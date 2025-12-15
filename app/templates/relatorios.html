@@ -2,8 +2,8 @@
 {% block content %}
 
 {% set meses = {
-    1: "Janeiro", 2: "Fevereiro", 3: "Março", 4: "Abril", 
-    5: "Maio", 6: "Julho", 7: "Julho", 8: "Agosto", 
+    1: "Janeiro", 2: "Fevereiro", 3: "Março", 4: "Abril",
+    5: "Maio", 6: "Junho", 7: "Julho", 8: "Agosto",
     9: "Setembro", 10: "Outubro", 11: "Novembro", 12: "Dezembro"
 } %}
 
@@ -18,7 +18,7 @@
     <h2 class="text-dark">
         <i class="bi bi-bar-chart-fill me-2"></i> Relatórios
     </h2>
-    
+
     <div class="d-flex gap-2">
         <a href="{{ url_for('main.exportar_relatorio_pdf', mes=mes_selecionado, ano=ano_selecionado, uvis_id=uvis_id_selecionado) }}"
            class="btn btn-danger">
@@ -33,8 +33,8 @@
 </div>
 
 {# --- Bloco de Filtros Unificado --- #}
-<form method="GET" class="card p-3 mb-4 shadow-sm">
-    <div class="row g-2">
+<form method="GET" class="card p-3 mb-4 shadow-sm rounded-4">
+    <div class="row g-2 align-items-end">
         <div class="col-md-3">
             <label for="mes_select" class="small text-muted">Mês:</label>
             <select name="mes" id="mes_select" class="form-select form-select-sm">
@@ -63,70 +63,144 @@
             </select>
         </div>
 
-        <div class="col-md-3 d-flex align-items-end">
+        <div class="col-md-3 d-flex gap-2">
             <button class="btn btn-success btn-sm w-100"><i class="bi bi-funnel"></i> Filtrar</button>
-        </div>
 
-
-        {% if uvis_id_selecionado %}
-        <div class="col-md-2">
-            <a href="{{ url_for('main.relatorios', mes=mes_selecionado, ano=ano_selecionado) }}" 
+            {% if uvis_id_selecionado %}
+            <a href="{{ url_for('main.relatorios', mes=mes_selecionado, ano=ano_selecionado) }}"
                class="btn btn-outline-secondary btn-sm w-100">
-               <i class="bi bi-x-lg"></i> Limpar UVIS
+                <i class="bi bi-x-lg"></i> Limpar UVIS
             </a>
+            {% endif %}
         </div>
-        {% endif %}
     </div>
 </form>
 
 <h4 class="mb-4 text-primary">
     Dados de {{ meses[mes_selecionado|int] }} / {{ ano_selecionado }}
     {% if uvis_id_selecionado %}
-        <small class="text-muted fst-italic">— Filtrado por: {{ uvis_disponiveis | selectattr(0, 'equalto', uvis_id_selecionado|int) | map(attribute=1) | first }}</small>
+        <small class="text-muted fst-italic">— Filtrado por:
+            {{ uvis_disponiveis | selectattr(0, 'equalto', uvis_id_selecionado|int) | map(attribute=1) | first }}
+        </small>
     {% endif %}
 </h4>
 
 <div class="row row-cols-1 row-cols-sm-2 row-cols-md-5 g-4 mb-4">
-    
-    {# CARD 1: TOTAL (Acento Primary) #}
     <div class="col">
         <div class="card info status-primary shadow-sm rounded-4 p-3 h-100">
             <h4 class="fw-bold text-primary">Total</h4>
             <p class="display-6 fw-bold mb-0 text-dark">{{ total_solicitacoes }}</p>
         </div>
     </div>
-    
-    {# CARD 2: APROVADAS (Acento Success) #}
+
     <div class="col">
         <div class="card info status-success shadow-sm rounded-4 p-3 h-100">
             <h4 class="fw-bold text-success">Aprovadas</h4>
             <p class="display-6 fw-bold mb-0 text-dark">{{ total_aprovadas }}</p>
         </div>
     </div>
-    
-    {# CARD 3: RECUSADAS (Acento Danger) #}
+
     <div class="col">
         <div class="card info status-danger shadow-sm rounded-4 p-3 h-100">
             <h4 class="fw-bold text-danger">Recusadas</h4>
             <p class="display-6 fw-bold mb-0 text-dark">{{ total_recusadas }}</p>
         </div>
     </div>
-    
-    {# CARD 4: EM ANÁLISE (Acento Warning) #}
+
     <div class="col">
         <div class="card info status-warning shadow-sm rounded-4 p-3 h-100">
             <h4 class="fw-bold text-warning">Em Análise</h4>
             <p class="display-6 fw-bold mb-0 text-dark">{{ total_analise }}</p>
         </div>
     </div>
-    
-    {# CARD 5: PENDENTES (Acento Info - usando o Azul primário/acento) #}
+
     <div class="col">
         <div class="card info status-info shadow-sm rounded-4 p-3 h-100">
             <h4 class="fw-bold text-info">Pendentes</h4>
             <p class="display-6 fw-bold mb-0 text-dark">{{ total_pendentes }}</p>
         </div>
     </div>
+</div>
+
+{# =========================
+   DASHBOARD DE GRÁFICOS
+   ========================= #}
+<div class="row g-4 mb-4">
+  <div class="col-lg-4">
+    <div class="card shadow-sm rounded-4 p-4 h-100">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h5 class="mb-0 text-dark"><i class="bi bi-pie-chart-fill me-2"></i>Status</h5>
+        <span class="badge bg-light text-dark border">Período filtrado</span>
+      </div>
+      <div style="height:280px;">
+        <canvas id="chartStatus"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card shadow-sm rounded-4 p-4 h-100">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h5 class="mb-0 text-dark"><i class="bi bi-geo-alt-fill me-2"></i>Solicitações por Região</h5>
+        <span class="badge bg-light text-dark border">Período filtrado</span>
+      </div>
+      <div style="height:280px;">
+        <canvas id="chartRegiao"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-lg-6">
+    <div class="card shadow-sm rounded-4 p-4 h-100">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h5 class="mb-0 text-dark"><i class="bi bi-building-check me-2"></i>Unidades (UVIS)</h5>
+        <span class="badge bg-light text-dark border">Top 10</span>
+      </div>
+      <div style="height:320px;">
+        <canvas id="chartUnidade"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card shadow-sm rounded-4 p-4 h-100">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h5 class="mb-0 text-dark"><i class="bi bi-bullseye me-2"></i>Foco</h5>
+        <span class="badge bg-light text-dark border">Período filtrado</span>
+      </div>
+      <div style="height:320px;">
+        <canvas id="chartFoco"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-lg-6">
+    <div class="card shadow-sm rounded-4 p-4 h-100">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h5 class="mb-0 text-dark"><i class="bi bi-journal-text me-2"></i>Tipo de Visita</h5>
+        <span class="badge bg-light text-dark border">Período filtrado</span>
+      </div>
+      <div style="height:320px;">
+        <canvas id="chartTipoVisita"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card shadow-sm rounded-4 p-4 h-100">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h5 class="mb-0 text-dark"><i class="bi bi-ruler me-2"></i>Altura de Voo</h5>
+        <span class="badge bg-light text-dark border">Período filtrado</span>
+      </div>
+      <div style="height:320px;">
+        <canvas id="chartAltura"></canvas>
+      </div>
+    </div>
+  </div>
 </div>
 
 {# --- Tabelas detalhadas: Região, Unidade, Status, Foco, Tipo, Altura --- #}
@@ -298,68 +372,254 @@
     </div>
 </div>
 
+{# Histórico mensal (seu gráfico original, mantido) #}
 <div class="card shadow-sm rounded-4 p-4 mb-4">
     <h4 class="mb-3 text-dark"><i class="bi bi-graph-up me-2"></i>Solicitações por Mês (Histórico)</h4>
-    <p class="text-muted">Visão geral da evolução ao longo do tempo, independente do filtro de período.</p>
-    <canvas id="chartMensal" height="100"></canvas>
+    <p class="text-muted mb-3">Visão geral da evolução ao longo do tempo, independente do filtro de período.</p>
+    <div style="height:300px;">
+        <canvas id="chartMensal"></canvas>
+    </div>
 </div>
 
-<script id="dados-mensais-json" type="application/json">
-    {{ dados_mensais | tojson | safe }}
-</script>
+{# =========================
+   JSONs para gráficos
+   ========================= #}
+<script id="dados-mensais-json" type="application/json">{{ dados_mensais | tojson | safe }}</script>
+<script id="dados-status-json" type="application/json">{{ dados_status | tojson | safe }}</script>
+<script id="dados-regiao-json" type="application/json">{{ dados_regiao | tojson | safe }}</script>
+<script id="dados-unidade-json" type="application/json">{{ dados_unidade | tojson | safe }}</script>
+<script id="dados-foco-json" type="application/json">{{ dados_foco | tojson | safe }}</script>
+<script id="dados-tipo-visita-json" type="application/json">{{ dados_tipo_visita | tojson | safe }}</script>
+<script id="dados-altura-json" type="application/json">{{ dados_altura_voo | tojson | safe }}</script>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
 <script>
-const dadosRaw = document.getElementById('dados-mensais-json').textContent;
-const dadosMensais = JSON.parse(dadosRaw);
+  // ================
+  // Helpers
+  // ================
+  const readJson = (id) => {
+    const el = document.getElementById(id);
+    return el ? JSON.parse(el.textContent) : [];
+  };
 
-const labels = dadosMensais.map(item => item[0]);
-const counts = dadosMensais.map(item => item[1]);
+  const cleanLabel = (v) => (v === null || v === undefined || v === "" ? "Não informado" : String(v));
 
-function formatarMes(label) {
-    if (!label) return '';
-    const [ano, mes] = label.split('-');
+  // Tema global
+  Chart.defaults.font.family = "system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  Chart.defaults.color = "#495057";
+  Chart.defaults.plugins.legend.labels.boxWidth = 12;
+  Chart.defaults.plugins.tooltip.backgroundColor = "rgba(33, 37, 41, 0.92)";
+  Chart.defaults.plugins.tooltip.padding = 12;
+  Chart.defaults.plugins.tooltip.titleColor = "#fff";
+  Chart.defaults.plugins.tooltip.bodyColor = "#fff";
+  Chart.defaults.responsive = true;
+  Chart.defaults.maintainAspectRatio = false;
+
+  const palette = ["#0d6efd", "#20c997", "#ffc107", "#dc3545", "#6f42c1", "#0dcaf0", "#fd7e14", "#198754", "#adb5bd", "#343a40"];
+
+  // =========================
+  // Gráfico: Histórico Mensal (line)
+  // =========================
+  const dadosMensais = readJson("dados-mensais-json");
+  const labelsMensais = dadosMensais.map(item => item[0]);
+  const countsMensais = dadosMensais.map(item => item[1]);
+
+  function formatarMes(label) {
+    if (!label) return "";
+    const [ano, mes] = label.split("-");
     const data = new Date(ano, mes - 1);
-    const formatador = new Intl.DateTimeFormat('pt-BR', { month: 'short', year: '2-digit' });
-    return formatador.format(data).replace('.', '/').replace(' ', '');
-}
+    const formatador = new Intl.DateTimeFormat("pt-BR", { month: "short", year: "2-digit" });
+    return formatador.format(data).replace(".", "/").replace(" ", "");
+  }
 
-const labelsFormatados = labels.map(formatarMes);
+  const labelsMensaisFmt = labelsMensais.map(formatarMes);
 
-const ctx = document.getElementById('chartMensal').getContext('2d');
-const chartMensal = new Chart(ctx, {
-    type: 'line',
-    data: {
-        labels: labelsFormatados,
+  if (document.getElementById("chartMensal")) {
+    new Chart(document.getElementById("chartMensal"), {
+      type: "line",
+      data: {
+        labels: labelsMensaisFmt,
         datasets: [{
-            label: 'Total de Solicitações',
-            data: counts,
-            backgroundColor: 'rgba(0, 163, 196, 0.2)',
-            borderColor: '#00a3c4',
-            borderWidth: 3,
-            tension: 0.3,
-            fill: true,
-            pointBackgroundColor: '#00a3c4',
-            pointBorderColor: '#fff',
-            pointRadius: 5
+          label: "Total de Solicitações",
+          data: countsMensais,
+          backgroundColor: "rgba(13, 110, 253, 0.15)",
+          borderColor: "#0d6efd",
+          borderWidth: 3,
+          tension: 0.35,
+          fill: true,
+          pointBackgroundColor: "#0d6efd",
+          pointBorderColor: "#fff",
+          pointRadius: 4
         }]
-    },
-    options: {
-        responsive: true,
+      },
+      options: {
+        interaction: { mode: "index", intersect: false },
+        plugins: { legend: { display: false } },
         scales: {
-            y: { beginAtZero: true, title: { display: true, text: 'Quantidade de Solicitações' }, ticks: { precision: 0 } }
-        },
-        plugins: {
-            legend: { display: false },
-            tooltip: {
-                callbacks: {
-                    title: ctx => `Mês: ${labelsFormatados[ctx[0].dataIndex]}`,
-                    label: ctx => `${ctx.dataset.label || ''}: ${ctx.parsed.y.toFixed(0)}`
-                }
-            }
+          x: { grid: { display: false } },
+          y: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.06)" }, ticks: { precision: 0 } }
         }
-    }
-});
+      }
+    });
+  }
+
+  // =========================
+  // Status (doughnut)
+  // =========================
+  const dadosStatus = readJson("dados-status-json").map(([s, c]) => [cleanLabel(s), c]);
+  if (document.getElementById("chartStatus")) {
+    new Chart(document.getElementById("chartStatus"), {
+      type: "doughnut",
+      data: {
+        labels: dadosStatus.map(x => x[0]),
+        datasets: [{
+          data: dadosStatus.map(x => x[1]),
+          backgroundColor: ["#198754", "#dc3545", "#ffc107", "#0dcaf0"],
+          borderWidth: 0,
+          hoverOffset: 6
+        }]
+      },
+      options: {
+        cutout: "70%",
+        plugins: {
+          legend: { position: "bottom" },
+          tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${ctx.parsed}` } }
+        }
+      }
+    });
+  }
+
+  // =========================
+  // Região (bar horizontal)
+  // =========================
+  const dadosRegiao = readJson("dados-regiao-json").map(([r, c]) => [cleanLabel(r), c]);
+  if (document.getElementById("chartRegiao")) {
+    new Chart(document.getElementById("chartRegiao"), {
+      type: "bar",
+      data: {
+        labels: dadosRegiao.map(x => x[0]),
+        datasets: [{
+          label: "Solicitações",
+          data: dadosRegiao.map(x => x[1]),
+          backgroundColor: "#0d6efd",
+          borderRadius: 10,
+          barThickness: 18
+        }]
+      },
+      options: {
+        indexAxis: "y",
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.06)" }, ticks: { precision: 0 } },
+          y: { grid: { display: false } }
+        }
+      }
+    });
+  }
+
+  // =========================
+  // Unidade (Top 10) (bar)
+  // =========================
+  let dadosUnidade = readJson("dados-unidade-json").map(([u, c]) => [cleanLabel(u), c]).slice(0, 10);
+  if (document.getElementById("chartUnidade")) {
+    new Chart(document.getElementById("chartUnidade"), {
+      type: "bar",
+      data: {
+        labels: dadosUnidade.map(x => x[0]),
+        datasets: [{
+          label: "Total",
+          data: dadosUnidade.map(x => x[1]),
+          backgroundColor: "#20c997",
+          borderRadius: 10
+        }]
+      },
+      options: {
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.06)" }, ticks: { precision: 0 } },
+          x: { grid: { display: false }, ticks: { maxRotation: 35, minRotation: 0 } }
+        }
+      }
+    });
+  }
+
+  // =========================
+  // Foco (bar horizontal)
+  // =========================
+  const dadosFoco = readJson("dados-foco-json").map(([f, c]) => [cleanLabel(f), c]);
+  if (document.getElementById("chartFoco")) {
+    new Chart(document.getElementById("chartFoco"), {
+      type: "bar",
+      data: {
+        labels: dadosFoco.map(x => x[0]),
+        datasets: [{
+          label: "Total",
+          data: dadosFoco.map(x => x[1]),
+          backgroundColor: "#6f42c1",
+          borderRadius: 10,
+          barThickness: 18
+        }]
+      },
+      options: {
+        indexAxis: "y",
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.06)" }, ticks: { precision: 0 } },
+          y: { grid: { display: false } }
+        }
+      }
+    });
+  }
+
+  // =========================
+  // Tipo de visita (doughnut)
+  // =========================
+  const dadosTipo = readJson("dados-tipo-visita-json").map(([t, c]) => [cleanLabel(t), c]);
+  if (document.getElementById("chartTipoVisita")) {
+    new Chart(document.getElementById("chartTipoVisita"), {
+      type: "doughnut",
+      data: {
+        labels: dadosTipo.map(x => x[0]),
+        datasets: [{
+          data: dadosTipo.map(x => x[1]),
+          backgroundColor: dadosTipo.map((_, i) => palette[i % palette.length]),
+          borderWidth: 0,
+          hoverOffset: 6
+        }]
+      },
+      options: {
+        cutout: "65%",
+        plugins: { legend: { position: "bottom" } }
+      }
+    });
+  }
+
+  // =========================
+  // Altura de voo (bar)
+  // =========================
+  const dadosAltura = readJson("dados-altura-json").map(([a, c]) => [cleanLabel(a), c]);
+  if (document.getElementById("chartAltura")) {
+    new Chart(document.getElementById("chartAltura"), {
+      type: "bar",
+      data: {
+        labels: dadosAltura.map(x => x[0]),
+        datasets: [{
+          label: "Total",
+          data: dadosAltura.map(x => x[1]),
+          backgroundColor: "#fd7e14",
+          borderRadius: 10
+        }]
+      },
+      options: {
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.06)" }, ticks: { precision: 0 } },
+          x: { grid: { display: false }, ticks: { maxRotation: 30, minRotation: 0 } }
+        }
+      }
+    });
+  }
 </script>
 
 {% endblock %}
