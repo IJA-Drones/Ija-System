@@ -1,0 +1,245 @@
+{% extends "base.html" %} {% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-8 col-lg-8">
+    <div class="card shadow border-0 rounded-4">
+      <div class="card-header bg-primary text-white py-3 rounded-top-4">
+        <h5 class="mb-0"><i class="bi bi-send-fill me-2"></i>Novo Pedido de Voo</h5>
+      </div>
+      <div class="card-body p-4">
+        <form method="POST">
+          
+          <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">
+            <i class="bi bi-calendar-event me-1 color-light"></i> Agendamento
+          </h6>
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="fw-bold mb-1 ">Data</label>
+              <input
+                type="date"
+                name="data"
+                class="form-control"
+                required
+                min="{{ hoje }}"
+              />
+            </div>
+            <div class="col-md-6">
+              <label class="fw-bold mb-1">Hora</label>
+              <input type="time" name="hora" class="form-control" required />
+            </div>
+          </div>
+
+          <h6 class="text-primary fw-bold mb-3 border-bottom pb-2 mt-4">
+            <i class="bi bi-geo-alt-fill me-1"></i> Localização
+          </h6>
+
+          <div class="row mb-3">
+            <div class="col-md-4">
+                <label class="fw-bold mb-1">CEP</label>
+                <input
+                  type="text"
+                  id="cep"
+                  name="cep"
+                  maxlength="9"
+                  class="form-control"
+                  placeholder="00000-000"
+                  required
+                />
+            </div>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-md-8">
+              <label class="fw-bold mb-1">Logradouro</label>
+              <input
+                type="text"
+                id="endereco"
+                name="logradouro"
+                class="form-control"
+                required
+              />
+            </div>
+            <div class="col-md-4">
+              <label class="fw-bold mb-1">Número</label>
+              <input
+                type="text"
+                name="numero"
+                class="form-control"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-md-6">
+                <label class="fw-bold mb-1">Complemento</label>
+                <input
+                  type="text"
+                  name="complemento"
+                  class="form-control"
+                  placeholder="Ex: Apto 102, Bloco C"
+                />
+            </div>
+            <div class="col-md-6">
+              <label class="fw-bold mb-1">Bairro</label>
+              <input
+                type="text"
+                id="bairro"
+                name="bairro"
+                class="form-control"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-md-9">
+              <label class="fw-bold mb-1">Cidade</label>
+              <input
+                type="text"
+                id="cidade"
+                name="cidade"
+                class="form-control"
+                required
+              />
+            </div>
+            <div class="col-md-3">
+              <label class="fw-bold mb-1">UF</label>
+              <input
+                type="text"
+                id="uf"
+                name="uf"
+                class="form-control"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="row mb-3">
+             <div class="col-md-6">
+                <label class="fw-bold mb-1 small">Latitude</label>
+                <input type="text" name="latitude" class="form-control form-control-sm" placeholder="-23.XXXXXX">
+             </div>
+             <div class="col-md-6">
+                <label class="fw-bold mb-1  small">Longitude</label>
+                <input type="text" name="longitude" class="form-control form-control-sm" placeholder="-46.XXXXXX">
+             </div>
+          </div>
+
+          <h6 class="text-primary fw-bold mb-3 border-bottom pb-2 mt-4">
+            <i class="bi bi-sliders me-1"></i> Detalhes da Operação
+          </h6>
+
+          <div class="row mb-3">
+            <div class="col-md-6">
+                <label class="fw-bold mb-1">Tipo de Visita</label>
+                <select class="form-select" name="tipo_visita" required>
+                    <option value="" selected disabled>Selecione...</option>
+                    <option value="monitoramento">Monitoramento</option>
+                    <option value="aedes">Aedes</option>
+                    <option value="culex">Culex</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="fw-bold mb-1">Altura do Voo</label>
+                <select class="form-select" name="altura_voo" required>
+                    <option value="" selected disabled>Selecione...</option>
+                    <option value="10m">10 Metros</option>
+                    <option value="20m">20 Metros</option>
+                    <option value="30m">30 Metros</option>
+                    <option value="40m">40 Metros</option>
+                </select>
+            </div>
+          </div>
+
+          <div class="row mb-3 p-3 rounded mx-1 border">
+             <div class="col-md-6 mb-2 mb-md-0 border-end">
+                <label class="fw-bold d-block mb-2">Identificou Criadouro?</label>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="criadouro" id="criadouroSim" value="sim">
+                    <label class="form-check-label" for="criadouroSim">Sim</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="criadouro" id="criadouroNao" value="nao" checked>
+                    <label class="form-check-label" for="criadouroNao">Não</label>
+                </div>
+             </div>
+
+             <div class="col-md-6">
+                <label class="fw-bold d-block mb-2">Necessário Apoio CET?</label>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="apoio_cet" id="cetSim" value="sim">
+                    <label class="form-check-label" for="cetSim">Sim</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="apoio_cet" id="cetNao" value="nao" checked>
+                    <label class="form-check-label" for="cetNao">Não</label>
+                </div>
+             </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="fw-bold mb-1">Observações</label>
+            <textarea class="form-control" name="observacao" rows="3" placeholder="Informações adicionais relevantes..."></textarea>
+          </div>
+
+          <h6 class="text-primary fw-bold mb-3 border-bottom pb-2 mt-4">
+            <i class="bi bi-bullseye me-1"></i> Classificação
+          </h6>
+
+          <div class="mb-4">
+            <label class="fw-bold mb-1">Foco da Ação</label>
+            <select name="foco" class="form-select" required>
+              <option value="" selected disabled>Selecione o tipo de foco...</option>
+              <option>Imóvel Abandonado</option>
+              <option>Piscina / Caixa D'água</option>
+              <option>Terreno Baldio</option>
+              <option>Ponto Estratégico (PE)</option>
+            </select>
+          </div>
+
+          <div class="d-flex justify-content-end gap-2">
+            <a
+              href="{{ url_for('main.dashboard') }}"
+              class="btn btn-outline-secondary px-4"
+              >Cancelar</a
+            >
+            <button type="submit" class="btn btn-success px-5 fw-bold">
+              <i class="bi bi-check-lg me-1"></i> Enviar Pedido
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.getElementById("cep").addEventListener("keyup", function () {
+    let cep = this.value.replace(/\D/g, "");
+
+    if (cep.length === 8) {
+      // Feedback visual carregando
+      document.getElementById("endereco").placeholder = "Buscando...";
+      
+      fetch(`https://viacep.com.br/ws/${cep}/json/`)
+        .then((response) => response.json())
+        .then((data) => {
+          if (!data.erro) {
+            document.getElementById("endereco").value = data.logradouro || "";
+            document.getElementById("bairro").value = data.bairro || "";
+            document.getElementById("cidade").value = data.localidade || "";
+            document.getElementById("uf").value = data.uf || "";
+            document.getElementById("endereco").placeholder = "";
+          } else {
+            alert("CEP não encontrado.");
+            document.getElementById("endereco").placeholder = "";
+          }
+        })
+        .catch(() => {
+            document.getElementById("endereco").placeholder = "";
+        });
+    }
+  });
+</script>
+{% endblock %}
+            

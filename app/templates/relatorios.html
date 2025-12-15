@@ -1,0 +1,365 @@
+{% extends "base.html" %}
+{% block content %}
+
+{% set meses = {
+    1: "Janeiro", 2: "Fevereiro", 3: "Março", 4: "Abril", 
+    5: "Maio", 6: "Julho", 7: "Julho", 8: "Agosto", 
+    9: "Setembro", 10: "Outubro", 11: "Novembro", 12: "Dezembro"
+} %}
+
+{% set status_cores = {
+    "APROVADO": "success",
+    "NEGADO": "danger",
+    "EM ANÁLISE": "warning",
+    "PENDENTE": "info"
+} %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="text-dark">
+        <i class="bi bi-bar-chart-fill me-2"></i> Relatórios
+    </h2>
+    
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('main.exportar_relatorio_pdf', mes=mes_selecionado, ano=ano_selecionado, uvis_id=uvis_id_selecionado) }}"
+           class="btn btn-danger">
+            <i class="bi bi-file-earmark-pdf-fill"></i> Exportar PDF
+        </a>
+
+        <a href="{{ url_for('main.exportar_relatorio_excel', mes=mes_selecionado, ano=ano_selecionado, uvis_id=uvis_id_selecionado) }}"
+           class="btn btn-success">
+            <i class="bi bi-file-earmark-excel-fill"></i> Exportar Excel
+        </a>
+    </div>
+</div>
+
+{# --- Bloco de Filtros Unificado --- #}
+<form method="GET" class="card p-3 mb-4 shadow-sm">
+    <div class="row g-2">
+        <div class="col-md-3">
+            <label for="mes_select" class="small text-muted">Mês:</label>
+            <select name="mes" id="mes_select" class="form-select form-select-sm">
+                {% for num, nome in meses.items() %}
+                    <option value="{{ num }}" {% if num == mes_selecionado|int %}selected{% endif %}>{{ nome }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <label for="ano_select" class="small text-muted">Ano:</label>
+            <select name="ano" id="ano_select" class="form-select form-select-sm">
+                {% for ano in anos_disponiveis %}
+                    <option value="{{ ano }}" {% if ano|int == ano_selecionado|int %}selected{% endif %}>{{ ano }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <label for="uvis_select" class="small text-muted">Unidade (UVIS):</label>
+            <select name="uvis_id" id="uvis_select" class="form-select form-select-sm">
+                <option value="" {% if uvis_id_selecionado is none or uvis_id_selecionado == "" %}selected{% endif %}>Todas as Unidades</option>
+                {% for id, nome in uvis_disponiveis %}
+                    <option value="{{ id }}" {% if id|int == uvis_id_selecionado|int %}selected{% endif %}>{{ nome }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-3 d-flex align-items-end">
+            <button class="btn btn-dark btn-sm w-100"><i class="bi bi-funnel"></i> Filtrar</button>
+        </div>
+
+
+        {% if uvis_id_selecionado %}
+        <div class="col-md-2">
+            <a href="{{ url_for('main.relatorios', mes=mes_selecionado, ano=ano_selecionado) }}" 
+               class="btn btn-outline-secondary btn-sm w-100">
+               <i class="bi bi-x-lg"></i> Limpar UVIS
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</form>
+
+<h4 class="mb-4 text-primary">
+    Dados de {{ meses[mes_selecionado|int] }} / {{ ano_selecionado }}
+    {% if uvis_id_selecionado %}
+        <small class="text-muted fst-italic">— Filtrado por: {{ uvis_disponiveis | selectattr(0, 'equalto', uvis_id_selecionado|int) | map(attribute=1) | first }}</small>
+    {% endif %}
+</h4>
+
+<div class="row row-cols-1 row-cols-sm-2 row-cols-md-5 g-4 mb-4">
+    
+    {# CARD 1: TOTAL (Acento Primary) #}
+    <div class="col">
+        <div class="card info status-primary shadow-sm rounded-4 p-3 h-100">
+            <h4 class="fw-bold text-primary">Total</h4>
+            <p class="display-6 fw-bold mb-0 text-dark">{{ total_solicitacoes }}</p>
+        </div>
+    </div>
+    
+    {# CARD 2: APROVADAS (Acento Success) #}
+    <div class="col">
+        <div class="card info status-success shadow-sm rounded-4 p-3 h-100">
+            <h4 class="fw-bold text-success">Aprovadas</h4>
+            <p class="display-6 fw-bold mb-0 text-dark">{{ total_aprovadas }}</p>
+        </div>
+    </div>
+    
+    {# CARD 3: RECUSADAS (Acento Danger) #}
+    <div class="col">
+        <div class="card info status-danger shadow-sm rounded-4 p-3 h-100">
+            <h4 class="fw-bold text-danger">Recusadas</h4>
+            <p class="display-6 fw-bold mb-0 text-dark">{{ total_recusadas }}</p>
+        </div>
+    </div>
+    
+    {# CARD 4: EM ANÁLISE (Acento Warning) #}
+    <div class="col">
+        <div class="card info status-warning shadow-sm rounded-4 p-3 h-100">
+            <h4 class="fw-bold text-warning">Em Análise</h4>
+            <p class="display-6 fw-bold mb-0 text-dark">{{ total_analise }}</p>
+        </div>
+    </div>
+    
+    {# CARD 5: PENDENTES (Acento Info - usando o Azul primário/acento) #}
+    <div class="col">
+        <div class="card info status-info shadow-sm rounded-4 p-3 h-100">
+            <h4 class="fw-bold text-info">Pendentes</h4>
+            <p class="display-6 fw-bold mb-0 text-dark">{{ total_pendentes }}</p>
+        </div>
+    </div>
+</div>
+
+{# --- Tabelas detalhadas: Região, Unidade, Status, Foco, Tipo, Altura --- #}
+<div class="card shadow-sm rounded-4 p-4 mb-4">
+    <h4 class="mb-3 text-dark"><i class="bi bi-geo-alt-fill me-2"></i>Solicitações por Região</h4>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>Região</th>
+                    <th class="text-center">Total de Solicitações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for regiao, count in dados_regiao %}
+                <tr>
+                    <td>{{ regiao or 'Não informado' }}</td>
+                    <td class="text-center">{{ count }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="2" class="text-center text-muted">Nenhuma solicitação encontrada para este período.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card shadow-sm rounded-4 p-4 mb-4">
+    <h4 class="mb-3 text-dark"><i class="bi bi-building-check me-2"></i>Solicitações por Unidade (UVIS)</h4>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>Unidade (UVIS)</th>
+                    <th class="text-center">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for unidade, total in dados_unidade %}
+                <tr>
+                    <td>{{ unidade or 'Não informado' }}</td>
+                    <td class="text-center">{{ total }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="2" class="text-center text-muted">Nenhuma solicitação encontrada para as unidades do período selecionado.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm rounded-4 p-4 h-100">
+            <h4 class="mb-3 text-dark"><i class="bi bi-list-task me-2"></i>Status Detalhado</h4>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th class="text-center">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for status, count in dados_status %}
+                        <tr>
+                            <td><span class="badge bg-{{ status_cores.get(status, 'secondary') }} text-uppercase">{{ status }}</span></td>
+                            <td class="text-center">{{ count }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="2" class="text-center text-muted">Nenhum status encontrado.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card shadow-sm rounded-4 p-4 h-100">
+            <h4 class="mb-3 text-dark"><i class="bi bi-bullseye me-2"></i>Solicitações por Foco</h4>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Foco</th>
+                            <th class="text-center">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for foco, count in dados_foco %}
+                        <tr>
+                            <td>{{ foco or 'Não informado' }}</td>
+                            <td class="text-center">{{ count }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="2" class="text-center text-muted">Nenhuma solicitação encontrada por foco.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm rounded-4 p-4 h-100">
+            <h4 class="mb-3 text-dark"><i class="bi bi-journal-text me-2"></i>Solicitações por Tipo de Visita</h4>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Tipo de Visita</th>
+                            <th class="text-center">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tipo, count in dados_tipo_visita %}
+                        <tr>
+                            <td>{{ tipo | capitalize or 'Não informado' }}</td>
+                            <td class="text-center">{{ count }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="2" class="text-center text-muted">Nenhuma solicitação encontrada por tipo de visita.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card shadow-sm rounded-4 p-4 h-100">
+            <h4 class="mb-3 text-dark"><i class="bi bi-ruler me-2"></i>Solicitações por Altura de Voo</h4>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Altura (Metros)</th>
+                            <th class="text-center">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for altura, count in dados_altura_voo %}
+                        <tr>
+                            <td>{{ altura or 'Não informado' }}</td>
+                            <td class="text-center">{{ count }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="2" class="text-center text-muted">Nenhuma solicitação encontrada por altura de voo.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm rounded-4 p-4 mb-4">
+    <h4 class="mb-3 text-dark"><i class="bi bi-graph-up me-2"></i>Solicitações por Mês (Histórico)</h4>
+    <p class="text-muted">Visão geral da evolução ao longo do tempo, independente do filtro de período.</p>
+    <canvas id="chartMensal" height="100"></canvas>
+</div>
+
+<script id="dados-mensais-json" type="application/json">
+    {{ dados_mensais | tojson | safe }}
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+const dadosRaw = document.getElementById('dados-mensais-json').textContent;
+const dadosMensais = JSON.parse(dadosRaw);
+
+const labels = dadosMensais.map(item => item[0]);
+const counts = dadosMensais.map(item => item[1]);
+
+function formatarMes(label) {
+    if (!label) return '';
+    const [ano, mes] = label.split('-');
+    const data = new Date(ano, mes - 1);
+    const formatador = new Intl.DateTimeFormat('pt-BR', { month: 'short', year: '2-digit' });
+    return formatador.format(data).replace('.', '/').replace(' ', '');
+}
+
+const labelsFormatados = labels.map(formatarMes);
+
+const ctx = document.getElementById('chartMensal').getContext('2d');
+const chartMensal = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: labelsFormatados,
+        datasets: [{
+            label: 'Total de Solicitações',
+            data: counts,
+            backgroundColor: 'rgba(0, 163, 196, 0.2)',
+            borderColor: '#00a3c4',
+            borderWidth: 3,
+            tension: 0.3,
+            fill: true,
+            pointBackgroundColor: '#00a3c4',
+            pointBorderColor: '#fff',
+            pointRadius: 5
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: { beginAtZero: true, title: { display: true, text: 'Quantidade de Solicitações' }, ticks: { precision: 0 } }
+        },
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                callbacks: {
+                    title: ctx => `Mês: ${labelsFormatados[ctx[0].dataIndex]}`,
+                    label: ctx => `${ctx.dataset.label || ''}: ${ctx.parsed.y.toFixed(0)}`
+                }
+            }
+        }
+    }
+});
+</script>
+
+{% endblock %}

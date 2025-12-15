@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container mt-4">
+    <h2 class="text-dark">
+        📅 Agenda de Agendamentos
+    </h2>
+    <hr>
+
+    <div id="calendar"></div>
+</div>
+
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+
+<script id="eventos-dados" type="application/json">
+    {{ eventos_json | safe }}
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    
+    // 2. Leitura e conversão do JSON armazenado
+    const eventosDadosRaw = document.getElementById('eventos-dados').textContent;
+    // O array de eventos será carregado aqui, eliminando o erro de sintaxe
+    let eventos;
+    try {
+        eventos = JSON.parse(eventosDadosRaw);
+    } catch (e) {
+        console.error("Erro ao carregar dados JSON para o FullCalendar:", e);
+        eventos = []; // Define como array vazio para evitar quebrar o calendário
+    }
+
+
+    var calendarEl = document.getElementById('calendar');
+
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        locale: 'pt-br',
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,listWeek'
+        },
+
+        // 3. Passa a variável JS (o array) diretamente
+        events: eventos,
+
+        // Adiciona tooltip com o título completo
+        eventDidMount: function(info) {
+            info.el.setAttribute("title", info.event.title);
+        }
+    });
+
+    calendar.render();
+});
+</script>
+
+{% endblock %}

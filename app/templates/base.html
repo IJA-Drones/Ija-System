@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sistema UVIS - Oceano Azul</title>
+    <link
+      rel="icon"
+      type="image/png"
+      href="{{ url_for('static', filename='img/logo_IJA_System.png') }}"
+    />
+
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+  </head>
+  <body>
+    <nav
+      class="navbar navbar-expand-lg navbar-light fixed-top shadow-sm"
+    >
+      <div class="container-fluid">
+        {% if current_user.is_authenticated %}
+        <button
+          class="btn btn-outline-primary me-3 d-none d-lg-block"
+          type="button"
+          id="sidebarToggle"
+          aria-label="Toggle Sidebar"
+        >
+          <i class="bi bi-list fs-5"></i>
+        </button>
+        {% endif %}
+
+        <a
+          class="navbar-brand d-flex align-items-center gap-3"
+          href="{{ url_for('main.dashboard') }}"
+        >
+          <img
+            src="{{ url_for('static', filename='img/logo_IJA_System.png') }}"
+            alt="OceanoAzul Logo"
+            height="65"
+            id="navbar-logo"
+            class="d-inline-block align-text-top"
+          />
+
+          <span class="fs-4">OceanoAzul</span>
+        </a>
+
+        <button
+          class="navbar-toggler border-0"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div
+          class="collapse navbar-collapse justify-content-end"
+          id="navbarNav"
+        >
+          <ul class="navbar-nav align-items-center gap-3">
+            {% if current_user.is_authenticated %}
+            <li class="nav-item d-lg-none">
+              <a class="nav-link" href="{{ url_for('main.dashboard') }}"
+                ><i class="bi bi-house-door me-2"></i>Dashboard</a
+              >
+            </li>
+            {% if current_user.tipo_usuario == 'admin' %}
+            <li class="nav-item d-lg-none">
+              <a class="nav-link" href="{{ url_for('main.relatorios') }}"
+                ><i class="bi bi-graph-up me-2"></i>Relatórios (Admin)</a
+              >
+            </li>
+            
+
+            {% endif %}
+
+            <li class="nav-item">
+              <span class="nav-link fw-bold">
+                <i class="bi bi-person-circle me-1"></i>
+                Olá,
+                <strong
+                  >{{ current_user.nome_uvis or current_user.name }}</strong
+                >
+              </span>
+            </li>
+            <li class="nav-item">
+              <button
+                id="toggleDarkMode"
+                class="btn btn-outline-primary btn-sm rounded-pill"
+              >
+                <i class="bi bi-moon-stars"></i>
+              </button>
+            </li>
+
+            <li class="nav-item border-start ps-3 d-none d-lg-block"></li>
+            <li class="nav-item">
+              <a
+                class="btn btn-outline-light btn-sm rounded-pill px-3 fw-bold"
+                href="{{ url_for('main.logout') }}"
+              >
+                Sair <i class="bi bi-box-arrow-right ms-1"></i>
+              </a>
+            </li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    {% if current_user.is_authenticated %}
+    <div class="app-wrapper">
+    <div class="app-sidebar" id="appSidebar">
+  <ul class="nav flex-column">
+    <li class="nav-item">
+      <a
+        class="nav-link {% if request.endpoint == 'main.dashboard' or request.endpoint == 'main.admin_dashboard' %}active{% endif %}"
+        href="{{ url_for('main.dashboard') }}"
+      >
+        <i class="bi bi-grid-fill me-2"></i><span>Dashboard</span>
+      </a>
+    </li>
+
+    {% if current_user.tipo_usuario == 'admin' %}
+    <li class="nav-item">
+      <a
+        class="nav-link {% if request.endpoint == 'main.relatorios' %}active{% endif %}"
+        href="{{ url_for('main.relatorios') }}"
+      >
+        <i class="bi bi-graph-up me-2"></i><span>Relatórios</span>
+      </a>
+    </li>
+
+    <!-- NOVO ITEM: AGENDA -->
+    <li class="nav-item">
+      <a
+        class="nav-link {% if request.endpoint == 'main.agenda' %}active{% endif %}"
+        href="{{ url_for('main.agenda') }}"
+      >
+        <i class="bi bi-calendar-event me-2"></i><span>Agenda</span>
+      </a>
+    </li>
+    {% endif %}
+  </ul>
+</div>
+
+
+      <div class="app-content" id="appContent">
+        <div class="container-fluid">
+          {% with messages = get_flashed_messages(with_categories=true) %} {% if
+          messages %} {% for category, message in messages %}
+          <div
+            class="alert alert-{{ category }} alert-dismissible fade show shadow-sm rounded-4"
+            role="alert"
+          >
+            {{ message }}
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="alert"
+              aria-label="Close"
+            ></button>
+          </div>
+          {% endfor %} {% endif %} {% endwith %} {% block content %}{% endblock
+          %}
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <div class="container py-4">{% block auth_content %}{% endblock %}</div>
+    {% endif %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+
+    {% block scripts %}{% endblock %}
+
+
+
+    <script>
+      // ------------------------------------
+      // JAVASCRIPT: CONTROLE SIDEBAR E DARK MODE
+      // ------------------------------------
+
+      // Removido: const navbar = document.querySelector(".navbar");
+      const body = document.body;
+      const sidebarToggle = document.getElementById("sidebarToggle");
+
+      // --- 1. Toggle Sidebar (desktop) --- (Agora é o item 1)
+      if (sidebarToggle) {
+        sidebarToggle.addEventListener("click", () => {
+          body.classList.toggle("sidebar-collapsed");
+        });
+
+        // Estado inicial: Garante que a sidebar está aberta por padrão no desktop
+        if (window.innerWidth >= 992) {
+          body.classList.remove("sidebar-collapsed");
+        }
+      }
+
+      // --- 2. Dark Mode (Seu JS original) --- (Agora é o item 2)
+      const toggle = document.getElementById("toggleDarkMode");
+      if (toggle) {
+        // Carregar preferência salva
+        // Corrigido para verificar o ícone inicial correto
+        if (localStorage.getItem("dark-mode") === "enabled") {
+          body.classList.add("dark-mode");
+          toggle.innerHTML = '<i class="bi bi-sun-fill"></i>';
+        } else {
+          toggle.innerHTML = '<i class="bi bi-moon-stars"></i>';
+        }
+
+        toggle.addEventListener("click", () => {
+          body.classList.toggle("dark-mode");
+
+          if (body.classList.contains("dark-mode")) {
+            localStorage.setItem("dark-mode", "enabled");
+            toggle.innerHTML = '<i class="bi bi-sun-fill"></i>';
+          } else {
+            localStorage.setItem("dark-mode", "disabled");
+            toggle.innerHTML = '<i class="bi bi-moon-stars"></i>';
+          }
+        });
+      }
+    </script>
+  </body>
+</html>
