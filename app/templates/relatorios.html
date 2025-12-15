@@ -11,7 +11,7 @@
     "APROVADO": "success",
     "NEGADO": "danger",
     "EM ANÁLISE": "warning",
-    "PENDENTE": "info"
+    "PENDENTE": "primary"
 } %}
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -405,6 +405,14 @@
 
   const cleanLabel = (v) => (v === null || v === undefined || v === "" ? "Não informado" : String(v));
 
+  // Normaliza texto (remove acentos e padroniza)
+  const normalizeText = (s) =>
+    String(s || "")
+      .trim()
+      .toUpperCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+
   // Tema global
   Chart.defaults.font.family = "system-ui, -apple-system, Segoe UI, Roboto, Arial";
   Chart.defaults.color = "#495057";
@@ -465,17 +473,45 @@
   }
 
   // =========================
-  // Status (doughnut)
+  // Status (doughnut) - CORES FIXAS POR NOME DO STATUS
+  // Aprovadas: verde | Recusadas: vermelho | Em análise: amarelo | Pendentes: azul
   // =========================
   const dadosStatus = readJson("dados-status-json").map(([s, c]) => [cleanLabel(s), c]);
+
+  const statusColorMap = {
+    "APROVADO": "#198754",
+    "APROVADA": "#198754",
+    "APROVADAS": "#198754",
+
+    "NEGADO": "#dc3545",
+    "NEGADA": "#dc3545",
+    "NEGADOS": "#dc3545",
+    "NEGADAS": "#dc3545",
+    "RECUSADO": "#dc3545",
+    "RECUSADA": "#dc3545",
+    "RECUSADOS": "#dc3545",
+    "RECUSADAS": "#dc3545",
+
+    "EM ANALISE": "#ffc107",
+
+    "PENDENTE": "#0d6efd",
+    "PENDENTES": "#0d6efd"
+  };
+
   if (document.getElementById("chartStatus")) {
+    const statusLabels = dadosStatus.map(x => x[0]);
+    const statusColors = statusLabels.map((lbl) => {
+      const key = normalizeText(lbl);
+      return statusColorMap[key] || "#6c757d"; // fallback (cinza)
+    });
+
     new Chart(document.getElementById("chartStatus"), {
       type: "doughnut",
       data: {
-        labels: dadosStatus.map(x => x[0]),
+        labels: statusLabels,
         datasets: [{
           data: dadosStatus.map(x => x[1]),
-          backgroundColor: ["#198754", "#dc3545", "#ffc107", "#0dcaf0"],
+          backgroundColor: statusColors,
           borderWidth: 0,
           hoverOffset: 6
         }]
