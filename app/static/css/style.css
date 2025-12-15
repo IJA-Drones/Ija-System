@@ -158,6 +158,8 @@ a:hover {
   color: var(--color-accent);
 }
 
+
+
 .navbar .btn-outline-light {
   color: var(--color-primary);
   border-color: var(--color-primary);
@@ -310,6 +312,11 @@ body.sidebar-collapsed .app-content {
 }
 .btn-outline-danger:hover {
   background: var(--color-danger);
+  color: #fff;
+}
+
+.btn-outline-light:hover {
+  background: var(--color-primary);
   color: #fff;
 }
 
@@ -601,10 +608,6 @@ body.dark-mode .form-control::placeholder {
   color: #94a3b8;
 }
 
-body.dark-mode .btn-primary {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-}
 body.dark-mode .btn-primary:hover {
   background: var(--color-primary-dark);
   border-color: var(--color-primary-dark);
@@ -616,6 +619,11 @@ body.dark-mode .btn-outline-secondary {
 body.dark-mode .btn-outline-secondary:hover {
   background: var(--color-text-muted);
   color: var(--color-bg-body);
+}
+
+body.dark-mode .btn-outline-light:hover {
+  background: var(--color-primary);
+  color: #fff;
 }
 
 body.dark-mode .table thead th {
@@ -765,9 +773,7 @@ body.dark-mode .modal em {
   font-size: 1rem !important;
 }
 
-/* -----------------------------------------
-   12) LOGO SWITCHING FOR DARK MODE
-   ----------------------------------------- */
+
 
 /* Logo padrão (tema claro) */
 .logo-dark {

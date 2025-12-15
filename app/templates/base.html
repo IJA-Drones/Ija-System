@@ -88,17 +88,7 @@
           id="navbarNav"
         >
           <ul class="navbar-nav align-items-center gap-3">
-            <!-- ✅ DARK MODE (sempre visível, inclusive login) -->
-            <li class="nav-item">
-              <button
-                id="toggleDarkMode"
-                class="btn btn-outline-primary btn-sm rounded-pill"
-                aria-label="Alternar tema"
-              >
-                <i class="bi bi-moon-stars"></i>
-              </button>
-            </li>
-
+            
             {% if current_user.is_authenticated %}
 
             <li class="nav-item d-lg-none">
@@ -123,6 +113,17 @@
                   >{{ current_user.nome_uvis or current_user.name }}</strong
                 >
               </span>
+
+ <!-- ✅ DARK MODE (sempre visível, inclusive login) -->
+               <li class="nav-item">
+              <button
+                id="toggleDarkMode"
+                class="btn btn-outline-light btn-sm rounded-pill"
+                aria-label="Alternar tema"
+              >
+                <i class="bi bi-moon-stars"></i>
+              </button>
+            </li>
             </li>
 
             <li class="nav-item border-start ps-3 d-none d-lg-block"></li>
