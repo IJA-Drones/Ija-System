@@ -86,7 +86,7 @@
                         {# NOVO: BOTÕES DE ADMIN/DELETAR #}
                         {% if current_user.tipo_usuario == 'admin' %}
                         <div class="d-flex gap-1 mt-2">
-                            <a href="{{ url_for('main.admin_editar', id=p.id) }}" class="btn btn-sm btn-success">
+                            <a href="{{ url_for('main.admin_editar_completo', id=p.id) }}" class="btn btn-sm btn-success">
                                 <i class="bi bi-pencil-square"></i> Editar
                             </a>
                             {# ESTE FORMULÁRIO ESTÁ CORRETO E AGORA NÃO ESTÁ ANINHADO #}

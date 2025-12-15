@@ -4,7 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>IJA System</title>
-
     <link
       rel="icon"
       type="image/png"
@@ -83,19 +82,19 @@
           <span class="navbar-toggler-icon"></span>
         </button>
 
-        <div
-          class="collapse navbar-collapse justify-content-end"
-          id="navbarNav"
-        >
+        <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
           <ul class="navbar-nav align-items-center gap-3">
             
             {% if current_user.is_authenticated %}
 
+
+            <!-- links mobile -->
             <li class="nav-item d-lg-none">
               <a class="nav-link" href="{{ url_for('main.dashboard') }}">
                 <i class="bi bi-house-door me-2"></i>Dashboard
               </a>
             </li>
+
 
             {% if current_user.tipo_usuario == 'admin' %}
             <li class="nav-item d-lg-none">
@@ -105,13 +104,27 @@
             </li>
             {% endif %}
 
+            <!-- ✅ NOTIFICAÇÕES: aparece pra TODOS autenticados -->
+            <li class="nav-item d-lg-none">
+              <a
+                class="nav-link {% if request.endpoint == 'main.notificacoes' %}active{% endif %}"
+                href="{{ url_for('main.notificacoes') }}"
+              >
+                <i class="bi bi-bell me-2"></i>Notificações
+                {% if notif_count and notif_count > 0 %}
+                  <span class="badge bg-danger ms-2" style="border-radius:999px;">
+                    {{ notif_count }}
+                  </span>
+                {% endif %}
+              </a>
+            </li>
+
+            <!-- usuário -->
             <li class="nav-item">
               <span class="nav-link fw-bold">
                 <i class="bi bi-person-circle me-1"></i>
                 Olá,
-                <strong
-                  >{{ current_user.nome_uvis or current_user.name }}</strong
-                >
+                <strong>{{ current_user.nome_uvis or current_user.name }}</strong>
               </span>
 
  <!-- ✅ DARK MODE (sempre visível, inclusive login) -->
@@ -147,26 +160,50 @@
     {% if current_user.is_authenticated %}
     <div class="app-wrapper">
       <!-- SIDEBAR -->
+  
+      <!-- SIDEBAR -->
       <div class="app-sidebar" id="appSidebar">
-        <ul class="nav flex-column">
+              <ul class="nav flex-column">
+      
+          <!-- Dashboard -->
+          <li class="nav-item">
+                  <a
+                    class="nav-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}"
+                    href="{{ url_for('main.dashboard') }}"
+                  >
+                    <i class="bi bi-grid-fill me-2"></i><span>Dashboard</span>
+                  </a>
+                </li>
+
+          <!-- ✅ Notificações (TODOS autenticados) -->
           <li class="nav-item">
             <a
-              class="nav-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}"
-              href="{{ url_for('main.dashboard') }}"
+              class="nav-link {% if request.endpoint == 'main.notificacoes' %}active{% endif %}"
+              href="{{ url_for('main.notificacoes') }}"
             >
-              <i class="bi bi-grid-fill me-2"></i><span>Dashboard</span>
+              <i class="bi bi-bell me-2"></i><span>Notificações</span>
+
+              {% if notif_count and notif_count > 0 %}
+              <span
+                class="badge bg-danger ms-auto"
+                style="border-radius: 999px"
+              >
+                {{ notif_count }}
+              </span>
+              {% endif %}
             </a>
           </li>
 
-          {% if current_user.tipo_usuario == 'admin' %}
-          <li class="nav-item">
-            <a
-              class="nav-link {% if request.endpoint == 'main.relatorios' %}active{% endif %}"
-              href="{{ url_for('main.relatorios') }}"
-            >
-              <i class="bi bi-graph-up me-2"></i><span>Relatórios</span>
-            </a>
-          </li>
+          <!-- Admin: Relatórios + Agenda -->
+                {% if current_user.tipo_usuario == 'admin' %}
+                <li class="nav-item">
+                  <a
+                    class="nav-link {% if request.endpoint == 'main.relatorios' %}active{% endif %}"
+                    href="{{ url_for('main.relatorios') }}"
+                  >
+                    <i class="bi bi-graph-up me-2"></i><span>Relatórios</span>
+                  </a>
+                </li>
 
           <li class="nav-item">
             <a
@@ -177,28 +214,34 @@
             </a>
           </li>
           {% endif %}
+
         </ul>
       </div>
 
-      <!-- CONTEÚDO PRINCIPAL -->
+      <!-- CONTENT -->      <!-- CONTEÚDO PRINCIPAL -->
       <div class="app-content" id="appContent">
         <div class="container-fluid">
-          {% with messages = get_flashed_messages(with_categories=true) %} {% if
-          messages %} {% for category, message in messages %}
-          <div
-            class="alert alert-{{ category }} alert-dismissible fade show shadow-sm rounded-4"
-          >
-            {{ message }}
-            <button
-              type="button"
-              class="btn-close"
-              data-bs-dismiss="alert"
-            ></button>
-          </div>
-          {% endfor %} {% endif %} {% endwith %} {% block content %}{% endblock
-          %}
+          {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+              {% for category, message in messages %}
+              <div
+                class="alert alert-{{ category }} alert-dismissible fade show shadow-sm rounded-4"
+                  >
+                {{ message }}
+                <button
+                  type="button"
+                  class="btn-close"
+                  data-bs-dismiss="alert"
+                    ></button>
+              </div>
+              {% endfor %}
+            {% endif %}
+          {% endwith %}
+
+          {% block content %}{% endblock %}
         </div>
       </div>
+
     </div>
 
     {% else %}
@@ -216,7 +259,7 @@
       const body = document.body;
       const sidebarToggle = document.getElementById("sidebarToggle");
 
-      // Sidebar
+      // Sidebar (desktop)
       if (sidebarToggle) {
         sidebarToggle.addEventListener("click", () => {
           body.classList.toggle("sidebar-collapsed");
@@ -227,7 +270,7 @@
         }
       }
 
-      // Dark Mode
+      // Dark mode
       const toggle = document.getElementById("toggleDarkMode");
       if (toggle) {
         if (localStorage.getItem("dark-mode") === "enabled") {

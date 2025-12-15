@@ -1,6 +1,7 @@
 from app import db
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime
 
 # -------------------------------------------------------------
 # USUÁRIO
@@ -86,3 +87,16 @@ class Solicitacao(db.Model):
         db.ForeignKey("usuarios.id"),
         nullable=False
     )
+    
+class Notificacao(db.Model):
+    __tablename__ = "notificacoes"
+
+    id = db.Column(db.Integer, primary_key=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=False)
+
+    titulo = db.Column(db.String(140), nullable=False)
+    mensagem = db.Column(db.Text)
+    link = db.Column(db.String(255))
+
+    criada_em = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    lida_em = db.Column(db.DateTime)

@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from app import db
-from app.models import Usuario, Solicitacao
+from app.models import Usuario, Solicitacao, Notificacao
+from datetime import datetime, date
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime, date
 from flask import json
@@ -24,6 +25,15 @@ def datetimeformat(value, format='%d-%m-%y'):
         return datetime.strptime(value, "%Y-%m-%d").strftime(format)
     except:
         return value  # se falhar, retorna como está
+
+@bp.context_processor
+def inject_user():
+    class MockUser:
+        is_authenticated = 'user_id' in session
+        name = session.get('user_nome')
+        id = session.get('user_id')
+        tipo_usuario = session.get('user_tipo')
+    return dict(current_user=MockUser())
 
 # --- Context Processor: Simula o 'current_user' para o HTML ---
 @bp.context_processor
@@ -301,66 +311,6 @@ def atualizar(id):
 
     return redirect(url_for('main.admin_dashboard'))
 
-# --- ROTA DE EDIÇÃO COMPLETA (Admin) ---
-@bp.route('/admin/editar_completo/<int:id>', methods=['GET', 'POST'], endpoint='admin_editar') 
-def admin_editar_completo(id):
-    # AJUSTE CHAVE: Permite APENAS 'admin'
-    if session.get('user_tipo') != 'admin':
-        flash('Permissão negada. Apenas administradores podem acessar esta página.', 'danger')
-        return redirect(url_for('main.admin_dashboard'))
-
-    pedido = Solicitacao.query.get_or_404(id)
-
-    if request.method == 'POST':
-        try:
-            # 1. Datas e Foco
-            data_str = request.form.get('data_agendamento')
-            hora_str = request.form.get('hora_agendamento')
-
-            pedido.data_agendamento = datetime.strptime(data_str, '%Y-%m-%d').date() if data_str else None
-            pedido.hora_agendamento = datetime.strptime(hora_str, '%H:%M').time() if hora_str else None
-            pedido.foco = request.form.get('foco')
-
-            # 2. Detalhes Operacionais
-            pedido.tipo_visita = request.form.get('tipo_visita')
-            pedido.altura_voo = request.form.get('altura_voo')
-            
-            # Booleans
-            pedido.criadouro = request.form.get('criadouro') == 'sim'
-            pedido.apoio_cet = request.form.get('apoio_cet') == 'sim'
-            pedido.observacao = request.form.get('observacao')
-
-            # 3. Localização
-            pedido.cep = request.form.get('cep')
-            pedido.logradouro = request.form.get('logradouro')
-            pedido.numero = request.form.get('numero')
-            pedido.bairro = request.form.get('bairro')
-            pedido.cidade = request.form.get('cidade')
-            pedido.uf = request.form.get('uf')
-            pedido.complemento = request.form.get('complemento')
-            
-            # GPS
-            pedido.latitude = request.form.get('latitude')
-            pedido.longitude = request.form.get('longitude')
-
-            # 4. Status e Decisão (Controle Interno)
-            pedido.protocolo = request.form.get('protocolo')
-            pedido.status = request.form.get('status')
-            pedido.justificativa = request.form.get('justificativa')
-
-            db.session.commit()
-            flash('Solicitação atualizada (Edição Completa) com sucesso!', 'success')
-            return redirect(url_for('main.admin_dashboard'))
-        
-        except ValueError as ve:
-            db.session.rollback()
-            flash(f"Erro no formato de data/hora: {ve}", "warning")
-        except Exception as e:
-            db.session.rollback()
-            flash(f"Erro ao salvar: {e}", "danger")
-    
-    # Renderiza o formulário pré-preenchido
-    return render_template('admin_editar_completo.html', pedido=pedido)
 
 # --- NOVO PEDIDO ---
 @bp.route('/novo_cadastro', methods=['GET', 'POST'], endpoint='novo')
@@ -672,7 +622,7 @@ def exportar_relatorio_pdf():
     orient = request.args.get('orient', default='portrait')  # 'portrait' ou 'landscape'
     filtro_data = f"{ano}-{mes:02d}"
 
-    # 2. Busca Principal para Totais e Detalhes (mesma lógica sua)
+    # 2. Busca Principal para Totais e Detalhes
     query_base = db.session.query(Solicitacao, Usuario).join(Usuario, Usuario.id == Solicitacao.usuario_id)
     query_base = aplicar_filtros_base(query_base, filtro_data, uvis_id)
     query_results = query_base.order_by(Solicitacao.data_criacao.desc()).all()
@@ -684,7 +634,7 @@ def exportar_relatorio_pdf():
     total_analise = sum(1 for s, u in query_results if s.status == "EM ANÁLISE")
     total_pendentes = sum(1 for s, u in query_results if s.status == "PENDENTE")
 
-    # 4. Buscas agrupadas (mantendo sua lógica)
+    # 4. Buscas agrupadas
     def aplicar_filtros_agrupados(query):
         query = query.filter(db.func.strftime('%Y-%m', Solicitacao.data_criacao) == filtro_data)
         if uvis_id:
@@ -719,7 +669,10 @@ def exportar_relatorio_pdf():
     dados_unidade_query = db.session.query(Usuario.nome_uvis, db.func.count(Solicitacao.id)) \
         .join(Usuario, Usuario.id == Solicitacao.usuario_id) \
         .filter(Usuario.tipo_usuario == 'uvis')
-    dados_unidade_raw = aplicar_filtros_agrupados(dados_unidade_query).group_by(Usuario.nome_uvis).order_by(db.func.count(Solicitacao.id).desc()).all()
+    dados_unidade_raw = aplicar_filtros_agrupados(dados_unidade_query) \
+        .group_by(Usuario.nome_uvis) \
+        .order_by(db.func.count(Solicitacao.id).desc()) \
+        .all()
     dados_unidade = [(u or "Não informado", c) for u, c in dados_unidade_raw]
 
     dados_mensais_raw = (
@@ -740,36 +693,74 @@ def exportar_relatorio_pdf():
     caminho_pdf = tmp_pdf.name
     tmp_pdf.close()
 
+    # Auto-landscape se muitos campos (evita esmagar a tabela detalhada)
+    if orient not in ('portrait', 'landscape'):
+        orient = 'portrait'
     pagesize = A4
-    if orient == 'landscape':
+    if orient == 'landscape' or True:  # deixei sempre landscape pq a tabela detalhada tem muitas colunas
         pagesize = landscape(A4)
 
-    doc = SimpleDocTemplate(caminho_pdf,
-                            pagesize=pagesize,
-                            leftMargin=16*mm, rightMargin=16*mm,
-                            topMargin=16*mm, bottomMargin=20*mm)
+    doc = SimpleDocTemplate(
+        caminho_pdf,
+        pagesize=pagesize,
+        leftMargin=14*mm, rightMargin=14*mm,
+        topMargin=14*mm, bottomMargin=18*mm
+    )
 
-    # Styles aprimorados
+    # Styles
     styles = getSampleStyleSheet()
-    title_style = ParagraphStyle('title', parent=styles['Title'], fontSize=22, leading=26, alignment=1, spaceAfter=8, textColor=colors.HexColor('#0d6efd'))
-    subtitle_style = ParagraphStyle('subtitle', parent=styles['Normal'], fontSize=10, textColor=colors.HexColor('#666'), alignment=1, spaceAfter=6)
-    section_h = ParagraphStyle('sec', parent=styles['Heading2'], fontSize=12, spaceAfter=6, textColor=colors.HexColor('#0d6efd'))
+    title_style = ParagraphStyle(
+        'title', parent=styles['Title'],
+        fontSize=20, leading=24, alignment=1,
+        spaceAfter=6, textColor=colors.HexColor('#0d6efd')
+    )
+    subtitle_style = ParagraphStyle(
+        'subtitle', parent=styles['Normal'],
+        fontSize=10, textColor=colors.HexColor('#666'),
+        alignment=1, spaceAfter=6
+    )
+    section_h = ParagraphStyle(
+        'sec', parent=styles['Heading2'],
+        fontSize=12, spaceAfter=6,
+        textColor=colors.HexColor('#0d6efd')
+    )
     normal = styles['Normal']
     small = ParagraphStyle('small', parent=styles['BodyText'], fontSize=9, textColor=colors.HexColor('#555'))
+
+    # Estilo de célula p/ tabela grande (principal correção do “sobrepondo”)
+    cell_style = ParagraphStyle(
+        'cell',
+        parent=styles['BodyText'],
+        fontSize=7.4,
+        leading=9,                 # evita sobreposição vertical
+        textColor=colors.HexColor('#222'),
+        wordWrap='CJK',            # quebra bem até em textos “sem espaço”
+        splitLongWords=True,
+        spaceAfter=0,
+        spaceBefore=0,
+    )
 
     story = []
 
     # -------------------------
     # Funções utilitárias
     # -------------------------
-    def safe_img_from_plt(fig):
-        """Recebe um matplotlib.figure.Figure, retorna ReportLab Image (BytesIO)."""
+    def P(txt):
+        txt = '' if txt is None else str(txt)
+        txt = txt.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+        return Paragraph(txt, cell_style)
+
+    def cut(s, n=220):
+        s = '' if s is None else str(s)
+        return (s[:n] + '…') if len(s) > n else s
+
+    def safe_img_from_plt(fig, width_mm=155):
         bio = BytesIO()
         fig.tight_layout()
-        fig.savefig(bio, format='png', dpi=150, bbox_inches='tight')
+        fig.savefig(bio, format='png', dpi=180, bbox_inches='tight')
         plt.close(fig)
         bio.seek(0)
-        return RLImage(bio, width=170*mm)  # escala automática
+        return RLImage(bio, width=width_mm*mm)
 
     def render_small_table(rows, colWidths):
         tbl = Table(rows, colWidths=colWidths)
@@ -792,37 +783,32 @@ def exportar_relatorio_pdf():
     # -------------------------
     # Cabeçalho / Capa
     # -------------------------
-    # Logo: procura em static/logo.png por padrão — se não existir, pula
     logo_path = os.path.join(os.getcwd(), 'static', 'logo.png')
+    logo = None
     if os.path.exists(logo_path):
         try:
-            logo = RLImage(logo_path, width=36*mm, height=36*mm)
+            logo = RLImage(logo_path, width=32*mm, height=32*mm)
         except Exception:
             logo = None
-    else:
-        logo = None
 
-    # Título e capa
     story.append(Spacer(1, 6))
     if logo:
-        # coloca o logo e título lado a lado
         h = [[logo, Paragraph(f"<b>Relatório Mensal — {mes:02d}/{ano}</b>", title_style)]]
-        cap_tbl = Table(h, colWidths=[40*mm, (doc.width - 40*mm)])
+        cap_tbl = Table(h, colWidths=[36*mm, (doc.width - 36*mm)])
         cap_tbl.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'MIDDLE')]))
         story.append(cap_tbl)
     else:
         story.append(Paragraph(f"Relatório Mensal — {mes:02d}/{ano}", title_style))
 
-    # subtítulo e linhas
     titulo_uvis = ""
     if uvis_id:
         uvis_obj = db.session.query(Usuario.nome_uvis).filter(Usuario.id == uvis_id).first()
         if uvis_obj:
             titulo_uvis = f" — {uvis_obj.nome_uvis}"
+
     story.append(Paragraph(f"Sistema de Gestão de Solicitações{titulo_uvis}", subtitle_style))
     story.append(Spacer(1, 8))
 
-    # capa: box com resumo principal (centralizado)
     resumo_box = [
         ['Métrica', 'Quantidade'],
         ['Total de Solicitações', str(total_solicitacoes)],
@@ -831,16 +817,12 @@ def exportar_relatorio_pdf():
         ['Em Análise', str(total_analise)],
         ['Pendentes', str(total_pendentes)]
     ]
-    story.append(render_small_table(resumo_box, [80*mm, 40*mm]))
-    story.append(Spacer(1, 12))
+    story.append(render_small_table(resumo_box, [90*mm, 45*mm]))
+    story.append(Spacer(1, 10))
+    story.append(Paragraph(f"Gerado em {datetime.now().strftime('%d/%m/%Y %H:%M')}", small))
+    story.append(Spacer(1, 14))
 
-    # Capa: breve meta-infos
-    story.append(Paragraph(f"Gerado por: Sistema SGSV — Gerado em {datetime.now().strftime('%d/%m/%Y %H:%M')}", small))
-    story.append(Spacer(1, 18))
-
-    # -------------------------
-    # Sumário simples (lista de seções)
-    # -------------------------
+    # Sumário
     story.append(Paragraph("Sumário", section_h))
     sumario_itens = [
         "Resumo Geral",
@@ -856,115 +838,134 @@ def exportar_relatorio_pdf():
         story.append(Paragraph(f"{i}. {it}", normal))
     story.append(PageBreak())
 
-    # -------------------------
-    # Seções com tabelas (formatadas)
-    # -------------------------
-    # 1) Resumo Geral (repetição do box com estilo)
+    # Seções
     story.append(Paragraph("Resumo Geral", section_h))
-    story.append(render_small_table(resumo_box, [110*mm, 50*mm]))
+    story.append(render_small_table(resumo_box, [110*mm, 60*mm]))
     story.append(Spacer(1, 8))
 
-    # 2) Regiões
     story.append(Paragraph("Solicitações por Região", section_h))
     rows = [['Região', 'Total']] + [[r, str(c)] for r, c in dados_regiao]
-    story.append(render_small_table(rows, [110*mm, 50*mm]))
+    story.append(render_small_table(rows, [110*mm, 60*mm]))
     story.append(Spacer(1, 8))
 
-    # 3) Status
     story.append(Paragraph("Status Detalhado", section_h))
     rows = [['Status', 'Total']] + [[s, str(c)] for s, c in dados_status]
-    story.append(render_small_table(rows, [110*mm, 50*mm]))
+    story.append(render_small_table(rows, [110*mm, 60*mm]))
     story.append(Spacer(1, 8))
 
-    # 4) Foco / Tipo / Altura
     story.append(Paragraph("Solicitações por Foco", section_h))
     rows = [['Foco', 'Total']] + [[f, str(c)] for f, c in dados_foco]
-    story.append(render_small_table(rows, [110*mm, 50*mm]))
+    story.append(render_small_table(rows, [110*mm, 60*mm]))
     story.append(Spacer(1, 6))
 
     story.append(Paragraph("Solicitações por Tipo de Visita", section_h))
     rows = [['Tipo', 'Total']] + [[t, str(c)] for t, c in dados_tipo_visita]
-    story.append(render_small_table(rows, [110*mm, 50*mm]))
+    story.append(render_small_table(rows, [110*mm, 60*mm]))
     story.append(Spacer(1, 6))
 
     story.append(Paragraph("Solicitações por Altura de Voo", section_h))
     rows = [['Altura (m)', 'Total']] + [[str(a), str(c)] for a, c in dados_altura_voo]
-    story.append(render_small_table(rows, [110*mm, 50*mm]))
+    story.append(render_small_table(rows, [110*mm, 60*mm]))
     story.append(Spacer(1, 8))
 
-    # 5) UVIS
     story.append(Paragraph("Solicitações por Unidade (UVIS) — Top", section_h))
     rows = [['Unidade', 'Total']] + [[u, str(c)] for u, c in dados_unidade]
-    story.append(render_small_table(rows, [110*mm, 50*mm]))
+    story.append(render_small_table(rows, [110*mm, 60*mm]))
     story.append(Spacer(1, 8))
 
-    # 6) Histórico mensal
     story.append(Paragraph("Histórico Mensal (Total por Mês)", section_h))
     rows = [['Mês', 'Total']] + [[m, str(c)] for m, c in dados_mensais]
-    story.append(render_small_table(rows, [70*mm, 40*mm]))
-    story.append(Spacer(1, 12))
+    story.append(render_small_table(rows, [70*mm, 45*mm]))
+    story.append(Spacer(1, 10))
 
-    # 7) Gráficos — somente se matplotlib disponível
+    # -------------------------
+    # Gráficos (compactos e mais bonitos)
+    # -------------------------
     story.append(PageBreak())
     story.append(Paragraph("Gráficos (Visão Geral)", section_h))
+
     if MATPLOTLIB_AVAILABLE:
         try:
-            # Pie chart: distribuição por status
+            # Donut: status
             labels = [s for s, _ in dados_status]
             values = [c for _, c in dados_status]
-            fig1, ax1 = plt.subplots(figsize=(6, 3))
-            ax1.pie(values or [1], labels=labels, autopct=lambda p: f'{p:.0f}%' if p > 0 else '', startangle=90, textprops={'fontsize': 8})
-            ax1.axis('equal')
-            story.append(safe_img_from_plt(fig1))
-            story.append(Spacer(1, 8))
+            total = sum(values) or 1
 
-            # Bar chart: top UVIS
+            def autopct(p):
+                return f'{p:.0f}%' if p >= 6 else ''
+
+            fig1, ax1 = plt.subplots(figsize=(5.2, 2.2))
+            wedges, *_ = ax1.pie(
+                values or [1],
+                labels=None,
+                autopct=autopct,
+                startangle=90,
+                pctdistance=0.75,
+                textprops={'fontsize': 8}
+            )
+            centre_circle = plt.Circle((0,0), 0.55, fc='white')
+            ax1.add_artist(centre_circle)
+            ax1.legend(wedges, labels, loc='center left', bbox_to_anchor=(1.02, 0.5),
+                       fontsize=8, frameon=False)
+            ax1.set_title('Distribuição por Status', fontsize=9)
+            ax1.axis('equal')
+            story.append(safe_img_from_plt(fig1, width_mm=145))
+            story.append(Spacer(1, 6))
+
+            # Barh: Top UVIS
             u_names = [u for u, _ in dados_unidade[:8]]
             u_vals = [c for _, c in dados_unidade[:8]]
-            fig2, ax2 = plt.subplots(figsize=(8, 2.6))
-            ax2.barh(u_names[::-1] or ['Nenhum'], u_vals[::-1] or [0])
-            ax2.set_xlabel('Total')
-            ax2.set_title('Top UVIS (maiores)', fontsize=9)
-            ax2.tick_params(axis='y', labelsize=8)
-            story.append(safe_img_from_plt(fig2))
-            story.append(Spacer(1, 8))
 
-            # Line chart: histórico mensal
+            fig2, ax2 = plt.subplots(figsize=(6.2, 2.2))
+            ax2.barh(u_names[::-1] or ['Nenhum'], u_vals[::-1] or [0])
+            ax2.set_xlabel('Total', fontsize=8)
+            ax2.set_title('Top UVIS', fontsize=9)
+            ax2.tick_params(axis='y', labelsize=8)
+            ax2.tick_params(axis='x', labelsize=8)
+            ax2.grid(axis='x', linestyle=':', linewidth=0.5)
+            story.append(safe_img_from_plt(fig2, width_mm=155))
+            story.append(Spacer(1, 6))
+
+            # Linha: histórico mensal
             months = [m for m, _ in dados_mensais]
             counts = [c for _, c in dados_mensais]
-            fig3, ax3 = plt.subplots(figsize=(8, 2.6))
+
+            fig3, ax3 = plt.subplots(figsize=(6.4, 2.2))
             if months:
-                ax3.plot(months, counts, marker='o', linewidth=1)
-                ax3.set_xticklabels(months, rotation=45, fontsize=8)
+                ax3.plot(range(len(months)), counts, marker='o', linewidth=1)
+                ax3.set_xticks(range(len(months)))
+                ax3.set_xticklabels(months, rotation=45, ha='right', fontsize=8)
             ax3.set_title('Histórico Mensal', fontsize=9)
+            ax3.tick_params(axis='y', labelsize=8)
             ax3.grid(axis='y', linestyle=':', linewidth=0.5)
-            story.append(safe_img_from_plt(fig3))
+            story.append(safe_img_from_plt(fig3, width_mm=160))
             story.append(Spacer(1, 6))
+
         except Exception:
-            # se algo falhar nos gráficos, apenas passa
             story.append(Paragraph("Gráficos indisponíveis (erro ao gerar).", normal))
             story.append(Spacer(1, 8))
     else:
         story.append(Paragraph("Matplotlib não disponível — gráficos foram omitidos.", normal))
         story.append(Spacer(1, 8))
 
-    # 8) Registros detalhados (tabela grande)
+    # -------------------------
+    # Registros detalhados (sem sobreposição)
+    # -------------------------
     story.append(PageBreak())
     story.append(Paragraph("Registros Detalhados", section_h))
     story.append(Spacer(1, 6))
 
     registros_header = ['Data', 'Hora', 'Unidade', 'Protocolo', 'Status', 'Região', 'Foco', 'Tipo Visita', 'Observação']
-    registros_rows = [registros_header]
+    registros_rows = [[P(h) for h in registros_header]]
 
     for s, u in query_results:
         # data/hora safe formatting
-        data_str = ''
         try:
             if getattr(s, 'data_agendamento', None):
                 data_str = s.data_agendamento.strftime("%d/%m/%Y") if hasattr(s.data_agendamento, 'strftime') else str(s.data_agendamento)
             else:
                 data_str = s.data_criacao.strftime("%d/%m/%Y") if hasattr(s.data_criacao, 'strftime') else str(s.data_criacao)
-        except:
+        except Exception:
             data_str = str(getattr(s, 'data_agendamento', '') or getattr(s, 'data_criacao', ''))
 
         hora = getattr(s, 'hora_agendamento', '')
@@ -976,75 +977,86 @@ def exportar_relatorio_pdf():
         regiao = getattr(u, 'regiao', '') or ''
         foco = getattr(s, 'foco', '') or ''
         tipo_visita = getattr(s, 'tipo_visita', '') or ''
-        obs = getattr(s, 'observacao', '') or ''
+        obs = cut(getattr(s, 'observacao', '') or '', 260)
 
-        registros_rows.append([data_str, hora_str, unidade, protocolo, status, regiao, foco, tipo_visita, obs])
+        registros_rows.append([
+            P(data_str),
+            P(hora_str),
+            P(unidade),
+            P(protocolo),
+            P(status),
+            P(regiao),
+            P(foco),
+            P(tipo_visita),
+            P(obs),
+        ])
 
-    # Dividimos a tabela em pedaços para evitar problemas de memória/páginas
-    # e garantir que não estoure
-    chunk_size = 40
+    # Chunk para não estourar memória/paginação
+    chunk_size = 32
     for i in range(0, len(registros_rows), chunk_size):
         chunk = registros_rows[i:i+chunk_size]
-        tbl = Table(chunk, repeatRows=1, colWidths=[18*mm, 14*mm, 35*mm, 26*mm, 22*mm, 28*mm, 28*mm, 30*mm, 45*mm])
+
+        # colWidths ajustadas p/ landscape A4 (melhor distribuição)
+        colWidths = [18*mm, 14*mm, 34*mm, 25*mm, 22*mm, 26*mm, 26*mm, 28*mm, 85*mm]
+
+        tbl = Table(chunk, repeatRows=1, colWidths=colWidths)
         tbl.setStyle(TableStyle([
             ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#0d6efd')),
             ('TEXTCOLOR', (0,0), (-1,0), colors.white),
             ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0,0), (-1,0), 9),
+            ('FONTSIZE', (0,0), (-1,0), 8),
+            ('ALIGN', (0,0), (-1,0), 'CENTER'),
+
             ('GRID', (0,0), (-1,-1), 0.25, colors.lightgrey),
             ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#fbfdff')]),
             ('VALIGN', (0,0), (-1,-1), 'TOP'),
-            ('LEFTPADDING', (0,0), (-1,-1), 4),
-            ('RIGHTPADDING', (0,0), (-1,-1), 4),
-            ('TOPPADDING', (0,0), (-1,-1), 3),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 3),
+
+            ('LEFTPADDING', (0,0), (-1,-1), 3),
+            ('RIGHTPADDING', (0,0), (-1,-1), 3),
+            ('TOPPADDING', (0,0), (-1,-1), 2),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 2),
+
+            ('WORDWRAP', (0,0), (-1,-1), 'CJK'),
         ]))
+
         story.append(tbl)
-        story.append(Spacer(1, 8))
-        # adiciona quebra de página entre chunks (exceto se for o último)
+        story.append(Spacer(1, 6))
         if i + chunk_size < len(registros_rows):
             story.append(PageBreak())
 
     # -------------------------
-    # Footer fixo e page numbers
+    # Header/Footer
     # -------------------------
-    # Usaremos canvas callbacks quando build() for chamado.
-    def _header_footer(canvas, doc):
-        # header (linha superior colorida)
+    def _header_footer(canvas, doc_):
         canvas.saveState()
         w, h = pagesize
-        # linha azul
-        canvas.setFillColor(colors.HexColor('#0d6efd'))
-        canvas.rect(doc.leftMargin, h - (12*mm), doc.width, 4, fill=1, stroke=0)
 
-        # rodapé: texto e número de página
-        footer_text = "Sistema de Gestão de Solicitações — SGSV"
+        # header line
+        canvas.setFillColor(colors.HexColor('#0d6efd'))
+        canvas.rect(doc_.leftMargin, h - (12*mm), doc_.width, 4, fill=1, stroke=0)
+
+        footer_text = "Sistema de Gestão de Solicitações — IJASystem"
         canvas.setFont("Helvetica", 8)
         canvas.setFillColor(colors.HexColor('#777'))
-        canvas.drawString(doc.leftMargin, 10*mm, footer_text)
+        canvas.drawString(doc_.leftMargin, 10*mm, footer_text)
 
-        # número de páginas
         page_num_text = f"Página {canvas.getPageNumber()}"
-        canvas.drawRightString(doc.leftMargin + doc.width, 10*mm, page_num_text)
+        canvas.drawRightString(doc_.leftMargin + doc_.width, 10*mm, page_num_text)
         canvas.restoreState()
 
-    # -------------------------
-    # Build e retorno
-    # -------------------------
     doc.build(story, onFirstPage=_header_footer, onLaterPages=_header_footer)
 
-    # nome do arquivo
-    nome_arquivo = f"relatorio_SGSV_{ano}_{mes:02d}"
+    nome_arquivo = f"relatorio_IJASystem_{ano}_{mes:02d}"
     if uvis_id:
         nome_arquivo += f"_UVIS_{uvis_id}"
 
-    # envia o pdf
     return send_file(
         caminho_pdf,
         as_attachment=True,
         download_name=f"{nome_arquivo}.pdf",
         mimetype="application/pdf"
     )
+
 
 # =======================================================================
 # ROTA 3: Exportar Excel (Com Filtro UVIS)
@@ -1190,7 +1202,7 @@ def exportar_relatorio_excel():
     output.seek(0)
 
     # Nome do arquivo
-    nome_arquivo = f"relatorio_SGSV_{ano}_{mes:02d}"
+    nome_arquivo = f"relatorio_IJASystem_{ano}_{mes:02d}"
     if uvis_id:
         nome_arquivo += f"_UVIS_{uvis_id}"
 
@@ -1201,68 +1213,74 @@ def exportar_relatorio_excel():
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
     
-    # NOVO: ROTA PARA EDIÇÃO COMPLETA (Apenas ADMIN)
-@bp.route('/admin/editar_completo/<int:id>', methods=['GET', 'POST'])
+@bp.route('/admin/editar_completo/<int:id>', methods=['GET', 'POST'], endpoint='admin_editar_completo')
 def admin_editar_completo(id):
-    # Permite APENAS 'admin'
     if session.get('user_tipo') != 'admin':
-        flash('Acesso restrito. Apenas administradores podem editar detalhes do registro.', 'danger')
+        flash('Permissão negada. Apenas administradores podem acessar esta página.', 'danger')
         return redirect(url_for('main.admin_dashboard'))
 
     pedido = Solicitacao.query.get_or_404(id)
 
     if request.method == 'POST':
         try:
-            # 1. TRATAMENTO DE DATAS E HORAS
+            # estado anterior (pra saber se mudou)
+            antes_data = pedido.data_agendamento
+            antes_hora = pedido.hora_agendamento
+
             data_str = request.form.get('data_agendamento')
             hora_str = request.form.get('hora_agendamento')
 
-            data_obj = datetime.strptime(data_str, '%Y-%m-%d').date() if data_str else None
-            hora_obj = datetime.strptime(hora_str, '%H:%M').time() if hora_str else None
+            pedido.data_agendamento = datetime.strptime(data_str, '%Y-%m-%d').date() if data_str else None
+            pedido.hora_agendamento = datetime.strptime(hora_str, '%H:%M').time() if hora_str else None
 
-            # 2. TRATAMENTO DE BOOLEANOS
-            criadouro_bool = request.form.get('criadouro') == 'sim'
-            apoio_cet_bool = request.form.get('apoio_cet') == 'sim'
-
-            # 3. ATUALIZAÇÃO DOS CAMPOS ORIGINAIS (Somente ADMIN)
-            pedido.data_agendamento = data_obj
-            pedido.hora_agendamento = hora_obj
             pedido.foco = request.form.get('foco')
             pedido.tipo_visita = request.form.get('tipo_visita')
             pedido.altura_voo = request.form.get('altura_voo')
-            pedido.criadouro = criadouro_bool
-            pedido.apoio_cet = apoio_cet_bool
+            pedido.criadouro = request.form.get('criadouro') == 'sim'
+            pedido.apoio_cet = request.form.get('apoio_cet') == 'sim'
             pedido.observacao = request.form.get('observacao')
-            
-            # Endereço
+
             pedido.cep = request.form.get('cep')
             pedido.logradouro = request.form.get('logradouro')
+            pedido.numero = request.form.get('numero')
             pedido.bairro = request.form.get('bairro')
             pedido.cidade = request.form.get('cidade')
             pedido.uf = request.form.get('uf')
-            pedido.numero = request.form.get('numero')
             pedido.complemento = request.form.get('complemento')
 
-            # Protocolo / Status / GPS (também editáveis pelo ADMIN)
             pedido.protocolo = request.form.get('protocolo')
             pedido.status = request.form.get('status')
             pedido.justificativa = request.form.get('justificativa')
             pedido.latitude = request.form.get('latitude')
             pedido.longitude = request.form.get('longitude')
-            
+
             db.session.commit()
-            flash('Registro atualizado (ADMIN).', 'success')
+
+            # 🔔 cria notificação se agendou/mudou data/hora
+            mudou_agendamento = (antes_data != pedido.data_agendamento) or (antes_hora != pedido.hora_agendamento)
+
+            if pedido.data_agendamento and mudou_agendamento:
+                data_fmt = pedido.data_agendamento.strftime("%d/%m/%Y")
+                hora_fmt = pedido.hora_agendamento.strftime("%H:%M") if pedido.hora_agendamento else "00:00"
+
+                criar_notificacao(
+                    usuario_id=pedido.usuario_id,
+                    titulo="📅 Agendamento atualizado",
+                    mensagem=f"Sua solicitação foi agendada para {data_fmt} às {hora_fmt}.",
+                    link=url_for("main.agenda")
+                )
+
+            flash('Solicitação atualizada com sucesso!', 'success')
             return redirect(url_for('main.admin_dashboard'))
 
+        except ValueError as ve:
+            db.session.rollback()
+            flash(f"Erro no formato de data/hora: {ve}", 'warning')
         except Exception as e:
             db.session.rollback()
-            flash(f"Erro ao atualizar o registro: {e}", "danger")
-            # Redireciona de volta para o GET com o ID para manter o contexto
-            return redirect(url_for('main.admin_editar_completo', id=id)) 
-    
-    # GET: Exibe o formulário de edição (você precisará criar este template: 'admin_editar_completo.html')
-    return render_template('admin_editar_completo.html', pedido=pedido)
+            flash(f"Erro ao salvar: {e}", 'danger')
 
+    return render_template('admin_editar_completo.html', pedido=pedido)
 
 
 from sqlalchemy.orm import joinedload
@@ -1306,17 +1324,20 @@ def agenda():
     user_tipo = session.get("user_tipo")
     user_id = session.get("user_id")
 
-    # Admin, Operário e Visualizar enxergam tudo
-    if user_tipo in ['admin', 'operario', 'visualizar']:
+    # Admin/Operário/Visualizar enxergam tudo
+    if user_tipo in ["admin", "operario", "visualizar"]:
         eventos = Solicitacao.query.options(joinedload(Solicitacao.autor)).all()
     else:
-        # UVIS vê apenas seus próprios agendamentos
-        eventos = Solicitacao.query \
-            .filter_by(usuario_id=user_id) \
-            .options(joinedload(Solicitacao.autor)).all()
+        # UVIS enxerga só os próprios
+        eventos = (
+            Solicitacao.query
+            .filter_by(usuario_id=user_id)
+            .options(joinedload(Solicitacao.autor))
+            .all()
+        )
 
-    # Converter eventos para o FullCalendar (JSON)
     agenda_eventos = []
+
     for e in eventos:
         if not e.data_agendamento:
             continue
@@ -1324,14 +1345,148 @@ def agenda():
         data = e.data_agendamento.strftime("%Y-%m-%d")
         hora = e.hora_agendamento.strftime("%H:%M") if e.hora_agendamento else "00:00"
 
-        agenda_eventos.append({
+        # evento base (SEM url)
+        ev = {
             "title": f"{e.foco} - {e.autor.nome_uvis}",
             "start": f"{data}T{hora}",
-            "url": url_for("main.admin_editar", id=e.id) if user_tipo in ["admin", "operario"] else None,
-            "color": "#198754" if e.status == "APROVADO" else
-                     "#dc3545" if e.status == "NEGADO" else
-                     "#ffc107" if e.status == "EM ANÁLISE" else
-                     "#0d6efd"
-        })
+            "color": (
+                "#198754" if e.status == "APROVADO" else
+                "#dc3545" if e.status == "NEGADO" else
+                "#ffc107" if e.status == "EM ANÁLISE" else
+                "#0d6efd"
+            ),
+            "extendedProps": {
+                "is_admin": (user_tipo == "admin"),
+                "foco": e.foco,
+                "uvis": e.autor.nome_uvis,
+                "hora": hora,
+                "status": e.status
+            }
+        }
+
+        # ✅ SOMENTE ADMIN recebe url (sem url=None)
+        if user_tipo == "admin":
+            ev["url"] = url_for("main.admin_editar_completo", id=e.id)
+
+        agenda_eventos.append(ev)
 
     return render_template("agenda.html", eventos_json=json.dumps(agenda_eventos))
+# -------------------------------------------------
+# CONTADOR (badge) NO BASE.HTML
+# -------------------------------------------------
+@bp.context_processor
+def inject_notificacoes():
+    if 'user_id' not in session:
+        return dict(notif_count=0)
+
+    user_id = session.get("user_id")
+    user_tipo = session.get("user_tipo")
+
+    if user_tipo in ["admin", "operario", "visualizar"]:
+        notif_count = Notificacao.query.filter_by(lida_em=None).count()
+    else:
+        notif_count = Notificacao.query.filter_by(usuario_id=user_id, lida_em=None).count()
+
+    return dict(notif_count=notif_count)
+
+
+# -------------------------------------------------
+# CRIAR NOTIFICAÇÃO
+# -------------------------------------------------
+def criar_notificacao(usuario_id, titulo, mensagem="", link=None):
+    n = Notificacao(
+        usuario_id=usuario_id,
+        titulo=titulo,
+        mensagem=mensagem or "",
+        link=link
+    )
+    db.session.add(n)
+    db.session.commit()
+    return n
+
+
+# -------------------------------------------------
+# GARANTIR NOTIFICAÇÕES DO DIA (sem duplicar)
+# - Admin/Operário/Visualizar: cria notificações "globais" (usuario_id = admin logado)
+# - UVIS: cria apenas para ela mesma (usuario_id = uvis logada)
+# -------------------------------------------------
+def garantir_notificacoes_do_dia(usuario_id):
+    hoje = date.today()
+
+    ags = (
+        Solicitacao.query
+        .options(joinedload(Solicitacao.autor))
+        .filter_by(usuario_id=usuario_id)
+        .filter(Solicitacao.data_agendamento == hoje)
+        .all()
+    )
+
+    for s in ags:
+        hora_fmt = s.hora_agendamento.strftime("%H:%M") if s.hora_agendamento else "00:00"
+
+        # 🔒 chave estável (NÃO mude mais esse formato)
+        link = url_for("main.agenda", sid=s.id, d=hoje.isoformat())
+
+        ja_existe = (
+            Notificacao.query
+            .filter_by(usuario_id=usuario_id, link=link)
+            .first()
+        )
+        if ja_existe:
+            continue
+
+        criar_notificacao(
+            usuario_id=usuario_id,
+            titulo="📅 Agendamento para hoje",
+            mensagem=f"Você tem um agendamento hoje às {hora_fmt} (Foco: {s.foco}).",
+            link=link
+        )
+
+
+
+# -------------------------------------------------
+# LER NOTIFICAÇÃO
+# -------------------------------------------------
+@bp.route("/notificacoes/<int:notif_id>/ler")
+def ler_notificacao(notif_id):
+    if 'user_id' not in session:
+        return redirect(url_for('main.login'))
+
+    user_id = session["user_id"]
+    user_tipo = session.get("user_tipo")
+
+    if user_tipo in ["admin", "operario", "visualizar"]:
+        n = Notificacao.query.get_or_404(notif_id)
+    else:
+        n = Notificacao.query.filter_by(id=notif_id, usuario_id=user_id).first_or_404()
+
+    if n.lida_em is None:
+        n.lida_em = datetime.utcnow()
+        db.session.commit()
+
+    return redirect(n.link or url_for("main.notificacoes"))
+
+
+@bp.route("/notificacoes")
+def notificacoes():
+    if 'user_id' not in session:
+        return redirect(url_for('main.login'))
+
+    user_id = session["user_id"]
+    user_tipo = session.get("user_tipo")
+
+    # ✅ só UVIS gera lembrete do dia (pro próprio usuário)
+    if user_tipo not in ["admin", "operario", "visualizar"]:
+        garantir_notificacoes_do_dia(user_id)
+
+    # ✅ admin vê tudo, uvis só as dela
+    if user_tipo in ["admin", "operario", "visualizar"]:
+        itens = Notificacao.query.order_by(Notificacao.criada_em.desc()).all()
+    else:
+        itens = (Notificacao.query
+                 .filter_by(usuario_id=user_id)
+                 .order_by(Notificacao.criada_em.desc())
+                 .all())
+
+    return render_template("notificacoes.html", itens=itens)
+
