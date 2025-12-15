@@ -10,29 +10,25 @@
       href="{{ url_for('static', filename='img/logo_IJA_System.png') }}"
     />
 
-    <!-- Bootstrap -->
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
 
-    <!-- Ícones -->
     <link
-      rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css"
+      rel="stylesheet"
     />
     <link
-      rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
     />
 
-    <!-- Fonte -->
     <link
       href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
 
-    <!-- CSS do projeto -->
     <link
       rel="stylesheet"
       href="{{ url_for('static', filename='css/style.css') }}"
@@ -40,7 +36,6 @@
   </head>
 
   <body>
-    <!-- ===================== NAVBAR ===================== -->
     <nav class="navbar navbar-expand-lg navbar-light fixed-top shadow-sm">
       <div class="container-fluid">
         {% if current_user.is_authenticated %}
@@ -63,13 +58,11 @@
             class="navbar-logo logo-light"
             alt="IJA System"
           />
-
           <img
             src="{{ url_for('static', filename='img/logo_IJA_System_dark.png') }}"
             class="navbar-logo logo-dark"
             alt="IJA System"
           />
-
           <span class="fs-4">IJA System</span>
         </a>
 
@@ -82,53 +75,23 @@
           <span class="navbar-toggler-icon"></span>
         </button>
 
-        <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+        <div
+          class="collapse navbar-collapse justify-content-end"
+          id="navbarNav"
+        >
           <ul class="navbar-nav align-items-center gap-3">
-            
             {% if current_user.is_authenticated %}
-
-
-            <!-- links mobile -->
-            <li class="nav-item d-lg-none">
-              <a class="nav-link" href="{{ url_for('main.dashboard') }}">
-                <i class="bi bi-house-door me-2"></i>Dashboard
-              </a>
-            </li>
-
-
-            {% if current_user.tipo_usuario == 'admin' %}
-            <li class="nav-item d-lg-none">
-              <a class="nav-link" href="{{ url_for('main.relatorios') }}">
-                <i class="bi bi-graph-up me-2"></i>Relatórios (Admin)
-              </a>
-            </li>
-            {% endif %}
-
-            <!-- ✅ NOTIFICAÇÕES: aparece pra TODOS autenticados -->
-            <li class="nav-item d-lg-none">
-              <a
-                class="nav-link {% if request.endpoint == 'main.notificacoes' %}active{% endif %}"
-                href="{{ url_for('main.notificacoes') }}"
-              >
-                <i class="bi bi-bell me-2"></i>Notificações
-                {% if notif_count and notif_count > 0 %}
-                  <span class="badge bg-danger ms-2" style="border-radius:999px;">
-                    {{ notif_count }}
-                  </span>
-                {% endif %}
-              </a>
-            </li>
-
-            <!-- usuário -->
             <li class="nav-item">
               <span class="nav-link fw-bold">
                 <i class="bi bi-person-circle me-1"></i>
                 Olá,
-                <strong>{{ current_user.nome_uvis or current_user.name }}</strong>
+                <strong
+                  >{{ current_user.nome_uvis or current_user.name }}</strong
+                >
               </span>
+            </li>
 
- <!-- ✅ DARK MODE (sempre visível, inclusive login) -->
-               <li class="nav-item">
+            <li class="nav-item">
               <button
                 id="toggleDarkMode"
                 class="btn btn-outline-light btn-sm rounded-pill"
@@ -137,10 +100,8 @@
                 <i class="bi bi-moon-stars"></i>
               </button>
             </li>
-            </li>
 
             <li class="nav-item border-start ps-3 d-none d-lg-block"></li>
-
             <li class="nav-item">
               <a
                 class="btn btn-outline-light btn-sm rounded-pill px-3 fw-bold"
@@ -150,61 +111,91 @@
               </a>
             </li>
 
+            <li class="nav-item d-lg-none">
+              <a class="nav-link" href="{{ url_for('main.dashboard') }}">
+                <i class="bi bi-house-door me-2"></i>Dashboard
+              </a>
+            </li>
+
+            {% if current_user.tipo_usuario == 'admin' %}
+            <li class="nav-item d-lg-none">
+              <a class="nav-link" href="{{ url_for('main.relatorios') }}">
+                <i class="bi bi-graph-up me-2"></i>Relatórios (Admin)
+              </a>
+            </li>
+            <li class="nav-item d-lg-none">
+              <a class="nav-link" href="{{ url_for('main.agenda') }}">
+                <i class="bi bi-calendar-event me-2"></i>Agenda
+              </a>
+            </li>
+            {% endif %}
+
+            <li class="nav-item d-lg-none">
+              <a
+                class="nav-link {% if request.endpoint == 'main.notificacoes' %}active{% endif %}"
+                href="{{ url_for('main.notificacoes') }}"
+              >
+                <i class="bi bi-bell me-2"></i>Notificações {% if notif_count
+                and notif_count > 0 %}
+                <span class="badge bg-danger ms-2" style="border-radius: 999px"
+                  >{{ notif_count }}</span
+                >
+                {% endif %}
+              </a>
+            </li>
+
+            {% else %}
+            <li class="nav-item">
+              <button
+                id="toggleDarkMode"
+                class="btn btn-outline-light btn-sm rounded-pill"
+                aria-label="Alternar tema"
+              >
+                <i class="bi bi-moon-stars"></i>
+              </button>
+            </li>
             {% endif %}
           </ul>
         </div>
       </div>
     </nav>
 
-    <!-- ===================== CONTEÚDO ===================== -->
     {% if current_user.is_authenticated %}
     <div class="app-wrapper">
-      <!-- SIDEBAR -->
-  
-      <!-- SIDEBAR -->
       <div class="app-sidebar" id="appSidebar">
-              <ul class="nav flex-column">
-      
-          <!-- Dashboard -->
+        <ul class="nav flex-column">
           <li class="nav-item">
-                  <a
-                    class="nav-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}"
-                    href="{{ url_for('main.dashboard') }}"
-                  >
-                    <i class="bi bi-grid-fill me-2"></i><span>Dashboard</span>
-                  </a>
-                </li>
+            <a
+              class="nav-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}"
+              href="{{ url_for('main.dashboard') }}"
+            >
+              <i class="bi bi-grid-fill me-2"></i><span>Dashboard</span>
+            </a>
+          </li>
 
-          <!-- ✅ Notificações (TODOS autenticados) -->
           <li class="nav-item">
             <a
               class="nav-link {% if request.endpoint == 'main.notificacoes' %}active{% endif %}"
               href="{{ url_for('main.notificacoes') }}"
             >
               <i class="bi bi-bell me-2"></i><span>Notificações</span>
-
               {% if notif_count and notif_count > 0 %}
-              <span
-                class="badge bg-danger ms-auto"
-                style="border-radius: 999px"
+              <span class="badge bg-danger ms-auto" style="border-radius: 999px"
+                >{{ notif_count }}</span
               >
-                {{ notif_count }}
-              </span>
               {% endif %}
             </a>
           </li>
 
-          <!-- Admin: Relatórios + Agenda -->
-                {% if current_user.tipo_usuario == 'admin' %}
-                <li class="nav-item">
-                  <a
-                    class="nav-link {% if request.endpoint == 'main.relatorios' %}active{% endif %}"
-                    href="{{ url_for('main.relatorios') }}"
-                  >
-                    <i class="bi bi-graph-up me-2"></i><span>Relatórios</span>
-                  </a>
-                </li>
-
+          {% if current_user.tipo_usuario == 'admin' %}
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint == 'main.relatorios' %}active{% endif %}"
+              href="{{ url_for('main.relatorios') }}"
+            >
+              <i class="bi bi-graph-up me-2"></i><span>Relatórios</span>
+            </a>
+          </li>
           <li class="nav-item">
             <a
               class="nav-link {% if request.endpoint == 'main.agenda' %}active{% endif %}"
@@ -214,45 +205,52 @@
             </a>
           </li>
           {% endif %}
-
         </ul>
       </div>
 
-      <!-- CONTENT -->      <!-- CONTEÚDO PRINCIPAL -->
       <div class="app-content" id="appContent">
-        <div class="container-fluid">
-          {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-              {% for category, message in messages %}
-              <div
-                class="alert alert-{{ category }} alert-dismissible fade show shadow-sm rounded-4"
-                  >
-                {{ message }}
-                <button
-                  type="button"
-                  class="btn-close"
-                  data-bs-dismiss="alert"
-                    ></button>
-              </div>
-              {% endfor %}
-            {% endif %}
-          {% endwith %}
-
-          {% block content %}{% endblock %}
-        </div>
+        <div class="container-fluid">{% block content %}{% endblock %}</div>
       </div>
-
     </div>
-
     {% else %}
-    <!-- LOGIN -->
     <div class="container py-4">{% block auth_content %}{% endblock %}</div>
     {% endif %}
 
-    <!-- ===================== SCRIPTS ===================== -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+    <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      {% set flashed = get_flashed_messages(with_categories=true) %}
+      
+      {% if flashed %}
+        {% for category, message in flashed %}
+          
+          // 1. Verifica o estado do Dark Mode no momento da exibição do alerta
+          const isDarkMode = document.body.classList.contains('dark-mode');
+          
+          let icon_type = "{% if category == 'success' %}success{% elif category == 'danger' %}error{% else %}info{% endif %}";
+
+          Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: icon_type,
+            // CORRIGIDO: Usa |tojson e sem aspas duplas
+            title: {{ message|tojson }}, 
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            
+            // 2. Aplica a classe customizada se o Dark Mode estiver ativo
+            customClass: {
+                // A classe 'swal2-dark-mode' será usada para estilizar o alerta no CSS
+                popup: isDarkMode ? 'swal2-dark-mode' : '' 
+            }
+          });
+        {% endfor %}
+      {% endif %}
+    });
+</script>
     {% block scripts %}{% endblock %}
 
     <script>
@@ -264,7 +262,6 @@
         sidebarToggle.addEventListener("click", () => {
           body.classList.toggle("sidebar-collapsed");
         });
-
         if (window.innerWidth >= 992) {
           body.classList.remove("sidebar-collapsed");
         }

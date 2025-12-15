@@ -131,7 +131,7 @@ a:hover {
 .navbar-brand span {
   font-size: 1.5rem;
   font-weight: 700;
-  color: var(--color-text-navbar);
+  color: var(--color-primary);
   line-height: 1;
   transition: font-size 0.3s;
 }
@@ -795,7 +795,27 @@ body.dark-mode .logo-dark {
 
 /* Opcional: tamanho padrão */
 .navbar-logo {
-  height: 65px;
+  height: 60px;
 }
 
+/* Estilos para o SweetAlert2 no Dark Mode */
+.swal2-dark-mode {
+    /* Fundo do alerta */
+    background-color: #343a40 !important; /* Um cinza escuro, comum em temas Dark */
+    /* Cor do texto dentro do alerta */
+    color: #f8f9fa !important; /* Branco muito claro */
+    /* Borda ou sombra para destacar */
+    border: 1px solid #495057; 
+}
+
+/* Opcional: Ajustar cores de outros elementos do toast no Dark Mode */
+.swal2-dark-mode .swal2-timer-progress-bar {
+    /* Deixa a barra de progresso mais visível em fundos escuros */
+    background: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* Garante que o ícone 'info' (que costuma ser azul) se destaque em fundo escuro */
+.swal2-dark-mode .swal2-icon.swal2-info {
+    color: #17a2b8; /* Cor que funciona bem em dark mode */
+}
 

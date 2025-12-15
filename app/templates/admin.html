@@ -257,14 +257,25 @@ document.querySelectorAll('.form-deletar').forEach(form => {
     form.addEventListener('submit', function(e) {
         e.preventDefault();
 
+        // 1. CHECAGEM DO DARK MODE
+        const isDarkMode = document.body.classList.contains('dark-mode');
+
         Swal.fire({
             title: 'Tem certeza?',
             text: "Você está prestes a DELETAR PERMANENTEMENTE este registro.",
             icon: 'warning',
-            customClass: 'swal-sm',
+            
+            // 2. APLICAÇÃO DA CLASSE DARK MODE NO MODAL (POPUP)
+            customClass: {
+                // Aplica a classe CSS 'swal2-dark-mode' se o dark mode estiver ativo
+                popup: isDarkMode ? 'swal2-dark-mode' : '',
+                // A classe 'swal-sm' que você já tinha pode ser mantida
+                // Se a sua classe 'swal-sm' não for o suficiente para o Dark Mode, remova-a ou ajuste-a.
+            },
+            
             showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#6c757d',
+            confirmButtonColor: '#d33', // Vermelho
+            cancelButtonColor: '#6c757d', // Cinza
             confirmButtonText: 'Sim, deletar!',
             cancelButtonText: 'Cancelar'
         }).then((result) => {
@@ -276,7 +287,6 @@ document.querySelectorAll('.form-deletar').forEach(form => {
 });
 </script>
 {% endblock %}
-
 
 
 {% endblock %}
