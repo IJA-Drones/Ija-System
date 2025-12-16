@@ -838,11 +838,6 @@ body.dark-mode .logo-dark {
     color: #f8f9fa !important; /* Texto claro */
 }
 
-/* Regras FullCalendar */
-.dark-mode .fc {
-    /* Cor do fundo das células e bordas */
-}
-
 .dark-mode .fc .fc-toolbar-title {
     color: #f8f9fa !important; /* Título do Mês/Semana */
 }
