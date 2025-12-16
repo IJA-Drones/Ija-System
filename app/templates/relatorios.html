@@ -19,20 +19,33 @@
         <i class="bi bi-bar-chart-fill me-2"></i> Relatórios
     </h2>
 
+    {# --- Bloco de Exportação AGORA COM FORMS GET --- #}
     <div class="d-flex gap-2">
-        <a href="{{ url_for('main.exportar_relatorio_pdf', mes=mes_selecionado, ano=ano_selecionado, uvis_id=uvis_id_selecionado) }}"
-           class="btn btn-danger">
-            <i class="bi bi-file-earmark-pdf-fill"></i> Exportar PDF
-        </a>
+        
+        {# FORMULÁRIO DE EXPORTAÇÃO PDF (Substitui o Link <a>) #}
+        <form method="GET" action="{{ url_for('main.exportar_relatorio_pdf') }}" class="form-exportar p-0 m-0">
+            <input type="hidden" name="mes" value="{{ mes_selecionado }}">
+            <input type="hidden" name="ano" value="{{ ano_selecionado }}">
+            <input type="hidden" name="uvis_id" value="{{ uvis_id_selecionado }}">
+            <button type="submit" class="btn btn-danger">
+                <i class="bi bi-file-earmark-pdf-fill"></i> Exportar PDF
+            </button>
+        </form>
 
-        <a href="{{ url_for('main.exportar_relatorio_excel', mes=mes_selecionado, ano=ano_selecionado, uvis_id=uvis_id_selecionado) }}"
-           class="btn btn-success">
-            <i class="bi bi-file-earmark-excel-fill"></i> Exportar Excel
-        </a>
+        {# FORMULÁRIO DE EXPORTAÇÃO EXCEL (Substitui o Link <a>) #}
+        <form method="GET" action="{{ url_for('main.exportar_relatorio_excel') }}" class="form-exportar p-0 m-0">
+            <input type="hidden" name="mes" value="{{ mes_selecionado }}">
+            <input type="hidden" name="ano" value="{{ ano_selecionado }}">
+            <input type="hidden" name="uvis_id" value="{{ uvis_id_selecionado }}">
+            <button type="submit" class="btn btn-success">
+                <i class="bi bi-file-earmark-excel-fill"></i> Exportar Excel
+            </button>
+        </form>
+        
     </div>
 </div>
 
-{# --- Bloco de Filtros Unificado --- #}
+{# --- Bloco de Filtros Unificado (MANTIDO) --- #}
 <form method="GET" class="card p-3 mb-4 shadow-sm rounded-4">
     <div class="row g-2 align-items-end">
         <div class="col-md-3">
@@ -64,7 +77,7 @@
         </div>
 
         <div class="col-md-3 d-flex gap-2">
-            <button class="btn btn-success btn-sm w-100"><i class="bi bi-funnel"></i> Filtrar</button>
+            <button type="submit" class="btn btn-success btn-sm w-100"><i class="bi bi-funnel"></i> Filtrar</button>
 
             {% if uvis_id_selecionado %}
             <a href="{{ url_for('main.relatorios', mes=mes_selecionado, ano=ano_selecionado) }}"
@@ -123,8 +136,8 @@
 </div>
 
 {# =========================
-   DASHBOARD DE GRÁFICOS
-   ========================= #}
+    DASHBOARD DE GRÁFICOS
+    ========================= #}
 <div class="row g-4 mb-4">
   <div class="col-lg-4">
     <div class="card shadow-sm rounded-4 p-4 h-100">
@@ -382,8 +395,8 @@
 </div>
 
 {# =========================
-   JSONs para gráficos
-   ========================= #}
+    JSONs para gráficos
+    ========================= #}
 <script id="dados-mensais-json" type="application/json">{{ dados_mensais | tojson | safe }}</script>
 <script id="dados-status-json" type="application/json">{{ dados_status | tojson | safe }}</script>
 <script id="dados-regiao-json" type="application/json">{{ dados_regiao | tojson | safe }}</script>
@@ -395,232 +408,267 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
 <script>
-  // ================
-  // Helpers
-  // ================
-  const readJson = (id) => {
-    const el = document.getElementById(id);
-    return el ? JSON.parse(el.textContent) : [];
-  };
+    // ================
+    // Helpers
+    // ================
+    const readJson = (id) => {
+        const el = document.getElementById(id);
+        return el ? JSON.parse(el.textContent) : [];
+    };
 
-  const cleanLabel = (v) => (v === null || v === undefined || v === "" ? "Não informado" : String(v));
+    const cleanLabel = (v) => (v === null || v === undefined || v === "" ? "Não informado" : String(v));
 
-  // Tema global
-  Chart.defaults.font.family = "system-ui, -apple-system, Segoe UI, Roboto, Arial";
-  Chart.defaults.color = "#495057";
-  Chart.defaults.plugins.legend.labels.boxWidth = 12;
-  Chart.defaults.plugins.tooltip.backgroundColor = "rgba(33, 37, 41, 0.92)";
-  Chart.defaults.plugins.tooltip.padding = 12;
-  Chart.defaults.plugins.tooltip.titleColor = "#fff";
-  Chart.defaults.plugins.tooltip.bodyColor = "#fff";
-  Chart.defaults.responsive = true;
-  Chart.defaults.maintainAspectRatio = false;
+    // Tema global
+    Chart.defaults.font.family = "system-ui, -apple-system, Segoe UI, Roboto, Arial";
+    Chart.defaults.color = "#495057";
+    Chart.defaults.plugins.legend.labels.boxWidth = 12;
+    Chart.defaults.plugins.tooltip.backgroundColor = "rgba(33, 37, 41, 0.92)";
+    Chart.defaults.plugins.tooltip.padding = 12;
+    Chart.defaults.plugins.tooltip.titleColor = "#fff";
+    Chart.defaults.plugins.tooltip.bodyColor = "#fff";
+    Chart.defaults.responsive = true;
+    Chart.defaults.maintainAspectRatio = false;
 
-  const palette = ["#0d6efd", "#20c997", "#ffc107", "#dc3545", "#6f42c1", "#0dcaf0", "#fd7e14", "#198754", "#adb5bd", "#343a40"];
+    const palette = ["#0d6efd", "#20c997", "#ffc107", "#dc3545", "#6f42c1", "#0dcaf0", "#fd7e14", "#198754", "#adb5bd", "#343a40"];
 
-  // =========================
-  
-  // Gráfico: Histórico Mensal (line)
-  // =========================
-  const dadosMensais = readJson("dados-mensais-json");
-  const labelsMensais = dadosMensais.map(item => item[0]);
-  const countsMensais = dadosMensais.map(item => item[1]);
+    // =========================
+    
+    // Gráfico: Histórico Mensal (line)
+    // =========================
+    const dadosMensais = readJson("dados-mensais-json");
+    const labelsMensais = dadosMensais.map(item => item[0]);
+    const countsMensais = dadosMensais.map(item => item[1]);
 
-  function formatarMes(label) {
-    if (!label) return "";
-    const [ano, mes] = label.split("-");
-    const data = new Date(ano, mes - 1);
-    const formatador = new Intl.DateTimeFormat("pt-BR", { month: "short", year: "2-digit" });
-    return formatador.format(data).replace(".", "/").replace(" ", "");
-  }
+    function formatarMes(label) {
+        if (!label) return "";
+        const [ano, mes] = label.split("-");
+        const data = new Date(ano, mes - 1);
+        const formatador = new Intl.DateTimeFormat("pt-BR", { month: "short", year: "2-digit" });
+        return formatador.format(data).replace(".", "/").replace(" ", "");
+    }
 
-  const labelsMensaisFmt = labelsMensais.map(formatarMes);
+    const labelsMensaisFmt = labelsMensais.map(formatarMes);
 
-  if (document.getElementById("chartMensal")) {
-    new Chart(document.getElementById("chartMensal"), {
-      type: "line",
-      data: {
-        labels: labelsMensaisFmt,
-        datasets: [{
-          label: "Total de Solicitações",
-          data: countsMensais,
-          backgroundColor: "rgba(13, 110, 253, 0.15)",
-          borderColor: "#0d6efd",
-          borderWidth: 3,
-          tension: 0.35,
-          fill: true,
-          pointBackgroundColor: "#0d6efd",
-          pointBorderColor: "#fff",
-          pointRadius: 4
-        }]
-      },
-      options: {
-        interaction: { mode: "index", intersect: false },
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { grid: { display: false } },
-          y: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.06)" }, ticks: { precision: 0 } }
-        }
-      }
-    });
-  }
+    if (document.getElementById("chartMensal")) {
+        new Chart(document.getElementById("chartMensal"), {
+            type: "line",
+            data: {
+                labels: labelsMensaisFmt,
+                datasets: [{
+                    label: "Total de Solicitações",
+                    data: countsMensais,
+                    backgroundColor: "rgba(13, 110, 253, 0.15)",
+                    borderColor: "#0d6efd",
+                    borderWidth: 3,
+                    tension: 0.35,
+                    fill: true,
+                    pointBackgroundColor: "#0d6efd",
+                    pointBorderColor: "#fff",
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                interaction: { mode: "index", intersect: false },
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.06)" }, ticks: { precision: 0 } }
+                }
+            }
+        });
+    }
 
-  // =========================
-  // Status (doughnut)
-  // =========================
-  const dadosStatus = readJson("dados-status-json").map(([s, c]) => [cleanLabel(s), c]);
-  if (document.getElementById("chartStatus")) {
-    new Chart(document.getElementById("chartStatus"), {
-      type: "doughnut",
-      data: {
-        labels: dadosStatus.map(x => x[0]),
-        datasets: [{
-          data: dadosStatus.map(x => x[1]),
-          backgroundColor: ["#198754", "#dc3545", "#ffc107", "#0dcaf0"],
-          borderWidth: 0,
-          hoverOffset: 6
-        }]
-      },
-      options: {
-        cutout: "70%",
-        plugins: {
-          legend: { position: "bottom" },
-          tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${ctx.parsed}` } }
-        }
-      }
-    });
-  }
+    // =========================
+    // Status (doughnut)
+    // =========================
+    const dadosStatus = readJson("dados-status-json").map(([s, c]) => [cleanLabel(s), c]);
+    if (document.getElementById("chartStatus")) {
+        new Chart(document.getElementById("chartStatus"), {
+            type: "doughnut",
+            data: {
+                labels: dadosStatus.map(x => x[0]),
+                datasets: [{
+                    data: dadosStatus.map(x => x[1]),
+                    backgroundColor: ["#198754", "#dc3545", "#ffc107", "#0dcaf0"],
+                    borderWidth: 0,
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                cutout: "70%",
+                plugins: {
+                    legend: { position: "bottom" },
+                    tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${ctx.parsed}` } }
+                }
+            }
+        });
+    }
 
-  // =========================
-  // Região (bar horizontal)
-  // =========================
-  const dadosRegiao = readJson("dados-regiao-json").map(([r, c]) => [cleanLabel(r), c]);
-  if (document.getElementById("chartRegiao")) {
-    new Chart(document.getElementById("chartRegiao"), {
-      type: "bar",
-      data: {
-        labels: dadosRegiao.map(x => x[0]),
-        datasets: [{
-          label: "Solicitações",
-          data: dadosRegiao.map(x => x[1]),
-          backgroundColor: "#0d6efd",
-          borderRadius: 10,
-          barThickness: 18
-        }]
-      },
-      options: {
-        indexAxis: "y",
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.06)" }, ticks: { precision: 0 } },
-          y: { grid: { display: false } }
-        }
-      }
-    });
-  }
+    // =========================
+    // Região (bar horizontal)
+    // =========================
+    const dadosRegiao = readJson("dados-regiao-json").map(([r, c]) => [cleanLabel(r), c]);
+    if (document.getElementById("chartRegiao")) {
+        new Chart(document.getElementById("chartRegiao"), {
+            type: "bar",
+            data: {
+                labels: dadosRegiao.map(x => x[0]),
+                datasets: [{
+                    label: "Solicitações",
+                    data: dadosRegiao.map(x => x[1]),
+                    backgroundColor: "#0d6efd",
+                    borderRadius: 10,
+                    barThickness: 18
+                }]
+            },
+            options: {
+                indexAxis: "y",
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.06)" }, ticks: { precision: 0 } },
+                    y: { grid: { display: false } }
+                }
+            }
+        });
+    }
 
-  // =========================
-  // Unidade (Top 10) (bar)
-  // =========================
-  let dadosUnidade = readJson("dados-unidade-json").map(([u, c]) => [cleanLabel(u), c]).slice(0, 10);
-  if (document.getElementById("chartUnidade")) {
-    new Chart(document.getElementById("chartUnidade"), {
-      type: "bar",
-      data: {
-        labels: dadosUnidade.map(x => x[0]),
-        datasets: [{
-          label: "Total",
-          data: dadosUnidade.map(x => x[1]),
-          backgroundColor: "#20c997",
-          borderRadius: 10
-        }]
-      },
-      options: {
-        plugins: { legend: { display: false } },
-        scales: {
-          y: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.06)" }, ticks: { precision: 0 } },
-          x: { grid: { display: false }, ticks: { maxRotation: 35, minRotation: 0 } }
-        }
-      }
-    });
-  }
+    // =========================
+    // Unidade (Top 10) (bar)
+    // =========================
+    let dadosUnidade = readJson("dados-unidade-json").map(([u, c]) => [cleanLabel(u), c]).slice(0, 10);
+    if (document.getElementById("chartUnidade")) {
+        new Chart(document.getElementById("chartUnidade"), {
+            type: "bar",
+            data: {
+                labels: dadosUnidade.map(x => x[0]),
+                datasets: [{
+                    label: "Total",
+                    data: dadosUnidade.map(x => x[1]),
+                    backgroundColor: "#20c997",
+                    borderRadius: 10
+                }]
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.06)" }, ticks: { precision: 0 } },
+                    x: { grid: { display: false }, ticks: { maxRotation: 35, minRotation: 0 } }
+                }
+            }
+        });
+    }
 
-  // =========================
-  // Foco (bar horizontal)
-  // =========================
-  const dadosFoco = readJson("dados-foco-json").map(([f, c]) => [cleanLabel(f), c]);
-  if (document.getElementById("chartFoco")) {
-    new Chart(document.getElementById("chartFoco"), {
-      type: "bar",
-      data: {
-        labels: dadosFoco.map(x => x[0]),
-        datasets: [{
-          label: "Total",
-          data: dadosFoco.map(x => x[1]),
-          backgroundColor: "#6f42c1",
-          borderRadius: 10,
-          barThickness: 18
-        }]
-      },
-      options: {
-        indexAxis: "y",
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.06)" }, ticks: { precision: 0 } },
-          y: { grid: { display: false } }
-        }
-      }
-    });
-  }
+    // =========================
+    // Foco (bar horizontal)
+    // =========================
+    const dadosFoco = readJson("dados-foco-json").map(([f, c]) => [cleanLabel(f), c]);
+    if (document.getElementById("chartFoco")) {
+        new Chart(document.getElementById("chartFoco"), {
+            type: "bar",
+            data: {
+                labels: dadosFoco.map(x => x[0]),
+                datasets: [{
+                    label: "Total",
+                    data: dadosFoco.map(x => x[1]),
+                    backgroundColor: "#6f42c1",
+                    borderRadius: 10,
+                    barThickness: 18
+                }]
+            },
+            options: {
+                indexAxis: "y",
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.06)" }, ticks: { precision: 0 } },
+                    y: { grid: { display: false } }
+                }
+            }
+        });
+    }
 
-  // =========================
-  // Tipo de visita (doughnut)
-  // =========================
-  const dadosTipo = readJson("dados-tipo-visita-json").map(([t, c]) => [cleanLabel(t), c]);
-  if (document.getElementById("chartTipoVisita")) {
-    new Chart(document.getElementById("chartTipoVisita"), {
-      type: "doughnut",
-      data: {
-        labels: dadosTipo.map(x => x[0]),
-        datasets: [{
-          data: dadosTipo.map(x => x[1]),
-          backgroundColor: dadosTipo.map((_, i) => palette[i % palette.length]),
-          borderWidth: 0,
-          hoverOffset: 6
-        }]
-      },
-      options: {
-        cutout: "65%",
-        plugins: { legend: { position: "bottom" } }
-      }
-    });
-  }
+    // =========================
+    // Tipo de visita (doughnut)
+    // =========================
+    const dadosTipo = readJson("dados-tipo-visita-json").map(([t, c]) => [cleanLabel(t), c]);
+    if (document.getElementById("chartTipoVisita")) {
+        new Chart(document.getElementById("chartTipoVisita"), {
+            type: "doughnut",
+            data: {
+                labels: dadosTipo.map(x => x[0]),
+                datasets: [{
+                    data: dadosTipo.map(x => x[1]),
+                    backgroundColor: dadosTipo.map((_, i) => palette[i % palette.length]),
+                    borderWidth: 0,
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                cutout: "65%",
+                plugins: { legend: { position: "bottom" } }
+            }
+        });
+    }
 
-  // =========================
-  // Altura de voo (bar)
-  // =========================
-  const dadosAltura = readJson("dados-altura-json").map(([a, c]) => [cleanLabel(a), c]);
-  if (document.getElementById("chartAltura")) {
-    new Chart(document.getElementById("chartAltura"), {
-      type: "bar",
-      data: {
-        labels: dadosAltura.map(x => x[0]),
-        datasets: [{
-          label: "Total",
-          data: dadosAltura.map(x => x[1]),
-          backgroundColor: "#fd7e14",
-          borderRadius: 10
-        }]
-      },
-      options: {
-        plugins: { legend: { display: false } },
-        scales: {
-          y: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.06)" }, ticks: { precision: 0 } },
-          x: { grid: { display: false }, ticks: { maxRotation: 30, minRotation: 0 } }
-        }
-      }
-    });
-  }
+    // =========================
+    // Altura de voo (bar)
+    // =========================
+    const dadosAltura = readJson("dados-altura-json").map(([a, c]) => [cleanLabel(a), c]);
+    if (document.getElementById("chartAltura")) {
+        new Chart(document.getElementById("chartAltura"), {
+            type: "bar",
+            data: {
+                labels: dadosAltura.map(x => x[0]),
+                datasets: [{
+                    label: "Total",
+                    data: dadosAltura.map(x => x[1]),
+                    backgroundColor: "#fd7e14",
+                    borderRadius: 10
+                }]
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.06)" }, ticks: { precision: 0 } },
+                    x: { grid: { display: false }, ticks: { maxRotation: 30, minRotation: 0 } }
+                }
+            }
+        });
+    }
 </script>
 
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        
+        // Seleciona todos os formulários de exportação
+        const exportForms = document.querySelectorAll('form.form-exportar');
+        
+        exportForms.forEach(form => {
+            
+            // Listener para a submissão do formulário (o listener universal aplica o loading)
+            form.addEventListener('submit', function(e) {
+                const submitButton = this.querySelector('button[type="submit"]');
+
+                if (submitButton) {
+                    const clickedButton = submitButton;
+
+                    // 1. O loading já foi aplicado pelo base.html (listener universal)
+                    
+                    // 2. FORÇA A REVERSÃO do loading após 4 segundos (tempo razoável para download)
+                    setTimeout(() => {
+                        // Verifica se a função global está disponível antes de chamar
+                        if (typeof hideLoadingState === 'function') {
+                            hideLoadingState(clickedButton);
+                        }
+                    }, 4000); 
+                    
+                    // Não há e.preventDefault() aqui para garantir que o formulário submeta
+                    // e inicie o download.
+                }
+            });
+        });
+    });
+</script>
 {% endblock %}

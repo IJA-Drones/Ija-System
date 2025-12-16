@@ -452,6 +452,8 @@ body.sidebar-collapsed .app-content {
   padding: 0.6rem 1rem;
   color: var(--color-text-main);
 }
+
+
 .form-control:focus,
 .form-select:focus {
   border-color: var(--color-accent);

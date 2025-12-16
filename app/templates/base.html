@@ -221,35 +221,51 @@
 
     <script>
       // ====================================================================
-      // FUNÇÃO DE CARREGAMENTO (LOADING STATE)
+      // FUNÇÕES GLOBAIS DE CARREGAMENTO (LOADING STATE)
+      // Definidas no escopo global para serem acessíveis em qualquer página
       // ====================================================================
+
+      /**
+       * Restaura o botão ao estado original (oposto de showLoadingState).
+       * @param {HTMLElement} button - O botão HTML a ser restaurado.
+       */
+      function hideLoadingState(button) {
+        if (!button || !button.originalText) return;
+
+        button.disabled = false;
+        button.innerHTML = button.originalText;
+        // Não é estritamente necessário, mas ajuda na limpeza do objeto
+        delete button.originalText; 
+      }
+
       /**
        * Aplica o estado de carregamento a um botão.
        * Desabilita o botão e substitui o conteúdo por um spinner.
        * @param {HTMLElement} button - O botão HTML a ser modificado.
        */
       function showLoadingState(button) {
-          if (!button) return;
+        if (!button) return;
 
-          // 1. Salva o conteúdo original para restaurar depois
-          button.originalText = button.innerHTML; 
+        // 1. Salva o conteúdo original para restaurar depois
+        button.originalText = button.innerHTML; 
 
-          // 2. Desabilita o botão
-          button.disabled = true;
+        // 2. Desabilita o botão
+        button.disabled = true;
 
-          // 3. Adiciona o spinner e o texto "Aguarde..." (classes do Bootstrap)
-          button.innerHTML = `
-              <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-              Aguarde...
-          `;
+        // 3. Adiciona o spinner e o texto "Aguarde..." (classes do Bootstrap)
+        button.innerHTML = `
+          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+          Aguarde...
+        `;
       }
-      
+
       // ====================================================================
-      // MENSAGENS FLASH (SWEETALERT2)
+      // LÓGICA EXECUTADA APÓS O CARREGAMENTO DO DOM
       // ====================================================================
       document.addEventListener("DOMContentLoaded", () => {
         {% set flashed = get_flashed_messages(with_categories=true) %}
         
+        // MENSAGENS FLASH (SWEETALERT2)
         {% if flashed %}
           {% for category, message in flashed %}
             
