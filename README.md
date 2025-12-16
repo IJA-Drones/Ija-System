@@ -176,5 +176,5 @@ sgsv-sistema/
 
 ## 📄 Licença
 
-Este projeto está sob a licença [© 2025 Oceano Azul | IJA drones. Todos os direitos reservados.].
+Este projeto está sob a licença [© 2025 IJA drones. Todos os direitos reservados.].
 **Desenvolvido para otimização de processos das UVIS.**
