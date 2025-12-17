@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from app import db
 from app.models import Usuario, Solicitacao, Notificacao
+from flask import jsonify
 from datetime import datetime, date
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime, date
@@ -14,10 +15,26 @@ from datetime import datetime, date
 import tempfile
 from sqlalchemy.orm import joinedload
 
-
 print("--- ROTAS CARREGADAS COM SUCESSO ---")
 
 bp = Blueprint('main', __name__)
+@bp.context_processor
+def inject_current_user():
+    class CurrentUser:
+        def __init__(self):
+            # autenticação
+            self.id = session.get("user_id")
+            self.is_authenticated = bool(self.id)
+
+            # nomes esperados no base.html
+            self.nome_uvis = session.get("user_nome_uvis")
+            self.name = session.get("user_name")
+
+            # tipo de usuário
+            self.tipo_usuario = session.get("user_tipo")
+
+    return dict(current_user=CurrentUser())
+
 @bp.app_template_filter('datetimeformat')
 def datetimeformat(value, format='%d-%m-%y'):
     try:
@@ -1490,3 +1507,42 @@ def notificacoes():
 
     return render_template("notificacoes.html", itens=itens)
 
+# -------------------------------------------------
+# EXCLUIR UMA NOTIFICAÇÃO
+# -------------------------------------------------
+@bp.route("/notificacoes/<int:notif_id>/excluir", methods=["POST"])
+def excluir_notificacao(notif_id):
+    if 'user_id' not in session:
+        return redirect(url_for('main.login'))
+
+    user_id = session["user_id"]
+    user_tipo = session.get("user_tipo")
+
+    if user_tipo in ["admin", "operario", "visualizar"]:
+        n = Notificacao.query.get_or_404(notif_id)
+    else:
+        n = Notificacao.query.filter_by(id=notif_id, usuario_id=user_id).first_or_404()
+
+    db.session.delete(n)
+    db.session.commit()
+
+    return redirect(url_for("main.notificacoes"))
+
+# -------------------------------------------------
+# LIMPAR TODAS AS NOTIFICAÇÕES
+# -------------------------------------------------
+@bp.route("/notificacoes/limpar", methods=["POST"])
+def limpar_notificacoes():
+    if 'user_id' not in session:
+        return redirect(url_for('main.login'))
+
+    user_id = session["user_id"]
+    user_tipo = session.get("user_tipo")
+
+    if user_tipo in ["admin", "operario", "visualizar"]:
+        Notificacao.query.delete()
+    else:
+        Notificacao.query.filter_by(usuario_id=user_id).delete()
+
+    db.session.commit()
+    return redirect(url_for("main.notificacoes"))

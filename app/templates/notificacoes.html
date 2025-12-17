@@ -1,46 +1,82 @@
-{% extends "base.html" %}
-{% block content %}
+{% extends "base.html" %} {% block content %}
 
 <div class="container-fluid">
-    <div class="d-flex align-items-center justify-content-between mb-3">
-        <h2 class="mb-0"><i class="bi bi-bell-fill me-2"></i>Notificações</h2>
-    </div>
+  <!-- TOPO -->
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="mb-0"><i class="bi bi-bell-fill me-2"></i>Notificações</h2>
 
-    <div class="card shadow-sm rounded-4">
-        <div class="card-body p-0"> 
-            {% if not itens %}
-                <div class="text-muted p-4">Nenhuma notificação por enquanto.</div>
-            {% else %}
-                <div class="list-group list-group-flush">
-                    {% for n in itens %}
-                        <a href="{{ url_for('main.ler_notificacao', notif_id=n.id) }}"
-                           class="list-group-item list-group-item-action d-flex justify-content-between align-items-start 
-                                 {% if not n.lida_em %}list-group-item-light-custom{% endif %}"> 
-                            <div class="me-3">
-                                
-                                <div class="d-flex align-items-center mb-1">
-                                    
-                                    <i class="bi bi-calendar-event-fill me-2 text-primary" style="font-size: 1.1rem;"></i>
+    <!-- LIMPAR TODAS -->
+    <form
+      method="POST"
+      action="{{ url_for('main.limpar_notificacoes') }}"
+      onsubmit="return confirm('Deseja realmente apagar todas as notificações?');"
+    >
+      <button class="btn btn-outline-danger btn-sm">
+        <i class="bi bi-trash3"></i> Limpar todas
+      </button>
+    </form>
+  </div>
 
-                                    <div class="fw-bold {% if not n.lida_em %}text-dark{% else %}text-muted{% endif %}"> 
-                                        {{ n.titulo }}
-                                        {% if not n.lida_em %}
-                                            <span class="badge bg-danger ms-2">Nova</span>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                <div class="text-muted small">{{ n.mensagem }}</div>
-                                <div class="text-muted small mt-1">
-                                    {{ n.criada_em.strftime("%d/%m/%Y %H:%M") if n.criada_em else "" }}
-                                </div>
-                            </div>
-                            <i class="bi bi-chevron-right text-muted"></i>
-                        </a>
-                    {% endfor %}
+  <!-- CARD -->
+  <div class="card shadow-sm rounded-4">
+    <div class="card-body p-0">
+      {% if not itens %}
+      <div class="text-muted p-4">Nenhuma notificação por enquanto.</div>
+      {% else %}
+      <div class="list-group list-group-flush">
+        {% for n in itens %}
+        <div
+          class="list-group-item d-flex justify-content-between align-items-start {% if not n.lida_em %}list-group-item-light-custom{% endif %}"
+        >
+          <!-- CONTEÚDO CLICÁVEL -->
+          <a
+            href="{{ url_for('main.ler_notificacao', notif_id=n.id) }}"
+            class="flex-grow-1 text-decoration-none"
+          >
+            <div class="me-3">
+              <div class="d-flex align-items-center mb-1">
+                <i
+                  class="bi bi-calendar-event-fill me-2 text-primary"
+                  style="font-size: 1.1rem"
+                ></i>
+
+                <div
+                  class="fw-bold {% if not n.lida_em %}text-dark{% else %}text-muted{% endif %}"
+                >
+                  {{ n.titulo }} {% if not n.lida_em %}
+                  <span class="badge bg-danger ms-2">Nova</span>
+                  {% endif %}
                 </div>
-            {% endif %}
+              </div>
+
+              <div class="text-muted small">{{ n.mensagem }}</div>
+
+              <div class="text-muted small mt-1">
+                {{ n.criada_em.strftime("%d/%m/%Y %H:%M") if n.criada_em else ""
+                }}
+              </div>
+            </div>
+          </a>
+
+          <!-- EXCLUIR UMA -->
+          <form
+            method="POST"
+            action="{{ url_for('main.excluir_notificacao', notif_id=n.id) }}"
+            onsubmit="return confirm('Deseja apagar esta notificação?');"
+          >
+            <button
+              class="btn btn-sm btn-outline-danger ms-2"
+              title="Excluir notificação"
+            >
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </form>
         </div>
+        {% endfor %}
+      </div>
+      {% endif %}
     </div>
+  </div>
 </div>
 
 {% endblock %}
