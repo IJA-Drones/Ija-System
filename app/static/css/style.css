@@ -527,3 +527,46 @@ body.dark-mode .page-item.disabled .page-link {
     background-color: transparent;
     border-color: #233549;
 }
+/* =========================================
+   AGENDA - FILTROS + AÇÕES
+   ========================================= */
+.calendar-filters {
+  padding: 14px 14px 10px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  background: rgba(13, 110, 253, 0.03);
+}
+
+.calendar-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.calendar-filters .form-label {
+  margin-bottom: 0.35rem;
+  font-weight: 700;
+}
+
+.calendar-filters .form-select,
+.calendar-filters .form-control {
+  border-radius: 12px;
+}
+
+.calendar-filters .btn {
+  border-radius: 12px;
+  padding: 0.55rem 1rem;
+  font-weight: 800;
+  box-shadow: var(--shadow-sm);
+}
+
+@media (max-width: 576px) {
+  .calendar-actions { justify-content: stretch; }
+  .calendar-actions .btn { width: 100%; }
+}
+
+/* Dark mode */
+body.dark-mode .calendar-filters {
+  background: rgba(76, 163, 255, 0.08);
+  border-bottom-color: #495057;
+}

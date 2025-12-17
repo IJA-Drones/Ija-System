@@ -1394,29 +1394,78 @@ def deletar(id):
 
     flash(f"Pedido #{pedido_id} da {autor_nome} deletado permanentemente.", "success")
     return redirect(url_for('main.admin_dashboard'))
-# ----------------------------------------------
-# ROTA DA AGENDA / CALENDÁRIO
-# ----------------------------------------------
 @bp.route("/agenda")
 def agenda():
-    if 'user_id' not in session:
-        return redirect(url_for('main.login'))
+    if "user_id" not in session:
+        return redirect(url_for("main.login"))
 
     user_tipo = session.get("user_tipo")
     user_id = session.get("user_id")
 
-    # Admin/Operário/Visualizar enxergam tudo
-    if user_tipo in ["admin", "operario", "visualizar"]:
-        eventos = Solicitacao.query.options(joinedload(Solicitacao.autor)).all()
+    # ----------------------------
+    # Filtros (GET)
+    # ----------------------------
+    filtro_status = request.args.get("status") or None
+    filtro_uvis_id = request.args.get("uvis_id", type=int)
+
+    mes = request.args.get("mes", datetime.now().month, type=int)
+    ano = request.args.get("ano", datetime.now().year, type=int)
+
+    # link vindo da notificação (você já usa ?d=YYYY-MM-DD lá)
+    d = request.args.get("d")  # opcional
+    initial_date = d or f"{ano}-{mes:02d}-01"
+
+    # ----------------------------
+    # Query base + permissões
+    # ----------------------------
+    query = Solicitacao.query.options(joinedload(Solicitacao.autor))
+
+    # UVIS só vê os próprios (e não pode filtrar outra UVIS)
+    if user_tipo not in ["admin", "operario", "visualizar"]:
+        query = query.filter(Solicitacao.usuario_id == user_id)
+        filtro_uvis_id = None
     else:
-        # UVIS enxerga só os próprios
-        eventos = (
-            Solicitacao.query
-            .filter_by(usuario_id=user_id)
-            .options(joinedload(Solicitacao.autor))
+        # Admin/Operário/Visualizar podem filtrar por UVIS
+        if filtro_uvis_id:
+            query = query.filter(Solicitacao.usuario_id == filtro_uvis_id)
+
+    # Filtro por status
+    if filtro_status:
+        query = query.filter(Solicitacao.status == filtro_status)
+
+    # Filtro por mês/ano (pela data do agendamento)
+    filtro_mesano = f"{ano}-{mes:02d}"
+    query = query.filter(db.func.strftime("%Y-%m", Solicitacao.data_agendamento) == filtro_mesano)
+
+    eventos = query.all()
+
+    # ----------------------------
+    # UVIS disponíveis (dropdown)
+    # ----------------------------
+    uvis_disponiveis = []
+    if user_tipo in ["admin", "operario", "visualizar"]:
+        uvis_disponiveis = (
+            db.session.query(Usuario.id, Usuario.nome_uvis)
+            .filter(Usuario.tipo_usuario == "uvis")
+            .order_by(Usuario.nome_uvis)
             .all()
         )
 
+    # Anos disponíveis (pra select)
+    anos_raw = (
+        db.session.query(db.func.strftime("%Y", Solicitacao.data_agendamento))
+        .filter(Solicitacao.data_agendamento.isnot(None))
+        .distinct()
+        .order_by(db.func.strftime("%Y", Solicitacao.data_agendamento).desc())
+        .all()
+    )
+    anos_disponiveis = [int(a[0]) for a in anos_raw if a and a[0]]
+    if not anos_disponiveis:
+        anos_disponiveis = [datetime.now().year]
+
+    # ----------------------------
+    # Monta eventos p/ FullCalendar
+    # ----------------------------
     agenda_eventos = []
 
     for e in eventos:
@@ -1426,15 +1475,15 @@ def agenda():
         data = e.data_agendamento.strftime("%Y-%m-%d")
         hora = e.hora_agendamento.strftime("%H:%M") if e.hora_agendamento else "00:00"
 
-        # evento base (SEM url)
         ev = {
+            "id": str(e.id),  # (opcional, mas útil)
             "title": f"{e.foco} - {e.autor.nome_uvis}",
             "start": f"{data}T{hora}",
             "color": (
                 "#198754" if e.status == "APROVADO" else
                 "#ffa023" if e.status == "APROVADO COM RECOMENDAÇÕES" else
                 "#dc3545" if e.status == "NEGADO" else
-                "#ffc107" if e.status == "EM ANÁLISE" else
+                "#e9fa05" if e.status == "EM ANÁLISE" else
                 "#0d6efd"
             ),
             "extendedProps": {
@@ -1446,13 +1495,186 @@ def agenda():
             }
         }
 
-        # ✅ SOMENTE ADMIN recebe url (sem url=None)
         if user_tipo == "admin":
             ev["url"] = url_for("main.admin_editar_completo", id=e.id)
 
         agenda_eventos.append(ev)
 
-    return render_template("agenda.html", eventos_json=json.dumps(agenda_eventos))
+    status_opcoes = [
+        "PENDENTE",
+        "EM ANÁLISE",
+        "APROVADO",
+        "APROVADO COM RECOMENDAÇÕES",
+        "NEGADO",
+    ]
+
+    return render_template(
+        "agenda.html",
+        eventos_json=json.dumps(agenda_eventos),
+        uvis_disponiveis=uvis_disponiveis,
+        status_opcoes=status_opcoes,
+        filtros={
+            "uvis_id": filtro_uvis_id,
+            "status": filtro_status,
+            "mes": mes,
+            "ano": ano,
+        },
+        anos_disponiveis=anos_disponiveis,
+        initial_date=initial_date,
+        pode_filtrar_uvis=(user_tipo in ["admin", "operario", "visualizar"]),
+    )
+
+@bp.route("/agenda/exportar_excel")
+def agenda_exportar_excel():
+    if "user_id" not in session:
+        return redirect(url_for("main.login"))
+
+    user_tipo = session.get("user_tipo")
+    user_id = session.get("user_id")
+
+    export_all = request.args.get("all") == "1"
+
+    # filtros (se all=1, ignora)
+    filtro_status = None if export_all else (request.args.get("status") or None)
+    filtro_uvis_id = None if export_all else request.args.get("uvis_id", type=int)
+    mes = None if export_all else request.args.get("mes", type=int)
+    ano = None if export_all else request.args.get("ano", type=int)
+
+    query = Solicitacao.query.options(joinedload(Solicitacao.autor))
+
+    # permissões
+    if user_tipo not in ["admin", "operario", "visualizar"]:
+        query = query.filter(Solicitacao.usuario_id == user_id)
+        filtro_uvis_id = None  # UVIS não filtra outras UVIS
+    else:
+        if filtro_uvis_id:
+            query = query.filter(Solicitacao.usuario_id == filtro_uvis_id)
+
+    if filtro_status:
+        query = query.filter(Solicitacao.status == filtro_status)
+
+    if mes and ano:
+        filtro_mesano = f"{ano}-{mes:02d}"
+        query = query.filter(
+            db.func.strftime("%Y-%m", Solicitacao.data_agendamento) == filtro_mesano
+        )
+
+    query = query.order_by(
+        Solicitacao.data_agendamento.desc(),
+        Solicitacao.hora_agendamento.desc()
+    )
+    eventos = query.all()
+
+    # -----------------------------
+    # Monta XLSX
+    # -----------------------------
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Agenda"
+
+    headers = [
+        "DATA",
+        "HORÁRIO",
+        "REGIÃO",
+        "UVIS",
+        "CET",
+        "ENDEREÇO DA AÇÃO",
+        "CEP",
+        "FOCO DA AÇÃO",
+        "COORDENADA GEOGRÁFICA",
+        "Altura dos Voos",
+        "Protocolo DECA",
+        "Status",
+    ]
+    ws.append(headers)
+
+    for p in eventos:
+        # Endereço completo
+        endereco_completo = (
+            f"{p.logradouro or ''}, {getattr(p, 'numero', '')} - "
+            f"{p.bairro or ''} - "
+            f"{(p.cidade or '')}/{(p.uf or '')} - "
+            f"{p.cep or ''}"
+        )
+        if getattr(p, "complemento", None):
+            endereco_completo += f" - {p.complemento}"
+
+        cet_txt = "SIM" if getattr(p, "apoio_cet", None) else "NÃO"
+
+        data_str = p.data_agendamento.strftime("%d/%m/%Y") if p.data_agendamento else ""
+        hora_str = p.hora_agendamento.strftime("%H:%M") if p.hora_agendamento else ""
+
+        uvis_nome = p.autor.nome_uvis if getattr(p, "autor", None) else ""
+        regiao = p.autor.regiao if getattr(p, "autor", None) else ""
+       
+
+        lat = getattr(p, "latitude", "") or ""
+        lon = getattr(p, "longitude", "") or ""
+        coordenada = f"{lat},{lon}" if (lat or lon) else ""
+
+        protocolo_deca = getattr(p, "protocolo_deca", None)
+        if not protocolo_deca:
+            protocolo_deca = getattr(p, "protocolo", "") or ""
+
+        ws.append([
+            data_str,
+            hora_str,
+            regiao,
+            uvis_nome,
+            cet_txt,
+            endereco_completo,
+            getattr(p, "cep", "") or "",
+            getattr(p, "foco", "") or "",
+            coordenada,
+            getattr(p, "altura_voo", "") or "",
+            protocolo_deca,
+            getattr(p, "status", "") or "",
+        ])
+
+    # -----------------------------
+    # Estilo (aplica uma vez)
+    # -----------------------------
+    header_fill = PatternFill("solid", fgColor="0D6EFD")
+    header_font = Font(bold=True, color="FFFFFF")
+    center = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    wrap = Alignment(vertical="top", wrap_text=True)
+
+    for col in range(1, len(headers) + 1):
+        c = ws.cell(row=1, column=col)
+        c.fill = header_fill
+        c.font = header_font
+        c.alignment = center
+
+    thin = Side(style="thin", color="D0D7DE")
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    for row in ws.iter_rows(min_row=1, max_row=ws.max_row, min_col=1, max_col=ws.max_column):
+        for cell in row:
+            cell.border = border
+            cell.alignment = wrap if cell.row > 1 else center
+
+    # largura automática simples
+    for col in range(1, ws.max_column + 1):
+        max_len = 0
+        col_letter = get_column_letter(col)
+        for cell in ws[col_letter]:
+            v = str(cell.value) if cell.value is not None else ""
+            max_len = max(max_len, len(v))
+        ws.column_dimensions[col_letter].width = min(max(12, max_len + 2), 60)
+
+    bio = BytesIO()
+    wb.save(bio)
+    bio.seek(0)
+
+    nome = "agenda_tudo.xlsx" if export_all else "agenda_exportada.xlsx"
+    return send_file(
+        bio,
+        as_attachment=True,
+        download_name=nome,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
+
 # -------------------------------------------------
 # CONTADOR (badge) NO BASE.HTML
 # -------------------------------------------------
