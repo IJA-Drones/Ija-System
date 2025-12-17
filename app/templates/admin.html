@@ -173,6 +173,7 @@
                                     <option value="PENDENTE" {% if p.status=='PENDENTE' %}selected{% endif %}>⚪️ Pendente</option>
                                     <option value="EM ANÁLISE" {% if p.status=='EM ANÁLISE' %}selected{% endif %}>🟡 Em Análise</option>
                                     <option value="APROVADO" {% if p.status=='APROVADO' %}selected{% endif %}>🟢 APROVAR</option>
+                                     <option value="APROVADO COM RECOMENDAÇÕES" {% if status=='APROVADO COM RECOMENDAÇÕES' %}selected{% endif %}>🟠 APROVADO COM RECOMENDAÇÕES</option>
                                     <option value="NEGADO" {% if p.status=='NEGADO' %}selected{% endif %}>🔴 NEGAR</option>
                                 </select>
 
