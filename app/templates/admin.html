@@ -159,7 +159,7 @@
                         
                         {# FORMULÁRIO DE ATUALIZAÇÃO (Será pego pelo listener universal do BASE.HTML) #}
                         {% if is_editable %}
-                        <form action="{{ url_for('main.atualizar', id=p.id) }}" method="POST">
+                        <form action="{{ url_for('main.atualizar', id=p.id) }}" method="POST" enctype="multipart/form-data">
                             <div class="row g-1 mb-2">
                                 <div class="col-12"><label class="small fw-bold text-muted">Ajuste GPS (Lat / Long)</label></div>
                                 <div class="col-6">
@@ -168,6 +168,14 @@
                                 <div class="col-6">
                                     <input name="longitude" class="form-control form-control-sm font-monospace" placeholder="Long" value="{{ p.longitude or '' }}">
                                 </div>
+                                <label class="small fw-bold text-muted">Anexo (opcional)</label>
+                                <input type="file" name="anexo" class="form-control form-control-sm mb-2">
+                                {% if p.anexo_path %}
+                                 <a class="btn btn-outline-secondary btn-sm w-100 mb-2" href="{{ url_for('main.baixar_anexo_admin', id=p.id) }}"
+">
+                                <i class="bi bi-paperclip"></i> Ver anexo atual
+                                </a>
+                        {% endif %}
                             </div>
 
                             <label class="small fw-bold text-muted">Protocolo DECEA</label>

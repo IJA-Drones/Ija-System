@@ -74,6 +74,10 @@ class Solicitacao(db.Model):
     latitude = db.Column(db.String(50))
     longitude = db.Column(db.String(50))
 
+    # Anexos
+    anexo_path = db.Column(db.String(255))   # "upload-files/sol_12_abcd1234.pdf"
+    anexo_nome = db.Column(db.String(255))   # "relatorio.pdf" (opcional)
+
     # ----------------------
     # Controle Admin
     # ----------------------

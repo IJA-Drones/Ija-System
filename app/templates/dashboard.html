@@ -121,12 +121,12 @@
         <li class="page-item {% if not paginacao.has_prev %}disabled{% endif %}">
             <a class="page-link" href="{{ url_for('main.dashboard', page=paginacao.prev_num, status=request.args.get('status', '')) }}">Anterior</a>
         </li>
-        {% for p in paginacao.iter_pages() %}
-            {% if p %}
-                {% if p == paginacao.page %}
-                <li class="page-item active"><a class="page-link">{{ p }}</a></li>
+        {% for pg in paginacao.iter_pages() %}
+            {% if pg %}
+                {% if pg == paginacao.page %}
+                <li class="page-item active"><a class="page-link">{{ pg }}</a></li>
                 {% else %}
-                <li class="page-item"><a class="page-link" href="{{ url_for('main.dashboard', page=p, status=request.args.get('status', '')) }}">{{ p }}</a></li>
+                <li class="page-item"><a class="page-link" href="{{ url_for('main.dashboard', page=pg, status=request.args.get('status', '')) }}">{{ pg }}</a></li>
                 {% endif %}
             {% else %}
                 <li class="page-item disabled"><a class="page-link">...</a></li>
@@ -139,82 +139,133 @@
 </nav>
 {% endif %}
 
+{# =========================
+   MODAIS (1 por solicitação)
+========================= #}
 {% for p in solicitacoes %}
 <div class="modal fade" id="modalDetalhes{{ p.id }}" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Detalhes do Pedido #{{ p.id }}</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
 
-                <h6 class="text-primary border-bottom pb-2 fw-bold"><i class="bi bi-geo-alt-fill"></i> Localização</h6>
-                <p class="rua mb-1 small">
-                    <strong>Endereço:</strong> {{ p.logradouro }}, {{ p.numero }} {{ '('+p.complemento+')' if p.complemento else '' }}
-                </p>
-                <p class="mb-2 small"><strong>Bairro:</strong> {{ p.bairro }} - {{ p.cidade }}/{{ p.uf }}</p>
+      <div class="modal-header">
+        <h5 class="modal-title">Detalhes do Pedido #{{ p.id }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
 
-                {% if p.latitude and p.longitude %}
-                <div class="d-flex justify-content-between align-items-center p-2 rounded border mb-3">
-                    <div>
-                        <small class="text-muted d-block">Coordenadas:</small>
-                        <strong class="font-monospace small">{{ p.latitude }}, {{ p.longitude }}</strong>
-                    </div>
-                    <a href="https://www.google.com/maps/search/?api=1&query={{ p.latitude }},{{ p.longitude }}" target="_blank" class="btn btn-sm btn-danger">
-                        <i class="bi bi-map"></i> Ver Mapa
-                    </a>
-                </div>
-                {% endif %}
+      <div class="modal-body">
 
-                <h6 class="text-primary border-bottom pb-2 fw-bold mt-3"><i class="bi bi-sliders"></i> Operação</h6>
-                <div class="row g-2 mb-2">
-                    <div class="col-6">
-                        <small class="text-muted d-block">Tipo de Visita:</small>
-                        <strong class="text-capitalize">{{ p.tipo_visita or '--' }}</strong>
-                    </div>
-                    <div class="col-6">
-                        <small class="text-muted d-block">Altura:</small>
-                        <strong>{{ p.altura_voo or '--' }}</strong>
-                    </div>
-                </div>
+        <h6 class="text-primary border-bottom pb-2 fw-bold">
+          <i class="bi bi-geo-alt-fill"></i> Localização
+        </h6>
 
-                <div class="row g-2 mb-3">
-                    <div class="col-6">
-                        <small class="text-muted d-block">Criadouro?</small>
-                        {% if p.criadouro %}<span class="badge bg-danger">SIM</span>{% else %}<span class="badge bg-secondary">NÃO</span>{% endif %}
-                    </div>
-                    <div class="col-6">
-                        <small class="text-muted d-block">Apoio CET?</small>
-                        {% if p.apoio_cet %}<span class="badge bg-warning text-dark">SIM</span>{% else %}<span class="badge bg-secondary">NÃO</span>{% endif %}
-                    </div>
-                </div>
+        <p class="rua mb-1 small">
+          <strong>Endereço:</strong>
+          {{ p.logradouro }}, {{ p.numero }}
+          {{ '(' ~ p.complemento ~ ')' if p.complemento else '' }}
+        </p>
 
-                {% if p.observacao %}
-                <div class="p-2 rounded border mb-3">
-                    <small class="text-muted d-block fw-bold">Observação do Usuário:</small>
-                    <em class="small">"{{ p.observacao }}"</em>
-                </div>
-                {% endif %}
+        <p class="mb-2 small">
+          <strong>Bairro:</strong> {{ p.bairro }} - {{ p.cidade }}/{{ p.uf }}
+        </p>
 
-                {% if p.status == 'NEGADO' %}
-                <div class="alert alert-danger mb-0">
-                    <strong class="d-block"><i class="bi bi-x-circle"></i> Pedido Negado</strong>
-                    <small>{{ p.justificativa }}</small>
-                </div>
-                {% elif p.status == 'APROVADO' %}
-                <div class="alert alert-success mb-0">
-                    <strong class="d-block"><i class="bi bi-check-circle"></i> Pedido Aprovado</strong>
-                    <small>Protocolo: {{ p.protocolo }}</small>
-                </div>
-                {% endif %}
-
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-            </div>
+        {% if p.latitude and p.longitude %}
+        <div class="d-flex justify-content-between align-items-center p-2 rounded border mb-3">
+          <div>
+            <small class="text-muted d-block">Coordenadas:</small>
+            <strong class="font-monospace small">{{ p.latitude }}, {{ p.longitude }}</strong>
+          </div>
+          <a href="https://www.google.com/maps/search/?api=1&query={{ p.latitude }},{{ p.longitude }}"
+             target="_blank"
+             class="btn btn-sm btn-danger">
+            <i class="bi bi-map"></i> Ver Mapa
+          </a>
         </div>
+        {% endif %}
+
+        <h6 class="text-primary border-bottom pb-2 fw-bold mt-3">
+          <i class="bi bi-paperclip"></i> Anexo
+        </h6>
+
+        {% if p.anexo_path %}
+        <div class="d-flex justify-content-between align-items-center p-2 rounded border mb-3">
+          <div>
+            <small class="text-muted d-block">Arquivo:</small>
+            <strong class="small">{{ p.anexo_nome or 'Anexo' }}</strong>
+          </div>
+
+          <a href="{{ url_for('main.baixar_anexo', id=p.id) }}"
+             target="_blank"
+             class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-download"></i> Abrir / Baixar
+          </a>
+        </div>
+        {% else %}
+        <div class="alert alert-secondary py-2 small mb-3">
+          Nenhum anexo enviado.
+        </div>
+        {% endif %}
+
+        <h6 class="text-primary border-bottom pb-2 fw-bold mt-3">
+          <i class="bi bi-sliders"></i> Operação
+        </h6>
+
+        <div class="row g-2 mb-2">
+          <div class="col-6">
+            <small class="text-muted d-block">Tipo de Visita:</small>
+            <strong class="text-capitalize">{{ p.tipo_visita or '--' }}</strong>
+          </div>
+          <div class="col-6">
+            <small class="text-muted d-block">Altura:</small>
+            <strong>{{ p.altura_voo or '--' }}</strong>
+          </div>
+        </div>
+
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <small class="text-muted d-block">Criadouro?</small>
+            {% if p.criadouro %}
+              <span class="badge bg-danger">SIM</span>
+            {% else %}
+              <span class="badge bg-secondary">NÃO</span>
+            {% endif %}
+          </div>
+          <div class="col-6">
+            <small class="text-muted d-block">Apoio CET?</small>
+            {% if p.apoio_cet %}
+              <span class="badge bg-warning text-dark">SIM</span>
+            {% else %}
+              <span class="badge bg-secondary">NÃO</span>
+            {% endif %}
+          </div>
+        </div>
+
+        {% if p.observacao %}
+        <div class="p-2 rounded border mb-3">
+          <small class="text-muted d-block fw-bold">Observação do Usuário:</small>
+          <em class="small">"{{ p.observacao }}"</em>
+        </div>
+        {% endif %}
+
+        {% if p.status == 'NEGADO' %}
+        <div class="alert alert-danger mb-0">
+          <strong class="d-block"><i class="bi bi-x-circle"></i> Pedido Negado</strong>
+          <small>{{ p.justificativa }}</small>
+        </div>
+        {% elif p.status == 'APROVADO' %}
+        <div class="alert alert-success mb-0">
+          <strong class="d-block"><i class="bi bi-check-circle"></i> Pedido Aprovado</strong>
+          <small>Protocolo: {{ p.protocolo }}</small>
+        </div>
+        {% endif %}
+
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+
     </div>
+  </div>
 </div>
 {% endfor %}
 
@@ -248,77 +299,46 @@
     background: rgba(0,0,0,.02);
     border-radius: 12px;
   }
-/* =========================
-   Chatbot UVIS - Dark Mode
-   (body.dark-mode)
-========================= */
 
-body.dark-mode #uvisChatbot.offcanvas {
-  background: #152233;
-  color: var(--color-text-main);
-  border-left: 1px solid #233549;
-}
+  /* Dark Mode (body.dark-mode) */
+  body.dark-mode #uvisChatbot.offcanvas {
+    background: #152233;
+    color: var(--color-text-main);
+    border-left: 1px solid #233549;
+  }
+  body.dark-mode #uvisChatbot .offcanvas-header {
+    background: #152233;
+    border-bottom: 1px solid #233549;
+  }
+  body.dark-mode #uvisChatbot .offcanvas-title { color: #ffffff; }
+  body.dark-mode #uvisChatbot .btn-close { filter: invert(1); }
+  body.dark-mode #uvisChatbot .offcanvas-body { color: var(--color-text-main); }
+  body.dark-mode #uvisChatbot .uvis-chat-messages { background: rgba(255, 255, 255, 0.04); }
 
-body.dark-mode #uvisChatbot .offcanvas-header {
-  background: #152233;
-  border-bottom: 1px solid #233549;
-}
-
-body.dark-mode #uvisChatbot .offcanvas-title {
-  color: #ffffff;
-}
-
-body.dark-mode #uvisChatbot .btn-close {
-  filter: invert(1); /* igual seu modal no dark mode */
-}
-
-body.dark-mode #uvisChatbot .offcanvas-body {
-  color: var(--color-text-main);
-}
-
-body.dark-mode #uvisChatbot .uvis-chat-messages {
-  background: rgba(255, 255, 255, 0.04);
-}
-
-/* bolhas */
-body.dark-mode #uvisChatbot .uvis-chat-bubble.bot {
-  background: #1c2b3f !important;
-  border: 1px solid #233549 !important;
-  color: var(--color-text-main) !important;
-}
-
-body.dark-mode #uvisChatbot .uvis-chat-bubble.user {
-  background: var(--color-primary) !important;
-  color: #ffffff !important;
-}
-
-/* input */
-body.dark-mode #uvisChatbot .form-control {
-  background: #1c2b3f !important;
-  border: 1px solid #334155 !important;
-  color: var(--color-text-main) !important;
-}
-
-body.dark-mode #uvisChatbot .form-control::placeholder {
-  color: var(--color-text-muted) !important;
-}
-
-/* botões rápidos */
-body.dark-mode #uvisChatbot .btn-outline-secondary {
-  color: var(--color-text-muted) !important;
-  border-color: #334155 !important;
-}
-
-body.dark-mode #uvisChatbot .btn-outline-secondary:hover {
-  background: rgba(255, 255, 255, 0.06) !important;
-  color: var(--color-text-main) !important;
-}
-
-/* texto de ajuda no rodapé (pra não ficar claro demais) */
-body.dark-mode #uvisChatbot small.text-muted {
-  color: var(--color-text-muted) !important;
-}
-
+  body.dark-mode #uvisChatbot .uvis-chat-bubble.bot {
+    background: #1c2b3f !important;
+    border: 1px solid #233549 !important;
+    color: var(--color-text-main) !important;
+  }
+  body.dark-mode #uvisChatbot .uvis-chat-bubble.user {
+    background: var(--color-primary) !important;
+    color: #ffffff !important;
+  }
+  body.dark-mode #uvisChatbot .form-control {
+    background: #1c2b3f !important;
+    border: 1px solid #334155 !important;
+    color: var(--color-text-main) !important;
+  }
+  body.dark-mode #uvisChatbot .form-control::placeholder { color: var(--color-text-muted) !important; }
+  body.dark-mode #uvisChatbot .btn-outline-secondary {
+    color: var(--color-text-muted) !important;
+    border-color: #334155 !important;
+  }
+  body.dark-mode #uvisChatbot .btn-outline-secondary:hover {
+    background: rgba(255, 255, 255, 0.06) !important;
+    color: var(--color-text-main) !important;
+  }
+  body.dark-mode #uvisChatbot small.text-muted { color: var(--color-text-muted) !important; }
 </style>
 
 <button class="btn btn-primary uvis-chat-btn" type="button"
@@ -381,7 +401,6 @@ body.dark-mode #uvisChatbot small.text-muted {
   }
 
   function renderBotHtml(text) {
-    // Respostas vêm do backend (texto fixo), mas vamos escapar e só permitir **negrito** + quebras de linha.
     let html = escapeHtml(text);
     html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
     html = html.replace(/\n/g, "<br>");
@@ -395,11 +414,8 @@ body.dark-mode #uvisChatbot small.text-muted {
     const bubble = document.createElement("div");
     bubble.className = "uvis-chat-bubble " + who + " " + (who === "user" ? "bg-primary text-white" : "bg-white border");
 
-    if (who === "bot") {
-      bubble.innerHTML = renderBotHtml(text);
-    } else {
-      bubble.textContent = text;
-    }
+    if (who === "bot") bubble.innerHTML = renderBotHtml(text);
+    else bubble.textContent = text;
 
     row.appendChild(bubble);
     msgs.appendChild(row);
@@ -453,7 +469,6 @@ body.dark-mode #uvisChatbot small.text-muted {
     }
   }
 
-  // mensagem inicial
   addMsg("Olá! Me diga sua dúvida sobre o sistema (status, nova solicitação, CEP, checklist, notificações...).", "bot");
 
   sendBtn.addEventListener("click", () => ask(input.value));

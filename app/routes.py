@@ -13,6 +13,10 @@ from io import BytesIO
 from flask import send_file
 from datetime import datetime, date 
 import tempfile
+import os
+import uuid
+from werkzeug.utils import secure_filename
+from flask import current_app, send_from_directory
 from sqlalchemy.orm import joinedload
 
 print("--- ROTAS CARREGADAS COM SUCESSO ---")
@@ -42,6 +46,19 @@ def datetimeformat(value, format='%d-%m-%y'):
         return datetime.strptime(value, "%Y-%m-%d").strftime(format)
     except:
         return value  # se falhar, retorna como está
+
+def get_upload_folder():
+    # pasta dentro do projeto: /seu_projeto/upload-files
+    folder = os.path.join(current_app.root_path, '..', 'upload-files')
+    folder = os.path.abspath(folder)
+    os.makedirs(folder, exist_ok=True)
+    return folder
+
+ALLOWED_EXTENSIONS = {"pdf", "png", "jpg", "jpeg", "doc", "docx", "xls", "xlsx"}
+
+def allowed_file(filename: str) -> bool:
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
 
 @bp.context_processor
 def inject_user():
@@ -305,28 +322,74 @@ def exportar_excel():
     )
 
 
-# --- ROTA DE ATUALIZAÇÃO SIMPLES (Admin/Operário) ---
 @bp.route('/admin/atualizar/<int:id>', methods=['POST'])
 def atualizar(id):
-    # AJUSTE CHAVE: Permite APENAS 'admin' E 'operario'
     if session.get('user_tipo') not in ['admin', 'operario']:
         flash('Permissão negada para esta ação.', 'danger')
         return redirect(url_for('main.admin_dashboard'))
 
     pedido = Solicitacao.query.get_or_404(id)
 
-    # Campos de Geo/Status:
+    # Campos atuais (como já está)
     pedido.protocolo = request.form.get('protocolo')
     pedido.status = request.form.get('status')
     pedido.justificativa = request.form.get('justificativa')
     pedido.latitude = request.form.get('latitude')
     pedido.longitude = request.form.get('longitude')
 
+    # ✅ NOVO: arquivo
+    file = request.files.get("anexo")
+    if file and file.filename:
+        if not allowed_file(file.filename):
+            flash("Tipo de arquivo não permitido.", "warning")
+            return redirect(url_for('main.admin_dashboard'))
+
+        original = secure_filename(file.filename)
+        ext = original.rsplit(".", 1)[1].lower()
+        unique_name = f"sol_{pedido.id}_{uuid.uuid4().hex}.{ext}"
+
+        upload_folder = get_upload_folder()
+        save_path = os.path.join(upload_folder, unique_name)
+        file.save(save_path)
+
+        # grava no banco (caminho relativo)
+        pedido.anexo_path = f"upload-files/{unique_name}"
+        pedido.anexo_nome = original
 
     db.session.commit()
     flash('Pedido atualizado com sucesso!', 'success')
-
     return redirect(url_for('main.admin_dashboard'))
+
+@bp.route("/admin/solicitacao/<int:id>/anexo", endpoint="baixar_anexo_admin")
+def baixar_anexo_admin(id):
+    if "user_id" not in session:
+        return redirect(url_for("main.login"))
+
+    user_tipo = session.get("user_tipo")
+    user_id = int(session.get("user_id"))
+
+    pedido = Solicitacao.query.get_or_404(id)
+
+    # ✅ Admin/Operário/Visualizar: pode baixar qualquer
+    if user_tipo in ["admin", "operario", "visualizar"]:
+        pass
+    # ✅ UVIS: só pode baixar se for o dono
+    elif user_tipo == "uvis":
+        if pedido.usuario_id != user_id:
+            flash("Permissão negada.", "danger")
+            return redirect(url_for("main.dashboard"))
+    else:
+        flash("Permissão negada.", "danger")
+        return redirect(url_for("main.login"))
+
+    if not pedido.anexo_path:
+        flash("Essa solicitação não tem anexo.", "warning")
+        return redirect(url_for("main.admin_dashboard"))
+
+    upload_folder = get_upload_folder()
+    filename = pedido.anexo_path.replace("upload-files/", "", 1)
+    return send_from_directory(upload_folder, filename, as_attachment=True)
+
 
 
 # --- NOVO PEDIDO ---
@@ -1698,3 +1761,38 @@ def uvis_chatbot():
         "matched": best["title"],
         "confidence": best_score,
     }), 200
+@bp.route("/solicitacao/<int:id>/anexo", endpoint="baixar_anexo")
+@bp.route("/admin/solicitacao/<int:id>/anexo", endpoint="baixar_anexo")
+def baixar_anexo(id):
+    if "user_id" not in session:
+        return redirect(url_for("main.login"))
+
+    user_tipo = session.get("user_tipo")
+    user_id = int(session.get("user_id"))
+
+    pedido = Solicitacao.query.get_or_404(id)
+
+    # ✅ Permissões:
+    # Admin/Operário/Visualizar: pode baixar qualquer um
+    # UVIS: só pode baixar se for dono da solicitação
+    if user_tipo not in ["admin", "operario", "visualizar", "uvis"]:
+        flash("Permissão negada.", "danger")
+        return redirect(url_for("main.dashboard"))
+
+    if user_tipo == "uvis" and pedido.usuario_id != user_id:
+        flash("Permissão negada.", "danger")
+        return redirect(url_for("main.dashboard"))
+
+    if not pedido.anexo_path:
+        flash("Essa solicitação não tem anexo.", "warning")
+        return redirect(url_for("main.dashboard"))
+
+    upload_folder = os.path.abspath(os.path.join(bp.root_path, "..", "..", "upload-files"))
+    filename = pedido.anexo_path.replace("upload-files/", "", 1)
+
+    file_path = os.path.join(upload_folder, filename)
+    if not os.path.exists(file_path):
+        flash("Arquivo não encontrado no servidor.", "warning")
+        return redirect(url_for("main.dashboard"))
+
+    return send_from_directory(upload_folder, filename, as_attachment=True)
