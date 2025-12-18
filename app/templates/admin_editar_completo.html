@@ -80,7 +80,7 @@
                             <select id="tipo_visita" name="tipo_visita" class="form-select">
                                 {% set tv = pedido.tipo_visita or '' %}
                                 <option value="Monitoramento" {% if tv == 'Monitoramento' %}selected{% endif %}>Monitoramento</option>
-                                <option value="Aedes Aegypti" {% if tv == 'Aedes Aegypti' %}selected{% endif %}>Aedes Aegypti</option>
+                                <option value="Aedes" {% if tv == 'Aedes' %}selected{% endif %}>Aedes</option>
                                 <option value="Culex" {% if tv == 'Culex' %}selected{% endif %}>Culex</option>                                 
                             </select>
                         </div>

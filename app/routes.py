@@ -692,6 +692,8 @@ except Exception:
     MATPLOTLIB_AVAILABLE = False
 
 @bp.route('/admin/exportar_relatorio_pdf')
+
+
 def exportar_relatorio_pdf():
     # -------------------------
     # 1. Parâmetros e filtros
@@ -714,6 +716,14 @@ def exportar_relatorio_pdf():
     total_recusadas = sum(1 for s, u in query_results if s.status == "NEGADO")
     total_analise = sum(1 for s, u in query_results if s.status == "EM ANÁLISE")
     total_pendentes = sum(1 for s, u in query_results if s.status == "PENDENTE")
+
+    STATUS_COLORS = {
+    "APROVADO": "#2ecc71",                    # Verde
+    "APROVADO COM RECOMENDAÇÕES": "#ee650a",  # Laranja
+    "EM ANÁLISE": "#f1c40f",                  # Amarelo
+    "PENDENTE": "#3498db",                    # Azul
+    "NEGADO": "#e74c3c",                      # Vermelho
+}
 
     # 4. Buscas agrupadas
     def aplicar_filtros_agrupados(query):
@@ -971,6 +981,10 @@ def exportar_relatorio_pdf():
             # Donut: status
             labels = [s for s, _ in dados_status]
             values = [c for _, c in dados_status]
+            colors_status = [
+            STATUS_COLORS.get(s, "#bdc3c7")  # cor padrão caso apareça status inesperado
+            for s in labels
+            ]
             total = sum(values) or 1
 
             def autopct(p):
@@ -978,13 +992,14 @@ def exportar_relatorio_pdf():
 
             fig1, ax1 = plt.subplots(figsize=(5.2, 2.2))
             wedges, *_ = ax1.pie(
-                values or [1],
-                labels=None,
-                autopct=autopct,
-                startangle=90,
-                pctdistance=0.75,
-                textprops={'fontsize': 8}
-            )
+            values or [1],
+            labels=None,
+            colors=colors_status,  
+            autopct=autopct,
+            startangle=90,
+            pctdistance=0.75,
+            textprops={'fontsize': 8}
+        )
             centre_circle = plt.Circle((0,0), 0.55, fc='white')
             ax1.add_artist(centre_circle)
             ax1.legend(wedges, labels, loc='center left', bbox_to_anchor=(1.02, 0.5),
