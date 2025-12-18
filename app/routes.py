@@ -2036,3 +2036,357 @@ def baixar_anexo(id):
         return redirect(url_for("main.dashboard"))
 
     return send_from_directory(upload_folder, filename, as_attachment=True)
+
+@bp.route("/admin/uvis/novo", methods=["GET", "POST"], endpoint="admin_uvis_novo")
+def admin_uvis_novo():
+    if "user_id" not in session:
+        flash("Faça login para continuar.", "warning")
+        return redirect(url_for("main.login"))
+
+    # SOMENTE ADMIN
+    if session.get("user_tipo") != "admin":
+        flash("Acesso restrito ao administrador.", "danger")
+        return redirect(url_for("main.dashboard"))
+
+    if request.method == "POST":
+        nome_uvis = (request.form.get("nome_uvis") or "").strip()
+        regiao = (request.form.get("regiao") or "").strip() or None
+        codigo_setor = (request.form.get("codigo_setor") or "").strip() or None
+
+        login = (request.form.get("login") or "").strip()
+        senha = request.form.get("senha") or ""
+        confirmar = request.form.get("confirmar") or ""
+
+        if not nome_uvis or not login or not senha:
+            flash("Preencha: Nome da UVIS, Login e Senha.", "warning")
+            return render_template("admin_uvis_novo.html")
+
+        if senha != confirmar:
+            flash("As senhas não conferem.", "warning")
+            return render_template("admin_uvis_novo.html")
+
+        novo_user = Usuario(
+            nome_uvis=nome_uvis,
+            regiao=regiao,
+            codigo_setor=codigo_setor,
+            login=login,
+            tipo_usuario="uvis",
+        )
+        novo_user.set_senha(senha)
+
+        try:
+            db.session.add(novo_user)
+            db.session.commit()
+            flash("UVIS cadastrada com sucesso!", "success")
+            return redirect(url_for("main.admin_dashboard"))
+        except IntegrityError:
+            db.session.rollback()
+            flash("Esse login já está em uso. Escolha outro.", "danger")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Erro ao cadastrar UVIS: {e}", "danger")
+
+    return render_template("admin_uvis_novo.html")
+@bp.route("/admin/uvis", methods=["GET"], endpoint="admin_uvis_listar")
+def admin_uvis_listar():
+    # precisa estar logado
+    if "user_id" not in session:
+        flash("Faça login para continuar.", "warning")
+        return redirect(url_for("main.login"))
+
+    # SOMENTE ADMIN
+    if session.get("user_tipo") != "admin":
+        flash("Acesso restrito ao administrador.", "danger")
+        return redirect(url_for("main.dashboard"))
+
+    # filtros (GET)
+    q = (request.args.get("q") or "").strip()
+    regiao = (request.args.get("regiao") or "").strip()
+    codigo_setor = (request.args.get("codigo_setor") or "").strip()
+
+    query = Usuario.query.filter(Usuario.tipo_usuario == "uvis")
+
+    if q:
+        query = query.filter(
+            db.or_(
+                Usuario.nome_uvis.ilike(f"%{q}%"),
+                Usuario.login.ilike(f"%{q}%")
+            )
+        )
+
+    if regiao:
+        query = query.filter(Usuario.regiao.ilike(f"%{regiao}%"))
+
+    if codigo_setor:
+        query = query.filter(Usuario.codigo_setor.ilike(f"%{codigo_setor}%"))
+
+    page = request.args.get("page", 1, type=int)
+    paginacao = query.order_by(Usuario.nome_uvis.asc()).paginate(
+        page=page, per_page=10, error_out=False
+    )
+
+    return render_template(
+        "admin_uvis_listar.html",
+        uvis=paginacao.items,
+        paginacao=paginacao,
+        q=q,
+        regiao=regiao,
+        codigo_setor=codigo_setor
+    )
+@bp.route("/admin/uvis/<int:id>/editar", methods=["GET", "POST"], endpoint="admin_uvis_editar")
+def admin_uvis_editar(id):
+    if "user_id" not in session:
+        flash("Faça login para continuar.", "warning")
+        return redirect(url_for("main.login"))
+
+    if session.get("user_tipo") != "admin":
+        flash("Acesso restrito ao administrador.", "danger")
+        return redirect(url_for("main.dashboard"))
+
+    uvis = Usuario.query.get_or_404(id)
+
+    # garante que está editando uma UVIS
+    if uvis.tipo_usuario != "uvis":
+        flash("Registro inválido para edição.", "danger")
+        return redirect(url_for("main.admin_uvis_listar"))
+
+    if request.method == "POST":
+        nome_uvis = (request.form.get("nome_uvis") or "").strip()
+        regiao = (request.form.get("regiao") or "").strip() or None
+        codigo_setor = (request.form.get("codigo_setor") or "").strip() or None
+        login = (request.form.get("login") or "").strip()
+
+        senha = (request.form.get("senha") or "").strip()
+        confirmar = (request.form.get("confirmar") or "").strip()
+
+        if not nome_uvis or not login:
+            flash("Preencha: Nome da UVIS e Login.", "warning")
+            return render_template("admin_uvis_editar.html", uvis=uvis)
+
+        if senha:
+            if senha != confirmar:
+                flash("As senhas não conferem.", "warning")
+                return render_template("admin_uvis_editar.html", uvis=uvis)
+            uvis.set_senha(senha)
+
+        uvis.nome_uvis = nome_uvis
+        uvis.regiao = regiao
+        uvis.codigo_setor = codigo_setor
+        uvis.login = login
+
+        try:
+            db.session.commit()
+            flash("UVIS atualizada com sucesso!", "success")
+            return redirect(url_for("main.admin_uvis_listar"))
+        except IntegrityError:
+            db.session.rollback()
+            flash("Esse login já está em uso. Escolha outro.", "danger")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Erro ao salvar: {e}", "danger")
+
+    return render_template("admin_uvis_editar.html", uvis=uvis)
+@bp.route("/admin/uvis/<int:id>/excluir", methods=["POST"], endpoint="admin_uvis_excluir")
+def admin_uvis_excluir(id):
+    if session.get("user_tipo") != "admin":
+        flash("Permissão negada. Apenas administradores podem deletar registros.", "danger")
+        return redirect(url_for("main.admin_uvis_listar"))
+
+    uvis = Usuario.query.get_or_404(id)
+
+    if uvis.tipo_usuario != "uvis":
+        flash("Registro inválido para exclusão.", "danger")
+        return redirect(url_for("main.admin_uvis_listar"))
+
+    # impede excluir se houver solicitações
+    existe = Solicitacao.query.filter_by(usuario_id=uvis.id).first()
+    if existe:
+        flash("Não é possível excluir: esta UVIS possui solicitações vinculadas.", "warning")
+        return redirect(url_for("main.admin_uvis_listar"))
+
+    try:
+        db.session.delete(uvis)
+        db.session.commit()
+        flash("UVIS excluída com sucesso!", "success")
+    except Exception:
+        db.session.rollback()
+        flash("Erro ao excluir UVIS.", "danger")
+
+    return redirect(url_for("main.admin_uvis_listar"))
+
+# ==========================
+# CHATBOT ADMIN (FAQ inteligente)
+# ==========================
+import re
+import unicodedata
+from flask import jsonify, request, session
+
+def _norm_admin(text: str) -> str:
+    if not text:
+        return ""
+    text = text.strip().lower()
+    text = unicodedata.normalize("NFKD", text)
+    text = "".join(ch for ch in text if not unicodedata.combining(ch))
+    text = re.sub(r"\s+", " ", text)
+    return text
+
+def _clean_answer(text: str) -> str:
+    """Remove markdown simples (**negrito**, `code`, etc) e normaliza."""
+    if not text:
+        return ""
+    text = re.sub(r"\*\*(.*?)\*\*", r"\1", text)   # remove ** **
+    text = text.replace("`", "")                  # remove ` `
+    text = re.sub(r"\n{3,}", "\n\n", text)         # evita muitas quebras
+    return text.strip()
+
+ADMIN_FAQ = [
+    {
+        "title": "Perfis e permissões",
+        "keywords": ["acesso", "perfil", "permissao", "permissões", "admin", "operario", "operário", "visualizar", "quem pode"],
+        "answer": (
+            "Perfis do painel:\n"
+            "- Administrador: acesso total (editar, excluir, gerenciar UVIS, relatórios e agenda).\n"
+            "- Operário: consegue salvar decisões (status/protocolo/justificativa).\n"
+            "- Visualizar: apenas leitura.\n"
+        ),
+    },
+    {
+        "title": "Filtros no painel",
+        "keywords": ["filtro", "filtrar", "status", "unidade", "uvis", "regiao", "região", "buscar", "pesquisar"],
+        "answer": (
+            "No painel você pode filtrar por:\n"
+            "- Status\n"
+            "- Unidade (UVIS)\n"
+            "- Região\n"
+            "Dica: filtros são pela URL (GET) e mudam a listagem."
+        ),
+    },
+    {
+        "title": "Salvar decisão",
+        "keywords": ["salvar", "decisao", "decisão", "status", "protocolo", "justificativa", "aprovado", "negado", "analise", "recomendacoes", "recomendações"],
+        "answer": (
+            "Em cada solicitação você pode definir:\n"
+            "- Status\n"
+            "- Protocolo\n"
+            "- Justificativa (principalmente se negar ou orientar)\n"
+            "Se o perfil for ‘Visualizar’, fica somente leitura."
+        ),
+    },
+    {
+        "title": "Editar completo",
+        "keywords": ["editar", "editar completo", "corrigir", "alterar", "data", "hora", "endereco", "endereço", "agendamento"],
+        "answer": (
+            "Editar completo serve para corrigir todos os dados do pedido:\n"
+            "data/hora, endereço, foco, tipo de visita, altura e observações.\n"
+            "Em alguns casos o sistema pode gerar notificação para a unidade."
+        ),
+    },
+    {
+        "title": "Excluir solicitação",
+        "keywords": ["excluir", "deletar", "apagar", "remover"],
+        "answer": (
+            "Excluir remove a solicitação definitivamente.\n"
+            "Normalmente é restrito ao Administrador e pede confirmação."
+        ),
+    },
+    {
+        "title": "Anexos",
+        "keywords": ["anexo", "arquivo", "upload", "baixar", "download", "pdf", "png", "jpg", "doc", "xlsx"],
+        "answer": (
+            "Você pode anexar arquivos na solicitação e depois baixar.\n"
+            "Se o anexo não aparecer, verifique se foi salvo corretamente e se o arquivo é permitido."
+        ),
+    },
+    {
+        "title": "GPS e mapa",
+        "keywords": ["gps", "latitude", "longitude", "coordenadas", "mapa", "google maps"],
+        "answer": (
+            "Latitude/Longitude ajudam na precisão.\n"
+            "Quando preenchidas, o botão de mapa abre o local no Google Maps."
+        ),
+    },
+    {
+        "title": "Exportar Excel do painel",
+        "keywords": ["exportar", "excel", "xlsx", "planilha", "baixar excel"],
+        "answer": (
+            "Existe exportação para Excel a partir do painel.\n"
+            "Quando você usa filtros (status/unidade/região), isso tende a refletir no arquivo exportado."
+        ),
+    },
+    {
+        "title": "Agenda",
+        "keywords": ["agenda", "calendario", "calendário", "eventos", "mes", "mês", "ano", "exportar agenda"],
+        "answer": (
+            "A Agenda mostra agendamentos por período.\n"
+            "Você pode filtrar (quando disponível) e exportar."
+        ),
+    },
+    {
+        "title": "Relatórios",
+        "keywords": ["relatorio", "relatórios", "pdf", "grafico", "gráfico", "totais", "mes", "ano"],
+        "answer": (
+            "Relatórios permitem filtrar por mês/ano e, quando disponível, por unidade.\n"
+            "Também podem ter exportação em PDF e Excel."
+        ),
+    },
+    {
+        "title": "Gestão de UVIS",
+        "keywords": ["uvis", "cadastrar uvis", "lista uvis", "gerenciar uvis", "unidade", "login", "senha", "codigo setor", "código setor", "regiao", "região"],
+        "answer": (
+            "Gestão de UVIS inclui:\n"
+            "- Listar UVIS\n"
+            "- Cadastrar UVIS\n"
+            "- Editar UVIS (inclusive redefinir senha)\n"
+            "Atenção: login não pode repetir."
+        ),
+    },
+]
+
+@bp.route("/api/admin/chatbot", methods=["POST"])
+def admin_chatbot():
+    if "user_id" not in session:
+        return jsonify({"answer": "Sessão expirada. Faça login novamente."}), 401
+
+    if session.get("user_tipo") not in ["admin", "operario", "visualizar"]:
+        return jsonify({"answer": "Acesso negado para este chatbot."}), 403
+
+    payload = request.get_json(silent=True) or {}
+    msg = (payload.get("message") or "").strip()
+
+    if not msg:
+        return jsonify({"answer": "Digite sua dúvida (ex.: como exportar Excel?)."}), 400
+
+    nmsg = _norm_admin(msg)
+
+    best = None
+    best_score = 0
+
+    for item in ADMIN_FAQ:
+        score = 0
+        for kw in item["keywords"]:
+            if kw in nmsg:
+                score += 1
+        if score > best_score:
+            best_score = score
+            best = item
+
+    if not best or best_score == 0:
+        sugestoes = [
+            "Como filtrar por status/unidade/região?",
+            "Como salvar decisão (status/protocolo/justificativa)?",
+            "Como editar completo?",
+            "Como exportar Excel?",
+            "Como funciona Agenda/Relatórios?",
+            "Como gerenciar UVIS?",
+        ]
+        return jsonify({
+            "answer": "Não achei essa dúvida direto no guia.\n\nSugestões:\n- " + "\n- ".join(sugestoes),
+            "matched": None,
+            "confidence": 0,
+        }), 200
+
+    return jsonify({
+        "answer": _clean_answer(best["answer"]),
+        "matched": best["title"],
+        "confidence": best_score,
+    }), 200

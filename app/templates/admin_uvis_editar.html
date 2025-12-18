@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4" style="max-width: 760px;">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h3 class="m-0">Editar UVIS</h3>
+    <a class="btn btn-outline-secondary" href="{{ url_for('main.admin_uvis_listar') }}">Voltar</a>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <form method="POST">
+        <div class="row g-3">
+          <div class="col-md-8">
+            <label class="form-label">Nome da UVIS *</label>
+            <input name="nome_uvis" class="form-control" required value="{{ uvis.nome_uvis }}">
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Região</label>
+            <input name="regiao" class="form-control" value="{{ uvis.regiao or '' }}">
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Código do Setor</label>
+            <input name="codigo_setor" class="form-control" value="{{ uvis.codigo_setor or '' }}">
+          </div>
+
+          <div class="col-md-8">
+            <label class="form-label">Login *</label>
+            <input name="login" class="form-control" required value="{{ uvis.login }}">
+          </div>
+
+          <hr class="my-2">
+
+          <div class="col-md-6">
+            <label class="form-label">Nova Senha (opcional)</label>
+            <input name="senha" type="password" class="form-control">
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Confirmar Nova Senha</label>
+            <input name="confirmar" type="password" class="form-control">
+          </div>
+          <div class="col-12">
+            <small class="text-muted">Se deixar a senha vazia, a senha atual permanece.</small>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2 mt-4">
+          <button class="btn btn-primary" type="submit">Salvar</button>
+          <a class="btn btn-outline-secondary" href="{{ url_for('main.admin_uvis_listar') }}">Cancelar</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,173 @@
+{% extends "base.html" %} {% block content %}
+<div class="container py-4">
+  <div
+    class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3"
+  >
+    <div>
+      <h3 class="m-0">UVIS cadastradas</h3>
+     
+      
+    </div>
+
+    <div class="d-flex gap-2">
+      <a
+        class="btn btn-outline-secondary"
+        href="{{ url_for('main.admin_dashboard') }}"
+      >
+        Voltar
+      </a>
+      <a class="btn btn-primary" href="{{ url_for('main.admin_uvis_novo') }}">
+        + Nova UVIS
+      </a>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card shadow-sm mb-3">
+    <div class="card-body">
+      <form method="GET" class="row g-2 align-items-end">
+        <div class="col-md-5">
+          <label class="form-label">Buscar (nome ou login)</label>
+          <input
+            class="form-control"
+            name="q"
+            value="{{ q }}"
+            placeholder="Ex: UVIS Centro ou uvis.centro"
+          />
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Região</label>
+          <input
+            class="form-control"
+            name="regiao"
+            value="{{ regiao }}"
+            placeholder="Ex: Norte"
+          />
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Código do setor</label>
+          <input
+            class="form-control"
+            name="codigo_setor"
+            value="{{ codigo_setor }}"
+            placeholder="Ex: 123A"
+          />
+        </div>
+
+        <div class="col-12 d-flex gap-2 mt-2">
+          <button class="btn btn-success" type="submit">
+            <i class="bi bi-search me-1"></i> Filtrar
+          </button>
+          <a
+            class="btn btn-outline-secondary"
+            href="{{ url_for('main.admin_uvis_listar') }}"
+          >
+            Limpar
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Tabela -->
+  <div class="card shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 80px">ID</th>
+              <th>Nome</th>
+              <th>Região</th>
+              <th>Cód. Setor</th>
+              <th>Login</th>
+              <th style="width: 160px">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if uvis and uvis|length > 0 %} {% for u in uvis %}
+            <tr>
+              <td class="text-muted">{{ u.id }}</td>
+              <td class="fw-semibold">{{ u.nome_uvis }}</td>
+              <td>{{ u.regiao or "-" }}</td>
+              <td>{{ u.codigo_setor or "-" }}</td>
+              <td><code>{{ u.login }}</code></td>
+              <td>
+                <div class="d-flex gap-2">
+                  <a
+                    class="btn btn-sm btn-outline-primary"
+                    href="{{ url_for('main.admin_uvis_editar', id=u.id) }}"
+                  >
+                    <i class="bi bi-pencil-square me-1"></i>Editar
+                  </a>
+
+                  <form
+                    class="form-deletar"
+                    method="POST"
+                    action="{{ url_for('main.admin_uvis_excluir', id=u.id) }}"
+                  >
+                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                      <i class="bi bi-trash me-1"></i>Excluir
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% endfor %} {% else %}
+            <tr>
+              <td colspan="5" class="text-center py-4 text-muted">
+                Nenhuma UVIS encontrada.
+              </td>
+            </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Paginação -->
+    {% if paginacao.pages > 1 %}
+    <div class="card-footer bg-transparent">
+      <nav>
+        <ul class="pagination mb-0 flex-wrap">
+          <li
+            class="page-item {% if not paginacao.has_prev %}disabled{% endif %}"
+          >
+            <a
+              class="page-link"
+              href="{{ url_for('main.admin_uvis_listar', page=paginacao.prev_num, q=q, regiao=regiao, codigo_setor=codigo_setor) }}"
+            >
+              Anterior
+            </a>
+          </li>
+
+          {% for p in range(1, paginacao.pages + 1) %}
+          <li class="page-item {% if p == paginacao.page %}active{% endif %}">
+            <a
+              class="page-link"
+              href="{{ url_for('main.admin_uvis_listar', page=p, q=q, regiao=regiao, codigo_setor=codigo_setor) }}"
+            >
+              {{ p }}
+            </a>
+          </li>
+          {% endfor %}
+
+          <li
+            class="page-item {% if not paginacao.has_next %}disabled{% endif %}"
+          >
+            <a
+              class="page-link"
+              href="{{ url_for('main.admin_uvis_listar', page=paginacao.next_num, q=q, regiao=regiao, codigo_setor=codigo_setor) }}"
+            >
+              Próxima
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
