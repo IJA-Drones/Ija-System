@@ -116,4 +116,4 @@ def verificar_banco():
 if __name__ == "__main__":
     verificar_banco()
     print(">>> INICIANDO SERVIDOR FLASK...")
-    app.run(debug=True)
+    app.run(debug=False)

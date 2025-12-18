@@ -23,10 +23,9 @@ def create_app():
     login_manager.init_app(app)
     login_manager.login_view = 'bp.login' # Nome da sua rota de login
 
-    # ESTE É O BLOCO QUE ESTÁ FALTANDO:
     @login_manager.user_loader
     def load_user(user_id):
-        # Importamos o modelo aqui dentro para evitar erros de importação circular
+
         from app.models import Usuario # Verifique se o nome do seu modelo é Usuario ou User
         return Usuario.query.get(int(user_id))
 
