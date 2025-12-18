@@ -2261,6 +2261,26 @@ ADMIN_FAQ = [
             "Dica: filtros são pela URL (GET) e mudam a listagem."
         ),
     },
+      {
+        "title": "Olá! Como posso ajudar?",
+        "keywords": ["olá", "oi", "hello", "hi", "bom dia", "boa tarde", "boa noite", "ajuda", "suporte"],
+        "answer": (
+            "Olá! Sou o assistente virtual do painel administrativo.\n"
+            "Posso ajudar com dúvidas sobre:\n"
+            "- Perfis e permissões\n"
+            "- Filtros no painel\n"
+            "- Salvar decisão\n"
+            "- Editar completo\n"
+            "- Excluir solicitação\n"
+            "- Anexos\n"
+            "- GPS e mapa\n"
+            "- Exportar Excel do painel\n"
+            "- Agenda\n"
+            "- Relatórios\n"
+            "- Gestão de UVIS\n"
+            "Como posso ajudar você hoje?"            
+        ),
+    },
     {
         "title": "Salvar decisão",
         "keywords": ["salvar", "decisao", "decisão", "status", "protocolo", "justificativa", "aprovado", "negado", "analise", "recomendacoes", "recomendações"],
