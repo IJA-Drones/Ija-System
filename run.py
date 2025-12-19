@@ -122,7 +122,7 @@ def verificar_banco():
 if __name__ == "__main__":
 
     verificar_banco()
-    app.run(debug=True, host='127.0.0.1', port=5000)
+    # app.run(debug=True, host='127.0.0.1', port=5000)
     
     # Adicione este print para você saber que ele terminou:
     print(">>> Banco de dados pronto! Passando o controle para o Gunicorn...")
