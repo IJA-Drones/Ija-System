@@ -71,10 +71,10 @@
         <div class="col-12">
     {% if session.user_tipo == "admin" %}
     <div class="calendar-actions mt-2">
-      <a class="btn btn-success"
-        href="{{ url_for('main.agenda_exportar_excel', **request.args.to_dict()) }}">
-        Exportar Excel
-      </a>
+    <a class="btn btn-success" href="{{ url_for('main.agenda_exportar_excel', **request.args.to_dict()) }}">
+    Exportar Excel
+</a>
+
     </div>
     {% endif %}
   </div>

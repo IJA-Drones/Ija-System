@@ -14,7 +14,7 @@
             {# ESTE FORMULÁRIO SERÁ INTERCEPTADO PELO LISTENER UNIVERSAL DO BASE.HTML #}
             <form action="{{ url_for('main.admin_editar_completo', id=pedido.id) }}" method="POST">
                 
-                <h4 class="mb-3 text-secondary">Detalhes do Pedido #{{ pedido.id }} - {{ pedido.autor.nome_uvis }}</h4>
+                <h4 class="mb-3 text-secondary">Detalhes do Pedido #{{ pedido.id }} - {{ pedido.usuario.nome_uvis }}</h4>
                 <hr>
 
                 {# --- SEÇÃO 1: DATA E FOCO --- #}

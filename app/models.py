@@ -1,12 +1,12 @@
 from app import db
-from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+from flask_login import UserMixin
 
 # -------------------------------------------------------------
 # USUÁRIO
 # -------------------------------------------------------------
-class Usuario(db.Model):
+class Usuario(UserMixin, db.Model):
     __tablename__ = 'usuarios'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -91,6 +91,9 @@ class Solicitacao(db.Model):
         db.ForeignKey("usuarios.id"),
         nullable=False
     )
+
+    usuario = db.relationship("Usuario", backref="solicitacoes_uv")
+    
     
 class Notificacao(db.Model):
     __tablename__ = "notificacoes"

@@ -1,44 +1,67 @@
-import json
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
-from app import db
-from app.models import Usuario, Solicitacao, Notificacao
-from flask import jsonify
-from datetime import datetime, date
-from sqlalchemy.exc import IntegrityError
-from datetime import datetime, date
-from flask import json
-from openpyxl import Workbook
-from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
-from openpyxl.utils import get_column_letter
-from io import BytesIO
-from flask import send_file
-from datetime import datetime, date 
-import tempfile
+# ==========================
+# IMPORTS PADRÃO PYTHON
+# ==========================
 import os
-import uuid
+import re
+import tempfile
+import unicodedata
+from datetime import date, datetime
+from io import BytesIO
+import json
+
+
+from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
-from flask import current_app, send_from_directory
+import uuid
+import os
+
+# ==========================
+# FLASK
+# ==========================
+from flask import (Blueprint, after_this_request, current_app, flash, jsonify,
+                   redirect, render_template, request, send_file,
+                   send_from_directory, url_for)
+
+from flask_login import current_user , login_required
+
+# ==========================
+# EXCEL / PDF
+# ==========================
+from openpyxl import Workbook
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.utils import get_column_letter
+from reportlab.lib.pagesizes import landscape
+# ==========================
+# SQLALCHEMY / BANCO
+# ==========================
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
+
+# ==========================
+# APP
+# ==========================
+from app import db
+from app.models import Notificacao, Solicitacao, Usuario
 
 print("--- ROTAS CARREGADAS COM SUCESSO ---")
 
 bp = Blueprint('main', __name__)
+
 @bp.context_processor
-def inject_current_user():
-    class CurrentUser:
-        def __init__(self):
-            # autenticação
-            self.id = session.get("user_id")
-            self.is_authenticated = bool(self.id)
+def inject_globals():
+    notif_count = 0
 
-            # nomes esperados no base.html
-            self.nome_uvis = session.get("user_nome_uvis")
-            self.name = session.get("user_name")
+    if current_user.is_authenticated:
+        if current_user.tipo_usuario in ["admin", "operario", "visualizar"]:
+            notif_count = Notificacao.query.filter_by(lida_em=None).count()
+        else:
+            notif_count = Notificacao.query.filter_by(
+                usuario_id=current_user.id,
+                lida_em=None
+            ).count()
 
-            # tipo de usuário
-            self.tipo_usuario = session.get("user_tipo")
+    return dict(notif_count=notif_count)
 
-    return dict(current_user=CurrentUser())
 
 @bp.app_template_filter('datetimeformat')
 def datetimeformat(value, format='%d-%m-%y'):
@@ -60,54 +83,75 @@ ALLOWED_EXTENSIONS = {"pdf", "png", "jpg", "jpeg", "doc", "docx", "xls", "xlsx"}
 def allowed_file(filename: str) -> bool:
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
-
-@bp.context_processor
-def inject_user():
-    class MockUser:
-        is_authenticated = 'user_id' in session
-        name = session.get('user_nome')
-        id = session.get('user_id')
-        tipo_usuario = session.get('user_tipo')
-    return dict(current_user=MockUser())
-
-# --- Context Processor: Simula o 'current_user' para o HTML ---
-@bp.context_processor
-def inject_user():
-    class MockUser:
-        is_authenticated = 'user_id' in session
-        name = session.get('user_nome')
-        id = session.get('user_id')
-        tipo_usuario = session.get('user_tipo')
-    return dict(current_user=MockUser())
-
 # --- DASHBOARD UVIS ---
 
 @bp.route('/')
+@login_required
 def dashboard():
-    if 'user_id' not in session:
-        return redirect(url_for('main.login'))
 
-    # AJUSTE CHAVE: Se for admin, operario OU visualizar, redireciona para o painel de gestão
-    if session.get('user_tipo') in ['admin', 'operario', 'visualizar']:
+    # Se for admin, operario ou visualizar → painel admin
+    if current_user.tipo_usuario in ['admin', 'operario', 'visualizar']:
         return redirect(url_for('main.admin_dashboard'))
 
-    try:
-        user_id = int(session.get('user_id'))
-    except (ValueError, TypeError):
-        session.clear()
-        flash('Sessão Inválida. Por favor, faça login novamente.', 'warning')
-        return redirect(url_for('main.login'))
+    # Query base: solicitações SOMENTE do usuário logado
+    query = Solicitacao.query.filter_by(usuario_id=current_user.id)
 
-    # 1. Query Base: Pega os pedidos SÓ deste usuário
-    query = Solicitacao.query.filter_by(usuario_id=user_id)
-
-    # 2. Lógica do Filtro: Verifica se veio algo na URL (ex: ?status=PENDENTE)
+    # Filtro por status (?status=...)
     filtro_status = request.args.get('status')
-
     if filtro_status:
         query = query.filter(Solicitacao.status == filtro_status)
 
-    # 3. Lógica da Paginação:
+    # Paginação
+    page = request.args.get("page", 1, type=int)
+    paginacao = query.order_by(
+        Solicitacao.data_criacao.desc()
+    ).paginate(page=page, per_page=6, error_out=False)
+
+    return render_template(
+        'dashboard.html',
+        solicitacoes=paginacao.items,
+        paginacao=paginacao
+    )
+
+# --- PAINEL DE GESTÃO (Visualização para todos) ---
+from flask_login import login_required, current_user
+from datetime import datetime
+
+@bp.route('/admin')
+@login_required
+def admin_dashboard():
+
+    # 🔐 Controle de acesso
+    if current_user.tipo_usuario not in ['admin', 'operario', 'visualizar']:
+        flash('Acesso restrito.', 'danger')
+        return redirect(url_for('main.dashboard'))
+
+    # Pode editar apenas admin e operario
+    is_editable = current_user.tipo_usuario in ['admin', 'operario']
+
+    # --- Captura filtros ---
+    filtro_status = request.args.get("status")
+    filtro_unidade = request.args.get("unidade")
+    filtro_regiao = request.args.get("regiao")
+
+    # --- Query base ---
+    query = Solicitacao.query.join(Usuario)
+
+    # --- Aplicação dos filtros ---
+    if filtro_status:
+        query = query.filter(Solicitacao.status == filtro_status)
+
+    if filtro_unidade:
+        query = query.filter(
+            Usuario.nome_uvis.ilike(f"%{filtro_unidade}%")
+        )
+
+    if filtro_regiao:
+        query = query.filter(
+            Usuario.regiao.ilike(f"%{filtro_regiao}%")
+        )
+
+    # Paginação
     page = request.args.get("page", 1, type=int)
 
     paginacao = query.order_by(
@@ -115,62 +159,20 @@ def dashboard():
     ).paginate(page=page, per_page=6, error_out=False)
 
     return render_template(
-        'dashboard.html',
-        nome=session.get('user_nome'),
-        solicitacoes=paginacao.items,
-        paginacao=paginacao
-    )
-
-# --- PAINEL DE GESTÃO (Visualização para todos) ---
-@bp.route('/admin')
-def admin_dashboard():
-    # AJUSTE CHAVE: Permite 'admin', 'operario' E 'visualizar'
-    if 'user_id' not in session or session.get('user_tipo') not in ['admin', 'operario', 'visualizar']:
-        flash('Acesso restrito.', 'danger')
-        return redirect(url_for('main.login'))
-    
-    # Flag para controlar a renderização dos botões de edição no template
-    is_editable = session.get('user_tipo') in ['admin', 'operario']
-    
-    # --- Captura filtros enviados pelo GET ---
-    filtro_status = request.args.get("status")
-    filtro_unidade = request.args.get("unidade")
-    filtro_regiao = request.args.get("regiao")
-
-    # --- Query base: Necessário dar JOIN com Usuario para filtrar por nome/região ---
-    query = Solicitacao.query.join(Usuario)
-    
-    # 🔑 APLICAÇÃO DOS FILTROS 🔑
-    if filtro_status:
-        query = query.filter(Solicitacao.status == filtro_status)
-
-    if filtro_unidade:
-        query = query.filter(Usuario.nome_uvis.ilike(f"%{filtro_unidade}%"))
-
-    if filtro_regiao:
-        query = query.filter(Usuario.regiao.ilike(f"%{filtro_regiao}%"))
-    # 🔑 FIM APLICAÇÃO DOS FILTROS 🔑
-
-    page = request.args.get("page", 1, type=int)
-
-    paginacao = query.order_by(
-        Solicitacao.data_criacao.desc()
-    ).paginate(page=page, per_page=6)
-
-    # Injeta a data/hora atual (para evitar o erro 'now is undefined' se fosse usado)
-    data_atual = datetime.now() 
-    
-    return render_template(
         'admin.html',
         pedidos=paginacao.items,
         paginacao=paginacao,
         is_editable=is_editable,
-        now=data_atual
+        now=datetime.now()
     )
 
+
 @bp.route('/admin/exportar_excel')
+@login_required
 def exportar_excel():
-    if 'user_id' not in session or session.get('user_tipo') not in ['admin', 'operario']:
+
+    # 🔐 Permissão: somente admin e operario
+    if current_user.tipo_usuario not in ['admin', 'operario']:
         flash('Permissão negada para exportar.', 'danger')
         return redirect(url_for('main.admin_dashboard'))
 
@@ -179,17 +181,29 @@ def exportar_excel():
         filtro_unidade = request.args.get("unidade")
         filtro_regiao = request.args.get("regiao")
 
-        # Usar joinedload evita o erro de "Lazy Loading" fora da sessão no Postgres
-        query = db.session.query(Solicitacao).join(Usuario).options(joinedload(Solicitacao.autor))
+        # Evita Lazy Loading no Postgres
+        query = (
+            db.session.query(Solicitacao)
+            .join(Usuario)
+            .options(joinedload(Solicitacao.autor))
+        )
 
         if filtro_status:
             query = query.filter(Solicitacao.status == filtro_status)
-        if filtro_unidade:
-            query = query.filter(Usuario.nome_uvis.ilike(f"%{filtro_unidade}%"))
-        if filtro_regiao:
-            query = query.filter(Usuario.regiao.ilike(f"%{filtro_regiao}%"))
 
-        pedidos = query.order_by(Solicitacao.data_criacao.desc()).all()
+        if filtro_unidade:
+            query = query.filter(
+                Usuario.nome_uvis.ilike(f"%{filtro_unidade}%")
+            )
+
+        if filtro_regiao:
+            query = query.filter(
+                Usuario.regiao.ilike(f"%{filtro_regiao}%")
+            )
+
+        pedidos = query.order_by(
+            Solicitacao.data_criacao.desc()
+        ).all()
 
         wb = Workbook()
         ws = wb.active
@@ -202,9 +216,18 @@ def exportar_excel():
             "Observação", "Status", "Protocolo", "Justificativa"
         ]
 
-        header_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
+        header_fill = PatternFill(
+            start_color="1F4E78",
+            end_color="1F4E78",
+            fill_type="solid"
+        )
         header_font = Font(color="FFFFFF", bold=True)
-        thin_border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+        thin_border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
 
         for col_num, header in enumerate(headers, 1):
             cell = ws.cell(row=1, column=col_num, value=header)
@@ -214,7 +237,6 @@ def exportar_excel():
             cell.border = thin_border
 
         for row_num, p in enumerate(pedidos, 2):
-            # Fallback seguro para o Autor
             uvis_nome = p.autor.nome_uvis if p.autor else "Não informado"
             uvis_regiao = p.autor.regiao if p.autor else "Não informado"
 
@@ -223,26 +245,33 @@ def exportar_excel():
                 f"{p.bairro or ''} - "
                 f"{(p.cidade or '')}/{(p.uf or '')} - {p.cep or ''}"
             )
-            if getattr(p, 'complemento', None):
+            if p.complemento:
                 endereco_completo += f" - {p.complemento}"
 
-            # Formatação de Data Segura
             data_formatada = ""
             if p.data_agendamento:
                 if isinstance(p.data_agendamento, (date, datetime)):
-                    data_formatada = p.data_agendamento.strftime("%d/%m/%y")
+                    data_formatada = p.data_agendamento.strftime("%d/%m/%Y")
                 else:
-                    try:
-                        data_formatada = datetime.strptime(str(p.data_agendamento), "%Y-%m-%d").strftime("%d/%m/%y")
-                    except:
-                        data_formatada = str(p.data_agendamento)
+                    data_formatada = str(p.data_agendamento)
 
             row = [
-                p.id, uvis_nome, uvis_regiao, data_formatada, str(p.hora_agendamento or ""),
-                endereco_completo, p.latitude or "", p.longitude or "",
-                p.foco, p.tipo_visita or "", p.altura_voo or "",
-                "SIM" if p.apoio_cet else "NÃO", p.observacao or "",
-                p.status, p.protocolo or "", p.justificativa or ""
+                p.id,
+                uvis_nome,
+                uvis_regiao,
+                data_formatada,
+                str(p.hora_agendamento or ""),
+                endereco_completo,
+                p.latitude or "",
+                p.longitude or "",
+                p.foco,
+                p.tipo_visita or "",
+                p.altura_voo or "",
+                "SIM" if p.apoio_cet else "NÃO",
+                p.observacao or "",
+                p.status,
+                p.protocolo or "",
+                p.justificativa or ""
             ]
 
             for col_num, value in enumerate(row, 1):
@@ -253,12 +282,13 @@ def exportar_excel():
         ws.freeze_panes = "A2"
 
         for col in ws.columns:
-            max_length = 0
-            column_letter = col[0].column_letter
-            for cell in col:
-                if cell.value:
-                    max_length = max(max_length, len(str(cell.value)))
-            ws.column_dimensions[column_letter].width = min(max_length + 2, 50)
+            max_length = max(
+                len(str(cell.value)) if cell.value else 0
+                for cell in col
+            )
+            ws.column_dimensions[col[0].column_letter].width = min(
+                max_length + 2, 50
+            )
 
         output = BytesIO()
         wb.save(output)
@@ -272,28 +302,35 @@ def exportar_excel():
         )
 
     except Exception as e:
-        db.session.rollback() # Limpa a transação do Postgres se algo falhar
-        print(f"ERRO EXPORTAR EXCEL: {str(e)}")
-        flash("Erro ao gerar o Excel. Verifique se os dados estão corretos.", "danger")
+        db.session.rollback()
+        print(f"ERRO EXPORTAR EXCEL: {e}")
+        flash(
+            "Erro ao gerar o Excel. Verifique se os dados estão corretos.",
+            "danger"
+        )
         return redirect(url_for('main.admin_dashboard'))
 
 @bp.route('/admin/atualizar/<int:id>', methods=['POST'])
+@login_required
 def atualizar(id):
-    if session.get('user_tipo') not in ['admin', 'operario']:
+
+    # 🔐 Permissão
+    if current_user.tipo_usuario not in ['admin', 'operario']:
         flash('Permissão negada para esta ação.', 'danger')
         return redirect(url_for('main.admin_dashboard'))
 
     pedido = Solicitacao.query.get_or_404(id)
 
-    # Campos atuais (como já está)
+    # --- Atualização de campos ---
     pedido.protocolo = request.form.get('protocolo')
     pedido.status = request.form.get('status')
     pedido.justificativa = request.form.get('justificativa')
     pedido.latitude = request.form.get('latitude')
     pedido.longitude = request.form.get('longitude')
 
-    # ✅ NOVO: arquivo
+    # --- Upload de anexo ---
     file = request.files.get("anexo")
+
     if file and file.filename:
         if not allowed_file(file.filename):
             flash("Tipo de arquivo não permitido.", "warning")
@@ -304,76 +341,51 @@ def atualizar(id):
         unique_name = f"sol_{pedido.id}_{uuid.uuid4().hex}.{ext}"
 
         upload_folder = get_upload_folder()
+        os.makedirs(upload_folder, exist_ok=True)
+
         save_path = os.path.join(upload_folder, unique_name)
         file.save(save_path)
 
-        # grava no banco (caminho relativo)
         pedido.anexo_path = f"upload-files/{unique_name}"
         pedido.anexo_nome = original
 
-    db.session.commit()
-    flash('Pedido atualizado com sucesso!', 'success')
+    try:
+        db.session.commit()
+        flash('Pedido atualizado com sucesso!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        print(f"ERRO ATUALIZAR PEDIDO: {e}")
+        flash('Erro ao atualizar o pedido.', 'danger')
+
     return redirect(url_for('main.admin_dashboard'))
-
-@bp.route("/admin/solicitacao/<int:id>/anexo", endpoint="baixar_anexo_admin")
-def baixar_anexo_admin(id):
-    if "user_id" not in session:
-        return redirect(url_for("main.login"))
-
-    user_tipo = session.get("user_tipo")
-    user_id = int(session.get("user_id"))
-
-    pedido = Solicitacao.query.get_or_404(id)
-
-    # ✅ Admin/Operário/Visualizar: pode baixar qualquer
-    if user_tipo in ["admin", "operario", "visualizar"]:
-        pass
-    # ✅ UVIS: só pode baixar se for o dono
-    elif user_tipo == "uvis":
-        if pedido.usuario_id != user_id:
-            flash("Permissão negada.", "danger")
-            return redirect(url_for("main.dashboard"))
-    else:
-        flash("Permissão negada.", "danger")
-        return redirect(url_for("main.login"))
-
-    if not pedido.anexo_path:
-        flash("Essa solicitação não tem anexo.", "warning")
-        return redirect(url_for("main.admin_dashboard"))
-
-    upload_folder = get_upload_folder()
-    filename = pedido.anexo_path.replace("upload-files/", "", 1)
-    return send_from_directory(upload_folder, filename, as_attachment=True)
-
 
 
 # --- NOVO PEDIDO ---
+from flask_login import login_required, current_user
+
 @bp.route('/novo_cadastro', methods=['GET', 'POST'], endpoint='novo')
+@login_required
 def novo():
-    if 'user_id' not in session:
-        return redirect(url_for('main.login'))
 
     hoje = date.today().isoformat()
 
     if request.method == 'POST':
         try:
-            user_id_int = int(session['user_id'])
-
+            # --- Data ---
             data_str = request.form.get('data')
             hora_str = request.form.get('hora')
 
-            if data_str:
-                data_obj = datetime.strptime(data_str, '%Y-%m-%d').date()
-            else:
-                data_obj = None
+            data_obj = (
+                datetime.strptime(data_str, '%Y-%m-%d').date()
+                if data_str else None
+            )
 
-            if hora_str:
-                hora_obj = datetime.strptime(hora_str, '%H:%M').time()
-            else:
-                hora_obj = None
+            hora_obj = (
+                datetime.strptime(hora_str, '%H:%M').time()
+                if hora_str else None
+            )
 
             apoio_cet_bool = request.form.get('apoio_cet') == 'sim'
-
 
             nova_solicitacao = Solicitacao(
                 data_agendamento=data_obj,
@@ -385,10 +397,9 @@ def novo():
                 cidade=request.form.get('cidade'),
                 numero=request.form.get('numero'),
                 uf=request.form.get('uf'),
-                complemento=request.form.get('complemento'), 
+                complemento=request.form.get('complemento'),
 
                 foco=request.form.get('foco'),
-
                 tipo_visita=request.form.get('tipo_visita'),
                 altura_voo=request.form.get('altura_voo'),
                 apoio_cet=apoio_cet_bool,
@@ -397,77 +408,87 @@ def novo():
                 latitude=request.form.get('latitude'),
                 longitude=request.form.get('longitude'),
 
-                usuario_id=user_id_int,
+                # 🔑 RELAÇÃO CORRETA COM FLASK-LOGIN
+                usuario_id=current_user.id,
+
                 status='PENDENTE'
             )
 
             db.session.add(nova_solicitacao)
             db.session.commit()
 
-            flash('Pedido enviado!', 'success')
+            flash('Pedido enviado com sucesso!', 'success')
             return redirect(url_for('main.dashboard'))
 
         except ValueError as ve:
             db.session.rollback()
-            flash(f"Erro no formato de data/hora: {ve}", "warning")
+            flash(f"Erro no formato de data ou hora.", "warning")
+
         except Exception as e:
             db.session.rollback()
-            flash(f"Erro ao salvar: {e}", "danger")
+            print(f"ERRO NOVO CADASTRO: {e}")
+            flash("Erro ao salvar o pedido.", "danger")
 
     return render_template('cadastro.html', hoje=hoje)
 
 # --- LOGIN ---
+from flask_login import login_user
+
+from flask_login import login_user, current_user
+
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
-    if 'user_id' in session:
-        # AJUSTE CHAVE: Redireciona para admin_dashboard se for admin, operario OU visualizar
-        if session.get('user_tipo') in ['admin', 'operario', 'visualizar']:
+    # Se já estiver logado, redireciona
+    if current_user.is_authenticated:
+        if current_user.tipo_usuario in ['admin', 'operario', 'visualizar']:
             return redirect(url_for('main.admin_dashboard'))
         return redirect(url_for('main.dashboard'))
 
     if request.method == 'POST':
-        user = Usuario.query.filter_by(login=request.form.get('login')).first()
-
-        if user and user.check_senha(request.form.get('senha')):
-            session['user_id'] = int(user.id)
-            session['user_nome'] = user.nome_uvis
-            session['user_tipo'] = user.tipo_usuario
-
-            flash(f'Bem-vindo, {user.nome_uvis}! Login realizado com sucesso.', 'success')
-
-            # AJUSTE CHAVE: Redireciona para admin_dashboard se for admin, operario OU visualizar
+        login_form = request.form.get('login')
+        senha_form = request.form.get('senha')
+        user = Usuario.query.filter_by(login=login_form).first()
+        if user and user.check_senha(senha_form):
+            login_user(user)  # 🔥 ÚNICO controle de login
+            flash(
+                f'Bem-vindo, {user.nome_uvis}! Login realizado com sucesso.',
+                'success'
+            )
             if user.tipo_usuario in ['admin', 'operario', 'visualizar']:
                 return redirect(url_for('main.admin_dashboard'))
             return redirect(url_for('main.dashboard'))
-        else:
-            flash('Login ou senha incorretos. Tente novamente.', 'danger')
+        flash('Login ou senha incorretos. Tente novamente.', 'danger')
 
     return render_template('login.html')
 
 # --- LOGOUT ---
+from flask_login import logout_user, login_required
+
 @bp.route('/logout')
+@login_required
 def logout():
-    session.clear()
+    logout_user()          # 🔑 encerra o current_user
+    session.clear()        # opcional (flash, tema, etc)
+    flash('Você saiu do sistema.', 'info')
     return redirect(url_for('main.login'))
+
 
 @bp.route("/forcar_erro")
 def forcar_erro():
     1 / 0  # erro proposital
     return "nunca vai chegar aqui"
 
-# ReportLab (PDF)
-from reportlab.lib.pagesizes import A4
-from reportlab.lib import colors
-from reportlab.lib.units import mm
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
-)
-
 # Openpyxl (Excel)
 from openpyxl import Workbook
-from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
+from reportlab.lib import colors
+# ReportLab (PDF)
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.lib.units import mm
+from reportlab.platypus import (PageBreak, Paragraph, SimpleDocTemplate,
+                                Spacer, Table, TableStyle)
 
 # O objeto 'bp' precisa ser definido (Exemplo: bp = Blueprint('main', __name__))
 # E 'Usuario' e 'Solicitacao' precisam ser seus modelos SQLAlchemy
@@ -478,7 +499,6 @@ from openpyxl.utils import get_column_letter
 
 def aplicar_filtros_base(query, filtro_data, uvis_id):
     """Aplica o filtro de mês/ano e opcionalmente o filtro de UVIS (usuario_id)."""
-    
     # --- AJUSTE DE COMPATIBILIDADE PARA O RENDER (POSTGRES) ---
     if db.engine.name == 'postgresql':
         # No PostgreSQL usamos to_char
@@ -486,7 +506,6 @@ def aplicar_filtros_base(query, filtro_data, uvis_id):
     else:
         # No SQLite (seu PC) continuamos com strftime
         query = query.filter(db.func.strftime('%Y-%m', Solicitacao.data_criacao) == filtro_data)
-    
     # Filtro de UVIS (opcional)
     if uvis_id:
         query = query.filter(Solicitacao.usuario_id == uvis_id)
@@ -494,93 +513,155 @@ def aplicar_filtros_base(query, filtro_data, uvis_id):
     return query
 
 
+from datetime import datetime
+
 # =======================================================================
 # ROTA 1: Visualização do Relatório (HTML)
 # =======================================================================
-from flask import session, redirect, url_for, request, render_template
-from datetime import datetime
+from flask import redirect, render_template, request, session, url_for
+
 from app import db
-from app.models import Usuario, Solicitacao
-import sqlalchemy
+from app.models import Solicitacao, Usuario
+
 
 @bp.route('/relatorios', methods=['GET'])
 def relatorios():
-    if 'user_id' not in session:
+    if not current_user.is_authenticated:
         return redirect(url_for('main.login'))
 
     try:
-        # 1. Parâmetros de Filtro
+        # 🔹 Parâmetros de Filtro
         mes_atual = request.args.get('mes', datetime.now().month, type=int)
         ano_atual = request.args.get('ano', datetime.now().year, type=int)
-        uvis_id = request.args.get('uvis_id', type=int)
         filtro_data = f"{ano_atual}-{mes_atual:02d}"
 
-        # 2. UVIS disponíveis para o dropdown
-        uvis_disponiveis = db.session.query(Usuario.id, Usuario.nome_uvis) \
-            .filter(Usuario.tipo_usuario == 'uvis') \
-            .order_by(Usuario.nome_uvis) \
-            .all()
+        # 🔐 Controle de UVIS
+        if current_user.tipo_usuario == 'uvis':
+            uvis_id = current_user.id
+        else:
+            uvis_id = request.args.get('uvis_id', type=int)
 
-        # 3. Histórico Mensal (CORRIGIDO PARA POSTGRESQL E SQLITE)
+        # 🔹 UVIS disponíveis (admin / operário / visualizar)
+        uvis_disponiveis = []
+        if current_user.tipo_usuario in ['admin', 'operario', 'visualizar']:
+            uvis_disponiveis = [
+                (u.id, u.nome_uvis)
+                for u in (
+                    db.session.query(Usuario.id, Usuario.nome_uvis)
+                    .filter(Usuario.tipo_usuario == 'uvis')
+                    .order_by(Usuario.nome_uvis)
+                    .all()
+                )
+            ]
+
+        # 🔹 Histórico mensal (Postgres x SQLite)
         if db.engine.name == 'postgresql':
-            # Função para PostgreSQL
             func_mes = db.func.to_char(Solicitacao.data_criacao, 'YYYY-MM')
         else:
-            # Função para SQLite (Local)
             func_mes = db.func.strftime('%Y-%m', Solicitacao.data_criacao)
 
-        dados_mensais_raw = (
-            db.session.query(
-                func_mes.label('mes_label'),
-                db.func.count(Solicitacao.id)
+        dados_mensais = [
+            (mes, total)
+            for mes, total in (
+                db.session.query(func_mes.label('mes'), db.func.count(Solicitacao.id))
+                .group_by('mes')
+                .order_by('mes')
+                .all()
             )
-            .group_by('mes_label')
-            .order_by('mes_label')
-            .all()
+        ]
+
+        anos_disponiveis = (
+            sorted({m.split('-')[0] for m, _ in dados_mensais}, reverse=True)
+            if dados_mensais else [ano_atual]
         )
-        dados_mensais = [tuple(row) for row in dados_mensais_raw]
 
-        anos_disponiveis = sorted(list(set([d[0].split('-')[0] for d in dados_mensais])), reverse=True) if dados_mensais else [ano_atual]
+        # 🔹 Query base única
+        base_query = aplicar_filtros_base(
+            db.session.query(Solicitacao),
+            filtro_data,
+            uvis_id
+        )
 
-        # 4. Totalizações
-        base_query = db.session.query(Solicitacao)
+        # 🔹 Totais
+        total_solicitacoes = base_query.count()
+        total_aprovadas = base_query.filter(Solicitacao.status == "APROVADO").count()
+        total_aprovadas_com_recomendacoes = base_query.filter(
+            Solicitacao.status == "APROVADO COM RECOMENDAÇÕES"
+        ).count()
+        total_recusadas = base_query.filter(Solicitacao.status == "NEGADO").count()
+        total_analise = base_query.filter(Solicitacao.status == "EM ANÁLISE").count()
+        total_pendentes = base_query.filter(Solicitacao.status == "PENDENTE").count()
 
-        total_solicitacoes = aplicar_filtros_base(base_query, filtro_data, uvis_id).count()
-        
-        # Otimização: Status fixos
-        total_aprovadas = aplicar_filtros_base(base_query, filtro_data, uvis_id).filter(Solicitacao.status == "APROVADO").count()
-        total_aprovadas_com_recomendacoes = aplicar_filtros_base(base_query, filtro_data, uvis_id).filter(Solicitacao.status == "APROVADO COM RECOMENDAÇÕES").count()
-        total_recusadas = aplicar_filtros_base(base_query, filtro_data, uvis_id).filter(Solicitacao.status == "NEGADO").count()
-        total_analise = aplicar_filtros_base(base_query, filtro_data, uvis_id).filter(Solicitacao.status == "EM ANÁLISE").count()
-        total_pendentes = aplicar_filtros_base(base_query, filtro_data, uvis_id).filter(Solicitacao.status == "PENDENTE").count()
+        # 🔹 Agrupamentos (SEM Row)
 
-        # 5. Consultas Agrupadas (Região, Status, Foco, etc.)
-        def formatar_dados(query):
-            return [tuple(row) for row in query.all()]
+        dados_regiao = [
+            (regiao or "Não informado", total)
+            for regiao, total in (
+                aplicar_filtros_base(
+                    db.session.query(Usuario.regiao, db.func.count(Solicitacao.id))
+                    .join(Usuario),
+                    filtro_data,
+                    uvis_id
+                )
+                .group_by(Usuario.regiao)
+                .all()
+            )
+        ]
 
-        # Região
-        query_regiao = db.session.query(Usuario.regiao, db.func.count(Solicitacao.id)).join(Usuario, Usuario.id == Solicitacao.usuario_id)
-        dados_regiao = formatar_dados(aplicar_filtros_base(query_regiao, filtro_data, uvis_id).group_by(Usuario.regiao))
+        dados_status = [
+            (status or "Não informado", total)
+            for status, total in (
+                base_query
+                .with_entities(Solicitacao.status, db.func.count(Solicitacao.id))
+                .group_by(Solicitacao.status)
+                .all()
+            )
+        ]
 
-        # Status
-        query_status = db.session.query(Solicitacao.status, db.func.count(Solicitacao.id))
-        dados_status = formatar_dados(aplicar_filtros_base(query_status, filtro_data, uvis_id).group_by(Solicitacao.status))
+        dados_foco = [
+            (foco or "Não informado", total)
+            for foco, total in (
+                base_query
+                .with_entities(Solicitacao.foco, db.func.count(Solicitacao.id))
+                .group_by(Solicitacao.foco)
+                .all()
+            )
+        ]
 
-        # Foco
-        query_foco = db.session.query(Solicitacao.foco, db.func.count(Solicitacao.id))
-        dados_foco = formatar_dados(aplicar_filtros_base(query_foco, filtro_data, uvis_id).group_by(Solicitacao.foco))
-        
-        # Tipo Visita
-        query_tipo_visita = db.session.query(Solicitacao.tipo_visita, db.func.count(Solicitacao.id))
-        dados_tipo_visita = formatar_dados(aplicar_filtros_base(query_tipo_visita, filtro_data, uvis_id).group_by(Solicitacao.tipo_visita))
-        
-        # Altura de Voo
-        query_altura_voo = db.session.query(Solicitacao.altura_voo, db.func.count(Solicitacao.id))
-        dados_altura_voo = formatar_dados(aplicar_filtros_base(query_altura_voo, filtro_data, uvis_id).group_by(Solicitacao.altura_voo))
+        dados_tipo_visita = [
+            (tipo or "Não informado", total)
+            for tipo, total in (
+                base_query
+                .with_entities(Solicitacao.tipo_visita, db.func.count(Solicitacao.id))
+                .group_by(Solicitacao.tipo_visita)
+                .all()
+            )
+        ]
 
-        # Unidade (UVIS)
-        query_unidade = db.session.query(Usuario.nome_uvis, db.func.count(Solicitacao.id)).join(Usuario, Usuario.id == Solicitacao.usuario_id).filter(Usuario.tipo_usuario == 'uvis')
-        dados_unidade = formatar_dados(aplicar_filtros_base(query_unidade, filtro_data, uvis_id).group_by(Usuario.nome_uvis))
+        dados_altura_voo = [
+            (altura or "Não informado", total)
+            for altura, total in (
+                base_query
+                .with_entities(Solicitacao.altura_voo, db.func.count(Solicitacao.id))
+                .group_by(Solicitacao.altura_voo)
+                .all()
+            )
+        ]
+
+        dados_unidade = [
+            (uvis or "Não informado", total)
+            for uvis, total in (
+                aplicar_filtros_base(
+                    db.session.query(Usuario.nome_uvis, db.func.count(Solicitacao.id))
+                    .join(Usuario)
+                    .filter(Usuario.tipo_usuario == 'uvis'),
+                    filtro_data,
+                    uvis_id
+                )
+                .group_by(Usuario.nome_uvis)
+                .all()
+            )
+        ]
 
         return render_template(
             'relatorios.html',
@@ -605,150 +686,186 @@ def relatorios():
         )
 
     except Exception as e:
-        db.session.rollback() # Limpa o erro para não travar o site
-        print(f"ERRO NOS RELATÓRIOS: {str(e)}")
-        # Em produção, redirecionamos para uma página de erro ou voltamos com mensagem
-        return render_template("erro.html", codigo="500", titulo="Erro nos Relatórios", mensagem="Houve um erro técnico ao processar os dados. Certifique-se de que existem solicitações cadastradas.")
+        db.session.rollback()
+        print(f"ERRO NOS RELATÓRIOS: {e}")
+        return render_template(
+            "erro.html",
+            codigo=500,
+            titulo="Erro nos Relatórios",
+            mensagem="Houve um erro técnico ao processar os dados."
+        )
 
-# =======================================================================
-# ROTA 2: Exportar PDF (Com Filtro UVIS)
-# =======================================================================
+
 import os
 import tempfile
-from io import BytesIO
 from datetime import datetime
-from math import ceil
+from io import BytesIO
 
 from flask import send_file, request
+from flask_login import login_required, current_user
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
-    PageBreak, Image as RLImage, Flowable, KeepTogether
+    PageBreak, Image as RLImage
 )
 
-# matplotlib é opcional — tentamos importar e marcamos se disponível
 try:
     import matplotlib.pyplot as plt
     MATPLOTLIB_AVAILABLE = True
-except Exception:
+except ImportError:
     MATPLOTLIB_AVAILABLE = False
 
 @bp.route('/admin/exportar_relatorio_pdf')
-
+@login_required
 def exportar_relatorio_pdf():
     # -------------------------
-    # 1. Parâmetros e filtros
+    # 1. Parâmetros e filtros (IGUAL ao /relatorios)
     # -------------------------
     mes = int(request.args.get('mes', datetime.now().month))
     ano = int(request.args.get('ano', datetime.now().year))
-    uvis_id = request.args.get('uvis_id', type=int)
     orient = request.args.get('orient', default='portrait')  # 'portrait' ou 'landscape'
     filtro_data = f"{ano}-{mes:02d}"
 
-    # 2. Busca Principal para Totais e Detalhes
-    query_base = db.session.query(Solicitacao, Usuario).join(Usuario, Usuario.id == Solicitacao.usuario_id)
-    query_base = aplicar_filtros_base(query_base, filtro_data, uvis_id)
-    query_results = query_base.order_by(Solicitacao.data_criacao.desc()).all()
-
-    # 3. Totais
-    total_solicitacoes = len(query_results)
-    total_aprovadas = sum(1 for s, u in query_results if s.status == "APROVADO")
-    total_aprovadas_com_recomendacoes = sum(1 for s, u in query_results if s.status == "APROVADO COM RECOMENDAÇÕES")
-    total_recusadas = sum(1 for s, u in query_results if s.status == "NEGADO")
-    total_analise = sum(1 for s, u in query_results if s.status == "EM ANÁLISE")
-    total_pendentes = sum(1 for s, u in query_results if s.status == "PENDENTE")
-
-    STATUS_COLORS = {
-    "APROVADO": "#2ecc71",                    # Verde
-    "APROVADO COM RECOMENDAÇÕES": "#ee650a",  # Laranja
-    "EM ANÁLISE": "#f1c40f",                  # Amarelo
-    "PENDENTE": "#3498db",                    # Azul
-    "NEGADO": "#e74c3c",                      # Vermelho
-}
-
-   # 4. Buscas agrupadas (CORRIGIDO PARA POSTGRES/SQLITE)
-    def aplicar_filtros_agrupados(query):
-        # Verifica se o motor do banco é PostgreSQL
-        if db.engine.name == 'postgresql':
-            # No Postgres usamos to_char
-            query = query.filter(db.func.to_char(Solicitacao.data_criacao, 'YYYY-MM') == filtro_data)
-        else:
-            # No SQLite (Local) mantemos o strftime
-            query = query.filter(db.func.strftime('%Y-%m', Solicitacao.data_criacao) == filtro_data)
-        
-        if uvis_id:
-            query = query.filter(Solicitacao.usuario_id == uvis_id)
-        return query
-
-    dados_regiao_raw = aplicar_filtros_agrupados(
-        db.session.query(Usuario.regiao, db.func.count(Solicitacao.id)).join(Usuario, Usuario.id == Solicitacao.usuario_id)
-    ).group_by(Usuario.regiao).all()
-    dados_regiao = [(r or "Não informado", c) for r, c in dados_regiao_raw]
-
-    dados_status_raw = aplicar_filtros_agrupados(
-        db.session.query(Solicitacao.status, db.func.count(Solicitacao.id))
-    ).group_by(Solicitacao.status).all()
-    dados_status = [(s or "Não informado", c) for s, c in dados_status_raw]
-
-    dados_foco_raw = aplicar_filtros_agrupados(
-        db.session.query(Solicitacao.foco, db.func.count(Solicitacao.id))
-    ).group_by(Solicitacao.foco).all()
-    dados_foco = [(f or "Não informado", c) for f, c in dados_foco_raw]
-
-    dados_tipo_visita_raw = aplicar_filtros_agrupados(
-        db.session.query(Solicitacao.tipo_visita, db.func.count(Solicitacao.id))
-    ).group_by(Solicitacao.tipo_visita).all()
-    dados_tipo_visita = [(t or "Não informado", c) for t, c in dados_tipo_visita_raw]
-
-    dados_altura_raw = aplicar_filtros_agrupados(
-        db.session.query(Solicitacao.altura_voo, db.func.count(Solicitacao.id))
-    ).group_by(Solicitacao.altura_voo).all()
-    dados_altura_voo = [(a or "Não informado", c) for a, c in dados_altura_raw]
-
-    dados_unidade_query = db.session.query(Usuario.nome_uvis, db.func.count(Solicitacao.id)) \
-        .join(Usuario, Usuario.id == Solicitacao.usuario_id) \
-        .filter(Usuario.tipo_usuario == 'uvis')
-    dados_unidade_raw = aplicar_filtros_agrupados(dados_unidade_query) \
-        .group_by(Usuario.nome_uvis) \
-        .order_by(db.func.count(Solicitacao.id).desc()) \
-        .all()
-    dados_unidade = [(u or "Não informado", c) for u, c in dados_unidade_raw]
-
-    
-    if db.engine.name == 'postgresql':
-            func_mes = db.func.to_char(Solicitacao.data_criacao, 'YYYY-MM')
+    # 🔐 Controle de UVIS (igual ao HTML /relatorios)
+    if current_user.tipo_usuario == 'uvis':
+        uvis_id = current_user.id
     else:
-            func_mes = db.func.strftime('%Y-%m', Solicitacao.data_criacao)
-
-    dados_mensais_raw = (
-            db.session.query(
-                func_mes, 
-                db.func.count(Solicitacao.id)
-            )
-            .group_by(func_mes)
-            .order_by(func_mes)
-            .all()
-        )
-        
-        # Converte para lista de tuplas (m, c) exatamente como era antes
-    dados_mensais = [tuple(row) for row in dados_mensais_raw]
+        uvis_id = request.args.get('uvis_id', type=int)
 
     # -------------------------
-    # 5. Preparar documento PDF
+    # 2. Query base (para contagens/agrupamentos) e query detalhada
+    # -------------------------
+    base_query = aplicar_filtros_base(
+        db.session.query(Solicitacao),
+        filtro_data,
+        uvis_id
+    )
+
+    query_detalhe = aplicar_filtros_base(
+        db.session.query(Solicitacao, Usuario).join(Usuario, Usuario.id == Solicitacao.usuario_id),
+        filtro_data,
+        uvis_id
+    )
+
+    query_results = query_detalhe.order_by(Solicitacao.data_criacao.desc()).all()
+
+    # -------------------------
+    # 3. Totais (igual ao /relatorios)
+    # -------------------------
+    total_solicitacoes = base_query.count()
+    total_aprovadas = base_query.filter(Solicitacao.status == "APROVADO").count()
+    total_aprovadas_com_recomendacoes = base_query.filter(
+        Solicitacao.status == "APROVADO COM RECOMENDAÇÕES"
+    ).count()
+    total_recusadas = base_query.filter(Solicitacao.status == "NEGADO").count()
+    total_analise = base_query.filter(Solicitacao.status == "EM ANÁLISE").count()
+    total_pendentes = base_query.filter(Solicitacao.status == "PENDENTE").count()
+
+    STATUS_COLORS = {
+        "APROVADO": "#2ecc71",
+        "APROVADO COM RECOMENDAÇÕES": "#ee650a",
+        "EM ANÁLISE": "#f1c40f",
+        "PENDENTE": "#3498db",
+        "NEGADO": "#e74c3c",
+    }
+
+    # -------------------------
+    # 4. AGRUPAMENTOS COMPLETOS (IGUAL ao /relatorios)
+    # -------------------------
+    dados_regiao = [
+        (regiao or "Não informado", total)
+        for regiao, total in (
+            aplicar_filtros_base(
+                db.session.query(Usuario.regiao, db.func.count(Solicitacao.id)).join(Usuario),
+                filtro_data,
+                uvis_id
+            )
+            .group_by(Usuario.regiao)
+            .all()
+        )
+    ]
+
+    dados_status = [
+        (status or "Não informado", total)
+        for status, total in (
+            base_query
+            .with_entities(Solicitacao.status, db.func.count(Solicitacao.id))
+            .group_by(Solicitacao.status)
+            .all()
+        )
+    ]
+
+    dados_foco = [
+        (foco or "Não informado", total)
+        for foco, total in (
+            base_query
+            .with_entities(Solicitacao.foco, db.func.count(Solicitacao.id))
+            .group_by(Solicitacao.foco)
+            .all()
+        )
+    ]
+
+    dados_tipo_visita = [
+        (tipo or "Não informado", total)
+        for tipo, total in (
+            base_query
+            .with_entities(Solicitacao.tipo_visita, db.func.count(Solicitacao.id))
+            .group_by(Solicitacao.tipo_visita)
+            .all()
+        )
+    ]
+
+    dados_altura_voo = [
+        (altura or "Não informado", total)
+        for altura, total in (
+            base_query
+            .with_entities(Solicitacao.altura_voo, db.func.count(Solicitacao.id))
+            .group_by(Solicitacao.altura_voo)
+            .all()
+        )
+    ]
+
+    dados_unidade = [
+        (uvis_nome or "Não informado", total)
+        for uvis_nome, total in (
+            aplicar_filtros_base(
+                db.session.query(Usuario.nome_uvis, db.func.count(Solicitacao.id))
+                .join(Usuario)
+                .filter(Usuario.tipo_usuario == 'uvis'),
+                filtro_data,
+                uvis_id
+            )
+            .group_by(Usuario.nome_uvis)
+            .all()
+        )
+    ]
+
+    # Histórico mensal (igual ao /relatorios)
+    if db.engine.name == 'postgresql':
+        func_mes = db.func.to_char(Solicitacao.data_criacao, 'YYYY-MM')
+    else:
+        func_mes = db.func.strftime('%Y-%m', Solicitacao.data_criacao)
+
+    dados_mensais = [
+        tuple(row) for row in (
+            db.session.query(func_mes.label('mes'), db.func.count(Solicitacao.id))
+            .group_by('mes')
+            .order_by('mes')
+            .all()
+        )
+    ]
+
+    # -------------------------
+    # 5. Preparar PDF
     # -------------------------
     tmp_pdf = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
     caminho_pdf = tmp_pdf.name
     tmp_pdf.close()
 
-    # Auto-landscape se muitos campos (evita esmagar a tabela detalhada)
-    if orient not in ('portrait', 'landscape'):
-        orient = 'portrait'
-    pagesize = A4
-    if orient == 'landscape' or True:  # deixei sempre landscape pq a tabela detalhada tem muitas colunas
-        pagesize = landscape(A4)
+    pagesize = landscape(A4) if orient == 'landscape' else A4
 
     doc = SimpleDocTemplate(
         caminho_pdf,
@@ -757,53 +874,47 @@ def exportar_relatorio_pdf():
         topMargin=14*mm, bottomMargin=18*mm
     )
 
-    # Styles
     styles = getSampleStyleSheet()
-    title_style = ParagraphStyle(
-        'title', parent=styles['Title'],
-        fontSize=20, leading=24, alignment=1,
-        spaceAfter=6, textColor=colors.HexColor('#0d6efd')
-    )
-    subtitle_style = ParagraphStyle(
-        'subtitle', parent=styles['Normal'],
-        fontSize=10, textColor=colors.HexColor('#666'),
-        alignment=1, spaceAfter=6
-    )
-    section_h = ParagraphStyle(
-        'sec', parent=styles['Heading2'],
-        fontSize=12, spaceAfter=6,
-        textColor=colors.HexColor('#0d6efd')
-    )
+    title_style = ParagraphStyle('title', parent=styles['Title'], fontSize=20, alignment=1,
+                                 textColor=colors.HexColor('#0d6efd'))
+    section_h = ParagraphStyle('sec', parent=styles['Heading2'], fontSize=12,
+                               textColor=colors.HexColor('#0d6efd'))
     normal = styles['Normal']
-    small = ParagraphStyle('small', parent=styles['BodyText'], fontSize=9, textColor=colors.HexColor('#555'))
-
-    # Estilo de célula p/ tabela grande (principal correção do “sobrepondo”)
     cell_style = ParagraphStyle(
-        'cell',
-        parent=styles['BodyText'],
-        fontSize=7.4,
-        leading=9,                 # evita sobreposição vertical
+        'cell', parent=styles['BodyText'],
+        fontSize=7.4, leading=9,
         textColor=colors.HexColor('#222'),
-        wordWrap='CJK',            # quebra bem até em textos “sem espaço”
-        splitLongWords=True,
-        spaceAfter=0,
-        spaceBefore=0,
+        wordWrap='CJK',
+        splitLongWords=True
     )
 
     story = []
 
     # -------------------------
-    # Funções utilitárias
+    # Capa / Resumo
     # -------------------------
-    def P(txt):
-        txt = '' if txt is None else str(txt)
-        txt = txt.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-        return Paragraph(txt, cell_style)
+    story.append(Paragraph(f"Relatório Mensal — {mes:02d}/{ano}", title_style))
+    story.append(Spacer(1, 8))
+    resumo_box = [
+        ['Métrica', 'Quantidade'],
+        ['Total de Solicitações', str(total_solicitacoes)],
+        ['Aprovadas', str(total_aprovadas)],
+        ['Aprovadas c/ Recomendações', str(total_aprovadas_com_recomendacoes)],
+        ['Recusadas', str(total_recusadas)],
+        ['Em Análise', str(total_analise)],
+        ['Pendentes', str(total_pendentes)]
+    ]
+    story.append(Table(resumo_box, colWidths=[90*mm, 45*mm], style=[
+        ('GRID', (0,0), (-1,-1), 0.25, colors.lightgrey),
+        ('BACKGROUND',(0,0),(-1,0),colors.HexColor('#0d6efd')),
+        ('TEXTCOLOR',(0,0),(-1,0),colors.white),
+        ('FONTNAME',(0,0),(-1,0),'Helvetica-Bold')
+    ]))
+    story.append(PageBreak())
 
-    def cut(s, n=220):
-        s = '' if s is None else str(s)
-        return (s[:n] + '…') if len(s) > n else s
-
+    # -------------------------
+    # Gráficos (mantidos)
+    # -------------------------
     def safe_img_from_plt(fig, width_mm=155):
         bio = BytesIO()
         fig.tight_layout()
@@ -812,180 +923,45 @@ def exportar_relatorio_pdf():
         bio.seek(0)
         return RLImage(bio, width=width_mm*mm)
 
-    def render_small_table(rows, colWidths):
-        tbl = Table(rows, colWidths=colWidths)
-        tbl.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0d6efd')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 9),
-            ('ALIGN', (0,0), (-1,0), 'CENTER'),
-            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-            ('GRID', (0, 0), (-1, -1), 0.25, colors.lightgrey),
-            ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#fbfdff')]),
-            ('LEFTPADDING', (0,0), (-1,-1), 6),
-            ('RIGHTPADDING', (0,0), (-1,-1), 6),
-            ('TOPPADDING', (0,0), (-1,-1), 4),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 4),
-        ]))
-        return tbl
-
-    # -------------------------
-    # Cabeçalho / Capa
-    # -------------------------
-    logo_path = os.path.join(os.getcwd(), 'static', 'logo.png')
-    logo = None
-    if os.path.exists(logo_path):
-        try:
-            logo = RLImage(logo_path, width=32*mm, height=32*mm)
-        except Exception:
-            logo = None
-
-    story.append(Spacer(1, 6))
-    if logo:
-        h = [[logo, Paragraph(f"<b>Relatório Mensal — {mes:02d}/{ano}</b>", title_style)]]
-        cap_tbl = Table(h, colWidths=[36*mm, (doc.width - 36*mm)])
-        cap_tbl.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'MIDDLE')]))
-        story.append(cap_tbl)
-    else:
-        story.append(Paragraph(f"Relatório Mensal — {mes:02d}/{ano}", title_style))
-
-    titulo_uvis = ""
-    if uvis_id:
-        uvis_obj = db.session.query(Usuario.nome_uvis).filter(Usuario.id == uvis_id).first()
-        if uvis_obj:
-            titulo_uvis = f" — {uvis_obj.nome_uvis}"
-
-    story.append(Paragraph(f"Sistema de Gestão de Solicitações{titulo_uvis}", subtitle_style))
-    story.append(Spacer(1, 8))
-
-    resumo_box = [
-        ['Métrica', 'Quantidade'],
-        ['Total de Solicitações', str(total_solicitacoes)],
-        ['Aprovadas', str(total_aprovadas)],
-        ['Aprovadas com Recomendações', str(total_aprovadas_com_recomendacoes)],
-        ['Recusadas', str(total_recusadas)],
-        ['Em Análise', str(total_analise)],
-        ['Pendentes', str(total_pendentes)]
-    ]
-    story.append(render_small_table(resumo_box, [90*mm, 45*mm]))
-    story.append(Spacer(1, 10))
-    story.append(Paragraph(f"Gerado em {datetime.now().strftime('%d/%m/%Y %H:%M')}", small))
-    story.append(Spacer(1, 14))
-
-    # Sumário
-    story.append(Paragraph("Sumário", section_h))
-    sumario_itens = [
-        "Resumo Geral",
-        "Solicitações por Região",
-        "Status Detalhado",
-        "Solicitações por Foco / Tipo / Altura",
-        "Solicitações por Unidade (UVIS)",
-        "Histórico Mensal",
-        "Gráficos (Visão Geral)",
-        "Registros Detalhados"
-    ]
-    for i, it in enumerate(sumario_itens, 1):
-        story.append(Paragraph(f"{i}. {it}", normal))
-    story.append(PageBreak())
-
-    # Seções
-    story.append(Paragraph("Resumo Geral", section_h))
-    story.append(render_small_table(resumo_box, [110*mm, 60*mm]))
-    story.append(Spacer(1, 8))
-
-    story.append(Paragraph("Solicitações por Região", section_h))
-    rows = [['Região', 'Total']] + [[r, str(c)] for r, c in dados_regiao]
-    story.append(render_small_table(rows, [110*mm, 60*mm]))
-    story.append(Spacer(1, 8))
-
-    story.append(Paragraph("Status Detalhado", section_h))
-    rows = [['Status', 'Total']] + [[s, str(c)] for s, c in dados_status]
-    story.append(render_small_table(rows, [110*mm, 60*mm]))
-    story.append(Spacer(1, 8))
-
-    story.append(Paragraph("Solicitações por Foco", section_h))
-    rows = [['Foco', 'Total']] + [[f, str(c)] for f, c in dados_foco]
-    story.append(render_small_table(rows, [110*mm, 60*mm]))
-    story.append(Spacer(1, 6))
-
-    story.append(Paragraph("Solicitações por Tipo de Visita", section_h))
-    rows = [['Tipo', 'Total']] + [[t, str(c)] for t, c in dados_tipo_visita]
-    story.append(render_small_table(rows, [110*mm, 60*mm]))
-    story.append(Spacer(1, 6))
-
-    story.append(Paragraph("Solicitações por Altura de Voo", section_h))
-    rows = [['Altura (m)', 'Total']] + [[str(a), str(c)] for a, c in dados_altura_voo]
-    story.append(render_small_table(rows, [110*mm, 60*mm]))
-    story.append(Spacer(1, 8))
-
-    story.append(Paragraph("Solicitações por Unidade (UVIS) — Top", section_h))
-    rows = [['Unidade', 'Total']] + [[u, str(c)] for u, c in dados_unidade]
-    story.append(render_small_table(rows, [110*mm, 60*mm]))
-    story.append(Spacer(1, 8))
-
-    story.append(Paragraph("Histórico Mensal (Total por Mês)", section_h))
-    rows = [['Mês', 'Total']] + [[m, str(c)] for m, c in dados_mensais]
-    story.append(render_small_table(rows, [70*mm, 45*mm]))
-    story.append(Spacer(1, 10))
-
-    # -------------------------
-    # Gráficos (compactos e mais bonitos)
-    # -------------------------
-    story.append(PageBreak())
-    story.append(Paragraph("Gráficos (Visão Geral)", section_h))
-
     if MATPLOTLIB_AVAILABLE:
         try:
-            # Donut: status
             labels = [s for s, _ in dados_status]
             values = [c for _, c in dados_status]
-            colors_status = [
-            STATUS_COLORS.get(s, "#bdc3c7")  # cor padrão caso apareça status inesperado
-            for s in labels
-            ]
-            total = sum(values) or 1
-
-            def autopct(p):
-                return f'{p:.0f}%' if p >= 6 else ''
+            colors_status = [STATUS_COLORS.get(s, "#bdc3c7") for s in labels]
 
             fig1, ax1 = plt.subplots(figsize=(5.2, 2.2))
+            def autopct(p): return f'{p:.0f}%' if p >= 6 else ''
             wedges, *_ = ax1.pie(
-            values or [1],
-            labels=None,
-            colors=colors_status,  
-            autopct=autopct,
-            startangle=90,
-            pctdistance=0.75,
-            textprops={'fontsize': 8}
-        )
-            centre_circle = plt.Circle((0,0), 0.55, fc='white')
+                values or [1],
+                labels=None,
+                colors=colors_status,
+                autopct=autopct,
+                startangle=90,
+                pctdistance=0.75,
+                textprops={'fontsize': 8}
+            )
+            centre_circle = plt.Circle((0, 0), 0.55, fc='white')
             ax1.add_artist(centre_circle)
             ax1.legend(wedges, labels, loc='center left', bbox_to_anchor=(1.02, 0.5),
                        fontsize=8, frameon=False)
             ax1.set_title('Distribuição por Status', fontsize=9)
             ax1.axis('equal')
-            story.append(safe_img_from_plt(fig1, width_mm=145))
+            story.append(safe_img_from_plt(fig1, 145))
             story.append(Spacer(1, 6))
 
-            # Barh: Top UVIS
             u_names = [u for u, _ in dados_unidade[:8]]
             u_vals = [c for _, c in dados_unidade[:8]]
-
             fig2, ax2 = plt.subplots(figsize=(6.2, 2.2))
             ax2.barh(u_names[::-1] or ['Nenhum'], u_vals[::-1] or [0])
             ax2.set_xlabel('Total', fontsize=8)
             ax2.set_title('Top UVIS', fontsize=9)
-            ax2.tick_params(axis='y', labelsize=8)
-            ax2.tick_params(axis='x', labelsize=8)
+            ax2.tick_params(axis='both', labelsize=8)
             ax2.grid(axis='x', linestyle=':', linewidth=0.5)
-            story.append(safe_img_from_plt(fig2, width_mm=155))
+            story.append(safe_img_from_plt(fig2, 155))
             story.append(Spacer(1, 6))
 
-            # Linha: histórico mensal
             months = [m for m, _ in dados_mensais]
             counts = [c for _, c in dados_mensais]
-
             fig3, ax3 = plt.subplots(figsize=(6.4, 2.2))
             if months:
                 ax3.plot(range(len(months)), counts, marker='o', linewidth=1)
@@ -994,87 +970,108 @@ def exportar_relatorio_pdf():
             ax3.set_title('Histórico Mensal', fontsize=9)
             ax3.tick_params(axis='y', labelsize=8)
             ax3.grid(axis='y', linestyle=':', linewidth=0.5)
-            story.append(safe_img_from_plt(fig3, width_mm=160))
+            story.append(safe_img_from_plt(fig3, 160))
             story.append(Spacer(1, 6))
 
         except Exception:
             story.append(Paragraph("Gráficos indisponíveis (erro ao gerar).", normal))
-            story.append(Spacer(1, 8))
+            story.append(Spacer(1, 6))
     else:
         story.append(Paragraph("Matplotlib não disponível — gráficos foram omitidos.", normal))
-        story.append(Spacer(1, 8))
+        story.append(Spacer(1, 6))
 
     # -------------------------
-    # Registros detalhados (sem sobreposição)
+    # ✅ NOVO: Tabelas com TODOS os agrupamentos do /relatorios
+    # -------------------------
+    def add_count_table(titulo, dados):
+        story.append(PageBreak())
+        story.append(Paragraph(titulo, section_h))
+        rows = [[Paragraph("Categoria", cell_style), Paragraph("Total", cell_style)]]
+        for nome, total in (dados or [("Nenhum", 0)]):
+            rows.append([Paragraph(str(nome), cell_style), Paragraph(str(total), cell_style)])
+
+        tbl = Table(rows, repeatRows=1, colWidths=[140*mm, 25*mm])
+        tbl.setStyle(TableStyle([
+            ('BACKGROUND', (0,0),(-1,0),colors.HexColor('#0d6efd')),
+            ('TEXTCOLOR',(0,0),(-1,0),colors.white),
+            ('FONTNAME',(0,0),(-1,0),'Helvetica-Bold'),
+            ('GRID',(0,0),(-1,-1),0.25,colors.lightgrey),
+            ('VALIGN',(0,0),(-1,-1),'TOP'),
+            ('LEFTPADDING',(0,0),(-1,-1),3),
+            ('RIGHTPADDING',(0,0),(-1,-1),3),
+            ('TOPPADDING',(0,0),(-1,-1),2),
+            ('BOTTOMPADDING',(0,0),(-1,-1),2),
+        ]))
+        story.append(tbl)
+
+    add_count_table("Agrupamento — Região", dados_regiao)
+    add_count_table("Agrupamento — Status", dados_status)
+    add_count_table("Agrupamento — Foco", dados_foco)
+    add_count_table("Agrupamento — Tipo de Visita", dados_tipo_visita)
+    add_count_table("Agrupamento — Altura do Voo", dados_altura_voo)
+    add_count_table("Agrupamento — Unidade (UVIS)", dados_unidade)
+    add_count_table("Histórico Mensal (tabela)", dados_mensais)
+
+    # -------------------------
+    # ✅ NOVO: Registros detalhados (mais completo)
     # -------------------------
     story.append(PageBreak())
-    story.append(Paragraph("Registros Detalhados", section_h))
-    story.append(Spacer(1, 6))
+    story.append(Paragraph("Registros Detalhados (Completo)", section_h))
 
-    registros_header = ['Data', 'Hora', 'Unidade', 'Protocolo', 'Status', 'Região', 'Foco', 'Tipo Visita', 'Observação']
-    registros_rows = [[P(h) for h in registros_header]]
+    # Tentei cobrir os mesmos eixos do relatório: Unidade, Região, Status, Foco, Tipo Visita, Altura Voo etc.
+    registros_header = [
+        'Data', 'Hora', 'Unidade', 'Região', 'Protocolo',
+        'Status', 'Foco', 'Tipo Visita', 'Altura Voo', 'Observação'
+    ]
+    registros_rows = [[Paragraph(h, cell_style) for h in registros_header]]
 
     for s, u in query_results:
-        # data/hora safe formatting
-        try:
-            if getattr(s, 'data_agendamento', None):
-                data_str = s.data_agendamento.strftime("%d/%m/%Y") if hasattr(s.data_agendamento, 'strftime') else str(s.data_agendamento)
-            else:
-                data_str = s.data_criacao.strftime("%d/%m/%Y") if hasattr(s.data_criacao, 'strftime') else str(s.data_criacao)
-        except Exception:
-            data_str = str(getattr(s, 'data_agendamento', '') or getattr(s, 'data_criacao', ''))
-
-        hora = getattr(s, 'hora_agendamento', '')
-        hora_str = hora.strftime("%H:%M") if hasattr(hora, 'strftime') else str(hora or '')
+        data_str = s.data_criacao.strftime("%d/%m/%Y") if getattr(s, 'data_criacao', None) else ''
+        hora_str = getattr(s, 'hora_agendamento', '')
+        hora_str = hora_str.strftime("%H:%M") if hasattr(hora_str, 'strftime') else str(hora_str or '')
 
         unidade = getattr(u, 'nome_uvis', '') or "Não informado"
+        regiao = getattr(u, 'regiao', '') or "Não informado"
+
         protocolo = getattr(s, 'protocolo', '') or ''
         status = getattr(s, 'status', '') or ''
-        regiao = getattr(u, 'regiao', '') or ''
         foco = getattr(s, 'foco', '') or ''
         tipo_visita = getattr(s, 'tipo_visita', '') or ''
-        obs = cut(getattr(s, 'observacao', '') or '', 260)
+        altura_voo = getattr(s, 'altura_voo', '') or ''
+        obs = getattr(s, 'observacao', '') or ''
 
         registros_rows.append([
-            P(data_str),
-            P(hora_str),
-            P(unidade),
-            P(protocolo),
-            P(status),
-            P(regiao),
-            P(foco),
-            P(tipo_visita),
-            P(obs),
+            Paragraph(str(data_str), cell_style),
+            Paragraph(str(hora_str), cell_style),
+            Paragraph(str(unidade), cell_style),
+            Paragraph(str(regiao), cell_style),
+            Paragraph(str(protocolo), cell_style),
+            Paragraph(str(status), cell_style),
+            Paragraph(str(foco), cell_style),
+            Paragraph(str(tipo_visita), cell_style),
+            Paragraph(str(altura_voo), cell_style),
+            Paragraph(str(obs), cell_style),
         ])
 
-    # Chunk para não estourar memória/paginação
-    chunk_size = 32
+    chunk_size = 26  # um pouco menor porque tem mais colunas
+    colWidths = [18*mm, 14*mm, 28*mm, 22*mm, 22*mm, 22*mm, 22*mm, 26*mm, 18*mm, 60*mm]
+
     for i in range(0, len(registros_rows), chunk_size):
         chunk = registros_rows[i:i+chunk_size]
-
-        # colWidths ajustadas p/ landscape A4 (melhor distribuição)
-        colWidths = [18*mm, 14*mm, 34*mm, 25*mm, 22*mm, 26*mm, 26*mm, 28*mm, 85*mm]
-
         tbl = Table(chunk, repeatRows=1, colWidths=colWidths)
         tbl.setStyle(TableStyle([
-            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#0d6efd')),
-            ('TEXTCOLOR', (0,0), (-1,0), colors.white),
-            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0,0), (-1,0), 8),
-            ('ALIGN', (0,0), (-1,0), 'CENTER'),
-
-            ('GRID', (0,0), (-1,-1), 0.25, colors.lightgrey),
-            ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#fbfdff')]),
-            ('VALIGN', (0,0), (-1,-1), 'TOP'),
-
-            ('LEFTPADDING', (0,0), (-1,-1), 3),
-            ('RIGHTPADDING', (0,0), (-1,-1), 3),
-            ('TOPPADDING', (0,0), (-1,-1), 2),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 2),
-
-            ('WORDWRAP', (0,0), (-1,-1), 'CJK'),
+            ('BACKGROUND', (0,0),(-1,0),colors.HexColor('#0d6efd')),
+            ('TEXTCOLOR',(0,0),(-1,0),colors.white),
+            ('FONTNAME',(0,0),(-1,0),'Helvetica-Bold'),
+            ('FONTSIZE',(0,0),(-1,0),8),
+            ('GRID',(0,0),(-1,-1),0.25,colors.lightgrey),
+            ('ROWBACKGROUNDS',(0,1),(-1,-1),[colors.white,colors.HexColor('#fbfdff')]),
+            ('VALIGN',(0,0),(-1,-1),'TOP'),
+            ('LEFTPADDING',(0,0),(-1,-1),3),
+            ('RIGHTPADDING',(0,0),(-1,-1),3),
+            ('TOPPADDING',(0,0),(-1,-1),2),
+            ('BOTTOMPADDING',(0,0),(-1,-1),2),
         ]))
-
         story.append(tbl)
         story.append(Spacer(1, 6))
         if i + chunk_size < len(registros_rows):
@@ -1086,18 +1083,12 @@ def exportar_relatorio_pdf():
     def _header_footer(canvas, doc_):
         canvas.saveState()
         w, h = pagesize
-
-        # header line
         canvas.setFillColor(colors.HexColor('#0d6efd'))
-        canvas.rect(doc_.leftMargin, h - (12*mm), doc_.width, 4, fill=1, stroke=0)
-
-        footer_text = "Sistema de Gestão de Solicitações — IJASystem"
+        canvas.rect(doc_.leftMargin, h-(12*mm), doc_.width, 4, fill=1, stroke=0)
         canvas.setFont("Helvetica", 8)
         canvas.setFillColor(colors.HexColor('#777'))
-        canvas.drawString(doc_.leftMargin, 10*mm, footer_text)
-
-        page_num_text = f"Página {canvas.getPageNumber()}"
-        canvas.drawRightString(doc_.leftMargin + doc_.width, 10*mm, page_num_text)
+        canvas.drawString(doc_.leftMargin, 10*mm, "Sistema de Gestão de Solicitações — IJASystem")
+        canvas.drawRightString(doc_.leftMargin + doc_.width, 10*mm, f"Página {canvas.getPageNumber()}")
         canvas.restoreState()
 
     doc.build(story, onFirstPage=_header_footer, onLaterPages=_header_footer)
@@ -1113,23 +1104,33 @@ def exportar_relatorio_pdf():
         mimetype="application/pdf"
     )
 
-
 # =======================================================================
 # ROTA 3: Exportar Excel (Com Filtro UVIS)
 # =======================================================================
 @bp.route('/admin/exportar_relatorio_excel')
+@login_required
 def exportar_relatorio_excel():
-    # 1. Parâmetros de Filtro
-    if 'user_id' not in session:
-        return redirect(url_for('main.login'))
+    from openpyxl import Workbook
+    from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
 
+    # -------------------------
+    # 1. Parâmetros e filtros
+    # -------------------------
     mes = request.args.get('mes', datetime.now().month, type=int)
     ano = request.args.get('ano', datetime.now().year, type=int)
-    uvis_id = request.args.get('uvis_id', type=int) # NOVO FILTRO
+    orient = request.args.get('orient', default='portrait')  # caso queira extensão futura
     filtro_data = f"{ano}-{mes:02d}"
 
+    # Controle de acesso UVIS
+    if current_user.tipo_usuario == 'uvis':
+        uvis_id = current_user.id
+    else:
+        uvis_id = request.args.get('uvis_id', type=int)
+
+    # -------------------------
     # 2. Busca de Dados
-    # 2. Busca de Dados
+    # -------------------------
     query_dados = db.session.query(
         Solicitacao.id,
         Solicitacao.status,
@@ -1150,24 +1151,25 @@ def exportar_relatorio_excel():
         Usuario.regiao
     ).join(Usuario, Usuario.id == Solicitacao.usuario_id)
 
-    # Filtro de Data Compatível (O ponto chave da correção)
+    # Filtro de data compatível com PostgreSQL/SQLite
     if db.engine.name == 'postgresql':
         query_dados = query_dados.filter(db.func.to_char(Solicitacao.data_criacao, 'YYYY-MM') == filtro_data)
     else:
         query_dados = query_dados.filter(db.func.strftime('%Y-%m', Solicitacao.data_criacao) == filtro_data)
 
-    # Filtro opcional por Unidade
+    # Filtro opcional por UVIS
     if uvis_id:
         query_dados = query_dados.filter(Solicitacao.usuario_id == uvis_id)
 
-    dados = query_dados.all()
+    dados = query_dados.order_by(Solicitacao.data_criacao.desc()).all()
 
+    # -------------------------
     # 3. Criar arquivo Excel
+    # -------------------------
     wb = Workbook()
     ws = wb.active
     ws.title = "Relatório"
 
-    # Cabeçalho
     colunas = [
         "ID", "Status", "Foco", "Tipo Visita", "Altura Voo",
         "Data Agendamento", "Hora Agendamento",
@@ -1175,7 +1177,6 @@ def exportar_relatorio_excel():
         "Latitude", "Longitude", "UVIS", "Região"
     ]
 
-    # ... (Estilos e escrita do cabeçalho) ...
     header_fill = PatternFill(start_color="1E90FF", end_color="1E90FF", fill_type="solid")
     header_font = Font(color="FFFFFF", bold=True)
     center = Alignment(horizontal="center", vertical="center")
@@ -1184,6 +1185,7 @@ def exportar_relatorio_excel():
     zebra1 = PatternFill(start_color="FFFFFFFF", end_color="FFFFFFFF", fill_type="solid")
     zebra2 = PatternFill(start_color="FFF7FBFF", end_color="FFF7FBFF", fill_type="solid")
 
+    # Cabeçalho
     for col_num, col_name in enumerate(colunas, 1):
         cell = ws.cell(row=1, column=col_num, value=col_name)
         cell.font = header_font
@@ -1191,26 +1193,11 @@ def exportar_relatorio_excel():
         cell.alignment = center
         cell.border = thin_border
 
-    # 4. Preenchimento das linhas
+    # Preenchimento de linhas
     for row_num, row in enumerate(dados, 2):
+        data_agendamento_fmt = row.data_agendamento.strftime("%d/%m/%Y") if row.data_agendamento else ""
+        hora_agendamento_fmt = row.hora_agendamento.strftime("%H:%M") if row.hora_agendamento else ""
 
-        # ---- FORMATAR DATAS ----
-        data_agendamento_fmt = ""
-        if row.data_agendamento:
-            try:
-                data_agendamento_fmt = row.data_agendamento.strftime("%d/%m/%Y")
-            except:
-                data_agendamento_fmt = str(row.data_agendamento)
-
-        # ---- FORMATAR HORA ----
-        hora_agendamento_fmt = ""
-        if row.hora_agendamento:
-            try:
-                hora_agendamento_fmt = row.hora_agendamento.strftime("%H:%M")
-            except:
-                hora_agendamento_fmt = str(row.hora_agendamento)
-
-        # ---- PREENCHER LINHAS ----
         values = [
             row.id,
             row.status,
@@ -1238,21 +1225,12 @@ def exportar_relatorio_excel():
                 cell.alignment = center
             else:
                 cell.alignment = Alignment(vertical="top", horizontal="left")
+            cell.fill = zebra1 if (row_num % 2 == 0) else zebra2
 
-            fill = zebra1 if (row_num % 2 == 0) else zebra2
-            cell.fill = fill
-
-    # 5. Ajustar e Finalizar
+    # Ajuste de largura das colunas
     for col in ws.columns:
-        max_length = 0
-        column = col[0].column_letter
-        for cell in col:
-            try:
-                if cell.value is not None:
-                    max_length = max(max_length, len(str(cell.value)))
-            except:
-                pass
-        ws.column_dimensions[column].width = max(10, min(max_length + 2, 60))
+        max_length = max((len(str(cell.value)) for cell in col if cell.value), default=10)
+        ws.column_dimensions[col[0].column_letter].width = min(max_length + 2, 60)
 
     ws.freeze_panes = "A2"
     ws.auto_filter.ref = f"A1:{get_column_letter(len(colunas))}1"
@@ -1273,56 +1251,81 @@ def exportar_relatorio_excel():
         as_attachment=True,
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
-    
-@bp.route('/admin/editar_completo/<int:id>', methods=['GET', 'POST'], endpoint='admin_editar_completo')
+
+
+
+from flask import flash, redirect, url_for, render_template, request
+from flask_login import login_required, current_user
+from app import db
+from app.models import Solicitacao, Usuario
+from datetime import datetime
+from sqlalchemy.orm import joinedload
+
+@bp.route('/admin/editar_completo/<int:id>', methods=['GET', 'POST'])
+@login_required
 def admin_editar_completo(id):
-    if session.get('user_tipo') != 'admin':
+    # 🔐 Controle de acesso
+    if current_user.tipo_usuario != 'admin':
         flash('Permissão negada. Apenas administradores podem acessar esta página.', 'danger')
         return redirect(url_for('main.admin_dashboard'))
 
-    pedido = Solicitacao.query.get_or_404(id)
+    # Busca segura com joinedload para evitar lazy-loading
+    pedido = Solicitacao.query.options(joinedload(Solicitacao.usuario)).get_or_404(id)
+
+    # Listas para selects do template (pré-preenchimento)
+    status_opcoes = ["PENDENTE", "EM ANÁLISE", "APROVADO", "APROVADO COM RECOMENDAÇÕES", "NEGADO"]
+    foco_opcoes = ["Foco 1", "Foco 2", "Foco 3"]  # ajuste conforme seus valores reais
+    tipo_visita_opcoes = ["Tipo 1", "Tipo 2", "Tipo 3"]  # ajuste conforme seus valores reais
+    uf_opcoes = ["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG",
+                 "PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"]
 
     if request.method == 'POST':
         try:
-            # estado anterior (pra saber se mudou)
+            # Guardar estado anterior de data/hora
             antes_data = pedido.data_agendamento
             antes_hora = pedido.hora_agendamento
 
+            # 1️⃣ Atualizar datas e horas
             data_str = request.form.get('data_agendamento')
             hora_str = request.form.get('hora_agendamento')
 
             pedido.data_agendamento = datetime.strptime(data_str, '%Y-%m-%d').date() if data_str else None
             pedido.hora_agendamento = datetime.strptime(hora_str, '%H:%M').time() if hora_str else None
 
-            pedido.foco = request.form.get('foco')
-            pedido.tipo_visita = request.form.get('tipo_visita')
-            pedido.altura_voo = request.form.get('altura_voo')
-            pedido.apoio_cet = request.form.get('apoio_cet') == 'sim'
-            pedido.observacao = request.form.get('observacao')
+            # 2️⃣ Atualizar campos principais
+            pedido.foco = request.form.get('foco') or pedido.foco
+            pedido.tipo_visita = request.form.get('tipo_visita') or pedido.tipo_visita
+            pedido.altura_voo = request.form.get('altura_voo') or pedido.altura_voo
+            pedido.apoio_cet = request.form.get('apoio_cet', 'não').lower() == 'sim'
+            pedido.observacao = request.form.get('observacao') or pedido.observacao
 
-            pedido.cep = request.form.get('cep')
-            pedido.logradouro = request.form.get('logradouro')
-            pedido.numero = request.form.get('numero')
-            pedido.bairro = request.form.get('bairro')
-            pedido.cidade = request.form.get('cidade')
-            pedido.uf = request.form.get('uf')
-            pedido.complemento = request.form.get('complemento')
+            # 3️⃣ Atualizar endereço
+            pedido.cep = request.form.get('cep') or pedido.cep
+            pedido.logradouro = request.form.get('logradouro') or pedido.logradouro
+            pedido.numero = request.form.get('numero') or pedido.numero
+            pedido.bairro = request.form.get('bairro') or pedido.bairro
+            pedido.cidade = request.form.get('cidade') or pedido.cidade
+            pedido.uf = request.form.get('uf') or pedido.uf
+            pedido.complemento = request.form.get('complemento') or pedido.complemento
 
-            pedido.protocolo = request.form.get('protocolo')
-            pedido.status = request.form.get('status')
-            pedido.justificativa = request.form.get('justificativa')
-            pedido.latitude = request.form.get('latitude')
-            pedido.longitude = request.form.get('longitude')
+            # 4️⃣ Atualizar protocolo, status, justificativa e coordenadas
+            pedido.protocolo = request.form.get('protocolo') or pedido.protocolo
+            pedido.status = request.form.get('status') or pedido.status
+            pedido.justificativa = request.form.get('justificativa') or pedido.justificativa
 
+            lat = request.form.get('latitude')
+            lon = request.form.get('longitude')
+            pedido.latitude = float(lat) if lat else None
+            pedido.longitude = float(lon) if lon else None
+
+            # Commit
             db.session.commit()
 
-            # 🔔 cria notificação se agendou/mudou data/hora
+            # 🔔 Notificação se agendamento mudou
             mudou_agendamento = (antes_data != pedido.data_agendamento) or (antes_hora != pedido.hora_agendamento)
-
             if pedido.data_agendamento and mudou_agendamento:
                 data_fmt = pedido.data_agendamento.strftime("%d/%m/%Y")
                 hora_fmt = pedido.hora_agendamento.strftime("%H:%M") if pedido.hora_agendamento else "00:00"
-
                 criar_notificacao(
                     usuario_id=pedido.usuario_id,
                     titulo="Agendamento atualizado",
@@ -1338,30 +1341,33 @@ def admin_editar_completo(id):
             flash(f"Erro no formato de data/hora: {ve}", 'warning')
         except Exception as e:
             db.session.rollback()
-            flash(f"Erro ao salvar: {e}", 'danger')
+            flash(f"Erro ao salvar a solicitação: {e}", 'danger')
 
-    return render_template('admin_editar_completo.html', pedido=pedido)
+    return render_template(
+        'admin_editar_completo.html',
+        pedido=pedido,
+        status_opcoes=status_opcoes,
+        foco_opcoes=foco_opcoes,
+        tipo_visita_opcoes=tipo_visita_opcoes,
+        uf_opcoes=uf_opcoes
+    )
 
-
-from sqlalchemy.orm import joinedload
-from flask import session, flash, redirect, url_for
+from flask_login import current_user, login_required
 
 @bp.route('/admin/deletar/<int:id>', methods=['POST'], endpoint='deletar_registro')
+@login_required
 def deletar(id):
-
-    if session.get('user_tipo') != 'admin':
+    # Verifica se é admin
+    if current_user.tipo_usuario != 'admin':  # <-- CORRETO: tipo_usuario
         flash('Permissão negada. Apenas administradores podem deletar registros.', 'danger')
         return redirect(url_for('main.admin_dashboard'))
 
-    # Carrega o autor junto (evita lazy load pós-delete)
-    pedido = (
-        Solicitacao.query
-        .options(joinedload(Solicitacao.autor))
-        .get_or_404(id)
-    )
-
+    # Busca a solicitação
+    pedido = Solicitacao.query.get_or_404(id)
     pedido_id = pedido.id
-    autor_nome = pedido.autor.nome_uvis if pedido.autor else "UVIS"
+
+    # Nome do autor da solicitação
+    autor_nome = pedido.usuario.nome_uvis if pedido.usuario else "UVIS"
 
     try:
         db.session.delete(pedido)
@@ -1369,48 +1375,53 @@ def deletar(id):
     except Exception:
         db.session.rollback()
         # Não mostra erro ao usuário
-        pass
 
     flash(f"Pedido #{pedido_id} da {autor_nome} deletado permanentemente.", "success")
     return redirect(url_for('main.admin_dashboard'))
 
+
+from flask_login import login_required, current_user
+
+from flask_login import login_required, current_user
+import traceback
+
+from flask import request, render_template
+from flask_login import login_required, current_user
+from sqlalchemy.orm import joinedload
+from datetime import datetime
+import json
+
 @bp.route("/agenda")
+@login_required
 def agenda():
-    if "user_id" not in session:
-        return redirect(url_for("main.login"))
-
     try:
-        user_tipo = session.get("user_tipo")
-        user_id = session.get("user_id")
+        # --- Usuário atual ---
+        user_tipo = current_user.tipo_usuario
+        user_id = current_user.id
 
-        # ----------------------------
-        # Filtros (GET)
-        # ----------------------------
+        # --- Filtros GET ---
         filtro_status = request.args.get("status") or None
         filtro_uvis_id = request.args.get("uvis_id", type=int)
-
         mes = request.args.get("mes", datetime.now().month, type=int)
         ano = request.args.get("ano", datetime.now().year, type=int)
-
-        d = request.args.get("d")  # opcional
+        d = request.args.get("d")
         initial_date = d or f"{ano}-{mes:02d}-01"
 
-        # ----------------------------
-        # Query base + permissões
-        # ----------------------------
-        query = Solicitacao.query.options(joinedload(Solicitacao.autor))
+        # --- Query base ---
+        query = Solicitacao.query.options(joinedload(Solicitacao.usuario))
 
         if user_tipo not in ["admin", "operario", "visualizar"]:
             query = query.filter(Solicitacao.usuario_id == user_id)
             filtro_uvis_id = None
+            pode_filtrar_uvis = False
         else:
+            pode_filtrar_uvis = True
             if filtro_uvis_id:
                 query = query.filter(Solicitacao.usuario_id == filtro_uvis_id)
 
         if filtro_status:
             query = query.filter(Solicitacao.status == filtro_status)
 
-        # --- CORREÇÃO DE COMPATIBILIDADE DE DATA (POSTGRES VS SQLITE) ---
         filtro_mesano = f"{ano}-{mes:02d}"
         if db.engine.name == 'postgresql':
             query = query.filter(db.func.to_char(Solicitacao.data_agendamento, "YYYY-MM") == filtro_mesano)
@@ -1419,50 +1430,19 @@ def agenda():
 
         eventos = query.all()
 
-        # ----------------------------
-        # UVIS disponíveis e Anos
-        # ----------------------------
-        uvis_disponiveis = []
-        if user_tipo in ["admin", "operario", "visualizar"]:
-            uvis_disponiveis = (
-                db.session.query(Usuario.id, Usuario.nome_uvis)
-                .filter(Usuario.tipo_usuario == "uvis")
-                .order_by(Usuario.nome_uvis)
-                .all()
-            )
-
-        # --- CORREÇÃO NOS ANOS DISPONÍVEIS ---
-        if db.engine.name == 'postgresql':
-            func_ano = db.func.to_char(Solicitacao.data_agendamento, "YYYY")
-        else:
-            func_ano = db.func.strftime("%Y", Solicitacao.data_agendamento)
-
-        anos_raw = (
-            db.session.query(func_ano)
-            .filter(Solicitacao.data_agendamento.isnot(None))
-            .distinct()
-            .order_by(func_ano.desc())
-            .all()
-        )
-        anos_disponiveis = [int(a[0]) for a in anos_raw if a and a[0]]
-        if not anos_disponiveis:
-            anos_disponiveis = [datetime.now().year]
-
-        # ----------------------------
-        # Monta eventos p/ FullCalendar
-        # ----------------------------
+        # --- Monta eventos para o FullCalendar ---
         agenda_eventos = []
-
         for e in eventos:
-            if not e.data_agendamento:
-                continue
-
-            data = e.data_agendamento.strftime("%Y-%m-%d")
-            hora = e.hora_agendamento.strftime("%H:%M") if e.hora_agendamento else "00:00"
+            try:
+                data = e.data_agendamento.strftime("%Y-%m-%d")
+                hora = e.hora_agendamento.strftime("%H:%M") if e.hora_agendamento else "00:00"
+                uvis_nome = e.usuario.nome_uvis if e.usuario else "UVIS"
+            except:
+                uvis_nome = "UVIS"
 
             ev = {
                 "id": str(e.id),
-                "title": f"{e.foco} - {e.autor.nome_uvis}",
+                "title": f"{e.foco} - {uvis_nome}",
                 "start": f"{data}T{hora}",
                 "color": (
                     "#198754" if e.status == "APROVADO" else
@@ -1472,53 +1452,69 @@ def agenda():
                     "#0d6efd"
                 ),
                 "extendedProps": {
-                    "is_admin": (user_tipo == "admin"),
                     "foco": e.foco,
-                    "uvis": e.autor.nome_uvis,
+                    "uvis": uvis_nome,
                     "hora": hora,
                     "status": e.status
                 }
             }
-
-            if user_tipo == "admin":
-                ev["url"] = url_for("main.admin_editar_completo", id=e.id)
-
             agenda_eventos.append(ev)
 
+        # --- Variáveis para filtros ---
         status_opcoes = ["PENDENTE", "EM ANÁLISE", "APROVADO", "APROVADO COM RECOMENDAÇÕES", "NEGADO"]
+
+        uvis_disponiveis = []
+        if user_tipo in ["admin", "operario", "visualizar"]:
+            uvis_disponiveis = db.session.query(Usuario.id, Usuario.nome_uvis).filter(Usuario.tipo_usuario == "uvis").order_by(Usuario.nome_uvis).all()
+
+        # --- Anos disponíveis ---
+        if db.engine.name == 'postgresql':
+            func_ano = db.func.to_char(Solicitacao.data_agendamento, "YYYY")
+        else:
+            func_ano = db.func.strftime("%Y", Solicitacao.data_agendamento)
+
+        anos_raw = db.session.query(func_ano).filter(Solicitacao.data_agendamento.isnot(None)).distinct().order_by(func_ano.desc()).all()
+        anos_disponiveis = [int(a[0]) for a in anos_raw if a and a[0]]
+        if not anos_disponiveis:
+            anos_disponiveis = [datetime.now().year]
+
+        # --- Dicionário de filtros para template ---
+        filtros = {
+            "uvis_id": filtro_uvis_id,
+            "status": filtro_status,
+            "mes": mes,
+            "ano": ano
+        }
 
         return render_template(
             "agenda.html",
             eventos_json=json.dumps(agenda_eventos),
-            uvis_disponiveis=uvis_disponiveis,
+            filtros=filtros,
             status_opcoes=status_opcoes,
-            filtros={
-                "uvis_id": filtro_uvis_id,
-                "status": filtro_status,
-                "mes": mes,
-                "ano": ano,
-            },
+            uvis_disponiveis=uvis_disponiveis,
             anos_disponiveis=anos_disponiveis,
             initial_date=initial_date,
-            pode_filtrar_uvis=(user_tipo in ["admin", "operario", "visualizar"]),
+            pode_filtrar_uvis=pode_filtrar_uvis
         )
 
     except Exception as e:
-        db.session.rollback() # MUITO IMPORTANTE para o Render
-        print(f"ERRO NA AGENDA: {str(e)}")
-        return render_template("erro.html", codigo="500", titulo="Erro na Agenda", mensagem="Ocorreu um erro ao carregar os compromissos técnicos.")
-    
-@bp.route("/agenda/exportar_excel")
-def agenda_exportar_excel():
-    if "user_id" not in session:
-        return redirect(url_for("main.login"))
+        import traceback
+        print("TRACEBACK COMPLETO:")
+        traceback.print_exc()
+        return f"ERRO NA AGENDA: {str(e)}"
 
-    user_tipo = session.get("user_tipo")
-    user_id = session.get("user_id")
 
+@bp.route("/agenda/exportar_excel", endpoint="agenda_exportar_excel")
+@login_required
+def exportar_excel():  # <--- função interna com nome diferente
+    if current_user.tipo_usuario != "admin":
+        abort(403)  # Forbidden
+
+    user_tipo = current_user.tipo_usuario
+    user_id = current_user.id
     export_all = request.args.get("all") == "1"
 
-    # filtros (se all=1, ignora)
+    # filtros
     filtro_status = None if export_all else (request.args.get("status") or None)
     filtro_uvis_id = None if export_all else request.args.get("uvis_id", type=int)
     mes = None if export_all else request.args.get("mes", type=int)
@@ -1526,29 +1522,22 @@ def agenda_exportar_excel():
 
     query = Solicitacao.query.options(joinedload(Solicitacao.autor))
 
-    # permissões
-    if user_tipo not in ["admin", "operario", "visualizar"]:
-        query = query.filter(Solicitacao.usuario_id == user_id)
-        filtro_uvis_id = None  # UVIS não filtra outras UVIS
-    else:
-        if filtro_uvis_id:
-            query = query.filter(Solicitacao.usuario_id == filtro_uvis_id)
-
+    if filtro_uvis_id:
+        query = query.filter(Solicitacao.usuario_id == filtro_uvis_id)
     if filtro_status:
         query = query.filter(Solicitacao.status == filtro_status)
-
     if mes and ano:
         filtro_mesano = f"{ano}-{mes:02d}"
         if db.engine.name == 'postgresql':
             query = query.filter(db.func.to_char(Solicitacao.data_agendamento, "YYYY-MM") == filtro_mesano)
         else:
             query = query.filter(db.func.strftime("%Y-%m", Solicitacao.data_agendamento) == filtro_mesano)
+
     query = query.order_by(
         Solicitacao.data_agendamento.desc(),
         Solicitacao.hora_agendamento.desc()
     )
     eventos = query.all()
-
     # -----------------------------
     # Monta XLSX
     # -----------------------------
@@ -1573,7 +1562,6 @@ def agenda_exportar_excel():
     ws.append(headers)
 
     for p in eventos:
-        # Endereço completo
         endereco_completo = (
             f"{p.logradouro or ''}, {getattr(p, 'numero', '')} - "
             f"{p.bairro or ''} - "
@@ -1584,21 +1572,14 @@ def agenda_exportar_excel():
             endereco_completo += f" - {p.complemento}"
 
         cet_txt = "SIM" if getattr(p, "apoio_cet", None) else "NÃO"
-
         data_str = p.data_agendamento.strftime("%d/%m/%Y") if p.data_agendamento else ""
         hora_str = p.hora_agendamento.strftime("%H:%M") if p.hora_agendamento else ""
-
         uvis_nome = p.autor.nome_uvis if getattr(p, "autor", None) else ""
         regiao = p.autor.regiao if getattr(p, "autor", None) else ""
-       
-
         lat = getattr(p, "latitude", "") or ""
         lon = getattr(p, "longitude", "") or ""
         coordenada = f"{lat},{lon}" if (lat or lon) else ""
-
-        protocolo_deca = getattr(p, "protocolo_deca", None)
-        if not protocolo_deca:
-            protocolo_deca = getattr(p, "protocolo", "") or ""
+        protocolo_deca = getattr(p, "protocolo_deca", None) or getattr(p, "protocolo", "") or ""
 
         ws.append([
             data_str,
@@ -1616,7 +1597,7 @@ def agenda_exportar_excel():
         ])
 
     # -----------------------------
-    # Estilo (aplica uma vez)
+    # Estilo
     # -----------------------------
     header_fill = PatternFill("solid", fgColor="0D6EFD")
     header_font = Font(bold=True, color="FFFFFF")
@@ -1631,53 +1612,26 @@ def agenda_exportar_excel():
 
     thin = Side(style="thin", color="D0D7DE")
     border = Border(left=thin, right=thin, top=thin, bottom=thin)
-
     for row in ws.iter_rows(min_row=1, max_row=ws.max_row, min_col=1, max_col=ws.max_column):
         for cell in row:
             cell.border = border
             cell.alignment = wrap if cell.row > 1 else center
 
-    # largura automática simples
     for col in range(1, ws.max_column + 1):
-        max_len = 0
-        col_letter = get_column_letter(col)
-        for cell in ws[col_letter]:
-            v = str(cell.value) if cell.value is not None else ""
-            max_len = max(max_len, len(v))
-        ws.column_dimensions[col_letter].width = min(max(12, max_len + 2), 60)
+        max_len = max(len(str(c.value)) if c.value else 0 for c in ws[get_column_letter(col)])
+        ws.column_dimensions[get_column_letter(col)].width = min(max(12, max_len + 2), 60)
 
     bio = BytesIO()
     wb.save(bio)
     bio.seek(0)
-
     nome = "agenda_tudo.xlsx" if export_all else "agenda_exportada.xlsx"
+
     return send_file(
         bio,
         as_attachment=True,
         download_name=nome,
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
-
-
-# -------------------------------------------------
-# CONTADOR (badge) NO BASE.HTML
-# -------------------------------------------------
-@bp.context_processor
-def inject_notificacoes():
-    if 'user_id' not in session:
-        return dict(notif_count=0)
-
-    user_id = session.get("user_id")
-    user_tipo = session.get("user_tipo")
-
-    if user_tipo in ["admin", "operario", "visualizar"]:
-        notif_count = Notificacao.query.filter_by(lida_em=None).count()
-    else:
-        notif_count = Notificacao.query.filter_by(usuario_id=user_id, lida_em=None).count()
-
-    return dict(notif_count=notif_count)
-
-
 # -------------------------------------------------
 # CRIAR NOTIFICAÇÃO
 # -------------------------------------------------
@@ -1823,7 +1777,9 @@ def limpar_notificacoes():
 # ==========================
 import re
 import unicodedata
+
 from flask import jsonify, request, session
+
 
 def _norm(text: str) -> str:
     if not text:
@@ -2188,7 +2144,9 @@ def admin_uvis_excluir(id):
 # ==========================
 import re
 import unicodedata
+
 from flask import jsonify, request, session
+
 
 def _norm_admin(text: str) -> str:
     if not text:

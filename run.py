@@ -113,11 +113,16 @@ def verificar_banco():
     except Exception as e:
         print(f"!!! ERRO FATAL NA VERIFICAÇÃO DO BANCO: {e}")
 
-if __name__ == "__main__":
-    verificar_banco()
+#if __name__ == "__main__":
+    #verificar_banco()
     # Comente ou remova as linhas abaixo para o Render:
     # print(">>> INICIANDO SERVIDOR FLASK...")
-    # app.run(debug=False , port:5000) #
+    #app.run(debug=True, port=5000) 
+
+if __name__ == "__main__":
+
+    verificar_banco()
+    app.run(debug=True, host='127.0.0.1', port=5000)
     
     # Adicione este print para você saber que ele terminou:
     print(">>> Banco de dados pronto! Passando o controle para o Gunicorn...")
