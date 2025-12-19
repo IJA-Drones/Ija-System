@@ -105,7 +105,7 @@
         <div class="card info status-primary h-100 shadow-sm rounded-4 overflow-hidden">
             <div class="card-body">
                 <h6 class="text-uppercase mb-2 text-muted">Total</h6>
-                <h2 class="mb-0 fw-bold text-primary">0</h2>
+                <h2 class="mb-0 fw-bold text-primary">{{ total_solicitacoes }}</h2>
             </div>
         </div>
     </div>
@@ -114,7 +114,7 @@
         <div class="card info status-success h-100 shadow-sm rounded-4 overflow-hidden">
             <div class="card-body">
                 <h6 class="text-uppercase mb-2 text-muted">Aprovadas</h6>
-                <h2 class="mb-0 fw-bold text-success">0</h2>
+                <h2 class="mb-0 fw-bold text-success">{{ total_aprovadas }}</h2>
             </div>
         </div>
     </div>
@@ -125,7 +125,7 @@
                 <h6 class="text-uppercase mb-2 text-muted" style="font-size: 0.85rem;">
                     Aprovadas c/ Recom.
                 </h6>
-                <h2 class="mb-0 fw-bold text-recomended">0</h2>
+                <h2 class="mb-0 fw-bold text-recomended">{{ total_aprovadas_com_recomendacoes }}</h2>
             </div>
         </div>
     </div>
@@ -134,7 +134,7 @@
         <div class="card info status-danger h-100 shadow-sm rounded-4 overflow-hidden">
             <div class="card-body">
                 <h6 class="text-uppercase mb-2 text-muted">Recusadas</h6>
-                <h2 class="mb-0 fw-bold text-danger">0</h2>
+                <h2 class="mb-0 fw-bold text-danger">{{ total_recusadas }}</h2>
             </div>
         </div>
     </div>
@@ -143,7 +143,7 @@
         <div class="card info status-warning h-100 shadow-sm rounded-4 overflow-hidden">
             <div class="card-body">
                 <h6 class="text-uppercase mb-2 text-muted">Em Análise</h6>
-                <h2 class="mb-0 fw-bold text-warning">0</h2>
+                <h2 class="mb-0 fw-bold text-warning">{{ total_analise }}</h2>
             </div>
         </div>
     </div>

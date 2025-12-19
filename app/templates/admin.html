@@ -287,7 +287,7 @@
                                 </select>
 
                                 <label class="small fw-bold text-muted">Justificativa (se negar)</label>
-                                <input name="justificativa" class="form-control form-control-sm mb-2" value="{{ p.justificativa or '' }}">
+                                <input name="justificativa" class="form-control form-control-sm mb-2" value="{{ p.justificativa or '' }}" placeholder="Digite a justificativa (se negar)" title="Justificativa para a decisão">
 
                                 {# ✅ ADICIONADO type="submit" #}
                                 <button class="btn btn-primary btn-sm w-100 fw-bold" type="submit">
@@ -380,7 +380,7 @@
 
       <div class="input-group">
         <input id="adminBotInput" class="form-control" placeholder="Digite sua dúvida…" autocomplete="off">
-        <button id="adminBotSend" class="btn btn-primary">
+        <button id="adminBotSend" class="btn btn-primary" type="button" title="Enviar mensagem">
           <i class="bi bi-send-fill"></i>
         </button>
       </div>
