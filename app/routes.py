@@ -53,14 +53,27 @@ def inject_globals():
 
     if current_user.is_authenticated:
         if current_user.tipo_usuario in ["admin", "operario", "visualizar"]:
-            notif_count = Notificacao.query.filter_by(lida_em=None).count()
+            notif_count = (
+                Notificacao.query
+                .filter(
+                    Notificacao.lida_em.is_(None),
+                    Notificacao.apagada_em.is_(None),
+                )
+                .count()
+            )
         else:
-            notif_count = Notificacao.query.filter_by(
-                usuario_id=current_user.id,
-                lida_em=None
-            ).count()
+            notif_count = (
+                Notificacao.query
+                .filter(
+                    Notificacao.usuario_id == current_user.id,
+                    Notificacao.lida_em.is_(None),
+                    Notificacao.apagada_em.is_(None),
+                )
+                .count()
+            )
 
     return dict(notif_count=notif_count)
+
 
 
 @bp.app_template_filter('datetimeformat')
@@ -1632,6 +1645,15 @@ def exportar_excel():  # <--- função interna com nome diferente
         download_name=nome,
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
+# =================================================
+# NOTIFICAÇÕES (Flask-Login: login_required + current_user)
+# Requer no topo:
+# from flask_login import login_required, current_user
+# from flask import abort, redirect, url_for, render_template
+# from datetime import datetime, date
+# from sqlalchemy.orm import joinedload
+# =================================================
+
 # -------------------------------------------------
 # CRIAR NOTIFICAÇÃO
 # -------------------------------------------------
@@ -1649,8 +1671,9 @@ def criar_notificacao(usuario_id, titulo, mensagem="", link=None):
 
 # -------------------------------------------------
 # GARANTIR NOTIFICAÇÕES DO DIA (sem duplicar)
-# - Admin/Operário/Visualizar: cria notificações "globais" (usuario_id = admin logado)
-# - UVIS: cria apenas para ela mesma (usuario_id = uvis logada)
+# - UVIS: cria apenas para ela mesma
+# Observação: com soft delete (apagada_em), NÃO recria se já existiu (mesmo apagada),
+# porque ela continua existindo no banco.
 # -------------------------------------------------
 def garantir_notificacoes_do_dia(usuario_id):
     hoje = date.today()
@@ -1666,7 +1689,7 @@ def garantir_notificacoes_do_dia(usuario_id):
     for s in ags:
         hora_fmt = s.hora_agendamento.strftime("%H:%M") if s.hora_agendamento else "00:00"
 
-        # 🔒 chave estável (NÃO mude mais esse formato)
+        # 🔒 chave estável
         link = url_for("main.agenda", sid=s.id, d=hoje.isoformat())
 
         ja_existe = (
@@ -1685,22 +1708,20 @@ def garantir_notificacoes_do_dia(usuario_id):
         )
 
 
-
 # -------------------------------------------------
 # LER NOTIFICAÇÃO
 # -------------------------------------------------
 @bp.route("/notificacoes/<int:notif_id>/ler")
+@login_required
 def ler_notificacao(notif_id):
-    if 'user_id' not in session:
-        return redirect(url_for('main.login'))
-
-    user_id = session["user_id"]
-    user_tipo = session.get("user_tipo")
+    user_tipo = current_user.tipo_usuario
 
     if user_tipo in ["admin", "operario", "visualizar"]:
         n = Notificacao.query.get_or_404(notif_id)
     else:
-        n = Notificacao.query.filter_by(id=notif_id, usuario_id=user_id).first_or_404()
+        n = (Notificacao.query
+             .filter_by(id=notif_id, usuario_id=current_user.id)
+             .first_or_404())
 
     if n.lida_em is None:
         n.lida_em = datetime.utcnow()
@@ -1709,67 +1730,70 @@ def ler_notificacao(notif_id):
     return redirect(n.link or url_for("main.notificacoes"))
 
 
+# -------------------------------------------------
+# LISTAR NOTIFICAÇÕES
+# -------------------------------------------------
 @bp.route("/notificacoes")
+@login_required
 def notificacoes():
-    if 'user_id' not in session:
-        return redirect(url_for('main.login'))
-
-    user_id = session["user_id"]
-    user_tipo = session.get("user_tipo")
+    user_tipo = current_user.tipo_usuario
 
     # ✅ só UVIS gera lembrete do dia (pro próprio usuário)
     if user_tipo not in ["admin", "operario", "visualizar"]:
-        garantir_notificacoes_do_dia(user_id)
+        garantir_notificacoes_do_dia(current_user.id)
 
-    # ✅ admin vê tudo, uvis só as dela
+    base = Notificacao.query.filter(Notificacao.apagada_em.is_(None))
+
+    # ✅ admin/operário/visualizar vê tudo, uvis só as dela
     if user_tipo in ["admin", "operario", "visualizar"]:
-        itens = Notificacao.query.order_by(Notificacao.criada_em.desc()).all()
+        itens = base.order_by(Notificacao.criada_em.desc()).all()
     else:
-        itens = (Notificacao.query
-                 .filter_by(usuario_id=user_id)
+        itens = (base
+                 .filter_by(usuario_id=current_user.id)
                  .order_by(Notificacao.criada_em.desc())
                  .all())
 
     return render_template("notificacoes.html", itens=itens)
 
+
 # -------------------------------------------------
-# EXCLUIR UMA NOTIFICAÇÃO
+# EXCLUIR UMA NOTIFICAÇÃO (SOFT DELETE)
 # -------------------------------------------------
 @bp.route("/notificacoes/<int:notif_id>/excluir", methods=["POST"])
+@login_required
 def excluir_notificacao(notif_id):
-    if 'user_id' not in session:
-        return redirect(url_for('main.login'))
-
-    user_id = session["user_id"]
-    user_tipo = session.get("user_tipo")
+    user_tipo = current_user.tipo_usuario
 
     if user_tipo in ["admin", "operario", "visualizar"]:
         n = Notificacao.query.get_or_404(notif_id)
     else:
-        n = Notificacao.query.filter_by(id=notif_id, usuario_id=user_id).first_or_404()
+        n = (Notificacao.query
+             .filter_by(id=notif_id, usuario_id=current_user.id)
+             .first_or_404())
 
-    db.session.delete(n)
+    n.apagada_em = datetime.utcnow()
     db.session.commit()
 
     return redirect(url_for("main.notificacoes"))
 
+
 # -------------------------------------------------
-# LIMPAR TODAS AS NOTIFICAÇÕES
+# LIMPAR TODAS AS NOTIFICAÇÕES (SOFT DELETE EM LOTE)
 # -------------------------------------------------
 @bp.route("/notificacoes/limpar", methods=["POST"])
+@login_required
 def limpar_notificacoes():
-    if 'user_id' not in session:
-        return redirect(url_for('main.login'))
+    user_tipo = current_user.tipo_usuario
+    agora = datetime.utcnow()
 
-    user_id = session["user_id"]
-    user_tipo = session.get("user_tipo")
+    q = Notificacao.query.filter(Notificacao.apagada_em.is_(None))
 
-    if user_tipo in ["admin", "operario", "visualizar"]:
-        Notificacao.query.delete()
-    else:
-        Notificacao.query.filter_by(usuario_id=user_id).delete()
+    if user_tipo not in ["admin", "operario", "visualizar"]:
+        q = q.filter_by(usuario_id=current_user.id)
 
+    q.update({"apagada_em": agora}, synchronize_session=False)
     db.session.commit()
+
     return redirect(url_for("main.notificacoes"))
 
 # ==========================
@@ -1778,7 +1802,8 @@ def limpar_notificacoes():
 import re
 import unicodedata
 
-from flask import jsonify, request, session
+from flask import jsonify, request
+from flask_login import login_required, current_user
 
 
 def _norm(text: str) -> str:
@@ -1789,6 +1814,7 @@ def _norm(text: str) -> str:
     text = "".join(ch for ch in text if not unicodedata.combining(ch))
     text = re.sub(r"\s+", " ", text)
     return text
+
 
 UVIS_FAQ = [
     {
@@ -1878,11 +1904,13 @@ UVIS_FAQ = [
     },
 ]
 
+
 @bp.route("/api/uvis/chatbot", methods=["POST"])
+@login_required
 def uvis_chatbot():
-    # protege: só usuário logado
-    if "user_id" not in session:
-        return jsonify({"answer": "Sessão expirada. Faça login novamente."}), 401
+    # (opcional) se quiser limitar só para UVIS:
+    # if current_user.tipo_usuario != "uvis":
+    #     return jsonify({"answer": "Acesso negado."}), 403
 
     payload = request.get_json(silent=True) or {}
     msg = (payload.get("message") or "").strip()
@@ -1926,52 +1954,54 @@ def uvis_chatbot():
         "matched": best["title"],
         "confidence": best_score,
     }), 200
+
+
+import os
+from flask import abort, send_from_directory
+from flask_login import login_required, current_user
+
 @bp.route("/solicitacao/<int:id>/anexo", endpoint="baixar_anexo")
-@bp.route("/admin/solicitacao/<int:id>/anexo", endpoint="baixar_anexo")
+@bp.route("/admin/solicitacao/<int:id>/anexo", endpoint="baixar_anexo_admin")
+@login_required
 def baixar_anexo(id):
-    if "user_id" not in session:
-        return redirect(url_for("main.login"))
-
-    user_tipo = session.get("user_tipo")
-    user_id = int(session.get("user_id"))
-
     pedido = Solicitacao.query.get_or_404(id)
 
-    # ✅ Permissões:
-    # Admin/Operário/Visualizar: pode baixar qualquer um
-    # UVIS: só pode baixar se for dono da solicitação
-    if user_tipo not in ["admin", "operario", "visualizar", "uvis"]:
-        flash("Permissão negada.", "danger")
-        return redirect(url_for("main.dashboard"))
-
-    if user_tipo == "uvis" and pedido.usuario_id != user_id:
-        flash("Permissão negada.", "danger")
-        return redirect(url_for("main.dashboard"))
+    # 🔐 permissões
+    if current_user.tipo_usuario not in ["admin", "operario", "visualizar", "uvis"]:
+        abort(403)
+    if current_user.tipo_usuario == "uvis" and pedido.usuario_id != current_user.id:
+        abort(403)
 
     if not pedido.anexo_path:
-        flash("Essa solicitação não tem anexo.", "warning")
-        return redirect(url_for("main.dashboard"))
+        abort(404)
 
-    upload_folder = os.path.abspath(os.path.join(bp.root_path, "..", "..", "upload-files"))
-    filename = pedido.anexo_path.replace("upload-files/", "", 1)
+    # ✅ mesma pasta do upload
+    upload_folder = get_upload_folder()
 
-    file_path = os.path.join(upload_folder, filename)
-    if not os.path.exists(file_path):
-        flash("Arquivo não encontrado no servidor.", "warning")
-        return redirect(url_for("main.dashboard"))
+    # ✅ normaliza o caminho salvo no banco
+    rel = (pedido.anexo_path or "").replace("\\", "/")
+    if rel.startswith("upload-files/"):
+        rel = rel.split("upload-files/", 1)[1]
+    rel = os.path.basename(rel)  # segurança
 
-    return send_from_directory(upload_folder, filename, as_attachment=True)
+    file_path = os.path.join(upload_folder, rel)
+    if not os.path.isfile(file_path):
+        abort(404)
+
+    return send_from_directory(
+        upload_folder,
+        rel,
+        as_attachment=True,
+        download_name=(pedido.anexo_nome or rel)
+    )
+
 
 @bp.route("/admin/uvis/novo", methods=["GET", "POST"], endpoint="admin_uvis_novo")
+@login_required
 def admin_uvis_novo():
-    if "user_id" not in session:
-        flash("Faça login para continuar.", "warning")
-        return redirect(url_for("main.login"))
-
     # SOMENTE ADMIN
-    if session.get("user_tipo") != "admin":
-        flash("Acesso restrito ao administrador.", "danger")
-        return redirect(url_for("main.dashboard"))
+    if current_user.tipo_usuario != "admin":
+        abort(403)
 
     if request.method == "POST":
         nome_uvis = (request.form.get("nome_uvis") or "").strip()
@@ -2012,19 +2042,15 @@ def admin_uvis_novo():
             flash(f"Erro ao cadastrar UVIS: {e}", "danger")
 
     return render_template("admin_uvis_novo.html")
+
+
 @bp.route("/admin/uvis", methods=["GET"], endpoint="admin_uvis_listar")
+@login_required
 def admin_uvis_listar():
-    # precisa estar logado
-    if "user_id" not in session:
-        flash("Faça login para continuar.", "warning")
-        return redirect(url_for("main.login"))
-
     # SOMENTE ADMIN
-    if session.get("user_tipo") != "admin":
-        flash("Acesso restrito ao administrador.", "danger")
-        return redirect(url_for("main.dashboard"))
+    if current_user.tipo_usuario != "admin":
+        abort(403)
 
-    # filtros (GET)
     q = (request.args.get("q") or "").strip()
     regiao = (request.args.get("regiao") or "").strip()
     codigo_setor = (request.args.get("codigo_setor") or "").strip()
@@ -2058,19 +2084,16 @@ def admin_uvis_listar():
         regiao=regiao,
         codigo_setor=codigo_setor
     )
-@bp.route("/admin/uvis/<int:id>/editar", methods=["GET", "POST"], endpoint="admin_uvis_editar")
-def admin_uvis_editar(id):
-    if "user_id" not in session:
-        flash("Faça login para continuar.", "warning")
-        return redirect(url_for("main.login"))
 
-    if session.get("user_tipo") != "admin":
-        flash("Acesso restrito ao administrador.", "danger")
-        return redirect(url_for("main.dashboard"))
+
+@bp.route("/admin/uvis/<int:id>/editar", methods=["GET", "POST"], endpoint="admin_uvis_editar")
+@login_required
+def admin_uvis_editar(id):
+    if current_user.tipo_usuario != "admin":
+        abort(403)
 
     uvis = Usuario.query.get_or_404(id)
 
-    # garante que está editando uma UVIS
     if uvis.tipo_usuario != "uvis":
         flash("Registro inválido para edição.", "danger")
         return redirect(url_for("main.admin_uvis_listar"))
@@ -2111,11 +2134,13 @@ def admin_uvis_editar(id):
             flash(f"Erro ao salvar: {e}", "danger")
 
     return render_template("admin_uvis_editar.html", uvis=uvis)
+
+
 @bp.route("/admin/uvis/<int:id>/excluir", methods=["POST"], endpoint="admin_uvis_excluir")
+@login_required
 def admin_uvis_excluir(id):
-    if session.get("user_tipo") != "admin":
-        flash("Permissão negada. Apenas administradores podem deletar registros.", "danger")
-        return redirect(url_for("main.admin_uvis_listar"))
+    if current_user.tipo_usuario != "admin":
+        abort(403)
 
     uvis = Usuario.query.get_or_404(id)
 
@@ -2123,7 +2148,6 @@ def admin_uvis_excluir(id):
         flash("Registro inválido para exclusão.", "danger")
         return redirect(url_for("main.admin_uvis_listar"))
 
-    # impede excluir se houver solicitações
     existe = Solicitacao.query.filter_by(usuario_id=uvis.id).first()
     if existe:
         flash("Não é possível excluir: esta UVIS possui solicitações vinculadas.", "warning")
@@ -2140,12 +2164,13 @@ def admin_uvis_excluir(id):
     return redirect(url_for("main.admin_uvis_listar"))
 
 # ==========================
-# CHATBOT ADMIN (FAQ inteligente)
+# CHATBOT ADMIN (FAQ inteligente) - Flask-Login
 # ==========================
 import re
 import unicodedata
 
-from flask import jsonify, request, session
+from flask import jsonify, request
+from flask_login import login_required, current_user
 
 
 def _norm_admin(text: str) -> str:
@@ -2157,6 +2182,7 @@ def _norm_admin(text: str) -> str:
     text = re.sub(r"\s+", " ", text)
     return text
 
+
 def _clean_answer(text: str) -> str:
     """Remove markdown simples (**negrito**, `code`, etc) e normaliza."""
     if not text:
@@ -2165,6 +2191,7 @@ def _clean_answer(text: str) -> str:
     text = text.replace("`", "")                  # remove ` `
     text = re.sub(r"\n{3,}", "\n\n", text)         # evita muitas quebras
     return text.strip()
+
 
 ADMIN_FAQ = [
     {
@@ -2185,10 +2212,9 @@ ADMIN_FAQ = [
             "- Status\n"
             "- Unidade (UVIS)\n"
             "- Região\n"
-            "Dica: filtros são pela URL (GET) e mudam a listagem."
-        ),
+            "Use os filtros para encontrar solicitações específicas rapidamente."),
     },
-      {
+    {
         "title": "Olá! Como posso ajudar?",
         "keywords": ["olá", "oi", "hello", "hi", "bom dia", "boa tarde", "boa noite", "ajuda", "suporte"],
         "answer": (
@@ -2205,7 +2231,7 @@ ADMIN_FAQ = [
             "- Agenda\n"
             "- Relatórios\n"
             "- Gestão de UVIS\n"
-            "Como posso ajudar você hoje?"            
+            "Como posso ajudar você hoje?"
         ),
     },
     {
@@ -2289,12 +2315,12 @@ ADMIN_FAQ = [
     },
 ]
 
-@bp.route("/api/admin/chatbot", methods=["POST"])
-def admin_chatbot():
-    if "user_id" not in session:
-        return jsonify({"answer": "Sessão expirada. Faça login novamente."}), 401
 
-    if session.get("user_tipo") not in ["admin", "operario", "visualizar"]:
+@bp.route("/api/admin/chatbot", methods=["POST"])
+@login_required
+def admin_chatbot():
+    # 🔐 só perfis do painel
+    if current_user.tipo_usuario not in ["admin", "operario", "visualizar"]:
         return jsonify({"answer": "Acesso negado para este chatbot."}), 403
 
     payload = request.get_json(silent=True) or {}

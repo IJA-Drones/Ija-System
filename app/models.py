@@ -107,3 +107,5 @@ class Notificacao(db.Model):
 
     criada_em = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     lida_em = db.Column(db.DateTime)
+
+    apagada_em = db.Column(db.DateTime)  # ✅ NOVO (soft delete)

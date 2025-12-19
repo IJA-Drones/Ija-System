@@ -265,14 +265,13 @@
                                 </div>
                                 <label class="small fw-bold text-muted">Anexo (opcional)</label>
                                 <input type="file" name="anexo" class="form-control form-control-sm mb-2">
-                                {% if p.anexo_path %}
-                                 <a class="btn btn-outline-secondary btn-sm w-100 mb-2" href="{{ url_for('main.baixar_anexo_admin', id=p.id) }}"
-">
+                              {% if p.anexo_path %}
+                              <a class="btn btn-outline-secondary btn-sm w-100 mb-2"
+                                href="{{ url_for('main.baixar_anexo', id=p.id) }}">
                                 <i class="bi bi-paperclip"></i> Ver anexo atual
-                                </a>
-                        {% endif %}
+                              </a>
+                            {% endif %}
                             </div>
-
                             <label class="small fw-bold text-muted">Protocolo DECEA</label>
                             <input name="protocolo" class="form-control form-control-sm font-monospace mb-2" placeholder="BR-2025-XXXX" value="{{ p.protocolo or '' }}">
 
