@@ -310,7 +310,7 @@ def exportar_excel():
         return send_file(
             output,
             download_name="relatorio_solicitacoes.xlsx",
-            as_attachment=False,
+            as_attachment=False",
             mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
