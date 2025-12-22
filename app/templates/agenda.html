@@ -1,11 +1,103 @@
 {% extends "base.html" %}
 {% block content %}
 
+<div class="d-flex justify-content-between align-items-center mb-4">
+    
+    <h2 class="text-dark">
+        <i class="bi bi-calendar-event-fill mb-2 text-primary"></i> Agenda
+    </h2>
+
+    {% if current_user.is_authenticated and current_user.tipo_usuario == "admin" %}
+    <div class="d-flex gap-2">
+        
+        {# Exportar Tudo #}
+        <a href="{{ url_for('main.agenda_exportar_excel', all=1) }}" 
+           class="btn btn-outline-success d-flex align-items-center gap-2"
+           title="Baixar base completa sem filtros">
+            <i class="bi bi-download"></i> <span class="d-none d-md-inline">Exportar Tudo</span>
+        </a>
+
+        {# Exportar Filtro Atual #}
+        <a href="{{ url_for('main.agenda_exportar_excel', **request.args.to_dict()) }}" 
+           class="btn btn-success text-white d-flex align-items-center gap-2 shadow-sm">
+            <i class="bi bi-file-earmark-excel"></i> Exportar Atual
+        </a>
+
+    </div>
+    {% endif %}
+
+</div>
+
+<form method="get" action="{{ url_for('main.agenda') }}" class="card p-3 mb-4 shadow-sm rounded-4 border-0">
+    <div class="row g-2 align-items-end">
+
+        {# CAMPO: UVIS (Se permitido) #}
+        {% if pode_filtrar_uvis %}
+        <div class="col-md-3">
+            <label class="small text-muted">UVIS:</label>
+            <select class="form-select form-select-sm" name="uvis_id">
+                <option value="">Todas</option>
+                {% for id, nome in uvis_disponiveis %}
+                    <option value="{{ id }}" {% if filtros.uvis_id|int == id|int %}selected{% endif %}>{{ nome }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+
+        {# CAMPO: STATUS #}
+        <div class="col-md-3">
+            <label class="small text-muted">Status:</label>
+            <select class="form-select form-select-sm" name="status">
+                <option value="">Todos</option>
+                {% for s in status_opcoes %}
+                    <option value="{{ s }}" {% if filtros.status == s %}selected{% endif %}>{{ s }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        {# CAMPO: MÊS #}
+        <div class="col-6 col-md-2">
+            <label class="small text-muted">Mês:</label>
+            <select class="form-select form-select-sm" name="mes">
+                {% for m in range(1, 13) %}
+                    <option value="{{ m }}" {% if filtros.mes|int == m %}selected{% endif %}>{{ "%02d"|format(m) }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        {# CAMPO: ANO #}
+        <div class="col-6 col-md-2">
+            <label class="small text-muted">Ano:</label>
+            <select class="form-select form-select-sm" name="ano">
+                {% for a in anos_disponiveis %}
+                    <option value="{{ a }}" {% if filtros.ano|int == a %}selected{% endif %}>{{ a }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        {# BOTÕES DE AÇÃO DO FORM #}
+        <div class="col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-success btn-sm w-100">
+                <i class="bi bi-funnel"></i> Filtrar
+            </button>
+
+            {# Botão Limpar (Só aparece se houver filtro ativo) #}
+            {% if filtros.uvis_id or filtros.status %}
+             <a href="{{ url_for('main.agenda') }}" 
+                class="btn btn-outline-secondary btn-sm w-100" 
+                title="Limpar Filtros">
+                 <i class="bi bi-x-lg"></i>
+             </a>
+            {% endif %}
+        </div>
+    </div>
+</form>
+
+
 <div class="container mt-4 mb-4">
   <div class="calendar-card">
     <div class="calendar-card-header">
       <div>
-        <h3 class="calendar-title">Agenda de Agendamentos</h3>
         <p class="calendar-subtitle">
           Visualize seus agendamentos por mês, semana ou lista.
         </p>
@@ -20,79 +112,7 @@
         </span>
       </div>
     </div>
-
-    <!-- FILTROS -->
-    <form method="get" action="{{ url_for('main.agenda') }}" class="card p-3 mb-2 shadow-sm rounded-4">
-      <div class="row g-2 align-items-end">
-
-        {# CAMPO UVIS #}
-        {% if pode_filtrar_uvis %}
-        <div class="col-12 col-md-3">
-          <label class="small text-muted">UVIS</label>
-          <select class="form-select form-select-sm" name="uvis_id">
-            <option value="">Todas</option>
-            {% for id, nome in uvis_disponiveis %}
-              <option value="{{ id }}" {% if filtros.uvis_id == id %}selected{% endif %}>{{ nome }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        {% endif %}
-
-        {# CAMPO STATUS #}
-        <div class="col-12 col-md-3">
-          <label class="small text-muted">Status</label>
-          <select class="form-select form-select-sm" name="status">
-            <option value="">Todos</option>
-            {% for s in status_opcoes %}
-              <option value="{{ s }}" {% if filtros.status == s %}selected{% endif %}>{{ s }}</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        {# CAMPO MÊS #}
-        <div class="col-6 col-md-2">
-          <label class="small text-muted">Mês</label>
-          <select class="form-select form-select-sm" name="mes">
-            {% for m in range(1, 13) %}
-              <option value="{{ m }}" {% if filtros.mes == m %}selected{% endif %}>{{ "%02d"|format(m) }}</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        {# CAMPO ANO #}
-        <div class="col-6 col-md-2">
-          <label class="small text-muted">Ano</label>
-          <select class="form-select form-select-sm" name="ano">
-            {% for a in anos_disponiveis %}
-              <option value="{{ a }}" {% if filtros.ano == a %}selected{% endif %}>{{ a }}</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        {# BOTÃO FILTRAR #}
-        <div class="col-12 col-md-2 d-grid">
-          <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
-        </div>
-
-      </div>
-    </form>
-
-    <!-- AÇÕES (EXPORTAR) -->
-    {% if current_user.is_authenticated and current_user.tipo_usuario == "admin" %}
-      <div class="d-flex gap-2 mb-3">
-        <a class="btn btn-success btn-sm"
-           href="{{ url_for('main.agenda_exportar_excel', **request.args.to_dict()) }}">
-          <i class="bi bi-file-earmark-excel me-1"></i> Exportar Excel
-        </a>
-
-        {# Opcional: exportar tudo ignorando filtros #}
-        <a class="btn btn-outline-success btn-sm"
-           href="{{ url_for('main.agenda_exportar_excel', all=1) }}">
-          <i class="bi bi-download me-1"></i> Exportar Tudo
-        </a>
-      </div>
-    {% endif %}
-
+    
     <!-- MODAL DETALHES DO AGENDAMENTO -->
     <div class="modal fade" id="modalEvento" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered">
