@@ -261,114 +261,58 @@
 </div>
 {% endfor %}
 
-<!-- =========================
-     Chatbot UVIS (FAQ inteligente)
-========================= -->
-<style>
-  .uvis-chat-btn {
-    position: fixed;
-    right: 18px;
-    bottom: 18px;
-    z-index: 1080;
-    border-radius: 999px;
-    padding: 12px 14px;
-    box-shadow: 0 10px 30px rgba(0,0,0,.18);
-  }
-  .uvis-chat-bubble {
-    max-width: 85%;
-    padding: 10px 12px;
-    border-radius: 14px;
-    font-size: .92rem;
-    line-height: 1.35rem;
-    white-space: pre-wrap;
-  }
-  .uvis-chat-bubble.user { margin-left: auto; }
-  .uvis-chat-bubble.bot  { margin-right: auto; }
-  .uvis-chat-messages {
-    height: calc(100vh - 240px);
-    overflow: auto;
-    padding: 12px;
-    background: rgba(0,0,0,.02);
-    border-radius: 12px;
-  }
+<!-- ========================
+   CHATBOT UVIS 
+========================== -->
 
-  /* Dark Mode (body.dark-mode) */
-  body.dark-mode #uvisChatbot.offcanvas {
-    background: #152233;
-    color: var(--color-text-main);
-    border-left: 1px solid #233549;
-  }
-  body.dark-mode #uvisChatbot .offcanvas-header {
-    background: #152233;
-    border-bottom: 1px solid #233549;
-  }
-  body.dark-mode #uvisChatbot .offcanvas-title { color: #ffffff; }
-  body.dark-mode #uvisChatbot .btn-close { filter: invert(1); }
-  body.dark-mode #uvisChatbot .offcanvas-body { color: var(--color-text-main); }
-  body.dark-mode #uvisChatbot .uvis-chat-messages { background: rgba(255, 255, 255, 0.04); }
-
-  body.dark-mode #uvisChatbot .uvis-chat-bubble.bot {
-    background: #1c2b3f !important;
-    border: 1px solid #233549 !important;
-    color: var(--color-text-main) !important;
-  }
-  body.dark-mode #uvisChatbot .uvis-chat-bubble.user {
-    background: var(--color-primary) !important;
-    color: #ffffff !important;
-  }
-  body.dark-mode #uvisChatbot .form-control {
-    background: #1c2b3f !important;
-    border: 1px solid #334155 !important;
-    color: var(--color-text-main) !important;
-  }
-  body.dark-mode #uvisChatbot .form-control::placeholder { color: var(--color-text-muted) !important; }
-  body.dark-mode #uvisChatbot .btn-outline-secondary {
-    color: var(--color-text-muted) !important;
-    border-color: #334155 !important;
-  }
-  body.dark-mode #uvisChatbot .btn-outline-secondary:hover {
-    background: rgba(255, 255, 255, 0.06) !important;
-    color: var(--color-text-main) !important;
-  }
-  body.dark-mode #uvisChatbot small.text-muted { color: var(--color-text-muted) !important; }
-</style>
-
-<button class="btn btn-primary uvis-chat-btn" type="button"
-        data-bs-toggle="offcanvas" data-bs-target="#uvisChatbot" aria-controls="uvisChatbot"
-        title="Ajuda UVIS">
-  <i class="bi bi-chat-dots-fill"></i>
+<button id="uvisBotFab" class="bot-fab" type="button" title="Ajuda UVIS" onclick="toggleUvisChat()">
+  <i class="bi bi-robot"></i>
 </button>
 
-<div class="offcanvas offcanvas-end" tabindex="-1" id="uvisChatbot" aria-labelledby="uvisChatbotLabel">
-  <div class="offcanvas-header">
-    <h5 class="offcanvas-title" id="uvisChatbotLabel">
-      <i class="bi bi-robot me-2"></i> Ajuda UVIS
-    </h5>
-    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-  </div>
-
-  <div class="offcanvas-body d-flex flex-column gap-2">
-    <div class="d-flex flex-wrap gap-2">
-      <button class="btn btn-sm btn-outline-secondary" data-q="O que significa Em Análise?">Status</button>
-      <button class="btn btn-sm btn-outline-secondary" data-q="Quais campos são obrigatórios na Nova Solicitação?">Campos</button>
-      <button class="btn btn-sm btn-outline-secondary" data-q="O que fazer se o CEP não encontrar?">CEP</button>
-      <button class="btn btn-sm btn-outline-secondary" data-q="Qual o checklist antes de enviar?">Checklist</button>
-      <button class="btn btn-sm btn-outline-secondary" data-q="Como funciona Notificações e Agenda?">Notificações</button>
+<div id="uvisChatWindow" class="chat-window">
+  
+  <div class="bot-header">
+    <div class="bot-title">
+      <i class="bi bi-robot fs-5"></i>
+      <div>
+        Ajuda UVIS
+        <span class="bot-badge ms-1">Assistente</span>
+      </div>
     </div>
+    
+    <div class="d-flex gap-2">
+      <button id="uvisBotClear" class="btn-close-chat" title="Limpar conversa" style="font-size: 1rem;">
+          <i class="bi bi-trash"></i>
+      </button>
 
-    <div id="uvisChatMessages" class="uvis-chat-messages"></div>
-
-    <div class="input-group mt-auto">
-      <input id="uvisChatInput" type="text" class="form-control" placeholder="Digite sua dúvida...">
-      <button id="uvisChatSend" class="btn btn-success">
-        <i class="bi bi-send-fill"></i>
+      <button id="uvisBotClose" type="button" class="btn-close-chat" onclick="toggleUvisChat()">
+        <i class="bi bi-x-lg"></i>
       </button>
     </div>
-
-    <small class="text-muted">
-      Baseado no manual UVIS. Se não achar a resposta, tente reformular com palavras como “status”, “CEP”, “nova solicitação”, “checklist”.
-    </small>
   </div>
+
+  <div class="bot-body">
+    
+    <div id="uvisChatMessages" class="d-flex flex-column gap-2 mb-3">
+        </div>
+
+    <div class="chips-container mt-auto">
+      <button class="chip" data-q="O que significa Em Análise?">Status</button>
+      <button class="chip" data-q="Quais campos são obrigatórios?">Campos</button>
+      <button class="chip" data-q="O que fazer se o CEP não encontrar?">CEP</button>
+      <button class="chip" data-q="Qual o checklist antes de enviar?">Checklist</button>
+      <button class="chip" data-q="Como funciona Notificações?">Notificações</button>
+    </div>
+
+  </div>
+
+  <div class="bot-footer">
+    <input id="uvisChatInput" type="text" placeholder="Digite sua dúvida..." autocomplete="off">
+    <button id="uvisChatSend" class="btn-send" type="button" title="Enviar">
+      <i class="bi bi-send-fill"></i>
+    </button>
+  </div>
+
 </div>
 
 {% endblock %}
@@ -376,13 +320,36 @@
 {% block scripts %}
 <script>
 (function () {
+  // --- TRAVA DE SEGURANÇA (Igual Admin) ---
+  if (window.UVIS_CHAT_INIT) return;
+  window.UVIS_CHAT_INIT = true;
+
+  // SELETORES
   const msgs = document.getElementById("uvisChatMessages");
   const input = document.getElementById("uvisChatInput");
   const sendBtn = document.getElementById("uvisChatSend");
-  const offcanvasEl = document.getElementById("uvisChatbot");
+  const clearBtn = document.getElementById("uvisBotClear");
+  const chatWindow = document.getElementById("uvisChatWindow");
+  const fab = document.getElementById("uvisBotFab");
+  const closeBtns = chatWindow.querySelectorAll("uvisBotClose");
 
-  if (!msgs || !input || !sendBtn || !offcanvasEl) return;
+  if (!msgs || !input || !sendBtn || !chatWindow) return;
 
+  // --- FUNÇÃO GLOBAL TOGGLE ---
+  window.toggleUvisChat = function() {
+    chatWindow.classList.toggle('active');
+    if (chatWindow.classList.contains('active')) {
+      setTimeout(() => {
+          input.focus();
+          if (msgs.children.length === 0) welcome();
+      }, 300);
+    }
+  }
+
+  // Evento para fechar usando o X dentro do modal
+  closeBtns.forEach(btn => btn.addEventListener("click", window.toggleUvisChat));
+
+  // --- TRATAMENTO DE HTML ---
   function escapeHtml(str) {
     return String(str || "")
       .replaceAll("&", "&amp;")
@@ -399,30 +366,28 @@
     return html;
   }
 
+  // --- ADICIONAR MENSAGEM ---
   function addMsg(text, who) {
-    const row = document.createElement("div");
-    row.className = "d-flex mb-2 " + (who === "user" ? "justify-content-end" : "justify-content-start");
+    const divMsg = document.createElement("div");
+    
+    // Classes idênticas ao CSS do Admin
+    const cssClass = who === "user" ? "user" : "bot";
+    divMsg.className = `message ${cssClass}`;
+    
+    if (who === "bot") divMsg.innerHTML = renderBotHtml(text);
+    else divMsg.textContent = text;
 
-    const bubble = document.createElement("div");
-    bubble.className = "uvis-chat-bubble " + who + " " + (who === "user" ? "bg-primary text-white" : "bg-white border");
-
-    if (who === "bot") bubble.innerHTML = renderBotHtml(text);
-    else bubble.textContent = text;
-
-    row.appendChild(bubble);
-    msgs.appendChild(row);
+    msgs.appendChild(divMsg);
     msgs.scrollTop = msgs.scrollHeight;
   }
 
+  // --- EFEITO DIGITANDO ---
   function addTyping() {
-    const row = document.createElement("div");
-    row.className = "d-flex mb-2 justify-content-start";
-    row.id = "uvisTyping";
-    const bubble = document.createElement("div");
-    bubble.className = "uvis-chat-bubble bot bg-white border";
-    bubble.textContent = "Digitando...";
-    row.appendChild(bubble);
-    msgs.appendChild(row);
+    const div = document.createElement("div");
+    div.id = "uvisTyping";
+    div.className = "message bot";
+    div.innerHTML = '<span class="typing-dots">...</span>';
+    msgs.appendChild(div);
     msgs.scrollTop = msgs.scrollHeight;
   }
 
@@ -431,12 +396,21 @@
     if (el) el.remove();
   }
 
+  // --- LÓGICA DE BOAS-VINDAS ---
+  function welcome() {
+    addMsg("Olá! Sou o assistente UVIS. Dúvidas sobre status, CEP ou checklist?", "bot");
+  }
+
+  // --- ENVIAR PERGUNTA ---
   async function ask(text) {
     const q = (text || "").trim();
     if (!q) return;
 
     addMsg(q, "user");
     input.value = "";
+    input.focus();
+    
+    sendBtn.disabled = true;
     addTyping();
 
     try {
@@ -449,32 +423,48 @@
       const data = await res.json().catch(() => ({}));
       removeTyping();
 
-      if (!res.ok && res.status === 401) {
-        addMsg("Sessão expirada. Faça login novamente.", "bot");
+      if (!res.ok) {
+        if (res.status === 401) {
+             addMsg("Sessão expirada. Faça login novamente.", "bot");
+        } else {
+             addMsg(data.answer || "Erro no servidor. Tente mais tarde.", "bot");
+        }
         return;
       }
 
       addMsg(data.answer || "Não consegui responder agora. Tente novamente.", "bot");
+
     } catch (e) {
       removeTyping();
-      addMsg("Erro ao conectar com o chatbot. Avise o suporte.", "bot");
+      addMsg("Erro ao conectar com o chatbot.", "bot");
+    } finally {
+      sendBtn.disabled = false;
+      setTimeout(() => input.focus(), 100);
     }
   }
 
-  addMsg("Olá! Me diga sua dúvida sobre o sistema (status, nova solicitação, CEP, checklist, notificações...).", "bot");
-
+  // --- EVENT LISTENERS ---
   sendBtn.addEventListener("click", () => ask(input.value));
+  
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter") ask(input.value);
   });
 
-  document.querySelectorAll("[data-q]").forEach(btn => {
-    btn.addEventListener("click", () => ask(btn.getAttribute("data-q")));
+  clearBtn.addEventListener("click", () => {
+    msgs.innerHTML = "";
+    welcome();
   });
 
-  offcanvasEl.addEventListener("shown.bs.offcanvas", () => {
-    setTimeout(() => input.focus(), 100);
+  document.querySelectorAll(".chip").forEach(btn => {
+    // Evita duplicação de eventos em re-renders
+    const newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+
+    newBtn.addEventListener("click", () => {
+       ask(newBtn.getAttribute("data-q"));
+    });
   });
+
 })();
 </script>
 {% endblock %}

@@ -1,107 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
 
-<!-- ==========================
-     CHATBOT ADMIN (UI Melhorada)
-========================== -->
-
-<style>
-  /* botão flutuante */
-  #adminBotFab{
-    position: fixed;
-    right: 18px;
-    bottom: 18px;
-    width: 56px;
-    height: 56px;
-    border-radius: 999px;
-    display: grid;
-    place-items: center;
-    z-index: 2000;
-    background: linear-gradient(135deg, #2563eb, #7c3aed);
-    border: none;
-    color: #fff;
-    box-shadow: 0 12px 28px rgba(0,0,0,.25);
-  }
-  #adminBotFab:hover{ transform: translateY(-1px); }
-  #adminBotFab:active{ transform: translateY(0px); }
-
-  .bot-header{
-    background: linear-gradient(135deg, #111827, #1f2937);
-    color: #fff;
-  }
-  .bot-badge{
-    font-size: 12px;
-    padding: 2px 8px;
-    border-radius: 999px;
-    background: rgba(255,255,255,.12);
-    border: 1px solid rgba(255,255,255,.14);
-  }
-
-  .bot-body{
-    background: radial-gradient(1200px 600px at 10% 0%, #eef2ff 0%, #f8fafc 55%, #ffffff 100%);
-  }
-
-  .msg{
-    max-width: 88%;
-    padding: 10px 12px;
-    border-radius: 16px;
-    font-size: 13px;
-    line-height: 1.35;
-    white-space: pre-wrap;
-    box-shadow: 0 6px 16px rgba(0,0,0,.06);
-  }
-  .msg.me{
-    background: linear-gradient(135deg, #2563eb, #4f46e5);
-    color: #fff;
-    border-bottom-right-radius: 6px;
-  }
-  .msg.bot{
-    background: #ffffff;
-    color: #111827;
-    border: 1px solid #e5e7eb;
-    border-bottom-left-radius: 6px;
-  }
-  .msg-meta{
-    font-size: 11px;
-    color: #6b7280;
-    margin-top: 2px;
-  }
-
-  .chips{
-    display:flex;
-    gap:8px;
-    flex-wrap: wrap;
-  }
-  .chip{
-    border: 1px solid #e5e7eb;
-    background: #fff;
-    color: #111827;
-    font-size: 12px;
-    padding: 6px 10px;
-    border-radius: 999px;
-    cursor: pointer;
-    transition: .15s;
-  }
-  .chip:hover{
-    border-color: #c7d2fe;
-    box-shadow: 0 6px 14px rgba(99,102,241,.12);
-    transform: translateY(-1px);
-  }
-
-  .typing{
-    display:inline-flex;
-    gap:4px;
-    align-items:center;
-  }
-  .dot{
-    width:6px;height:6px;border-radius:50%;
-    background:#9ca3af;
-    animation: blink 1.1s infinite ease-in-out;
-  }
-  .dot:nth-child(2){ animation-delay: .15s }
-  .dot:nth-child(3){ animation-delay: .30s }
-  @keyframes blink{ 0%, 80%, 100%{opacity:.25} 40%{opacity:1} }
-</style>
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="text-dark"><i class="bi bi-shield-lock-fill"></i> Painel de Gestão</h2>
 
@@ -122,32 +21,59 @@
     </div>
 </div>
 
-{# --- Formulário de Filtros --- #}
-{# JÁ SERÁ INTERCEPTADO PELO LISTENER UNIVERSAL DO BASE.HTML #}
-<form method="GET" class="card p-3 mb-4 shadow-sm">
-    <div class="row g-2">
+{# --- Formulário de Filtros (Padronizado) --- #}
+<form method="GET" class="card p-3 mb-4 shadow-sm rounded-4">
+    <div class="row g-2 align-items-end">
+        
         <div class="col-md-3">
-            <label class="small text-muted">Filtrar por Status</label>
+            <label class="small text-muted">Status:</label>
             <select name="status" class="form-select form-select-sm">
                 <option value="">Todos</option>
                 <option value="PENDENTE" {{ 'selected' if request.args.get('status')=='PENDENTE' else '' }}>⚪️ Pendente</option>
                 <option value="EM ANÁLISE" {{ 'selected' if request.args.get('status')=='EM ANÁLISE' else '' }}>🟡 Em Análise</option>
                 <option value="APROVADO" {{ 'selected' if request.args.get('status')=='APROVADO' else '' }}>🟢 Aprovado</option>
-                <option value="APROVADO COM RECOMENDAÇÕES" {{ 'selected' if request.args.get('status')=='APROVADO COM RECOMENDAÇÕES' else '' }}>🟠 aprovado c/ recomendações</option>
+                <option value="APROVADO COM RECOMENDAÇÕES" {{ 'selected' if request.args.get('status')=='APROVADO COM RECOMENDAÇÕES' else '' }}>🟠 Aprovado c/ rec.</option>
                 <option value="NEGADO" {{ 'selected' if request.args.get('status')=='NEGADO' else '' }}>🔴 Negado</option>
             </select>
         </div>
+
         <div class="col-md-3">
-            <label class="small text-muted color-light" >Pesquisar por Unidade</label>
-            <input type="text" name="unidade" class="text-add form-control form-control-sm" placeholder="Nome da UVIS..." value="{{ request.args.get('unidade', '') }}">
+            <label class="small text-muted">Unidade:</label>
+            <input 
+                type="text" 
+                name="unidade" 
+                class="form-control form-control-sm" 
+                placeholder="Nome da UVIS..." 
+                value="{{ request.args.get('unidade', '') }}"
+            >
         </div>
+
         <div class="col-md-3">
-            <label class="small text-muted">Região</label>
-            <input type="text" name="regiao" class="text-add form-control form-control-sm" placeholder="Leste, Oeste..." value="{{ request.args.get('regiao', '') }}">
+            <label class="small text-muted">Região:</label>
+            <input 
+                type="text" 
+                name="regiao" 
+                class="form-control form-control-sm" 
+                placeholder="Leste, Oeste..." 
+                value="{{ request.args.get('regiao', '') }}"
+            >
         </div>
-        <div class="col-md-3 d-flex align-items-end">
-            <button class="btn btn-success btn-sm w-100" type="submit"><i class="bi bi-funnel"></i> Filtrar</button>
+
+        <div class="col-md-3 d-flex gap-2">
+            <button class="btn btn-success btn-sm w-100" type="submit">
+                <i class="bi bi-funnel"></i> Filtrar
+            </button>
+
+            {# Lógica Corrigida: Verifica se status, unidade ou regiao estão preenchidos #}
+            {% if request.args.get('status') or request.args.get('unidade') or request.args.get('regiao') %}
+                <a href="{{ url_for(request.endpoint) }}" 
+                   class="btn btn-outline-secondary btn-sm w-100"
+                   title="Remover filtros">
+                    <i class="bi bi-x-lg"></i> Limpar
+                </a>
+            {% endif %}
         </div>
+
     </div>
 </form>
 
@@ -350,63 +276,101 @@
     </div>
 </div>
 {% if current_user.tipo_usuario == 'admin' %}
-<button id="adminBotFab" title="Ajuda do painel">
-  <i class="bi bi-robot fs-5"></i>
+
+<!-- ========================
+ CHATBOT ADMIN (UI Melhorada)
+ ========================== -->
+
+<button id="adminBotFab" class="bot-fab" title="Ajuda do painel" onclick="toggleAdminChat()">
+    <i class="bi bi-robot"></i>
 </button>
 
-<div class="offcanvas offcanvas-end" tabindex="-1" id="adminBotCanvas" aria-labelledby="adminBotLabel" style="width: 360px;">
-  <div class="offcanvas-header bot-header">
-    <div>
-      <div class="d-flex align-items-center gap-2">
-        <strong id="adminBotLabel">Ajuda do Painel</strong>
-        <span class="bot-badge">FAQ inteligente</span>
-      </div>
-      <small class="opacity-75">Pergunte sobre filtros, decisões, exportações, agenda, UVIS…</small>
+<div id="adminBotWindow" class="chat-window">
+    
+    <div class="bot-header">
+        <div class="bot-title">
+            <i class="bi bi-robot fs-5"></i>
+            <div>
+                Ajuda do Painel
+                <span class="bot-badge ms-1">FAQ Admin</span>
+            </div>
+        </div>
+        
+        <div class="d-flex gap-2">
+            <button id="adminBotClear" class="btn-close-chat" title="Limpar conversa" style="font-size: 1rem;">
+                <i class="bi bi-trash"></i>
+            </button>
+            
+            <button id="adminBotClose" class="btn-close-chat" onclick="toggleAdminChat()">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
     </div>
-    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Fechar"></button>
-  </div>
 
-  <div class="offcanvas-body bot-body d-flex flex-column p-3">
-    <div id="adminBotMessages" class="d-flex flex-column gap-2" style="flex:1; overflow:auto;"></div>
+    <div class="bot-body">
+        
+        <div id="adminBotMessages" class="d-flex flex-column gap-2 mb-3">
+            <div class="message bot">
+                <strong>Olá, Admin!</strong><br>
+                Pergunte sobre filtros, exportações, agenda ou UVIS.
+            </div>
+        </div>
 
-    <div class="mt-3">
-      <div class="chips mb-2">
-        <button class="chip" data-q="Como filtrar por status/unidade/região?">Filtros</button>
-        <button class="chip" data-q="Como salvar decisão?">Salvar decisão</button>
-        <button class="chip" data-q="Como exportar Excel?">Exportar Excel</button>
-        <button class="chip" data-q="Como funciona Agenda?">Agenda</button>
-        <button class="chip" data-q="Como gerenciar UVIS?">UVIS</button>
-      </div>
+        <div class="chips-container mt-auto">
+            <button class="chip" data-q="Como filtrar por status/unidade?">Filtros</button>
+            <button class="chip" data-q="Como salvar decisão?">Salvar decisão</button>
+            <button class="chip" data-q="Como exportar Excel?">Exportar Excel</button>
+            <button class="chip" data-q="Como funciona Agenda?">Agenda</button>
+            <button class="chip" data-q="Como gerenciar UVIS?">UVIS</button>
+        </div>
+    </div>
 
-      <div class="input-group">
-        <input id="adminBotInput" class="form-control" placeholder="Digite sua dúvida…" autocomplete="off">
-        <button id="adminBotSend" class="btn btn-primary" type="button" title="Enviar mensagem">
-          <i class="bi bi-send-fill"></i>
+    <div class="bot-footer">
+        <input id="adminBotInput" type="text" placeholder="Digite sua dúvida..." autocomplete="off">
+        <button id="adminBotSend" class="btn-send" title="Enviar">
+            <i class="bi bi-send-fill"></i>
         </button>
-      </div>
-
-      <div class="d-flex justify-content-between mt-2">
-        <button id="adminBotClear" class="btn btn-sm btn-outline-secondary">Limpar</button>
-        <small class="text-muted">Enter para enviar</small>
-      </div>
     </div>
-  </div>
 </div>
 {% endif %}
 
 {% block scripts %}
 <script>
 
-(function () {
-  const API_URL = "{{ url_for('main.admin_chatbot') }}";
-  const fab = document.getElementById("adminBotFab");
-  const canvasEl = document.getElementById("adminBotCanvas");
-  const canvas = new bootstrap.Offcanvas(canvasEl);
+// ===================================
+// CHATBOT ADMIN
 
+
+(function () {
+  // --- TRAVA DE SEGURANÇA ---
+  // Se o chat já foi iniciado, não faz nada.
+  if (window.ADMIN_CHAT_INIT) return;
+  window.ADMIN_CHAT_INIT = true;
+  // --------------------------
+
+  const API_URL = "{{ url_for('main.admin_chatbot') }}";
+  
+  const fab = document.getElementById("adminBotFab");
+  const chatWindow = document.getElementById("adminBotWindow");
   const box = document.getElementById("adminBotMessages");
   const input = document.getElementById("adminBotInput");
   const send = document.getElementById("adminBotSend");
   const clearBtn = document.getElementById("adminBotClear");
+  const closeBtns = document.querySelectorAll("#adminBotClose");
+
+  function toggleChat() {
+    chatWindow.classList.toggle('active');
+    if (chatWindow.classList.contains('active')) {
+      setTimeout(() => {
+         input.focus();
+         welcome();
+      }, 300);
+    }
+  }
+
+  // Event Listeners (agora protegidos pela trava acima)
+  fab.addEventListener("click", toggleChat);
+  closeBtns.forEach(btn => btn.addEventListener("click", toggleChat));
 
   function nowTime(){
     const d = new Date();
@@ -414,39 +378,20 @@
   }
 
   function addMsg(text, who = "bot") {
-    const row = document.createElement("div");
-    row.className = "d-flex " + (who === "me" ? "justify-content-end" : "justify-content-start");
-
-    const col = document.createElement("div");
-    col.className = "d-flex flex-column " + (who === "me" ? "align-items-end" : "align-items-start");
-
-    const b = document.createElement("div");
-    b.className = "msg " + (who === "me" ? "me" : "bot");
-    b.textContent = text;
-
-    const meta = document.createElement("div");
-    meta.className = "msg-meta";
-    meta.textContent = nowTime();
-
-    col.appendChild(b);
-    col.appendChild(meta);
-    row.appendChild(col);
-    box.appendChild(row);
-
+    const divMsg = document.createElement("div");
+    const cssClass = who === "me" ? "user" : "bot"; 
+    divMsg.className = `message ${cssClass}`;
+    divMsg.innerHTML = text; 
+    box.appendChild(divMsg);
     box.scrollTop = box.scrollHeight;
   }
 
   function addTyping(){
-    const row = document.createElement("div");
-    row.className = "d-flex justify-content-start";
-    row.id = "botTypingRow";
-
-    const b = document.createElement("div");
-    b.className = "msg bot";
-    b.innerHTML = '<span class="typing"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>';
-
-    row.appendChild(b);
-    box.appendChild(row);
+    const div = document.createElement("div");
+    div.id = "botTypingRow";
+    div.className = "message bot"; 
+    div.innerHTML = '<span class="typing-dots">...</span>'; 
+    box.appendChild(div);
     box.scrollTop = box.scrollHeight;
   }
 
@@ -477,45 +422,46 @@
       removeTyping();
 
       if (!r.ok) {
-        addMsg(data.answer || "Erro ao consultar. Verifique sua sessão.", "bot");
+        addMsg(data.answer || "Erro ao consultar.", "bot");
       } else {
         addMsg(data.answer || "Não consegui responder.", "bot");
       }
     } catch (e) {
       removeTyping();
-      addMsg("Falha de conexão. Tente novamente.", "bot");
+      addMsg("Falha de conexão.", "bot");
     } finally {
       send.disabled = false;
+      setTimeout(() => input.focus(), 100);
     }
   }
 
   function welcome(){
     if (box.dataset.welcome) return;
     box.dataset.welcome = "1";
+    if(box.children.length > 0) return;
+
     addMsg(
-      "Olá! Posso te ajudar com o painel.\n\n" +
-      "Exemplos:\n" +
-      "- Como filtrar pedidos?\n" +
-      "- Como salvar decisão?\n" +
-      "- Como exportar Excel?\n" +
-      "- Como funciona agenda e relatórios?\n" +
-      "- Como gerenciar UVIS?",
+      "<strong>Olá!</strong> Posso te ajudar com o painel?<br><br>" +
+      "Tente clicar nos botões abaixo ou pergunte sobre filtros e agenda.",
       "bot"
     );
   }
 
-  fab.addEventListener("click", () => {
-    canvas.show();
-    setTimeout(() => { welcome(); input.focus(); }, 150);
-  });
-
   send.addEventListener("click", () => ask());
+  
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter") ask();
   });
 
   document.querySelectorAll(".chip").forEach(btn => {
-    btn.addEventListener("click", () => ask(btn.dataset.q));
+    // REMOVE qualquer listener anterior para evitar duplicação em re-renders parciais
+    const newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+    
+    newBtn.addEventListener("click", () => {
+        const question = newBtn.getAttribute('data-q');
+        ask(question);
+    });
   });
 
   clearBtn.addEventListener("click", () => {
@@ -523,6 +469,7 @@
     delete box.dataset.welcome;
     welcome();
   });
+
 })();
 
 // ===================================

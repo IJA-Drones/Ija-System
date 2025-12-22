@@ -1,55 +1,100 @@
-{% extends "base.html" %}
+{% extends "base.html" %} 
 {% block content %}
-<div class="container py-4" style="max-width: 760px;">
-  <div class="d-flex align-items-center justify-content-between mb-3">
-    <h3 class="m-0">Editar UVIS</h3>
-    <a class="btn btn-outline-secondary" href="{{ url_for('main.admin_uvis_listar') }}">Voltar</a>
+<div class="container py-4" style="max-width: 800px;">
+  
+  {# --- Cabeçalho --- #}
+  <div class="d-flex align-items-center mb-4">
+      <h2 class="text-dark m-0">
+          <i class="bi bi-pencil-square me-2 text-primary"></i> Editar UVIS
+      </h2>
   </div>
 
-  <div class="card shadow-sm">
-    <div class="card-body">
+  {# --- Card Principal --- #}
+  <div class="card info status-primary shadow-sm rounded-4 border-0">
+    <div class="card-body p-4">
+      
       <form method="POST">
-        <div class="row g-3">
-          <div class="col-md-8">
-            <label class="form-label">Nome da UVIS *</label>
+        
+        {# SEÇÃO 1: INFORMAÇÕES GERAIS #}
+        <div class="d-flex align-items-center mb-3">
+            <i class="bi bi-building-gear text-primary me-2 fs-5"></i>
+            <h5 class="m-0 text-primary fw-bold">Informações da Unidade</h5>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-12">
+            <label class="form-label fw-bold small text-muted">
+                <i class="bi bi-hospital me-1 text-primary"></i> Nome da UVIS *
+            </label>
             <input name="nome_uvis" class="form-control" required value="{{ uvis.nome_uvis }}">
           </div>
+        </div>
 
-          <div class="col-md-4">
-            <label class="form-label">Região</label>
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">
+                <i class="bi bi-map me-1 text-primary"></i> Região
+            </label>
             <input name="regiao" class="form-control" value="{{ uvis.regiao or '' }}">
           </div>
-
-          <div class="col-md-4">
-            <label class="form-label">Código do Setor</label>
+          
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">
+                <i class="bi bi-upc-scan me-1 text-primary"></i> Código do Setor
+            </label>
             <input name="codigo_setor" class="form-control" value="{{ uvis.codigo_setor or '' }}">
           </div>
+        </div>
 
-          <div class="col-md-8">
-            <label class="form-label">Login *</label>
+        <hr class="text-muted opacity-25 my-4">
+
+        {# SEÇÃO 2: DADOS DE ACESSO #}
+        <div class="d-flex align-items-center mb-3">
+            <i class="bi bi-shield-lock text-primary me-2 fs-5"></i>
+            <h5 class="m-0 text-primary fw-bold">Dados de Acesso</h5>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-12">
+            <label class="form-label fw-bold small text-muted">
+                <i class="bi bi-person-badge me-1 text-primary"></i> Login *
+            </label>
             <input name="login" class="form-control" required value="{{ uvis.login }}">
           </div>
+        </div>
 
-          <hr class="my-2">
-
+        <div class="row g-3 mb-2">
           <div class="col-md-6">
-            <label class="form-label">Nova Senha (opcional)</label>
+            <label class="form-label fw-bold small text-muted">
+                <i class="bi bi-key me-1 text-primary"></i> Nova Senha (opcional)
+            </label>
             <input name="senha" type="password" class="form-control">
           </div>
 
           <div class="col-md-6">
-            <label class="form-label">Confirmar Nova Senha</label>
+            <label class="form-label fw-bold small text-muted">
+                <i class="bi bi-check-circle me-1 text-primary"></i> Confirmar Nova Senha
+            </label>
             <input name="confirmar" type="password" class="form-control">
           </div>
-          <div class="col-12">
-            <small class="text-muted">Se deixar a senha vazia, a senha atual permanece.</small>
-          </div>
+        </div>
+        
+        <div class="mb-4">
+           <small class="text-muted fst-italic">
+             <i class="bi bi-info-circle me-1"></i> Se deixar os campos de senha vazios, a senha atual permanece inalterada.
+           </small>
         </div>
 
-        <div class="d-flex gap-2 mt-4">
-          <button class="btn btn-primary" type="submit">Salvar</button>
-          <a class="btn btn-outline-secondary" href="{{ url_for('main.admin_uvis_listar') }}">Cancelar</a>
+        {# BOTÕES DE AÇÃO #}
+        <div class="d-flex justify-content-end gap-2 mt-5">
+          <a href="{{ url_for('main.admin_uvis_listar') }}" class="btn btn-outline-danger px-4">
+              <i class="bi bi-x-lg me-1"></i> Cancelar
+          </a>
+          <button type="submit" class="btn btn-primary px-5 shadow-sm fw-bold">
+            <i class="bi bi-check-lg me-1"></i> Salvar Alterações
+          </button>
         </div>
+
       </form>
     </div>
   </div>
