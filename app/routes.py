@@ -198,7 +198,7 @@ def exportar_excel():
         query = (
             db.session.query(Solicitacao)
             .join(Usuario)
-            .options(joinedload(Solicitacao.autor))
+            .options(joinedload(Solicitacao.usuario))
         )
 
         if filtro_status:
@@ -250,8 +250,8 @@ def exportar_excel():
             cell.border = thin_border
 
         for row_num, p in enumerate(pedidos, 2):
-            uvis_nome = p.autor.nome_uvis if p.autor else "Não informado"
-            uvis_regiao = p.autor.regiao if p.autor else "Não informado"
+            uvis_nome = p.usuario.nome_uvis if p.usuario else "Não informado"
+            uvis_regiao = p.usuario.regiao if p.usuario else "Não informado"
 
             endereco_completo = (
                 f"{p.logradouro or ''}, {p.numero or ''} - "
@@ -1640,7 +1640,7 @@ def exportar_excel():  # <--- função interna com nome diferente
     mes = None if export_all else request.args.get("mes", type=int)
     ano = None if export_all else request.args.get("ano", type=int)
 
-    query = Solicitacao.query.options(joinedload(Solicitacao.autor))
+    query = Solicitacao.query.options(joinedload(Solicitacao.usuario))
 
     if filtro_uvis_id:
         query = query.filter(Solicitacao.usuario_id == filtro_uvis_id)
@@ -1694,8 +1694,8 @@ def exportar_excel():  # <--- função interna com nome diferente
         cet_txt = "SIM" if getattr(p, "apoio_cet", None) else "NÃO"
         data_str = p.data_agendamento.strftime("%d/%m/%Y") if p.data_agendamento else ""
         hora_str = p.hora_agendamento.strftime("%H:%M") if p.hora_agendamento else ""
-        uvis_nome = p.autor.nome_uvis if getattr(p, "autor", None) else ""
-        regiao = p.autor.regiao if getattr(p, "autor", None) else ""
+        uvis_nome = p.usuario.nome_uvis if getattr(p, "usuario", None) else ""
+        regiao = p.usuario.regiao if getattr(p, "usuario", None) else ""
         lat = getattr(p, "latitude", "") or ""
         lon = getattr(p, "longitude", "") or ""
         coordenada = f"{lat},{lon}" if (lat or lon) else ""
@@ -1787,7 +1787,7 @@ def garantir_notificacoes_do_dia(usuario_id):
 
     ags = (
         Solicitacao.query
-        .options(joinedload(Solicitacao.autor))
+        .options(joinedload(Solicitacao.usuario))
         .filter_by(usuario_id=usuario_id)
         .filter(Solicitacao.data_agendamento == hoje)
         .all()

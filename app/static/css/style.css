@@ -418,42 +418,165 @@ body.dark-mode .swal2-popup.swal2-toast .swal2-success-fix {
 }
 
 /* -----------------------------------------
-   12) FULLCALENDAR CUSTOMIZATION
+   12) FULLCALENDAR CUSTOMIZATION (OCEANO AZUL)
    ----------------------------------------- */
-.calendar-card { background: #fff; border-radius: 16px; box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08); border: 1px solid rgba(0, 0, 0, 0.06); overflow: hidden; }
-.calendar-card-header { padding: 16px 18px; border-bottom: 1px solid rgba(0, 0, 0, 0.06); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.calendar-title { margin: 0; font-weight: 800; letter-spacing: -0.3px; display: flex; align-items: center; gap: 10px; }
-.calendar-subtitle { margin: 0; color: #6c757d; font-size: 0.95rem; }
 
-#calendar { padding: 14px; }
-.fc .fc-toolbar-title { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.2px; color: #212529; }
-.fc .fc-button { border-radius: 10px !important; padding: 8px 12px !important; font-weight: 700 !important; border: 1px solid rgba(13, 110, 253, 0.22) !important; background: rgba(13, 110, 253, 0.06) !important; color: #0d6efd !important; transition: transform 0.05s ease, background 0.2s ease, box-shadow 0.2s ease; }
-.fc .fc-button:hover { background: rgba(13, 110, 253, 0.12) !important; box-shadow: 0 6px 14px rgba(13, 110, 253, 0.18); }
-.fc .fc-button:active { transform: translateY(1px); }
-.fc .fc-button-primary:not(:disabled).fc-button-active, .fc .fc-button-primary:not(:disabled):active { background: #0d6efd !important; color: #fff !important; border-color: #0d6efd !important; box-shadow: 0 8px 18px rgba(13, 110, 253, 0.28); }
+/* Container do Calendário */
+.calendar-card { 
+    background: var(--color-bg-white); 
+    border-radius: var(--radius-lg); 
+    box-shadow: var(--shadow-sm); 
+    border: 1px solid rgba(0,0,0,0.05); 
+    overflow: hidden; 
+}
 
-.fc .fc-col-header-cell-cushion { padding: 10px 0; color: #495057; font-weight: 800; text-transform: uppercase; font-size: 0.78rem; letter-spacing: 0.6px; }
-.fc .fc-daygrid-day-frame { border-radius: 12px; transition: background 0.15s ease; }
-.fc .fc-daygrid-day:hover .fc-daygrid-day-frame { background: rgba(13, 110, 253, 0.05); }
+/* Título e Toolbar do FullCalendar */
+.fc .fc-toolbar-title { 
+    font-size: 1.25rem; 
+    font-weight: 700; 
+    color: var(--color-primary-dark); 
+    font-family: "Poppins", sans-serif;
+}
 
-.fc .fc-day-today { background: rgba(13, 110, 253, 0.08) !important; }
-.fc .fc-day-today .fc-daygrid-day-number { background: #0d6efd; color: #fff !important; border-radius: 999px; padding: 2px 8px; font-weight: 800; }
+/* Botões de Navegação (Mês, Semana, Hoje) */
+.fc .fc-button { 
+    border-radius: var(--radius-sm) !important; 
+    padding: 0.4rem 1rem !important; 
+    font-weight: 600 !important; 
+    font-size: 0.9rem !important;
+    text-transform: capitalize;
+    transition: all 0.2s ease;
+    box-shadow: none !important;
+}
 
-.fc .fc-event { border-radius: 10px; border: 0 !important; padding: 2px 6px; box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12); transition: transform 0.06s ease, filter 0.2s ease; cursor: default; }
-.fc .fc-event.fc-event-clickable { cursor: pointer; }
-.fc .fc-event:hover { transform: translateY(-1px); filter: brightness(1.03); }
-.fc .fc-event-title { font-weight: 800; font-size: 0.85rem; }
-.fc .fc-event-time { font-weight: 700; font-size: 0.78rem; opacity: 0.95; }
+/* Estado Normal dos Botões (Branco/Cinza) */
+.fc .fc-button-primary { 
+    background-color: var(--color-bg-white) !important; 
+    border-color: #e2e8f0 !important; 
+    color: var(--color-text-muted) !important; 
+}
 
-/* Calendar Dark Mode Overrides */
-.dark-mode .calendar-card { background: #343a40 !important; border-color: #495057 !important; }
-.dark-mode .calendar-card-header { border-bottom-color: #495057 !important; }
-.dark-mode .calendar-title, .dark-mode .calendar-subtitle, .dark-mode .fc .fc-toolbar-title { color: #f8f9fa !important; }
-.dark-mode .fc .fc-col-header-cell-cushion { color: #adb5bd !important; }
-.dark-mode .fc-scrollgrid, .dark-mode .fc-daygrid-body, .dark-mode .fc-theme-standard td, .dark-mode .fc-theme-standard th { background-color: #343a40 !important; border-color: #495057 !important; }
-.dark-mode .fc .fc-day-today { background: #495057 !important; }
-.dark-mode .fc .fc-day-today .fc-daygrid-day-number { background: #0d6efd; color: #fff !important; }
-.dark-mode .fc .fc-event { box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4); }
+/* Hover dos Botões */
+.fc .fc-button-primary:hover { 
+    background-color: #f8fafc !important; 
+    border-color: var(--color-primary) !important; 
+    color: var(--color-primary) !important; 
+    transform: translateY(-1px);
+}
+
+/* Estado Ativo dos Botões (Azul Oceano) */
+.fc .fc-button-primary:not(:disabled).fc-button-active, 
+.fc .fc-button-primary:not(:disabled):active { 
+    background-color: var(--color-primary) !important; 
+    border-color: var(--color-primary) !important; 
+    color: #fff !important; 
+    box-shadow: var(--shadow-sm) !important;
+}
+
+/* Cabeçalho dos Dias (DOM, SEG, TER...) */
+.fc .fc-col-header-cell-cushion { 
+    padding: 12px 0; 
+    color: var(--color-text-muted); 
+    font-weight: 700; 
+    text-transform: uppercase; 
+    font-size: 0.75rem; 
+    letter-spacing: 0.5px; 
+}
+
+/* Grid e Células */
+.fc-theme-standard .fc-scrollgrid { 
+    border: 1px solid #f1f5f9; 
+    border-radius: var(--radius-md); 
+}
+.fc-theme-standard td, .fc-theme-standard th { 
+    border-color: #f1f5f9; 
+}
+
+/* Dia Atual (Today) */
+.fc .fc-day-today { 
+    background: rgba(44, 82, 130, 0.03) !important; /* var(--color-primary) bem suave */
+}
+.fc .fc-day-today .fc-daygrid-day-number { 
+    background: var(--color-primary); 
+    color: #fff !important; 
+    border-radius: 50%; 
+    width: 28px; 
+    height: 28px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    margin: 4px;
+}
+
+/* Eventos (Barrinhas) */
+.fc .fc-event { 
+    border-radius: 6px; 
+    border: none !important; 
+    padding: 2px 5px; 
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); 
+    transition: transform 0.2s ease; 
+    cursor: pointer; 
+    font-size: 0.85rem;
+}
+.fc .fc-event:hover { 
+    transform: scale(1.02); 
+    filter: brightness(0.95); 
+    box-shadow: var(--shadow-md);
+}
+
+/* =========================================
+   DARK MODE OVERRIDES (FULLCALENDAR)
+   ========================================= */
+body.dark-mode .calendar-card { 
+    background: #152233 !important; /* Fundo do modal */
+    border-color: #233549 !important; 
+}
+
+body.dark-mode .fc .fc-toolbar-title { 
+    color: var(--color-text-main) !important; 
+}
+
+body.dark-mode .fc .fc-button-primary { 
+    background-color: #1c2b3f !important; 
+    border-color: #334155 !important; 
+    color: var(--color-text-muted) !important; 
+}
+
+body.dark-mode .fc .fc-button-primary:hover { 
+    border-color: var(--color-accent) !important; 
+    color: var(--color-accent) !important; 
+}
+
+body.dark-mode .fc .fc-button-primary.fc-button-active { 
+    background-color: var(--color-primary) !important; 
+    border-color: var(--color-primary) !important; 
+    color: #fff !important; 
+}
+
+body.dark-mode .fc-theme-standard .fc-scrollgrid, 
+body.dark-mode .fc-theme-standard td, 
+body.dark-mode .fc-theme-standard th { 
+    border-color: #233549 !important; 
+}
+
+body.dark-mode .fc .fc-day-today { 
+    background: rgba(255, 255, 255, 0.02) !important; 
+}
+
+/* =========================================
+   ESTILO DO FORMULÁRIO DE FILTROS DA AGENDA
+   (Para garantir que o card de filtros fique igual aos outros)
+   ========================================= */
+.card.calendar-filters {
+    background: var(--color-bg-white);
+    border: none;
+    box-shadow: var(--shadow-sm);
+}
+
+body.dark-mode .card.calendar-filters {
+    background: #152233;
+    border: 1px solid #233549;
+}
 
 /* -----------------------------------------
    13) LOADING & NOTIFICAÇÕES (DEMAIS REGRAS)
@@ -546,49 +669,6 @@ body.dark-mode .page-item.active .page-link {
 body.dark-mode .page-item.disabled .page-link {
     background-color: transparent;
     border-color: #233549;
-}
-/* =========================================
-   AGENDA - FILTROS + AÇÕES
-   ========================================= */
-.calendar-filters {
-  padding: 14px 14px 10px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-  background: rgba(13, 110, 253, 0.03);
-}
-
-.calendar-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-.calendar-filters .form-label {
-  margin-bottom: 0.35rem;
-  font-weight: 700;
-}
-
-.calendar-filters .form-select,
-.calendar-filters .form-control {
-  border-radius: 12px;
-}
-
-.calendar-filters .btn {
-  border-radius: 12px;
-  padding: 0.55rem 1rem;
-  font-weight: 800;
-  box-shadow: var(--shadow-sm);
-}
-
-@media (max-width: 576px) {
-  .calendar-actions { justify-content: stretch; }
-  .calendar-actions .btn { width: 100%; }
-}
-
-/* Dark mode */
-body.dark-mode .calendar-filters {
-  background: rgba(76, 163, 255, 0.08);
-  border-bottom-color: #495057;
 }
 
 /* =========================================

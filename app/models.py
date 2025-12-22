@@ -21,7 +21,7 @@ class Usuario(UserMixin, db.Model):
 
     solicitacoes = db.relationship(
         "Solicitacao",
-        backref="autor",
+        back_populates="usuario", 
         lazy="select"
     )
 
@@ -48,16 +48,15 @@ class Solicitacao(db.Model):
     foco = db.Column(db.String(50), nullable=False)
 
     # ----------------------
-    # Detalhes Operacionais (NOVOS)
+    # Detalhes Operacionais
     # ----------------------
-    tipo_visita = db.Column(db.String(50))  # Monitoramento, Aedes, Culex
-    altura_voo = db.Column(db.String(20))   # 10m, 20m, 30m, 40m
+    tipo_visita = db.Column(db.String(50))
+    altura_voo = db.Column(db.String(20))
     
-    # Perguntas Sim/Não (Salvo como True/False no banco)
     criadouro = db.Column(db.Boolean, default=False) 
     apoio_cet = db.Column(db.Boolean, default=False)
     
-    observacao = db.Column(db.Text)         # Texto livre maior
+    observacao = db.Column(db.Text)
 
     # ----------------------
     # Endereço
@@ -75,8 +74,8 @@ class Solicitacao(db.Model):
     longitude = db.Column(db.String(50))
 
     # Anexos
-    anexo_path = db.Column(db.String(255))   # "upload-files/sol_12_abcd1234.pdf"
-    anexo_nome = db.Column(db.String(255))   # "relatorio.pdf" (opcional)
+    anexo_path = db.Column(db.String(255))
+    anexo_nome = db.Column(db.String(255))
 
     # ----------------------
     # Controle Admin
@@ -92,7 +91,7 @@ class Solicitacao(db.Model):
         nullable=False
     )
 
-    usuario = db.relationship("Usuario", backref="solicitacoes_uv")
+    usuario = db.relationship("Usuario", back_populates="solicitacoes")
     
     
 class Notificacao(db.Model):
@@ -108,4 +107,4 @@ class Notificacao(db.Model):
     criada_em = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     lida_em = db.Column(db.DateTime)
 
-    apagada_em = db.Column(db.DateTime)  # ✅ NOVO (soft delete)
+    apagada_em = db.Column(db.DateTime)
