@@ -1,8 +1,8 @@
-"""ajustar tamanho status
+"""Sincronizando modelos da branch ajustes
 
-Revision ID: f9b96cd71d4c
-Revises: 33e469f17914
-Create Date: 2025-12-23 15:14:09.272175
+Revision ID: cfe2d073d2b9
+Revises: 796a8641f68a
+Create Date: 2025-12-26 10:48:23.297888
 
 """
 from alembic import op
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'f9b96cd71d4c'
-down_revision = '33e469f17914'
+revision = 'cfe2d073d2b9'
+down_revision = '796a8641f68a'
 branch_labels = None
 depends_on = None
 
