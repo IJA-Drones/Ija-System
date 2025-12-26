@@ -44,6 +44,50 @@
       rel="stylesheet"
       href="{{ url_for('static', filename='css/style.css') }}"
     />
+
+    <!-- ✅ CSS do submenu (Clientes) -->
+    <style>
+      .app-sidebar .nav-link-toggle {
+        background: transparent;
+        border: 0;
+        text-align: left;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.5rem 0.75rem;
+        border-radius: 14px;
+      }
+
+      .app-sidebar .nav-link-toggle:hover {
+        background: rgba(0, 0, 0, 0.05);
+      }
+
+      .dark-mode .app-sidebar .nav-link-toggle:hover {
+        background: rgba(255, 255, 255, 0.06);
+      }
+
+      .app-sidebar .nav-link-toggle .chevron {
+        transition: transform 0.2s ease;
+        opacity: 0.85;
+      }
+
+      .app-sidebar .nav-link-toggle[aria-expanded="true"] .chevron {
+        transform: rotate(180deg);
+      }
+
+      .app-sidebar .sub-nav {
+        margin: 0.25rem 0 0.5rem;
+        padding-left: 1.8rem;
+      }
+
+      .app-sidebar .sub-link {
+        padding: 0.45rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.93rem;
+        opacity: 0.95;
+      }
+    </style>
   </head>
 
   <body>
@@ -101,6 +145,7 @@
               </span>
             </li>
             {% endif %}
+
             <li class="nav-item">
               <button
                 id="toggleDarkMode"
@@ -110,6 +155,7 @@
                 <i class="bi bi-moon-stars"></i>
               </button>
             </li>
+
             {% if current_user.is_authenticated %}
             <li class="nav-item border-start ps-3 d-none d-lg-block"></li>
             <li class="nav-item">
@@ -138,6 +184,7 @@
               <i class="bi bi-grid-fill me-2"></i><span>Dashboard</span>
             </a>
           </li>
+
           <li class="nav-item">
             <a
               class="nav-link {% if request.endpoint == 'main.notificacoes' %}active{% endif %}"
@@ -151,6 +198,7 @@
               {% endif %}
             </a>
           </li>
+
           {% if current_user.tipo_usuario == 'admin' %}
           <li class="nav-item">
             <a
@@ -162,28 +210,101 @@
           </li>
           <li class="nav-item">
             <a
-              class="nav-link {% if request.endpoint == 'main.admin_uvis_novo' %}active{% endif %}"
-              href="{{ url_for('main.admin_uvis_novo') }}"
-            >
-              <i class="bi bi-person-plus-fill me-2"></i><span>Cadastrar UVIS</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a
-              class="nav-link {% if request.endpoint == 'main.admin_uvis_listar' %}active{% endif %}"
-              href="{{ url_for('main.admin_uvis_listar') }}"
-            >
-              <i class="bi bi-buildings-fill me-2"></i><span>UVIS</span>
-            </a>
-          </li>
-
-          <li class="nav-item">
-            <a
               class="nav-link {% if request.endpoint == 'main.agenda' %}active{% endif %}"
               href="{{ url_for('main.agenda') }}"
             >
               <i class="bi bi-calendar-event-fill me-2"></i><span>Agenda</span>
             </a>
+          </li>
+
+          <!-- ✅ UVIS COM SUBMENU -->
+          {% set uvis_active = request.endpoint in ['main.admin_uvis_listar',
+          'main.admin_uvis_novo'] %}
+          <li class="nav-item">
+            <button
+              type="button"
+              class="nav-link nav-link-toggle {% if uvis_active %}active{% endif %}"
+              data-bs-toggle="collapse"
+              data-bs-target="#menuUvis"
+              aria-expanded="{{ 'true' if uvis_active else 'false' }}"
+              aria-controls="menuUvis"
+            >
+              <span>
+                <i class="bi bi-buildings-fill me-2"></i><span>UVIS</span>
+              </span>
+              <i class="bi bi-chevron-down chevron"></i>
+            </button>
+
+            <div
+              class="collapse {% if uvis_active %}show{% endif %}"
+              id="menuUvis"
+            >
+              <ul class="nav flex-column sub-nav">
+                <li class="nav-item">
+                  <a
+                    class="nav-link sub-link {% if request.endpoint == 'main.admin_uvis_listar' %}active{% endif %}"
+                    href="{{ url_for('main.admin_uvis_listar') }}"
+                  >
+                    <i class="bi bi-list-ul me-2"></i><span>Listar</span>
+                  </a>
+                </li>
+
+                <li class="nav-item">
+                  <a
+                    class="nav-link sub-link {% if request.endpoint == 'main.admin_uvis_novo' %}active{% endif %}"
+                    href="{{ url_for('main.admin_uvis_novo') }}"
+                  >
+                    <i class="bi bi-person-plus-fill me-2"></i
+                    ><span>Cadastrar</span>
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </li>
+
+          <!-- ✅ CLIENTES COM SUBMENU -->
+          {% set clientes_active = request.endpoint in ['main.listar_clientes',
+          'main.cadastrar_clientes'] %}
+          <li class="nav-item">
+            <button
+              type="button"
+              class="nav-link nav-link-toggle {% if clientes_active %}active{% endif %}"
+              data-bs-toggle="collapse"
+              data-bs-target="#menuClientes"
+              aria-expanded="{{ 'true' if clientes_active else 'false' }}"
+              aria-controls="menuClientes"
+            >
+              <span>
+                <i class="bi bi-people-fill me-2"></i><span>Clientes</span>
+              </span>
+              <i class="bi bi-chevron-down chevron"></i>
+            </button>
+
+            <div
+              class="collapse {% if clientes_active %}show{% endif %}"
+              id="menuClientes"
+            >
+              <ul class="nav flex-column sub-nav">
+                <li class="nav-item">
+                  <a
+                    class="nav-link sub-link {% if request.endpoint == 'main.listar_clientes' %}active{% endif %}"
+                    href="{{ url_for('main.listar_clientes') }}"
+                  >
+                    <i class="bi bi-list-ul me-2"></i><span>Listar</span>
+                  </a>
+                </li>
+
+                <li class="nav-item">
+                  <a
+                    class="nav-link sub-link {% if request.endpoint == 'main.cadastrar_clientes' %}active{% endif %}"
+                    href="{{ url_for('main.cadastrar_clientes') }}"
+                  >
+                    <i class="bi bi-person-plus-fill me-2"></i
+                    ><span>Cadastrar</span>
+                  </a>
+                </li>
+              </ul>
+            </div>
           </li>
           {% endif %}
         </ul>
@@ -271,41 +392,37 @@
               timerProgressBar: true,
               background: isDarkMode ? '#152233' : '#fff',
               color: isDarkMode ? '#ffffff' : '#545454',
-              customClass: {
-                  popup: isDarkMode ? 'swal2-dark-mode' : ''
-              }
+              customClass: { popup: isDarkMode ? 'swal2-dark-mode' : '' }
             });
           {% endfor %}
         {% endif %}
 
         // Lógica Global para DELEÇÃO
         document.querySelectorAll('.form-deletar').forEach(form => {
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                const isDarkMode = body.classList.contains('dark-mode');
-                const submitButton = form.querySelector('button[type="submit"]');
+          form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const isDarkMode = body.classList.contains('dark-mode');
+            const submitButton = form.querySelector('button[type="submit"]');
 
-                Swal.fire({
-                    title: 'Tem certeza?',
-                    text: "Este registro será removido permanentemente.",
-                    icon: 'warning',
-                    background: isDarkMode ? '#152233' : '#fff',
-                    color: isDarkMode ? '#ffffff' : '#545454',
-                    showCancelButton: true,
-                    confirmButtonColor: '#d33',
-                    cancelButtonColor: '#6c757d',
-                    confirmButtonText: 'Sim, deletar!',
-                    cancelButtonText: 'Cancelar'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        showLoadingState(submitButton);
-                        form.submit();
-                    }
-                });
+            Swal.fire({
+              title: 'Tem certeza?',
+              text: "Este registro será removido permanentemente.",
+              icon: 'warning',
+              background: isDarkMode ? '#152233' : '#fff',
+              color: isDarkMode ? '#ffffff' : '#545454',
+              showCancelButton: true,
+              confirmButtonColor: '#d33',
+              cancelButtonColor: '#6c757d',
+              confirmButtonText: 'Sim, deletar!',
+              cancelButtonText: 'Cancelar'
+            }).then((result) => {
+              if (result.isConfirmed) {
+                showLoadingState(submitButton);
+                form.submit();
+              }
             });
+          });
         });
-
-        // --- CONTROLES DE LAYOUT ---
 
         // Sidebar Toggle
         if (sidebarToggle) {
@@ -318,7 +435,6 @@
         if (toggle) {
           const savedTheme = getThemeFromCookie();
 
-          // Se o cookie diz dark, garante que a classe esteja lá
           if (savedTheme === "dark") {
             body.classList.add("dark-mode");
             toggle.innerHTML = '<i class="bi bi-sun-fill"></i>';
@@ -328,7 +444,6 @@
             body.classList.toggle("dark-mode");
             const isDark = body.classList.contains("dark-mode");
 
-            // Salva no Cookie e remove lixo do localStorage antigo
             setThemeCookie(isDark ? "dark" : "light");
             localStorage.removeItem("dark-mode");
 
@@ -347,6 +462,7 @@
         });
       });
     </script>
+
     {% block scripts %}{% endblock %}
   </body>
 </html>

@@ -108,3 +108,14 @@ class Notificacao(db.Model):
     lida_em = db.Column(db.DateTime)
 
     apagada_em = db.Column(db.DateTime)
+
+class Clientes(db.Model):
+    __tablename__ = "clientes"
+
+    id = db.Column(db.Integer, primary_key=True)
+    nome_cliente = db.Column(db.String(100), nullable=False)
+    documento = db.Column(db.String(50), unique=True, nullable=False)
+    contato = db.Column(db.String(100))
+    telefone = db.Column(db.String(20))
+    email = db.Column(db.String(100))
+    endereco = db.Column(db.String(255))

@@ -1,0 +1,190 @@
+{% extends "base.html" %} {% block content %}
+
+<div class="container mt-4 mb-4">
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <h4 class="mb-3">Cadastrar Cliente</h4>
+
+      {% with messages = get_flashed_messages(with_categories=true) %} {% if
+      messages %} {% for category, message in messages %}
+      <div class="alert alert-{{ category }} mb-3" role="alert">
+        {{ message }}
+      </div>
+      {% endfor %} {% endif %} {% endwith %}
+
+      <form
+        method="post"
+        action="{{ url_for('main.cadastrar_clientes') }}"
+        novalidate
+      >
+        <div class="row g-3">
+          <div class="col-12 col-md-6">
+            <label class="form-label"
+              >Nome do Cliente <span class="text-danger">*</span></label
+            >
+            <input
+              type="text"
+              class="form-control {% if errors.get('nome_cliente') %}is-invalid{% endif %}"
+              name="nome_cliente"
+              value="{{ form.get('nome_cliente','') }}"
+              placeholder="Ex: João Pedro"
+              required
+            />
+            {% if errors.get('nome_cliente') %}
+            <div class="invalid-feedback">{{ errors.get('nome_cliente') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label class="form-label"
+              >Documento (CPF/CNPJ) <span class="text-danger">*</span></label
+            >
+            <input
+              type="text"
+              class="form-control {% if errors.get('documento') %}is-invalid{% endif %}"
+              name="documento"
+              id="documento"
+              value="{{ form.get('documento','') }}"
+              inputmode="numeric"
+              placeholder="CPF: 000.000.000-00 | CNPJ: 00.000.000/0000-00"
+              required
+            />
+            <div class="form-text">
+              Digite somente números — o sistema formata automaticamente e
+              valida CPF/CNPJ.
+            </div>
+            {% if errors.get('documento') %}
+            <div class="invalid-feedback">{{ errors.get('documento') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label class="form-label">Contato</label>
+            <input
+              type="text"
+              class="form-control"
+              name="contato"
+              value="{{ form.get('contato','') }}"
+              placeholder="Ex: Responsável / Referência"
+            />
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label class="form-label">Telefone</label>
+            <input
+              type="text"
+              class="form-control {% if errors.get('telefone') %}is-invalid{% endif %}"
+              name="telefone"
+              id="telefone"
+              value="{{ form.get('telefone','') }}"
+              inputmode="numeric"
+              placeholder="(00) 00000-0000"
+            />
+            <div class="form-text">Com DDD. Ex: (71) 99999-9999</div>
+            {% if errors.get('telefone') %}
+            <div class="invalid-feedback">{{ errors.get('telefone') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label class="form-label">E-mail</label>
+            <input
+              type="email"
+              class="form-control {% if errors.get('email') %}is-invalid{% endif %}"
+              name="email"
+              value="{{ form.get('email','') }}"
+              placeholder="nome@dominio.com"
+            />
+            {% if errors.get('email') %}
+            <div class="invalid-feedback">{{ errors.get('email') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-12">
+            <label class="form-label">Endereço</label>
+            <input
+              type="text"
+              class="form-control"
+              name="endereco"
+              value="{{ form.get('endereco','') }}"
+              placeholder="Rua, número, bairro, cidade"
+            />
+          </div>
+
+          <div class="col-12 d-flex gap-2 mt-2">
+            <button type="submit" class="btn btn-primary">Salvar</button>
+            <a
+              href="{{ url_for('main.dashboard') }}"
+              class="btn btn-outline-secondary"
+              >Voltar</a
+            >
+          </div>
+        </div>
+      </form>
+
+      <small class="text-muted d-block mt-3">
+        Campos com <span class="text-danger">*</span> são obrigatórios.
+      </small>
+    </div>
+  </div>
+</div>
+
+<script>
+  function onlyDigits(v) {
+    return (v || "").replace(/\D/g, "");
+  }
+
+  // Máscara CPF/CNPJ (dinâmica)
+  function maskDocumento(value) {
+    const d = onlyDigits(value);
+
+    // CPF (até 11)
+    if (d.length <= 11) {
+      let v = d.slice(0, 11);
+      v = v.replace(/(\d{3})(\d)/, "$1.$2");
+      v = v.replace(/(\d{3})(\d)/, "$1.$2");
+      v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+      return v;
+    }
+
+    // CNPJ (até 14)
+    let v = d.slice(0, 14);
+    v = v.replace(/(\d{2})(\d)/, "$1.$2");
+    v = v.replace(/(\d{3})(\d)/, "$1.$2");
+    v = v.replace(/(\d{3})(\d)/, "$1/$2");
+    v = v.replace(/(\d{4})(\d{1,2})$/, "$1-$2");
+    return v;
+  }
+
+  // Máscara telefone BR (10/11 dígitos)
+  function maskTelefone(value) {
+    const d = onlyDigits(value).slice(0, 11);
+
+    if (d.length <= 2) return d;
+    if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+    if (d.length <= 10)
+      return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+    return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  }
+
+  const docInput = document.getElementById("documento");
+  const telInput = document.getElementById("telefone");
+
+  if (docInput) {
+    docInput.addEventListener("input", (e) => {
+      const pos = e.target.selectionStart;
+      e.target.value = maskDocumento(e.target.value);
+      e.target.setSelectionRange(pos, pos);
+    });
+  }
+
+  if (telInput) {
+    telInput.addEventListener("input", (e) => {
+      const pos = e.target.selectionStart;
+      e.target.value = maskTelefone(e.target.value);
+      e.target.setSelectionRange(pos, pos);
+    });
+  }
+</script>
+
+{% endblock %}

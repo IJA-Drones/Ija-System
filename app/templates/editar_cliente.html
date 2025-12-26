@@ -1,0 +1,175 @@
+{% extends "base.html" %} {% block content %}
+
+<div class="container mt-4 mb-4">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+      <h4 class="mb-0">Editar Cliente</h4>
+      <small class="text-muted">ID: #{{ cliente.id }}</small>
+    </div>
+    <a
+      class="btn btn-outline-secondary"
+      href="{{ url_for('main.listar_clientes') }}"
+    >
+      Voltar
+    </a>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <form method="post" novalidate>
+        <div class="row g-3">
+          <div class="col-12 col-md-6">
+            <label class="form-label"
+              >Nome do Cliente <span class="text-danger">*</span></label
+            >
+            <input
+              type="text"
+              class="form-control {% if errors.get('nome_cliente') %}is-invalid{% endif %}"
+              name="nome_cliente"
+              value="{{ form.get('nome_cliente','') }}"
+              required
+            />
+            {% if errors.get('nome_cliente') %}
+            <div class="invalid-feedback">{{ errors.get('nome_cliente') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label class="form-label"
+              >Documento (CPF/CNPJ) <span class="text-danger">*</span></label
+            >
+            <input
+              type="text"
+              class="form-control {% if errors.get('documento') %}is-invalid{% endif %}"
+              name="documento"
+              id="documento"
+              value="{{ form.get('documento','') }}"
+              inputmode="numeric"
+              required
+            />
+            <div class="form-text">
+              Digite só números — o sistema formata automaticamente e valida
+              CPF/CNPJ.
+            </div>
+            {% if errors.get('documento') %}
+            <div class="invalid-feedback">{{ errors.get('documento') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label class="form-label">Contato</label>
+            <input
+              type="text"
+              class="form-control"
+              name="contato"
+              value="{{ form.get('contato','') }}"
+            />
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label class="form-label">Telefone</label>
+            <input
+              type="text"
+              class="form-control {% if errors.get('telefone') %}is-invalid{% endif %}"
+              name="telefone"
+              id="telefone"
+              value="{{ form.get('telefone','') }}"
+              inputmode="numeric"
+            />
+            {% if errors.get('telefone') %}
+            <div class="invalid-feedback">{{ errors.get('telefone') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label class="form-label">E-mail</label>
+            <input
+              type="email"
+              class="form-control {% if errors.get('email') %}is-invalid{% endif %}"
+              name="email"
+              value="{{ form.get('email','') }}"
+            />
+            {% if errors.get('email') %}
+            <div class="invalid-feedback">{{ errors.get('email') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-12">
+            <label class="form-label">Endereço</label>
+            <input
+              type="text"
+              class="form-control"
+              name="endereco"
+              value="{{ form.get('endereco','') }}"
+            />
+          </div>
+
+          <div class="col-12 d-flex gap-2 mt-2">
+            <button type="submit" class="btn btn-primary">
+              Salvar alterações
+            </button>
+
+            <form
+              class="form-deletar m-0"
+              method="post"
+              action="{{ url_for('main.deletar_cliente', cliente_id=cliente.id) }}"
+            >
+              <button type="submit" class="btn btn-danger">Excluir</button>
+            </form>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  function onlyDigits(v) {
+    return (v || "").replace(/\D/g, "");
+  }
+
+  function maskDocumento(value) {
+    const d = onlyDigits(value);
+
+    if (d.length <= 11) {
+      let v = d.slice(0, 11);
+      v = v.replace(/(\d{3})(\d)/, "$1.$2");
+      v = v.replace(/(\d{3})(\d)/, "$1.$2");
+      v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+      return v;
+    }
+
+    let v = d.slice(0, 14);
+    v = v.replace(/(\d{2})(\d)/, "$1.$2");
+    v = v.replace(/(\d{3})(\d)/, "$1.$2");
+    v = v.replace(/(\d{3})(\d)/, "$1/$2");
+    v = v.replace(/(\d{4})(\d{1,2})$/, "$1-$2");
+    return v;
+  }
+
+  function maskTelefone(value) {
+    const d = onlyDigits(value).slice(0, 11);
+    if (d.length <= 2) return d;
+    if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+    if (d.length <= 10)
+      return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+    return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  }
+
+  const docInput = document.getElementById("documento");
+  const telInput = document.getElementById("telefone");
+
+  if (docInput) {
+    docInput.addEventListener("input", (e) => {
+      e.target.value = maskDocumento(e.target.value);
+    });
+  }
+
+  if (telInput) {
+    telInput.addEventListener("input", (e) => {
+      e.target.value = maskTelefone(e.target.value);
+    });
+  }
+</script>
+
+{% endblock %}

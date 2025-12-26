@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  /* --- Ajustes de layout específicos desta tela --- */
+  .clientes-toolbar { gap: 12px; }
+
+  .clientes-filtros .form-label {
+    font-size: .85rem;
+    opacity: .9;
+    margin-bottom: 6px;
+  }
+
+  .clientes-filtros .form-control,
+  .clientes-filtros .form-select {
+    height: 44px;
+    border-radius: 14px;
+  }
+
+  .clientes-filtros .btn {
+    height: 44px;
+    border-radius: 14px;
+    white-space: nowrap;
+  }
+
+  .clientes-card { border-radius: 18px; }
+
+  .clientes-table-wrap {
+    border-radius: 18px;
+    overflow: hidden;
+  }
+
+  /* tabela com mais espaço (evita “apertado/grudado”) */
+  .clientes-table {
+    min-width: 1250px;
+    table-layout: fixed;
+  }
+
+  .clientes-table th {
+    padding: 14px 16px;
+    font-size: .82rem;
+    letter-spacing: .02em;
+    text-transform: uppercase;
+    opacity: .9;
+  }
+
+  .clientes-table td {
+    padding: 18px 16px;
+    vertical-align: middle;
+    line-height: 1.25;
+  }
+
+  /* separador de linhas mais visível */
+  .clientes-table tbody tr + tr td {
+    border-top: 1px solid rgba(255,255,255,.08) !important;
+  }
+
+  .muted { opacity: .85; }
+
+  /* Blocos em 2 linhas dentro da célula */
+  .cell-main { font-weight: 600; }
+  .cell-sub  { font-size: .86rem; opacity: .85; margin-top: 4px; }
+
+  /* “Pill” pro telefone (e você pode usar pra outros campos) */
+  .cell-pill {
+    display: inline-block;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.08);
+    font-size: .9rem;
+    white-space: nowrap;
+  }
+
+  /* Truncar com reticências de forma bonita */
+  .clip {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
+    max-width: 100%;
+  }
+
+  /* colunas (ajuste fino) */
+  .col-id      { width: 70px; }
+  .col-nome    { width: 240px; }
+  .col-doc     { width: 180px; }
+  .col-contato { width: 200px; }
+  .col-tel     { width: 160px; }
+  .col-email   { width: 300px; }
+  .col-end     { width: 320px; }
+  .col-acoes   { width: 130px; }
+
+  @media (max-width: 768px) {
+    .clientes-table { min-width: 1100px; }
+  }
+</style>
+
+<div class="container mt-4 mb-4">
+
+  <!-- Topo: título + ações -->
+  <div class="d-flex flex-wrap align-items-center justify-content-between clientes-toolbar mb-3">
+    <div>
+      <h4 class="mb-0">Clientes</h4>
+      <small class="text-muted">
+        Encontrados: <strong>{{ filters.total }}</strong>
+        {% if filters.q or filters.doc or filters.email or filters.telefone %}
+          <span class="ms-1">(filtrado)</span>
+        {% endif %}
+      </small>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2">
+      <a class="btn btn-primary" href="{{ url_for('main.cadastrar_clientes') }}">
+        <i class="bi bi-person-plus-fill me-1"></i> Novo Cliente
+      </a>
+
+      <a class="btn btn-success"
+         href="{{ url_for('main.listar_clientes',
+              q=filters.q, doc=filters.doc, email=filters.email, telefone=filters.telefone,
+              sort=filters.sort, per_page=filters.per_page, export='xlsx') }}">
+        <i class="bi bi-file-earmark-excel-fill me-1"></i> Exportar Excel
+      </a>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card shadow-sm clientes-card clientes-filtros mb-3">
+    <div class="card-body">
+
+      <form method="get" action="{{ url_for('main.listar_clientes') }}" class="row g-3">
+
+        <!-- Linha 1 -->
+        <div class="col-12 col-lg-4">
+          <label class="form-label">Busca geral</label>
+          <input class="form-control" name="q" value="{{ filters.q }}"
+                 placeholder="Nome, email, contato, endereço, CPF/CNPJ, telefone">
+        </div>
+
+        <div class="col-12 col-md-6 col-lg-2">
+          <label class="form-label">CPF/CNPJ</label>
+          <input class="form-control" name="doc" value="{{ filters.doc }}"
+                 placeholder="Somente números ou com máscara">
+        </div>
+
+        <div class="col-12 col-md-6 col-lg-2">
+          <label class="form-label">E-mail</label>
+          <input class="form-control" name="email" value="{{ filters.email }}"
+                 placeholder="ex: gmail.com">
+        </div>
+
+        <div class="col-12 col-md-6 col-lg-2">
+          <label class="form-label">Telefone</label>
+          <input class="form-control" name="telefone" value="{{ filters.telefone }}"
+                 placeholder="DDD + número">
+        </div>
+
+        <div class="col-12 col-md-6 col-lg-2">
+          <label class="form-label">Ordenar</label>
+          <select class="form-select" name="sort">
+            <option value="nome_asc"  {% if filters.sort == 'nome_asc' %}selected{% endif %}>Nome (A→Z)</option>
+            <option value="nome_desc" {% if filters.sort == 'nome_desc' %}selected{% endif %}>Nome (Z→A)</option>
+            <option value="id_desc"   {% if filters.sort == 'id_desc' %}selected{% endif %}>Mais recentes</option>
+            <option value="id_asc"    {% if filters.sort == 'id_asc' %}selected{% endif %}>Mais antigos</option>
+          </select>
+        </div>
+
+        <!-- Linha 2 -->
+        <div class="col-12 col-md-6 col-lg-2">
+          <label class="form-label">Por página</label>
+          <select class="form-select" name="per_page">
+            <option value="10" {% if filters.per_page == 10 %}selected{% endif %}>10</option>
+            <option value="20" {% if filters.per_page == 20 %}selected{% endif %}>20</option>
+            <option value="30" {% if filters.per_page == 30 %}selected{% endif %}>30</option>
+            <option value="50" {% if filters.per_page == 50 %}selected{% endif %}>50</option>
+          </select>
+        </div>
+
+        <div class="col-12 col-md-6 col-lg-4 d-flex align-items-end gap-2">
+          <button class="btn btn-primary w-100" type="submit">
+            <i class="bi bi-search me-1"></i> Filtrar
+          </button>
+
+          <a class="btn btn-outline-secondary w-100" href="{{ url_for('main.listar_clientes') }}">
+            Limpar
+          </a>
+        </div>
+
+        <input type="hidden" name="page" value="1">
+      </form>
+
+    </div>
+  </div>
+
+  <!-- Tabela -->
+  <div class="card shadow-sm clientes-card">
+    <div class="card-body p-0 clientes-table-wrap">
+
+      {% if clientes|length == 0 %}
+        <div class="p-4">
+          <div class="alert alert-info mb-0">
+            Nenhum cliente encontrado com os filtros atuais.
+          </div>
+        </div>
+      {% else %}
+        <div class="table-responsive">
+          <table class="table table-hover mb-0 clientes-table">
+            <thead>
+              <tr>
+                <th class="col-id">ID</th>
+                <th class="col-nome">Nome</th>
+                <th class="col-doc">Documento</th>
+                <th class="col-contato">Contato</th>
+                <th class="col-tel">Telefone</th>
+                <th class="col-email">E-mail</th>
+                <th class="col-end">Endereço</th>
+                <th class="col-acoes text-center">Ações</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {% for c in clientes %}
+              <tr>
+                <td class="col-id muted">#{{ c.id }}</td>
+
+                <td class="col-nome">
+                  <div class="cell-main">{{ c.nome_cliente }}</div>
+                </td>
+
+                <td class="col-doc">
+                  <span class="badge text-bg-dark">{{ c.documento_fmt }}</span>
+                </td>
+
+                <td class="col-contato">
+                  <span class="clip" title="{{ c.contato }}">{{ c.contato }}</span>
+                </td>
+
+                <td class="col-tel">
+                  <span class="cell-pill">{{ c.telefone_fmt }}</span>
+                </td>
+
+                <td class="col-email">
+                  <span class="clip" title="{{ c.email }}">{{ c.email }}</span>
+                </td>
+
+                <td class="col-end">
+                  <span class="clip" title="{{ c.endereco }}">{{ c.endereco }}</span>
+                </td>
+
+                <td class="col-acoes text-center">
+                  <div class="d-inline-flex gap-2">
+                    <a class="btn btn-sm btn-outline-primary"
+                       href="{{ url_for('main.editar_cliente', cliente_id=c.id) }}"
+                       title="Editar">
+                      <i class="bi bi-pencil-fill"></i>
+                    </a>
+
+                    <form class="form-deletar m-0" method="post"
+                          action="{{ url_for('main.deletar_cliente', cliente_id=c.id) }}">
+                      <button class="btn btn-sm btn-outline-danger" type="submit" title="Excluir">
+                        <i class="bi bi-trash-fill"></i>
+                      </button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+
+          </table>
+        </div>
+      {% endif %}
+
+    </div>
+  </div>
+
+  {% if filters.total_pages > 1 %}
+  <div class="d-flex flex-wrap justify-content-between align-items-center mt-3 gap-2">
+    <small class="text-muted">
+      Página <strong>{{ filters.page }}</strong> de <strong>{{ filters.total_pages }}</strong>
+    </small>
+
+    <nav aria-label="Paginação">
+      <ul class="pagination mb-0">
+        {% set prev_page = filters.page - 1 %}
+        {% set next_page = filters.page + 1 %}
+
+        <li class="page-item {% if filters.page <= 1 %}disabled{% endif %}">
+          <a class="page-link" href="{{ url_for('main.listar_clientes',
+              q=filters.q, doc=filters.doc, email=filters.email, telefone=filters.telefone,
+              sort=filters.sort, per_page=filters.per_page, page=prev_page) }}">Anterior</a>
+        </li>
+
+        <li class="page-item disabled">
+          <span class="page-link">{{ filters.page }}</span>
+        </li>
+
+        <li class="page-item {% if filters.page >= filters.total_pages %}disabled{% endif %}">
+          <a class="page-link" href="{{ url_for('main.listar_clientes',
+              q=filters.q, doc=filters.doc, email=filters.email, telefone=filters.telefone,
+              sort=filters.sort, per_page=filters.per_page, page=next_page) }}">Próxima</a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+
+  <div class="mt-3">
+    <a class="btn btn-outline-secondary" href="{{ url_for('main.dashboard') }}">Voltar</a>
+  </div>
+
+</div>
+
+{% endblock %}

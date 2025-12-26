@@ -41,7 +41,7 @@ from sqlalchemy.orm import joinedload
 # APP
 # ==========================
 from app import db
-from app.models import Notificacao, Solicitacao, Usuario
+from app.models import Notificacao, Solicitacao, Usuario, Clientes
 
 print("--- ROTAS CARREGADAS COM SUCESSO ---")
 
@@ -573,6 +573,7 @@ def relatorios():
         else:
             func_mes = db.func.strftime('%Y-%m', Solicitacao.data_criacao)
 
+        # ✅ Mantive ordem cronológica por mês (pra gráfico)
         dados_mensais = [
             (mes, total)
             for mes, total in (
@@ -605,7 +606,7 @@ def relatorios():
         total_analise = base_query.filter(Solicitacao.status == "EM ANÁLISE").count()
         total_pendentes = base_query.filter(Solicitacao.status == "PENDENTE").count()
 
-        # 🔹 Agrupamentos (SEM Row)
+        # 🔹 Agrupamentos (MAIOR -> MENOR)
 
         dados_regiao = [
             (regiao or "Não informado", total)
@@ -617,6 +618,7 @@ def relatorios():
                     uvis_id
                 )
                 .group_by(Usuario.regiao)
+                .order_by(db.func.count(Solicitacao.id).desc())   # ✅ maior -> menor
                 .all()
             )
         ]
@@ -627,6 +629,7 @@ def relatorios():
                 base_query
                 .with_entities(Solicitacao.status, db.func.count(Solicitacao.id))
                 .group_by(Solicitacao.status)
+                .order_by(db.func.count(Solicitacao.id).desc())   # ✅ maior -> menor
                 .all()
             )
         ]
@@ -637,6 +640,7 @@ def relatorios():
                 base_query
                 .with_entities(Solicitacao.foco, db.func.count(Solicitacao.id))
                 .group_by(Solicitacao.foco)
+                .order_by(db.func.count(Solicitacao.id).desc())   # ✅ maior -> menor
                 .all()
             )
         ]
@@ -647,6 +651,7 @@ def relatorios():
                 base_query
                 .with_entities(Solicitacao.tipo_visita, db.func.count(Solicitacao.id))
                 .group_by(Solicitacao.tipo_visita)
+                .order_by(db.func.count(Solicitacao.id).desc())   # ✅ maior -> menor
                 .all()
             )
         ]
@@ -657,6 +662,7 @@ def relatorios():
                 base_query
                 .with_entities(Solicitacao.altura_voo, db.func.count(Solicitacao.id))
                 .group_by(Solicitacao.altura_voo)
+                .order_by(db.func.count(Solicitacao.id).desc())   # ✅ maior -> menor
                 .all()
             )
         ]
@@ -672,6 +678,7 @@ def relatorios():
                     uvis_id
                 )
                 .group_by(Usuario.nome_uvis)
+                .order_by(db.func.count(Solicitacao.id).desc())   # ✅ maior -> menor
                 .all()
             )
         ]
@@ -707,6 +714,7 @@ def relatorios():
             titulo="Erro nos Relatórios",
             mensagem="Houve um erro técnico ao processar os dados."
         )
+
 
 
 import os
@@ -1225,7 +1233,7 @@ def exportar_relatorio_pdf():
 
 
 # =======================================================================
-# ROTA 3: Exportar Excel (Com Filtro UVIS)
+# ROTA 3: Exportar Excel (Com Filtro UVIS) - Layout “bonito” igual Excel
 # =======================================================================
 @bp.route('/admin/exportar_relatorio_excel')
 @login_required
@@ -1239,7 +1247,6 @@ def exportar_relatorio_excel():
     # -------------------------
     mes = request.args.get('mes', datetime.now().month, type=int)
     ano = request.args.get('ano', datetime.now().year, type=int)
-    orient = request.args.get('orient', default='portrait')  # caso queira extensão futura
     filtro_data = f"{ano}-{mes:02d}"
 
     # Controle de acesso UVIS
@@ -1259,14 +1266,19 @@ def exportar_relatorio_excel():
         Solicitacao.altura_voo,
         Solicitacao.data_agendamento,
         Solicitacao.hora_agendamento,
+
+        # Endereço (campos separados no banco)
         Solicitacao.cep,
         Solicitacao.logradouro,
         Solicitacao.numero,
         Solicitacao.bairro,
         Solicitacao.cidade,
         Solicitacao.uf,
+
         Solicitacao.latitude,
         Solicitacao.longitude,
+
+        # UVIS
         Usuario.nome_uvis,
         Usuario.regiao
     ).join(Usuario, Usuario.id == Solicitacao.usuario_id)
@@ -1283,27 +1295,64 @@ def exportar_relatorio_excel():
 
     dados = query_dados.order_by(Solicitacao.data_criacao.desc()).all()
 
+    # Se tiver filtro UVIS, pega o nome pra ajudar no nome do arquivo
+    nome_uvis_filtro = None
+    if uvis_id:
+        nome_uvis_filtro = db.session.query(Usuario.nome_uvis).filter(Usuario.id == uvis_id).scalar()
+
     # -------------------------
-    # 3. Criar arquivo Excel
+    # 3. Helper: montar endereço em 1 LINHA (compacto igual Excel)
+    # -------------------------
+    def montar_endereco(row):
+        partes_rua = []
+        if row.logradouro:
+            partes_rua.append(row.logradouro.strip())
+        if row.numero is not None and str(row.numero).strip():
+            partes_rua.append(str(row.numero).strip())
+
+        rua_numero = ", ".join([p for p in partes_rua if p]).strip()
+
+        cidade_uf = ""
+        if row.cidade and row.uf:
+            cidade_uf = f"{row.cidade.strip()}/{row.uf.strip()}"
+        elif row.cidade:
+            cidade_uf = row.cidade.strip()
+        elif row.uf:
+            cidade_uf = row.uf.strip()
+
+        bairro_cidade = " - ".join([p for p in [(row.bairro or "").strip(), cidade_uf] if p]).strip()
+        cep_txt = f"CEP {row.cep.strip()}" if row.cep else ""
+
+        # Formato final: "Rua, 123 | Bairro - Cidade/UF | CEP 00000-000"
+        return " | ".join([p for p in [rua_numero, bairro_cidade, cep_txt] if p])
+
+    # -------------------------
+    # 4. Criar arquivo Excel
     # -------------------------
     wb = Workbook()
     ws = wb.active
     ws.title = "Relatório"
 
+    # ✅ UVIS vem no começo agora
     colunas = [
+        "UVIS", "Região",
         "ID", "Status", "Foco", "Tipo Visita", "Altura Voo",
         "Data Agendamento", "Hora Agendamento",
-        "CEP", "Logradouro", "Número", "Bairro", "Cidade", "UF",
-        "Latitude", "Longitude", "UVIS", "Região"
+        "ENDEREÇO DE AÇÃO",
+        "Latitude", "Longitude"
     ]
 
+    # Estilos (bem padrão Excel)
     header_fill = PatternFill(start_color="1E90FF", end_color="1E90FF", fill_type="solid")
     header_font = Font(color="FFFFFF", bold=True)
-    center = Alignment(horizontal="center", vertical="center")
-    thin = Side(style='thin', color="000000")
+    thin = Side(style="thin", color="000000")
     thin_border = Border(left=thin, right=thin, top=thin, bottom=thin)
     zebra1 = PatternFill(start_color="FFFFFFFF", end_color="FFFFFFFF", fill_type="solid")
     zebra2 = PatternFill(start_color="FFF7FBFF", end_color="FFF7FBFF", fill_type="solid")
+
+    # ✅ alinhamento igual ao print (compacto e central vertical)
+    center = Alignment(horizontal="center", vertical="center")
+    left_center = Alignment(horizontal="left", vertical="center")
 
     # Cabeçalho
     for col_num, col_name in enumerate(colunas, 1):
@@ -1313,12 +1362,19 @@ def exportar_relatorio_excel():
         cell.alignment = center
         cell.border = thin_border
 
+    # Altura do cabeçalho (compacto)
+    ws.row_dimensions[1].height = 22
+
     # Preenchimento de linhas
     for row_num, row in enumerate(dados, 2):
         data_agendamento_fmt = row.data_agendamento.strftime("%d/%m/%Y") if row.data_agendamento else ""
         hora_agendamento_fmt = row.hora_agendamento.strftime("%H:%M") if row.hora_agendamento else ""
 
+        endereco_acao = montar_endereco(row)
+
         values = [
+            row.nome_uvis,
+            row.regiao,
             row.id,
             row.status,
             row.foco,
@@ -1326,36 +1382,52 @@ def exportar_relatorio_excel():
             row.altura_voo,
             data_agendamento_fmt,
             hora_agendamento_fmt,
-            row.cep,
-            row.logradouro,
-            row.numero,
-            row.bairro,
-            row.cidade,
-            row.uf,
+            endereco_acao,
             row.latitude,
-            row.longitude,
-            row.nome_uvis,
-            row.regiao
+            row.longitude
         ]
+
+        # Altura das linhas (igual Excel “padrão bonito”)
+        ws.row_dimensions[row_num].height = 20
 
         for col_index, value in enumerate(values, 1):
             cell = ws.cell(row=row_num, column=col_index, value=value)
             cell.border = thin_border
-            if col_index in (1, 3, 6, 8, 15, 16):
-                cell.alignment = center
-            else:
-                cell.alignment = Alignment(vertical="top", horizontal="left")
             cell.fill = zebra1 if (row_num % 2 == 0) else zebra2
 
-    # Ajuste de largura das colunas
-    for col in ws.columns:
-        max_length = max((len(str(cell.value)) for cell in col if cell.value), default=10)
-        ws.column_dimensions[col[0].column_letter].width = min(max_length + 2, 60)
+            # Centraliza campos curtos, texto fica alinhado à esquerda (igual print)
+            if col_index in (3, 7, 8, 9, 11, 12):  # ID, Altura, Data, Hora, Lat, Long
+                cell.alignment = center
+            else:
+                cell.alignment = left_center
 
+    # Congelar cabeçalho
     ws.freeze_panes = "A2"
+
+    # Auto-filtro no cabeçalho
     ws.auto_filter.ref = f"A1:{get_column_letter(len(colunas))}1"
 
-    # Gerar arquivo em memória
+    # ✅ Larguras “na mão” (fica igual ao print / bem organizado)
+    larguras = {
+        "A": 24,  # UVIS
+        "B": 12,  # Região
+        "C": 6,   # ID
+        "D": 18,  # Status
+        "E": 22,  # Foco
+        "F": 16,  # Tipo Visita
+        "G": 10,  # Altura Voo
+        "H": 14,  # Data
+        "I": 14,  # Hora
+        "J": 90,  # ENDEREÇO DE AÇÃO
+        "K": 14,  # Latitude
+        "L": 14   # Longitude
+    }
+    for col, width in larguras.items():
+        ws.column_dimensions[col].width = width
+
+    # -------------------------
+    # 5. Gerar arquivo em memória
+    # -------------------------
     output = BytesIO()
     wb.save(output)
     output.seek(0)
@@ -1363,7 +1435,8 @@ def exportar_relatorio_excel():
     # Nome do arquivo
     nome_arquivo = f"relatorio_IJASystem_{ano}_{mes:02d}"
     if uvis_id:
-        nome_arquivo += f"_UVIS_{uvis_id}"
+        safe_nome = (nome_uvis_filtro or f"ID_{uvis_id}").replace(" ", "_")
+        nome_arquivo += f"_UVIS_{safe_nome}"
 
     return send_file(
         output,
@@ -1371,6 +1444,7 @@ def exportar_relatorio_excel():
         as_attachment=True,
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
+
 
 
 
@@ -1756,10 +1830,23 @@ def exportar_excel():  # <--- função interna com nome diferente
 # NOTIFICAÇÕES (Flask-Login: login_required + current_user)
 # Requer no topo:
 # from flask_login import login_required, current_user
-# from flask import abort, redirect, url_for, render_template
+# from flask import redirect, url_for, render_template
 # from datetime import datetime, date
 # from sqlalchemy.orm import joinedload
+# from zoneinfo import ZoneInfo
 # =================================================
+
+from zoneinfo import ZoneInfo
+
+TZ_BR = ZoneInfo("America/Sao_Paulo")
+
+def agora_brasilia_naive():
+    """
+    Retorna datetime no horário de Brasília, mas sem tzinfo (naive),
+    para bater com db.DateTime (sem timezone).
+    """
+    return datetime.now(TZ_BR).replace(tzinfo=None)
+
 
 # -------------------------------------------------
 # CRIAR NOTIFICAÇÃO
@@ -1769,7 +1856,8 @@ def criar_notificacao(usuario_id, titulo, mensagem="", link=None):
         usuario_id=usuario_id,
         titulo=titulo,
         mensagem=mensagem or "",
-        link=link
+        link=link,
+        criada_em=agora_brasilia_naive(),  # ✅ Brasília
     )
     db.session.add(n)
     db.session.commit()
@@ -1778,9 +1866,7 @@ def criar_notificacao(usuario_id, titulo, mensagem="", link=None):
 
 # -------------------------------------------------
 # GARANTIR NOTIFICAÇÕES DO DIA (sem duplicar)
-# - UVIS: cria apenas para ela mesma
-# Observação: com soft delete (apagada_em), NÃO recria se já existiu (mesmo apagada),
-# porque ela continua existindo no banco.
+# ✅ REGRA: se já existiu (mesmo apagada), NÃO recria
 # -------------------------------------------------
 def garantir_notificacoes_do_dia(usuario_id):
     hoje = date.today()
@@ -1796,9 +1882,10 @@ def garantir_notificacoes_do_dia(usuario_id):
     for s in ags:
         hora_fmt = s.hora_agendamento.strftime("%H:%M") if s.hora_agendamento else "00:00"
 
-        # 🔒 chave estável
+        # 🔒 chave estável (muda por dia por conta do d=hoje)
         link = url_for("main.agenda", sid=s.id, d=hoje.isoformat())
 
+        # ✅ Se já existe (inclusive apagada), NÃO cria novamente
         ja_existe = (
             Notificacao.query
             .filter_by(usuario_id=usuario_id, link=link)
@@ -1831,7 +1918,7 @@ def ler_notificacao(notif_id):
              .first_or_404())
 
     if n.lida_em is None:
-        n.lida_em = datetime.utcnow()
+        n.lida_em = agora_brasilia_naive()  # ✅ Brasília
         db.session.commit()
 
     return redirect(n.link or url_for("main.notificacoes"))
@@ -1878,7 +1965,7 @@ def excluir_notificacao(notif_id):
              .filter_by(id=notif_id, usuario_id=current_user.id)
              .first_or_404())
 
-    n.apagada_em = datetime.utcnow()
+    n.apagada_em = agora_brasilia_naive()  # ✅ Brasília
     db.session.commit()
 
     return redirect(url_for("main.notificacoes"))
@@ -1891,7 +1978,7 @@ def excluir_notificacao(notif_id):
 @login_required
 def limpar_notificacoes():
     user_tipo = current_user.tipo_usuario
-    agora = datetime.utcnow()
+    agora = agora_brasilia_naive()  # ✅ Brasília
 
     q = Notificacao.query.filter(Notificacao.apagada_em.is_(None))
 
@@ -1903,10 +1990,10 @@ def limpar_notificacoes():
 
     return redirect(url_for("main.notificacoes"))
 
+
 # ==========================
 # CHATBOT UVIS (FAQ inteligente)
 # ==========================
-import re
 import unicodedata
 
 from flask import jsonify, request
@@ -2289,7 +2376,6 @@ def admin_uvis_excluir(id):
 # ==========================
 # CHATBOT ADMIN (FAQ inteligente) - Flask-Login
 # ==========================
-import re
 import unicodedata
 
 from flask import jsonify, request
@@ -2508,3 +2594,647 @@ def erro_interno(e):
         titulo="Erro Interno do Servidor", 
         mensagem="Desculpe, algo deu errado do nosso lado. Tente novamente mais tarde."
     ), 500
+
+# -----------------------------
+# Helpers: CPF/CNPJ/Telefone
+# -----------------------------
+def only_digits(value: str) -> str:
+    return re.sub(r"\D", "", value or "")
+
+def format_cpf(cpf_digits: str) -> str:
+    return f"{cpf_digits[:3]}.{cpf_digits[3:6]}.{cpf_digits[6:9]}-{cpf_digits[9:11]}"
+
+def format_cnpj(cnpj_digits: str) -> str:
+    return f"{cnpj_digits[:2]}.{cnpj_digits[2:5]}.{cnpj_digits[5:8]}/{cnpj_digits[8:12]}-{cnpj_digits[12:14]}"
+
+def validate_cpf(cpf: str) -> bool:
+    cpf = only_digits(cpf)
+    if len(cpf) != 11 or cpf == cpf[0] * 11:
+        return False
+
+    # 1º dígito
+    soma = sum(int(cpf[i]) * (10 - i) for i in range(9))
+    d1 = (soma * 10) % 11
+    d1 = 0 if d1 == 10 else d1
+    if d1 != int(cpf[9]):
+        return False
+
+    # 2º dígito
+    soma = sum(int(cpf[i]) * (11 - i) for i in range(10))
+    d2 = (soma * 10) % 11
+    d2 = 0 if d2 == 10 else d2
+    return d2 == int(cpf[10])
+
+def validate_cnpj(cnpj: str) -> bool:
+    cnpj = only_digits(cnpj)
+    if len(cnpj) != 14 or cnpj == cnpj[0] * 14:
+        return False
+
+    pesos1 = [5,4,3,2,9,8,7,6,5,4,3,2]
+    pesos2 = [6,5,4,3,2,9,8,7,6,5,4,3,2]
+
+    soma = sum(int(cnpj[i]) * pesos1[i] for i in range(12))
+    d1 = 11 - (soma % 11)
+    d1 = 0 if d1 >= 10 else d1
+    if d1 != int(cnpj[12]):
+        return False
+
+    soma = sum(int(cnpj[i]) * pesos2[i] for i in range(13))
+    d2 = 11 - (soma % 11)
+    d2 = 0 if d2 >= 10 else d2
+    return d2 == int(cnpj[13])
+
+def validate_documento(doc: str):
+    """
+    Retorna (ok, tipo, doc_digits, doc_formatado, erro_msg)
+    tipo: 'CPF' | 'CNPJ'
+    """
+    digits = only_digits(doc)
+
+    if len(digits) == 11:
+        if not validate_cpf(digits):
+            return False, "CPF", digits, None, "CPF inválido (dígitos verificadores não conferem)."
+        return True, "CPF", digits, format_cpf(digits), None
+
+    if len(digits) == 14:
+        if not validate_cnpj(digits):
+            return False, "CNPJ", digits, None, "CNPJ inválido (dígitos verificadores não conferem)."
+        return True, "CNPJ", digits, format_cnpj(digits), None
+
+    return False, None, digits, None, "Documento deve ter 11 (CPF) ou 14 (CNPJ) dígitos."
+
+def format_phone_br(phone_digits: str) -> str:
+    d = only_digits(phone_digits)
+    if len(d) == 11:
+        return f"({d[:2]}) {d[2:7]}-{d[7:11]}"
+    if len(d) == 10:
+        return f"({d[:2]}) {d[2:6]}-{d[6:10]}"
+    return phone_digits  # se não bater, devolve como veio
+
+
+# -----------------------------
+# Rota: cadastrar clientes
+# -----------------------------
+@bp.route('/clientes/cadastrar', methods=['GET', 'POST'], endpoint='cadastrar_clientes')
+@login_required
+def cadastrar_clientes():
+    # Segurança: só admin
+    if getattr(current_user, "tipo_usuario", None) != "admin":
+        abort(403)
+
+    errors = {}
+    form = {}
+
+    if request.method == "POST":
+        nome_cliente = (request.form.get("nome_cliente") or "").strip()
+        documento = (request.form.get("documento") or "").strip()
+        contato = (request.form.get("contato") or "").strip()
+        telefone = (request.form.get("telefone") or "").strip()
+        email = (request.form.get("email") or "").strip()
+        endereco = (request.form.get("endereco") or "").strip()
+
+        # Mantém valores pra re-render do form
+        form = {
+            "nome_cliente": nome_cliente,
+            "documento": documento,
+            "contato": contato,
+            "telefone": telefone,
+            "email": email,
+            "endereco": endereco,
+        }
+
+        # Obrigatórios
+        if not nome_cliente:
+            errors["nome_cliente"] = "Informe o nome do cliente."
+        if not documento:
+            errors["documento"] = "Informe CPF ou CNPJ."
+
+        # Documento (CPF/CNPJ)
+        doc_ok, doc_tipo, doc_digits, doc_fmt, doc_err = validate_documento(documento)
+        if documento and not doc_ok:
+            errors["documento"] = doc_err
+
+        # Email (se preenchido)
+        if email:
+            if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
+                errors["email"] = "E-mail inválido. Ex: nome@dominio.com"
+
+        # Telefone (se preenchido)
+        if telefone:
+            tel_digits = only_digits(telefone)
+            if len(tel_digits) not in (10, 11):
+                errors["telefone"] = "Telefone deve ter 10 ou 11 dígitos (com DDD)."
+
+        # Se doc válido, checar duplicidade antes de tentar salvar
+        if doc_ok:
+            existe = Clientes.query.filter_by(documento=doc_digits).first()
+            if existe:
+                errors["documento"] = f"Já existe um cliente cadastrado com esse {doc_tipo}."
+
+        if errors:
+            flash("Corrija os campos destacados.", "warning")
+            return render_template("cadastrar_clientes.html", form=form, errors=errors)
+
+        # Salvar (documento SEM máscara)
+        novo = Clientes(
+            nome_cliente=nome_cliente,
+            documento=doc_digits,  # salva limpo pra UNIQUE funcionar sempre
+            contato=contato or None,
+            telefone=only_digits(telefone) or None,  # salva limpo também
+            email=email or None,
+            endereco=endereco or None
+        )
+
+        db.session.add(novo)
+        db.session.commit()
+
+        flash(f"Cliente cadastrado com sucesso! Documento salvo como {doc_fmt}.", "success")
+        return redirect(url_for("main.cadastrar_clientes"))
+
+    return render_template("cadastrar_clientes.html", form=form, errors=errors)
+
+import math
+import re
+from io import BytesIO
+from datetime import datetime
+
+from flask import render_template, abort, request, send_file
+from flask_login import login_required, current_user
+
+from app import db
+from app.models import Clientes
+
+
+# -----------------------------
+# Helpers: CPF/CNPJ/Telefone
+# -----------------------------
+def only_digits(value: str) -> str:
+    return re.sub(r"\D", "", value or "")
+
+
+def format_cpf(cpf_digits: str) -> str:
+    d = only_digits(cpf_digits)
+    if len(d) != 11:
+        return cpf_digits
+    return f"{d[:3]}.{d[3:6]}.{d[6:9]}-{d[9:11]}"
+
+
+def format_cnpj(cnpj_digits: str) -> str:
+    d = only_digits(cnpj_digits)
+    if len(d) != 14:
+        return cnpj_digits
+    return f"{d[:2]}.{d[2:5]}.{d[5:8]}/{d[8:12]}-{d[12:14]}"
+
+
+def format_documento(doc: str) -> str:
+    d = only_digits(doc)
+    if len(d) == 11:
+        return format_cpf(d)
+    if len(d) == 14:
+        return format_cnpj(d)
+    return doc
+
+
+def format_phone_br(phone: str) -> str:
+    d = only_digits(phone)
+    if len(d) == 11:
+        return f"({d[:2]}) {d[2:7]}-{d[7:11]}"
+    if len(d) == 10:
+        return f"({d[:2]}) {d[2:6]}-{d[6:10]}"
+    return phone
+
+
+@bp.route("/clientes", methods=["GET"], endpoint="listar_clientes")
+@login_required
+def listar_clientes():
+    # Segurança: só admin
+    if getattr(current_user, "tipo_usuario", None) != "admin":
+        abort(403)
+
+    # -----------------------------
+    # Params (filtros / paginação)
+    # -----------------------------
+    q = (request.args.get("q") or "").strip()
+    doc = (request.args.get("doc") or "").strip()  # cpf/cnpj (com ou sem máscara)
+    email = (request.args.get("email") or "").strip()
+    telefone = (request.args.get("telefone") or "").strip()
+    sort = (request.args.get("sort") or "nome_asc").strip()
+
+    try:
+        page = int(request.args.get("page") or 1)
+    except ValueError:
+        page = 1
+    page = max(1, page)
+
+    try:
+        per_page = int(request.args.get("per_page") or 20)
+    except ValueError:
+        per_page = 20
+    per_page = 10 if per_page < 10 else 50 if per_page > 50 else per_page
+
+    export = (request.args.get("export") or "").strip().lower()  # "xlsx"
+
+    # -----------------------------
+    # Query base
+    # -----------------------------
+    query = Clientes.query
+
+    # filtro documento (salvo como dígitos)
+    if doc:
+        query = query.filter(Clientes.documento.ilike(f"%{only_digits(doc)}%"))
+
+    # filtro email
+    if email:
+        query = query.filter(Clientes.email.ilike(f"%{email}%"))
+
+    # filtro telefone (salvo como dígitos)
+    if telefone:
+        query = query.filter(Clientes.telefone.ilike(f"%{only_digits(telefone)}%"))
+
+    # busca geral (nome, contato, email, endereço, doc, telefone)
+    if q:
+        like = f"%{q}%"
+        q_digits = only_digits(q)
+
+        query = query.filter(
+            db.or_(
+                Clientes.nome_cliente.ilike(like),
+                Clientes.contato.ilike(like),
+                Clientes.email.ilike(like),
+                Clientes.endereco.ilike(like),
+                Clientes.documento.ilike(f"%{q_digits}%") if q_digits else db.false(),
+                Clientes.telefone.ilike(f"%{q_digits}%") if q_digits else db.false(),
+            )
+        )
+
+    # ordenação
+    if sort == "nome_desc":
+        query = query.order_by(Clientes.nome_cliente.desc())
+    elif sort == "id_desc":
+        query = query.order_by(Clientes.id.desc())
+    elif sort == "id_asc":
+        query = query.order_by(Clientes.id.asc())
+    else:
+        query = query.order_by(Clientes.nome_cliente.asc())
+
+    # -----------------------------
+    # Exportação Excel (filtrado)
+    # -----------------------------
+    if export == "xlsx":
+        rows = query.all()
+
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+        from openpyxl.utils import get_column_letter
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Clientes"
+
+        # --- Estilos ---
+        header_fill = PatternFill("solid", fgColor="1F2937")  # cinza escuro
+        header_font = Font(bold=True, color="FFFFFF")
+        header_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+
+        thin = Side(style="thin", color="E5E7EB")
+        border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+        text_align = Alignment(horizontal="left", vertical="center", wrap_text=True)
+        center_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+
+        # --- (Opcional) Título do relatório ---
+        ws["A1"] = "Relatório de Clientes"
+        ws["A1"].font = Font(bold=True, size=14)
+        ws["A2"] = f"Gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+        ws["A2"].font = Font(color="6B7280")
+
+        # Linha de cabeçalho começa na 4
+        start_row = 4
+        headers = ["ID", "Nome", "Documento", "Contato", "Telefone", "E-mail", "Endereço"]
+
+        for col_idx, h in enumerate(headers, start=1):
+            cell = ws.cell(row=start_row, column=col_idx, value=h)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = header_align
+            cell.border = border
+
+        # --- Dados ---
+        for i, c in enumerate(rows, start=start_row + 1):
+            values = [
+                c.id,
+                c.nome_cliente,
+                format_documento(c.documento),      # já formatado
+                c.contato or "",
+                format_phone_br(c.telefone or ""),  # já formatado
+                c.email or "",
+                c.endereco or "",
+            ]
+
+            for col_idx, v in enumerate(values, start=1):
+                cell = ws.cell(row=i, column=col_idx, value=v)
+                cell.border = border
+
+                # alinhamento por coluna
+                if col_idx == 1:  # ID
+                    cell.alignment = center_align
+                else:
+                    cell.alignment = text_align
+
+                # força texto em Documento/Telefone pra não virar número
+                if col_idx in (3, 5):
+                    cell.number_format = "@"
+
+        last_row = start_row + len(rows)
+        last_col = len(headers)
+
+        # --- Congela cabeçalho ---
+        ws.freeze_panes = ws["A5"]  # congela acima da linha 5
+
+        # --- AutoFilter ---
+        ws.auto_filter.ref = f"A{start_row}:{get_column_letter(last_col)}{max(last_row, start_row)}"
+
+        # --- Altura do cabeçalho ---
+        ws.row_dimensions[start_row].height = 22
+
+        # --- Largura de colunas (mais inteligente) ---
+        max_widths = {1: 8, 2: 28, 3: 22, 4: 18, 5: 18, 6: 26, 7: 45}
+
+        for col_idx in range(1, last_col + 1):
+            max_len = len(headers[col_idx - 1])
+            for r in range(start_row + 1, last_row + 1):
+                val = ws.cell(row=r, column=col_idx).value
+                if val is None:
+                    continue
+                max_len = max(max_len, len(str(val)))
+
+            width = min(max_len + 2, max_widths.get(col_idx, 40))
+            ws.column_dimensions[get_column_letter(col_idx)].width = width
+
+        # --- Zebra (linhas alternadas) ---
+        zebra_fill = PatternFill("solid", fgColor="F9FAFB")
+        for r in range(start_row + 1, last_row + 1):
+            if (r - (start_row + 1)) % 2 == 1:
+                for ccol in range(1, last_col + 1):
+                    ws.cell(row=r, column=ccol).fill = zebra_fill
+
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+
+        stamp = datetime.now().strftime("%Y-%m-%d_%H%M")
+        filename = f"clientes_{stamp}.xlsx"
+
+        return send_file(
+            output,
+            as_attachment=True,
+            download_name=filename,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+
+    # -----------------------------
+    # Paginação
+    # -----------------------------
+    total = query.count()
+    total_pages = max(1, math.ceil(total / per_page))
+
+    if page > total_pages:
+        page = total_pages
+
+    clientes_db = query.offset((page - 1) * per_page).limit(per_page).all()
+
+    # manda já formatado pro template
+    clientes = [
+        {
+            "id": c.id,
+            "nome_cliente": c.nome_cliente,
+            "documento_fmt": format_documento(c.documento),
+            "contato": c.contato or "-",
+            "telefone_fmt": format_phone_br(c.telefone or "") or "-",
+            "email": c.email or "-",
+            "endereco": c.endereco or "-",
+        }
+        for c in clientes_db
+    ]
+
+    filters = {
+        "q": q,
+        "doc": doc,
+        "email": email,
+        "telefone": telefone,
+        "sort": sort,
+        "page": page,
+        "per_page": per_page,
+        "total": total,
+        "total_pages": total_pages,
+    }
+
+    return render_template("listar_clientes.html", clientes=clientes, filters=filters)
+from flask import render_template, request, redirect, url_for, flash, abort
+from flask_login import login_required, current_user
+from app import db
+from app.models import Clientes
+import re
+
+# -----------------------------
+# Helpers: digits / format
+# -----------------------------
+def only_digits(value: str) -> str:
+    return re.sub(r"\D", "", value or "")
+
+def format_cpf(cpf_digits: str) -> str:
+    d = only_digits(cpf_digits)
+    if len(d) != 11:
+        return cpf_digits
+    return f"{d[:3]}.{d[3:6]}.{d[6:9]}-{d[9:11]}"
+
+def format_cnpj(cnpj_digits: str) -> str:
+    d = only_digits(cnpj_digits)
+    if len(d) != 14:
+        return cnpj_digits
+    return f"{d[:2]}.{d[2:5]}.{d[5:8]}/{d[8:12]}-{d[12:14]}"
+
+def format_documento(doc: str) -> str:
+    d = only_digits(doc)
+    if len(d) == 11:
+        return format_cpf(d)
+    if len(d) == 14:
+        return format_cnpj(d)
+    return doc
+
+def format_phone_br(phone: str) -> str:
+    d = only_digits(phone)
+    if len(d) == 11:
+        return f"({d[:2]}) {d[2:7]}-{d[7:11]}"
+    if len(d) == 10:
+        return f"({d[:2]}) {d[2:6]}-{d[6:10]}"
+    return phone
+
+
+# -----------------------------
+# Validação CPF/CNPJ
+# -----------------------------
+def validate_cpf(cpf: str) -> bool:
+    cpf = only_digits(cpf)
+    if len(cpf) != 11 or cpf == cpf[0] * 11:
+        return False
+
+    soma = sum(int(cpf[i]) * (10 - i) for i in range(9))
+    d1 = (soma * 10) % 11
+    d1 = 0 if d1 == 10 else d1
+    if d1 != int(cpf[9]):
+        return False
+
+    soma = sum(int(cpf[i]) * (11 - i) for i in range(10))
+    d2 = (soma * 10) % 11
+    d2 = 0 if d2 == 10 else d2
+    return d2 == int(cpf[10])
+
+def validate_cnpj(cnpj: str) -> bool:
+    cnpj = only_digits(cnpj)
+    if len(cnpj) != 14 or cnpj == cnpj[0] * 14:
+        return False
+
+    pesos1 = [5,4,3,2,9,8,7,6,5,4,3,2]
+    pesos2 = [6,5,4,3,2,9,8,7,6,5,4,3,2]
+
+    soma = sum(int(cnpj[i]) * pesos1[i] for i in range(12))
+    d1 = 11 - (soma % 11)
+    d1 = 0 if d1 >= 10 else d1
+    if d1 != int(cnpj[12]):
+        return False
+
+    soma = sum(int(cnpj[i]) * pesos2[i] for i in range(13))
+    d2 = 11 - (soma % 11)
+    d2 = 0 if d2 >= 10 else d2
+    return d2 == int(cnpj[13])
+
+def validate_documento(doc: str):
+    """
+    Retorna (ok, tipo, doc_digits, doc_formatado, erro_msg)
+    tipo: 'CPF' | 'CNPJ'
+    """
+    digits = only_digits(doc)
+
+    if len(digits) == 11:
+        if not validate_cpf(digits):
+            return False, "CPF", digits, None, "CPF inválido (dígitos verificadores não conferem)."
+        return True, "CPF", digits, format_cpf(digits), None
+
+    if len(digits) == 14:
+        if not validate_cnpj(digits):
+            return False, "CNPJ", digits, None, "CNPJ inválido (dígitos verificadores não conferem)."
+        return True, "CNPJ", digits, format_cnpj(digits), None
+
+    return False, None, digits, None, "Documento deve ter 11 (CPF) ou 14 (CNPJ) dígitos."
+
+
+# -----------------------------
+# EDITAR CLIENTE (admin)
+# -----------------------------
+@bp.route("/clientes/<int:cliente_id>/editar", methods=["GET", "POST"], endpoint="editar_cliente")
+@login_required
+def editar_cliente(cliente_id):
+    if getattr(current_user, "tipo_usuario", None) != "admin":
+        abort(403)
+
+    cliente = Clientes.query.get_or_404(cliente_id)
+
+    errors = {}
+    form = {}
+
+    if request.method == "POST":
+        nome_cliente = (request.form.get("nome_cliente") or "").strip()
+        documento = (request.form.get("documento") or "").strip()
+        contato = (request.form.get("contato") or "").strip()
+        telefone = (request.form.get("telefone") or "").strip()
+        email = (request.form.get("email") or "").strip()
+        endereco = (request.form.get("endereco") or "").strip()
+
+        form = {
+            "nome_cliente": nome_cliente,
+            "documento": documento,
+            "contato": contato,
+            "telefone": telefone,
+            "email": email,
+            "endereco": endereco,
+        }
+
+        # obrigatórios
+        if not nome_cliente:
+            errors["nome_cliente"] = "Informe o nome do cliente."
+        if not documento:
+            errors["documento"] = "Informe CPF ou CNPJ."
+
+        # documento
+        doc_ok, doc_tipo, doc_digits, doc_fmt, doc_err = validate_documento(documento)
+        if documento and not doc_ok:
+            errors["documento"] = doc_err
+
+        # email
+        if email:
+            if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
+                errors["email"] = "E-mail inválido. Ex: nome@dominio.com"
+
+        # telefone
+        if telefone:
+            tel_digits = only_digits(telefone)
+            if len(tel_digits) not in (10, 11):
+                errors["telefone"] = "Telefone deve ter 10 ou 11 dígitos (com DDD)."
+
+        # duplicidade documento (ignora o próprio)
+        if doc_ok:
+            existe = (
+                Clientes.query
+                .filter(Clientes.documento == doc_digits, Clientes.id != cliente.id)
+                .first()
+            )
+            if existe:
+                errors["documento"] = f"Já existe outro cliente com esse {doc_tipo}."
+
+        if errors:
+            flash("Corrija os campos destacados.", "warning")
+            return render_template("editar_cliente.html", form=form, errors=errors, cliente=cliente)
+
+        # salva
+        cliente.nome_cliente = nome_cliente
+        cliente.documento = doc_digits
+        cliente.contato = contato or None
+        cliente.telefone = only_digits(telefone) or None
+        cliente.email = email or None
+        cliente.endereco = endereco or None
+
+        db.session.commit()
+
+        flash(f"Cliente atualizado! Documento: {doc_fmt}", "success")
+        return redirect(url_for("main.listar_clientes"))
+
+    # GET: preenche form com dados atuais (formatados)
+    form = {
+        "nome_cliente": cliente.nome_cliente,
+        "documento": format_documento(cliente.documento),
+        "contato": cliente.contato or "",
+        "telefone": format_phone_br(cliente.telefone or ""),
+        "email": cliente.email or "",
+        "endereco": cliente.endereco or "",
+    }
+
+    return render_template("editar_cliente.html", form=form, errors=errors, cliente=cliente)
+
+
+# -----------------------------
+# DELETAR CLIENTE (admin)
+# -----------------------------
+@bp.route("/clientes/<int:cliente_id>/deletar", methods=["POST"], endpoint="deletar_cliente")
+@login_required
+def deletar_cliente(cliente_id):
+    if getattr(current_user, "tipo_usuario", None) != "admin":
+        abort(403)
+
+    cliente = Clientes.query.get_or_404(cliente_id)
+
+    db.session.delete(cliente)
+    db.session.commit()
+
+    flash("Cliente removido com sucesso.", "success")
+    return redirect(url_for("main.listar_clientes"))
