@@ -1,101 +1,119 @@
-{% extends "base.html" %} 
-
-{% block content %}
-<div class="container-fluid py-4" style="max-width: 1200px;">
-  
+{% extends "base.html" %} {% block content %}
+<div class="container-fluid py-4" style="max-width: 1200px">
   {# --- Cabeçalho --- #}
   <div class="d-flex align-items-center mb-4">
-      <h2 class="text-dark m-0">
-          <i class="bi bi-person-plus-fill me-2 text-primary"></i> Cadastrar Cliente
-      </h2>
+    <h2 class="text-dark m-0">
+      <i class="bi bi-person-plus-fill me-2 text-primary"></i> Cadastrar Cliente
+    </h2>
   </div>
 
-  {# --- Mensagens de Feedback --- #}
-  {% with messages = get_flashed_messages(with_categories=true) %} 
-    {% if messages %} 
-      {% for category, message in messages %}
-      <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm mb-4 rounded-3" role="alert">
-        <i class="bi bi-info-circle me-2"></i> {{ message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      </div>
-      {% endfor %} 
-    {% endif %} 
-  {% endwith %}
-
-  {# --- Card Principal --- #}
+  {# --- Mensagens de Feedback --- #} {% with messages =
+  get_flashed_messages(with_categories=true) %} {% if messages %} {% for
+  category, message in messages %}
+  <div
+    class="alert alert-{{ category }} alert-dismissible fade show shadow-sm mb-4 rounded-3"
+    role="alert"
+  >
+    <i class="bi bi-info-circle me-2"></i> {{ message }}
+    <button
+      type="button"
+      class="btn-close"
+      data-bs-dismiss="alert"
+      aria-label="Close"
+    ></button>
+  </div>
+  {% endfor %} {% endif %} {% endwith %} {# --- Card Principal --- #}
   <div class="card info status-primary shadow-sm rounded-4 border-0">
     <div class="card-body p-4">
-      
-      <form method="post" action="{{ url_for('main.cadastrar_clientes') }}" novalidate>
-        
+      <form
+        method="post"
+        action="{{ url_for('main.cadastrar_clientes') }}"
+        novalidate
+      >
         {# SEÇÃO 1: IDENTIFICAÇÃO #}
         <div class="d-flex align-items-center mb-3">
-            <i class="bi bi-card-heading text-primary me-2 fs-5"></i>
-            <h5 class="m-0 text-primary fw-bold">Identificação</h5>
+          <i class="bi bi-card-heading text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Identificação</h5>
         </div>
 
         <div class="row g-3 mb-4">
           <div class="col-md-6">
             <label class="form-label fw-bold small text-muted">
-                <i class="bi bi-person me-1 text-primary"></i> Nome do Cliente *
+              <i class="bi bi-person me-1 text-primary"></i> Nome do Cliente *
             </label>
-            <input type="text" 
-                   class="form-control {% if errors.get('nome_cliente') %}is-invalid{% endif %}" 
-                   name="nome_cliente" 
-                   value="{{ form.get('nome_cliente','') }}" 
-                   placeholder="Ex: João Pedro" 
-                   required>
+            <input
+              type="text"
+              class="form-control {% if errors.get('nome_cliente') %}is-invalid{% endif %}"
+              name="nome_cliente"
+              value="{{ form.get('nome_cliente','') }}"
+              placeholder="Ex: João Pedro"
+              required
+            />
             {% if errors.get('nome_cliente') %}
             <div class="invalid-feedback">{{ errors.get('nome_cliente') }}</div>
             {% endif %}
           </div>
-          
+
           <div class="col-md-6">
             <label class="form-label fw-bold small text-muted">
-                <i class="bi bi-file-earmark-person me-1 text-primary"></i> Documento (CPF/CNPJ) *
+              <i class="bi bi-file-earmark-person me-1 text-primary"></i>
+              Documento (CPF/CNPJ) *
             </label>
-            <input type="text" 
-                   id="documento" 
-                   name="documento" 
-                   class="form-control {% if errors.get('documento') %}is-invalid{% endif %}" 
-                   value="{{ form.get('documento','') }}" 
-                   inputmode="numeric" 
-                   placeholder="000.000.000-00" 
-                   required>
-            <div class="form-text small">Somente números. O sistema formata automaticamente.</div>
+            <input
+              type="text"
+              id="documento"
+              name="documento"
+              class="form-control {% if errors.get('documento') %}is-invalid{% endif %}"
+              value="{{ form.get('documento','') }}"
+              inputmode="numeric"
+              placeholder="000.000.000-00"
+              required
+            />
+            <div class="form-text small">
+              Somente números. O sistema formata automaticamente.
+            </div>
             {% if errors.get('documento') %}
             <div class="invalid-feedback">{{ errors.get('documento') }}</div>
             {% endif %}
           </div>
         </div>
 
-        <hr class="text-muted opacity-25 my-4">
+        <hr class="text-muted opacity-25 my-4" />
 
         {# SEÇÃO 2: CONTATO #}
         <div class="d-flex align-items-center mb-3">
-            <i class="bi bi-telephone-fill text-primary me-2 fs-5"></i>
-            <h5 class="m-0 text-primary fw-bold">Dados de Contato</h5>
+          <i class="bi bi-telephone-fill text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Dados de Contato</h5>
         </div>
 
         <div class="row g-3 mb-4">
           <div class="col-md-4">
             <label class="form-label fw-bold small text-muted">
-                <i class="bi bi-person-badge me-1 text-primary"></i> Responsável / Contato
+              <i class="bi bi-person-badge me-1 text-primary"></i> Responsável /
+              Contato
             </label>
-            <input type="text" name="contato" class="form-control" value="{{ form.get('contato','') }}" placeholder="Ex: Maria (Gerente)">
+            <input
+              type="text"
+              name="contato"
+              class="form-control"
+              value="{{ form.get('contato','') }}"
+              placeholder="Ex: Maria (Gerente)"
+            />
           </div>
 
           <div class="col-md-4">
             <label class="form-label fw-bold small text-muted">
-                <i class="bi bi-whatsapp me-1 text-primary"></i> Telefone
+              <i class="bi bi-whatsapp me-1 text-primary"></i> Telefone
             </label>
-            <input type="text" 
-                   id="telefone" 
-                   name="telefone" 
-                   class="form-control {% if errors.get('telefone') %}is-invalid{% endif %}" 
-                   value="{{ form.get('telefone','') }}" 
-                   inputmode="numeric" 
-                   placeholder="(00) 00000-0000">
+            <input
+              type="text"
+              id="telefone"
+              name="telefone"
+              class="form-control {% if errors.get('telefone') %}is-invalid{% endif %}"
+              value="{{ form.get('telefone','') }}"
+              inputmode="numeric"
+              placeholder="(00) 00000-0000"
+            />
             {% if errors.get('telefone') %}
             <div class="invalid-feedback">{{ errors.get('telefone') }}</div>
             {% endif %}
@@ -103,60 +121,302 @@
 
           <div class="col-md-4">
             <label class="form-label fw-bold small text-muted">
-                <i class="bi bi-envelope me-1 text-primary"></i> E-mail
+              <i class="bi bi-envelope me-1 text-primary"></i> E-mail
             </label>
-            <input type="email" 
-                   name="email" 
-                   class="form-control {% if errors.get('email') %}is-invalid{% endif %}" 
-                   value="{{ form.get('email','') }}" 
-                   placeholder="exemplo@dominio.com">
+            <input
+              type="email"
+              name="email"
+              class="form-control {% if errors.get('email') %}is-invalid{% endif %}"
+              value="{{ form.get('email','') }}"
+              placeholder="exemplo@dominio.com"
+            />
             {% if errors.get('email') %}
             <div class="invalid-feedback">{{ errors.get('email') }}</div>
             {% endif %}
           </div>
         </div>
 
-        <hr class="text-muted opacity-25 my-4">
+        <hr class="text-muted opacity-25 my-4" />
 
-        {# SEÇÃO 3: ENDEREÇO #}
+        {# SEÇÃO 3: ENDEREÇO (CEP -> Autofill) #}
         <div class="d-flex align-items-center mb-3">
-            <i class="bi bi-geo-alt-fill text-primary me-2 fs-5"></i>
-            <h5 class="m-0 text-primary fw-bold">Localização</h5>
+          <i class="bi bi-geo-alt-fill text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Localização</h5>
         </div>
 
-        <div class="row g-3">
-          <div class="col-12">
+        <div class="row g-3 mb-2">
+          <div class="col-md-3">
             <label class="form-label fw-bold small text-muted">
-                <i class="bi bi-map me-1 text-primary"></i> Endereço Completo
+              <i class="bi bi-mailbox2-flag me-1 text-primary"></i> CEP
             </label>
-            <input type="text" name="endereco" class="form-control" value="{{ form.get('endereco','') }}" placeholder="Rua, número, bairro, cidade - UF">
+            <div class="input-group">
+              <input
+                type="text"
+                id="cep"
+                name="cep"
+                class="form-control {% if errors.get('cep') %}is-invalid{% endif %}"
+                value="{{ form.get('cep','') }}"
+                inputmode="numeric"
+                placeholder="00000-000"
+              />
+              <button
+                type="button"
+                class="btn btn-outline-primary"
+                id="btnBuscarCep"
+              >
+                Buscar
+              </button>
+
+              {% if errors.get('cep') %}
+              <div class="invalid-feedback d-block">
+                {{ errors.get('cep') }}
+              </div>
+              {% endif %}
+            </div>
+            <div class="form-text small" id="cepStatus"></div>
+          </div>
+
+          <div class="col-md-7">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-signpost-2 me-1 text-primary"></i> Logradouro
+            </label>
+            <input
+              type="text"
+              id="logradouro"
+              name="logradouro"
+              class="form-control"
+              value="{{ form.get('logradouro','') }}"
+              placeholder="Rua / Avenida"
+            />
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-hash me-1 text-primary"></i> Número
+            </label>
+            <input
+              type="text"
+              id="numero"
+              name="numero"
+              class="form-control"
+              value="{{ form.get('numero','') }}"
+              placeholder="Nº"
+            />
           </div>
         </div>
 
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-building me-1 text-primary"></i> Complemento
+            </label>
+            <input
+              type="text"
+              id="complemento"
+              name="complemento"
+              class="form-control"
+              value="{{ form.get('complemento','') }}"
+              placeholder="Apto, bloco, referência..."
+            />
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-geo me-1 text-primary"></i> Bairro
+            </label>
+            <input
+              type="text"
+              id="bairro"
+              name="bairro"
+              class="form-control"
+              value="{{ form.get('bairro','') }}"
+              placeholder="Bairro"
+            />
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-pin-map me-1 text-primary"></i> Cidade
+            </label>
+            <input
+              type="text"
+              id="cidade"
+              name="cidade"
+              class="form-control"
+              value="{{ form.get('cidade','') }}"
+              placeholder="Cidade"
+            />
+          </div>
+
+          <div class="col-md-1">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-compass me-1 text-primary"></i> UF
+            </label>
+            <input
+              type="text"
+              id="uf"
+              name="uf"
+              class="form-control text-uppercase"
+              value="{{ form.get('uf','') }}"
+              maxlength="2"
+              placeholder="UF"
+            />
+          </div>
+        </div>
+
+        {# (Opcional) campo único para compatibilidade / debug, não precisa
+        exibir #}
+        <input
+          type="hidden"
+          id="endereco"
+          name="endereco"
+          value="{{ form.get('endereco','') }}"
+        />
+
         <small class="text-muted d-block mt-4">
-          Campos com <span class="text-danger">*</span> são de preenchimento obrigatório.
+          Campos com <span class="text-danger">*</span> são de preenchimento
+          obrigatório.
         </small>
 
         {# BOTÕES #}
         <div class="d-flex justify-content-end gap-2 mt-5">
-          <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-danger px-4">
-              <i class="bi bi-x-lg me-1"></i> Cancelar
+          <a
+            href="{{ url_for('main.dashboard') }}"
+            class="btn btn-outline-danger px-4"
+          >
+            <i class="bi bi-x-lg me-1"></i> Cancelar
           </a>
           <button type="submit" class="btn btn-primary px-5 shadow-sm fw-bold">
             <i class="bi bi-check-lg me-1"></i> Salvar Cliente
           </button>
         </div>
-
       </form>
     </div>
   </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
+{% endblock %} {% block scripts %}
 <script>
+  function onlyDigits(v) {
+    return (v || "").replace(/\D/g, "");
+  }
+
+  function maskCep(value) {
+    const d = onlyDigits(value).slice(0, 8);
+    if (d.length <= 5) return d;
+    return `${d.slice(0, 5)}-${d.slice(5)}`;
+  }
+
+  // monta uma string final (só pra compatibilidade/preview; o backend também monta)
+  function buildEnderecoString() {
+    const cep = maskCep(document.getElementById("cep")?.value || "");
+    const logradouro = (
+      document.getElementById("logradouro")?.value || ""
+    ).trim();
+    const numero = (document.getElementById("numero")?.value || "").trim();
+    const complemento = (
+      document.getElementById("complemento")?.value || ""
+    ).trim();
+    const bairro = (document.getElementById("bairro")?.value || "").trim();
+    const cidade = (document.getElementById("cidade")?.value || "").trim();
+    const uf = (document.getElementById("uf")?.value || "")
+      .trim()
+      .toUpperCase();
+
+    let linha1 = "";
+    if (logradouro) linha1 += logradouro;
+    if (numero) linha1 += linha1 ? `, ${numero}` : numero;
+    if (complemento) linha1 += linha1 ? ` (${complemento})` : complemento;
+
+    const linha2 = [bairro, cidade && uf ? `${cidade}/${uf}` : cidade || uf]
+      .filter(Boolean)
+      .join(" - ");
+    const linha3 = cep ? `CEP ${cep}` : "";
+
+    const full = [linha1, linha2, linha3].filter(Boolean).join(" - ");
+    const hidden = document.getElementById("endereco");
+    if (hidden) hidden.value = full;
+
+    return full;
+  }
+
+  async function buscarCep() {
+    const cepInput = document.getElementById("cep");
+    const status = document.getElementById("cepStatus");
+    const cepDigits = onlyDigits(cepInput.value);
+
+    if (!cepDigits) {
+      if (status) status.textContent = "";
+      return;
+    }
+
+    if (cepDigits.length !== 8) {
+      if (status) status.textContent = "CEP inválido. Digite 8 números.";
+      return;
+    }
+
+    if (status) status.textContent = "Buscando CEP...";
+
+    // endpoint do seu Flask (vamos criar abaixo)
+    const urlTemplate = "{{ url_for('main.api_cep', cep='__CEP__') }}";
+    const url = urlTemplate.replace("__CEP__", cepDigits);
+
+    try {
+      const resp = await fetch(url, {
+        headers: { Accept: "application/json" },
+      });
+      const data = await resp.json();
+
+      if (!resp.ok || !data.ok) {
+        if (status)
+          status.textContent =
+            data.error || "Não foi possível consultar o CEP.";
+        return;
+      }
+
+      // Preenche campos
+      document.getElementById("logradouro").value = data.logradouro || "";
+      document.getElementById("bairro").value = data.bairro || "";
+      document.getElementById("cidade").value = data.cidade || "";
+      document.getElementById("uf").value = (data.uf || "").toUpperCase();
+
+      // complemento geralmente vem vazio (deixa o usuário completar)
+      // document.getElementById("complemento").value = data.complemento || "";
+
+      if (status) status.textContent = "CEP encontrado ✅";
+      buildEnderecoString();
+
+      // ajuda: joga foco no número
+      const numero = document.getElementById("numero");
+      if (numero) numero.focus();
+    } catch (e) {
+      if (status)
+        status.textContent = "Erro ao consultar CEP. Tente novamente.";
+    }
+  }
+
+  // hooks
+  const cepInput = document.getElementById("cep");
+  const btn = document.getElementById("btnBuscarCep");
+  if (cepInput) {
+    cepInput.addEventListener("input", (e) => {
+      e.target.value = maskCep(e.target.value);
+      buildEnderecoString();
+    });
+    cepInput.addEventListener("blur", buscarCep);
+  }
+  if (btn) btn.addEventListener("click", buscarCep);
+
+  // atualiza endereço “final” quando qualquer campo muda
+  ["logradouro", "numero", "complemento", "bairro", "cidade", "uf"].forEach(
+    (id) => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener("input", buildEnderecoString);
+    }
+  );
   // Mantive suas funções de máscara que já funcionam bem
-  function onlyDigits(v) { return (v || "").replace(/\D/g, ""); }
+  function onlyDigits(v) {
+    return (v || "").replace(/\D/g, "");
+  }
 
   function maskDocumento(value) {
     const d = onlyDigits(value);
@@ -179,7 +439,8 @@
     const d = onlyDigits(value).slice(0, 11);
     if (d.length <= 2) return d;
     if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
-    if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+    if (d.length <= 10)
+      return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
     return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
   }
 

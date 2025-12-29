@@ -2595,8 +2595,84 @@ def erro_interno(e):
         mensagem="Desculpe, algo deu errado do nosso lado. Tente novamente mais tarde."
     ), 500
 
+import re
+import requests
+from flask import jsonify, current_app
+from flask_login import login_required
+
+def only_digits(value: str) -> str:
+    return re.sub(r"\D", "", value or "")
+
+@bp.route("/api/cep/<cep>", methods=["GET"], endpoint="api_cep")
+@login_required
+def api_cep(cep):
+    cep_digits = only_digits(cep)
+
+    if len(cep_digits) != 8:
+        return jsonify(ok=False, error="CEP inválido. Use 8 dígitos."), 400
+
+    def _resp_ok(payload):
+        return jsonify(
+            ok=True,
+            cep=payload.get("cep", ""),
+            logradouro=payload.get("logradouro", ""),
+            complemento=payload.get("complemento", ""),
+            bairro=payload.get("bairro", ""),
+            cidade=payload.get("cidade", ""),
+            uf=payload.get("uf", ""),
+        )
+
+    headers = {"User-Agent": "Mozilla/5.0"}
+
+    # 1) ViaCEP
+    try:
+        r = requests.get(f"https://viacep.com.br/ws/{cep_digits}/json/", timeout=8, headers=headers)
+        r.raise_for_status()
+        data = r.json()
+
+        if data.get("erro"):
+            return jsonify(ok=False, error="CEP não encontrado."), 404
+
+        payload = {
+            "cep": data.get("cep", ""),
+            "logradouro": data.get("logradouro", ""),
+            "complemento": data.get("complemento", ""),
+            "bairro": data.get("bairro", ""),
+            "cidade": data.get("localidade", ""),
+            "uf": data.get("uf", ""),
+        }
+        return _resp_ok(payload)
+
+    except Exception as e:
+        current_app.logger.exception("Falha ViaCEP: %s", e)
+
+        # 2) Fallback: BrasilAPI
+        try:
+            r2 = requests.get(f"https://brasilapi.com.br/api/cep/v1/{cep_digits}", timeout=8, headers=headers)
+            r2.raise_for_status()
+            data2 = r2.json()
+
+            payload = {
+                "cep": data2.get("cep", ""),
+                "logradouro": data2.get("street", ""),
+                "complemento": "",  # BrasilAPI normalmente não traz
+                "bairro": data2.get("neighborhood", ""),
+                "cidade": data2.get("city", ""),
+                "uf": data2.get("state", ""),
+            }
+            return _resp_ok(payload)
+
+        except Exception as e2:
+            current_app.logger.exception("Falha BrasilAPI: %s", e2)
+
+            # Se estiver em DEBUG, mostra o erro real pra você ver a causa
+            if current_app.debug:
+                return jsonify(ok=False, error=f"Falha CEP (debug): {repr(e2)}"), 502
+
+            return jsonify(ok=False, error="Falha ao consultar o serviço de CEP."), 502
+
 # -----------------------------
-# Helpers: CPF/CNPJ/Telefone
+# Helpers: CPF/CNPJ/Telefone/CEP
 # -----------------------------
 def only_digits(value: str) -> str:
     return re.sub(r"\D", "", value or "")
@@ -2612,14 +2688,12 @@ def validate_cpf(cpf: str) -> bool:
     if len(cpf) != 11 or cpf == cpf[0] * 11:
         return False
 
-    # 1º dígito
     soma = sum(int(cpf[i]) * (10 - i) for i in range(9))
     d1 = (soma * 10) % 11
     d1 = 0 if d1 == 10 else d1
     if d1 != int(cpf[9]):
         return False
 
-    # 2º dígito
     soma = sum(int(cpf[i]) * (11 - i) for i in range(10))
     d2 = (soma * 10) % 11
     d2 = 0 if d2 == 10 else d2
@@ -2669,11 +2743,47 @@ def format_phone_br(phone_digits: str) -> str:
         return f"({d[:2]}) {d[2:7]}-{d[7:11]}"
     if len(d) == 10:
         return f"({d[:2]}) {d[2:6]}-{d[6:10]}"
-    return phone_digits  # se não bater, devolve como veio
+    return phone_digits
+
+def format_cep(cep_digits: str) -> str:
+    d = only_digits(cep_digits)
+    if len(d) == 8:
+        return f"{d[:5]}-{d[5:]}"
+    return cep_digits
+
+def build_endereco_full(cep, logradouro, numero, complemento, bairro, cidade, uf) -> str:
+    cep = only_digits(cep)
+    logradouro = (logradouro or "").strip()
+    numero = (numero or "").strip()
+    complemento = (complemento or "").strip()
+    bairro = (bairro or "").strip()
+    cidade = (cidade or "").strip()
+    uf = (uf or "").strip().upper()
+
+    linha1 = ""
+    if logradouro:
+        linha1 += logradouro
+    if numero:
+        linha1 += f", {numero}" if linha1 else numero
+    if complemento:
+        linha1 += f" ({complemento})" if linha1 else complemento
+
+    cidade_uf = ""
+    if cidade and uf:
+        cidade_uf = f"{cidade}/{uf}"
+    else:
+        cidade_uf = cidade or uf
+
+    linha2 = " - ".join([x for x in [bairro, cidade_uf] if x])
+
+    cep_fmt = format_cep(cep) if cep else ""
+    linha3 = f"CEP {cep_fmt}" if cep_fmt else ""
+
+    return " - ".join([x for x in [linha1, linha2, linha3] if x]).strip()
 
 
 # -----------------------------
-# Rota: cadastrar clientes
+# Rota: cadastrar clientes (COM CEP)
 # -----------------------------
 @bp.route('/clientes/cadastrar', methods=['GET', 'POST'], endpoint='cadastrar_clientes')
 @login_required
@@ -2691,7 +2801,22 @@ def cadastrar_clientes():
         contato = (request.form.get("contato") or "").strip()
         telefone = (request.form.get("telefone") or "").strip()
         email = (request.form.get("email") or "").strip()
-        endereco = (request.form.get("endereco") or "").strip()
+
+        # NOVOS CAMPOS DE ENDEREÇO
+        cep = (request.form.get("cep") or "").strip()
+        logradouro = (request.form.get("logradouro") or "").strip()
+        numero = (request.form.get("numero") or "").strip()
+        complemento = (request.form.get("complemento") or "").strip()
+        bairro = (request.form.get("bairro") or "").strip()
+        cidade = (request.form.get("cidade") or "").strip()
+        uf = (request.form.get("uf") or "").strip().upper()
+
+        # Fallback (caso ainda exista campo antigo no form)
+        endereco_raw = (request.form.get("endereco") or "").strip()
+
+        # Monta o endereço final (se qualquer campo novo veio preenchido)
+        tem_endereco_novo = any([cep, logradouro, numero, complemento, bairro, cidade, uf])
+        endereco_full = build_endereco_full(cep, logradouro, numero, complemento, bairro, cidade, uf) if tem_endereco_novo else endereco_raw
 
         # Mantém valores pra re-render do form
         form = {
@@ -2700,7 +2825,18 @@ def cadastrar_clientes():
             "contato": contato,
             "telefone": telefone,
             "email": email,
-            "endereco": endereco,
+
+            # novos
+            "cep": cep,
+            "logradouro": logradouro,
+            "numero": numero,
+            "complemento": complemento,
+            "bairro": bairro,
+            "cidade": cidade,
+            "uf": uf,
+
+            # compat
+            "endereco": endereco_full,
         }
 
         # Obrigatórios
@@ -2725,6 +2861,12 @@ def cadastrar_clientes():
             if len(tel_digits) not in (10, 11):
                 errors["telefone"] = "Telefone deve ter 10 ou 11 dígitos (com DDD)."
 
+        # CEP (se preenchido)
+        if cep:
+            cep_digits = only_digits(cep)
+            if len(cep_digits) != 8:
+                errors["cep"] = "CEP deve ter 8 dígitos."
+
         # Se doc válido, checar duplicidade antes de tentar salvar
         if doc_ok:
             existe = Clientes.query.filter_by(documento=doc_digits).first()
@@ -2735,14 +2877,14 @@ def cadastrar_clientes():
             flash("Corrija os campos destacados.", "warning")
             return render_template("cadastrar_clientes.html", form=form, errors=errors)
 
-        # Salvar (documento SEM máscara)
+        # Salvar (documento e telefone SEM máscara)
         novo = Clientes(
             nome_cliente=nome_cliente,
-            documento=doc_digits,  # salva limpo pra UNIQUE funcionar sempre
+            documento=doc_digits,
             contato=contato or None,
-            telefone=only_digits(telefone) or None,  # salva limpo também
+            telefone=only_digits(telefone) or None,
             email=email or None,
-            endereco=endereco or None
+            endereco=endereco_full or None
         )
 
         db.session.add(novo)
@@ -2752,6 +2894,7 @@ def cadastrar_clientes():
         return redirect(url_for("main.cadastrar_clientes"))
 
     return render_template("cadastrar_clientes.html", form=form, errors=errors)
+
 
 import math
 import re
