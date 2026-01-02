@@ -1,77 +1,87 @@
-{% extends "base.html" %} 
-{% block content %}
+{% extends "base.html" %} {% block content %}
 
-
-<div class="container-fluid py-4" style="max-width: 1200px;">
-  
+<div class="container-fluid py-4" style="max-width: 1200px">
   <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="text-dark">
-            <i class="bi bi-buildings-fill me-2 text-primary"></i> UVIS Cadastradas
-        </h2>
-  
-    <div class="d-flex gap-2">
-      <a href="{{ url_for('main.admin_dashboard') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
-            <i class="bi bi-arrow-left"></i> Voltar
-        </a>
+    <h2 class="text-dark">
+      <i class="bi bi-buildings-fill me-2 text-primary"></i> UVIS Cadastradas
+    </h2>
 
-        <a href="{{ url_for('main.admin_uvis_novo') }}" class="btn btn-success text-white d-flex align-items-center gap-2 shadow-sm">
-            <i class="bi bi-plus-lg"></i> Nova UVIS
-        </a>
+    <div class="d-flex gap-2">
+      <a
+        href="{{ url_for('main.admin_dashboard') }}"
+        class="btn btn-outline-secondary d-flex align-items-center gap-2"
+      >
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+      <a
+        href="{{ url_for('main.admin_uvis_exportar', q=q, regiao=regiao, codigo_setor=codigo_setor) }}"
+        class="btn btn-outline-primary d-flex align-items-center gap-2"
+      >
+        <i class="bi bi-file-earmark-excel"></i> Exportar Excel
+      </a>
+      <a
+        href="{{ url_for('main.admin_uvis_novo') }}"
+        class="btn btn-success text-white d-flex align-items-center gap-2 shadow-sm"
+      >
+        <i class="bi bi-plus-lg"></i> Nova UVIS
+      </a>
     </div>
   </div>
 
   <form method="GET" class="card p-3 mb-4 shadow-sm rounded-4">
     <div class="row g-2 align-items-end">
-        
-        <div class="col-md-4">
-            <label for="search_q" class="small text-muted">Buscar (nome ou login):</label>
-            <input 
-                type="text" 
-                class="form-control form-control-sm" 
-                name="q" 
-                id="search_q"
-                value="{{ q }}" 
-                placeholder="Ex: UVIS Centro ou uvis.centro"
-            >
-        </div>
+      <div class="col-md-4">
+        <label for="search_q" class="small text-muted"
+          >Buscar (nome ou login):</label
+        >
+        <input
+          type="text"
+          class="form-control form-control-sm"
+          name="q"
+          id="search_q"
+          value="{{ q }}"
+          placeholder="Ex: UVIS Centro"
+        />
+      </div>
 
-        <div class="col-md-3">
-            <label for="search_regiao" class="small text-muted">Região:</label>
-            <input 
-                type="text" 
-                class="form-control form-control-sm" 
-                name="regiao" 
-                id="search_regiao"
-                value="{{ regiao }}" 
-                placeholder="Ex: Norte"
-            >
-        </div>
+      <div class="col-md-3">
+        <label for="search_regiao" class="small text-muted">Região:</label>
+        <input
+          type="text"
+          class="form-control form-control-sm"
+          name="regiao"
+          id="search_regiao"
+          value="{{ regiao }}"
+          placeholder="Ex: Norte"
+        />
+      </div>
 
-        <div class="col-md-2">
-            <label for="search_codigo" class="small text-muted">Cód. Setor:</label>
-            <input 
-                type="text" 
-                class="form-control form-control-sm" 
-                name="codigo_setor" 
-                id="search_codigo"
-                value="{{ codigo_setor }}" 
-                placeholder="Ex: 123A"
-            >
-        </div>
+      <div class="col-md-2">
+        <label for="search_codigo" class="small text-muted">Cód. Setor:</label>
+        <input
+          type="text"
+          class="form-control form-control-sm"
+          name="codigo_setor"
+          id="search_codigo"
+          value="{{ codigo_setor }}"
+          placeholder="Ex: 123A"
+        />
+      </div>
 
-        <div class="col-md-3 d-flex gap-2">
-            <button type="submit" class="btn btn-success btn-sm w-100">
-                <i class="bi bi-funnel"></i> Filtrar
-            </button>
+      <div class="col-md-3 d-flex gap-2">
+        <button type="submit" class="btn btn-success btn-sm w-100">
+          <i class="bi bi-funnel"></i> Filtrar
+        </button>
 
-            {% if q or regiao or codigo_setor %}
-            <a href="{{ url_for(request.endpoint) }}" 
-               class="btn btn-outline-secondary btn-sm w-100">
-                <i class="bi bi-x-lg"></i> Limpar
-            </a>
-            {% endif %}
-        </div>
-
+        {% if q or regiao or codigo_setor %}
+        <a
+          href="{{ url_for(request.endpoint) }}"
+          class="btn btn-outline-secondary btn-sm w-100"
+        >
+          <i class="bi bi-x-lg"></i> Limpar
+        </a>
+        {% endif %}
+      </div>
     </div>
   </form>
 

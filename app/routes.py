@@ -2295,7 +2295,6 @@ def admin_uvis_listar():
         codigo_setor=codigo_setor
     )
 
-
 @bp.route("/admin/uvis/<int:id>/editar", methods=["GET", "POST"], endpoint="admin_uvis_editar")
 @login_required
 def admin_uvis_editar(id):
@@ -3381,3 +3380,116 @@ def deletar_cliente(cliente_id):
 
     flash("Cliente removido com sucesso.", "success")
     return redirect(url_for("main.listar_clientes"))
+from flask import request, abort, send_file
+from flask_login import login_required, current_user
+from io import BytesIO
+from datetime import datetime
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+
+@bp.route("/admin/uvis/exportar", methods=["GET"], endpoint="admin_uvis_exportar")
+@login_required
+def admin_uvis_exportar():
+    if current_user.tipo_usuario != "admin":
+        abort(403)
+
+    q = (request.args.get("q") or "").strip()
+    regiao = (request.args.get("regiao") or "").strip()
+    codigo_setor = (request.args.get("codigo_setor") or "").strip()
+
+    query = Usuario.query.filter(Usuario.tipo_usuario == "uvis")
+
+    if q:
+        query = query.filter(
+            db.or_(
+                Usuario.nome_uvis.ilike(f"%{q}%"),
+                Usuario.login.ilike(f"%{q}%")
+            )
+        )
+    if regiao:
+        query = query.filter(Usuario.regiao.ilike(f"%{regiao}%"))
+    if codigo_setor:
+        query = query.filter(Usuario.codigo_setor.ilike(f"%{codigo_setor}%"))
+
+    rows = query.order_by(Usuario.nome_uvis.asc()).all()
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "UVIS"
+
+    # ---------- ESTILOS ----------
+    title_font = Font(bold=True, size=14)
+    meta_font = Font(size=10, color="666666")
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill("solid", fgColor="1F4E79")
+    zebra_fill = PatternFill("solid", fgColor="F3F6FA")
+
+    thin = Side(style="thin", color="D0D7DE")
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    left = Alignment(horizontal="left", vertical="center")
+    center = Alignment(horizontal="center", vertical="center")
+
+    # ---------- TÍTULO / META (FORA DA TABELA) ----------
+    ws["A1"] = "UVIS Cadastradas"
+    ws["A1"].font = title_font
+
+    ws["A3"] = f"Exportado em: {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+    ws["A3"].font = meta_font
+
+    start_header_row = 5
+
+    # ---------- CABEÇALHO ----------
+    headers = ["ID", "Nome", "Região", "Cód. Setor", "Login"]
+    for col, h in enumerate(headers, start=1):
+        cell = ws.cell(row=start_header_row, column=col, value=h)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = center
+        cell.border = border
+
+    # ---------- DADOS ----------
+    start_data_row = start_header_row + 1
+    for i, u in enumerate(rows):
+        r = start_data_row + i
+        values = [u.id, u.nome_uvis, u.regiao, u.codigo_setor, u.login]
+
+        for c, v in enumerate(values, start=1):
+            cell = ws.cell(row=r, column=c, value=v)
+            cell.border = border
+            cell.alignment = center if c == 1 else left
+
+            if i % 2 == 1:
+                cell.fill = zebra_fill
+
+    end_data_row = start_data_row + len(rows) - 1
+
+    # ---------- AUTOFILTER (SEGURO) ----------
+    if rows:
+        ws.auto_filter.ref = f"A{start_header_row}:E{end_data_row}"
+        ws.freeze_panes = f"A{start_data_row}"
+
+    # ---------- LARGURAS ----------
+    ws.column_dimensions["A"].width = 8
+    ws.column_dimensions["B"].width = 34
+    ws.column_dimensions["C"].width = 14
+    ws.column_dimensions["D"].width = 16
+    ws.column_dimensions["E"].width = 24
+
+    # ---------- TOTAL ----------
+    total_row = end_data_row + 2
+    ws.cell(row=total_row, column=1, value="Total de UVIS:").font = Font(bold=True)
+    ws.cell(row=total_row, column=2, value=len(rows)).font = Font(bold=True)
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    filename = f"uvis_{datetime.now().strftime('%Y-%m-%d_%H-%M')}.xlsx"
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name=filename,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
