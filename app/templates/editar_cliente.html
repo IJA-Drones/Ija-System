@@ -1,33 +1,38 @@
 {% extends "base.html" %} 
 {% block content %}
 
-<div class="container mt-4 mb-4">
-  <div class="d-flex align-items-center justify-content-between mb-3">
-    <div>
-      <h4 class="mb-0">Editar Cliente</h4>
-      <small class="text-muted">ID: #{{ cliente.id }}</small>
-    </div>
-    <a
-      class="btn btn-outline-secondary"
-      href="{{ url_for('main.listar_clientes') }}"
-    >
-      Voltar
-    </a>
+<div class="container-fluid py-4" style="max-width: 1200px;">
+  
+  {# --- Cabeçalho --- #}
+  <div class="d-flex align-items-center justify-content-between mb-4">
+      <h2 class="text-dark m-0">
+          <i class="bi bi-person-gear me-2 text-primary"></i> Editar Cliente
+      </h2>
+      <small class="text-muted fw-bold">ID: #{{ cliente.id }}</small>
   </div>
 
-  <div class="card shadow-sm">
-    <div class="card-body">
+  {# --- Card Principal --- #}
+  <div class="card info status-primary shadow-sm rounded-4 border-0">
+    <div class="card-body p-4">
+      
       <form method="post" novalidate>
-        <div class="row g-3">
-          <div class="col-12 col-md-6">
-            <label class="form-label"
-              >Nome do Cliente <span class="text-danger">*</span></label
-            >
+        
+        {# SEÇÃO 1: IDENTIFICAÇÃO #}
+        <div class="d-flex align-items-center mb-3">
+            <i class="bi bi-person-badge text-primary me-2 fs-5"></i>
+            <h5 class="m-0 text-primary fw-bold">Identificação</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">
+                <i class="bi bi-person me-1 text-primary"></i> Nome do Cliente *
+            </label>
             <input
               type="text"
               class="form-control {% if errors.get('nome_cliente') %}is-invalid{% endif %}"
               name="nome_cliente"
-              value="{{ form.get('nome_cliente','') }}"
+              value="{{ form.get('nome_cliente', cliente.nome_cliente) }}"
               required
             />
             {% if errors.get('nome_cliente') %}
@@ -35,93 +40,138 @@
             {% endif %}
           </div>
 
-          <div class="col-12 col-md-6">
-            <label class="form-label"
-              >Documento (CPF/CNPJ) <span class="text-danger">*</span></label
-            >
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">
+                <i class="bi bi-card-text me-1 text-primary"></i> Documento (CPF/CNPJ) *
+            </label>
             <input
               type="text"
               class="form-control {% if errors.get('documento') %}is-invalid{% endif %}"
               name="documento"
               id="documento"
-              value="{{ form.get('documento','') }}"
+              value="{{ form.get('documento', cliente.documento) }}"
               inputmode="numeric"
               required
             />
-            <div class="form-text">
-              Digite só números — o sistema formata automaticamente e valida
-              CPF/CNPJ.
+            <div class="form-text small">
+              Digite só números — o sistema formata e valida automaticamente.
             </div>
             {% if errors.get('documento') %}
             <div class="invalid-feedback">{{ errors.get('documento') }}</div>
             {% endif %}
           </div>
+        </div>
 
-          <div class="col-12 col-md-6">
-            <label class="form-label">Contato</label>
+        <hr class="text-muted opacity-25 my-4">
+
+        {# SEÇÃO 2: CONTATO E LOCALIZAÇÃO #}
+        <div class="d-flex align-items-center mb-3">
+            <i class="bi bi-telephone text-primary me-2 fs-5"></i>
+            <h5 class="m-0 text-primary fw-bold">Contato e Localização</h5>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">
+                <i class="bi bi-person-lines-fill me-1 text-primary"></i> Nome do Contato
+            </label>
             <input
               type="text"
               class="form-control"
               name="contato"
-              value="{{ form.get('contato','') }}"
+              value="{{ form.get('contato', cliente.contato) }}"
             />
           </div>
 
-          <div class="col-12 col-md-6">
-            <label class="form-label">Telefone</label>
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">
+                <i class="bi bi-whatsapp me-1 text-primary"></i> Telefone
+            </label>
             <input
               type="text"
               class="form-control {% if errors.get('telefone') %}is-invalid{% endif %}"
               name="telefone"
               id="telefone"
-              value="{{ form.get('telefone','') }}"
+              value="{{ form.get('telefone', cliente.telefone) }}"
               inputmode="numeric"
             />
             {% if errors.get('telefone') %}
             <div class="invalid-feedback">{{ errors.get('telefone') }}</div>
             {% endif %}
           </div>
+        </div>
 
-          <div class="col-12 col-md-6">
-            <label class="form-label">E-mail</label>
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">
+                <i class="bi bi-envelope me-1 text-primary"></i> E-mail
+            </label>
             <input
               type="email"
               class="form-control {% if errors.get('email') %}is-invalid{% endif %}"
               name="email"
-              value="{{ form.get('email','') }}"
+              value="{{ form.get('email', cliente.email) }}"
             />
             {% if errors.get('email') %}
             <div class="invalid-feedback">{{ errors.get('email') }}</div>
             {% endif %}
           </div>
 
-          <div class="col-12">
-            <label class="form-label">Endereço</label>
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">
+                <i class="bi bi-geo-alt me-1 text-primary"></i> Endereço Completo
+            </label>
             <input
               type="text"
               class="form-control"
               name="endereco"
-              value="{{ form.get('endereco','') }}"
+              value="{{ form.get('endereco', cliente.endereco) }}"
             />
           </div>
+        </div>
 
-          <div class="col-12 d-flex gap-2 mt-2">
-            <button type="submit" class="btn btn-primary">
-              Salvar alterações
+        {# BOTÕES DE AÇÃO #}
+        <div class="d-flex justify-content-between align-items-center mt-5">
+            {# Botão Excluir (Lado Esquerdo) #}
+            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalExcluir">
+                <i class="bi bi-trash me-1"></i> Excluir Cliente
             </button>
 
-            <form
-              class="form-deletar m-0"
-              method="post"
-              action="{{ url_for('main.deletar_cliente', cliente_id=cliente.id) }}"
-            >
-              <button type="submit" class="btn btn-danger">Excluir</button>
-            </form>
-          </div>
+            {# Botões de Salvar/Voltar (Lado Direito) #}
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('main.listar_clientes') }}" class="btn btn-outline-secondary px-4">
+                    Cancelar
+                </a>
+                <button type="submit" class="btn btn-primary px-5 shadow-sm fw-bold">
+                    <i class="bi bi-check-lg me-1"></i> Salvar Alterações
+                </button>
+            </div>
         </div>
       </form>
+
     </div>
   </div>
+</div>
+
+{# Modal de Confirmação de Exclusão (Boa prática para o estilo novo) #}
+<div class="modal fade" id="modalExcluir" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold">Confirmar Exclusão</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Tem certeza que deseja excluir o cliente <strong>{{ cliente.nome_cliente }}</strong>? Esta ação não pode ser desfeita.
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                <form action="{{ url_for('main.deletar_cliente', cliente_id=cliente.id) }}" method="post" class="m-0">
+                    <button type="submit" class="btn btn-danger px-4">Confirmar Exclusão</button>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -131,7 +181,6 @@
 
   function maskDocumento(value) {
     const d = onlyDigits(value);
-
     if (d.length <= 11) {
       let v = d.slice(0, 11);
       v = v.replace(/(\d{3})(\d)/, "$1.$2");
@@ -139,7 +188,6 @@
       v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
       return v;
     }
-
     let v = d.slice(0, 14);
     v = v.replace(/(\d{2})(\d)/, "$1.$2");
     v = v.replace(/(\d{3})(\d)/, "$1.$2");
