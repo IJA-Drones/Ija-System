@@ -7,10 +7,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>IJA System</title>
+
+    <!-- ✅ FIX JINJA: concatenação com ~ -->
     <link
       rel="icon"
       type="image/png"
-      href="{{ url_for('static', filename='img/logo_IJA_System_' + (tema_escolhido if tema_escolhido else 'light') + '.png') }}"
+      href="{{ url_for('static', filename='img/logo_IJA_System_' ~ (tema_escolhido if tema_escolhido else 'light') ~ '.png') }}"
     />
 
     <link
@@ -45,7 +47,19 @@
       href="{{ url_for('static', filename='css/style.css') }}"
     />
 
-    <!-- ✅ CSS do submenu (Clientes) -->
+    <!-- ✅ PWA (Instalar como app) -->
+    <link
+      rel="manifest"
+      href="{{ url_for('static', filename='manifest.webmanifest') }}"
+    />
+    <meta name="theme-color" content="#101927" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+
+    <!-- ✅ CSS do submenu (Clientes) + footer da sidebar -->
     <style>
       .app-sidebar .nav-link-toggle {
         background: transparent;
@@ -86,6 +100,15 @@
         border-radius: 12px;
         font-size: 0.93rem;
         opacity: 0.95;
+      }
+
+      /* ✅ rodapé no pé da sidebar */
+      .sidebar-footer {
+        padding: 0.75rem 0.5rem 1rem;
+        border-top: 1px solid rgba(0, 0, 0, 0.06);
+      }
+      .dark-mode .sidebar-footer {
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
       }
     </style>
   </head>
@@ -174,8 +197,10 @@
 
     {% if current_user.is_authenticated %}
     <div class="app-wrapper">
-      <div class="app-sidebar" id="appSidebar">
-        <ul class="nav flex-column">
+      <!-- ✅ vira flex-column pra ter "pé" fixo -->
+      <div class="app-sidebar d-flex flex-column" id="appSidebar">
+        <!-- ✅ nav ocupa o espaço e empurra o footer pra baixo -->
+        <ul class="nav flex-column flex-grow-1">
           <li class="nav-item">
             <a
               class="nav-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}"
@@ -308,6 +333,29 @@
           </li>
           {% endif %}
         </ul>
+
+        <!-- ✅ PÉ DA SIDEBAR: aparece SEMPRE -->
+        <div class="sidebar-footer mt-auto">
+          <!-- 🔥 NOVO: Abrir app (aparece quando já está instalado) -->
+          <a class="nav-link" href="#" id="openAppLink" style="display: none">
+            <i class="bi bi-box-arrow-up-right me-2"></i><span>Abrir app</span>
+          </a>
+
+          <!-- Baixar app (aparece quando NÃO está instalado) -->
+          <a
+            class="nav-link"
+            href="#"
+            id="installAppLink"
+            style="display: none"
+          >
+            <i class="bi bi-download me-2"></i><span>Baixar app</span>
+          </a>
+
+          <!-- iOS instruções -->
+          <a class="nav-link" href="#" id="installAppIOS" style="display: none">
+            <i class="bi bi-phone me-2"></i><span>Instalar no iPhone</span>
+          </a>
+        </div>
       </div>
 
       <div class="app-content" id="appContent">
@@ -370,10 +418,161 @@
         button.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Aguarde...`;
       }
 
+      // ✅ PWA: instalar como app
+      let deferredPrompt = null;
+
+      function isIOS() {
+        return /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+      }
+
+      function isInStandaloneMode() {
+        return (
+          (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
+          window.navigator.standalone === true
+        );
+      }
+
+      // “Melhor esforço” para saber se já foi instalado (Chrome não dá um "isInstalled" perfeito no browser)
+      function isProbablyInstalled() {
+        return isInStandaloneMode() || localStorage.getItem("pwa_installed") === "1";
+      }
+
+      function showCorrectPwaLinks() {
+        const installLink = document.getElementById("installAppLink");
+        const openLink = document.getElementById("openAppLink");
+        const installIOS = document.getElementById("installAppIOS");
+
+        if (isIOS()) {
+          // iOS: não existe prompt padrão. Mostra instrução se não estiver no modo app.
+          if (installLink) installLink.style.display = "none";
+          if (openLink) openLink.style.display = isInStandaloneMode() ? "none" : "block"; // opcional
+          if (installIOS) installIOS.style.display = isInStandaloneMode() ? "none" : "block";
+          return;
+        }
+
+        // Chrome/Edge/Android/Desktop
+        if (installIOS) installIOS.style.display = "none";
+
+        if (isProbablyInstalled()) {
+          if (installLink) installLink.style.display = "none";
+          if (openLink) openLink.style.display = "block";
+        } else {
+          if (openLink) openLink.style.display = "none";
+          if (installLink) installLink.style.display = "block";
+        }
+      }
+
+      // Captura o evento de instalação (Chrome/Edge/Android)
+      window.addEventListener("beforeinstallprompt", (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+      });
+
+      // Quando instala, salva flag e troca UI
+      window.addEventListener("appinstalled", () => {
+        localStorage.setItem("pwa_installed", "1");
+        deferredPrompt = null;
+        showCorrectPwaLinks();
+      });
+
       document.addEventListener("DOMContentLoaded", () => {
         const body = document.body;
         const toggle = document.getElementById("toggleDarkMode");
         const sidebarToggle = document.getElementById("sidebarToggle");
+
+        // ✅ registra o SW (escopo global)
+        if ("serviceWorker" in navigator) {
+          navigator.serviceWorker.register(
+            "{{ url_for('static', filename='sw.js') }}",
+            { scope: "/" }
+          );
+        }
+
+        // ✅ controla links do rodapé
+        showCorrectPwaLinks();
+
+        const installLink = document.getElementById("installAppLink");
+        const openLink = document.getElementById("openAppLink");
+        const installIOS = document.getElementById("installAppIOS");
+
+        if (installLink) {
+          installLink.addEventListener("click", async (e) => {
+            e.preventDefault();
+
+            if (isInStandaloneMode()) {
+              Swal.fire({
+                icon: "info",
+                title: "Já está no app",
+                text: "Você já está usando o IJA como aplicativo.",
+              });
+              return;
+            }
+
+            if (!deferredPrompt) {
+              // Pode ser: já instalado, ou o Chrome não liberou ainda
+              if (isProbablyInstalled()) {
+                showCorrectPwaLinks();
+                Swal.fire({
+                  icon: "info",
+                  title: "Já instalado",
+                  html: "O app já está instalado. Para abrir, use o ícone do IJA na tela inicial/área de trabalho (ou clique em <b>Abrir app</b>).",
+                });
+                return;
+              }
+
+              Swal.fire({
+                icon: "info",
+                title: "Instalação não liberada ainda",
+                html:
+                  "No <b>Chrome/Edge</b>, abra o menu do navegador e procure <b>Instalar app</b>.<br><br>" +
+                  "Se não aparecer, confirme que está em <b>HTTPS</b> e que o <b>manifest</b> e o <b>service worker</b> estão carregando sem erro.",
+              });
+              return;
+            }
+
+            deferredPrompt.prompt();
+            await deferredPrompt.userChoice;
+            deferredPrompt = null;
+
+            Swal.fire({
+              icon: "success",
+              title: "Pronto!",
+              text: "Se o navegador aceitar, o app será instalado.",
+            });
+          });
+        }
+
+        if (openLink) {
+          openLink.addEventListener("click", (e) => {
+            e.preventDefault();
+
+            // Se já está dentro do PWA, apenas navega
+            if (isInStandaloneMode()) {
+              window.location.href = "/?pwa=1";
+              return;
+            }
+
+            // No navegador normal, não dá pra “forçar” abrir o PWA.
+            Swal.fire({
+              icon: "info",
+              title: "Abrir o app",
+              html:
+                "Para abrir como aplicativo, use o <b>ícone do IJA</b> na sua tela inicial/área de trabalho.<br><br>" +
+                "Se preferir, abra o menu do Chrome/Edge e procure <b>Aplicativos</b> / <b>Abrir</b> (depende do dispositivo).",
+            });
+          });
+        }
+
+        if (installIOS) {
+          installIOS.addEventListener("click", (e) => {
+            e.preventDefault();
+            Swal.fire({
+              icon: "info",
+              title: "Como instalar no iPhone",
+              html: "Abra no <b>Safari</b> → toque em <b>Compartilhar</b> → <b>Adicionar à Tela de Início</b>.",
+            });
+          });
+        }
 
         // --- MENSAGENS FLASH (SWEETALERT2 DARK/LIGHT) ---
         {% set flashed = get_flashed_messages(with_categories=true) %}
