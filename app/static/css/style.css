@@ -1,7 +1,5 @@
 /* =========================================
    DESIGN SYSTEM - OCEANO AZUL
-   - Organização por seções
-   - Integridade total de estilos
    ========================================= */
 
 /* -----------------------------------------
@@ -10,16 +8,10 @@
 
 /* CSS de prioridade máxima */
 html.dark-mode {
-    background-color: #101927 !important; /* Use a cor exata do seu dark mode */
-}
-
-body.dark-mode {
-    background-color: #101927 !important;
-}
-
-/* Evita que a transição de cores ocorra no carregamento inicial */
-body {
-    transition: background-color 0.3s ease, color 0.3s ease;
+  --color-bg-body: #101927;
+  --color-bg-surface: #162235;
+  --color-text-main: #e2e8f0;
+  --color-text-muted: #a0aec0;
 }
 
 
@@ -52,6 +44,15 @@ body {
   --navbar-height: 90px;
   --sidebar-width: 230px;
   --sidebar-width-collapsed: 80px;
+  --color-bg-body: #f4f7f9;
+  --color-bg-surface: #ffffff
+
+  /* váriaveis utilitárias */
+  --transition-base: 0.3s ease;
+    --color-accent-soft: rgba(0, 163, 196, 0.12);
+    --color-accent-soft-hover: rgba(0, 163, 196, 0.18);
+
+
 }
 
 /* -----------------------------------------
@@ -222,6 +223,24 @@ body.sidebar-collapsed .app-content { margin-left: var(--sidebar-width-collapsed
 
 .btn-outline-light:hover { background: var(--color-primary); color: #fff; }
 
+.anexo-btn {
+    display: flex;
+    align-items: center;
+    height: 32px;
+    padding: 0 12px;
+    border: 1px dashed #ced4da;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    color: #495057;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+    background-color: #f8f9fa;
+}
+
+.transition-all {
+    transition: all 0.25s ease;
+}
+
 /* -----------------------------------------
    6) CARDS & STATUS STRIP
    ----------------------------------------- */
@@ -249,25 +268,6 @@ body.sidebar-collapsed .app-content { margin-left: var(--sidebar-width-collapsed
 
 .text-dark { color: var(--color-primary-dark) !important; }
 .text-muted { color: var(--color-text-muted) !important; }
-
-/* -----------------------------------------
-   7) TABLES
-   ----------------------------------------- */
-.table-responsive { border-radius: var(--radius-lg); background: var(--color-bg-white); }
-.table { margin-bottom: 0; border-collapse: separate; border-spacing: 0; }
-.table thead th { background: var(--color-primary-dark); color: #fff; font-weight: 600; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px; padding: 1rem; border: none; }
-.table tbody tr { transition: background-color 0.2s; }
-.table tbody tr:hover { background: #f0f7ff; }
-.table td { vertical-align: middle; padding: 1rem; border-top: 1px solid #edf2f7; color: var(--color-text-main); }
-.table td.bg-light { background: #f8fafc; border-right: 3px solid var(--color-accent); }
-
-/* -----------------------------------------
-   8) FORMS
-   ----------------------------------------- */
-.form-control, .form-select { border-radius: var(--radius-md); border: 1px solid #e2e8f0; padding: 0.6rem 1rem; color: var(--color-text-main); }
-.form-control:focus, .form-select:focus { border-color: var(--color-accent); box-shadow: 0 0 0 3px rgba(0, 163, 196, 0.15); outline: none; }
-.form-label { font-weight: 600; font-size: 0.9rem; color: var(--color-text-muted); margin-bottom: 0.5rem; }
-.form-control[readonly] { background: #edf2f7; color: var(--color-text-muted); }
 
 /* -----------------------------------------
    9) BADGES, ALERTS & UTILITIES
@@ -322,22 +322,11 @@ body.dark-mode .card.info .text-danger { color: var(--color-danger) !important; 
 body.dark-mode .card.info .text-warning { color: var(--color-warning) !important; }
 body.dark-mode .card.info .text-recomended { color: var(--color-recomended) !important; }
 
-body.dark-mode .form-control, body.dark-mode .form-select { background: #1c2b3f; border: 1px solid #334155; color: var(--color-text-main); }
-body.dark-mode .form-control:focus, body.dark-mode .form-select:focus { border-color: var(--color-accent); box-shadow: 0 0 0 3px rgba(0, 224, 255, 0.25); }
-body.dark-mode .form-control[readonly] { background: #1f2a44; color: var(--color-text-muted); }
-body.dark-mode .form-control::placeholder { color: #94a3b8; }
 
 body.dark-mode .btn-primary:hover { background: var(--color-primary-dark); border-color: var(--color-primary-dark); }
 body.dark-mode .btn-outline-secondary { color: var(--color-text-muted); border-color: var(--color-text-muted); }
 body.dark-mode .btn-outline-secondary:hover { background: var(--color-text-muted); color: var(--color-bg-body); }
 body.dark-mode .btn-outline-light:hover { background: var(--color-primary); color: #fff; }
-
-body.dark-mode .table thead th { background: #1f3a5a; color: #fff; }
-body.dark-mode .table tbody tr { background: #152233; }
-body.dark-mode .table tbody tr:nth-child(even) { background: #1a2c44; }
-body.dark-mode .table tbody tr:hover { background: #224268 !important; }
-body.dark-mode .table td { border-top: 1px solid #233549; color: var(--color-text-main); background: #1c2b3f; }
-body.dark-mode .table td.bg-light { background: #1c2b3f; border-right: 3px solid var(--color-accent); }
 
 body.dark-mode .bg-secondary { background: var(--color-text-muted) !important; }
 body.dark-mode .bg-success { background: var(--color-success) !important; }
@@ -370,6 +359,7 @@ body.dark-mode .modal em { color: var(--color-text-muted); }
 /* -----------------------------------------
    11) SWEETALERT2 & LOGOS (DARK MODE INTEGRADO)
    ----------------------------------------- */
+
 /* Estilo Base para o Modal do Alerta */
 .swal2-dark-mode {
     background-color: #152233 !important;
@@ -466,169 +456,9 @@ body.dark-mode .swal2-popup.swal2-toast .swal2-success-fix {
     background-color: transparent !important;
 }
 
-/* -----------------------------------------
-   12) FULLCALENDAR CUSTOMIZATION (OCEANO AZUL)
-   ----------------------------------------- */
-
-/* Container do Calendário */
-.calendar-card { 
-    background: var(--color-bg-white); 
-    border-radius: var(--radius-lg); 
-    box-shadow: var(--shadow-sm); 
-    border: 1px solid rgba(0,0,0,0.05); 
-    overflow: hidden; 
-}
-
-/* Título e Toolbar do FullCalendar */
-.fc .fc-toolbar-title { 
-    font-size: 1.25rem; 
-    font-weight: 700; 
-    color: var(--color-primary-dark); 
-    font-family: "Poppins", sans-serif;
-}
-
-/* Botões de Navegação (Mês, Semana, Hoje) */
-.fc .fc-button { 
-    border-radius: var(--radius-sm) !important; 
-    padding: 0.4rem 1rem !important; 
-    font-weight: 600 !important; 
-    font-size: 0.9rem !important;
-    text-transform: capitalize;
-    transition: all 0.2s ease;
-    box-shadow: none !important;
-}
-
-/* Estado Normal dos Botões (Branco/Cinza) */
-.fc .fc-button-primary { 
-    background-color: var(--color-bg-white) !important; 
-    border-color: #e2e8f0 !important; 
-    color: var(--color-text-muted) !important; 
-}
-
-/* Hover dos Botões */
-.fc .fc-button-primary:hover { 
-    background-color: #f8fafc !important; 
-    border-color: var(--color-primary) !important; 
-    color: var(--color-primary) !important; 
-    transform: translateY(-1px);
-}
-
-/* Estado Ativo dos Botões (Azul Oceano) */
-.fc .fc-button-primary:not(:disabled).fc-button-active, 
-.fc .fc-button-primary:not(:disabled):active { 
-    background-color: var(--color-primary) !important; 
-    border-color: var(--color-primary) !important; 
-    color: #fff !important; 
-    box-shadow: var(--shadow-sm) !important;
-}
-
-/* Cabeçalho dos Dias (DOM, SEG, TER...) */
-.fc .fc-col-header-cell-cushion { 
-    padding: 12px 0; 
-    color: var(--color-text-muted); 
-    font-weight: 700; 
-    text-transform: uppercase; 
-    font-size: 0.75rem; 
-    letter-spacing: 0.5px; 
-}
-
-/* Grid e Células */
-.fc-theme-standard .fc-scrollgrid { 
-    border: 1px solid #f1f5f9; 
-    border-radius: var(--radius-md); 
-}
-.fc-theme-standard td, .fc-theme-standard th { 
-    border-color: #f1f5f9; 
-}
-
-/* Dia Atual (Today) */
-.fc .fc-day-today { 
-    background: rgba(44, 82, 130, 0.03) !important; /* var(--color-primary) bem suave */
-}
-.fc .fc-day-today .fc-daygrid-day-number { 
-    background: var(--color-primary); 
-    color: #fff !important; 
-    border-radius: 50%; 
-    width: 28px; 
-    height: 28px; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    margin: 4px;
-}
-
-/* Eventos (Barrinhas) */
-.fc .fc-event { 
-    border-radius: 6px; 
-    border: none !important; 
-    padding: 2px 5px; 
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); 
-    transition: transform 0.2s ease; 
-    cursor: pointer; 
-    font-size: 0.85rem;
-}
-.fc .fc-event:hover { 
-    transform: scale(1.02); 
-    filter: brightness(0.95); 
-    box-shadow: var(--shadow-md);
-}
-
-/* =========================================
-   DARK MODE OVERRIDES (FULLCALENDAR)
-   ========================================= */
-body.dark-mode .calendar-card { 
-    background: #152233 !important; /* Fundo do modal */
-    border-color: #233549 !important; 
-}
-
-body.dark-mode .fc .fc-toolbar-title { 
-    color: var(--color-text-main) !important; 
-}
-
-body.dark-mode .fc .fc-button-primary { 
-    background-color: #1c2b3f !important; 
-    border-color: #334155 !important; 
-    color: var(--color-text-muted) !important; 
-}
-
-body.dark-mode .fc .fc-button-primary:hover { 
-    border-color: var(--color-accent) !important; 
-    color: var(--color-accent) !important; 
-}
-
-body.dark-mode .fc .fc-button-primary.fc-button-active { 
-    background-color: var(--color-primary) !important; 
-    border-color: var(--color-primary) !important; 
-    color: #fff !important; 
-}
-
-body.dark-mode .fc-theme-standard .fc-scrollgrid, 
-body.dark-mode .fc-theme-standard td, 
-body.dark-mode .fc-theme-standard th { 
-    border-color: #233549 !important; 
-}
-
-body.dark-mode .fc .fc-day-today { 
-    background: rgba(255, 255, 255, 0.02) !important; 
-}
-
-/* =========================================
-   ESTILO DO FORMULÁRIO DE FILTROS DA AGENDA
-   (Para garantir que o card de filtros fique igual aos outros)
-   ========================================= */
-.card.calendar-filters {
-    background: var(--color-bg-white);
-    border: none;
-    box-shadow: var(--shadow-sm);
-}
-
-body.dark-mode .card.calendar-filters {
-    background: #152233;
-    border: 1px solid #233549;
-}
 
 /* -----------------------------------------
-   13) LOADING & NOTIFICAÇÕES (DEMAIS REGRAS)
+   12) LOADING & NOTIFICAÇÕES (DEMAIS REGRAS)
    ----------------------------------------- */
 .loading-spinner {
   background: white url("data:image/svg+xml;charset=utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20fill%3D%22%230d6efd%22%20d%3D%22M12%204V2A10%2010%200%200%201%2022%2012h-2a8%208%200%200%200-8-8z%22%2F%3E%3CanimateTransform%20attributeName%3D%22transform%22%20type%3D%22rotate%22%20from%3D%220%2012%2012%22%20to%3D%22360%2012%2012%22%20dur%3D%221s%22%20repeatCount%3D%22indefinite%22%2F%3E%3C%2Fsvg%3E") no-repeat right 10px center;
@@ -654,7 +484,7 @@ body.dark-mode .list-group-item-light-custom { background-color: #3f98b3a1 !impo
 }
 
 /* -----------------------------------------
-   15) PAGINAÇÃO
+   13) PAGINAÇÃO
    ----------------------------------------- */
 .pagination {
     gap: 5px; /* Espaçamento entre os botões */
@@ -720,348 +550,16 @@ body.dark-mode .page-item.disabled .page-link {
     border-color: #233549;
 }
 
-/* =========================================
-   16) CHAT BOT - OCEANO AZUL INTEGRADO
-   ========================================= */
-
-/* --- Container Principal do Chat (Janela) --- */
-.chat-window {
-    position: fixed;
-    bottom: 90px; /* Acima do botão flutuante */
-    right: 20px;
-    width: 380px;
-    height: 550px;
-    max-height: 80vh; /* Para telas menores */
-    background-color: var(--color-bg-white);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg);
-    z-index: 1049;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    opacity: 0;
-    transform: translateY(20px) scale(0.95);
-    pointer-events: none; /* Invisível não clicável */
-    border: 1px solid rgba(0,0,0,0.05);
-}
-
-
-/* Classe para quando o chat estiver aberto */
-.chat-window.active {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    pointer-events: all;
-}
-
-/* --- Cabeçalho do Chat --- */
-.bot-header {
-    background: linear-gradient(135deg, var(--color-primary-dark), var(--color-primary));
-    color: #fff;
-    padding: 1.2rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-}
-
-.bot-title {
-    font-weight: 700;
-    font-size: 1.1rem;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin: 0;
-    color: #fff; /* Força branco mesmo se houver regra global */
-}
-
-.bot-badge {
-    background-color: rgba(255, 255, 255, 0.2);
-    padding: 4px 10px;
-    border-radius: var(--radius-pill);
-    font-size: 0.7rem;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    backdrop-filter: blur(4px);
-}
-
-.btn-close-chat {
-    background: transparent;
-    border: none;
-    color: rgba(255,255,255,0.8);
-    font-size: 1.2rem;
-    cursor: pointer;
-    transition: color 0.2s;
-}
-.btn-close-chat:hover { color: #fff; }
-
-/* --- Corpo do Chat (Área das mensagens) --- */
-.bot-body {
-    flex: 1;
-    background-color: var(--color-bg-body); /* Usa o fundo do site */
-    padding: 1rem;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    scrollbar-width: thin; /* Firefox */
-}
-
-/* Barras de rolagem personalizadas */
-.bot-body::-webkit-scrollbar { width: 6px; }
-.bot-body::-webkit-scrollbar-thumb { background-color: rgba(0,0,0,0.1); border-radius: 10px; }
-
-/* --- Balões de Mensagem --- */
-.message {
-    max-width: 85%;
-    padding: 10px 16px;
-    font-size: 0.9rem;
-    line-height: 1.5;
-    position: relative;
-    word-wrap: break-word;
-}
-
-/* Mensagem do Robô */
-.message.bot {
-    align-self: flex-start;
-    background-color: var(--color-bg-white);
-    color: var(--color-text-main);
-    border-radius: 16px 16px 16px 2px;
-    border: 1px solid rgba(0,0,0,0.05);
-    box-shadow: var(--shadow-sm);
-}
-
-/* Mensagem do Usuário */
-.message.user {
-    align-self: flex-end;
-    background-color: var(--color-primary);
-    color: #fff;
-    border-radius: 16px 16px 2px 16px;
-    box-shadow: 0 4px 10px rgba(44, 82, 130, 0.2); /* Sombra colorida */
-}
-
-/* --- Chips / Sugestões --- */
-.chips-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 5px;
-}
-
-.chip {
-    background-color: var(--color-bg-white);
-    border: 1px solid var(--color-primary);
-    color: var(--color-primary);
-    border-radius: var(--radius-pill);
-    padding: 6px 14px;
-    font-size: 0.8rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.chip:hover {
-    background-color: var(--color-primary);
-    color: #fff;
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-sm);
-}
-
-/* --- Rodapé (Input) --- */
-.bot-footer {
-    padding: 12px;
-    background-color: var(--color-bg-white);
-    border-top: 1px solid rgba(0,0,0,0.08);
-    display: flex;
-    gap: 10px;
-    align-items: center;
-}
-
-.bot-footer input {
-    border-radius: var(--radius-pill);
-    background-color: var(--color-bg-body);
-    border: 1px solid transparent;
-    padding-left: 20px;
-    font-size: 0.9rem;
-}
-
-.bot-footer input:focus {
-    background-color: var(--color-bg-white);
-    border-color: var(--color-accent);
-    box-shadow: 0 0 0 3px rgba(0, 163, 196, 0.15);
-}
-
-.btn-send {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: var(--color-primary);
-    color: var(--color-bg-white);
-    border: none;
-    transition: all 0.2s;
-}
-
-  #adminBotSend i  , #uvisChatSend i {
-    transition: transform 0.2s;
-    color: var(--color-bg-white);
-  }
-
-.btn-send:hover {
-    background-color: var(--color-accent);
-    transform: rotate(-10deg) scale(1.05);
-}
-
-/* --- Botão Flutuante (FAB) --- */
-#adminBotFab , #uvisBotFab {
-    position: fixed;
-    right: 18px;
-    bottom: 18px;
-    width: 56px;
-    height: 56px;
-    border-radius: 999px;
-    display: grid;
-    place-items: center;
-    z-index: 2000;
-    background: linear-gradient(135deg, var(--color-primary), var(--color-accent-hover));
-    border: none;
-    box-shadow: 0 12px 28px rgba(0,0,0,.25);
-  }
-  #adminBotFab:hover, #uvisBotFab:hover{ transform: translateY(-1px); }
-  #adminBotFab:active, #uvisBotFab:active{ transform: translateY(0px); }
-
-  #adminBotFab i , #uvisBotFab i {
-    font-size: 1.5rem;
-    transition: transform 0.2s;
-    color: var(--color-bg-white);
-  }
-
-
-/* =========================================
-   DARK MODE - CHAT
-   ========================================= */
-body.dark-mode .chat-window {
-    background-color: #152233; /* Fundo do modal igual SweetAlert */
-    border: 1px solid #233549;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-}
-
-body.dark-mode .bot-header {
-    background: linear-gradient(135deg, #1f2a3e, #152233);
-    border-bottom: 1px solid #233549;
-}
-
-body.dark-mode .bot-body {
-    background-color: #101927; /* Fundo escuro profundo */
-}
-
-body.dark-mode .message.bot {
-    background-color: #1f2a3e;
-    color: var(--color-text-main);
-    border-color: #233549;
-}
-
-body.dark-mode .message.user {
-    background-color: var(--color-primary); /* Azul brilhante no dark */
-    color: #fff;
-    box-shadow: none;
-}
-
-body.dark-mode .chip {
-    background-color: #1f2a3e;
-    border-color: #233549;
-    color: var(--color-text-muted);
-}
-
-body.dark-mode .chip:hover {
-    background-color: var(--color-accent);
-    color: #101927;
-    border-color: var(--color-accent);
-}
-
-body.dark-mode .bot-footer {
-    background-color: #152233;
-    border-top-color: #233549;
-}
-
-body.dark-mode .bot-footer input {
-    background-color: #101927;
-    color: #fff;
-    border: 1px solid #233549;
-}
-body.dark-mode .bot-footer input::placeholder { color: #5a6a85; }
-
-body.dark-mode .bot-footer input:focus {
-    border-color: var(--color-accent);
-}
-
-body.dark-mode .bot-fab {
-    box-shadow: 0 8px 20px rgba(0,0,0,0.5);
-}
-body.dark-mode .bot-fab::after {
-    border-color: var(--color-primary-dark);
-}
-
-/* Força o arredondamento correto para mensagens do usuário */
-.message.user {
-    border-radius: 16px 16px 2px 16px !important;
-}
-
-/* --- Botão Flutuante (FAB) --- */
-body.dark-mode {#adminBotFab , #uvisBotFab {
-    position: fixed;
-    right: 18px;
-    bottom: 18px;
-    width: 56px;
-    height: 56px;
-    border-radius: 999px;
-    display: grid;
-    place-items: center;
-    z-index: 2000;
-    background: linear-gradient(135deg, var(--color-primary), var(--color-accent-hover));
-    border: none;
-    box-shadow: 0 12px 28px rgba(0,0,0,.25);
-  }
-}
-
-body.dark-mode {
-  #adminBotFab:hover, #uvisBotFab:hover{ transform: translateY(-1px); }
-  #adminBotFab:active, #uvisBotFab:active{ transform: translateY(0px); }
-
-  #adminBotFab i , #uvisBotFab i {
-    font-size: 1.5rem;
-    transition: transform 0.2s;
-    color: var(--color-text-main);
-  }
-}
-
-/* Botão de anexo minimalista */
-.anexo-btn {
-    display: flex;
-    align-items: center;
-    height: 32px;
-    padding: 0 12px;
-    border: 1px dashed #ced4da;
-    border-radius: 6px;
-    font-size: 0.8rem;
-    color: #495057;
-    cursor: pointer;
-    transition: border-color 0.15s ease, background-color 0.15s ease;
-    background-color: #f8f9fa;
-}
-
-.transition-all {
-    transition: all 0.25s ease;
-}
-
 /* No seu arquivo CSS ou tag <style> */
 #install-container {
     display: none; /* Escondido por padrão */
 }
 
-/* --- RESPONSIVIDADE TOTAL --- */
+
+
+/* -----------------------------------------
+   14) RESPONSIVIDADE
+   ----------------------------------------- */
 @media (max-width: 991.98px) {
     /* Navbar: Mantém fixa mas reduz altura */
     .navbar {
@@ -1170,4 +668,33 @@ body.sidebar-collapsed .app-content {
             display: none; /* Esconde o "Olá, Usuário" em telas muito pequenas */
         }
     }
+}
+
+/* --- EFEITO DE ITEM SELECIONADO (ACTIVE) --- */
+
+/* Estilo para o link ativo */
+.app-sidebar .nav-link.active {
+    background: rgba(0, 163, 196, 0.15) !important; /* Azul suave de fundo */
+    color: var(--color-accent) !important;          /* Cor de destaque no texto/ícone */
+    border-left: 4px solid var(--color-accent);    /* Barrinha lateral esquerda */
+    font-weight: 600;
+}
+
+/* Garante que o ícone dentro do link ativo também mude de cor */
+.app-sidebar .nav-link.active i {
+    color: var(--color-accent) !important;
+}
+
+/* Ajuste para o Modo Escuro */
+body.dark-mode .app-sidebar .nav-link.active {
+    background: rgba(18, 227, 255, 0.1) !important;
+    color: var(--color-accent) !important;
+    border-left-color: var(--color-accent);
+}
+
+/* Efeito para os submenus (UVIS e Clientes) */
+.app-sidebar .sub-link.active {
+    background: rgba(0, 163, 196, 0.1) !important;
+    color: var(--color-accent) !important;
+    font-weight: 600;
 }

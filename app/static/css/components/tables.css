@@ -1,0 +1,18 @@
+/* -----------------------------------------
+   TABLES
+   ----------------------------------------- */
+.table-responsive { border-radius: var(--radius-lg); background: var(--color-bg-white); }
+.table { margin-bottom: 0; border-collapse: separate; border-spacing: 0; }
+.table thead th { background: var(--color-primary-dark); color: #fff; font-weight: 600; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px; padding: 1rem; border: none; }
+.table tbody tr { transition: background-color 0.2s; }
+.table tbody tr:hover { background: #f0f7ff; }
+.table td { vertical-align: middle; padding: 1rem; border-top: 1px solid #edf2f7; color: var(--color-text-main); }
+.table td.bg-light { background: #f8fafc; border-right: 3px solid var(--color-accent); }
+
+/* dark mode */
+body.dark-mode .table thead th { background: #1f3a5a; color: #fff; }
+body.dark-mode .table tbody tr { background: #152233; }
+body.dark-mode .table tbody tr:nth-child(even) { background: #1a2c44; }
+body.dark-mode .table tbody tr:hover { background: #224268 !important; }
+body.dark-mode .table td { border-top: 1px solid #233549; color: var(--color-text-main); background: #1c2b3f; }
+body.dark-mode .table td.bg-light { background: #1c2b3f; border-right: 3px solid var(--color-accent); }

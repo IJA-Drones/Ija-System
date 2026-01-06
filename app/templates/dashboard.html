@@ -1,4 +1,11 @@
 {% extends "base.html" %}
+
+{% block extra_styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/chatbot.css') }}">
+{% endblock %}
+
 {% block content %}
 
 {# --- INÍCIO DO CONTAINER PADRONIZADO --- #}

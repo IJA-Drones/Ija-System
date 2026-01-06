@@ -1,0 +1,335 @@
+/* =========================================
+   16) CHAT BOT - OCEANO AZUL INTEGRADO
+   ========================================= */
+
+/* --- Container Principal do Chat (Janela) --- */
+.chat-window {
+    position: fixed;
+    bottom: 90px; /* Acima do botão flutuante */
+    right: 20px;
+    width: 380px;
+    height: 550px;
+    max-height: 80vh; /* Para telas menores */
+    background-color: var(--color-bg-white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    z-index: 1049;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+    pointer-events: none; /* Invisível não clicável */
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+
+/* Classe para quando o chat estiver aberto */
+.chat-window.active {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: all;
+}
+
+/* --- Cabeçalho do Chat --- */
+.bot-header {
+    background: linear-gradient(135deg, var(--color-primary-dark), var(--color-primary));
+    color: #fff;
+    padding: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.bot-title {
+    font-weight: 700;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    color: #fff; /* Força branco mesmo se houver regra global */
+}
+
+.bot-badge {
+    background-color: rgba(255, 255, 255, 0.2);
+    padding: 4px 10px;
+    border-radius: var(--radius-pill);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    backdrop-filter: blur(4px);
+}
+
+.btn-close-chat {
+    background: transparent;
+    border: none;
+    color: rgba(255,255,255,0.8);
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+.btn-close-chat:hover { color: #fff; }
+
+/* --- Corpo do Chat (Área das mensagens) --- */
+.bot-body {
+    flex: 1;
+    background-color: var(--color-bg-body); /* Usa o fundo do site */
+    padding: 1rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    scrollbar-width: thin; /* Firefox */
+}
+
+/* Barras de rolagem personalizadas */
+.bot-body::-webkit-scrollbar { width: 6px; }
+.bot-body::-webkit-scrollbar-thumb { background-color: rgba(0,0,0,0.1); border-radius: 10px; }
+
+/* --- Balões de Mensagem --- */
+.message {
+    max-width: 85%;
+    padding: 10px 16px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    position: relative;
+    word-wrap: break-word;
+}
+
+/* Mensagem do Robô */
+.message.bot {
+    align-self: flex-start;
+    background-color: var(--color-bg-white);
+    color: var(--color-text-main);
+    border-radius: 16px 16px 16px 2px;
+    border: 1px solid rgba(0,0,0,0.05);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Mensagem do Usuário */
+.message.user {
+    align-self: flex-end;
+    background-color: var(--color-primary);
+    color: #fff;
+    border-radius: 16px 16px 2px 16px;
+    box-shadow: 0 4px 10px rgba(44, 82, 130, 0.2); /* Sombra colorida */
+}
+
+/* --- Chips / Sugestões --- */
+.chips-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 5px;
+}
+
+.chip {
+    background-color: var(--color-bg-white);
+    border: 1px solid var(--color-primary);
+    color: var(--color-primary);
+    border-radius: var(--radius-pill);
+    padding: 6px 14px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.chip:hover {
+    background-color: var(--color-primary);
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+}
+
+/* --- Rodapé (Input) --- */
+.bot-footer {
+    padding: 12px;
+    background-color: var(--color-bg-white);
+    border-top: 1px solid rgba(0,0,0,0.08);
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.bot-footer input {
+    border-radius: var(--radius-pill);
+    background-color: var(--color-bg-body);
+    border: 1px solid transparent;
+    padding-left: 20px;
+    font-size: 0.9rem;
+}
+
+.bot-footer input:focus {
+    background-color: var(--color-bg-white);
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px rgba(0, 163, 196, 0.15);
+}
+
+.btn-send {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--color-primary);
+    color: var(--color-bg-white);
+    border: none;
+    transition: all 0.2s;
+}
+
+  #adminBotSend i  , #uvisChatSend i {
+    transition: transform 0.2s;
+    color: var(--color-bg-white);
+  }
+
+.btn-send:hover {
+    background-color: var(--color-accent);
+    transform: rotate(-10deg) scale(1.05);
+}
+
+/* --- Botão Flutuante (FAB) --- */
+#adminBotFab , #uvisBotFab {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    width: 56px;
+    height: 56px;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    z-index: 2000;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-accent-hover));
+    border: none;
+    box-shadow: 0 12px 28px rgba(0,0,0,.25);
+  }
+  #adminBotFab:hover, #uvisBotFab:hover{ transform: translateY(-1px); }
+  #adminBotFab:active, #uvisBotFab:active{ transform: translateY(0px); }
+
+  #adminBotFab i , #uvisBotFab i {
+    font-size: 1.5rem;
+    transition: transform 0.2s;
+    color: var(--color-bg-white);
+  }
+
+
+/* =========================================
+   DARK MODE - CHAT
+   ========================================= */
+body.dark-mode .chat-window {
+    background-color: #152233; /* Fundo do modal igual SweetAlert */
+    border: 1px solid #233549;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+}
+
+body.dark-mode .bot-header {
+    background: linear-gradient(135deg, #1f2a3e, #152233);
+    border-bottom: 1px solid #233549;
+}
+
+body.dark-mode .bot-body {
+    background-color: #101927; /* Fundo escuro profundo */
+}
+
+body.dark-mode .message.bot {
+    background-color: #1f2a3e;
+    color: var(--color-text-main);
+    border-color: #233549;
+}
+
+body.dark-mode .message.user {
+    background-color: var(--color-primary); /* Azul brilhante no dark */
+    color: #fff;
+    box-shadow: none;
+}
+
+body.dark-mode .chip {
+    background-color: #1f2a3e;
+    border-color: #233549;
+    color: var(--color-text-muted);
+}
+
+body.dark-mode .chip:hover {
+    background-color: var(--color-accent);
+    color: #101927;
+    border-color: var(--color-accent);
+}
+
+body.dark-mode .bot-footer {
+    background-color: #152233;
+    border-top-color: #233549;
+}
+
+body.dark-mode .bot-footer input {
+    background-color: #101927;
+    color: #fff;
+    border: 1px solid #233549;
+}
+body.dark-mode .bot-footer input::placeholder { color: #5a6a85; }
+
+body.dark-mode .bot-footer input:focus {
+    border-color: var(--color-accent);
+}
+
+body.dark-mode .bot-fab {
+    box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+}
+body.dark-mode .bot-fab::after {
+    border-color: var(--color-primary-dark);
+}
+
+/* Força o arredondamento correto para mensagens do usuário */
+.message.user {
+    border-radius: 16px 16px 2px 16px !important;
+}
+
+/* --- Botão Flutuante (FAB) --- */
+body.dark-mode {#adminBotFab , #uvisBotFab {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    width: 56px;
+    height: 56px;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    z-index: 2000;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-accent-hover));
+    border: none;
+    box-shadow: 0 12px 28px rgba(0,0,0,.25);
+  }
+}
+
+body.dark-mode {
+  #adminBotFab:hover, #uvisBotFab:hover{ transform: translateY(-1px); }
+  #adminBotFab:active, #uvisBotFab:active{ transform: translateY(0px); }
+
+  #adminBotFab i , #uvisBotFab i {
+    font-size: 1.5rem;
+    transition: transform 0.2s;
+    color: var(--color-text-main);
+  }
+}
+
+/* Botão de anexo minimalista */
+.anexo-btn {
+    display: flex;
+    align-items: center;
+    height: 32px;
+    padding: 0 12px;
+    border: 1px dashed #ced4da;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    color: #495057;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+    background-color: #f8f9fa;
+}
+
+.transition-all {
+    transition: all 0.25s ease;
+}

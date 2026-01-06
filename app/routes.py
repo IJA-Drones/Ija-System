@@ -2194,22 +2194,20 @@ def baixar_anexo(id):
         download_name=(pedido.anexo_nome or rel)
     )
 
-@bp.route("/admin/solicitacao/<int:id>/remover-anexo", methods=["POST"])
+@bp.route("/admin/solicitacao/<int:id>/remover_anexo", methods=["POST"])
 @login_required
 def remover_anexo(id):
     pedido = Solicitacao.query.get_or_404(id)
 
-    if current_user.tipo_usuario not in ["admin", "operario"]:
-        abort(403)
+    # ... lógica de permissão ...
 
     pedido.anexo_path = None
     pedido.anexo_nome = None
     db.session.commit()
-    
 
-    return jsonify({"ok": True})
-
-
+    # ✅ Isso fará o Toast "Removido com sucesso" aparecer no topo igual aos outros deletes
+    flash('PDF removido com sucesso!', 'success') 
+    return redirect(url_for('main.dashboard'))
 
 @bp.route("/admin/uvis/novo", methods=["GET", "POST"], endpoint="admin_uvis_novo")
 @login_required

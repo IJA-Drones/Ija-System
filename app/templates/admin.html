@@ -1,4 +1,8 @@
 {% extends "base.html" %}
+{% block extra_styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+{% endblock %}
 {% block content %}
 
 {# --- INÍCIO DO CONTAINER PADRONIZADO --- #}

@@ -1,0 +1,13 @@
+/* -----------------------------------------
+   FORMS
+   ----------------------------------------- */
+.form-control, .form-select { border-radius: var(--radius-md); border: 1px solid #e2e8f0; padding: 0.6rem 1rem; color: var(--color-text-main); }
+.form-control:focus, .form-select:focus { border-color: var(--color-accent); box-shadow: 0 0 0 3px rgba(0, 163, 196, 0.15); outline: none; }
+.form-label { font-weight: 600; font-size: 0.9rem; color: var(--color-text-muted); margin-bottom: 0.5rem; }
+.form-control[readonly] { background: #edf2f7; color: var(--color-text-muted); }
+
+/* dark mode */
+body.dark-mode .form-control, body.dark-mode .form-select { background: #1c2b3f; border: 1px solid #334155; color: var(--color-text-main); }
+body.dark-mode .form-control:focus, body.dark-mode .form-select:focus { border-color: var(--color-accent); box-shadow: 0 0 0 3px rgba(0, 224, 255, 0.25); }
+body.dark-mode .form-control[readonly] { background: #1f2a44; color: var(--color-text-muted); }
+body.dark-mode .form-control::placeholder { color: #94a3b8; }

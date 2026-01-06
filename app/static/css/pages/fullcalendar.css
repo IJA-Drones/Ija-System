@@ -1,0 +1,160 @@
+/* -----------------------------------------
+   FULLCALENDAR CUSTOMIZATION (OCEANO AZUL)
+   ----------------------------------------- */
+
+/* Container do Calendário */
+.calendar-card { 
+    background: var(--color-bg-white); 
+    border-radius: var(--radius-lg); 
+    box-shadow: var(--shadow-sm); 
+    border: 1px solid rgba(0,0,0,0.05); 
+    overflow: hidden; 
+}
+
+/* Título e Toolbar do FullCalendar */
+.fc .fc-toolbar-title { 
+    font-size: 1.25rem; 
+    font-weight: 700; 
+    color: var(--color-primary-dark); 
+    font-family: "Poppins", sans-serif;
+}
+
+/* Botões de Navegação (Mês, Semana, Hoje) */
+.fc .fc-button { 
+    border-radius: var(--radius-sm) !important; 
+    padding: 0.4rem 1rem !important; 
+    font-weight: 600 !important; 
+    font-size: 0.9rem !important;
+    text-transform: capitalize;
+    transition: all 0.2s ease;
+    box-shadow: none !important;
+}
+
+/* Estado Normal dos Botões (Branco/Cinza) */
+.fc .fc-button-primary { 
+    background-color: var(--color-bg-white) !important; 
+    border-color: #e2e8f0 !important; 
+    color: var(--color-text-muted) !important; 
+}
+
+/* Hover dos Botões */
+.fc .fc-button-primary:hover { 
+    background-color: #f8fafc !important; 
+    border-color: var(--color-primary) !important; 
+    color: var(--color-primary) !important; 
+    transform: translateY(-1px);
+}
+
+/* Estado Ativo dos Botões (Azul Oceano) */
+.fc .fc-button-primary:not(:disabled).fc-button-active, 
+.fc .fc-button-primary:not(:disabled):active { 
+    background-color: var(--color-primary) !important; 
+    border-color: var(--color-primary) !important; 
+    color: #fff !important; 
+    box-shadow: var(--shadow-sm) !important;
+}
+
+/* Cabeçalho dos Dias (DOM, SEG, TER...) */
+.fc .fc-col-header-cell-cushion { 
+    padding: 12px 0; 
+    color: var(--color-text-muted); 
+    font-weight: 700; 
+    text-transform: uppercase; 
+    font-size: 0.75rem; 
+    letter-spacing: 0.5px; 
+}
+
+/* Grid e Células */
+.fc-theme-standard .fc-scrollgrid { 
+    border: 1px solid #f1f5f9; 
+    border-radius: var(--radius-md); 
+}
+.fc-theme-standard td, .fc-theme-standard th { 
+    border-color: #f1f5f9; 
+}
+
+/* Dia Atual (Today) */
+.fc .fc-day-today { 
+    background: rgba(44, 82, 130, 0.03) !important; /* var(--color-primary) bem suave */
+}
+.fc .fc-day-today .fc-daygrid-day-number { 
+    background: var(--color-primary); 
+    color: #fff !important; 
+    border-radius: 50%; 
+    width: 28px; 
+    height: 28px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    margin: 4px;
+}
+
+/* Eventos (Barrinhas) */
+.fc .fc-event { 
+    border-radius: 6px; 
+    border: none !important; 
+    padding: 2px 5px; 
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); 
+    transition: transform 0.2s ease; 
+    cursor: pointer; 
+    font-size: 0.85rem;
+}
+.fc .fc-event:hover { 
+    transform: scale(1.02); 
+    filter: brightness(0.95); 
+    box-shadow: var(--shadow-md);
+}
+
+/* =========================================
+   DARK MODE OVERRIDES (FULLCALENDAR)
+   ========================================= */
+body.dark-mode .calendar-card { 
+    background: #152233 !important; /* Fundo do modal */
+    border-color: #233549 !important; 
+}
+
+body.dark-mode .fc .fc-toolbar-title { 
+    color: var(--color-text-main) !important; 
+}
+
+body.dark-mode .fc .fc-button-primary { 
+    background-color: #1c2b3f !important; 
+    border-color: #334155 !important; 
+    color: var(--color-text-muted) !important; 
+}
+
+body.dark-mode .fc .fc-button-primary:hover { 
+    border-color: var(--color-accent) !important; 
+    color: var(--color-accent) !important; 
+}
+
+body.dark-mode .fc .fc-button-primary.fc-button-active { 
+    background-color: var(--color-primary) !important; 
+    border-color: var(--color-primary) !important; 
+    color: #fff !important; 
+}
+
+body.dark-mode .fc-theme-standard .fc-scrollgrid, 
+body.dark-mode .fc-theme-standard td, 
+body.dark-mode .fc-theme-standard th { 
+    border-color: #233549 !important; 
+}
+
+body.dark-mode .fc .fc-day-today { 
+    background: rgba(255, 255, 255, 0.02) !important; 
+}
+
+/* =========================================
+   ESTILO DO FORMULÁRIO DE FILTROS DA AGENDA
+   (Para garantir que o card de filtros fique igual aos outros)
+   ========================================= */
+.card.calendar-filters {
+    background: var(--color-bg-white);
+    border: none;
+    box-shadow: var(--shadow-sm);
+}
+
+body.dark-mode .card.calendar-filters {
+    background: #152233;
+    border: 1px solid #233549;
+}

@@ -7,19 +7,20 @@
     <title>IJA System</title>
 
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}" />
-    <meta name="theme-color" content="#0d6efd" />
+    <meta name="theme-color" content="#101927" />
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="IJA System" />
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/icon-192.png') }}" />
-
-    <link rel="icon" type="image/png"
-        href="{{ url_for('static', filename='img/logo_IJA_System_' ~ (tema_escolhido if tema_escolhido else 'light') ~ '.png') }}" />
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/logo_IJA_System_' ~ (tema_escolhido if tema_escolhido else 'light') ~ '.png') }}" />
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_styles %}{% endblock %}
 
     <script>
         (function () {
@@ -31,11 +32,9 @@
         })();
     </script>
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
-        /* Ajuste para garantir que o menu hambúrguer não abra o colapso do bootstrap, mas sim a sidebar */
         @media (max-width: 991px) {
-            .navbar-collapse { display: none !important; } /* Desativa o menu padrão de lista no mobile */
+            .navbar-collapse { display: none !important; } 
             .user-dropdown-mobile { display: block !important; }
         }
     </style>
@@ -58,16 +57,16 @@
                 <span class="fs-4 d-none d-sm-inline">IJA System</span>
             </a>
 
-            <div class="dropdown">
+            <div class="dropdown me-2">
                 <button class="btn btn-outline-primary rounded-pill d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi bi-person-circle fs-5"></i>
                     <i class="bi bi-chevron-down small"></i>
                 </button>
-                <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2 p-2" style="border-radius: 15px; min-width: 200px;">
+                <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2 p-2" style="border-radius: 15px; min-width: 220px;">
                     {% if current_user.is_authenticated %}
                     <li class="px-3 py-2 border-bottom mb-2">
                         <small class="text-muted d-block">Logado como:</small>
-                        <span class="fw-bold">{{ current_user.nome_uvis or current_user.name }}</span>
+                        <span class="fw-bold text-truncate d-block" style="max-width: 180px;">{{ current_user.nome_uvis or current_user.name }}</span>
                     </li>
                     {% endif %}
                     <li>
@@ -92,18 +91,16 @@
 
     {% if current_user.is_authenticated %}
     <div class="app-wrapper">
-      <div class="app-sidebar d-flex flex-column" id="appSidebar">
-        <ul class="nav flex-column flex-grow-1">
+        <div class="app-sidebar d-flex flex-column" id="appSidebar">
+            <ul class="nav flex-column flex-grow-1">
                 <li class="nav-item">
-                    <a class="nav-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}"
-                        href="{{ url_for('main.dashboard') }}">
+                    <a class="nav-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}" href="{{ url_for('main.dashboard') }}">
                         <i class="bi bi-grid-fill me-2"></i><span>Dashboard</span>
                     </a>
                 </li>
 
                 <li class="nav-item">
-                    <a class="nav-link {% if request.endpoint == 'main.notificacoes' %}active{% endif %}"
-                        href="{{ url_for('main.notificacoes') }}">
+                    <a class="nav-link {% if request.endpoint == 'main.notificacoes' %}active{% endif %}" href="{{ url_for('main.notificacoes') }}">
                         <i class="bi bi-bell-fill me-2"></i><span>Notificações</span>
                         {% if notif_count and notif_count > 0 %}
                         <span class="badge bg-danger ms-auto" style="border-radius: 999px">{{ notif_count }}</span>
@@ -113,14 +110,12 @@
 
                 {% if current_user.tipo_usuario == 'admin' %}
                 <li class="nav-item">
-                    <a class="nav-link {% if request.endpoint == 'main.relatorios' %}active{% endif %}"
-                        href="{{ url_for('main.relatorios') }}">
+                    <a class="nav-link {% if request.endpoint == 'main.relatorios' %}active{% endif %}" href="{{ url_for('main.relatorios') }}">
                         <i class="bi bi-bar-chart-fill me-2"></i><span>Relatórios</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {% if request.endpoint == 'main.agenda' %}active{% endif %}"
-                        href="{{ url_for('main.agenda') }}">
+                    <a class="nav-link {% if request.endpoint == 'main.agenda' %}active{% endif %}" href="{{ url_for('main.agenda') }}">
                         <i class="bi bi-calendar-event-fill me-2"></i><span>Agenda</span>
                     </a>
                 </li>
@@ -154,14 +149,14 @@
 
                 <div class="sidebar-footer mt-auto p-3 text-center">
                     <div id="install-container" style="display: none;">
-                        <button id="btnInstall" class="btn btn-primary border-0 btn-sm d-flex align-items-center justify-content-center w-100">
+                        <button id="btnInstall" class="btn btn-primary border-0 btn-sm d-flex align-items-center justify-content-center w-100 rounded-pill">
                             <i class="bi bi-download"></i>
                             <span class="ms-2 sidebar-text">Instalar App</span>
                         </button>
                     </div>
                 </div>
             </ul>
-      </div>
+        </div>
 
         <div class="app-content" id="appContent">
             <div class="container-fluid min-vh-100">
@@ -174,6 +169,7 @@
             </footer>
         </div>
     </div>
+
     {% else %}
     <div class="container py-4">
         {% block auth_content %}{% endblock %}
@@ -184,7 +180,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
-        function setThemeCookie(themeName) {
+       function setThemeCookie(themeName) {
             const date = new Date();
             date.setTime(date.getTime() + 365 * 24 * 60 * 60 * 1000);
             document.cookie = `theme=${themeName}; expires=${date.toUTCString()}; path=/; SameSite=Lax`;
@@ -195,13 +191,105 @@
             return theme ? theme[1] : null;
         }
 
+        // 🔥 loading state COMPLETO (igual antigo)
+        function showLoadingState(button) {
+            if (!button) return;
+            button.originalText = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML =
+            `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Aguarde...`;
+        }
+
+        function hideLoadingState(button) {
+            if (!button || !button.originalText) return;
+            button.disabled = false;
+            button.innerHTML = button.originalText;
+            delete button.originalText;
+        }
+
+        {% set flashed = get_flashed_messages(with_categories=true) %}
+        {% if flashed %}
+        {% for category, message in flashed %}
+            const isDarkMode = document.body.classList.contains('dark-mode');
+
+            let iconType =
+            "{{ 'success' if category == 'success'
+            else 'error' if category in ['danger','error']
+            else 'info' }}";
+
+            Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: iconType,
+            title: {{ message|tojson }},
+            showConfirmButton: false,
+            timer: 1600,
+            timerProgressBar: true,
+            background: isDarkMode ? '#152233' : '#ffffff',
+            color: isDarkMode ? '#ffffff' : '#545454',
+            customClass: {
+                popup: isDarkMode ? 'swal2-dark-mode' : ''
+            }
+            });
+        {% endfor %}
+        {% endif %}
+
+
         document.addEventListener("DOMContentLoaded", () => {
             const body = document.body;
             const toggle = document.getElementById("toggleDarkMode");
             const sidebarToggle = document.getElementById("sidebarToggle");
             const overlay = document.getElementById("sidebarOverlay");
 
-            // Sidebar Toggle (Mobile abre lateral, Desktop colapsa)
+            // 1. CONFIRMAÇÃO DE EXCLUSÃO (Agora inclui anexo e qualquer outro delete)
+            document.querySelectorAll('.form-deletar').forEach(form => {
+                form.addEventListener('submit', function (e) {
+                    e.preventDefault(); // Trava o envio automático
+
+                    const isDarkMode = document.body.classList.contains('dark-mode');
+                    const submitButton = form.querySelector('button[type="submit"]');
+
+                    Swal.fire({
+                        title: 'Tem certeza?',
+                        text: 'Este registro será removido permanentemente.',
+                        icon: 'warning',
+                        // ✅ Note que este script usa background/color manuais, 
+                        // por isso estava diferente do que tinha a classe customClass
+                        customClass: {
+                            popup: isDarkMode ? 'swal2-dark-mode' : ''
+                        },
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: 'Sim, remover!',
+                        cancelButtonText: 'Cancelar'
+                        // Adicione a classe aqui também para garantir o estilo do anel do ícone
+                        
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            showLoadingState(submitButton); // Chama o loading só após confirmar
+                            form.submit();
+                        }
+                    });
+                });
+            });
+
+            // 2. LOADING UNIVERSAL (Melhorado para evitar conflitos)
+            document.querySelectorAll('form:not(.form-deletar):not(.form-exportar):not(.form-no-loading)').forEach(form => {
+                form.addEventListener('submit', function (e) {
+                    // Se o formulário já foi enviado, evita duplicidade
+                    if (this.classList.contains('submitting')) return;
+                    
+                    const btn = this.querySelector('button[type="submit"]');
+                    if (btn) {
+                        this.classList.add('submitting');
+                        showLoadingState(btn);
+                    }
+                });
+            });
+
+
+            // ✅ Lógica Unificada Sidebar
             if (sidebarToggle) {
                 sidebarToggle.addEventListener("click", () => {
                     if (window.innerWidth < 992) {
@@ -216,7 +304,7 @@
                 overlay.addEventListener("click", () => body.classList.remove("sidebar-open"));
             }
 
-            // Dark Mode
+            // ✅ Dark Mode (Dropdown)
             if (toggle) {
                 const savedTheme = getThemeFromCookie();
                 if (savedTheme === "dark") {
@@ -232,7 +320,7 @@
                 });
             }
 
-            // PWA
+            // ✅ Lógica PWA Completa (Unificada)
             let deferredPrompt;
             const installContainer = document.getElementById('install-container');
             const btnInstall = document.getElementById('btnInstall');
@@ -245,16 +333,27 @@
 
             if (btnInstall) {
                 btnInstall.addEventListener('click', async () => {
-                    installContainer.style.display = 'none';
+                    if (!deferredPrompt) return;
                     deferredPrompt.prompt();
+                    await deferredPrompt.userChoice;
                     deferredPrompt = null;
+                    if (installContainer) installContainer.style.display = 'none';
                 });
+            }
+
+            // Dica iOS
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+            if (isIOS && !isStandalone) {
+                if (iosLink) iosLink.style.display = "block";
             }
         });
 
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register("/sw.js");
+            navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}");
         }
     </script>
+
+    {% block scripts %}{% endblock %}
 </body>
 </html>
