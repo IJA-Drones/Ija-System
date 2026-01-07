@@ -302,107 +302,6 @@ body.sidebar-collapsed .app-content {
     margin-top: 20px;
   }
 }
-
-/* -----------------------------------------
-   5) BUTTONS
-   ----------------------------------------- */
-.btn {
-  border-radius: var(--radius-pill);
-  font-weight: 600;
-  padding: 0.6rem 1.5rem;
-  box-shadow: var(--shadow-sm);
-  transition: all 0.2s ease;
-  border: 1px solid transparent;
-}
-
-.btn-sm {
-  padding: 0.4rem 1rem;
-  font-size: 0.85rem;
-}
-
-.btn .bi {
-  color: currentColor;
-  margin-right: 4px;
-}
-
-.btn-primary {
-  background-color: var(--color-filter);
-  border-color: var(--color-primary);
-  color: #fff;
-}
-
-.btn-primary:hover {
-  background-color: var(--color-primary-dark);
-  border-color: var(--color-primary-dark);
-  transform: translateY(-2px);
-}
-
-.btn-success {
-  background-color: var(--color-accent);
-  border-color: var(--color-accent);
-  color: #fff;
-}
-
-.btn-success:hover {
-  background-color: var(--color-accent-hover);
-  border-color: var(--color-accent-hover);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-.btn-secondary {
-  background-color: var(--color-success);
-  border-color: var(--color-success);
-  color: #fff;
-}
-
-.btn-secondary:hover {
-  background-color: var(--color-success-hover);
-  border-color: var(--color-success-hover);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-.btn-outline-primary {
-  color: var(--color-primary);
-  border-color: var(--color-primary);
-  background: transparent;
-}
-
-.btn-outline-primary:hover {
-  background: var(--color-primary);
-  color: #fff;
-}
-
-.btn-outline-danger {
-  color: var(--color-danger);
-  border-color: var(--color-danger);
-}
-
-.btn-outline-danger:hover {
-  background: var(--color-danger);
-  color: #fff;
-}
-
-.btn-outline-light:hover {
-  background: var(--color-primary);
-  color: #fff;
-}
-
-.anexo-btn {
-  display: flex;
-  align-items: center;
-  height: 32px;
-  padding: 0 12px;
-  border: 1px dashed #ced4da;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  color: #495057;
-  cursor: pointer;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
-  background-color: #f8f9fa;
-}
-
 /* -----------------------------------------
    6) CARDS & STATUS STRIP
    ----------------------------------------- */
@@ -894,7 +793,8 @@ body.dark-mode .page-item.disabled .page-link {
   .table-accordion tr.main-row {
       display: block;
       background: #ffffff;
-      margin: 14px 12px;                /* separação entre cards */
+      margin: 14px 0 !important; 
+      width: 100% !important;       
       border-radius: 16px;
       box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
       border-left: 5px solid var(--color-primary);
@@ -993,23 +893,110 @@ body.dark-mode .page-item.disabled .page-link {
 
 /* Ajustes Mobile Pequeno (< 576px) */
 @media (max-width: 576px) {
-  .navbar .dropdown-menu {
-    right: 0; 
-    left: auto;
+  
+  /* --- Navbar (Mantido) --- */
+  .navbar .dropdown-menu { right: 0; left: auto; }
+  .navbar .dropdown button { padding: 0.4rem 0.8rem; display: flex; align-items: center; gap: 8px; }
+  .navbar .dropdown button span { display: none; }
+
+  /* --- CORREÇÃO BLINDADA DO ANEXO --- */
+
+  /* 1. Container: Garante que nunca passe da largura da tela */
+  .anexo-actions,
+  .anexo-actions-inline,
+  .anexo-group { /* Adicionei .anexo-group por garantia */
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    gap: 6px !important;          /* Gap reduzido para economizar espaço */
+    align-items: center !important;
+    width: 100% !important;
+    max-width: 100% !important;   /* Trava a largura máxima */
+    box-sizing: border-box !important;
   }
 
-  .navbar .dropdown button {
-    padding: 0.4rem 0.8rem;
-    display: flex; 
-    align-items: center; 
-    gap: 8px;
+  /* 2. Botão "Anexar" (O que deve encolher) */
+  .anexo-actions .btn-anexo,
+  .anexo-actions-inline .btn-anexo,
+  .anexo-actions-inline label.btn,
+  .anexo-group .btn-anexo-main {
+    /* O SEGREDO: flex-basis 0 força o botão a caber no espaço que sobra */
+    flex: 1 1 0px !important;     
+    width: 0 !important;          /* Hack para forçar o encolhimento em alguns browsers */
+    min-width: 0 !important;      
+    
+    height: 40px !important;      /* Altura compacta (40px) */
+    margin: 0 !important;
+    padding: 0 8px !important;    /* Padding lateral menor */
+
+    /* Layout Interno */
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    
+    /* Visual */
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    letter-spacing: .2px;
+    box-shadow: 0 2px 5px rgba(16, 24, 40, .05);
+    background: rgba(13,110,253,.06);
+    border: 1px solid rgba(13,110,253,.25) !important;
+    overflow: hidden !important; /* Garante que nada vaze */
   }
 
-  .navbar .dropdown button span {
-    display: none;
+  /* Texto dentro do botão */
+  .btn-anexo > span,
+  .btn-anexo-main > span {
+    display: block !important;
+    width: 100% !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    font-size: 0.85rem !important; /* Fonte levemente menor */
+    line-height: 40px !important;  /* Centraliza na nova altura */
+    text-align: left !important;
+    margin: 0 !important;
+  }
+
+  /* Ícone do clipe */
+  .btn-anexo i,
+  .btn-anexo-main i {
+    flex: 0 0 auto;
+    font-size: 1rem;
+    margin-right: 6px;
+    opacity: .9;
+  }
+
+  /* 3. Botões de Ícone (Olho / Lixeira) - Tamanho Fixo */
+  .anexo-actions .btn-icon,
+  .anexo-actions-inline a.btn,
+  .anexo-actions-inline button.btn,
+  .anexo-group .btn-anexo-icon {
+    /* Trava o tamanho em 40x40px */
+    flex: 0 0 40px !important;    
+    width: 40px !important;
+    height: 40px !important;
+    
+    margin: 0 !important;
+    padding: 0 !important;
+
+    /* Centralização */
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    /* Visual */
+    border-radius: 10px !important;
+    box-shadow: 0 2px 5px rgba(16, 24, 40, .05);
+  }
+
+  /* Ajuste dos ícones internos */
+  .anexo-actions-inline a.btn i,
+  .anexo-actions-inline button.btn i,
+  .anexo-group .btn-anexo-icon i {
+    font-size: 1.1rem !important;
+    line-height: 1 !important;
   }
 }
-
 /* =========================================
    CORREÇÃO BOTÃO DE ANEXO – MOBILE
    ========================================= */
@@ -1058,10 +1045,6 @@ body.dark-mode .page-item.disabled .page-link {
       border-radius: 50%;
   }
 }
-
-/* =========================================
-   DASHBOARD DESKTOP – AJUSTE DE COLUNAS
-   ========================================= */
 /* =========================================
    DASHBOARD DESKTOP – AJUSTE DE COLUNAS
    ========================================= */
@@ -1117,3 +1100,79 @@ body.dark-mode .page-item.disabled .page-link {
     background-color: #1f2937;
   }
 }
+
+/* Container Unificado do Arquivo */
+.file-upload-wrapper {
+    position: relative;
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+/* O "Botão" principal que vira a barra de fundo */
+.file-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    height: 45px; /* Altura confortável para o dedo */
+    background-color: #f8f9fa; /* Cinza bem claro */
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 0 5px 0 12px; /* Espaço interno */
+    transition: all 0.2s ease;
+}
+
+/* Quando tem arquivo (Estado Ativo) */
+.file-card.has-file {
+    background-color: #e3f2fd; /* Azulzinho bem claro */
+    border-color: #90caf9;
+    color: #0d47a1;
+}
+
+/* Área do Texto (Esquerda) */
+.file-info {
+    display: flex;
+    align-items: center;
+    flex-grow: 1; /* Ocupa todo espaço disponível */
+    min-width: 0; /* Permite cortar o texto */
+    cursor: pointer;
+}
+
+.file-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-left: 8px;
+}
+
+/* Área das Ações (Direita) */
+.file-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0; /* Não deixa esmagar */
+}
+
+/* Botões de Ação (Ícones) */
+.btn-action-icon {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    color: #6c757d;
+    transition: background 0.2s;
+}
+
+.btn-action-icon:hover, .btn-action-icon:active {
+    background-color: rgba(0,0,0,0.05);
+    color: #333;
+}
+
+.btn-action-icon.danger { color: #dc3545; }
+.btn-action-icon.danger:hover { background-color: #f8d7da; }

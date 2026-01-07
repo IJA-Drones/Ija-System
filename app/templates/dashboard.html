@@ -1,10 +1,9 @@
 {% extends "base.html" %}
-
 {% block extra_styles %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/chatbot.css') }}">
-
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
   {# =========================================
      RESPONSIVIDADE (somente overrides mobile)
      - Tabela -> Cards no celular (com GAP real)

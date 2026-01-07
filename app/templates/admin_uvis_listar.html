@@ -1,4 +1,8 @@
-{% extends "base.html" %} {% block content %} {# ========================= CSS
+{% extends "base.html" %} {% block content %} 
+{% block extra_styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+{% endblock %}
+{# ========================= CSS
 (RESPONSIVO + CARDS NO MOBILE) - Mantém tabela no desktop - No mobile/tablet
 vira "cards" com espaçamento bom - Respeita dark-mode (html.dark-mode /
 body.dark-mode) ========================= #}

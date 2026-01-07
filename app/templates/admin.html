@@ -3,105 +3,8 @@
 {% block extra_styles %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/chatbot.css') }}">
-    <style>
-   /* ===== Anexo Actions — MOBILE (mais bonito) ===== */
-@media (max-width: 576px) {
-
-  /* container */
-  .anexo-actions,
-  .anexo-actions-inline{
-    display: flex !important;
-    flex-wrap: wrap !important;
-    gap: .6rem !important;
-    align-items: stretch !important;
-  }
-
-  /* botão "Anexar" (linha inteira) */
-  .anexo-actions .btn-anexo,
-  .anexo-actions-inline .btn-anexo,
-  .anexo-actions-inline label.btn{
-    width: 100% !important;
-    flex: 0 0 100% !important;
-
-    /* visual */
-    border-radius: 14px !important;
-    padding: .72rem .85rem !important;
-    font-weight: 600 !important;
-    letter-spacing: .2px;
-    box-shadow: 0 8px 18px rgba(16, 24, 40, .08);
-    background: rgba(13,110,253,.06);
-    border-color: rgba(13,110,253,.25) !important;
-  }
-
-  /* efeito de toque */
-  .anexo-actions .btn-anexo:active,
-  .anexo-actions-inline .btn-anexo:active{
-    transform: translateY(1px);
-    box-shadow: 0 5px 12px rgba(16, 24, 40, .10);
-  }
-
-  /* texto do arquivo (reticências) */
-  .btn-anexo{
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: .45rem !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-  }
-  .btn-anexo > span{
-    min-width: 0 !important;
-    max-width: 100% !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    white-space: nowrap !important;
-  }
-
-  /* ícone do clipe alinhado */
-  .btn-anexo i{
-    flex: 0 0 auto;
-    font-size: 1rem;
-    opacity: .9;
-  }
-
-  /* botões de ícone (visualizar/remover) */
-  .anexo-actions .btn-icon,
-  .anexo-actions-inline a.btn,
-  .anexo-actions-inline button.btn{
-    width: 46px !important;
-    height: 46px !important;
-    padding: 0 !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    flex: 0 0 46px !important;
-
-    border-radius: 14px !important;
-    box-shadow: 0 8px 18px rgba(16, 24, 40, .08);
-  }
-
-  /* deixa os 2 ícones “bonitos” na segunda linha */
-  .anexo-actions-inline a.btn,
-  .anexo-actions-inline button.btn{
-    margin-top: .1rem;
-  }
-
-  /* hover suave (quando tiver) */
-  .anexo-actions-inline a.btn:hover,
-  .anexo-actions-inline button.btn:hover,
-  .anexo-actions .btn-icon:hover{
-    filter: brightness(1.03);
-  }
-
-  /* garante que o group não estoure */
-  .anexo-actions-inline,
-  .anexo-actions{
-    max-width: 100%;
-  }
-}
-
-</style>
-
 {% endblock %}
 
 {% block content %}
@@ -329,7 +232,7 @@
                                     </div>
 
                                     <div class="d-flex gap-1 align-items-center">
-                                        <label id="btnAnexo{{ p.id }}" for="inputPdf{{ p.id }}" class="btn btn-sm btn-outline-primary w-100 text-truncate"><span id="textoDisplay{{ p.id }}"><i class="bi bi-paperclip"></i> {{ p.anexo_nome or 'Anexar' }}</span></label>
+                                        <label id="btnAnexo{{ p.id }}" for="inputPdf{{ p.id }}" class="btn btn-sm btn-outline-primary text-truncate"><span id="textoDisplay{{ p.id }}"><i class="bi bi-paperclip"></i> {{ p.anexo_nome or 'Anexar' }}</span></label>
                                         <a id="btnVisualizar{{ p.id }}" href="{{ url_for('main.baixar_anexo', id=p.id) if p.anexo_path else '#' }}" target="_blank" class="btn btn-sm btn-outline-primary {% if not p.anexo_path %}d-none{% endif %}"><i class="bi bi-eye"></i></a>
                                         <button type="submit" form="formRemoverAnexo{{ p.id }}" class="btn btn-sm btn-outline-danger {% if not p.anexo_path %}d-none{% endif %}" id="btnRemover{{ p.id }}"><i class="bi bi-x"></i></button>
                                     </div>
@@ -427,7 +330,7 @@
                                                 class="btn btn-outline-primary btn-sm btn-anexo"
                                                 >
                                                 <span id="textoDisplay{{ p.id }}_mob">
-                                                    <i class="bi bi-paperclip me-1"></i> {{ p.anexo_nome or 'Anexar' }}
+                                                    {{ p.anexo_nome or 'Anexar' }}
                                                 </span>
                                             </label>
 
@@ -435,7 +338,7 @@
                                             <a id="btnVisualizar{{ p.id }}_mob"
                                                 href="{{ url_for('main.baixar_anexo', id=p.id) if p.anexo_path else '#' }}"
                                                 target="_blank"
-                                                class="btn btn-success btn-sm btn-icon {% if not p.anexo_path %}d-none{% endif %}">
+                                                class="btn btn-sm btn-outline-primary {% if not p.anexo_path %}d-none{% endif %}">
                                                 <i class="bi bi-eye"></i>
                                             </a>
                                             <button type="submit" form="formRemoverAnexo{{ p.id }}" class="btn btn-sm btn-outline-danger {% if not p.anexo_path %}d-none{% endif %}" id="btnRemover{{ p.id }}"><i class="bi bi-x"></i></button>                                           

@@ -1,4 +1,7 @@
 {% extends "base.html" %} {% block content %}
+{% block extra_styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+{% endblock %}
 <div class="container-fluid py-4" style="max-width: 1200px">
   {# --- Cabeçalho --- #}
   <div class="d-flex align-items-center mb-4">

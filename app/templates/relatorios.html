@@ -3,6 +3,7 @@
 {% block extra_styles %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
 
   <style>
     /* =========================
@@ -151,7 +152,7 @@
       <input type="hidden" name="mes" value="{{ mes_selecionado }}">
       <input type="hidden" name="ano" value="{{ ano_selecionado }}">
       <input type="hidden" name="uvis_id" value="{{ uvis_id_selecionado }}">
-      <button type="submit" class="btn btn-danger rel-btn" title="Exportar PDF">
+      <button type="submit" class="btn btn-danger bt-sm" title="Exportar PDF">
         <i class="bi bi-file-earmark-pdf-fill"></i>
         <span>Exportar PDF</span>
       </button>
@@ -161,7 +162,7 @@
       <input type="hidden" name="mes" value="{{ mes_selecionado }}">
       <input type="hidden" name="ano" value="{{ ano_selecionado }}">
       <input type="hidden" name="uvis_id" value="{{ uvis_id_selecionado }}">
-      <button type="submit" class="btn btn-success rel-btn" title="Exportar Excel">
+      <button type="submit" class="btn btn-success bt-sm" title="Exportar Excel">
         <i class="bi bi-file-earmark-excel-fill"></i>
         <span>Exportar Excel</span>
       </button>

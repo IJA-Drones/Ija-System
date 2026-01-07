@@ -211,25 +211,6 @@ body.dark-mode .fc-event {
   flex-wrap: wrap;
 }
 
-.agenda-btn {
-  border-radius: 999px;
-  padding: .7rem 1.2rem;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border: 1px solid rgba(0,0,0,.08);
-  box-shadow: 0 10px 24px rgba(0,0,0,.08);
-}
-
-.agenda-btn i {
-  width: 36px;
-  height: 36px;
-  border-radius: 999px;
-  display: grid;
-  place-items: center;
-  background: rgba(0,0,0,.08);
-}
 
 /* Mobile Header */
 @media (max-width: 768px) {

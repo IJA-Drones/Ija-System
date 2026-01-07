@@ -3,6 +3,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/fullcalendar.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -18,14 +19,14 @@
   {% if current_user.is_authenticated and current_user.tipo_usuario == "admin" %}
   <div class="agenda-actions">
     <a href="{{ url_for('main.agenda_exportar_excel', all=1) }}"
-       class="btn btn-outline-secondary btn-sm agenda-btn"
+       class="btn btn-outline-secondary btn-sm"
        title="Baixar base completa sem filtros">
       <i class="bi bi-download"></i>
       <span>Exportar Tudo</span>
     </a>
 
     <a href="{{ url_for('main.agenda_exportar_excel', **request.args.to_dict()) }}"
-       class="btn btn-success text-white btn-sm agenda-btn"
+       class="btn btn-success btn-sm"
        title="Exportar com filtros atuais">
       <i class="bi bi-file-earmark-excel"></i>
       <span>Exportar Atual</span>
