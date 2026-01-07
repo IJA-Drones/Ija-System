@@ -111,30 +111,41 @@
                 >   
                     {# COLUNA 1: IDENTIFICAÇÃO (SEMPRE VISÍVEL) #}
                     <td class="ps-3 py-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <strong class="text-primary fs-6">{{ p.usuario.nome_uvis }}</strong>
-                                
-                                {# Badge de Status Mobile (Só aparece < 992px) #}
-                                <span class="badge mb-2 mt-3
-                                    {% if p.status=='PENDENTE' %}bg-secondary
-                                    {% elif p.status=='EM ANÁLISE' %}bg-warning
-                                    {% elif p.status=='APROVADO COM RECOMENDAÇÕES' %}bg-recomended
-                                    {% elif p.status=='APROVADO' %}bg-success
-                                    {% elif p.status=='NEGADO' %}bg-danger
-                                    {% else %}bg-warning text-dark{% endif %}">
-                                    {{ p.status }}
-                                </span>
-                                
-                                <br>
-                                <span class="badge bg-secondary mb-2 mt-1">{{ p.usuario.regiao }}</span>
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="d-flex flex-column">
+
+                                <!-- NOME -->
+                                <strong class="text-primary fs-6">
+                                    {{ p.usuario.nome_uvis }}
+                                </strong>
+
+                                <!-- STATUS -->
+                                <div class="mt-1">
+                                    <span class="badge 
+                                        {% if p.status=='PENDENTE' %}bg-secondary
+                                        {% elif p.status=='EM ANÁLISE' %}bg-warning
+                                        {% elif p.status=='APROVADO COM RECOMENDAÇÕES' %}bg-recomended
+                                        {% elif p.status=='APROVADO' %}bg-success
+                                        {% elif p.status=='NEGADO' %}bg-danger
+                                        {% else %}bg-warning text-dark{% endif %}">
+                                        {{ p.status }}
+                                    </span>
+                                </div>
+
+                                <!-- REGIÃO -->
+                                <div class="mt-1">
+                                    <span class="badge bg-secondary">
+                                        {{ p.usuario.regiao }}
+                                    </span>
+                                </div>
+
                             </div>
-                            
-                            {# Seta Indicativa Mobile #}
+
+                            <!-- SETA MOBILE -->
                             <i class="bi bi-chevron-down text-muted d-lg-none p-2"></i>
                         </div>
 
-                        <div class="small text-muted mt-1 border-top pt-2">
+                        <div class="small text-muted mt-3 border-top pt-2">
                             <i class="bi bi-calendar-event me-1"></i> {{ p.data_agendamento.strftime('%d/%m/%Y') }} às {{ p.hora_agendamento.strftime('%H:%M') }}
                         </div>
 
