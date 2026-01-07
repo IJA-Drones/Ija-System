@@ -1,9 +1,281 @@
 {% extends "base.html" %}
 
 {% block extra_styles %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/chatbot.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/chatbot.css') }}">
+
+  {# =========================================
+     RESPONSIVIDADE (somente overrides mobile)
+     - Tabela -> Cards no celular (com GAP real)
+     - Modal fullscreen no celular
+     - Respeita seu Design System + Dark Mode (html.dark-mode e body.dark-mode)
+     ========================================= #}
+  <style>
+    /* ========= MOBILE / TABLET ========= */
+    @media (max-width: 768px) {
+
+      /* --- Ajustes gerais --- */
+      .container-fluid.py-4 {
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+      }
+
+      /* --- Cabeçalho: título + botão --- */
+      .d-flex.justify-content-between.align-items-center.mb-4 {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 12px;
+      }
+      .d-flex.justify-content-between.align-items-center.mb-4 a.btn {
+        width: 100%;
+      }
+
+      /* --- Filtros --- */
+      form.card.p-3.mb-4 {
+        padding: 14px !important;
+        margin-bottom: 18px !important;
+      }
+      form.card.p-3.mb-4 .row.g-2.align-items-end > div {
+        width: 100%;
+      }
+
+      /* =====================================
+         LISTAGEM: "Card wrapper" no mobile
+         (o overflow-hidden do card pai estava
+          "colando" visualmente os cards e cortando sombra)
+         ===================================== */
+      .card.shadow-sm.rounded-4.border-0.overflow-hidden {
+        background: transparent !important;
+        box-shadow: none !important;
+        overflow: visible !important;
+      }
+      .card.shadow-sm.rounded-4.border-0.overflow-hidden .card-body.p-0 {
+        padding: 0 !important;
+      }
+
+      /* --- Tabela vira “lista” --- */
+      .table-responsive {
+        overflow: visible !important;
+        padding-bottom: 96px !important; /* espaço pra não ficar atrás do FAB */
+      }
+
+      table.table {
+        margin: 0 !important;
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
+      }
+
+      thead.table-light {
+        display: none !important;
+      }
+
+      tbody {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 24px !important;          /* <<< ESPAÇO ENTRE CARDS (maior) */
+        padding: 4px 0 0 0 !important; /* respiro superior */
+      }
+
+      /* --- Card (TR) --- */
+      tbody tr {
+        display: block !important;
+        background: var(--color-bg-white) !important;
+        border: 1px solid rgba(0, 0, 0, 0.10) !important;
+        border-radius: 18px !important;
+        box-shadow: var(--shadow-md) !important;
+        overflow: hidden !important;
+        transform: none !important; /* evita “pulos” do hover */
+      }
+
+      /* remove hover “tabela” no mobile */
+      .table-hover > tbody > tr:hover > * {
+        background: transparent !important;
+      }
+
+      /* --- Linhas internas do card (TD) --- */
+      tbody tr td {
+        display: grid !important;
+        grid-template-columns: 128px 1fr; /* label | conteúdo */
+        column-gap: 14px;
+        align-items: start !important;
+
+        padding: 16px 16px !important;   /* <<< MAIS ESPAÇOSO */
+        border: 0 !important;
+        text-align: left !important;
+        background: transparent !important;
+        color: var(--color-text-main) !important;
+      }
+
+      /* separador entre blocos do card */
+      tbody tr td + td {
+        border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
+      }
+
+      /* remove paddings laterais do desktop */
+      tbody tr td.ps-4,
+      tbody tr td.pe-4 {
+        padding-left: 16px !important;
+        padding-right: 16px !important;
+      }
+
+      /* Labels para cada campo do card (sem alterar HTML) */
+      tbody tr td:nth-child(1)::before { content: "Data"; }
+      tbody tr td:nth-child(2)::before { content: "Localização / Foco"; }
+      tbody tr td:nth-child(3)::before { content: "Situação"; }
+      tbody tr td:nth-child(4)::before { content: "Ações"; }
+
+      tbody tr td::before {
+        font-weight: 700;
+        color: var(--color-text-muted);
+        font-size: .82rem;
+        line-height: 1.15;
+        padding-top: 2px;
+        letter-spacing: .2px;
+      }
+
+      /* conteúdo do TD */
+      tbody tr td > * {
+        min-width: 0;
+      }
+
+      /* coluna 2 (localização) vira bloco */
+      tbody tr td:nth-child(2) .d-flex.flex-column {
+        width: 100%;
+      }
+
+      /* badges: melhor encaixe */
+      .badge {
+        white-space: normal !important;
+        text-align: center !important;
+        line-height: 1.15 !important;
+      }
+
+      /* botão de ações ocupa a linha toda */
+      tbody tr td:nth-child(4) button.btn {
+        width: 100%;
+      }
+
+      /* --- “Nenhuma solicitação” (colspan) não vira card quebrado --- */
+      tbody tr td[colspan] {
+        display: block !important;
+        padding: 26px 16px !important;
+        text-align: center !important;
+      }
+      tbody tr td[colspan]::before {
+        content: none !important;
+        display: none !important;
+      }
+
+      /* =========================
+         MODAL -> FULLSCREEN (Mobile)
+         ========================= */
+      .modal .modal-dialog {
+        margin: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        height: 100% !important;
+      }
+
+      .modal .modal-content {
+        height: 100vh !important;
+        border-radius: 0 !important;
+        border: 0 !important;
+        background: var(--color-bg-white) !important;
+        color: var(--color-text-main) !important;
+      }
+
+      .modal .modal-header,
+      .modal .modal-footer {
+        position: sticky;
+        background: var(--color-bg-white) !important;
+        z-index: 10;
+      }
+
+      .modal .modal-header {
+        top: 0;
+        border-bottom: 1px solid rgba(0,0,0,.10) !important;
+      }
+
+      .modal .modal-footer {
+        bottom: 0;
+        border-top: 1px solid rgba(0,0,0,.10) !important;
+      }
+
+      .modal .modal-body {
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 16px !important;
+      }
+
+      .modal .modal-footer .btn {
+        width: 100%;
+      }
+
+      /* Chat: não estourar no mobile */
+      .chat-window {
+        width: calc(100% - 24px) !important;
+        right: 12px !important;
+        left: 12px !important;
+        max-width: none !important;
+        z-index: 1198 !important;
+      }
+
+      /* FAB: sempre aparece, sempre por cima */
+      #uvisBotFab.bot-fab,
+      .bot-fab {
+        position: fixed !important;
+        right: 14px !important;
+        bottom: calc(14px + env(safe-area-inset-bottom)) !important;
+        z-index: 1199 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+      }
+    }
+
+    /* ========= MOBILE MUITO PEQUENO ========= */
+    @media (max-width: 420px) {
+      tbody tr td {
+        grid-template-columns: 112px 1fr !important;
+        padding: 15px 14px !important;
+      }
+      tbody tr td::before {
+        font-size: .78rem;
+      }
+      .d-flex.justify-content-between.align-items-center.mb-4 h2 {
+        font-size: 1.2rem;
+      }
+    }
+
+    /* =========================================
+       DARK MODE (Cookie)
+       - Ajuste de bordas/divisórias no mobile
+       ========================================= */
+    @media (max-width: 768px) {
+
+      html.dark-mode tbody tr,
+      body.dark-mode tbody tr {
+        border-color: #233549 !important;
+        box-shadow: var(--shadow-md) !important;
+      }
+
+      html.dark-mode tbody tr td + td,
+      body.dark-mode tbody tr td + td {
+        border-top-color: #233549 !important;
+      }
+
+      html.dark-mode .modal .modal-header,
+      body.dark-mode .modal .modal-header {
+        border-bottom-color: #233549 !important;
+      }
+
+      html.dark-mode .modal .modal-footer,
+      body.dark-mode .modal .modal-footer {
+        border-top-color: #233549 !important;
+      }
+    }
+  </style>
 {% endblock %}
 
 {% block content %}
@@ -11,279 +283,280 @@
 {# --- INÍCIO DO CONTAINER PADRONIZADO --- #}
 <div class="container-fluid py-4" style="max-width: 1200px;">
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="text-dark m-0">
-            <i class="bi bi-list-task me-2 text-primary"></i> Minhas Solicitações
-        </h2>
-        <a href="{{ url_for('main.novo') }}" class="btn btn-success shadow-sm">
-            <i class="bi bi-plus-lg"></i> Nova Solicitação
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="text-dark m-0">
+      <i class="bi bi-list-task me-2 text-primary"></i> Minhas Solicitações
+    </h2>
+    <a href="{{ url_for('main.novo') }}" class="btn btn-success shadow-sm">
+      <i class="bi bi-plus-lg"></i> Nova Solicitação
+    </a>
+  </div>
+
+  {# Filtros #}
+  <form method="GET" class="card p-3 mb-4 shadow-sm rounded-4 border-0">
+    <div class="row g-2 align-items-end">
+      <div class="col-md-5">
+        <label class="small text-muted mb-1">Filtrar por status</label>
+        <select name="status" class="form-select form-select-sm">
+          <option value="">Todos os Pedidos</option>
+          <option value="PENDENTE" {{ 'selected' if request.args.get('status')=='PENDENTE' else '' }}>⚪️ Pendentes</option>
+          <option value="EM ANÁLISE" {{ 'selected' if request.args.get('status')=='EM ANÁLISE' else '' }}>🟡 Em Análise</option>
+          <option value="APROVADO" {{ 'selected' if request.args.get('status')=='APROVADO' else '' }}>🟢 Aprovados</option>
+          <option value="APROVADO COM RECOMENDAÇÕES" {{ 'selected' if request.args.get('status')=='APROVADO COM RECOMENDAÇÕES' else ''}}>🟠 Aprovado com Recomendações</option>
+          <option value="NEGADO" {{ 'selected' if request.args.get('status')=='NEGADO' else '' }}>🔴 Negados</option>
+        </select>
+      </div>
+
+      <div class="col-md-3">
+        <button type="submit" class="btn btn-success btn-sm w-100">
+          <i class="bi bi-funnel me-2"></i> Filtrar
+        </button>
+      </div>
+
+      {% if request.args.get('status') %}
+      <div class="col-md-2">
+        <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary btn-sm w-100">
+          <i class="bi bi-x-lg"></i> Limpar
         </a>
+      </div>
+      {% endif %}
     </div>
+  </form>
 
-    {# Filtros #}
-    <form method="GET" class="card p-3 mb-4 shadow-sm rounded-4 border-0">
-        <div class="row g-2 align-items-end">
-            <div class="col-md-5">
-                <label class="small text-muted mb-1">Filtrar por status</label>
-                <select name="status" class="form-select form-select-sm">
-                    <option value="">Todos os Pedidos</option>
-                    <option value="PENDENTE" {{ 'selected' if request.args.get('status')=='PENDENTE' else '' }}>⚪️ Pendentes</option>
-                    <option value="EM ANÁLISE" {{ 'selected' if request.args.get('status')=='EM ANÁLISE' else '' }}>🟡 Em Análise</option>
-                    <option value="APROVADO" {{ 'selected' if request.args.get('status')=='APROVADO' else '' }}>🟢 Aprovados</option>
-                    <option value="APROVADO COM RECOMENDAÇÕES" {{ 'selected' if request.args.get('status')=='APROVADO COM RECOMENDAÇÕES' else ''}}>🟠 Aprovado com Recomendações</option>
-                    <option value="NEGADO" {{ 'selected' if request.args.get('status')=='NEGADO' else '' }}>🔴 Negados</option>
-                </select>
-            </div>
+  {# Tabela #}
+  <div class="card shadow-sm rounded-4 border-0 overflow-hidden">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-4">Data</th>
+              <th style="width: 40%">Localização / Foco</th>
+              <th class="text-center">Situação</th>
+              <th class="text-center pe-4">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in solicitacoes %}
+            <tr>
+              <td class="ps-4">
+                <strong class="text-main">
+                  {{ p.data_agendamento.strftime('%d/%m/%y') }}
+                </strong>
+                <br />
+                <small class="text-muted">{{ p.hora_agendamento.strftime('%H:%M') }}</small>
+              </td>
 
-            <div class="col-md-3">
-                <button type="submit" class="btn btn-success btn-sm w-100">
-                    <i class="bi bi-funnel me-2"></i> Filtrar
-                </button>
-            </div>
+              <td>
+                <div class="d-flex flex-column">
+                  <span class="fw-bold text-main">
+                    {{ p.logradouro }}, {{ p.numero or 'S/N' }}
+                    {% if p.complemento %} <span class="fw-normal text-muted">({{ p.complemento }})</span> {% endif %}
+                  </span>
+                  <small class="text-muted">
+                    {{ p.bairro }} - {{ p.cidade }}/{{ p.uf }}
+                  </small>
 
-            {% if request.args.get('status') %}
-            <div class="col-md-2">
-                <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary btn-sm w-100">
-                    <i class="bi bi-x-lg"></i> Limpar
-                </a>
-            </div>
-            {% endif %}
-        </div>
-    </form>
-
-    {# Tabela #}
-    <div class="card shadow-sm rounded-4 border-0 overflow-hidden">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th class="ps-4">Data</th>
-                            <th style="width: 40%">Localização / Foco</th>
-                            <th class="text-center">Situação</th>
-                            <th class="text-center pe-4">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for p in solicitacoes %}
-                        <tr>
-                            <td class="ps-4">
-                                <strong class="text-main">
-                                    {{ p.data_agendamento.strftime('%d/%m/%y') }}
-                                </strong>
-                                <br />
-                                <small class="text-muted">{{ p.hora_agendamento.strftime('%H:%M') }}</small>
-                            </td>
-
-                            <td>
-                                <div class="d-flex flex-column">
-                                    <span class="fw-bold text-main">
-                                        {{ p.logradouro }}, {{ p.numero or 'S/N' }}
-                                        {% if p.complemento %} <span class="fw-normal text-muted">({{ p.complemento }})</span> {% endif %}
-                                    </span>
-                                    <small class="text-muted">
-                                        {{ p.bairro }} - {{ p.cidade }}/{{ p.uf }}
-                                    </small>
-
-                                    <div class="mt-1">
-                                        <span class="badge bg-secondary">{{ p.foco }}</span>
-                                        {% if p.latitude %}
-                                            <i class="bi bi-geo-alt-fill text-danger ms-1" title="Localização GPS salva"></i>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </td>
-
-                            <td class="text-center">
-                                {% if p.status == 'PENDENTE' %}
-                                    <span class="badge bg-secondary text-white">Pendente</span>
-                                {% elif p.status == 'APROVADO' %}
-                                    <span class="badge bg-success rounded-pill">Aprovado</span>
-                                    <div class="small text-success mt-1 fw-bold font-monospace">{{ p.protocolo }}</div>
-                                {% elif p.status == 'APROVADO COM RECOMENDAÇÕES' %}
-                                    <span class="badge bg-recomended text-dark rounded-pill"></i> Aprovado com Recomendações</span>
-                                    <div class="small text-recomended mt-1 fw-bold font-monospace">{{ p.protocolo }}</div>
-                                {% elif p.status == 'NEGADO' %}
-                                    <span class="badge bg-danger rounded-pill"></i> Negado</span>
-                                {% else %}
-                                    <span class="badge bg-warning text-dark rounded-pill">Em Análise</span>
-                                {% endif %}
-                            </td>
-
-                            <td class="text-center pe-4">
-                                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalDetalhes{{ p.id }}">
-                                    <i class="bi bi-eye"></i> Detalhes
-                                </button>
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="4" class="text-center py-5 text-muted">
-                                <i class="bi bi-inbox fs-1 d-block mb-3"></i>
-                                <p>Nenhuma solicitação encontrada.</p>
-                                <a href="{{ url_for('main.novo') }}" class="btn btn-sm btn-primary">Criar Agora</a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    {# Paginação #}
-    {% if paginacao and paginacao.pages > 1 %}
-    <nav aria-label="Navegação de páginas" class="mt-4">
-        <ul class="pagination justify-content-center">
-            <li class="page-item {% if not paginacao.has_prev %}disabled{% endif %}">
-                <a class="page-link" href="{{ url_for('main.dashboard', page=paginacao.prev_num, status=request.args.get('status', '')) }}">Anterior</a>
-            </li>
-            {% for pg in paginacao.iter_pages() %}
-                {% if pg %}
-                    {% if pg == paginacao.page %}
-                    <li class="page-item active"><a class="page-link">{{ pg }}</a></li>
-                    {% else %}
-                    <li class="page-item"><a class="page-link" href="{{ url_for('main.dashboard', page=pg, status=request.args.get('status', '')) }}">{{ pg }}</a></li>
+                  <div class="mt-1">
+                    <span class="badge bg-secondary">{{ p.foco }}</span>
+                    {% if p.latitude %}
+                      <i class="bi bi-geo-alt-fill text-danger ms-1" title="Localização GPS salva"></i>
                     {% endif %}
-                {% else %}
-                    <li class="page-item disabled"><a class="page-link">...</a></li>
-                {% endif %}
-            {% endfor %}
-            <li class="page-item {% if not paginacao.has_next %}disabled{% endif %}">
-                <a class="page-link" href="{{ url_for('main.dashboard', page=paginacao.next_num, status=request.args.get('status', '')) }}">Próxima</a>
-            </li>
-        </ul>
-    </nav>
-    {% endif %}
-
-    {# =========================
-       MODAIS (1 por solicitação)
-    ========================= #}
-    {% for p in solicitacoes %}
-    <div class="modal fade" id="modalDetalhes{{ p.id }}" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-
-          <div class="modal-header">
-            <h5 class="modal-title">Detalhes do Pedido #{{ p.id }}</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-
-          <div class="modal-body">
-
-            <h6 class="text-primary border-bottom pb-2 fw-bold">
-              <i class="bi bi-geo-alt-fill"></i> Localização
-            </h6>
-
-            <p class="rua mb-1 small">
-              <strong>Endereço:</strong>
-              {{ p.logradouro }}, {{ p.numero }}
-              {{ '(' ~ p.complemento ~ ')' if p.complemento else '' }}
-            </p>
-
-            <p class="mb-2 small">
-              <strong>Bairro:</strong> {{ p.bairro }} - {{ p.cidade }}/{{ p.uf }}
-            </p>
-
-            {% if p.latitude and p.longitude %}
-            <div class="d-flex justify-content-between align-items-center p-2 rounded border mb-3">
-              <div>
-                <small class="text-muted d-block">Coordenadas:</small>
-                <strong class="font-monospace small">{{ p.latitude }}, {{ p.longitude }}</strong>
-              </div>
-              <a href="https://www.google.com/maps/search/?api=1&query={{ p.latitude }},{{ p.longitude }}"
-                 target="_blank"
-                 class="btn btn-sm btn-outline-danger">
-                <i class="bi bi-map"></i> Ver Mapa
-              </a>
-            </div>
-            {% endif %}
-
-            <h6 class="text-primary border-bottom pb-2 fw-bold mt-3">
-              <i class="bi bi-paperclip"></i> Anexo
-            </h6>
-
-            {% if p.anexo_path %}
-            <div class="d-flex justify-content-between align-items-center p-2 rounded border mb-3">
-              <div>
-                <small class="text-muted d-block">Arquivo:</small>
-                <strong class="small">{{ p.anexo_nome or 'Anexo' }}</strong>
-              </div>
-
-              <a href="{{ url_for('main.baixar_anexo', id=p.id) }}"
-                 target="_blank"
-                 class="btn btn-sm btn-outline-primary">
-                <i class="bi bi-download"></i> Abrir / Baixar
-              </a>
-            </div>
-            {% else %}
-            <div class="alert alert-secondary py-2 small mb-3">
-              Nenhum anexo enviado.
-            </div>
-            {% endif %}
-
-            <h6 class="text-primary border-bottom pb-2 fw-bold mt-3">
-              <i class="bi bi-sliders"></i> Operação
-            </h6>
-
-            <div class="row g-2 mb-2">
-              <div class="col-6">
-                <small class="text-muted d-block">Tipo de Visita:</small>
-                <strong class="text-capitalize">{{ p.tipo_visita or '--' }}</strong>
-              </div>
-              <div class="col-6">
-                <small class="text-muted d-block">Altura:</small>
-                <strong>{{ p.altura_voo or '--' }}</strong>
-              </div>
-            </div>
-
-            <div class="row g-2 mb-3">
-                <div class="col-6">
-                    <small class="text-muted d-block">Apoio CET?</small>
-                    {% if p.apoio_cet %}<span class="badge bg-warning text-dark">SIM</span>{% else %}<span class="badge bg-secondary">NÃO</span>{% endif %}
+                  </div>
                 </div>
-            </div>
+              </td>
 
-            {% if p.observacao %}
-            <div class="p-2 rounded border mb-3">
-              <small class="text-muted d-block fw-bold">Observação do Usuário:</small>
-              <em class="small">"{{ p.observacao }}"</em>
-            </div>
-            {% endif %}
+              <td class="text-center">
+                {% if p.status == 'PENDENTE' %}
+                  <span class="badge bg-secondary text-white">Pendente</span>
+                {% elif p.status == 'APROVADO' %}
+                  <span class="badge bg-success rounded-pill">Aprovado</span>
+                  <div class="small text-success mt-1 fw-bold font-monospace">{{ p.protocolo }}</div>
+                {% elif p.status == 'APROVADO COM RECOMENDAÇÕES' %}
+                  <span class="badge bg-recomended text-dark rounded-pill"></i> Aprovado com Recomendações</span>
+                  <div class="small text-recomended mt-1 fw-bold font-monospace">{{ p.protocolo }}</div>
+                {% elif p.status == 'NEGADO' %}
+                  <span class="badge bg-danger rounded-pill"></i> Negado</span>
+                {% else %}
+                  <span class="badge bg-warning text-dark rounded-pill">Em Análise</span>
+                {% endif %}
+              </td>
 
-            {% if p.status == 'NEGADO' %}
-            <div class="alert alert-danger mb-0">
-              <strong class="d-block"><i class="bi bi-x-circle"></i> Pedido Negado</strong>
-              <small>{{ p.justificativa }}</small>
-            </div>
-            {% elif p.status == 'APROVADO' %}
-            <div class="alert alert-success mb-0">
-              <strong class="d-block"><i class="bi bi-check-circle"></i> Pedido Aprovado</strong>
-              <small>Protocolo: {{ p.protocolo }}</small>
-            </div>
-            {% endif %}
-
-          </div>
-
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-          </div>
-
-        </div>
+              <td class="text-center pe-4">
+                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalDetalhes{{ p.id }}">
+                  <i class="bi bi-eye"></i> Detalhes
+                </button>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="4" class="text-center py-5 text-muted">
+                <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+                <p>Nenhuma solicitação encontrada.</p>
+                <a href="{{ url_for('main.novo') }}" class="btn btn-sm btn-primary">Criar Agora</a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
     </div>
-    {% endfor %}
+  </div>
 
-</div> 
+  {# Paginação #}
+  {% if paginacao and paginacao.pages > 1 %}
+  <nav aria-label="Navegação de páginas" class="mt-4">
+    <ul class="pagination justify-content-center">
+      <li class="page-item {% if not paginacao.has_prev %}disabled{% endif %}">
+        <a class="page-link" href="{{ url_for('main.dashboard', page=paginacao.prev_num, status=request.args.get('status', '')) }}">Anterior</a>
+      </li>
+
+      {% for pg in paginacao.iter_pages() %}
+        {% if pg %}
+          {% if pg == paginacao.page %}
+            <li class="page-item active"><a class="page-link">{{ pg }}</a></li>
+          {% else %}
+            <li class="page-item"><a class="page-link" href="{{ url_for('main.dashboard', page=pg, status=request.args.get('status', '')) }}">{{ pg }}</a></li>
+          {% endif %}
+        {% else %}
+          <li class="page-item disabled"><a class="page-link">...</a></li>
+        {% endif %}
+      {% endfor %}
+
+      <li class="page-item {% if not paginacao.has_next %}disabled{% endif %}">
+        <a class="page-link" href="{{ url_for('main.dashboard', page=paginacao.next_num, status=request.args.get('status', '')) }}">Próxima</a>
+      </li>
+    </ul>
+  </nav>
+  {% endif %}
+
+  {# =========================
+     MODAIS (1 por solicitação)
+     ========================= #}
+  {% for p in solicitacoes %}
+  <div class="modal fade" id="modalDetalhes{{ p.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+
+        <div class="modal-header">
+          <h5 class="modal-title">Detalhes do Pedido #{{ p.id }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body">
+
+          <h6 class="text-primary border-bottom pb-2 fw-bold">
+            <i class="bi bi-geo-alt-fill"></i> Localização
+          </h6>
+
+          <p class="rua mb-1 small">
+            <strong>Endereço:</strong>
+            {{ p.logradouro }}, {{ p.numero }}
+            {{ '(' ~ p.complemento ~ ')' if p.complemento else '' }}
+          </p>
+
+          <p class="mb-2 small">
+            <strong>Bairro:</strong> {{ p.bairro }} - {{ p.cidade }}/{{ p.uf }}
+          </p>
+
+          {% if p.latitude and p.longitude %}
+          <div class="d-flex justify-content-between align-items-center p-2 rounded border mb-3">
+            <div>
+              <small class="text-muted d-block">Coordenadas:</small>
+              <strong class="font-monospace small">{{ p.latitude }}, {{ p.longitude }}</strong>
+            </div>
+            <a href="https://www.google.com/maps/search/?api=1&query={{ p.latitude }},{{ p.longitude }}"
+               target="_blank"
+               class="btn btn-sm btn-outline-danger">
+              <i class="bi bi-map"></i> Ver Mapa
+            </a>
+          </div>
+          {% endif %}
+
+          <h6 class="text-primary border-bottom pb-2 fw-bold mt-3">
+            <i class="bi bi-paperclip"></i> Anexo
+          </h6>
+
+          {% if p.anexo_path %}
+          <div class="d-flex justify-content-between align-items-center p-2 rounded border mb-3">
+            <div>
+              <small class="text-muted d-block">Arquivo:</small>
+              <strong class="small">{{ p.anexo_nome or 'Anexo' }}</strong>
+            </div>
+
+            <a href="{{ url_for('main.baixar_anexo', id=p.id) }}"
+               target="_blank"
+               class="btn btn-sm btn-outline-primary">
+              <i class="bi bi-download"></i> Abrir / Baixar
+            </a>
+          </div>
+          {% else %}
+          <div class="alert alert-secondary py-2 small mb-3">
+            Nenhum anexo enviado.
+          </div>
+          {% endif %}
+
+          <h6 class="text-primary border-bottom pb-2 fw-bold mt-3">
+            <i class="bi bi-sliders"></i> Operação
+          </h6>
+
+          <div class="row g-2 mb-2">
+            <div class="col-6">
+              <small class="text-muted d-block">Tipo de Visita:</small>
+              <strong class="text-capitalize">{{ p.tipo_visita or '--' }}</strong>
+            </div>
+            <div class="col-6">
+              <small class="text-muted d-block">Altura:</small>
+              <strong>{{ p.altura_voo or '--' }}</strong>
+            </div>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <small class="text-muted d-block">Apoio CET?</small>
+              {% if p.apoio_cet %}<span class="badge bg-warning text-dark">SIM</span>{% else %}<span class="badge bg-secondary">NÃO</span>{% endif %}
+            </div>
+          </div>
+
+          {% if p.observacao %}
+          <div class="p-2 rounded border mb-3">
+            <small class="text-muted d-block fw-bold">Observação do Usuário:</small>
+            <em class="small">"{{ p.observacao }}"</em>
+          </div>
+          {% endif %}
+
+          {% if p.status == 'NEGADO' %}
+          <div class="alert alert-danger mb-0">
+            <strong class="d-block"><i class="bi bi-x-circle"></i> Pedido Negado</strong>
+            <small>{{ p.justificativa }}</small>
+          </div>
+          {% elif p.status == 'APROVADO' %}
+          <div class="alert alert-success mb-0">
+            <strong class="d-block"><i class="bi bi-check-circle"></i> Pedido Aprovado</strong>
+            <small>Protocolo: {{ p.protocolo }}</small>
+          </div>
+          {% endif %}
+
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+
+</div>
 {# --- FIM DO CONTAINER PADRONIZADO --- #}
-
 
 <button id="uvisBotFab" class="bot-fab" type="button" title="Ajuda UVIS" onclick="toggleUvisChat()">
   <i class="bi bi-robot"></i>
 </button>
 
 <div id="uvisChatWindow" class="chat-window">
-  
+
   <div class="bot-header">
     <div class="bot-title">
       <i class="bi bi-robot fs-5"></i>
@@ -292,10 +565,10 @@
         <span class="bot-badge ms-1">Assistente</span>
       </div>
     </div>
-    
+
     <div class="d-flex gap-2">
       <button id="uvisBotClear" class="btn-close-chat" title="Limpar conversa" style="font-size: 1rem;">
-          <i class="bi bi-trash"></i>
+        <i class="bi bi-trash"></i>
       </button>
 
       <button id="uvisBotClose" type="button" class="btn-close-chat" onclick="toggleUvisChat()">
@@ -305,9 +578,9 @@
   </div>
 
   <div class="bot-body">
-    
+
     <div id="uvisChatMessages" class="d-flex flex-column gap-2 mb-3">
-        </div>
+    </div>
 
     <div class="chips-container mt-auto">
       <button class="chip" data-q="O que significa Em Análise?">Status</button>
@@ -333,43 +606,37 @@
 {% block scripts %}
 <script>
 (function () {
-  // --- TRAVA DE SEGURANÇA (Igual Admin) ---
   if (window.UVIS_CHAT_INIT) return;
   window.UVIS_CHAT_INIT = true;
 
-  // SELETORES
   const msgs = document.getElementById("uvisChatMessages");
   const input = document.getElementById("uvisChatInput");
   const sendBtn = document.getElementById("uvisChatSend");
   const clearBtn = document.getElementById("uvisBotClear");
   const chatWindow = document.getElementById("uvisChatWindow");
   const fab = document.getElementById("uvisBotFab");
-  const closeBtns = document.querySelectorAll("#uvisBotClose"); // Corrigido seletor
+  const closeBtns = document.querySelectorAll("#uvisBotClose");
 
   if (!msgs || !input || !sendBtn || !chatWindow) return;
 
-  // --- FUNÇÃO GLOBAL TOGGLE ---
   window.toggleUvisChat = function() {
     chatWindow.classList.toggle('active');
     if (chatWindow.classList.contains('active')) {
       setTimeout(() => {
-          input.focus();
-          if (msgs.children.length === 0) welcome();
+        input.focus();
+        if (msgs.children.length === 0) welcome();
       }, 300);
     }
   }
 
-  // Evento para fechar usando o X dentro do modal
   closeBtns.forEach(btn => btn.addEventListener("click", window.toggleUvisChat));
 
-  // --- TRATAMENTO DE HTML ---
-  // --- TRATAMENTO DE HTML ---
   function escapeHtml(str) {
     return String(str || "")
       .replaceAll("&", "&amp;")
       .replaceAll("<", "&lt;")
       .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")  
+      .replaceAll('"', "&quot;")
       .replaceAll("'", "&#039;");
   }
 
@@ -380,14 +647,11 @@
     return html;
   }
 
-  // --- ADICIONAR MENSAGEM ---
   function addMsg(text, who) {
     const divMsg = document.createElement("div");
-    
-    // Classes idênticas ao CSS do Admin
     const cssClass = who === "user" ? "user" : "bot";
     divMsg.className = `message ${cssClass}`;
-    
+
     if (who === "bot") divMsg.innerHTML = renderBotHtml(text);
     else divMsg.textContent = text;
 
@@ -395,7 +659,6 @@
     msgs.scrollTop = msgs.scrollHeight;
   }
 
-  // --- EFEITO DIGITANDO ---
   function addTyping() {
     const div = document.createElement("div");
     div.id = "uvisTyping";
@@ -410,12 +673,10 @@
     if (el) el.remove();
   }
 
-  // --- LÓGICA DE BOAS-VINDAS ---
   function welcome() {
     addMsg("Olá! Sou o assistente UVIS. Dúvidas sobre status, CEP ou checklist?", "bot");
   }
 
-  // --- ENVIAR PERGUNTA ---
   async function ask(text) {
     const q = (text || "").trim();
     if (!q) return;
@@ -423,7 +684,7 @@
     addMsg(q, "user");
     input.value = "";
     input.focus();
-    
+
     sendBtn.disabled = true;
     addTyping();
 
@@ -438,11 +699,8 @@
       removeTyping();
 
       if (!res.ok) {
-        if (res.status === 401) {
-             addMsg("Sessão expirada. Faça login novamente.", "bot");
-        } else {
-             addMsg(data.answer || "Erro no servidor. Tente mais tarde.", "bot");
-        }
+        if (res.status === 401) addMsg("Sessão expirada. Faça login novamente.", "bot");
+        else addMsg(data.answer || "Erro no servidor. Tente mais tarde.", "bot");
         return;
       }
 
@@ -457,9 +715,8 @@
     }
   }
 
-  // --- EVENT LISTENERS ---
   sendBtn.addEventListener("click", () => ask(input.value));
-  
+
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter") ask(input.value);
   });
@@ -470,12 +727,11 @@
   });
 
   document.querySelectorAll(".chip").forEach(btn => {
-    // Evita duplicação de eventos em re-renders
     const newBtn = btn.cloneNode(true);
     btn.parentNode.replaceChild(newBtn, btn);
 
     newBtn.addEventListener("click", () => {
-       ask(newBtn.getAttribute("data-q"));
+      ask(newBtn.getAttribute("data-q"));
     });
   });
 

@@ -349,12 +349,20 @@ def exportar_excel():
         )
         return redirect(url_for('main.admin_dashboard'))
 
+from flask import request, jsonify, current_app, redirect, url_for, flash
+import os, uuid
+from werkzeug.utils import secure_filename
+
 @bp.route('/admin/atualizar/<int:id>', methods=['POST'])
 @login_required
 def atualizar(id):
 
     # 🔐 Permissão
     if current_user.tipo_usuario not in ['admin', 'operario']:
+        # Se for form normal, não devolve JSON
+        if request.accept_mimetypes.accept_html and not request.is_json:
+            flash("Permissão negada.", "danger")
+            return redirect(request.referrer or url_for("main.admin_dashboard"))
         return jsonify({"error": "Permissão negada"}), 403
 
     pedido = Solicitacao.query.get_or_404(id)
@@ -370,44 +378,56 @@ def atualizar(id):
     file = request.files.get("anexo")
     if file and file.filename:
         if allowed_file(file.filename):
-            from werkzeug.utils import secure_filename # Garantir import
-            
-            # Recupera a extensão original corretamente
             original_filename = secure_filename(file.filename)
             ext = original_filename.rsplit(".", 1)[1].lower()
-            # Nome único mantendo a extensão real do arquivo
             unique_name = f"sol_{pedido.id}_{uuid.uuid4().hex}.{ext}"
             upload_folder = get_upload_folder()
             file_path = os.path.join(upload_folder, unique_name)
-            
-            pedido.anexo_path = f"upload-files/{unique_name}"
-            pedido.anexo_nome = original_filename
 
             try:
                 file.save(file_path)
-                # Atualiza o banco APENAS se o arquivo foi salvo com sucesso
                 pedido.anexo_path = f"upload-files/{unique_name}"
                 pedido.anexo_nome = original_filename
             except Exception as e:
                 current_app.logger.error(f"Erro ao salvar arquivo físico: {e}")
+                # Form normal: volta e mostra mensagem
+                if request.accept_mimetypes.accept_html and not request.is_json:
+                    flash("Falha ao salvar o arquivo no servidor.", "danger")
+                    return redirect(request.referrer or url_for("main.admin_dashboard"))
                 return jsonify({"error": "Falha ao salvar o arquivo no servidor."}), 500
         else:
-                return jsonify({"error": "Formato de arquivo não permitido."}), 400
-        
+            if request.accept_mimetypes.accept_html and not request.is_json:
+                flash("Formato de arquivo não permitido.", "warning")
+                return redirect(request.referrer or url_for("main.admin_dashboard"))
+            return jsonify({"error": "Formato de arquivo não permitido."}), 400
+
     # commit final
     try:
         db.session.commit()
-        return jsonify({
-            "ok": True, 
-            "message": "Solicitação atualizada com sucesso!",
-            "anexo_nome": pedido.anexo_nome # Retorna para o JS atualizar a interface
-        }), 200
+
+        # ✅ Se for uma chamada AJAX (fetch), mantém JSON
+        is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest" or request.is_json
+        if is_ajax:
+            return jsonify({
+                "ok": True,
+                "message": "Solicitação atualizada com sucesso!",
+                "anexo_nome": pedido.anexo_nome
+            }), 200
+
+        # ✅ Se for submit normal (seu caso), REDIRECIONA e não mostra JSON
+        flash("Solicitação atualizada com sucesso!", "success")
+        return redirect(request.referrer or url_for("main.admin_dashboard"))
+
     except Exception as e:
         db.session.rollback()
-        # Se falhou o banco, o ideal seria remover o arquivo físico salvo (cleanup), 
-        # mas em muitos casos de produção (Render) o disco é efêmero, então não é crítico.
         current_app.logger.error(f"Erro de Banco (Atualizar ID {id}): {e}")
+
+        if request.accept_mimetypes.accept_html and not request.is_json:
+            flash("Erro ao gravar dados no banco de dados.", "danger")
+            return redirect(request.referrer or url_for("main.admin_dashboard"))
+
         return jsonify({"error": "Erro ao gravar dados no banco de dados."}), 500
+
     
 # --- NOVO PEDIDO ---
 from flask_login import login_required, current_user
