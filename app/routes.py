@@ -889,9 +889,9 @@ def exportar_relatorio_pdf():
     ]
 
     if db.engine.name == 'postgresql':
-        func_mes = db.func.to_char(Solicitacao.data_criacao, 'YYYY-MM')
+        func_mes = db.func.to_char(Solicitacao.data_agendamento, 'YYYY-MM')
     else:
-        func_mes = db.func.strftime('%Y-%m', Solicitacao.data_criacao)
+        func_mes = db.func.strftime('%Y-%m', Solicitacao.data_agendamento)
 
     dados_mensais = [
         tuple(row) for row in (
@@ -1160,8 +1160,8 @@ def exportar_relatorio_pdf():
     else:
         story.append(Paragraph("Matplotlib não disponível — gráficos foram omitidos.", normal))
 
-    # -------------------------
-    # DETALHES (opcional: se quiser manter, deixa por último)
+        # -------------------------
+    # DETALHES (Registros Detalhados)
     # -------------------------
     story.append(PageBreak())
     story.append(Paragraph("Registros Detalhados", section_h))
@@ -1172,8 +1172,25 @@ def exportar_relatorio_pdf():
         'Data', 'Hora', 'Unidade', 'Região', 'Protocolo',
         'Status', 'Foco', 'Tipo Visita', 'Altura Voo', 'Observação'
     ]
-    registros_rows = [[Paragraph(h, ParagraphStyle('hdr', parent=cell_style, textColor=colors.white, fontSize=8.7))
-                       for h in registros_header]]
+
+    hdr_style = ParagraphStyle(
+        'hdr',
+        parent=cell_style,
+        textColor=colors.white,
+        fontSize=7.8,
+        leading=9.2
+    )
+
+    cell_style_small = ParagraphStyle(
+        'cell_small',
+        parent=cell_style,
+        fontSize=7.6,
+        leading=9.2,
+        wordWrap='CJK',
+        splitLongWords=True
+    )
+
+    registros_rows = [[Paragraph(h, hdr_style) for h in registros_header]]
 
     for s, u in query_results:
         data_str = s.data_criacao.strftime("%d/%m/%Y") if getattr(s, 'data_criacao', None) else ''
@@ -1191,41 +1208,75 @@ def exportar_relatorio_pdf():
         obs = getattr(s, 'observacao', '') or ''
 
         registros_rows.append([
-            Paragraph(str(data_str), cell_style),
-            Paragraph(str(hora_str), cell_style),
-            Paragraph(str(unidade), cell_style),
-            Paragraph(str(regiao), cell_style),
-            Paragraph(str(protocolo), cell_style),
-            Paragraph(str(status), cell_style),
-            Paragraph(str(foco), cell_style),
-            Paragraph(str(tipo_visita), cell_style),
-            Paragraph(str(altura_voo), cell_style),
-            Paragraph(str(obs), cell_style),
+            Paragraph(str(data_str), cell_style_small),
+            Paragraph(str(hora_str), cell_style_small),
+            Paragraph(str(unidade), cell_style_small),
+            Paragraph(str(regiao), cell_style_small),
+            Paragraph(str(protocolo), cell_style_small),
+            Paragraph(str(status), cell_style_small),
+            Paragraph(str(foco), cell_style_small),
+            Paragraph(str(tipo_visita), cell_style_small),
+            Paragraph(str(altura_voo), cell_style_small),
+            Paragraph(str(obs), cell_style_small),
         ])
 
-    chunk_size = 26
-    colWidths = [18*mm, 14*mm, 28*mm, 22*mm, 22*mm, 22*mm, 22*mm, 26*mm, 18*mm, 60*mm]
+    # ✅ Larguras base (as suas), mas vamos “encaixar” no doc.width automaticamente
+    base_col_widths = [
+        18*mm, 14*mm, 28*mm, 22*mm, 22*mm,
+        22*mm, 22*mm, 26*mm, 18*mm, 60*mm
+    ]
 
+    # ✅ Se a soma estourar a largura útil da página, escala proporcionalmente
+    total_w = sum(base_col_widths)
+    max_w = doc.width  # largura útil = página - margens
+
+    if total_w > max_w:
+        scale = max_w / total_w
+        colWidths = [w * scale for w in base_col_widths]
+    else:
+        colWidths = base_col_widths
+
+    # ✅ Quantidade de linhas por página (ajuste fino)
+    chunk_size = 28 if orient == 'landscape' else 24
+
+    # 🔥 renderiza em blocos para não ficar pesado e manter header repetido
     for i in range(0, len(registros_rows), chunk_size):
-        chunk = registros_rows[i:i+chunk_size]
-        tbl = Table(chunk, repeatRows=1, colWidths=colWidths)
+        chunk = registros_rows[i:i + chunk_size]
+
+        tbl = Table(
+            chunk,
+            repeatRows=1,
+            colWidths=colWidths,
+            hAlign='LEFT'  # ✅ evita “puxar” pro centro e cortar laterais
+        )
+
         tbl.setStyle(TableStyle([
-            ('BACKGROUND', (0,0),(-1,0),colors.HexColor('#0d6efd')),
-            ('TEXTCOLOR',(0,0),(-1,0),colors.white),
-            ('FONTNAME',(0,0),(-1,0),'Helvetica-Bold'),
-            ('FONTSIZE',(0,0),(-1,0),8.4),
-            ('GRID',(0,0),(-1,-1),0.25,colors.HexColor('#d9dee7')),
-            ('ROWBACKGROUNDS',(0,1),(-1,-1),[colors.white,colors.HexColor('#fbfdff')]),
-            ('VALIGN',(0,0),(-1,-1),'TOP'),
-            ('LEFTPADDING',(0,0),(-1,-1),4),
-            ('RIGHTPADDING',(0,0),(-1,-1),4),
-            ('TOPPADDING',(0,0),(-1,-1),3),
-            ('BOTTOMPADDING',(0,0),(-1,-1),3),
+            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#0d6efd')),
+            ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+
+            ('GRID', (0,0), (-1,-1), 0.25, colors.HexColor('#d9dee7')),
+            ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#fbfdff')]),
+
+            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+            ('ALIGN', (0,0), (-1,0), 'LEFT'),
+            ('ALIGN', (0,1), (-1,-1), 'LEFT'),
+
+            ('LEFTPADDING', (0,0), (-1,-1), 3),
+            ('RIGHTPADDING', (0,0), (-1,-1), 3),
+            ('TOPPADDING', (0,0), (-1,-1), 2),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 2),
+
+            # ✅ reforço de quebra de linha dentro das células
+            ('WORDWRAP', (0,0), (-1,-1), 'CJK'),
         ]))
+
         story.append(tbl)
         story.append(Spacer(1, 6))
+
         if i + chunk_size < len(registros_rows):
             story.append(PageBreak())
+
 
     # -------------------------
     # Header/Footer

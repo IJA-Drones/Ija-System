@@ -64,8 +64,8 @@
 
     <style>
       :root {
-        --navbar-offset: 64px;
-      } /* fallback */
+        --navbar-offset: 64px; /* fallback */
+      }
 
       html,
       body {
@@ -73,59 +73,10 @@
         padding: 0 !important;
       }
 
-      /* Navbar sempre acima */
-      .navbar.fixed-top {
-        top: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        z-index: 1030 !important; /* bootstrap */
-      }
-
-      /* ✅ O OFFSET VAI NO BODY (não tem como falhar) */
-      body {
-        padding-top: var(--navbar-offset) !important;
-      }
-
-      /* Remove qualquer offset antigo no conteúdo (pra não duplicar espaço) */
-      .app-content {
-        padding-top: 0 !important;
-      }
-      .app-content > .container-fluid.min-vh-100 {
-        padding-top: 0 !important;
-      }
-      .app-wrapper,
-      #appContent {
-        margin-top: 0 !important;
-        padding-top: 0 !important;
-      }
-
-      /* ✅ IMPORTANTÍSSIMO: escopar collapse só na navbar */
-      @media (max-width: 991.98px) {
-        .navbar .navbar-collapse {
-          display: none !important;
-        }
-      }
-      @media (min-width: 992px) {
-        .navbar .navbar-collapse {
-          display: flex !important;
-        }
-      }
-    </style>
-    <style>
-      :root {
-        --navbar-offset: 64px;
-      } /* fallback */
-
-      html,
-      body {
-        margin: 0 !important;
-        padding: 0 !important;
-      }
-
-      /* ✅ FORÇA a navbar ser FIXA de verdade (evita override no mobile) */
+      /* Navbar fixa normal */
       .navbar.fixed-top {
         position: fixed !important;
-        top: env(safe-area-inset-top, 0px) !important;
+        top: 0 !important; /* ✅ tira env aqui */
         left: 0 !important;
         right: 0 !important;
         width: 100% !important;
@@ -134,14 +85,14 @@
         transform: none !important;
       }
 
-      /* ✅ OFFSET no body + safe-area (Chrome retorna 0, iPhone usa o valor certo) */
+      /* ✅ offset do conteúdo (inclui safe-area só aqui) */
       body {
         padding-top: calc(
           var(--navbar-offset) + env(safe-area-inset-top, 0px)
         ) !important;
       }
 
-      /* Remove qualquer offset duplicado no conteúdo */
+      /* remove offsets duplicados no conteúdo */
       .app-content {
         padding-top: 0 !important;
       }
