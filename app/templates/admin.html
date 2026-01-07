@@ -4,47 +4,6 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/chatbot.css') }}">
-    
-    {# --- CSS ESPECÍFICO PARA MOBILE CARD VIEW --- #}
-    <style>
-        /* Apenas em telas menores que 992px (Mobile/Tablet) */
-        @media (max-width: 991.98px) {
-            /* Esconde o cabeçalho da tabela */
-            .table-mobile-cards thead { display: none; }
-            
-            /* Transforma a tabela em blocos */
-            .table-mobile-cards, 
-            .table-mobile-cards tbody, 
-            .table-mobile-cards tr, 
-            .table-mobile-cards td { 
-                display: block; 
-                width: 100%; 
-            }
-
-            /* Estiliza a linha como se fosse um Cartão */
-            .table-mobile-cards tr {
-                margin-bottom: 1rem;
-                background: #fff;
-                border-radius: var(--radius-lg);
-                box-shadow: var(--shadow-sm);
-                border: 1px solid rgba(0,0,0,0.05);
-                overflow: hidden;
-            }
-
-            /* Espaçamento interno das células */
-            .table-mobile-cards td {
-                padding: 1rem;
-                border-bottom: 1px solid #edf2f7;
-                text-align: left; /* Garante alinhamento à esquerda */
-            }
-
-            /* Remove a borda da última célula do card */
-            .table-mobile-cards td:last-child {
-                border-bottom: none;
-                background-color: #f8fafc; /* Fundo leve para destacar a área de ação */
-            }
-        }
-    </style>
 {% endblock %}
 
 {% block content %}
@@ -124,236 +83,312 @@
         </div>
     </div>
 
-    {# --- TABELA HÍBRIDA (Vira Cards no Mobile) --- #}
-    {# Adicionei a classe 'table-mobile-cards' e removi 'table-responsive' para deixar o CSS controlar #}
+
+    {# --- TABELA HÍBRIDA (SANFONA NO MOBILE / TABELA NO PC) --- #}
     <div class="card shadow-sm rounded-4 border-0 overflow-hidden"> 
-        <table class="table table-mobile-cards table-hover align-middle mb-0">
-            <thead >
+        <table class="table table-hover align-middle mb-0 table-accordion">
+            
+            {# HEADER: OCULTO NO MOBILE (d-none), VISÍVEL NO DESKTOP (d-lg-table-header-group) #}
+            <thead class="d-none d-lg-table-header-group">
                 <tr>
                     <th style="width: 25%">Unidade</th>
                     <th style="width: 40%">Dados da Operação</th>
                     <th style="width: 35%">{% if is_editable %}Decisão & Ajustes{% else %}Status Atual & Protocolo{% endif %}</th>
                 </tr>
             </thead>
+
             <tbody>
                 {% for p in pedidos %}
-                <tr>
-                    {# COLUNA 1: IDENTIFICAÇÃO #}
-                    <td class="align-top pt-3">
-                        <div class="d-flex justify-content-between align-items-start">
+                
+                {# === LINHA PRINCIPAL (CABEÇALHO DA SANFONA NO MOBILE / LINHA COMUM NO PC) === #}
+                <tr class="main-row"
+                        onclick="
+                        if(event.target.closest('a, button, form')) return;
+                        bootstrap.Collapse.getOrCreateInstance(
+                            document.getElementById('accordion{{ p.id }}')
+                        ).toggle();
+                        "
+                >   
+                    {# COLUNA 1: IDENTIFICAÇÃO (SEMPRE VISÍVEL) #}
+                    <td class="ps-3 py-3">
+                        <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <strong class="text-primary fs-6">{{ p.usuario.nome_uvis }}</strong>
+                                
+                                {# Badge de Status Mobile (Só aparece < 992px) #}
+                                <span class="badge mb-2 mt-3
+                                    {% if p.status=='PENDENTE' %}bg-secondary
+                                    {% elif p.status=='EM ANÁLISE' %}bg-warning
+                                    {% elif p.status=='APROVADO COM RECOMENDAÇÕES' %}bg-recomended
+                                    {% elif p.status=='APROVADO' %}bg-success
+                                    {% elif p.status=='NEGADO' %}bg-danger
+                                    {% else %}bg-warning text-dark{% endif %}">
+                                    {{ p.status }}
+                                </span>
+                                
                                 <br>
                                 <span class="badge bg-secondary mb-2 mt-1">{{ p.usuario.regiao }}</span>
                             </div>
                             
-                            {# Status Visível Rápido no Mobile #}
-                            <span class="d-lg-none badge 
-                                {% if p.status=='PENDENTE' %}bg-secondary
-                                {% elif p.status=='APROVADO' %}bg-success
-                                {% elif p.status=='NEGADO' %}bg-danger
-                                {% else %}bg-warning text-dark{% endif %}">
-                                {{ p.status }}
-                            </span>
+                            {# Seta Indicativa Mobile #}
+                            <i class="bi bi-chevron-down text-muted d-lg-none p-2"></i>
                         </div>
 
-                        <div class="small text-muted border-top pt-2 mt-2">
-                            <i class="bi bi-calendar"></i>
-                            {{ p.data_agendamento.strftime('%d/%m/%Y') }} às {{ p.hora_agendamento.strftime('%H:%M') }}
-                            <br><br>
-                            <i class="bi bi-geo-alt"></i>
-                            {{ p.logradouro }}, {{ p.numero or 'S/N' }}
-                            {% if p.complemento %} <span class="fst-italic">({{ p.complemento }})</span> {% endif %}
-                            <br>
-                            {{ p.bairro }} - {{ p.cidade }}/{{ p.uf }}
-                            <br>
-                            CEP: {{ p.cep }}
+                        <div class="small text-muted mt-1 border-top pt-2">
+                            <i class="bi bi-calendar-event me-1"></i> {{ p.data_agendamento.strftime('%d/%m/%Y') }} às {{ p.hora_agendamento.strftime('%H:%M') }}
                         </div>
 
+                        {# Endereço Desktop (Escondido no Mobile) #}
+                        <div class="d-none d-lg-block mt-1 small text-muted">
+                            <i class="bi bi-geo-alt"></i> {{ p.logradouro }}, {{ p.numero or 'S/N' }} - {{ p.bairro }}
+                            <br>CEP: {{ p.cep }}
+                        </div>
+
+                        {# Botões de Admin Desktop #}
                         {% if current_user.tipo_usuario == 'admin' %}
-                        <div class="d-flex gap-1 mt-3 pt-2 border-top">
-                            <a href="{{ url_for('main.admin_editar_completo', id=p.id) }}" class="btn btn-sm btn-success flex-grow-1">
+                        <div class="d-none d-lg-flex gap-1 mt-2">
+                            <a href="{{ url_for('main.admin_editar_completo', id=p.id) }}"
+                                class="btn btn-sm btn-success"
+                                onclick="event.stopPropagation();">
                                 <i class="bi bi-pencil-square"></i> Editar
                             </a>
-                            <form class="form-deletar" action="{{ url_for('main.deletar_registro', id=p.id) }}" method="POST">
-                                <button type="submit" class="btn btn-sm btn-danger w-100">
-                                    <i class="bi bi-trash"></i>
-                                </button>
+                            <form class="form-deletar"
+                                action="{{ url_for('main.deletar_registro', id=p.id) }}"
+                                method="POST"
+                                onclick="event.stopPropagation();">
+                                <button type="submit" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i> Deletar</button>
                             </form>
                         </div>
                         {% endif %}
                     </td>
 
-                    {# COLUNA 2: DADOS TÉCNICOS #}
-                    <td class="align-top pt-3">
-                        <h6 class="d-lg-none fw-bold text-muted text-uppercase small mb-2">Dados da Operação</h6>
-                        
-                        {% if p.latitude and p.longitude %}
-                        <div class="d-flex justify-content-between align-items-center p-2 rounded mb-3 border ">
-                            <div style="line-height: 1.2;">
-                                <small class="text-muted d-block">GPS:</small>
-                                <small class="fw-bold font-monospace ">{{ p.latitude }}, {{ p.longitude }}</small>
-                            </div>
-                            <a href="http://maps.google.com/maps?q={{ p.latitude }},{{ p.longitude }}" target="_blank" class="btn btn-sm btn-outline-danger ms-2">
-                                <i class="bi bi-map-fill"></i>
-                            </a>
-                        </div>
-                        {% else %}
-                        <div class="alert alert-warning py-1 px-2 small mb-3">
-                            <i class="bi bi-exclamation-triangle"></i> Sem coordenadas
+                    {# COLUNA 2: DADOS (SÓ DESKTOP) #}
+                    <td class="align-top pt-3 d-none d-lg-table-cell">
+                        {% if p.latitude %}
+                        <div class="d-flex justify-content-between p-2 rounded border mb-2">
+                            <small class="font-monospace fw-bold">{{ p.latitude }}, {{ p.longitude }}</small>
+                            <a href="http://maps.google.com/maps?q={{ p.latitude }},{{ p.longitude }}" target="_blank" class="btn btn-sm btn-outline-danger py-0"><i class="bi bi-map-fill"></i></a>
                         </div>
                         {% endif %}
-
-                        <div class="row g-2 small mb-2">
+                        <div class="row g-2 small">
+                            <div class="col-6"><span>Tipo:</span> <strong>{{ p.tipo_visita }}</strong></div>
+                            <div class="col-6"><span>Altura:</span> <strong>{{ p.altura_voo }}</strong></div>
+                            <div class="col-12"><span>Foco:</span> <strong>{{ p.foco }}</strong></div>
                             <div class="col-6">
-                                <span class="text-muted d-block">Tipo de Visita:</span>
-                                <strong class="text-capitalize">{{ p.tipo_visita or '--' }}</strong>
-                            </div>
-                            <div class="col-6">
-                                <span class="text-muted d-block">Altura Voo:</span>
-                                <strong>{{ p.altura_voo or '--' }}</strong>
-                            </div>
-                            <div class="col-12">
-                                <span class="text-muted d-block">Foco:</span>
-                                <strong>{{ p.foco }}</strong>
+                                <span>Apoio CET?</span>
+                                {% if p.apoio_cet %}
+                                        <div class="mt-1">
+                                            <span class="badge bg-success text-light">
+                                                 Sim
+                                            </span>
+                                        </div>
+                                    {% else %}
+                                        <div class="mt-1">
+                                            <span class="badge bg-danger text-light">
+                                               Não
+                                            </span>
+                                        </div>
+                                    {% endif %}
                             </div>
                         </div>
 
-                        <div class="mb-3">
-                            {% if p.apoio_cet %}
-                            <span class="badge bg-warning text-dark">Apoio CET: SIM</span>
-                            {% else %}
-                            <span class="badge bg-secondary">Apoio CET: NÃO</span>
-                            {% endif %}
-                        </div>
-
-                        {% if p.observacao %}
-                        <div class="p-2 border rounded small fst-italic text-muted campo-observacao ">
-                            <i class="bi bi-chat-quote me-1"></i> "{{ p.observacao }}"
-                        </div>
-                        {% endif %}
+                        {% if p.observacao %}<div class="mt-2 p-1 border rounded fst-italic small">{{ p.observacao }}</div>{% endif %}
                     </td>
 
-                    {# COLUNA 3: AÇÕES E STATUS #}
-                    <td class="align-top pt-3">
-                        <h6 class="d-lg-none fw-bold text-muted text-uppercase small mb-2">Decisão & Status</h6>
-
+                    {# COLUNA 3: FORMULÁRIO (SÓ DESKTOP) #}
+                    <td class="align-top pt-3 d-none d-lg-table-cell bg-opacity-10">
                         {% if is_editable %}
-                        
-                        {# --- FORMULÁRIO DE DECISÃO --- #}
-                        <form action="{{ url_for('main.atualizar', id=p.id) }}" method="POST" enctype="multipart/form-data">
-                            
-                            <div class="row g-1 mb-2">
-                                <div class="col-12"><label class="small fw-bold text-muted">Ajuste GPS (Lat / Long)</label></div>
-                                <div class="col-6">
-                                    <input name="latitude" class="form-control form-control-sm font-monospace" placeholder="Lat" value="{{ p.latitude or '' }}">
+                            {# --- FORMULÁRIO DESKTOP ORIGINAL --- #}
+                            <form action="{{ url_for('main.atualizar', id=p.id) }}" method="POST" enctype="multipart/form-data">
+                                <div class="row g-1 mb-2">
+                                    <div class="col-6"><input name="latitude" class="form-control form-control-sm" value="{{ p.latitude or '' }}" placeholder="Lat"></div>
+                                    <div class="col-6"><input name="longitude" class="form-control form-control-sm" value="{{ p.longitude or '' }}" placeholder="Long"></div>
                                 </div>
-                                <div class="col-6">
-                                    <input name="longitude" class="form-control form-control-sm font-monospace" placeholder="Long" value="{{ p.longitude or '' }}">
-                                </div>
-                            </div>
-                            
-                            <label class="small fw-bold text-muted">Protocolo DECEA</label>
-                            <input name="protocolo" class="form-control form-control-sm font-monospace mb-2" placeholder="BR-2025-XXXX" value="{{ p.protocolo or '' }}">
-
-                            <div class="p-3 border rounded  shadow-sm">
-                                <label class="small fw-bold text-muted">Decisão do Status</label>
-                                <select name="status" class="form-select form-select-sm mb-2 fw-bold text-dark" onchange="toggleJustificativa(this, '{{ p.id }}')">
-                                    <option value="PENDENTE" {% if p.status=='PENDENTE' %}selected{% endif %}>⚪️ Pendente</option>
-                                    <option value="EM ANÁLISE" {% if p.status=='EM ANÁLISE' %}selected{% endif %}>🟡 Em Análise</option>
-                                    <option value="APROVADO" {% if p.status=='APROVADO' %}selected{% endif %}>🟢 Aprovar</option>
-                                    <option value="APROVADO COM RECOMENDAÇÕES" {% if p.status=='APROVADO COM RECOMENDAÇÕES' %}selected{% endif %}>🟠 Aprovado c/ rec.</option>
-                                    <option value="NEGADO" {% if p.status=='NEGADO' %}selected{% endif %}>🔴 Negar</option>
-                                </select>
-
-                                <div class="mb-3" id="boxJustificativa{{ p.id }}" style="display: none;">
-                                    <label class="small fw-bold text-muted mb-1">Justificativa <span class="text-danger">*</span></label>
-                                    <input name="justificativa" id="inputJustificativa{{ p.id }}" class="form-control form-control-sm" value="{{ p.justificativa or '' }}" placeholder="Motivo da negação...">
-                                </div>
-
-                                <div class="mb-2">
-                                    <label class="small fw-bold text-muted mb-1">Anexo (PDF)</label>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <label id="btnAnexo{{ p.id }}" for="inputPdf{{ p.id }}" class="btn btn-sm btn-outline-primary w-100 text-truncate">
-                                            <span id="textoDisplay{{ p.id }}"><i class="bi bi-paperclip"></i> {{ p.anexo_nome or 'Anexar' }}</span>
-                                        </label>
-
-                                        <a id="btnVisualizar{{ p.id }}" href="{{ url_for('main.baixar_anexo', id=p.id) if p.anexo_path else '#' }}" target="_blank" class="btn btn-sm btn-outline-primary {% if not p.anexo_path %}d-none{% endif %}">
-                                            <i class="bi bi-eye"></i>
-                                        </a>
-
-                                        {# --- BOTÃO DE DELETAR ANEXO (CONECTADO AO BASE.HTML) --- #}
-                                        {# Este botão usa o atributo 'form' para apontar para o formulário externo #}
-                                        <button type="submit" form="formRemoverAnexo{{ p.id }}" id="btnRemover{{ p.id }}" class="btn btn-sm btn-outline-danger {% if not p.anexo_path %}d-none{% endif %}">
-                                            <i class="bi bi-x-lg"></i>
-                                        </button>
-
-                                        <input type="file" name="anexo" id="inputPdf{{ p.id }}" class="d-none" accept="application/pdf, image/*" onchange="processarArquivo(this, '{{ p.id }}')">
+                                <input name="protocolo" class="form-control form-control-sm mb-2" placeholder="Protocolo" value="{{ p.protocolo or '' }}">
+                                
+                                <div class="p-2 border rounded">
+                                    <select name="status" class="form-select form-select-sm mb-2" onchange="toggleJustificativa(this, '{{ p.id }}')">
+                                        <option value="PENDENTE" {% if p.status=='PENDENTE' %}selected{% endif %}>⚪️ Pendente</option>
+                                        <option value="EM ANÁLISE" {% if p.status=='EM ANÁLISE' %}selected{% endif %}>🟡 Em Análise</option>
+                                        <option value="APROVADO COM RECOMENDAÇÕES" {% if p.status=='APROVADO COM RECOMENDAÇÕES' %}selected{% endif %}>🟠 Aprovado com Recomendações</option>
+                                        <option value="APROVADO" {% if p.status=='APROVADO' %}selected{% endif %}>🟢 Aprovar</option>
+                                        <option value="NEGADO" {% if p.status=='NEGADO' %}selected{% endif %}>🔴 Negar</option>
+                                    </select>
+                                    
+                                    <div id="boxJustificativa{{ p.id }}" style="display: none;" class="mb-2">
+                                        <input name="justificativa" id="inputJustificativa{{ p.id }}" class="form-control form-control-sm" value="{{ p.justificativa or '' }}" placeholder="Justificativa">
                                     </div>
+
+                                    <div class="d-flex gap-1 align-items-center">
+                                        <label id="btnAnexo{{ p.id }}" for="inputPdf{{ p.id }}" class="btn btn-sm btn-outline-primary w-100 text-truncate"><span id="textoDisplay{{ p.id }}"><i class="bi bi-paperclip"></i> {{ p.anexo_nome or 'Anexar' }}</span></label>
+                                        <a id="btnVisualizar{{ p.id }}" href="{{ url_for('main.baixar_anexo', id=p.id) if p.anexo_path else '#' }}" target="_blank" class="btn btn-sm btn-outline-primary {% if not p.anexo_path %}d-none{% endif %}"><i class="bi bi-eye"></i></a>
+                                        <button type="submit" form="formRemoverAnexo{{ p.id }}" class="btn btn-sm btn-outline-danger {% if not p.anexo_path %}d-none{% endif %}" id="btnRemover{{ p.id }}"><i class="bi bi-x"></i></button>
+                                    </div>
+                                    <input type="file" name="anexo" id="inputPdf{{ p.id }}" class="d-none" onchange="processarArquivo(this, '{{ p.id }}')">
+                                    
+                                    <button type="submit" class="btn btn-primary btn-sm w-100 mt-2">Salvar</button>
                                 </div>
-
-                                <div class="d-grid mt-3">
-                                    <button type="submit" class="btn btn-primary btn-sm rounded-pill shadow-sm">
-                                        <i class="bi bi-check-lg me-1"></i> Salvar Tudo
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
-
-                        {# --- FORMULÁRIO FANTASMA DE REMOÇÃO DE ANEXO (Fica invisível, o botão acima aciona ele) --- #}
-                        {% if p.anexo_path %}
-                        <form action="{{ url_for('main.remover_anexo', id=p.id) }}" method="POST" class="form-deletar d-none" id="formRemoverAnexo{{ p.id }}"></form>
-                        {% endif %}
-
+                            </form>
+                            {# Form Fantasma Remover Desktop #}
+                            {% if p.anexo_path %}<form action="{{ url_for('main.remover_anexo', id=p.id) }}" method="POST" class="form-deletar d-none" id="formRemoverAnexo{{ p.id }}"></form>{% endif %}
                         {% else %}
-                        {# MODO LEITURA #}
-                        <div class="p-3 border rounded">
-                            <div class="text-center mb-2">
-                                <span class="badge fw-bold fs-6 p-2
-                                    {% if p.status=='APROVADO' %}bg-success
-                                    {% elif p.status=='NEGADO' %}bg-danger
-                                    {% else %}bg-secondary{% endif %}">
-                                    {{ p.status }}
-                                </span>
-                            </div>
-                            <label class="small fw-bold text-muted">Protocolo:</label>
-                            <div class="mb-2 p-1 border rounded font-monospace small  text-center">{{ p.protocolo or 'N/A' }}</div>
-                            
-                            {% if p.justificativa %}
-                            <label class="small fw-bold text-muted">Justificativa:</label>
-                            <div class="small p-1 border rounded fst-italic text-muted ">{{ p.justificativa }}</div>
-                            {% endif %}
-                        </div>
+                            <div class="text-center"><span class="badge bg-secondary">{{ p.status }}</span></div>
                         {% endif %}
+                    </td>
+                </tr>
+
+                {# === LINHA 2: SANFONA DETALHES (SÓ MOBILE) === #}
+                <tr class="d-lg-none p-0 border-0">
+                    <td colspan="3" class="p-0 border-0">
+                        <div class="collapse" id="accordion{{ p.id }}">
+                            <div class="p-3 border-bottom">
+                                
+                                {# --- 1. DADOS COMPLETOS MOBILE --- #}
+                                <div class="p-3 rounded border mb-3">
+                                    <h6 class="small fw-bold text-muted mb-2 text-uppercase">Detalhes</h6>
+                                    <p class="small text-dark mb-2">{{ p.logradouro }}, {{ p.numero }} - {{ p.bairro }}</p>
+
+                                    {% if p.latitude and p.longitude %}
+                                    <div class="rounded p-2 mb-2">
+                                        <div class="small text-muted mb-1">
+                                            <i class="bi bi-crosshair text-danger me-1"></i> Coordenadas
+                                        </div>
+                                        <div class="fw-bold font-monospace text-dark">
+                                            {{ p.latitude }}, {{ p.longitude }}
+                                        </div>
+                                    </div>
+                                    <div class="d-grid mb-3">
+                                        <a href="http://maps.google.com/maps?q={{ p.latitude }},{{ p.longitude }}" target="_blank" class="btn btn-sm btn-outline-danger">
+                                            <i class="bi bi-map-fill text-danger me-2"></i> Ver no Mapa
+                                        </a>
+                                    </div>
+                                    {% endif %}                                       
+                                    <div class="row g-2 small text-muted">
+                                        <div class="col-6"><strong>Tipo:</strong> {{ p.tipo_visita }}</div>
+                                        <div class="col-6"><strong>Alt:</strong> {{ p.altura_voo }}</div>
+                                        <div class="col-6"><strong>Foco:</strong> {{ p.foco }}</div>
+                                        <div class="col-6">
+                                            <span>Apoio CET?</span>
+                                                {% if p.apoio_cet %}
+                                                        <div class="mt-1">
+                                                            <span class="badge bg-success text-light">
+                                                                Sim
+                                                            </span>
+                                                        </div>
+                                                    {% else %}
+                                                        <div class="mt-1">
+                                                            <span class="badge bg-danger text-light">
+                                                            Não
+                                                            </span>
+                                                        </div>
+                                                    {% endif %}
+                                        </div>
+                                    </div>
+                                    {% if p.observacao %}<div class="alert alert-warning small p-2 mt-2 mb-0">{{ p.observacao }}</div>{% endif %}
+                                </div>
+
+                                {# --- 2. FORMULÁRIO MOBILE (Cópia adaptada para Mobile) --- #}
+                                {% if is_editable %}
+                                <div class="p-3 rounded border shadow-sm">
+                                    <h6 class="small fw-bold text-primary mb-3 text-uppercase">Tomar Decisão</h6>
+                                    
+                                    <form action="{{ url_for('main.atualizar', id=p.id) }}" method="POST" enctype="multipart/form-data">
+                                        <div class="d-none">
+                                            <input name="latitude" value="{{ p.latitude }}">
+                                            <input name="longitude" value="{{ p.longitude }}">
+                                        </div>
+                                        <input name="protocolo" class="form-control mb-3" placeholder="Protocolo DECEA" value="{{ p.protocolo or '' }}">
+                                        
+                                        <select name="status" class="form-select mb-3 fw-bold border-secondary" onchange="toggleJustificativa(this, '{{ p.id }}_mob')">
+                                            <option value="PENDENTE" {% if p.status=='PENDENTE' %}selected{% endif %}>⚪️ Pendente</option>
+                                            <option value="EM ANÁLISE" {% if p.status=='EM ANÁLISE' %}selected{% endif %}>🟡 Em Análise</option>
+                                            <option value="APROVADO" {% if p.status=='APROVADO' %}selected{% endif %}>🟢 Aprovar</option>
+                                            <option value="APROVADO COM RECOMENDAÇÕES" {% if p.status=='APROVADO COM RECOMENDAÇÕES' %}selected{% endif %}>🟠 Aprovado com Recomendações</option>
+                                            <option value="NEGADO" {% if p.status=='NEGADO' %}selected{% endif %}>🔴 Negar</option>
+                                        </select>
+
+                                        <div id="boxJustificativa{{ p.id }}_mob" style="display: none;" class="mb-3">
+                                            <textarea name="justificativa" id="inputJustificativa{{ p.id }}_mob" class="form-control" rows="2" placeholder="Motivo...">{{ p.justificativa }}</textarea>
+                                        </div>
+
+                                        <div class="anexo-actions mb-3">
+
+                                            <label id="btnAnexo{{ p.id }}_mob"
+                                                for="inputPdf{{ p.id }}_mob"
+                                                class="btn btn-outline-primary btn-sm btn-anexo"
+                                                >
+                                                <span id="textoDisplay{{ p.id }}_mob">
+                                                    <i class="bi bi-paperclip me-1"></i> {{ p.anexo_nome or 'Anexar' }}
+                                                </span>
+                                            </label>
+
+                                            
+                                            <a id="btnVisualizar{{ p.id }}_mob"
+                                                href="{{ url_for('main.baixar_anexo', id=p.id) if p.anexo_path else '#' }}"
+                                                target="_blank"
+                                                class="btn btn-success btn-sm btn-icon {% if not p.anexo_path %}d-none{% endif %}">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+
+                                            
+                                            {% if p.anexo_path %}
+                                            <form action="{{ url_for('main.remover_anexo', id=p.id) }}"
+                                                method="POST"
+                                                id="formRemoverAnexo{{ p.id }}_mob"
+                                                class="d-none">
+                                            </form>
+
+                                            {% endif %}
+                                        </div>
+
+                                        <input type="file" name="anexo" id="inputPdf{{ p.id }}_mob" class="d-none" onchange="processarArquivo(this, '{{ p.id }}_mob')">
+
+                                        <button type="submit" class="btn btn-primary w-100 fw-bold py-2">Salvar Decisão</button>
+                                    </form>
+                                    
+                                    {% if current_user.tipo_usuario == 'admin' %}
+                                    <div class="d-flex gap-1 mt-2 align-items-center justify-content-center">
+                                        <a href="{{ url_for('main.admin_editar_completo', id=p.id) }}"
+                                            class="btn btn-sm btn-success">
+                                            <i class="bi bi-pencil-square"></i> Editar
+                                        </a>
+                                        <form class="form-deletar" action="{{ url_for('main.deletar_registro', id=p.id) }}"
+                                            method="POST">
+                                            <button type="submit" class="btn btn-sm btn-danger">
+                                                <i class="bi bi-trash"></i> Deletar
+                                            </button>
+                                        </form>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
                     </td>
                 </tr>
                 {% else %}
-                <tr>
-                    <td colspan="3" class="text-center py-5 text-muted">
-                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                        Nenhum pedido encontrado.
-                    </td>
-                </tr>
+                <tr><td colspan="3" class="text-center py-5">Nenhum registro.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
         
-        {# --- Paginação --- #}
+        {# --- PAGINAÇÃO (MANTIDA IGUAL) --- #}
         {% if paginacao.pages > 1 %}
-        <nav aria-label="Navegação" class="mt-4 pb-3">
+        <nav class="mt-4 pb-3">
             <ul class="pagination justify-content-center">
                 <li class="page-item {% if not paginacao.has_prev %}disabled{% endif %}">
-                    <a class="page-link" href="{{ url_for('main.admin_dashboard', page=paginacao.prev_num, status=request.args.get('status'), unidade=request.args.get('unidade'), regiao=request.args.get('regiao')) }}">Anterior</a>
+                    <a class="page-link" href="{{ url_for('main.admin_dashboard', page=paginacao.prev_num) }}">Anterior</a>
                 </li>
-                <li class="page-item disabled"><a class="page-link">{{ paginacao.page }} / {{ paginacao.pages }}</a></li>
+                <li class="page-item disabled"><span class="page-link">{{ paginacao.page }} / {{ paginacao.pages }}</span></li>
                 <li class="page-item {% if not paginacao.has_next %}disabled{% endif %}">
-                    <a class="page-link" href="{{ url_for('main.admin_dashboard', page=paginacao.next_num, status=request.args.get('status'), unidade=request.args.get('unidade'), regiao=request.args.get('regiao')) }}">Próxima</a>
+                    <a class="page-link" href="{{ url_for('main.admin_dashboard', page=paginacao.next_num) }}">Próxima</a>
                 </li>
             </ul>
         </nav>
         {% endif %}
     </div>
 </div>
+{# --- FIM DO CONTAINER PADRONIZADO --- #}
 
 {# --- CHATBOT (Mantido igual) --- #}
 {% if current_user.tipo_usuario == 'admin' %}
@@ -397,25 +432,27 @@
         if (!input.files || !input.files.length) return;
 
         const file = input.files[0];
+
         const texto = document.getElementById('textoDisplay' + id);
-        const btnAnexo = document.getElementById('btnAnexo' + id);
         const btnVisualizar = document.getElementById('btnVisualizar' + id);
         const btnRemover = document.getElementById('btnRemover' + id);
 
         const url = URL.createObjectURL(file);
 
-        // Atualiza texto e layout
-        texto.innerHTML = `<i class="bi bi-paperclip me-2"></i> ${file.name}`;
-        btnAnexo.classList.remove('w-100');
-        btnAnexo.classList.add('flex-grow-1');
+        if (texto) {
+            texto.innerHTML = `<i class="bi bi-paperclip me-1"></i> ${file.name}`;
+        }
 
-        // Atualiza botão de visualizar para o novo arquivo (preview)
-        btnVisualizar.href = url;
-        btnVisualizar.classList.remove('d-none');
+        if (btnVisualizar) {
+            btnVisualizar.href = url;
+            btnVisualizar.classList.remove('d-none');
+        }
 
-        // ESCONDE O BOTÃO DE REMOVER O ARQUIVO ANTIGO (pois agora temos um novo não salvo)
-        if (btnRemover) btnRemover.classList.add('d-none');
+        if (btnRemover) {
+            btnRemover.classList.remove('d-none');
+        }
     }
+
 
     // --- TOGGLE JUSTIFICATIVA ---
     function toggleJustificativa(select, id) {
