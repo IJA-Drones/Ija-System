@@ -658,13 +658,6 @@ body.dark-mode .list-group-item .text-dark { color: var(--color-text-main) !impo
 .list-group-item-light-custom { background-color: var(--color-text-notificação) !important; }
 body.dark-mode .list-group-item-light-custom { background-color: #3f98b3a1 !important; }
 
-/* Calendar Mobile Fix */
-@media (max-width: 576px) {
-  #calendar { padding: 10px; }
-  .fc .fc-toolbar-title { font-size: 1.05rem; }
-  .fc .fc-button { padding: 7px 10px !important; }
-}
-
 /* -----------------------------------------
    13) PAGINAÇÃO
    ----------------------------------------- */
