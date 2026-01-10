@@ -339,14 +339,30 @@
 
                       <!-- Filtro por Foco da Ação -->
                       <div class="col-md-3">
-                          <label class="small text-muted mb-1">Filtrar por Foco da Ação</label>
-                          <select name="foco" class="form-select form-select-sm">
-                              <option value="">Todos os Focos</option>
-                              <option value="Imóvel Abandonado" {{ 'selected' if request.args.get('foco')=='Imóvel Abandonado' else '' }}>Imóvel Abandonado</option>
-                              <option value="Piscina/Caixa d'água" {{ 'selected' if request.args.get('foco')=="Piscina/Caixa d'água" else '' }}>Piscina/Caixa d'água</option>
-                              <option value="Terreno Baldio" {{ 'selected' if request.args.get('foco')=='Terreno Baldio' else '' }}>Terreno Baldio</option>
-                              <option value="Ponto Estratégico" {{ 'selected' if request.args.get('foco')=='Ponto Estratégico' else '' }}>Ponto Estratégico</option>
-                          </select>
+                        <label class="small text-muted mb-1">Filtrar por Foco da Ação</label>
+                        <select name="foco" class="form-select form-select-sm">
+                          <option value="">Todos os Focos</option>
+
+                          <option value="Imóvel Abandonado"
+                            {{ 'selected' if request.args.get('foco') == 'Imóvel Abandonado' else '' }}>
+                            Imóvel Abandonado
+                          </option>
+
+                          <option value="Piscina / Caixa D'água"
+                            {{ 'selected' if request.args.get('foco') == "Piscina / Caixa D'água" else '' }}>
+                            Piscina / Caixa D'água
+                          </option>
+
+                          <option value="Terreno Baldio"
+                            {{ 'selected' if request.args.get('foco') == 'Terreno Baldio' else '' }}>
+                            Terreno Baldio
+                          </option>
+
+                          <option value="Ponto Estratégico (PE)"
+                            {{ 'selected' if request.args.get('foco') == 'Ponto Estratégico (PE)' else '' }}>
+                            Ponto Estratégico (PE)
+                          </option>
+                        </select>
                       </div>
 
                       <div class="col-md-3 d-flex gap-2">
@@ -364,12 +380,6 @@
           </div>
       </div>
   </div>
-
-
-
-
-
-
   {# Tabela #}
   <div class="card shadow-sm rounded-4 border-0 overflow-hidden">
     <div class="card-body p-0">

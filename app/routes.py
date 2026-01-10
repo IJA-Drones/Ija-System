@@ -547,31 +547,30 @@ def novo():
             apoio_cet_bool = request.form.get('apoio_cet') == 'sim'
 
             nova_solicitacao = Solicitacao(
-                data_agendamento=data_obj,
-                hora_agendamento=hora_obj,
+            data_agendamento=data_obj,
+            hora_agendamento=hora_obj,
 
-                cep=request.form.get('cep'),
-                logradouro=request.form.get('logradouro'),
-                bairro=request.form.get('bairro'),
-                cidade=request.form.get('cidade'),
-                numero=request.form.get('numero'),
-                uf=request.form.get('uf'),
-                complemento=request.form.get('complemento'),
+            cep=request.form.get('cep'),
+            logradouro=request.form.get('logradouro'),
+            bairro=request.form.get('bairro'),
+            cidade=request.form.get('cidade'),
+            numero=request.form.get('numero'),
+            uf=request.form.get('uf'),
+            complemento=request.form.get('complemento'),
 
-                foco=request.form.get('foco')
-                tipo_visita=request.form.get('tipo_visita'),
-                altura_voo=request.form.get('altura_voo'),
-                apoio_cet=apoio_cet_bool,
-                observacao=request.form.get('observacao'),
+            foco=request.form.get('foco'),
+            tipo_visita=request.form.get('tipo_visita'),
+            altura_voo=request.form.get('altura_voo'),
+            apoio_cet=apoio_cet_bool,
+            observacao=request.form.get('observacao'),
 
-                latitude=request.form.get('latitude'),
-                longitude=request.form.get('longitude'),
+            latitude=request.form.get('latitude'),
+            longitude=request.form.get('longitude'),
 
-                # 🔑 RELAÇÃO CORRETA COM FLASK-LOGIN
-                usuario_id=current_user.id,
+            usuario_id=current_user.id,
+            status='PENDENTE'
+        )
 
-                status='PENDENTE'
-            )
 
             db.session.add(nova_solicitacao)
             db.session.commit()
