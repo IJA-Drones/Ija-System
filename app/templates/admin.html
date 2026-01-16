@@ -515,136 +515,200 @@
 
 {% block scripts %}
 <script>
-    // --- LÓGICA DE INTERFACE DE ARQUIVO ---
-    function processarArquivo(input, id) {
-        if (!input.files || !input.files.length) return;
+  // --- LÓGICA DE INTERFACE DE ARQUIVO ---
+  function processarArquivo(input, id) {
+    if (!input.files || !input.files.length) return;
 
-        const file = input.files[0];
+    const file = input.files[0];
 
-        const texto = document.getElementById('textoDisplay' + id);
-        const btnVisualizar = document.getElementById('btnVisualizar' + id);
-        const btnRemover = document.getElementById('btnRemover' + id);
+    const texto = document.getElementById("textoDisplay" + id);
+    const btnVisualizar = document.getElementById("btnVisualizar" + id);
+    const btnRemover = document.getElementById("btnRemover" + id);
 
-        const url = URL.createObjectURL(file);
+    const url = URL.createObjectURL(file);
 
-        if (texto) {
-            texto.innerHTML = `<i class="bi bi-paperclip me-1"></i> ${file.name}`;
-        }
-
-        if (btnVisualizar) {
-            btnVisualizar.href = url;
-            btnVisualizar.classList.remove('d-none');
-        }
-
-        if (btnRemover) {
-            btnRemover.classList.remove('d-none');
-        }
+    if (texto) {
+      texto.innerHTML = `<i class="bi bi-paperclip me-1"></i> ${file.name}`;
     }
 
-    // Função para resumir nomes de arquivos longos
-    function resumirNomeArquivo(nome, max = 22) {
-        if (!nome) return "";
-        if (nome.length <= max) return nome;
-
-        const dot = nome.lastIndexOf(".");
-        const ext = dot > 0 ? nome.slice(dot) : "";
-        const base = dot > 0 ? nome.slice(0, dot) : nome;
-
-        const keepStart = Math.max(8, Math.floor((max - ext.length - 3) * 0.6));
-        const keepEnd = Math.max(5, (max - ext.length - 3) - keepStart);
-
-        return base.slice(0, keepStart) + "..." + base.slice(-keepEnd) + ext;
+    if (btnVisualizar) {
+      btnVisualizar.href = url;
+      btnVisualizar.classList.remove("d-none");
     }
 
+    if (btnRemover) {
+      btnRemover.classList.remove("d-none");
+    }
+  }
+
+  // Função para resumir nomes de arquivos longos
+  function resumirNomeArquivo(nome, max = 22) {
+    if (!nome) return "";
+    if (nome.length <= max) return nome;
+
+    const dot = nome.lastIndexOf(".");
+    const ext = dot > 0 ? nome.slice(dot) : "";
+    const base = dot > 0 ? nome.slice(0, dot) : nome;
+
+    const keepStart = Math.max(8, Math.floor((max - ext.length - 3) * 0.6));
+    const keepEnd = Math.max(5, (max - ext.length - 3) - keepStart);
+
+    return base.slice(0, keepStart) + "..." + base.slice(-keepEnd) + ext;
+  }
+
+  // --- TOGGLE JUSTIFICATIVA (só aparece em NEGADO) ---
+  function toggleJustificativa(select, id) {
+    const box = document.getElementById("boxJustificativa" + id);
+    const input = document.getElementById("inputJustificativa" + id);
+    if (!box || !input) return;
+
+    if (select.value === "NEGADO") {
+      box.style.display = "block";
+      input.setAttribute("required", "required");
+    } else {
+      box.style.display = "none";
+      input.removeAttribute("required");
+    }
+  }
+
+  // --- INICIALIZAÇÃO ---
+  document.addEventListener("DOMContentLoaded", () => {
     // Resumo de nome (sem depender de .btn-anexo > span)
-    document.addEventListener("DOMContentLoaded", () => {
-        document.querySelectorAll('[id^="textoDisplay"]').forEach(span => {
-            const original = (span.textContent || "").trim();
-            if (!original) return;
+    document.querySelectorAll('[id^="textoDisplay"]').forEach((span) => {
+      const original = (span.textContent || "").trim();
+      if (!original) return;
 
-            // tooltip com nome completo
-            span.setAttribute("title", original);
+      // tooltip com nome completo
+      span.setAttribute("title", original);
 
-            // tenta separar o nome do arquivo se tiver "📎" textual, senão usa tudo
-            const cleaned = original.replace(/^📎\s*/,'').trim();
-            const resumido = resumirNomeArquivo(cleaned, 22);
+      // tenta separar o nome do arquivo se tiver "📎" textual, senão usa tudo
+      const cleaned = original.replace(/^📎\s*/, "").trim();
+      const resumido = resumirNomeArquivo(cleaned, 22);
 
-            // preserva ícone <i> se existir
-            const icon = span.querySelector("i");
-            if (icon) {
-                const iconClone = icon.cloneNode(true);
-                span.innerHTML = "";
-                span.appendChild(iconClone);
-                span.insertAdjacentText("beforeend", " " + resumido);
-            } else {
-                span.textContent = resumido;
-            }
-        });
+      // preserva ícone <i> se existir
+      const icon = span.querySelector("i");
+      if (icon) {
+        const iconClone = icon.cloneNode(true);
+        span.innerHTML = "";
+        span.appendChild(iconClone);
+        span.insertAdjacentText("beforeend", " " + resumido);
+      } else {
+        span.textContent = resumido;
+      }
     });
 
-    // --- TOGGLE JUSTIFICATIVA (só aparece em NEGADO) ---
-    function toggleJustificativa(select, id) {
-        const box = document.getElementById('boxJustificativa' + id);
-        const input = document.getElementById('inputJustificativa' + id);
-        if (!box || !input) return;
+    // Inicializa justificativa em todos selects de status que tenham data-jid
+    document.querySelectorAll('select[name="status"][data-jid]').forEach((select) => {
+      toggleJustificativa(select, select.dataset.jid);
+    });
 
-        if (select.value === 'NEGADO') {
-            box.style.display = 'block';
-            input.setAttribute('required', 'required');
-        } else {
-            box.style.display = 'none';
-            input.removeAttribute('required');
+    // --- CHATBOT ---
+    (function () {
+      if (window.ADMIN_CHAT_INIT) return;
+      window.ADMIN_CHAT_INIT = true;
+
+      const API_URL = "{{ url_for('main.admin_chatbot') }}";
+      const fab = document.getElementById("adminBotFab");
+      const chatWindow = document.getElementById("adminBotWindow");
+      const box = document.getElementById("adminBotMessages");
+      const input = document.getElementById("adminBotInput");
+      const send = document.getElementById("adminBotSend");
+      const closeBtns = document.querySelectorAll("#adminBotClose, #adminBotClear");
+
+      if (!fab || !chatWindow || !box || !input) return;
+
+      // ✅ Mensagem inicial do FAQ
+      const FAQ_WELCOME_HTML = `
+        Olá! Sou o <b>assistente virtual</b> do <b>painel administrativo</b>.<br>
+        <b>Posso ajudar</b> com dúvidas sobre:<br>
+        - <b>Perfis e permissões</b><br>
+        - <b>Filtros no painel</b><br>
+        - <b>Salvar decisão</b><br>
+        - <b>Editar completo</b><br>
+        - <b>Excluir solicitação</b><br>
+        - <b>Anexos</b><br>
+        - <b>GPS e mapa</b><br>
+        - <b>Exportar Excel</b><br>
+        - <b>Agenda</b><br>
+        - <b>Relatórios</b><br>
+        - <b>Gestão de UVIS</b><br>
+        <b>Como posso ajudar você hoje?</b>
+      `;
+
+      // ✅ Garante que aparece só 1x (e reaparece se limpar)
+      function ensureWelcomeMessage() {
+        const hasAnyMessage = box.querySelector(".message");
+        if (hasAnyMessage) return;
+
+        const divBot = document.createElement("div");
+        divBot.className = "message bot";
+        divBot.innerHTML = FAQ_WELCOME_HTML;
+        box.appendChild(divBot);
+        box.scrollTop = box.scrollHeight;
+      }
+
+      function toggleChat() {
+        chatWindow.classList.toggle("active");
+
+        if (chatWindow.classList.contains("active")) {
+          ensureWelcomeMessage();
+          setTimeout(() => input.focus(), 300);
         }
-    }
+      }
 
-    // --- INICIALIZAÇÃO ---
-    document.addEventListener('DOMContentLoaded', () => {
-        // Inicializa justificativa em todos selects de status que tenham data-jid
-        document.querySelectorAll('select[name="status"][data-jid]').forEach(select => {
-            toggleJustificativa(select, select.dataset.jid);
-        });
+      fab.addEventListener("click", toggleChat);
 
-        // Chatbot logic (Mantido igual)
-        (function () {
-            if (window.ADMIN_CHAT_INIT) return;
-            window.ADMIN_CHAT_INIT = true;
-            const API_URL = "{{ url_for('main.admin_chatbot') }}";
-            const fab = document.getElementById("adminBotFab");
-            const chatWindow = document.getElementById("adminBotWindow");
-            const box = document.getElementById("adminBotMessages");
-            const input = document.getElementById("adminBotInput");
-            const send = document.getElementById("adminBotSend");
-            const closeBtns = document.querySelectorAll("#adminBotClose, #adminBotClear");
+      closeBtns.forEach((b) =>
+        b.addEventListener("click", (e) => {
+          if (e.currentTarget.id === "adminBotClear") {
+            box.innerHTML = "";
+            ensureWelcomeMessage();
+            setTimeout(() => input.focus(), 150);
+          } else {
+            toggleChat();
+          }
+        })
+      );
 
-            if(!fab) return;
+      async function ask(txt) {
+        const msg = (txt || input.value || "").trim();
+        if (!msg) return;
 
-            function toggleChat() { chatWindow.classList.toggle('active'); if(chatWindow.classList.contains('active')) setTimeout(()=>input.focus(),300); }
-            fab.addEventListener("click", toggleChat);
-            closeBtns.forEach(b => b.addEventListener("click", (e) => {
-                if(e.currentTarget.id === 'adminBotClear') box.innerHTML = '';
-                else toggleChat();
-            }));
+        const divMe = document.createElement("div");
+        divMe.className = "message user";
+        divMe.innerText = msg;
+        box.appendChild(divMe);
+        input.value = "";
 
-            async function ask(txt) {
-                const msg = (txt || input.value || "").trim();
-                if(!msg) return;
+        const divBot = document.createElement("div");
+        divBot.className = "message bot";
+        divBot.innerHTML = "...";
+        box.appendChild(divBot);
+        box.scrollTop = box.scrollHeight;
 
-                const divMe = document.createElement("div"); divMe.className="message user"; divMe.innerText=msg; box.appendChild(divMe);
-                input.value="";
+        try {
+          const r = await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: msg }),
+          });
+          const d = await r.json();
+          divBot.innerHTML = d.answer || "Erro.";
+        } catch (e) {
+          divBot.innerHTML = "Erro de conexão.";
+        }
+      }
 
-                const divBot = document.createElement("div"); divBot.className="message bot"; divBot.innerHTML='...'; box.appendChild(divBot);
-                box.scrollTop = box.scrollHeight;
+      if (send) send.addEventListener("click", () => ask());
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") ask();
+      });
 
-                try {
-                    const r = await fetch(API_URL, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({message:msg})});
-                    const d = await r.json();
-                    divBot.innerHTML = d.answer || "Erro.";
-                } catch(e) { divBot.innerHTML = "Erro de conexão."; }
-            }
-            if(send) send.addEventListener("click", ()=>ask());
-            if(input) input.addEventListener("keydown", e=>{if(e.key==="Enter") ask()});
-            document.querySelectorAll(".chip").forEach(c => c.addEventListener("click", ()=>ask(c.getAttribute('data-q'))));
-        })();
-    });
+      document.querySelectorAll(".chip").forEach((c) =>
+        c.addEventListener("click", () => ask(c.getAttribute("data-q")))
+      );
+    })();
+  });
 </script>
+
 {% endblock %}
