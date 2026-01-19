@@ -272,3 +272,81 @@ class Clientes(db.Model):
     telefone = db.Column(db.String(20))
     email = db.Column(db.String(100), index=True)
     endereco = db.Column(db.String(255))
+
+
+# -------------------------------------------------------------
+# EQUIPES
+# - Uma equipe tem exatamente 2 membros: 1 PILOTO e 1 AUXILIAR
+# - A associação fica em EquipePiloto (pivot) com campo "papel"
+# -------------------------------------------------------------
+class Equipe(db.Model):
+    __tablename__ = "equipes"
+
+    id = db.Column(db.Integer, primary_key=True, index=True)
+
+    nome_equipe = db.Column(db.String(100), nullable=False, index=True)
+    descricao = db.Column(db.Text)
+
+    regiao = db.Column(db.String(20), index=True)  # opcional (ajuda filtro)
+    ativa = db.Column(db.Boolean, default=True, nullable=False, index=True)
+
+    criada_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+
+    membros = db.relationship(
+        "EquipePiloto",
+        back_populates="equipe",
+        lazy="select",
+        cascade="all, delete-orphan"
+    )
+
+    @property
+    def piloto_titular(self):
+        return next((m.piloto for m in self.membros if m.papel == "piloto"), None)
+
+    @property
+    def piloto_auxiliar(self):
+        return next((m.piloto for m in self.membros if m.papel == "auxiliar"), None)
+
+
+# -------------------------------------------------------------
+# VÍNCULO EQUIPE <-> PILOTOS (com papel)
+# - papel: "piloto" | "auxiliar"
+# -------------------------------------------------------------
+class EquipePiloto(db.Model):
+    __tablename__ = "equipe_pilotos"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    equipe_id = db.Column(
+        db.Integer,
+        db.ForeignKey("equipes.id"),
+        nullable=False,
+        index=True
+    )
+
+    piloto_id = db.Column(
+        db.Integer,
+        db.ForeignKey("pilotos.id"),
+        nullable=False,
+        index=True
+    )
+
+    # papel na equipe: "piloto" (titular) ou "auxiliar"
+    papel = db.Column(db.String(20), nullable=False, index=True)
+
+    criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+
+    equipe = db.relationship("Equipe", back_populates="membros")
+    piloto = db.relationship("Pilotos", lazy="joined")
+
+    __table_args__ = (
+        # impede duplicar o mesmo piloto na mesma equipe
+        db.UniqueConstraint("equipe_id", "piloto_id", name="uq_equipe_piloto_unico"),
+
+        # garante 1 único "piloto" por equipe e 1 único "auxiliar" por equipe
+        db.UniqueConstraint("equipe_id", "papel", name="uq_equipe_papel_unico"),
+
+        db.Index("ix_equipe_pilotos_equipe", "equipe_id"),
+        db.Index("ix_equipe_pilotos_piloto", "piloto_id"),
+        db.Index("ix_equipe_pilotos_papel", "papel"),
+    )

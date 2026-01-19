@@ -41,7 +41,7 @@ from sqlalchemy.orm import joinedload
 # APP
 # ==========================
 from app import db
-from app.models import Notificacao, Solicitacao, Usuario, Clientes, Pilotos
+from app.models import Notificacao, Solicitacao, Usuario, Clientes, Pilotos, Equipe, EquipePiloto
 
 print("--- ROTAS CARREGADAS COM SUCESSO ---")
 
@@ -4284,3 +4284,119 @@ def piloto_concluir_os(os_id):
     return redirect(url_for('main.piloto_os'))
 
 
+REGIOES = {"NORTE", "SUL", "LESTE", "OESTE"}
+
+@bp.route("/equipes/cadastrar", methods=["GET", "POST"], endpoint="cadastrar_equipes")
+@login_required
+def cadastrar_equipes():
+    # 🔐 só admin (ajuste se quiser operario também)
+    if getattr(current_user, "tipo_usuario", None) != "admin":
+        abort(403)
+
+    errors = {}
+    form = {}
+
+    # lista de pilotos pro select (pode filtrar por ativos se tiver)
+    pilotos_db = Pilotos.query.order_by(Pilotos.nome_piloto.asc()).all()
+
+    if request.method == "POST":
+        nome_equipe = (request.form.get("nome_equipe") or "").strip()
+        descricao = (request.form.get("descricao") or "").strip()
+        regiao = (request.form.get("regiao") or "").strip().upper()
+
+        piloto_id = (request.form.get("piloto_id") or "").strip()
+        auxiliar_id = (request.form.get("auxiliar_id") or "").strip()
+
+        form = {
+            "nome_equipe": nome_equipe,
+            "descricao": descricao,
+            "regiao": regiao,
+            "piloto_id": piloto_id,
+            "auxiliar_id": auxiliar_id,
+        }
+
+        # validações
+        if not nome_equipe:
+            errors["nome_equipe"] = "Informe o nome da equipe."
+
+        if regiao and regiao not in REGIOES:
+            errors["regiao"] = "Selecione uma região válida."
+
+        if not piloto_id:
+            errors["piloto_id"] = "Selecione o piloto titular."
+        if not auxiliar_id:
+            errors["auxiliar_id"] = "Selecione o piloto auxiliar."
+
+        # ids válidos e diferentes
+        piloto_obj = None
+        auxiliar_obj = None
+
+        if piloto_id:
+            try:
+                piloto_obj = Pilotos.query.get(int(piloto_id))
+                if not piloto_obj:
+                    errors["piloto_id"] = "Piloto titular não encontrado."
+            except ValueError:
+                errors["piloto_id"] = "Piloto titular inválido."
+
+        if auxiliar_id:
+            try:
+                auxiliar_obj = Pilotos.query.get(int(auxiliar_id))
+                if not auxiliar_obj:
+                    errors["auxiliar_id"] = "Piloto auxiliar não encontrado."
+            except ValueError:
+                errors["auxiliar_id"] = "Piloto auxiliar inválido."
+
+        if piloto_id and auxiliar_id and piloto_id == auxiliar_id:
+            errors["auxiliar_id"] = "Auxiliar deve ser diferente do piloto titular."
+
+        # opcional: evitar duplicidade por nome (case-insensitive)
+        if nome_equipe:
+            existe = Equipe.query.filter(db.func.lower(Equipe.nome_equipe) == nome_equipe.lower()).first()
+            if existe:
+                errors["nome_equipe"] = "Já existe uma equipe com esse nome."
+
+        if errors:
+            flash("Corrija os campos destacados.", "warning")
+            return render_template(
+                "cadastrar_equipes.html",
+                form=form,
+                errors=errors,
+                pilotos=pilotos_db
+            )
+
+        # cria equipe
+        equipe = Equipe(
+            nome_equipe=nome_equipe,
+            descricao=descricao or None,
+            regiao=regiao or None,
+            ativa=True
+        )
+        db.session.add(equipe)
+        db.session.flush()  # garante equipe.id antes do pivot
+
+        # cria vínculos (pivot)
+        db.session.add(EquipePiloto(equipe_id=equipe.id, piloto_id=piloto_obj.id, papel="piloto"))
+        db.session.add(EquipePiloto(equipe_id=equipe.id, piloto_id=auxiliar_obj.id, papel="auxiliar"))
+
+        try:
+            db.session.commit()
+            flash("Equipe cadastrada com sucesso!", "success")
+            return redirect(url_for("main.cadastrar_equipes")) 
+        except Exception as e:
+            db.session.rollback()
+            # pega erro de constraint (ex: piloto em outra equipe / papel duplicado)
+            flash("Erro ao salvar no banco. Verifique se os pilotos já estão em outra equipe.", "danger")
+            return render_template(
+                "cadastrar_equipes.html",
+                form=form,
+                errors=errors,
+                pilotos=pilotos_db
+            )
+
+    return render_template(
+        "cadastrar_equipes.html",
+        form=form,
+        errors=errors,
+        pilotos=pilotos_db
+    )

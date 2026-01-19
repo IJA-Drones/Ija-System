@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid py-4" style="max-width: 1200px">
+
+  {# --- Cabeçalho --- #}
+  <div class="d-flex align-items-center mb-4">
+    <h2 class="text-dark m-0">
+      <i class="bi bi-people-fill me-2 text-primary"></i> Cadastrar Equipe
+    </h2>
+  </div>
+
+  {# --- Mensagens de Feedback --- #}
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm mb-4 rounded-3" role="alert">
+          <i class="bi bi-info-circle me-2"></i> {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  {# --- Card Principal --- #}
+  <div class="card info status-primary shadow-sm rounded-4 border-0">
+    <div class="card-body p-4">
+
+      <form method="post" action="{{ url_for('main.cadastrar_equipes') }}" novalidate>
+
+        {# SEÇÃO 1: IDENTIFICAÇÃO #}
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-card-heading text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Identificação</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-people me-1 text-primary"></i> Nome da Equipe *
+            </label>
+            <input
+              type="text"
+              class="form-control {% if errors.get('nome_equipe') %}is-invalid{% endif %}"
+              name="nome_equipe"
+              value="{{ form.get('nome_equipe','') }}"
+              placeholder="Ex: Equipe Alfa"
+              required
+            />
+            {% if errors.get('nome_equipe') %}
+              <div class="invalid-feedback">{{ errors.get('nome_equipe') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-geo-alt me-1 text-primary"></i> Região
+            </label>
+
+            {% set reg = (form.get('regiao','') or '')|upper %}
+            <select name="regiao" class="form-select {% if errors.get('regiao') %}is-invalid{% endif %}">
+              <option value="">Selecione...</option>
+              <option value="NORTE" {% if reg == 'NORTE' %}selected{% endif %}>NORTE</option>
+              <option value="SUL" {% if reg == 'SUL' %}selected{% endif %}>SUL</option>
+              <option value="LESTE" {% if reg == 'LESTE' %}selected{% endif %}>LESTE</option>
+              <option value="OESTE" {% if reg == 'OESTE' %}selected{% endif %}>OESTE</option>
+            </select>
+
+            {% if errors.get('regiao') %}
+              <div class="invalid-feedback">{{ errors.get('regiao') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-card-text me-1 text-primary"></i> Status
+            </label>
+            <input type="text" class="form-control" value="Ativa" disabled>
+            <div class="form-text small">Equipes novas entram como ativas.</div>
+          </div>
+        </div>
+
+        <hr class="text-muted opacity-25 my-4" />
+
+        {# SEÇÃO 2: MEMBROS #}
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-person-lines-fill text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Membros</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-person-badge-fill me-1 text-primary"></i> Piloto Titular *
+            </label>
+            <select name="piloto_id" class="form-select {% if errors.get('piloto_id') %}is-invalid{% endif %}" required>
+              <option value="">Selecione...</option>
+              {% for p in pilotos %}
+                <option value="{{ p.id }}" {% if form.get('piloto_id','')|string == p.id|string %}selected{% endif %}>
+                  {{ p.nome_piloto }}{% if p.regiao %} ({{ p.regiao }}){% endif %}
+                </option>
+              {% endfor %}
+            </select>
+            {% if errors.get('piloto_id') %}
+              <div class="invalid-feedback">{{ errors.get('piloto_id') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-person-check-fill me-1 text-primary"></i> Piloto Auxiliar *
+            </label>
+            <select name="auxiliar_id" class="form-select {% if errors.get('auxiliar_id') %}is-invalid{% endif %}" required>
+              <option value="">Selecione...</option>
+              {% for p in pilotos %}
+                <option value="{{ p.id }}" {% if form.get('auxiliar_id','')|string == p.id|string %}selected{% endif %}>
+                  {{ p.nome_piloto }}{% if p.regiao %} ({{ p.regiao }}){% endif %}
+                </option>
+              {% endfor %}
+            </select>
+            {% if errors.get('auxiliar_id') %}
+              <div class="invalid-feedback">{{ errors.get('auxiliar_id') }}</div>
+            {% endif %}
+            <div class="form-text small">Auxiliar deve ser diferente do titular.</div>
+          </div>
+        </div>
+
+        <hr class="text-muted opacity-25 my-4" />
+
+        {# SEÇÃO 3: OBSERVAÇÕES #}
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-journal-text text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Observações</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-12">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-chat-left-text me-1 text-primary"></i> Descrição (opcional)
+            </label>
+            <textarea
+              name="descricao"
+              class="form-control"
+              rows="3"
+              placeholder="Ex: equipe atende prioritariamente bairros X/Y..."
+            >{{ form.get('descricao','') }}</textarea>
+          </div>
+        </div>
+
+        <small class="text-muted d-block mt-4">
+          Campos com <span class="text-danger">*</span> são de preenchimento obrigatório.
+        </small>
+
+        {# BOTÕES #}
+        <div class="d-flex justify-content-end gap-2 mt-5">
+          <a href="{{ url_for('main.listar_equipes') if 'listar_equipes' in (globals()|string) else url_for('main.dashboard') }}"
+             class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-x-lg me-1"></i> Cancelar
+          </a>
+
+          <button type="submit" class="btn btn-primary btn-sm">
+            <i class="bi bi-check-lg me-1"></i> Salvar Equipe
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
