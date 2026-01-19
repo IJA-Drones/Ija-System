@@ -6,10 +6,10 @@
    CARD BASE
    ========================= */
 .calendar-card {
-  background: var(--color-bg-white);
+  background: var(--color-bg-surface);
   border-radius: var(--radius-lg);
   border: 1px solid rgba(0,0,0,.06);
-  box-shadow: 0 12px 28px rgba(0,0,0,.06);
+  box-shadow: 0 12px 28px rgba(0,0,0,.1);
   overflow: hidden;
 }
 
@@ -148,6 +148,7 @@
   #calendar .fc-daygrid-day-frame {
     min-height: 70px;
   }
+  
 
   #calendar .fc-daygrid-event {
     font-size: .78rem;
@@ -159,24 +160,48 @@
    DARK MODE
    ========================= */
 body.dark-mode .calendar-card {
-  background: #101927;
+  background: var(--color-bg-body);
   border-color: #233549;
   box-shadow: 0 18px 40px rgba(0,0,0,.45);
 }
 
-body.dark-mode .fc {
-  background: #101927;
+/* Estilo para células do cabeçalho no modo escuro */
+body.dark-mode .fc-col-header-cell-cushion {
+  background-color: #2c3e50 !important; /* Fundo escuro para os cabeçalhos */
+  color: var(--color-text-main) !important; /* Cor clara para o texto */
+  border-color: #34495e !important; /* Borda escura */
+}
+
+/* Se necessário, ajuste o fundo da área de rolagem da agenda */
+body.dark-mode .fc-scrollgrid-sync-inner {
+  background-color: #2c3e50;
+}
+
+/* Ajustar a borda para o cabeçalho do calendário */
+body.dark-mode .fc-col-header-cell {
+  border-color: #34495e;
+}
+
+
+body.dark-mode.fc-header-toolbar {
+  border-color: #34495e;
+}
+
+body.dark-mode .fc .fc-daygrid-day-frame,
+body.dark-mode .fc .fc-scrollgrid-sync-inner,
+body.dark-mode .fc .fc-col-header-cell-cushion {
+  background-color: var(--color-bg-surface) !important;
 }
 
 body.dark-mode .fc-toolbar-title,
 body.dark-mode .fc-col-header-cell-cushion {
-  color: #e8eef8 !important;
+  color: var(--color-text-main) !important;
 }
 
 body.dark-mode .fc-button {
-  background: #152233 !important;
+  background: var(--color-bg-surface) !important;
   border-color: #233549 !important;
-  color: #e8eef8 !important;
+  color: var(--color-text-main) !important;
 }
 
 body.dark-mode .fc-button:hover {
@@ -195,6 +220,18 @@ body.dark-mode .fc-event {
   );
 }
 
+body.dark .agenda-header {
+  background-color: #2c3e50; /* cor escura para o cabeçalho */
+}
+
+body.dark .agenda-body {
+  background-color: #34495e; /* cor escura para o corpo da agenda */
+}
+
+.agenda-header, .agenda-body {
+  transition: background-color var(--transition-base) ease;
+}
+
 /* =========================
    HEADER DA AGENDA
    ========================= */
@@ -211,8 +248,114 @@ body.dark-mode .fc-event {
   flex-wrap: wrap;
 }
 
-
 /* Mobile Header */
+@media (max-width: 768px) {
+  .agenda-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .agenda-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .agenda-btn {
+    flex-direction: column;
+    padding: 1rem;
+    border-radius: 18px;
+  }
+}
+
+/* =========================
+   DARK MODE – LISTA DE EVENTOS
+   ========================= */
+body.dark-mode .fc-list-day-cushion.fc-cell-shaded {
+  background-color: #2c3e50 !important; /* Fundo escuro para as células de evento */
+  color: var(--color-text-main) !important; /* Cor clara para o texto */
+  border-radius: 10px;
+  border: 1px solid #34495e !important; /* Borda mais suave e escura */
+}
+
+/* Quando a célula de evento é clicada (ativa) */
+body.dark-mode .fc-list-day-cushion.fc-cell-shaded.fc-event-active {
+  background-color: rgba(59,130,246,0.2) !important; /* Destaque suave ao selecionar um evento */
+  color: #fff !important; /* Garantir que o texto fique branco ao selecionar */
+}
+
+/* Ajustar o cabeçalho de dias da lista de eventos */
+body.dark-mode .fc-list-day-cushion.fc-cell-header {
+  background-color: #34495e !important; /* Fundo mais escuro para os dias */
+  color: #e8eef8 !important; /* Cor clara para o texto */
+  font-weight: 600;
+  padding: 12px 16px;
+}
+
+/* Se necessário, para áreas de rolagem na lista de eventos */
+body.dark-mode .fc-scrollgrid-sync-inner {
+  background-color: #2c3e50 !important; /* Fundo escuro para a área de rolagem */
+  border-color: #34495e !important; /* Borda suave para a área de rolagem */
+}
+
+/* =========================
+   INTERAÇÃO DO CALENDÁRIO DIÁRIO
+   ========================= */
+body.dark-mode .fc-day-today {
+  background: rgba(59,130,246,0.15) !important; /* Destaque do dia atual */
+}
+
+body.dark-mode .fc-day-today .fc-daygrid-day-number {
+  background: var(--color-primary) !important;
+  color: #fff !important;
+  border-radius: 999px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+}
+
+/* =========================
+   BOTÕES NA LISTA DE EVENTOS
+   ========================= */
+body.dark-mode .fc-button {
+  background: var(--color-bg-surface) !important;
+  border-color: #233549 !important;
+  color: var(--color-text-main) !important;
+  border-radius: 999px;
+}
+
+body.dark-mode .fc-button:hover {
+  background: rgba(59,130,246,0.15) !important;
+  color: var(--color-primary) !important;
+}
+
+body.dark-mode .fc-button-primary.fc-button-active {
+  background: var(--color-primary) !important;
+  color: #fff !important;
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 8px 18px rgba(59,130,246,0.35);
+}
+
+/* =========================
+   HEADER DA AGENDA
+   ========================= */
+body.dark .agenda-header {
+  background-color: #2c3e50 !important; /* Cor escura para o cabeçalho */
+  border-bottom: 1px solid #34495e;
+}
+
+body.dark .agenda-body {
+  background-color: #34495e; /* Cor escura para o corpo da agenda */
+}
+
+.agenda-header, .agenda-body {
+  transition: background-color var(--transition-base) ease;
+}
+
+/* =========================
+   HEADER DA AGENDA (Mobile)
+   ========================= */
 @media (max-width: 768px) {
   .agenda-header {
     flex-direction: column;

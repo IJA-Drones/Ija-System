@@ -291,37 +291,95 @@
     </a>
   </div>
 
-  {# Filtros #}
-  <form method="GET" class="card p-3 mb-4 shadow-sm rounded-4 border-0">
-    <div class="row g-2 align-items-end">
-      <div class="col-md-5">
-        <label class="small text-muted mb-1">Filtrar por status</label>
-        <select name="status" class="form-select form-select-sm">
-          <option value="">Todos os Pedidos</option>
-          <option value="PENDENTE" {{ 'selected' if request.args.get('status')=='PENDENTE' else '' }}>⚪️ Pendentes</option>
-          <option value="EM ANÁLISE" {{ 'selected' if request.args.get('status')=='EM ANÁLISE' else '' }}>🟡 Em Análise</option>
-          <option value="APROVADO" {{ 'selected' if request.args.get('status')=='APROVADO' else '' }}>🟢 Aprovados</option>
-          <option value="APROVADO COM RECOMENDAÇÕES" {{ 'selected' if request.args.get('status')=='APROVADO COM RECOMENDAÇÕES' else ''}}>🟠 Aprovado com Recomendações</option>
-          <option value="NEGADO" {{ 'selected' if request.args.get('status')=='NEGADO' else '' }}>🔴 Negados</option>
-        </select>
+  {# --- FILTROS EM "SANFONA" (Accordion) --- #}
+  <div class="card shadow-sm rounded-4 mb-4 border-0">
+      <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center cursor-pointer"
+          data-bs-toggle="collapse"
+          data-bs-target="#collapseFiltros"
+          aria-expanded="false"
+          style="cursor: pointer;">
+
+          <div class="d-flex align-items-center gap-2">
+              <i class="bi bi-funnel-fill text-primary"></i>
+              <span class="text-dark">Filtros de Busca</span>
+              {% if request.args.get('status') or request.args.get('tipo_visita') or request.args.get('foco') %}
+                  <span class="badge bg-danger rounded-circle p-1" style="width: 8px; height: 8px;"></span>
+              {% endif %}
+          </div>
+          <i class="bi bi-chevron-down text-muted"></i>
       </div>
 
-      <div class="col-md-3">
-        <button type="submit" class="btn btn-success btn-sm w-100">
-          <i class="bi bi-funnel me-2"></i> Filtrar
-        </button>
-      </div>
+      <div class="collapse {% if request.args.get('status') or request.args.get('tipo_visita') or request.args.get('foco') %}show{% endif %}" id="collapseFiltros">
+          <div class="card-body pt-0">
+              <form method="GET">
+                  <div class="row g-2 align-items-end">
+                      <!-- Filtro por Status -->
+                      <div class="col-md-3">
+                          <label class="small text-muted mb-1">Filtrar por Status</label>
+                          <select name="status" class="form-select form-select-sm">
+                              <option value="">Todos os Pedidos</option>
+                              <option value="PENDENTE" {{ 'selected' if request.args.get('status')=='PENDENTE' else '' }}>⚪️ Pendentes</option>
+                              <option value="EM ANÁLISE" {{ 'selected' if request.args.get('status')=='EM ANÁLISE' else '' }}>🟡 Em Análise</option>
+                              <option value="APROVADO" {{ 'selected' if request.args.get('status')=='APROVADO' else '' }}>🟢 Aprovados</option>
+                              <option value="APROVADO COM RECOMENDAÇÕES" {{ 'selected' if request.args.get('status')=='APROVADO COM RECOMENDAÇÕES' else ''}}>🟠 Aprovado c/ Recomendações</option>
+                              <option value="NEGADO" {{ 'selected' if request.args.get('status')=='NEGADO' else '' }}>🔴 Negados</option>
+                          </select>
+                      </div>
 
-      {% if request.args.get('status') %}
-      <div class="col-md-2">
-        <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary btn-sm w-100">
-          <i class="bi bi-x-lg"></i> Limpar
-        </a>
-      </div>
-      {% endif %}
-    </div>
-  </form>
+                      <!-- Filtro por Tipo de Visita -->
+                      <div class="col-md-3">
+                          <label class="small text-muted mb-1">Filtrar por Tipo de Visita</label>
+                          <select name="tipo_visita" class="form-select form-select-sm">
+                              <option value="">Todos os tipos</option>
+                              <option value="Monitoramento" {{ 'selected' if request.args.get('tipo_visita')=='Monitoramento' else '' }}>Monitoramento</option>
+                              <option value="Aedes" {{ 'selected' if request.args.get('tipo_visita')=='Aedes' else '' }}>Aedes</option>
+                              <option value="Culex" {{ 'selected' if request.args.get('tipo_visita')=='Culex' else '' }}>Culex</option>
+                          </select>
+                      </div>
 
+                      <!-- Filtro por Foco da Ação -->
+                      <div class="col-md-3">
+                        <label class="small text-muted mb-1">Filtrar por Foco da Ação</label>
+                        <select name="foco" class="form-select form-select-sm">
+                          <option value="">Todos os Focos</option>
+
+                          <option value="Imóvel Abandonado"
+                            {{ 'selected' if request.args.get('foco') == 'Imóvel Abandonado' else '' }}>
+                            Imóvel Abandonado
+                          </option>
+
+                          <option value="Piscina / Caixa D'água"
+                            {{ 'selected' if request.args.get('foco') == "Piscina / Caixa D'água" else '' }}>
+                            Piscina / Caixa D'água
+                          </option>
+
+                          <option value="Terreno Baldio"
+                            {{ 'selected' if request.args.get('foco') == 'Terreno Baldio' else '' }}>
+                            Terreno Baldio
+                          </option>
+
+                          <option value="Ponto Estratégico (PE)"
+                            {{ 'selected' if request.args.get('foco') == 'Ponto Estratégico (PE)' else '' }}>
+                            Ponto Estratégico (PE)
+                          </option>
+                        </select>
+                      </div>
+
+                      <div class="col-md-3 d-flex gap-2">
+                            <button type="submit" class="btn btn-success btn-sm w-100">
+                              <i class="bi bi-funnel me-2"></i> Filtrar
+                          </button>
+                            {% if request.args.get('status') or request.args.get('unidade') or request.args.get('regiao') %}
+                                <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary btn-sm w-100">
+                                    <i class="bi bi-x-lg"></i> Limpar
+                                </a>
+                            {% endif %}
+                      </div>
+                  </div>
+              </form>
+          </div>
+      </div>
+  </div>
   {# Tabela #}
   <div class="card shadow-sm rounded-4 border-0 overflow-hidden">
     <div class="card-body p-0">
@@ -502,12 +560,12 @@
           <div class="d-flex justify-content-between align-items-center p-2 rounded border mb-3">
             <div>
               <small class="text-muted d-block">Arquivo:</small>
-              <strong class="small text-truncate" style="max-width: 200px; display: inline-block;">{{ p.anexo_nome or 'Anexo' }}</strong>
+              <strong class="small">{{ p.anexo_nome or 'Anexo' }}</strong>
             </div>
 
             <a href="{{ url_for('main.baixar_anexo', id=p.id) }}"
                target="_blank"
-               class="btn btn-sm btn-outline-primary {% if not p.anexo_path %}d-none{% endif %}">
+               class="btn btn-sm btn-outline-primary">
               <i class="bi bi-download"></i> Abrir / Baixar
             </a>
           </div>

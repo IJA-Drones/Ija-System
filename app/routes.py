@@ -96,6 +96,17 @@ def get_upload_folder():
         os.makedirs(folder, exist_ok=True)
     return os.path.abspath(folder)
 
+import unicodedata
+
+def normalize_string(value):
+    if value:
+        return ''.join(
+            c for c in unicodedata.normalize('NFD', value)
+            if unicodedata.category(c) != 'Mn'
+        ).lower()
+    return value
+
+
 def allowed_file(filename: str) -> bool:
     """Verifica se a extensão do arquivo é permitida."""
     ALLOWED_EXTENSIONS = {"pdf", "png", "jpg", "jpeg", "doc", "docx", "xls", "xlsx"}
@@ -143,14 +154,13 @@ def roles_required(*roles):
 @bp.route('/')
 @login_required
 def dashboard():
-
     if current_user.tipo_usuario == 'piloto':
         return redirect(url_for('main.piloto_os'))
 
     if current_user.tipo_usuario in ['admin', 'operario', 'visualizar']:
         return redirect(url_for('main.admin_dashboard'))
 
-    # ✅ UVIS: só as solicitações dela + carrega piloto pra exibir
+    # ✅ UVIS: só as solicitações dela + carrega piloto para exibir
     query = (
         Solicitacao.query
         .options(
@@ -160,10 +170,23 @@ def dashboard():
         .filter(Solicitacao.usuario_id == current_user.id)
     )
 
+    # Filtragem por status (original)
     filtro_status = request.args.get('status')
     if filtro_status:
         query = query.filter(Solicitacao.status == filtro_status)
 
+    # Filtro por tipo de visita
+    filtro_tipo_visita = request.args.get('tipo_visita')
+    if filtro_tipo_visita:
+        query = query.filter(Solicitacao.tipo_visita == filtro_tipo_visita)
+
+    # Filtro por foco da ação
+    filtro_foco = request.args.get('foco')
+    if filtro_foco:
+        query = query.filter(Solicitacao.foco == filtro_foco)  # Aqui, o valor de filtro_foco já é uma string
+
+
+    # Paginação
     page = request.args.get("page", 1, type=int)
     paginacao = query.order_by(Solicitacao.data_criacao.desc())\
         .paginate(page=page, per_page=6, error_out=False)
@@ -173,6 +196,7 @@ def dashboard():
         solicitacoes=paginacao.items,
         paginacao=paginacao,
     )
+
 
 # --- PAINEL DE GESTÃO (Visualização para todos) ---
 from flask_login import login_required, current_user
@@ -523,31 +547,30 @@ def novo():
             apoio_cet_bool = request.form.get('apoio_cet') == 'sim'
 
             nova_solicitacao = Solicitacao(
-                data_agendamento=data_obj,
-                hora_agendamento=hora_obj,
+            data_agendamento=data_obj,
+            hora_agendamento=hora_obj,
 
-                cep=request.form.get('cep'),
-                logradouro=request.form.get('logradouro'),
-                bairro=request.form.get('bairro'),
-                cidade=request.form.get('cidade'),
-                numero=request.form.get('numero'),
-                uf=request.form.get('uf'),
-                complemento=request.form.get('complemento'),
+            cep=request.form.get('cep'),
+            logradouro=request.form.get('logradouro'),
+            bairro=request.form.get('bairro'),
+            cidade=request.form.get('cidade'),
+            numero=request.form.get('numero'),
+            uf=request.form.get('uf'),
+            complemento=request.form.get('complemento'),
 
-                foco=request.form.get('foco'),
-                tipo_visita=request.form.get('tipo_visita'),
-                altura_voo=request.form.get('altura_voo'),
-                apoio_cet=apoio_cet_bool,
-                observacao=request.form.get('observacao'),
+            foco=request.form.get('foco'),
+            tipo_visita=request.form.get('tipo_visita'),
+            altura_voo=request.form.get('altura_voo'),
+            apoio_cet=apoio_cet_bool,
+            observacao=request.form.get('observacao'),
 
-                latitude=request.form.get('latitude'),
-                longitude=request.form.get('longitude'),
+            latitude=request.form.get('latitude'),
+            longitude=request.form.get('longitude'),
 
-                # 🔑 RELAÇÃO CORRETA COM FLASK-LOGIN
-                usuario_id=current_user.id,
+            usuario_id=current_user.id,
+            status='PENDENTE'
+        )
 
-                status='PENDENTE'
-            )
 
             db.session.add(nova_solicitacao)
             db.session.commit()
@@ -2570,122 +2593,138 @@ ADMIN_FAQ = [
         "title": "Perfis e permissões",
         "keywords": ["acesso", "perfil", "permissao", "permissões", "admin", "operario", "operário", "visualizar", "quem pode"],
         "answer": (
-            "Perfis do painel:\n"
-            "- Administrador: acesso total (editar, excluir, gerenciar UVIS, relatórios e agenda).\n"
-            "- Operário: consegue salvar decisões (status/protocolo/justificativa).\n"
-            "- Visualizar: apenas leitura.\n"
+            "<b>Perfis do painel:</b><br>"
+            "- <b>Administrador</b>: acesso total (<b>editar</b>, <b>excluir</b>, <b>gerenciar UVIS</b>, <b>relatórios</b> e <b>agenda</b>).<br>"
+            "- <b>Operário</b>: consegue <b>salvar decisões</b> (<b>status</b>, <b>protocolo</b> e <b>justificativa</b>).<br>"
+            "- <b>Visualizar</b>: <b>apenas leitura</b>.<br>"
         ),
     },
     {
         "title": "Filtros no painel",
         "keywords": ["filtro", "filtrar", "status", "unidade", "uvis", "regiao", "região", "buscar", "pesquisar"],
         "answer": (
-            "No painel você pode filtrar por:\n"
-            "- Status\n"
-            "- Unidade (UVIS)\n"
-            "- Região\n"
-            "Use os filtros para encontrar solicitações específicas rapidamente."),
+            "<b>No painel você pode filtrar por:</b><br>"
+            "- <b>Status</b><br>"
+            "- <b>Unidade (UVIS)</b><br>"
+            "- <b>Região</b><br>"
+            "Use os <b>filtros</b> para encontrar <b>solicitações específicas</b> rapidamente."
+        ),
     },
     {
         "title": "Olá! Como posso ajudar?",
         "keywords": ["olá", "oi", "hello", "hi", "bom dia", "boa tarde", "boa noite", "ajuda", "suporte"],
         "answer": (
-            "Olá! Sou o assistente virtual do painel administrativo.\n"
-            "Posso ajudar com dúvidas sobre:\n"
-            "- Perfis e permissões\n"
-            "- Filtros no painel\n"
-            "- Salvar decisão\n"
-            "- Editar completo\n"
-            "- Excluir solicitação\n"
-            "- Anexos\n"
-            "- GPS e mapa\n"
-            "- Exportar Excel do painel\n"
-            "- Agenda\n"
-            "- Relatórios\n"
-            "- Gestão de UVIS\n"
-            "Como posso ajudar você hoje?"
+            "Olá! Sou o <b>assistente virtual</b> do <b>painel administrativo</b>.<br>"
+            "<b>Posso ajudar</b> com dúvidas sobre:<br>"
+            "- <b>Perfis e permissões</b><br>"
+            "- <b>Filtros no painel</b><br>"
+            "- <b>Salvar decisão</b><br>"
+            "- <b>Editar completo</b><br>"
+            "- <b>Excluir solicitação</b><br>"
+            "- <b>Anexos</b><br>"
+            "- <b>GPS e mapa</b><br>"
+            "- <b>Exportar Excel</b><br>"
+            "- <b>Agenda</b><br>"
+            "- <b>Relatórios</b><br>"
+            "- <b>Gestão de UVIS</b><br>"
+            "<b>Como posso ajudar você hoje?</b>"
         ),
     },
     {
         "title": "Salvar decisão",
         "keywords": ["salvar", "decisao", "decisão", "status", "protocolo", "justificativa", "aprovado", "negado", "analise", "recomendacoes", "recomendações"],
         "answer": (
-            "Em cada solicitação você pode definir:\n"
-            "- Status\n"
-            "- Protocolo\n"
-            "- Justificativa (principalmente se negar ou orientar)\n"
-            "Se o perfil for ‘Visualizar’, fica somente leitura."
+            "Em cada <b>solicitação</b> você pode definir:<br>"
+            "- <b>Status</b><br>"
+            "- <b>Protocolo</b><br>"
+            "- <b>Justificativa</b> (obrigatória ao <b>negar</b> ou <b>orientar</b>)<br>"
+            "Se o perfil for <b>Visualizar</b>, fica em <b>somente leitura</b>."
         ),
     },
     {
         "title": "Editar completo",
         "keywords": ["editar", "editar completo", "corrigir", "alterar", "data", "hora", "endereco", "endereço", "agendamento"],
         "answer": (
-            "Editar completo serve para corrigir todos os dados do pedido:\n"
-            "data/hora, endereço, foco, tipo de visita, altura e observações.\n"
-            "Em alguns casos o sistema pode gerar notificação para a unidade."
+            "<b>Editar completo</b> serve para <b>corrigir todos os dados</b> do pedido:<br>"
+            "<b>Data/Hora</b>, <b>Endereço</b>, <b>Foco</b>, <b>Tipo de visita</b>, <b>Altura</b> e <b>Observações</b>.<br>"
+            "Em alguns casos o sistema pode gerar <b>notificação para a unidade</b>."
         ),
     },
     {
         "title": "Excluir solicitação",
         "keywords": ["excluir", "deletar", "apagar", "remover"],
         "answer": (
-            "Excluir remove a solicitação definitivamente.\n"
-            "Normalmente é restrito ao Administrador e pede confirmação."
+            "<b>Excluir</b> remove a solicitação <b>definitivamente</b>.<br>"
+            "Normalmente é restrito ao perfil <b>Administrador</b> e pede <b>confirmação</b>."
         ),
     },
     {
         "title": "Anexos",
         "keywords": ["anexo", "arquivo", "upload", "baixar", "download", "pdf", "png", "jpg", "doc", "xlsx"],
         "answer": (
-            "Você pode anexar arquivos na solicitação e depois baixar.\n"
-            "Se o anexo não aparecer, verifique se foi salvo corretamente e se o arquivo é permitido."
+            "Você pode <b>anexar arquivos</b> na solicitação e depois <b>baixar</b>.<br>"
+            "Se o anexo não aparecer, verifique se foi <b>salvo corretamente</b> e se o <b>formato é permitido</b>."
         ),
     },
     {
         "title": "GPS e mapa",
         "keywords": ["gps", "latitude", "longitude", "coordenadas", "mapa", "google maps"],
         "answer": (
-            "Latitude/Longitude ajudam na precisão.\n"
-            "Quando preenchidas, o botão de mapa abre o local no Google Maps."
+            "<b>Latitude e Longitude</b> ajudam na <b>precisão do endereço</b>.<br>"
+            "Quando preenchidas, o botão de <b>mapa</b> abre o local no <b>Google Maps</b>."
         ),
     },
     {
         "title": "Exportar Excel do painel",
         "keywords": ["exportar", "excel", "xlsx", "planilha", "baixar excel"],
         "answer": (
-            "Existe exportação para Excel a partir do painel.\n"
-            "Quando você usa filtros (status/unidade/região), isso tende a refletir no arquivo exportado."
+            "Existe <b>exportação para Excel</b> a partir do painel.<br>"
+            "Os <b>filtros aplicados</b> (<b>status</b>, <b>unidade</b>, <b>região</b>) refletem no <b>arquivo exportado</b>."
         ),
     },
     {
         "title": "Agenda",
         "keywords": ["agenda", "calendario", "calendário", "eventos", "mes", "mês", "ano", "exportar agenda"],
         "answer": (
-            "A Agenda mostra agendamentos por período.\n"
-            "Você pode filtrar (quando disponível) e exportar."
+            "A <b>Agenda</b> mostra <b>agendamentos</b> por período.<br>"
+            "Você pode <b>filtrar</b> e <b>exportar</b> quando disponível."
         ),
     },
     {
         "title": "Relatórios",
         "keywords": ["relatorio", "relatórios", "pdf", "grafico", "gráfico", "totais", "mes", "ano"],
         "answer": (
-            "Relatórios permitem filtrar por mês/ano e, quando disponível, por unidade.\n"
-            "Também podem ter exportação em PDF e Excel."
+            "<b>Relatórios</b> permitem filtrar por <b>mês</b>, <b>ano</b> e <b>unidade</b>.<br>"
+            "Podem ser exportados em <b>PDF</b> e <b>Excel</b>."
+        ),
+    },
+    {
+        "title": "Pilotos",
+        "keywords": ["piloto", "Piloto", "pilotos", "Pilotos", "copiloto", "auxiliar de piloto", "auxiliar"],
+        "answer": (
+            "<b>Pilotos</b> são os responsáveis pela <b>execução das solicitações</b>.<br>"
+            "O <b>Cadastro de pilotos</b> permite:<br>"
+            "- <b>Cadastrar</b><br>"
+            "- <b>Editar</b><br>"
+            "- <b>Excluir</b><br>"
+            "- <b>Listar</b><br>"
+            "Cada solicitação pode ter um <b>piloto associado</b>.<br>"
+            "As <b>UVIS</b> veem os pilotos da <b>sua região</b>."
         ),
     },
     {
         "title": "Gestão de UVIS",
         "keywords": ["uvis", "cadastrar uvis", "lista uvis", "gerenciar uvis", "unidade", "login", "senha", "codigo setor", "código setor", "regiao", "região"],
         "answer": (
-            "Gestão de UVIS inclui:\n"
-            "- Listar UVIS\n"
-            "- Cadastrar UVIS\n"
-            "- Editar UVIS (inclusive redefinir senha)\n"
-            "Atenção: login não pode repetir."
+            "<b>Gestão de UVIS</b> inclui:<br>"
+            "- <b>Listar UVIS</b><br>"
+            "- <b>Cadastrar UVIS</b><br>"
+            "- <b>Editar UVIS</b> (inclusive <b>redefinir senha</b>)<br>"
+            "<b>Atenção:</b> o <b>login não pode se repetir</b>."
         ),
     },
 ]
+
 
 
 @bp.route("/api/admin/chatbot", methods=["POST"])
