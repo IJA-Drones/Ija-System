@@ -565,7 +565,7 @@
 
             <a href="{{ url_for('main.baixar_anexo', id=p.id) }}"
                target="_blank"
-               class="btn btn-sm btn-outline-primary">
+                class="btn btn-sm btn-outline-primary {% if not p.anexo_path %}d-none{% endif %}">
               <i class="bi bi-download"></i> Abrir / Baixar
             </a>
           </div>
