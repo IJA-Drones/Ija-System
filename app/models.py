@@ -217,6 +217,16 @@ class Solicitacao(db.Model):
         back_populates="solicitacoes"
     )
 
+    # Equipe responsável (novo)
+    equipe_id = db.Column(
+        db.Integer,
+        db.ForeignKey("equipes.id"),
+        nullable=True,
+        index=True
+    )
+
+    equipe = db.relationship("Equipe", lazy="joined")
+
     # 🔥 ÍNDICES COMPOSTOS (relatórios e dashboard do piloto)
     __table_args__ = (
         db.Index("ix_solicitacao_data_status", "data_criacao", "status"),

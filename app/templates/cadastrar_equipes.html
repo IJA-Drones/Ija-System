@@ -158,8 +158,10 @@
 
         {# BOTÕES #}
         <div class="d-flex justify-content-end gap-2 mt-5">
-          <a href="{{ url_for('main.listar_equipes') if 'listar_equipes' in (globals()|string) else url_for('main.dashboard') }}"
-             class="btn btn-outline-danger btn-sm">
+          <a
+            href="{% if current_user.tipo_usuario == 'admin' %}{{ url_for('main.listar_equipes') }}{% else %}{{ url_for('main.dashboard') }}{% endif %}"
+            class="btn btn-outline-danger btn-sm"
+          >
             <i class="bi bi-x-lg me-1"></i> Cancelar
           </a>
 

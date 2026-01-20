@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid py-4" style="max-width: 1200px;">
+
+  {# --- Cabeçalho --- #}
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h2 class="text-dark m-0">
+        <i class="bi bi-people-fill me-2 text-primary"></i> Editar Equipe
+      </h2>
+      <p class="text-muted small mb-0">
+        Atualize os dados da equipe e os membros (piloto titular e auxiliar).
+      </p>
+    </div>
+    <small class="text-muted fw-bold">ID: #{{ equipe.id }}</small>
+  </div>
+
+  {# --- Mensagens de Feedback --- #}
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm mb-4 rounded-3" role="alert">
+          <i class="bi bi-info-circle me-2"></i> {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  {# --- Card Principal --- #}
+  <div class="card info status-primary shadow-sm rounded-4 border-0">
+    <div class="card-body p-4">
+
+      <form method="post" novalidate>
+
+        {# SEÇÃO 1: IDENTIFICAÇÃO #}
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-card-heading text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Identificação</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-8">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-tags me-1 text-primary"></i> Nome da Equipe *
+            </label>
+            <input
+              type="text"
+              class="form-control {% if errors.get('nome_equipe') %}is-invalid{% endif %}"
+              name="nome_equipe"
+              value="{{ form.get('nome_equipe', equipe.nome_equipe) }}"
+              placeholder="Ex: Equipe Alfa"
+              required
+            />
+            {% if errors.get('nome_equipe') %}
+              <div class="invalid-feedback">{{ errors.get('nome_equipe') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-geo-alt me-1 text-primary"></i> Região
+            </label>
+
+            {% set reg = (form.get('regiao', equipe.regiao) or '')|upper %}
+            <select name="regiao" class="form-select {% if errors.get('regiao') %}is-invalid{% endif %}">
+              <option value="">Selecione...</option>
+              <option value="NORTE" {% if reg == 'NORTE' %}selected{% endif %}>NORTE</option>
+              <option value="SUL" {% if reg == 'SUL' %}selected{% endif %}>SUL</option>
+              <option value="LESTE" {% if reg == 'LESTE' %}selected{% endif %}>LESTE</option>
+              <option value="OESTE" {% if reg == 'OESTE' %}selected{% endif %}>OESTE</option>
+            </select>
+
+            {% if errors.get('regiao') %}
+              <div class="invalid-feedback">{{ errors.get('regiao') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-toggle-on me-1 text-primary"></i> Status
+            </label>
+
+            {# checkbox -> ativa=on #}
+            {% set ativa_checked = form.get('ativa', ('on' if equipe.ativa else '')) %}
+            <div class="form-check form-switch mt-2">
+              <input class="form-check-input" type="checkbox" role="switch" id="ativaSwitch" name="ativa"
+                     {% if ativa_checked %}checked{% endif %}>
+              <label class="form-check-label" for="ativaSwitch">
+                {% if ativa_checked %}Ativa{% else %}Inativa{% endif %}
+              </label>
+            </div>
+            <div class="form-text small">
+              Desative para impedir uso/seleção em novas operações (se aplicável).
+            </div>
+          </div>
+        </div>
+
+        <hr class="text-muted opacity-25 my-4" />
+
+        {# SEÇÃO 2: MEMBROS #}
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-person-badge-fill text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Membros</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-person-check me-1 text-primary"></i> Piloto Titular *
+            </label>
+
+            {% set piloto_sel = form.get('piloto_id', (piloto_atual.id if piloto_atual else '')) %}
+            <select name="piloto_id" class="form-select {% if errors.get('piloto_id') %}is-invalid{% endif %}" required>
+              <option value="">Selecione...</option>
+              {% for p in pilotos %}
+                <option value="{{ p.id }}" {% if piloto_sel|string == p.id|string %}selected{% endif %}>
+                  #{{ p.id }} — {{ p.nome_piloto }}{% if p.regiao %} ({{ p.regiao }}){% endif %}
+                </option>
+              {% endfor %}
+            </select>
+
+            {% if errors.get('piloto_id') %}
+              <div class="invalid-feedback">{{ errors.get('piloto_id') }}</div>
+            {% endif %}
+            <div class="form-text small">
+              Este é o piloto principal da equipe.
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-person-plus me-1 text-primary"></i> Auxiliar (opcional)
+            </label>
+
+            {% set aux_sel = form.get('auxiliar_id', (aux_atual.id if aux_atual else '')) %}
+            <select name="auxiliar_id" class="form-select {% if errors.get('auxiliar_id') %}is-invalid{% endif %}">
+              <option value="">Sem auxiliar</option>
+              {% for p in pilotos %}
+                <option value="{{ p.id }}" {% if aux_sel|string == p.id|string %}selected{% endif %}>
+                  #{{ p.id }} — {{ p.nome_piloto }}{% if p.regiao %} ({{ p.regiao }}){% endif %}
+                </option>
+              {% endfor %}
+            </select>
+
+            {% if errors.get('auxiliar_id') %}
+              <div class="invalid-feedback">{{ errors.get('auxiliar_id') }}</div>
+            {% endif %}
+            <div class="form-text small">
+              O auxiliar não pode ser o mesmo do piloto titular.
+            </div>
+          </div>
+        </div>
+
+        <hr class="text-muted opacity-25 my-4" />
+
+        {# SEÇÃO 3: DESCRIÇÃO #}
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-journal-text text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Descrição</h5>
+        </div>
+
+        <div class="row g-3 mb-2">
+          <div class="col-12">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-card-text me-1 text-primary"></i> Observações
+            </label>
+            <textarea
+              class="form-control {% if errors.get('descricao') %}is-invalid{% endif %}"
+              name="descricao"
+              rows="4"
+              placeholder="Ex: Equipe responsável por atendimentos em área de risco, plantões noturnos, etc."
+            >{{ form.get('descricao', equipe.descricao or '') }}</textarea>
+            {% if errors.get('descricao') %}
+              <div class="invalid-feedback">{{ errors.get('descricao') }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        {# BOTÕES #}
+        <div class="d-flex justify-content-between align-items-center mt-5">
+
+          <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalExcluir">
+            <i class="bi bi-trash me-1"></i> Excluir Equipe
+          </button>
+
+          <div class="d-flex gap-2">
+            <a href="{{ url_for('main.listar_equipes') }}" class="btn btn-outline-secondary px-4">
+              Cancelar
+            </a>
+
+            <button type="submit" class="btn btn-primary px-5 shadow-sm fw-bold">
+              <i class="bi bi-check-lg me-1"></i> Salvar Alterações
+            </button>
+          </div>
+
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+</div>
+
+{# Modal de Confirmação de Exclusão #}
+<div class="modal fade" id="modalExcluir" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content rounded-4 border-0 shadow">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold">Confirmar Exclusão</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        Tem certeza que deseja excluir a equipe <strong>{{ equipe.nome_equipe }}</strong>?
+        <div class="text-muted small mt-1">Esta ação não pode ser desfeita.</div>
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+        <form action="{{ url_for('main.deletar_equipe', equipe_id=equipe.id) }}" method="post" class="m-0">
+          <button type="submit" class="btn btn-danger px-4">Confirmar Exclusão</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Atualiza o label do switch de status em tempo real
+  document.addEventListener("DOMContentLoaded", () => {
+    const sw = document.getElementById("ativaSwitch");
+    const lbl = document.querySelector("label[for='ativaSwitch']");
+    if (sw && lbl) {
+      const update = () => { lbl.textContent = sw.checked ? "Ativa" : "Inativa"; };
+      update();
+      sw.addEventListener("change", update);
+    }
+  });
+</script>
+{% endblock %}
