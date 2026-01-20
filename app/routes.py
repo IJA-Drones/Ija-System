@@ -4784,7 +4784,7 @@ def editar_equipe(equipe_id):
                 db.session.rollback()
                 errors["auxiliar_id"] = "Equipe não pode ter o mesmo piloto em mais de um papel."
                 return render_template(
-                    "equipes/editar_equipe.html",
+                    "editar_equipe.html",
                     equipe=equipe,
                     pilotos=pilotos,
                     errors=errors,
@@ -4796,7 +4796,7 @@ def editar_equipe(equipe_id):
 
             db.session.commit()
             flash("Equipe atualizada com sucesso.", "success")
-            return redirect(url_for("main.editar_equipe", equipe_id=equipe.id))
+            return redirect(url_for("main.listar_equipes", equipe_id=equipe.id))
 
         flash("Corrija os campos destacados e tente novamente.", "danger")
 
