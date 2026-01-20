@@ -4220,17 +4220,55 @@ def piloto_os():
         flash("Piloto sem vínculo cadastrado.", "danger")
         return redirect(url_for('main.dashboard'))
 
-    status_ok = ["APROVADA", "APROVADA COM RECOMENDAÇÕES", "APROVADO", "APROVADO COM RECOMENDAÇÕES"]
+    status_ok = ["APROVADO", "APROVADO COM RECOMENDAÇÕES", "APROVADA", "APROVADA COM RECOMENDAÇÕES"]
 
+    # ✅ pega o vínculo do piloto com uma equipe ATIVA
+    # prioridade: papel "piloto" (titular) primeiro, depois "auxiliar"
+    vinculo = (
+        EquipePiloto.query
+        .join(Equipe, Equipe.id == EquipePiloto.equipe_id)
+        .options(joinedload(EquipePiloto.equipe))
+        .filter(
+            EquipePiloto.piloto_id == current_user.piloto_id,
+            Equipe.ativa.is_(True)
+        )
+        .order_by(
+            db.case((EquipePiloto.papel == "piloto", 0), else_=1),
+            EquipePiloto.criado_em.desc()
+        )
+        .first()
+    )
+
+    if not vinculo or not vinculo.equipe_id:
+        flash("Você ainda não está vinculado a nenhuma equipe ativa.", "warning")
+        return render_template(
+            "piloto_os.html",
+            pedidos=[],
+            paginacao=None,
+            status_ok=status_ok,
+            pilot_team_nome=None,
+            pilot_team_regiao=None,
+            pilot_team_papel=None,
+        )
+
+    pilot_team_nome = vinculo.equipe.nome_equipe if vinculo.equipe else None
+    pilot_team_regiao = vinculo.equipe.regiao if vinculo.equipe else None
+    pilot_team_papel = (vinculo.papel or "").lower()
+
+    # ✅ AGORA a OS vem por EQUIPE (não por piloto_id)
     query = (
         Solicitacao.query
-        .options(joinedload(Solicitacao.usuario))
+        .options(
+            joinedload(Solicitacao.usuario),
+            joinedload(Solicitacao.equipe)  # pra exibir equipe no template se quiser
+        )
         .filter(
-            Solicitacao.piloto_id == current_user.piloto_id,
+            Solicitacao.equipe_id == vinculo.equipe_id,
             Solicitacao.status.in_(status_ok)
         )
     )
 
+    # filtros existentes (seu helper)
     filtro_data = request.args.get("data")  # ex: 2026-01
     uvis_id = request.args.get("uvis_id")
     query = aplicar_filtros_base(query, filtro_data, uvis_id)
@@ -4245,9 +4283,11 @@ def piloto_os():
         "piloto_os.html",
         pedidos=paginacao.items,
         paginacao=paginacao,
-        status_ok=status_ok
+        status_ok=status_ok,
+        pilot_team_nome=pilot_team_nome,
+        pilot_team_regiao=pilot_team_regiao,
+        pilot_team_papel=pilot_team_papel,
     )
-
 
 @bp.route('/piloto/os/<int:os_id>/concluir', methods=['POST'])
 @login_required
@@ -4256,19 +4296,45 @@ def piloto_concluir_os(os_id):
 
     s = Solicitacao.query.get_or_404(os_id)
 
-    if s.piloto_id != current_user.piloto_id:
-        flash("Você não pode alterar esta OS.", "danger")
-        return redirect(url_for('main.piloto_os'))
-
     status_ok = ["APROVADO", "APROVADO COM RECOMENDAÇÕES", "APROVADA", "APROVADA COM RECOMENDAÇÕES"]
     if s.status not in status_ok:
         flash("A OS não está aprovada.", "warning")
         return redirect(url_for('main.piloto_os'))
 
+    if not s.equipe_id:
+        flash("Esta OS não possui equipe atribuída.", "danger")
+        return redirect(url_for('main.piloto_os'))
+
+    # ✅ valida se o piloto logado faz parte da equipe da OS
+    vinculo = (
+        EquipePiloto.query
+        .join(Equipe, Equipe.id == EquipePiloto.equipe_id)
+        .options(joinedload(EquipePiloto.equipe))
+        .filter(
+            EquipePiloto.equipe_id == s.equipe_id,
+            EquipePiloto.piloto_id == current_user.piloto_id,
+            Equipe.ativa.is_(True)
+        )
+        .first()
+    )
+
+    if not vinculo:
+        flash("Você não faz parte da equipe atribuída a esta OS.", "danger")
+        return redirect(url_for('main.piloto_os'))
+
+    equipe_nome = vinculo.equipe.nome_equipe if vinculo.equipe else None
+    papel = (vinculo.papel or "").lower() if vinculo.papel else None
+
     s.status = "CONCLUÍDO"
     db.session.commit()
 
-    flash("Ordem de serviço concluída com sucesso.", "success")
+    if equipe_nome and papel:
+        flash(f"OS #{s.id} concluída! Equipe: {equipe_nome} | Papel: {papel}.", "success")
+    elif equipe_nome:
+        flash(f"OS #{s.id} concluída! Equipe: {equipe_nome}.", "success")
+    else:
+        flash(f"OS #{s.id} concluída com sucesso!", "success")
+
     return redirect(url_for('main.piloto_os'))
 
 
@@ -4302,6 +4368,9 @@ def cadastrar_equipes():
             "auxiliar_id": auxiliar_id,
         }
 
+        # -----------------------------
+        # Validações básicas
+        # -----------------------------
         if not nome_equipe:
             errors["nome_equipe"] = "Informe o nome da equipe."
 
@@ -4311,27 +4380,9 @@ def cadastrar_equipes():
         if not piloto_id:
             errors["piloto_id"] = "Selecione o piloto titular."
         if not auxiliar_id:
-            errors["auxiliar_id"] = "Selecione o piloto auxiliar."
+            errors["auxiliar_id"] = "Selecione o pilotosuya o piloto auxiliar."
 
-        piloto_obj = None
-        auxiliar_obj = None
-
-        if piloto_id:
-            try:
-                piloto_obj = Pilotos.query.get(int(piloto_id))
-                if not piloto_obj:
-                    errors["piloto_id"] = "Piloto titular não encontrado."
-            except ValueError:
-                errors["piloto_id"] = "Piloto titular inválido."
-
-        if auxiliar_id:
-            try:
-                auxiliar_obj = Pilotos.query.get(int(auxiliar_id))
-                if not auxiliar_obj:
-                    errors["auxiliar_id"] = "Piloto auxiliar não encontrado."
-            except ValueError:
-                errors["auxiliar_id"] = "Piloto auxiliar inválido."
-
+        # não permitir o mesmo piloto nos dois papéis
         if piloto_id and auxiliar_id and piloto_id == auxiliar_id:
             errors["auxiliar_id"] = "Auxiliar deve ser diferente do piloto titular."
 
@@ -4341,6 +4392,68 @@ def cadastrar_equipes():
             if existe:
                 errors["nome_equipe"] = "Já existe uma equipe com esse nome."
 
+        # -----------------------------
+        # Carrega objetos Piloto
+        # -----------------------------
+        piloto_obj = None
+        auxiliar_obj = None
+
+        piloto_id_int = None
+        auxiliar_id_int = None
+
+        if piloto_id:
+            try:
+                piloto_id_int = int(piloto_id)
+                piloto_obj = Pilotos.query.get(piloto_id_int)
+                if not piloto_obj:
+                    errors["piloto_id"] = "Piloto titular não encontrado."
+            except ValueError:
+                errors["piloto_id"] = "Piloto titular inválido."
+
+        if auxiliar_id:
+            try:
+                auxiliar_id_int = int(auxiliar_id)
+                auxiliar_obj = Pilotos.query.get(auxiliar_id_int)
+                if not auxiliar_obj:
+                    errors["auxiliar_id"] = "Piloto auxiliar não encontrado."
+            except ValueError:
+                errors["auxiliar_id"] = "Piloto auxiliar inválido."
+
+        # -----------------------------
+        # ✅ NOVO: Bloqueio de piloto em outra equipe (titular OU auxiliar)
+        # -----------------------------
+        def piloto_ja_em_equipe(piloto_id_check: int):
+            """Retorna (EquipePiloto, Equipe) se o piloto já estiver em alguma equipe."""
+            vinc = (
+                EquipePiloto.query
+                .join(Equipe, Equipe.id == EquipePiloto.equipe_id)
+                .filter(EquipePiloto.piloto_id == piloto_id_check)
+                .first()
+            )
+            if not vinc:
+                return None, None
+            eq = Equipe.query.get(vinc.equipe_id)
+            return vinc, eq
+
+        if piloto_id_int and "piloto_id" not in errors:
+            vinc, eq = piloto_ja_em_equipe(piloto_id_int)
+            if vinc:
+                nome_eq = eq.nome_equipe if eq else f"ID {vinc.equipe_id}"
+                papel = (vinc.papel or "").lower()
+                errors["piloto_id"] = f"Este piloto já está na equipe '{nome_eq}' como {papel}. Remova de lá antes."
+                flash(errors["piloto_id"], "warning")
+
+        if auxiliar_id_int and "auxiliar_id" not in errors:
+            vinc, eq = piloto_ja_em_equipe(auxiliar_id_int)
+            if vinc:
+                nome_eq = eq.nome_equipe if eq else f"ID {vinc.equipe_id}"
+                papel = (vinc.papel or "").lower()
+                errors["auxiliar_id"] = f"Este piloto já está na equipe '{nome_eq}' como {papel}. Remova de lá antes."
+                flash(errors["auxiliar_id"], "warning")
+
+        # -----------------------------
+        # Se tiver erro, volta pro template
+        # -----------------------------
         if errors:
             flash("Corrija os campos destacados.", "warning")
             return render_template(
@@ -4351,6 +4464,9 @@ def cadastrar_equipes():
                 regioes=regioes_lista
             )
 
+        # -----------------------------
+        # Criação da Equipe + Vínculos
+        # -----------------------------
         equipe = Equipe(
             nome_equipe=nome_equipe,
             descricao=descricao or None,
@@ -4358,7 +4474,7 @@ def cadastrar_equipes():
             ativa=True
         )
         db.session.add(equipe)
-        db.session.flush()
+        db.session.flush()  # pega equipe.id
 
         db.session.add(EquipePiloto(equipe_id=equipe.id, piloto_id=piloto_obj.id, papel="piloto"))
         db.session.add(EquipePiloto(equipe_id=equipe.id, piloto_id=auxiliar_obj.id, papel="auxiliar"))
@@ -4672,7 +4788,6 @@ def listar_equipes():
         filters=filters,
         is_admin=(tipo == "admin"),
     )
-
 # -------------------------------------------------------------
 # EDITAR EQUIPE (admin)
 # -------------------------------------------------------------
@@ -4683,11 +4798,14 @@ def editar_equipe(equipe_id):
     if getattr(current_user, "tipo_usuario", None) != "admin":
         abort(403)
 
-    equipe = Equipe.query.options(
-        db.selectinload(Equipe.membros).selectinload(EquipePiloto.piloto)
-    ).get_or_404(equipe_id)
+    equipe = (
+        Equipe.query.options(
+            db.selectinload(Equipe.membros).selectinload(EquipePiloto.piloto)
+        )
+        .get_or_404(equipe_id)
+    )
 
-    # Helpers: pegar ids atuais
+    # Helpers: pegar membros atuais
     piloto_atual = equipe.piloto_titular
     aux_atual = equipe.piloto_auxiliar
 
@@ -4696,6 +4814,26 @@ def editar_equipe(equipe_id):
 
     # lista de pilotos para selects
     pilotos = Pilotos.query.order_by(Pilotos.nome_piloto.asc()).all()
+
+    # helper: verifica se piloto já está em outra equipe (qualquer papel)
+    def conflito_em_outra_equipe(piloto_id_check: int, equipe_id_atual: int):
+        """
+        Retorna (vinculo, equipe_conflito) se o piloto já estiver em outra equipe
+        (titular ou auxiliar). Caso contrário, (None, None).
+        """
+        vinc = (
+            EquipePiloto.query
+            .filter(
+                EquipePiloto.piloto_id == piloto_id_check,
+                EquipePiloto.equipe_id != equipe_id_atual
+            )
+            .first()
+        )
+        if not vinc:
+            return None, None
+
+        eq = Equipe.query.get(vinc.equipe_id)
+        return vinc, eq
 
     if request.method == "POST":
         nome_equipe = (request.form.get("nome_equipe") or "").strip()
@@ -4710,7 +4848,6 @@ def editar_equipe(equipe_id):
         if not nome_equipe:
             errors["nome_equipe"] = "Informe o nome da equipe."
 
-        # região pode ser vazio (ok), mas se vier algo, valida básico
         if regiao and regiao not in ("NORTE", "SUL", "LESTE", "OESTE"):
             errors["regiao"] = "Região inválida."
 
@@ -4747,6 +4884,27 @@ def editar_equipe(equipe_id):
         if auxiliar_id and not aux_obj:
             errors["auxiliar_id"] = "Auxiliar não encontrado."
 
+        # ---------------------------------------------------------------------
+        # ✅ BLOQUEIO FORTE: piloto não pode estar em OUTRA equipe (qualquer papel)
+        # ---------------------------------------------------------------------
+        if piloto_id and "piloto_id" not in errors:
+            vinc, eq = conflito_em_outra_equipe(piloto_id, equipe.id)
+            if vinc:
+                nome_eq = eq.nome_equipe if eq and eq.nome_equipe else f"ID {vinc.equipe_id}"
+                papel = (vinc.papel or "").lower()
+                msg = f"Este piloto já está na equipe '{nome_eq}' como {papel}. Remova de lá antes de atribuir aqui."
+                errors["piloto_id"] = msg
+                flash(msg, "warning")
+
+        if auxiliar_id and "auxiliar_id" not in errors:
+            vinc, eq = conflito_em_outra_equipe(auxiliar_id, equipe.id)
+            if vinc:
+                nome_eq = eq.nome_equipe if eq and eq.nome_equipe else f"ID {vinc.equipe_id}"
+                papel = (vinc.papel or "").lower()
+                msg = f"Este piloto já está na equipe '{nome_eq}' como {papel}. Remova de lá antes de atribuir aqui."
+                errors["auxiliar_id"] = msg
+                flash(msg, "warning")
+
         # --- se ok, salva ---
         if not errors:
             equipe.nome_equipe = nome_equipe
@@ -4773,16 +4931,15 @@ def editar_equipe(equipe_id):
                         EquipePiloto(equipe_id=equipe.id, piloto_id=auxiliar_id, papel="auxiliar")
                     )
             else:
-                # se veio vazio e existe vínculo, remove
                 if membro_aux:
                     db.session.delete(membro_aux)
 
             # 3) proteção extra: não deixar duplicar o mesmo piloto na mesma equipe
-            # (além das UniqueConstraints)
             ids = [m.piloto_id for m in equipe.membros if m.piloto_id]
             if len(ids) != len(set(ids)):
                 db.session.rollback()
                 errors["auxiliar_id"] = "Equipe não pode ter o mesmo piloto em mais de um papel."
+                flash(errors["auxiliar_id"], "danger")
                 return render_template(
                     "editar_equipe.html",
                     equipe=equipe,
@@ -4794,11 +4951,16 @@ def editar_equipe(equipe_id):
                     is_admin=True,
                 )
 
-            db.session.commit()
-            flash("Equipe atualizada com sucesso.", "success")
-            return redirect(url_for("main.listar_equipes", equipe_id=equipe.id))
-
-        flash("Corrija os campos destacados e tente novamente.", "danger")
+            try:
+                db.session.commit()
+                flash("Equipe atualizada com sucesso.", "success")
+                return redirect(url_for("main.listar_equipes", equipe_id=equipe.id))
+            except Exception as e:
+                db.session.rollback()
+                current_app.logger.error(f"Erro ao atualizar equipe {equipe.id}: {e}")
+                flash("Erro ao salvar alterações da equipe. Tente novamente.", "danger")
+        else:
+            flash("Corrija os campos destacados e tente novamente.", "danger")
 
     # GET (ou POST com erro)
     return render_template(
