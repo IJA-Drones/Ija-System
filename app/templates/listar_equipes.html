@@ -1,0 +1,472 @@
+{% extends "base.html" %}
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+{% endblock %}
+{% block content %}
+
+<style>
+  .equipes-table-wrap { width: 100%; }
+
+  @media (max-width: 991.98px) {
+    .container-fluid.py-4 {
+      padding-left: 12px !important;
+      padding-right: 12px !important;
+    }
+
+    .d-flex.justify-content-between.align-items-center.mb-4 {
+      flex-direction: column;
+      align-items: flex-start !important;
+      gap: 12px;
+    }
+    .d-flex.justify-content-between.align-items-center.mb-4 .d-flex.gap-2 {
+      width: 100%;
+      flex-wrap: wrap;
+    }
+    .d-flex.justify-content-between.align-items-center.mb-4 .d-flex.gap-2 > a {
+      flex: 1 1 48%;
+      justify-content: center;
+    }
+
+    form.card.p-3.mb-4 .row.g-2.align-items-end > div {
+      width: 100%;
+    }
+
+    .equipes-table-wrap .table-responsive { overflow-x: visible !important; }
+    .equipes-table-wrap table.table thead { display: none; }
+
+    .equipes-table-wrap table.table,
+    .equipes-table-wrap table.table tbody,
+    .equipes-table-wrap table.table tr,
+    .equipes-table-wrap table.table td {
+      display: block;
+      width: 100%;
+    }
+
+    .equipes-table-wrap table.table tbody tr {
+      margin: 0 0 16px 0 !important;
+      border-radius: 16px !important;
+      overflow: hidden;
+      border: 1px solid rgba(0,0,0,.08);
+      box-shadow: 0 10px 22px rgba(0,0,0,.06);
+      background: #fff;
+    }
+    .equipes-table-wrap table.table tbody tr:last-child {
+      margin-bottom: 0 !important;
+    }
+
+    .equipes-table-wrap table.table tbody tr td {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 14px !important;
+      border: 0 !important;
+      background: transparent !important;
+      text-align: left !important;
+    }
+
+    .equipes-table-wrap table.table tbody tr td + td {
+      border-top: 1px solid rgba(0,0,0,.06) !important;
+    }
+
+    .equipes-table-wrap .ps-3,
+    .equipes-table-wrap .pe-3 {
+      padding-left: 14px !important;
+      padding-right: 14px !important;
+    }
+
+    /* Labels (mobile cards) */
+    .equipes-table-wrap table.table tbody tr td:nth-child(1)::before { content: "ID"; }
+    .equipes-table-wrap table.table tbody tr td:nth-child(2)::before { content: "Equipe"; }
+    .equipes-table-wrap table.table tbody tr td:nth-child(3)::before { content: "Região"; }
+    .equipes-table-wrap table.table tbody tr td:nth-child(4)::before { content: "Ativa"; }
+    .equipes-table-wrap table.table tbody tr td:nth-child(5)::before { content: "Piloto Titular"; }
+    .equipes-table-wrap table.table tbody tr td:nth-child(6)::before { content: "Auxiliar"; }
+    .equipes-table-wrap table.table tbody tr td:nth-child(7)::before { content: "Criada em"; }
+    .equipes-table-wrap table.table tbody tr td:nth-child(8)::before { content: "Ações"; }
+
+    .equipes-table-wrap table.table tbody tr td::before {
+      flex: 0 0 130px;
+      max-width: 130px;
+      font-weight: 700;
+      font-size: .82rem;
+      line-height: 1.1;
+      color: rgba(0,0,0,.55);
+      padding-top: 2px;
+    }
+
+    .equipes-table-wrap table.table tbody tr td > * {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .equipes-table-wrap td:nth-child(8) .d-flex.gap-2 {
+      flex-direction: column;
+      width: 100%;
+    }
+    .equipes-table-wrap td:nth-child(8) .d-flex.gap-2 .btn {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .card-footer .d-flex.justify-content-between.align-items-center {
+      flex-direction: column;
+      align-items: flex-start !important;
+      gap: 10px;
+    }
+    .card-footer nav { width: 100%; }
+    .card-footer .pagination { justify-content: flex-start; flex-wrap: wrap; }
+  }
+
+  @media (max-width: 420px) {
+    .equipes-table-wrap table.table tbody tr td::before {
+      flex-basis: 110px;
+      max-width: 110px;
+      font-size: .78rem;
+    }
+    .equipes-table-wrap table.table tbody tr td {
+      padding: 12px 12px !important;
+    }
+  }
+
+  /* DARK MODE */
+  @media (max-width: 991.98px) {
+    html.dark-mode .equipes-table-wrap table.table tbody tr,
+    body.dark-mode .equipes-table-wrap table.table tbody tr {
+      background: #0f1a24 !important;
+      border-color: #233549 !important;
+      box-shadow: 0 14px 30px rgba(0,0,0,.35) !important;
+      color: rgba(255,255,255,.92) !important;
+    }
+
+    html.dark-mode .equipes-table-wrap table.table tbody tr td + td,
+    body.dark-mode .equipes-table-wrap table.table tbody tr td + td {
+      border-top-color: #233549 !important;
+    }
+
+    html.dark-mode .equipes-table-wrap table.table tbody tr td::before,
+    body.dark-mode .equipes-table-wrap table.table tbody tr td::before {
+      color: rgba(255,255,255,.72) !important;
+    }
+
+    html.dark-mode .equipes-table-wrap table.table tbody tr td,
+    body.dark-mode .equipes-table-wrap table.table tbody tr td {
+      color: rgba(255,255,255,.92) !important;
+    }
+
+    html.dark-mode .equipes-table-wrap .text-muted,
+    body.dark-mode .equipes-table-wrap .text-muted {
+      color: rgba(255,255,255,.70) !important;
+    }
+
+    html.dark-mode .equipes-table-wrap a,
+    body.dark-mode .equipes-table-wrap a {
+      color: #7dd3fc !important;
+    }
+
+    html.dark-mode .card-footer.bg-white,
+    body.dark-mode .card-footer.bg-white {
+      background: transparent !important;
+      border-top-color: #233549 !important;
+    }
+  }
+</style>
+
+<div class="container-fluid py-4" style="max-width: 1200px">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="text-dark">
+        <i class="bi bi-people-fill me-2 text-primary"></i> Equipes
+      </h2>
+      <p class="text-muted small mb-0">
+        Total de registros: <strong>{{ filters.total }}</strong>
+        {% if filters.q or filters.regiao or filters.ativa or filters.piloto_id or filters.auxiliar_id %}
+          <span class="badge bg-filter-custom ms-2">Filtrado</span>
+        {% endif %}
+      </p>
+    </div>
+
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary d-flex align-items-center">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+
+  {% if is_admin %}
+  <a href="{{ url_for('main.listar_equipes',
+                      export='xlsx',
+                      q=filters.q,
+                      regiao=filters.regiao,
+                      ativa=filters.ativa,
+                      piloto_id=filters.piloto_id,
+                      auxiliar_id=filters.auxiliar_id,
+                      sort=filters.sort,
+                      per_page=filters.per_page) }}"
+     class="btn btn-secondary d-flex align-items-center gap-2">
+    <i class="bi bi-file-earmark-excel-fill"></i> Exportar Excel
+  </a>
+{% endif %}
+
+
+      {% if is_admin %}
+        <a href="{{ url_for('main.cadastrar_equipes') }}" class="btn btn-success d-flex align-items-center gap-2">
+          <i class="bi bi-plus-lg"></i> Nova Equipe
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  {# --- FILTROS EM SANFONA (EQUIPES) --- #}
+  <div class="card shadow-sm rounded-4 mb-4 border-0">
+    <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center"
+         data-bs-toggle="collapse"
+         data-bs-target="#collapseFiltrosEquipes"
+         aria-expanded="{{ 'true' if (filters.q or filters.regiao or filters.ativa or filters.piloto_id or filters.auxiliar_id) else 'false' }}"
+         style="cursor: pointer;">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-funnel-fill text-primary"></i>
+        <span class="text-dark">Filtros de Busca</span>
+
+        {% if filters.q or filters.regiao or filters.ativa or filters.piloto_id or filters.auxiliar_id %}
+          <span class="badge bg-danger rounded-circle p-1" style="width: 8px; height: 8px;"></span>
+        {% endif %}
+      </div>
+      <i class="bi bi-chevron-down text-muted"></i>
+    </div>
+
+    <div class="collapse {% if filters.q or filters.regiao or filters.ativa or filters.piloto_id or filters.auxiliar_id %}show{% endif %}"
+         id="collapseFiltrosEquipes">
+      <div class="card-body pt-0">
+        <form method="GET" action="{{ url_for('main.listar_equipes') }}">
+          <div class="row g-2 align-items-end">
+
+            <div class="col-md-4">
+              <label class="small text-muted mb-1">Busca geral:</label>
+              <input type="text"
+                     class="form-control form-control-sm"
+                     name="q"
+                     value="{{ filters.q }}"
+                     placeholder="Equipe, descrição, região, piloto...">
+            </div>
+
+            <div class="col-md-2">
+              <label class="small text-muted mb-1">Região:</label>
+              <select class="form-select form-select-sm" name="regiao">
+                <option value="">Todas</option>
+                <option value="NORTE" {% if filters.regiao == 'NORTE' %}selected{% endif %}>NORTE</option>
+                <option value="SUL" {% if filters.regiao == 'SUL' %}selected{% endif %}>SUL</option>
+                <option value="LESTE" {% if filters.regiao == 'LESTE' %}selected{% endif %}>LESTE</option>
+                <option value="OESTE" {% if filters.regiao == 'OESTE' %}selected{% endif %}>OESTE</option>
+              </select>
+            </div>
+
+            <div class="col-md-2">
+              <label class="small text-muted mb-1">Status:</label>
+              <select class="form-select form-select-sm" name="ativa">
+                <option value="" {% if not filters.ativa %}selected{% endif %}>Todas</option>
+                <option value="1" {% if filters.ativa in ['1','true','sim','yes'] %}selected{% endif %}>Ativas</option>
+                <option value="0" {% if filters.ativa in ['0','false','nao','não','no'] %}selected{% endif %}>Inativas</option>
+              </select>
+            </div>
+
+            <div class="col-md-2">
+              <label class="small text-muted mb-1">Piloto (ID):</label>
+              <input type="text"
+                     class="form-control form-control-sm"
+                     name="piloto_id"
+                     value="{{ filters.piloto_id }}"
+                     placeholder="Ex: 12">
+            </div>
+
+            <div class="col-md-2">
+              <label class="small text-muted mb-1">Auxiliar (ID):</label>
+              <input type="text"
+                     class="form-control form-control-sm"
+                     name="auxiliar_id"
+                     value="{{ filters.auxiliar_id }}"
+                     placeholder="Ex: 34">
+            </div>
+
+            <div class="col-md-2">
+              <label class="small text-muted mb-1">Ordenar:</label>
+              <select class="form-select form-select-sm" name="sort">
+                <option value="nome_asc" {% if filters.sort == 'nome_asc' %}selected{% endif %}>Nome (A→Z)</option>
+                <option value="nome_desc" {% if filters.sort == 'nome_desc' %}selected{% endif %}>Nome (Z→A)</option>
+                <option value="id_desc" {% if filters.sort == 'id_desc' %}selected{% endif %}>Mais recentes</option>
+                <option value="id_asc" {% if filters.sort == 'id_asc' %}selected{% endif %}>Mais antigos</option>
+                <option value="criada_desc" {% if filters.sort == 'criada_desc' %}selected{% endif %}>Criação (↓)</option>
+                <option value="criada_asc" {% if filters.sort == 'criada_asc' %}selected{% endif %}>Criação (↑)</option>
+              </select>
+            </div>
+
+            <div class="col-md-2 d-flex gap-2 flex-column flex-md-row">
+              <button type="submit" class="btn btn-success btn-sm flex-fill text-nowrap">
+                <i class="bi bi-funnel"></i> Filtrar
+              </button>
+
+              {% if filters.q or filters.regiao or filters.ativa or filters.piloto_id or filters.auxiliar_id %}
+                <a href="{{ url_for('main.listar_equipes') }}"
+                   class="btn btn-outline-secondary btn-sm flex-fill text-nowrap">
+                  <i class="bi bi-x-lg"></i> Limpar
+                </a>
+              {% endif %}
+            </div>
+
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0 rounded-4 overflow-hidden equipes-table-wrap">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-3" style="width: 80px">ID</th>
+              <th>Equipe</th>
+              <th>Região</th>
+              <th>Status</th>
+              <th>Piloto Titular</th>
+              <th>Auxiliar</th>
+              <th>Criada em</th>
+              <th class="text-center" style="width: 210px">Ações</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% if equipes %}
+              {% for e in equipes %}
+                {% set piloto = e.piloto_titular %}
+                {% set aux = e.piloto_auxiliar %}
+
+                <tr>
+                  <td class="ps-3 text-muted">#{{ e.id }}</td>
+
+                  <td>
+                    <div class="fw-bold">{{ e.nome_equipe }}</div>
+                    {% if e.descricao %}
+                      <div class="text-muted small text-truncate" style="max-width: 520px;">
+                        {{ e.descricao }}
+                      </div>
+                    {% endif %}
+                  </td>
+
+                  <td>
+                    {% if e.regiao and e.regiao != '-' %}
+                      <span class="badge bg-white text-dark border">{{ e.regiao }}</span>
+                    {% else %}
+                      <span class="text-muted">-</span>
+                    {% endif %}
+                  </td>
+
+                  <td>
+                    {% if e.ativa %}
+                      <span class="badge bg-success-subtle text-success border border-success-subtle">Ativa</span>
+                    {% else %}
+                      <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Inativa</span>
+                    {% endif %}
+                  </td>
+
+                  <td>
+                    {% if piloto %}
+                      <div class="fw-semibold">{{ piloto.nome_piloto }}</div>
+                      <div class="text-muted small">#{{ piloto.id }}</div>
+                    {% else %}
+                      <span class="text-muted">-</span>
+                    {% endif %}
+                  </td>
+
+                  <td>
+                    {% if aux %}
+                      <div class="fw-semibold">{{ aux.nome_piloto }}</div>
+                      <div class="text-muted small">#{{ aux.id }}</div>
+                    {% else %}
+                      <span class="text-muted">-</span>
+                    {% endif %}
+                  </td>
+
+                  <td>
+                    {% if e.criada_em %}
+                      <span class="text-muted">{{ e.criada_em.strftime('%d/%m/%Y %H:%M') }}</span>
+                    {% else %}
+                      <span class="text-muted">-</span>
+                    {% endif %}
+                  </td>
+
+                  <td class="text-center pe-3">
+                    {% if is_admin %}
+                      <div class="d-flex gap-2 justify-content-center">
+                        <a href="{{ url_for('main.editar_equipe', equipe_id=e.id) }}"
+                           class="btn btn-sm btn-success text-white shadow-sm"
+                           title="Editar">
+                          <i class="bi bi-pencil-square"></i> Editar
+                        </a>
+
+                        <form class="form-deletar m-0" method="POST"
+                              action="{{ url_for('main.deletar_equipe', equipe_id=e.id) }}">
+                          <button type="submit" class="btn btn-sm btn-danger shadow-sm" title="Excluir">
+                            <i class="bi bi-trash"></i> Excluir
+                          </button>
+                        </form>
+                      </div>
+                    {% else %}
+                      <span class="text-muted small">Somente leitura</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="8" class="text-center py-5">
+                  <p class="text-muted mb-0">Nenhuma equipe encontrada com os filtros aplicados.</p>
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {% if filters.total_pages > 1 %}
+      <div class="card-footer bg-white py-3 border-top">
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="small text-muted">Página <strong>{{ filters.page }}</strong> de {{ filters.total_pages }}</span>
+          <nav>
+            <ul class="pagination pagination-sm mb-0">
+              <li class="page-item {% if filters.page <= 1 %}disabled{% endif %}">
+                <a class="page-link shadow-none"
+                   href="{{ url_for('main.listar_equipes',
+                                    page=filters.page-1,
+                                    q=filters.q,
+                                    regiao=filters.regiao,
+                                    ativa=filters.ativa,
+                                    piloto_id=filters.piloto_id,
+                                    auxiliar_id=filters.auxiliar_id,
+                                    sort=filters.sort,
+                                    per_page=filters.per_page) }}">Anterior</a>
+              </li>
+              <li class="page-item active"><span class="page-link shadow-none">{{ filters.page }}</span></li>
+              <li class="page-item {% if filters.page >= filters.total_pages %}disabled{% endif %}">
+                <a class="page-link shadow-none"
+                   href="{{ url_for('main.listar_equipes',
+                                    page=filters.page+1,
+                                    q=filters.q,
+                                    regiao=filters.regiao,
+                                    ativa=filters.ativa,
+                                    piloto_id=filters.piloto_id,
+                                    auxiliar_id=filters.auxiliar_id,
+                                    sort=filters.sort,
+                                    per_page=filters.per_page) }}">Próxima</a>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

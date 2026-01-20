@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html
   lang="pt-br"
   class="{% if tema_escolhido == 'dark' %}dark-mode{% endif %}"
@@ -316,43 +316,86 @@
               </ul>
             </div>
           </li>
-          {% endif %}
-        {# ===================== PILOTOS (ADMIN + UVIS) ===================== #}
-{% if current_user.tipo_usuario in ['admin', 'uvis'] %}
-<li class="nav-item">
-  <button
-    type="button"
-    class="nav-link nav-link-toggle"
-    data-bs-toggle="collapse"
-    data-bs-target="#menuPilotos"
-  >
-    <span>
-      <i class="bi bi-person-badge-fill me-2"></i>
-      <span>Pilotos</span>
-    </span>
-    <i class="bi bi-chevron-down chevron"></i>
-  </button>
+          {% endif %} {# ===================== PILOTOS (SOMENTE ADMIN)
+          ===================== #} {% if current_user.tipo_usuario == 'admin' %}
+          <li class="nav-item">
+            <button
+              type="button"
+              class="nav-link nav-link-toggle"
+              data-bs-toggle="collapse"
+              data-bs-target="#menuPilotos"
+            >
+              <span>
+                <i class="bi bi-person-badge-fill me-2"></i>
+                <span>Pilotos</span>
+              </span>
+              <i class="bi bi-chevron-down chevron"></i>
+            </button>
 
-  <div class="collapse" id="menuPilotos">
-    <ul class="nav flex-column sub-nav">
-      <li class="nav-item">
-        <a class="nav-link sub-link" href="{{ url_for('main.listar_pilotos') }}">
-          <i class="bi bi-list-ul me-2"></i><span>Listar</span>
-        </a>
-      </li>
+            <div class="collapse" id="menuPilotos">
+              <ul class="nav flex-column sub-nav">
+                <li class="nav-item">
+                  <a
+                    class="nav-link sub-link"
+                    href="{{ url_for('main.listar_pilotos') }}"
+                  >
+                    <i class="bi bi-list-ul me-2"></i><span>Listar</span>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a
+                    class="nav-link sub-link"
+                    href="{{ url_for('main.cadastrar_pilotos') }}"
+                  >
+                    <i class="bi bi-person-plus-fill me-2"></i
+                    ><span>Cadastrar</span>
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </li>
+          {% endif %} {# ===================== EQUIPES (ADMIN COMPLETO / UVIS SÓ
+          LISTAR) ===================== #} {% if current_user.tipo_usuario in
+          ['admin', 'uvis'] %}
+          <li class="nav-item">
+            <button
+              type="button"
+              class="nav-link nav-link-toggle"
+              data-bs-toggle="collapse"
+              data-bs-target="#menuEquipes"
+            >
+              <span>
+                <i class="bi bi-people-fill me-2"></i>
+                <span>Equipes</span>
+              </span>
+              <i class="bi bi-chevron-down chevron"></i>
+            </button>
 
-      {% if current_user.tipo_usuario == 'admin' %}
-      <li class="nav-item">
-        <a class="nav-link sub-link" href="{{ url_for('main.cadastrar_pilotos') }}">
-          <i class="bi bi-person-plus-fill me-2"></i><span>Cadastrar</span>
-        </a>
-      </li>
-      {% endif %}
-    </ul>
-  </div>
-</li>
-      </li>
+            <div class="collapse" id="menuEquipes">
+              <ul class="nav flex-column sub-nav">
+                <li class="nav-item">
+                  <a
+                    class="nav-link sub-link"
+                    href="{{ url_for('main.listar_equipes') }}"
+                  >
+                    <i class="bi bi-list-ul me-2"></i><span>Listar</span>
+                  </a>
+                </li>
 
+                {% if current_user.tipo_usuario == 'admin' %}
+                <li class="nav-item">
+                  <a
+                    class="nav-link sub-link"
+                    href="{{ url_for('main.cadastrar_equipes') }}"
+                  >
+                    <i class="bi bi-person-plus-fill me-2"></i
+                    ><span>Cadastrar</span>
+                  </a>
+                </li>
+                {% endif %}
+              </ul>
+            </div>
+          </li>
           {% endif %}
 
           <div class="sidebar-footer mt-auto p-3 text-center">
