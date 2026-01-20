@@ -375,13 +375,13 @@
                                         <input name="protocolo" class="form-control mb-3" placeholder="Protocolo DECEA" value="{{ p.protocolo or '' }}">
 
                                         <label class="form-label mt-2">Equipe responsável</label>
-                                        <select class="form-select form-select-sm" name="equipe_id" {% if not is_editable %}disabled{% endif %}>
+                                        <select class="form-select form-select-sm" name="equipe_id">
                                             <option value="" {% if not p.equipe_id %}selected{% endif %}>— Sem equipe (remover atribuição) —</option>
                                             <option value="" disabled>────────────</option>
 
                                             {% for e in equipes %}
                                                 <option value="{{ e.id }}" {% if p.equipe_id == e.id %}selected{% endif %}>
-                                                    {{ e.nome_equipe }}{% if e.regiao %} ({{ e.regiao }}){% endif %}
+                                                {{ e.nome_equipe }}{% if e.regiao %} ({{ e.regiao }}){% endif %}
                                                 </option>
                                             {% endfor %}
                                         </select>

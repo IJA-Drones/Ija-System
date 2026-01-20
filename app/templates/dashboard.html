@@ -534,23 +534,27 @@
             <i class="bi bi-person-badge"></i> Responsável
           </h6>
 
-          <div class="row g-2 mb-3">
-            <div class="col-12">
-              <small class="text-muted d-block">Piloto:</small>
-              {% if p.piloto and p.piloto.nome_piloto %}
-                <strong>{{ p.piloto.nome_piloto }}</strong>
-                {% if p.piloto.telefone %}
-                  <div class="small mt-1">
-                    <span class="text-muted">Contato:</span>
-                    <span class="fw-semibold">{{ p.piloto.telefone }}</span>
-                  </div>
-                {% endif %}
-              {% else %}
-                <span class="badge bg-secondary">Ainda não atribuído</span>
-                <div class="small text-muted mt-1">Assim que o admin atribuir um piloto, aparecerá aqui.</div>
-              {% endif %}
-            </div>
-          </div>
+      <div class="row g-2 mb-3">
+  <div class="col-12">
+    <small class="text-muted d-block">Equipe:</small>
+
+    {% if p.equipe and p.equipe.nome_equipe %}
+      <strong>{{ p.equipe.nome_equipe }}</strong>
+
+      {% if p.equipe.regiao %}
+        <div class="small mt-1">
+          <span class="text-muted">Região:</span>
+          <span class="fw-semibold">{{ p.equipe.regiao }}</span>
+        </div>
+      {% endif %}
+
+    {% else %}
+      <span class="badge bg-secondary">Ainda não atribuída</span>
+      <div class="small text-muted mt-1">Assim que o admin atribuir uma equipe, aparecerá aqui.</div>
+    {% endif %}
+  </div>
+</div>
+
 
           <h6 class="text-primary border-bottom pb-2 fw-bold mt-3">
             <i class="bi bi-paperclip"></i> Anexo

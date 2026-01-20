@@ -160,12 +160,12 @@ def dashboard():
     if current_user.tipo_usuario in ['admin', 'operario', 'visualizar']:
         return redirect(url_for('main.admin_dashboard'))
 
-    # ✅ UVIS: só as solicitações dela + carrega piloto para exibir
+    # ✅ UVIS: só as solicitações dela + carrega equipe para exibir
     query = (
         Solicitacao.query
         .options(
             joinedload(Solicitacao.usuario),
-            joinedload(Solicitacao.piloto)
+            joinedload(Solicitacao.equipe)  # ✅ aqui
         )
         .filter(Solicitacao.usuario_id == current_user.id)
     )
@@ -183,13 +183,14 @@ def dashboard():
     # Filtro por foco da ação
     filtro_foco = request.args.get('foco')
     if filtro_foco:
-        query = query.filter(Solicitacao.foco == filtro_foco)  # Aqui, o valor de filtro_foco já é uma string
-
+        query = query.filter(Solicitacao.foco == filtro_foco)
 
     # Paginação
     page = request.args.get("page", 1, type=int)
-    paginacao = query.order_by(Solicitacao.data_criacao.desc())\
+    paginacao = (
+        query.order_by(Solicitacao.data_criacao.desc())
         .paginate(page=page, per_page=6, error_out=False)
+    )
 
     return render_template(
         'dashboard.html',
@@ -215,47 +216,44 @@ def admin_dashboard():
     is_editable = current_user.tipo_usuario in ['admin', 'operario']
 
     # --- Captura filtros ---
-    filtro_status = request.args.get("status")
-    filtro_unidade = request.args.get("unidade")
-    filtro_regiao = request.args.get("regiao")
+    filtro_status = (request.args.get("status") or "").strip()
+    filtro_unidade = (request.args.get("unidade") or "").strip()
+    filtro_regiao = (request.args.get("regiao") or "").strip()
 
-    # --- Query base ---
-    query = Solicitacao.query \
-        .options(joinedload(Solicitacao.usuario)) \
-        .join(Usuario)
-
+    # --- Query base (com eager loading) ---
     query = (
         Solicitacao.query
         .options(
             joinedload(Solicitacao.usuario),
-            joinedload(Solicitacao.piloto)  # bom pra exibir o nome do piloto já atribuído
+            joinedload(Solicitacao.equipe)  # ✅ agora é equipe
         )
         .join(Usuario)
     )
-
-    pilotos = Pilotos.query.order_by(Pilotos.nome_piloto.asc()).all()
-
 
     # --- Aplicação dos filtros ---
     if filtro_status:
         query = query.filter(Solicitacao.status == filtro_status)
 
     if filtro_unidade:
-        query = query.filter(
-            Usuario.nome_uvis.ilike(f"%{filtro_unidade}%")
-        )
+        query = query.filter(Usuario.nome_uvis.ilike(f"%{filtro_unidade}%"))
 
     if filtro_regiao:
-        query = query.filter(
-            Usuario.regiao.ilike(f"%{filtro_regiao}%")
-        )
+        query = query.filter(Usuario.regiao.ilike(f"%{filtro_regiao}%"))
+
+    # ✅ Lista de equipes para o select (sugiro só ativas)
+    equipes = (
+        Equipe.query
+        .filter(Equipe.ativa.is_(True))
+        .order_by(Equipe.regiao.asc(), Equipe.nome_equipe.asc())
+        .all()
+    )
 
     # Paginação
     page = request.args.get("page", 1, type=int)
-
-    paginacao = query.order_by(
-        Solicitacao.data_criacao.desc()
-    ).paginate(page=page, per_page=6, error_out=False)
+    paginacao = (
+        query.order_by(Solicitacao.data_criacao.desc())
+        .paginate(page=page, per_page=6, error_out=False)
+    )
 
     return render_template(
         'admin.html',
@@ -263,62 +261,57 @@ def admin_dashboard():
         paginacao=paginacao,
         is_editable=is_editable,
         now=datetime.now(),
-        pilotos=pilotos,
+        equipes=equipes,  # ✅ envia pro template
     )
+
 
 @bp.route('/admin/exportar_excel')
 @login_required
 def exportar_excel():
+
     # 🔐 Permissão: somente admin e operario
     if current_user.tipo_usuario not in ['admin', 'operario']:
         flash('Permissão negada para exportar.', 'danger')
         return redirect(url_for('main.admin_dashboard'))
 
     try:
-        filtro_status = request.args.get("status")
-        filtro_unidade = request.args.get("unidade")
-        filtro_regiao = request.args.get("regiao")
+        filtro_status = (request.args.get("status") or "").strip()
+        filtro_unidade = (request.args.get("unidade") or "").strip()
+        filtro_regiao = (request.args.get("regiao") or "").strip()
 
-        # Evita Lazy Loading no Postgres
         query = (
             db.session.query(Solicitacao)
             .join(Usuario)
-            .options(joinedload(Solicitacao.usuario))
+            .options(
+                joinedload(Solicitacao.usuario),
+                joinedload(Solicitacao.equipe)  # ✅ agora puxa equipe
+            )
         )
 
         if filtro_status:
             query = query.filter(Solicitacao.status == filtro_status)
 
         if filtro_unidade:
-            query = query.filter(
-                Usuario.nome_uvis.ilike(f"%{filtro_unidade}%")
-            )
+            query = query.filter(Usuario.nome_uvis.ilike(f"%{filtro_unidade}%"))
 
         if filtro_regiao:
-            query = query.filter(
-                Usuario.regiao.ilike(f"%{filtro_regiao}%")
-            )
+            query = query.filter(Usuario.regiao.ilike(f"%{filtro_regiao}%"))
 
-        pedidos = query.order_by(
-            Solicitacao.data_criacao.desc()
-        ).all()
+        pedidos = query.order_by(Solicitacao.data_criacao.desc()).all()
 
         wb = Workbook()
         ws = wb.active
         ws.title = "Relatório de Solicitações"
 
         headers = [
-            "ID", "Unidade", "Região", "Data Agendada", "Hora",
+            "ID", "Unidade", "Região", "Equipe Responsável",  # ✅ adicionada
+            "Data Agendada", "Hora",
             "Endereço Completo", "Latitude", "Longitude",
             "Foco", "Tipo Visita", "Altura", "Apoio CET?",
             "Observação", "Status", "Protocolo", "Justificativa"
         ]
 
-        header_fill = PatternFill(
-            start_color="1F4E78",
-            end_color="1F4E78",
-            fill_type="solid"
-        )
+        header_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
         header_font = Font(color="FFFFFF", bold=True)
         thin_border = Border(
             left=Side(style='thin'),
@@ -337,6 +330,12 @@ def exportar_excel():
         for row_num, p in enumerate(pedidos, 2):
             uvis_nome = p.usuario.nome_uvis if p.usuario else "Não informado"
             uvis_regiao = p.usuario.regiao if p.usuario else "Não informado"
+
+            equipe_nome = ""
+            if getattr(p, "equipe", None):
+                equipe_nome = p.equipe.nome_equipe or ""
+            elif getattr(p, "equipe_id", None):
+                equipe_nome = f"ID #{p.equipe_id}"
 
             endereco_completo = (
                 f"{p.logradouro or ''}, {p.numero or ''} - "
@@ -357,6 +356,7 @@ def exportar_excel():
                 p.id,
                 uvis_nome,
                 uvis_regiao,
+                equipe_nome,  # ✅ adicionada
                 data_formatada,
                 str(p.hora_agendamento or ""),
                 endereco_completo,
@@ -380,13 +380,8 @@ def exportar_excel():
         ws.freeze_panes = "A2"
 
         for col in ws.columns:
-            max_length = max(
-                len(str(cell.value)) if cell.value else 0
-                for cell in col
-            )
-            ws.column_dimensions[col[0].column_letter].width = min(
-                max_length + 2, 50
-            )
+            max_length = max(len(str(cell.value)) if cell.value else 0 for cell in col)
+            ws.column_dimensions[col[0].column_letter].width = min(max_length + 2, 50)
 
         output = BytesIO()
         wb.save(output)
@@ -402,11 +397,9 @@ def exportar_excel():
     except Exception as e:
         db.session.rollback()
         print(f"ERRO EXPORTAR EXCEL: {e}")
-        flash(
-            "Erro ao gerar o Excel. Verifique se os dados estão corretos.",
-            "danger"
-        )
+        flash("Erro ao gerar o Excel. Verifique se os dados estão corretos.", "danger")
         return redirect(url_for('main.admin_dashboard'))
+
 
 from flask import request, jsonify, current_app, redirect, url_for, flash
 import os, uuid
