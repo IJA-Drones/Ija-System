@@ -4,65 +4,6 @@
 {% endblock %}
 
 {% block auth_content %}
-<br><br><br>
-<div class="row justify-content-center mt-5">
-    <div class="col-md-5 col-lg-4">
-        <div class="card p-4 shadow-lg border-0 rounded-4">
-            
-            <div class="text-center mb-4">
-                <h3 class="fw-bold text-primary">Bem-vindo</h3>
-                <p class="text-muted">Gestão de Solicitações de Voo</p>
-            </div>
-            
-            <form method="POST">
-                
-                <div class="form-floating mb-3">
-                    <input type="text" name="login" class="form-control rounded-3" id="floatingInput" placeholder="Usuário" required />
-                    <label for="floatingInput">Usuário</label>
-                </div>
-
-                <div class="form-floating mb-4">
-                    <input type="password" name="senha" class="form-control rounded-3" id="floatingPassword" placeholder="Senha" required />
-                    <label for="floatingPassword">Senha</label>
-                </div>
-
-                <div class="d-flex align-items-start gap-3 p-3 rounded-4 border  shadow-sm mb-4 mx-auto" style="max-width: 100%;">
-                    
-                    <div class="d-flex align-items-center justify-content-center rounded-circle shadow-sm text-primary flex-shrink-0" style="width: 40px; height: 40px;">
-                        <i class="bi bi-shield-lock-fill fs-5"></i>
-                    </div>
-
-                    <div>
-                        <h6 class="fw-bold text-primary mb-2" style="font-size: 0.9rem;">Acesso de Teste</h6>
-                        
-                        <div class="d-flex flex-column gap-2">
-                            <div class="d-flex align-items-center gap-2 font-monospace small">
-                                <span class="px-2 py-1 rounded border text-dark fw-bold">admin</span>
-                                <span class="text-muted text-opacity-50">/</span> 
-                                <span class="text-muted">admin123</span>
-                            </div>
-
-                            <div class="d-flex align-items-center gap-2 font-monospace small">
-                                <span class="px-2 py-1 rounded border text-dark fw-bold">lapa</span>
-                                <span class="text-muted text-opacity-50">/</span>
-                                <span class="text-muted">1234</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <button type="submit" class="btn btn-success w-100 py-2 fs-5 fw-bold rounded-pill shadow-sm">
-                    Entrar
-                </button>
-
-            </form>
-        </div>
-    </div>
-</div>
-
-
-<!-- código estilizado para quando remover as credenciais de teste
-
 
 <div class="container-fluid d-flex align-items-center justify-content-center" 
      style="margin-top: 80px; height: calc(100vh - 200px);">
@@ -95,7 +36,7 @@
             </form>
         </div>
     </div>
-</div> -->
+</div>
 
 {% endblock auth_content %}
 

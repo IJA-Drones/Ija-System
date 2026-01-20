@@ -1,6 +1,6 @@
 {
-  "name": "IJA System",
-  "short_name": "IJA",
+  "name": "Oceano Azul",
+  "short_name": "Oceano Azul",
   "start_url": "/?pwa=1",
   "scope": "/",
   "display": "standalone",
