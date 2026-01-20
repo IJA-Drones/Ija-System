@@ -432,27 +432,31 @@ def atualizar(id):
     pedido.latitude = request.form.get('latitude')
     pedido.longitude = request.form.get('longitude')
 
-    # ✅ Atribuição de piloto (opcional)
-    piloto_id = request.form.get("piloto_id")
+    # ✅ Atribuição de equipe (opcional)
+    equipe_id = request.form.get("equipe_id")
 
-    if piloto_id in (None, "", "null", "undefined"):
-        pedido.piloto_id = None
+    if equipe_id in (None, "", "null", "undefined"):
+        pedido.equipe_id = None
+        equipe_nome = None
     else:
         try:
-            piloto_id_int = int(piloto_id)
-            existe = Pilotos.query.get(piloto_id_int)
-            if not existe:
-                flash("Piloto selecionado não existe.", "warning")
+            equipe_id_int = int(equipe_id)
+            equipe = Equipe.query.get(equipe_id_int)
+            if not equipe:
+                flash("Equipe selecionada não existe.", "warning")
                 return redirect(request.referrer or url_for("main.admin_dashboard"))
-            pedido.piloto_id = piloto_id_int
+
+            pedido.equipe_id = equipe_id_int
+            equipe_nome = equipe.nome_equipe
+
         except ValueError:
-            flash("Piloto inválido.", "warning")
+            flash("Equipe inválida.", "warning")
             return redirect(request.referrer or url_for("main.admin_dashboard"))
 
-    # ✅ Regra de negócio: se aprovou, precisa ter piloto
+    # ✅ Regra de negócio: se aprovou, precisa ter equipe
     status_aprovacao = ["APROVADO", "APROVADO COM RECOMENDAÇÕES"]
-    if pedido.status in status_aprovacao and not pedido.piloto_id:
-        flash("Para aprovar, selecione um piloto responsável.", "warning")
+    if pedido.status in status_aprovacao and not pedido.equipe_id:
+        flash("Para aprovar, selecione uma equipe responsável.", "warning")
         return redirect(request.referrer or url_for("main.admin_dashboard"))
 
     # Processamento de Anexo
@@ -481,7 +485,7 @@ def atualizar(id):
                 return redirect(request.referrer or url_for("main.admin_dashboard"))
             return jsonify({"error": "Formato de arquivo não permitido."}), 400
 
-    # commit final (MANTER APENAS ESTE BLOCO)
+    # commit final
     try:
         db.session.commit()
 
@@ -491,7 +495,8 @@ def atualizar(id):
                 "ok": True,
                 "message": "Solicitação atualizada com sucesso!",
                 "anexo_nome": pedido.anexo_nome,
-                "piloto_id": pedido.piloto_id,
+                "equipe_id": pedido.equipe_id,
+                "equipe_nome": equipe_nome,
             }), 200
 
         flash("Solicitação atualizada com sucesso!", "success")
@@ -507,16 +512,6 @@ def atualizar(id):
 
         return jsonify({"error": "Erro ao gravar dados no banco de dados."}), 500
 
-
-    except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"Erro de Banco (Atualizar ID {id}): {e}")
-
-        if request.accept_mimetypes.accept_html and not request.is_json:
-            flash("Erro ao gravar dados no banco de dados.", "danger")
-            return redirect(request.referrer or url_for("main.admin_dashboard"))
-
-        return jsonify({"error": "Erro ao gravar dados no banco de dados."}), 500
 
     
 # --- NOVO PEDIDO ---
@@ -4289,15 +4284,14 @@ REGIOES = {"NORTE", "SUL", "LESTE", "OESTE"}
 @bp.route("/equipes/cadastrar", methods=["GET", "POST"], endpoint="cadastrar_equipes")
 @login_required
 def cadastrar_equipes():
-    # 🔐 só admin (ajuste se quiser operario também)
     if getattr(current_user, "tipo_usuario", None) != "admin":
         abort(403)
 
     errors = {}
     form = {}
 
-    # lista de pilotos pro select (pode filtrar por ativos se tiver)
     pilotos_db = Pilotos.query.order_by(Pilotos.nome_piloto.asc()).all()
+    regioes_lista = sorted(REGIOES)
 
     if request.method == "POST":
         nome_equipe = (request.form.get("nome_equipe") or "").strip()
@@ -4315,7 +4309,6 @@ def cadastrar_equipes():
             "auxiliar_id": auxiliar_id,
         }
 
-        # validações
         if not nome_equipe:
             errors["nome_equipe"] = "Informe o nome da equipe."
 
@@ -4327,7 +4320,6 @@ def cadastrar_equipes():
         if not auxiliar_id:
             errors["auxiliar_id"] = "Selecione o piloto auxiliar."
 
-        # ids válidos e diferentes
         piloto_obj = None
         auxiliar_obj = None
 
@@ -4350,7 +4342,7 @@ def cadastrar_equipes():
         if piloto_id and auxiliar_id and piloto_id == auxiliar_id:
             errors["auxiliar_id"] = "Auxiliar deve ser diferente do piloto titular."
 
-        # opcional: evitar duplicidade por nome (case-insensitive)
+        # duplicidade por nome
         if nome_equipe:
             existe = Equipe.query.filter(db.func.lower(Equipe.nome_equipe) == nome_equipe.lower()).first()
             if existe:
@@ -4362,10 +4354,10 @@ def cadastrar_equipes():
                 "cadastrar_equipes.html",
                 form=form,
                 errors=errors,
-                pilotos=pilotos_db
+                pilotos=pilotos_db,
+                regioes=regioes_lista
             )
 
-        # cria equipe
         equipe = Equipe(
             nome_equipe=nome_equipe,
             descricao=descricao or None,
@@ -4373,30 +4365,477 @@ def cadastrar_equipes():
             ativa=True
         )
         db.session.add(equipe)
-        db.session.flush()  # garante equipe.id antes do pivot
+        db.session.flush()
 
-        # cria vínculos (pivot)
         db.session.add(EquipePiloto(equipe_id=equipe.id, piloto_id=piloto_obj.id, papel="piloto"))
         db.session.add(EquipePiloto(equipe_id=equipe.id, piloto_id=auxiliar_obj.id, papel="auxiliar"))
 
         try:
             db.session.commit()
             flash("Equipe cadastrada com sucesso!", "success")
-            return redirect(url_for("main.cadastrar_equipes")) 
+            return redirect(url_for("main.listar_equipes"))
         except Exception as e:
             db.session.rollback()
-            # pega erro de constraint (ex: piloto em outra equipe / papel duplicado)
             flash("Erro ao salvar no banco. Verifique se os pilotos já estão em outra equipe.", "danger")
             return render_template(
                 "cadastrar_equipes.html",
                 form=form,
                 errors=errors,
-                pilotos=pilotos_db
+                pilotos=pilotos_db,
+                regioes=regioes_lista
             )
 
     return render_template(
         "cadastrar_equipes.html",
         form=form,
         errors=errors,
-        pilotos=pilotos_db
+        pilotos=pilotos_db,
+        regioes=regioes_lista
     )
+
+# -------------------------------------------------------------
+# LISTAR EQUIPES (admin e uvis) 
+# -------------------------------------------------------------
+
+@bp.route("/equipes", methods=["GET"], endpoint="listar_equipes")
+@login_required
+def listar_equipes():
+
+    tipo = getattr(current_user, "tipo_usuario", None)
+
+    # -----------------------------
+    # Params (filtros / paginação)
+    # -----------------------------
+    q = (request.args.get("q") or "").strip()
+
+    # ✅ TRAVAS PARA UVIS:
+    # - regiao sempre a do usuário
+    # - ativa sempre somente ativas
+    if tipo == "uvis":
+        regiao = (getattr(current_user, "regiao", None) or "").strip()
+        ativa = "1"  # força filtro de ativas
+    else:
+        regiao = (request.args.get("regiao") or "").strip()
+        ativa = (request.args.get("ativa") or "").strip().lower()  # "1"/"0"/"true"/"false"
+
+    piloto_id = (request.args.get("piloto_id") or "").strip()
+    auxiliar_id = (request.args.get("auxiliar_id") or "").strip()
+    sort = (request.args.get("sort") or "nome_asc").strip()
+
+    try:
+        page = int(request.args.get("page") or 1)
+    except ValueError:
+        page = 1
+    page = max(1, page)
+
+    try:
+        per_page = int(request.args.get("per_page") or 20)
+    except ValueError:
+        per_page = 20
+    per_page = 10 if per_page < 10 else 50 if per_page > 50 else per_page
+
+    export = (request.args.get("export") or "").strip().lower()  # "xlsx"
+
+    # -----------------------------
+    # Query base (sem JOIN/DISTINCT)
+    # -----------------------------
+    query = Equipe.query.options(
+        db.selectinload(Equipe.membros).selectinload(EquipePiloto.piloto)
+    )
+
+    # -----------------------------
+    # Regras de visibilidade
+    # -----------------------------
+    if tipo == "uvis":
+        # se a UVIS não tiver região cadastrada, não mostra nada por segurança
+        if not regiao:
+            query = query.filter(db.false())
+        else:
+            # trava região
+            query = query.filter(Equipe.regiao.ilike(regiao))
+            # trava somente ativas
+            query = query.filter(Equipe.ativa.is_(True))
+
+    elif tipo == "admin":
+        # admin vê tudo
+        pass
+
+    else:
+        # escolha conservadora: restringe por regiao do usuário se existir, senão bloqueia tudo
+        user_reg = (getattr(current_user, "regiao", None) or "").strip()
+        if user_reg:
+            query = query.filter(Equipe.regiao.ilike(user_reg))
+            regiao = user_reg
+        else:
+            query = query.filter(db.false())
+
+    # -----------------------------
+    # Filtros (aplicados após regra)
+    # -----------------------------
+    # Para admin/outros, regiao é filtro normal
+    # Para uvis, regiao já está travada (isso só reforça)
+    if regiao:
+        query = query.filter(Equipe.regiao.ilike(regiao))
+
+    # ✅ ativa: só deixa o admin/outros mexerem; uvis já foi travado em True acima
+    if tipo != "uvis":
+        if ativa in ("1", "true", "sim", "yes"):
+            query = query.filter(Equipe.ativa.is_(True))
+        elif ativa in ("0", "false", "nao", "não", "no"):
+            query = query.filter(Equipe.ativa.is_(False))
+
+    # filtro por piloto titular (sem join)
+    if piloto_id:
+        try:
+            piloto_id_int = int(piloto_id)
+            query = query.filter(
+                Equipe.membros.any(
+                    db.and_(
+                        EquipePiloto.papel == "piloto",
+                        EquipePiloto.piloto_id == piloto_id_int,
+                    )
+                )
+            )
+        except ValueError:
+            pass
+
+    # filtro por auxiliar (sem join)
+    if auxiliar_id:
+        try:
+            auxiliar_id_int = int(auxiliar_id)
+            query = query.filter(
+                Equipe.membros.any(
+                    db.and_(
+                        EquipePiloto.papel == "auxiliar",
+                        EquipePiloto.piloto_id == auxiliar_id_int,
+                    )
+                )
+            )
+        except ValueError:
+            pass
+
+    # busca geral (nome equipe, descricao, regiao, nomes/telefone dos pilotos)
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            db.or_(
+                Equipe.nome_equipe.ilike(like),
+                Equipe.descricao.ilike(like),
+                Equipe.regiao.ilike(like),
+
+                Equipe.membros.any(
+                    EquipePiloto.piloto.has(
+                        db.or_(
+                            Pilotos.nome_piloto.ilike(like),
+                            Pilotos.telefone.ilike(like),
+                        )
+                    )
+                ),
+            )
+        )
+
+    # -----------------------------
+    # Ordenação
+    # -----------------------------
+    if sort == "nome_desc":
+        query = query.order_by(Equipe.nome_equipe.desc())
+    elif sort == "id_desc":
+        query = query.order_by(Equipe.id.desc())
+    elif sort == "id_asc":
+        query = query.order_by(Equipe.id.asc())
+    elif sort == "criada_desc":
+        query = query.order_by(Equipe.criada_em.desc())
+    elif sort == "criada_asc":
+        query = query.order_by(Equipe.criada_em.asc())
+    else:
+        query = query.order_by(Equipe.nome_equipe.asc())
+
+    # -----------------------------
+    # Exportação Excel (filtrado)
+    # -----------------------------
+    if export == "xlsx":
+        # só admin exporta
+        if tipo != "admin":
+            abort(403)
+
+        rows = query.all()
+
+        from io import BytesIO
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+        from openpyxl.utils import get_column_letter
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Equipes"
+
+        header_fill = PatternFill("solid", fgColor="1F2937")
+        header_font = Font(bold=True, color="FFFFFF")
+        header_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+
+        thin = Side(style="thin", color="E5E7EB")
+        border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+        text_align = Alignment(horizontal="left", vertical="center", wrap_text=True)
+        center_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+
+        ws["A1"] = "Relatório de Equipes"
+        ws["A1"].font = Font(bold=True, size=14)
+        ws["A2"] = f"Gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+        ws["A2"].font = Font(color="6B7280")
+
+        start_row = 4
+        headers = ["ID", "Equipe", "Região", "Ativa", "Piloto Titular", "Auxiliar", "Criada em", "Descrição"]
+
+        for col_idx, h in enumerate(headers, start=1):
+            cell = ws.cell(row=start_row, column=col_idx, value=h)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = header_align
+            cell.border = border
+
+        for i, e in enumerate(rows, start=start_row + 1):
+            piloto_nome = e.piloto_titular.nome_piloto if e.piloto_titular else ""
+            aux_nome = e.piloto_auxiliar.nome_piloto if e.piloto_auxiliar else ""
+
+            values = [
+                e.id,
+                e.nome_equipe,
+                e.regiao or "",
+                "SIM" if e.ativa else "NÃO",
+                piloto_nome,
+                aux_nome,
+                e.criada_em.strftime("%d/%m/%Y %H:%M") if e.criada_em else "",
+                e.descricao or "",
+            ]
+
+            for col_idx, v in enumerate(values, start=1):
+                cell = ws.cell(row=i, column=col_idx, value=v)
+                cell.border = border
+                cell.alignment = center_align if col_idx in (1, 4) else text_align
+
+        last_row = start_row + len(rows)
+        last_col = len(headers)
+
+        ws.freeze_panes = ws["A5"]
+        ws.auto_filter.ref = f"A{start_row}:{get_column_letter(last_col)}{max(last_row, start_row)}"
+        ws.row_dimensions[start_row].height = 22
+
+        max_widths = {1: 8, 2: 28, 3: 14, 4: 10, 5: 26, 6: 26, 7: 18, 8: 50}
+        for col_idx in range(1, last_col + 1):
+            max_len = len(headers[col_idx - 1])
+            for r in range(start_row + 1, last_row + 1):
+                val = ws.cell(row=r, column=col_idx).value
+                if val is None:
+                    continue
+                max_len = max(max_len, len(str(val)))
+            width = min(max_len + 2, max_widths.get(col_idx, 40))
+            ws.column_dimensions[get_column_letter(col_idx)].width = width
+
+        zebra_fill = PatternFill("solid", fgColor="F9FAFB")
+        for r in range(start_row + 1, last_row + 1):
+            if (r - (start_row + 1)) % 2 == 1:
+                for ccol in range(1, last_col + 1):
+                    ws.cell(row=r, column=ccol).fill = zebra_fill
+
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+
+        stamp = datetime.now().strftime("%Y-%m-%d_%H%M")
+        filename = f"equipes_{stamp}.xlsx"
+
+        return send_file(
+            output,
+            as_attachment=True,
+            download_name=filename,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+
+    # -----------------------------
+    # Paginação + filtros pro template
+    # -----------------------------
+    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+    equipes = pagination.items
+
+    filters = {
+        "q": q,
+        "regiao": regiao,
+        "ativa": ativa,  # ✅ para UVIS sempre "1"
+        "piloto_id": piloto_id,
+        "auxiliar_id": auxiliar_id,
+        "sort": sort,
+        "page": page,
+        "per_page": per_page,
+        "total": pagination.total,
+        "total_pages": pagination.pages,
+        "locked_regiao": (tipo == "uvis"),
+        "locked_ativa": (tipo == "uvis"),
+    }
+
+    return render_template(
+        "listar_equipes.html",
+        equipes=equipes,
+        filters=filters,
+        is_admin=(tipo == "admin"),
+    )
+
+# -------------------------------------------------------------
+# EDITAR EQUIPE (admin)
+# -------------------------------------------------------------
+@bp.route("/equipes/<int:equipe_id>/editar", methods=["GET", "POST"], endpoint="editar_equipe")
+@login_required
+def editar_equipe(equipe_id):
+    # Segurança: só admin
+    if getattr(current_user, "tipo_usuario", None) != "admin":
+        abort(403)
+
+    equipe = Equipe.query.options(
+        db.selectinload(Equipe.membros).selectinload(EquipePiloto.piloto)
+    ).get_or_404(equipe_id)
+
+    # Helpers: pegar ids atuais
+    piloto_atual = equipe.piloto_titular
+    aux_atual = equipe.piloto_auxiliar
+
+    errors = {}
+    form = request.form.to_dict(flat=True) if request.method == "POST" else {}
+
+    # lista de pilotos para selects
+    pilotos = Pilotos.query.order_by(Pilotos.nome_piloto.asc()).all()
+
+    if request.method == "POST":
+        nome_equipe = (request.form.get("nome_equipe") or "").strip()
+        regiao = (request.form.get("regiao") or "").strip().upper()
+        ativa_raw = (request.form.get("ativa") or "").strip()
+        descricao = (request.form.get("descricao") or "").strip()
+
+        piloto_id_raw = (request.form.get("piloto_id") or "").strip()
+        aux_id_raw = (request.form.get("auxiliar_id") or "").strip()
+
+        # --- validações ---
+        if not nome_equipe:
+            errors["nome_equipe"] = "Informe o nome da equipe."
+
+        # região pode ser vazio (ok), mas se vier algo, valida básico
+        if regiao and regiao not in ("NORTE", "SUL", "LESTE", "OESTE"):
+            errors["regiao"] = "Região inválida."
+
+        # ativa (checkbox) -> True/False
+        ativa = True if ativa_raw in ("1", "true", "on", "sim", "yes") else False
+
+        # piloto titular obrigatório
+        piloto_id = None
+        try:
+            piloto_id = int(piloto_id_raw) if piloto_id_raw else None
+        except ValueError:
+            piloto_id = None
+
+        if not piloto_id:
+            errors["piloto_id"] = "Selecione o piloto titular."
+
+        # auxiliar opcional
+        auxiliar_id = None
+        try:
+            auxiliar_id = int(aux_id_raw) if aux_id_raw else None
+        except ValueError:
+            auxiliar_id = None
+
+        # não permitir mesmo piloto nos dois papéis
+        if piloto_id and auxiliar_id and piloto_id == auxiliar_id:
+            errors["auxiliar_id"] = "O auxiliar não pode ser o mesmo piloto titular."
+
+        # valida se ids existem
+        piloto_obj = Pilotos.query.get(piloto_id) if piloto_id else None
+        if piloto_id and not piloto_obj:
+            errors["piloto_id"] = "Piloto titular não encontrado."
+
+        aux_obj = Pilotos.query.get(auxiliar_id) if auxiliar_id else None
+        if auxiliar_id and not aux_obj:
+            errors["auxiliar_id"] = "Auxiliar não encontrado."
+
+        # --- se ok, salva ---
+        if not errors:
+            equipe.nome_equipe = nome_equipe
+            equipe.regiao = regiao or None
+            equipe.ativa = ativa
+            equipe.descricao = descricao or None
+
+            # 1) garantir/atualizar vínculo do PILOTO TITULAR
+            membro_piloto = next((m for m in equipe.membros if m.papel == "piloto"), None)
+            if membro_piloto:
+                membro_piloto.piloto_id = piloto_id
+            else:
+                equipe.membros.append(
+                    EquipePiloto(equipe_id=equipe.id, piloto_id=piloto_id, papel="piloto")
+                )
+
+            # 2) garantir/atualizar vínculo do AUXILIAR (pode ser None -> remove)
+            membro_aux = next((m for m in equipe.membros if m.papel == "auxiliar"), None)
+            if auxiliar_id:
+                if membro_aux:
+                    membro_aux.piloto_id = auxiliar_id
+                else:
+                    equipe.membros.append(
+                        EquipePiloto(equipe_id=equipe.id, piloto_id=auxiliar_id, papel="auxiliar")
+                    )
+            else:
+                # se veio vazio e existe vínculo, remove
+                if membro_aux:
+                    db.session.delete(membro_aux)
+
+            # 3) proteção extra: não deixar duplicar o mesmo piloto na mesma equipe
+            # (além das UniqueConstraints)
+            ids = [m.piloto_id for m in equipe.membros if m.piloto_id]
+            if len(ids) != len(set(ids)):
+                db.session.rollback()
+                errors["auxiliar_id"] = "Equipe não pode ter o mesmo piloto em mais de um papel."
+                return render_template(
+                    "equipes/editar_equipe.html",
+                    equipe=equipe,
+                    pilotos=pilotos,
+                    errors=errors,
+                    form=form,
+                    piloto_atual=piloto_atual,
+                    aux_atual=aux_atual,
+                    is_admin=True,
+                )
+
+            db.session.commit()
+            flash("Equipe atualizada com sucesso.", "success")
+            return redirect(url_for("main.editar_equipe", equipe_id=equipe.id))
+
+        flash("Corrija os campos destacados e tente novamente.", "danger")
+
+    # GET (ou POST com erro)
+    return render_template(
+        "editar_equipe.html",
+        equipe=equipe,
+        pilotos=pilotos,
+        errors=errors,
+        form=form,
+        piloto_atual=piloto_atual,
+        aux_atual=aux_atual,
+        is_admin=True,
+    )
+
+@bp.route("/equipes/<int:equipe_id>/deletar", methods=["POST"], endpoint="deletar_equipe")
+@login_required
+def deletar_equipe(equipe_id):
+    # Segurança: só admin
+    if getattr(current_user, "tipo_usuario", None) != "admin":
+        abort(403)
+
+    equipe = Equipe.query.get_or_404(equipe_id)
+
+    try:
+        # Como Equipe.membros tem cascade="all, delete-orphan",
+        # os vínculos em equipe_pilotos serão apagados junto.
+        db.session.delete(equipe)
+        db.session.commit()
+        flash(f"Equipe '{equipe.nome_equipe}' excluída com sucesso.", "success")
+    except Exception:
+        db.session.rollback()
+        flash("Não foi possível excluir a equipe. Verifique se há vínculos ativos no sistema.", "danger")
+
+    return redirect(url_for("main.listar_equipes"))

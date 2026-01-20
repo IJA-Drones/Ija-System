@@ -151,6 +151,17 @@
                                             {{ p.usuario.regiao }}
                                         </span>
                                     </div>
+
+                                    <!-- EQUIPE (exibição rápida) -->
+                                    <div class="mt-2 small text-muted">
+                                        <i class="bi bi-people-fill me-1"></i>
+                                        {% if p.equipe %}
+                                            <strong>{{ p.equipe.nome_equipe }}</strong>
+                                            {% if p.equipe.regiao %}<span class="text-muted">({{ p.equipe.regiao }})</span>{% endif %}
+                                        {% else %}
+                                            <span class="text-muted">Sem equipe atribuída</span>
+                                        {% endif %}
+                                    </div>
                                 </div>
 
                             </div>
@@ -218,50 +229,49 @@
                             <div class=" p-1 border rounded fst-italic small">
                                 {{ p.observacao }}
                             </div>{% endif %}</div>
-                        
                     </td>
 
                     {# COLUNA 3: FORMULÁRIO (SÓ DESKTOP) #}
                     <td class="align-top pt-3 d-none d-lg-table-cell bg-opacity-10">
                         {% if is_editable %}
-                            {# --- FORMULÁRIO DESKTOP ORIGINAL --- #}
+                            {# --- FORMULÁRIO DESKTOP --- #}
                             <form action="{{ url_for('main.atualizar', id=p.id) }}" method="POST" enctype="multipart/form-data">
                                 <div class="row g-1 mb-2">
                                     <div class="col-6"><input name="latitude" class="form-control form-control-sm" value="{{ p.latitude or '' }}" placeholder="Lat"></div>
                                     <div class="col-6"><input name="longitude" class="form-control form-control-sm" value="{{ p.longitude or '' }}" placeholder="Long"></div>
                                 </div>
+
                                 <input name="protocolo" class="form-control form-control-sm mb-2" placeholder="Protocolo" value="{{ p.protocolo or '' }}">
+
                                 <div class="p-2 border rounded gap-1 d-flex flex-column">
                                     <div>
                                         <label class="form-label">Status</label>
-                                    <select name="status"
-                                            class="form-select form-select-sm"
-                                            data-jid="{{ p.id }}"
-                                            onchange="toggleJustificativa(this, this.dataset.jid)">
-                                        <option value="PENDENTE" {% if p.status=='PENDENTE' %}selected{% endif %}>⚪️ Pendente</option>
-                                        <option value="EM ANÁLISE" {% if p.status=='EM ANÁLISE' %}selected{% endif %}>🟡 Em Análise</option>
-                                        <option value="APROVADO COM RECOMENDAÇÕES" {% if p.status=='APROVADO COM RECOMENDAÇÕES' %}selected{% endif %}>🟠 Aprovado com Recomendações</option>
-                                        <option value="APROVADO" {% if p.status=='APROVADO' %}selected{% endif %}>🟢 Aprovar</option>
-                                        <option value="NEGADO" {% if p.status=='NEGADO' %}selected{% endif %}>🔴 Negar</option>
-                                    </select>
+                                        <select name="status"
+                                                class="form-select form-select-sm"
+                                                data-jid="{{ p.id }}"
+                                                onchange="toggleJustificativa(this, this.dataset.jid)">
+                                            <option value="PENDENTE" {% if p.status=='PENDENTE' %}selected{% endif %}>⚪️ Pendente</option>
+                                            <option value="EM ANÁLISE" {% if p.status=='EM ANÁLISE' %}selected{% endif %}>🟡 Em Análise</option>
+                                            <option value="APROVADO COM RECOMENDAÇÕES" {% if p.status=='APROVADO COM RECOMENDAÇÕES' %}selected{% endif %}>🟠 Aprovado com Recomendações</option>
+                                            <option value="APROVADO" {% if p.status=='APROVADO' %}selected{% endif %}>🟢 Aprovar</option>
+                                            <option value="NEGADO" {% if p.status=='NEGADO' %}selected{% endif %}>🔴 Negar</option>
+                                        </select>
                                     </div>
-                                    <div>
-                                        <label class="form-label mt-2">Piloto responsável</label>
-                                        <select class="form-select form-select-sm" name="piloto_id" {% if not is_editable %}disabled{% endif %}>
-                                            {# ✅ opção para LIMPAR #}
-                                            <option value="" {% if not p.piloto_id %}selected{% endif %}>— Sem piloto (remover atribuição) —</option>
 
-                                            {# (opcional) separador visual #}
+                                    <div>
+                                        <label class="form-label mt-2">Equipe responsável</label>
+                                        <select class="form-select form-select-sm" name="equipe_id" {% if not is_editable %}disabled{% endif %}>
+                                            <option value="" {% if not p.equipe_id %}selected{% endif %}>— Sem equipe (remover atribuição) —</option>
                                             <option value="" disabled>────────────</option>
 
-                                            {# lista normal #}
-                                            {% for pilot in pilotos %}
-                                                <option value="{{ pilot.id }}" {% if p.piloto_id == pilot.id %}selected{% endif %}>
-                                                {{ pilot.nome_piloto }}{% if pilot.regiao %} ({{ pilot.regiao }}){% endif %}
+                                            {% for e in equipes %}
+                                                <option value="{{ e.id }}" {% if p.equipe_id == e.id %}selected{% endif %}>
+                                                    {{ e.nome_equipe }}{% if e.regiao %} ({{ e.regiao }}){% endif %}{% if e.ativa is not none and not e.ativa %} — INATIVA{% endif %}
                                                 </option>
                                             {% endfor %}
                                         </select>
                                     </div>
+
                                     <div id="boxJustificativa{{ p.id }}" style="display: none;" class="">
                                         <label class="form-label mt-2">Justificativa</label>
                                         <input name="justificativa" id="inputJustificativa{{ p.id }}" class="form-control form-control-sm" value="{{ p.justificativa or '' }}" placeholder="Justificativa">
@@ -361,24 +371,22 @@
                                             <input name="latitude" value="{{ p.latitude }}">
                                             <input name="longitude" value="{{ p.longitude }}">
                                         </div>
-                                        <input name="protocolo" class="form-control mb-3" placeholder="Protocolo DECEA" value="{{ p.protocolo or '' }}">
-                                        <label class="form-label mt-2">Piloto responsável</label>
-                                        <select class="form-select form-select-sm" name="piloto_id" {% if not is_editable %}disabled{% endif %}>
-                                            {# ✅ opção para LIMPAR #}
-                                            <option value="" {% if not p.piloto_id %}selected{% endif %}>— Sem piloto (remover atribuição) —</option>
 
-                                            {# (opcional) separador visual #}
+                                        <input name="protocolo" class="form-control mb-3" placeholder="Protocolo DECEA" value="{{ p.protocolo or '' }}">
+
+                                        <label class="form-label mt-2">Equipe responsável</label>
+                                        <select class="form-select form-select-sm" name="equipe_id" {% if not is_editable %}disabled{% endif %}>
+                                            <option value="" {% if not p.equipe_id %}selected{% endif %}>— Sem equipe (remover atribuição) —</option>
                                             <option value="" disabled>────────────</option>
 
-                                            {# lista normal #}
-                                            {% for pilot in pilotos %}
-                                                <option value="{{ pilot.id }}" {% if p.piloto_id == pilot.id %}selected{% endif %}>
-                                                {{ pilot.nome_piloto }}{% if pilot.regiao %} ({{ pilot.regiao }}){% endif %}
+                                            {% for e in equipes %}
+                                                <option value="{{ e.id }}" {% if p.equipe_id == e.id %}selected{% endif %}>
+                                                    {{ e.nome_equipe }}{% if e.regiao %} ({{ e.regiao }}){% endif %}
                                                 </option>
                                             {% endfor %}
                                         </select>
 
-                                        <label class="form-label mt-2">Piloto responsável</label>
+                                        <label class="form-label mt-2">Status</label>
                                         <select name="status"
                                                 class="form-select mb-3"
                                                 data-jid="{{ p.id }}_mob"
