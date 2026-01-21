@@ -4202,6 +4202,25 @@ def deletar_piloto(piloto_id):
 
     piloto = Pilotos.query.get_or_404(piloto_id)
 
+    # ✅ BLOQUEIO: não pode excluir se estiver vinculado a alguma equipe (titular/auxiliar)
+    vinculo = (
+        EquipePiloto.query
+        .filter(EquipePiloto.piloto_id == piloto.id)
+        .first()
+    )
+
+    if vinculo:
+        equipe = Equipe.query.get(vinculo.equipe_id)
+        nome_equipe = equipe.nome_equipe if equipe and equipe.nome_equipe else f"ID {vinculo.equipe_id}"
+        papel = (vinculo.papel or "").lower()
+
+        flash(
+            f"Não é possível excluir o piloto '{piloto.nome_piloto}' porque ele está vinculado à equipe '{nome_equipe}' como {papel}. "
+            f"Remova o vínculo da equipe antes de excluir.",
+            "warning"
+        )
+        return redirect(url_for("main.listar_pilotos"))
+
     # apaga usuário(s) vinculados a esse piloto
     Usuario.query.filter_by(piloto_id=piloto.id, tipo_usuario="piloto").delete(synchronize_session=False)
 
@@ -4210,7 +4229,6 @@ def deletar_piloto(piloto_id):
 
     flash("Piloto excluído com sucesso.", "success")
     return redirect(url_for("main.listar_pilotos"))
-
 
 @bp.route('/piloto/os')
 @login_required
