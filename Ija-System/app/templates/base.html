@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html
   lang="pt-br"
   class="{% if tema_escolhido == 'dark' %}dark-mode{% endif %}"
@@ -23,8 +23,11 @@
       rel="apple-touch-icon"
       href="{{ url_for('static', filename='img/icon-192.png') }}"
     />
-
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/oceano_azul_icon.png') }}" />
+    <link
+      rel="icon"
+      type="image/png"
+      href="{{ url_for('static', filename='img/logo_oceano_azul_' ~ (tema_escolhido if tema_escolhido else 'light') ~ '.png') }}"
+    />
 
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
@@ -61,39 +64,59 @@
 
     <style>
       :root {
-        --navbar-offset: 70px; /* Fallback mais realista para mobile */
+        --navbar-offset: 64px; /* fallback */
       }
 
       body {
-        overflow-x: hidden; /* Evita scroll lateral indesejado no mobile */
-        /* Remova o padding-top daqui e deixe o JS ou uma classe fixa resolver */
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
       }
 
-      /* ✅ Classe para evitar que o conteúdo suma antes do JS carregar */
-      body:not(.is-loaded) {
-        padding-top: 70px !important;
+      html,
+      body {
+        margin: 0;
+        padding: 0;
       }
 
       .navbar.fixed-top {
-        z-index: 1050 !important; /* Acima de quase tudo */
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        z-index: 1030 !important;
       }
 
-      /* Overlay deve cobrir a tela toda, inclusive a navbar se necessário */
-      .sidebar-overlay {
-        z-index: 1060 !important;
+      /* ✅ offset do conteúdo (inclui safe-area só aqui) */
+      body {
+        padding-top: calc(
+          var(--navbar-offset) + env(safe-area-inset-top, 0px)
+        ) !important;
       }
 
-      #appSidebar {
-        z-index: 1070 !important; /* Sidebar sempre no topo de tudo no mobile */
+      /* remove offsets duplicados no conteúdo */
+      .app-content {
+        padding-top: 0 !important;
+      }
+      .app-content > .container-fluid.min-vh-100 {
+        padding-top: 0 !important;
+      }
+      .app-wrapper,
+      #appContent {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
       }
 
+      /* ✅ IMPORTANTÍSSIMO: escopar "navbar-collapse" só na navbar */
       @media (max-width: 991.98px) {
-        .navbar .navbar-collapse { display: none !important; }
-        
-        /* Ajuste para a logo não estourar em celulares pequenos */
-        .navbar-brand img {
-          max-width: 140px; 
-          height: auto;
+        .navbar .navbar-collapse {
+          display: none !important;
+        }
+      }
+      @media (min-width: 992px) {
+        .navbar .navbar-collapse {
+          display: flex !important;
         }
       }
     </style>
@@ -119,19 +142,19 @@
           class="navbar-brand d-flex align-items-center gap-2 me-auto"
           href="{{ url_for('main.dashboard') }}"
         >
-          <!-- <img src="{{ url_for('static', filename='img/logo_oceano_azul_' ~ (tema_escolhido if tema_escolhido else 'light') ~ '.png') }}" alt="Logo Oceano Azul"> -->
           <img
             src="{{ url_for('static', filename='img/logo_oceano_azul_light.png') }}"
-            class="navbar-logo logo-light ms-5"
+            class="navbar-logo logo-light"
             alt="Oceano Azul"
-            style="max-height: 50px"
+            style="max-height: 40px"
           />
           <img
             src="{{ url_for('static', filename='img/logo_oceano_azul_dark.png') }}"
-            class="navbar-logo logo-dark ms-5"
+            class="navbar-logo logo-dark"
             alt="Oceano Azul"
-            style="max-height: 50px"
+            style="max-height: 40px"
           />
+          <span class="fs-4 d-none d-sm-inline">Oceano Azul</span>
         </a>
 
         <div class="dropdown me-2">
@@ -296,86 +319,43 @@
               </ul>
             </div>
           </li>
-          {% endif %} {# ===================== PILOTOS (SOMENTE ADMIN)
-          ===================== #} {% if current_user.tipo_usuario == 'admin' %}
-          <li class="nav-item">
-            <button
-              type="button"
-              class="nav-link nav-link-toggle"
-              data-bs-toggle="collapse"
-              data-bs-target="#menuPilotos"
-            >
-              <span>
-                <i class="bi bi-person-badge-fill me-2"></i>
-                <span>Pilotos</span>
-              </span>
-              <i class="bi bi-chevron-down chevron"></i>
-            </button>
+          {% endif %}
+        {# ===================== PILOTOS (ADMIN + UVIS) ===================== #}
+{% if current_user.tipo_usuario in ['admin', 'uvis'] %}
+<li class="nav-item">
+  <button
+    type="button"
+    class="nav-link nav-link-toggle"
+    data-bs-toggle="collapse"
+    data-bs-target="#menuPilotos"
+  >
+    <span>
+      <i class="bi bi-person-badge-fill me-2"></i>
+      <span>Pilotos</span>
+    </span>
+    <i class="bi bi-chevron-down chevron"></i>
+  </button>
 
-            <div class="collapse" id="menuPilotos">
-              <ul class="nav flex-column sub-nav">
-                <li class="nav-item">
-                  <a
-                    class="nav-link sub-link"
-                    href="{{ url_for('main.listar_pilotos') }}"
-                  >
-                    <i class="bi bi-list-ul me-2"></i><span>Listar</span>
-                  </a>
-                </li>
-                <li class="nav-item">
-                  <a
-                    class="nav-link sub-link"
-                    href="{{ url_for('main.cadastrar_pilotos') }}"
-                  >
-                    <i class="bi bi-person-plus-fill me-2"></i
-                    ><span>Cadastrar</span>
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </li>
-          {% endif %} {# ===================== EQUIPES (ADMIN COMPLETO / UVIS SÓ
-          LISTAR) ===================== #} {% if current_user.tipo_usuario in
-          ['admin', 'uvis'] %}
-          <li class="nav-item">
-            <button
-              type="button"
-              class="nav-link nav-link-toggle"
-              data-bs-toggle="collapse"
-              data-bs-target="#menuEquipes"
-            >
-              <span>
-                <i class="bi bi-people-fill me-2"></i>
-                <span>Equipes</span>
-              </span>
-              <i class="bi bi-chevron-down chevron"></i>
-            </button>
+  <div class="collapse" id="menuPilotos">
+    <ul class="nav flex-column sub-nav">
+      <li class="nav-item">
+        <a class="nav-link sub-link" href="{{ url_for('main.listar_pilotos') }}">
+          <i class="bi bi-list-ul me-2"></i><span>Listar</span>
+        </a>
+      </li>
 
-            <div class="collapse" id="menuEquipes">
-              <ul class="nav flex-column sub-nav">
-                <li class="nav-item">
-                  <a
-                    class="nav-link sub-link"
-                    href="{{ url_for('main.listar_equipes') }}"
-                  >
-                    <i class="bi bi-list-ul me-2"></i><span>Listar</span>
-                  </a>
-                </li>
+      {% if current_user.tipo_usuario == 'admin' %}
+      <li class="nav-item">
+        <a class="nav-link sub-link" href="{{ url_for('main.cadastrar_pilotos') }}">
+          <i class="bi bi-person-plus-fill me-2"></i><span>Cadastrar</span>
+        </a>
+      </li>
+      {% endif %}
+    </ul>
+  </div>
+</li>
+      </li>
 
-                {% if current_user.tipo_usuario == 'admin' %}
-                <li class="nav-item">
-                  <a
-                    class="nav-link sub-link"
-                    href="{{ url_for('main.cadastrar_equipes') }}"
-                  >
-                    <i class="bi bi-person-plus-fill me-2"></i
-                    ><span>Cadastrar</span>
-                  </a>
-                </li>
-                {% endif %}
-              </ul>
-            </div>
-          </li>
           {% endif %}
 
           <div class="sidebar-footer mt-auto p-3 text-center">
@@ -554,32 +534,25 @@
                            }
 
       function syncNavbarOffset() {
-          const nav = document.querySelector(".navbar.fixed-top");
-          if (!nav) return;
+        const nav = document.querySelector(".navbar.fixed-top");
+        if (!nav) return;
 
-          // Usa o offsetHeight que é mais estável para cálculos de layout
-          const height = nav.offsetHeight;
-          
-          if (height > 0) {
-            document.documentElement.style.setProperty("--navbar-offset", height + "px");
-            document.body.style.paddingTop = `calc(${height}px + env(safe-area-inset-top, 0px))`;
-            document.body.classList.add('is-loaded');
-          }
-        }
+        requestAnimationFrame(() => {
+          const h = Math.ceil(nav.getBoundingClientRect().height || 64);
+          document.documentElement.style.setProperty("--navbar-offset", `${h}px`);
+        });
+      }
 
-        // Garante que o cálculo rode após o carregamento de imagens (logos)
-        window.addEventListener("load", syncNavbarOffset);
-        document.addEventListener("DOMContentLoaded", syncNavbarOffset);
+      document.addEventListener("DOMContentLoaded", () => {
+        syncNavbarOffset();
         window.addEventListener("resize", syncNavbarOffset);
 
-        // Observer para mudanças dinâmicas (ex: se a navbar expandir)
-        if (window.ResizeObserver) {
-          const ro = new ResizeObserver(entries => {
-            syncNavbarOffset();
-          });
-          const nav = document.querySelector(".navbar.fixed-top");
-          if (nav) ro.observe(nav);
-            }
+        const nav = document.querySelector(".navbar.fixed-top");
+        if (nav && "ResizeObserver" in window) {
+          const ro = new ResizeObserver(() => syncNavbarOffset());
+          ro.observe(nav);
+        }
+      });
 
       window.addEventListener("load", syncNavbarOffset);
 

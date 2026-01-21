@@ -727,36 +727,61 @@ body.dark-mode .page-item.disabled .page-link {
    14) RESPONSIVIDADE & LAYOUT DINÂMICO
    ========================================= */
 
+/* 1) RESET ESTRUTURAL (Fora de Media Query) 
+   Impede que a sidebar empurre o conteúdo no mobile */
+.app-wrapper {
+    display: block !important; 
+    width: 100%;
+    position: relative;
+    min-height: 100vh;
+}
+
+/* 2) REATIVA O FLEX APENAS NO DESKTOP */
+@media (min-width: 992px) {
+    .app-wrapper {
+        display: flex !important; 
+    }
+}
+
 /* Ajustes Gerais para Telas Menores (< 992px) */
 @media (max-width: 991.98px) {
-  
-  /* --- 1. NAVBAR & SIDEBAR MOBILE --- */
-  .navbar {
-    height: 70px !important;
-    min-height: 70px !important;
-    padding: 0 15px !important;
+
+  /* 1. Força o conteúdo a ignorar qualquer elemento lateral */
+  .app-wrapper {
+    display: block !important;
+    overflow-x: hidden !important; /* Impede que a sidebar crie scroll lateral */
+    width: 100vw !important;
   }
 
+  /* 2. Garante que a Sidebar não empurre NADA */
   .app-sidebar {
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
     width: 280px !important;
     height: 100vh !important;
-    transform: translateX(-100%);
-    z-index: 2050 !important;
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    display: block !important;
-    box-shadow: 10px 0 25px rgba(0, 0, 0, 0.3);
-    padding-top: 20px !important;
+    transform: translateX(-101%); /* 101% para garantir que suma total */
+    z-index: 9999 !important;      /* Valor extremo para iPhones */
+    visibility: hidden;           /* Esconde totalmente para o navegador ignorar */
+    transition: transform 0.3s ease, visibility 0.3s;
   }
 
+  /* 3. Quando aberta, ela flutua e fica visível */
+  body.sidebar-open .app-sidebar {
+    transform: translateX(0) !important;
+    visibility: visible !important;
+  }
+
+  /* 4. O segredo para o iPhone: Trava a largura do conteúdo */
   .app-content {
-    margin-left: 0 !important;
-    margin-top: 80px !important;
+    margin: 0 !important;
     padding: 15px !important;
     width: 100% !important;
+    max-width: 100vw !important; /* Não deixa passar da largura do visor */
+    min-width: 100vw !important;
+    overflow-x: hidden;
   }
+}
 
   body.sidebar-open .app-sidebar {
     transform: translateX(0);
@@ -773,7 +798,7 @@ body.dark-mode .page-item.disabled .page-link {
     width: 100%; 
     height: 100%;
     background: rgba(0, 0, 0, 0.5);
-    z-index: 2040;
+    z-index: 2500; /* Entre a navbar e a sidebar */
     display: none;
     backdrop-filter: blur(2px);
   }
@@ -961,13 +986,13 @@ body.dark-mode .page-item.disabled .page-link {
   /* 1. Container: Garante que nunca passe da largura da tela */
   .anexo-actions,
   .anexo-actions-inline,
-  .anexo-group { /* Adicionei .anexo-group por garantia */
+  .anexo-group { 
     display: flex !important;
     flex-wrap: nowrap !important;
-    gap: 6px !important;          /* Gap reduzido para economizar espaço */
+    gap: 6px !important;          
     align-items: center !important;
     width: 100% !important;
-    max-width: 100% !important;   /* Trava a largura máxima */
+    max-width: 100% !important;   
     box-sizing: border-box !important;
   }
 
@@ -976,28 +1001,25 @@ body.dark-mode .page-item.disabled .page-link {
   .anexo-actions-inline .btn-anexo,
   .anexo-actions-inline label.btn,
   .anexo-group .btn-anexo-main {
-    /* O SEGREDO: flex-basis 0 força o botão a caber no espaço que sobra */
     flex: 1 1 0px !important;     
-    width: 0 !important;          /* Hack para forçar o encolhimento em alguns browsers */
+    width: 0 !important;          
     min-width: 0 !important;      
     
-    height: 40px !important;      /* Altura compacta (40px) */
+    height: 40px !important;      
     margin: 0 !important;
-    padding: 0 8px !important;    /* Padding lateral menor */
+    padding: 0 8px !important;    
 
-    /* Layout Interno */
     display: flex !important;
     align-items: center !important;
     justify-content: flex-start !important;
     
-    /* Visual */
     border-radius: 10px !important;
     font-weight: 600 !important;
     letter-spacing: .2px;
     box-shadow: 0 2px 5px rgba(16, 24, 40, .05);
     background: rgba(13,110,253,.06);
     border: 1px solid rgba(13,110,253,.25) !important;
-    overflow: hidden !important; /* Garante que nada vaze */
+    overflow: hidden !important; 
   }
 
   /* Texto dentro do botão */
@@ -1008,8 +1030,8 @@ body.dark-mode .page-item.disabled .page-link {
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
-    font-size: 0.85rem !important; /* Fonte levemente menor */
-    line-height: 40px !important;  /* Centraliza na nova altura */
+    font-size: 0.85rem !important; 
+    line-height: 40px !important;  
     text-align: left !important;
     margin: 0 !important;
   }
@@ -1028,7 +1050,6 @@ body.dark-mode .page-item.disabled .page-link {
   .anexo-actions-inline a.btn,
   .anexo-actions-inline button.btn,
   .anexo-group .btn-anexo-icon {
-    /* Trava o tamanho em 40x40px */
     flex: 0 0 40px !important;    
     width: 40px !important;
     height: 40px !important;
@@ -1036,12 +1057,10 @@ body.dark-mode .page-item.disabled .page-link {
     margin: 0 !important;
     padding: 0 !important;
 
-    /* Centralização */
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
 
-    /* Visual */
     border-radius: 10px !important;
     box-shadow: 0 2px 5px rgba(16, 24, 40, .05);
   }
@@ -1054,250 +1073,107 @@ body.dark-mode .page-item.disabled .page-link {
     line-height: 1 !important;
   }
 }
-/* =========================================
-   CORREÇÃO BOTÃO DE ANEXO – MOBILE
-   ========================================= */
-@media (max-width: 991.98px) {
 
-  /* Container do anexo */
-  .anexo-container,
-  .file-upload-wrapper {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      width: 100%;
-  }
-
-  /* Botão de upload */
-  .anexo-container .btn,
-  .file-upload-wrapper .btn {
-      width: auto !important;          /* <<< evita botão gigante */
-      max-width: 100%;
-      flex: 1;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-  }
-
-  /* Texto do nome do arquivo */
-  .anexo-container .file-name,
-  .file-upload-wrapper .file-name {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      max-width: 100%;
-      display: block;
-  }
-
-  /* Botão remover anexo */
-  .anexo-container .btn-remove,
-  .file-upload-wrapper .btn-remove {
-      flex-shrink: 0;
-      width: 36px;
-      height: 36px;
-      padding: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 50%;
-  }
-}
-
-/* ✅ Navbar collapse bem escopado */
-@media (max-width: 991.98px) {
-  .navbar .navbar-collapse {
-    display: none !important;
-  }
-}
-
-@media (min-width: 992px) {
-  .navbar .navbar-collapse {
-    display: flex !important;
-  }
-}
-/* =========================================
-   DASHBOARD DESKTOP – AJUSTE DE COLUNAS
-   ========================================= */
-@media (min-width: 992px) {
-
-  /* Força layout fixo da tabela */
-  .table-accordion {
-    table-layout: fixed;
-  }
-
-  /* Coluna 1 – Identificação */
-  .table-accordion td:nth-child(1),
-  .table-accordion th:nth-child(1) {
-    width: 33%;
-  }
-
-  /* Coluna 2 – Dados da operação */
-  .table-accordion td:nth-child(2),
-  .table-accordion th:nth-child(2) {
-    width: 33%;
-  }
-
-  /* Coluna 3 – Decisão / Formulário */
-  .table-accordion td:nth-child(3),
-  .table-accordion th:nth-child(3) {
-    width: 34%;
-  }
-
-  /* Impede inputs de estourarem a coluna */
-  .table-accordion td {
-    overflow-wrap: break-word;
-    word-wrap: break-word;
-  }
-
-  /* Formulário mais compacto visualmente */
-  .table-accordion td form {
-    max-width: 100%;
-  }
-
-  /* Inputs e selects não forçam expansão */
-  .table-accordion input,
-  .table-accordion select,
-  .table-accordion textarea {
-    max-width: 100%;
-  }
-
-  /* Cartão interno mais elegante */
-  .table-accordion td .border.rounded {
-    background-color: #f9fafb;
-  }
-
-  body.dark-mode .table-accordion td .border.rounded {
-    background-color: #1f2937;
-  }
-}
-
-/* Container Unificado do Arquivo */
-.file-upload-wrapper {
+/* 1) Comportamento Padrão para evitar esmagamento Mobile */
+.app-wrapper {
+    display: block !important; 
+    width: 100%;
     position: relative;
-    width: 100%;
-    margin-bottom: 15px;
+    min-height: 100vh;
 }
 
-/* O "Botão" principal que vira a barra de fundo */
-.file-card {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    height: 45px; /* Altura confortável para o dedo */
-    background-color: #f8f9fa; /* Cinza bem claro */
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    padding: 0 5px 0 12px; /* Espaço interno */
-    transition: all 0.2s ease;
+/* 2) Reativa o Flex apenas no Desktop */
+@media (min-width: 992px) {
+    .app-wrapper {
+        display: flex !important; 
+    }
 }
 
-/* Quando tem arquivo (Estado Ativo) */
-.file-card.has-file {
-    background-color: #e3f2fd; /* Azulzinho bem claro */
-    border-color: #90caf9;
-    color: #0d47a1;
+@media screen and (max-device-width: 360px) and (max-device-height: 740px) and (-webkit-min-device-pixel-ratio: 4) {
+
+    .navbar {
+    height: 70px !important;
+    padding: 0 10px !important; /* Reduzido para ganhar espaço lateral */
+    display: flex !important;
+    flex-direction: row !important; /* Força ficar na mesma linha sempre */
+    flex-wrap: nowrap !important;   /* Impede que os itens pulem para baixo */
+    align-items: center !important;
+    justify-content: space-between !important;
+  }
+
+  .navbar .container-fluid {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    padding: 0 !important;
+  }
+
+  /* Ajuste do Botão Hamburguer */
+  #sidebarToggle {
+    margin-right: 5px !important;
+    flex-shrink: 0 !important;
+    padding: 5px 8px !important;
+  }
+
+  /* Ajuste da Logo para caber no S8+ e iPhone SE */
+  .navbar-brand {
+    margin: 0 auto !important; /* Centraliza a logo */
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-grow: 1 !important;
+    min-width: 0 !important; /* Permite que a logo encolha se necessário */
+  }
+
+  .navbar-logo {
+    max-height: 35px !important; /* Reduzido para não empurrar a altura da barra */
+    width: auto !important;
+    object-fit: contain !important;
+  }
+
+  /* Ajuste do Dropdown de Usuário */
+  .navbar .dropdown {
+    margin-left: 5px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .navbar .dropdown button {
+    padding: 5px 10px !important;
+    height: 40px !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+    
+    /* Força o wrapper a não ser flex de jeito nenhum */
+    .app-wrapper {
+        display: block !important;
+        flex-direction: column !important;
+    }
+
+    /* Garante que o conteúdo ocupe a largura real, sem sobras */
+    .app-content {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 10px !important; /* Um pouco menor para ganhar espaço na tela estreita */
+        flex: none !important;
+    }
+
+    /* Sidebar flutuando sem ocupar espaço na árvore de layout */
+    .app-sidebar {
+        position: fixed !important;
+        z-index: 5000 !important;
+        width: 260px !important; /* Levemente mais estreita para o S8+ */
+    }
+
+    /* Previne o esmagamento dos cards de UVIS */
+    .table-accordion tr.main-row, 
+    .table-mobile-cards tr {
+        width: calc(100vw - 20px) !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
 }
-
-/* Área do Texto (Esquerda) */
-.file-info {
-    display: flex;
-    align-items: center;
-    flex-grow: 1; /* Ocupa todo espaço disponível */
-    min-width: 0; /* Permite cortar o texto */
-    cursor: pointer;
-}
-
-.file-name {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-size: 0.9rem;
-    font-weight: 500;
-    margin-left: 8px;
-}
-
-/* Área das Ações (Direita) */
-.file-actions {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    flex-shrink: 0; /* Não deixa esmagar */
-}
-
-/* Botões de Ação (Ícones) */
-.btn-action-icon {
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 6px;
-    border: none;
-    background: transparent;
-    color: #6c757d;
-    transition: background 0.2s;
-}
-
-.btn-action-icon:hover, .btn-action-icon:active {
-    background-color: rgba(0,0,0,0.05);
-    color: #333;
-}
-
-.btn-action-icon.danger { color: #dc3545; }
-.btn-action-icon.danger:hover { background-color: #f8d7da; }
-
-/* =========================================================
-   FORM CONTROLS – PADRÃO VISUAL DO SISTEMA
-   ========================================================= */
-
-/* Labels */
-label,
-.form-label {
-  font-weight: 500;
-  border-radius: 10px;
-}
-
-/* Inputs, selects e textareas */
-.form-control,
-.form-select {
-  border-radius: 12px;
-  font-size: 0.85rem;
-  padding: 0.45rem 0.75rem;
-
-  border: 1px solid #dee2e6;
-  box-shadow: none;
-
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-/* Versão small */
-.form-control-sm,
-.form-select-sm {
-  border-radius: 10px;
-  font-size: 0.8rem;
-  padding: 0.35rem 0.65rem;
-}
-
-/* Focus (padrão elegante, sem exagero) */
-.form-control:focus,
-.form-select:focus {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.15);
-}
-
-/* Placeholder */
-.form-control::placeholder {
-  color: #adb5bd;
-  font-size: 0.8rem;
-}
-
-/* Remove aparência quadrada em browsers estranhos */
-input,
-select,
-textarea {
-  border-radius: inherit;
-}
-

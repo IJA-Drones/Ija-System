@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block extra_styles %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
 {% endblock %}
 
 {% block auth_content %}
@@ -29,7 +30,7 @@
                     <label for="floatingPassword">Senha</label>
                 </div>
 
-                <button type="submit" class="btn btn-success w-100 py-2 fs-5 fw-bold rounded-pill shadow-sm text-align-center">
+                <button type="submit" class="btn btn-success w-100 py-2 fs-5 fw-bold rounded-pill shadow-sm justify-content-center">
                     Entrar
                 </button>
 
