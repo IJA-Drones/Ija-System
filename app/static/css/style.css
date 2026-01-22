@@ -13,7 +13,12 @@ body {
   height: 100%;
   margin: 0;
   padding: 0;
-  overflow: hidden;
+  overflow-x: hidden; /* só trava lateral */
+}
+
+body.modal-open .app-content {
+  overflow: hidden !important;
+  -webkit-overflow-scrolling: auto !important;
 }
 
 /* ✅ Navbar fixa */
