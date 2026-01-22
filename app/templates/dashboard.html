@@ -20,13 +20,9 @@
     --accent-color: #0d6efd; /* Ajuste conforme a cor do IJA System */
   }
 
-  /* Impede o scroll "fantasma" atrás do modal */
   body.modal-open {
     overflow: hidden !important;
-    position: fixed;
-    width: 100%;
   }
-
   /* =========================================
      LISTAGEM (TABELA -> CARDS MOBILE)
      ========================================= */
@@ -117,7 +113,6 @@
       display: flex;
       align-items: flex-end; /* Fixa no rodapé */
       min-height: 100vh;
-      pointer-events: none !important;
     }
 
     .modal-content {
@@ -780,5 +775,12 @@
   });
 
 })();
+
+document.addEventListener('hidden.bs.modal', function () {
+  document.body.classList.remove('modal-open');
+  document.body.style.overflow = '';
+  document.body.style.paddingRight = '';
+});
+
 </script>
 {% endblock %}

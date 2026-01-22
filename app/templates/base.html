@@ -75,10 +75,12 @@
 
       /* ✅ Destrava o fundo no mobile mantendo a posição */
       body.modal-open {
-        position: fixed;
-        width: 100%;
+        overflow: hidden !important;
       }
 
+      body.modal-open .main-footer {
+        display: none !important;
+      }
       .navbar.fixed-top {
         z-index: 1030 !important; /* Ajustado para não brigar com o modal (1050) */
       }
@@ -548,26 +550,23 @@
           modalElement.blur();
       });
 
-      document.addEventListener('hidden.bs.modal', function () {
-          // 2. Limpeza profunda do body para destravar o scroll e os cliques
-          document.body.classList.remove('modal-open');
-          document.body.style.removeProperty('overflow');
-          document.body.style.removeProperty('position');
-          document.body.style.removeProperty('padding-top');
-          document.body.style.removeProperty('width');
-          
-          // 3. Remove backdrops órfãos (fundo escuro que as vezes trava)
-          const backdrops = document.querySelectorAll('.modal-backdrop');
-          backdrops.forEach(b => b.remove());
+     document.addEventListener('hidden.bs.modal', () => {
+      // Remove a classe do Bootstrap
+      document.body.classList.remove('modal-open');
 
-          // 4. Recalcula a navbar da Oceano Azul
-          if (typeof syncNavbarOffset === 'function') {
-              syncNavbarOffset();
-          }
-      });
+      // Libera scroll (somente isso)
+      document.body.style.overflow = '';
+
+      // Remove backdrops órfãos (bug comum no iOS)
+      document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+
+      // Recalcula o offset da navbar com segurança
+      if (typeof syncNavbarOffset === 'function') {
+        requestAnimationFrame(syncNavbarOffset);
+      }
+    });
 
     </script>
-
     {% block scripts %}{% endblock %}
   </body>
 </html>
