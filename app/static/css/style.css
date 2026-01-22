@@ -352,7 +352,7 @@ body.sidebar-collapsed .app-content {
   .navbar {
     position: relative;
     min-height: auto;
-    z-index: auto;
+    z-index: 1035;
     box-shadow: var(--shadow-sm);
   }
 
@@ -744,11 +744,17 @@ body.dark-mode .page-item.disabled .page-link {
     width: 280px !important;
     height: 100vh !important;
     transform: translateX(-100%);
-    z-index: 2050 !important;
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: block !important;
     box-shadow: 10px 0 25px rgba(0, 0, 0, 0.3);
     padding-top: 20px !important;
+    z-index: 1035 !important; /* Deve ser MENOR que o modal (1050) */
+    pointer-events: none;
+    visibility: hidden;
+  }
+
+  body.sidebar-open .app-sidebar {
+    pointer-events: auto;    /* Reativa quando aberta */
   }
 
   .app-content {
@@ -760,6 +766,7 @@ body.dark-mode .page-item.disabled .page-link {
 
   body.sidebar-open .app-sidebar {
     transform: translateX(0);
+    pointer-events: auto;
   }
 
   body.sidebar-open {
@@ -773,7 +780,7 @@ body.dark-mode .page-item.disabled .page-link {
     width: 100%; 
     height: 100%;
     background: rgba(0, 0, 0, 0.5);
-    z-index: 2040;
+    z-index: 1030 !important;
     display: none;
     backdrop-filter: blur(2px);
   }
@@ -946,6 +953,57 @@ body.dark-mode .page-item.disabled .page-link {
       margin-left: var(--sidebar-width-collapsed);
       width: calc(100% - var(--sidebar-width-collapsed));
     }
+}
+
+/* =========================================
+   CORREÇÃO DEFINITIVA DO MODAL (MOBILE)
+   ========================================= */
+@media (max-width: 991.98px) {
+  /* 1. Ajustamos a sidebar para ficar abaixo do modal do Bootstrap */
+
+  body.sidebar-open .app-sidebar {
+    pointer-events: auto;    /* Reativa quando aberta */
+  }
+
+  .app-sidebar {
+    z-index: 1040 !important; /* Estava 2050, baixamos para 1040 */
+  }
+
+  .sidebar-overlay {
+    z-index: 1030 !important; /* Estava 2040, baixamos para 1030 */
+  }
+
+  /* 2. Forçamos o Modal a ser a camada mais alta */
+  .modal {
+    z-index: 1060 !important; /* Acima da sidebar */
+    position: fixed !important;
+    pointer-events: auto !important; /* Garante que aceite cliques */
+  }
+  
+  .modal-backdrop {
+    z-index: 1050 !important; /* Fica logo atrás do modal */
+  }
+
+  /* 3. Evita o "Congelamento" visual */
+  body.modal-open {
+    overflow: hidden !important;
+    padding-right: 0 !important;
+  }
+
+  /* 4. Estilo Bottom Sheet (Ficha que desliza de baixo) */
+  .modal-dialog {
+    margin: 0 !important;
+    display: flex !important;
+    align-items: flex-end !important;
+    min-height: 100vh !important;
+  }
+
+  .modal-content {
+    border-radius: 24px 24px 0 0 !important;
+    height: 85vh !important;
+    border: none !important;
+    box-shadow: 0 -10px 25px rgba(0,0,0,0.15) !important;
+  }
 }
 
 /* Ajustes Mobile Pequeno (< 576px) */

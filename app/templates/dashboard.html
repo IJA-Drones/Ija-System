@@ -11,270 +11,232 @@
      - Respeita seu Design System + Dark Mode (html.dark-mode e body.dark-mode)
      ========================================= #}
   <style>
-    /* ========= MOBILE / TABLET ========= */
-    @media (max-width: 768px) {
+  /* =========================================
+     VARIÁVEIS E RESIDUOS GERAIS
+     ========================================= */
+  :root {
+    --card-radius: 18px;
+    --sheet-radius: 24px;
+    --accent-color: #0d6efd; /* Ajuste conforme a cor do IJA System */
+  }
 
-      /* --- Ajustes gerais --- */
-      .container-fluid.py-4 {
-        padding-left: 12px !important;
-        padding-right: 12px !important;
-      }
+  /* Impede o scroll "fantasma" atrás do modal */
+  body.modal-open {
+    overflow: hidden !important;
+    position: fixed;
+    width: 100%;
+  }
 
-      /* --- Cabeçalho: título + botão --- */
-      .d-flex.justify-content-between.align-items-center.mb-4 {
-        flex-direction: column;
-        align-items: flex-start !important;
-        gap: 12px;
-      }
-      .d-flex.justify-content-between.align-items-center.mb-4 a.btn {
-        width: 100%;
-      }
+  /* =========================================
+     LISTAGEM (TABELA -> CARDS MOBILE)
+     ========================================= */
+  @media (max-width: 768px) {
+    .container-fluid.py-4 { padding: 16px !important; }
 
-      /* --- Filtros --- */
-      form.card.p-3.mb-4 {
-        padding: 14px !important;
-        margin-bottom: 18px !important;
-      }
-      form.card.p-3.mb-4 .row.g-2.align-items-end > div {
-        width: 100%;
-      }
+    /* Cabeçalho do Dashboard */
+    .d-flex.justify-content-between.align-items-center.mb-4 {
+      flex-direction: column;
+      align-items: stretch !important;
+      gap: 15px;
+    }
 
-      /* =====================================
-         LISTAGEM: "Card wrapper" no mobile
-         (o overflow-hidden do card pai estava
-          "colando" visualmente os cards e cortando sombra)
-         ===================================== */
-      .card.shadow-sm.rounded-4.border-0.overflow-hidden {
-        background: transparent !important;
-        box-shadow: none !important;
-        overflow: visible !important;
-      }
-      .card.shadow-sm.rounded-4.border-0.overflow-hidden .card-body.p-0 {
-        padding: 0 !important;
-      }
+    /* Transformação da Tabela */
+    thead.table-light { display: none !important; }
+    
+    .table-responsive {
+      overflow: visible !important;
+      border: none !important;
+    }
 
-      /* --- Tabela vira “lista” --- */
-      .table-responsive {
-        overflow: visible !important;
-        padding-bottom: 96px !important; /* espaço pra não ficar atrás do FAB */
-      }
+    table.table { border-collapse: separate !important; border-spacing: 0 16px !important; }
 
-      table.table {
-        margin: 0 !important;
-        border-collapse: separate !important;
-        border-spacing: 0 !important;
-      }
+    tbody {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 0 !important; /* Espaçamento controlado pelo border-spacing ou margin */
+    }
 
-      thead.table-light {
-        display: none !important;
-      }
+    tbody tr {
+      display: block !important;
+      background: var(--color-bg-white) !important;
+      border: 1px solid rgba(0, 0, 0, 0.08) !important;
+      border-radius: var(--card-radius) !important;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04) !important;
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
 
-      tbody {
+    tbody tr td {
+      display: flex !important;
+      flex-direction: column;
+      padding: 12px 20px !important;
+      border: none !important;
+      text-align: left !important;
+    }
+
+    /* Divisórias sutis entre campos do card */
+    tbody tr td + td {
+      border-top: 1px solid rgba(0, 0, 0, 0.04) !important;
+    }
+
+    /* Labels Mobile Estilizados */
+    tbody tr td::before {
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 0.65rem;
+      letter-spacing: 0.6px;
+      color: var(--color-text-muted);
+      margin-bottom: 4px;
+      display: block;
+    }
+
+    tbody tr td:nth-child(1)::before { content: "Data e Horário"; }
+    tbody tr td:nth-child(2)::before { content: "Localização / Foco"; }
+    tbody tr td:nth-child(3)::before { content: "Status da Solicitação"; }
+    tbody tr td:nth-child(4)::before { content: "Ações"; }
+
+    /* Botão de Detalhes em destaque */
+    tbody tr td:nth-child(4) {
+      padding: 16px 20px !important;
+      background: rgba(0, 0, 0, 0.02);
+    }
+    tbody tr td:nth-child(4) .btn {
+      width: 100%;
+      font-weight: 600;
+      padding: 10px;
+      border-radius: 12px;
+    }
+  }
+
+  /* =========================================
+     MODAL ESTILO "BOTTOM SHEET" (MOBILE)
+     ========================================= */
+  @media (max-width: 768px) {
+    .modal.fade .modal-dialog {
+      margin: 0 !important;
+      display: flex;
+      align-items: flex-end; /* Fixa no rodapé */
+      min-height: 100vh;
+      pointer-events: none !important;
+    }
+
+    .modal-content {
+      border-radius: var(--sheet-radius) var(--sheet-radius) 0 0 !important;
+      max-height: 88vh !important;
+      border: none !important;
+      box-shadow: 0 -8px 30px rgba(0,0,0,0.15);
+      background: var(--color-bg-white) !important;
+      animation: slideUp 0.35s ease-out;
+    }
+
+    /* Handle (tracinho de puxar) */
+    .modal-content::before {
+      content: "";
+      width: 45px;
+      height: 5px;
+      background: #ddd;
+      border-radius: 10px;
+      margin: 12px auto 0;
+      display: block;
+    }
+
+    .modal {
+      z-index: 1060 !important; 
+      pointer-events: auto !important;
+    }
+
+    .modal.show {
         display: flex !important;
-        flex-direction: column !important;
-        gap: 24px !important;          /* <<< ESPAÇO ENTRE CARDS (maior) */
-        padding: 4px 0 0 0 !important; /* respiro superior */
-      }
-
-      /* --- Card (TR) --- */
-      tbody tr {
-        display: block !important;
-        background: var(--color-bg-white) !important;
-        border: 1px solid rgba(0, 0, 0, 0.10) !important;
-        border-radius: 18px !important;
-        box-shadow: var(--shadow-md) !important;
-        overflow: hidden !important;
-        transform: none !important; /* evita “pulos” do hover */
-      }
-
-      /* remove hover “tabela” no mobile */
-      .table-hover > tbody > tr:hover > * {
-        background: transparent !important;
-      }
-
-      /* --- Linhas internas do card (TD) --- */
-      tbody tr td {
-        display: grid !important;
-        grid-template-columns: 128px 1fr; /* label | conteúdo */
-        column-gap: 14px;
-        align-items: start !important;
-
-        padding: 16px 16px !important;   /* <<< MAIS ESPAÇOSO */
-        border: 0 !important;
-        text-align: left !important;
-        background: transparent !important;
-        color: var(--color-text-main) !important;
-      }
-
-      /* separador entre blocos do card */
-      tbody tr td + td {
-        border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
-      }
-
-      /* remove paddings laterais do desktop */
-      tbody tr td.ps-4,
-      tbody tr td.pe-4 {
-        padding-left: 16px !important;
-        padding-right: 16px !important;
-      }
-
-      /* Labels para cada campo do card (sem alterar HTML) */
-      tbody tr td:nth-child(1)::before { content: "Data"; }
-      tbody tr td:nth-child(2)::before { content: "Localização / Foco"; }
-      tbody tr td:nth-child(3)::before { content: "Situação"; }
-      tbody tr td:nth-child(4)::before { content: "Ações"; }
-
-      tbody tr td::before {
-        font-weight: 700;
-        color: var(--color-text-muted);
-        font-size: .82rem;
-        line-height: 1.15;
-        padding-top: 2px;
-        letter-spacing: .2px;
-      }
-
-      /* conteúdo do TD */
-      tbody tr td > * {
-        min-width: 0;
-      }
-
-      /* coluna 2 (localização) vira bloco */
-      tbody tr td:nth-child(2) .d-flex.flex-column {
-        width: 100%;
-      }
-
-      /* badges: melhor encaixe */
-      .badge {
-        white-space: normal !important;
-        text-align: center !important;
-        line-height: 1.15 !important;
-      }
-
-      /* botão de ações ocupa a linha toda */
-      tbody tr td:nth-child(4) button.btn {
-        width: 100%;
-      }
-
-      /* --- “Nenhuma solicitação” (colspan) não vira card quebrado --- */
-      tbody tr td[colspan] {
-        display: block !important;
-        padding: 26px 16px !important;
-        text-align: center !important;
-      }
-      tbody tr td[colspan]::before {
-        content: none !important;
-        display: none !important;
-      }
-
-      /* =========================
-         MODAL -> FULLSCREEN (Mobile)
-         ========================= */
-      .modal .modal-dialog {
-        margin: 0 !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        height: 100% !important;
-      }
-
-      .modal .modal-content {
-        height: 100vh !important;
-        border-radius: 0 !important;
-        border: 0 !important;
-        background: var(--color-bg-white) !important;
-        color: var(--color-text-main) !important;
-      }
-
-      .modal .modal-header,
-      .modal .modal-footer {
-        position: sticky;
-        background: var(--color-bg-white) !important;
-        z-index: 10;
-      }
-
-      .modal .modal-header {
-        top: 0;
-        border-bottom: 1px solid rgba(0,0,0,.10) !important;
-      }
-
-      .modal .modal-footer {
-        bottom: 0;
-        border-top: 1px solid rgba(0,0,0,.10) !important;
-      }
-
-      .modal .modal-body {
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-        padding: 16px !important;
-      }
-
-      .modal .modal-footer .btn {
-        width: 100%;
-      }
-
-      /* Chat: não estourar no mobile */
-      .chat-window {
-        width: calc(100% - 24px) !important;
-        right: 12px !important;
-        left: 12px !important;
-        max-width: none !important;
-        z-index: 1198 !important;
-      }
-
-      /* FAB: sempre aparece, sempre por cima */
-      #uvisBotFab.bot-fab,
-      .bot-fab {
-        position: fixed !important;
-        right: 14px !important;
-        bottom: calc(14px + env(safe-area-inset-bottom)) !important;
-        z-index: 1199 !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-      }
+        align-items: flex-end;
+        pointer-events: auto !important; /* Força o recebimento do toque */
+    }
+    
+    /* Garante que o fundo escuro não fique na frente do modal */
+    .modal-backdrop {
+      z-index: 1050 !important;
     }
 
-    /* ========= MOBILE MUITO PEQUENO ========= */
-    @media (max-width: 420px) {
-      tbody tr td {
-        grid-template-columns: 112px 1fr !important;
-        padding: 15px 14px !important;
-      }
-      tbody tr td::before {
-        font-size: .78rem;
-      }
-      .d-flex.justify-content-between.align-items-center.mb-4 h2 {
-        font-size: 1.2rem;
-      }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
     }
 
-    /* =========================================
-       DARK MODE (Cookie)
-       - Ajuste de bordas/divisórias no mobile
-       ========================================= */
-    @media (max-width: 768px) {
-
-      html.dark-mode tbody tr,
-      body.dark-mode tbody tr {
-        border-color: #233549 !important;
-        box-shadow: var(--shadow-md) !important;
-      }
-
-      html.dark-mode tbody tr td + td,
-      body.dark-mode tbody tr td + td {
-        border-top-color: #233549 !important;
-      }
-
-      html.dark-mode .modal .modal-header,
-      body.dark-mode .modal .modal-header {
-        border-bottom-color: #233549 !important;
-      }
-
-      html.dark-mode .modal .modal-footer,
-      body.dark-mode .modal .modal-footer {
-        border-top-color: #233549 !important;
-      }
+    .modal-body {
+      padding: 20px 24px !important;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
-  </style>
+
+    .modal-header {
+      padding: 15px 24px !important;
+      border-bottom: 1px solid rgba(0,0,0,0.06) !important;
+    }
+
+    .modal-footer {
+      padding: 16px 24px !important;
+      border-top: 1px solid rgba(0,0,0,0.06) !important;
+      display: flex;
+    }
+
+    .modal-footer .btn {
+      flex: 1;
+      padding: 12px;
+      border-radius: 12px;
+    }
+  }
+
+  /* =========================================
+     CHATBOT & FAB (Z-INDEX FIX)
+     ========================================= */
+  #uvisBotFab.bot-fab {
+    z-index: 1060 !important; /* Acima do backdrop mas abaixo de alertas se houver */
+  }
+
+  .chat-window {
+    z-index: 1070 !important;
+    border-radius: 20px !important;
+    box-shadow: var(--shadow-lg) !important;
+  }
+
+  @media (max-width: 768px) {
+    .chat-window {
+      width: calc(100% - 32px) !important;
+      bottom: 85px !important;
+      height: 65vh !important;
+    }
+  }
+
+  /* =========================================
+     DARK MODE ENHANCEMENTS
+     ========================================= */
+  html.dark-mode body, body.dark-mode {
+    --card-border: rgba(255, 255, 255, 0.1);
+  }
+
+  html.dark-mode tbody tr, body.dark-mode tbody tr {
+    background: #1e1e1e !important;
+    border-color: #333 !important;
+  }
+
+  html.dark-mode .modal-content, body.dark-mode .modal-content {
+    background: #1a1a1a !important;
+    color: #f0f0f0 !important;
+  }
+
+  html.dark-mode .modal-content::before, body.dark-mode .modal-content::before {
+    background: #444;
+  }
+
+  html.dark-mode tbody tr td + td, body.dark-mode tbody tr td + td {
+    border-top-color: #333 !important;
+  }
+
+  html.dark-mode .modal-header, html.dark-mode .modal-footer,
+  body.dark-mode .modal-header, body.dark-mode .modal-footer {
+    border-color: #333 !important;
+    background: #1a1a1a !important;
+  }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -491,7 +453,7 @@
      MODAIS (1 por solicitação)
      ========================= #}
   {% for p in solicitacoes %}
-  <div class="modal fade" id="modalDetalhes{{ p.id }}" tabindex="-1" aria-hidden="true">
+  <div class="modal fade" id="modalDetalhes{{ p.id }}">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
 
