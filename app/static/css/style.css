@@ -48,7 +48,6 @@ body.modal-open .app-content {
     100dvh - var(--navbar-offset) - env(safe-area-inset-top, 0px)
   );
 
-  overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 
   padding-bottom: env(safe-area-inset-bottom, 0px);
