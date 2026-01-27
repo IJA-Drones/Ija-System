@@ -34,20 +34,27 @@
         </div>
 
         <div class="row g-3 mb-4">
-          <div class="col-md-6">
-            <label class="form-label fw-bold small text-muted">
-                <i class="bi bi-map me-1 text-primary"></i> Região
-            </label>
-            <input name="regiao" class="form-control" value="{{ uvis.regiao or '' }}">
-          </div>
-          
-          <div class="col-md-6">
-            <label class="form-label fw-bold small text-muted">
-                <i class="bi bi-upc-scan me-1 text-primary"></i> Código do Setor
-            </label>
-            <input name="codigo_setor" class="form-control" value="{{ uvis.codigo_setor or '' }}">
-          </div>
+        <div class="col-md-6">
+          <label class="form-label fw-bold small text-muted">
+            <i class="bi bi-map me-1 text-primary"></i> Região
+          </label>
+
+          <select name="regiao" class="form-control">
+            <option value="" disabled {% if not uvis.regiao %}selected{% endif %}>
+              Selecione a região
+            </option>
+
+            <option value="CENTRO" {% if uvis.regiao == 'CENTRO' %}selected{% endif %}>Centro</option>
+            <option value="OESTE" {% if uvis.regiao == 'OESTE' %}selected{% endif %}>Oeste</option>
+            <option value="SUL" {% if uvis.regiao == 'SUL' %}selected{% endif %}>Sul</option>
+            <option value="SUDESTE" {% if uvis.regiao == 'SUDESTE' %}selected{% endif %}>Sudeste</option>
+            <option value="NORTE" {% if uvis.regiao == 'NORTE' %}selected{% endif %}>Norte</option>
+            <option value="LESTE" {% if uvis.regiao == 'LESTE' %}selected{% endif %}>Leste</option>
+            <option value="CENTRO-OESTE" {% if uvis.regiao == 'CENTRO-OESTE' %}selected{% endif %}>Centro-Oeste</option>
+          </select>
         </div>
+      </div>
+
 
         <hr class="text-muted opacity-25 my-4">
 

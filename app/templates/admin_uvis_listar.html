@@ -323,21 +323,11 @@ body.dark-mode) ========================= #}
           <option value="SUL" {% if reg == 'SUL' %}selected{% endif %}>SUL</option>
           <option value="LESTE" {% if reg == 'LESTE' %}selected{% endif %}>LESTE</option>
           <option value="OESTE" {% if reg == 'OESTE' %}selected{% endif %}>OESTE</option>
+          <option value="CENTRO" {% if reg == 'CENTRO' %}selected{% endif %}>CENTRO</option>
+          <option value="SUDESTE" {% if reg == 'SUDESTE' %}selected{% endif %}>SUDESTE</option>        
+          <option value="CENTRO-OESTE" {% if reg == 'CENTRO-OESTE' %}selected{% endif %}>CENTRO-OESTE</option>
         </select>
-      </div>
-
-          <div class="col-md-3">
-            <label for="search_codigo" class="small text-muted">Cód. Setor:</label>
-            <input
-              type="text"
-              class="form-control form-control-sm"
-              name="codigo_setor"
-              id="search_codigo"
-              value="{{ codigo_setor }}"
-              placeholder="Ex: 123A"
-            />
-          </div>
-
+      </div>        
           <div class="col-md-3 d-flex gap-2">
             {# 1. Botão FILTRAR #}
             <button type="submit" class="btn btn-success btn-sm flex-grow-1">
@@ -370,8 +360,7 @@ body.dark-mode) ========================= #}
               <tr>
                 <th style="width: 80px">ID</th>
                 <th>Nome</th>
-                <th>Região</th>
-                <th>Cód. Setor</th>
+                <th>Região</th>                
                 <th>Login</th>
                 <th style="width: 160px">Ações</th>
               </tr>
@@ -381,8 +370,7 @@ body.dark-mode) ========================= #}
               <tr>
                 <td class="text-muted">{{ u.id }}</td>
                 <td class="fw-semibold">{{ u.nome_uvis }}</td>
-                <td>{{ u.regiao or "-" }}</td>
-                <td>{{ u.codigo_setor or "-" }}</td>
+                <td>{{ u.regiao or "-" }}</td>                
                 <td><code>{{ u.login }}</code></td>
                 <td>
                   <div class="d-flex gap-2">
