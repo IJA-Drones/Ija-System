@@ -2391,8 +2391,7 @@ def admin_uvis_novo():
 
         novo_user = Usuario(
             nome_uvis=nome_uvis,
-            regiao=regiao,
-            codigo_setor=codigo_setor,
+            regiao=regiao,            
             login=login,
             tipo_usuario="uvis",
         )
@@ -2454,8 +2453,7 @@ def admin_uvis_listar():
 
     filters = {
         "q": q,
-        "regiao": regiao,
-        "codigo_setor": codigo_setor,
+        "regiao": regiao,        
         "total": total
     }
 
@@ -2465,8 +2463,7 @@ def admin_uvis_listar():
         paginacao=paginacao,
         filters=filters,
         q=q,
-        regiao=regiao,
-        codigo_setor=codigo_setor
+        regiao=regiao        
     )
 
 @bp.route("/admin/uvis/<int:id>/editar", methods=["GET", "POST"], endpoint="admin_uvis_editar")
@@ -2483,8 +2480,7 @@ def admin_uvis_editar(id):
 
     if request.method == "POST":
         nome_uvis = (request.form.get("nome_uvis") or "").strip()
-        regiao = (request.form.get("regiao") or "").strip() or None
-        codigo_setor = (request.form.get("codigo_setor") or "").strip() or None
+        regiao = (request.form.get("regiao") or "").strip() or None        
         login = (request.form.get("login") or "").strip()
 
         senha = (request.form.get("senha") or "").strip()
@@ -2501,8 +2497,7 @@ def admin_uvis_editar(id):
             uvis.set_senha(senha)
 
         uvis.nome_uvis = nome_uvis
-        uvis.regiao = regiao
-        uvis.codigo_setor = codigo_setor
+        uvis.regiao = regiao        
         uvis.login = login
 
         try:
@@ -3584,8 +3579,7 @@ def admin_uvis_exportar():
         abort(403)
 
     q = (request.args.get("q") or "").strip()
-    regiao = (request.args.get("regiao") or "").strip()
-    codigo_setor = (request.args.get("codigo_setor") or "").strip()
+    regiao = (request.args.get("regiao") or "").strip()    
 
     query = Usuario.query.filter(Usuario.tipo_usuario == "uvis")
 
@@ -3598,9 +3592,7 @@ def admin_uvis_exportar():
         )
     if regiao:
         query = query.filter(Usuario.regiao.ilike(f"%{regiao}%"))
-    if codigo_setor:
-        query = query.filter(Usuario.codigo_setor.ilike(f"%{codigo_setor}%"))
-
+        
     rows = query.order_by(Usuario.nome_uvis.asc()).all()
 
     wb = Workbook()
@@ -3630,7 +3622,7 @@ def admin_uvis_exportar():
     start_header_row = 5
 
     # ---------- CABEÇALHO ----------
-    headers = ["ID", "Nome", "Região", "Cód. Setor", "Login"]
+    headers = ["ID", "Nome", "Região", "Login"]
     for col, h in enumerate(headers, start=1):
         cell = ws.cell(row=start_header_row, column=col, value=h)
         cell.font = header_font
@@ -3642,7 +3634,7 @@ def admin_uvis_exportar():
     start_data_row = start_header_row + 1
     for i, u in enumerate(rows):
         r = start_data_row + i
-        values = [u.id, u.nome_uvis, u.regiao, u.codigo_setor, u.login]
+        values = [u.id, u.nome_uvis, u.regiao, u.login]
 
         for c, v in enumerate(values, start=1):
             cell = ws.cell(row=r, column=c, value=v)
@@ -3718,7 +3710,7 @@ def format_phone_br(digits: str) -> str:
     return digits or ""
 
 
-REGIOES = {"NORTE", "SUL", "LESTE", "OESTE"}
+REGIOES = {"NORTE", "SUL", "LESTE", "OESTE", "CENTRO", "SULDESTE"}
 
 
 # -------------------------------------------------------------
