@@ -1,0 +1,154 @@
+{# templates/uvis_equipe_membro_adicionar.html #}
+{% extends "base.html" %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid py-4" style="max-width: 1200px">
+
+  {# --- Cabeçalho --- #}
+  <div class="d-flex align-items-center mb-4">
+    <h2 class="text-dark m-0">
+      <i class="bi bi-person-plus-fill me-2 text-primary"></i> Adicionar membro — {{ nome_equipe }}
+    </h2>
+  </div>
+
+  {# --- Mensagens de Feedback --- #}
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm mb-4 rounded-3" role="alert">
+          <i class="bi bi-info-circle me-2"></i> {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  {# --- Card Principal --- #}
+  <div class="card info status-primary shadow-sm rounded-4 border-0">
+    <div class="card-body p-4">
+
+      <form
+        method="post"
+        action="{{ url_for('main.adicionar_membro_equipe_uvis', nome_equipe=nome_equipe) }}"
+        novalidate
+      >
+
+        {# SEÇÃO 1: IDENTIFICAÇÃO #}
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-card-heading text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Identificação</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-people me-1 text-primary"></i> Equipe
+            </label>
+            <input type="text" class="form-control" value="{{ nome_equipe }}" disabled>
+            <div class="form-text small">Você está adicionando um membro nesta equipe.</div>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-geo-alt me-1 text-primary"></i> Região
+            </label>
+            <input type="text" class="form-control" value="{{ (current_user.regiao or '')|upper }}" disabled>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-card-text me-1 text-primary"></i> Status
+            </label>
+            <input type="text" class="form-control" value="Ativa" disabled>
+            <div class="form-text small">Equipe UVIS fica ativa por padrão.</div>
+          </div>
+        </div>
+
+        <hr class="text-muted opacity-25 my-4" />
+
+        {# SEÇÃO 2: MEMBRO #}
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-person-lines-fill text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Membro</h5>
+        </div>
+
+        {% if errors.get('limite') %}
+          <div class="alert alert-warning shadow-sm rounded-3">
+            <i class="bi bi-exclamation-triangle me-2"></i> {{ errors.get('limite') }}
+          </div>
+        {% endif %}
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-person-fill me-1 text-primary"></i> Nome *
+            </label>
+            <input
+              type="text"
+              class="form-control {% if errors.get('nome') %}is-invalid{% endif %}"
+              name="nome"
+              value="{{ form.get('nome','') }}"
+              placeholder="Ex: João da Silva"
+              required
+            />
+            {% if errors.get('nome') %}
+              <div class="invalid-feedback">{{ errors.get('nome') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-briefcase-fill me-1 text-primary"></i> Função
+            </label>
+            <input
+              type="text"
+              class="form-control"
+              name="funcao"
+              value="{{ form.get('funcao','') }}"
+              placeholder="Ex: Endemias / Supervisor / Apoio"
+            />
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-telephone-fill me-1 text-primary"></i> Contato (opcional)
+            </label>
+            <input
+              type="text"
+              class="form-control"
+              name="contato"
+              value="{{ form.get('contato','') }}"
+              placeholder="Ex: (11) 99999-9999 / email@..."
+            />
+          </div>
+        </div>
+
+        <small class="text-muted d-block mt-4">
+          Campos com <span class="text-danger">*</span> são de preenchimento obrigatório.
+        </small>
+
+        {# BOTÕES #}
+        <div class="d-flex justify-content-end gap-2 mt-5">
+          <a
+            href="{{ url_for('main.listar_membros_equipe_uvis', nome_equipe=nome_equipe) }}"
+            class="btn btn-outline-danger btn-sm"
+          >
+            <i class="bi bi-x-lg me-1"></i> Cancelar
+          </a>
+
+          <button type="submit" class="btn btn-primary btn-sm">
+            <i class="bi bi-check-lg me-1"></i> Adicionar
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
