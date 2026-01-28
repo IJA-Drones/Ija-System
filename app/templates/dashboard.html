@@ -438,11 +438,42 @@
                   <span class="badge bg-warning text-dark rounded-pill">Em Análise</span>
                 {% endif %}
               </td>
-
               <td class="text-center pe-4">
-                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalDetalhes{{ p.id }}">
-                  <i class="bi bi-eye"></i> Detalhes
-                </button>
+                <div class="d-flex flex-column flex-lg-row justify-content-center align-items-stretch gap-2" style="min-width: 120px;">
+                  
+                  {# Botão Detalhes - Ajustado para ocupar largura total no container flex #}
+                  <button type="button" class="btn btn-sm btn-outline-primary w-100" data-bs-toggle="modal" data-bs-target="#modalDetalhes{{ p.id }}">
+                    <i class="bi bi-eye"></i> Detalhes
+                  </button>
+
+                  {# Lógica de Edição + Ajuda #}
+                  {% if p.status == 'PENDENTE' or p.status == 'NEGADO' %}
+                    <div class="d-flex gap-1 w-100">
+                        <a href="{{ url_for('main.editar_solicitacao', id=p.id) }}"
+                          class="btn btn-sm btn-success flex-grow-1 d-flex align-items-center justify-content-center"
+                          onclick="event.stopPropagation();">
+                            <i class="bi bi-pencil-square me-1"></i> Editar
+                        </a>
+                        
+                        {# Botão de Ajuda (só para NEGADOS) - Mantém a altura do botão de editar #}
+                        {% if p.status == 'NEGADO' and p.justificativa %}
+                          <button type="button" 
+                                  class="btn btn-sm btn-outline-danger d-flex align-items-center justify-content-center" 
+                                  data-bs-toggle="tooltip" 
+                                  data-bs-placement="top" 
+                                  title="Motivo: {{ p.justificativa }}">
+                              <i class="bi bi-question-circle"></i>
+                          </button>
+                        {% endif %}
+                    </div>
+                  {% else %}
+                    {# Botão de Cadeado (Status bloqueado) - Tamanho idêntico aos outros #}
+                    <button class="btn btn-sm btn-light border w-100 opacity-75 d-flex align-items-center justify-content-center" title="Edição bloqueada">
+                        <i class="bi bi-lock-fill"></i>
+                    </button>
+                  {% endif %}
+
+                </div>
               </td>
             </tr>
             {% else %}

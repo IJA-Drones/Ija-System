@@ -134,6 +134,15 @@
                                     {{ p.usuario.nome_uvis }}
                                 </strong>
 
+                                {# --- ALERTA DE CORREÇÃO PARA O ADMIN --- #}
+                                {% if p.status == 'PENDENTE' and p.justificativa and p.justificativa.startswith('CORREÇÃO:') %}
+                                    <div class="mt-1 d-lg-none">
+                                        <span class="badge bg-info text-dark animate-pulse" style="font-size: 0.65rem;">
+                                            <i class="bi bi-arrow-repeat"></i> CORREÇÃO RECEBIDA
+                                        </span>
+                                    </div>
+                                {% endif %}
+
                                 <div class="mt-3">
                                     <!-- STATUS -->
                                     <div class="mt-1">
@@ -186,7 +195,7 @@
                         {# Botões de Admin Desktop #}
                         {% if current_user.tipo_usuario == 'admin' %}
                         <div class="d-none d-lg-flex gap-1 mt-4">
-                            <a href="{{ url_for('main.admin_editar_completo', id=p.id) }}"
+                            <a href="{{ url_for('main.editar_solicitacao', id=p.id) }}"
                                 class="btn btn-sm btn-success"
                                 onclick="event.stopPropagation();">
                                 <i class="bi bi-pencil-square"></i> Editar
@@ -446,7 +455,7 @@
 
                                     {% if current_user.tipo_usuario == 'admin' %}
                                     <div class="d-flex gap-1 mt-2 align-items-center justify-content-center">
-                                        <a href="{{ url_for('main.admin_editar_completo', id=p.id) }}"
+                                        <a href="{{ url_for('main.editar_solicitacao', id=p.id) }}"
                                            class="btn btn-sm btn-success">
                                             <i class="bi bi-pencil-square"></i> Editar
                                         </a>
