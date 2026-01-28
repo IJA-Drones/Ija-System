@@ -136,9 +136,10 @@
 
                                 {# --- ALERTA DE CORREÇÃO PARA O ADMIN --- #}
                                 {% if p.status == 'PENDENTE' and p.justificativa and p.justificativa.startswith('CORREÇÃO:') %}
-                                    <div class="mt-1 d-lg-none">
-                                        <span class="badge bg-info text-dark animate-pulse" style="font-size: 0.65rem;">
-                                            <i class="bi bi-arrow-repeat"></i> CORREÇÃO RECEBIDA
+                                    {# Removi o 'd-lg-none' para que apareça no PC também #}
+                                    <div class="mt-2"> 
+                                        <span class="badge bg-info text-dark animate-pulse shadow-sm" style="font-size: 0.75rem;">
+                                            <i class="bi bi-arrow-repeat me-1"></i> CORREÇÃO RECEBIDA
                                         </span>
                                     </div>
                                 {% endif %}
