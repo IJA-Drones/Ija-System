@@ -1,0 +1,146 @@
+{# templates/uvis_equipe_membros_listar.html #}
+{% extends "base.html" %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid py-4" style="max-width: 1200px">
+
+  {# --- Cabeçalho --- #}
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <h2 class="text-dark m-0">
+      <i class="bi bi-person-lines-fill me-2 text-primary"></i> Equipe: {{ nome_equipe }}
+    </h2>
+
+    <a
+      href="{{ url_for('main.adicionar_membro_equipe_uvis', nome_equipe=nome_equipe) }}"
+      class="btn btn-outline-primary btn-sm {% if total >= maximo %}disabled{% endif %}"
+      {% if total >= maximo %}aria-disabled="true"{% endif %}
+    >
+      <i class="bi bi-person-plus me-1"></i> Adicionar pessoa
+    </a>
+  </div>
+
+  {# --- Mensagens de Feedback --- #}
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm mb-4 rounded-3" role="alert">
+          <i class="bi bi-info-circle me-2"></i> {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  {# --- Card Principal --- #}
+  <div class="card info status-primary shadow-sm rounded-4 border-0">
+    <div class="card-body p-4">
+
+      {# SEÇÃO 1: IDENTIFICAÇÃO #}
+      <div class="d-flex align-items-center mb-3">
+        <i class="bi bi-card-heading text-primary me-2 fs-5"></i>
+        <h5 class="m-0 text-primary fw-bold">Identificação</h5>
+      </div>
+
+      <div class="row g-3 mb-4">
+        <div class="col-md-6">
+          <label class="form-label fw-bold small text-muted">
+            <i class="bi bi-building me-1 text-primary"></i> UVIS
+          </label>
+          <input type="text" class="form-control" value="{{ current_user.nome_uvis }}" disabled>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label fw-bold small text-muted">
+            <i class="bi bi-geo-alt me-1 text-primary"></i> Região
+          </label>
+          <input type="text" class="form-control" value="{{ (current_user.regiao or '')|upper }}" disabled>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label fw-bold small text-muted">
+            <i class="bi bi-people me-1 text-primary"></i> Membros
+          </label>
+          <input type="text" class="form-control" value="{{ total }}/{{ maximo }}" disabled>
+          <div class="form-text small">Limite: 5 pessoas por equipe.</div>
+        </div>
+      </div>
+
+      <hr class="text-muted opacity-25 my-4" />
+
+      {# SEÇÃO 2: MEMBROS #}
+      <div class="d-flex align-items-center mb-3">
+        <i class="bi bi-person-lines-fill text-primary me-2 fs-5"></i>
+        <h5 class="m-0 text-primary fw-bold">Membros da equipe</h5>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 70px">#</th>
+              <th>Nome</th>
+              <th>Função</th>
+              <th>Contato</th>
+              <th style="width: 200px" class="text-end">Ações</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% if membros and membros|length %}
+              {% for m in membros %}
+                <tr>
+                  <td><span class="badge text-bg-primary">{{ m.ordem }}</span></td>
+                  <td class="fw-semibold">{{ m.nome }}</td>
+                  <td>{{ m.funcao or "-" }}</td>
+                  <td>{{ m.contato or "-" }}</td>
+
+                  <td class="text-end">
+                    <a
+                      href="{{ url_for('main.editar_membro_equipe_uvis', membro_id=m.id) }}"
+                      class="btn btn-outline-primary btn-sm"
+                      title="Editar"
+                    >
+                      <i class="bi bi-pencil-square"></i>
+                    </a>
+
+                    <form
+                      method="post"
+                      action="{{ url_for('main.deletar_membro_equipe_uvis', membro_id=m.id) }}"
+                      class="d-inline"
+                      onsubmit="return confirm('Remover este membro da equipe?');"
+                    >
+                      <button type="submit" class="btn btn-outline-danger btn-sm" title="Excluir">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="5" class="text-center text-muted py-4">
+                  Nenhum membro cadastrado nesta equipe ainda.
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+
+      {# BOTÕES #}
+      <div class="d-flex justify-content-end gap-2 mt-5">
+        <a href="{{ url_for('main.listar_equipes_uvis') }}" class="btn btn-outline-danger btn-sm">
+          <i class="bi bi-arrow-left me-1"></i> Voltar para equipes
+        </a>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+{% endblock %}
