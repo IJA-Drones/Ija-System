@@ -42,7 +42,7 @@ from sqlalchemy.orm import joinedload
 # APP
 # ==========================
 from app import db
-from app.models import Notificacao, Solicitacao, Usuario, Clientes, Pilotos, Equipe, EquipePiloto
+from app.models import Notificacao, Solicitacao, Usuario, Clientes, Pilotos, Equipe, EquipePiloto, EquipeUvis
 
 print("--- ROTAS CARREGADAS COM SUCESSO ---")
 
@@ -5025,3 +5025,223 @@ def deletar_equipe(equipe_id):
         flash("Não foi possível excluir a equipe. Verifique se há vínculos ativos no sistema.", "danger")
 
     return redirect(url_for("main.listar_equipes"))
+
+
+# -------------------------------------------------------------
+# HELPERS (opcional, mas recomendado)
+# -------------------------------------------------------------
+def _uvis_only():
+    if getattr(current_user, "tipo_usuario", None) != "uvis":
+        abort(403)
+
+def _proximo_slot_equipe_uvis(uvis_usuario_id: int, nome_equipe: str):
+    usados = {
+        x[0] for x in (
+            db.session.query(EquipeUvis.ordem)
+            .filter_by(uvis_usuario_id=uvis_usuario_id, nome_equipe=nome_equipe)
+            .all()
+        )
+    }
+    for slot in range(1, 6):
+        if slot not in usados:
+            return slot
+    return None  # cheio
+
+# -------------------------------------------------------------
+# Rota: listar equipe da UVIS logada (somente a dela)
+# -------------------------------------------------------------
+@bp.route("/uvis/equipes", methods=["GET"], endpoint="listar_equipes_uvis")
+@login_required
+def listar_equipes_uvis():
+    _uvis_only()
+
+    # pega nomes das equipes e contagem de membros (só da UVIS logada)
+    rows = (
+        db.session.query(
+            EquipeUvis.nome_equipe,
+            db.func.count(EquipeUvis.id).label("total")
+        )
+        .filter(EquipeUvis.uvis_usuario_id == current_user.id)
+        .group_by(EquipeUvis.nome_equipe)
+        .order_by(EquipeUvis.nome_equipe.asc())
+        .all()
+    )
+
+    # lista simples pro template
+    equipes = [{"nome_equipe": r[0], "total": int(r[1])} for r in rows]
+
+    return render_template("uvis_equipes_listar.html", equipes=equipes)
+
+@bp.route("/uvis/equipes/<string:nome_equipe>", methods=["GET"], endpoint="listar_membros_equipe_uvis")
+@login_required
+def listar_membros_equipe_uvis(nome_equipe):
+    _uvis_only()
+
+    nome_equipe = (nome_equipe or "").strip()
+    if not nome_equipe:
+        abort(404)
+
+    membros = (
+        EquipeUvis.query
+        .filter_by(uvis_usuario_id=current_user.id, nome_equipe=nome_equipe)
+        .order_by(EquipeUvis.ordem.asc())
+        .all()
+    )
+
+    total = len(membros)
+    maximo = 5
+
+    return render_template(
+        "uvis_equipe_membros_listar.html",
+        nome_equipe=nome_equipe,
+        membros=membros,
+        total=total,
+        maximo=maximo
+    )
+from flask import request, flash, redirect, url_for
+
+@bp.route("/uvis/equipes/<string:nome_equipe>/adicionar", methods=["GET", "POST"], endpoint="adicionar_membro_equipe_uvis")
+@login_required
+def adicionar_membro_equipe_uvis(nome_equipe):
+    _uvis_only()
+
+    nome_equipe = (nome_equipe or "").strip()
+    if not nome_equipe:
+        abort(404)
+
+    errors = {}
+    form = {"nome_equipe": nome_equipe}
+
+    if request.method == "POST":
+        nome = (request.form.get("nome") or "").strip()
+        funcao = (request.form.get("funcao") or "").strip()
+        contato = (request.form.get("contato") or "").strip()
+
+        form.update({"nome": nome, "funcao": funcao, "contato": contato})
+
+        if not nome:
+            errors["nome"] = "Informe o nome do membro."
+
+        slot = _proximo_slot_equipe_uvis(current_user.id, nome_equipe)
+        if not slot:
+            errors["limite"] = "Limite máximo de 5 pessoas nesta equipe atingido."
+
+        if errors:
+            flash("Corrija os campos destacados.", "warning")
+            return render_template("uvis_equipe_membro_adicionar.html", form=form, errors=errors, nome_equipe=nome_equipe)
+
+        novo = EquipeUvis(
+            uvis_usuario_id=current_user.id,
+            nome_equipe=nome_equipe,
+            ordem=slot,
+            nome=nome,
+            funcao=funcao or None,
+            contato=contato or None
+        )
+        db.session.add(novo)
+        db.session.commit()
+
+        flash("Membro adicionado com sucesso!", "success")
+        return redirect(url_for("main.listar_membros_equipe_uvis", nome_equipe=nome_equipe))
+
+    return render_template("uvis_equipe_membro_adicionar.html", form=form, errors=errors, nome_equipe=nome_equipe)
+
+#-------------------------------------------------------------
+# Rota: criar nova equipe UVIS
+#-------------------------------------------------------------
+@bp.route("/uvis/equipes/nova", methods=["GET", "POST"], endpoint="criar_equipe_uvis")
+@login_required
+def criar_equipe_uvis():
+    _uvis_only()
+
+    errors = {}
+    form = {}
+
+    if request.method == "POST":
+        nome_equipe = (request.form.get("nome_equipe") or "").strip()
+        form["nome_equipe"] = nome_equipe
+
+        if not nome_equipe:
+            errors["nome_equipe"] = "Informe o nome da equipe."
+
+        if errors:
+            flash("Corrija os campos destacados.", "warning")
+            return render_template("uvis_equipe_criar.html", form=form, errors=errors)
+
+        # manda direto para adicionar o 1º membro
+        return redirect(url_for("main.adicionar_membro_equipe_uvis", nome_equipe=nome_equipe))
+
+    return render_template("uvis_equipe_criar.html", form=form, errors=errors)
+# -------------------------------------------------------------
+# Rota: editar membro da equipe UVIS    
+#-------------------------------------------------------------
+
+@bp.route("/uvis/equipe-membro/<int:membro_id>/editar", methods=["GET", "POST"], endpoint="editar_membro_equipe_uvis")
+@login_required
+def editar_membro_equipe_uvis(membro_id):
+    _uvis_only()
+
+    membro = EquipeUvis.query.get_or_404(membro_id)
+
+    # 🔒 só a UVIS dona
+    if membro.uvis_usuario_id != current_user.id:
+        abort(403)
+
+    errors = {}
+    form = {}
+
+    if request.method == "POST":
+        nome = (request.form.get("nome") or "").strip()
+        funcao = (request.form.get("funcao") or "").strip()
+        contato = (request.form.get("contato") or "").strip()
+
+        form = {"nome": nome, "funcao": funcao, "contato": contato}
+
+        if not nome:
+            errors["nome"] = "Informe o nome do membro."
+
+        if errors:
+            flash("Corrija os campos destacados.", "warning")
+            return render_template("uvis_equipe_membro_editar.html", membro=membro, form=form, errors=errors)
+
+        membro.nome = nome
+        membro.funcao = funcao or None
+        membro.contato = contato or None
+
+        db.session.commit()
+        flash("Membro atualizado com sucesso!", "success")
+        return redirect(url_for("main.listar_membros_equipe_uvis", nome_equipe=membro.nome_equipe))
+
+    form = {
+        "nome": membro.nome or "",
+        "funcao": membro.funcao or "",
+        "contato": membro.contato or "",
+    }
+    return render_template("uvis_equipe_membro_editar.html", membro=membro, form=form, errors=errors)
+
+#-------------------------------------------------------------
+# Rota: deletar membro da equipe UVIS   
+#-------------------------------------------------------------
+@bp.route("/uvis/equipe-membro/<int:membro_id>/deletar", methods=["POST"], endpoint="deletar_membro_equipe_uvis")
+@login_required
+def deletar_membro_equipe_uvis(membro_id):
+    _uvis_only()
+
+    membro = EquipeUvis.query.get_or_404(membro_id)
+    if membro.uvis_usuario_id != current_user.id:
+        abort(403)
+
+    nome_equipe = membro.nome_equipe
+
+    db.session.delete(membro)
+    db.session.commit()
+
+    flash("Membro removido com sucesso.", "success")
+
+    # se ficou sem ninguém, volta para lista de equipes
+    restante = EquipeUvis.query.filter_by(uvis_usuario_id=current_user.id, nome_equipe=nome_equipe).count()
+    if restante == 0:
+        flash("Equipe ficou sem membros e não será mais exibida.", "info")
+        return redirect(url_for("main.listar_equipes_uvis"))
+
+    return redirect(url_for("main.listar_membros_equipe_uvis", nome_equipe=nome_equipe))

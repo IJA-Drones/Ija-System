@@ -9,7 +9,7 @@ from flask_login import UserMixin
 # - Piloto também é um Usuario (tipo_usuario="piloto") e aponta para Pilotos via piloto_id
 # -------------------------------------------------------------
 class Usuario(UserMixin, db.Model):
-    __tablename__ = 'usuarios'
+    __tablename__ = "usuarios"
 
     id = db.Column(db.Integer, primary_key=True)
 
@@ -21,7 +21,7 @@ class Usuario(UserMixin, db.Model):
     senha_hash = db.Column(db.String(200), nullable=False)
 
     # tipos esperados: "admin", "uvis", "operario", "visualizador", "piloto"
-    tipo_usuario = db.Column(db.String(20), default='uvis', index=True)
+    tipo_usuario = db.Column(db.String(20), default="uvis", index=True)
 
     # ✅ vínculo opcional com Pilotos (somente quando tipo_usuario="piloto")
     piloto_id = db.Column(
@@ -39,7 +39,7 @@ class Usuario(UserMixin, db.Model):
         lazy="select"
     )
 
-    # ✅ NOVO: vínculos de pilotos que atendem esta UVIS (para filtro do piloto)
+    # ✅ vínculos de pilotos que atendem esta UVIS (para filtro do piloto)
     vinculos_pilotos = db.relationship(
         "PilotoUvis",
         back_populates="uvis_usuario",
@@ -47,11 +47,64 @@ class Usuario(UserMixin, db.Model):
         cascade="all, delete-orphan"
     )
 
+    # ✅ NOVO: equipe da UVIS (até 5 pessoas) - 1 registro por membro
+    equipe_uvis_membros = db.relationship(
+        "EquipeUvis",
+        back_populates="uvis_usuario",
+        lazy="select",
+        cascade="all, delete-orphan",
+        order_by="EquipeUvis.ordem"
+    )
+
     def set_senha(self, senha):
         self.senha_hash = generate_password_hash(senha)
 
     def check_senha(self, senha):
         return check_password_hash(self.senha_hash, senha)
+
+
+# -------------------------------------------------------------
+# EQUIPE UVIS (até 5 pessoas por UVIS)
+# - 1 linha por membro
+# - limite 5 via ordem 1..5 (CheckConstraint) + UniqueConstraint(uvis_usuario_id, ordem)
+# -------------------------------------------------------------
+class EquipeUvis(db.Model):
+    __tablename__ = "equipe_uvis"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    uvis_usuario_id = db.Column(
+        db.Integer,
+        db.ForeignKey("usuarios.id"),
+        nullable=False,
+        index=True
+    )
+
+    # nome da equipe (agrupa membros)
+    nome_equipe = db.Column(db.String(100), nullable=False, index=True)
+
+    # slot fixo pra limitar em 5 DENTRO da equipe
+    ordem = db.Column(db.Integer, nullable=False)
+
+    # dados do membro
+    nome = db.Column(db.String(100), nullable=False, index=True)
+    funcao = db.Column(db.String(80))
+    contato = db.Column(db.String(80))
+
+    criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+
+    uvis_usuario = db.relationship("Usuario", back_populates="equipe_uvis_membros")
+
+    __table_args__ = (
+        
+        db.UniqueConstraint("uvis_usuario_id", "nome_equipe", "ordem", name="uq_equipe_uvis_equipe_slot"),
+
+        db.CheckConstraint("ordem >= 1 AND ordem <= 5", name="ck_equipe_uvis_ordem_1_5"),
+
+        db.Index("ix_equipe_uvis_uvis", "uvis_usuario_id"),
+        db.Index("ix_equipe_uvis_uvis_equipe", "uvis_usuario_id", "nome_equipe"),
+        db.Index("ix_equipe_uvis_uvis_equipe_ordem", "uvis_usuario_id", "nome_equipe", "ordem"),
+    )
 
 
 # -------------------------------------------------------------
@@ -125,13 +178,9 @@ class PilotoUvis(db.Model):
 
 # -------------------------------------------------------------
 # SOLICITAÇÃO / ORDEM DE SERVIÇO
-# - Regras do piloto:
-#   * ver somente status "APROVADA"
-#   * ver somente solicitacoes atribuídas ao seu piloto_id
-#   * (opcional) garantir que usuario_id (UVIS) esteja vinculado ao piloto via PilotoUvis
 # -------------------------------------------------------------
 class Solicitacao(db.Model):
-    __tablename__ = 'solicitacoes'
+    __tablename__ = "solicitacoes"
 
     id = db.Column(db.Integer, primary_key=True)
 
@@ -186,7 +235,6 @@ class Solicitacao(db.Model):
         index=True
     )
 
-    # Sugestão de status: "EM ANÁLISE" -> "APROVADA" -> "CONCLUÍDA"
     status = db.Column(
         db.String(30),
         default="EM ANÁLISE",
@@ -224,10 +272,8 @@ class Solicitacao(db.Model):
         nullable=True,
         index=True
     )
-
     equipe = db.relationship("Equipe", lazy="joined")
 
-    # 🔥 ÍNDICES COMPOSTOS (relatórios e dashboard do piloto)
     __table_args__ = (
         db.Index("ix_solicitacao_data_status", "data_criacao", "status"),
         db.Index("ix_solicitacao_usuario_data", "usuario_id", "data_criacao"),
