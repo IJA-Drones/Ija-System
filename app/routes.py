@@ -204,13 +204,19 @@ def dashboard():
 from flask_login import login_required, current_user
 from datetime import datetime
 
+
 from sqlalchemy import case # Necessário para a ordenação personalizada
 from datetime import datetime
 from sqlalchemy.orm import joinedload
 
+
+
 @bp.route('/admin')
 @login_required
 def admin_dashboard():
+    google_maps_key = os.getenv("KEY_API_GOOGLE_MAPS")  # a mesma do .env    
+
+
     # 🔐 Controle de acesso
     if current_user.tipo_usuario not in ['admin', 'operario', 'visualizar']:
         flash('Acesso restrito.', 'danger')
@@ -256,7 +262,7 @@ def admin_dashboard():
         else_=99
     )
 
-    # ✅ Equipes ativas para o select
+
     equipes = (
         Equipe.query
         .filter(Equipe.ativa.is_(True))
@@ -264,8 +270,9 @@ def admin_dashboard():
         .all()
     )
 
+
     # Paginação e Ordenação Final
-    # Ordenamos primeiro pelo status (Case) e depois pela criação mais recente
+
     page = request.args.get("page", 1, type=int)
     paginacao = (
         query.order_by(ordem_status, Solicitacao.data_criacao.desc())
@@ -279,8 +286,10 @@ def admin_dashboard():
         is_editable=is_editable,
         now=datetime.now(),
         equipes=equipes,
-        unidades_select=unidades_select
+        unidades_select=unidades_select,
+        google_maps_key=google_maps_key
     )
+
 
 
 @bp.route('/admin/exportar_excel')
@@ -525,58 +534,172 @@ def atualizar(id):
 
 
     
-# --- NOVO PEDIDO ---
+
+import requests
+from urllib.parse import urlencode
+
+def geocode_endereco_google(*, logradouro, numero, bairro, cidade, uf, cep=None):
+    """
+    Retorna (lat, lng) ou (None, None) se não achar.
+    """
+    api_key = os.getenv("KEY_API_GOOGLE_MAPS")
+    if not api_key:
+        raise RuntimeError("KEY_API_GOOGLE_MAPS não encontrada no ambiente")
+
+    # Monta um endereço bem “forte” pro Google
+    partes = [
+        (logradouro or "").strip(),
+        (numero or "").strip(),
+        (bairro or "").strip(),
+        (cidade or "").strip(),
+        (uf or "").strip(),
+    ]
+    if cep:
+        partes.append((cep or "").strip())
+    partes.append("Brasil")
+
+    address = ", ".join([p for p in partes if p])
+
+    params = {
+        "address": address,
+        "key": api_key,
+        "region": "br",   # ajuda a “puxar” para Brasil
+    }
+
+    url = "https://maps.googleapis.com/maps/api/geocode/json?" + urlencode(params)
+    resp = requests.get(url, timeout=10)
+    data = resp.json()
+
+    status = data.get("status")
+    if status != "OK":
+        return None, None
+
+    results = data.get("results") or []
+    if not results:
+        return None, None
+
+    loc = results[0]["geometry"]["location"]
+    return loc.get("lat"), loc.get("lng")
+    
+from datetime import date, datetime
+from flask import render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 
+# -----------------------------------------
+# ENDPOINT PARA GEOCODE (AJAX)
+# -----------------------------------------
+@bp.route("/api/geocode", methods=["POST"], endpoint="api_geocode")
+@login_required
+def api_geocode():
+    try:
+        data = request.get_json(silent=True) or {}
+
+        logradouro = (data.get("logradouro") or "").strip()
+        numero = (data.get("numero") or "").strip()
+        bairro = (data.get("bairro") or "").strip()
+        cidade = (data.get("cidade") or "").strip()
+        uf = (data.get("uf") or "").strip()
+        cep = (data.get("cep") or "").strip()
+
+        # Mínimo necessário
+        if not logradouro or not numero or not cidade or not uf:
+            return jsonify({"ok": False, "message": "Endereço incompleto"}), 200
+
+        lat, lng = geocode_endereco_google(
+            logradouro=logradouro,
+            numero=numero,
+            bairro=bairro,
+            cidade=cidade,
+            uf=uf,
+            cep=cep,
+        )
+
+        if lat is None or lng is None:
+            return jsonify({"ok": False, "message": "Não foi possível geocodificar"}), 200
+
+        return jsonify({"ok": True, "lat": lat, "lng": lng}), 200
+
+    except Exception as e:
+        print(f"ERRO /api/geocode: {e}")
+        return jsonify({"ok": False, "message": "Erro interno"}), 200
+
+
+# -----------------------------------------
+# --- NOVO PEDIDO ---
+# -----------------------------------------
 @bp.route('/novo_cadastro', methods=['GET', 'POST'], endpoint='novo')
 @login_required
 def novo():
-
     hoje = date.today().isoformat()
 
     if request.method == 'POST':
         try:
-            # --- Data ---
             data_str = request.form.get('data')
             hora_str = request.form.get('hora')
 
-            data_obj = (
-                datetime.strptime(data_str, '%Y-%m-%d').date()
-                if data_str else None
-            )
-
-            hora_obj = (
-                datetime.strptime(hora_str, '%H:%M').time()
-                if hora_str else None
-            )
+            data_obj = datetime.strptime(data_str, '%Y-%m-%d').date() if data_str else None
+            hora_obj = datetime.strptime(hora_str, '%H:%M').time() if hora_str else None
 
             apoio_cet_bool = request.form.get('apoio_cet') == 'sim'
 
+            # --- Endereço ---
+            cep = request.form.get('cep')
+            logradouro = request.form.get('logradouro')
+            numero = request.form.get('numero')
+            bairro = request.form.get('bairro')
+            cidade = request.form.get('cidade')
+            uf = request.form.get('uf')
+            complemento = request.form.get('complemento')
+
+            # --- Coordenadas (vindo do JS) ---
+            lat_raw = (request.form.get('latitude') or "").strip()
+            lng_raw = (request.form.get('longitude') or "").strip()
+
+            latitude = None
+            longitude = None
+
+            if lat_raw and lng_raw:
+                latitude = float(lat_raw.replace(",", "."))
+                longitude = float(lng_raw.replace(",", "."))
+            else:
+                # Fallback: se por algum motivo o JS não pegou, tenta no POST também
+                latitude, longitude = geocode_endereco_google(
+                    logradouro=logradouro,
+                    numero=numero,
+                    bairro=bairro,
+                    cidade=cidade,
+                    uf=uf,
+                    cep=cep,
+                )
+
+            if latitude is None or longitude is None:
+                flash("Não foi possível obter coordenadas automaticamente. Confira endereço/número e tente novamente.", "warning")
+                return render_template('cadastro.html', hoje=hoje)
+
             nova_solicitacao = Solicitacao(
-            data_agendamento=data_obj,
-            hora_agendamento=hora_obj,
+                data_agendamento=data_obj,
+                hora_agendamento=hora_obj,
 
-            cep=request.form.get('cep'),
-            logradouro=request.form.get('logradouro'),
-            bairro=request.form.get('bairro'),
-            cidade=request.form.get('cidade'),
-            numero=request.form.get('numero'),
-            uf=request.form.get('uf'),
-            complemento=request.form.get('complemento'),
+                cep=cep,
+                logradouro=logradouro,
+                bairro=bairro,
+                cidade=cidade,
+                numero=numero,
+                uf=uf,
+                complemento=complemento,
 
-            foco=request.form.get('foco'),
-            tipo_visita=request.form.get('tipo_visita'),
-            altura_voo=request.form.get('altura_voo'),
-            apoio_cet=apoio_cet_bool,
-            observacao=request.form.get('observacao'),
+                foco=request.form.get('foco'),
+                tipo_visita=request.form.get('tipo_visita'),
+                altura_voo=request.form.get('altura_voo'),
+                apoio_cet=apoio_cet_bool,
+                observacao=request.form.get('observacao'),
 
-            latitude=request.form.get('latitude'),
-            longitude=request.form.get('longitude'),
+                latitude=latitude,
+                longitude=longitude,
 
-            usuario_id=current_user.id,
-            status='PENDENTE'
-        )
-
+                usuario_id=current_user.id,
+                status='PENDENTE'
+            )
 
             db.session.add(nova_solicitacao)
             db.session.commit()
@@ -584,9 +707,9 @@ def novo():
             flash('Pedido enviado com sucesso!', 'success')
             return redirect(url_for('main.dashboard'))
 
-        except ValueError as ve:
+        except ValueError:
             db.session.rollback()
-            flash(f"Erro no formato de data ou hora.", "warning")
+            flash("Erro no formato de data/hora ou coordenadas.", "warning")
 
         except Exception as e:
             db.session.rollback()
@@ -1767,26 +1890,38 @@ from flask_login import login_required, current_user
 from sqlalchemy.orm import joinedload
 from datetime import datetime
 import json
+from flask import request, render_template
+from flask_login import login_required, current_user
+from sqlalchemy.orm import joinedload
+from datetime import datetime
+import json
+import os
 
 @bp.route("/agenda")
 @login_required
 def agenda():
     try:
+        # ✅ Key pro mapa no modal
+        google_maps_key = os.getenv("KEY_API_GOOGLE_MAPS") or ""
+
         # --- Usuário atual ---
-        user_tipo = current_user.tipo_usuario
+        user_tipo = getattr(current_user, "tipo_usuario", None)
         user_id = current_user.id
 
         # --- Filtros GET ---
-        filtro_status = request.args.get("status") or None
+        filtro_status = (request.args.get("status") or "").strip() or None
         filtro_uvis_id = request.args.get("uvis_id", type=int)
         mes = request.args.get("mes", datetime.now().month, type=int)
         ano = request.args.get("ano", datetime.now().year, type=int)
-        d = request.args.get("d")
-        initial_date = d or f"{ano}-{mes:02d}-01"
+
+        # ✅ Se não vier "d", abre na data de HOJE (evita cair no dia 01)
+        d = (request.args.get("d") or "").strip()
+        initial_date = d or datetime.now().strftime("%Y-%m-%d")
 
         # --- Query base ---
         query = Solicitacao.query.options(joinedload(Solicitacao.usuario))
 
+        # Permissões / filtro UVIS
         if user_tipo not in ["admin", "operario", "visualizar"]:
             query = query.filter(Solicitacao.usuario_id == user_id)
             filtro_uvis_id = None
@@ -1796,11 +1931,13 @@ def agenda():
             if filtro_uvis_id:
                 query = query.filter(Solicitacao.usuario_id == filtro_uvis_id)
 
+        # Filtro status
         if filtro_status:
             query = query.filter(Solicitacao.status == filtro_status)
 
+        # Filtro mês/ano (mantido)
         filtro_mesano = f"{ano}-{mes:02d}"
-        if db.engine.name == 'postgresql':
+        if db.engine.name == "postgresql":
             query = query.filter(db.func.to_char(Solicitacao.data_agendamento, "YYYY-MM") == filtro_mesano)
         else:
             query = query.filter(db.func.strftime("%Y-%m", Solicitacao.data_agendamento) == filtro_mesano)
@@ -1809,15 +1946,54 @@ def agenda():
 
         # --- Monta eventos para o FullCalendar ---
         agenda_eventos = []
-        for e in eventos:
-            try:
-                data = e.data_agendamento.strftime("%Y-%m-%d")
-                hora = e.hora_agendamento.strftime("%H:%M") if e.hora_agendamento else "00:00"
-                uvis_nome = e.usuario.nome_uvis if e.usuario else "UVIS"
-            except:
-                uvis_nome = "UVIS"
 
-            ev = {
+        for e in eventos:
+            # data/hora seguros
+            if not e.data_agendamento:
+                continue
+
+            data = e.data_agendamento.strftime("%Y-%m-%d")
+            hora = e.hora_agendamento.strftime("%H:%M") if e.hora_agendamento else "00:00"
+            uvis_nome = (e.usuario.nome_uvis if e.usuario else "UVIS") or "UVIS"
+
+            # coords numéricos (tolerante a vírgula)
+            lat = None
+            lng = None
+            try:
+                if e.latitude is not None and str(e.latitude).strip() != "":
+                    lat = float(str(e.latitude).replace(",", "."))
+                if e.longitude is not None and str(e.longitude).strip() != "":
+                    lng = float(str(e.longitude).replace(",", "."))
+            except Exception:
+                lat = None
+                lng = None
+
+            # endereço formatado
+            logradouro = (e.logradouro or "").strip()
+            numero = (e.numero or "S/N")
+            bairro = (e.bairro or "").strip()
+            cidade = (getattr(e, "cidade", "") or "").strip()
+            uf = (getattr(e, "uf", "") or "").strip()
+            cep = (e.cep or "").strip()
+
+            partes = []
+            if logradouro:
+                partes.append(f"{logradouro}, {numero}")
+            elif numero:
+                partes.append(str(numero))
+
+            if bairro:
+                partes.append(bairro)
+
+            if cidade or uf:
+                partes.append(f"{cidade}/{uf}".strip("/"))
+
+            endereco_txt = " - ".join([p for p in partes if p and p != "S/N"])
+            if cep:
+                endereco_txt = (endereco_txt + f" (CEP {cep})").strip()
+
+            # evento do calendário
+            agenda_eventos.append({
                 "id": str(e.id),
                 "title": f"{e.foco} - {uvis_nome}",
                 "start": f"{data}T{hora}",
@@ -1832,30 +2008,42 @@ def agenda():
                     "foco": e.foco,
                     "uvis": uvis_nome,
                     "hora": hora,
-                    "status": e.status
+                    "status": e.status,
+
+                    # ✅ padrão único pro JS (modal + rota)
+                    "lat": lat,
+                    "lng": lng,
+                    "endereco": endereco_txt
                 }
-            }
-            agenda_eventos.append(ev)
+            })
 
         # --- Variáveis para filtros ---
         status_opcoes = ["PENDENTE", "EM ANÁLISE", "APROVADO", "APROVADO COM RECOMENDAÇÕES", "NEGADO"]
 
         uvis_disponiveis = []
         if user_tipo in ["admin", "operario", "visualizar"]:
-            uvis_disponiveis = db.session.query(Usuario.id, Usuario.nome_uvis).filter(Usuario.tipo_usuario == "uvis").order_by(Usuario.nome_uvis).all()
+            uvis_disponiveis = (
+                db.session.query(Usuario.id, Usuario.nome_uvis)
+                .filter(Usuario.tipo_usuario == "uvis")
+                .order_by(Usuario.nome_uvis)
+                .all()
+            )
 
         # --- Anos disponíveis ---
-        if db.engine.name == 'postgresql':
+        if db.engine.name == "postgresql":
             func_ano = db.func.to_char(Solicitacao.data_agendamento, "YYYY")
         else:
             func_ano = db.func.strftime("%Y", Solicitacao.data_agendamento)
 
-        anos_raw = db.session.query(func_ano).filter(Solicitacao.data_agendamento.isnot(None)).distinct().order_by(func_ano.desc()).all()
-        anos_disponiveis = [int(a[0]) for a in anos_raw if a and a[0]]
-        if not anos_disponiveis:
-            anos_disponiveis = [datetime.now().year]
+        anos_raw = (
+            db.session.query(func_ano)
+            .filter(Solicitacao.data_agendamento.isnot(None))
+            .distinct()
+            .order_by(func_ano.desc())
+            .all()
+        )
+        anos_disponiveis = [int(a[0]) for a in anos_raw if a and a[0]] or [datetime.now().year]
 
-        # --- Dicionário de filtros para template ---
         filtros = {
             "uvis_id": filtro_uvis_id,
             "status": filtro_status,
@@ -1865,13 +2053,14 @@ def agenda():
 
         return render_template(
             "agenda.html",
-            eventos_json=json.dumps(agenda_eventos),
+            eventos_json=json.dumps(agenda_eventos, ensure_ascii=False),
             filtros=filtros,
             status_opcoes=status_opcoes,
             uvis_disponiveis=uvis_disponiveis,
             anos_disponiveis=anos_disponiveis,
             initial_date=initial_date,
-            pode_filtrar_uvis=pode_filtrar_uvis
+            pode_filtrar_uvis=pode_filtrar_uvis,
+            google_maps_key=google_maps_key,   # ✅ pro modal com mapa
         )
 
     except Exception as e:
@@ -1880,6 +2069,96 @@ def agenda():
         traceback.print_exc()
         return f"ERRO NA AGENDA: {str(e)}"
 
+
+@bp.route("/agenda/rotas-dia")
+@login_required
+def agenda_rotas_dia():
+    try:
+        user_tipo = current_user.tipo_usuario
+        user_id = current_user.id
+
+        dia = (request.args.get("dia") or "").strip()
+        if not dia:
+            return jsonify(ok=False, error="Parâmetro 'dia' é obrigatório (YYYY-MM-DD)."), 400
+
+        try:
+            dia_date = datetime.strptime(dia, "%Y-%m-%d").date()
+        except ValueError:
+            return jsonify(ok=False, error="Formato inválido para 'dia'. Use YYYY-MM-DD."), 400
+
+        # filtros opcionais
+        filtro_uvis_id = request.args.get("uvis_id", type=int)
+
+        query = Solicitacao.query.options(joinedload(Solicitacao.usuario))
+
+        # permissão
+        if user_tipo not in ["admin", "operario", "visualizar"]:
+            query = query.filter(Solicitacao.usuario_id == user_id)
+            filtro_uvis_id = None
+        else:
+            if filtro_uvis_id:
+                query = query.filter(Solicitacao.usuario_id == filtro_uvis_id)
+
+        # ✅ SOMENTE status permitidos para rota
+        query = query.filter(
+            Solicitacao.status.in_(["APROVADO", "APROVADO COM RECOMENDAÇÕES"])
+        )
+
+        # dia exato
+        query = query.filter(Solicitacao.data_agendamento == dia_date)
+
+        eventos = query.order_by(Solicitacao.hora_agendamento.asc()).all()
+
+        pontos = []
+        total_com_coords = 0
+
+        for e in eventos:
+            lat = e.latitude
+            lng = e.longitude
+
+            # normaliza (string/decimal)
+            try:
+                if isinstance(lat, str):
+                    lat = float(lat.replace(",", "."))
+                else:
+                    lat = float(lat) if lat is not None else None
+
+                if isinstance(lng, str):
+                    lng = float(lng.replace(",", "."))
+                else:
+                    lng = float(lng) if lng is not None else None
+            except:
+                lat = None
+                lng = None
+
+            if lat is None or lng is None:
+                continue
+
+            total_com_coords += 1
+
+            pontos.append({
+                "id": e.id,
+                "lat": lat,
+                "lng": lng,
+                "hora": e.hora_agendamento.strftime("%H:%M") if e.hora_agendamento else "00:00",
+                "uvis": e.usuario.nome_uvis if e.usuario else "",
+                "foco": e.foco or "",
+                "status": e.status,
+                "endereco": f"{e.logradouro or ''}, {e.numero or 'S/N'} - {e.bairro or ''}".strip()
+            })
+
+        return jsonify(
+            ok=True,
+            dia=dia,
+            total_eventos=len(eventos),
+            total_com_coordenadas=total_com_coords,
+            pontos=pontos
+        )
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify(ok=False, error=str(e)), 500
 
 @bp.route("/agenda/exportar_excel", endpoint="agenda_exportar_excel")
 @login_required
