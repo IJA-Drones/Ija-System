@@ -235,29 +235,39 @@
             </a>
           </li>
 
-        <li class="nav-item">
-          <button type="button" class="nav-link nav-link-toggle" data-bs-toggle="collapse" data-bs-target="#menuUvis">
-            <span><i class="bi bi-buildings-fill me-2"></i><span>UVIS</span></span>
-            <i class="bi bi-chevron-down chevron"></i>
-          </button>
-          <div class="collapse" id="menuUvis">
-            <ul class="nav flex-column sub-nav">
-              <li class="nav-item">
-                <a class="nav-link sub-link" href="{{ url_for('main.admin_uvis_listar') }}">
-                  <i class="bi bi-list-ul me-2"></i><span>Listar</span>
-                </a>
-              </li>
-              {# ✅ Somente ADMIN vê o Cadastrar #}
-              {% if current_user.tipo_usuario == 'admin' %}
-              <li class="nav-item">
-                <a class="nav-link sub-link" href="{{ url_for('main.admin_uvis_novo') }}">
-                  <i class="bi bi-person-plus-fill me-2"></i><span>Cadastrar</span>
-                </a>
-              </li>
-              {% endif %}
-            </ul>
-          </div>
-        </li>
+          <li class="nav-item">
+            <button
+              type="button"
+              class="nav-link nav-link-toggle"
+              data-bs-toggle="collapse"
+              data-bs-target="#menuUvis"
+            >
+              <span
+                ><i class="bi bi-buildings-fill me-2"></i
+                ><span>UVIS</span></span
+              >
+              <i class="bi bi-chevron-down chevron"></i>
+            </button>
+            <div class="collapse" id="menuUvis">
+              <ul class="nav flex-column sub-nav">
+                <li class="nav-item">
+                  <a
+                    class="nav-link sub-link"
+                    href="{{ url_for('main.admin_uvis_listar') }}"
+                    ><i class="bi bi-list-ul me-2"></i><span>Listar</span></a
+                  >
+                </li>
+                <li class="nav-item">
+                  <a
+                    class="nav-link sub-link"
+                    href="{{ url_for('main.admin_uvis_novo') }}"
+                    ><i class="bi bi-person-plus-fill me-2"></i
+                    ><span>Cadastrar</span></a
+                  >
+                </li>
+              </ul>
+            </div>
+          </li>
 
           {# ✅ Mudança de ['admin', 'visualizar'] para apenas ['admin'] #}
           {% if current_user.tipo_usuario == 'admin' %}
@@ -324,10 +334,9 @@
               </ul>
             </div>
           </li>
-          {% endif %}
-
-          {# ===================== EQUIPES (ADMIN/VISUALIZAR COMPLETO / UVIS SÓ LISTAR) ===================== #} 
-          {% if current_user.tipo_usuario in ['admin', 'uvis', 'visualizar'] %}
+          {% endif %} {# ===================== EQUIPES (ADMIN COMPLETO / UVIS SÓ
+          LISTAR) ===================== #} {% if current_user.tipo_usuario in
+          ['admin', 'uvis'] %}
           <li class="nav-item">
             <button type="button" class="nav-link nav-link-toggle" data-bs-toggle="collapse" data-bs-target="#menuEquipes">
               <span>
