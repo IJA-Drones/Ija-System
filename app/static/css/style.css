@@ -374,7 +374,6 @@ body.sidebar-collapsed .app-content {
    6) CARDS & STATUS STRIP
    ----------------------------------------- */
 
-
 @keyframes pulse-blue {
   0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(13, 202, 240, 0.7); }
   70% { transform: scale(1); box-shadow: 0 0 0 5px rgba(13, 202, 240, 0); }

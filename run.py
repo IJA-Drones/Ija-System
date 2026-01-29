@@ -54,23 +54,28 @@ def verificar_banco():
                 print(f"--- Usuário Operario encontrado (ID: {operario.id}) ---")
 
 
-            # --- 1.7. GARANTE VISUALIZAR (NOVO) ---
-            visualizar = Usuario.query.filter_by(login='visualizar').first()
-            if not visualizar:
-                print("--- Criando novo usuário Visualizar (somente leitura)... ---")
-                visualizar = Usuario(
-                    nome_uvis="Usuário Somente Leitura", 
-                    regiao="AUDITORIA", 
-                    codigo_setor="99",
-                    login="visualizar",
-                    tipo_usuario="visualizar" # NOVO TIPO DE USUÁRIO
-                )
-                visualizar.set_senha("1234") # Senha solicitada
-                db.session.add(visualizar)
-            else:
-                if visualizar.tipo_usuario != 'visualizar':
-                    visualizar.tipo_usuario = 'visualizar' 
-                print(f"--- Usuário Visualizar encontrado (ID: {visualizar.id}) ---")
+            # --- 1.6. GARANTE USUÁRIOS DE AUDITORIA (Visualizar e Covisa) ---
+            # Criamos uma lista para facilitar a manutenção
+            perfis_auditoria = [
+                {"login": "visualizar", "nome": "AUDITORIA", "senha": "123", "regiao": "AUDITORIA"},
+                {"login": "covisa", "nome": "COVISA", "senha": "123456", "regiao": "COVISA"}
+            ]
+
+            for p_auditoria in perfis_auditoria:
+                user_aud = Usuario.query.filter_by(login=p_auditoria["login"]).first()
+                if not user_aud:
+                    print(f"--- Criando usuário {p_auditoria['login']}... ---")
+                    user_aud = Usuario(
+                        nome_uvis=p_auditoria["nome"], 
+                        regiao=p_auditoria["regiao"], 
+                        codigo_setor="99",
+                        login=p_auditoria["login"],
+                        tipo_usuario="visualizar" # Ambos herdam o mesmo perfil
+                    )
+                    user_aud.set_senha(p_auditoria["senha"])
+                    db.session.add(user_aud)
+                else:
+                    user_aud.tipo_usuario = "visualizar"
 
 
             # --- 2. GARANTE LAPA ---
@@ -88,23 +93,6 @@ def verificar_banco():
                 db.session.add(lapa)
             else:
                 print(f"--- Usuário Lapa encontrado (ID: {lapa.id}) ---")
-            
-            
-            # --- 3. GARANTE NOVO USUÁRIO DE TESTE (teste) ---
-            teste = Usuario.query.filter_by(login='teste').first()
-            if not teste:
-                print("--- Criando novo usuário de TESTE (teste)... ---")
-                teste = Usuario(
-                    nome_uvis="UVIS Teste QA", 
-                    regiao="SUL", 
-                    codigo_setor="10",
-                    login="teste",
-                    tipo_usuario="uvis"
-                )
-                teste.set_senha("1234")
-                db.session.add(teste)
-            else:
-                print(f"--- Usuário Teste encontrado (ID: {teste.id}) ---")
 
             # --- 4. GARANTE PILOTO (NOVO) ---
             # 4.1) Garante cadastro do piloto na tabela Pilotos
@@ -159,9 +147,6 @@ def verificar_banco():
             # garante que lapa/teste existem no escopo (você cria acima)
             if lapa and lapa.id:
                 vincular_uvis(piloto.id, lapa.id)
-
-            if teste and teste.id:
-                vincular_uvis(piloto.id, teste.id)
 
             print("--- Vínculos Piloto ↔ UVIS garantidos ---")
 
