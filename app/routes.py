@@ -22,6 +22,7 @@ from flask import (Blueprint, after_this_request, current_app, flash, jsonify,
                    redirect, render_template, request, send_file,
                    send_from_directory, url_for)
 
+
 from flask_login import current_user , login_required
 
 # ==========================
@@ -202,11 +203,14 @@ def dashboard():
 # --- PAINEL DE GESTÃO (Visualização para todos) ---
 from flask_login import login_required, current_user
 from datetime import datetime
+
+from sqlalchemy import case # Necessário para a ordenação personalizada
+from datetime import datetime
+from sqlalchemy.orm import joinedload
+
 @bp.route('/admin')
 @login_required
 def admin_dashboard():
-    google_maps_key = os.getenv("KEY_API_GOOGLE_MAPS")  # a mesma do .env    
-
     # 🔐 Controle de acesso
     if current_user.tipo_usuario not in ['admin', 'operario', 'visualizar']:
         flash('Acesso restrito.', 'danger')
@@ -217,8 +221,9 @@ def admin_dashboard():
 
     # --- Captura filtros ---
     filtro_status = (request.args.get("status") or "").strip()
-    filtro_unidade = (request.args.get("unidade") or "").strip()
     filtro_regiao = (request.args.get("regiao") or "").strip()
+
+    unidades_select = Usuario.query.filter_by(tipo_usuario='uvis').order_by(Usuario.nome_uvis.asc()).all()
 
     # --- Query base (com eager loading) ---
     query = (
@@ -233,13 +238,25 @@ def admin_dashboard():
     # --- Aplicação dos filtros ---
     if filtro_status:
         query = query.filter(Solicitacao.status == filtro_status)
-
-    if filtro_unidade:
-        query = query.filter(Usuario.nome_uvis.ilike(f"%{filtro_unidade}%"))
-
     if filtro_regiao:
         query = query.filter(Usuario.regiao.ilike(f"%{filtro_regiao}%"))
+    
+    # --- Lógica de Ordenação ---
+    # Pendentes (incluindo as correções) ficam em 1º lugar
+    ordem_status = case(
+        {
+            'PENDENTE': 1,
+            'EM ANÁLISE': 2,
+            'APROVADO COM RECOMENDAÇÕES': 3,
+            'APROVADO': 4,
+            'NEGADO': 5,
+            'CONCLUÍDO': 6
+        },
+        value=Solicitacao.status,
+        else_=99
+    )
 
+    # ✅ Equipes ativas para o select
     equipes = (
         Equipe.query
         .filter(Equipe.ativa.is_(True))
@@ -247,9 +264,11 @@ def admin_dashboard():
         .all()
     )
 
+    # Paginação e Ordenação Final
+    # Ordenamos primeiro pelo status (Case) e depois pela criação mais recente
     page = request.args.get("page", 1, type=int)
     paginacao = (
-        query.order_by(Solicitacao.data_criacao.desc())
+        query.order_by(ordem_status, Solicitacao.data_criacao.desc())
         .paginate(page=page, per_page=6, error_out=False)
     )
 
@@ -260,7 +279,7 @@ def admin_dashboard():
         is_editable=is_editable,
         now=datetime.now(),
         equipes=equipes,
-        google_maps_key=google_maps_key
+        unidades_select=unidades_select
     )
 
 
@@ -270,7 +289,7 @@ def admin_dashboard():
 def exportar_excel():
 
     # 🔐 Permissão: somente admin e operario
-    if current_user.tipo_usuario not in ['admin', 'operario']:
+    if current_user.tipo_usuario not in ['admin', 'operario' , 'visualizar']:
         flash('Permissão negada para exportar.', 'danger')
         return redirect(url_for('main.admin_dashboard'))
 
@@ -1731,91 +1750,94 @@ from app.models import Solicitacao, Usuario
 from datetime import datetime
 from sqlalchemy.orm import joinedload
 
-@bp.route('/admin/editar_completo/<int:id>', methods=['GET', 'POST'])
+@bp.route('/solicitacao/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
-def admin_editar_completo(id):
-    # 🔐 Controle de acesso
-    if current_user.tipo_usuario != 'admin':
-        flash('Permissão negada. Apenas administradores podem acessar esta página.', 'danger')
-        return redirect(url_for('main.admin_dashboard'))
-
-    # Busca segura com joinedload para evitar lazy-loading
+def editar_solicitacao(id):
+    # 1️⃣ Busca o pedido com os dados do usuário
     pedido = Solicitacao.query.options(joinedload(Solicitacao.usuario)).get_or_404(id)
+    
+    is_admin = current_user.tipo_usuario == 'admin'
 
-    # Listas para selects do template (pré-preenchimento)
+    # 🔐 Regras de Segurança Reais
+    if not is_admin:
+        # Verifica se o pedido pertence à UVIS logada
+        if pedido.usuario_id != current_user.id:
+            flash('Permissão negada. Você só pode editar suas próprias solicitações.', 'danger')
+            return redirect(url_for('main.dashboard'))
+        
+        # Trava de Status: UVIS só edita PENDENTE ou NEGADO
+        if pedido.status not in ["PENDENTE", "NEGADO"]:
+            flash('Esta solicitação já está em processo de aprovação e não pode ser editada.', 'warning')
+            return redirect(url_for('main.dashboard'))
+
+    # Opções para os selects (Pode ser movido para uma constante ou banco)
     status_opcoes = ["PENDENTE", "EM ANÁLISE", "APROVADO", "APROVADO COM RECOMENDAÇÕES", "NEGADO"]
-    foco_opcoes = ["Foco 1", "Foco 2", "Foco 3"]  # ajuste conforme seus valores reais
-    tipo_visita_opcoes = ["Tipo 1", "Tipo 2", "Tipo 3"]  # ajuste conforme seus valores reais
+    foco_opcoes = ["Foco 1", "Foco 2", "Foco 3"]
+    tipo_visita_opcoes = ["Tipo 1", "Tipo 2", "Tipo 3"]
     uf_opcoes = ["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG",
                  "PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"]
 
     if request.method == 'POST':
         try:
-            # Guardar estado anterior de data/hora
-            antes_data = pedido.data_agendamento
-            antes_hora = pedido.hora_agendamento
-
-            # 1️⃣ Atualizar datas e horas
+            # 2️⃣ Atualização de Datas/Horas (Reaproveitando sua lógica original)
             data_str = request.form.get('data_agendamento')
             hora_str = request.form.get('hora_agendamento')
-
             pedido.data_agendamento = datetime.strptime(data_str, '%Y-%m-%d').date() if data_str else None
             pedido.hora_agendamento = datetime.strptime(hora_str, '%H:%M').time() if hora_str else None
 
-            # 2️⃣ Atualizar campos principais
+            # 3️⃣ Atualização de Campos Gerais
             pedido.foco = request.form.get('foco') or pedido.foco
             pedido.tipo_visita = request.form.get('tipo_visita') or pedido.tipo_visita
             pedido.altura_voo = request.form.get('altura_voo') or pedido.altura_voo
             pedido.apoio_cet = request.form.get('apoio_cet', 'não').lower() == 'sim'
             pedido.observacao = request.form.get('observacao') or pedido.observacao
-
-            # 3️⃣ Atualizar endereço
+            
+            # 4️⃣ Endereço e Localização
             pedido.cep = request.form.get('cep') or pedido.cep
             pedido.logradouro = request.form.get('logradouro') or pedido.logradouro
             pedido.numero = request.form.get('numero') or pedido.numero
             pedido.bairro = request.form.get('bairro') or pedido.bairro
             pedido.cidade = request.form.get('cidade') or pedido.cidade
             pedido.uf = request.form.get('uf') or pedido.uf
-            pedido.complemento = request.form.get('complemento') or pedido.complemento
+            pedido.latitude = float(request.form.get('latitude')) if request.form.get('latitude') else pedido.latitude
+            pedido.longitude = float(request.form.get('longitude')) if request.form.get('longitude') else pedido.longitude
 
-            # 4️⃣ Atualizar protocolo, status, justificativa e coordenadas
-            pedido.protocolo = request.form.get('protocolo') or pedido.protocolo
-            pedido.status = request.form.get('status') or pedido.status
-            pedido.justificativa = request.form.get('justificativa') or pedido.justificativa
+            # 5️⃣ Lógica de Status e Hierarquia
+            if is_admin:
+                pedido.status = request.form.get('status') or pedido.status
+                pedido.protocolo = request.form.get('protocolo') or pedido.protocolo
+                # Se o Admin salvar, ele provavelmente limpou a correção ou deu nova justificativa
+                pedido.justificativa = request.form.get('justificativa') or pedido.justificativa
+            else:
+                # Se a UVIS está editando um pedido que estava NEGADO
+                if pedido.status == 'NEGADO':
+                    # Mantemos o status PENDENTE, mas marcamos a justificativa
+                    # Isso ativa o badge "CORREÇÃO RECEBIDA" no Painel do Admin
+                    motivo_original = pedido.justificativa or ""
+                    # Evitamos duplicar o prefixo se ela editar várias vezes
+                    limpo = motivo_original.replace("CORREÇÃO: ", "")
+                    pedido.justificativa = f"CORREÇÃO: {limpo}"
+                else:
+                    # Se era PENDENTE e ela só editou dados (como o CEP), 
+                    # mantemos limpo ou como estava.
+                    pedido.justificativa = None
+                
+                pedido.status = "PENDENTE"
 
-            lat = request.form.get('latitude')
-            lon = request.form.get('longitude')
-            pedido.latitude = float(lat) if lat else None
-            pedido.longitude = float(lon) if lon else None
-
-            # Commit
             db.session.commit()
-
-            # 🔔 Notificação se agendamento mudou
-            mudou_agendamento = (antes_data != pedido.data_agendamento) or (antes_hora != pedido.hora_agendamento)
-            if pedido.data_agendamento and mudou_agendamento:
-                data_fmt = pedido.data_agendamento.strftime("%d/%m/%Y")
-                hora_fmt = pedido.hora_agendamento.strftime("%H:%M") if pedido.hora_agendamento else "00:00"
-                criar_notificacao(
-                    usuario_id=pedido.usuario_id,
-                    titulo="Agendamento atualizado",
-                    mensagem=f"Sua solicitação foi agendada para {data_fmt} às {hora_fmt}.",
-                    link=url_for("main.agenda")
-                )
-
             flash('Solicitação atualizada com sucesso!', 'success')
-            return redirect(url_for('main.admin_dashboard'))
+            
+            # Redireciona conforme o papel
+            return redirect(url_for('main.admin_dashboard' if is_admin else 'main.dashboard'))
 
-        except ValueError as ve:
-            db.session.rollback()
-            flash(f"Erro no formato de data/hora: {ve}", 'warning')
         except Exception as e:
             db.session.rollback()
             flash(f"Erro ao salvar a solicitação: {e}", 'danger')
 
     return render_template(
-        'admin_editar_completo.html',
+        'editar_solicitacao.html', # Renomeie seu arquivo .html também!
         pedido=pedido,
+        is_admin=is_admin,
         status_opcoes=status_opcoes,
         foco_opcoes=foco_opcoes,
         tipo_visita_opcoes=tipo_visita_opcoes,
@@ -2685,8 +2707,7 @@ def admin_uvis_novo():
 @bp.route("/admin/uvis", methods=["GET"], endpoint="admin_uvis_listar")
 @login_required
 def admin_uvis_listar():
-    # SOMENTE ADMIN
-    if current_user.tipo_usuario != "admin":
+    if current_user.tipo_usuario is ["admin", "operario", "visualizar"]:
         abort(403)
 
     q = (request.args.get("q") or "").strip()
@@ -3080,7 +3101,7 @@ def api_cep(cep):
 
     # 1) ViaCEP
     try:
-        r = requests.get(f"https://viacep.com.br/ws/{cep_digits}/json/", timeout=8, headers=headers)
+        r = requests.get(f"https://viacep.com.br/ws/{cep_digits}/json/", timeout=3, headers=headers, verify=False)
         r.raise_for_status()
         data = r.json()
 
@@ -3102,7 +3123,7 @@ def api_cep(cep):
 
         # 2) Fallback: BrasilAPI
         try:
-            r2 = requests.get(f"https://brasilapi.com.br/api/cep/v1/{cep_digits}", timeout=8, headers=headers)
+            r2 = requests.get(f"https://brasilapi.com.br/api/cep/v1/{cep_digits}", timeout=3, headers=headers, verify=False)
             r2.raise_for_status()
             data2 = r2.json()
 
@@ -4098,10 +4119,11 @@ def cadastrar_pilotos():
 def listar_pilotos():
     user_tipo = getattr(current_user, "tipo_usuario", None)
 
-    if user_tipo not in ("admin", "uvis"):
+    if user_tipo not in ("admin", "uvis", "visualizar"):
         abort(403)
 
     q = (request.args.get("q") or "").strip()
+    # Para visualizar e admin, a região vem do filtro; para UVIS, é travada
     regiao = (request.args.get("regiao") or "").strip().upper()
     telefone = (request.args.get("telefone") or "").strip()
     sort = (request.args.get("sort") or "nome_asc").strip()
@@ -4125,13 +4147,7 @@ def listar_pilotos():
     if user_tipo == "uvis":
         if not uvis_regiao:
             flash("Sua UVIS está sem região cadastrada. Contate o administrador.", "warning")
-            return render_template(
-                "listar_pilotos.html",
-                pilotos=[],
-                filters={"q": q, "regiao": "", "telefone": telefone, "sort": sort, "page": 1, "per_page": per_page, "total": 0, "total_pages": 1},
-                is_admin=False,
-                uvis_regiao=None
-            )
+            return render_template("listar_pilotos.html", pilotos=[], filters=filters, is_admin=False)
         regiao = uvis_regiao
 
     query = Pilotos.query
@@ -4166,7 +4182,9 @@ def listar_pilotos():
     # Exportação Excel
     # -----------------------------
     if export == "xlsx":
-        rows = query.all()
+        # ✅ Liberamos a exportação para o perfil visualizar também
+        if user_tipo not in ["admin", "visualizar"]:
+            abort(403)
 
         from openpyxl import Workbook
         from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
@@ -4282,11 +4300,15 @@ def listar_pilotos():
         "total_pages": total_pages,
     }
 
+    is_editable = user_tipo in ["admin", "operario"]
+
     return render_template(
         "listar_pilotos.html",
         pilotos=pilotos,
         filters=filters,
         is_admin=(user_tipo == "admin"),
+        is_editable=is_editable, # 👈 Adicionado para controle do front-end
+        tipo_usuario=user_tipo,   # 👈 Útil para badges de status na tela
         uvis_regiao=(uvis_regiao if user_tipo == "uvis" else None),
     )
 
@@ -4845,7 +4867,7 @@ def listar_equipes():
             # trava somente ativas
             query = query.filter(Equipe.ativa.is_(True))
 
-    elif tipo == "admin":
+    elif tipo in ["admin", "visualizar"]:
         # admin vê tudo
         pass
 
@@ -4944,7 +4966,7 @@ def listar_equipes():
     # -----------------------------
     if export == "xlsx":
         # só admin exporta
-        if tipo != "admin":
+        if tipo != "admin" and tipo != "visualizar":
             abort(403)
 
         rows = query.all()
@@ -5046,6 +5068,7 @@ def listar_equipes():
     # -----------------------------
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
     equipes = pagination.items
+    is_editable = tipo in ["admin", "operario"]
 
     filters = {
         "q": q,
@@ -5067,6 +5090,8 @@ def listar_equipes():
         equipes=equipes,
         filters=filters,
         is_admin=(tipo == "admin"),
+        is_editable=is_editable, 
+        tipo_usuario=tipo,
     )
 # -------------------------------------------------------------
 # EDITAR EQUIPE (admin)

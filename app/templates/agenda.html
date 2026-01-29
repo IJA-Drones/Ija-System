@@ -21,14 +21,15 @@
       <button id="btnRotaDia" class="btn btn-danger btn-sm">
         <i class="bi bi-sign-turn-right"></i> Traçar rota do dia
       </button>
-
-      {% if current_user.is_authenticated and current_user.tipo_usuario == "admin" %}
-      <a href="{{ url_for('main.agenda_exportar_excel', all=1) }}"
-         class="btn btn-outline-secondary btn-sm"
-         title="Baixar base completa sem filtros">
-        <i class="bi bi-download"></i>
-        <span>Exportar Tudo</span>
-      </a>
+      
+  {% if current_user.is_authenticated and current_user.tipo_usuario == "admin" %}
+  <div class="agenda-actions">
+    <a href="{{ url_for('main.agenda_exportar_excel', all=1) }}"
+       class="btn btn-outline-secondary btn-sm"
+       title="Baixar base completa sem filtros">
+      <i class="bi bi-download"></i>
+      <span>Exportar Tudo</span>
+    </a>
 
       <a href="{{ url_for('main.agenda_exportar_excel', **request.args.to_dict()) }}"
          class="btn btn-success btn-sm"

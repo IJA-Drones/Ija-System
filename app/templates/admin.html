@@ -17,14 +17,15 @@
 
         {# BOTÕES EXPORTAR #}
         <div class="d-flex gap-2">
-            {% if is_editable %}
+            {% if current_user.tipo_usuario in ['admin', 'visualizar'] %}
             <form method="GET" action="{{ url_for('main.exportar_excel') }}" class="form-exportar p-0 m-0">
                 <input type="hidden" name="status" value="{{ request.args.get('status', '') }}">
                 <input type="hidden" name="unidade" value="{{ request.args.get('unidade', '') }}">
                 <input type="hidden" name="regiao" value="{{ request.args.get('regiao', '') }}">
 
                 <button type="submit" class="btn btn-success shadow-sm">
-                    <i class="bi bi-file-earmark-excel-fill"></i> <span class="d-none d-md-inline">Exportar Excel</span>
+                    <i class="bi bi-file-earmark-excel-fill"></i> 
+                    <span class="d-none d-md-inline">Exportar Excel</span>
                 </button>
             </form>
             {% endif %}
@@ -34,10 +35,10 @@
     {# --- FILTROS EM "SANFONA" (Accordion) --- #}
     <div class="card shadow-sm rounded-4 mb-4 border-0">
         <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center cursor-pointer"
-             data-bs-toggle="collapse"
-             data-bs-target="#collapseFiltros"
-             aria-expanded="false"
-             style="cursor: pointer;">
+                data-bs-toggle="collapse"
+                data-bs-target="#collapseFiltros"
+                aria-expanded="false"
+                style="cursor: pointer;">
 
             <div class="d-flex align-items-center gap-2">
                 <i class="bi bi-funnel-fill text-primary"></i>
@@ -50,7 +51,7 @@
         </div>
 
         <div class="collapse {% if request.args.get('status') or request.args.get('unidade') or request.args.get('regiao') %}show{% endif %}" id="collapseFiltros">
-            <div class="card-body pt-0">
+            <div class="card-body pt-0 pb-4">
                 <form method="GET">
                     <div class="row g-2 align-items-end">
                         <div class="col-md-3">
@@ -67,9 +68,17 @@
                         </div>
                         <div class="col-md-3">
                             <label class="small text-muted">Unidade:</label>
-                            <input type="text" name="unidade" class="form-control form-control-sm" placeholder="Nome da UVIS..." value="{{ request.args.get('unidade', '') }}">
+                            <select name="unidade" class="form-select form-select-sm">
+                                <option value="">Todas as UVIS</option>
+                                {% for u in unidades_select %}
+                                    <option value="{{ u.nome_uvis }}" 
+                                        {% if request.args.get('unidade') == u.nome_uvis %}selected{% endif %}>
+                                        {{ u.nome_uvis }}
+                                    </option>
+                                {% endfor %}
+                            </select>
                         </div>
-                       <div class="col-md-3">
+                        <div class="col-md-3">
                         <label class="small text-muted">Região:</label>
 
                         {% set reg = (request.args.get('regiao','') or '')|upper %}
@@ -86,7 +95,7 @@
                         </select>
                         </div>
                         <div class="col-md-3 d-flex gap-2">
-                            <button class="btn btn-success btn-sm w-100" type="submit"><i class="bi bi-search"></i> Filtrar</button>
+                            <button class="btn btn-success btn-sm w-100 align-items-center justify-content-center" type="submit"><i class="bi bi-search"></i> Filtrar</button>
                             {% if request.args.get('status') or request.args.get('unidade') or request.args.get('regiao') %}
                                 <a href="{{ url_for(request.endpoint) }}" class="btn btn-outline-secondary btn-sm w-100">
                                     <i class="bi bi-x-lg"></i> Limpar
@@ -99,7 +108,6 @@
         </div>
     </div>
 
-
     {# --- TABELA HÍBRIDA (SANFONA NO MOBILE / TABELA NO PC) --- #}
     <div class="card shadow-sm rounded-4 border-0 overflow-hidden">
         <table class="table table-hover align-middle mb-0 table-accordion">
@@ -109,7 +117,7 @@
                 <tr>
                     <th style="width: 25%">Unidade</th>
                     <th style="width: 40%">Dados da Operação</th>
-                    <th style="width: 35%">{% if is_editable %}Decisão & Ajustes{% else %}Status Atual & Protocolo{% endif %}</th>
+                    <th style="width: 35%">{% if is_editable %}Decisão & Ajustes{% else %}Status Atual & Protocolo DECEA{% endif %}</th>
                 </tr>
             </thead>
 
@@ -133,6 +141,16 @@
                                 <strong class="text-primary fs-6">
                                     {{ p.usuario.nome_uvis }}
                                 </strong>
+
+                                {# --- ALERTA DE CORREÇÃO PARA O ADMIN --- #}
+                                {% if p.status == 'PENDENTE' and p.justificativa and p.justificativa.startswith('CORREÇÃO:') %}
+                                    {# Removi o 'd-lg-none' para que apareça no PC também #}
+                                    <div class="mt-2"> 
+                                        <span class="badge bg-info text-dark animate-pulse shadow-sm" style="font-size: 0.75rem;">
+                                            <i class="bi bi-arrow-repeat me-1"></i> CORREÇÃO RECEBIDA
+                                        </span>
+                                    </div>
+                                {% endif %}
 
                                 <div class="mt-3">
                                     <!-- STATUS -->
@@ -186,7 +204,7 @@
                         {# Botões de Admin Desktop #}
                         {% if current_user.tipo_usuario == 'admin' %}
                         <div class="d-none d-lg-flex gap-1 mt-4">
-                            <a href="{{ url_for('main.admin_editar_completo', id=p.id) }}"
+                            <a href="{{ url_for('main.editar_solicitacao', id=p.id) }}"
                                 class="btn btn-sm btn-success"
                                 onclick="event.stopPropagation();">
                                 <i class="bi bi-pencil-square"></i> Editar
@@ -246,7 +264,7 @@
                     {# COLUNA 3: FORMULÁRIO (SÓ DESKTOP) #}
                     <td class="align-top pt-3 d-none d-lg-table-cell bg-opacity-10">
                         {% if is_editable %}
-                            {# --- FORMULÁRIO DESKTOP --- #}
+                            {# --- FORMULÁRIO DESKTOP (ADMIN/OPERÁRIO) --- #}
                             <form action="{{ url_for('main.atualizar', id=p.id) }}" method="POST" enctype="multipart/form-data">
                                 <div class="row g-1 mb-2">
                                     <div class="col-6"><input name="latitude" class="form-control form-control-sm" value="{{ p.latitude or '' }}" placeholder="Lat"></div>
@@ -258,10 +276,7 @@
                                 <div class="p-2 border rounded gap-1 d-flex flex-column">
                                     <div>
                                         <label class="form-label">Status</label>
-                                        <select name="status"
-                                                class="form-select form-select-sm"
-                                                data-jid="{{ p.id }}"
-                                                onchange="toggleJustificativa(this, this.dataset.jid)">
+                                        <select name="status" class="form-select form-select-sm" data-jid="{{ p.id }}" onchange="toggleJustificativa(this, this.dataset.jid)">
                                             <option value="PENDENTE" {% if p.status=='PENDENTE' %}selected{% endif %}>⚪️ Pendente</option>
                                             <option value="EM ANÁLISE" {% if p.status=='EM ANÁLISE' %}selected{% endif %}>🟡 Em Análise</option>
                                             <option value="APROVADO COM RECOMENDAÇÕES" {% if p.status=='APROVADO COM RECOMENDAÇÕES' %}selected{% endif %}>🟠 Aprovado com Recomendações</option>
@@ -272,56 +287,68 @@
 
                                     <div>
                                         <label class="form-label mt-2">Equipe responsável</label>
-                                        <select class="form-select form-select-sm" name="equipe_id" {% if not is_editable %}disabled{% endif %}>
-                                            <option value="" {% if not p.equipe_id %}selected{% endif %}>— Sem equipe (remover atribuição) —</option>
-                                            <option value="" disabled>────────────</option>
-
+                                        <select class="form-select form-select-sm" name="equipe_id">
+                                            <option value="" {% if not p.equipe_id %}selected{% endif %}>— Sem equipe —</option>
                                             {% for e in equipes %}
                                                 <option value="{{ e.id }}" {% if p.equipe_id == e.id %}selected{% endif %}>
-                                                    {{ e.nome_equipe }}{% if e.regiao %} ({{ e.regiao }}){% endif %}{% if e.ativa is not none and not e.ativa %} — INATIVA{% endif %}
+                                                    {{ e.nome_equipe }}{% if e.regiao %} ({{ e.regiao }}){% endif %}
                                                 </option>
                                             {% endfor %}
                                         </select>
                                     </div>
 
-                                    <div id="boxJustificativa{{ p.id }}" style="display: none;" class="">
+                                    <div id="boxJustificativa{{ p.id }}" style="display: none;">
                                         <label class="form-label mt-2">Justificativa</label>
-                                        <input name="justificativa" id="inputJustificativa{{ p.id }}" class="form-control form-control-sm" value="{{ p.justificativa or '' }}" placeholder="Justificativa">
+                                        <input name="justificativa" id="inputJustificativa{{ p.id }}" class="form-control form-control-sm" value="{{ p.justificativa or '' }}">
                                     </div>
 
                                     <div class="d-flex gap-1 mt-2">
                                         <label id="btnAnexo{{ p.id }}" for="inputPdf{{ p.id }}" class="btn btn-sm btn-outline-primary text-truncate justify-content-center vw-100">
                                             <span id="textoDisplay{{ p.id }}"><i class="bi bi-paperclip"></i> {{ p.anexo_nome or 'Anexar' }}</span>
                                         </label>
-                                        <a id="btnVisualizar{{ p.id }}"
-                                           href="{{ url_for('main.baixar_anexo', id=p.id) if p.anexo_path else '#' }}"
-                                           target="_blank"
-                                           class="btn btn-sm btn-outline-primary {% if not p.anexo_path %}d-none{% endif %}">
-                                            <i class="bi bi-eye"></i>
-                                        </a>
-                                        <button type="submit"
-                                                form="formRemoverAnexo{{ p.id }}"
-                                                class="btn btn-sm btn-outline-danger {% if not p.anexo_path %}d-none{% endif %}"
-                                                id="btnRemover{{ p.id }}">
-                                            <i class="bi bi-x"></i>
-                                        </button>
+                                        {# ... (seus botões de visualizar/remover anexo) ... #}
                                     </div>
 
                                     <input type="file" name="anexo" id="inputPdf{{ p.id }}" class="d-none" onchange="processarArquivo(this, '{{ p.id }}')">
-
                                     <button type="submit" class="btn btn-primary btn-sm w-100 mt-2">Salvar</button>
                                 </div>
                             </form>
-
-                            {# Form Fantasma Remover Desktop #}
-                            {% if p.anexo_path %}
-                            <form action="{{ url_for('main.remover_anexo', id=p.id) }}"
-                                  method="POST"
-                                  class="form-deletar d-none"
-                                  id="formRemoverAnexo{{ p.id }}"></form>
-                            {% endif %}
                         {% else %}
-                            <div class="text-center"><span class="badge bg-secondary">{{ p.status }}</span></div>
+                            {# --- VISÃO EXCLUSIVA PARA O PERFIL 'VISUALIZAR' --- #}
+                            <div class="p-3 border rounded bg-light shadow-sm" style="min-height: 180px;">
+                                <div class="mb-2">
+                                    <small class="text-muted d-block text-uppercase fw-bold" style="font-size: 0.65rem;">Protocolo DECEA</small>
+                                    <div class="font-monospace text-primary fw-bold fs-6 py-1">
+                                        {{ p.protocolo or 'Não informado' }}
+                                    </div>
+                                </div>
+
+                                <div class="mb-2">
+                                    <small class="text-muted d-block text-uppercase fw-bold" style="font-size: 0.65rem;">Status Atual</small>
+                                    <span class="badge w-100 py-2 mt-1
+                                        {% if p.status == 'APROVADO' %}bg-success
+                                        {% elif p.status == 'NEGADO' %}bg-danger
+                                        {% else %}bg-warning text-dark{% endif %}">
+                                        {{ p.status }}
+                                    </span>
+                                </div>
+
+                                <div class="mb-2">
+                                    <small class="text-muted d-block text-uppercase fw-bold" style="font-size: 0.65rem;">Equipe Escalada</small>
+                                    <div class="small text-dark mt-1">
+                                        <i class="bi bi-people-fill me-1"></i>
+                                        {{ p.equipe.nome_equipe if p.equipe else 'Nenhuma' }}
+                                    </div>
+                                </div>
+
+                                {% if p.anexo_path %}
+                                <div class="mt-2 pt-2 border-top">
+                                    <a href="{{ url_for('main.baixar_anexo', id=p.id) }}" target="_blank" class="btn btn-sm btn-outline-primary w-100">
+                                        <i class="bi bi-file-pdf"></i> Ver Anexo
+                                    </a>
+                                </div>
+                                {% endif %}
+                            </div>
                         {% endif %}
                     </td>
                 </tr>
@@ -462,7 +489,7 @@
 
                                     {% if current_user.tipo_usuario == 'admin' %}
                                     <div class="d-flex gap-1 mt-2 align-items-center justify-content-center">
-                                        <a href="{{ url_for('main.admin_editar_completo', id=p.id) }}"
+                                        <a href="{{ url_for('main.editar_solicitacao', id=p.id) }}"
                                            class="btn btn-sm btn-success">
                                             <i class="bi bi-pencil-square"></i> Editar
                                         </a>
