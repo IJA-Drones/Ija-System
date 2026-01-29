@@ -108,13 +108,13 @@
              <label class="form-label fw-bold small text-muted">
                 <i class="bi bi-globe me-1 text-primary"></i> Latitude
              </label>
-             <input type="text" name="latitude" class="form-control form-control-sm font-monospace" placeholder="-23.XXXXXX">
+            <input type="text" id="latitude" name="latitude" class="form-control form-control-sm font-monospace" placeholder="-23.XXXXXX" readonly>
            </div>
            <div class="col-md-6">
              <label class="form-label fw-bold small text-muted">
                 <i class="bi bi-globe me-1 text-primary"></i> Longitude
              </label>
-             <input type="text" name="longitude" class="form-control form-control-sm font-monospace" placeholder="-46.XXXXXX">
+            <input type="text" id="longitude" name="longitude" class="form-control form-control-sm font-monospace" placeholder="-46.XXXXXX" readonly>
            </div>
         </div>
 
@@ -215,77 +215,168 @@
 
 {% block scripts %}
 <script>
-  document.addEventListener("DOMContentLoaded", function() {
-      // Listener para o campo CEP
-      const cepInput = document.getElementById("cep");
+document.addEventListener("DOMContentLoaded", function() {
 
-      if (cepInput) {
-          cepInput.addEventListener("keyup", function () {
-            let val = this.value.replace(/\D/g, "");
+  const cepInput = document.getElementById("cep");
+  const enderecoInput = document.getElementById("endereco");
+  const bairroInput = document.getElementById("bairro");
+  const cidadeInput = document.getElementById("cidade");
+  const ufInput = document.getElementById("uf");
+  const numeroInput = document.querySelector('input[name="numero"]');
 
-            if (val.length === 8) {
-                // Adiciona classe de loading
-                this.classList.add('loading-spinner');
-                this.disabled = true;
+  const latInput = document.getElementById("latitude");
+  const lngInput = document.getElementById("longitude");
 
-                // Limpa campos
-                document.getElementById("endereco").value = "";
-                document.getElementById("bairro").value = "";
-                document.getElementById("cidade").value = "";
-                document.getElementById("uf").value = "";
-                
-                fetch(`https://viacep.com.br/ws/${val}/json/`)
-                    .then((response) => response.json())
-                    .then((data) => {
-                        this.classList.remove('loading-spinner');
-                        this.disabled = false;
-                        this.focus();
-                        
-                        if (!data.erro) {
-                            document.getElementById("endereco").value = data.logradouro || "";
-                            document.getElementById("bairro").value = data.bairro || "";
-                            document.getElementById("cidade").value = data.localidade || "";
-                            document.getElementById("uf").value = data.uf || "";
-                            
-                            // Foca no número
-                            document.querySelector('input[name="numero"]').focus();
-                        } else {
-                            if(typeof Swal !== 'undefined'){
-                                Swal.fire({
-                                    toast: true,
-                                    position: 'top-end',
-                                    icon: 'warning',
-                                    title: 'CEP não encontrado.',
-                                    showConfirmButton: false,
-                                    timer: 3000,
-                                    customClass: {
-                                        popup: document.body.classList.contains('dark-mode') ? 'swal2-dark-mode' : ''
-                                    }
-                                });
-                            }
-                        }
-                    })
-                    .catch(() => {
-                        this.classList.remove('loading-spinner');
-                        this.disabled = false;
-                        
-                        if(typeof Swal !== 'undefined'){
-                            Swal.fire({
-                                toast: true,
-                                position: 'top-end',
-                                icon: 'error',
-                                title: 'Erro ao consultar CEP.',
-                                showConfirmButton: false,
-                                timer: 3000,
-                                customClass: {
-                                    popup: document.body.classList.contains('dark-mode') ? 'swal2-dark-mode' : ''
-                                }
-                            });
-                        }
-                    });
+  let geocodeTimer = null;
+
+  function limparLatLng() {
+    if (latInput) latInput.value = "";
+    if (lngInput) lngInput.value = "";
+  }
+
+  async function chamarGeocode() {
+    try {
+      const payload = {
+        cep: (cepInput?.value || "").trim(),
+        logradouro: (enderecoInput?.value || "").trim(),
+        numero: (numeroInput?.value || "").trim(),
+        bairro: (bairroInput?.value || "").trim(),
+        cidade: (cidadeInput?.value || "").trim(),
+        uf: (ufInput?.value || "").trim()
+      };
+
+      // Só tenta se tiver o mínimo
+      if (!payload.logradouro || !payload.numero || !payload.cidade || !payload.uf) {
+        return;
+      }
+
+      // (opcional) feedback visual
+      if (latInput) latInput.value = "buscando...";
+      if (lngInput) lngInput.value = "buscando...";
+
+      const res = await fetch("/api/geocode", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      console.log("GEOCODE response:", data);
+
+      if (data.ok) {
+        latInput.value = data.lat;
+        lngInput.value = data.lng;
+      } else {
+        limparLatLng();
+        // Toast opcional (só se quiser)
+        // if (typeof Swal !== 'undefined') {
+        //   Swal.fire({ toast:true, position:'top-end', icon:'warning', title:data.message || 'Não foi possível geocodificar', showConfirmButton:false, timer:2500 });
+        // }
+      }
+    } catch (e) {
+      console.error("Erro geocode:", e);
+      limparLatLng();
+    }
+  }
+
+  function agendarGeocode(ms = 450) {
+    clearTimeout(geocodeTimer);
+    geocodeTimer = setTimeout(chamarGeocode, ms);
+  }
+
+  // -----------------------------
+  // VIA CEP (quando digita CEP)
+  // -----------------------------
+  if (cepInput) {
+    cepInput.addEventListener("keyup", function () {
+      let val = this.value.replace(/\D/g, "");
+
+      if (val.length === 8) {
+        this.classList.add('loading-spinner');
+        this.disabled = true;
+
+        // Limpa campos
+        enderecoInput.value = "";
+        bairroInput.value = "";
+        cidadeInput.value = "";
+        ufInput.value = "";
+        limparLatLng();
+
+        fetch(`https://viacep.com.br/ws/${val}/json/`)
+          .then((response) => response.json())
+          .then((data) => {
+            this.classList.remove('loading-spinner');
+            this.disabled = false;
+            this.focus();
+
+            if (!data.erro) {
+              enderecoInput.value = data.logradouro || "";
+              bairroInput.value = data.bairro || "";
+              cidadeInput.value = data.localidade || "";
+              ufInput.value = data.uf || "";
+
+              // Foca no número
+              if (numeroInput) numeroInput.focus();
+
+              // Se o número já tiver algo (ex: autofill), tenta geocode
+              if ((numeroInput?.value || "").trim()) agendarGeocode(150);
+
+            } else {
+              if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                  toast: true,
+                  position: 'top-end',
+                  icon: 'warning',
+                  title: 'CEP não encontrado.',
+                  showConfirmButton: false,
+                  timer: 3000,
+                  customClass: {
+                    popup: document.body.classList.contains('dark-mode') ? 'swal2-dark-mode' : ''
+                  }
+                });
+              }
+            }
+          })
+          .catch(() => {
+            this.classList.remove('loading-spinner');
+            this.disabled = false;
+            limparLatLng();
+
+            if (typeof Swal !== 'undefined') {
+              Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'error',
+                title: 'Erro ao consultar CEP.',
+                showConfirmButton: false,
+                timer: 3000,
+                customClass: {
+                  popup: document.body.classList.contains('dark-mode') ? 'swal2-dark-mode' : ''
+                }
+              });
             }
           });
       }
-  });
+    });
+  }
+
+  // -----------------------------
+  // GEOCODE (quando digita número)
+  // -----------------------------
+  if (numeroInput) {
+    // enquanto digita
+    numeroInput.addEventListener("keyup", function() {
+      limparLatLng();
+      agendarGeocode(450);
+    });
+
+    // quando sai do campo (bem confiável)
+    numeroInput.addEventListener("blur", function() {
+      agendarGeocode(100);
+    });
+  }
+
+});
 </script>
+
 {% endblock %}

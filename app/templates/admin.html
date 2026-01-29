@@ -206,7 +206,16 @@
                         {% if p.latitude %}
                         <div class="d-flex justify-content-between p-2 rounded border mb-2">
                             <small class="font-monospace fw-bold">{{ p.latitude }}, {{ p.longitude }}</small>
-                            <a href="http://maps.google.com/maps?q={{ p.latitude }},{{ p.longitude }}" target="_blank" class="btn btn-sm btn-outline-danger py-0"><i class="bi bi-map-fill"></i></a>
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-danger py-0 btn-open-map"
+                                data-lat="{{ p.latitude }}"
+                                data-lng="{{ p.longitude }}"
+                                data-title="{{ p.usuario.nome_uvis }} - {{ p.logradouro }}, {{ p.numero or 'S/N' }}"
+                                title="Ver no mapa"
+                                >
+                                <i class="bi bi-map-fill"></i>
+                            </button>
                         </div>
                         {% endif %}
                         <div class="row gap-2 small mt-3">
@@ -338,12 +347,19 @@
                                         </div>
                                     </div>
                                     <div class="d-grid mb-3">
-                                        <a href="http://maps.google.com/maps?q={{ p.latitude }},{{ p.longitude }}" target="_blank" class="btn btn-sm btn-outline-danger">
-                                            <i class="bi bi-map-fill text-danger me-2"></i> Ver no Mapa
-                                        </a>
+                                     <button
+                                        type="button"
+                                        class="btn btn-sm btn-outline-danger py-0 btn-open-map"
+                                        data-lat="{{ p.latitude }}"
+                                        data-lng="{{ p.longitude }}"
+                                        data-title="{{ p.usuario.nome_uvis }} - {{ p.logradouro }}, {{ p.numero or 'S/N' }}"
+                                        title="Ver no mapa"
+                                        onclick="event.stopPropagation();"
+                                        >
+                                        <i class="bi bi-map-fill"></i>
+                                        </button>
                                     </div>
                                     {% endif %}
-
                                     <div class="row g-2 small text-muted">
                                         <div class="col-6"><strong>Tipo:</strong> {{ p.tipo_visita }}</div>
                                         <div class="col-6"><strong>Alt:</strong> {{ p.altura_voo }}</div>
@@ -520,12 +536,175 @@
         <button id="adminBotSend" class="btn-send"><i class="bi bi-send-fill"></i></button>
     </div>
 </div>
+<div class="modal fade" id="mapModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 overflow-hidden">
+      <div class="modal-header">
+        <h5 class="modal-title" id="mapModalTitle">Localização</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+
+      <div class="modal-body p-0">
+        <div id="mapCanvas" style="width:100%; height: 420px;"></div>
+      </div>
+
+      <div class="modal-footer d-flex justify-content-between">
+        <div class="small text-muted" id="mapCoords"></div>
+        <div class="d-flex gap-2">
+          <a id="btnOpenGoogleMaps" class="btn btn-outline-secondary" target="_blank" rel="noopener">
+            <i class="bi bi-box-arrow-up-right"></i> Abrir no Google Maps
+          </a>
+          <a id="btnDirections" class="btn btn-danger" target="_blank" rel="noopener">
+            <i class="bi bi-sign-turn-right"></i> Traçar rota
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 {% endif %}
 
 {% endblock %}
 
 {% block scripts %}
 <script>
+// ---- Google Maps (lazy load) ----
+const GOOGLE_MAPS_KEY = "{{ google_maps_key or '' }}";
+let googleMapsLoaded = false;
+let mapInstance = null;
+let markerInstance = null;
+
+function loadGoogleMaps() {
+  return new Promise((resolve, reject) => {
+    if (googleMapsLoaded && window.google && window.google.maps) return resolve();
+
+    if (!GOOGLE_MAPS_KEY) {
+      return reject(new Error("KEY_API_GOOGLE_MAPS não foi enviada ao template."));
+    }
+
+    // evita carregar duas vezes
+    if (document.getElementById("googleMapsScript")) {
+      const wait = setInterval(() => {
+        if (window.google && window.google.maps) {
+          clearInterval(wait);
+          googleMapsLoaded = true;
+          resolve();
+        }
+      }, 50);
+      return;
+    }
+
+    window.__initGoogleMaps = () => {
+      googleMapsLoaded = true;
+      resolve();
+    };
+
+    const s = document.createElement("script");
+    s.id = "googleMapsScript";
+    s.async = true;
+    s.defer = true;
+    s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(GOOGLE_MAPS_KEY)}&callback=__initGoogleMaps`;
+    s.onerror = () => reject(new Error("Falha ao carregar Google Maps JS."));
+    document.head.appendChild(s);
+  });
+}
+
+function openMapModal({ lat, lng, title }) {
+  const modalEl = document.getElementById("mapModal");
+  if (!modalEl) {
+    console.error("Modal #mapModal não existe no HTML.");
+    // fallback
+    window.open(`https://www.google.com/maps?q=${lat},${lng}`, "_blank");
+    return;
+  }
+
+  const titleEl = document.getElementById("mapModalTitle");
+  const coordsEl = document.getElementById("mapCoords");
+  const btnOpen = document.getElementById("btnOpenGoogleMaps");
+  const btnDir = document.getElementById("btnDirections");
+
+  if (titleEl) titleEl.textContent = title || "Localização";
+  if (coordsEl) coordsEl.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+
+  // Links externos (fallback + utilidade)
+  const q = `${lat},${lng}`;
+  if (btnOpen) btnOpen.href = `https://www.google.com/maps?q=${encodeURIComponent(q)}`;
+  if (btnDir) btnDir.href = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(q)}`;
+
+  // ✅ Bootstrap 5.0/5.1 compat (sem getOrCreateInstance)
+  let bsModal = bootstrap.Modal.getInstance(modalEl);
+  if (!bsModal) bsModal = new bootstrap.Modal(modalEl);
+  bsModal.show();
+
+  // Render do mapa após abrir (garante que o container tem tamanho)
+  setTimeout(() => {
+    const center = { lat, lng };
+    const canvas = document.getElementById("mapCanvas");
+
+    if (!canvas) {
+      console.error("Elemento #mapCanvas não existe no HTML.");
+      return;
+    }
+
+    if (!mapInstance) {
+      mapInstance = new google.maps.Map(canvas, {
+        center,
+        zoom: 18,
+        mapTypeControl: false,
+        streetViewControl: true,
+        fullscreenControl: true,
+      });
+    } else {
+      mapInstance.setCenter(center);
+      mapInstance.setZoom(18);
+    }
+
+    if (!markerInstance) {
+      markerInstance = new google.maps.Marker({
+        position: center,
+        map: mapInstance,
+        title: title || "Local",
+      });
+    } else {
+      markerInstance.setPosition(center);
+      markerInstance.setTitle(title || "Local");
+    }
+  }, 150);
+}
+
+// ✅ garante que os botões já existem antes de bindar evento
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll(".btn-open-map").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+
+      const lat = parseFloat(btn.dataset.lat);
+      const lng = parseFloat(btn.dataset.lng);
+      const title = btn.dataset.title || "Localização";
+
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        Swal?.fire({
+          toast: true,
+          position: "top-end",
+          icon: "warning",
+          title: "Sem coordenadas válidas.",
+          showConfirmButton: false,
+          timer: 2500,
+        });
+        return;
+      }
+
+      try {
+        await loadGoogleMaps();
+        openMapModal({ lat, lng, title });
+      } catch (err) {
+        console.error(err);
+        window.open(`https://www.google.com/maps?q=${lat},${lng}`, "_blank");
+      }
+    });
+  });
+});
+
   // --- LÓGICA DE INTERFACE DE ARQUIVO ---
   function processarArquivo(input, id) {
     if (!input.files || !input.files.length) return;
