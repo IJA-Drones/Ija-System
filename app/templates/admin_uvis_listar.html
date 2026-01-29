@@ -261,12 +261,15 @@ body.dark-mode) ========================= #}
       >
         <i class="bi bi-file-earmark-excel-fill"></i> Exportar Excel
       </a>
+
+      {% if is_admin %}
       <a
         href="{{ url_for('main.admin_uvis_novo') }}"
         class="btn btn-success text-white d-flex align-items-center gap-2 shadow-sm"
       >
-        <i class="bi bi-plus-lg"></i> Nova UVIS
+        <i class="bi bi-plus-lg"></i> Cadastrar UVIS
       </a>
+      {% endif %}
     </div>
   </div>
 

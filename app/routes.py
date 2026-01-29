@@ -221,8 +221,9 @@ def admin_dashboard():
 
     # --- Captura filtros ---
     filtro_status = (request.args.get("status") or "").strip()
-    filtro_unidade = (request.args.get("unidade") or "").strip()
     filtro_regiao = (request.args.get("regiao") or "").strip()
+
+    unidades_select = Usuario.query.filter_by(tipo_usuario='uvis').order_by(Usuario.nome_uvis.asc()).all()
 
     # --- Query base (com eager loading) ---
     query = (
@@ -237,8 +238,6 @@ def admin_dashboard():
     # --- Aplicação dos filtros ---
     if filtro_status:
         query = query.filter(Solicitacao.status == filtro_status)
-    if filtro_unidade:
-        query = query.filter(Usuario.nome_uvis.ilike(f"%{filtro_unidade}%"))
     if filtro_regiao:
         query = query.filter(Usuario.regiao.ilike(f"%{filtro_regiao}%"))
     
@@ -280,6 +279,7 @@ def admin_dashboard():
         is_editable=is_editable,
         now=datetime.now(),
         equipes=equipes,
+        unidades_select=unidades_select
     )
 
 
@@ -288,7 +288,7 @@ def admin_dashboard():
 def exportar_excel():
 
     # 🔐 Permissão: somente admin e operario
-    if current_user.tipo_usuario not in ['admin', 'operario']:
+    if current_user.tipo_usuario not in ['admin', 'operario' , 'visualizar']:
         flash('Permissão negada para exportar.', 'danger')
         return redirect(url_for('main.admin_dashboard'))
 
@@ -2436,8 +2436,7 @@ def admin_uvis_novo():
 @bp.route("/admin/uvis", methods=["GET"], endpoint="admin_uvis_listar")
 @login_required
 def admin_uvis_listar():
-    # SOMENTE ADMIN
-    if current_user.tipo_usuario != "admin":
+    if current_user.tipo_usuario is ["admin", "operario", "visualizar"]:
         abort(403)
 
     q = (request.args.get("q") or "").strip()
@@ -3849,10 +3848,11 @@ def cadastrar_pilotos():
 def listar_pilotos():
     user_tipo = getattr(current_user, "tipo_usuario", None)
 
-    if user_tipo not in ("admin", "uvis"):
+    if user_tipo not in ("admin", "uvis", "visualizar"):
         abort(403)
 
     q = (request.args.get("q") or "").strip()
+    # Para visualizar e admin, a região vem do filtro; para UVIS, é travada
     regiao = (request.args.get("regiao") or "").strip().upper()
     telefone = (request.args.get("telefone") or "").strip()
     sort = (request.args.get("sort") or "nome_asc").strip()
@@ -3876,13 +3876,7 @@ def listar_pilotos():
     if user_tipo == "uvis":
         if not uvis_regiao:
             flash("Sua UVIS está sem região cadastrada. Contate o administrador.", "warning")
-            return render_template(
-                "listar_pilotos.html",
-                pilotos=[],
-                filters={"q": q, "regiao": "", "telefone": telefone, "sort": sort, "page": 1, "per_page": per_page, "total": 0, "total_pages": 1},
-                is_admin=False,
-                uvis_regiao=None
-            )
+            return render_template("listar_pilotos.html", pilotos=[], filters=filters, is_admin=False)
         regiao = uvis_regiao
 
     query = Pilotos.query
@@ -3917,7 +3911,9 @@ def listar_pilotos():
     # Exportação Excel
     # -----------------------------
     if export == "xlsx":
-        rows = query.all()
+        # ✅ Liberamos a exportação para o perfil visualizar também
+        if user_tipo not in ["admin", "visualizar"]:
+            abort(403)
 
         from openpyxl import Workbook
         from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
@@ -4033,11 +4029,15 @@ def listar_pilotos():
         "total_pages": total_pages,
     }
 
+    is_editable = user_tipo in ["admin", "operario"]
+
     return render_template(
         "listar_pilotos.html",
         pilotos=pilotos,
         filters=filters,
         is_admin=(user_tipo == "admin"),
+        is_editable=is_editable, # 👈 Adicionado para controle do front-end
+        tipo_usuario=user_tipo,   # 👈 Útil para badges de status na tela
         uvis_regiao=(uvis_regiao if user_tipo == "uvis" else None),
     )
 
@@ -4596,7 +4596,7 @@ def listar_equipes():
             # trava somente ativas
             query = query.filter(Equipe.ativa.is_(True))
 
-    elif tipo == "admin":
+    elif tipo in ["admin", "visualizar"]:
         # admin vê tudo
         pass
 
@@ -4695,7 +4695,7 @@ def listar_equipes():
     # -----------------------------
     if export == "xlsx":
         # só admin exporta
-        if tipo != "admin":
+        if tipo != "admin" and tipo != "visualizar":
             abort(403)
 
         rows = query.all()
@@ -4797,6 +4797,7 @@ def listar_equipes():
     # -----------------------------
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
     equipes = pagination.items
+    is_editable = tipo in ["admin", "operario"]
 
     filters = {
         "q": q,
@@ -4818,6 +4819,8 @@ def listar_equipes():
         equipes=equipes,
         filters=filters,
         is_admin=(tipo == "admin"),
+        is_editable=is_editable, 
+        tipo_usuario=tipo,
     )
 # -------------------------------------------------------------
 # EDITAR EQUIPE (admin)

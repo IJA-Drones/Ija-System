@@ -59,7 +59,7 @@ def verificar_banco():
             if not visualizar:
                 print("--- Criando novo usuário Visualizar (somente leitura)... ---")
                 visualizar = Usuario(
-                    nome_uvis="Usuário Somente Leitura", 
+                    nome_uvis="AUDITORIA", 
                     regiao="AUDITORIA", 
                     codigo_setor="99",
                     login="visualizar",

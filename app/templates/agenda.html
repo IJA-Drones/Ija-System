@@ -16,7 +16,7 @@
     </h2>
   </div>
 
-  {% if current_user.is_authenticated and current_user.tipo_usuario == "admin" %}
+  {% if current_user.is_authenticated and current_user.tipo_usuario in ['admin', 'visualizar'] %}
   <div class="agenda-actions">
     <a href="{{ url_for('main.agenda_exportar_excel', all=1) }}"
        class="btn btn-outline-secondary btn-sm"
