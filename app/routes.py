@@ -204,14 +204,19 @@ def dashboard():
 from flask_login import login_required, current_user
 from datetime import datetime
 
+
 from sqlalchemy import case # Necessário para a ordenação personalizada
 from datetime import datetime
 from sqlalchemy.orm import joinedload
 
+
+
 @bp.route('/admin')
 @login_required
 def admin_dashboard():
-    google_maps_key = os.getenv("KEY_API_GOOGLE_MAPS")
+    google_maps_key = os.getenv("KEY_API_GOOGLE_MAPS")  # a mesma do .env    
+
+
     # 🔐 Controle de acesso
     if current_user.tipo_usuario not in ['admin', 'operario', 'visualizar']:
         flash('Acesso restrito.', 'danger')
@@ -257,7 +262,7 @@ def admin_dashboard():
         else_=99
     )
 
-    # ✅ Equipes ativas para o select
+
     equipes = (
         Equipe.query
         .filter(Equipe.ativa.is_(True))
@@ -265,8 +270,9 @@ def admin_dashboard():
         .all()
     )
 
+
     # Paginação e Ordenação Final
-    # Ordenamos primeiro pelo status (Case) e depois pela criação mais recente
+
     page = request.args.get("page", 1, type=int)
     paginacao = (
         query.order_by(ordem_status, Solicitacao.data_criacao.desc())

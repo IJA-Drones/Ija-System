@@ -324,10 +324,9 @@
               </ul>
             </div>
           </li>
-          {% endif %}
-
-          {# ===================== EQUIPES (ADMIN/VISUALIZAR COMPLETO / UVIS SÓ LISTAR) ===================== #} 
-          {% if current_user.tipo_usuario in ['admin', 'uvis', 'visualizar'] %}
+          {% endif %} {# ===================== EQUIPES (ADMIN COMPLETO / UVIS SÓ
+          LISTAR) ===================== #} {% if current_user.tipo_usuario in
+          ['admin', 'uvis'] %}
           <li class="nav-item">
             <button type="button" class="nav-link nav-link-toggle" data-bs-toggle="collapse" data-bs-target="#menuEquipes">
               <span>
@@ -387,7 +386,14 @@
             </div>
           </li>
           {% endif %}
-
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint == 'main.agenda' %}active{% endif %}"
+              href="{{ url_for('main.agenda') }}"
+            >
+              <i class="bi bi-calendar-event-fill me-2"></i><span>Agenda</span>
+            </a>
+          </li>
           <div class="sidebar-footer mt-auto p-3 text-center">
             <div id="install-container" style="display: none">
               <button
