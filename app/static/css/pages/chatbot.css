@@ -8,7 +8,7 @@
     bottom: 90px; /* Acima do botão flutuante */
     right: 20px;
     width: 380px;
-    height: 550px;
+    height: 500px;
     max-height: 80vh; /* Para telas menores */
     background-color: var(--color-bg-white);
     border-radius: var(--radius-lg);
@@ -24,6 +24,10 @@
     border: 1px solid rgba(0,0,0,0.05);
 }
 
+.chatbot-container {
+    z-index: 1041 !important; /* Um pouco acima da navbar (1030) */
+    bottom: 20px; /* Garante que não cole no rodapé */
+}
 
 /* Classe para quando o chat estiver aberto */
 .chat-window.active {
@@ -202,7 +206,7 @@
     border-radius: 999px;
     display: grid;
     place-items: center;
-    z-index: 2000;
+    z-index: 1041;
     background: linear-gradient(135deg, var(--color-primary), var(--color-accent-hover));
     border: none;
     box-shadow: 0 12px 28px rgba(0,0,0,.25);
