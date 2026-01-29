@@ -211,6 +211,7 @@ from sqlalchemy.orm import joinedload
 @bp.route('/admin')
 @login_required
 def admin_dashboard():
+    google_maps_key = os.getenv("KEY_API_GOOGLE_MAPS")
     # 🔐 Controle de acesso
     if current_user.tipo_usuario not in ['admin', 'operario', 'visualizar']:
         flash('Acesso restrito.', 'danger')
@@ -279,7 +280,8 @@ def admin_dashboard():
         is_editable=is_editable,
         now=datetime.now(),
         equipes=equipes,
-        unidades_select=unidades_select
+        unidades_select=unidades_select,
+        google_maps_key=google_maps_key
     )
 
 
