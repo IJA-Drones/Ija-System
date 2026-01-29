@@ -20,7 +20,7 @@
     <div class="d-flex gap-2 flex-wrap">
 
       {# ✅ Rota do dia: mostra para admin/operario/visualizar (ajuste se quiser) #}
-      {% if current_user.is_authenticated and current_user.tipo_usuario in ["admin", "operario", "visualizar"] %}
+      {% if current_user.is_authenticated and current_user.tipo_usuario in ["admin", "operario", "visualizar", "uvis"] %}
         <button id="btnRotaDia" class="btn btn-danger btn-sm">
           <i class="bi bi-sign-turn-right"></i> Traçar rota do dia
         </button>
@@ -530,16 +530,22 @@
           return;
         }
 
-        const origin = `${d.pontos[0].lat},${d.pontos[0].lng}`;
-        const destination = `${d.pontos[d.pontos.length - 1].lat},${d.pontos[d.pontos.length - 1].lng}`;
-        const waypointsArr = d.pontos.slice(1, -1).map(p => `${p.lat},${p.lng}`);
 
-        let mapsUrl =
-          `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&travelmode=driving`;
+if (!d.ok) throw new Error(d.error || "Erro ao montar rota.");
 
-        if (waypointsArr.length) mapsUrl += `&waypoints=${encodeURIComponent(waypointsArr.join("|"))}`;
+const destination = `${d.pontos[d.pontos.length - 1].lat},${d.pontos[d.pontos.length - 1].lng}`;
+const waypointsArr = d.pontos.slice(0, -1).map(p => `${p.lat},${p.lng}`);
 
-        window.open(mapsUrl, "_blank", "noopener");
+let mapsUrl =
+  `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}&travelmode=driving`;
+
+if (waypointsArr.length) {
+  mapsUrl += `&waypoints=${encodeURIComponent(waypointsArr.join("|"))}`;
+}
+
+console.log("MAPS URL =>", mapsUrl);
+window.open(mapsUrl, "_blank", "noopener"); // ✅ TEM que ser mapsUrl
+
 
       } catch (e) {
         console.error(e);
