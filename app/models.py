@@ -202,6 +202,7 @@ class Solicitacao(db.Model):
     apoio_cet = db.Column(db.Boolean, default=False)
 
     observacao = db.Column(db.Text)
+    area_restrita = db.Column(db.Boolean, default=False, nullable=False)
 
     # ----------------------
     # Endereço

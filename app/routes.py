@@ -85,6 +85,23 @@ def datetimeformat(value, format='%d-%m-%y'):
         return value.strftime(format)
     except Exception:
         return value # Retorna o valor original em caso de erro para não quebrar a página
+    
+# --- 3: CÁLCULO DE DISTÂNCIA ENTRE COORDENADAS ---
+def calcular_distancia(lat1, lon1, lat2, lon2):
+    # Raio da Terra em metros
+    R = 6371000 
+    
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlambda = math.radians(lon2 - lon1)
+    
+    a = math.sin(dphi / 2)**2 + \
+        math.cos(phi1) * math.cos(phi2) * \
+        math.sin(dlambda / 2)**2
+    
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return R * c
+
 
 def get_upload_folder():
     """
@@ -672,6 +689,23 @@ def novo():
                     cep=cep,
                 )
 
+            # 3. Calcular o risco com as coordenadas já definidas
+            ZONAS_RESTRITAS = [
+                {"nome": "Congonhas", "lat": -23.6273, "lng": -46.6565, "raio": 5400},
+                {"nome": "Campo de Marte", "lat": -23.5092, "lng": -46.6377, "raio": 5400},
+                {"nome": "Guarulhos", "lat": -23.4356, "lng": -46.4731, "raio": 9000},
+                {"nome": "Viracopos", "lat": -23.0069, "lng": -47.1344, "raio": 9000},
+                {"nome": "Heliponto Paulista", "lat": -23.5615, "lng": -46.6559, "raio": 2000}
+            ]
+
+            area_restrita_final = False
+            if latitude and longitude:
+                for zona in ZONAS_RESTRITAS:
+                    distancia = calcular_distancia(latitude, longitude, zona['lat'], zona['lng'])
+                    if distancia < zona['raio']:
+                        area_restrita_final = True
+                        break
+
             if latitude is None or longitude is None:
                 flash("Não foi possível obter coordenadas automaticamente. Confira endereço/número e tente novamente.", "warning")
                 return render_template('cadastro.html', hoje=hoje)
@@ -696,6 +730,7 @@ def novo():
 
                 latitude=latitude,
                 longitude=longitude,
+                area_restrita=area_restrita_final,
 
                 usuario_id=current_user.id,
                 status='PENDENTE'

@@ -17,7 +17,7 @@
   <div class="card info status-primary shadow-sm rounded-4 border-0">
     <div class="card-body p-4">
       
-      <form method="POST">
+      <form method="POST" id="formNovoPedido">
         
         {# SEÇÃO 1: AGENDAMENTO #}
         <div class="d-flex align-items-center mb-3">
@@ -213,6 +213,7 @@
 </div>
 {% endblock %}
 
+<script src="https://maps.googleapis.com/maps/api/js?key=SUA_CHAVE_AQUI&libraries=geometry"></script>
 {% block scripts %}
 <script>
 document.addEventListener("DOMContentLoaded", function() {
@@ -377,6 +378,135 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 
 });
+
+const AREAS_PROIBIDAS = [
+    { 
+        nome: "Aeroporto de Congonhas (CGH)", 
+        lat: -23.6273, 
+        lng: -46.6565, 
+        raio: 5400 
+    },
+    { 
+        nome: "Aeroporto Campo de Marte (RTE)", 
+        lat: -23.5092, 
+        lng: -46.6377, 
+        raio: 5400 
+    },
+    { 
+        nome: "Aeroporto de Guarulhos (GRU)", 
+        lat: -23.4356, 
+        lng: -46.4731, 
+        raio: 9000 // Raio maior por ser aeroporto internacional
+    },
+    { 
+        nome: "Aeroporto de Viracopos (VCP)", 
+        lat: -23.0069, 
+        lng: -47.1344, 
+        raio: 9000 
+    },
+    { 
+        nome: "Zona de Helipontos (Av. Paulista)", 
+        lat: -23.5615, 
+        lng: -46.6559, 
+        raio: 2000 // Área com fluxo intenso de helicópteros
+    },
+    { 
+        nome: "Base Aérea de Santos", 
+        lat: -23.9275, 
+        lng: -46.2975, 
+        raio: 5400 
+    }
+];
+
+/**
+ * Valida se o ponto está em área restrita e pede confirmação
+ */
+async function validarAreaVoo(lat, lng) {
+    // Verifica se a biblioteca de geometria está disponível
+    if (!google.maps.geometry || !google.maps.geometry.spherical) {
+        console.error("Biblioteca Geometry do Google não carregada!");
+        return true; // Se a API falhar, permite o envio para não travar o sistema
+    }
+
+    const pontoVoo = new google.maps.LatLng(lat, lng);
+    
+    for (const area of AREAS_PROIBIDAS) {
+        const centroArea = new google.maps.LatLng(area.lat, area.lng);
+        const distancia = google.maps.geometry.spherical.computeDistanceBetween(pontoVoo, centroArea);
+
+        if (distancia < area.raio) {
+            // O código "para" aqui e espera a UVIS clicar
+            const result = await Swal.fire({
+                icon: 'warning',
+                title: 'Área Restrita Detectada!',
+                html: `Este ponto está a <b>${(distancia/1000).toFixed(2)}km</b> do <b>${area.nome}</b>.<br><br>` +
+                      'O voo nesta área é de alta complexidade e exige autorização do DECEA.<br><br>' +
+                      '<strong>Deseja confirmar o envio por sua conta e risco?</strong>',
+                showCancelButton: true,
+                confirmButtonColor: '#ffc107',
+                cancelButtonColor: '#6e7881',
+                confirmButtonText: 'Sim, desejo enviar',
+                cancelButtonText: 'Não, vou revisar',
+                reverseButtons: true
+            });
+
+            // Se confirmou o risco, seta o campo oculto para o Admin ver depois
+            if (result.isConfirmed) {
+                const inputRisco = document.getElementById('risco_aereo');
+                if (inputRisco) inputRisco.value = "1";
+                return true;
+            }
+            
+            return false; // Usuário desistiu
+        }
+    }
+    return true; // Área segura
+}
+
+/**
+ * Interceptador do Formulário
+ */
+const formSolicitacao = document.getElementById('formNovoPedido'); 
+
+if (formSolicitacao) {
+    formSolicitacao.addEventListener('submit', async function(e) {
+        // 1. Bloqueia o envio imediato
+        e.preventDefault();
+
+        const latField = document.getElementById('latitude');
+        const lngField = document.getElementById('longitude');
+
+        const lat = parseFloat(latField.value);
+        const lng = parseFloat(lngField.value);
+
+        // Verifica se as coordenadas são válidas (evita o texto "buscando...")
+        if (isNaN(lat) || isNaN(lng)) {
+            Swal.fire({
+                icon: "info",
+                title: "Aguarde o GPS",
+                text: "Ainda estamos localizando o endereço. Espere as coordenadas aparecerem e tente novamente.",
+                timer: 2500,
+                showConfirmButton: false
+            });
+            return; 
+        }
+
+        // 2. Executa a validação de área e espera o clique no SweetAlert
+        try {
+            const podeEnviar = await validarAreaVoo(lat, lng);
+
+            if (podeEnviar) {
+                // 3. Envia o formulário manualmente chamando o método nativo
+                console.log("Validação concluída. Enviando para o Flask...");
+                this.submit(); 
+            }
+        } catch (error) {
+            console.error("Erro no fluxo de validação:", error);
+            // Em caso de erro crítico no JS, envia para não perder o pedido
+            this.submit();
+        }
+    });
+}
 </script>
 
 {% endblock %}

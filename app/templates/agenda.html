@@ -1,86 +1,112 @@
-{% extends "base.html" %}
+{% extends "base.html" %} {% block extra_styles %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/pages/fullcalendar.css') }}"
+/>
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/components/forms.css') }}"
+/>
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/components/tables.css') }}"
+/>
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/components/buttons.css') }}"
+/>
+{% endblock %} {% block content %}
 
-{% block extra_styles %}
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/fullcalendar.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
-{% endblock %}
-
-{% block content %}
-
-<div class="container-fluid py-4" style="max-width: 1200px;">
+<div class="container-fluid py-4" style="max-width: 1200px">
   <div class="d-flex justify-content-between align-items-center mb-4">
-      <h2 class="text-dark"><i class="bi bi-calendar-event-fill me-2 text-primary"></i> Agenda</h2>
+    <h2 class="text-dark">
+      <i class="bi bi-calendar-event-fill me-2 text-primary"></i> Agenda
+    </h2>
 
-
-      
-    {% if current_user.is_authenticated and current_user.tipo_usuario in ['admin', 'visualizar'] %}
+    {% if current_user.is_authenticated and current_user.tipo_usuario in
+    ['admin', 'visualizar'] %}
     <div class="d-flex gap-2 flex-wrap">
+      {# ✅ Rota do dia: mostra para admin/operario/visualizar (ajuste se
+      quiser) #} {% if current_user.is_authenticated and
+      current_user.tipo_usuario in ["admin", "operario", "visualizar", "uvis"]
+      %}
+      <button id="btnRotaDia" class="btn btn-danger btn-sm">
+        <i class="bi bi-sign-turn-right"></i> Traçar rota do dia
+      </button>
+      {% endif %} {# ✅ Exportar: só admin e visualizar (igual você queria) #}
+      {% if current_user.is_authenticated and current_user.tipo_usuario in
+      ["admin", "visualizar"] %}
+      <a
+        href="{{ url_for('main.agenda_exportar_excel', all=1) }}"
+        class="btn btn-outline-secondary btn-sm"
+        title="Baixar base completa sem filtros"
+      >
+        <i class="bi bi-download"></i>
+        <span>Exportar Tudo</span>
+      </a>
 
-      {# ✅ Rota do dia: mostra para admin/operario/visualizar (ajuste se quiser) #}
-      {% if current_user.is_authenticated and current_user.tipo_usuario in ["admin", "operario", "visualizar", "uvis"] %}
-        <button id="btnRotaDia" class="btn btn-danger btn-sm">
-          <i class="bi bi-sign-turn-right"></i> Traçar rota do dia
-        </button>
+      <a
+        href="{{ url_for('main.agenda_exportar_excel', **request.args.to_dict()) }}"
+        class="btn btn-success btn-sm"
+        title="Exportar com filtros atuais"
+      >
+        <i class="bi bi-file-earmark-excel"></i>
+        <span>Exportar Atual</span>
+      </a>
       {% endif %}
-
-      {# ✅ Exportar: só admin e visualizar (igual você queria) #}
-      {% if current_user.is_authenticated and current_user.tipo_usuario in ["admin", "visualizar"] %}
-        <a href="{{ url_for('main.agenda_exportar_excel', all=1) }}"
-           class="btn btn-outline-secondary btn-sm"
-           title="Baixar base completa sem filtros">
-          <i class="bi bi-download"></i>
-          <span>Exportar Tudo</span>
-        </a>
-
-          <a href="{{ url_for('main.agenda_exportar_excel', **request.args.to_dict()) }}"
-            class="btn btn-success btn-sm"
-            title="Exportar com filtros atuais">
-            <i class="bi bi-file-earmark-excel"></i>
-            <span>Exportar Atual</span>
-          </a>
-        {% endif %}
-      </div>
+    </div>
     {% endif %}
   </div>
-  
-
 
   {# --- FILTROS DA AGENDA (SANFONA) --- #}
   <div class="card shadow-sm rounded-4 mb-4 border-0">
-    <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center"
-         data-bs-toggle="collapse"
-         data-bs-target="#collapseFiltrosAgenda"
-         aria-expanded="{{ 'true' if (filtros.uvis_id or filtros.status) else 'false' }}"
-         style="cursor: pointer;">
-
+    <div
+      class="card-header border-0 p-3 d-flex justify-content-between align-items-center"
+      data-bs-toggle="collapse"
+      data-bs-target="#collapseFiltrosAgenda"
+      aria-expanded="{{ 'true' if (filtros.uvis_id or filtros.status) else 'false' }}"
+      style="cursor: pointer"
+    >
       <div class="d-flex align-items-center gap-2">
         <i class="bi bi-funnel-fill text-primary"></i>
         <span class="text-dark">Filtros de busca</span>
 
         {% if filtros.uvis_id or filtros.status %}
-          <span class="badge bg-danger rounded-circle p-1" style="width: 8px; height: 8px;"></span>
+        <span
+          class="badge bg-danger rounded-circle p-1"
+          style="width: 8px; height: 8px"
+        ></span>
         {% endif %}
       </div>
 
       <i class="bi bi-chevron-down text-muted"></i>
     </div>
 
-    <div class="collapse {% if filtros.uvis_id or filtros.status %}show{% endif %}" id="collapseFiltrosAgenda">
+    <div
+      class="collapse {% if filtros.uvis_id or filtros.status %}show{% endif %}"
+      id="collapseFiltrosAgenda"
+    >
       <div class="card-body pt-0">
         <form method="get" action="{{ url_for('main.agenda') }}">
           <div class="row g-2 align-items-end">
-
             {% if pode_filtrar_uvis %}
             <div class="col-md-3">
               <label class="small text-muted">UVIS:</label>
               <select class="form-select form-select-sm" name="uvis_id">
                 <option value="">Todas</option>
                 {% for id, nome in uvis_disponiveis %}
-                  <option value="{{ id }}" {% if filtros.uvis_id|int == id|int %}selected{% endif %}>
-                    {{ nome }}
-                  </option>
+                <option
+                  value="{{ id }}"
+                  {%
+                  if
+                  filtros.uvis_id|int=""
+                  ="id|int"
+                  %}selected{%
+                  endif
+                  %}
+                >
+                  {{ nome }}
+                </option>
                 {% endfor %}
               </select>
             </div>
@@ -91,7 +117,18 @@
               <select class="form-select form-select-sm" name="status">
                 <option value="">Todos</option>
                 {% for s in status_opcoes %}
-                  <option value="{{ s }}" {% if filtros.status == s %}selected{% endif %}>{{ s }}</option>
+                <option
+                  value="{{ s }}"
+                  {%
+                  if
+                  filtros.status=""
+                  ="s"
+                  %}selected{%
+                  endif
+                  %}
+                >
+                  {{ s }}
+                </option>
                 {% endfor %}
               </select>
             </div>
@@ -100,9 +137,18 @@
               <label class="small text-muted">Mês:</label>
               <select class="form-select form-select-sm" name="mes">
                 {% for m in range(1, 13) %}
-                  <option value="{{ m }}" {% if filtros.mes|int == m %}selected{% endif %}>
-                    {{ "%02d"|format(m) }}
-                  </option>
+                <option
+                  value="{{ m }}"
+                  {%
+                  if
+                  filtros.mes|int=""
+                  ="m"
+                  %}selected{%
+                  endif
+                  %}
+                >
+                  {{ "%02d"|format(m) }}
+                </option>
                 {% endfor %}
               </select>
             </div>
@@ -111,23 +157,40 @@
               <label class="small text-muted">Ano:</label>
               <select class="form-select form-select-sm" name="ano">
                 {% for a in anos_disponiveis %}
-                  <option value="{{ a }}" {% if filtros.ano|int == a %}selected{% endif %}>{{ a }}</option>
+                <option
+                  value="{{ a }}"
+                  {%
+                  if
+                  filtros.ano|int=""
+                  ="a"
+                  %}selected{%
+                  endif
+                  %}
+                >
+                  {{ a }}
+                </option>
                 {% endfor %}
               </select>
             </div>
 
             <div class="col-md-2 d-flex gap-2">
-              <button type="submit" class="btn btn-success btn-sm w-100 align-items-center justify-content-center">
+              <button
+                type="submit"
+                class="btn btn-success btn-sm w-100 align-items-center justify-content-center"
+              >
                 <i class="bi bi-funnel"></i> Filtrar
               </button>
 
               {% if filtros.uvis_id or filtros.status %}
-                <a href="{{ url_for('main.agenda') }}" class="btn btn-outline-secondary btn-sm w-100" title="Limpar filtros">
-                  <i class="bi bi-x-lg"></i> Limpar
-                </a>
+              <a
+                href="{{ url_for('main.agenda') }}"
+                class="btn btn-outline-secondary btn-sm w-100"
+                title="Limpar filtros"
+              >
+                <i class="bi bi-x-lg"></i> Limpar
+              </a>
               {% endif %}
             </div>
-
           </div>
         </form>
       </div>
@@ -139,14 +202,12 @@
       <div id="calendar"></div>
     </div>
   </div>
-
 </div>
 
 {# --- MODAL DETALHES DO EVENTO --- #}
 <div class="modal fade" id="modalEvento" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered"> 
+  <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content rounded-4 border-0 shadow">
-
       <div class="modal-header border-bottom-0">
         <div>
           <h5 class="modal-title fw-bold text-primary mb-0">
@@ -154,88 +215,162 @@
           </h5>
           <div class="small text-muted" id="m-title-sub">—</div>
         </div>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Fechar"
+        ></button>
       </div>
 
       <div class="modal-body p-0">
         <div class="row g-0">
           <div class="col-lg-5 p-4 d-flex flex-column gap-4">
             <div class="info-group">
-                <label class="small text-muted fw-bold text-uppercase ls-1 mb-1 d-block">Unidade Solicitante</label>
-                <h4 id="m-uvis" class="fw-bold text-dark border-start border-primary border-4 ps-3 mb-0">—</h4>
+              <label
+                class="small text-muted fw-bold text-uppercase ls-1 mb-1 d-block"
+                >Unidade Solicitante</label
+              >
+              <h4
+                id="m-uvis"
+                class="fw-bold text-dark border-start border-primary border-4 ps-3 mb-0"
+              >
+                —
+              </h4>
             </div>
 
             <div class="row g-3">
-                <div class="col-6">
-                    <div class="p-3 rounded-4 bg-light border-0 shadow-sm h-100">
-                        <label class="small text-muted fw-bold text-uppercase d-block mb-2" style="font-size: 0.65rem;">Horário Agendado</label>
-                        <div class="d-flex align-items-center text-primary">
-                            <i class="bi bi-clock-fill fs-5 me-2"></i>
-                            <span id="m-hora" class="fw-bold fs-5">—</span>
-                        </div>
-                    </div>
+              <div class="col-6">
+                <div class="p-3 rounded-4 bg-light border-0 shadow-sm h-100">
+                  <label
+                    class="small text-muted fw-bold text-uppercase d-block mb-2"
+                    style="font-size: 0.65rem"
+                    >Horário Agendado</label
+                  >
+                  <div class="d-flex align-items-center text-primary">
+                    <i class="bi bi-clock-fill fs-5 me-2"></i>
+                    <span id="m-hora" class="fw-bold fs-5">—</span>
+                  </div>
                 </div>
-                <div class="col-6">
-                    <div class="p-3 rounded-4 bg-light border-0 shadow-sm h-100">
-                        <label class="small text-muted fw-bold text-uppercase d-block mb-2" style="font-size: 0.65rem;">Foco da Ação</label>
-                        <div class="d-flex align-items-center text-dark">
-                            <i class="bi bi-crosshair me-2 text-danger"></i>
-                            <span id="m-foco" class="fw-semibold">—</span>
-                        </div>
-                    </div>
+              </div>
+              <div class="col-6">
+                <div class="p-3 rounded-4 bg-light border-0 shadow-sm h-100">
+                  <label
+                    class="small text-muted fw-bold text-uppercase d-block mb-2"
+                    style="font-size: 0.65rem"
+                    >Foco da Ação</label
+                  >
+                  <div class="d-flex align-items-center text-dark">
+                    <i class="bi bi-crosshair me-2 text-danger"></i>
+                    <span id="m-foco" class="fw-semibold">—</span>
+                  </div>
                 </div>
+              </div>
             </div>
 
             <div class="info-card p-3 rounded-4 border">
-                <div class="mb-3">
-                    <label class="small text-muted fw-bold text-uppercase d-block mb-2" style="font-size: 0.65rem;">Situação do Pedido</label>
-                    <span id="m-status" class="badge rounded-pill shadow-sm px-2" style="font-size: 0.75rem; font-weight: 600;">—</span>
-                </div>
+              <div class="mb-3">
+                <label
+                  class="small text-muted fw-bold text-uppercase d-block mb-2"
+                  style="font-size: 0.65rem"
+                  >Situação do Pedido</label
+                >
+                <span
+                  id="m-status"
+                  class="badge rounded-pill shadow-sm px-2"
+                  style="font-size: 0.75rem; font-weight: 600"
+                  >—</span
+                >
+              </div>
 
-                <div id="boxCoords" style="display:none;">
-                    <label class="small text-muted fw-bold text-uppercase d-block mb-2" style="font-size: 0.65rem;">Endereço de Operação</label>
-                    <div class="d-flex gap-2">
-                        <i class="bi bi-geo-alt text-primary fs-5"></i>
-                        <div>
-                            <div id="m-endereco" class="fw-semibold text-dark small mb-1">—</div>
-                            <code id="m-coords" class="text-muted" style="font-size: 1rem;">—</code>
-                        </div>
+              <div id="boxCoords" style="display: none">
+                <label
+                  class="small text-muted fw-bold text-uppercase d-block mb-2"
+                  style="font-size: 0.65rem"
+                  >Endereço de Operação</label
+                >
+                <div class="d-flex gap-2">
+                  <i class="bi bi-geo-alt text-primary fs-5"></i>
+                  <div>
+                    <div
+                      id="m-endereco"
+                      class="fw-semibold text-dark small mb-1"
+                    >
+                      —
                     </div>
+                    <code
+                      id="m-coords"
+                      class="text-muted"
+                      style="font-size: 1rem"
+                      >—</code
+                    >
+                  </div>
                 </div>
+              </div>
             </div>
 
-            <div class="alert alert-soft-warning d-flex align-items-center rounded-4 border-0 m-0 d-none" id="boxSemCoords">
-                <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                <span class="small fw-medium">Atenção: Coordenadas GPS não cadastradas.</span>
+            <div
+              class="alert alert-soft-warning d-flex align-items-center rounded-4 border-0 m-0 d-none"
+              id="boxSemCoords"
+            >
+              <i class="bi bi-exclamation-triangle-fill me-2"></i>
+              <span class="small fw-medium"
+                >Atenção: Coordenadas GPS não cadastradas.</span
+              >
             </div>
-        </div>
+          </div>
 
           <div class="col-lg-7 p-4 border-start bg-light-subtle">
-            <div id="mapCanvasEvento" class="rounded-3 shadow-sm border" style="width:100%; height: 400px;"></div>
-            
-            <div id="boxButtonsMaps" class="d-flex gap-2 mt-3 justify-content-end">
-                {# O uso de flex-fill garante que ambos cresçam para ter o mesmo tamanho #}
-                <a id="m-openmaps" class="btn btn-success btn-sm flex-fill d-flex align-items-center justify-content-center py-2" target="_blank" rel="noopener">
-                  <i class="bi bi-box-arrow-up-right me-2"></i> Maps
-                </a>
-                <a id="m-directions" class="btn btn-danger btn-sm flex-fill d-flex align-items-center justify-content-center py-2" target="_blank" rel="noopener">
-                  <i class="bi bi-sign-turn-right me-2"></i> Traçar Rota
-                </a>
+            <div
+              id="mapCanvasEvento"
+              class="rounded-3 shadow-sm border"
+              style="width: 100%; height: 400px"
+            ></div>
+
+            <div
+              id="boxButtonsMaps"
+              class="d-flex gap-2 mt-3 justify-content-end"
+            >
+              {# O uso de flex-fill garante que ambos cresçam para ter o mesmo
+              tamanho #}
+              <a
+                id="m-openmaps"
+                class="btn btn-success btn-sm flex-fill d-flex align-items-center justify-content-center py-2"
+                target="_blank"
+                rel="noopener"
+              >
+                <i class="bi bi-box-arrow-up-right me-2"></i> Maps
+              </a>
+              <a
+                id="m-directions"
+                class="btn btn-danger btn-sm flex-fill d-flex align-items-center justify-content-center py-2"
+                target="_blank"
+                rel="noopener"
+              >
+                <i class="bi bi-sign-turn-right me-2"></i> Traçar Rota
+              </a>
             </div>
           </div>
         </div>
       </div>
 
       <div class="modal-footer border-top-0">
-        <button class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Fechar</button>
-      </div>    
+        <button
+          class="btn btn-outline-secondary rounded-pill px-4"
+          data-bs-dismiss="modal"
+        >
+          Fechar
+        </button>
+      </div>
     </div>
   </div>
 </div>
 
-{% endblock %}
-{% block scripts %}
-<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet" />
+{% endblock %} {% block scripts %}
+<link
+  href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css"
+  rel="stylesheet"
+/>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/locales-all.global.min.js"></script>
 
@@ -281,10 +416,13 @@
 
   function loadGoogleMaps() {
     return new Promise((resolve, reject) => {
-      if (googleMapsLoaded && window.google && window.google.maps) return resolve();
+      if (googleMapsLoaded && window.google && window.google.maps)
+        return resolve();
 
       if (!GOOGLE_MAPS_KEY) {
-        return reject(new Error("KEY_API_GOOGLE_MAPS não foi enviada ao template."));
+        return reject(
+          new Error("KEY_API_GOOGLE_MAPS não foi enviada ao template."),
+        );
       }
 
       if (document.getElementById("googleMapsScript")) {
@@ -318,8 +456,10 @@
 
     if (statusText === "APROVADO") el.classList.add("bg-success");
     else if (statusText === "NEGADO") el.classList.add("bg-danger");
-    else if (statusText === "EM ANÁLISE") el.classList.add("bg-warning", "text-dark");
-    else if (statusText === "APROVADO COM RECOMENDAÇÕES") el.classList.add("bg-warning", "text-dark");
+    else if (statusText === "EM ANÁLISE")
+      el.classList.add("bg-warning", "text-dark");
+    else if (statusText === "APROVADO COM RECOMENDAÇÕES")
+      el.classList.add("bg-warning", "text-dark");
     else if (statusText === "PENDENTE") el.classList.add("bg-secondary");
     else el.classList.add("bg-secondary");
   }
@@ -378,11 +518,14 @@
       if (boxSemCoords) boxSemCoords.style.display = "none";
 
       if (elEndereco) elEndereco.textContent = endereco || "—";
-      if (elCoords) elCoords.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+      if (elCoords)
+        elCoords.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
 
       const q = `${lat},${lng}`;
-      if (aOpen) aOpen.href = `https://www.google.com/maps?q=${encodeURIComponent(q)}`;
-      if (aDir) aDir.href = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(q)}`;
+      if (aOpen)
+        aOpen.href = `https://www.google.com/maps?q=${encodeURIComponent(q)}`;
+      if (aDir)
+        aDir.href = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(q)}`;
     } else {
       if (boxCoords) boxCoords.style.display = "none";
       if (boxSemCoords) boxSemCoords.style.display = "block";
@@ -452,7 +595,6 @@
         google.maps.event.trigger(mapEvento, "resize");
         mapEvento.setCenter(center);
       }, 200);
-
     } catch (err) {
       console.error(err);
       // fallback visual
@@ -489,11 +631,11 @@
         right: isMobile ? "listWeek" : "dayGridMonth,listWeek",
       },
 
-      dateClick: function(info) {
+      dateClick: function (info) {
         selectedDayISO = info.dateStr;
       },
 
-      eventClick: function(info) {
+      eventClick: function (info) {
         info.jsEvent.preventDefault();
 
         if (info.event.start) {
@@ -504,7 +646,7 @@
         openEventoModalFromEvent(info.event);
       },
 
-      datesSet: function() {
+      datesSet: function () {
         if (!selectedDayISO) selectedDayISO = getSmartDay(calendar);
       },
     });
@@ -512,62 +654,66 @@
     calendar.render();
 
     // ===== ROTA DO DIA =====
-    document.getElementById("btnRotaDia")?.addEventListener("click", async () => {
-      const dia = selectedDayISO || getSmartDay(calendar);
+    document
+      .getElementById("btnRotaDia")
+      ?.addEventListener("click", async () => {
+        const dia = selectedDayISO || getSmartDay(calendar);
 
-      const params = new URLSearchParams(window.location.search);
-      params.set("dia", dia);
+        const params = new URLSearchParams(window.location.search);
+        params.set("dia", dia);
 
-      const url = `/agenda/rotas-dia?${params.toString()}`;
+        const url = `/agenda/rotas-dia?${params.toString()}`;
 
-      try {
-        const r = await fetch(url, { headers: { Accept: "application/json" } });
-        const d = await r.json();
-
-        if (!d.ok) throw new Error(d.error || "Erro ao montar rota.");
-
-        if (!d.pontos || d.pontos.length < 1) {
-          Swal?.fire({
-            toast: true,
-            position: "top-end",
-            icon: "warning",
-            title: "Nenhum ponto aprovado com coordenadas para este dia.",
-                showConfirmButton: false,
-            showConfirmButton: false,
-            timer: 3000,
+        try {
+          const r = await fetch(url, {
+            headers: { Accept: "application/json" },
           });
-          return;
+          const d = await r.json();
+
+          if (!d.ok) throw new Error(d.error || "Erro ao montar rota.");
+
+          if (!d.pontos || d.pontos.length < 1) {
+            Swal?.fire({
+              toast: true,
+              position: "top-end",
+              icon: "warning",
+              title: "Nenhum ponto aprovado com coordenadas para este dia.",
+              showConfirmButton: false,
+              showConfirmButton: false,
+              timer: 3000,
+            });
+            return;
+          }
+
+          if (!d.ok) throw new Error(d.error || "Erro ao montar rota.");
+
+          // 1. O destino final será o ÚLTIMO ponto da sua lista
+          const destination = `${d.pontos[d.pontos.length - 1].lat},${d.pontos[d.pontos.length - 1].lng}`;
+
+          // Waypoints: Se houver mais de 1 ponto, pegamos todos os anteriores ao último
+          // Se houver apenas 1 ponto, o slice(0, -1) resultará em um array vazio (correto)
+          const waypointsArr = d.pontos
+            .slice(0, -1)
+            .map((p) => `${p.lat},${p.lng}`);
+
+          // Origin vazia = Google Maps usa sua localização atual
+          let mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}&travelmode=driving`;
+
+          if (waypointsArr.length > 0) {
+            mapsUrl += `&waypoints=${encodeURIComponent(waypointsArr.join("|"))}`;
+          }
+
+          console.log("Traçando rota para " + d.pontos.length + " ponto(s)...");
+          window.open(mapsUrl, "_blank", "noopener");
+        } catch (e) {
+          console.error(e);
+          Swal?.fire({
+            icon: "error",
+            title: "Erro ao traçar rota",
+            text: e.message || "Falha",
+          });
         }
-
-if (!d.ok) throw new Error(d.error || "Erro ao montar rota.");
-
-// 1. O destino final será o ÚLTIMO ponto da sua lista
-const destination = `${d.pontos[d.pontos.length - 1].lat},${d.pontos[d.pontos.length - 1].lng}`;
-        
-// Waypoints: Se houver mais de 1 ponto, pegamos todos os anteriores ao último
-// Se houver apenas 1 ponto, o slice(0, -1) resultará em um array vazio (correto)
-const waypointsArr = d.pontos.slice(0, -1).map(p => `${p.lat},${p.lng}`);
-
-// Origin vazia = Google Maps usa sua localização atual
-let mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}&travelmode=driving`;
-
-if (waypointsArr.length > 0) {
-    mapsUrl += `&waypoints=${encodeURIComponent(waypointsArr.join("|"))}`;
-}
-
-console.log("Traçando rota para " + d.pontos.length + " ponto(s)...");
-window.open(mapsUrl, "_blank", "noopener");
-
-
-      } catch (e) {
-        console.error(e);
-        Swal?.fire({
-          icon: "error",
-          title: "Erro ao traçar rota",
-          text: e.message || "Falha",
-        });
-      }
-    });
+      });
 
     // responsivo
     window.addEventListener("resize", () => {
@@ -584,4 +730,3 @@ window.open(mapsUrl, "_blank", "noopener");
   });
 </script>
 {% endblock %}
-
