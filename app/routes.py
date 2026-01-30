@@ -5562,3 +5562,56 @@ def deletar_membro_equipe_uvis(membro_id):
         return redirect(url_for("main.listar_equipes_uvis"))
 
     return redirect(url_for("main.listar_membros_equipe_uvis", nome_equipe=nome_equipe))
+
+@bp.route('/api/heatmap-data')
+@login_required
+def heatmap_data():
+    uvis_id = request.args.get('uvis_id')
+    
+    query = Solicitacao.query.filter(
+        Solicitacao.latitude.isnot(None),
+        Solicitacao.longitude.isnot(None),
+        Solicitacao.status == 'APROVADO'
+    )
+
+    # AJUSTE AQUI: Trocamos uvis_id por usuario_id (ou o nome que está no seu model)
+    if current_user.tipo_usuario == 'uvis':
+        query = query.filter_by(usuario_id=current_user.id) 
+    elif uvis_id and uvis_id != "":
+        # Aqui também: filtrando a coluna correta no banco
+        query = query.filter_by(usuario_id=uvis_id)
+
+    solicitacoes = query.all()
+
+    # Montamos a lista de dicionários para o JSON
+    pontos = []
+    for s in solicitacoes:
+        try:
+            pontos.append({
+                "lat": float(s.latitude),
+                "lng": float(s.longitude),
+                "foco": s.foco if s.foco else "Outros"
+            })
+        except (ValueError, TypeError):
+            # Caso alguma coordenada esteja em formato inválido no banco
+            continue
+
+    return jsonify(pontos)
+
+@bp.route('/mapa-relatorio')
+@login_required
+def mapa_relatorio():
+    # Buscamos as UVIS para o filtro do Admin
+    uvis_disponiveis = []
+    if current_user.tipo_usuario == 'admin':
+        # Aqui buscamos os usuários que são do tipo 'uvis' para popular o select
+        uvis_disponiveis = db.session.query(Usuario.id, Usuario.nome_uvis)\
+                    .filter(Usuario.tipo_usuario == 'uvis').all()
+        
+    key = current_app.config.get('KEY_API_GOOGLE_MAPS')
+
+    print(f"DEBUG CHAVE: {current_app.config.get('KEY_API_GOOGLE_MAPS')}")
+    return render_template('mapa_relatorio.html', 
+                    uvis_disponiveis=uvis_disponiveis,
+                    google_maps_key=current_app.config.get('KEY_API_GOOGLE_MAPS', 'CHAVE_NAO_ENCONTRADA')
+    )

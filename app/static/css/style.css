@@ -1329,3 +1329,28 @@ textarea {
     justify-content: space-between !important;
   }
 }
+
+/* =========================================
+          EXTRAS & FIXES GERAIS
+   ========================================= */
+
+/* Estilização da Legenda Flutuante */
+#map-legend {
+    position: absolute;
+    bottom: 30px;
+    left: 20px;
+    z-index: 5;
+    background: white;
+    padding: 15px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    min-width: 180px;
+}
+.gradient-bar {
+    height: 10px;
+    width: 100%;
+    background: linear-gradient(to right, rgba(0, 255, 0, 1), rgba(255, 255, 0, 1), rgba(255, 0, 0, 1));
+    border-radius: 5px;
+    margin: 8px 0;
+}
+

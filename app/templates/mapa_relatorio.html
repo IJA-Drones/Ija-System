@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/chatbot.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="card shadow-sm border-0 rounded-4 mb-4">
+        <div class="card-body">
+            <div class="row align-items-end g-3">
+                <div class="col-md-3">
+                    <h4 class="m-0 fw-bold text-primary"><i class="bi bi-geo-fill"></i> Mapa de Calor</h4>
+                    <p class="text-muted small m-0">Densidade de focos de Dengue</p>
+                </div>
+                
+                {% if current_user.tipo_usuario == 'admin' %}
+                <div class="col-md-3">
+                    <label class="small fw-bold text-muted">Unidade:</label>
+                    <select id="uvisFilter" class="form-select" onchange="carregarDadosCalor()">
+                        <option value="">Todas as Unidades</option>
+                        {% for id, nome_uvis in uvis_disponiveis %}
+                        <option value="{{ id }}">{{ nome_uvis }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+
+                <div class="col-md-3">
+                    <label class="small fw-bold text-muted">Filtrar Tipo de Foco:</label>
+                    <select id="focoFilter" class="form-select" onchange="carregarDadosCalor()">
+                        <option value="todos">Todos os Focos</option>
+                        <option value="piscina">Piscinas / Água Parada</option>
+                        <option value="abandonado">Imóveis Abandonados</option>
+                        <option value="outros">Outros Pontos</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-2">
+                    <button onclick="carregarDadosCalor()" class="btn btn-primary w-100">
+                        <i class="bi bi-arrow-clockwise"></i> Atualizar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 rounded-4 overflow-hidden position-relative">
+        <div id="mapHeatmap" style="width: 100%; height: 600px;"></div>
+        
+        <div id="map-legend">
+            <h6 class="fw-bold mb-1 small text-uppercase">Densidade de Focos</h6>
+            <div class="gradient-bar"></div>
+            <div class="d-flex justify-content-between small text-muted">
+                <span>Baixa</span>
+                <span>Alta</span>
+            </div>
+            <hr class="my-2">
+            <div class="small">
+                <strong>Total filtrado:</strong> <span id="count-total">0</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://maps.googleapis.com/maps/api/js?key={{ config['KEY_API_GOOGLE_MAPS'] }}&libraries=visualization&callback=initMap" async defer></script>
+<script>
+    let map;
+    let heatmap;
+
+    async function initMap() {
+        const mapDiv = document.getElementById("mapHeatmap");
+        let centerPos = { lat: -22.4279, lng: -45.4584 }; // Itajubá
+
+        map = new google.maps.Map(mapDiv, {
+            zoom: 13,
+            center: centerPos,
+            mapTypeId: 'hybrid',
+            mapTypeControl: false,
+            streetViewControl: false
+        });
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const userPos = { lat: position.coords.latitude, lng: position.coords.longitude };
+                    map.setCenter(userPos);
+                }
+            );
+        }
+
+        carregarDadosCalor();
+    }
+
+    async function carregarDadosCalor() {
+        try {
+            const uvisId = document.getElementById("uvisFilter")?.value || "";
+            const focoFiltro = document.getElementById("focoFilter").value;
+            
+            const response = await fetch(`/api/heatmap-data?uvis_id=${uvisId}`);
+            let pontos = await response.json();
+
+            // Lógica de Filtro
+            if (focoFiltro !== "todos") {
+                pontos = pontos.filter(p => {
+                    const texto = p.foco.toLowerCase();
+                    if (focoFiltro === "piscina") return texto.includes("piscina") || texto.includes("água");
+                    if (focoFiltro === "abandonado") return texto.includes("abandonado");
+                    if (focoFiltro === "outros") return !texto.includes("piscina") && !texto.includes("água") && !texto.includes("abandonado");
+                    return true;
+                });
+            }
+
+            // Converte para pontos de calor (Heatmap)
+            const heatData = pontos.map(p => new google.maps.LatLng(p.lat, p.lng));
+
+            // Limpa o heatmap anterior
+            if (heatmap) {
+                heatmap.setMap(null);
+            }
+
+            // Cria a Camada de Calor
+            heatmap = new google.maps.visualization.HeatmapLayer({
+                data: heatData,
+                map: map,
+                radius: 40,      // Ajuste o raio conforme a necessidade visual
+                opacity: 0.8
+            });
+
+            // Atualiza contador na legenda
+            document.getElementById("count-total").innerText = pontos.length;
+
+        } catch (error) {
+            console.error("Erro ao carregar dados de calor:", error);
+        }
+    }
+
+    window.onload = initMap;
+</script>
+{% endblock %}

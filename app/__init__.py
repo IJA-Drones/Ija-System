@@ -12,10 +12,10 @@ db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
 
-# Carrega variáveis de ambiente
-load_dotenv()
-
 def create_app():
+    base_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+    dotenv_path = os.path.join(base_dir, '.env')
+    load_dotenv(dotenv_path)
     app = Flask(__name__)
 
     # Static files (produção)
