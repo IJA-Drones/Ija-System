@@ -324,9 +324,8 @@
               </ul>
             </div>
           </li>
-          {% endif %} {# ===================== EQUIPES (ADMIN COMPLETO / UVIS SÓ
-          LISTAR) ===================== #} {% if current_user.tipo_usuario in
-          ['admin', 'uvis'] %}
+          {% endif %} {# ===================== EQUIPES (ADMIN COMPLETO / UVIS SÓ LISTAR) ===================== #} 
+          {% if current_user.tipo_usuario in ['admin', 'uvis'] %}
           <li class="nav-item">
             <button type="button" class="nav-link nav-link-toggle" data-bs-toggle="collapse" data-bs-target="#menuEquipes">
               <span>
@@ -359,7 +358,7 @@
 
           {# ===================== EQUIPES (UVIS) ===================== #} 
           {# ✅ Visualizar não precisa ver este menu, pois ele já vê a lista global acima #}
-          {% if current_user.tipo_usuario == 'uvis' %}
+          {% if current_user.tipo_usuario in ['admin', 'uvis'] %}
           <li class="nav-item">
             <button type="button" class="nav-link nav-link-toggle" data-bs-toggle="collapse" data-bs-target="#menuEquipesUvis">
               <span>
@@ -379,13 +378,15 @@
 
                 <li class="nav-item">
                   <a class="nav-link sub-link {% if request.endpoint == 'main.criar_equipe_uvis' %}active{% endif %}" href="{{ url_for('main.criar_equipe_uvis') }}">
-                    <i class="bi bi-plus-lg me-2"></i><span>Cadastrar</span>
+                    <i class="bi bi-person-plus-fill me-2"></i><span>Cadastrar</span>
                   </a>
                 </li>
               </ul>
             </div>
           </li>
           {% endif %}
+
+          {% if current_user.tipo_usuario == 'uvis' %}
           <li class="nav-item">
             <a
               class="nav-link {% if request.endpoint == 'main.agenda' %}active{% endif %}"
@@ -394,6 +395,7 @@
               <i class="bi bi-calendar-event-fill me-2"></i><span>Agenda</span>
             </a>
           </li>
+          {% endif %}
           <div class="sidebar-footer mt-auto p-3 text-center">
             <div id="install-container" style="display: none">
               <button
@@ -633,7 +635,6 @@
       navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}");
   }
     </script>
-
     {% block scripts %}{% endblock %}
   </body>
 </html>

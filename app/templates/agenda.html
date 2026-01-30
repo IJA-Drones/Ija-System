@@ -540,25 +540,23 @@
           return;
         }
 
-
 if (!d.ok) throw new Error(d.error || "Erro ao montar rota.");
 
 // 1. O destino final será o ÚLTIMO ponto da sua lista
 const destination = `${d.pontos[d.pontos.length - 1].lat},${d.pontos[d.pontos.length - 1].lng}`;
-
-// 2. TODOS os outros pontos (do primeiro até o penúltimo) viram waypoints
-// Assim, o Maps traça a rota da sua casa/escritório passando por cada um deles
+        
+// Waypoints: Se houver mais de 1 ponto, pegamos todos os anteriores ao último
+// Se houver apenas 1 ponto, o slice(0, -1) resultará em um array vazio (correto)
 const waypointsArr = d.pontos.slice(0, -1).map(p => `${p.lat},${p.lng}`);
 
-// 3. Deixamos a 'origin' vazia para o Google Maps usar o seu GPS atual
+// Origin vazia = Google Maps usa sua localização atual
 let mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}&travelmode=driving`;
 
-// 4. Adicionamos todos os pontos como paradas no caminho
 if (waypointsArr.length > 0) {
     mapsUrl += `&waypoints=${encodeURIComponent(waypointsArr.join("|"))}`;
 }
 
-console.log("ROTA INICIANDO DA SUA LOCALIZAÇÃO =>", mapsUrl);
+console.log("Traçando rota para " + d.pontos.length + " ponto(s)...");
 window.open(mapsUrl, "_blank", "noopener");
 
 
