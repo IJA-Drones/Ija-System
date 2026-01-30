@@ -1,135 +1,191 @@
-{% extends "base.html" %} 
-{% block extra_styles %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
-{% endblock %}
-
-{% block content %}
-<div class="container-fluid py-4" style="max-width: 1200px;">
-  
+{% extends "base.html" %} {% block extra_styles %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/components/buttons.css') }}"
+/>
+{% endblock %} {% block content %}
+<div class="container-fluid py-4" style="max-width: 1200px">
   {# --- Cabeçalho --- #}
   <div class="d-flex align-items-center mb-4">
-      <h2 class="text-dark m-0">
-          <i class="bi bi-send-fill me-2 text-primary"></i> Novo Pedido de Voo
-      </h2>
+    <h2 class="text-dark m-0">
+      <i class="bi bi-send-fill me-2 text-primary"></i> Novo Pedido de Voo
+    </h2>
   </div>
 
   {# --- Card Principal --- #}
   <div class="card info status-primary shadow-sm rounded-4 border-0">
     <div class="card-body p-4">
-      
       <form method="POST" id="formNovoPedido">
-        
+        <input type="hidden" name="risco_aereo" id="risco_aereo" value="0">
         {# SEÇÃO 1: AGENDAMENTO #}
         <div class="d-flex align-items-center mb-3">
-            <i class="bi bi-calendar-event text-primary me-2 fs-5"></i>
-            <h5 class="m-0 text-primary fw-bold">Agendamento</h5>
+          <i class="bi bi-calendar-event text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Agendamento</h5>
         </div>
 
         <div class="row g-3 mb-4">
           <div class="col-md-6">
             <label class="form-label fw-bold small text-muted">
-                <i class="bi bi-calendar-date me-1 text-primary"></i> Data da Visita *
+              <i class="bi bi-calendar-date me-1 text-primary"></i> Data da
+              Visita *
             </label>
-            <input type="date" name="data" class="form-control" required min="{{ hoje }}">
+            <input
+              type="date"
+              name="data"
+              class="form-control"
+              required
+              min="{{ hoje }}"
+            />
           </div>
-          
+
           <div class="col-md-6">
             <label class="form-label fw-bold small text-muted">
-                <i class="bi bi-clock me-1 text-primary"></i> Horário Previsto *
+              <i class="bi bi-clock me-1 text-primary"></i> Horário Previsto *
             </label>
-            <input type="time" name="hora" class="form-control" required>
+            <input type="time" name="hora" class="form-control" required />
           </div>
         </div>
 
-        <hr class="text-muted opacity-25 my-4">
+        <hr class="text-muted opacity-25 my-4" />
 
         {# SEÇÃO 2: LOCALIZAÇÃO #}
         <div class="d-flex align-items-center mb-3">
-            <i class="bi bi-geo-alt-fill text-primary me-2 fs-5"></i>
-            <h5 class="m-0 text-primary fw-bold">Localização</h5>
+          <i class="bi bi-geo-alt-fill text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Localização</h5>
         </div>
 
         <div class="row g-3 mb-3">
           <div class="col-md-4">
             <label class="form-label fw-bold small text-muted">
-                <i class="bi bi-search me-1 text-primary"></i> CEP *
+              <i class="bi bi-search me-1 text-primary"></i> CEP *
             </label>
-            <input type="text" id="cep" name="cep" maxlength="9" class="form-control" placeholder="00000-000" required>
+            <input
+              type="text"
+              id="cep"
+              name="cep"
+              maxlength="9"
+              class="form-control"
+              placeholder="00000-000"
+              required
+            />
           </div>
         </div>
 
         <div class="row g-3 mb-3">
           <div class="col-md-8">
             <label class="form-label fw-bold small text-muted">
-                <i class="bi bi-signpost-2 me-1 text-primary"></i> Logradouro *
+              <i class="bi bi-signpost-2 me-1 text-primary"></i> Logradouro *
             </label>
-            <input type="text" id="endereco" name="logradouro" class="form-control" required>
+            <input
+              type="text"
+              id="endereco"
+              name="logradouro"
+              class="form-control"
+              required
+            />
           </div>
           <div class="col-md-4">
             <label class="form-label fw-bold small text-muted">
-                <i class="bi bi-hash me-1 text-primary"></i> Número *
+              <i class="bi bi-hash me-1 text-primary"></i> Número *
             </label>
-            <input type="text" name="numero" class="form-control" required>
+            <input type="text" name="numero" class="form-control" required />
           </div>
         </div>
 
         <div class="row g-3 mb-3">
           <div class="col-md-6">
             <label class="form-label fw-bold small text-muted">
-                <i class="bi bi-door-open me-1 text-primary"></i> Complemento
+              <i class="bi bi-door-open me-1 text-primary"></i> Complemento
             </label>
-            <input type="text" name="complemento" class="form-control" placeholder="Ex: Apto 102">
+            <input
+              type="text"
+              name="complemento"
+              class="form-control"
+              placeholder="Ex: Apto 102"
+            />
           </div>
           <div class="col-md-6">
             <label class="form-label fw-bold small text-muted">
-                <i class="bi bi-map me-1 text-primary"></i> Bairro *
+              <i class="bi bi-map me-1 text-primary"></i> Bairro *
             </label>
-            <input type="text" id="bairro" name="bairro" class="form-control" required>
+            <input
+              type="text"
+              id="bairro"
+              name="bairro"
+              class="form-control"
+              required
+            />
           </div>
         </div>
 
         <div class="row g-3 mb-3">
           <div class="col-md-9">
             <label class="form-label fw-bold small text-muted">
-                <i class="bi bi-building me-1 text-primary"></i> Cidade *
+              <i class="bi bi-building me-1 text-primary"></i> Cidade *
             </label>
-            <input type="text" id="cidade" name="cidade" class="form-control" required>
+            <input
+              type="text"
+              id="cidade"
+              name="cidade"
+              class="form-control"
+              required
+            />
           </div>
           <div class="col-md-3">
             <label class="form-label fw-bold small text-muted">
-                <i class="bi bi-flag me-1 text-primary"></i> UF *
+              <i class="bi bi-flag me-1 text-primary"></i> UF *
             </label>
-            <input type="text" id="uf" name="uf" class="form-control" required>
+            <input
+              type="text"
+              id="uf"
+              name="uf"
+              class="form-control"
+              required
+            />
           </div>
         </div>
 
         <div class="row g-3 mb-4">
-           <div class="col-md-6">
-             <label class="form-label fw-bold small text-muted">
-                <i class="bi bi-globe me-1 text-primary"></i> Latitude
-             </label>
-            <input type="text" id="latitude" name="latitude" class="form-control form-control-sm font-monospace" placeholder="-23.XXXXXX" readonly>
-           </div>
-           <div class="col-md-6">
-             <label class="form-label fw-bold small text-muted">
-                <i class="bi bi-globe me-1 text-primary"></i> Longitude
-             </label>
-            <input type="text" id="longitude" name="longitude" class="form-control form-control-sm font-monospace" placeholder="-46.XXXXXX" readonly>
-           </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-globe me-1 text-primary"></i> Latitude
+            </label>
+            <input
+              type="text"
+              id="latitude"
+              name="latitude"
+              class="form-control form-control-sm font-monospace"
+              placeholder="-23.XXXXXX"
+              readonly
+            />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-globe me-1 text-primary"></i> Longitude
+            </label>
+            <input
+              type="text"
+              id="longitude"
+              name="longitude"
+              class="form-control form-control-sm font-monospace"
+              placeholder="-46.XXXXXX"
+              readonly
+            />
+          </div>
         </div>
 
-        <hr class="text-muted opacity-25 my-4">
+        <hr class="text-muted opacity-25 my-4" />
 
         {# SEÇÃO 3: DETALHES DA OPERAÇÃO #}
         <div class="d-flex align-items-center mb-3">
-            <i class="bi bi-sliders text-primary me-2 fs-5"></i>
-            <h5 class="m-0 text-primary fw-bold">Detalhes da Operação</h5>
+          <i class="bi bi-sliders text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Detalhes da Operação</h5>
         </div>
 
         <div class="row g-3 mb-3">
           <div class="col-md-6">
             <label class="form-label fw-bold small text-muted">
-                <i class="bi bi-list-task me-1 text-primary"></i> Tipo de Visita *
+              <i class="bi bi-list-task me-1 text-primary"></i> Tipo de Visita *
             </label>
             <select class="form-select" name="tipo_visita" required>
               <option value="" selected disabled>Selecione...</option>
@@ -138,10 +194,10 @@
               <option value="Culex">Culex</option>
             </select>
           </div>
-          
+
           <div class="col-md-6">
             <label class="form-label fw-bold small text-muted">
-                <i class="bi bi-arrow-up me-1 text-primary"></i> Altura do Voo *
+              <i class="bi bi-arrow-up me-1 text-primary"></i> Altura do Voo *
             </label>
             <select class="form-select" name="altura_voo" required>
               <option value="" selected disabled>Selecione...</option>
@@ -154,34 +210,53 @@
         </div>
 
         <div class="row mb-3 p-3 rounded mx-1 border">
-            <label class="fw-bold d-block mb-2 text-muted small">
-                <i class="bi bi-cone-striped me-1 text-primary"></i> Necessário Apoio CET?
-            </label>
-            <div class="d-flex gap-4">
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="apoio_cet" id="cetSim" value="sim">
-                  <label class="form-check-label" for="cetSim">Sim</label>
-                </div>
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="apoio_cet" id="cetNao" value="nao" checked>
-                  <label class="form-check-label" for="cetNao">Não</label>
-                </div>
+          <label class="fw-bold d-block mb-2 text-muted small">
+            <i class="bi bi-cone-striped me-1 text-primary"></i> Necessário
+            Apoio CET?
+          </label>
+          <div class="d-flex gap-4">
+            <div class="form-check">
+              <input
+                class="form-check-input"
+                type="radio"
+                name="apoio_cet"
+                id="cetSim"
+                value="sim"
+              />
+              <label class="form-check-label" for="cetSim">Sim</label>
             </div>
+            <div class="form-check">
+              <input
+                class="form-check-input"
+                type="radio"
+                name="apoio_cet"
+                id="cetNao"
+                value="nao"
+                checked
+              />
+              <label class="form-check-label" for="cetNao">Não</label>
+            </div>
+          </div>
         </div>
 
         <div class="mb-4">
           <label class="form-label fw-bold small text-muted">
             <i class="bi bi-card-text me-1 text-primary"></i> Observações
           </label>
-          <textarea class="form-control" name="observacao" rows="3" placeholder="Informações adicionais relevantes..."></textarea>
+          <textarea
+            class="form-control"
+            name="observacao"
+            rows="3"
+            placeholder="Informações adicionais relevantes..."
+          ></textarea>
         </div>
 
-        <hr class="text-muted opacity-25 my-4">
+        <hr class="text-muted opacity-25 my-4" />
 
         {# SEÇÃO 4: CLASSIFICAÇÃO #}
         <div class="d-flex align-items-center mb-3">
-            <i class="bi bi-bullseye text-primary me-2 fs-5"></i>
-            <h5 class="m-0 text-primary fw-bold">Classificação</h5>
+          <i class="bi bi-bullseye text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Classificação</h5>
         </div>
 
         <div class="mb-4">
@@ -189,7 +264,9 @@
             <i class="bi bi-crosshair me-1 text-primary"></i> Foco da Ação *
           </label>
           <select name="foco" class="form-select" required>
-            <option value="" selected disabled>Selecione o tipo de foco...</option>
+            <option value="" selected disabled>
+              Selecione o tipo de foco...
+            </option>
             <option>Imóvel Abandonado</option>
             <option>Piscina / Caixa D'água</option>
             <option>Terreno Baldio</option>
@@ -199,314 +276,324 @@
 
         {# BOTÕES #}
         <div class="d-flex justify-content-end gap-2 mt-5">
-          <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-danger px-4">
-              <i class="bi bi-x-lg me-1"></i> Cancelar
+          <a
+            href="{{ url_for('main.dashboard') }}"
+            class="btn btn-outline-danger px-4"
+          >
+            <i class="bi bi-x-lg me-1"></i> Cancelar
           </a>
           <button type="submit" class="btn btn-primary px-5 shadow-sm fw-bold">
             <i class="bi bi-send me-1"></i> Enviar Pedido
           </button>
         </div>
-
       </form>
     </div>
   </div>
 </div>
-{% endblock %}
-
+{% endblock %} {% block scripts %}
 <script src="https://maps.googleapis.com/maps/api/js?key=SUA_CHAVE_AQUI&libraries=geometry"></script>
-{% block scripts %}
 <script>
-document.addEventListener("DOMContentLoaded", function() {
+  document.addEventListener("DOMContentLoaded", function () {
+    const cepInput = document.getElementById("cep");
+    const enderecoInput = document.getElementById("endereco");
+    const bairroInput = document.getElementById("bairro");
+    const cidadeInput = document.getElementById("cidade");
+    const ufInput = document.getElementById("uf");
+    const numeroInput = document.querySelector('input[name="numero"]');
 
-  const cepInput = document.getElementById("cep");
-  const enderecoInput = document.getElementById("endereco");
-  const bairroInput = document.getElementById("bairro");
-  const cidadeInput = document.getElementById("cidade");
-  const ufInput = document.getElementById("uf");
-  const numeroInput = document.querySelector('input[name="numero"]');
+    const latInput = document.getElementById("latitude");
+    const lngInput = document.getElementById("longitude");
 
-  const latInput = document.getElementById("latitude");
-  const lngInput = document.getElementById("longitude");
+    let geocodeTimer = null;
 
-  let geocodeTimer = null;
-
-  function limparLatLng() {
-    if (latInput) latInput.value = "";
-    if (lngInput) lngInput.value = "";
-  }
-
-  async function chamarGeocode() {
-    try {
-      const payload = {
-        cep: (cepInput?.value || "").trim(),
-        logradouro: (enderecoInput?.value || "").trim(),
-        numero: (numeroInput?.value || "").trim(),
-        bairro: (bairroInput?.value || "").trim(),
-        cidade: (cidadeInput?.value || "").trim(),
-        uf: (ufInput?.value || "").trim()
-      };
-
-      // Só tenta se tiver o mínimo
-      if (!payload.logradouro || !payload.numero || !payload.cidade || !payload.uf) {
-        return;
-      }
-
-      // (opcional) feedback visual
-      if (latInput) latInput.value = "buscando...";
-      if (lngInput) lngInput.value = "buscando...";
-
-      const res = await fetch("/api/geocode", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-
-      const data = await res.json();
-      console.log("GEOCODE response:", data);
-
-      if (data.ok) {
-        latInput.value = data.lat;
-        lngInput.value = data.lng;
-      } else {
-        limparLatLng();
-        // Toast opcional (só se quiser)
-        // if (typeof Swal !== 'undefined') {
-        //   Swal.fire({ toast:true, position:'top-end', icon:'warning', title:data.message || 'Não foi possível geocodificar', showConfirmButton:false, timer:2500 });
-        // }
-      }
-    } catch (e) {
-      console.error("Erro geocode:", e);
-      limparLatLng();
+    function limparLatLng() {
+      if (latInput) latInput.value = "";
+      if (lngInput) lngInput.value = "";
     }
-  }
 
-  function agendarGeocode(ms = 450) {
-    clearTimeout(geocodeTimer);
-    geocodeTimer = setTimeout(chamarGeocode, ms);
-  }
+    async function chamarGeocode() {
+      try {
+        const payload = {
+          cep: (cepInput?.value || "").trim(),
+          logradouro: (enderecoInput?.value || "").trim(),
+          numero: (numeroInput?.value || "").trim(),
+          bairro: (bairroInput?.value || "").trim(),
+          cidade: (cidadeInput?.value || "").trim(),
+          uf: (ufInput?.value || "").trim(),
+        };
 
-  // -----------------------------
-  // VIA CEP (quando digita CEP)
-  // -----------------------------
-  if (cepInput) {
-    cepInput.addEventListener("keyup", function () {
-      let val = this.value.replace(/\D/g, "");
+        // Só tenta se tiver o mínimo
+        if (
+          !payload.logradouro ||
+          !payload.numero ||
+          !payload.cidade ||
+          !payload.uf
+        ) {
+          return;
+        }
 
-      if (val.length === 8) {
-        this.classList.add('loading-spinner');
-        this.disabled = true;
+        // (opcional) feedback visual
+        if (latInput) latInput.value = "buscando...";
+        if (lngInput) lngInput.value = "buscando...";
 
-        // Limpa campos
-        enderecoInput.value = "";
-        bairroInput.value = "";
-        cidadeInput.value = "";
-        ufInput.value = "";
+        const res = await fetch("/api/geocode", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await res.json();
+        console.log("GEOCODE response:", data);
+
+        if (data.ok) {
+          latInput.value = data.lat;
+          lngInput.value = data.lng;
+        } else {
+          limparLatLng();
+          // Toast opcional (só se quiser)
+          // if (typeof Swal !== 'undefined') {
+          //   Swal.fire({ toast:true, position:'top-end', icon:'warning', title:data.message || 'Não foi possível geocodificar', showConfirmButton:false, timer:2500 });
+          // }
+        }
+      } catch (e) {
+        console.error("Erro geocode:", e);
         limparLatLng();
+      }
+    }
 
-        fetch(`https://viacep.com.br/ws/${val}/json/`)
-          .then((response) => response.json())
-          .then((data) => {
-            this.classList.remove('loading-spinner');
-            this.disabled = false;
-            this.focus();
+    function agendarGeocode(ms = 450) {
+      clearTimeout(geocodeTimer);
+      geocodeTimer = setTimeout(chamarGeocode, ms);
+    }
 
-            if (!data.erro) {
-              enderecoInput.value = data.logradouro || "";
-              bairroInput.value = data.bairro || "";
-              cidadeInput.value = data.localidade || "";
-              ufInput.value = data.uf || "";
+    // -----------------------------
+    // VIA CEP (quando digita CEP)
+    // -----------------------------
+    if (cepInput) {
+      cepInput.addEventListener("keyup", function () {
+        let val = this.value.replace(/\D/g, "");
 
-              // Foca no número
-              if (numeroInput) numeroInput.focus();
+        if (val.length === 8) {
+          this.classList.add("loading-spinner");
+          this.disabled = true;
 
-              // Se o número já tiver algo (ex: autofill), tenta geocode
-              if ((numeroInput?.value || "").trim()) agendarGeocode(150);
+          // Limpa campos
+          enderecoInput.value = "";
+          bairroInput.value = "";
+          cidadeInput.value = "";
+          ufInput.value = "";
+          limparLatLng();
 
-            } else {
-              if (typeof Swal !== 'undefined') {
+          fetch(`https://viacep.com.br/ws/${val}/json/`)
+            .then((response) => response.json())
+            .then((data) => {
+              this.classList.remove("loading-spinner");
+              this.disabled = false;
+              this.focus();
+
+              if (!data.erro) {
+                enderecoInput.value = data.logradouro || "";
+                bairroInput.value = data.bairro || "";
+                cidadeInput.value = data.localidade || "";
+                ufInput.value = data.uf || "";
+
+                // Foca no número
+                if (numeroInput) numeroInput.focus();
+
+                // Se o número já tiver algo (ex: autofill), tenta geocode
+                if ((numeroInput?.value || "").trim()) agendarGeocode(150);
+              } else {
+                if (typeof Swal !== "undefined") {
+                  Swal.fire({
+                    toast: true,
+                    position: "top-end",
+                    icon: "warning",
+                    title: "CEP não encontrado.",
+                    showConfirmButton: false,
+                    timer: 3000,
+                    customClass: {
+                      popup: document.body.classList.contains("dark-mode")
+                        ? "swal2-dark-mode"
+                        : "",
+                    },
+                  });
+                }
+              }
+            })
+            .catch(() => {
+              this.classList.remove("loading-spinner");
+              this.disabled = false;
+              limparLatLng();
+
+              if (typeof Swal !== "undefined") {
                 Swal.fire({
                   toast: true,
-                  position: 'top-end',
-                  icon: 'warning',
-                  title: 'CEP não encontrado.',
+                  position: "top-end",
+                  icon: "error",
+                  title: "Erro ao consultar CEP.",
                   showConfirmButton: false,
                   timer: 3000,
                   customClass: {
-                    popup: document.body.classList.contains('dark-mode') ? 'swal2-dark-mode' : ''
-                  }
+                    popup: document.body.classList.contains("dark-mode")
+                      ? "swal2-dark-mode"
+                      : "",
+                  },
                 });
               }
-            }
-          })
-          .catch(() => {
-            this.classList.remove('loading-spinner');
-            this.disabled = false;
-            limparLatLng();
-
-            if (typeof Swal !== 'undefined') {
-              Swal.fire({
-                toast: true,
-                position: 'top-end',
-                icon: 'error',
-                title: 'Erro ao consultar CEP.',
-                showConfirmButton: false,
-                timer: 3000,
-                customClass: {
-                  popup: document.body.classList.contains('dark-mode') ? 'swal2-dark-mode' : ''
-                }
-              });
-            }
-          });
-      }
-    });
-  }
-
-  // -----------------------------
-  // GEOCODE (quando digita número)
-  // -----------------------------
-  if (numeroInput) {
-    // enquanto digita
-    numeroInput.addEventListener("keyup", function() {
-      limparLatLng();
-      agendarGeocode(450);
-    });
-
-    // quando sai do campo (bem confiável)
-    numeroInput.addEventListener("blur", function() {
-      agendarGeocode(100);
-    });
-  }
-
-});
-
-const AREAS_PROIBIDAS = [
-    { 
-        nome: "Aeroporto de Congonhas (CGH)", 
-        lat: -23.6273, 
-        lng: -46.6565, 
-        raio: 5400 
-    },
-    { 
-        nome: "Aeroporto Campo de Marte (RTE)", 
-        lat: -23.5092, 
-        lng: -46.6377, 
-        raio: 5400 
-    },
-    { 
-        nome: "Aeroporto de Guarulhos (GRU)", 
-        lat: -23.4356, 
-        lng: -46.4731, 
-        raio: 9000 // Raio maior por ser aeroporto internacional
-    },
-    { 
-        nome: "Aeroporto de Viracopos (VCP)", 
-        lat: -23.0069, 
-        lng: -47.1344, 
-        raio: 9000 
-    },
-    { 
-        nome: "Zona de Helipontos (Av. Paulista)", 
-        lat: -23.5615, 
-        lng: -46.6559, 
-        raio: 2000 // Área com fluxo intenso de helicópteros
-    },
-    { 
-        nome: "Base Aérea de Santos", 
-        lat: -23.9275, 
-        lng: -46.2975, 
-        raio: 5400 
+            });
+        }
+      });
     }
-];
 
-/**
- * Valida se o ponto está em área restrita e pede confirmação
- */
-async function validarAreaVoo(lat, lng) {
-    // Verifica se a biblioteca de geometria está disponível
-    if (!google.maps.geometry || !google.maps.geometry.spherical) {
+    // -----------------------------
+    // GEOCODE (quando digita número)
+    // -----------------------------
+    if (numeroInput) {
+      // enquanto digita
+      numeroInput.addEventListener("keyup", function () {
+        limparLatLng();
+        agendarGeocode(450);
+      });
+
+      // quando sai do campo (bem confiável)
+      numeroInput.addEventListener("blur", function () {
+        agendarGeocode(100);
+      });
+    }
+
+    const AREAS_PROIBIDAS = [
+      {
+        nome: "Aeroporto de Congonhas (CGH)",
+        lat: -23.6273,
+        lng: -46.6565,
+        raio: 5400,
+      },
+      {
+        nome: "Aeroporto Campo de Marte (RTE)",
+        lat: -23.5092,
+        lng: -46.6377,
+        raio: 5400,
+      },
+      {
+        nome: "Aeroporto de Guarulhos (GRU)",
+        lat: -23.4356,
+        lng: -46.4731,
+        raio: 9000, // Raio maior por ser aeroporto internacional
+      },
+      {
+        nome: "Aeroporto de Viracopos (VCP)",
+        lat: -23.0069,
+        lng: -47.1344,
+        raio: 9000,
+      },
+      {
+        nome: "Zona de Helipontos (Av. Paulista)",
+        lat: -23.5615,
+        lng: -46.6559,
+        raio: 2000, // Área com fluxo intenso de helicópteros
+      },
+      {
+        nome: "Base Aérea de Santos",
+        lat: -23.9275,
+        lng: -46.2975,
+        raio: 5400,
+      },
+    ];
+
+    /**
+     * Valida se o ponto está em área restrita e pede confirmação
+     */
+    async function validarAreaVoo(lat, lng) {
+      // Verifica se a biblioteca de geometria está disponível
+      if (!google.maps.geometry || !google.maps.geometry.spherical) {
         console.error("Biblioteca Geometry do Google não carregada!");
         return true; // Se a API falhar, permite o envio para não travar o sistema
-    }
+      }
 
-    const pontoVoo = new google.maps.LatLng(lat, lng);
-    
-    for (const area of AREAS_PROIBIDAS) {
+      const pontoVoo = new google.maps.LatLng(lat, lng);
+
+      for (const area of AREAS_PROIBIDAS) {
         const centroArea = new google.maps.LatLng(area.lat, area.lng);
-        const distancia = google.maps.geometry.spherical.computeDistanceBetween(pontoVoo, centroArea);
+        const distancia = google.maps.geometry.spherical.computeDistanceBetween(
+          pontoVoo,
+          centroArea,
+        );
 
         if (distancia < area.raio) {
-            // O código "para" aqui e espera a UVIS clicar
-            const result = await Swal.fire({
-                icon: 'warning',
-                title: 'Área Restrita Detectada!',
-                html: `Este ponto está a <b>${(distancia/1000).toFixed(2)}km</b> do <b>${area.nome}</b>.<br><br>` +
-                      'O voo nesta área é de alta complexidade e exige autorização do DECEA.<br><br>' +
-                      '<strong>Deseja confirmar o envio por sua conta e risco?</strong>',
-                showCancelButton: true,
-                confirmButtonColor: '#ffc107',
-                cancelButtonColor: '#6e7881',
-                confirmButtonText: 'Sim, desejo enviar',
-                cancelButtonText: 'Não, vou revisar',
-                reverseButtons: true
-            });
+          // O código "para" aqui e espera a UVIS clicar
+          const result = await Swal.fire({
+            icon: "warning",
+            title: "Área Restrita Detectada!",
+            html:
+              `Este ponto está a <b>${(distancia / 1000).toFixed(2)}km</b> do <b>${area.nome}</b>.<br><br>` +
+              "O voo nesta área é de alta complexidade e exige autorização do DECEA.<br><br>" +
+              "<strong>Deseja confirmar o envio por sua conta e risco?</strong>",
+            showCancelButton: true,
+            confirmButtonColor: "#ffc107",
+            cancelButtonColor: "#6e7881",
+            confirmButtonText: "Sim, desejo enviar",
+            cancelButtonText: "Não, vou revisar",
+            reverseButtons: true,
+          });
 
-            // Se confirmou o risco, seta o campo oculto para o Admin ver depois
-            if (result.isConfirmed) {
-                const inputRisco = document.getElementById('risco_aereo');
-                if (inputRisco) inputRisco.value = "1";
-                return true;
-            }
-            
-            return false; // Usuário desistiu
+          // Se confirmou o risco, seta o campo oculto para o Admin ver depois
+          if (result.isConfirmed) {
+            const inputRisco = document.getElementById("risco_aereo");
+            if (inputRisco) inputRisco.value = "1";
+            return true;
+          }
+
+          return false; // Usuário desistiu
         }
+      }
+      return true; // Área segura
     }
-    return true; // Área segura
-}
 
-/**
- * Interceptador do Formulário
- */
-const formSolicitacao = document.getElementById('formNovoPedido'); 
+    /**
+     * Interceptador do Formulário
+     */
+    const formSolicitacao = document.getElementById("formNovoPedido");
 
-if (formSolicitacao) {
-    formSolicitacao.addEventListener('submit', async function(e) {
+    if (formSolicitacao) {
+      formSolicitacao.addEventListener("submit", async function (e) {
         // 1. Bloqueia o envio imediato
         e.preventDefault();
 
-        const latField = document.getElementById('latitude');
-        const lngField = document.getElementById('longitude');
+        const latField = document.getElementById("latitude");
+        const lngField = document.getElementById("longitude");
 
         const lat = parseFloat(latField.value);
         const lng = parseFloat(lngField.value);
 
         // Verifica se as coordenadas são válidas (evita o texto "buscando...")
         if (isNaN(lat) || isNaN(lng)) {
-            Swal.fire({
-                icon: "info",
-                title: "Aguarde o GPS",
-                text: "Ainda estamos localizando o endereço. Espere as coordenadas aparecerem e tente novamente.",
-                timer: 2500,
-                showConfirmButton: false
-            });
-            return; 
+          Swal.fire({
+            icon: "info",
+            title: "Aguarde o GPS",
+            text: "Ainda estamos localizando o endereço. Espere as coordenadas aparecerem e tente novamente.",
+            timer: 2500,
+            showConfirmButton: false,
+          });
+          return;
         }
 
         // 2. Executa a validação de área e espera o clique no SweetAlert
         try {
-            const podeEnviar = await validarAreaVoo(lat, lng);
+          const podeEnviar = await validarAreaVoo(lat, lng);
 
-            if (podeEnviar) {
-                // 3. Envia o formulário manualmente chamando o método nativo
-                console.log("Validação concluída. Enviando para o Flask...");
-                this.submit(); 
-            }
-        } catch (error) {
-            console.error("Erro no fluxo de validação:", error);
-            // Em caso de erro crítico no JS, envia para não perder o pedido
+          if (podeEnviar) {
+            // 3. Envia o formulário manualmente chamando o método nativo
+            console.log("Validação concluída. Enviando para o Flask...");
             this.submit();
+          }
+        } catch (error) {
+          console.error("Erro no fluxo de validação:", error);
+          // Em caso de erro crítico no JS, envia para não perder o pedido
+          this.submit();
         }
-    });
-}
+      });
+    }
+  });
 </script>
 
 {% endblock %}

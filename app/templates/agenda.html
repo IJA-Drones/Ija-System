@@ -97,13 +97,7 @@
                 {% for id, nome in uvis_disponiveis %}
                 <option
                   value="{{ id }}"
-                  {%
-                  if
-                  filtros.uvis_id|int=""
-                  ="id|int"
-                  %}selected{%
-                  endif
-                  %}
+                  {% if filtros.uvis_id|int == id|int %}selected{% endif %}
                 >
                   {{ nome }}
                 </option>
@@ -119,13 +113,7 @@
                 {% for s in status_opcoes %}
                 <option
                   value="{{ s }}"
-                  {%
-                  if
-                  filtros.status=""
-                  ="s"
-                  %}selected{%
-                  endif
-                  %}
+                  {% if filtros.status == s %}selected{% endif %}
                 >
                   {{ s }}
                 </option>
@@ -139,13 +127,7 @@
                 {% for m in range(1, 13) %}
                 <option
                   value="{{ m }}"
-                  {%
-                  if
-                  filtros.mes|int=""
-                  ="m"
-                  %}selected{%
-                  endif
-                  %}
+                  {% if filtros.mes|int == m %}selected{% endif %}
                 >
                   {{ "%02d"|format(m) }}
                 </option>
@@ -159,13 +141,7 @@
                 {% for a in anos_disponiveis %}
                 <option
                   value="{{ a }}"
-                  {%
-                  if
-                  filtros.ano|int=""
-                  ="a"
-                  %}selected{%
-                  endif
-                  %}
+                  {% if filtros.ano|int == a %}selected{% endif %}
                 >
                   {{ a }}
                 </option>
