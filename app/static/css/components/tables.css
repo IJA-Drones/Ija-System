@@ -63,8 +63,11 @@
 
 /* Badge mais visível */
 #m-status {
-  letter-spacing: 1px;
-  font-weight: 800;
+  padding: 0.35em 0.8em; /* Diminui o "corpo" do badge */
+  font-size: 0.7rem;      /* Diminui o texto */
+  font-weight: 700;       /* Mantém a legibilidade */
+  letter-spacing: 0.3px;  /* Melhora o visual em letras pequenas */
+  text-transform: uppercase;
 }
 
 /* dark mode */
