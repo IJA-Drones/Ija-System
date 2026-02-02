@@ -4,7 +4,10 @@ class Config:
     # Gera uma chave secreta aleatória ou usa uma fixa
     SECRET_KEY = os.environ.get('SECRET_KEY')
     uri = os.environ.get('DATABASE_URL')
-    KEY_API_GOOGLE_MAPS = os.environ.get('KEY_API_GOOGLE_MAPS')
+    Maps_KEY_FRONT = os.getenv("KEY_API_GOOGLE_MAPS")
+
+# Nova variável (sem restrição de site) apenas para o Geocode do Python
+    Maps_KEY_BACK = os.getenv("GOOGLE_MAPS_KEY_BACK")
     
     # Caminho do Banco de Dados
 

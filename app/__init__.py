@@ -45,6 +45,11 @@ def create_app():
     @login_manager.user_loader
     def load_user(user_id):
         return Usuario.query.get(int(user_id))
+    
+    @app.context_processor
+    def inject_google_maps_key():
+        # Isso envia a chave para TODOS os templates automaticamente
+        return dict(google_maps_key=app.config.get("Maps_KEY_FRONT"))
 
     # Context Processor (APENAS o tema)
     @app.context_processor

@@ -68,7 +68,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="https://maps.googleapis.com/maps/api/js?key={{ config['KEY_API_GOOGLE_MAPS'] }}&libraries=visualization&callback=initMap" async defer></script>
+<script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_key }}&libraries=visualization&callback=initMap" async defer></script>
 <script>
     let map;
     let heatmap;

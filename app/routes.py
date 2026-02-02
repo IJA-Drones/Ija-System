@@ -561,10 +561,11 @@ def geocode_endereco_google(*, logradouro, numero, bairro, cidade, uf, cep=None)
     """
     Retorna (lat, lng) ou (None, None) se não achar.
     """
-    api_key = os.getenv("KEY_API_GOOGLE_MAPS")
+    api_key = current_app.config.get("Maps_KEY_BACK") or os.getenv("GOOGLE_MAPS_KEY_BACK")
+    
+    # Validação de segurança
     if not api_key:
-        raise RuntimeError("KEY_API_GOOGLE_MAPS não encontrada no ambiente")
-
+        raise RuntimeError("Maps_KEY_BACK não encontrada nas configurações do App")
     # Monta um endereço bem “forte” pro Google
     partes = [
         (logradouro or "").strip(),
@@ -588,6 +589,8 @@ def geocode_endereco_google(*, logradouro, numero, bairro, cidade, uf, cep=None)
     url = "https://maps.googleapis.com/maps/api/geocode/json?" + urlencode(params)
     resp = requests.get(url, timeout=10)
     data = resp.json()
+
+    print(f"RESPOSTA DO GOOGLE NO PYTHON: {data}")
 
     status = data.get("status")
     if status != "OK":
@@ -651,6 +654,8 @@ def api_geocode():
 def novo():
     hoje = date.today().isoformat()
 
+    key_for_map = current_app.config.get("Maps_KEY_FRONT")
+
     if request.method == 'POST':
         try:
             data_str = request.form.get('data')
@@ -710,7 +715,7 @@ def novo():
 
             if latitude is None or longitude is None:
                 flash("Não foi possível obter coordenadas automaticamente. Confira endereço/número e tente novamente.", "warning")
-                return render_template('cadastro.html', hoje=hoje)
+                return render_template('cadastro.html', hoje=hoje, google_maps_key=key_for_map)
 
             nova_solicitacao = Solicitacao(
                 data_agendamento=data_obj,
@@ -753,7 +758,7 @@ def novo():
             print(f"ERRO NOVO CADASTRO: {e}")
             flash("Erro ao salvar o pedido.", "danger")
 
-    return render_template('cadastro.html', hoje=hoje)
+    return render_template('cadastro.html', hoje=hoje, google_maps_key=key_for_map)
 
 # --- LOGIN ---
 from flask_login import login_user
@@ -1939,7 +1944,7 @@ import os
 def agenda():
     try:
         # ✅ Key pro mapa no modal
-        google_maps_key = current_app.config.get("KEY_API_GOOGLE_MAPS") or os.getenv("KEY_API_GOOGLE_MAPS") or ""
+        google_maps_key = current_app.config.get("Maps_KEY_FRONT") or os.getenv("KEY_API_GOOGLE_MAPS") or ""
 
         # --- Usuário atual ---
         user_tipo = getattr(current_user, "tipo_usuario", None)
@@ -5610,23 +5615,27 @@ def heatmap_data():
 
     return jsonify(pontos)
 
+
 @bp.route('/mapa-relatorio')
 @login_required
 def mapa_relatorio():
-    # Buscamos as UVIS para o filtro do Admin
+    # 1. Busca as UVIS (Lógica mantida)
     uvis_disponiveis = []
     if current_user.tipo_usuario == 'admin':
-        # Aqui buscamos os usuários que são do tipo 'uvis' para popular o select
         uvis_disponiveis = db.session.query(Usuario.id, Usuario.nome_uvis)\
                     .filter(Usuario.tipo_usuario == 'uvis').all()
         
-    key = current_app.config.get('KEY_API_GOOGLE_MAPS')
+    # 2. Busca a chave (Lógica blindada: tenta o nome novo, depois o antigo)
+    key = current_app.config.get('Maps_KEY_FRONT') or os.getenv('KEY_API_GOOGLE_MAPS')
 
-    print(f"DEBUG CHAVE: {current_app.config.get('KEY_API_GOOGLE_MAPS')}")
+    # DEBUG para você ver no terminal qual chave está sendo enviada
+    print(f"DEBUG CHAVE MAPA-RELATORIO: {key}")
+
     return render_template('mapa_relatorio.html', 
                     uvis_disponiveis=uvis_disponiveis,
-                    google_maps_key=current_app.config.get('KEY_API_GOOGLE_MAPS', 'CHAVE_NAO_ENCONTRADA')
+                    google_maps_key=key
     )
+
 from flask import abort, render_template
 from sqlalchemy import func
 def _admin_only():
