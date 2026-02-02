@@ -4231,6 +4231,8 @@ def listar_pilotos():
         if user_tipo not in ["admin", "visualizar"]:
             abort(403)
 
+        rows = query.all()
+
         from openpyxl import Workbook
         from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
         from openpyxl.utils import get_column_letter
