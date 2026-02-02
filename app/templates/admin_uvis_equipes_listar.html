@@ -1,0 +1,319 @@
+{% extends "base.html" %}
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+{% endblock %}
+{% block content %}
+
+<style>
+  .equipes-table-wrap { width: 100%; }
+
+  @media (max-width: 991.98px) {
+    .container-fluid.py-4 {
+      padding-left: 12px !important;
+      padding-right: 12px !important;
+    }
+
+    .d-flex.justify-content-between.align-items-center.mb-4 {
+      flex-direction: column;
+      align-items: flex-start !important;
+      gap: 12px;
+    }
+    .d-flex.justify-content-between.align-items-center.mb-4 .d-flex.gap-2 {
+      width: 100%;
+      flex-wrap: wrap;
+    }
+    .d-flex.justify-content-between.align-items-center.mb-4 .d-flex.gap-2 > a {
+      flex: 1 1 48%;
+      justify-content: center;
+    }
+
+    .equipes-table-wrap .table-responsive { overflow-x: visible !important; }
+    .equipes-table-wrap table.table thead { display: none; }
+
+    .equipes-table-wrap table.table,
+    .equipes-table-wrap table.table tbody,
+    .equipes-table-wrap table.table tr,
+    .equipes-table-wrap table.table td {
+      display: block;
+      width: 100%;
+    }
+
+    .equipes-table-wrap table.table tbody tr {
+      margin: 0 0 16px 0 !important;
+      border-radius: 16px !important;
+      overflow: hidden;
+      border: 1px solid rgba(0,0,0,.08);
+      box-shadow: 0 10px 22px rgba(0,0,0,.06);
+      background: #fff;
+    }
+    .equipes-table-wrap table.table tbody tr:last-child {
+      margin-bottom: 0 !important;
+    }
+
+    .equipes-table-wrap table.table tbody tr td {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 14px !important;
+      border: 0 !important;
+      background: transparent !important;
+      text-align: left !important;
+    }
+
+    .equipes-table-wrap table.table tbody tr td + td {
+      border-top: 1px solid rgba(0,0,0,.06) !important;
+    }
+
+    .equipes-table-wrap .ps-3,
+    .equipes-table-wrap .pe-3 {
+      padding-left: 14px !important;
+      padding-right: 14px !important;
+    }
+
+    /* Labels (mobile cards) */
+    .equipes-table-wrap table.table tbody tr td:nth-child(1)::before { content: "UVIS"; }
+    .equipes-table-wrap table.table tbody tr td:nth-child(2)::before { content: "Equipe"; }
+    .equipes-table-wrap table.table tbody tr td:nth-child(3)::before { content: "Membros"; }
+    .equipes-table-wrap table.table tbody tr td:nth-child(4)::before { content: "Ações"; }
+
+    .equipes-table-wrap table.table tbody tr td::before {
+      flex: 0 0 130px;
+      max-width: 130px;
+      font-weight: 700;
+      font-size: .82rem;
+      line-height: 1.1;
+      color: rgba(0,0,0,.55);
+      padding-top: 2px;
+    }
+
+    .equipes-table-wrap table.table tbody tr td > * {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .equipes-table-wrap td:nth-child(4) .d-flex.gap-2 {
+      flex-direction: column;
+      width: 100%;
+    }
+    .equipes-table-wrap td:nth-child(4) .d-flex.gap-2 .btn {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .card-footer .d-flex.justify-content-between.align-items-center {
+      flex-direction: column;
+      align-items: flex-start !important;
+      gap: 10px;
+    }
+    .card-footer nav { width: 100%; }
+    .card-footer .pagination { justify-content: flex-start; flex-wrap: wrap; }
+  }
+
+  @media (max-width: 420px) {
+    .equipes-table-wrap table.table tbody tr td::before {
+      flex-basis: 110px;
+      max-width: 110px;
+      font-size: .78rem;
+    }
+    .equipes-table-wrap table.table tbody tr td {
+      padding: 12px 12px !important;
+    }
+  }
+
+  /* DARK MODE */
+  @media (max-width: 991.98px) {
+    html.dark-mode .equipes-table-wrap table.table tbody tr,
+    body.dark-mode .equipes-table-wrap table.table tbody tr {
+      background: #0f1a24 !important;
+      border-color: #233549 !important;
+      box-shadow: 0 14px 30px rgba(0,0,0,.35) !important;
+      color: rgba(255,255,255,.92) !important;
+    }
+
+    html.dark-mode .equipes-table-wrap table.table tbody tr td + td,
+    body.dark-mode .equipes-table-wrap table.table tbody tr td + td {
+      border-top-color: #233549 !important;
+    }
+
+    html.dark-mode .equipes-table-wrap table.table tbody tr td::before,
+    body.dark-mode .equipes-table-wrap table.table tbody tr td::before {
+      color: rgba(255,255,255,.72) !important;
+    }
+
+    html.dark-mode .equipes-table-wrap table.table tbody tr td,
+    body.dark-mode .equipes-table-wrap table.table tbody tr td {
+      color: rgba(255,255,255,.92) !important;
+    }
+
+    html.dark-mode .equipes-table-wrap .text-muted,
+    body.dark-mode .equipes-table-wrap .text-muted {
+      color: rgba(255,255,255,.70) !important;
+    }
+
+    html.dark-mode .equipes-table-wrap a,
+    body.dark-mode .equipes-table-wrap a {
+      color: #7dd3fc !important;
+    }
+
+    html.dark-mode .card-footer.bg-white,
+    body.dark-mode .card-footer.bg-white {
+      background: transparent !important;
+      border-top-color: #233549 !important;
+    }
+  }
+</style>
+
+<div class="container-fluid py-4" style="max-width: 1200px">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="text-dark">
+        <i class="bi bi-people-fill me-2 text-primary"></i> Equipes UVIS Cadastradas
+      </h2>
+      <p class="text-muted small mb-0">
+        Total de registros: <strong>{{ total or (equipes|length) }}</strong>
+        {% if filters and (filters.q_uvis or filters.q_equipe or filters.sort) %}
+          <span class="badge bg-filter-custom ms-2">Filtrado</span>
+        {% endif %}
+      </p>
+    </div>
+
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary d-flex align-items-center">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  {# --- FILTROS EM SANFONA --- #}
+  <div class="card shadow-sm rounded-4 mb-4 border-0">
+    <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center"
+         data-bs-toggle="collapse"
+         data-bs-target="#collapseFiltrosEquipesUvisAdmin"
+         aria-expanded="{{ 'true' if (filters and (filters.q_uvis or filters.q_equipe or filters.sort)) else 'false' }}"
+         style="cursor: pointer;">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-funnel-fill text-primary"></i>
+        <span class="text-dark">Filtros de Busca</span>
+
+        {% if filters and (filters.q_uvis or filters.q_equipe or filters.sort) %}
+          <span class="badge bg-danger rounded-circle p-1" style="width: 8px; height: 8px;"></span>
+        {% endif %}
+      </div>
+      <i class="bi bi-chevron-down text-muted"></i>
+    </div>
+
+    <div class="collapse {% if filters and (filters.q_uvis or filters.q_equipe or filters.sort) %}show{% endif %}"
+         id="collapseFiltrosEquipesUvisAdmin">
+      <div class="card-body pt-0">
+        <form method="GET" action="{{ url_for('main.admin_listar_equipes_uvis') }}">
+          <div class="row g-2 align-items-end">
+
+            <div class="col-md-4">
+              <label class="small text-muted mb-1">Buscar UVIS:</label>
+              <input type="text"
+                     class="form-control form-control-sm"
+                     name="q_uvis"
+                     value="{{ filters.q_uvis if filters else '' }}"
+                     placeholder="Nome da UVIS...">
+            </div>
+
+            <div class="col-md-4">
+              <label class="small text-muted mb-1">Buscar equipe:</label>
+              <input type="text"
+                     class="form-control form-control-sm"
+                     name="q_equipe"
+                     value="{{ filters.q_equipe if filters else '' }}"
+                     placeholder="Nome da equipe...">
+            </div>
+
+            <div class="col-md-2">
+              <label class="small text-muted mb-1">Ordenar:</label>
+              <select class="form-select form-select-sm" name="sort">
+                {% set s = (filters.sort if filters else '') %}
+                <option value="uvis_asc"  {% if s == 'uvis_asc' %}selected{% endif %}>UVIS (A→Z)</option>
+                <option value="uvis_desc" {% if s == 'uvis_desc' %}selected{% endif %}>UVIS (Z→A)</option>
+                <option value="equipe_asc" {% if s == 'equipe_asc' %}selected{% endif %}>Equipe (A→Z)</option>
+                <option value="equipe_desc" {% if s == 'equipe_desc' %}selected{% endif %}>Equipe (Z→A)</option>
+                <option value="membros_desc" {% if s == 'membros_desc' %}selected{% endif %}>Mais membros</option>
+                <option value="membros_asc" {% if s == 'membros_asc' %}selected{% endif %}>Menos membros</option>
+              </select>
+            </div>
+
+            <div class="col-md-2 d-flex gap-2 flex-column flex-md-row">
+              <button type="submit" class="btn btn-success btn-sm flex-fill text-nowrap">
+                <i class="bi bi-funnel"></i> Filtrar
+              </button>
+
+              {% if filters and (filters.q_uvis or filters.q_equipe or filters.sort) %}
+                <a href="{{ url_for('main.admin_listar_equipes_uvis') }}"
+                   class="btn btn-outline-secondary btn-sm flex-fill text-nowrap">
+                  <i class="bi bi-x-lg"></i> Limpar
+                </a>
+              {% endif %}
+            </div>
+
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0 rounded-4 overflow-hidden equipes-table-wrap">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-3">UVIS</th>
+              <th>Equipe</th>
+              <th class="text-center" style="width: 120px;">Membros</th>
+              <th class="text-center pe-3" style="width: 210px">Ações</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% if equipes %}
+              {% for e in equipes %}
+                <tr>
+                  <td class="ps-3">
+                    <div class="fw-bold">{{ e.uvis_nome }}</div>
+                    <div class="text-muted small">#{{ e.uvis_id }}</div>
+                  </td>
+
+                  <td>
+                    <div class="fw-bold">{{ e.nome_equipe }}</div>
+                    <div class="text-muted small">Equipe cadastrada pela UVIS</div>
+                  </td>
+
+                  <td class="text-center">
+                    <span class="badge bg-white text-dark border">{{ e.total }}</span>
+                  </td>
+
+                  <td class="text-center pe-3">
+                    <div class="d-flex gap-2 justify-content-center">
+                      <a href="{{ url_for('main.admin_listar_membros_equipe_uvis', uvis_id=e.uvis_id, nome_equipe=e.nome_equipe) }}"
+                         class="btn btn-sm btn-primary text-white shadow-sm">
+                        <i class="bi bi-people"></i> Ver membros
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="4" class="text-center py-5">
+                  <p class="text-muted mb-0">Nenhuma equipe encontrada com os filtros aplicados.</p>
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

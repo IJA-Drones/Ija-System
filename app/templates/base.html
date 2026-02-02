@@ -356,9 +356,8 @@
           </li>
           {% endif %}
 
-          {# ===================== EQUIPES (UVIS) ===================== #} 
-          {# ✅ Visualizar não precisa ver este menu, pois ele já vê a lista global acima #}
-          {% if current_user.tipo_usuario in ['admin', 'uvis'] %}
+          {# ===================== EQUIPES (UVIS) ===================== #}
+          {% if current_user.tipo_usuario in ['uvis', 'admin'] %}
           <li class="nav-item">
             <button type="button" class="nav-link nav-link-toggle" data-bs-toggle="collapse" data-bs-target="#menuEquipesUvis">
               <span>
@@ -370,21 +369,39 @@
 
             <div class="collapse" id="menuEquipesUvis">
               <ul class="nav flex-column sub-nav">
+
+                {# --- ADMIN: lista global --- #}
+                {% if current_user.tipo_usuario == 'admin' %}
                 <li class="nav-item">
-                  <a class="nav-link sub-link {% if request.endpoint in ['main.listar_equipes_uvis','main.listar_membros_equipe_uvis'] %}active{% endif %}" href="{{ url_for('main.listar_equipes_uvis') }}">
+                  <a class="nav-link sub-link {% if request.endpoint in ['main.admin_listar_equipes_uvis','main.admin_listar_membros_equipe_uvis'] %}active{% endif %}"
+                    href="{{ url_for('main.admin_listar_equipes_uvis') }}">
+                    <i class="bi bi-list-ul me-2"></i><span>Listar</span>
+                  </a>
+                </li>
+                {% endif %}
+
+                {# --- UVIS: lista e cadastrar (dela) --- #}
+                {% if current_user.tipo_usuario == 'uvis' %}
+                <li class="nav-item">
+                  <a class="nav-link sub-link {% if request.endpoint in ['main.listar_equipes_uvis','main.listar_membros_equipe_uvis'] %}active{% endif %}"
+                    href="{{ url_for('main.listar_equipes_uvis') }}">
                     <i class="bi bi-list-ul me-2"></i><span>Listar</span>
                   </a>
                 </li>
 
                 <li class="nav-item">
-                  <a class="nav-link sub-link {% if request.endpoint == 'main.criar_equipe_uvis' %}active{% endif %}" href="{{ url_for('main.criar_equipe_uvis') }}">
+                  <a class="nav-link sub-link {% if request.endpoint == 'main.criar_equipe_uvis' %}active{% endif %}"
+                    href="{{ url_for('main.criar_equipe_uvis') }}">
                     <i class="bi bi-person-plus-fill me-2"></i><span>Cadastrar</span>
                   </a>
                 </li>
+                {% endif %}
+
               </ul>
             </div>
           </li>
           {% endif %}
+
 
           {% if current_user.tipo_usuario == 'uvis' %}
           <li class="nav-item">

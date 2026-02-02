@@ -23,8 +23,7 @@
       <i class="bi bi-calendar-event-fill me-2 text-primary"></i> Agenda
     </h2>
 
-    {% if current_user.is_authenticated and current_user.tipo_usuario in
-    ['admin', 'visualizar'] %}
+      
     <div class="d-flex gap-2 flex-wrap">
       {# ✅ Rota do dia: mostra para admin/operario/visualizar (ajuste se
       quiser) #} {% if current_user.is_authenticated and
@@ -45,17 +44,14 @@
         <span>Exportar Tudo</span>
       </a>
 
-      <a
-        href="{{ url_for('main.agenda_exportar_excel', **request.args.to_dict()) }}"
-        class="btn btn-success btn-sm"
-        title="Exportar com filtros atuais"
-      >
-        <i class="bi bi-file-earmark-excel"></i>
-        <span>Exportar Atual</span>
-      </a>
-      {% endif %}
-    </div>
-    {% endif %}
+          <a href="{{ url_for('main.agenda_exportar_excel', **request.args.to_dict()) }}"
+            class="btn btn-success btn-sm"
+            title="Exportar com filtros atuais">
+            <i class="bi bi-file-earmark-excel"></i>
+            <span>Exportar Atual</span>
+          </a>
+        {% endif %}
+      </div>    
   </div>
 
   {# --- FILTROS DA AGENDA (SANFONA) --- #}
