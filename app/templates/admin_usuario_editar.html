@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}" />
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}" />
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1200px">
+
+  <div class="d-flex align-items-center mb-4">
+    <h2 class="text-dark m-0">
+      <i class="bi bi-pencil-square me-2 text-primary"></i> Editar Usuário
+    </h2>
+  </div>
+
+  {# --- Mensagens Flash (opcional) --- #}
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm mb-4 rounded-3" role="alert">
+          <i class="bi bi-info-circle me-2"></i> {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <div class="card info status-primary shadow-sm rounded-4 border-0">
+    <div class="card-body p-4">
+
+      <form method="POST" action="{{ url_for('main.admin_usuario_editar', id=usuario.id) }}" novalidate>
+
+        {# SEÇÃO 1: IDENTIFICAÇÃO #}
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-card-heading text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Identificação</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-8">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-person me-1 text-primary"></i> Nome (exibição) *
+            </label>
+
+            <input
+              type="text"
+              class="form-control {% if errors.get('nome_uvis') %}is-invalid{% endif %}"
+              name="nome_uvis"
+              value="{{ form.get('nome_uvis', usuario.nome_uvis or '') }}"
+              placeholder="Ex: Administrador João"
+              required
+            />
+
+            {% if errors.get('nome_uvis') %}
+              <div class="invalid-feedback">{{ errors.get('nome_uvis') }}</div>
+            {% endif %}
+
+            <div class="form-text small">
+              Esse nome aparece no topo e em telas de listagem.
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-shield-lock-fill me-1 text-primary"></i> Tipo de Usuário *
+            </label>
+
+            {% set tipo_sel = (form.get('tipo_usuario', usuario.tipo_usuario or '') or '')|lower %}
+            <select
+              name="tipo_usuario"
+              class="form-select {% if errors.get('tipo_usuario') %}is-invalid{% endif %}"
+              required
+              {% if usuario.id == current_user.id %}disabled{% endif %}
+            >
+              <option value="admin" {% if tipo_sel == 'admin' %}selected{% endif %}>Admin</option>
+              <option value="operario" {% if tipo_sel == 'operario' %}selected{% endif %}>Operário</option>
+            </select>
+
+            {% if usuario.id == current_user.id %}
+              <input type="hidden" name="tipo_usuario" value="{{ usuario.tipo_usuario }}">
+              <div class="form-text small text-warning">
+                <i class="bi bi-exclamation-triangle me-1"></i>
+                Você não pode alterar seu próprio tipo de usuário.
+              </div>
+            {% endif %}
+
+            {% if errors.get('tipo_usuario') %}
+              <div class="invalid-feedback">{{ errors.get('tipo_usuario') }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <hr class="text-muted opacity-25 my-4" />
+
+        {# SEÇÃO 2: LOCAL / DADOS INTERNOS #}
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-geo-alt-fill text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Dados Internos</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-map me-1 text-primary"></i> Região
+            </label>
+
+            {% set reg = (form.get('regiao', usuario.regiao or '') or '')|upper %}
+            <select name="regiao" class="form-select {% if errors.get('regiao') %}is-invalid{% endif %}">
+              <option value="">Selecione...</option>
+              <option value="NORTE" {% if reg == 'NORTE' %}selected{% endif %}>NORTE</option>
+              <option value="SUL" {% if reg == 'SUL' %}selected{% endif %}>SUL</option>
+              <option value="LESTE" {% if reg == 'LESTE' %}selected{% endif %}>LESTE</option>
+              <option value="OESTE" {% if reg == 'OESTE' %}selected{% endif %}>OESTE</option>
+              <option value="CENTRO" {% if reg == 'CENTRO' %}selected{% endif %}>CENTRO</option>
+              <option value="SUDESTE" {% if reg == 'SUDESTE' %}selected{% endif %}>SUDESTE</option>
+              <option value="CENTRO-OESTE" {% if reg == 'CENTRO-OESTE' %}selected{% endif %}>CENTRO-OESTE</option>
+              <option value="CENTRAL" {% if reg == 'CENTRAL' %}selected{% endif %}>CENTRAL</option>
+              <option value="OPERACIONAL" {% if reg == 'OPERACIONAL' %}selected{% endif %}>OPERACIONAL</option>
+              <option value="AUDITORIA" {% if reg == 'AUDITORIA' %}selected{% endif %}>AUDITORIA</option>
+              <option value="COVISA" {% if reg == 'COVISA' %}selected{% endif %}>COVISA</option>
+            </select>
+
+            {% if errors.get('regiao') %}
+              <div class="invalid-feedback">{{ errors.get('regiao') }}</div>
+            {% endif %}
+          </div>         
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-person-lock me-1 text-primary"></i> Login *
+            </label>
+
+            <input
+              type="text"
+              class="form-control {% if errors.get('login') %}is-invalid{% endif %}"
+              name="login"
+              value="{{ form.get('login', usuario.login or '') }}"
+              placeholder="Ex: operario01"
+              required
+              autocomplete="off"
+            />
+
+            {% if errors.get('login') %}
+              <div class="invalid-feedback">{{ errors.get('login') }}</div>
+            {% endif %}
+
+            <div class="form-text small">
+              Usado para entrar no sistema. Deve ser único.
+            </div>
+          </div>
+        </div>
+
+        <hr class="text-muted opacity-25 my-4" />
+
+        {# SEÇÃO 3: SENHA (OPCIONAL) #}
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-key-fill text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Senha (opcional)</h5>
+        </div>
+
+        <div class="row g-3 mb-2">
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-shield-lock me-1 text-primary"></i> Nova senha
+            </label>
+            <input
+              type="password"
+              class="form-control {% if errors.get('senha') %}is-invalid{% endif %}"
+              name="senha"
+              value=""
+              placeholder="Deixe em branco para não alterar"
+              autocomplete="new-password"
+            />
+            {% if errors.get('senha') %}
+              <div class="invalid-feedback">{{ errors.get('senha') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-shield-check me-1 text-primary"></i> Confirmar senha
+            </label>
+            <input
+              type="password"
+              class="form-control {% if errors.get('senha2') %}is-invalid{% endif %}"
+              name="senha2"
+              value=""
+              placeholder="Repita a nova senha"
+              autocomplete="new-password"
+            />
+            {% if errors.get('senha2') %}
+              <div class="invalid-feedback">{{ errors.get('senha2') }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="small text-muted mt-2">
+          <i class="bi bi-info-circle me-1"></i>
+          Se você preencher a senha, precisa confirmar. Se deixar em branco, mantém a senha atual.
+        </div>
+
+        <small class="text-muted d-block mt-4">
+          Campos com <span class="text-danger">*</span> são de preenchimento obrigatório.
+        </small>
+
+        {# BOTÕES #}
+        <div class="d-flex justify-content-end gap-2 mt-5">
+          <a href="{{ url_for('main.admin_usuarios_listar') }}" class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-x-lg me-1"></i> Cancelar
+          </a>
+
+          <button type="submit" class="btn btn-primary btn-sm">
+            <i class="bi bi-check-lg me-1"></i> Salvar Alterações
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // opcional: impedir espaço no login
+  document.addEventListener("DOMContentLoaded", () => {
+    const login = document.querySelector('input[name="login"]');
+    if (login) {
+      login.addEventListener("input", (e) => {
+        e.target.value = e.target.value.replace(/\s+/g, "");
+      });
+    }
+  });
+</script>
+{% endblock %}

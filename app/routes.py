@@ -5700,3 +5700,314 @@ def admin_listar_membros_equipe_uvis(uvis_id, nome_equipe):
         total=len(membros),
         maximo=5
     )
+
+@bp.route("/admin/usuarios/novo", methods=["GET", "POST"], endpoint="admin_usuario_novo")
+@login_required
+def admin_usuario_novo():
+    # 🔐 Somente ADMIN cria admin/operário
+    if current_user.tipo_usuario != "admin":
+        flash("Você não tem permissão para acessar esta página.", "danger")
+        return redirect(url_for("main.dashboard"))
+
+    errors = {}
+    form = {}
+
+    if request.method == "POST":
+        # pega campos
+        nome = (request.form.get("nome") or "").strip()
+        login = (request.form.get("login") or "").strip()
+        tipo_usuario = (request.form.get("tipo_usuario") or "").strip()
+        regiao = (request.form.get("regiao") or "").strip() or None
+        codigo_setor = (request.form.get("codigo_setor") or "").strip() or None
+
+        senha = (request.form.get("senha") or "").strip()
+        senha2 = (request.form.get("senha2") or "").strip()
+
+        # repopular form
+        form = {
+            "nome": nome,
+            "login": login,
+            "tipo_usuario": tipo_usuario,
+            "regiao": regiao or "",
+            "codigo_setor": codigo_setor or "",
+            "senha": senha,
+            "senha2": senha2,
+        }
+
+        # validações
+        if not nome:
+            errors["nome"] = "Informe o nome."
+        if not login:
+            errors["login"] = "Informe o login."
+        if tipo_usuario not in ["admin", "operario"]:
+            errors["tipo_usuario"] = "Selecione um tipo válido (admin ou operário)."
+        if not senha:
+            errors["senha"] = "Informe uma senha."
+        if not senha2:
+            errors["senha2"] = "Confirme a senha."
+        if senha and senha2 and senha != senha2:
+            errors["senha2"] = "As senhas não conferem."
+
+        # checa login duplicado
+        if login and Usuario.query.filter_by(login=login).first():
+            errors["login"] = "Esse login já está em uso."
+
+        if errors:
+            flash("Revise os campos destacados.", "warning")
+            return render_template("admin_usuario_novo.html", errors=errors, form=form)
+
+        # cria usuário
+        novo = Usuario(
+            nome_uvis=nome,          # você usa nome_uvis como nome exibido
+            regiao=regiao,
+            codigo_setor=codigo_setor,
+            login=login,
+            tipo_usuario=tipo_usuario
+        )
+        novo.set_senha(senha)
+
+        try:
+            db.session.add(novo)
+            db.session.commit()
+            flash("Usuário criado com sucesso!", "success")
+            return redirect(url_for("main.dashboard"))
+        except IntegrityError:
+            db.session.rollback()
+            flash("Esse login já está em uso. Escolha outro.", "danger")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Erro ao salvar: {e}", "danger")
+
+    # GET
+    return render_template("admin_usuario_novo.html", errors=errors, form=form)
+
+from flask import render_template, request, redirect, url_for, flash
+from flask_login import login_required, current_user
+from sqlalchemy import or_
+from sqlalchemy.exc import IntegrityError
+from werkzeug.exceptions import abort
+
+from app import db
+from app.models import Usuario
+
+
+def _admin_only():
+    if current_user.tipo_usuario != "admin":
+        flash("Acesso restrito.", "danger")
+        return False
+    return True
+
+
+# -----------------------------------------
+# LISTAR ADMIN / OPERÁRIO
+# -----------------------------------------
+@bp.route("/admin/usuarios", methods=["GET"], endpoint="admin_usuarios_listar")
+@login_required
+def admin_usuarios_listar():
+    if not _admin_only():
+        return redirect(url_for("main.dashboard"))
+
+    q = (request.args.get("q") or "").strip()
+    tipo = (request.args.get("tipo") or "").strip().lower()  # admin | operario | ""
+
+    query = Usuario.query.filter(Usuario.tipo_usuario.in_(["admin", "operario"]))
+
+    if tipo in ("admin", "operario"):
+        query = query.filter(Usuario.tipo_usuario == tipo)
+
+    if q:
+        like = f"%{q}%"
+        query = query.filter(or_(
+            Usuario.nome_uvis.ilike(like),
+            Usuario.login.ilike(like)
+        ))
+
+    page = request.args.get("page", 1, type=int)
+    paginacao = query.order_by(Usuario.tipo_usuario.asc(), Usuario.nome_uvis.asc()).paginate(
+        page=page, per_page=10, error_out=False
+    )
+
+    return render_template(
+        "admin_usuarios_listar.html",
+        usuarios=paginacao.items,
+        paginacao=paginacao,
+        q=q,
+        tipo=tipo
+    )
+
+
+# -----------------------------------------
+# EDITAR ADMIN / OPERÁRIO
+# -----------------------------------------
+from flask import render_template, request, redirect, url_for, flash, abort
+from flask_login import login_required, current_user
+from sqlalchemy.exc import IntegrityError
+from app import db
+from app.models import Usuario
+
+@bp.route("/admin/usuarios/<int:id>/editar", methods=["GET", "POST"], endpoint="admin_usuario_editar")
+@login_required
+def admin_usuario_editar(id):
+    if current_user.tipo_usuario != "admin":
+        abort(403)
+
+    usuario = Usuario.query.get_or_404(id)
+
+    # só deixa editar admin/operario (evita mexer em uvis/piloto/visualizar etc)
+    if usuario.tipo_usuario not in ("admin", "operario"):
+        flash("Registro inválido para edição.", "warning")
+        return redirect(url_for("main.admin_usuarios_listar"))
+
+    errors = {}
+    form = {}
+
+    if request.method == "POST":
+        nome_uvis = (request.form.get("nome_uvis") or "").strip()
+        login = (request.form.get("login") or "").strip()
+        regiao = (request.form.get("regiao") or "").strip() or None
+        codigo_setor = (request.form.get("codigo_setor") or "").strip() or None
+
+        # se tentar trocar o próprio tipo, ignora
+        if usuario.id == current_user.id:
+            tipo_usuario = usuario.tipo_usuario
+        else:
+            tipo_usuario = (request.form.get("tipo_usuario") or "").strip().lower()
+
+        senha = (request.form.get("senha") or "").strip()
+        senha2 = (request.form.get("senha2") or "").strip()
+
+        form = {
+            "nome_uvis": nome_uvis,
+            "login": login,
+            "regiao": regiao or "",
+            "codigo_setor": codigo_setor or "",
+            "tipo_usuario": tipo_usuario,
+        }
+
+        if not nome_uvis:
+            errors["nome_uvis"] = "Informe o nome."
+        if not login:
+            errors["login"] = "Informe o login."
+        if tipo_usuario not in ("admin", "operario"):
+            errors["tipo_usuario"] = "Tipo inválido."
+
+        # senha é opcional no editar
+        if senha or senha2:
+            if len(senha) < 4:
+                errors["senha"] = "Senha muito curta (mín. 4)."
+            if senha != senha2:
+                errors["senha2"] = "As senhas não conferem."
+
+        if errors:
+            return render_template(
+                "admin_usuario_editar.html",
+                usuario=usuario,
+                errors=errors,
+                form=form
+            )
+
+        # aplica alterações
+        usuario.nome_uvis = nome_uvis
+        usuario.login = login
+        usuario.regiao = regiao
+        usuario.codigo_setor = codigo_setor
+        usuario.tipo_usuario = tipo_usuario
+
+        if senha:
+            usuario.set_senha(senha)
+
+        try:
+            db.session.commit()
+            flash("Usuário atualizado com sucesso!", "success")
+            return redirect(url_for("main.admin_usuarios_listar"))
+        except IntegrityError:
+            db.session.rollback()
+            errors["login"] = "Esse login já está em uso."
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Erro ao salvar: {e}", "danger")
+
+    # GET -> preenche form padrão
+    form = {
+        "nome_uvis": usuario.nome_uvis or "",
+        "login": usuario.login or "",
+        "regiao": usuario.regiao or "",
+        "codigo_setor": usuario.codigo_setor or "",
+        "tipo_usuario": usuario.tipo_usuario or "operario",
+    }
+
+    return render_template(
+        "admin_usuario_editar.html",
+        usuario=usuario,
+        errors=errors,
+        form=form
+    )
+
+
+
+# -----------------------------------------
+# RESETAR SENHA (POST)
+# -----------------------------------------
+@bp.route("/admin/usuarios/<int:id>/reset_senha", methods=["POST"], endpoint="admin_usuario_reset_senha")
+@login_required
+def admin_usuario_reset_senha(id):
+    if not _admin_only():
+        return redirect(url_for("main.dashboard"))
+
+    user = Usuario.query.get_or_404(id)
+
+    if user.tipo_usuario not in ("admin", "operario"):
+        flash("Usuário inválido.", "warning")
+        return redirect(url_for("main.admin_usuarios_listar"))
+
+    senha = (request.form.get("senha") or "").strip()
+    senha2 = (request.form.get("senha2") or "").strip()
+
+    if not senha or not senha2:
+        flash("Informe e confirme a senha.", "warning")
+        return redirect(url_for("main.admin_usuarios_listar"))
+
+    if senha != senha2:
+        flash("As senhas não conferem.", "warning")
+        return redirect(url_for("main.admin_usuarios_listar"))
+
+    try:
+        user.set_senha(senha)
+        db.session.commit()
+        flash("Senha atualizada com sucesso!", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erro ao atualizar senha: {e}", "danger")
+
+    return redirect(url_for("main.admin_usuarios_listar"))
+
+
+# -----------------------------------------
+# EXCLUIR (POST)
+# -----------------------------------------
+@bp.route("/admin/usuarios/<int:id>/excluir", methods=["POST"], endpoint="admin_usuario_excluir")
+@login_required
+def admin_usuario_excluir(id):
+    if not _admin_only():
+        return redirect(url_for("main.dashboard"))
+
+    user = Usuario.query.get_or_404(id)
+
+    if user.tipo_usuario not in ("admin", "operario"):
+        flash("Usuário inválido.", "warning")
+        return redirect(url_for("main.admin_usuarios_listar"))
+
+    # não deixa excluir o próprio usuário logado
+    if user.id == current_user.id:
+        flash("Você não pode excluir seu próprio usuário.", "warning")
+        return redirect(url_for("main.admin_usuarios_listar"))
+
+    try:
+        db.session.delete(user)
+        db.session.commit()
+        flash("Usuário excluído com sucesso!", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erro ao excluir: {e}", "danger")
+
+    return redirect(url_for("main.admin_usuarios_listar"))
