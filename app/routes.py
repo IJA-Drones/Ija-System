@@ -2802,11 +2802,17 @@ def admin_uvis_listar():
         regiao=regiao        
     )
 
+def _admin_only_redirect():
+    if current_user.tipo_usuario != "admin":
+        flash("Você não tem permissão para acessar esta função.", "danger")
+        return redirect(request.referrer or url_for("main.admin_uvis_listar"))
+    return None
 @bp.route("/admin/uvis/<int:id>/editar", methods=["GET", "POST"], endpoint="admin_uvis_editar")
 @login_required
 def admin_uvis_editar(id):
-    if current_user.tipo_usuario != "admin":
-        abort(403)
+    resp = _admin_only_redirect()
+    if resp: 
+        return resp
 
     uvis = Usuario.query.get_or_404(id)
 
@@ -2816,7 +2822,7 @@ def admin_uvis_editar(id):
 
     if request.method == "POST":
         nome_uvis = (request.form.get("nome_uvis") or "").strip()
-        regiao = (request.form.get("regiao") or "").strip() or None        
+        regiao = (request.form.get("regiao") or "").strip() or None
         login = (request.form.get("login") or "").strip()
 
         senha = (request.form.get("senha") or "").strip()
@@ -2833,7 +2839,7 @@ def admin_uvis_editar(id):
             uvis.set_senha(senha)
 
         uvis.nome_uvis = nome_uvis
-        uvis.regiao = regiao        
+        uvis.regiao = regiao
         uvis.login = login
 
         try:
@@ -2853,8 +2859,9 @@ def admin_uvis_editar(id):
 @bp.route("/admin/uvis/<int:id>/excluir", methods=["POST"], endpoint="admin_uvis_excluir")
 @login_required
 def admin_uvis_excluir(id):
-    if current_user.tipo_usuario != "admin":
-        abort(403)
+    resp = _admin_only_redirect()
+    if resp:
+        return resp
 
     uvis = Usuario.query.get_or_404(id)
 
@@ -2876,6 +2883,7 @@ def admin_uvis_excluir(id):
         flash("Erro ao excluir UVIS.", "danger")
 
     return redirect(url_for("main.admin_uvis_listar"))
+
 
 # ==========================
 # CHATBOT ADMIN (FAQ inteligente) - Flask-Login

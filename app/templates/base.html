@@ -217,7 +217,7 @@
             </a>
           </li>
 
-          {% if current_user.tipo_usuario in ['admin', 'visualizar'] %}
+          {% if current_user.tipo_usuario in ['admin', 'visualizar', 'operario'] %}
           <li class="nav-item">
             <a
               class="nav-link {% if request.endpoint == 'main.relatorios' %}active{% endif %}"

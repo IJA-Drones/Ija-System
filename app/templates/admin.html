@@ -533,7 +533,7 @@
 {# --- FIM DO CONTAINER PADRONIZADO --- #}
 
 {# --- CHATBOT (Mantido igual) --- #}
-{% if current_user.tipo_usuario == 'admin' %}
+{% if current_user.tipo_usuario in ['admin', 'operario'] %}
 <button id="adminBotFab" class="bot-fab" title="Ajuda do painel" onclick="toggleAdminChat()">
     <i class="bi bi-robot"></i>
 </button>
