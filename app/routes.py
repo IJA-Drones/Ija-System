@@ -5527,3 +5527,77 @@ def deletar_membro_equipe_uvis(membro_id):
         return redirect(url_for("main.listar_equipes_uvis"))
 
     return redirect(url_for("main.listar_membros_equipe_uvis", nome_equipe=nome_equipe))
+
+from flask import abort, render_template
+from sqlalchemy import func
+def _admin_only():
+    if getattr(current_user, "tipo_usuario", None) != "admin":
+        abort(403)
+
+# -------------------------------------------------------------
+# ADMIN: listar todas as equipes criadas por todas as UVIS
+# -------------------------------------------------------------
+@bp.route("/admin/uvis/equipes", methods=["GET"], endpoint="admin_listar_equipes_uvis")
+@login_required
+def admin_listar_equipes_uvis():
+    _admin_only()
+
+    # Agrupa por UVIS + nome_equipe
+    rows = (
+        db.session.query(
+            Usuario.id.label("uvis_id"),
+            Usuario.nome_uvis.label("uvis_nome"),
+            EquipeUvis.nome_equipe.label("nome_equipe"),
+            func.count(EquipeUvis.id).label("total")
+        )
+        .join(Usuario, Usuario.id == EquipeUvis.uvis_usuario_id)
+        .filter(Usuario.tipo_usuario == "uvis")
+        .group_by(Usuario.id, Usuario.nome_uvis, EquipeUvis.nome_equipe)
+        .order_by(Usuario.nome_uvis.asc(), EquipeUvis.nome_equipe.asc())
+        .all()
+    )
+
+    equipes = [
+        {
+            "uvis_id": int(r.uvis_id),
+            "uvis_nome": r.uvis_nome or "",
+            "nome_equipe": r.nome_equipe,
+            "total": int(r.total),
+        }
+        for r in rows
+    ]
+
+    # Pode reaproveitar um template específico do admin
+    return render_template("admin_uvis_equipes_listar.html", equipes=equipes)
+
+# -------------------------------------------------------------
+# ADMIN: listar membros de uma equipe específica de uma UVIS
+# -------------------------------------------------------------
+@bp.route("/admin/uvis/<int:uvis_id>/equipes/<string:nome_equipe>", methods=["GET"], endpoint="admin_listar_membros_equipe_uvis")
+@login_required
+def admin_listar_membros_equipe_uvis(uvis_id, nome_equipe):
+    _admin_only()
+
+    nome_equipe = (nome_equipe or "").strip()
+    if not nome_equipe:
+        abort(404)
+
+    membros = (
+        EquipeUvis.query
+        .filter_by(uvis_usuario_id=uvis_id, nome_equipe=nome_equipe)
+        .order_by(EquipeUvis.ordem.asc())
+        .all()
+    )
+
+    uvis = Usuario.query.get(uvis_id)
+    uvis_nome = (uvis.nome_uvis if uvis else "") or ""
+
+    return render_template(
+        "admin_uvis_equipe_membros_listar.html",
+        uvis_id=uvis_id,
+        uvis_nome=uvis_nome,
+        nome_equipe=nome_equipe,
+        membros=membros,
+        total=len(membros),
+        maximo=5
+    )

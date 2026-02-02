@@ -13,9 +13,7 @@
   <div class="d-flex justify-content-between align-items-center mb-4">
       <h2 class="text-dark"><i class="bi bi-calendar-event-fill me-2 text-primary"></i> Agenda</h2>
 
-
       
-    {% if current_user.is_authenticated and current_user.tipo_usuario in ['admin', 'visualizar'] %}
     <div class="d-flex gap-2 flex-wrap">
 
       {# ✅ Rota do dia: mostra para admin/operario/visualizar (ajuste se quiser) #}
@@ -41,8 +39,7 @@
             <span>Exportar Atual</span>
           </a>
         {% endif %}
-      </div>
-    {% endif %}
+      </div>    
   </div>
   
 
