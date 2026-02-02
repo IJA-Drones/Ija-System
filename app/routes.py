@@ -590,8 +590,6 @@ def geocode_endereco_google(*, logradouro, numero, bairro, cidade, uf, cep=None)
     resp = requests.get(url, timeout=10)
     data = resp.json()
 
-    print(f"RESPOSTA DO GOOGLE NO PYTHON: {data}")
-
     status = data.get("status")
     if status != "OK":
         return None, None
