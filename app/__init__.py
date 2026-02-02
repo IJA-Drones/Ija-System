@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from whitenoise import WhiteNoise
 from flask_talisman import Talisman
 
+
 # Extensões (SEM init_app aqui)
 db = SQLAlchemy()
 migrate = Migrate()
@@ -18,27 +19,12 @@ def create_app():
     load_dotenv(dotenv_path)
     app = Flask(__name__)
 
+    # 2. Carregue as configurações da classe Config
+    from config import Config
+    app.config.from_object(Config)
+
     # Static files (produção)
-    app.wsgi_app = WhiteNoise(app.wsgi_app, root='app/static/')
-
-    # Secret Key
-    app.config['SECRET_KEY'] = os.getenv(
-        'SECRET_KEY', 'chave-secreta-padrao-desenvolvimento'
-    )
-
-    # Banco de Dados
-    database_url = os.getenv("DATABASE_URL")
-
-    if database_url:
-        if database_url.startswith("postgres://"):
-            database_url = database_url.replace(
-                "postgres://", "postgresql://", 1
-            )
-        app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-    else:
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///sgsv.db'
-
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.wsgi_app = WhiteNoise(app.wsgi_app, root='app/static/') 
 
     # Inicialização das extensões
     db.init_app(app)

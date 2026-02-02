@@ -11,6 +11,8 @@ class Config:
     if uri and uri.startswith("postgres://"):
         uri = uri.replace("postgres://", "postgresql://", 1)
 
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+
     # configuração sqlalchemy
     SQLALCHEMY_DATABASE_URI = uri
     

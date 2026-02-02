@@ -498,11 +498,9 @@
         elCoords.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
 
       const q = `${lat},${lng}`;
-      if (aOpen)
-        aOpen.href = `https://www.google.com/maps?q=${encodeURIComponent(q)}`;
-      if (aDir)
-        aDir.href = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(q)}`;
-    } else {
+      if (aOpen) aOpen.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
+      if (aDir) aDir.href = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(q)}&travelmode=driving`;
+          } else {
       if (boxCoords) boxCoords.style.display = "none";
       if (boxSemCoords) boxSemCoords.style.display = "block";
 

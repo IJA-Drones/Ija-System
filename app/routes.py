@@ -102,7 +102,6 @@ def calcular_distancia(lat1, lon1, lat2, lon2):
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     return R * c
 
-
 def get_upload_folder():
     """
     Localiza a pasta de uploads de forma absoluta.
@@ -244,6 +243,7 @@ def admin_dashboard():
 
     # --- Captura filtros ---
     filtro_status = (request.args.get("status") or "").strip()
+    filtro_unidade = (request.args.get("unidade") or "").strip()
     filtro_regiao = (request.args.get("regiao") or "").strip()
 
     unidades_select = Usuario.query.filter_by(tipo_usuario='uvis').order_by(Usuario.nome_uvis.asc()).all()
@@ -261,6 +261,8 @@ def admin_dashboard():
     # --- Aplicação dos filtros ---
     if filtro_status:
         query = query.filter(Solicitacao.status == filtro_status)
+    if filtro_unidade:
+        query = query.filter(Usuario.nome_uvis.ilike(f"%{filtro_unidade}%"))
     if filtro_regiao:
         query = query.filter(Usuario.regiao.ilike(f"%{filtro_regiao}%"))
     
@@ -1937,7 +1939,7 @@ import os
 def agenda():
     try:
         # ✅ Key pro mapa no modal
-        google_maps_key = os.getenv("KEY_API_GOOGLE_MAPS") or ""
+        google_maps_key = current_app.config.get("KEY_API_GOOGLE_MAPS") or os.getenv("KEY_API_GOOGLE_MAPS") or ""
 
         # --- Usuário atual ---
         user_tipo = getattr(current_user, "tipo_usuario", None)
