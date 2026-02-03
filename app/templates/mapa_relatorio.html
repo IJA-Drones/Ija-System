@@ -5,44 +5,46 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
     <style>
-        /* Container principal arredondado */
+            /* Container principal */
         .map-container { width: 100%; height: 65vh; background-color: #f8f9fa; border-radius: 0 0 16px 16px; }
 
-        /* Estilo Glassmorphism para Elementos Flutuantes */
+        /* Efeito de Vidro (Glassmorphism) */
         .glass-panel {
-            background: rgba(255, 255, 255, 0.85) !important;
+            background: rgba(255, 255, 255, 0.8) !important;
             backdrop-filter: blur(12px) saturate(180%) !important;
             -webkit-backdrop-filter: blur(12px) saturate(180%) !important;
-            border: 1px solid rgba(255, 255, 255, 0.3) !important;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
+            border: 1px solid rgba(255, 255, 255, 0.4) !important;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08) !important;
             border-radius: 12px !important;
         }
 
-        /* Redesign das Abas de Alternância (Pills) */
+        /* Redesign das Abas (Pills Modernas) */
         #mapTabs {
             background: #f1f3f5;
             padding: 4px;
             border-radius: 50px;
             display: inline-flex;
             border: none;
+            margin-bottom: 10px;
         }
 
         #mapTabs .nav-link {
             border-radius: 50px !important;
-            padding: 8px 20px;
+            padding: 8px 24px;
             color: #6c757d;
             font-weight: 600;
+            font-size: 0.85rem;
             transition: all 0.3s ease;
             border: none !important;
         }
 
         #mapTabs .nav-link.active {
             background: #ffffff !important;
-            color: var(--color-primary, #0d6efd) !important;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+            color: #0d6efd !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
         }
 
-        /* Legendas e Cards Flutuantes */
+        /* Elementos Flutuantes */
         .map-legend-overlay, .focos-counter-card, .map-category-legend {
             position: absolute;
             z-index: 1000;
@@ -52,8 +54,28 @@
             top: 20px;
             left: 50%;
             transform: translateX(-50%);
-            min-width: 180px;
-            padding: 10px 20px;
+            min-width: 200px;
+            padding: 10px 15px;
+        }
+
+        .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;      /* Espaço entre a cor e o texto */
+        margin-bottom: 8px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #444;
+    }
+
+        .legend-color {
+            width: 14px;      /* Largura da bolinha */
+            height: 14px;     /* Altura da bolinha */
+            border-radius: 50%; /* Torna redonda */
+            display: inline-block;
+            border: 2px solid #fff; /* Borda branca para destacar no vidro */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Sombra leve */
+            flex-shrink: 0;   /* Impede que a bolinha amasse */
         }
 
         .gradient-bar {
@@ -71,6 +93,30 @@
             padding: 20px;
             border-radius: 0 0 16px 16px;
         }
+
+        .map-category-legend {
+        width: 160px !important; /* Largura reduzida */
+        padding: 10px !important; /* Padding mais compacto */
+        }
+
+        .map-category-legend h6 {
+            font-size: 0.6rem !important; /* Título menor */
+            margin-bottom: 8px !important;
+        }
+
+        .legend-item {
+            gap: 8px;
+            margin-bottom: 4px; /* Espaço entre itens reduzido */
+            font-size: 0.65rem !important; /* Texto dos itens menor */
+        }
+
+        .legend-color {
+            width: 10px;  /* Bolinha menor */
+            height: 10px; /* Bolinha menor */
+            border: 1.5px solid #fff;
+        }
+
+        .cursor-pointer { cursor: pointer; }
     </style>
 {% endblock %}
 
@@ -183,13 +229,14 @@
                         </div>
                     </div>
                 </div>
-                <div class="tab-pane fade" id="tabArea">
+                <div class="tab-pane fade" id="tabArea"> 
                     <div id="mapPolygons" class="map-container"></div>
                     <div class="map-category-legend glass-panel p-3 border-0" style="bottom: 20px; left: 20px;">
-                        <h6 class="fw-bold text-muted small mb-3">CATEGORIAS</h6>
-                        <div class="legend-item"><div class="legend-color" style="background: #00d1ff;"></div><span>Piscina</span></div>
-                        <div class="legend-item"><div class="legend-color" style="background: #ff4d4d;"></div><span>Abandono</span></div>
-                        <div class="legend-item"><div class="legend-color" style="background: #ffa500;"></div><span>Terreno</span></div>
+                        <h6 class="fw-bold text-muted small mb-3 text-uppercase">Legenda</h6>
+                        <div class="legend-item"><div class="legend-color" style="background: #0000ff;"></div><span>Piscina</span></div>
+                        <div class="legend-item"><div class="legend-color" style="background: #ff3c0b;"></div><span>Imóveis Abandonados</span></div>
+                        <div class="legend-item"><div class="legend-color" style="background: #006400;"></div><span>Terreno Baldio</span></div>
+                        <div class="legend-item"><div class="legend-color" style="background: #ffa500;"></div><span>Outros</span></div>
                     </div>
                 </div>
                 <div class="tab-pane fade" id="tabLogistica">
