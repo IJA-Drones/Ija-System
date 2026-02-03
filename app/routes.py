@@ -833,6 +833,8 @@ from flask import redirect, render_template, request, session, url_for
 
 from app import db
 from app.models import Solicitacao, Usuario
+from sqlalchemy import extract, func
+from datetime import datetime
 
 @bp.route('/relatorios', methods=['GET'])
 def relatorios():
@@ -5582,12 +5584,22 @@ def deletar_membro_equipe_uvis(membro_id):
 @login_required
 def heatmap_data():
     uvis_id = request.args.get('uvis_id')
+    mes = request.args.get('mes')
+    ano = request.args.get('ano')
     
     query = Solicitacao.query.filter(
         Solicitacao.latitude.isnot(None),
         Solicitacao.longitude.isnot(None),
         Solicitacao.status == 'APROVADO'
     )
+
+    # Filtro de Data (Se você tiver a coluna data_agendamento ou similar)
+    if mes and ano:
+        from sqlalchemy import extract
+        query = query.filter(
+            extract('month', Solicitacao.data_agendamento) == int(mes),
+            extract('year', Solicitacao.data_agendamento) == int(ano)
+        )
 
     # AJUSTE AQUI: Trocamos uvis_id por usuario_id (ou o nome que está no seu model)
     if current_user.tipo_usuario == 'uvis':
