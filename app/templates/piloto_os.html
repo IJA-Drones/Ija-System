@@ -77,18 +77,10 @@
     }
 
     /* Labels (4 colunas) */
-    tbody tr td:nth-child(1)::before {
-      content: "Agendamento";
-    }
-    tbody tr td:nth-child(2)::before {
-      content: "Local / UVIS";
-    }
-    tbody tr td:nth-child(3)::before {
-      content: "Status";
-    }
-    tbody tr td:nth-child(4)::before {
-      content: "Ações";
-    }
+    tbody tr td:nth-child(1)::before { content: "Agendamento"; }
+    tbody tr td:nth-child(2)::before { content: "Local / UVIS"; }
+    tbody tr td:nth-child(3)::before { content: "Status"; }
+    tbody tr td:nth-child(4)::before { content: "Ações"; }
 
     tbody tr td::before {
       font-weight: 700;
@@ -99,9 +91,7 @@
       letter-spacing: 0.2px;
     }
 
-    tbody tr td > * {
-      min-width: 0;
-    }
+    tbody tr td > * { min-width: 0; }
 
     /* ações em coluna */
     tbody tr td:nth-child(4) .d-flex.gap-2 {
@@ -125,7 +115,7 @@
       display: none !important;
     }
 
-    /* MODAL fullscreen no mobile (mesmo padrão) */
+    /* MODAL fullscreen no mobile */
     .modal .modal-dialog {
       margin: 0 !important;
       width: 100% !important;
@@ -158,38 +148,27 @@
       -webkit-overflow-scrolling: touch;
       padding: 16px !important;
     }
-    .modal .modal-footer .btn {
-      width: 100%;
-    }
+    .modal .modal-footer .btn { width: 100%; }
   }
 
   @media (max-width: 420px) {
-    tbody tr td {
-      grid-template-columns: 112px 1fr !important;
-    }
-    tbody tr td::before {
-      font-size: 0.78rem;
-    }
+    tbody tr td { grid-template-columns: 112px 1fr !important; }
+    tbody tr td::before { font-size: 0.78rem; }
   }
 
   /* ========= DARK MODE (divisórias do mobile) ========= */
   @media (max-width: 768px) {
     html.dark-mode tbody tr,
-    body.dark-mode tbody tr {
-      border-color: #233549 !important;
-    }
+    body.dark-mode tbody tr { border-color: #233549 !important; }
+
     html.dark-mode tbody tr td + td,
-    body.dark-mode tbody tr td + td {
-      border-top-color: #233549 !important;
-    }
+    body.dark-mode tbody tr td + td { border-top-color: #233549 !important; }
+
     html.dark-mode .modal .modal-header,
-    body.dark-mode .modal .modal-header {
-      border-bottom-color: #233549 !important;
-    }
+    body.dark-mode .modal .modal-header { border-bottom-color: #233549 !important; }
+
     html.dark-mode .modal .modal-footer,
-    body.dark-mode .modal .modal-footer {
-      border-top-color: #233549 !important;
-    }
+    body.dark-mode .modal .modal-footer { border-top-color: #233549 !important; }
   }
 
   /* util */
@@ -214,7 +193,6 @@
         Exibindo apenas: <b>APROVADA</b> / <b>APROVADA COM RECOMENDAÇÕES</b>
       </div>
 
-      {# ✅ NOVO: equipe + papel do piloto logado #}
       <div class="text-muted small mt-2">
         {% if pilot_team_nome %}
           <span class="badge bg-light text-dark border">
@@ -391,7 +369,7 @@
   </nav>
   {% endif %}
 
-  {# ========================= MODAIS (1 por OS) ========================= #}
+  {# ========================= MODAIS DETALHES (1 por OS) ========================= #}
   {% for p in pedidos %}
   <div class="modal fade" id="modalDetalhes{{ p.id }}" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -421,14 +399,16 @@
               <small class="text-muted d-block">Coordenadas:</small>
               <strong class="font-monospace small">{{ p.latitude }}, {{ p.longitude }}</strong>
             </div>
-            <a
-              href="https://www.google.com/maps/search/?api=1&query={{ p.latitude }},{{ p.longitude }}"
-              target="_blank"
-              rel="noopener"
-              class="btn btn-sm btn-outline-danger"
+
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-danger btn-open-map"
+              data-lat="{{ p.latitude }}"
+              data-lng="{{ p.longitude }}"
+              data-title="OS #{{ p.id }} - {{ p.logradouro }}, {{ p.numero or 'S/N' }}"
             >
               <i class="bi bi-map"></i> Ver Mapa
-            </a>
+            </button>
           </div>
           {% endif %}
 
@@ -444,11 +424,7 @@
             <div class="col-6">
               <small class="text-muted d-block">Região:</small>
               <strong>{{ p.usuario.regiao if p.usuario and p.usuario.regiao else '--' }}</strong>
-            </div>
-            <div class="col-6">
-              <small class="text-muted d-block">Código Setor:</small>
-              <strong>{{ p.usuario.codigo_setor if p.usuario and p.usuario.codigo_setor else '--' }}</strong>
-            </div>
+            </div>          
           </div>
 
           <h6 class="text-primary border-bottom pb-2 fw-bold mt-3">
@@ -459,7 +435,7 @@
           <div class="d-flex justify-content-between align-items-center p-2 rounded border mb-3">
             <div>
               <small class="text-muted d-block">Arquivo:</small>
-               <strong class="small text-truncate" style="max-width: 200px; display: inline-block;">{{ p.anexo_nome or 'Anexo' }}</strong>
+              <strong class="small text-truncate" style="max-width: 200px; display: inline-block;">{{ p.anexo_nome or 'Anexo' }}</strong>
             </div>
 
             <a
@@ -545,13 +521,45 @@
     </div>
   </div>
   {% endfor %}
+
+  {# ========================= MODAL MAPA (ÚNICO - FORA DO LOOP) ========================= #}
+  <div class="modal fade" id="mapModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content rounded-4 border-0 overflow-hidden">
+        <div class="modal-header">
+          <h5 class="modal-title" id="mapModalTitle">Localização</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+
+        <div class="modal-body p-0">
+          <div id="mapCanvas" style="width:100%; height: 420px;"></div>
+        </div>
+
+        <div class="modal-footer d-flex justify-content-between">
+          <div class="small text-muted" id="mapCoords"></div>
+          <div class="d-flex gap-2">
+            <a id="btnOpenGoogleMaps" class="btn btn-outline-secondary" target="_blank" rel="noopener">
+              <i class="bi bi-box-arrow-up-right"></i> Abrir no Google Maps
+            </a>
+            <a id="btnDirections" class="btn btn-danger" target="_blank" rel="noopener">
+              <i class="bi bi-sign-turn-right"></i> Traçar rota
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-  // Confirmação “Concluir OS”
   document.addEventListener("DOMContentLoaded", () => {
+
+    // -------------------------
+    // Confirmação “Concluir OS”
+    // -------------------------
     document.querySelectorAll(".form-concluir").forEach((form) => {
       form.addEventListener("submit", function (e) {
         e.preventDefault();
@@ -576,6 +584,137 @@
         });
       });
     });
+
+    // -------------------------
+    // Google Maps (lazy load)
+    // -------------------------
+    const GOOGLE_MAPS_KEY = "{{ google_maps_key or '' }}";
+    let googleMapsLoaded = false;
+    let mapInstance = null;
+    let markerInstance = null;
+
+    function loadGoogleMaps() {
+      return new Promise((resolve, reject) => {
+        if (googleMapsLoaded && window.google && window.google.maps) return resolve();
+
+        if (!GOOGLE_MAPS_KEY) {
+          return reject(new Error("google_maps_key não foi enviada ao template."));
+        }
+
+        if (document.getElementById("googleMapsScript")) {
+          const wait = setInterval(() => {
+            if (window.google && window.google.maps) {
+              clearInterval(wait);
+              googleMapsLoaded = true;
+              resolve();
+            }
+          }, 50);
+          return;
+        }
+
+        window.__initGoogleMaps = () => {
+          googleMapsLoaded = true;
+          resolve();
+        };
+
+        const s = document.createElement("script");
+        s.id = "googleMapsScript";
+        s.async = true;
+        s.defer = true;
+        s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(GOOGLE_MAPS_KEY)}&callback=__initGoogleMaps`;
+        s.onerror = () => reject(new Error("Falha ao carregar Google Maps JS."));
+        document.head.appendChild(s);
+      });
+    }
+
+    function openMapModal({ lat, lng, title }) {
+      const modalEl = document.getElementById("mapModal");
+      if (!modalEl) {
+        window.open(`https://www.google.com/maps?q=${lat},${lng}`, "_blank");
+        return;
+      }
+
+      const titleEl = document.getElementById("mapModalTitle");
+      const coordsEl = document.getElementById("mapCoords");
+      const btnOpen = document.getElementById("btnOpenGoogleMaps");
+      const btnDir = document.getElementById("btnDirections");
+
+      if (titleEl) titleEl.textContent = title || "Localização";
+      if (coordsEl) coordsEl.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+
+      const q = `${lat},${lng}`;
+      if (btnOpen) btnOpen.href = `https://www.google.com/maps?q=${encodeURIComponent(q)}`;
+      if (btnDir) btnDir.href = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(q)}`;
+
+      let bsModal = bootstrap.Modal.getInstance(modalEl);
+      if (!bsModal) bsModal = new bootstrap.Modal(modalEl);
+      bsModal.show();
+
+      // espera o modal aparecer para o mapa renderizar certinho
+      setTimeout(() => {
+        const center = { lat, lng };
+        const canvas = document.getElementById("mapCanvas");
+        if (!canvas) return;
+
+        if (!mapInstance) {
+          mapInstance = new google.maps.Map(canvas, {
+            center,
+            zoom: 18,
+            mapTypeControl: false,
+            streetViewControl: true,
+            fullscreenControl: true,
+          });
+        } else {
+          mapInstance.setCenter(center);
+          mapInstance.setZoom(18);
+        }
+
+        if (!markerInstance) {
+          markerInstance = new google.maps.Marker({
+            position: center,
+            map: mapInstance,
+            title: title || "Local",
+          });
+        } else {
+          markerInstance.setPosition(center);
+          markerInstance.setTitle(title || "Local");
+        }
+      }, 180);
+    }
+
+    document.querySelectorAll(".btn-open-map").forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+
+        const lat = parseFloat(btn.dataset.lat);
+        const lng = parseFloat(btn.dataset.lng);
+        const title = btn.dataset.title || "Localização";
+
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+          Swal?.fire({
+            toast: true,
+            position: "top-end",
+            icon: "warning",
+            title: "Sem coordenadas válidas.",
+            showConfirmButton: false,
+            timer: 2500,
+            customClass: {
+              popup: document.body.classList.contains("dark-mode") ? "swal2-dark-mode" : "",
+            },
+          });
+          return;
+        }
+
+        try {
+          await loadGoogleMaps();
+          openMapModal({ lat, lng, title });
+        } catch (err) {
+          console.error(err);
+          window.open(`https://www.google.com/maps?q=${lat},${lng}`, "_blank");
+        }
+      });
+    });
+
   });
 </script>
 {% endblock %}

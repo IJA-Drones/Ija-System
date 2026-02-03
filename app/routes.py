@@ -4577,11 +4577,12 @@ def deletar_piloto(piloto_id):
 @bp.route('/piloto/os')
 @login_required
 @roles_required('piloto')
+
 def piloto_os():
     if not current_user.piloto_id:
         flash("Piloto sem vínculo cadastrado.", "danger")
         return redirect(url_for('main.dashboard'))
-
+    google_maps_key = os.getenv("KEY_API_GOOGLE_MAPS")
     status_ok = ["APROVADO", "APROVADO COM RECOMENDAÇÕES", "APROVADA", "APROVADA COM RECOMENDAÇÕES"]
 
     # ✅ pega o vínculo do piloto com uma equipe ATIVA
@@ -4611,6 +4612,7 @@ def piloto_os():
             pilot_team_nome=None,
             pilot_team_regiao=None,
             pilot_team_papel=None,
+            google_maps_key=current_app.config.get("GOOGLE_MAPS_API_KEY", "")
         )
 
     pilot_team_nome = vinculo.equipe.nome_equipe if vinculo.equipe else None
@@ -4642,14 +4644,15 @@ def piloto_os():
     ).paginate(page=page, per_page=6, error_out=False)
 
     return render_template(
-        "piloto_os.html",
-        pedidos=paginacao.items,
-        paginacao=paginacao,
-        status_ok=status_ok,
-        pilot_team_nome=pilot_team_nome,
-        pilot_team_regiao=pilot_team_regiao,
-        pilot_team_papel=pilot_team_papel,
-    )
+    "piloto_os.html",
+    pedidos=paginacao.items,
+    paginacao=paginacao,
+    status_ok=status_ok,
+    pilot_team_nome=pilot_team_nome,
+    pilot_team_regiao=pilot_team_regiao,
+    pilot_team_papel=pilot_team_papel,
+    google_maps_key=google_maps_key
+)
 
 @bp.route('/piloto/os/<int:os_id>/concluir', methods=['POST'])
 @login_required
