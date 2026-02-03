@@ -5,75 +5,71 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
     <style>
-        .map-container { width: 100%; height: 65vh; background-color: #eee; border-radius: 0 0 16px 16px; }
-        /* Legenda do Mapa de Calor */
-        .map-legend-overlay {
-            position: absolute; bottom: 20px; left: 20px; z-index: 1000;
-            width: 160px; background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(8px); padding: 10px;
-            border-radius: 10px; /* Arredondamento suave de 10px */
-            border: 1px solid rgba(0,0,0,0.08);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        /* Container principal arredondado */
+        .map-container { width: 100%; height: 65vh; background-color: #f8f9fa; border-radius: 0 0 16px 16px; }
+
+        /* Estilo Glassmorphism para Elementos Flutuantes */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85) !important;
+            backdrop-filter: blur(12px) saturate(180%) !important;
+            -webkit-backdrop-filter: blur(12px) saturate(180%) !important;
+            border: 1px solid rgba(255, 255, 255, 0.3) !important;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
+            border-radius: 12px !important;
+        }
+
+        /* Redesign das Abas de Alternância (Pills) */
+        #mapTabs {
+            background: #f1f3f5;
+            padding: 4px;
+            border-radius: 50px;
+            display: inline-flex;
+            border: none;
+        }
+
+        #mapTabs .nav-link {
+            border-radius: 50px !important;
+            padding: 8px 20px;
+            color: #6c757d;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none !important;
+        }
+
+        #mapTabs .nav-link.active {
+            background: #ffffff !important;
+            color: var(--color-primary, #0d6efd) !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+        }
+
+        /* Legendas e Cards Flutuantes */
+        .map-legend-overlay, .focos-counter-card, .map-category-legend {
+            position: absolute;
+            z-index: 1000;
+        }
+
+        .focos-counter-card {
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            min-width: 180px;
+            padding: 10px 20px;
         }
 
         .gradient-bar {
-            height: 6px; width: 100%;
-            /* Variável controlada pelo JS para mudar a cor da legenda */
+            height: 6px;
+            width: 100%;
             background: var(--legenda-gradiente, linear-gradient(to right, #00ffff, #0000ff, #ff0000));
-            border-radius: 10px; margin-bottom: 4px;
-            transition: background 0.4s ease;
-        }
-
-        /* Card de Focos Detectados (Posição Centralizada e Suave) */
-        .focos-counter-card {
-            position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
-            z-index: 1000; min-width: 180px; background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px); padding: 8px 15px;
-            border-radius: 10px; /* Arredondamento suave de 10px */
-            border: 1px solid rgba(0,0,0,0.1);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-        .map-legend-overlay h6 { font-size: 0.65rem !important; margin-bottom: 8px !important; }
-        .map-legend-overlay span { font-size: 0.6rem !important; }
-        .cursor-pointer { cursor: pointer; }
-        
-        /* Rodapé de Logística fixo dentro da aba */
-        .logistics-footer {
-            background: white; border-top: 1px solid rgba(0,0,0,0.1);
-            padding: 15px; border-radius: 0 0 16px 16px;
-        }
-
-        /* Legenda para o Mapa de Áreas (Bolinhas) */
-        .map-category-legend {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            z-index: 1000;
-            width: 180px;
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(8px);
-            padding: 12px;
-            border-radius: 12px;
-            border: 1px solid rgba(0,0,0,0.1);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            border-radius: 10px;
             margin-bottom: 6px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            color: #444;
+            transition: background 0.5s ease;
         }
 
-        .legend-color {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            border: 1.5px solid #fff;
-            box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+        .logistics-footer {
+            background: #ffffff;
+            border-top: 1px solid #eee;
+            padding: 20px;
+            border-radius: 0 0 16px 16px;
         }
     </style>
 {% endblock %}
@@ -152,93 +148,64 @@
         </div>
     </div>
 
-    {# --- DASHBOARD DE MAPAS --- #}
+    {# --- MAPA COM DESIGN CLEAN --- #}
     <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
-        <div class="card-header bg-white border-0 pt-3">
-            <ul class="nav nav-pills nav-fill bg-light rounded-pill p-1" id="mapTabs" role="tablist">
+        <div class="card-header bg-white border-0 py-3 text-center">
+            <ul class="nav nav-pills" id="mapTabs" role="tablist">
                 <li class="nav-item">
-                    <a class="nav-link active rounded-pill fw-bold" data-bs-toggle="tab" href="#tabCalor"><i class="bi bi-fire"></i> Mapa de Calor</a>
+                    <a class="nav-link active" data-bs-toggle="tab" href="#tabCalor"><i class="bi bi-fire me-2"></i>Calor</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link rounded-pill fw-bold" data-bs-toggle="tab" href="#tabArea"><i class="bi bi-layers-half"></i> Áreas</a>
+                    <a class="nav-link" data-bs-toggle="tab" href="#tabArea"><i class="bi bi-geo me-2"></i>Áreas</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link rounded-pill fw-bold" data-bs-toggle="tab" href="#tabLogistica"><i class="bi bi-truck"></i> Logística</a>
+                    <a class="nav-link" data-bs-toggle="tab" href="#tabLogistica"><i class="bi bi-truck me-2"></i>Logística</a>
                 </li>
             </ul>
         </div>
+
         <div class="card-body p-0 position-relative">
             
-            <div class="position-absolute p-2 bg-white shadow-sm rounded-3 border" 
-                style="top: 15px; left: 50%; transform: translateX(-50%); z-index: 1000; min-width: 130px; min-height: 50px; opacity: 0.9; backdrop-filter: blur(10px);">
-                <div class="text-center">
-                    <small class="text-muted text-uppercase fw-bold" style="font-size: 0.55rem; letter-spacing: 0.5px;">Focos Detectados no Período</small>
-                    <h4 class="mb-0 fw-bold text-primary" id="count-total" style="line-height: 1;">0</h4>
-                </div>
+            {# Card Flutuante Central #}
+            <div class="focos-counter-card glass-panel border-0 text-center">
+                <small class="text-muted text-uppercase fw-bold" style="font-size: 0.55rem; min-width: 100px; min-height: 40px; letter-spacing: 1px;">Volume de Focos</small>
+                <h3 class="mb-0 fw-bold text-primary" id="count-total">0</h3>
             </div>
 
             <div class="tab-content">
                 <div class="tab-pane fade show active" id="tabCalor">
                     <div id="mapHeatmap" class="map-container"></div>
-                    <div class="map-legend-overlay shadow-sm">
-                        <h6 class="fw-bold mb-2 small text-uppercase">Densidade de Focos</h6>
+                    <div class="map-legend-overlay glass-panel p-3 border-0" style="bottom: 20px; left: 20px;">
+                        <h6 class="fw-bold mb-2 small text-muted">DENSIDADE</h6>
                         <div class="gradient-bar"></div>
-                        <div class="d-flex justify-content-between small text-muted fw-bold">
-                            <span>Baixa</span><span>Alta</span>
-                        </div>
-                        <hr class="my-2 opacity-50">
-                        <div class="small d-flex justify-content-between">
-                            <span class="text-muted">Total:</span><strong class="text-primary" id="legend-count">0</strong>
+                        <div class="d-flex justify-content-between small fw-bold text-muted" style="font-size: 0.6rem;">
+                            <span>BAIXA</span><span>ALTA</span>
                         </div>
                     </div>
                 </div>
                 <div class="tab-pane fade" id="tabArea">
                     <div id="mapPolygons" class="map-container"></div>
-                    
-                    <div class="map-category-legend">
-                        <h6 class="fw-bold text-uppercase mb-2 text-muted" style="font-size: 0.65rem;">Legenda Operacional</h6>
-                        
-                        <div class="legend-item">
-                            <div class="legend-color" style="background: #00d1ff;"></div>
-                            <span>Piscina / Água</span>
-                        </div>
-                        
-                        <div class="legend-item">
-                            <div class="legend-color" style="background: #ff4d4d;"></div>
-                            <span>Imóvel Abandonado</span>
-                        </div>
-                        
-                        <div class="legend-item">
-                            <div class="legend-color" style="background: #ffa500;"></div>
-                            <span>Terreno Baldio</span>
-                        </div>
-                        
-                        <div class="legend-item">
-                            <div class="legend-color" style="background: #0d6efd;"></div>
-                            <span>Outros Focos</span>
-                        </div>
-
-                        <div class="mt-2 pt-2 border-top">
-                            <small class="text-muted d-block" style="font-size: 0.6rem;">
-                                <i class="bi bi-circle"></i> Raio: 20m
-                            </small>
-                        </div>
+                    <div class="map-category-legend glass-panel p-3 border-0" style="bottom: 20px; left: 20px;">
+                        <h6 class="fw-bold text-muted small mb-3">CATEGORIAS</h6>
+                        <div class="legend-item"><div class="legend-color" style="background: #00d1ff;"></div><span>Piscina</span></div>
+                        <div class="legend-item"><div class="legend-color" style="background: #ff4d4d;"></div><span>Abandono</span></div>
+                        <div class="legend-item"><div class="legend-color" style="background: #ffa500;"></div><span>Terreno</span></div>
                     </div>
                 </div>
                 <div class="tab-pane fade" id="tabLogistica">
                     <div id="mapLogistics" class="map-container"></div>
                     <div class="logistics-footer d-flex justify-content-around">
                         <div class="text-center">
-                            <small class="text-muted d-block small text-uppercase fw-bold" style="font-size: 0.6rem;">Distância</small>
-                            <span class="fw-bold"><span id="distancia-km">0</span> km</span>
+                            <small class="text-muted d-block fw-bold" style="font-size: 0.6rem;">DISTÂNCIA</small>
+                            <span class="fw-bold fs-5 text-dark"><span id="distancia-km">0</span> <small>km</small></span>
+                        </div>
+                        <div class="text-center border-start border-end px-5">
+                            <small class="text-muted d-block fw-bold" style="font-size: 0.6rem;">CONSUMO</small>
+                            <span class="fw-bold fs-5 text-dark"><span id="consumo-litros">0</span> <small>L</small></span>
                         </div>
                         <div class="text-center">
-                            <small class="text-muted d-block small text-uppercase fw-bold" style="font-size: 0.6rem;">Consumo</small>
-                            <span class="fw-bold"><span id="consumo-litros">0</span> L</span>
-                        </div>
-                        <div class="text-center">
-                            <small class="text-muted d-block small text-uppercase fw-bold" style="font-size: 0.6rem;">Custo Est.</small>
-                            <span class="text-success fw-bold">R$ <span id="custo-total-log">0,00</span></span>
+                            <small class="text-muted d-block fw-bold" style="font-size: 0.6rem;">CUSTO ESTIMADO</small>
+                            <span class="text-success fw-bold fs-5">R$ <span id="custo-total-log">0,00</span></span>
                         </div>
                     </div>
                 </div>
