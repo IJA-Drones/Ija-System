@@ -6,16 +6,32 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
     <style>
         .map-container { width: 100%; height: 65vh; background-color: #eee; border-radius: 0 0 16px 16px; }
+        /* Legenda do Mapa de Calor */
         .map-legend-overlay {
-            position: absolute; bottom: 20px; left: 20px; z-index: 1000; width: 160px;
-            background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(8px);
-            padding: 10px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.08);
+            position: absolute; bottom: 20px; left: 20px; z-index: 1000;
+            width: 160px; background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(8px); padding: 10px;
+            border-radius: 10px; /* Arredondamento suave de 10px */
+            border: 1px solid rgba(0,0,0,0.08);
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
+
         .gradient-bar {
             height: 6px; width: 100%;
+            /* Variável controlada pelo JS para mudar a cor da legenda */
             background: var(--legenda-gradiente, linear-gradient(to right, #00ffff, #0000ff, #ff0000));
-            border-radius: 10px; margin-bottom: 4px; transition: background 0.3s ease;
+            border-radius: 10px; margin-bottom: 4px;
+            transition: background 0.4s ease;
+        }
+
+        /* Card de Focos Detectados (Posição Centralizada e Suave) */
+        .focos-counter-card {
+            position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
+            z-index: 1000; min-width: 180px; background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px); padding: 8px 15px;
+            border-radius: 10px; /* Arredondamento suave de 10px */
+            border: 1px solid rgba(0,0,0,0.1);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
         .map-legend-overlay h6 { font-size: 0.65rem !important; margin-bottom: 8px !important; }
         .map-legend-overlay span { font-size: 0.6rem !important; }
@@ -310,21 +326,58 @@
             if (heatmap) heatmap.setMap(null);
 
             let gradienteMapa, gradienteCSS;
+
             if (focoFiltro === "piscina") {
-                gradienteMapa = ['rgba(0, 255, 255, 0)', 'rgba(0, 255, 255, 1)', 'rgba(0, 150, 255, 1)', 'rgba(0, 0, 255, 1)'];
-                gradienteCSS = "linear-gradient(to right, #00ffff, #0096ff, #0000ff)";
+            // ÁGUA: Tons de Ciano e Azul Profundo
+            gradienteMapa = [
+                'rgba(0, 255, 255, 0)', 
+                'rgba(0, 255, 255, 1)', 
+                'rgba(0, 150, 255, 1)', 
+                'rgba(0, 0, 255, 1)'
+            ];
+            gradienteCSS = "linear-gradient(to right, #00ffff, #0096ff, #0000ff)";
+
             } else if (focoFiltro === "abandonado") {
-                gradienteMapa = ['rgba(255, 255, 0, 0)', 'rgba(255, 165, 0, 1)', 'rgba(255, 0, 0, 1)'];
-                gradienteCSS = "linear-gradient(to right, #ffff00, #ffa500, #ff0000)";
+                // PERIGO/ABANDONO: Tons de Vermelho para Roxo Escuro
+                gradienteMapa = [
+                    'rgba(255, 0, 0, 0)', 
+                    'rgba(255, 0, 0, 1)', 
+                    'rgba(150, 0, 150, 1)', 
+                    'rgba(100, 0, 100, 1)'
+                ];
+                gradienteCSS = "linear-gradient(to right, #ff0000, #960096, #640064)";
+
+            } else if (focoFiltro === "terreno") {
+                // NATUREZA/TERRENO: Verde Lima para Esmeralda (O VERDE QUE VOCÊ PEDIU)
+                gradienteMapa = [
+                    'rgba(0, 255, 0, 0)', 
+                    'rgba(173, 255, 47, 1)', // GreenYellow
+                    'rgba(0, 255, 0, 1)',    // Limão
+                    'rgba(0, 100, 0, 1)'     // Verde Escuro
+                ];
+                gradienteCSS = "linear-gradient(to right, #adff2f, #00ff00, #006400)";
+
             } else {
-                gradienteMapa = ['rgba(0, 255, 255, 0)', 'rgba(0, 255, 255, 1)', 'rgba(0, 191, 255, 1)', 'rgba(0, 0, 255, 1)', 'rgba(255, 0, 0, 1)'];
-                gradienteCSS = "linear-gradient(to right, #00ffff, #0000ff, #ff0000)";
+                // PADRÃO: Gradiente de alto contraste
+                gradienteMapa = [
+                    'rgba(0, 255, 255, 0)', 
+                    'rgba(0, 255, 0, 1)', 
+                    'rgba(255, 255, 0, 1)', 
+                    'rgba(255, 0, 0, 1)'
+                ];
+                gradienteCSS = "linear-gradient(to right, #00ffff, #00ff00, #ffff00, #ff0000)";
             }
 
             const barra = document.querySelector('.gradient-bar');
             if (barra) barra.style.setProperty('--legenda-gradiente', gradienteCSS);
 
-            heatmap = new google.maps.visualization.HeatmapLayer({ data: heatData, map: mapHeat, radius: 40, opacity: 0.8, gradient: gradienteMapa });
+            heatmap = new google.maps.visualization.HeatmapLayer({ 
+                data: heatData, 
+                map: mapHeat, 
+                radius: 40, 
+                opacity: 0.8, 
+                gradient: gradienteMapa 
+            });
             if (heatData.length > 0) {
                 const bounds = new google.maps.LatLngBounds();
                 heatData.forEach(p => bounds.extend(p));
