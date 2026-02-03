@@ -4,116 +4,117 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
-    <style>
-            /* Container principal */
-        .map-container { width: 100%; height: 65vh; background-color: #f8f9fa; border-radius: 0 0 16px 16px; }
-
-        /* Efeito de Vidro (Glassmorphism) */
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.8) !important;
-            backdrop-filter: blur(12px) saturate(180%) !important;
-            -webkit-backdrop-filter: blur(12px) saturate(180%) !important;
-            border: 1px solid rgba(255, 255, 255, 0.4) !important;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08) !important;
-            border-radius: 12px !important;
+    <style>/* 1. Definição de Variáveis (Modo Claro/Escuro) */
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --glass-text: #444;
+            --glass-border: rgba(0, 0, 0, 0.1);
+            --accent-color: #0d6efd;
         }
 
-        /* Redesign das Abas (Pills Modernas) */
+        .dark-mode {
+            --glass-bg: rgba(15, 23, 42, 0.75); /* Azul marinho translúcido */
+            --glass-text: #f8fafc;
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --accent-color: #38bdf8; /* Azul ciano para brilhar no escuro */
+        }
+
+        /* 2. Container e Base */
+        .map-container { 
+            width: 100%; 
+            height: 65vh; 
+            background-color: #f8f9fa; 
+            border-radius: 0 0 16px 16px; 
+        }
+
+        /* 3. Efeito de Vidro Universal (Glassmorphism) */
+        .glass-panel {
+            background: var(--glass-bg) !important;
+            backdrop-filter: blur(10px) saturate(160%) !important;
+            -webkit-backdrop-filter: blur(10px) saturate(160%) !important;
+            border: 1px solid var(--glass-border) !important;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15) !important;
+            border-radius: 12px !important;
+            color: var(--glass-text) !important;
+            transition: all 0.3s ease;
+        }
+
+        /* 4. Ajuste dos Cards Flutuantes (Compactos) */
+        .focos-counter-card {
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            position: absolute;
+            z-index: 1000;
+            min-width: 150px;
+            padding: 8px 16px; /* Altura reduzida para não ficar "esticado" */
+            text-align: center;
+        }
+
+        .focos-counter-card h3 {
+            color: var(--accent-color) !important;
+            font-weight: 800;
+            margin-bottom: 0;
+            line-height: 1.1;
+        }
+
+        .focos-counter-card small {
+            color: var(--glass-text) !important;
+            opacity: 0.8;
+            font-size: 0.6rem;
+        }
+
+        /* 5. Legendas (Design Minimalista) */
+        .map-legend-overlay, .map-category-legend {
+            position: absolute;
+            bottom: 25px;
+            left: 20px;
+            z-index: 1000;
+            width: 155px;
+            padding: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: var(--glass-text) !important;
+        }
+
+        .legend-color {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            border: 1.5px solid #fff;
+            flex-shrink: 0;
+        }
+
+        /* 6. Abas e Rodapé */
         #mapTabs {
             background: #f1f3f5;
             padding: 4px;
             border-radius: 50px;
             display: inline-flex;
-            border: none;
-            margin-bottom: 10px;
         }
 
-        #mapTabs .nav-link {
-            border-radius: 50px !important;
-            padding: 8px 24px;
-            color: #6c757d;
-            font-weight: 600;
-            font-size: 0.85rem;
-            transition: all 0.3s ease;
-            border: none !important;
-        }
+        .dark-mode #mapTabs { background: #334155; }
 
         #mapTabs .nav-link.active {
-            background: #ffffff !important;
-            color: #0d6efd !important;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
-        }
-
-        /* Elementos Flutuantes */
-        .map-legend-overlay, .focos-counter-card, .map-category-legend {
-            position: absolute;
-            z-index: 1000;
-        }
-
-        .focos-counter-card {
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            min-width: 200px;
-            padding: 10px 15px;
-        }
-
-        .legend-item {
-        display: flex;
-        align-items: center;
-        gap: 10px;      /* Espaço entre a cor e o texto */
-        margin-bottom: 8px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: #444;
-    }
-
-        .legend-color {
-            width: 14px;      /* Largura da bolinha */
-            height: 14px;     /* Altura da bolinha */
-            border-radius: 50%; /* Torna redonda */
-            display: inline-block;
-            border: 2px solid #fff; /* Borda branca para destacar no vidro */
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Sombra leve */
-            flex-shrink: 0;   /* Impede que a bolinha amasse */
-        }
-
-        .gradient-bar {
-            height: 6px;
-            width: 100%;
-            background: var(--legenda-gradiente, linear-gradient(to right, #00ffff, #0000ff, #ff0000));
-            border-radius: 10px;
-            margin-bottom: 6px;
-            transition: background 0.5s ease;
+            background: var(--card-bg) !important;
+            color: var(--accent-color) !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+            border-radius: 50px;
         }
 
         .logistics-footer {
-            background: #ffffff;
-            border-top: 1px solid #eee;
-            padding: 20px;
+            background: var(--card-bg);
+            border-top: 1px solid var(--glass-border);
+            padding: 15px 20px;
             border-radius: 0 0 16px 16px;
-        }
-
-        .map-category-legend {
-        width: 160px !important; /* Largura reduzida */
-        padding: 10px !important; /* Padding mais compacto */
-        }
-
-        .map-category-legend h6 {
-            font-size: 0.6rem !important; /* Título menor */
-            margin-bottom: 8px !important;
-        }
-
-        .legend-item {
-            gap: 8px;
-            margin-bottom: 4px; /* Espaço entre itens reduzido */
-            font-size: 0.65rem !important; /* Texto dos itens menor */
-        }
-
-        .legend-color {
-            width: 10px;  /* Bolinha menor */
-            height: 10px; /* Bolinha menor */
-            border: 1.5px solid #fff;
+            color: var(--glass-text);
         }
 
         .cursor-pointer { cursor: pointer; }
@@ -196,7 +197,7 @@
 
     {# --- MAPA COM DESIGN CLEAN --- #}
     <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
-        <div class="card-header bg-white border-0 py-3 text-center">
+        <div class="card-header border-0 py-3 text-center">
             <ul class="nav nav-pills" id="mapTabs" role="tablist">
                 <li class="nav-item">
                     <a class="nav-link active" data-bs-toggle="tab" href="#tabCalor"><i class="bi bi-fire me-2"></i>Calor</a>
@@ -221,11 +222,22 @@
             <div class="tab-content">
                 <div class="tab-pane fade show active" id="tabCalor">
                     <div id="mapHeatmap" class="map-container"></div>
-                    <div class="map-legend-overlay glass-panel p-3 border-0" style="bottom: 20px; left: 20px;">
-                        <h6 class="fw-bold mb-2 small text-muted">DENSIDADE</h6>
+                    
+                    <div class="map-legend-overlay glass-panel border-0">
+                        <h6 class="fw-bold mb-2 text-uppercase">Densidade de Focos</h6>
+                        
                         <div class="gradient-bar"></div>
-                        <div class="d-flex justify-content-between small fw-bold text-muted" style="font-size: 0.6rem;">
-                            <span>BAIXA</span><span>ALTA</span>
+                        
+                        <div class="d-flex justify-content-between fw-bold" style="font-size: 0.6rem; opacity: 0.8;">
+                            <span>Baixa</span>
+                            <span>Alta</span>
+                        </div>
+                        
+                        <hr class="my-2 opacity-25">
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span style="font-size: 0.65rem; opacity: 0.8;">Total:</span>
+                            <strong style="color: var(--accent-color) !important;" id="legend-count">0</strong>
                         </div>
                     </div>
                 </div>
@@ -311,10 +323,10 @@
 
     function getCorPorFoco(foco) {
         const f = foco.toLowerCase();
-        if (f.includes("piscina") || f.includes("água")) return "#00d1ff"; 
-        if (f.includes("abandonado") || f.includes("vazio")) return "#ff4d4d"; 
-        if (f.includes("terreno") || f.includes("lote")) return "#ffa500"; 
-        return "#0d6efd"; 
+        if (f.includes("piscina") || f.includes("água")) return "#0000ff"; // Azul da legenda
+        if (f.includes("abandonado") || f.includes("vazio")) return "#ff3c0b"; // Vermelho da legenda
+        if (f.includes("terreno") || f.includes("lote")) return "#006400"; // Verde da legenda
+        return "#ffa500"; // Laranja para "Outros" 
     }
 
     async function carregarDadosCalor() {
@@ -437,5 +449,17 @@
             }
         } catch (error) { console.error(error); }
     }
+
+        const darkMapStyle = [
+        { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
+        { elementType: "labels.text.stroke", stylers: [{ color: "#242f3e" }] },
+        { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
+        { featureType: "administrative.locality", elementType: "labels.text.fill", stylers: [{ color: "#d59563" }] },
+        { featureType: "poi", elementType: "labels.text.fill", stylers: [{ color: "#d59563" }] },
+        { featureType: "road", elementType: "geometry", stylers: [{ color: "#38414e" }] },
+        { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#212a37" }] },
+        { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#9ca5b9" }] },
+        { featureType: "water", elementType: "geometry", stylers: [{ color: "#17263c" }] }
+    ];
 </script>
 {% endblock %}
