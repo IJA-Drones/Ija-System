@@ -142,6 +142,15 @@
                                     {{ p.usuario.nome_uvis }}
                                 </strong>
 
+                                {# --- ALERTA GEOFENCING (MINIMALISTA) --- #}
+                                    {% if p.area_restrita %}
+                                        <div class="mt-1">
+                                            <span class="badge bg-danger animate-pulse-red shadow-sm" style="font-size: 0.65rem; letter-spacing: 0.5px;">
+                                                <i class="bi bi-exclamation-triangle-fill"></i> ÁREA RESTRITA
+                                            </span>
+                                        </div>
+                                    {% endif %}
+
                                 {# --- ALERTA DE CORREÇÃO PARA O ADMIN --- #}
                                 {% if p.status == 'PENDENTE' and p.justificativa and p.justificativa.startswith('CORREÇÃO:') %}
                                     {# Removi o 'd-lg-none' para que apareça no PC também #}

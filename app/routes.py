@@ -652,7 +652,7 @@ def api_geocode():
 def novo():
     hoje = date.today().isoformat()
 
-    key_for_map = current_app.config.get("Maps_KEY_FRONT")
+    key_for_map = current_app.config.get("Maps_KEY_FRONT") or os.getenv("KEY_API_GOOGLE_MAPS")
 
     if request.method == 'POST':
         try:
@@ -694,6 +694,11 @@ def novo():
                     cep=cep,
                 )
 
+            confirmou_risco_pelo_js = request.form.get('risco_aereo') == '1'
+            area_restrita_server = False
+            distancia_detectada = 0
+            zona_conflito_nome = ""
+
             # 3. Calcular o risco com as coordenadas já definidas
             ZONAS_RESTRITAS = [
                 {"nome": "Congonhas", "lat": -23.6273, "lng": -46.6565, "raio": 5400},
@@ -703,13 +708,16 @@ def novo():
                 {"nome": "Heliponto Paulista", "lat": -23.5615, "lng": -46.6559, "raio": 2000}
             ]
 
-            area_restrita_final = False
             if latitude and longitude:
                 for zona in ZONAS_RESTRITAS:
                     distancia = calcular_distancia(latitude, longitude, zona['lat'], zona['lng'])
                     if distancia < zona['raio']:
-                        area_restrita_final = True
+                        area_restrita_server = True
+                        distancia_detectada = distancia
+                        zona_conflito_nome = zona['nome']
                         break
+            
+            area_restrita_final = area_restrita_server or confirmou_risco_pelo_js
 
             if latitude is None or longitude is None:
                 flash("Não foi possível obter coordenadas automaticamente. Confira endereço/número e tente novamente.", "warning")
@@ -743,6 +751,14 @@ def novo():
 
             db.session.add(nova_solicitacao)
             db.session.commit()
+
+            if area_restrita_final:
+                # Esta mensagem aparecerá para o usuário que enviou, 
+                # mas você pode registrar um log ou disparar um email aqui.
+                flash(f"⚠️ Alerta: Pedido registrado em área restrita ({zona_conflito_nome}). O administrador foi notificado.", "danger")
+                
+                # Exemplo de log para o Admin ver no terminal/arquivo:
+                print(f"ALERTA GEOFENCING: Novo pedido ID {nova_solicitacao.id} criado em zona de risco!")
 
             flash('Pedido enviado com sucesso!', 'success')
             return redirect(url_for('main.dashboard'))

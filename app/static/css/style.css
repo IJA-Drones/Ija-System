@@ -384,6 +384,19 @@ body.sidebar-collapsed .app-content {
   border: 1px solid #0dcaf0;
 }
 
+  @keyframes pulse-red {
+      0% { opacity: 1; }
+      50% { opacity: 0.7; }
+      100% { opacity: 1; }
+  }
+  .animate-pulse-red {
+      animation: pulse-red 2s infinite ease-in-out;
+  }
+  /* Estilo para destacar a linha inteira se for área restrita (opcional) */
+  .table-danger-light {
+      background-color: rgba(220, 53, 69, 0.05) !important;
+  }
+
 .card {
   border: none;
   border-radius: var(--radius-lg);
