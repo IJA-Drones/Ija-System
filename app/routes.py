@@ -5810,7 +5810,7 @@ def admin_usuario_novo():
             db.session.add(novo)
             db.session.commit()
             flash("Usuário criado com sucesso!", "success")
-            return redirect(url_for("main.dashboard"))
+            return redirect(url_for("main.admin_usuarios_listar"))
         except IntegrityError:
             db.session.rollback()
             flash("Esse login já está em uso. Escolha outro.", "danger")
