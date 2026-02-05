@@ -306,8 +306,6 @@
     </div>
   </li>
 {% endif %}
-
-
           {% endif %} 
           {# ===================== PILOTOS ===================== #} 
           {% if current_user.tipo_usuario in ['admin', 'visualizar'] %}
@@ -451,7 +449,14 @@
             </a>
           </li>
           {% endif %}
-
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint == 'main.consultar_endereco_geolocalizacao' %}active{% endif %}"
+              href="{{ url_for('main.consultar_endereco_geolocalizacao') }}"
+            >
+              <i class="bi bi-search me-2"></i><span>Geolocalização</span>
+            </a>
+          </li>
           <div class="sidebar-footer mt-auto p-3 text-center">
             <div id="install-container" style="display: none">
               <button

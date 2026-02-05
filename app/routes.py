@@ -6051,3 +6051,8 @@ def admin_usuario_excluir(id):
         flash(f"Erro ao excluir: {e}", "danger")
 
     return redirect(url_for("main.admin_usuarios_listar"))
+
+@bp.route('/consultar_endereco_geolocalizacao', methods=['GET'])
+@login_required
+def consultar_endereco_geolocalizacao():
+    return render_template('consultar_endereco_geolocalizacao.html')
