@@ -259,53 +259,54 @@
           </div>
         </li>
 
-        {% if current_user.tipo_usuario == 'admin' %}
-          {# ===================== USUÁRIOS ===================== #}       
+{% if current_user.tipo_usuario == 'admin' %}
+  {# ===================== USUÁRIOS ===================== #}       
+  <li class="nav-item">
+    <button type="button" class="nav-link nav-link-toggle" data-bs-toggle="collapse" data-bs-target="#menuUsuarios">
+      <span><i class="bi bi-people-fill me-2"></i><span>Usuário</span></span>
+      <i class="bi bi-chevron-down chevron"></i>
+    </button>
+    <div class="collapse" id="menuUsuarios">
+      <ul class="nav flex-column sub-nav">
         <li class="nav-item">
-            <button type="button" class="nav-link nav-link-toggle" data-bs-toggle="collapse" data-bs-target="#menuClientes">
-              <span><i class="bi bi-people-fill me-2"></i><span>Usuario</span></span>
-              <i class="bi bi-chevron-down chevron"></i>
-            </button>
-            <div class="collapse" id="menuClientes">
-              <ul class="nav flex-column sub-nav">
-                <li class="nav-item">
-                  <a class="nav-link sub-link" href="{{ url_for('main.admin_usuarios_listar') }}">
-                    <i class="bi bi-list-ul me-2"></i><span>Listar</span>
-                  </a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link sub-link" href="{{ url_for('main.admin_usuario_novo') }}">
-                    <i class="bi bi-person-plus-fill me-2"></i><span>Cadastrar</span>
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </li>
-        {% endif %}
+          <a class="nav-link sub-link" href="{{ url_for('main.admin_usuarios_listar') }}">
+            <i class="bi bi-list-ul me-2"></i><span>Listar</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link sub-link" href="{{ url_for('main.admin_usuario_novo') }}">
+            <i class="bi bi-person-plus-fill me-2"></i><span>Cadastrar</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </li>
+{% endif %}
 
-          {# ✅ Mudança de ['admin', 'visualizar'] para apenas ['admin'] #}
-          {% if current_user.tipo_usuario == 'admin' %}
-          <li class="nav-item">
-            <button type="button" class="nav-link nav-link-toggle" data-bs-toggle="collapse" data-bs-target="#menuClientes">
-              <span><i class="bi bi-people-fill me-2"></i><span>Clientes</span></span>
-              <i class="bi bi-chevron-down chevron"></i>
-            </button>
-            <div class="collapse" id="menuClientes">
-              <ul class="nav flex-column sub-nav">
-                <li class="nav-item">
-                  <a class="nav-link sub-link" href="{{ url_for('main.listar_clientes') }}">
-                    <i class="bi bi-list-ul me-2"></i><span>Listar</span>
-                  </a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link sub-link" href="{{ url_for('main.cadastrar_clientes') }}">
-                    <i class="bi bi-person-plus-fill me-2"></i><span>Cadastrar</span>
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </li>
-          {% endif %}
+{% if current_user.tipo_usuario == 'admin' %}
+  {# ===================== CLIENTES ===================== #} 
+  <li class="nav-item">
+    <button type="button" class="nav-link nav-link-toggle" data-bs-toggle="collapse" data-bs-target="#menuClientes">
+      <span><i class="bi bi-people-fill me-2"></i><span>Clientes</span></span>
+      <i class="bi bi-chevron-down chevron"></i>
+    </button>
+    <div class="collapse" id="menuClientes">
+      <ul class="nav flex-column sub-nav">
+        <li class="nav-item">
+          <a class="nav-link sub-link" href="{{ url_for('main.listar_clientes') }}">
+            <i class="bi bi-list-ul me-2"></i><span>Listar</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link sub-link" href="{{ url_for('main.cadastrar_clientes') }}">
+            <i class="bi bi-person-plus-fill me-2"></i><span>Cadastrar</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </li>
+{% endif %}
+
 
           {% endif %} 
           {# ===================== PILOTOS ===================== #} 
