@@ -6055,4 +6055,6 @@ def admin_usuario_excluir(id):
 @bp.route('/consultar_endereco_geolocalizacao', methods=['GET'])
 @login_required
 def consultar_endereco_geolocalizacao():
-    return render_template('consultar_endereco_geolocalizacao.html')
+    google_maps_key = os.getenv("KEY_API_GOOGLE_MAPS")
+    print(google_maps_key)  # Verifique se a chave está sendo carregada corretamente
+    return render_template('consultar_endereco_geolocalizacao.html', google_maps_key=google_maps_key)
