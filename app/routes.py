@@ -4763,7 +4763,7 @@ def cadastrar_equipes():
         if not piloto_id:
             errors["piloto_id"] = "Selecione o piloto titular."
         if not auxiliar_id:
-            errors["auxiliar_id"] = "Selecione o pilotosuya o piloto auxiliar."
+            errors["auxiliar_id"] = "Selecione o pilotos o piloto auxiliar."
 
         # não permitir o mesmo piloto nos dois papéis
         if piloto_id and auxiliar_id and piloto_id == auxiliar_id:
