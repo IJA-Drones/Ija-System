@@ -4721,7 +4721,7 @@ def piloto_concluir_os(os_id):
     return redirect(url_for('main.piloto_os'))
 
 
-REGIOES = {"NORTE", "SUL", "LESTE", "OESTE"}
+REGIOES = {"NORTE", "SUL", "LESTE", "OESTE", "CENTRO", "SULDESTE", "CENTRO-OESTE"}
 
 @bp.route("/equipes/cadastrar", methods=["GET", "POST"], endpoint="cadastrar_equipes")
 @login_required
