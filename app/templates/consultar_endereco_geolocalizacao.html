@@ -134,24 +134,40 @@
   <div id="geo-error" class="alert alert-danger" style="display: none;"></div>
 </div>
 {% endblock %}
-
 {% block scripts %}
 <script>
-  let map, directionsService, directionsRenderer;
-  
+  let map, directionsService, directionsRenderer, userLocation;
+
   function initMap() {
+    // Inicializando o mapa
     map = new google.maps.Map(document.getElementById("map"), {
       zoom: 13,
-      center: { lat: -23.55052, lng: -46.633308 }, // Default to São Paulo
+      center: { lat: -23.55052, lng: -46.633308 }, // Default para São Paulo
     });
 
     directionsService = new google.maps.DirectionsService();
     directionsRenderer = new google.maps.DirectionsRenderer();
     directionsRenderer.setMap(map);
-  }
 
-  function onlyDigits(v) {
-    return (v || "").replace(/\D/g, "");
+    // Obter a localização do usuário
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        function(position) {
+          userLocation = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
+          map.setCenter(userLocation);  // Move o mapa para a localização do usuário
+          new google.maps.Marker({
+            position: userLocation,
+            map: map,
+            title: "Você está aqui",
+          });
+        },
+        function(error) {
+          alert("Erro ao obter a localização do usuário.");
+        }
+      );
+    } else {
+      alert("Geolocalização não é suportada pelo seu navegador.");
+    }
   }
 
   function consultarCep() {
@@ -202,8 +218,6 @@
           document.getElementById('geo-error').style.display = "none";
 
           // Agora, traçar a rota
-          const userLocation = new google.maps.LatLng(-23.55052, -46.633308); // Aqui deve vir a localização do usuário
-
           const destination = new google.maps.LatLng(data.lat, data.lng);
 
           const request = {
