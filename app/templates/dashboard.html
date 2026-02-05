@@ -11,6 +11,33 @@
      - Respeita seu Design System + Dark Mode (html.dark-mode e body.dark-mode)
      ========================================= #}
   <style>
+      .btn-tracar-rota {
+      background-color: #f44336; /* Vermelho mais vibrante */
+      color: white;
+      padding: 8px 16px;
+      border-radius: 25px;
+      font-weight: bold;
+      transition: background-color 0.3s, transform 0.2s;
+      text-align: center;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none; /* Retira underline */
+    }
+
+    .btn-tracar-rota:hover {
+      background-color: #e53935; /* Cor de hover mais escura */
+      transform: scale(1.05); /* Aumenta um pouco o botão no hover */
+    }
+
+    .btn-tracar-rota:focus {
+      outline: none;
+      box-shadow: 0 0 0 4px rgba(255, 105, 135, 0.4); /* Sombra quando em foco */
+    }
+
+    .btn-tracar-rota i {
+      font-size: 1.1rem;
+    }
     /* ========= MOBILE / TABLET ========= */
     @media (max-width: 768px) {
 
@@ -38,7 +65,6 @@
       form.card.p-3.mb-4 .row.g-2.align-items-end > div {
         width: 100%;
       }
-
       /* =====================================
          LISTAGEM: "Card wrapper" no mobile
          (o overflow-hidden do card pai estava
@@ -420,6 +446,14 @@
                       <i class="bi bi-geo-alt-fill text-danger ms-1" title="Localização GPS salva"></i>
                     {% endif %}
                   </div>
+
+                  <!-- Botão de Traçar Rota (fora do Modal) -->                  
+                {% if p.latitude and p.longitude %}
+                  <a href="https://www.google.com/maps/dir/?api=1&destination={{ p.latitude }},{{ p.longitude }}" 
+                    target="_blank" class="btn btn-tracar-rota mt-2">
+                    <i class="bi bi-sign-turn-right"></i> Traçar Rota
+                  </a>
+                {% endif %}
                 </div>
               </td>
 
@@ -552,12 +586,7 @@
             <div>
               <small class="text-muted d-block">Coordenadas:</small>
               <strong class="font-monospace small">{{ p.latitude }}, {{ p.longitude }}</strong>
-            </div>
-            <a href="https://www.google.com/maps/search/?api=1&query={{ p.latitude }},{{ p.longitude }}"
-               target="_blank"
-               class="btn btn-sm btn-outline-danger">
-              <i class="bi bi-map"></i> Ver Mapa
-            </a>
+            </div>           
           </div>
           {% endif %}
 
@@ -713,142 +742,259 @@
     </button>
   </div>
 </div>
-<script src="https://maps.googleapis.com/maps/api/js?key=SUA_CHAVE&libraries=geometry"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_key }}&libraries=geometry"></script>
 {% endblock %}
-
 {% block scripts %}
 <script>
-  
-(function () {
-  if (window.UVIS_CHAT_INIT) return;
-  window.UVIS_CHAT_INIT = true;
+  (function () {
+    if (window.UVIS_CHAT_INIT) return;
+    window.UVIS_CHAT_INIT = true;
 
-  const msgs = document.getElementById("uvisChatMessages");
-  const input = document.getElementById("uvisChatInput");
-  const sendBtn = document.getElementById("uvisChatSend");
-  const clearBtn = document.getElementById("uvisBotClear");
-  const chatWindow = document.getElementById("uvisChatWindow");
-  const fab = document.getElementById("uvisBotFab");
-  const closeBtns = document.querySelectorAll("#uvisBotClose");
+    const msgs = document.getElementById("uvisChatMessages");
+    const input = document.getElementById("uvisChatInput");
+    const sendBtn = document.getElementById("uvisChatSend");
+    const clearBtn = document.getElementById("uvisBotClear");
+    const chatWindow = document.getElementById("uvisChatWindow");
+    const fab = document.getElementById("uvisBotFab");
+    const closeBtns = document.querySelectorAll("#uvisBotClose");
 
-  if (!msgs || !input || !sendBtn || !chatWindow) return;
+    if (!msgs || !input || !sendBtn || !chatWindow) return;
 
-  window.toggleUvisChat = function() {
-    chatWindow.classList.toggle('active');
-    if (chatWindow.classList.contains('active')) {
-      setTimeout(() => {
-        input.focus();
-        if (msgs.children.length === 0) welcome();
-      }, 300);
-    }
-  }
-
-  closeBtns.forEach(btn => btn.addEventListener("click", window.toggleUvisChat));
-
-  function escapeHtml(str) {
-    return String(str || "")
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
-  }
-
-  function renderBotHtml(text) {
-    let html = escapeHtml(text);
-    html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-    html = html.replace(/\n/g, "<br>");
-    return html;
-  }
-
-  function addMsg(text, who) {
-    const divMsg = document.createElement("div");
-    const cssClass = who === "user" ? "user" : "bot";
-    divMsg.className = `message ${cssClass}`;
-
-    if (who === "bot") divMsg.innerHTML = renderBotHtml(text);
-    else divMsg.textContent = text;
-
-    msgs.appendChild(divMsg);
-    msgs.scrollTop = msgs.scrollHeight;
-  }
-
-  function addTyping() {
-    const div = document.createElement("div");
-    div.id = "uvisTyping";
-    div.className = "message bot";
-    div.innerHTML = '<span class="typing-dots">...</span>';
-    msgs.appendChild(div);
-    msgs.scrollTop = msgs.scrollHeight;
-  }
-
-  function removeTyping() {
-    const el = document.getElementById("uvisTyping");
-    if (el) el.remove();
-  }
-
-  function welcome() {
-    addMsg("Olá! Sou o assistente UVIS. Dúvidas sobre status, CEP ou checklist?", "bot");
-  }
-
-  async function ask(text) {
-    const q = (text || "").trim();
-    if (!q) return;
-
-    addMsg(q, "user");
-    input.value = "";
-    input.focus();
-
-    sendBtn.disabled = true;
-    addTyping();
-
-    try {
-      const res = await fetch("/api/uvis/chatbot", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({message: q})
-      });
-
-      const data = await res.json().catch(() => ({}));
-      removeTyping();
-
-      if (!res.ok) {
-        if (res.status === 401) addMsg("Sessão expirada. Faça login novamente.", "bot");
-        else addMsg(data.answer || "Erro no servidor. Tente mais tarde.", "bot");
-        return;
+    window.toggleUvisChat = function() {
+      chatWindow.classList.toggle('active');
+      if (chatWindow.classList.contains('active')) {
+        setTimeout(() => {
+          input.focus();
+          if (msgs.children.length === 0) welcome();
+        }, 300);
       }
-
-      addMsg(data.answer || "Não consegui responder agora. Tente novamente.", "bot");
-
-    } catch (e) {
-      removeTyping();
-      addMsg("Erro ao conectar com o chatbot.", "bot");
-    } finally {
-      sendBtn.disabled = false;
-      setTimeout(() => input.focus(), 100);
     }
-  }
 
-  sendBtn.addEventListener("click", () => ask(input.value));
+    closeBtns.forEach(btn => btn.addEventListener("click", window.toggleUvisChat));
 
-  input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") ask(input.value);
-  });
+    function escapeHtml(str) {
+      return String(str || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
 
-  clearBtn.addEventListener("click", () => {
-    msgs.innerHTML = "";
-    welcome();
-  });
+    function renderBotHtml(text) {
+      let html = escapeHtml(text);
+      html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+      html = html.replace(/\n/g, "<br>");
+      return html;
+    }
 
-  document.querySelectorAll(".chip").forEach(btn => {
-    const newBtn = btn.cloneNode(true);
-    btn.parentNode.replaceChild(newBtn, btn);
+    function addMsg(text, who) {
+      const divMsg = document.createElement("div");
+      const cssClass = who === "user" ? "user" : "bot";
+      divMsg.className = `message ${cssClass}`;
 
-    newBtn.addEventListener("click", () => {
-      ask(newBtn.getAttribute("data-q"));
+      if (who === "bot") divMsg.innerHTML = renderBotHtml(text);
+      else divMsg.textContent = text;
+
+      msgs.appendChild(divMsg);
+      msgs.scrollTop = msgs.scrollHeight;
+    }
+
+    function addTyping() {
+      const div = document.createElement("div");
+      div.id = "uvisTyping";
+      div.className = "message bot";
+      div.innerHTML = '<span class="typing-dots">...</span>';
+      msgs.appendChild(div);
+      msgs.scrollTop = msgs.scrollHeight;
+    }
+
+    function removeTyping() {
+      const el = document.getElementById("uvisTyping");
+      if (el) el.remove();
+    }
+
+    function welcome() {
+      addMsg("Olá! Sou o assistente UVIS. Dúvidas sobre status, CEP ou checklist?", "bot");
+    }
+
+    async function ask(text) {
+      const q = (text || "").trim();
+      if (!q) return;
+
+      addMsg(q, "user");
+      input.value = "";
+      input.focus();
+
+      sendBtn.disabled = true;
+      addTyping();
+
+      try {
+        const res = await fetch("/api/uvis/chatbot", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({message: q})
+        });
+
+        const data = await res.json().catch(() => ({}));
+        removeTyping();
+
+        if (!res.ok) {
+          if (res.status === 401) addMsg("Sessão expirada. Faça login novamente.", "bot");
+          else addMsg(data.answer || "Erro no servidor. Tente mais tarde.", "bot");
+          return;
+        }
+
+        addMsg(data.answer || "Não consegui responder agora. Tente novamente.", "bot");
+
+      } catch (e) {
+        removeTyping();
+        addMsg("Erro ao conectar com o chatbot.", "bot");
+      } finally {
+        sendBtn.disabled = false;
+        setTimeout(() => input.focus(), 100);
+      }
+    }
+
+    sendBtn.addEventListener("click", () => ask(input.value));
+
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") ask(input.value);
     });
-  });
 
-})();
+    clearBtn.addEventListener("click", () => {
+      msgs.innerHTML = "";
+      welcome();
+    });
+
+    document.querySelectorAll(".chip").forEach(btn => {
+      const newBtn = btn.cloneNode(true);
+      btn.parentNode.replaceChild(newBtn, btn);
+
+      newBtn.addEventListener("click", () => {
+        ask(newBtn.getAttribute("data-q"));
+      });
+    });
+
+    // === Google Maps Modal ===
+    const GOOGLE_MAPS_KEY = "{{ google_maps_key }}";  // Passe sua chave do Google Maps
+    let googleMapsLoaded = false;
+    let mapInstance = null;
+    let markerInstance = null;
+
+    function loadGoogleMaps() {
+      return new Promise((resolve, reject) => {
+        if (googleMapsLoaded && window.google && window.google.maps) return resolve();
+
+        if (!GOOGLE_MAPS_KEY) {
+          return reject(new Error("KEY_API_GOOGLE_MAPS não foi enviada ao template."));
+        }
+
+        // Prevenir carregamento múltiplo
+        if (document.getElementById("googleMapsScript")) {
+          const wait = setInterval(() => {
+            if (window.google && window.google.maps) {
+              clearInterval(wait);
+              googleMapsLoaded = true;
+              resolve();
+            }
+          }, 50);
+          return;
+        }
+
+        window.__initGoogleMaps = () => {
+          googleMapsLoaded = true;
+          resolve();
+        };
+
+        const script = document.createElement("script");
+        script.id = "googleMapsScript";
+        script.async = true;
+        script.defer = true;
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(GOOGLE_MAPS_KEY)}&callback=__initGoogleMaps`;
+        script.onerror = () => reject(new Error("Falha ao carregar Google Maps JS."));
+        document.head.appendChild(script);
+      });
+    }
+
+    function openMapModal({ lat, lng, title }) {
+      const modalEl = document.getElementById("mapModal");
+      const titleEl = document.getElementById("mapModalTitle");
+      const coordsEl = document.getElementById("mapCoords");
+      const btnOpen = document.getElementById("btnOpenGoogleMaps");
+      const btnDir = document.getElementById("btnDirections");
+
+      if (titleEl) titleEl.textContent = title || "Localização";
+      if (coordsEl) coordsEl.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+
+      // Links externos para Google Maps
+      const q = `${lat},${lng}`;
+      if (btnOpen) btnOpen.href = `https://www.google.com/maps?q=${encodeURIComponent(q)}`;
+      if (btnDir) btnDir.href = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(q)}`;
+
+      // Abrir modal com o mapa
+      let bsModal = bootstrap.Modal.getInstance(modalEl);
+      if (!bsModal) bsModal = new bootstrap.Modal(modalEl);
+      bsModal.show();
+
+      // Inicializar o mapa após abrir
+      setTimeout(() => {
+        const center = { lat, lng };
+        const canvas = document.getElementById("mapCanvas");
+
+        if (!canvas) {
+          console.error("Elemento #mapCanvas não encontrado.");
+          return;
+        }
+
+        if (!mapInstance) {
+          mapInstance = new google.maps.Map(canvas, {
+            center,
+            zoom: 18,
+            mapTypeControl: false,
+            streetViewControl: true,
+            fullscreenControl: true,
+          });
+        } else {
+          mapInstance.setCenter(center);
+          mapInstance.setZoom(18);
+        }
+
+        if (!markerInstance) {
+          markerInstance = new google.maps.Marker({
+            position: center,
+            map: mapInstance,
+            title: title || "Local",
+          });
+        } else {
+          markerInstance.setPosition(center);
+          markerInstance.setTitle(title || "Local");
+        }
+      }, 150);
+    }
+
+    document.querySelectorAll(".btn-open-map").forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+
+        const lat = parseFloat(btn.dataset.lat);
+        const lng = parseFloat(btn.dataset.lng);
+        const title = btn.dataset.title || "Localização";
+
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+          alert("Sem coordenadas válidas.");
+          return;
+        }
+
+        try {
+          await loadGoogleMaps();
+          openMapModal({ lat, lng, title });
+        } catch (err) {
+          console.error(err);
+          window.open(`https://www.google.com/maps?q=${lat},${lng}`, "_blank");
+        }
+      });
+    });
+  })();
 </script>
 {% endblock %}

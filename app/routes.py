@@ -171,12 +171,13 @@ def roles_required(*roles):
 @bp.route('/')
 @login_required
 def dashboard():
+    google_maps_key = os.getenv("KEY_API_GOOGLE_MAPS")  # a mesma do .env 
     if current_user.tipo_usuario == 'piloto':
         return redirect(url_for('main.piloto_os'))
 
     if current_user.tipo_usuario in ['admin', 'operario', 'visualizar']:
         return redirect(url_for('main.admin_dashboard'))
-
+     
     # ✅ UVIS: só as solicitações dela + carrega equipe para exibir
     query = (
         Solicitacao.query
@@ -213,6 +214,7 @@ def dashboard():
         'dashboard.html',
         solicitacoes=paginacao.items,
         paginacao=paginacao,
+        google_maps_key=google_maps_key
     )
 
 
