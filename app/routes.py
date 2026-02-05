@@ -5611,7 +5611,7 @@ def heatmap_data():
     query = Solicitacao.query.filter(
         Solicitacao.latitude.isnot(None),
         Solicitacao.longitude.isnot(None),
-        Solicitacao.status == 'APROVADO'
+        Solicitacao.status.in_(['APROVADO', 'APROVADO COM RECOMENDAÇÕES'])
     )
 
     # Filtro de Data (Se você tiver a coluna data_agendamento ou similar)
