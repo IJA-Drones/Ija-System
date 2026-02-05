@@ -121,6 +121,15 @@
     </div>
   </div>
 
+  <!-- Botão para traçar a rota -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-12 d-flex align-items-center justify-content-center">
+      <button type="button" class="btn btn-success" onclick="traçarRota()">
+        Traçar Rota
+      </button>
+    </div>
+  </div>
+
   <!-- Mapa de Rota -->
   <div class="row g-3 mb-4">
     <div class="col-md-12">
@@ -216,24 +225,6 @@
           document.getElementById('latitude').value = data.lat;
           document.getElementById('longitude').value = data.lng;
           document.getElementById('geo-error').style.display = "none";
-
-          // Agora, traçar a rota
-          const destination = new google.maps.LatLng(data.lat, data.lng);
-
-          const request = {
-            origin: userLocation,
-            destination: destination,
-            travelMode: google.maps.TravelMode.DRIVING,
-          };
-
-          directionsService.route(request, (result, status) => {
-            if (status === google.maps.DirectionsStatus.OK) {
-              directionsRenderer.setDirections(result);
-            } else {
-              document.getElementById('geo-error').style.display = "block";
-              document.getElementById('geo-error').textContent = "Erro ao traçar a rota.";
-            }
-          });
         } else {
           document.getElementById('geo-error').style.display = "block";
           document.getElementById('geo-error').textContent = data.message;
@@ -243,6 +234,31 @@
         document.getElementById('geo-error').style.display = "block";
         document.getElementById('geo-error').textContent = "Erro ao consultar geolocalização.";
       });
+  }
+
+  function traçarRota() {
+    const latitude = document.getElementById('latitude').value;
+    const longitude = document.getElementById('longitude').value;
+
+    if (!latitude || !longitude) {
+      alert("Por favor, consulte a geolocalização primeiro.");
+      return;
+    }
+
+    const destination = new google.maps.LatLng(latitude, longitude);
+    const request = {
+      origin: userLocation,
+      destination: destination,
+      travelMode: google.maps.TravelMode.DRIVING,
+    };
+
+    directionsService.route(request, (result, status) => {
+      if (status === google.maps.DirectionsStatus.OK) {
+        directionsRenderer.setDirections(result);
+      } else {
+        alert("Erro ao traçar a rota.");
+      }
+    });
   }
 
   // Inicializa o mapa quando a página carrega
