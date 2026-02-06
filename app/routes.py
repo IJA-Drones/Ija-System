@@ -651,20 +651,22 @@ def api_geocode():
 @login_required
 def novo():
     hoje = date.today().isoformat()
-
     key_for_map = current_app.config.get("Maps_KEY_FRONT") or os.getenv("KEY_API_GOOGLE_MAPS")
 
     if request.method == 'POST':
         try:
+            # --- Dados de Data/Hora ---
             data_str = request.form.get('data')
             hora_str = request.form.get('hora')
-
             data_obj = datetime.strptime(data_str, '%Y-%m-%d').date() if data_str else None
             hora_obj = datetime.strptime(hora_str, '%H:%M').time() if hora_str else None
 
-            apoio_cet_bool = request.form.get('apoio_cet') == 'sim'
+            # --- Perímetro Planejado (NOVO) ---
+            # O JS deve enviar uma string JSON para o campo 'perimetro_planejado'
+            perimetro_planejado = request.form.get('perimetro_planejado')
 
-            # --- Endereço ---
+            # --- Restante dos dados ---
+            apoio_cet_bool = request.form.get('apoio_cet') == 'sim'
             cep = request.form.get('cep')
             logradouro = request.form.get('logradouro')
             numero = request.form.get('numero')
@@ -673,33 +675,15 @@ def novo():
             uf = request.form.get('uf')
             complemento = request.form.get('complemento')
 
-            # --- Coordenadas (vindo do JS) ---
+            # --- Coordenadas ---
             lat_raw = (request.form.get('latitude') or "").strip()
             lng_raw = (request.form.get('longitude') or "").strip()
+            latitude = float(lat_raw.replace(",", ".")) if lat_raw else None
+            longitude = float(lng_raw.replace(",", ".")) if lng_raw else None
 
-            latitude = None
-            longitude = None
-
-            if lat_raw and lng_raw:
-                latitude = float(lat_raw.replace(",", "."))
-                longitude = float(lng_raw.replace(",", "."))
-            else:
-                # Fallback: se por algum motivo o JS não pegou, tenta no POST também
-                latitude, longitude = geocode_endereco_google(
-                    logradouro=logradouro,
-                    numero=numero,
-                    bairro=bairro,
-                    cidade=cidade,
-                    uf=uf,
-                    cep=cep,
-                )
-
-            confirmou_risco_pelo_js = request.form.get('risco_aereo') == '1'
+            # Lógica de Geofencing (ZONAS_RESTRITAS) mantida...
             area_restrita_server = False
-            distancia_detectada = 0
             zona_conflito_nome = ""
-
-            # 3. Calcular o risco com as coordenadas já definidas
             ZONAS_RESTRITAS = [
                 {"nome": "Congonhas", "lat": -23.6273, "lng": -46.6565, "raio": 5400},
                 {"nome": "Campo de Marte", "lat": -23.5092, "lng": -46.6377, "raio": 5400},
@@ -713,20 +697,16 @@ def novo():
                     distancia = calcular_distancia(latitude, longitude, zona['lat'], zona['lng'])
                     if distancia < zona['raio']:
                         area_restrita_server = True
-                        distancia_detectada = distancia
                         zona_conflito_nome = zona['nome']
                         break
             
+            confirmou_risco_pelo_js = request.form.get('risco_aereo') == '1'
             area_restrita_final = area_restrita_server or confirmou_risco_pelo_js
 
-            if latitude is None or longitude is None:
-                flash("Não foi possível obter coordenadas automaticamente. Confira endereço/número e tente novamente.", "warning")
-                return render_template('cadastro.html', hoje=hoje, google_maps_key=key_for_map)
-
+            # --- Criação da Solicitação com o Perímetro ---
             nova_solicitacao = Solicitacao(
                 data_agendamento=data_obj,
                 hora_agendamento=hora_obj,
-
                 cep=cep,
                 logradouro=logradouro,
                 bairro=bairro,
@@ -734,17 +714,16 @@ def novo():
                 numero=numero,
                 uf=uf,
                 complemento=complemento,
-
                 foco=request.form.get('foco'),
                 tipo_visita=request.form.get('tipo_visita'),
                 altura_voo=request.form.get('altura_voo'),
                 apoio_cet=apoio_cet_bool,
                 observacao=request.form.get('observacao'),
-
                 latitude=latitude,
                 longitude=longitude,
                 area_restrita=area_restrita_final,
-
+                # Salvando o polígono aqui
+                perimetro_planejado=perimetro_planejado, 
                 usuario_id=current_user.id,
                 status='PENDENTE'
             )
@@ -752,20 +731,8 @@ def novo():
             db.session.add(nova_solicitacao)
             db.session.commit()
 
-            if area_restrita_final:
-                # Esta mensagem aparecerá para o usuário que enviou, 
-                # mas você pode registrar um log ou disparar um email aqui.
-                flash(f"⚠️ Alerta: Pedido registrado em área restrita ({zona_conflito_nome}). O administrador foi notificado.", "danger")
-                
-                # Exemplo de log para o Admin ver no terminal/arquivo:
-                print(f"ALERTA GEOFENCING: Novo pedido ID {nova_solicitacao.id} criado em zona de risco!")
-
             flash('Pedido enviado com sucesso!', 'success')
             return redirect(url_for('main.dashboard'))
-
-        except ValueError:
-            db.session.rollback()
-            flash("Erro no formato de data/hora ou coordenadas.", "warning")
 
         except Exception as e:
             db.session.rollback()

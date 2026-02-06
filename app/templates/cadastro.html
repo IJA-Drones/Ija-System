@@ -3,6 +3,31 @@
   rel="stylesheet"
   href="{{ url_for('static', filename='css/components/buttons.css') }}"
 />
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"
+/>
+<style>
+  #mapaDesenho {
+    height: 450px; /* altura fixa ok */
+    width: 100%; /* IMPORTANTÍSSIMO dentro do modal */
+    display: block;
+  }
+
+  .modal-body {
+    overflow: hidden;
+  }
+  .modal {
+    z-index: 2000 !important;
+  }
+  .modal-backdrop {
+    z-index: 1990 !important;
+  }
+</style>
 {% endblock %} {% block content %}
 <div class="container-fluid py-4" style="max-width: 1200px">
   {# --- Cabeçalho --- #}
@@ -16,7 +41,7 @@
   <div class="card info status-primary shadow-sm rounded-4 border-0">
     <div class="card-body p-4">
       <form method="POST" id="formNovoPedido">
-        <input type="hidden" name="risco_aereo" id="risco_aereo" value="0">
+        <input type="hidden" name="risco_aereo" id="risco_aereo" value="0" />
         {# SEÇÃO 1: AGENDAMENTO #}
         <div class="d-flex align-items-center mb-3">
           <i class="bi bi-calendar-event text-primary me-2 fs-5"></i>
@@ -174,6 +199,79 @@
           </div>
         </div>
 
+        <input
+          type="hidden"
+          name="perimetro_planejado"
+          id="perimetro_planejado"
+        />
+
+        <div class="row g-3 mb-3">
+          <div class="col-12">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-pentagon me-1 text-primary"></i> Área de Voo
+              (Opcional)
+            </label>
+            <button
+              type="button"
+              class="btn btn-map-draw w-100 py-3 d-flex flex-column align-items-center justify-content-center"
+              data-bs-toggle="modal"
+              data-bs-target="#modalMapa"
+            >
+              <i class="bi bi-pencil-square fs-4 mb-1"></i>
+              <span id="labelPerimetro">Desenhar área de atuação no mapa</span>
+            </button>
+          </div>
+        </div>
+
+        <div
+          class="modal fade"
+          id="modalMapa"
+          data-bs-backdrop="static"
+          data-bs-keyboard="false"
+          tabindex="-1"
+          aria-hidden="true"
+        >
+          <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content shadow-lg">
+              <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                  <i class="bi bi-map me-2"></i>Delimitar Área de Voo
+                </h5>
+                <button
+                  type="button"
+                  class="btn-close btn-close-white"
+                  data-bs-dismiss="modal"
+                  aria-label="Close"
+                ></button>
+              </div>
+              <div class="modal-body p-0">
+                <div id="mapaDesenho" style="min-height: 450px"></div>
+              </div>
+              <div class="modal-footer justify-content-between">
+                <small class="text-muted"
+                  >Use a ferramenta de polígono à esquerda para desenhar.</small
+                >
+                <div>
+                  <button
+                    type="button"
+                    class="btn btn-secondary"
+                    data-bs-dismiss="modal"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-primary px-4"
+                    onclick="salvarDesenho()"
+                  >
+                    Confirmar Área
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <hr class="text-muted opacity-25 my-4" />
 
         {# SEÇÃO 3: DETALHES DA OPERAÇÃO #}
@@ -291,8 +389,121 @@
   </div>
 </div>
 {% endblock %} {% block scripts %}
-<script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_key }}&libraries=geometry"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+
 <script>
+  let mapDraw = null;
+  let drawnItems = new L.FeatureGroup();
+  let marcadorEndereco = null;
+
+  function centralizarMapaNoEndereco() {
+    if (!mapDraw) return;
+
+    const lat = parseFloat(document.getElementById("latitude")?.value);
+    const lng = parseFloat(document.getElementById("longitude")?.value);
+
+    if (Number.isNaN(lat) || Number.isNaN(lng)) return;
+
+    mapDraw.setView([lat, lng], Math.max(mapDraw.getZoom() || 17, 17), {
+      animate: false,
+    });
+
+    // marker opcional
+    if (!marcadorEndereco) {
+      marcadorEndereco = L.marker([lat, lng], { keyboard: false }).addTo(
+        mapDraw,
+      );
+    } else {
+      marcadorEndereco.setLatLng([lat, lng]);
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const modalEl = document.getElementById("modalMapa");
+    if (modalEl && modalEl.parentElement !== document.body) {
+      document.body.appendChild(modalEl); // move o modal pro final do body
+    }
+
+    modalEl.addEventListener("shown.bs.modal", () => {
+      const lat =
+        parseFloat(document.getElementById("latitude").value) || -23.5505;
+      const lng =
+        parseFloat(document.getElementById("longitude").value) || -46.6333;
+
+      if (!mapDraw) {
+        // Camadas base
+        const osm = L.tileLayer(
+          "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+          {
+            maxZoom: 19,
+          },
+        );
+
+        const esriSat = L.tileLayer(
+          "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+          {
+            maxZoom: 19,
+            attribution: "Tiles &copy; Esri",
+          },
+        );
+
+        // Cria mapa com OSM como padrão
+        mapDraw = L.map("mapaDesenho", {
+          zoomAnimation: false,
+          fadeAnimation: false,
+          markerZoomAnimation: false,
+          trackResize: false,
+          layers: [osm], // camada inicial
+        }).setView([lat, lng], 17);
+
+        // Desenhos
+        mapDraw.addLayer(drawnItems);
+
+        // Controle de camadas (Mapa / Satélite + overlay dos desenhos)
+        L.control
+          .layers(
+            { "Mapa (OSM)": osm, Satélite: esriSat },
+            { Desenhos: drawnItems },
+            { collapsed: false },
+          )
+          .addTo(mapDraw);
+
+        // Controle de desenho
+        const drawControl = new L.Control.Draw({
+          draw: {
+            polygon: { allowIntersection: false, showArea: true },
+            polyline: false,
+            rectangle: false,
+            circle: false,
+            marker: false,
+            circlemarker: false,
+          },
+          edit: { featureGroup: drawnItems },
+        });
+        mapDraw.addControl(drawControl);
+
+        mapDraw.on(L.Draw.Event.CREATED, (e) => {
+          drawnItems.clearLayers();
+          drawnItems.addLayer(e.layer);
+        });
+      } else {
+        mapDraw.setView([lat, lng], 17, { animate: false });
+      }
+
+      // Ajuste de tamanho + centralizar no endereço
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          mapDraw.invalidateSize({ animate: false, pan: false });
+          setTimeout(() => {
+            mapDraw.invalidateSize({ animate: false, pan: false });
+            centralizarMapaNoEndereco();
+          }, 50);
+        });
+      });
+    });
+  });
+
   document.addEventListener("DOMContentLoaded", function () {
     const cepInput = document.getElementById("cep");
     const enderecoInput = document.getElementById("endereco");
@@ -348,6 +559,8 @@
         if (data.ok) {
           latInput.value = data.lat;
           lngInput.value = data.lng;
+
+          centralizarMapaNoEndereco();
         } else {
           limparLatLng();
           // Toast opcional (só se quiser)
