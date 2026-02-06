@@ -199,7 +199,7 @@
           </div>
         </div>
 
-        <input
+        <!-- <input
           type="hidden"
           name="perimetro_planejado"
           id="perimetro_planejado"
@@ -270,7 +270,7 @@
               </div>
             </div>
           </div>
-        </div>
+        </div> -->
 
         <hr class="text-muted opacity-25 my-4" />
 
@@ -393,116 +393,116 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 
 <script>
-  let mapDraw = null;
-  let drawnItems = new L.FeatureGroup();
-  let marcadorEndereco = null;
+  // let mapDraw = null;
+  // let drawnItems = new L.FeatureGroup();
+  // let marcadorEndereco = null;
 
-  function centralizarMapaNoEndereco() {
-    if (!mapDraw) return;
+  // function centralizarMapaNoEndereco() {
+  //   if (!mapDraw) return;
 
-    const lat = parseFloat(document.getElementById("latitude")?.value);
-    const lng = parseFloat(document.getElementById("longitude")?.value);
+  //   const lat = parseFloat(document.getElementById("latitude")?.value);
+  //   const lng = parseFloat(document.getElementById("longitude")?.value);
 
-    if (Number.isNaN(lat) || Number.isNaN(lng)) return;
+  //   if (Number.isNaN(lat) || Number.isNaN(lng)) return;
 
-    mapDraw.setView([lat, lng], Math.max(mapDraw.getZoom() || 17, 17), {
-      animate: false,
-    });
+  //   mapDraw.setView([lat, lng], Math.max(mapDraw.getZoom() || 17, 17), {
+  //     animate: false,
+  //   });
 
-    // marker opcional
-    if (!marcadorEndereco) {
-      marcadorEndereco = L.marker([lat, lng], { keyboard: false }).addTo(
-        mapDraw,
-      );
-    } else {
-      marcadorEndereco.setLatLng([lat, lng]);
-    }
-  }
+  //   // marker opcional
+  //   if (!marcadorEndereco) {
+  //     marcadorEndereco = L.marker([lat, lng], { keyboard: false }).addTo(
+  //       mapDraw,
+  //     );
+  //   } else {
+  //     marcadorEndereco.setLatLng([lat, lng]);
+  //   }
+  // }
 
-  document.addEventListener("DOMContentLoaded", () => {
-    const modalEl = document.getElementById("modalMapa");
-    if (modalEl && modalEl.parentElement !== document.body) {
-      document.body.appendChild(modalEl); // move o modal pro final do body
-    }
+  // document.addEventListener("DOMContentLoaded", () => {
+  //   const modalEl = document.getElementById("modalMapa");
+  //   if (modalEl && modalEl.parentElement !== document.body) {
+  //     document.body.appendChild(modalEl); // move o modal pro final do body
+  //   }
 
-    modalEl.addEventListener("shown.bs.modal", () => {
-      const lat =
-        parseFloat(document.getElementById("latitude").value) || -23.5505;
-      const lng =
-        parseFloat(document.getElementById("longitude").value) || -46.6333;
+  //   modalEl.addEventListener("shown.bs.modal", () => {
+  //     const lat =
+  //       parseFloat(document.getElementById("latitude").value) || -23.5505;
+  //     const lng =
+  //       parseFloat(document.getElementById("longitude").value) || -46.6333;
 
-      if (!mapDraw) {
-        // Camadas base
-        const osm = L.tileLayer(
-          "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-          {
-            maxZoom: 19,
-          },
-        );
+  //     if (!mapDraw) {
+  //       // Camadas base
+  //       const osm = L.tileLayer(
+  //         "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+  //         {
+  //           maxZoom: 19,
+  //         },
+  //       );
 
-        const esriSat = L.tileLayer(
-          "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-          {
-            maxZoom: 19,
-            attribution: "Tiles &copy; Esri",
-          },
-        );
+  //       const esriSat = L.tileLayer(
+  //         "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+  //         {
+  //           maxZoom: 19,
+  //           attribution: "Tiles &copy; Esri",
+  //         },
+  //       );
 
-        // Cria mapa com OSM como padrão
-        mapDraw = L.map("mapaDesenho", {
-          zoomAnimation: false,
-          fadeAnimation: false,
-          markerZoomAnimation: false,
-          trackResize: false,
-          layers: [osm], // camada inicial
-        }).setView([lat, lng], 17);
+  //       // Cria mapa com OSM como padrão
+  //       mapDraw = L.map("mapaDesenho", {
+  //         zoomAnimation: false,
+  //         fadeAnimation: false,
+  //         markerZoomAnimation: false,
+  //         trackResize: false,
+  //         layers: [osm], // camada inicial
+  //       }).setView([lat, lng], 17);
 
-        // Desenhos
-        mapDraw.addLayer(drawnItems);
+  //       // Desenhos
+  //       mapDraw.addLayer(drawnItems);
 
-        // Controle de camadas (Mapa / Satélite + overlay dos desenhos)
-        L.control
-          .layers(
-            { "Mapa (OSM)": osm, Satélite: esriSat },
-            { Desenhos: drawnItems },
-            { collapsed: false },
-          )
-          .addTo(mapDraw);
+  //       // Controle de camadas (Mapa / Satélite + overlay dos desenhos)
+  //       L.control
+  //         .layers(
+  //           { "Mapa (OSM)": osm, Satélite: esriSat },
+  //           { Desenhos: drawnItems },
+  //           { collapsed: false },
+  //         )
+  //         .addTo(mapDraw);
 
-        // Controle de desenho
-        const drawControl = new L.Control.Draw({
-          draw: {
-            polygon: { allowIntersection: false, showArea: true },
-            polyline: false,
-            rectangle: false,
-            circle: false,
-            marker: false,
-            circlemarker: false,
-          },
-          edit: { featureGroup: drawnItems },
-        });
-        mapDraw.addControl(drawControl);
+  //       // Controle de desenho
+  //       const drawControl = new L.Control.Draw({
+  //         draw: {
+  //           polygon: { allowIntersection: false, showArea: true },
+  //           polyline: false,
+  //           rectangle: false,
+  //           circle: false,
+  //           marker: false,
+  //           circlemarker: false,
+  //         },
+  //         edit: { featureGroup: drawnItems },
+  //       });
+  //       mapDraw.addControl(drawControl);
 
-        mapDraw.on(L.Draw.Event.CREATED, (e) => {
-          drawnItems.clearLayers();
-          drawnItems.addLayer(e.layer);
-        });
-      } else {
-        mapDraw.setView([lat, lng], 17, { animate: false });
-      }
+  //       mapDraw.on(L.Draw.Event.CREATED, (e) => {
+  //         drawnItems.clearLayers();
+  //         drawnItems.addLayer(e.layer);
+  //       });
+  //     } else {
+  //       mapDraw.setView([lat, lng], 17, { animate: false });
+  //     }
 
-      // Ajuste de tamanho + centralizar no endereço
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          mapDraw.invalidateSize({ animate: false, pan: false });
-          setTimeout(() => {
-            mapDraw.invalidateSize({ animate: false, pan: false });
-            centralizarMapaNoEndereco();
-          }, 50);
-        });
-      });
-    });
-  });
+  //     // Ajuste de tamanho + centralizar no endereço
+  //     requestAnimationFrame(() => {
+  //       requestAnimationFrame(() => {
+  //         mapDraw.invalidateSize({ animate: false, pan: false });
+  //         setTimeout(() => {
+  //           mapDraw.invalidateSize({ animate: false, pan: false });
+  //           centralizarMapaNoEndereco();
+  //         }, 50);
+  //       });
+  //     });
+  //   });
+  // });
 
   document.addEventListener("DOMContentLoaded", function () {
     const cepInput = document.getElementById("cep");
@@ -560,7 +560,7 @@
           latInput.value = data.lat;
           lngInput.value = data.lng;
 
-          centralizarMapaNoEndereco();
+          // centralizarMapaNoEndereco();
         } else {
           limparLatLng();
           // Toast opcional (só se quiser)

@@ -68,6 +68,9 @@ def inject_globals():
         return dict(notif_count=q.scalar() or 0)
     return dict(notif_count=0)
 
+def inject_google_key():
+    return {"google_maps_key": current_app.config.get("KEY_API_GOOGLE_MAPS") or os.getenv("KEY_API_GOOGLE_MAPS")}
+
 
 # --- 2: FILTRO DE DATA PARA JINJA2 ---
 @bp.app_template_filter('datetimeformat')

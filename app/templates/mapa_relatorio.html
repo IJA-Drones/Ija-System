@@ -275,7 +275,6 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_key }}&libraries=visualization&callback=initMap" async defer></script>
 <script>
     // Seus scripts permanecem iguais, apenas certifique-se de que atualizarMapas() 
     // chama tanto carregarDadosCalor quanto carregarDadosOperacionais.
@@ -286,21 +285,69 @@
 
     function initMap() {
         const center = { lat: -22.4279, lng: -45.4584 };
-        mapHeat = new google.maps.Map(document.getElementById("mapHeatmap"), { zoom: 13, center: center, mapTypeId: 'hybrid' });
-        mapArea = new google.maps.Map(document.getElementById("mapPolygons"), { zoom: 13, center: center, mapTypeId: 'hybrid' });
-        mapLogistics = new google.maps.Map(document.getElementById("mapLogistics"), { zoom: 13, center: center });
 
-        document.querySelectorAll('a[data-bs-toggle="tab"]').forEach(tab => {
-            tab.addEventListener('shown.bs.tab', (e) => {
-                google.maps.event.trigger(mapHeat, 'resize');
-                google.maps.event.trigger(mapArea, 'resize');
-                google.maps.event.trigger(mapLogistics, 'resize');
-                const target = e.target.getAttribute('href');
-                if (target === '#tabCalor') carregarDadosCalor();
-                if (target === '#tabArea') carregarDadosOperacionais();
-            });
+        // garante que os containers existem (evita erro se a aba/página não tiver algum deles)
+        const elHeat = document.getElementById("mapHeatmap");
+        const elPoly = document.getElementById("mapPolygons");
+        const elLogi = document.getElementById("mapLogistics");
+
+        if (!elHeat && !elPoly && !elLogi) {
+        console.warn("Containers do Google Maps não encontrados nesta página.");
+        return;
+        }
+
+        if (elHeat) {
+        mapHeat = new google.maps.Map(elHeat, {
+            zoom: 13,
+            center,
+            mapTypeId: "hybrid",
         });
+        }
+
+        if (elPoly) {
+        mapArea = new google.maps.Map(elPoly, {
+            zoom: 13,
+            center,
+            mapTypeId: "hybrid",
+        });
+        }
+
+        if (elLogi) {
+        mapLogistics = new google.maps.Map(elLogi, {
+            zoom: 13,
+            center,
+        });
+        }
+
+        document.querySelectorAll('a[data-bs-toggle="tab"]').forEach((tab) => {
+        tab.addEventListener("shown.bs.tab", (e) => {
+            if (mapHeat) google.maps.event.trigger(mapHeat, "resize");
+            if (mapArea) google.maps.event.trigger(mapArea, "resize");
+            if (mapLogistics) google.maps.event.trigger(mapLogistics, "resize");
+
+            const target = e.target.getAttribute("href");
+            if (target === "#tabCalor") carregarDadosCalor();
+            if (target === "#tabArea") carregarDadosOperacionais();
+        });
+        });
+
         carregarDadosCalor();
+    }
+
+    // ✅ inicia quando a API estiver pronta (base.html dispara googlemaps:ready)
+    function bootRelatorioMapas() {
+        // espera DOM pronto também
+        if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initMap, { once: true });
+        } else {
+        initMap();
+        }
+    }
+
+    if (window.__GOOGLE_MAPS_READY__) {
+        bootRelatorioMapas();
+    } else {
+        document.addEventListener("googlemaps:ready", bootRelatorioMapas, { once: true });
     }
 
     function atualizarMapas() {
