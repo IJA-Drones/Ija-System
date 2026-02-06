@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}" />
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1200px">
+  <div class="d-flex align-items-center mb-4">
+    <h2 class="text-dark m-0">
+      <i class="bi bi-person-badge-fill me-2 text-primary"></i> Consultar Endereço e Geolocalização
+    </h2>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <!-- Formulário para Endereço e Geolocalização -->
+    <div class="col-md-4">
+      <label class="form-label fw-bold small text-muted">
+        <i class="bi bi-house-door me-1 text-primary"></i> CEP
+      </label>
+      <input
+        type="text"
+        id="cep"
+        class="form-control"
+        placeholder="Digite o CEP"
+        maxlength="8"
+        onblur="consultarCep()"
+      />
+      <div class="invalid-feedback" id="cep-error"></div>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label fw-bold small text-muted">
+        <i class="bi bi-house me-1 text-primary"></i> Logradouro
+      </label>
+      <input
+        type="text"
+        id="logradouro"
+        class="form-control"
+        placeholder="Ex: Rua dos Três Irmãos"
+      />
+    </div>
+    <div class="col-md-4">
+      <label class="form-label fw-bold small text-muted">
+        <i class="bi bi-building me-1 text-primary"></i> Número
+      </label>
+      <input
+        type="text"
+        id="numero"
+        class="form-control"
+        placeholder="Número"
+      />
+    </div>
+  </div>
+
+  <!-- Outras informações -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <label class="form-label fw-bold small text-muted">
+        <i class="bi bi-geo-alt me-1 text-primary"></i> Bairro
+      </label>
+      <input
+        type="text"
+        id="bairro"
+        class="form-control"
+        placeholder="Ex: Centro"
+      />
+    </div>
+    <div class="col-md-4">
+      <label class="form-label fw-bold small text-muted">
+        <i class="bi bi-house-door me-1 text-primary"></i> Cidade
+      </label>
+      <input
+        type="text"
+        id="cidade"
+        class="form-control"
+        placeholder="Ex: São Paulo"
+      />
+    </div>
+    <div class="col-md-4">
+      <label class="form-label fw-bold small text-muted">
+        <i class="bi bi-map me-1 text-primary"></i> UF
+      </label>
+      <input
+        type="text"
+        id="uf"
+        class="form-control"
+        placeholder="Ex: SP"
+      />
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <label class="form-label fw-bold small text-muted">
+        <i class="bi bi-geo-alt-fill me-1 text-primary"></i> Latitude
+      </label>
+      <input
+        type="text"
+        id="latitude"
+        class="form-control"
+        placeholder="Latitude"
+        readonly
+      />
+    </div>
+    <div class="col-md-4">
+      <label class="form-label fw-bold small text-muted">
+        <i class="bi bi-geo-alt-fill me-1 text-primary"></i> Longitude
+      </label>
+      <input
+        type="text"
+        id="longitude"
+        class="form-control"
+        placeholder="Longitude"
+        readonly
+      />
+    </div>
+    <div class="col-md-4 d-flex align-items-center justify-content-center">
+      <button type="button" class="btn btn-primary" onclick="consultarGeocode()">
+        Consultar Geolocalização
+      </button>
+    </div>
+  </div>
+
+  <!-- Botão para traçar a rota -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-12 d-flex align-items-center justify-content-center">
+      <button type="button" class="btn btn-success" onclick="traçarRota()">
+        Traçar Rota
+      </button>
+    </div>
+  </div>
+
+  <!-- Mapa de Rota -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-12">
+      <label class="form-label fw-bold small text-muted">
+        <i class="bi bi-map me-1 text-primary"></i> Mapa de Rota
+      </label>
+      <div id="map" style="height: 400px; width: 100%;"></div>
+    </div>
+  </div>
+
+  <div id="geo-error" class="alert alert-danger" style="display: none;"></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  let map, directionsService, directionsRenderer, userLocation;
+
+  function initMap() {
+    // Inicializando o mapa
+    map = new google.maps.Map(document.getElementById("map"), {
+      zoom: 13,
+      center: { lat: -23.55052, lng: -46.633308 }, // Default para São Paulo
+    });
+
+    directionsService = new google.maps.DirectionsService();
+    directionsRenderer = new google.maps.DirectionsRenderer();
+    directionsRenderer.setMap(map);
+
+    // Obter a localização do usuário
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        function(position) {
+          userLocation = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
+          map.setCenter(userLocation);  // Move o mapa para a localização do usuário
+          new google.maps.Marker({
+            position: userLocation,
+            map: map,
+            title: "Você está aqui",
+          });
+        },
+        function(error) {
+          alert("Erro ao obter a localização do usuário.");
+        }
+      );
+    } else {
+      alert("Geolocalização não é suportada pelo seu navegador.");
+    }
+  }
+
+  function consultarCep() {
+    const cep = document.getElementById('cep').value;
+
+    if (cep.length !== 8) {
+      document.getElementById('cep-error').textContent = "CEP inválido. Use 8 dígitos.";
+      return;
+    }
+
+    fetch(`/api/cep/${cep}`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.ok) {
+          document.getElementById('logradouro').value = data.logradouro;
+          document.getElementById('bairro').value = data.bairro;
+          document.getElementById('cidade').value = data.cidade;
+          document.getElementById('uf').value = data.uf;
+          document.getElementById('cep-error').textContent = "";
+        } else {
+          document.getElementById('cep-error').textContent = data.error;
+        }
+      })
+      .catch(error => {
+        document.getElementById('cep-error').textContent = "Erro ao consultar o CEP.";
+      });
+  }
+
+  function consultarGeocode() {
+    const logradouro = document.getElementById('logradouro').value;
+    const numero = document.getElementById('numero').value;
+    const bairro = document.getElementById('bairro').value;
+    const cidade = document.getElementById('cidade').value;
+    const uf = document.getElementById('uf').value;
+
+    const endereco = { logradouro, numero, bairro, cidade, uf };
+
+    fetch('/api/geocode', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(endereco),
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.ok) {
+          document.getElementById('latitude').value = data.lat;
+          document.getElementById('longitude').value = data.lng;
+          document.getElementById('geo-error').style.display = "none";
+        } else {
+          document.getElementById('geo-error').style.display = "block";
+          document.getElementById('geo-error').textContent = data.message;
+        }
+      })
+      .catch(error => {
+        document.getElementById('geo-error').style.display = "block";
+        document.getElementById('geo-error').textContent = "Erro ao consultar geolocalização.";
+      });
+  }
+
+  function traçarRota() {
+    const latitude = document.getElementById('latitude').value;
+    const longitude = document.getElementById('longitude').value;
+
+    if (!latitude || !longitude) {
+      alert("Por favor, consulte a geolocalização primeiro.");
+      return;
+    }
+
+    const destination = new google.maps.LatLng(latitude, longitude);
+    const request = {
+      origin: userLocation,
+      destination: destination,
+      travelMode: google.maps.TravelMode.DRIVING,
+    };
+
+    directionsService.route(request, (result, status) => {
+      if (status === google.maps.DirectionsStatus.OK) {
+        directionsRenderer.setDirections(result);
+      } else {
+        alert("Erro ao traçar a rota.");
+      }
+    });
+  }
+
+  // Inicializa o mapa quando a página carrega
+  window.onload = initMap;
+</script>
+<script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_key }}&libraries=geometry,visualization,directions"></script>
+{% endblock %}

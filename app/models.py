@@ -391,7 +391,7 @@ class EquipePiloto(db.Model):
     )
 
     # papel na equipe: "piloto" (titular) ou "auxiliar"
-    papel = db.Column(db.String(20), nullable=False, index=True)
+    papel = db.Column(db.String(20), nullable=False)
 
     criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
 
@@ -407,5 +407,5 @@ class EquipePiloto(db.Model):
 
         db.Index("ix_equipe_pilotos_equipe", "equipe_id"),
         db.Index("ix_equipe_pilotos_piloto", "piloto_id"),
-        db.Index("ix_equipe_pilotos_papel", "papel"),
+        db.Index("ix_equipe_pilotos_papel", "papel")
     )

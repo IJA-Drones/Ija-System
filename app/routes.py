@@ -174,12 +174,13 @@ def roles_required(*roles):
 @bp.route('/')
 @login_required
 def dashboard():
+    google_maps_key = os.getenv("KEY_API_GOOGLE_MAPS")  # a mesma do .env 
     if current_user.tipo_usuario == 'piloto':
         return redirect(url_for('main.piloto_os'))
 
     if current_user.tipo_usuario in ['admin', 'operario', 'visualizar']:
         return redirect(url_for('main.admin_dashboard'))
-
+     
     # ✅ UVIS: só as solicitações dela + carrega equipe para exibir
     query = (
         Solicitacao.query
@@ -216,6 +217,7 @@ def dashboard():
         'dashboard.html',
         solicitacoes=paginacao.items,
         paginacao=paginacao,
+        google_maps_key=google_maps_key
     )
 
 
@@ -4689,7 +4691,7 @@ def piloto_concluir_os(os_id):
     return redirect(url_for('main.piloto_os'))
 
 
-REGIOES = {"NORTE", "SUL", "LESTE", "OESTE"}
+REGIOES = {"NORTE", "SUL", "LESTE", "OESTE", "CENTRO", "SULDESTE", "CENTRO-OESTE"}
 
 @bp.route("/equipes/cadastrar", methods=["GET", "POST"], endpoint="cadastrar_equipes")
 @login_required
@@ -4731,7 +4733,7 @@ def cadastrar_equipes():
         if not piloto_id:
             errors["piloto_id"] = "Selecione o piloto titular."
         if not auxiliar_id:
-            errors["auxiliar_id"] = "Selecione o pilotosuya o piloto auxiliar."
+            errors["auxiliar_id"] = "Selecione o pilotos o piloto auxiliar."
 
         # não permitir o mesmo piloto nos dois papéis
         if piloto_id and auxiliar_id and piloto_id == auxiliar_id:
@@ -5579,7 +5581,7 @@ def heatmap_data():
     query = Solicitacao.query.filter(
         Solicitacao.latitude.isnot(None),
         Solicitacao.longitude.isnot(None),
-        Solicitacao.status == 'APROVADO'
+        Solicitacao.status.in_(['APROVADO', 'APROVADO COM RECOMENDAÇÕES'])
     )
 
     # Filtro de Data (Se você tiver a coluna data_agendamento ou similar)
@@ -5778,7 +5780,7 @@ def admin_usuario_novo():
             db.session.add(novo)
             db.session.commit()
             flash("Usuário criado com sucesso!", "success")
-            return redirect(url_for("main.dashboard"))
+            return redirect(url_for("main.admin_usuarios_listar"))
         except IntegrityError:
             db.session.rollback()
             flash("Esse login já está em uso. Escolha outro.", "danger")
@@ -6019,3 +6021,10 @@ def admin_usuario_excluir(id):
         flash(f"Erro ao excluir: {e}", "danger")
 
     return redirect(url_for("main.admin_usuarios_listar"))
+
+@bp.route('/consultar_endereco_geolocalizacao', methods=['GET'])
+@login_required
+def consultar_endereco_geolocalizacao():
+    google_maps_key = os.getenv("KEY_API_GOOGLE_MAPS")
+    print(google_maps_key)  # Verifique se a chave está sendo carregada corretamente
+    return render_template('consultar_endereco_geolocalizacao.html', google_maps_key=google_maps_key)
