@@ -132,7 +132,7 @@ def allowed_file(filename: str) -> bool:
     ALLOWED_EXTENSIONS = {"pdf", "png", "jpg", "jpeg", "doc", "docx", "xls", "xlsx"}
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
-from sqlalchemy import extract, cast, Integer
+from sqlalchemy import extract, cast, Integer, func
 
 def aplicar_filtros_base(query, filtro_data, uvis_id):
     if filtro_data:
@@ -212,14 +212,32 @@ def dashboard():
         query.order_by(Solicitacao.data_criacao.desc())
         .paginate(page=page, per_page=6, error_out=False)
     )
+    
+    equipes_query = Equipe.query.filter_by(ativa=True)
 
-    return render_template(
-        'dashboard.html',
-        solicitacoes=paginacao.items,
-        paginacao=paginacao,
-        google_maps_key=google_maps_key
+    # opcional: filtra por região da UVIS
+    if current_user.regiao:
+        equipes_query = equipes_query.filter(Equipe.regiao == current_user.regiao)
+
+    equipes = equipes_query.order_by(Equipe.nome_equipe.asc()).all()
+
+    rows = (
+        db.session.query(EquipeUvis.nome_equipe, func.count(EquipeUvis.id).label("total"))
+        .filter(EquipeUvis.uvis_usuario_id == current_user.id)
+        .group_by(EquipeUvis.nome_equipe)
+        .order_by(EquipeUvis.nome_equipe.asc())
+        .all()
     )
 
+    equipes_uvis = [{"nome_equipe": r[0], "total": int(r[1])} for r in rows]
+
+    return render_template(
+    "dashboard.html",
+    solicitacoes=paginacao.items,
+    paginacao=paginacao,
+    google_maps_key=google_maps_key,
+    equipes_uvis=equipes_uvis  
+)
 
 # --- PAINEL DE GESTÃO (Visualização para todos) ---
 from flask_login import login_required, current_user
@@ -313,6 +331,8 @@ def admin_dashboard():
         unidades_select=unidades_select,
         google_maps_key=google_maps_key
     )
+
+
 
 
 
@@ -5570,6 +5590,38 @@ def deletar_membro_equipe_uvis(membro_id):
         return redirect(url_for("main.listar_equipes_uvis"))
 
     return redirect(url_for("main.listar_membros_equipe_uvis", nome_equipe=nome_equipe))
+
+@bp.route("/solicitacao/<int:id>/atribuir-equipe-uvis", methods=["POST"], endpoint="atribuir_equipe_uvis_solicitacao")
+@login_required
+def atribuir_equipe_uvis_solicitacao(id):
+    sol = Solicitacao.query.get_or_404(id)
+
+    # 🔒 Segurança: só a UVIS dona da solicitação (ou admin, se quiser permitir)
+    if sol.usuario_id != current_user.id and current_user.tipo_usuario != "admin":
+        flash("Você não tem permissão para alterar esta solicitação.", "danger")
+        return redirect(url_for("main.dashboard"))
+
+    nome_equipe = (request.form.get("nome_equipe") or "").strip()
+    if not nome_equipe:
+        flash("Selecione uma equipe.", "warning")
+        return redirect(url_for("main.dashboard"))
+
+    # ✅ valida se existe ESSA equipe para ESSA UVIS
+    existe = (
+        db.session.query(EquipeUvis.id)
+        .filter(EquipeUvis.uvis_usuario_id == current_user.id)
+        .filter(EquipeUvis.nome_equipe == nome_equipe)
+        .first()
+    )
+    if not existe:
+        flash("Equipe UVIS não encontrada para seu usuário.", "danger")
+        return redirect(url_for("main.dashboard"))
+
+    sol.equipe_uvis_nome = nome_equipe
+    db.session.commit()
+
+    flash("Equipe UVIS atribuída com sucesso!", "success")
+    return redirect(url_for("main.dashboard"))
 
 @bp.route('/api/heatmap-data')
 @login_required

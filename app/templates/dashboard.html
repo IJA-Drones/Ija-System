@@ -475,11 +475,18 @@
               <td class="text-center pe-4">
                 <div class="d-flex flex-column flex-lg-row justify-content-center align-items-stretch gap-2" style="min-width: 120px;">
                   
-                  {# Botão Detalhes - Ajustado para ocupar largura total no container flex #}
-                  <button type="button" class="btn btn-sm btn-outline-primary w-100" data-bs-toggle="modal" data-bs-target="#modalDetalhes{{ p.id }}">
-                    <i class="bi bi-eye"></i> Detalhes
-                  </button>
+                 {# Botão Detalhes #}
+                <button type="button" class="btn btn-sm btn-outline-primary w-100" data-bs-toggle="modal" data-bs-target="#modalDetalhes{{ p.id }}">
+                  <i class="bi bi-eye"></i> Detalhes
+                </button>
 
+               <button type="button"
+                      class="btn btn-sm btn-outline-warning w-100"
+                      data-bs-toggle="modal"
+                      data-bs-target="#modalEquipeUvis{{ p.id }}">
+                <i class="bi bi-people"></i>
+                {% if p.equipe_uvis_nome %} Trocar Equipe {% else %} Atribuir Equipe {% endif %}
+              </button>
                   {# Lógica de Edição + Ajuda #}
                   {% if p.status == 'PENDENTE' or p.status == 'NEGADO' %}
                     <div class="d-flex gap-1 w-100">
@@ -505,8 +512,7 @@
                     <button class="btn btn-sm btn-light border w-100 opacity-75 d-flex align-items-center justify-content-center" title="Edição bloqueada">
                         <i class="bi bi-lock-fill"></i>
                     </button>
-                  {% endif %}
-
+                  {% endif %}       
                 </div>
               </td>
             </tr>
@@ -688,7 +694,60 @@
       </div>
     </div>
   </div>
-  {% endfor %}
+  <div class="modal fade" id="modalEquipeUvis{{ p.id }}" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="bi bi-people me-2"></i>Equipe UVIS - Pedido #{{ p.id }}
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <form method="POST" action="{{ url_for('main.atribuir_equipe_uvis_solicitacao', id=p.id) }}">
+        <div class="modal-body">
+
+          <div class="mb-2">
+            <small class="text-muted d-block">Equipe atual:</small>
+            {% if p.equipe_uvis_nome %}
+              <strong>{{ p.equipe_uvis_nome }}</strong>
+            {% else %}
+              <span class="badge bg-secondary">Ainda não atribuída</span>
+            {% endif %}
+          </div>
+
+          <label class="small text-muted mb-1">Selecionar equipe UVIS</label>
+          <select name="nome_equipe" class="form-select" required>
+            <option value="" disabled {% if not p.equipe_uvis_nome %}selected{% endif %}>Selecione...</option>
+
+            {% for e in equipes_uvis %}
+              <option value="{{ e.nome_equipe }}" {% if p.equipe_uvis_nome == e.nome_equipe %}selected{% endif %}>
+                {{ e.nome_equipe }} ({{ e.total }})
+              </option>
+            {% endfor %}
+          </select>
+
+          {% if equipes_uvis|length == 0 %}
+            <div class="alert alert-warning mt-3 mb-0">
+              Você ainda não criou nenhuma equipe UVIS. Vá em “Minhas Equipes” e crie uma.
+            </div>
+          {% endif %}
+
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-warning">
+            <i class="bi bi-check2"></i> Salvar
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</div>
+{% endfor %}
 
 </div>
 {# --- FIM DO CONTAINER PADRONIZADO --- #}
