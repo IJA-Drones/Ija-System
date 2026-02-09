@@ -581,9 +581,7 @@
   {# =========================
      MODAIS (1 por solicitação)
      ========================= #}
-  { # =================
-      modal de detalhes
-      ================= # }
+  
   {% for p in solicitacoes %}
   <div class="modal fade" id="modalDetalhes{{ p.id }}" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -718,9 +716,6 @@
     </div>
   </div>
 
-  { # ==================
-      modal equipes uvis
-      ================== # }
   <div class="modal fade" id="modalEquipeUvis{{ p.id }}" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -774,9 +769,6 @@
     </div>
   </div>
 
-  { # ===================
-      modal justificativa
-      =================== # }
   <div class="modal fade" id="modalJustificativa{{ p.id }}" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
