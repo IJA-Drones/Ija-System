@@ -9,7 +9,6 @@ from datetime import date, datetime
 from io import BytesIO
 import json
 
-
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 import uuid
@@ -19,8 +18,8 @@ import os
 # FLASK
 # ==========================
 from flask import (Blueprint, after_this_request, current_app, flash, jsonify,
-                   redirect, render_template, request, send_file,
-                   send_from_directory, url_for)
+                redirect, render_template, request, send_file,
+                send_from_directory, url_for)
 
 
 from flask_login import current_user , login_required

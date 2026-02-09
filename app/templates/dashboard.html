@@ -410,18 +410,19 @@
   <div class="card shadow-sm rounded-4 border-0 overflow-hidden">
     <div class="card-body p-0">
       <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
+        <table class="table table-hover align-middle mb-0" style="min-height: 200px;">
           <thead class="table-light">
             <tr>
               <th class="ps-4">Data</th>
               <th style="width: 40%">Localização / Foco</th>
               <th class="text-center">Situação</th>
-              <th class="text-center pe-4">Ações</th>
+              <th class="text-end pe-4">Ações</th>
             </tr>
           </thead>
           <tbody>
             {% for p in solicitacoes %}
             <tr>
+              {# Coluna 1: Data e Hora #}
               <td class="ps-4">
                 <strong class="text-main">
                   {{ p.data_agendamento.strftime('%d/%m/%y') }}
@@ -430,6 +431,7 @@
                 <small class="text-muted">{{ p.hora_agendamento.strftime('%H:%M') }}</small>
               </td>
 
+              {# Coluna 2: Localização #}
               <td>
                 <div class="d-flex flex-column">
                   <span class="fw-bold text-main">
@@ -447,72 +449,90 @@
                     {% endif %}
                   </div>
 
-                  <!-- Botão de Traçar Rota (fora do Modal) -->                  
-                {% if p.latitude and p.longitude %}
-                  <a href="https://www.google.com/maps/dir/?api=1&destination={{ p.latitude }},{{ p.longitude }}" 
-                    target="_blank" class="btn btn-tracar-rota mt-2">
-                    <i class="bi bi-sign-turn-right"></i> Traçar Rota
-                  </a>
-                {% endif %}
+                  {% if p.latitude and p.longitude %}
+                    <a href="https://www.google.com/maps/dir/?api=1&destination={{ p.latitude }},{{ p.longitude }}" 
+                      target="_blank" class="btn btn-sm btn-outline-primary mt-2 d-inline-block w-auto" style="max-width: fit-content;">
+                      <i class="bi bi-sign-turn-right"></i> Traçar Rota
+                    </a>
+                  {% endif %}
                 </div>
               </td>
 
+              {# Coluna 3: Status + MODAL (Correção aqui) #}
               <td class="text-center">
                 {% if p.status == 'PENDENTE' %}
                   <span class="badge bg-secondary text-white">Pendente</span>
+                
                 {% elif p.status == 'APROVADO' %}
                   <span class="badge bg-success rounded-pill">Aprovado</span>
                   <div class="small text-success mt-1 fw-bold font-monospace">{{ p.protocolo }}</div>
+                
                 {% elif p.status == 'APROVADO COM RECOMENDAÇÕES' %}
-                  <span class="badge bg-recomended text-dark rounded-pill"></i> Aprovado com Recomendações</span>
-                  <div class="small text-recomended mt-1 fw-bold font-monospace">{{ p.protocolo }}</div>
+                  <span class="badge bg-info text-dark rounded-pill">Aprovado c/ Rec.</span>
+                  <div class="small text-dark mt-1 fw-bold font-monospace">{{ p.protocolo }}</div>
+                
                 {% elif p.status == 'NEGADO' %}
-                  <span class="badge bg-danger rounded-pill"></i> Negado</span>
+                  <span class="badge bg-danger rounded-pill">Negado</span>
+                  
+                  {# Botão Ver Motivo #}
+                  {% if p.justificativa %}
+                    <div class="mt-1">
+                      <button type="button" 
+                              class="btn btn-link btn-sm text-danger text-decoration-none p-0 fw-bold" 
+                              style="font-size: 0.8rem;"
+                              data-bs-toggle="modal" 
+                              data-bs-target="#modalJustificativa{{ p.id }}">
+                        <i class="bi bi-info-circle-fill me-1"></i>Ver Motivo
+                      </button>
+                    </div>
+                  {% endif %}
+
                 {% else %}
                   <span class="badge bg-warning text-dark rounded-pill">Em Análise</span>
                 {% endif %}
               </td>
-              <td class="text-center pe-4">
-                <div class="d-flex flex-column flex-lg-row justify-content-center align-items-stretch gap-2" style="min-width: 120px;">
-                  
-                 {# Botão Detalhes #}
-                <button type="button" class="btn btn-sm btn-outline-primary w-100" data-bs-toggle="modal" data-bs-target="#modalDetalhes{{ p.id }}">
-                  <i class="bi bi-eye"></i> Detalhes
-                </button>
 
-               <button type="button"
-                      class="btn btn-sm btn-outline-warning w-100"
-                      data-bs-toggle="modal"
-                      data-bs-target="#modalEquipeUvis{{ p.id }}">
-                <i class="bi bi-people"></i>
-                {% if p.equipe_uvis_nome %} Trocar Equipe {% else %} Atribuir Equipe {% endif %}
-              </button>
-                  {# Lógica de Edição + Ajuda #}
-                  {% if p.status == 'PENDENTE' or p.status == 'NEGADO' %}
-                    <div class="d-flex gap-1 w-100">
-                        <a href="{{ url_for('main.editar_solicitacao', id=p.id) }}"
-                          class="btn btn-sm btn-success flex-grow-1 d-flex align-items-center justify-content-center"
-                          onclick="event.stopPropagation();">
-                            <i class="bi bi-pencil-square me-1"></i> Editar
+              {# Coluna 4: Ações #}
+              <td class="text-end pe-4">
+                <div class="dropdown">
+                  <button class="btn btn-light btn-sm rounded-circle p-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-three-dots-vertical"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                    
+                    {# Ação: Detalhes #}
+                    <li>
+                      <button class="dropdown-item py-2" type="button" data-bs-toggle="modal" data-bs-target="#modalDetalhes{{ p.id }}">
+                        <i class="bi bi-eye text-primary me-2"></i> Ver Detalhes
+                      </button>
+                    </li>
+
+                    {# Ação: Equipe #}
+                    <li>
+                      <button class="dropdown-item py-2" type="button" data-bs-toggle="modal" data-bs-target="#modalEquipeUvis{{ p.id }}">
+                        <i class="bi bi-people text-dark me-2"></i> 
+                        {% if p.equipe_uvis_nome %} Trocar Equipe {% else %} Atribuir Equipe {% endif %}
+                      </button>
+                    </li>
+
+                    <li><hr class="dropdown-divider"></li>
+
+                    {# Ação: Editar #}
+                    {% if p.status == 'PENDENTE' or p.status == 'NEGADO' %}
+                      <li>
+                        <a class="dropdown-item py-2" href="{{ url_for('main.editar_solicitacao', id=p.id) }}">
+                          <i class="bi bi-pencil-square text-success me-2"></i> Editar Solicitação
                         </a>
-                        
-                        {# Botão de Ajuda (só para NEGADOS) - Mantém a altura do botão de editar #}
-                        {% if p.status == 'NEGADO' and p.justificativa %}
-                          <button type="button" 
-                                  class="btn btn-sm btn-outline-danger d-flex align-items-center justify-content-center" 
-                                  data-bs-toggle="tooltip" 
-                                  data-bs-placement="top" 
-                                  title="Motivo: {{ p.justificativa }}">
-                              <i class="bi bi-question-circle"></i>
-                          </button>
-                        {% endif %}
-                    </div>
-                  {% else %}
-                    {# Botão de Cadeado (Status bloqueado) - Tamanho idêntico aos outros #}
-                    <button class="btn btn-sm btn-light border w-100 opacity-75 d-flex align-items-center justify-content-center" title="Edição bloqueada">
-                        <i class="bi bi-lock-fill"></i>
-                    </button>
-                  {% endif %}       
+                      </li>
+                    {% else %}
+                      <li>
+                        <span class="dropdown-item py-2 text-muted disabled">
+                          <i class="bi bi-lock-fill me-2"></i> Edição Bloqueada
+                        </span>
+                      </li>
+                    {% endif %}
+
+                  </ul>
                 </div>
               </td>
             </tr>
@@ -561,6 +581,9 @@
   {# =========================
      MODAIS (1 por solicitação)
      ========================= #}
+  { # =================
+      modal de detalhes
+      ================= # }
   {% for p in solicitacoes %}
   <div class="modal fade" id="modalDetalhes{{ p.id }}" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -694,59 +717,97 @@
       </div>
     </div>
   </div>
+
+  { # ==================
+      modal equipes uvis
+      ================== # }
   <div class="modal fade" id="modalEquipeUvis{{ p.id }}" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
 
-      <div class="modal-header">
-        <h5 class="modal-title">
-          <i class="bi bi-people me-2"></i>Equipe UVIS - Pedido #{{ p.id }}
-        </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="bi bi-people me-2"></i>Equipe UVIS - Pedido #{{ p.id }}
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
 
-      <form method="POST" action="{{ url_for('main.atribuir_equipe_uvis_solicitacao', id=p.id) }}">
-        <div class="modal-body">
+        <form method="POST" action="{{ url_for('main.atribuir_equipe_uvis_solicitacao', id=p.id) }}">
+          <div class="modal-body">
 
-          <div class="mb-2">
-            <small class="text-muted d-block">Equipe atual:</small>
-            {% if p.equipe_uvis_nome %}
-              <strong>{{ p.equipe_uvis_nome }}</strong>
-            {% else %}
-              <span class="badge bg-secondary">Ainda não atribuída</span>
+            <div class="mb-2">
+              <small class="text-muted d-block">Equipe atual:</small>
+              {% if p.equipe_uvis_nome %}
+                <strong>{{ p.equipe_uvis_nome }}</strong>
+              {% else %}
+                <span class="badge bg-secondary">Ainda não atribuída</span>
+              {% endif %}
+            </div>
+
+            <label class="small text-muted mb-1">Selecionar equipe UVIS</label>
+            <select name="nome_equipe" class="form-select" required>
+              <option value="" disabled {% if not p.equipe_uvis_nome %}selected{% endif %}>Selecione...</option>
+
+              {% for e in equipes_uvis %}
+                <option value="{{ e.nome_equipe }}" {% if p.equipe_uvis_nome == e.nome_equipe %}selected{% endif %}>
+                  {{ e.nome_equipe }} ({{ e.total }})
+                </option>
+              {% endfor %}
+            </select>
+
+            {% if equipes_uvis|length == 0 %}
+              <div class="alert alert-warning mt-3 mb-0">
+                Você ainda não criou nenhuma equipe UVIS. Vá em “Minhas Equipes” e crie uma.
+              </div>
             {% endif %}
+
           </div>
 
-          <label class="small text-muted mb-1">Selecionar equipe UVIS</label>
-          <select name="nome_equipe" class="form-select" required>
-            <option value="" disabled {% if not p.equipe_uvis_nome %}selected{% endif %}>Selecione...</option>
-
-            {% for e in equipes_uvis %}
-              <option value="{{ e.nome_equipe }}" {% if p.equipe_uvis_nome == e.nome_equipe %}selected{% endif %}>
-                {{ e.nome_equipe }} ({{ e.total }})
-              </option>
-            {% endfor %}
-          </select>
-
-          {% if equipes_uvis|length == 0 %}
-            <div class="alert alert-warning mt-3 mb-0">
-              Você ainda não criou nenhuma equipe UVIS. Vá em “Minhas Equipes” e crie uma.
-            </div>
-          {% endif %}
-
-        </div>
-
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="submit" class="btn btn-warning">
-            <i class="bi bi-check2"></i> Salvar
-          </button>
-        </div>
-      </form>
-
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-warning">
+              <i class="bi bi-check2"></i> Salvar
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
-</div>
+
+  { # ===================
+      modal justificativa
+      =================== # }
+  <div class="modal fade" id="modalJustificativa{{ p.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> Motivo da Recusa
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        
+        <div class="modal-body p-4 text-center">
+          <div class="mb-3">
+              <i class="bi bi-x-circle text-danger" style="font-size: 3rem;"></i>
+          </div>
+          <h6 class="fw-bold text-secondary mb-2">Solicitação negada pelo motivo:</h6>
+          <div class="alert alert-light border border-danger-subtle text-danger rounded-3 mt-3 text-start">
+              {{ p.justificativa }}
+          </div>
+        </div>
+
+        <div class="modal-footer bg-light border-0 justify-content-center py-3">
+          <button type="button" class="btn btn-outline-secondary px-4 rounded-pill" data-bs-dismiss="modal">Entendi</button>
+          <a href="{{ url_for('main.editar_solicitacao', id=p.id) }}" class="btn btn-danger px-4 rounded-pill">
+            <i class="bi bi-pencil-square me-2"></i> Corrigir Agora
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </div>
 {% endfor %}
 
 </div>
