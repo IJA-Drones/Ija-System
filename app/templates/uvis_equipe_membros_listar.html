@@ -100,6 +100,7 @@
                   <td>{{ m.contato or "-" }}</td>
 
                   <td class="text-end">
+                    {# Botão Editar #}
                     <a
                       href="{{ url_for('main.editar_membro_equipe_uvis', membro_id=m.id) }}"
                       class="btn btn-outline-primary btn-sm"
@@ -108,16 +109,18 @@
                       <i class="bi bi-pencil-square"></i>
                     </a>
 
+                    {# --- BOTÃO EXCLUIR (COM ALERTA BONITO) --- #}
+                    {# A classe 'form-deletar' ativa o script do base.html automaticamente #}
                     <form
                       method="post"
                       action="{{ url_for('main.deletar_membro_equipe_uvis', membro_id=m.id) }}"
-                      class="d-inline"
-                      onsubmit="return confirm('Remover este membro da equipe?');"
+                      class="form-deletar d-inline ms-1"
                     >
                       <button type="submit" class="btn btn-outline-danger btn-sm" title="Excluir">
                         <i class="bi bi-trash"></i>
                       </button>
                     </form>
+                    {# ----------------------------------------- #}
                   </td>
                 </tr>
               {% endfor %}
