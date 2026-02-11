@@ -315,9 +315,24 @@
                                         <label id="btnAnexo{{ p.id }}" for="inputPdf{{ p.id }}" class="btn btn-sm btn-outline-primary text-truncate justify-content-center vw-100">
                                             <span id="textoDisplay{{ p.id }}"><i class="bi bi-paperclip"></i> {{ p.anexo_nome or 'Anexar' }}</span>
                                         </label>
-                                        {# ... (seus botões de visualizar/remover anexo) ... #}
-                                    </div>
+                                      {% if p.anexo_path %}
+                                        <a id="btnVisualizar{{ p.id }}"
+                                        href="{{ url_for('main.baixar_anexo_admin', id=p.id) }}"
+                                        target="_blank"
+                                        class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
 
+                                        <button type="submit"
+                                                class="btn btn-sm btn-outline-danger"
+                                                id="btnRemover{{ p.id }}"
+                                                formaction="{{ url_for('main.remover_anexo', id=p.id) }}"
+                                                formmethod="POST"
+                                                onclick="event.stopPropagation();">
+                                            <i class="bi bi-x"></i>
+                                        </button>
+                                      {% endif %}
+                                    </div>
                                     <input type="file" name="anexo" id="inputPdf{{ p.id }}" class="d-none" onchange="processarArquivo(this, '{{ p.id }}')">
                                     <button type="submit" class="btn btn-primary btn-sm w-100 mt-2">Salvar</button>
                                 </div>
