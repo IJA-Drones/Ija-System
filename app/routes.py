@@ -1563,7 +1563,7 @@ def exportar_relatorio_pdf():
 
     doc.build(story, onFirstPage=_header_footer, onLaterPages=_header_footer)
 
-    nome_arquivo = f"relatorio_IJASystem_{ano}_{mes:02d}"
+    nome_arquivo = f"relatorio_OceanoAzul_{ano}_{mes:02d}"
     if uvis_id:
         nome_arquivo += f"_UVIS_{uvis_id}"
 
@@ -1785,7 +1785,7 @@ def exportar_relatorio_excel():
     output.seek(0)
 
     # Nome do arquivo
-    nome_arquivo = f"relatorio_IJASystem_{ano}_{mes:02d}"
+    nome_arquivo = f"relatorio_OceanoAzul_{ano}_{mes:02d}"
     if uvis_id:
         safe_nome = (nome_uvis_filtro or f"ID_{uvis_id}").replace(" ", "_")
         nome_arquivo += f"_UVIS_{safe_nome}"
