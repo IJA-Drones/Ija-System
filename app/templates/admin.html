@@ -25,6 +25,9 @@
                 <a href="{{ url_for('main.novo') }}" class="btn btn-success shadow-sm">
                     <i class="bi bi-plus-lg"></i> Nova Solicitação
                 </a>
+                <a href="{{ url_for('main.admin_canceladas') }}" class="btn btn-outline-dark shadow-sm">
+                <i class="bi bi-x-circle"></i> Canceladas
+                </a>
                 <button type="submit" class="btn btn-success shadow-sm">
                     <i class="bi bi-file-earmark-excel-fill"></i> 
                     <span class="d-none d-md-inline">Exportar Excel</span>
@@ -374,6 +377,17 @@
                                     </a>
                                 </div>
                                 {% endif %}
+                                <div class="mt-2 pt-2 border-top">
+                                {% if p.status != 'CANCELADO' %}
+                                    <form method="POST"
+                                        action="{{ url_for('main.cancelar_solicitacao_admin', id=p.id) }}"
+                                        onsubmit="return confirm('Tem certeza que deseja cancelar esta solicitação?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger w-100">
+                                        <i class="bi bi-x-circle"></i> Cancelar Solicitação
+                                    </button>
+                                    </form>
+                                {% endif %}
+                                </div>
                             </div>
                         {% endif %}
                     </td>

@@ -190,6 +190,9 @@ def dashboard():
         .filter(Solicitacao.usuario_id == current_user.id)
     )
 
+    # ✅ NÃO MOSTRAR CANCELADAS NO DASHBOARD PRINCIPAL
+    query = query.filter(Solicitacao.status != "CANCELADO")
+    
     # Filtragem por status (original)
     filtro_status = request.args.get('status')
     if filtro_status:
@@ -248,12 +251,10 @@ from datetime import datetime
 from sqlalchemy.orm import joinedload
 
 
-
 @bp.route('/admin')
 @login_required
 def admin_dashboard():
-    google_maps_key = os.getenv("KEY_API_GOOGLE_MAPS")  # a mesma do .env    
-
+    google_maps_key = os.getenv("KEY_API_GOOGLE_MAPS")
 
     # 🔐 Controle de acesso
     if current_user.tipo_usuario not in ['admin', 'operario', 'visualizar']:
@@ -268,9 +269,22 @@ def admin_dashboard():
     filtro_unidade = (request.args.get("unidade") or "").strip()
     filtro_regiao = (request.args.get("regiao") or "").strip()
 
-    unidades_select = Usuario.query.filter_by(tipo_usuario='uvis').order_by(Usuario.nome_uvis.asc()).all()
+    # 🔁 Se alguém tentar acessar CANCELADO pelo filtro, redireciona
+    if filtro_status == "CANCELADO":
+        return redirect(url_for(
+            "main.admin_canceladas",
+            unidade=filtro_unidade,
+            regiao=filtro_regiao
+        ))
 
-    # --- Query base (com eager loading) ---
+    unidades_select = (
+        Usuario.query
+        .filter_by(tipo_usuario='uvis')
+        .order_by(Usuario.nome_uvis.asc())
+        .all()
+    )
+
+    # --- Query base ---
     query = (
         Solicitacao.query
         .options(
@@ -280,16 +294,20 @@ def admin_dashboard():
         .join(Usuario)
     )
 
+    # ✅ NÃO MOSTRAR CANCELADAS NO PAINEL PRINCIPAL
+    query = query.filter(Solicitacao.status != "CANCELADO")
+
     # --- Aplicação dos filtros ---
     if filtro_status:
         query = query.filter(Solicitacao.status == filtro_status)
+
     if filtro_unidade:
         query = query.filter(Usuario.nome_uvis.ilike(f"%{filtro_unidade}%"))
+
     if filtro_regiao:
         query = query.filter(Usuario.regiao.ilike(f"%{filtro_regiao}%"))
-    
-    # --- Lógica de Ordenação ---
-    # Pendentes (incluindo as correções) ficam em 1º lugar
+
+    # --- Ordenação personalizada ---
     ordem_status = case(
         {
             'PENDENTE': 1,
@@ -297,12 +315,11 @@ def admin_dashboard():
             'APROVADO COM RECOMENDAÇÕES': 3,
             'APROVADO': 4,
             'NEGADO': 5,
-            'CONCLUÍDO': 6
+            'CONCLUÍDO': 6,
         },
         value=Solicitacao.status,
         else_=99
     )
-
 
     equipes = (
         Equipe.query
@@ -311,10 +328,9 @@ def admin_dashboard():
         .all()
     )
 
-
-    # Paginação e Ordenação Final
-
+    # --- Paginação ---
     page = request.args.get("page", 1, type=int)
+
     paginacao = (
         query.order_by(ordem_status, Solicitacao.data_criacao.desc())
         .paginate(page=page, per_page=6, error_out=False)
@@ -330,10 +346,6 @@ def admin_dashboard():
         unidades_select=unidades_select,
         google_maps_key=google_maps_key
     )
-
-
-
-
 
 @bp.route('/admin/exportar_excel')
 @login_required
@@ -6139,3 +6151,113 @@ def handle_exception(e: Exception):
     except Exception:
         pass
     return _render_error(500)
+
+@bp.post("/solicitacao/<int:id>/cancelar")
+@login_required
+def cancelar_solicitacao(id):
+    s = Solicitacao.query.get_or_404(id)
+
+    # segurança: UVIS só cancela as próprias solicitações
+    if current_user.tipo_usuario != "admin" and s.usuario_id != current_user.id:
+        abort(403)
+
+    # seta status cancelado
+    s.status = "CANCELADO"
+    db.session.commit()
+
+    flash("Solicitação cancelada.", "success")
+    return redirect(request.referrer or url_for("main.dashboard"))
+
+@bp.route("/canceladas")
+@login_required
+def solicitacoes_canceladas():
+    # se piloto for redirecionado no seu app, mantém sua lógica
+    if current_user.tipo_usuario == 'piloto':
+        return redirect(url_for('main.piloto_os'))
+
+    # UVIS: só as dela
+    query = (
+        Solicitacao.query
+        .options(
+            joinedload(Solicitacao.usuario),
+            joinedload(Solicitacao.equipe)
+        )
+        .filter(Solicitacao.usuario_id == current_user.id)
+        .filter(Solicitacao.status == "CANCELADO")
+        .order_by(Solicitacao.data_criacao.desc())
+    )
+
+    page = request.args.get("page", 1, type=int)
+    paginacao = query.paginate(page=page, per_page=6, error_out=False)
+
+    return render_template(
+        "dashboard_canceladas.html",
+        solicitacoes=paginacao.items,
+        paginacao=paginacao
+    )
+
+@bp.post("/admin/solicitacao/<int:id>/cancelar")
+@login_required
+def cancelar_solicitacao_admin(id):
+    s = Solicitacao.query.get_or_404(id)
+
+    # ✅ perfis do admin painel podem cancelar tudo
+    if current_user.tipo_usuario in ["admin", "operario", "visualizar"]:
+        pass
+    else:
+        # ✅ UVIS só cancela as próprias
+        if s.usuario_id != current_user.id:
+            abort(403)
+
+    # evita re-cancelar
+    if s.status == "CANCELADO":
+        flash("Essa solicitação já está cancelada.", "info")
+        return redirect(request.referrer or url_for("main.admin_dashboard"))
+
+    s.status = "CANCELADO"
+    db.session.commit()
+
+    flash("Solicitação cancelada.", "success")
+    return redirect(request.referrer or url_for("main.admin_dashboard"))
+
+@bp.route("/admin/canceladas")
+@login_required
+def admin_canceladas():
+    google_maps_key = os.getenv("KEY_API_GOOGLE_MAPS")
+
+    if current_user.tipo_usuario not in ['admin', 'operario', 'visualizar']:
+        flash('Acesso restrito.', 'danger')
+        return redirect(url_for('main.dashboard'))
+
+    # filtros (mantém unidade/região igual ao admin)
+    filtro_unidade = (request.args.get("unidade") or "").strip()
+    filtro_regiao = (request.args.get("regiao") or "").strip()
+
+    unidades_select = Usuario.query.filter_by(tipo_usuario='uvis').order_by(Usuario.nome_uvis.asc()).all()
+
+    query = (
+        Solicitacao.query
+        .options(
+            joinedload(Solicitacao.usuario),
+            joinedload(Solicitacao.equipe)
+        )
+        .join(Usuario)
+        .filter(Solicitacao.status == "CANCELADO")
+    )
+
+    if filtro_unidade:
+        query = query.filter(Usuario.nome_uvis.ilike(f"%{filtro_unidade}%"))
+    if filtro_regiao:
+        query = query.filter(Usuario.regiao.ilike(f"%{filtro_regiao}%"))
+
+    page = request.args.get("page", 1, type=int)
+    paginacao = query.order_by(Solicitacao.data_criacao.desc()).paginate(page=page, per_page=6, error_out=False)
+
+    return render_template(
+        "admin_canceladas.html",
+        pedidos=paginacao.items,
+        paginacao=paginacao,
+        now=datetime.now(),
+        unidades_select=unidades_select,
+        google_maps_key=google_maps_key
+    )
