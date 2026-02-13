@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1200px;">
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="text-dark m-0">
+      <i class="bi bi-x-circle me-2 text-danger"></i> Solicitações Canceladas
+    </h2>
+
+    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary shadow-sm">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+  </div>
+
+  <div class="card shadow-sm rounded-4 border-0 overflow-hidden">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" style="min-height: 200px;">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-4">Data</th>
+              <th style="width: 40%">Localização / Foco</th>
+              <th class="text-center">Situação</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for p in solicitacoes %}
+            <tr>
+              <td class="ps-4">
+                <strong class="text-main">
+                  {{ p.data_agendamento.strftime('%d/%m/%y') }}
+                </strong>
+                <br />
+                <small class="text-muted">{{ p.hora_agendamento.strftime('%H:%M') }}</small>
+              </td>
+
+              <td>
+                <div class="d-flex flex-column">
+                  <span class="fw-bold text-main">
+                    {{ p.logradouro }}, {{ p.numero or 'S/N' }}
+                    {% if p.complemento %} <span class="fw-normal text-muted">({{ p.complemento }})</span> {% endif %}
+                  </span>
+                  <small class="text-muted">
+                    {{ p.bairro }} - {{ p.cidade }}/{{ p.uf }}
+                  </small>
+
+                  <div class="mt-1">
+                    <span class="badge bg-secondary">{{ p.foco }}</span>
+                  </div>
+                </div>
+              </td>
+
+              <td class="text-center">
+                <span class="badge bg-dark rounded-pill">Cancelado</span>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="4" class="text-center py-5 text-muted">
+                <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+                <p>Nenhuma solicitação cancelada.</p>
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-sm btn-primary">Voltar</a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+
+        </table>
+      </div>
+    </div>
+  </div>
+
+  {% if paginacao and paginacao.pages > 1 %}
+  <nav aria-label="Navegação de páginas" class="mt-4">
+    <ul class="pagination justify-content-center">
+
+      <li class="page-item {% if not paginacao.has_prev %}disabled{% endif %}">
+        <a class="page-link" href="{{ url_for('main.solicitacoes_canceladas', page=paginacao.prev_num) }}">Anterior</a>
+      </li>
+
+      {% for pg in paginacao.iter_pages() %}
+        {% if pg %}
+          {% if pg == paginacao.page %}
+            <li class="page-item active"><a class="page-link">{{ pg }}</a></li>
+          {% else %}
+            <li class="page-item"><a class="page-link" href="{{ url_for('main.solicitacoes_canceladas', page=pg) }}">{{ pg }}</a></li>
+          {% endif %}
+        {% else %}
+          <li class="page-item disabled"><a class="page-link">...</a></li>
+        {% endif %}
+      {% endfor %}
+
+      <li class="page-item {% if not paginacao.has_next %}disabled{% endif %}">
+        <a class="page-link" href="{{ url_for('main.solicitacoes_canceladas', page=paginacao.next_num) }}">Próxima</a>
+      </li>
+
+    </ul>
+  </nav>
+  {% endif %}
+
+</div>
+{% endblock %}

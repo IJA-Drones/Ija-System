@@ -79,6 +79,74 @@
         padding: 0 !important;
       }
 
+      /* ===== Header (título + botões) ===== */
+.dashboard-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important; /* em vez de space-between */
+  gap: 12px !important;
+  flex-wrap: wrap; /* não quebra feio em telas médias */
+}
+
+.dashboard-header h2 {
+  margin: 0 !important;
+  margin-right: auto !important; /* empurra os botões pro lado direito */
+  white-space: nowrap;
+}
+
+.dashboard-header .header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Botão “Canceladas” com cara de pill e mais leve */
+.dashboard-header .btn-canceladas {
+  border-radius: 999px !important;
+  padding: 8px 14px !important;
+  border: 1px solid rgba(0,0,0,.15) !important;
+  background: #fff !important;
+}
+
+.dashboard-header .btn-canceladas:hover {
+  transform: translateY(-1px);
+}
+
+/* Mantém o botão “Nova Solicitação” consistente */
+.dashboard-header .btn-nova {
+  border-radius: 999px !important;
+  padding: 8px 16px !important;
+}
+
+/* ===== Mobile ===== */
+@media (max-width: 768px) {
+  .dashboard-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .dashboard-header h2 {
+    margin-right: 0 !important;
+    white-space: normal;
+  }
+
+  .dashboard-header .header-actions {
+    width: 100%;
+  }
+
+  .dashboard-header .header-actions a.btn {
+    width: 100%;
+  }
+}
+
+/* ===== Dark mode (seu cookie usa html.dark-mode/body.dark-mode) ===== */
+html.dark-mode .dashboard-header .btn-canceladas,
+body.dark-mode .dashboard-header .btn-canceladas {
+  background: transparent !important;
+  border-color: #233549 !important;
+  color: var(--color-text-main) !important;
+}
       /* --- Tabela vira “lista” --- */
       .table-responsive {
         overflow: visible !important;
@@ -308,15 +376,21 @@
 {# --- INÍCIO DO CONTAINER PADRONIZADO --- #}
 <div class="container-fluid py-4" style="max-width: 1200px;">
 
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="text-dark m-0">
-      <i class="bi bi-list-task me-2 text-primary"></i> Minhas Solicitações
-    </h2>
-    <a href="{{ url_for('main.novo') }}" class="btn btn-success shadow-sm">
+<div class="d-flex justify-content-between align-items-center mb-4 dashboard-header">
+  <h2 class="text-dark m-0">
+    <i class="bi bi-list-task me-2 text-primary"></i> Minhas Solicitações
+  </h2>
+
+  <div class="header-actions">
+    <a href="{{ url_for('main.solicitacoes_canceladas') }}" class="btn btn-outline-dark shadow-sm btn-canceladas">
+      <i class="bi bi-x-circle"></i> Canceladas
+    </a>
+
+    <a href="{{ url_for('main.novo') }}" class="btn btn-success shadow-sm btn-nova">
       <i class="bi bi-plus-lg"></i> Nova Solicitação
     </a>
   </div>
-
+</div>
   {# --- FILTROS EM "SANFONA" (Accordion) --- #}
   <div class="card shadow-sm rounded-4 mb-4 border-0">
       <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center cursor-pointer"
@@ -531,7 +605,20 @@
                         </span>
                       </li>
                     {% endif %}
+                    <li><hr class="dropdown-divider"></li>
 
+                    {# ✅ CANCELAR #}
+                    {% if p.status != 'CANCELADO' %}
+                    <li>
+                      <form method="POST"
+                            action="{{ url_for('main.cancelar_solicitacao', id=p.id) }}"
+                            onsubmit="return confirm('Tem certeza que deseja cancelar esta solicitação?');">
+                        <button class="dropdown-item py-2 text-danger" type="submit">
+                          <i class="bi bi-x-circle me-2"></i> Cancelar Solicitação
+                        </button>
+                      </form>
+                    </li>
+                    {% endif %}
                   </ul>
                 </div>
               </td>
