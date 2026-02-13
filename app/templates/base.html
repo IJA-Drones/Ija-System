@@ -439,8 +439,6 @@
           {% endif %}
           
           {# ===================== MAPA DE CALOR (ADMIN COMPLETO / UVIS SÓ POR UNIDADE) ===================== #} 
-          {% if current_user.tipo_usuario in ['admin', 'uvis'] %}
-          {# Item: Mapa de Risco #}
           <li class="nav-item">
             <a href="{{ url_for('main.mapa_relatorio') }}" 
               class="nav-link {{ 'active' if request.endpoint == 'main.mapa_relatorio' }}">
@@ -449,7 +447,6 @@
               <span class="badge rounded-pill bg-danger ms-auto small animate-pulse" style="font-size: 0.6rem;">LIVE</span>
             </a>
           </li>
-          {% endif %}
           <li class="nav-item">
             <a
               class="nav-link {% if request.endpoint == 'main.consultar_endereco_geolocalizacao' %}active{% endif %}"
