@@ -2537,13 +2537,15 @@ UVIS_FAQ = [
     },
     {
         "title": "O que tem na tela 'Minhas Solicitações' (Dashboard)",
-        "keywords": ["dashboard", "minhas solicitacoes", "tela inicial", "filtro", "detalhes", "nova solicitacao"],
+        "keywords": ["dashboard", "minhas solicitacoes", "tela inicial", "filtro", "detalhes", "nova solicitacao", "editar", "equipes", "informacoes", "modal", "equipe"],
         "answer": (
             "Na tela **Minhas Solicitações** você encontra:\n"
             "- Botão **Nova Solicitação** (abre o formulário)\n"
             "- **Filtro por status** (Pendente, Em Análise, Aprovado, Aprovado com Recomendações, Negado)\n"
             "- **Tabela** com data/hora, localização e foco\n"
             "- Botão **Detalhes** (abre um modal com informações completas)\n"
+            "- Botão **Adicionar/Editar Equipes** (abre um modal para inserir a equipe responsável)\n"
+            "- Botão **Editar solicitação** (abre para editar a solicitação apenas quando está pendente ou negada.)\n"
         ),
     },
     {
@@ -2567,15 +2569,16 @@ UVIS_FAQ = [
             "Boas práticas:\n"
             "- confira se o **CEP** corresponde ao local\n"
             "- verifique logradouro/bairro/cidade/UF\n"
-            "- preencha o **número** (sem ele pode dificultar a localização)\n"
+            "- preencha o **número** corretamente\n"
         ),
     },
     {
         "title": "Latitude/Longitude e mapa",
-        "keywords": ["latitude", "longitude", "coordenadas", "gps", "mapa"],
+        "keywords": ["latitude", "longitude", "coordenadas", "gps", "mapa", "consulta", "localizacao"],
         "answer": (
-            "📍 **Latitude/Longitude** é opcional (recomendado) e melhora a precisão.\n"
-            "Se houver coordenadas, o sistema pode oferecer acesso rápido ao mapa."
+            "📍 **Latitude/Longitude** é preenchido automaticamente após inserir o endereço.\n"
+            "Tendo coordenadas, o sistema oferecer acesso rápido ao mapa.\n"
+            "Você consegue consultar latitude e longitude na opção Geolocalização.\n"        
         ),
     },
     {
@@ -2583,7 +2586,8 @@ UVIS_FAQ = [
         "keywords": ["notificacao", "notificacoes", "agenda", "calendario", "lembrete"],
         "answer": (
             "🔔 Em **Notificações**, você vê alertas da unidade (lembretes do dia/atualizações).\n"
-            "Ao clicar, pode ser direcionado para a **Agenda**, que mostra os agendamentos por mês/semana/lista."
+            "Ao clicar, pode ser direcionado para a **Agenda**, que mostra os agendamentos por mês/lista.\n"
+            "Ao clicar em uma solicitação, abre um modal com as informações completas da solicitação com opção de traçar a rota.\n"
         ),
     },
     {
@@ -2596,6 +2600,7 @@ UVIS_FAQ = [
             "☐ Número preenchido\n"
             "☐ Tipo de visita e altura do voo selecionados\n"
             "☐ Foco da ação selecionado\n"
+            "☐ Endereço válido?\n"
             "☐ Observações (se necessário) com informações objetivas\n"
         ),
     },
@@ -2603,7 +2608,7 @@ UVIS_FAQ = [
         "title": "Suporte",
         "keywords": ["suporte", "erro", "acesso", "login", "senha", "ajuda", "Suporte", "Ajuda"],
         "answer": (            
-            "Entre em contato com o time de suporte da IJA: **suporte@ijadrones.com.br.**"
+            "Entre em contato com o time de suporte da Oceano Azul: **suporte@ijadrones.com.br.**"
         ),
     },
 ]
@@ -2965,6 +2970,7 @@ ADMIN_FAQ = [
             "- <b>Agenda</b><br>"
             "- <b>Relatórios</b><br>"
             "- <b>Gestão de UVIS</b><br>"
+            "- <b>Google Maps</b><br>"
             "<b>Como posso ajudar você hoje?</b>"
         ),
     },
@@ -3006,10 +3012,12 @@ ADMIN_FAQ = [
     },
     {
         "title": "GPS e mapa",
-        "keywords": ["gps", "latitude", "longitude", "coordenadas", "mapa", "google maps"],
+        "keywords": ["gps", "latitude", "longitude", "coordenadas", "mapa", "google maps", "consulta", "localizacao", "localização", "geolocalizacao", "geolocalização", "Mapas"],
         "answer": (
-            "<b>Latitude e Longitude</b> ajudam na <b>precisão do endereço</b>.<br>"
-            "Quando preenchidas, o botão de <b>mapa</b> abre o local no <b>Google Maps</b>."
+            "<b>Latitude e Longitude</b> é utilizado para <b>localizar o endereço com precisão</b>.<br>"
+            "Quando preenchidas e puxadas corretamente, o botão de <b>mapa</b> abre o local no <b>Google Maps</b>.<br>"
+            "O sistema possui mapas de calor para melhorar a visualização das áreas com mais solicitações.<br>"
+            "O campo de Geolocalização permite consultar coordenadas a partir do endereço e traçar rotas."
         ),
     },
     {
@@ -3026,6 +3034,7 @@ ADMIN_FAQ = [
         "answer": (
             "A <b>Agenda</b> mostra <b>agendamentos</b> por período.<br>"
             "Você pode <b>filtrar</b> e <b>exportar</b> quando disponível."
+            "Você pode <b>traçar as rotas</b> quando disponível mais de 2 solicitações aprovadas naquele dia."
         ),
     },
     {
