@@ -71,6 +71,19 @@
           </div>
         </div>
 
+        {% if current_user.tipo_usuario in ['admin', 'visualizar'] %}
+          <div class="mb-4">
+              <label class="form-label fw-bold"><i class="bi bi-geo-alt me-2"></i>Unidade (UVIS) Responsável</label>
+              <select class="form-select border-primary" name="uvis_responsavel_id" required>
+                  <option value="" selected disabled>Escolha a UVIS que executará este serviço...</option>
+                  {% for uvis in uvis_lista %}
+                      <option value="{{ uvis.id }}">{{ uvis.nome_uvis }} ({{ uvis.regiao }})</option>
+                  {% endfor %}
+              </select>
+              <div class="form-text text-muted">Esta solicitação aparecerá diretamente no dashboard da UVIS selecionada.</div>
+          </div>
+          {% endif %}
+
         <hr class="text-muted opacity-25 my-4" />
 
         {# SEÇÃO 2: LOCALIZAÇÃO #}

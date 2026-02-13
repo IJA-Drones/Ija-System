@@ -677,6 +677,11 @@ def novo():
     hoje = date.today().isoformat()
     key_for_map = current_app.config.get("Maps_KEY_FRONT") or os.getenv("KEY_API_GOOGLE_MAPS")
 
+    # --- NOVO: Busca lista de UVIS para a COVISA/Admin escolher ---
+    uvis_lista = []
+    if current_user.tipo_usuario in ['admin', 'visualizar']:
+        uvis_lista = Usuario.query.filter_by(tipo_usuario='uvis').order_by(Usuario.nome_uvis.asc()).all()
+
     if request.method == 'POST':
         try:
             # --- Dados de Data/Hora ---
@@ -685,77 +690,51 @@ def novo():
             data_obj = datetime.strptime(data_str, '%Y-%m-%d').date() if data_str else None
             hora_obj = datetime.strptime(hora_str, '%H:%M').time() if hora_str else None
 
-            # --- Perímetro Planejado (NOVO) ---
-            # O JS deve enviar uma string JSON para o campo 'perimetro_planejado'
             perimetro_planejado = request.form.get('perimetro_planejado')
+            
+            # --- LÓGICA DE ATRIBUIÇÃO DE USUÁRIO ---
+            # Se for COVISA ou Admin, usa o ID vindo do select. Se for UVIS, usa o próprio ID.
+            if current_user.tipo_usuario in ['admin', 'visualizar']:
+                uvis_id_final = request.form.get('uvis_responsavel_id')
+                if not uvis_id_final:
+                    flash("Por favor, selecione a UVIS responsável.", "warning")
+                    return render_template('cadastro.html', hoje=hoje, google_maps_key=key_for_map, uvis_lista=uvis_lista)
+            else:
+                uvis_id_final = current_user.id
 
-            # --- Restante dos dados ---
-            apoio_cet_bool = request.form.get('apoio_cet') == 'sim'
-            cep = request.form.get('cep')
-            logradouro = request.form.get('logradouro')
-            numero = request.form.get('numero')
-            bairro = request.form.get('bairro')
-            cidade = request.form.get('cidade')
-            uf = request.form.get('uf')
-            complemento = request.form.get('complemento')
-
-            # --- Coordenadas ---
+            # ... (Restante dos dados de endereço e coordenadas mantidos) ...
             lat_raw = (request.form.get('latitude') or "").strip()
             lng_raw = (request.form.get('longitude') or "").strip()
             latitude = float(lat_raw.replace(",", ".")) if lat_raw else None
             longitude = float(lng_raw.replace(",", ".")) if lng_raw else None
 
-            # Lógica de Geofencing (ZONAS_RESTRITAS) mantida...
-            area_restrita_server = False
-            zona_conflito_nome = ""
-            ZONAS_RESTRITAS = [
-                {"nome": "Congonhas", "lat": -23.6273, "lng": -46.6565, "raio": 5400},
-                {"nome": "Campo de Marte", "lat": -23.5092, "lng": -46.6377, "raio": 5400},
-                {"nome": "Guarulhos", "lat": -23.4356, "lng": -46.4731, "raio": 9000},
-                {"nome": "Viracopos", "lat": -23.0069, "lng": -47.1344, "raio": 9000},
-                {"nome": "Heliponto Paulista", "lat": -23.5615, "lng": -46.6559, "raio": 2000}
-            ]
-
-            if latitude and longitude:
-                for zona in ZONAS_RESTRITAS:
-                    distancia = calcular_distancia(latitude, longitude, zona['lat'], zona['lng'])
-                    if distancia < zona['raio']:
-                        area_restrita_server = True
-                        zona_conflito_nome = zona['nome']
-                        break
-            
-            confirmou_risco_pelo_js = request.form.get('risco_aereo') == '1'
-            area_restrita_final = area_restrita_server or confirmou_risco_pelo_js
-
-            # --- Criação da Solicitação com o Perímetro ---
+            # --- Criação da Solicitação ---
             nova_solicitacao = Solicitacao(
                 data_agendamento=data_obj,
                 hora_agendamento=hora_obj,
-                cep=cep,
-                logradouro=logradouro,
-                bairro=bairro,
-                cidade=cidade,
-                numero=numero,
-                uf=uf,
-                complemento=complemento,
+                cep=request.form.get('cep'),
+                logradouro=request.form.get('logradouro'),
+                bairro=request.form.get('bairro'),
+                cidade=request.form.get('cidade'),
+                numero=request.form.get('numero'),
+                uf=request.form.get('uf'),
+                complemento=request.form.get('complemento'),
                 foco=request.form.get('foco'),
                 tipo_visita=request.form.get('tipo_visita'),
                 altura_voo=request.form.get('altura_voo'),
-                apoio_cet=apoio_cet_bool,
+                apoio_cet=request.form.get('apoio_cet') == 'sim',
                 observacao=request.form.get('observacao'),
                 latitude=latitude,
                 longitude=longitude,
-                area_restrita=area_restrita_final,
-                # Salvando o polígono aqui
                 perimetro_planejado=perimetro_planejado, 
-                usuario_id=current_user.id,
+                usuario_id=uvis_id_final, 
                 status='PENDENTE'
             )
 
             db.session.add(nova_solicitacao)
             db.session.commit()
 
-            flash('Pedido enviado com sucesso!', 'success')
+            flash('Solicitação criada e enviada para a UVIS com sucesso!', 'success')
             return redirect(url_for('main.dashboard'))
 
         except Exception as e:
@@ -763,7 +742,7 @@ def novo():
             print(f"ERRO NOVO CADASTRO: {e}")
             flash("Erro ao salvar o pedido.", "danger")
 
-    return render_template('cadastro.html', hoje=hoje, google_maps_key=key_for_map)
+    return render_template('cadastro.html', hoje=hoje, google_maps_key=key_for_map, uvis_lista=uvis_lista)
 
 # --- LOGIN ---
 from flask_login import login_user

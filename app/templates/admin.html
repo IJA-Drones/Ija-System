@@ -22,7 +22,9 @@
                 <input type="hidden" name="status" value="{{ request.args.get('status', '') }}">
                 <input type="hidden" name="unidade" value="{{ request.args.get('unidade', '') }}">
                 <input type="hidden" name="regiao" value="{{ request.args.get('regiao', '') }}">
-
+                <a href="{{ url_for('main.novo') }}" class="btn btn-success shadow-sm">
+                    <i class="bi bi-plus-lg"></i> Nova Solicitação
+                </a>
                 <button type="submit" class="btn btn-success shadow-sm">
                     <i class="bi bi-file-earmark-excel-fill"></i> 
                     <span class="d-none d-md-inline">Exportar Excel</span>
