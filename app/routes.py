@@ -250,6 +250,10 @@ from sqlalchemy import case # Necessário para a ordenação personalizada
 from datetime import datetime
 from sqlalchemy.orm import joinedload
 
+from sqlalchemy import case
+# ... (se já tiver importado, ignora)
+# from flask import request, redirect, url_for, flash, render_template
+# from flask_login import login_required, current_user
 
 @bp.route('/admin')
 @login_required
@@ -269,12 +273,16 @@ def admin_dashboard():
     filtro_unidade = (request.args.get("unidade") or "").strip()
     filtro_regiao = (request.args.get("regiao") or "").strip()
 
+    # ✅ novo filtro (SIM / NAO)
+    filtro_apoio_cet = (request.args.get("apoio_cet") or "").strip().upper()
+
     # 🔁 Se alguém tentar acessar CANCELADO pelo filtro, redireciona
     if filtro_status == "CANCELADO":
         return redirect(url_for(
             "main.admin_canceladas",
             unidade=filtro_unidade,
-            regiao=filtro_regiao
+            regiao=filtro_regiao,
+            apoio_cet=filtro_apoio_cet
         ))
 
     unidades_select = (
@@ -306,6 +314,12 @@ def admin_dashboard():
 
     if filtro_regiao:
         query = query.filter(Usuario.regiao.ilike(f"%{filtro_regiao}%"))
+
+    # ✅ filtro apoio CET
+    if filtro_apoio_cet == "SIM":
+        query = query.filter(Solicitacao.apoio_cet.is_(True))
+    elif filtro_apoio_cet == "NAO":
+        query = query.filter(Solicitacao.apoio_cet.is_(False))
 
     # --- Ordenação personalizada ---
     ordem_status = case(
@@ -360,6 +374,7 @@ def exportar_excel():
         filtro_status = (request.args.get("status") or "").strip()
         filtro_unidade = (request.args.get("unidade") or "").strip()
         filtro_regiao = (request.args.get("regiao") or "").strip()
+        filtro_apoio_cet = (request.args.get("apoio_cet") or "").strip().upper()
 
         query = (
             db.session.query(Solicitacao)
@@ -378,6 +393,9 @@ def exportar_excel():
 
         if filtro_regiao:
             query = query.filter(Usuario.regiao.ilike(f"%{filtro_regiao}%"))
+
+        if filtro_apoio_cet:
+            query = query.filter(Usuario.regiao.ilike(f"%{filtro_apoio_cet}%"))
 
         pedidos = query.order_by(Solicitacao.data_criacao.desc()).all()
 

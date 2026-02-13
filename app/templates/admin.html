@@ -99,9 +99,17 @@
                             <option value="CENTRO-OESTE" {% if reg == 'CENTRO-OESTE' %}selected{% endif %}>CENTRO-OESTE</option>
                         </select>
                         </div>
+                        <div class="col-md-3">
+                        <label class="small text-muted">Apoio CET?</label>
+                        <select name="apoio_cet" class="form-select form-select-sm">
+                            <option value="" {{ 'selected' if not request.args.get('apoio_cet') else '' }}>Todos</option>
+                            <option value="SIM" {{ 'selected' if request.args.get('apoio_cet')=='SIM' else '' }}>SIM</option>
+                            <option value="NAO" {{ 'selected' if request.args.get('apoio_cet')=='NAO' else '' }}>NÃO</option>
+                        </select>
+                        </div>
                         <div class="col-md-3 d-flex gap-2">
                             <button class="btn btn-success btn-sm w-100 align-items-center justify-content-center" type="submit"><i class="bi bi-search"></i> Filtrar</button>
-                            {% if request.args.get('status') or request.args.get('unidade') or request.args.get('regiao') %}
+                            {% if request.args.get('status') or request.args.get('unidade') or request.args.get('regiao') or request.args.get('apoio_cet') %}
                                 <a href="{{ url_for(request.endpoint) }}" class="btn btn-outline-secondary btn-sm w-100">
                                     <i class="bi bi-x-lg"></i> Limpar
                                 </a>
