@@ -6085,6 +6085,78 @@ def admin_usuario_excluir(id):
 @bp.route('/consultar_endereco_geolocalizacao', methods=['GET'])
 @login_required
 def consultar_endereco_geolocalizacao():
-    google_maps_key = os.getenv("KEY_API_GOOGLE_MAPS")
-    print(google_maps_key)  # Verifique se a chave está sendo carregada corretamente
+    google_maps_key = os.getenv("KEY_API_GOOGLE_MAPS")    
     return render_template('consultar_endereco_geolocalizacao.html', google_maps_key=google_maps_key)
+
+from flask import abort, current_app
+from flask_login import login_required
+
+def _dev_only():
+    if not current_app.debug:
+        abort(404)
+
+@bp.route("/__test/erro/<int:code>", methods=["GET"], endpoint="test_error_code")
+@login_required
+def test_error_code(code):
+    _dev_only()
+
+    if code == 500:
+        raise RuntimeError("Erro 500 forçado para teste")
+    abort(code)
+
+import uuid
+from flask import render_template, request
+from werkzeug.exceptions import HTTPException
+
+def _error_payload(code: int):
+    # títulos/mensagens padrão por tipo de erro
+    defaults = {
+        400: ("Requisição inválida", "A solicitação não pôde ser processada. Verifique os dados e tente novamente."),
+        401: ("Não autenticado", "Você precisa fazer login para continuar."),
+        403: ("Acesso negado", "Você não tem permissão para acessar este recurso."),
+        404: ("Página não encontrada", "O endereço acessado não existe ou foi movido."),
+        405: ("Método não permitido", "Essa ação não é permitida para esta rota."),
+        408: ("Tempo esgotado", "A solicitação demorou demais. Tente novamente."),
+        409: ("Conflito", "Houve um conflito ao processar sua solicitação."),
+        410: ("Recurso indisponível", "Esse conteúdo não está mais disponível."),
+        415: ("Mídia não suportada", "Formato de arquivo/dados não suportado."),
+        422: ("Não foi possível processar", "Verifique os campos informados e tente novamente."),
+        429: ("Muitas tentativas", "Você fez muitas solicitações em pouco tempo. Aguarde e tente novamente."),
+        500: ("Erro interno", "Ocorreu um erro no servidor. Tente novamente em instantes."),
+        502: ("Gateway inválido", "Serviço temporariamente indisponível. Tente novamente."),
+        503: ("Serviço indisponível", "Serviço em manutenção ou sobrecarregado. Tente novamente mais tarde."),
+    }
+    return defaults.get(code, ("Ocorreu um problema", "Não foi possível concluir sua solicitação no momento. Tente novamente."))
+
+
+def _render_error(code: int, titulo=None, mensagem=None):
+    request_id = request.headers.get("X-Request-Id") or str(uuid.uuid4())[:8]
+    if not titulo or not mensagem:
+        t, m = _error_payload(code)
+        titulo = titulo or t
+        mensagem = mensagem or m
+
+    return render_template(
+        "erro.html",   
+        codigo=code,
+        titulo=titulo,
+        mensagem=mensagem,
+        request_id=request_id,
+    ), code
+
+
+# ✅ pega qualquer HTTPException (abort(403), abort(404) etc.)
+@bp.app_errorhandler(HTTPException)
+def handle_http_exception(e: HTTPException):
+    return _render_error(e.code or 500)
+
+
+# ✅ pega exceptions “reais” (500)
+@bp.app_errorhandler(Exception)
+def handle_exception(e: Exception):
+    # loga no console (ou usa logging)
+    try:
+        current_app.logger.exception(e)
+    except Exception:
+        pass
+    return _render_error(500)
