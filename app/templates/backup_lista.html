@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+<style>
+  .error-page-bg { position: relative; overflow: hidden; }
+  .error-page-bg::before {
+    content: "";
+    position: absolute;
+    inset: -200px;
+    background:
+      radial-gradient(circle at 20% 10%, rgba(220,53,69,.10), transparent 55%),
+      radial-gradient(circle at 80% 30%, rgba(13,110,253,.08), transparent 55%),
+      radial-gradient(circle at 50% 90%, rgba(25,135,84,.06), transparent 55%);
+    z-index: 0;
+  }
+  .error-card { position: relative; z-index: 1; backdrop-filter: blur(6px); background: rgba(255,255,255,.96); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-5 error-page-bg" style="max-width: 1200px;">
+  <div class="row justify-content-center align-items-center" style="min-height: 70vh;">
+    <div class="col-md-10 col-lg-9 col-xl-8">
+
+      <div class="card shadow-lg rounded-4 border-0 p-4 p-sm-5 error-card">
+        <div class="card-body p-0">
+
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+            <div>
+              <h2 class="h4 fw-bold mb-1">{{ titulo|default('Backups') }}</h2>
+              <p class="text-muted mb-0">{{ mensagem|default('') }}</p>
+            </div>
+
+            <div class="d-flex gap-2">
+              <a href="{{ url_for('main.backup_page') }}" class="btn btn-primary rounded-pill px-4">
+                <i class="bi bi-plus-circle me-2"></i>Gerar agora
+              </a>
+              <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary rounded-pill px-4">
+                <i class="bi bi-house-door me-2"></i>Voltar
+              </a>
+            </div>
+          </div>
+
+          {% if is_error %}
+            <div class="alert alert-danger rounded-4 mb-0">
+              {{ mensagem }}
+            </div>
+          {% else %}
+            {% if backups|length == 0 %}
+              <div class="alert alert-warning rounded-4 mb-0">
+                Nenhum backup encontrado na pasta <code>{{ backups_dir|default('backup/') }}</code>.
+              </div>
+            {% else %}
+              <div class="table-responsive">
+                <table class="table align-middle">
+                  <thead>
+                    <tr>
+                      <th>Arquivo</th>
+                      <th>Data/Hora</th>
+                      <th class="text-end">Tamanho</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for b in backups %}
+                      <tr>
+                        <td>
+                          <i class="bi bi-filetype-sql me-2 text-primary"></i>
+                          <span class="fw-semibold">{{ b.name }}</span>
+                        </td>
+                        <td class="text-muted">
+                          {{ b.modified_at.strftime('%d/%m/%Y às %H:%M') }}
+
+                        </td>
+                        <td class="text-end text-muted">
+                          {% set kb = (b.size_bytes / 1024) %}
+                          {% set mb = (kb / 1024) %}
+                          {% if mb >= 1 %}
+                            {{ '%.2f'|format(mb) }} MB
+                          {% else %}
+                            {{ '%.0f'|format(kb) }} KB
+                          {% endif %}
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+
+              <p class="small text-muted mb-0 mt-3">
+                Backups automáticos rodam diariamente às <strong>05:00</strong> ({{ "America/Sao_Paulo" }}).
+              </p>
+            {% endif %}
+          {% endif %}
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

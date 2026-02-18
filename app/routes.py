@@ -8,11 +8,15 @@ import unicodedata
 from datetime import date, datetime
 from io import BytesIO
 import json
+from apscheduler.schedulers.background import BackgroundScheduler
 
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 import uuid
 import os
+import threading
+from flask import render_template, url_for
+from flask_login import login_required, current_user
 
 # ==========================
 # FLASK
@@ -6278,4 +6282,217 @@ def admin_canceladas():
         now=datetime.now(),
         unidades_select=unidades_select,
         google_maps_key=google_maps_key
+    )
+import os
+import subprocess
+import threading
+from datetime import datetime
+from pathlib import Path
+
+from flask import jsonify, render_template
+from apscheduler.schedulers.background import BackgroundScheduler
+from flask_login import login_required, current_user
+
+# =========================
+# CONFIG
+# =========================
+TIMEZONE = "America/Sao_Paulo"
+BACKUP_DIR = Path(__file__).resolve().parent / "backup"  # app/backup
+
+scheduler = BackgroundScheduler(timezone=TIMEZONE)
+_scheduler_started = False
+
+
+# =========================
+# BACKUP CORE
+# =========================
+def _ensure_backup_dir():
+    BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def _backup_filename():
+    stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    return BACKUP_DIR / f"backup_{stamp}.sql"
+
+
+def _run_postgres_backup():
+    database_url = os.getenv("DATABASE_URL")
+    if not database_url:
+        raise RuntimeError("DATABASE_URL não encontrada no .env")
+
+    _ensure_backup_dir()
+    output_file = _backup_filename()
+
+    cmd = [
+        "pg_dump",
+        "--no-owner",
+        "--no-privileges",
+        "--format=plain",
+        "--file", str(output_file),
+        database_url,
+    ]
+
+    result = subprocess.run(cmd, capture_output=True, text=True)
+
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"pg_dump falhou:\n{result.stderr.strip() or result.stdout.strip() or 'sem saída'}"
+        )
+
+    if not output_file.exists():
+        raise RuntimeError(
+            "pg_dump retornou sucesso, mas o arquivo não foi criado. "
+            f"Caminho esperado: {output_file}"
+        )
+
+    if output_file.stat().st_size == 0:
+        raise RuntimeError(
+            "Arquivo de backup foi criado mas está vazio (0 bytes). "
+            "Verifique conexão/credenciais/SSL do banco."
+        )
+
+    return output_file
+
+
+# =========================
+# SCHEDULER (1x/dia 05:00)
+# =========================
+def start_daily_backup_scheduler():
+    global _scheduler_started
+    if _scheduler_started:
+        return
+
+    _ensure_backup_dir()
+
+    if scheduler.get_job("daily_backup_0500") is None:
+        scheduler.add_job(
+            _run_postgres_backup,
+            trigger="cron",
+            hour=5,
+            minute=0,
+            id="daily_backup_0500",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+        )
+
+    if not scheduler.running:
+        scheduler.start()
+
+    _scheduler_started = True
+
+
+@bp.record_once
+def _on_bp_load(state):
+    start_daily_backup_scheduler()
+
+
+# =========================
+# UI BACKUP (admin)
+# =========================
+_backup_state = {
+    "running": False,
+    "last_file": None,
+    "last_error": None,
+    "started_at": None,
+    "finished_at": None,
+}
+
+
+def _run_backup_async():
+    try:
+        _backup_state["running"] = True
+        _backup_state["last_error"] = None
+        _backup_state["started_at"] = datetime.now().isoformat()
+        _backup_state["finished_at"] = None
+
+        file_path = _run_postgres_backup()  # salva na pasta
+        _backup_state["last_file"] = str(file_path)
+
+    except Exception as e:
+        _backup_state["last_error"] = str(e)
+
+    finally:
+        _backup_state["running"] = False
+        _backup_state["finished_at"] = datetime.now().isoformat()
+
+
+def _list_backups():
+    _ensure_backup_dir()
+    files = sorted(BACKUP_DIR.glob("backup_*.sql"), key=lambda p: p.stat().st_mtime, reverse=True)
+
+    backups = []
+    for p in files:
+        st = p.stat()
+        backups.append({
+            "name": p.name,
+            "path": str(p),
+            "size_bytes": st.st_size,
+            "modified_at": datetime.fromtimestamp(st.st_mtime),
+        })
+    return backups
+
+
+@bp.route("/backup", methods=["GET"])
+@login_required
+def backup_page():
+    if getattr(current_user, "tipo_usuario", None) != "admin":
+        return render_template(
+            "backup_aguarde.html",
+            codigo=403,
+            titulo="Acesso negado",
+            mensagem="Apenas administradores podem gerar backup do banco.",
+            is_error=True,
+        ), 403
+
+    # dispara o backup async se não estiver rodando
+    if not _backup_state["running"]:
+        t = threading.Thread(target=_run_backup_async, daemon=True)
+        t.start()
+
+    return render_template(
+        "backup_aguarde.html",
+        codigo="Backup",
+        titulo="Gerando backup do banco de dados",
+        mensagem="Aguarde alguns segundos. Ao finalizar, você poderá ver a lista de backups gerados.",
+        is_error=False,
+    )
+
+
+@bp.route("/backup/status", methods=["GET"])
+@login_required
+def backup_status():
+    if getattr(current_user, "tipo_usuario", None) != "admin":
+        return jsonify({"ok": False, "error": "forbidden"}), 403
+
+    return jsonify({
+        "running": _backup_state["running"],
+        "last_file": _backup_state["last_file"],
+        "last_error": _backup_state["last_error"],
+        "started_at": _backup_state["started_at"],
+        "finished_at": _backup_state["finished_at"],
+    })
+
+
+@bp.route("/backups", methods=["GET"])
+@login_required
+def backups_list_page():
+    if getattr(current_user, "tipo_usuario", None) != "admin":
+        return render_template(
+            "backup_lista.html",
+            codigo=403,
+            titulo="Acesso negado",
+            mensagem="Apenas administradores podem visualizar os backups.",
+            backups=[],
+            is_error=True,
+        ), 403
+
+    backups = _list_backups()
+    return render_template(
+        "backup_lista.html",
+        codigo="Backups",
+        titulo="Backups do Banco",
+        mensagem="Lista de backups gerados automaticamente (05:00) e manuais.",
+        backups=backups,
+        is_error=False,
     )
