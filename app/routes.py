@@ -9,6 +9,7 @@ from datetime import date, datetime
 from io import BytesIO
 import json
 from apscheduler.schedulers.background import BackgroundScheduler
+from zoneinfo import ZoneInfo
 
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
@@ -46,7 +47,7 @@ from sqlalchemy.orm import joinedload
 # ==========================
 from app import db
 from app.models import Notificacao, Solicitacao, Usuario, Clientes, Pilotos, Equipe, EquipePiloto, EquipeUvis
-
+TZ = ZoneInfo("America/Sao_Paulo")
 print("--- ROTAS CARREGADAS COM SUCESSO ---")
 
 bp = Blueprint('main', __name__)
@@ -6315,7 +6316,7 @@ def _ensure_backup_dir():
 
 
 def _backup_filename():
-    stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    stamp = datetime.now(TZ).strftime("%Y-%m-%d_%H-%M-%S")
     return BACKUP_DIR / f"backup_{stamp}.sql"
 
 
@@ -6432,7 +6433,7 @@ def _list_backups():
             "name": p.name,
             "path": str(p),
             "size_bytes": st.st_size,
-            "modified_at": datetime.fromtimestamp(st.st_mtime),
+            "modified_at": datetime.fromtimestamp(st.st_mtime, tz=TZ),
         })
     return backups
 
