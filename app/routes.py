@@ -890,6 +890,7 @@ def relatorios():
         )
 
         base_query = aplicar_filtros_base(db.session.query(Solicitacao), filtro_data, uvis_id)
+        
 
         # ADICIONE ISSO AQUI:
         print("SQL EXECUTADO:", str(base_query.statement.compile(dialect=db.engine.dialect)))
@@ -1980,8 +1981,11 @@ def agenda():
         d = (request.args.get("d") or "").strip()
         initial_date = d or datetime.now().strftime("%Y-%m-%d")
 
-        # --- Query base ---
-        query = Solicitacao.query.options(joinedload(Solicitacao.usuario))
+        query = (
+        Solicitacao.query
+        .options(joinedload(Solicitacao.usuario))
+        .filter(Solicitacao.status != "CANCELADO")
+    )
 
         # Permissões / filtro UVIS
         if user_tipo not in ["admin", "operario", "visualizar"]:
