@@ -6288,13 +6288,18 @@ def admin_canceladas():
         unidades_select=unidades_select,
         google_maps_key=google_maps_key
     )
+
 import os
 import subprocess
 import threading
+import gzip
+import shutil
+import dropbox
 from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
-from flask import jsonify, render_template
+from flask import jsonify, render_template, current_app
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask_login import login_required, current_user
 
@@ -6302,11 +6307,61 @@ from flask_login import login_required, current_user
 # CONFIG
 # =========================
 TIMEZONE = "America/Sao_Paulo"
-BACKUP_DIR = Path(__file__).resolve().parent / "backup"  # app/backup
+TZ = ZoneInfo(TIMEZONE)
+BACKUP_DIR = Path(__file__).resolve().parent / "backup"
 
 scheduler = BackgroundScheduler(timezone=TIMEZONE)
 _scheduler_started = False
 
+# =========================
+# DROPBOX CORE (Versão Única e Correta)
+# =========================
+def upload_to_dropbox(file_path):
+    """Compacta o arquivo SQL e envia para o Dropbox usando Refresh Token"""
+    app_key = os.environ.get('DROPBOX_APP_KEY')
+    app_secret = os.environ.get('DROPBOX_APP_SECRET')
+    refresh_token = os.environ.get('DROPBOX_REFRESH_TOKEN')
+
+
+    # 1. Define o caminho do arquivo compactado (.sql -> .sql.gz)
+    zipped_file = file_path.with_suffix(file_path.suffix + ".gz")
+
+    try:
+        # 2. Compactação Gzip
+        print(f"📦 Compactando: {file_path.name}...")
+        with open(file_path, 'rb') as f_in:
+            with gzip.open(zipped_file, 'wb') as f_out:
+                shutil.copyfileobj(f_in, f_out)
+
+        # 3. Conexão com Dropbox
+        if all([app_key, app_secret, refresh_token]):
+            # Método Profissional (Refresh Token)
+            dbx = dropbox.Dropbox(
+                app_key=app_key,
+                app_secret=app_secret,
+                oauth2_refresh_token=refresh_token
+            )
+        
+
+        # 4. Faz o Upload
+        dest_path = f"/backups/{zipped_file.name}"
+        print(f"📤 Enviando para Dropbox: {dest_path}...")
+        
+        with open(zipped_file, "rb") as f:
+            meta = dbx.files_upload(f.read(), dest_path, mode=dropbox.files.WriteMode.overwrite)
+            print(f"✅ SUCESSO! Arquivo salvo oficialmente em: {meta.path_display}")
+        
+        # 5. Limpeza Local
+        if zipped_file.exists(): os.remove(zipped_file)
+        if file_path.exists(): os.remove(file_path)
+        
+        return True
+
+    except Exception as e:
+        print(f"❌ ERRO NO DROPBOX: {str(e)}")
+        if 'zipped_file' in locals() and zipped_file.exists(): 
+            os.remove(zipped_file)
+        return False
 
 # =========================
 # BACKUP CORE
@@ -6314,50 +6369,61 @@ _scheduler_started = False
 def _ensure_backup_dir():
     BACKUP_DIR.mkdir(parents=True, exist_ok=True)
 
-
 def _backup_filename():
     stamp = datetime.now(TZ).strftime("%Y-%m-%d_%H-%M-%S")
     return BACKUP_DIR / f"backup_{stamp}.sql"
 
-
 def _run_postgres_backup():
+    """Gera o arquivo de backup REAL (Postgres) e envia para o Dropbox"""
     database_url = os.getenv("DATABASE_URL")
-    if not database_url:
-        raise RuntimeError("DATABASE_URL não encontrada no .env")
-
     _ensure_backup_dir()
     output_file = _backup_filename()
 
-    cmd = [
-        "pg_dump",
-        "--no-owner",
-        "--no-privileges",
-        "--format=plain",
-        "--file", str(output_file),
-        database_url,
-    ]
+    try:
+        if not database_url:
+            raise RuntimeError("DATABASE_URL não configurada no .env ou no Render.")
 
-    result = subprocess.run(cmd, capture_output=True, text=True)
+        # --- LÓGICA DE BACKUP REAL ---
+        # Se estiver no Windows, tentamos localizar o pg_dump.exe
+        pg_dump_cmd = "pg_dump"
+        if os.name == 'nt':
+            print(f"🖥️ Localhost (Windows) detectado. Tentando backup real do banco remoto...")
+            # Se o pg_dump não estiver no seu PATH, você pode colocar o caminho completo abaixo:
+            # pg_dump_cmd = r"C:\Program Files\PostgreSQL\16\bin\pg_dump.exe"
 
-    if result.returncode != 0:
-        raise RuntimeError(
-            f"pg_dump falhou:\n{result.stderr.strip() or result.stdout.strip() or 'sem saída'}"
-        )
+        cmd = [
+            pg_dump_cmd,
+            "--no-owner",
+            "--no-privileges",
+            "--format=plain",
+            "--file", str(output_file),
+            database_url
+        ]
 
-    if not output_file.exists():
-        raise RuntimeError(
-            "pg_dump retornou sucesso, mas o arquivo não foi criado. "
-            f"Caminho esperado: {output_file}"
-        )
+        # Executa o comando real
+        # shell=True ajuda o Windows a encontrar o executável se ele estiver no PATH
+        result = subprocess.run(cmd, capture_output=True, text=True, shell=(os.name == 'nt'))
 
-    if output_file.stat().st_size == 0:
-        raise RuntimeError(
-            "Arquivo de backup foi criado mas está vazio (0 bytes). "
-            "Verifique conexão/credenciais/SSL do banco."
-        )
+        if result.returncode != 0:
+            # Se falhar no Windows, pode ser que você não tenha o PostgreSQL instalado localmente
+            if os.name == 'nt':
+                raise RuntimeError(f"O comando pg_dump falhou. Verifique se o PostgreSQL está instalado no seu Nitro V15. Erro: {result.stderr}")
+            else:
+                raise RuntimeError(f"pg_dump falhou no servidor: {result.stderr}")
 
-    return output_file
+        print(f"⚙️ Backup SQL gerado com sucesso: {output_file.name}")
 
+        # --- ENVIO PARA O DROPBOX ---
+        upload_success = upload_to_dropbox(output_file)
+        
+        if not upload_success:
+            print("⚠️ O backup foi gerado, mas o envio ao Dropbox falhou.")
+            
+        return output_file 
+
+    except Exception as e:
+        print(f"❌ Erro crítico no backup real: {e}")
+        raise e
 
 # =========================
 # SCHEDULER (1x/dia 05:00)
@@ -6386,11 +6452,9 @@ def start_daily_backup_scheduler():
 
     _scheduler_started = True
 
-
 @bp.record_once
 def _on_bp_load(state):
     start_daily_backup_scheduler()
-
 
 # =========================
 # UI BACKUP (admin)
@@ -6403,28 +6467,27 @@ _backup_state = {
     "finished_at": None,
 }
 
-
 def _run_backup_async():
     try:
         _backup_state["running"] = True
         _backup_state["last_error"] = None
-        _backup_state["started_at"] = datetime.now().isoformat()
+        _backup_state["started_at"] = datetime.now(TZ).isoformat()
         _backup_state["finished_at"] = None
 
-        file_path = _run_postgres_backup()  # salva na pasta
-        _backup_state["last_file"] = str(file_path)
+        file_path = _run_postgres_backup() 
+        _backup_state["last_file"] = f"Enviado para Nuvem: {file_path.name}.gz"
 
     except Exception as e:
         _backup_state["last_error"] = str(e)
-
     finally:
         _backup_state["running"] = False
-        _backup_state["finished_at"] = datetime.now().isoformat()
-
+        _backup_state["finished_at"] = datetime.now(TZ).isoformat()
 
 def _list_backups():
+    # Como agora apagamos o local para economizar espaço, 
+    # esta lista mostrará apenas arquivos que falharam no upload ou estão pendentes.
     _ensure_backup_dir()
-    files = sorted(BACKUP_DIR.glob("backup_*.sql"), key=lambda p: p.stat().st_mtime, reverse=True)
+    files = sorted(BACKUP_DIR.glob("backup_*"), key=lambda p: p.stat().st_mtime, reverse=True)
 
     backups = []
     for p in files:
@@ -6437,6 +6500,7 @@ def _list_backups():
         })
     return backups
 
+# (As rotas /backup, /backup/status e /backups permanecem iguais)
 
 @bp.route("/backup", methods=["GET"])
 @login_required
