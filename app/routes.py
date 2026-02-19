@@ -6362,7 +6362,9 @@ def upload_to_dropbox(file_path):
 # BACKUP CORE
 # =========================
 def _ensure_backup_dir():
-    BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+    if not BACKUP_DIR.exists():
+        BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+        print(f"📁 Pasta de backup criada em: {BACKUP_DIR}")
 
 def _backup_filename():
     stamp = datetime.now(TZ).strftime("%Y-%m-%d_%H-%M-%S")
@@ -6435,7 +6437,7 @@ def start_daily_backup_scheduler():
             _run_postgres_backup,
             trigger="cron",
             hour=10,
-            minute=37,
+            minute=58,
             id="daily_backup_0500",
             replace_existing=True,
             max_instances=1,
@@ -6479,22 +6481,49 @@ def _run_backup_async():
         _backup_state["finished_at"] = datetime.now(TZ).isoformat()
 
 def _list_backups():
-    # Como agora apagamos o local para economizar espaço, 
-    # esta lista mostrará apenas arquivos que falharam no upload ou estão pendentes.
-    _ensure_backup_dir()
-    files = sorted(BACKUP_DIR.glob("backup_*"), key=lambda p: p.stat().st_mtime, reverse=True)
+    """Lista os arquivos diretamente da pasta /backups no Dropbox"""
+    app_key = os.environ.get('DROPBOX_APP_KEY').strip()
+    app_secret = os.environ.get('DROPBOX_APP_SECRET').strip()
+    refresh_token = os.environ.get('DROPBOX_REFRESH_TOKEN').strip()
 
     backups = []
-    for p in files:
-        st = p.stat()
-        backups.append({
-            "name": p.name,
-            "path": str(p),
-            "size_bytes": st.st_size,
-            "modified_at": datetime.fromtimestamp(st.st_mtime, tz=TZ),
-        })
-    return backups
+    try:
+        dbx = dropbox.Dropbox(
+            app_key=app_key,
+            app_secret=app_secret,
+            oauth2_refresh_token=refresh_token
+        )
 
+        # Lista os arquivos da pasta /backups
+        # Se a pasta estiver vazia ou não existir, ele cai no except
+        result = dbx.files_list_folder('/backups')
+
+        for entry in sorted(result.entries, key=lambda x: x.name, reverse=True):
+            if isinstance(entry, dropbox.files.FileMetadata):
+                backups.append({
+                    "name": entry.name,
+                    "path": entry.path_display,
+                    "size_bytes": entry.size,
+                    "modified_at": entry.client_modified.replace(tzinfo=ZoneInfo("UTC")).astimezone(TZ),
+                    "is_cloud": True # Flag para sabermos que está na nuvem
+                })
+        
+    except Exception as e:
+        print(f"⚠️ Erro ao listar Dropbox (Pasta pode estar vazia): {e}")
+        # Se falhar a nuvem, tenta olhar a pasta local por garantia
+        _ensure_backup_dir()
+        files = sorted(BACKUP_DIR.glob("backup_*"), key=lambda p: p.stat().st_mtime, reverse=True)
+        for p in files:
+            st = p.stat()
+            backups.append({
+                "name": p.name,
+                "path": str(p),
+                "size_bytes": st.st_size,
+                "modified_at": datetime.fromtimestamp(st.st_mtime, tz=TZ),
+                "is_cloud": False
+            })
+            
+    return backups
 # (As rotas /backup, /backup/status e /backups permanecem iguais)
 
 @bp.route("/backup", methods=["GET"])
