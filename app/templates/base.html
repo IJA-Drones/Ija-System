@@ -453,7 +453,6 @@
               <i class="bi bi-search me-2"></i><span>Geolocalização</span>
             </a>
           </li>
-          {#
           {% if current_user.is_authenticated and current_user.tipo_usuario == 'admin' %}
             <li class="nav-item">
               <a class="nav-link {% if request.endpoint in ['main.backups_list_page','main.backup_page'] %}active{% endif %}"
@@ -462,7 +461,6 @@
               </a>
             </li>
           {% endif %}
-          #}
 
           <div class="sidebar-footer mt-auto p-3 text-center">
             <div id="install-container" style="display: none">
