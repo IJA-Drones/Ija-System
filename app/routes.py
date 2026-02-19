@@ -6367,8 +6367,13 @@ def _ensure_backup_dir():
         print(f"📁 Pasta de backup criada em: {BACKUP_DIR}")
 
 def _backup_filename():
-    stamp = datetime.now(TZ).strftime("%Y-%m-%d_%H-%M-%S")
-    return BACKUP_DIR / f"backup_{stamp}.sql"
+    stamp = datetime.now(TZ).strftime("%d-%m-%Y_%H-%M")
+
+    project_name = os.getenv("PROJECT_NAME", "backup")
+    environment = os.getenv("APP_ENV", "prod")  # prod | staging | dev
+
+    return BACKUP_DIR / f"{project_name}_{environment}_{stamp}.sql"
+
 
 def _run_postgres_backup():
     """Gera o arquivo de backup REAL (Postgres) e envia para o Dropbox"""
