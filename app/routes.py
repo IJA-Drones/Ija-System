@@ -6435,7 +6435,7 @@ def start_daily_backup_scheduler():
             _run_postgres_backup,
             trigger="cron",
             hour=10,
-            minute=28,
+            minute=37,
             id="daily_backup_0500",
             replace_existing=True,
             max_instances=1,
