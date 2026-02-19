@@ -6317,50 +6317,45 @@ _scheduler_started = False
 # DROPBOX CORE (Versão Única e Correta)
 # =========================
 def upload_to_dropbox(file_path):
-    """Compacta o arquivo SQL e envia para o Dropbox usando Refresh Token"""
-    app_key = os.environ.get('DROPBOX_APP_KEY')
-    app_secret = os.environ.get('DROPBOX_APP_SECRET')
-    refresh_token = os.environ.get('DROPBOX_REFRESH_TOKEN')
+    """Versão simplificada para debugar o erro de credenciais"""
+    app_key = os.environ.get('DROPBOX_APP_KEY', '').strip()
+    app_secret = os.environ.get('DROPBOX_APP_SECRET', '').strip()
+    refresh_token = os.environ.get('DROPBOX_REFRESH_TOKEN', '').strip()
 
+    # Esse print vai nos confirmar se o Python está lendo as chaves do Render
+    print(f"DEBUG: Tentando Dropbox com Key: {app_key[:4]}... / Secret: {app_secret[:4]}...")
 
-    # 1. Define o caminho do arquivo compactado (.sql -> .sql.gz)
+    if not all([app_key, app_secret, refresh_token]):
+        print("❌ ERRO: Faltam variáveis de ambiente do Dropbox no Render.")
+        return False
+
     zipped_file = file_path.with_suffix(file_path.suffix + ".gz")
 
     try:
-        # 2. Compactação Gzip
-        print(f"📦 Compactando: {file_path.name}...")
+        # Compactação
         with open(file_path, 'rb') as f_in:
             with gzip.open(zipped_file, 'wb') as f_out:
                 shutil.copyfileobj(f_in, f_out)
 
-        # 3. Conexão com Dropbox
-        if all([app_key, app_secret, refresh_token]):
-            # Método Profissional (Refresh Token)
-            dbx = dropbox.Dropbox(
-                app_key=app_key,
-                app_secret=app_secret,
-                oauth2_refresh_token=refresh_token
-            )
-        
+        # Conexão FORÇANDO a renovação do token
+        dbx = dropbox.Dropbox(
+            app_key=app_key,
+            app_secret=app_secret,
+            oauth2_refresh_token=refresh_token
+        )
 
-        # 4. Faz o Upload
         dest_path = f"/backups/{zipped_file.name}"
-        print(f"📤 Enviando para Dropbox: {dest_path}...")
-        
         with open(zipped_file, "rb") as f:
             meta = dbx.files_upload(f.read(), dest_path, mode=dropbox.files.WriteMode.overwrite)
-            print(f"✅ SUCESSO! Arquivo salvo oficialmente em: {meta.path_display}")
+            print(f"✅ SUCESSO ABSOLUTO! Salvo em: {meta.path_display}")
         
-        # 5. Limpeza Local
         if zipped_file.exists(): os.remove(zipped_file)
         if file_path.exists(): os.remove(file_path)
-        
         return True
 
     except Exception as e:
+        # Se der erro aqui, saberemos se é credencial ou permissão
         print(f"❌ ERRO NO DROPBOX: {str(e)}")
-        if 'zipped_file' in locals() and zipped_file.exists(): 
-            os.remove(zipped_file)
         return False
 
 # =========================
