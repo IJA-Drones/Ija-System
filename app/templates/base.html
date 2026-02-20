@@ -348,6 +348,17 @@
               </ul>
             </div>
           </li>
+          {% endif %}
+
+          {# ===================== EQUIPAMNETOS ===================== #} 
+          {% if current_user.tipo_usuario in ['admin'] %}
+          <li class="nav-item">
+            <a class="nav-link {% if request.endpoint == 'main.listar_equipamentos' %}active{% endif %}"
+              href="{{ url_for('main.listar_equipamentos') }}">
+              <i class="bi bi-gear-fill me-2"></i><span>Equipamentos</span>
+            </a> 
+          </li>
+
           {% endif %} {# ===================== EQUIPES (ADMIN COMPLETO / UVIS SÓ LISTAR) ===================== #} 
           {% if current_user.tipo_usuario in ['admin', 'uvis'] %}
           <li class="nav-item">

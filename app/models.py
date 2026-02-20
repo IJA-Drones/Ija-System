@@ -423,6 +423,7 @@ class EquipePiloto(db.Model):
 # -------------------------------------------------------------
 # EQUIPAMENTOS (Drones, Baterias, Veículos)
 # -------------------------------------------------------------
+
 class Equipamentos(db.Model):
     __tablename__ = "equipamentos"
 
@@ -459,7 +460,7 @@ class Equipamentos(db.Model):
 
     # Configuração do Polimorfismo do SQLAlchemy
     __mapper_args__ = {
-        "polymorphic_identity": "equipamento",
+        "polymorphic_identity": "equipamentos",
         "polymorphic_on": tipo_equipamento
     }    
 
@@ -475,10 +476,15 @@ class Drones(Equipamentos):
     pmd_kg = db.Column(db.Float, nullable=False)
 
     # Um drone possui várias baterias
-    baterias = db.relationship("Bateria", back_populates="drone_vinculado", lazy="select")
+    baterias = db.relationship(
+        "Baterias", 
+        back_populates="drone_vinculado", 
+        lazy="select",
+        foreign_keys="[Baterias.drone_id]"
+    )
 
     __mapper_args__ = {
-        "polymorphic_identity": "drone"
+        "polymorphic_identity": "drones"
     }
 
 class Baterias(Equipamentos):
@@ -490,8 +496,12 @@ class Baterias(Equipamentos):
 
     # Vínculo específico: a qual Drone essa bateria pertence?
     drone_id = db.Column(db.Integer, db.ForeignKey("drones.id"), nullable=True, index=True)
-    drone_vinculado = db.relationship("Drone", back_populates="baterias")
+    drone_vinculado = db.relationship(
+        "Drones", 
+        back_populates="baterias",
+        foreign_keys=[drone_id]
+    )
 
     __mapper_args__ = {
-        "polymorphic_identity": "bateria"
+        "polymorphic_identity": "baterias"
     }

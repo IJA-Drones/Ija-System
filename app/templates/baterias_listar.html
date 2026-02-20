@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1200px">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="text-dark">
+        <i class="bi bi-battery-full me-2 text-warning"></i> Inventário de Baterias
+      </h2>
+      <p class="text-muted small mb-0">Controle de ciclos e rastreio de equipamentos.</p>
+    </div>
+    <a href="#" class="btn btn-success btn-sm d-flex align-items-center gap-2">
+      <i class="bi bi-plus-lg"></i> Nova Bateria
+    </a>
+  </div>
+
+  <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-3">Bateria</th>
+              <th>S/N</th>
+              <th>Ciclos</th>
+              <th>Localização / Drone</th>
+              <th>Status</th>
+              <th class="text-center">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for b in baterias %}
+            <tr>
+              <td class="ps-3 fw-bold">{{ b.renomacao }}</td>
+              <td class="text-muted small">{{ b.numero_serie }}</td>
+              <td>
+                <div class="d-flex align-items-center">
+                  <span class="me-2">{{ b.ciclo }}</span>
+                  <div class="progress w-100" style="height: 6px; max-width: 60px;">
+                    {# Lógica visual: se ciclos > 200, fica vermelho #}
+                    <div class="progress-bar {% if b.ciclo > 200 %}bg-danger{% else %}bg-success{% endif %}" 
+                         style="width: {{ (b.ciclo / 2.5) if b.ciclo <= 250 else 100 }}%"></div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                {% if b.drone_vinculado %}
+                  <span class="badge bg-primary-light text-primary">
+                    <i class="bi bi-airplane me-1"></i>{{ b.drone_vinculado.renomacao }}
+                  </span>
+                {% else %}
+                  <span class="badge bg-light text-muted border">Em Estoque</span>
+                {% endif %}
+              </td>
+              <td>
+                <span class="badge {% if b.status == 'Ativo' %}bg-success{% else %}bg-secondary{% endif %}">
+                  {{ b.status }}
+                </span>
+              </td>
+              <td class="text-center">
+                <button class="btn btn-sm btn-light border"><i class="bi bi-gear"></i></button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

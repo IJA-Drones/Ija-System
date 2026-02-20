@@ -6367,8 +6367,13 @@ def _ensure_backup_dir():
         print(f"📁 Pasta de backup criada em: {BACKUP_DIR}")
 
 def _backup_filename():
-    stamp = datetime.now(TZ).strftime("%Y-%m-%d_%H-%M-%S")
-    return BACKUP_DIR / f"backup_{stamp}.sql"
+    stamp = datetime.now(TZ).strftime("%d-%m-%Y_%H-%M")
+
+    project_name = os.getenv("PROJECT_NAME", "backup")
+    environment = os.getenv("APP_ENV", "prod")  # prod | staging | dev
+
+    return BACKUP_DIR / f"{project_name}_{environment}_{stamp}.sql"
+
 
 def _run_postgres_backup():
     """Gera o arquivo de backup REAL (Postgres) e envia para o Dropbox"""
@@ -6589,3 +6594,44 @@ def backups_list_page():
         backups=backups,
         is_error=False,
     )
+
+from app.models import Drones , Baterias, Equipamentos
+
+@bp.route('/equipamentos', methods=['GET'])
+@login_required
+def listar_equipamentos():
+    # Usamos o campo 'tipo_equipamento' que definimos no polimorfismo para contar
+    total_drones = Equipamentos.query.filter_by(tipo_equipamento='drones').count()
+    total_baterias = Equipamentos.query.filter_by(tipo_equipamento='baterias').count()
+    em_manutencao = Equipamentos.query.filter_by(status='Em Manutenção').count()
+    
+    # Busca todos para a tabela
+    todos = Equipamentos.query.order_by(Equipamentos.criado_em.desc()).all()
+
+    return render_template('equipamentos_listar.html', 
+                            equipamentos=todos,
+                            total_drones=total_drones,
+                            total_baterias=total_baterias,
+                            em_manutencao=em_manutencao)
+
+@bp.route('/equipamentos/drones', methods=['GET'])
+@login_required
+def listar_drones():
+    # Filtra apenas por Drones
+    drones = Drones.query.all()
+    
+    # Define se o usuário tem permissão de administrador
+    is_admin = current_user.tipo_usuario == 'admin'
+    
+    return render_template('drones_listar.html', 
+                            drones=drones, 
+                            is_admin=is_admin)
+
+@bp.route('/equipamentos/baterias', methods=['GET'])
+@login_required
+def listar_baterias():
+    # Busca todas as baterias (para ver estoque geral)
+    baterias = Baterias.query.all()
+
+    is_admin = current_user.tipo_usuario == 'admin'
+    return render_template('baterias_listar.html', baterias=baterias, is_admin=is_admin)

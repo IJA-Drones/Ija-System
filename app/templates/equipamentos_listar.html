@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1200px">
+    <div class="mb-4">
+        <h2 class="text-dark"><i class="bi bi-box-seam me-2 text-primary"></i>Gestão de Inventário</h2>
+        <p class="text-muted">Visão geral de hardware e ativos da IJA Drones.</p>
+    </div>
+
+    {# --- CARDS DE RESUMO / NAVEGAÇÃO --- #}
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 bg-primary text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1 text-white-50">Drones</h6>
+                        <h3 class="mb-0">{{ total_drones }}</h3>
+                    </div>
+                    <div class="fs-1 opacity-50"><i class="bi bi-airplane-engines"></i></div>
+                </div>
+                <a href="{{ url_for('main.listar_drones') }}" class="btn btn-light btn-sm mt-3 w-100 rounded-3">Ver Frota</a>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 bg-warning">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1 text-black-50">Baterias</h6>
+                        <h3 class="mb-0">{{ total_baterias }}</h3>
+                    </div>
+                    <div class="fs-1 opacity-50"><i class="bi bi-battery-half"></i></div>
+                </div>
+                <a href="{{ url_for('main.listar_baterias') }}" class="btn btn-dark btn-sm mt-3 w-100 rounded-3">Ver Estoque</a>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 bg-white border-start border-danger border-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1 text-muted">Em Manutenção</h6>
+                        <h3 class="mb-0 text-danger">{{ em_manutencao }}</h3>
+                    </div>
+                    <div class="fs-1 text-danger opacity-25"><i class="bi bi-tools"></i></div>
+                </div>
+                <p class="small text-muted mt-3 mb-0">Aguardando reparo técnico.</p>
+            </div>
+        </div>
+    </div>
+
+    {# --- TABELA GERAL (LINHA DO TEMPO) --- #}
+    <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+        <div class="card-header bg-white py-3 border-0">
+            <h6 class="mb-0 fw-bold"><i class="bi bi-clock-history me-2"></i>Atividades Recentes de Cadastro</h6>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3">Tipo</th>
+                            <th>Renomação / Modelo</th>
+                            <th>Nº de Série</th>
+                            <th>Status</th>
+                            <th>Cadastrado em</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for eq in equipamentos %}
+                        <tr>
+                            <td class="ps-3">
+                                {% if eq.tipo_equipamento == 'drone' %}
+                                    <i class="bi bi-airplane-engines text-primary" title="Drone"></i>
+                                {% elif eq.tipo_equipamento == 'bateria' %}
+                                    <i class="bi bi-battery-half text-warning" title="Bateria"></i>
+                                {% else %}
+                                    <i class="bi bi-truck text-success"></i>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="fw-bold">{{ eq.renomacao }}</span>
+                                <div class="text-muted small">{{ eq.modelo }}</div>
+                            </td>
+                            <td class="text-muted small">{{ eq.numero_serie or '-' }}</td>
+                            <td>
+                                <span class="badge {% if eq.status == 'Ativo' %}bg-success-light text-success{% else %}bg-light text-muted border{% endif %}">
+                                    {{ eq.status }}
+                                </span>
+                            </td>
+                            <td class="text-muted small">
+                                {% if eq.criado_em %}
+                                    {{ eq.criado_em.strftime('%d/%m/%Y') }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

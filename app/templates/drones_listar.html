@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1200px">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="text-dark">
+        <i class="bi bi-airplane-engines-fill me-2 text-primary"></i> Frota de Drones
+      </h2>
+      <p class="text-muted small mb-0">
+        Gerenciamento de aeronaves e baterias vinculadas.
+      </p>
+    </div>
+
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center">
+        <i class="bi bi-arrow-left me-1"></i> Dashboard
+      </a>
+      {% if is_admin %}
+      <a href="#" class="btn btn-success btn-sm d-flex align-items-center gap-2">
+        <i class="bi bi-plus-lg"></i> Novo Drone
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  {# --- TABELA DE DRONES --- #}
+  <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-3">Drone (Renomação)</th>
+              <th>Modelo / Categoria</th>
+              <th>Equipe Responsável</th>
+              <th>Baterias Acopladas</th>
+              <th>Status</th>
+              <th class="text-center">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if drones %}
+              {% for d in drones %}
+              <tr>
+                <td class="ps-3">
+                  <span class="fw-bold text-primary">{{ d.renomacao }}</span>
+                  <div class="text-muted" style="font-size: 0.7rem;">S/N: {{ d.numero_serie or 'N/I' }}</div>
+                </td>
+
+                <td>
+                  <span class="badge bg-white text-dark border">{{ d.modelo }}</span>
+                  <div class="text-muted small">{{ d.categoria or '' }}</div>
+                </td>
+
+                <td>
+                  {% if d.equipe %}
+                    <span class="text-dark"><i class="bi bi-people me-1"></i>{{ d.equipe.nome_equipe }}</span>
+                  {% else %}
+                    <span class="text-muted small fst-italic">Sem equipe</span>
+                  {% endif %}
+                </td>
+
+                <td>
+                  <div class="d-flex flex-wrap gap-1">
+                    {% for bat in d.baterias %}
+                      <span class="badge bg-warning text-dark border border-warning" style="font-size: 0.7rem;">
+                        <i class="bi bi-battery-charging"></i> {{ bat.renomacao }} ({{ bat.ciclo }}c)
+                      </span>
+                    {% else %}
+                      <span class="text-muted small">Nenhuma</span>
+                    {% endfor %}
+                  </div>
+                </td>
+
+                <td>
+                  {% if d.status == 'Ativo' %}
+                    <span class="badge bg-success-light text-success"><i class="bi bi-check-circle me-1"></i>Ativo</span>
+                  {% elif d.status == 'Em Manutenção' %}
+                    <span class="badge bg-danger-light text-danger"><i class="bi bi-tools me-1"></i>Manutenção</span>
+                  {% else %}
+                    <span class="badge bg-secondary-light text-secondary">{{ d.status }}</span>
+                  {% endif %}
+                </td>
+
+                <td class="text-center">
+                  <div class="btn-group">
+                    <a href="#" class="btn btn-sm btn-outline-primary" title="Editar"><i class="bi bi-pencil"></i></a>
+                    <button class="btn btn-sm btn-outline-danger" title="Excluir"><i class="bi bi-trash"></i></button>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr><td colspan="6" class="text-center py-4 text-muted">Nenhum drone cadastrado.</td></tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
