@@ -4607,16 +4607,15 @@ def deletar_piloto(piloto_id):
 
     flash("Piloto excluído com sucesso.", "success")
     return redirect(url_for("main.listar_pilotos"))
-
 @bp.route('/piloto/os')
 @login_required
 @roles_required('piloto')
-
 def piloto_os():
     if not current_user.piloto_id:
         flash("Piloto sem vínculo cadastrado.", "danger")
         return redirect(url_for('main.dashboard'))
-    google_maps_key = os.getenv("KEY_API_GOOGLE_MAPS")
+
+    google_maps_key = os.getenv("KEY_API_GOOGLE_MAPS") or current_app.config.get("GOOGLE_MAPS_API_KEY", "")
     status_ok = ["APROVADO", "APROVADO COM RECOMENDAÇÕES", "APROVADA", "APROVADA COM RECOMENDAÇÕES"]
 
     # ✅ pega o vínculo do piloto com uma equipe ATIVA
@@ -4646,19 +4645,39 @@ def piloto_os():
             pilot_team_nome=None,
             pilot_team_regiao=None,
             pilot_team_papel=None,
-            google_maps_key=current_app.config.get("GOOGLE_MAPS_API_KEY", "")
+            google_maps_key=google_maps_key,
+            drones_equipe=[],
+            baterias_equipe=[]
         )
 
     pilot_team_nome = vinculo.equipe.nome_equipe if vinculo.equipe else None
     pilot_team_regiao = vinculo.equipe.regiao if vinculo.equipe else None
     pilot_team_papel = (vinculo.papel or "").lower()
 
+    # ✅ DRONES vinculados à equipe ativa do piloto
+    drones_equipe = (
+        Drones.query
+        .options(joinedload(Drones.equipe))
+        .filter(Drones.equipe_id == vinculo.equipe_id)
+        .order_by(Drones.renomacao.asc())
+        .all()
+    )
+
+    # ✅ (opcional) BATERIAS vinculadas aos DRONES dessa equipe
+    baterias_equipe = (
+        Baterias.query
+        .join(Drones, Baterias.drone_id == Drones.id)
+        .filter(Drones.equipe_id == vinculo.equipe_id)
+        .order_by(Baterias.renomacao.asc())
+        .all()
+    )
+
     # ✅ AGORA a OS vem por EQUIPE (não por piloto_id)
     query = (
         Solicitacao.query
         .options(
             joinedload(Solicitacao.usuario),
-            joinedload(Solicitacao.equipe)  # pra exibir equipe no template se quiser
+            joinedload(Solicitacao.equipe)
         )
         .filter(
             Solicitacao.equipe_id == vinculo.equipe_id,
@@ -4678,16 +4697,17 @@ def piloto_os():
     ).paginate(page=page, per_page=6, error_out=False)
 
     return render_template(
-    "piloto_os.html",
-    pedidos=paginacao.items,
-    paginacao=paginacao,
-    status_ok=status_ok,
-    pilot_team_nome=pilot_team_nome,
-    pilot_team_regiao=pilot_team_regiao,
-    pilot_team_papel=pilot_team_papel,
-    google_maps_key=google_maps_key
-)
-
+        "piloto_os.html",
+        pedidos=paginacao.items,
+        paginacao=paginacao,
+        status_ok=status_ok,
+        pilot_team_nome=pilot_team_nome,
+        pilot_team_regiao=pilot_team_regiao,
+        pilot_team_papel=pilot_team_papel,
+        google_maps_key=google_maps_key,
+        drones_equipe=drones_equipe,
+        baterias_equipe=baterias_equipe
+    )
 @bp.route('/piloto/os/<int:os_id>/concluir', methods=['POST'])
 @login_required
 @roles_required('piloto')
