@@ -7240,3 +7240,25 @@ def equipamentos_manutencao():
         equipamentos=equipamentos,
         total=len(equipamentos)
     )
+
+@bp.route('/equipamentos/baterias/update_ciclos/<int:id>', methods=['POST'])
+@login_required
+def update_ciclos(id):
+    bateria = Baterias.query.get_or_404(id)
+    data = request.get_json()
+    
+    quantidade = data.get('quantidade', 1)
+    operacao = data.get('operacao', 'add')
+
+    if operacao == 'add':
+        bateria.ciclo += quantidade
+    else:
+        bateria.ciclo = max(0, bateria.ciclo - quantidade) # Impede ciclos negativos
+
+    db.session.commit()
+    
+    # Retorna o novo valor e a cor para o JavaScript atualizar a tela
+    return {
+        'novo_ciclo': bateria.ciclo,
+        'cor': 'bg-danger' if bateria.ciclo > 200 else 'bg-success'
+    }
