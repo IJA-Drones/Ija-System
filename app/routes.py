@@ -6630,8 +6630,613 @@ def listar_drones():
 @bp.route('/equipamentos/baterias', methods=['GET'])
 @login_required
 def listar_baterias():
+
     # Busca todas as baterias (para ver estoque geral)
     baterias = Baterias.query.all()
-
     is_admin = current_user.tipo_usuario == 'admin'
+
     return render_template('baterias_listar.html', baterias=baterias, is_admin=is_admin)
+
+
+# -----------------------------
+# Rota: cadastrar drone
+# -----------------------------
+@bp.route('/drones/cadastrar', methods=['GET', 'POST'], endpoint='cadastrar_drone')
+@login_required
+def cadastrar_drone():
+    # Segurança: só admin
+    if getattr(current_user, "tipo_usuario", None) != "admin":
+        abort(403)
+
+    errors = {}
+    form = {}
+
+    # lista de equipes (opcional no form)
+    equipes = Equipe.query.filter_by(ativa=True).order_by(Equipe.nome_equipe.asc()).all()
+
+    if request.method == "POST":
+        modelo = (request.form.get("modelo") or "").strip()
+        renomacao = (request.form.get("renomacao") or "").strip()
+        categoria = (request.form.get("categoria") or "").strip()
+        status = (request.form.get("status") or "Ativo").strip()
+
+        ano_fabricacao_raw = (request.form.get("ano_fabricacao") or "").strip()
+        numero_serie = (request.form.get("numero_serie") or "").strip()
+
+        registro_anatel = (request.form.get("registro_anatel") or "").strip()
+        registro_anac = (request.form.get("registro_anac") or "").strip()
+
+        pmd_kg_raw = (request.form.get("pmd_kg") or "").strip()
+        equipe_id_raw = (request.form.get("equipe_id") or "").strip()
+        ultima_manutencao_raw = (request.form.get("ultima_manutencao") or "").strip()
+
+        # Mantém valores pra re-render do form
+        form = {
+            "modelo": modelo,
+            "renomacao": renomacao,
+            "categoria": categoria,
+            "status": status,
+            "ano_fabricacao": ano_fabricacao_raw,
+            "numero_serie": numero_serie,
+            "registro_anatel": registro_anatel,
+            "registro_anac": registro_anac,
+            "pmd_kg": pmd_kg_raw,
+            "equipe_id": equipe_id_raw,
+            "ultima_manutencao": ultima_manutencao_raw,
+        }
+
+        # Obrigatórios
+        if not modelo:
+            errors["modelo"] = "Informe o modelo do drone."
+        if not renomacao:
+            errors["renomacao"] = "Informe a renomação do drone."
+        if not registro_anatel:
+            errors["registro_anatel"] = "Informe o registro ANATEL."
+        if not registro_anac:
+            errors["registro_anac"] = "Informe o registro ANAC."
+        if not pmd_kg_raw:
+            errors["pmd_kg"] = "Informe o PMD (kg)."
+
+        # PMD
+        pmd_kg = None
+        if pmd_kg_raw:
+            try:
+                pmd_kg = float(pmd_kg_raw.replace(",", "."))
+                if pmd_kg <= 0:
+                    errors["pmd_kg"] = "PMD deve ser maior que 0."
+            except ValueError:
+                errors["pmd_kg"] = "PMD inválido. Use um número (ex: 25.5)."
+
+        # Ano fabricação (opcional)
+        ano_fabricacao = None
+        if ano_fabricacao_raw:
+            try:
+                ano_fabricacao = int(ano_fabricacao_raw)
+                if ano_fabricacao < 1900 or ano_fabricacao > 2100:
+                    errors["ano_fabricacao"] = "Ano de fabricação inválido."
+            except ValueError:
+                errors["ano_fabricacao"] = "Ano de fabricação inválido."
+
+        # Equipe (opcional)
+        equipe_id = None
+        if equipe_id_raw:
+            try:
+                equipe_id = int(equipe_id_raw)
+                equipe_ok = Equipe.query.filter_by(id=equipe_id, ativa=True).first()
+                if not equipe_ok:
+                    errors["equipe_id"] = "Equipe inválida."
+            except ValueError:
+                errors["equipe_id"] = "Equipe inválida."
+
+        # Última manutenção (opcional)
+        ultima_manutencao = None
+        if ultima_manutencao_raw:
+            try:
+                ultima_manutencao = datetime.strptime(ultima_manutencao_raw, "%Y-%m-%d").date()
+            except ValueError:
+                errors["ultima_manutencao"] = "Data inválida."
+
+        # Unique checks (antes do commit)
+        if registro_anac and not errors.get("registro_anac"):
+            existe_anac = Drones.query.filter_by(registro_anac=registro_anac).first()
+            if existe_anac:
+                errors["registro_anac"] = "Já existe um drone com esse Registro ANAC."
+
+        if numero_serie:
+            # numero_serie é unique em Equipamentos, mas aqui checamos via Drones já ajuda (se quiser 100%,
+            # melhor checar no modelo base Equipamentos também)
+            existe_ns = Drones.query.filter_by(numero_serie=numero_serie).first()
+            if existe_ns:
+                errors["numero_serie"] = "Já existe um equipamento com esse Número de Série."
+
+        if errors:
+            flash("Corrija os campos destacados.", "warning")
+            return render_template("cadastrar_drone.html", form=form, errors=errors, equipes=equipes)
+
+        novo = Drones(
+            tipo_equipamento="drones",  # importante pro polimorfismo
+            status=status,
+            modelo=modelo,
+            renomacao=renomacao,
+            categoria=categoria or None,
+            ano_fabricacao=ano_fabricacao,
+            numero_serie=numero_serie or None,
+            ultima_manutencao=ultima_manutencao,
+
+            equipe_id=equipe_id,
+
+            registro_anatel=registro_anatel,
+            registro_anac=registro_anac,
+            pmd_kg=pmd_kg,
+        )
+
+        try:
+            db.session.add(novo)
+            db.session.commit()
+            flash("Drone cadastrado com sucesso!", "success")
+            # troque para sua rota real de listagem quando existir
+            return redirect(url_for("main.cadastrar_drone"))
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Erro ao cadastrar drone: {str(e)}", "danger")
+            return render_template("cadastrar_drone.html", form=form, errors=errors, equipes=equipes)
+
+    return render_template("cadastrar_drone.html", form=form, errors=errors, equipes=equipes)
+
+# -----------------------------
+# Rota: editar drone
+# -----------------------------
+@bp.route('/drones/<int:drone_id>/editar', methods=['GET', 'POST'], endpoint='editar_drone')
+@login_required
+def editar_drone(drone_id):
+
+    if getattr(current_user, "tipo_usuario", None) != "admin":
+        abort(403)
+
+    drone = Drones.query.get_or_404(drone_id)
+
+    errors = {}
+    form = {}
+
+    equipes = Equipe.query.filter_by(ativa=True).order_by(Equipe.nome_equipe.asc()).all()
+
+    if request.method == "POST":
+
+        modelo = (request.form.get("modelo") or "").strip()
+        renomacao = (request.form.get("renomacao") or "").strip()
+        categoria = (request.form.get("categoria") or "").strip()
+        status = (request.form.get("status") or "Ativo").strip()
+
+        ano_raw = (request.form.get("ano_fabricacao") or "").strip()
+        numero_serie = (request.form.get("numero_serie") or "").strip()
+        registro_anatel = (request.form.get("registro_anatel") or "").strip()
+        registro_anac = (request.form.get("registro_anac") or "").strip()
+        pmd_raw = (request.form.get("pmd_kg") or "").strip()
+        equipe_id_raw = (request.form.get("equipe_id") or "").strip()
+        manut_raw = (request.form.get("ultima_manutencao") or "").strip()
+
+        form = request.form.to_dict()
+
+        # Validações básicas
+        if not modelo:
+            errors["modelo"] = "Informe o modelo."
+        if not renomacao:
+            errors["renomacao"] = "Informe a renomação."
+        if not registro_anatel:
+            errors["registro_anatel"] = "Informe o registro ANATEL."
+        if not registro_anac:
+            errors["registro_anac"] = "Informe o registro ANAC."
+
+        # PMD
+        try:
+            pmd_kg = float(pmd_raw.replace(",", "."))
+            if pmd_kg <= 0:
+                raise ValueError()
+        except:
+            errors["pmd_kg"] = "PMD inválido."
+
+        # Unique ANAC (exceto ele mesmo)
+        existe_anac = Drones.query.filter(
+            Drones.registro_anac == registro_anac,
+            Drones.id != drone.id
+        ).first()
+        if existe_anac:
+            errors["registro_anac"] = "Já existe outro drone com esse ANAC."
+
+        # Unique Número de Série
+        if numero_serie:
+            existe_ns = Drones.query.filter(
+                Drones.numero_serie == numero_serie,
+                Drones.id != drone.id
+            ).first()
+            if existe_ns:
+                errors["numero_serie"] = "Número de série já utilizado."
+
+        if errors:
+            flash("Corrija os campos destacados.", "warning")
+            return render_template("editar_drone.html", drone=drone, form=form, errors=errors, equipes=equipes)
+
+        # Atualiza
+        drone.modelo = modelo
+        drone.renomacao = renomacao
+        drone.categoria = categoria or None
+        drone.status = status
+        drone.numero_serie = numero_serie or None
+        drone.registro_anatel = registro_anatel
+        drone.registro_anac = registro_anac
+        drone.pmd_kg = pmd_kg
+
+        drone.equipe_id = int(equipe_id_raw) if equipe_id_raw else None
+
+        if ano_raw:
+            drone.ano_fabricacao = int(ano_raw)
+        else:
+            drone.ano_fabricacao = None
+
+        if manut_raw:
+            drone.ultima_manutencao = datetime.strptime(manut_raw, "%Y-%m-%d").date()
+        else:
+            drone.ultima_manutencao = None
+
+        db.session.commit()
+        flash("Drone atualizado com sucesso!", "success")
+        return redirect(url_for("main.listar_drones"))
+
+    # GET
+    form = {
+        "modelo": drone.modelo,
+        "renomacao": drone.renomacao,
+        "categoria": drone.categoria,
+        "status": drone.status,
+        "ano_fabricacao": drone.ano_fabricacao,
+        "numero_serie": drone.numero_serie,
+        "registro_anatel": drone.registro_anatel,
+        "registro_anac": drone.registro_anac,
+        "pmd_kg": drone.pmd_kg,
+        "equipe_id": drone.equipe_id,
+        "ultima_manutencao": drone.ultima_manutencao
+    }
+
+    return render_template("editar_drone.html", drone=drone, form=form, errors=errors, equipes=equipes)
+
+# -----------------------------
+# Rota: deletar drone (robusta)
+# -----------------------------
+@bp.route('/drones/<int:drone_id>/deletar', methods=['POST'], endpoint='deletar_drone')
+@login_required
+def deletar_drone(drone_id):
+
+    if getattr(current_user, "tipo_usuario", None) != "admin":
+        abort(403)
+
+    drone = Drones.query.get_or_404(drone_id)
+
+    try:
+        # 1) desvincula baterias antes
+        for bateria in list(drone.baterias):
+            bateria.drone_id = None
+
+        # força o UPDATE das baterias acontecer antes do DELETE do drone
+        db.session.flush()
+
+        # 2) agora remove o drone
+        db.session.delete(drone)
+        db.session.commit()
+
+        flash("Drone removido com sucesso.", "success")
+
+    except Exception as e:
+        db.session.rollback()
+        # importante: logar no console também (Render)
+        print("ERRO AO DELETAR DRONE:", repr(e))
+        flash("Erro ao remover drone. Verifique vínculos (baterias/OS) e tente novamente.", "danger")
+
+    return redirect(url_for("main.listar_drones"))
+
+
+# -----------------------------
+# Rota: cadastrar bateria (vincula a um drone)
+# -----------------------------
+@bp.route('/baterias/cadastrar', methods=['GET', 'POST'], endpoint='cadastrar_bateria')
+@login_required
+def cadastrar_bateria():
+    # Segurança: só admin
+    if getattr(current_user, "tipo_usuario", None) != "admin":
+        abort(403)
+
+    errors = {}
+    form = {}
+
+    # lista de drones para dropdown
+    drones = Drones.query.order_by(Drones.renomacao.asc()).all()
+
+    # opcional: permitir pré-seleção por querystring ?drone_id=123
+    drone_id_pre = request.args.get("drone_id", type=int)
+
+    if request.method == "POST":
+        modelo = (request.form.get("modelo") or "").strip()
+        renomacao = (request.form.get("renomacao") or "").strip()
+        status = (request.form.get("status") or "Ativo").strip()
+
+        categoria = (request.form.get("categoria") or "").strip()  # opcional
+        ano_raw = (request.form.get("ano_fabricacao") or "").strip()
+        numero_serie = (request.form.get("numero_serie") or "").strip()
+
+        ciclo_raw = (request.form.get("ciclo") or "").strip()
+        drone_id_raw = (request.form.get("drone_id") or "").strip()
+        manut_raw = (request.form.get("ultima_manutencao") or "").strip()
+
+        # mantém dados
+        form = {
+            "modelo": modelo,
+            "renomacao": renomacao,
+            "status": status,
+            "categoria": categoria,
+            "ano_fabricacao": ano_raw,
+            "numero_serie": numero_serie,
+            "ciclo": ciclo_raw,
+            "drone_id": drone_id_raw,
+            "ultima_manutencao": manut_raw,
+        }
+
+        # obrigatórios mínimos
+        if not modelo:
+            errors["modelo"] = "Informe o modelo da bateria."
+        if not renomacao:
+            errors["renomacao"] = "Informe a renomação (ex: BAT-01)."
+
+        # ciclo (opcional, mas se vier tem que ser inteiro >= 0)
+        ciclo = 0
+        if ciclo_raw:
+            try:
+                ciclo = int(ciclo_raw)
+                if ciclo < 0:
+                    errors["ciclo"] = "Ciclo não pode ser negativo."
+            except ValueError:
+                errors["ciclo"] = "Ciclo inválido (use número inteiro)."
+
+        # ano fabricação (opcional)
+        ano_fabricacao = None
+        if ano_raw:
+            try:
+                ano_fabricacao = int(ano_raw)
+                if ano_fabricacao < 1900 or ano_fabricacao > 2100:
+                    errors["ano_fabricacao"] = "Ano de fabricação inválido."
+            except ValueError:
+                errors["ano_fabricacao"] = "Ano de fabricação inválido."
+
+        # ultima manutenção (opcional)
+        ultima_manutencao = None
+        if manut_raw:
+            try:
+                ultima_manutencao = datetime.strptime(manut_raw, "%Y-%m-%d").date()
+            except ValueError:
+                errors["ultima_manutencao"] = "Data inválida."
+
+        # drone_id (opcional)
+        drone_id = None
+        if drone_id_raw:
+            try:
+                drone_id = int(drone_id_raw)
+                d_ok = Drones.query.get(drone_id)
+                if not d_ok:
+                    errors["drone_id"] = "Drone inválido."
+            except ValueError:
+                errors["drone_id"] = "Drone inválido."
+
+        # numero_serie é unique em Equipamentos (se preencher, validar duplicidade)
+        if numero_serie:
+            existe_ns = Equipamentos.query.filter_by(numero_serie=numero_serie).first()
+            if existe_ns:
+                errors["numero_serie"] = "Já existe um equipamento com esse Número de Série."
+
+        if errors:
+            flash("Corrija os campos destacados.", "warning")
+            return render_template("cadastrar_bateria.html", form=form, errors=errors, drones=drones)
+
+        nova = Baterias(
+            tipo_equipamento="baterias",
+            status=status,
+            modelo=modelo,
+            renomacao=renomacao,
+            categoria=categoria or None,
+            ano_fabricacao=ano_fabricacao,
+            numero_serie=numero_serie or None,
+            ultima_manutencao=ultima_manutencao,
+            ciclo=ciclo,
+            drone_id=drone_id
+        )
+
+        try:
+            db.session.add(nova)
+            db.session.commit()
+            flash("Bateria cadastrada com sucesso!", "success")
+            # ajuste para sua rota de listagem, se existir
+            return redirect(url_for("main.listar_baterias"))
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Erro ao cadastrar bateria: {str(e)}", "danger")
+            return render_template("cadastrar_bateria.html", form=form, errors=errors, drones=drones)
+
+    # GET: se veio drone_id na querystring, já deixa selecionado
+    if drone_id_pre and Drones.query.get(drone_id_pre):
+        form["drone_id"] = str(drone_id_pre)
+
+    return render_template("cadastrar_bateria.html", form=form, errors=errors, drones=drones)
+
+
+# -----------------------------
+# Rota: editar bateria
+# -----------------------------
+@bp.route('/baterias/<int:bateria_id>/editar', methods=['GET', 'POST'], endpoint='editar_bateria')
+@login_required
+def editar_bateria(bateria_id):
+    if getattr(current_user, "tipo_usuario", None) != "admin":
+        abort(403)
+
+    bateria = Baterias.query.get_or_404(bateria_id)
+    drones = Drones.query.order_by(Drones.renomacao.asc()).all()
+
+    errors = {}
+    form = {}
+
+    if request.method == "POST":
+        modelo = (request.form.get("modelo") or "").strip()
+        renomacao = (request.form.get("renomacao") or "").strip()
+        status = (request.form.get("status") or "Ativo").strip()
+
+        categoria = (request.form.get("categoria") or "").strip()
+        ano_raw = (request.form.get("ano_fabricacao") or "").strip()
+        numero_serie = (request.form.get("numero_serie") or "").strip()
+
+        ciclo_raw = (request.form.get("ciclo") or "").strip()
+        drone_id_raw = (request.form.get("drone_id") or "").strip()
+        manut_raw = (request.form.get("ultima_manutencao") or "").strip()
+
+        form = request.form.to_dict()
+
+        # obrigatórios
+        if not modelo:
+            errors["modelo"] = "Informe o modelo da bateria."
+        if not renomacao:
+            errors["renomacao"] = "Informe a renomação (ex: BAT-01)."
+
+        # ciclo
+        ciclo = bateria.ciclo or 0
+        if ciclo_raw == "":
+            ciclo = 0
+        else:
+            try:
+                ciclo = int(ciclo_raw)
+                if ciclo < 0:
+                    errors["ciclo"] = "Ciclo não pode ser negativo."
+            except ValueError:
+                errors["ciclo"] = "Ciclo inválido (use número inteiro)."
+
+        # ano fabricação (opcional)
+        ano_fabricacao = None
+        if ano_raw:
+            try:
+                ano_fabricacao = int(ano_raw)
+                if ano_fabricacao < 1900 or ano_fabricacao > 2100:
+                    errors["ano_fabricacao"] = "Ano de fabricação inválido."
+            except ValueError:
+                errors["ano_fabricacao"] = "Ano de fabricação inválido."
+
+        # última manutenção (opcional)
+        ultima_manutencao = None
+        if manut_raw:
+            try:
+                ultima_manutencao = datetime.strptime(manut_raw, "%Y-%m-%d").date()
+            except ValueError:
+                errors["ultima_manutencao"] = "Data inválida."
+
+        # drone (opcional)
+        drone_id = None
+        if drone_id_raw:
+            try:
+                drone_id = int(drone_id_raw)
+                d_ok = Drones.query.get(drone_id)
+                if not d_ok:
+                    errors["drone_id"] = "Drone inválido."
+            except ValueError:
+                errors["drone_id"] = "Drone inválido."
+
+        # numero_serie unique em Equipamentos (exceto ele mesmo)
+        if numero_serie:
+            existe_ns = Equipamentos.query.filter(
+                Equipamentos.numero_serie == numero_serie,
+                Equipamentos.id != bateria.id
+            ).first()
+            if existe_ns:
+                errors["numero_serie"] = "Já existe outro equipamento com esse Número de Série."
+
+        if errors:
+            flash("Corrija os campos destacados.", "warning")
+            return render_template("editar_bateria.html", bateria=bateria, form=form, errors=errors, drones=drones)
+
+        # atualiza
+        bateria.modelo = modelo
+        bateria.renomacao = renomacao
+        bateria.status = status
+        bateria.categoria = categoria or None
+        bateria.numero_serie = numero_serie or None
+        bateria.ciclo = ciclo
+        bateria.drone_id = drone_id
+        bateria.ano_fabricacao = ano_fabricacao
+        bateria.ultima_manutencao = ultima_manutencao
+
+        try:
+            db.session.commit()
+            flash("Bateria atualizada com sucesso!", "success")
+            return redirect(url_for("main.listar_baterias"))
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Erro ao atualizar bateria: {str(e)}", "danger")
+            return render_template("editar_bateria.html", bateria=bateria, form=form, errors=errors, drones=drones)
+
+    # GET (preenche form)
+    form = {
+        "modelo": bateria.modelo,
+        "renomacao": bateria.renomacao,
+        "status": bateria.status,
+        "categoria": bateria.categoria,
+        "ano_fabricacao": bateria.ano_fabricacao,
+        "numero_serie": bateria.numero_serie,
+        "ciclo": bateria.ciclo,
+        "drone_id": bateria.drone_id,
+        "ultima_manutencao": bateria.ultima_manutencao.strftime("%Y-%m-%d") if bateria.ultima_manutencao else ""
+    }
+
+    return render_template("editar_bateria.html", bateria=bateria, form=form, errors=errors, drones=drones)
+
+
+# -----------------------------
+# Rota: deletar bateria
+# -----------------------------
+@bp.route('/baterias/<int:bateria_id>/deletar', methods=['POST'], endpoint='deletar_bateria')
+@login_required
+def deletar_bateria(bateria_id):
+    if getattr(current_user, "tipo_usuario", None) != "admin":
+        abort(403)
+
+    bateria = Baterias.query.get_or_404(bateria_id)
+
+    try:
+        # se estiver vinculada, desvincula antes
+        bateria.drone_id = None
+        db.session.flush()
+
+        db.session.delete(bateria)
+        db.session.commit()
+
+        flash("Bateria removida com sucesso.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erro ao remover bateria: {str(e)}", "danger")
+
+    return redirect(url_for("main.listar_baterias"))
+
+# -----------------------------
+# Rota: Equipamentos em Manutenção
+# -----------------------------
+@bp.route("/equipamentos/em-manutencao", methods=["GET"], endpoint="equipamentos_manutencao")
+@login_required
+def equipamentos_manutencao():
+
+    # opcional: restringir só admin
+    # if getattr(current_user, "tipo_usuario", None) != "admin":
+    #     abort(403)
+
+    equipamentos = (
+        Equipamentos.query
+        .filter(Equipamentos.status == "Em Manutenção")
+        .order_by(Equipamentos.criado_em.desc())
+        .all()
+    )
+
+    return render_template(
+        "equipamentos_manutencao.html",
+        equipamentos=equipamentos,
+        total=len(equipamentos)
+    )

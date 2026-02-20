@@ -23,7 +23,7 @@
         <i class="bi bi-arrow-left me-1"></i> Dashboard
       </a>
       {% if is_admin %}
-      <a href="#" class="btn btn-success btn-sm d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.cadastrar_drone') }}" class="btn btn-success btn-sm d-flex align-items-center gap-2">
         <i class="bi bi-plus-lg"></i> Novo Drone
       </a>
       {% endif %}
@@ -90,11 +90,24 @@
                 </td>
 
                 <td class="text-center">
-                  <div class="btn-group">
-                    <a href="#" class="btn btn-sm btn-outline-primary" title="Editar"><i class="bi bi-pencil"></i></a>
-                    <button class="btn btn-sm btn-outline-danger" title="Excluir"><i class="bi bi-trash"></i></button>
-                  </div>
-                </td>
+                <div class="btn-group" role="group" aria-label="Ações">
+                  <a href="{{ url_for('main.editar_drone', drone_id=d.id) }}"
+                    class="btn btn-sm btn-outline-primary"
+                    title="Editar">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                </div>
+                <div class="btn-group" role="group">
+                  <form method="post"
+                        action="{{ url_for('main.deletar_drone', drone_id=d.id) }}"
+                        style="display:inline;"
+                        onsubmit="return confirm('Tem certeza que deseja excluir este drone?');">
+                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Excluir">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </form>
+                </div>
+              </td>
               </tr>
               {% endfor %}
             {% else %}
