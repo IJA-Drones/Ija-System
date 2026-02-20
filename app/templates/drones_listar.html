@@ -15,7 +15,7 @@
             <p class="text-muted small mb-0">Gerenciamento de aeronaves e baterias vinculadas.</p>
         </div>
         <div class="d-flex gap-2">
-            <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i> Dashboard</a>
+            <a href="{{ url_for('main.listar_equipamentos') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i> Voltar</a>
             {% if is_admin %}
             <a href="{{ url_for('main.cadastrar_drone') }}" class="btn btn-success btn-sm"><i class="bi bi-plus-lg"></i> Novo Drone</a>
             {% endif %}
