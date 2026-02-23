@@ -154,6 +154,16 @@
         <a href="{{ url_for('main.cadastrar_veiculo') }}" class="btn btn-success d-flex align-items-center gap-2">
           <i class="bi bi-plus-lg"></i> Novo Veículo
         </a>
+        <a
+        class="btn btn-outline-primary d-flex align-items-center gap-2"
+        href="{{ url_for('main.listar_veiculos',
+                        q=filters.q,
+                        operacao=filters.operacao,
+                        frota=filters.frota,
+                        status=filters.status,
+                        export=1) }}">
+        <i class="bi bi-file-earmark-excel"></i> Exportar Excel
+        </a>
       {% endif %}
     </div>
   </div>
@@ -420,4 +430,4 @@
   </div>
 
 </div>
-{% endblock %}
+{% endblock %}novo 
