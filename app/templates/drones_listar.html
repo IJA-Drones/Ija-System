@@ -6,27 +6,153 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}" />
 
 <style>
-  /* Ajustezinho só pros botões de ação ficarem alinhados e bonitos */
-  .acoes-wrap{
-    display:flex;
-    justify-content:center;
-    gap:.5rem;
-    flex-wrap:wrap;
-  }
-  .acoes-wrap .btn{
-    display:inline-flex;
-    align-items:center;
-    gap:.35rem;
-    white-space:nowrap;
-  }
-  .acoes-wrap form{ margin:0; }
+    /* =========================================
+       DESIGN SYSTEM OCEANO AZUL (IGUAL DASHBOARD)
+       ========================================= */
+    
+    .dashboard-header {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 12px !important;
+        flex-wrap: wrap;
+    }
+
+    .dashboard-header h2 {
+        margin: 0 !important;
+        margin-right: auto !important;
+        white-space: nowrap;
+    }
+
+    .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    /* Botões Pill */
+    .btn-pill {
+        border-radius: 999px !important;
+        padding: 8px 16px !important;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        transition: transform 0.2s;
+    }
+
+    .btn-pill:hover {
+        transform: translateY(-1px);
+    }
+
+    .btn-voltar {
+        border: 1px solid rgba(0,0,0,.15) !important;
+        background: #fff !important;
+        color: var(--color-text-main) !important;
+    }
+
+    /* Ajuste para as ações na tabela */
+    .acoes-wrap {
+        display: flex;
+        justify-content: center;
+        gap: .5rem;
+        flex-wrap: wrap;
+    }
+
+    /* =========================================
+       RESPONSIVIDADE (MOBILE -> CARDS)
+       ========================================= */
+    @media (max-width: 768px) {
+        .dashboard-header {
+            flex-direction: column !important;
+            align-items: stretch !important;
+        }
+
+        .dashboard-header h2 {
+            margin-right: 0 !important;
+            white-space: normal;
+        }
+
+        .header-actions {
+            width: 100%;
+        }
+
+        .header-actions a.btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        /* Tabela vira Lista de Cards */
+        .table-responsive {
+            background: transparent !important;
+            border: 0 !important;
+        }
+
+        thead { display: none !important; }
+
+        tbody {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 16px !important;
+            padding: 10px 0 !important;
+        }
+
+        tbody tr {
+            display: block !important;
+            background: var(--color-bg-white) !important;
+            border: 1px solid rgba(0, 0, 0, 0.10) !important;
+            border-radius: 18px !important;
+            box-shadow: var(--shadow-sm) !important;
+            padding: 10px !important;
+        }
+
+        tbody tr td {
+            display: grid !important;
+            grid-template-columns: 120px 1fr !important;
+            gap: 10px;
+            padding: 12px 8px !important;
+            border: 0 !important;
+            text-align: left !important;
+            align-items: center !important;
+        }
+
+        tbody tr td + td {
+            border-top: 1px solid rgba(0, 0, 0, 0.05) !important;
+        }
+
+        /* Labels Automáticos */
+        tbody tr td:nth-child(1)::before { content: "Drone"; }
+        tbody tr td:nth-child(2)::before { content: "Modelo"; }
+        tbody tr td:nth-child(3)::before { content: "Equipe"; }
+        tbody tr td:nth-child(4)::before { content: "Baterias"; }
+        tbody tr td:nth-child(5)::before { content: "Status"; }
+        tbody tr td:nth-child(6)::before { content: "Ações"; }
+
+        tbody tr td::before {
+            font-weight: 700;
+            color: var(--color-text-muted);
+            font-size: .75rem;
+            text-transform: uppercase;
+        }
+
+        .acoes-wrap {
+            justify-content: flex-start;
+        }
+    }
+
+    /* DARK MODE */
+    html.dark-mode .btn-voltar, body.dark-mode .btn-voltar {
+        background: transparent !important;
+        border-color: #233549 !important;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4" style="max-width: 1200px">
 
-    {# --- Mensagens de Feedback --- #}
+    {# --- FEEDBACK --- #}
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         {% for category, message in messages %}
@@ -38,28 +164,25 @@
       {% endif %}
     {% endwith %}
 
-    {# --- CABEÇALHO --- #}
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="text-dark">
-              <i class="bi bi-airplane-engines-fill me-2 text-primary"></i> Frota de Drones
-            </h2>
-            <p class="text-muted small mb-0">Gerenciamento de aeronaves e baterias vinculadas.</p>
-        </div>
+    {# --- CABEÇALHO PADRONIZADO --- #}
+    <div class="dashboard-header mb-4">
+        <h2 class="text-dark">
+            <i class="bi bi-airplane-engines-fill me-2 text-primary"></i> Frota de Drones
+        </h2>
 
-        <div class="d-flex gap-2">
-            <a href="{{ url_for('main.listar_equipamentos') }}" class="btn btn-outline-secondary btn-sm">
-              <i class="bi bi-arrow-left me-1"></i> Voltar
+        <div class="header-actions">
+            <a href="{{ url_for('main.listar_equipamentos') }}" class="btn btn-pill btn-voltar shadow-sm">
+                <i class="bi bi-arrow-left"></i> Voltar
             </a>
             {% if is_admin %}
-            <a href="{{ url_for('main.cadastrar_drone') }}" class="btn btn-success btn-sm">
-              <i class="bi bi-plus-lg"></i> Novo Drone
+            <a href="{{ url_for('main.cadastrar_drone') }}" class="btn btn-pill btn-success shadow-sm">
+                <i class="bi bi-plus-lg"></i> Novo Drone
             </a>
             {% endif %}
         </div>
     </div>
 
-    {# --- TABELA --- #}
+    {# --- LISTAGEM --- #}
     <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -91,22 +214,17 @@
 
                                 <td>
                                     {% if d.equipe %}
-                                        <span class="text-dark">
-                                          <i class="bi bi-people me-1"></i>{{ d.equipe.nome_equipe }}
-                                        </span>
+                                        <span class="text-dark"><i class="bi bi-people me-1"></i>{{ d.equipe.nome_equipe }}</span>
                                     {% else %}
                                         <span class="text-muted small fst-italic">Sem equipe</span>
                                     {% endif %}
                                 </td>
 
                                 <td>
-                                    <div class="d-flex flex-column gap-2">
+                                    <div class="d-flex flex-column gap-1">
                                       {% for bat in d.baterias %}
-                                        <button type="button"
-                                                class="btn badge bg-warning text-dark border border-warning shadow-sm p-2 w-180 text-start"
-                                                data-bs-toggle="modal"
-                                                data-bs-target="#modalBat{{ bat.id }}"
-                                                style="font-size: 0.75rem;">
+                                        <button type="button" class="btn badge bg-warning text-dark border border-warning shadow-sm p-2 text-start" 
+                                                data-bs-toggle="modal" data-bs-target="#modalBat{{ bat.id }}" style="font-size: 0.7rem; max-width: 150px;">
                                             <i class="bi bi-battery-charging me-1"></i> {{ bat.renomacao }} ({{ bat.ciclo }}c)
                                         </button>
                                       {% else %}
@@ -125,70 +243,35 @@
                                     {% endif %}
                                 </td>
 
-                                {# =========================
-                                   AÇÕES (melhoradas)
-                                   - Layout flex com gap
-                                   - Botões com texto no desktop (lg) e só ícone no mobile
-                                   - Tooltips Bootstrap
-                                   ========================= #}
-                                <td class="text-center">
-                                  <div class="acoes-wrap">
-
-                                    {% if is_admin %}
-                                      {# 🛠 Enviar para manutenção #}
-                                      <form method="post"
-                                            action="{{ url_for('main.enviar_manutencao_drone', drone_id=d.id) }}"
-                                            onsubmit="return confirm('Enviar o drone {{ d.renomacao }} para manutenção?');">
-                                        <button type="submit"
-                                                class="btn btn-sm {% if d.status == 'Em Manutenção' %}btn-outline-secondary{% else %}btn-outline-warning{% endif %}"
-                                                data-bs-toggle="tooltip"
-                                                data-bs-placement="top"
-                                                data-bs-title="{% if d.status == 'Em Manutenção' %}Já está em manutenção{% else %}Enviar para manutenção{% endif %}"
-                                                {% if d.status == 'Em Manutenção' %}disabled aria-disabled="true"{% endif %}>
-                                          <i class="bi bi-tools"></i>
-                                          <span class="d-none d-lg-inline">
-                                            {% if d.status == 'Em Manutenção' %}Em Manut.{% else %}Manutenção{% endif %}
-                                          </span>
+                                <td class="text-end pe-4">
+                                    <div class="dropdown">
+                                        <button class="btn btn-dots ms-auto" type="button" data-bs-toggle="dropdown">
+                                            <i class="bi bi-three-dots-vertical"></i>
                                         </button>
-                                      </form>
-                                    {% endif %}
-
-                                    {# ✏️ Editar #}
-                                    <a href="{{ url_for('main.editar_drone', drone_id=d.id) }}"
-                                       class="btn btn-sm btn-outline-primary"
-                                       data-bs-toggle="tooltip"
-                                       data-bs-placement="top"
-                                       data-bs-title="Editar drone">
-                                      <i class="bi bi-pencil"></i>
-                                      <span class="d-none d-lg-inline">Editar</span>
-                                    </a>
-
-                                    {% if is_admin %}
-                                      {# 🗑 Excluir #}
-                                      <form method="post"
-                                            action="{{ url_for('main.deletar_drone', drone_id=d.id) }}"
-                                            onsubmit="return confirm('Excluir o drone {{ d.renomacao }}? Essa ação não pode ser desfeita.');">
-                                        <button type="submit"
-                                                class="btn btn-sm btn-outline-danger"
-                                                data-bs-toggle="tooltip"
-                                                data-bs-placement="top"
-                                                data-bs-title="Excluir drone">
-                                          <i class="bi bi-trash"></i>
-                                          <span class="d-none d-lg-inline">Excluir</span>
-                                        </button>
-                                      </form>
-                                    {% endif %}
-
-                                  </div>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
+                                            <li><a class="dropdown-item py-2" href="{{ url_for('main.editar_drone', drone_id=d.id) }}"><i class="bi bi-pencil me-2"></i> Editar Dados</a></li>
+                                            {% if is_admin %}
+                                            <li>
+                                                <form method="post" action="{{ url_for('main.enviar_manutencao_drone', drone_id=d.id) }}">
+                                                    <button type="submit" class="dropdown-item py-2 text-warning" {% if d.status == 'Em Manutenção' %}disabled{% endif %}>
+                                                        <i class="bi bi-tools me-2"></i> Enviar Manutenção
+                                                    </button>
+                                                </form>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <form method="post" action="{{ url_for('main.deletar_drone', drone_id=d.id) }}" onsubmit="return confirm('Excluir drone?');">
+                                                    <button type="submit" class="dropdown-item py-2 text-danger"><i class="bi bi-trash me-2"></i> Excluir Drone</button>
+                                                </form>
+                                            </li>
+                                            {% endif %}
+                                        </ul>
+                                    </div>
                                 </td>
                             </tr>
                             {% endfor %}
                         {% else %}
-                            <tr>
-                              <td colspan="6" class="text-center py-4 text-muted">
-                                Nenhum drone cadastrado.
-                              </td>
-                            </tr>
+                            <tr><td colspan="6" class="text-center py-4 text-muted">Nenhum drone cadastrado.</td></tr>
                         {% endif %}
                     </tbody>
                 </table>
@@ -197,65 +280,34 @@
     </div>
 </div>
 
-{# --- TODOS OS MODAIS (baterias) --- #}
-{% for d in drones %}
-  {% for bat in d.baterias %}
-  <div class="modal fade" id="modalBat{{ bat.id }}" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-          <div class="modal-content border-0 rounded-4 shadow">
-              <div class="modal-header bg-warning text-dark border-0">
-                  <h5 class="modal-title fw-bold">
-                    <i class="bi bi-battery-full me-2"></i>Bateria: {{ bat.renomacao }}
-                  </h5>
-                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-              </div>
-
-              <div class="modal-body p-4 text-dark">
-                  <div class="row g-3">
-                      <div class="col-6">
-                          <label class="small text-muted d-block">Modelo</label>
-                          <span class="fw-bold">{{ bat.modelo or 'N/I' }}</span>
-                      </div>
-                      <div class="col-6">
-                          <label class="small text-muted d-block">S/N</label>
-                          <span class="fw-bold">{{ bat.numero_serie or 'N/I' }}</span>
-                      </div>
-
-                      <hr class="my-2 opacity-25">
-
-                      <div class="col-6">
-                          <label class="small text-muted d-block">Ciclos</label>
-                          <span class="badge bg-dark">{{ bat.ciclo }} ciclos</span>
-                      </div>
-
-                      <div class="col-6">
-                          <label class="small text-muted d-block">Drone Atual</label>
-                          <span class="text-primary fw-bold">{{ d.renomacao }}</span>
-                      </div>
-                  </div>
-              </div>
-
-              <div class="modal-footer border-0">
-                  <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">
-                    Fechar
-                  </button>
-                  {% if is_admin %}
-                      <a href="{{ url_for('main.editar_bateria', bateria_id=bat.id) }}" class="btn btn-primary btn-sm">
-                          <i class="bi bi-pencil-fill me-1"></i>Editar Bateria
-                      </a>
-                  {% endif %}
-              </div>
-          </div>
-      </div>
-  </div>
-  {% endfor %}
-{% endfor %}
+{# --- MODAIS DE BATERIA --- #}
+{% for d in drones %}{% for bat in d.baterias %}
+<div class="modal fade" id="modalBat{{ bat.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4 shadow">
+            <div class="modal-header bg-warning text-dark border-0">
+                <h5 class="modal-title fw-bold"><i class="bi bi-battery-full me-2"></i>{{ bat.renomacao }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4 text-dark">
+                <div class="row g-3">
+                    <div class="col-6"><label class="small text-muted d-block">Modelo</label><strong>{{ bat.modelo or 'N/I' }}</strong></div>
+                    <div class="col-6"><label class="small text-muted d-block">Ciclos</label><span class="badge bg-dark">{{ bat.ciclo }} ciclos</span></div>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Fechar</button>
+                {% if is_admin %}<a href="{{ url_for('main.editar_bateria', bateria_id=bat.id) }}" class="btn btn-primary btn-sm">Editar</a>{% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}{% endfor %}
 
 {% endblock %}
 
 {% block scripts %}
 <script>
-  // Tooltips Bootstrap
   document.addEventListener("DOMContentLoaded", () => {
     const els = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     els.map((el) => new bootstrap.Tooltip(el));
