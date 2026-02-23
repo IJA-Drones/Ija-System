@@ -4920,7 +4920,6 @@ def cadastrar_equipes():
         pilotos=pilotos_db,
         regioes=regioes_lista
     )
-
 # -------------------------------------------------------------
 # LISTAR EQUIPES (admin e uvis) 
 # -------------------------------------------------------------
@@ -4968,7 +4967,8 @@ def listar_equipes():
     # Query base (sem JOIN/DISTINCT)
     # -----------------------------
     query = Equipe.query.options(
-        db.selectinload(Equipe.membros).selectinload(EquipePiloto.piloto)
+        db.selectinload(Equipe.membros).selectinload(EquipePiloto.piloto),
+        db.selectinload(Equipe.equipamentos),  # ✅ TRAZ equipamentos da equipe (inclui drones/baterias/etc)
     )
 
     # -----------------------------
@@ -5207,9 +5207,9 @@ def listar_equipes():
         equipes=equipes,
         filters=filters,
         is_admin=(tipo == "admin"),
-        is_editable=is_editable, 
+        is_editable=is_editable,
         tipo_usuario=tipo,
-    )
+    )    
 # -------------------------------------------------------------
 # EDITAR EQUIPE (admin)
 # -------------------------------------------------------------
