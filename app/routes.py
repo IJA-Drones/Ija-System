@@ -4618,8 +4618,6 @@ def piloto_os():
     google_maps_key = os.getenv("KEY_API_GOOGLE_MAPS") or current_app.config.get("GOOGLE_MAPS_API_KEY", "")
     status_ok = ["APROVADO", "APROVADO COM RECOMENDAÇÕES", "APROVADA", "APROVADA COM RECOMENDAÇÕES"]
 
-    # ✅ pega o vínculo do piloto com uma equipe ATIVA
-    # prioridade: papel "piloto" (titular) primeiro, depois "auxiliar"
     vinculo = (
         EquipePiloto.query
         .join(Equipe, Equipe.id == EquipePiloto.equipe_id)
@@ -4647,14 +4645,14 @@ def piloto_os():
             pilot_team_papel=None,
             google_maps_key=google_maps_key,
             drones_equipe=[],
-            baterias_equipe=[]
+            baterias_equipe=[],
+            veiculos_equipe=[],
         )
 
     pilot_team_nome = vinculo.equipe.nome_equipe if vinculo.equipe else None
     pilot_team_regiao = vinculo.equipe.regiao if vinculo.equipe else None
     pilot_team_papel = (vinculo.papel or "").lower()
 
-    # ✅ DRONES vinculados à equipe ativa do piloto
     drones_equipe = (
         Drones.query
         .options(joinedload(Drones.equipe))
@@ -4663,7 +4661,6 @@ def piloto_os():
         .all()
     )
 
-    # ✅ (opcional) BATERIAS vinculadas aos DRONES dessa equipe
     baterias_equipe = (
         Baterias.query
         .join(Drones, Baterias.drone_id == Drones.id)
@@ -4672,7 +4669,14 @@ def piloto_os():
         .all()
     )
 
-    # ✅ AGORA a OS vem por EQUIPE (não por piloto_id)
+    # ✅ VEÍCULOS vinculados à equipe ativa do piloto
+    veiculos_equipe = (
+        Veiculos.query
+        .filter(Veiculos.equipe_id == vinculo.equipe_id)
+        .order_by(Veiculos.operacao.asc(), Veiculos.modelo.asc())
+        .all()
+    )
+
     query = (
         Solicitacao.query
         .options(
@@ -4685,8 +4689,7 @@ def piloto_os():
         )
     )
 
-    # filtros existentes (seu helper)
-    filtro_data = request.args.get("data")  # ex: 2026-01
+    filtro_data = request.args.get("data")
     uvis_id = request.args.get("uvis_id")
     query = aplicar_filtros_base(query, filtro_data, uvis_id)
 
@@ -4706,8 +4709,13 @@ def piloto_os():
         pilot_team_papel=pilot_team_papel,
         google_maps_key=google_maps_key,
         drones_equipe=drones_equipe,
-        baterias_equipe=baterias_equipe
+        baterias_equipe=baterias_equipe,
+        veiculos_equipe=veiculos_equipe,  # ✅ novo
     )
+
+
+
+
 @bp.route('/piloto/os/<int:os_id>/concluir', methods=['POST'])
 @login_required
 @roles_required('piloto')
@@ -7935,3 +7943,68 @@ def deletar_veiculo(veiculo_id):
         flash(f"Erro ao remover: {str(e)}", "danger")
 
     return redirect(url_for("main.listar_veiculos"))
+
+    from flask import render_template, request, redirect, url_for, flash, abort
+from flask_login import login_required, current_user
+from app import db
+from app.models import Veiculos
+
+
+@bp.route("/piloto/veiculos", methods=["GET"], endpoint="piloto_veiculos")
+@login_required
+@roles_required("piloto")
+def piloto_veiculos():
+    # nome do piloto logado (no seu model Usuario, nome_uvis é obrigatório e no cadastro do piloto você grava nome_piloto ali)
+    nome_piloto = (getattr(current_user, "nome_uvis", None) or "").strip()
+
+    if not nome_piloto:
+        flash("Seu usuário piloto está sem nome vinculado. Contate o administrador.", "warning")
+        return render_template("piloto_veiculos.html", veiculos=[])
+
+    veiculos = (
+        Veiculos.query
+        .filter(db.func.lower(Veiculos.responsavel) == nome_piloto.lower())
+        .order_by(Veiculos.operacao.asc(), Veiculos.modelo.asc())
+        .all()
+    )
+
+    return render_template("piloto_veiculos.html", veiculos=veiculos)
+
+
+@bp.route("/piloto/veiculos/<int:veiculo_id>/km", methods=["POST"], endpoint="piloto_atualizar_km_veiculo")
+@login_required
+@roles_required("piloto")
+def piloto_atualizar_km_veiculo(veiculo_id):
+    nome_piloto = (getattr(current_user, "nome_uvis", None) or "").strip()
+    if not nome_piloto:
+        abort(403)
+
+    v = Veiculos.query.get_or_404(veiculo_id)
+
+    # 🔒 Segurança: só pode editar se ele for o responsável
+    if (v.responsavel or "").strip().lower() != nome_piloto.lower():
+        abort(403)
+
+    km_raw = (request.form.get("km_atual") or "").strip().replace(".", "").replace(",", ".")
+    if not km_raw:
+        flash("Informe o KM atual.", "warning")
+        return redirect(url_for("main.piloto_veiculos"))
+
+    try:
+        km = float(km_raw)
+        if km < 0:
+            raise ValueError()
+    except ValueError:
+        flash("KM atual inválido. Use apenas números.", "warning")
+        return redirect(url_for("main.piloto_veiculos"))
+
+    v.km_atual = km
+
+    try:
+        db.session.commit()
+        flash(f"KM atualizado para {km:.0f} no veículo {v.modelo} ({v.placa}).", "success")
+    except Exception:
+        db.session.rollback()
+        flash("Erro ao salvar o KM. Tente novamente.", "danger")
+
+    return redirect(url_for("main.piloto_veiculos"))
