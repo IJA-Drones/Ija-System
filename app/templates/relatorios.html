@@ -140,33 +140,33 @@
 
     {# --- Cabeçalho e Bloco de Exportação --- #}
     <div class="rel-header mb-4">
-  <div class="rel-title">
-    <h2 class="m-0 fw-bold">
-      <i class="bi bi-bar-chart-fill me-2 text-primary"></i> Relatórios
-    </h2>
-  </div>
+        <div class="rel-title">
+            <h2 class="m-0 fw-bold">
+            <i class="bi bi-bar-chart-fill me-2 text-primary"></i> Relatórios
+            </h2>
+        </div>
 
-  <div class="rel-actions">
-    <form method="GET" action="{{ url_for('main.exportar_relatorio_pdf') }}" class="form-exportar p-0 m-0">
-      <input type="hidden" name="mes" value="{{ mes_selecionado }}">
-      <input type="hidden" name="ano" value="{{ ano_selecionado }}">
-      <input type="hidden" name="uvis_id" value="{{ uvis_id_selecionado }}">
-      <button type="submit" class="btn btn-danger bt-sm" title="Exportar PDF">
-        <i class="bi bi-file-earmark-pdf-fill"></i>
-        <span>Exportar PDF</span>
-      </button>
-    </form>
+        <div class="rel-actions d-flex gap-2 mb-3">
+            <form method="GET" action="{{ url_for('main.exportar_relatorio_pdf') }}" class="form-exportar p-0 m-0 d-grid" style="width: 180px;">
+            <input type="hidden" name="mes" value="{{ mes_selecionado }}">
+            <input type="hidden" name="ano" value="{{ ano_selecionado }}">
+            <input type="hidden" name="uvis_id" value="{{ uvis_id_selecionado }}">
+            <button type="submit" class="btn btn-danger d-flex align-items-center justify-content-center gap-2" title="Exportar PDF">
+                <i class="bi bi-file-earmark-pdf-fill"></i>
+                <span>Exportar PDF</span>
+            </button>
+            </form>
 
-    <form method="GET" action="{{ url_for('main.exportar_relatorio_excel') }}" class="form-exportar p-0 m-0">
-      <input type="hidden" name="mes" value="{{ mes_selecionado }}">
-      <input type="hidden" name="ano" value="{{ ano_selecionado }}">
-      <input type="hidden" name="uvis_id" value="{{ uvis_id_selecionado }}">
-      <button type="submit" class="btn btn-success bt-sm" title="Exportar Excel">
-        <i class="bi bi-file-earmark-excel-fill"></i>
-        <span>Exportar Excel</span>
-      </button>
-    </form>
-  </div>
+            <form method="GET" action="{{ url_for('main.exportar_relatorio_excel') }}" class="form-exportar p-0 m-0 d-grid" style="width: 180px;">
+            <input type="hidden" name="mes" value="{{ mes_selecionado }}">
+            <input type="hidden" name="ano" value="{{ ano_selecionado }}">
+            <input type="hidden" name="uvis_id" value="{{ uvis_id_selecionado }}">
+            <button type="submit" class="btn btn-secondary d-flex align-items-center justify-content-center gap-2" title="Exportar Excel">
+                <i class="bi bi-file-earmark-excel-fill"></i>
+                <span>Exportar Excel</span>
+            </button>
+            </form>
+        </div>
 </div>
 
 {# --- FILTROS EM "SANFONA" (Accordion) --- #}
