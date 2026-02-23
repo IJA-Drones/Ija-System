@@ -535,14 +535,14 @@ body.dark-mode .dashboard-header .btn-canceladas {
               {# Coluna 3: Status + MODAL (Correção aqui) #}
               <td class="text-center">
                 {% if p.status == 'PENDENTE' %}
-                  <span class="badge bg-secondary text-white">Pendente</span>
+                  <span class="badge bg-secondary text-dark">Pendente</span>
                 
                 {% elif p.status == 'APROVADO' %}
                   <span class="badge bg-success rounded-pill">Aprovado</span>
-                  <div class="small text-success mt-1 fw-bold font-monospace">{{ p.protocolo }}</div>
+                  <div class="small text-dark mt-1 fw-bold font-monospace">{{ p.protocolo }}</div>
                 
                 {% elif p.status == 'APROVADO COM RECOMENDAÇÕES' %}
-                  <span class="badge bg-info text-dark rounded-pill">Aprovado c/ Rec.</span>
+                  <span class="badge bg-recomended text-dark rounded-pill">Aprovado c/ Rec.</span>
                   <div class="small text-dark mt-1 fw-bold font-monospace">{{ p.protocolo }}</div>
                 
                 {% elif p.status == 'NEGADO' %}
@@ -569,7 +569,7 @@ body.dark-mode .dashboard-header .btn-canceladas {
               {# Coluna 4: Ações #}
               <td class="text-end pe-4">
                 <div class="dropdown">
-                  <button class="btn btn-light btn-sm rounded-circle p-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  <button class="btn btn-outline-secondary ms-auto" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi bi-three-dots-vertical"></i>
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end shadow border-0">
