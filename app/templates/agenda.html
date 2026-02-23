@@ -24,34 +24,40 @@
     </h2>
 
       
-    <div class="d-flex gap-2 flex-wrap">
-      {# ✅ Rota do dia: mostra para admin/operario/visualizar (ajuste se
-      quiser) #} {% if current_user.is_authenticated and
-      current_user.tipo_usuario in ["admin", "operario", "visualizar", "uvis"]
-      %}
-      <button id="btnRotaDia" class="btn btn-danger btn-sm">
-        <i class="bi bi-sign-turn-right"></i> Traçar rota do dia
-      </button>
-      {% endif %} {# ✅ Exportar: só admin e visualizar (igual você queria) #}
-      {% if current_user.is_authenticated and current_user.tipo_usuario in
-      ["admin", "visualizar"] %}
-      <a
-        href="{{ url_for('main.agenda_exportar_excel', all=1) }}"
-        class="btn btn-outline-secondary btn-sm"
-        title="Baixar base completa sem filtros"
-      >
-        <i class="bi bi-download"></i>
-        <span>Exportar Tudo</span>
-      </a>
+    <div class="d-flex gap-2 flex-wrap align-items-center">
+      {# ✅ Rota do dia #} 
+      {% if current_user.is_authenticated and current_user.tipo_usuario in ["admin", "operario", "visualizar", "uvis"] %}
+        <div style="width: 180px;">
+          <button id="btnRotaDia" class="btn btn-danger w-100 d-flex align-items-center justify-content-center gap-2" style="height: 38px;">
+            <i class="bi bi-sign-turn-right"></i> 
+            <span>Rota do Dia</span>
+          </button>
+        </div>
+      {% endif %}
 
+      {# ✅ Exportar Tudo #}
+      {% if current_user.is_authenticated and current_user.tipo_usuario in ["admin", "visualizar"] %}
+        {# ✅ Exportar Atual #}
+        <div style="width: 180px;">
           <a href="{{ url_for('main.agenda_exportar_excel', **request.args.to_dict()) }}"
-            class="btn btn-success btn-sm"
+            class="btn btn-success w-100 d-flex align-items-center justify-content-center gap-2" 
+            style="height: 38px;"
             title="Exportar com filtros atuais">
             <i class="bi bi-file-earmark-excel"></i>
             <span>Exportar Atual</span>
           </a>
-        {% endif %}
-      </div>    
+        </div>
+        <div style="width: 180px;">
+          <a href="{{ url_for('main.agenda_exportar_excel', all=1) }}" 
+            class="btn btn-secondary w-100 d-flex align-items-center justify-content-center gap-2" 
+            style="height: 38px;"
+            title="Baixar base completa sem filtros">
+            <i class="bi bi-download"></i>
+            <span>Exportar Tudo</span>
+          </a>
+        </div>
+      {% endif %}
+    </div>
   </div>
 
   {# --- FILTROS DA AGENDA (SANFONA) --- #}
