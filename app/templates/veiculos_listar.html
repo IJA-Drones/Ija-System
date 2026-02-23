@@ -1,0 +1,433 @@
+{% extends "base.html" %}
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<style>
+  .veiculos-wrap { width: 100%; }
+
+  .stat-card {
+    border: 1px solid rgba(0,0,0,.06);
+    border-radius: 18px;
+    box-shadow: 0 10px 22px rgba(0,0,0,.06);
+  }
+
+  .stat-number { font-size: 1.35rem; font-weight: 800; line-height: 1.1; }
+  .stat-label { font-size: .82rem; color: rgba(0,0,0,.55); }
+
+  .table thead th { white-space: nowrap; }
+
+  .badge-soft {
+    border: 1px solid rgba(0,0,0,.08);
+    background: rgba(255,255,255,.7);
+    color: rgba(0,0,0,.78);
+  }
+
+  /* MOBILE: tabela vira cards */
+  @media (max-width: 991.98px) {
+    .container-fluid.py-4 { padding-left: 12px !important; padding-right: 12px !important; }
+
+    .header-row {
+      flex-direction: column;
+      align-items: flex-start !important;
+      gap: 12px;
+    }
+    .header-actions { width: 100%; flex-wrap: wrap; }
+    .header-actions > a { flex: 1 1 48%; justify-content: center; }
+
+    .filters-row .col-md-3,
+    .filters-row .col-md-2,
+    .filters-row .col-md-4,
+    .filters-row .col-md-1 { width: 100%; }
+
+    .veiculos-wrap .table-responsive { overflow-x: visible !important; }
+    .veiculos-wrap table.table thead { display: none; }
+
+    .veiculos-wrap table.table,
+    .veiculos-wrap table.table tbody,
+    .veiculos-wrap table.table tr,
+    .veiculos-wrap table.table td {
+      display: block;
+      width: 100%;
+    }
+
+    .veiculos-wrap table.table tbody tr {
+      margin: 0 0 16px 0 !important;
+      border-radius: 18px !important;
+      overflow: hidden;
+      border: 1px solid rgba(0,0,0,.08);
+      box-shadow: 0 10px 22px rgba(0,0,0,.06);
+      background: #fff;
+    }
+    .veiculos-wrap table.table tbody tr:last-child { margin-bottom: 0 !important; }
+
+    .veiculos-wrap table.table tbody tr td {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 14px !important;
+      border: 0 !important;
+      background: transparent !important;
+      text-align: left !important;
+    }
+    .veiculos-wrap table.table tbody tr td + td {
+      border-top: 1px solid rgba(0,0,0,.06) !important;
+    }
+
+    /* labels */
+    .veiculos-wrap table.table tbody tr td:nth-child(1)::before { content: "ID"; }
+    .veiculos-wrap table.table tbody tr td:nth-child(2)::before { content: "Veículo"; }
+    .veiculos-wrap table.table tbody tr td:nth-child(3)::before { content: "Frota/Operação"; }
+    .veiculos-wrap table.table tbody tr td:nth-child(4)::before { content: "Responsável"; }
+    .veiculos-wrap table.table tbody tr td:nth-child(5)::before { content: "KM Atual"; }
+    .veiculos-wrap table.table tbody tr td:nth-child(6)::before { content: "Próx Revisão"; }
+    .veiculos-wrap table.table tbody tr td:nth-child(7)::before { content: "Falta"; }
+    .veiculos-wrap table.table tbody tr td:nth-child(8)::before { content: "Revisão marcada"; }
+    .veiculos-wrap table.table tbody tr td:nth-child(9)::before { content: "Status"; }
+    .veiculos-wrap table.table tbody tr td:nth-child(10)::before { content: "Ações"; }
+
+    .veiculos-wrap table.table tbody tr td::before {
+      flex: 0 0 140px;
+      max-width: 140px;
+      font-weight: 700;
+      font-size: .82rem;
+      line-height: 1.1;
+      color: rgba(0,0,0,.55);
+      padding-top: 2px;
+    }
+
+    .veiculos-wrap table.table tbody tr td > * {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .actions-col .d-flex { flex-direction: column; width: 100%; }
+    .actions-col .btn { width: 100%; justify-content: center; }
+  }
+
+  /* DARK MODE */
+  @media (max-width: 991.98px) {
+    html.dark-mode .veiculos-wrap table.table tbody tr,
+    body.dark-mode .veiculos-wrap table.table tbody tr {
+      background: #0f1a24 !important;
+      border-color: #233549 !important;
+      box-shadow: 0 14px 30px rgba(0,0,0,.35) !important;
+      color: rgba(255,255,255,.92) !important;
+    }
+    html.dark-mode .veiculos-wrap table.table tbody tr td + td,
+    body.dark-mode .veiculos-wrap table.table tbody tr td + td {
+      border-top-color: #233549 !important;
+    }
+    html.dark-mode .veiculos-wrap table.table tbody tr td::before,
+    body.dark-mode .veiculos-wrap table.table tbody tr td::before {
+      color: rgba(255,255,255,.72) !important;
+    }
+  }
+</style>
+
+<div class="container-fluid py-4" style="max-width: 1200px">
+
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-3 header-row">
+    <div>
+      <h2 class="text-dark mb-1">
+        <i class="bi bi-truck-front-fill me-2 text-primary"></i> Veículos
+      </h2>
+      <p class="text-muted small mb-0">
+        Total: <strong>{{ filters.total }}</strong>
+        {% if filters.q or filters.operacao or filters.frota or filters.status %}
+          <span class="badge bg-filter-custom ms-2">Filtrado</span>
+        {% endif %}
+      </p>
+    </div>
+
+    <div class="d-flex gap-2 header-actions">
+      <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+      {% if is_admin %}
+        <a href="{{ url_for('main.cadastrar_veiculo') }}" class="btn btn-success d-flex align-items-center gap-2">
+          <i class="bi bi-plus-lg"></i> Novo Veículo
+        </a>
+        <a
+        class="btn btn-outline-primary d-flex align-items-center gap-2"
+        href="{{ url_for('main.listar_veiculos',
+                        q=filters.q,
+                        operacao=filters.operacao,
+                        frota=filters.frota,
+                        status=filters.status,
+                        export=1) }}">
+        <i class="bi bi-file-earmark-excel"></i> Exportar Excel
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ---------- Stats (calculados no template) ---------- #}
+  {% set total = veiculos|length %}
+  {% set ns = namespace(atrasados=0, proximos=0, marcados=0) %}
+
+  {% for v in veiculos %}
+    {% if v.revisao_marcada_em %}
+      {% set ns.marcados = ns.marcados + 1 %}
+    {% endif %}
+
+    {% set falt = v.km_restante_revisao %}
+    {% if falt is not none %}
+      {% if falt < 0 %}
+        {% set ns.atrasados = ns.atrasados + 1 %}
+      {% elif falt <= 2000 %}
+        {% set ns.proximos = ns.proximos + 1 %}
+      {% endif %}
+    {% endif %}
+  {% endfor %}
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="stat-card p-3 bg-white">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <div class="stat-label">Total</div>
+            <div class="stat-number">{{ total }}</div>
+          </div>
+          <i class="bi bi-car-front-fill fs-3 text-primary"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="stat-card p-3 bg-white">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <div class="stat-label">Próx. revisão (≤ 2000 km)</div>
+            <div class="stat-number">{{ ns.proximos }}</div>
+          </div>
+          <i class="bi bi-exclamation-triangle-fill fs-3 text-warning"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="stat-card p-3 bg-white">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <div class="stat-label">Atrasados</div>
+            <div class="stat-number">{{ ns.atrasados }}</div>
+          </div>
+          <i class="bi bi-x-octagon-fill fs-3 text-danger"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="stat-card p-3 bg-white">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <div class="stat-label">Revisão marcada</div>
+            <div class="stat-number">{{ ns.marcados }}</div>
+          </div>
+          <i class="bi bi-calendar-check-fill fs-3 text-success"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card shadow-sm rounded-4 mb-4 border-0">
+    <div class="card-body">
+      <form method="GET" action="{{ url_for('main.listar_veiculos') }}">
+        <div class="row g-2 align-items-end filters-row">
+          <div class="col-md-4">
+            <label class="small text-muted mb-1">Busca</label>
+            <input type="text" name="q" value="{{ filters.q or '' }}"
+                   class="form-control form-control-sm"
+                   placeholder="Modelo, placa, responsável...">
+          </div>
+
+          <div class="col-md-2">
+            <label class="small text-muted mb-1">Operação</label>
+            <select name="operacao" class="form-select form-select-sm">
+              <option value="">Todas</option>
+              <option value="PMSP" {% if (filters.operacao or '') == 'PMSP' %}selected{% endif %}>PMSP</option>
+              <option value="AGRO" {% if (filters.operacao or '') == 'AGRO' %}selected{% endif %}>AGRO</option>
+            </select>
+          </div>
+
+          <div class="col-md-2">
+            <label class="small text-muted mb-1">Frota</label>
+            <select name="frota" class="form-select form-select-sm">
+              <option value="">Todas</option>
+              <option value="PROPRIA" {% if (filters.frota or '') == 'PROPRIA' %}selected{% endif %}>PROPRIA</option>
+              <option value="ALUGADA" {% if (filters.frota or '') == 'ALUGADA' %}selected{% endif %}>ALUGADA</option>
+            </select>
+          </div>
+
+          <div class="col-md-2">
+            <label class="small text-muted mb-1">Status</label>
+            <select name="status" class="form-select form-select-sm">
+              <option value="">Todos</option>
+              <option value="Ativo" {% if (filters.status or '') == 'Ativo' %}selected{% endif %}>Ativo</option>
+              <option value="Inativo" {% if (filters.status or '') == 'Inativo' %}selected{% endif %}>Inativo</option>
+              <option value="Em Manutenção" {% if (filters.status or '') == 'Em Manutenção' %}selected{% endif %}>Em Manutenção</option>
+            </select>
+          </div>
+
+          <div class="col-md-2 d-flex gap-2">
+            <button class="btn btn-success btn-sm flex-fill text-nowrap" type="submit">
+              <i class="bi bi-funnel"></i> Filtrar
+            </button>
+
+            {% if filters.q or filters.operacao or filters.frota or filters.status %}
+              <a class="btn btn-outline-secondary btn-sm flex-fill text-nowrap"
+                 href="{{ url_for('main.listar_veiculos') }}">
+                <i class="bi bi-x-lg"></i> Limpar
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="card shadow-sm border-0 rounded-4 overflow-hidden veiculos-wrap">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-3" style="width: 80px">ID</th>
+              <th>Veículo</th>
+              <th>Frota / Operação</th>
+              <th>Responsável</th>
+              <th class="text-end">KM Atual</th>
+              <th class="text-end">Próx Revisão</th>
+              <th>Falta</th>
+              <th>Revisão marcada</th>
+              <th>Status</th>
+              {% if is_admin %}<th class="text-end pe-3" style="width: 210px">Ações</th>{% endif %}
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for v in veiculos %}
+              {% set falt = v.km_restante_revisao %}
+              <tr>
+                <td class="ps-3 text-muted">#{{ v.id }}</td>
+
+                <td>
+                  <div class="fw-semibold">{{ v.modelo }}</div>
+                  <div class="text-muted small">
+                    {{ v.placa }} • {{ v.ano_fabricacao or '-' }}
+                  </div>
+                </td>
+
+                <td>
+                  <div class="d-flex flex-wrap gap-1">
+                    <span class="badge badge-soft">{{ v.frota }}</span>
+                    <span class="badge badge-soft">{{ v.operacao }}</span>
+                  </div>
+                </td>
+
+                <td>
+                  {% if v.responsavel %}
+                    <span class="fw-semibold">{{ v.responsavel }}</span>
+                  {% else %}
+                    <span class="text-muted">-</span>
+                  {% endif %}
+                </td>
+
+                <td class="text-end">
+                  <span class="fw-semibold">{{ '%.0f'|format(v.km_atual or 0) }}</span>
+                </td>
+
+                <td class="text-end">
+                  {% if v.km_prox_revisao is not none %}
+                    <span class="fw-semibold">{{ '%.0f'|format(v.km_prox_revisao) }}</span>
+                  {% else %}
+                    <span class="text-muted">-</span>
+                  {% endif %}
+                </td>
+
+                <td>
+                  {% if falt is none %}
+                    <span class="text-muted">-</span>
+                  {% else %}
+                    {% if falt < 0 %}
+                      <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                        {{ '%.0f'|format(falt) }} km
+                      </span>
+                    {% elif falt <= 2000 %}
+                      <span class="badge bg-warning-subtle text-warning border border-warning-subtle">
+                        {{ '%.0f'|format(falt) }} km
+                      </span>
+                    {% else %}
+                      <span class="badge bg-success-subtle text-success border border-success-subtle">
+                        {{ '%.0f'|format(falt) }} km
+                      </span>
+                    {% endif %}
+                  {% endif %}
+                </td>
+
+                <td>
+                  {% if v.revisao_marcada_em %}
+                    <div class="fw-semibold">{{ v.revisao_marcada_em.strftime('%d/%m/%Y %H:%M') }}</div>
+                    {% if v.revisao_obs %}
+                      <div class="text-muted small text-truncate" style="max-width: 240px;">{{ v.revisao_obs }}</div>
+                    {% endif %}
+                  {% else %}
+                    <span class="text-muted">-</span>
+                  {% endif %}
+                </td>
+
+                <td>
+                  {% if v.status == 'Ativo' %}
+                    <span class="badge bg-success-subtle text-success border border-success-subtle">Ativo</span>
+                  {% elif v.status == 'Em Manutenção' %}
+                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Em Manutenção</span>
+                  {% else %}
+                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">{{ v.status }}</span>
+                  {% endif %}
+                </td>
+
+                {% if is_admin %}
+                  <td class="text-end pe-3 actions-col">
+                    <div class="d-flex gap-2 justify-content-end">
+                      <a class="btn btn-sm btn-success shadow-sm"
+                         href="{{ url_for('main.editar_veiculo', veiculo_id=v.id) }}">
+                        <i class="bi bi-pencil-square"></i> Editar
+                      </a>
+
+                      <form method="POST"
+                            action="{{ url_for('main.deletar_veiculo', veiculo_id=v.id) }}"
+                            class="d-inline form-deletar">
+                        <button class="btn btn-sm btn-danger shadow-sm" type="submit">
+                          <i class="bi bi-trash"></i> Excluir
+                        </button>
+                      </form>
+                    </div>
+                  </td>
+                {% endif %}
+              </tr>
+
+            {% else %}
+              <tr>
+                <td colspan="{% if is_admin %}10{% else %}9{% endif %}" class="text-center py-5 text-muted">
+                  Nenhum veículo cadastrado.
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}novo 

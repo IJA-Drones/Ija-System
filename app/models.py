@@ -360,6 +360,13 @@ class Equipe(db.Model):
         cascade="all, delete-orphan"
     )
 
+    #Relacionamento com os equipamentos (Drones da equipe)
+    equipamentos = db.relationship(
+        "Equipamentos",
+        back_populates="equipe",
+        lazy="select"
+    )
+
     @property
     def piloto_titular(self):
         return next((m.piloto for m in self.membros if m.papel == "piloto"), None)
@@ -411,3 +418,130 @@ class EquipePiloto(db.Model):
         db.Index("ix_equipe_pilotos_piloto", "piloto_id"),
         db.Index("ix_equipe_pilotos_papel", "papel")
     )
+
+
+# -------------------------------------------------------------
+# EQUIPAMENTOS (Drones, Baterias, Veículos)
+# -------------------------------------------------------------
+
+class Equipamentos(db.Model):
+    __tablename__ = "equipamentos"
+
+    id = db.Column(db.Integer, primary_key=True, index=True)
+
+    tipo_equipamento = db.Column(db.String(50), nullable=False, index=True)
+
+    # Status geral (ex: Ativo, Inativo, Em Manutenção)
+    status = db.Column(db.String(20), default="Ativo", index=True)
+    
+    modelo = db.Column(db.String(100), nullable=False, index=True)
+
+    # Referente à "RENOMAÇÃO" (ex: PLOA 19, ANDRE 020)
+    renomacao = db.Column(db.String(100), nullable=False, index=True)
+
+    # Dados técnicos gerais (pulverização, monitoramento)
+    categoria = db.Column(db.String(100))
+
+    ano_fabricacao = db.Column(db.Integer)
+    numero_serie = db.Column(db.String(100), unique=True, index=True)
+
+    # Manutenção
+    ultima_manutencao = db.Column(db.Date)
+
+    criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+
+    # ---------------------------------------------------------
+    # VÍNCULOS DE NEGÓCIO
+    # ---------------------------------------------------------
+    
+    # Vínculo com a Equipe (Baterias podem herdar isso através do drone ou ter o seu próprio)
+    equipe_id = db.Column(db.Integer, db.ForeignKey("equipes.id"), nullable=True, index=True)
+    equipe = db.relationship("Equipe", back_populates="equipamentos")
+
+    # Configuração do Polimorfismo do SQLAlchemy
+    __mapper_args__ = {
+        "polymorphic_identity": "equipamentos",
+        "polymorphic_on": tipo_equipamento
+    }    
+
+class Drones(Equipamentos):
+    __tablename__ = 'drones'
+
+    id = db.Column(db.Integer, db.ForeignKey('equipamentos.id'), primary_key=True)
+
+    registro_anatel = db.Column(db.String(50), nullable=False, index=True)
+    registro_anac = db.Column(db.String(50), nullable=False, unique=True, index=True)
+    
+    # pmd (peso máximo de decolagem)
+    pmd_kg = db.Column(db.Float, nullable=False)
+
+    # Um drone possui várias baterias
+    baterias = db.relationship(
+        "Baterias", 
+        back_populates="drone_vinculado", 
+        lazy="select",
+        foreign_keys="[Baterias.drone_id]"
+    )
+
+    __mapper_args__ = {
+        "polymorphic_identity": "drones"
+    }
+
+class Baterias(Equipamentos):
+    __tablename__ = 'baterias'
+
+    id = db.Column(db.Integer, db.ForeignKey('equipamentos.id'), primary_key=True)
+
+    ciclo = db.Column(db.Integer, default=0)
+
+    # Vínculo específico: a qual Drone essa bateria pertence?
+    drone_id = db.Column(db.Integer, db.ForeignKey("drones.id"), nullable=True, index=True)
+    drone_vinculado = db.relationship(
+        "Drones", 
+        back_populates="baterias",
+        foreign_keys=[drone_id]
+    )
+
+    __mapper_args__ = {
+        "polymorphic_identity": "baterias"
+    }
+
+class Veiculos(Equipamentos):
+    __tablename__ = "veiculos"
+
+    id = db.Column(db.Integer, db.ForeignKey("equipamentos.id"), primary_key=True)
+
+    # PLANILHA
+    # FROTA: PROPRIA | ALUGADA
+    frota = db.Column(db.String(20), nullable=False, index=True)
+
+    # OPERAÇÃO: PMSP | AGRO (ou outras no futuro)
+    operacao = db.Column(db.String(30), nullable=False, index=True)
+
+    # Placa do veículo
+    placa = db.Column(db.String(10), nullable=False, unique=True, index=True)
+
+    # Responsável pelo veículo
+    responsavel = db.Column(db.String(120), index=True)
+
+    # KM atual e próxima revisão (em KM)
+    km_atual = db.Column(db.Float, default=0, nullable=False)
+    km_prox_revisao = db.Column(db.Float, nullable=True)
+
+    # Campo opcional para registrar observações tipo "MARCADO 06/02 09:30"
+    revisao_marcada_em = db.Column(db.DateTime, nullable=True, index=True)
+    revisao_obs = db.Column(db.String(255))
+
+    __mapper_args__ = {
+        "polymorphic_identity": "veiculos"
+    }
+
+    @property
+    def km_restante_revisao(self):
+        """Se km_prox_revisao estiver preenchido, retorna quanto falta (pode ser negativo)."""
+        if self.km_prox_revisao is None:
+            return None
+        try:
+            return float(self.km_prox_revisao) - float(self.km_atual or 0)
+        except Exception:
+            return None

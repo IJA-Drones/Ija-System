@@ -16,25 +16,33 @@
         <h2 class="text-dark"><i class="bi bi-shield-lock-fill me-2 text-primary"></i> Painel de Gestão</h2>
 
         {# BOTÕES EXPORTAR #}
-        <div class="d-flex gap-2">
-            {% if current_user.tipo_usuario in ['admin', 'visualizar'] %}
-            <form method="GET" action="{{ url_for('main.exportar_excel') }}" class="form-exportar p-0 m-0">
+        {% if current_user.tipo_usuario in ['admin', 'visualizar'] %}
+        <div class="d-flex gap-2 align-items-center">
+            <div style="width: 180px;">
+                <a href="{{ url_for('main.novo') }}" class="btn btn-success shadow-sm w-100 d-flex align-items-center justify-content-center gap-2" style="height: 38px;">
+                    <i class="bi bi-plus-lg"></i> 
+                    <span>Nova Solicitação</span>
+                </a>
+            </div>
+
+            <form method="GET" action="{{ url_for('main.exportar_excel') }}" class="p-0 m-0" style="width: 180px;">
                 <input type="hidden" name="status" value="{{ request.args.get('status', '') }}">
                 <input type="hidden" name="unidade" value="{{ request.args.get('unidade', '') }}">
                 <input type="hidden" name="regiao" value="{{ request.args.get('regiao', '') }}">
-                <a href="{{ url_for('main.novo') }}" class="btn btn-success shadow-sm">
-                    <i class="bi bi-plus-lg"></i> Nova Solicitação
-                </a>
-                <a href="{{ url_for('main.admin_canceladas') }}" class="btn btn-outline-dark shadow-sm">
-                <i class="bi bi-x-circle"></i> Canceladas
-                </a>
-                <button type="submit" class="btn btn-success shadow-sm">
+                <button type="submit" class="btn btn-secondary shadow-sm w-100 d-flex align-items-center justify-content-center gap-2" style="height: 38px;">
                     <i class="bi bi-file-earmark-excel-fill"></i> 
-                    <span class="d-none d-md-inline">Exportar Excel</span>
+                    <span>Exportar Excel</span>
                 </button>
             </form>
-            {% endif %}
+
+            <div style="width: 180px;">
+                <a href="{{ url_for('main.admin_canceladas') }}" class="btn btn-danger shadow-sm w-100 d-flex align-items-center justify-content-center gap-2" style="height: 38px;">
+                    <i class="bi bi-x-circle"></i> 
+                    <span>Canceladas</span>
+                </a>
+            </div>
         </div>
+        {% endif %}
     </div>
 
     {# --- FILTROS EM "SANFONA" (Accordion) --- #}

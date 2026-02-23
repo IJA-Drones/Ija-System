@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1200px;">
+
+  {# --- Cabeçalho --- #}
+  <div class="d-flex align-items-center justify-content-between mb-4">
+      <h2 class="text-dark m-0">
+          <i class="bi bi-drone me-2 text-primary"></i> Editar Drone
+      </h2>
+      <small class="text-muted fw-bold">ID: #{{ drone.id }}</small>
+  </div>
+
+  {# --- Mensagens de Feedback --- #}
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm mb-4 rounded-3" role="alert">
+          <i class="bi bi-info-circle me-2"></i> {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  {# --- Card Principal --- #}
+  <div class="card info status-primary shadow-sm rounded-4 border-0">
+    <div class="card-body p-4">
+
+      <form method="post" novalidate>
+
+        {# SEÇÃO 1: IDENTIFICAÇÃO #}
+        <div class="d-flex align-items-center mb-3">
+            <i class="bi bi-card-heading text-primary me-2 fs-5"></i>
+            <h5 class="m-0 text-primary fw-bold">Identificação</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-tag-fill me-1 text-primary"></i> Modelo *
+            </label>
+            <input
+              type="text"
+              class="form-control {% if errors.get('modelo') %}is-invalid{% endif %}"
+              name="modelo"
+              value="{{ form.get('modelo', drone.modelo) }}"
+              required
+            />
+            {% if errors.get('modelo') %}
+              <div class="invalid-feedback">{{ errors.get('modelo') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-pen-fill me-1 text-primary"></i> Renomação *
+            </label>
+            <input
+              type="text"
+              class="form-control {% if errors.get('renomacao') %}is-invalid{% endif %}"
+              name="renomacao"
+              value="{{ form.get('renomacao', drone.renomacao) }}"
+              required
+            />
+            {% if errors.get('renomacao') %}
+              <div class="invalid-feedback">{{ errors.get('renomacao') }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-activity me-1 text-primary"></i> Status
+            </label>
+            {% set st = form.get('status', drone.status) %}
+            <select name="status" class="form-select">
+              <option value="Ativo" {{ 'selected' if st=='Ativo' else '' }}>Ativo</option>
+              <option value="Inativo" {{ 'selected' if st=='Inativo' else '' }}>Inativo</option>
+              <option value="Em Manutenção" {{ 'selected' if st=='Em Manutenção' else '' }}>Em Manutenção</option>
+            </select>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-bookmark-fill me-1 text-primary"></i> Categoria
+            </label>
+            {% set cat = form.get('categoria', drone.categoria) %}
+            <select name="categoria" class="form-select">
+              <option value="">— Selecione —</option>
+              <option value="Pulverização" {{ 'selected' if cat=='Pulverização' else '' }}>Pulverização</option>
+              <option value="Monitoramento" {{ 'selected' if cat=='Monitoramento' else '' }}>Monitoramento</option>
+            </select>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-calendar3 me-1 text-primary"></i> Ano de Fabricação
+            </label>
+            <input
+              type="number"
+              class="form-control {% if errors.get('ano_fabricacao') %}is-invalid{% endif %}"
+              name="ano_fabricacao"
+              value="{{ form.get('ano_fabricacao', drone.ano_fabricacao) }}"
+              min="1900"
+              max="2100"
+            />
+            {% if errors.get('ano_fabricacao') %}
+              <div class="invalid-feedback">{{ errors.get('ano_fabricacao') }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <hr class="text-muted opacity-25 my-4">
+
+        {# SEÇÃO 2: REGISTROS #}
+        <div class="d-flex align-items-center mb-3">
+            <i class="bi bi-patch-check-fill text-primary me-2 fs-5"></i>
+            <h5 class="m-0 text-primary fw-bold">Registros</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-shield-lock-fill me-1 text-primary"></i> Registro ANATEL *
+            </label>
+            <input
+              type="text"
+              class="form-control {% if errors.get('registro_anatel') %}is-invalid{% endif %}"
+              name="registro_anatel"
+              value="{{ form.get('registro_anatel', drone.registro_anatel) }}"
+              required
+            />
+            {% if errors.get('registro_anatel') %}
+              <div class="invalid-feedback">{{ errors.get('registro_anatel') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-shield-check me-1 text-primary"></i> Registro ANAC *
+            </label>
+            <input
+              type="text"
+              class="form-control {% if errors.get('registro_anac') %}is-invalid{% endif %}"
+              name="registro_anac"
+              value="{{ form.get('registro_anac', drone.registro_anac) }}"
+              required
+            />
+            {% if errors.get('registro_anac') %}
+              <div class="invalid-feedback">{{ errors.get('registro_anac') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-upc-scan me-1 text-primary"></i> Número de Série
+            </label>
+            <input
+              type="text"
+              class="form-control {% if errors.get('numero_serie') %}is-invalid{% endif %}"
+              name="numero_serie"
+              value="{{ form.get('numero_serie', drone.numero_serie) }}"
+              placeholder="Único (se informado)"
+            />
+            {% if errors.get('numero_serie') %}
+              <div class="invalid-feedback">{{ errors.get('numero_serie') }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <hr class="text-muted opacity-25 my-4">
+
+        {# SEÇÃO 3: TÉCNICO & VÍNCULOS #}
+        <div class="d-flex align-items-center mb-3">
+            <i class="bi bi-tools text-primary me-2 fs-5"></i>
+            <h5 class="m-0 text-primary fw-bold">Técnico & Vínculos</h5>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-speedometer2 me-1 text-primary"></i> PMD (kg) *
+            </label>
+            <input
+              type="text"
+              class="form-control {% if errors.get('pmd_kg') %}is-invalid{% endif %}"
+              name="pmd_kg"
+              value="{{ form.get('pmd_kg', drone.pmd_kg) }}"
+              inputmode="decimal"
+              required
+            />
+            {% if errors.get('pmd_kg') %}
+              <div class="invalid-feedback">{{ errors.get('pmd_kg') }}</div>
+            {% endif %}
+            <div class="form-text small">Aceita vírgula ou ponto.</div>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-people-fill me-1 text-primary"></i> Equipe (opcional)
+            </label>
+            {% set chosen = form.get('equipe_id', drone.equipe_id) %}
+            <select name="equipe_id" class="form-select {% if errors.get('equipe_id') %}is-invalid{% endif %}">
+              <option value="">— Sem equipe —</option>
+              {% for e in equipes %}
+                <option value="{{ e.id }}" {{ 'selected' if chosen and chosen|int == e.id else '' }}>
+                  {{ e.nome_equipe }}
+                </option>
+              {% endfor %}
+            </select>
+            {% if errors.get('equipe_id') %}
+              <div class="invalid-feedback">{{ errors.get('equipe_id') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-wrench-adjustable-circle me-1 text-primary"></i> Última Manutenção
+            </label>
+            <input
+              type="date"
+              class="form-control {% if errors.get('ultima_manutencao') %}is-invalid{% endif %}"
+              name="ultima_manutencao"
+              value="{% if form.get('ultima_manutencao') %}{{ form.get('ultima_manutencao') }}{% elif drone.ultima_manutencao %}{{ drone.ultima_manutencao.strftime('%Y-%m-%d') }}{% endif %}"
+            />
+            {% if errors.get('ultima_manutencao') %}
+              <div class="invalid-feedback">{{ errors.get('ultima_manutencao') }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <small class="text-muted d-block mt-4">
+          Campos com <span class="text-danger">*</span> são de preenchimento obrigatório.
+        </small>
+
+        {# BOTÕES DE AÇÃO #}
+        <div class="d-flex justify-content-between align-items-center mt-5">
+          {# Botão Excluir (Lado Esquerdo) #}
+          <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalExcluir">
+            <i class="bi bi-trash me-1"></i> Excluir Drone
+          </button>
+
+          {# Botões de Salvar/Voltar (Lado Direito) #}
+          <div class="d-flex gap-2">
+            <a href="{{ url_for('main.listar_drones') }}" class="btn btn-outline-secondary px-4">
+              Cancelar
+            </a>
+            <button type="submit" class="btn btn-primary px-5 shadow-sm fw-bold">
+              <i class="bi bi-check-lg me-1"></i> Salvar Alterações
+            </button>
+          </div>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>
+
+{# Modal de Confirmação de Exclusão #}
+<div class="modal fade" id="modalExcluir" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content rounded-4 border-0 shadow">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold">Confirmar Exclusão</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        Tem certeza que deseja excluir o drone <strong>{{ drone.renomacao }}</strong>?
+        <div class="text-muted small mt-2">
+          Esta ação não pode ser desfeita. As baterias vinculadas serão apenas desvinculadas do drone.
+        </div>
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+        <form action="{{ url_for('main.deletar_drone', drone_id=drone.id) }}" method="post" class="m-0">
+          <button type="submit" class="btn btn-danger px-4">Confirmar Exclusão</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

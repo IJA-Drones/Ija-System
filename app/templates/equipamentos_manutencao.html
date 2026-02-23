@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1200px">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="text-dark">
+                <i class="bi bi-tools me-2 text-danger"></i>
+                Equipamentos em Manutenção
+            </h2>
+            <p class="text-muted small mb-0">
+                Total em manutenção: <strong class="text-danger">{{ total }}</strong>
+            </p>
+        </div>
+
+        <a href="{{ url_for('main.listar_equipamentos') }}"
+           class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i> Voltar
+        </a>
+    </div>
+
+    <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3">Tipo</th>
+                            <th>Renomação</th>
+                            <th>Modelo</th>
+                            <th>Nº de Série</th>
+                            <th>Equipe</th>
+                            <th>Data Cadastro</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if equipamentos %}
+                            {% for eq in equipamentos %}
+                            <tr>
+                                <td class="ps-3">
+                                    {% if eq.tipo_equipamento == 'drones' %}
+                                        <i class="bi bi-airplane-engines text-primary" title="Drone"></i>
+                                    {% elif eq.tipo_equipamento == 'baterias' %}
+                                        <i class="bi bi-battery-half text-warning" title="Bateria"></i>
+                                    {% else %}
+                                        <i class="bi bi-box text-secondary"></i>
+                                    {% endif %}
+                                </td>
+
+                                <td class="fw-bold text-danger">
+                                    {{ eq.renomacao }}
+                                </td>
+
+                                <td>
+                                    {{ eq.modelo }}
+                                </td>
+
+                                <td class="text-muted small">
+                                    {{ eq.numero_serie or '-' }}
+                                </td>
+
+                                <td>
+                                    {% if eq.equipe %}
+                                        <span class="badge bg-light border text-dark">
+                                            {{ eq.equipe.nome_equipe }}
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted small">—</span>
+                                    {% endif %}
+                                </td>
+
+                                <td class="text-muted small">
+                                    {% if eq.criado_em %}
+                                        {{ eq.criado_em.strftime('%d/%m/%Y') }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">
+                                    Nenhum equipamento em manutenção no momento.
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

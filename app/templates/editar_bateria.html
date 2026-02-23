@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1200px;">
+
+  {# --- Cabeçalho --- #}
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <h2 class="text-dark m-0">
+      <i class="bi bi-battery-charging me-2 text-primary"></i> Editar Bateria
+    </h2>
+    <small class="text-muted fw-bold">ID: #{{ bateria.id }}</small>
+  </div>
+
+  {# --- Mensagens --- #}
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm mb-4 rounded-3" role="alert">
+          <i class="bi bi-info-circle me-2"></i> {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  {# --- Card --- #}
+  <div class="card info status-primary shadow-sm rounded-4 border-0">
+    <div class="card-body p-4">
+
+      <form method="post" novalidate>
+
+        {# SEÇÃO 1: IDENTIFICAÇÃO #}
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-card-heading me-2 fs-5"></i>
+          <h5 class="m-0 fw-bold">Identificação</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-tag-fill me-1"></i> Modelo *
+            </label>
+            <input type="text"
+                   name="modelo"
+                   class="form-control {% if errors.get('modelo') %}is-invalid{% endif %}"
+                   value="{{ form.get('modelo', bateria.modelo) }}"
+                   required>
+            {% if errors.get('modelo') %}
+              <div class="invalid-feedback">{{ errors.get('modelo') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-pen-fill me-1"></i> Renomação *
+            </label>
+            <input type="text"
+                   name="renomacao"
+                   class="form-control {% if errors.get('renomacao') %}is-invalid{% endif %}"
+                   value="{{ form.get('renomacao', bateria.renomacao) }}"
+                   required>
+            {% if errors.get('renomacao') %}
+              <div class="invalid-feedback">{{ errors.get('renomacao') }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-activity me-1"></i> Status
+            </label>
+            {% set st = form.get('status', bateria.status) %}
+            <select name="status" class="form-select">
+              <option value="Ativo" {{ 'selected' if st=='Ativo' else '' }}>Ativo</option>
+              <option value="Inativo" {{ 'selected' if st=='Inativo' else '' }}>Inativo</option>
+              <option value="Em Manutenção" {{ 'selected' if st=='Em Manutenção' else '' }}>Em Manutenção</option>
+            </select>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-bookmark-fill me-1"></i> Categoria (opcional)
+            </label>
+            {% set cat = form.get('categoria', bateria.categoria) %}
+            <select name="categoria" class="form-select">
+              <option value="">— Selecione —</option>
+              <option value="Pulverização" {{ 'selected' if cat=='Pulverização' else '' }}>Pulverização</option>
+              <option value="Monitoramento" {{ 'selected' if cat=='Monitoramento' else '' }}>Monitoramento</option>
+            </select>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-calendar3 me-1"></i> Ano de Fabricação
+            </label>
+            <input type="number"
+                   name="ano_fabricacao"
+                   class="form-control {% if errors.get('ano_fabricacao') %}is-invalid{% endif %}"
+                   value="{{ form.get('ano_fabricacao', bateria.ano_fabricacao) }}"
+                   min="1900" max="2100">
+            {% if errors.get('ano_fabricacao') %}
+              <div class="invalid-feedback">{{ errors.get('ano_fabricacao') }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <hr class="text-muted opacity-25 my-4">
+
+        {# SEÇÃO 2: DADOS TÉCNICOS #}
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-tools me-2 fs-5"></i>
+          <h5 class="m-0 fw-bold">Dados Técnicos</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-upc-scan me-1"></i> Número de Série
+            </label>
+            <input type="text"
+                   name="numero_serie"
+                   class="form-control {% if errors.get('numero_serie') %}is-invalid{% endif %}"
+                   value="{{ form.get('numero_serie', bateria.numero_serie) }}">
+            {% if errors.get('numero_serie') %}
+              <div class="invalid-feedback">{{ errors.get('numero_serie') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-arrow-repeat me-1"></i> Ciclo
+            </label>
+            <input type="number"
+                   name="ciclo"
+                   class="form-control {% if errors.get('ciclo') %}is-invalid{% endif %}"
+                   value="{{ form.get('ciclo', bateria.ciclo) }}"
+                   min="0">
+            {% if errors.get('ciclo') %}
+              <div class="invalid-feedback">{{ errors.get('ciclo') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-wrench-adjustable-circle me-1"></i> Última Manutenção
+            </label>
+            <input type="date"
+                   name="ultima_manutencao"
+                   class="form-control {% if errors.get('ultima_manutencao') %}is-invalid{% endif %}"
+                   value="{{ form.get('ultima_manutencao','') }}">
+            {% if errors.get('ultima_manutencao') %}
+              <div class="invalid-feedback">{{ errors.get('ultima_manutencao') }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <hr class="text-muted opacity-25 my-4">
+
+        {# SEÇÃO 3: VÍNCULO COM DRONE #}
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-link-45deg me-2 fs-5"></i>
+          <h5 class="m-0 fw-bold">Vínculo com Drone</h5>
+        </div>
+
+        <div class="row g-3 mb-2">
+          <div class="col-md-12">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-drone me-1"></i> Drone (opcional)
+            </label>
+
+            {% set chosen = form.get('drone_id', bateria.drone_id) %}
+            <select name="drone_id" class="form-select {% if errors.get('drone_id') %}is-invalid{% endif %}">
+              <option value="">— Em estoque —</option>
+              {% for d in drones %}
+                <option value="{{ d.id }}" {{ 'selected' if chosen and chosen|int == d.id else '' }}>
+                  {{ d.renomacao }} — {{ d.modelo }}
+                </option>
+              {% endfor %}
+            </select>
+
+            {% if errors.get('drone_id') %}
+              <div class="invalid-feedback">{{ errors.get('drone_id') }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        {# BOTÕES #}
+        <div class="d-flex justify-content-between align-items-center mt-5">
+          <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalExcluir">
+            <i class="bi bi-trash me-1"></i> Excluir Bateria
+          </button>
+
+          <div class="d-flex gap-2">
+            <a href="{{ url_for('main.listar_baterias') }}" class="btn btn-outline-secondary px-4">
+              Cancelar
+            </a>
+            <button type="submit" class="btn btn-primary px-5 shadow-sm fw-bold">
+              <i class="bi bi-check-lg me-1"></i> Salvar Alterações
+            </button>
+          </div>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>
+
+{# Modal de Exclusão #}
+<div class="modal fade" id="modalExcluir" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content rounded-4 border-0 shadow">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold">Confirmar Exclusão</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        Tem certeza que deseja excluir a bateria <strong>{{ bateria.renomacao }}</strong>?
+        {% if bateria.drone_vinculado %}
+          <div class="text-muted small mt-2">
+            Ela está vinculada ao drone <strong>{{ bateria.drone_vinculado.renomacao }}</strong> e será desvinculada automaticamente.
+          </div>
+        {% endif %}
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+        <form action="{{ url_for('main.deletar_bateria', bateria_id=bateria.id) }}" method="post" class="m-0">
+          <button type="submit" class="btn btn-danger px-4">Confirmar Exclusão</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

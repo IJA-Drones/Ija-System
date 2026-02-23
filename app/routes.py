@@ -46,7 +46,7 @@ from sqlalchemy.orm import joinedload
 # APP
 # ==========================
 from app import db
-from app.models import Notificacao, Solicitacao, Usuario, Clientes, Pilotos, Equipe, EquipePiloto, EquipeUvis
+from app.models import Notificacao, Solicitacao, Usuario, Clientes, Pilotos, Equipe, EquipePiloto, EquipeUvis, Veiculos
 TZ = ZoneInfo("America/Sao_Paulo")
 print("--- ROTAS CARREGADAS COM SUCESSO ---")
 
@@ -4093,7 +4093,7 @@ def format_phone_br(digits: str) -> str:
     return digits or ""
 
 
-REGIOES = {"NORTE", "SUL", "LESTE", "OESTE", "CENTRO", "SULDESTE"}
+REGIOES = {"NORTE", "SUL", "LESTE", "OESTE", "CENTRO", "SULDESTE", "CENTRO-OESTE"}
 
 
 # -------------------------------------------------------------
@@ -4607,16 +4607,15 @@ def deletar_piloto(piloto_id):
 
     flash("Piloto excluído com sucesso.", "success")
     return redirect(url_for("main.listar_pilotos"))
-
 @bp.route('/piloto/os')
 @login_required
 @roles_required('piloto')
-
 def piloto_os():
     if not current_user.piloto_id:
         flash("Piloto sem vínculo cadastrado.", "danger")
         return redirect(url_for('main.dashboard'))
-    google_maps_key = os.getenv("KEY_API_GOOGLE_MAPS")
+
+    google_maps_key = os.getenv("KEY_API_GOOGLE_MAPS") or current_app.config.get("GOOGLE_MAPS_API_KEY", "")
     status_ok = ["APROVADO", "APROVADO COM RECOMENDAÇÕES", "APROVADA", "APROVADA COM RECOMENDAÇÕES"]
 
     # ✅ pega o vínculo do piloto com uma equipe ATIVA
@@ -4646,19 +4645,39 @@ def piloto_os():
             pilot_team_nome=None,
             pilot_team_regiao=None,
             pilot_team_papel=None,
-            google_maps_key=current_app.config.get("GOOGLE_MAPS_API_KEY", "")
+            google_maps_key=google_maps_key,
+            drones_equipe=[],
+            baterias_equipe=[]
         )
 
     pilot_team_nome = vinculo.equipe.nome_equipe if vinculo.equipe else None
     pilot_team_regiao = vinculo.equipe.regiao if vinculo.equipe else None
     pilot_team_papel = (vinculo.papel or "").lower()
 
+    # ✅ DRONES vinculados à equipe ativa do piloto
+    drones_equipe = (
+        Drones.query
+        .options(joinedload(Drones.equipe))
+        .filter(Drones.equipe_id == vinculo.equipe_id)
+        .order_by(Drones.renomacao.asc())
+        .all()
+    )
+
+    # ✅ (opcional) BATERIAS vinculadas aos DRONES dessa equipe
+    baterias_equipe = (
+        Baterias.query
+        .join(Drones, Baterias.drone_id == Drones.id)
+        .filter(Drones.equipe_id == vinculo.equipe_id)
+        .order_by(Baterias.renomacao.asc())
+        .all()
+    )
+
     # ✅ AGORA a OS vem por EQUIPE (não por piloto_id)
     query = (
         Solicitacao.query
         .options(
             joinedload(Solicitacao.usuario),
-            joinedload(Solicitacao.equipe)  # pra exibir equipe no template se quiser
+            joinedload(Solicitacao.equipe)
         )
         .filter(
             Solicitacao.equipe_id == vinculo.equipe_id,
@@ -4678,16 +4697,17 @@ def piloto_os():
     ).paginate(page=page, per_page=6, error_out=False)
 
     return render_template(
-    "piloto_os.html",
-    pedidos=paginacao.items,
-    paginacao=paginacao,
-    status_ok=status_ok,
-    pilot_team_nome=pilot_team_nome,
-    pilot_team_regiao=pilot_team_regiao,
-    pilot_team_papel=pilot_team_papel,
-    google_maps_key=google_maps_key
-)
-
+        "piloto_os.html",
+        pedidos=paginacao.items,
+        paginacao=paginacao,
+        status_ok=status_ok,
+        pilot_team_nome=pilot_team_nome,
+        pilot_team_regiao=pilot_team_regiao,
+        pilot_team_papel=pilot_team_papel,
+        google_maps_key=google_maps_key,
+        drones_equipe=drones_equipe,
+        baterias_equipe=baterias_equipe
+    )
 @bp.route('/piloto/os/<int:os_id>/concluir', methods=['POST'])
 @login_required
 @roles_required('piloto')
@@ -4900,9 +4920,8 @@ def cadastrar_equipes():
         pilotos=pilotos_db,
         regioes=regioes_lista
     )
-
 # -------------------------------------------------------------
-# LISTAR EQUIPES (admin e uvis) 
+# LISTAR EQUIPES (admin e uvis)
 # -------------------------------------------------------------
 
 @bp.route("/equipes", methods=["GET"], endpoint="listar_equipes")
@@ -4948,7 +4967,8 @@ def listar_equipes():
     # Query base (sem JOIN/DISTINCT)
     # -----------------------------
     query = Equipe.query.options(
-        db.selectinload(Equipe.membros).selectinload(EquipePiloto.piloto)
+        db.selectinload(Equipe.membros).selectinload(EquipePiloto.piloto),
+        db.selectinload(Equipe.equipamentos),  # ✅ traz equipamentos (inclui drones) vinculados à equipe
     )
 
     # -----------------------------
@@ -4980,8 +5000,6 @@ def listar_equipes():
     # -----------------------------
     # Filtros (aplicados após regra)
     # -----------------------------
-    # Para admin/outros, regiao é filtro normal
-    # Para uvis, regiao já está travada (isso só reforça)
     if regiao:
         query = query.filter(Equipe.regiao.ilike(regiao))
 
@@ -5093,7 +5111,9 @@ def listar_equipes():
         ws["A2"].font = Font(color="6B7280")
 
         start_row = 4
-        headers = ["ID", "Equipe", "Região", "Ativa", "Piloto Titular", "Auxiliar", "Criada em", "Descrição"]
+
+        # ✅ NOVO: coluna Drones
+        headers = ["ID", "Equipe", "Região", "Ativa", "Piloto Titular", "Auxiliar", "Drones", "Criada em", "Descrição"]
 
         for col_idx, h in enumerate(headers, start=1):
             cell = ws.cell(row=start_row, column=col_idx, value=h)
@@ -5106,6 +5126,23 @@ def listar_equipes():
             piloto_nome = e.piloto_titular.nome_piloto if e.piloto_titular else ""
             aux_nome = e.piloto_auxiliar.nome_piloto if e.piloto_auxiliar else ""
 
+            # ✅ monta string com drones vinculados (via equipamentos)
+            drones = [eq for eq in (e.equipamentos or []) if getattr(eq, "tipo_equipamento", None) == "drones"]
+
+            # Formato: RENOMAÇÃO (MODELO) [NS: ...]
+            drones_txt_parts = []
+            for d in drones:
+                nome = (getattr(d, "renomacao", None) or getattr(d, "modelo", None) or f"Drone {getattr(d, 'id', '')}").strip()
+                modelo = (getattr(d, "modelo", None) or "").strip()                
+
+                piece = nome
+                if modelo and modelo.lower() not in (nome.lower(),):
+                    piece = f"{nome} ({modelo})"       
+
+                drones_txt_parts.append(piece)
+
+            drones_txt = "; ".join(drones_txt_parts)
+
             values = [
                 e.id,
                 e.nome_equipe,
@@ -5113,6 +5150,7 @@ def listar_equipes():
                 "SIM" if e.ativa else "NÃO",
                 piloto_nome,
                 aux_nome,
+                drones_txt, 
                 e.criada_em.strftime("%d/%m/%Y %H:%M") if e.criada_em else "",
                 e.descricao or "",
             ]
@@ -5120,6 +5158,7 @@ def listar_equipes():
             for col_idx, v in enumerate(values, start=1):
                 cell = ws.cell(row=i, column=col_idx, value=v)
                 cell.border = border
+                # centraliza só ID e Ativa
                 cell.alignment = center_align if col_idx in (1, 4) else text_align
 
         last_row = start_row + len(rows)
@@ -5129,7 +5168,8 @@ def listar_equipes():
         ws.auto_filter.ref = f"A{start_row}:{get_column_letter(last_col)}{max(last_row, start_row)}"
         ws.row_dimensions[start_row].height = 22
 
-        max_widths = {1: 8, 2: 28, 3: 14, 4: 10, 5: 26, 6: 26, 7: 18, 8: 50}
+        # ✅ NOVO: max_widths ajustado (agora são 9 colunas)
+        max_widths = {1: 8, 2: 28, 3: 14, 4: 10, 5: 26, 6: 26, 7: 60, 8: 18, 9: 50}
         for col_idx in range(1, last_col + 1):
             max_len = len(headers[col_idx - 1])
             for r in range(start_row + 1, last_row + 1):
@@ -5170,7 +5210,7 @@ def listar_equipes():
     filters = {
         "q": q,
         "regiao": regiao,
-        "ativa": ativa,  # ✅ para UVIS sempre "1"
+        "ativa": ativa,  # para UVIS sempre "1"
         "piloto_id": piloto_id,
         "auxiliar_id": auxiliar_id,
         "sort": sort,
@@ -5187,7 +5227,7 @@ def listar_equipes():
         equipes=equipes,
         filters=filters,
         is_admin=(tipo == "admin"),
-        is_editable=is_editable, 
+        is_editable=is_editable,
         tipo_usuario=tipo,
     )
 # -------------------------------------------------------------
@@ -6594,3 +6634,1304 @@ def backups_list_page():
         backups=backups,
         is_error=False,
     )
+
+from app.models import Drones , Baterias, Equipamentos
+
+@bp.route('/equipamentos', methods=['GET'])
+@login_required
+def listar_equipamentos():
+    # Usamos o campo 'tipo_equipamento' que definimos no polimorfismo para contar
+    total_drones = Equipamentos.query.filter_by(tipo_equipamento='drones').count()
+    total_baterias = Equipamentos.query.filter_by(tipo_equipamento='baterias').count()
+    em_manutencao = Equipamentos.query.filter_by(status='Em Manutenção').count()
+    
+    # Busca todos para a tabela
+    todos = Equipamentos.query.order_by(Equipamentos.criado_em.desc()).all()
+
+    return render_template('equipamentos_listar.html', 
+                            equipamentos=todos,
+                            total_drones=total_drones,
+                            total_baterias=total_baterias,
+                            em_manutencao=em_manutencao)
+
+@bp.route('/equipamentos/drones', methods=['GET'])
+@login_required
+def listar_drones():
+    # Filtra apenas por Drones
+    drones = Drones.query.all()
+    
+    # Define se o usuário tem permissão de administrador
+    is_admin = current_user.tipo_usuario == 'admin'
+    
+    return render_template('drones_listar.html', 
+                            drones=drones, 
+                            is_admin=is_admin)
+
+@bp.route('/equipamentos/baterias', methods=['GET'])
+@login_required
+def listar_baterias():
+
+    # Busca todas as baterias (para ver estoque geral)
+    baterias = Baterias.query.all()
+    is_admin = current_user.tipo_usuario == 'admin'
+
+    return render_template('baterias_listar.html', baterias=baterias, is_admin=is_admin)
+
+
+# -----------------------------
+# Rota: cadastrar drone
+# -----------------------------
+@bp.route('/drones/cadastrar', methods=['GET', 'POST'], endpoint='cadastrar_drone')
+@login_required
+def cadastrar_drone():
+    # Segurança: só admin
+    if getattr(current_user, "tipo_usuario", None) != "admin":
+        abort(403)
+
+    errors = {}
+    form = {}
+
+    # lista de equipes (opcional no form)
+    equipes = Equipe.query.filter_by(ativa=True).order_by(Equipe.nome_equipe.asc()).all()
+
+    if request.method == "POST":
+        modelo = (request.form.get("modelo") or "").strip()
+        renomacao = (request.form.get("renomacao") or "").strip()
+        categoria = (request.form.get("categoria") or "").strip()
+        status = (request.form.get("status") or "Ativo").strip()
+
+        ano_fabricacao_raw = (request.form.get("ano_fabricacao") or "").strip()
+        numero_serie = (request.form.get("numero_serie") or "").strip()
+
+        registro_anatel = (request.form.get("registro_anatel") or "").strip()
+        registro_anac = (request.form.get("registro_anac") or "").strip()
+
+        pmd_kg_raw = (request.form.get("pmd_kg") or "").strip()
+        equipe_id_raw = (request.form.get("equipe_id") or "").strip()
+        ultima_manutencao_raw = (request.form.get("ultima_manutencao") or "").strip()
+
+        # Mantém valores pra re-render do form
+        form = {
+            "modelo": modelo,
+            "renomacao": renomacao,
+            "categoria": categoria,
+            "status": status,
+            "ano_fabricacao": ano_fabricacao_raw,
+            "numero_serie": numero_serie,
+            "registro_anatel": registro_anatel,
+            "registro_anac": registro_anac,
+            "pmd_kg": pmd_kg_raw,
+            "equipe_id": equipe_id_raw,
+            "ultima_manutencao": ultima_manutencao_raw,
+        }
+
+        # Obrigatórios
+        if not modelo:
+            errors["modelo"] = "Informe o modelo do drone."
+        if not renomacao:
+            errors["renomacao"] = "Informe a renomação do drone."
+        if not registro_anatel:
+            errors["registro_anatel"] = "Informe o registro ANATEL."
+        if not registro_anac:
+            errors["registro_anac"] = "Informe o registro ANAC."
+        if not pmd_kg_raw:
+            errors["pmd_kg"] = "Informe o PMD (kg)."
+
+        # PMD
+        pmd_kg = None
+        if pmd_kg_raw:
+            try:
+                pmd_kg = float(pmd_kg_raw.replace(",", "."))
+                if pmd_kg <= 0:
+                    errors["pmd_kg"] = "PMD deve ser maior que 0."
+            except ValueError:
+                errors["pmd_kg"] = "PMD inválido. Use um número (ex: 25.5)."
+
+        # Ano fabricação (opcional)
+        ano_fabricacao = None
+        if ano_fabricacao_raw:
+            try:
+                ano_fabricacao = int(ano_fabricacao_raw)
+                if ano_fabricacao < 1900 or ano_fabricacao > 2100:
+                    errors["ano_fabricacao"] = "Ano de fabricação inválido."
+            except ValueError:
+                errors["ano_fabricacao"] = "Ano de fabricação inválido."
+
+        # Equipe (opcional)
+        equipe_id = None
+        if equipe_id_raw:
+            try:
+                equipe_id = int(equipe_id_raw)
+                equipe_ok = Equipe.query.filter_by(id=equipe_id, ativa=True).first()
+                if not equipe_ok:
+                    errors["equipe_id"] = "Equipe inválida."
+            except ValueError:
+                errors["equipe_id"] = "Equipe inválida."
+
+        # Última manutenção (opcional)
+        ultima_manutencao = None
+        if ultima_manutencao_raw:
+            try:
+                ultima_manutencao = datetime.strptime(ultima_manutencao_raw, "%Y-%m-%d").date()
+            except ValueError:
+                errors["ultima_manutencao"] = "Data inválida."
+
+        # Unique checks (antes do commit)
+        if registro_anac and not errors.get("registro_anac"):
+            existe_anac = Drones.query.filter_by(registro_anac=registro_anac).first()
+            if existe_anac:
+                errors["registro_anac"] = "Já existe um drone com esse Registro ANAC."
+
+        if numero_serie:
+            # numero_serie é unique em Equipamentos, mas aqui checamos via Drones já ajuda (se quiser 100%,
+            # melhor checar no modelo base Equipamentos também)
+            existe_ns = Drones.query.filter_by(numero_serie=numero_serie).first()
+            if existe_ns:
+                errors["numero_serie"] = "Já existe um equipamento com esse Número de Série."
+
+        if errors:
+            flash("Corrija os campos destacados.", "warning")
+            return render_template("cadastrar_drone.html", form=form, errors=errors, equipes=equipes)
+
+        novo = Drones(
+            tipo_equipamento="drones",  # importante pro polimorfismo
+            status=status,
+            modelo=modelo,
+            renomacao=renomacao,
+            categoria=categoria or None,
+            ano_fabricacao=ano_fabricacao,
+            numero_serie=numero_serie or None,
+            ultima_manutencao=ultima_manutencao,
+
+            equipe_id=equipe_id,
+
+            registro_anatel=registro_anatel,
+            registro_anac=registro_anac,
+            pmd_kg=pmd_kg,
+        )
+
+        try:
+            db.session.add(novo)
+            db.session.commit()
+            flash("Drone cadastrado com sucesso!", "success")
+            # troque para sua rota real de listagem quando existir
+            return redirect(url_for("main.cadastrar_drone"))
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Erro ao cadastrar drone: {str(e)}", "danger")
+            return render_template("cadastrar_drone.html", form=form, errors=errors, equipes=equipes)
+
+    return render_template("cadastrar_drone.html", form=form, errors=errors, equipes=equipes)
+
+# -----------------------------
+# Rota: editar drone
+# -----------------------------
+@bp.route('/drones/<int:drone_id>/editar', methods=['GET', 'POST'], endpoint='editar_drone')
+@login_required
+def editar_drone(drone_id):
+
+    if getattr(current_user, "tipo_usuario", None) != "admin":
+        abort(403)
+
+    drone = Drones.query.get_or_404(drone_id)
+
+    errors = {}
+    form = {}
+
+    equipes = Equipe.query.filter_by(ativa=True).order_by(Equipe.nome_equipe.asc()).all()
+
+    if request.method == "POST":
+
+        modelo = (request.form.get("modelo") or "").strip()
+        renomacao = (request.form.get("renomacao") or "").strip()
+        categoria = (request.form.get("categoria") or "").strip()
+        status = (request.form.get("status") or "Ativo").strip()
+
+        ano_raw = (request.form.get("ano_fabricacao") or "").strip()
+        numero_serie = (request.form.get("numero_serie") or "").strip()
+        registro_anatel = (request.form.get("registro_anatel") or "").strip()
+        registro_anac = (request.form.get("registro_anac") or "").strip()
+        pmd_raw = (request.form.get("pmd_kg") or "").strip()
+        equipe_id_raw = (request.form.get("equipe_id") or "").strip()
+        manut_raw = (request.form.get("ultima_manutencao") or "").strip()
+
+        form = request.form.to_dict()
+
+        # Validações básicas
+        if not modelo:
+            errors["modelo"] = "Informe o modelo."
+        if not renomacao:
+            errors["renomacao"] = "Informe a renomação."
+        if not registro_anatel:
+            errors["registro_anatel"] = "Informe o registro ANATEL."
+        if not registro_anac:
+            errors["registro_anac"] = "Informe o registro ANAC."
+
+        # PMD
+        try:
+            pmd_kg = float(pmd_raw.replace(",", "."))
+            if pmd_kg <= 0:
+                raise ValueError()
+        except:
+            errors["pmd_kg"] = "PMD inválido."
+
+        # Unique ANAC (exceto ele mesmo)
+        existe_anac = Drones.query.filter(
+            Drones.registro_anac == registro_anac,
+            Drones.id != drone.id
+        ).first()
+        if existe_anac:
+            errors["registro_anac"] = "Já existe outro drone com esse ANAC."
+
+        # Unique Número de Série
+        if numero_serie:
+            existe_ns = Drones.query.filter(
+                Drones.numero_serie == numero_serie,
+                Drones.id != drone.id
+            ).first()
+            if existe_ns:
+                errors["numero_serie"] = "Número de série já utilizado."
+
+        if errors:
+            flash("Corrija os campos destacados.", "warning")
+            return render_template("editar_drone.html", drone=drone, form=form, errors=errors, equipes=equipes)
+
+        # Atualiza
+        drone.modelo = modelo
+        drone.renomacao = renomacao
+        drone.categoria = categoria or None
+        drone.status = status
+        drone.numero_serie = numero_serie or None
+        drone.registro_anatel = registro_anatel
+        drone.registro_anac = registro_anac
+        drone.pmd_kg = pmd_kg
+
+        drone.equipe_id = int(equipe_id_raw) if equipe_id_raw else None
+
+        if ano_raw:
+            drone.ano_fabricacao = int(ano_raw)
+        else:
+            drone.ano_fabricacao = None
+
+        if manut_raw:
+            drone.ultima_manutencao = datetime.strptime(manut_raw, "%Y-%m-%d").date()
+        else:
+            drone.ultima_manutencao = None
+
+        db.session.commit()
+        flash("Drone atualizado com sucesso!", "success")
+        return redirect(url_for("main.listar_drones"))
+
+    # GET
+    form = {
+        "modelo": drone.modelo,
+        "renomacao": drone.renomacao,
+        "categoria": drone.categoria,
+        "status": drone.status,
+        "ano_fabricacao": drone.ano_fabricacao,
+        "numero_serie": drone.numero_serie,
+        "registro_anatel": drone.registro_anatel,
+        "registro_anac": drone.registro_anac,
+        "pmd_kg": drone.pmd_kg,
+        "equipe_id": drone.equipe_id,
+        "ultima_manutencao": drone.ultima_manutencao
+    }
+
+    return render_template("editar_drone.html", drone=drone, form=form, errors=errors, equipes=equipes)
+
+# -----------------------------
+# Rota: deletar drone (robusta)
+# -----------------------------
+@bp.route('/drones/<int:drone_id>/deletar', methods=['POST'], endpoint='deletar_drone')
+@login_required
+def deletar_drone(drone_id):
+
+    if getattr(current_user, "tipo_usuario", None) != "admin":
+        abort(403)
+
+    drone = Drones.query.get_or_404(drone_id)
+
+    try:
+        # 1) desvincula baterias antes
+        for bateria in list(drone.baterias):
+            bateria.drone_id = None
+
+        # força o UPDATE das baterias acontecer antes do DELETE do drone
+        db.session.flush()
+
+        # 2) agora remove o drone
+        db.session.delete(drone)
+        db.session.commit()
+
+        flash("Drone removido com sucesso.", "success")
+
+    except Exception as e:
+        db.session.rollback()
+        # importante: logar no console também (Render)
+        print("ERRO AO DELETAR DRONE:", repr(e))
+        flash("Erro ao remover drone. Verifique vínculos (baterias/OS) e tente novamente.", "danger")
+
+    return redirect(url_for("main.listar_drones"))
+
+
+# -----------------------------
+# Rota: cadastrar bateria (vincula a um drone)
+# -----------------------------
+@bp.route('/baterias/cadastrar', methods=['GET', 'POST'], endpoint='cadastrar_bateria')
+@login_required
+def cadastrar_bateria():
+    # Segurança: só admin
+    if getattr(current_user, "tipo_usuario", None) != "admin":
+        abort(403)
+
+    errors = {}
+    form = {}
+
+    # lista de drones para dropdown
+    drones = Drones.query.order_by(Drones.renomacao.asc()).all()
+
+    # opcional: permitir pré-seleção por querystring ?drone_id=123
+    drone_id_pre = request.args.get("drone_id", type=int)
+
+    if request.method == "POST":
+        modelo = (request.form.get("modelo") or "").strip()
+        renomacao = (request.form.get("renomacao") or "").strip()
+        status = (request.form.get("status") or "Ativo").strip()
+
+        categoria = (request.form.get("categoria") or "").strip()  # opcional
+        ano_raw = (request.form.get("ano_fabricacao") or "").strip()
+        numero_serie = (request.form.get("numero_serie") or "").strip()
+
+        ciclo_raw = (request.form.get("ciclo") or "").strip()
+        drone_id_raw = (request.form.get("drone_id") or "").strip()
+        manut_raw = (request.form.get("ultima_manutencao") or "").strip()
+
+        # mantém dados
+        form = {
+            "modelo": modelo,
+            "renomacao": renomacao,
+            "status": status,
+            "categoria": categoria,
+            "ano_fabricacao": ano_raw,
+            "numero_serie": numero_serie,
+            "ciclo": ciclo_raw,
+            "drone_id": drone_id_raw,
+            "ultima_manutencao": manut_raw,
+        }
+
+        # obrigatórios mínimos
+        if not modelo:
+            errors["modelo"] = "Informe o modelo da bateria."
+        if not renomacao:
+            errors["renomacao"] = "Informe a renomação (ex: BAT-01)."
+
+        # ciclo (opcional, mas se vier tem que ser inteiro >= 0)
+        ciclo = 0
+        if ciclo_raw:
+            try:
+                ciclo = int(ciclo_raw)
+                if ciclo < 0:
+                    errors["ciclo"] = "Ciclo não pode ser negativo."
+            except ValueError:
+                errors["ciclo"] = "Ciclo inválido (use número inteiro)."
+
+        # ano fabricação (opcional)
+        ano_fabricacao = None
+        if ano_raw:
+            try:
+                ano_fabricacao = int(ano_raw)
+                if ano_fabricacao < 1900 or ano_fabricacao > 2100:
+                    errors["ano_fabricacao"] = "Ano de fabricação inválido."
+            except ValueError:
+                errors["ano_fabricacao"] = "Ano de fabricação inválido."
+
+        # ultima manutenção (opcional)
+        ultima_manutencao = None
+        if manut_raw:
+            try:
+                ultima_manutencao = datetime.strptime(manut_raw, "%Y-%m-%d").date()
+            except ValueError:
+                errors["ultima_manutencao"] = "Data inválida."
+
+        # drone_id (opcional)
+        drone_id = None
+        if drone_id_raw:
+            try:
+                drone_id = int(drone_id_raw)
+                d_ok = Drones.query.get(drone_id)
+                if not d_ok:
+                    errors["drone_id"] = "Drone inválido."
+            except ValueError:
+                errors["drone_id"] = "Drone inválido."
+
+        # numero_serie é unique em Equipamentos (se preencher, validar duplicidade)
+        if numero_serie:
+            existe_ns = Equipamentos.query.filter_by(numero_serie=numero_serie).first()
+            if existe_ns:
+                errors["numero_serie"] = "Já existe um equipamento com esse Número de Série."
+
+        if errors:
+            flash("Corrija os campos destacados.", "warning")
+            return render_template("cadastrar_bateria.html", form=form, errors=errors, drones=drones)
+
+        nova = Baterias(
+            tipo_equipamento="baterias",
+            status=status,
+            modelo=modelo,
+            renomacao=renomacao,
+            categoria=categoria or None,
+            ano_fabricacao=ano_fabricacao,
+            numero_serie=numero_serie or None,
+            ultima_manutencao=ultima_manutencao,
+            ciclo=ciclo,
+            drone_id=drone_id
+        )
+
+        try:
+            db.session.add(nova)
+            db.session.commit()
+            flash("Bateria cadastrada com sucesso!", "success")
+            # ajuste para sua rota de listagem, se existir
+            return redirect(url_for("main.listar_baterias"))
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Erro ao cadastrar bateria: {str(e)}", "danger")
+            return render_template("cadastrar_bateria.html", form=form, errors=errors, drones=drones)
+
+    # GET: se veio drone_id na querystring, já deixa selecionado
+    if drone_id_pre and Drones.query.get(drone_id_pre):
+        form["drone_id"] = str(drone_id_pre)
+
+    return render_template("cadastrar_bateria.html", form=form, errors=errors, drones=drones)
+
+
+# -----------------------------
+# Rota: editar bateria
+# -----------------------------
+@bp.route('/baterias/<int:bateria_id>/editar', methods=['GET', 'POST'], endpoint='editar_bateria')
+@login_required
+def editar_bateria(bateria_id):
+    if getattr(current_user, "tipo_usuario", None) != "admin":
+        abort(403)
+
+    bateria = Baterias.query.get_or_404(bateria_id)
+    drones = Drones.query.order_by(Drones.renomacao.asc()).all()
+
+    errors = {}
+    form = {}
+
+    if request.method == "POST":
+        modelo = (request.form.get("modelo") or "").strip()
+        renomacao = (request.form.get("renomacao") or "").strip()
+        status = (request.form.get("status") or "Ativo").strip()
+
+        categoria = (request.form.get("categoria") or "").strip()
+        ano_raw = (request.form.get("ano_fabricacao") or "").strip()
+        numero_serie = (request.form.get("numero_serie") or "").strip()
+
+        ciclo_raw = (request.form.get("ciclo") or "").strip()
+        drone_id_raw = (request.form.get("drone_id") or "").strip()
+        manut_raw = (request.form.get("ultima_manutencao") or "").strip()
+
+        form = request.form.to_dict()
+
+        # obrigatórios
+        if not modelo:
+            errors["modelo"] = "Informe o modelo da bateria."
+        if not renomacao:
+            errors["renomacao"] = "Informe a renomação (ex: BAT-01)."
+
+        # ciclo
+        ciclo = bateria.ciclo or 0
+        if ciclo_raw == "":
+            ciclo = 0
+        else:
+            try:
+                ciclo = int(ciclo_raw)
+                if ciclo < 0:
+                    errors["ciclo"] = "Ciclo não pode ser negativo."
+            except ValueError:
+                errors["ciclo"] = "Ciclo inválido (use número inteiro)."
+
+        # ano fabricação (opcional)
+        ano_fabricacao = None
+        if ano_raw:
+            try:
+                ano_fabricacao = int(ano_raw)
+                if ano_fabricacao < 1900 or ano_fabricacao > 2100:
+                    errors["ano_fabricacao"] = "Ano de fabricação inválido."
+            except ValueError:
+                errors["ano_fabricacao"] = "Ano de fabricação inválido."
+
+        # última manutenção (opcional)
+        ultima_manutencao = None
+        if manut_raw:
+            try:
+                ultima_manutencao = datetime.strptime(manut_raw, "%Y-%m-%d").date()
+            except ValueError:
+                errors["ultima_manutencao"] = "Data inválida."
+
+        # drone (opcional)
+        drone_id = None
+        if drone_id_raw:
+            try:
+                drone_id = int(drone_id_raw)
+                d_ok = Drones.query.get(drone_id)
+                if not d_ok:
+                    errors["drone_id"] = "Drone inválido."
+            except ValueError:
+                errors["drone_id"] = "Drone inválido."
+
+        # numero_serie unique em Equipamentos (exceto ele mesmo)
+        if numero_serie:
+            existe_ns = Equipamentos.query.filter(
+                Equipamentos.numero_serie == numero_serie,
+                Equipamentos.id != bateria.id
+            ).first()
+            if existe_ns:
+                errors["numero_serie"] = "Já existe outro equipamento com esse Número de Série."
+
+        if errors:
+            flash("Corrija os campos destacados.", "warning")
+            return render_template("editar_bateria.html", bateria=bateria, form=form, errors=errors, drones=drones)
+
+        # atualiza
+        bateria.modelo = modelo
+        bateria.renomacao = renomacao
+        bateria.status = status
+        bateria.categoria = categoria or None
+        bateria.numero_serie = numero_serie or None
+        bateria.ciclo = ciclo
+        bateria.drone_id = drone_id
+        bateria.ano_fabricacao = ano_fabricacao
+        bateria.ultima_manutencao = ultima_manutencao
+
+        try:
+            db.session.commit()
+            flash("Bateria atualizada com sucesso!", "success")
+            return redirect(url_for("main.listar_baterias"))
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Erro ao atualizar bateria: {str(e)}", "danger")
+            return render_template("editar_bateria.html", bateria=bateria, form=form, errors=errors, drones=drones)
+
+    # GET (preenche form)
+    form = {
+        "modelo": bateria.modelo,
+        "renomacao": bateria.renomacao,
+        "status": bateria.status,
+        "categoria": bateria.categoria,
+        "ano_fabricacao": bateria.ano_fabricacao,
+        "numero_serie": bateria.numero_serie,
+        "ciclo": bateria.ciclo,
+        "drone_id": bateria.drone_id,
+        "ultima_manutencao": bateria.ultima_manutencao.strftime("%Y-%m-%d") if bateria.ultima_manutencao else ""
+    }
+
+    return render_template("editar_bateria.html", bateria=bateria, form=form, errors=errors, drones=drones)
+
+
+# -----------------------------
+# Rota: deletar bateria
+# -----------------------------
+@bp.route('/baterias/<int:bateria_id>/deletar', methods=['POST'], endpoint='deletar_bateria')
+@login_required
+def deletar_bateria(bateria_id):
+    if getattr(current_user, "tipo_usuario", None) != "admin":
+        abort(403)
+
+    bateria = Baterias.query.get_or_404(bateria_id)
+
+    try:
+        # se estiver vinculada, desvincula antes
+        bateria.drone_id = None
+        db.session.flush()
+
+        db.session.delete(bateria)
+        db.session.commit()
+
+        flash("Bateria removida com sucesso.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erro ao remover bateria: {str(e)}", "danger")
+
+    return redirect(url_for("main.listar_baterias"))
+
+# -----------------------------
+# Rota: Equipamentos em Manutenção
+# -----------------------------
+@bp.route("/equipamentos/em-manutencao", methods=["GET"], endpoint="equipamentos_manutencao")
+@login_required
+def equipamentos_manutencao():
+
+    # opcional: restringir só admin
+    # if getattr(current_user, "tipo_usuario", None) != "admin":
+    #     abort(403)
+
+    equipamentos = (
+        Equipamentos.query
+        .filter(Equipamentos.status == "Em Manutenção")
+        .order_by(Equipamentos.criado_em.desc())
+        .all()
+    )
+
+    return render_template(
+        "equipamentos_manutencao.html",
+        equipamentos=equipamentos,
+        total=len(equipamentos)
+    )
+
+@bp.route('/equipamentos/baterias/update_ciclos/<int:id>', methods=['POST'])
+@login_required
+def update_ciclos(id):
+    bateria = Baterias.query.get_or_404(id)
+    data = request.get_json()
+    
+    quantidade = data.get('quantidade', 1)
+    operacao = data.get('operacao', 'add')
+
+    if operacao == 'add':
+        bateria.ciclo += quantidade
+    else:
+        bateria.ciclo = max(0, bateria.ciclo - quantidade) # Impede ciclos negativos
+
+    db.session.commit()
+    
+    # Retorna o novo valor e a cor para o JavaScript atualizar a tela
+    return {
+        'novo_ciclo': bateria.ciclo,
+        'cor': 'bg-danger' if bateria.ciclo > 200 else 'bg-success'
+    }
+
+
+# -----------------------------
+# Rota: enviar drone para manutenção
+# -----------------------------
+@bp.route('/drones/<int:drone_id>/manutencao', methods=['POST'], endpoint='enviar_manutencao_drone')
+@login_required
+def enviar_manutencao_drone(drone_id):
+    # Segurança: só admin
+    if getattr(current_user, "tipo_usuario", None) != "admin":
+        abort(403)
+
+    drone = Drones.query.get_or_404(drone_id)
+
+    try:
+        # já está em manutenção? só avisa e volta
+        if (drone.status or "").strip() == "Em Manutenção":
+            flash("Este drone já está em manutenção.", "warning")
+            return redirect(url_for("main.listar_drones"))
+
+        drone.status = "Em Manutenção"
+
+        # opcional: registra a data (boa prática)
+        drone.ultima_manutencao = date.today()
+
+        db.session.commit()
+        flash(f"Drone {drone.renomacao} enviado para manutenção.", "success")
+
+    except Exception as e:
+        db.session.rollback()
+        print("ERRO AO ENVIAR DRONE PARA MANUTENÇÃO:", repr(e))
+        flash("Erro ao enviar o drone para manutenção.", "danger")
+
+    return redirect(url_for("main.listar_drones"))
+
+
+def get_responsaveis_choices():
+    """
+    Retorna lista de opções para o select de responsável.
+    Inclui:
+      - Todos os Pilotos cadastrados
+      - E marca se ele aparece como 'piloto' e/ou 'auxiliar' em alguma equipe
+    """
+    # Mapa piloto_id -> set(papeis)
+    papeis_por_piloto = {}
+    for row in db.session.query(EquipePiloto.piloto_id, EquipePiloto.papel).all():
+        papeis_por_piloto.setdefault(row.piloto_id, set()).add((row.papel or "").lower())
+
+    pilotos = Pilotos.query.order_by(Pilotos.nome_piloto.asc()).all()
+
+    opts = []
+    for p in pilotos:
+        papeis = papeis_por_piloto.get(p.id, set())
+
+        # etiqueta: se tiver os dois papéis, mostra ambos
+        if "piloto" in papeis and "auxiliar" in papeis:
+            label = f"{p.nome_piloto} (Piloto/Aux)"
+        elif "auxiliar" in papeis:
+            label = f"{p.nome_piloto} (Auxiliar)"
+        else:
+            # default: piloto cadastrado (mesmo que não esteja em equipe ainda)
+            label = f"{p.nome_piloto} (Piloto)"
+
+        # value salvo no banco (string). Salva só o nome limpo.
+        value = p.nome_piloto
+
+        opts.append({"value": value, "label": label})
+
+    return opts
+
+
+from flask import render_template, request, abort, make_response
+from flask_login import login_required, current_user
+from app import db
+from app.models import Veiculos
+from datetime import datetime
+from io import BytesIO
+
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment
+from io import BytesIO
+from datetime import datetime
+
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.utils import get_column_letter
+from openpyxl.utils import get_column_letter
+
+
+from flask import render_template, request, abort, make_response
+from flask_login import login_required, current_user
+from app import db
+from app.models import Veiculos
+from datetime import datetime
+from io import BytesIO
+
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.utils import get_column_letter
+
+
+@bp.route("/veiculos", methods=["GET"], endpoint="listar_veiculos")
+@login_required
+def listar_veiculos():
+    tipo = getattr(current_user, "tipo_usuario", None)
+
+    # Permissões
+    if tipo not in ("admin", "visualizar", "operario", "uvis", "piloto"):
+        abort(403)
+
+    # Filtros
+    q = (request.args.get("q") or "").strip()
+    operacao = (request.args.get("operacao") or "").strip().upper()
+    frota = (request.args.get("frota") or "").strip().upper()
+    status = (request.args.get("status") or "").strip()
+
+    export = (request.args.get("export") or "").strip()  # se vier "1" exporta
+
+    query = Veiculos.query
+
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            db.or_(
+                Veiculos.modelo.ilike(like),
+                Veiculos.placa.ilike(like),
+                Veiculos.responsavel.ilike(like),
+            )
+        )
+
+    if operacao:
+        query = query.filter(Veiculos.operacao == operacao)
+
+    if frota:
+        query = query.filter(Veiculos.frota == frota)
+
+    if status:
+        query = query.filter(Veiculos.status == status)
+
+    veiculos = query.order_by(Veiculos.criado_em.desc()).all()
+
+    # -----------------------------
+    # EXPORTAR EXCEL (design próximo ao print)
+    # -----------------------------
+    if export in ("1", "true", "yes", "xlsx"):
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Veículos"
+
+        # Estilos
+        fill_title = PatternFill("solid", fgColor="FFD966")   # amarelo forte (título)
+        fill_header = PatternFill("solid", fgColor="FFF2CC")  # amarelo claro (cabeçalho)
+        fill_green  = PatternFill("solid", fgColor="C6EFCE")  # verde claro
+        fill_yellow = PatternFill("solid", fgColor="FFEB9C")  # amarelo alerta
+        fill_red    = PatternFill("solid", fgColor="FFC7CE")  # vermelho claro
+        fill_none   = PatternFill()  # sem fill
+
+        font_bold = Font(bold=True)
+        font_title = Font(bold=True, size=12)
+
+        align_center = Alignment(horizontal="center", vertical="center")
+        align_left = Alignment(horizontal="left", vertical="center")
+
+        thin = Side(style="thin", color="000000")
+        border_thin = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+        num_format = '#,##0.00'
+
+        headers = ["MODELO", "ANO", "FROTA", "OPERAÇÃO", "PLACA", "RESPONSAVEL", "KM ATUAL", "PROX REVISAO", "OBS"]
+
+        def write_section(title, rows, start_row):
+            # faixa do título (mescla B..H)
+            ws.merge_cells(start_row=start_row, start_column=2, end_row=start_row, end_column=8)
+            cell = ws.cell(row=start_row, column=2, value=title)
+            cell.font = font_title
+            cell.alignment = align_center
+            cell.fill = fill_title
+
+            # pinta faixa B..H
+            for c in range(2, 9):
+                ws.cell(row=start_row, column=c).fill = fill_title
+                ws.cell(row=start_row, column=c).border = border_thin
+
+            # cabeçalho (A..I)
+            header_row = start_row + 1
+            for col_idx, h in enumerate(headers, start=1):
+                ch = ws.cell(row=header_row, column=col_idx, value=h)
+                ch.font = font_bold
+                ch.alignment = align_center
+                ch.fill = fill_header
+                ch.border = border_thin
+
+            # dados
+            r = header_row + 1
+            for v in rows:
+                falt = v.km_restante_revisao
+
+                obs = ""
+                if v.revisao_marcada_em:
+                    obs = "MARCADO " + v.revisao_marcada_em.strftime("%d/%m %H:%M")
+                elif v.revisao_obs:
+                    obs = v.revisao_obs
+
+                data = [
+                    v.modelo or "",
+                    v.ano_fabricacao or "",
+                    v.frota or "",
+                    v.operacao or "",
+                    v.placa or "",
+                    v.responsavel or "",
+                    float(v.km_atual or 0),
+                    float(v.km_prox_revisao) if v.km_prox_revisao is not None else "",
+                    obs,
+                ]
+
+                for col_idx, value in enumerate(data, start=1):
+                    c = ws.cell(row=r, column=col_idx, value=value)
+                    c.border = border_thin
+                    c.alignment = align_left if col_idx in (1, 5, 6, 9) else align_center
+
+                    # números
+                    if col_idx in (7, 8) and isinstance(value, (int, float)):
+                        c.number_format = num_format
+
+                    # KM ATUAL verde
+                    if col_idx == 7 and isinstance(value, (int, float)):
+                        c.fill = fill_green
+
+                    # PROX REVISAO por status
+                    if col_idx == 8:
+                        if value == "" or falt is None:
+                            c.fill = fill_none
+                        else:
+                            if falt < 0:
+                                c.fill = fill_red
+                            elif falt <= 2000:
+                                c.fill = fill_yellow
+                            else:
+                                c.fill = fill_green
+
+                r += 1
+
+            return r + 2  # respiro
+
+        # separar por operação
+        by_op = {}
+        for v in veiculos:
+            op = (v.operacao or "OUTROS").upper()
+            by_op.setdefault(op, []).append(v)
+
+        # ordem PMSP, AGRO, resto
+        ops_order = []
+        for k in ("PMSP", "AGRO"):
+            if k in by_op:
+                ops_order.append(k)
+        for k in sorted(by_op.keys()):
+            if k not in ops_order:
+                ops_order.append(k)
+
+        current_row = 2
+        for op in ops_order:
+            current_row = write_section(f"VEICULOS {op}", by_op[op], current_row)
+
+        # larguras
+        col_widths = {
+            1: 16,  # MODELO
+            2: 8,   # ANO
+            3: 12,  # FROTA
+            4: 12,  # OPERAÇÃO
+            5: 14,  # PLACA
+            6: 18,  # RESPONSAVEL
+            7: 14,  # KM ATUAL
+            8: 14,  # PROX REVISAO
+            9: 26,  # OBS
+        }
+        for col_idx, w in col_widths.items():
+            ws.column_dimensions[get_column_letter(col_idx)].width = w
+
+        # gerar arquivo
+        file_stream = BytesIO()
+        wb.save(file_stream)
+        file_stream.seek(0)
+
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"veiculos_{ts}.xlsx"
+
+        response = make_response(file_stream.getvalue())
+        response.headers["Content-Type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
+
+    # -----------------------------
+    # RENDER NORMAL
+    # -----------------------------
+    is_admin = (tipo == "admin")
+
+    filters = {
+        "q": q,
+        "operacao": operacao,
+        "frota": frota,
+        "status": status,
+        "total": len(veiculos),
+    }
+
+    return render_template(
+        "veiculos_listar.html",
+        veiculos=veiculos,
+        is_admin=is_admin,
+        filters=filters
+    )
+
+
+@bp.route("/veiculos/cadastrar", methods=["GET", "POST"], endpoint="cadastrar_veiculo")
+@login_required
+def cadastrar_veiculo():
+    if getattr(current_user, "tipo_usuario", None) != "admin":
+        abort(403)
+
+    errors = {}
+    form = {}
+
+    responsaveis = get_responsaveis_choices()
+
+    if request.method == "POST":
+        modelo = (request.form.get("modelo") or "").strip()
+        ano_raw = (request.form.get("ano_fabricacao") or "").strip()
+        frota = (request.form.get("frota") or "").strip().upper()
+        operacao = (request.form.get("operacao") or "").strip().upper()
+        placa = (request.form.get("placa") or "").strip().upper()
+
+        # vem do select
+        responsavel = (request.form.get("responsavel") or "").strip()
+
+        km_atual_raw = (request.form.get("km_atual") or "").strip()
+        km_prox_raw = (request.form.get("km_prox_revisao") or "").strip()
+        status = (request.form.get("status") or "Ativo").strip()
+        revisao_marcada_raw = (request.form.get("revisao_marcada_em") or "").strip()
+        revisao_obs = (request.form.get("revisao_obs") or "").strip()
+
+        form = {
+            "modelo": modelo,
+            "ano_fabricacao": ano_raw,
+            "frota": frota,
+            "operacao": operacao,
+            "placa": placa,
+            "responsavel": responsavel,
+            "km_atual": km_atual_raw,
+            "km_prox_revisao": km_prox_raw,
+            "status": status,
+            "revisao_marcada_em": revisao_marcada_raw,
+            "revisao_obs": revisao_obs,
+        }
+
+        # validações básicas
+        if not modelo:
+            errors["modelo"] = "Informe o modelo."
+        if not ano_raw:
+            errors["ano_fabricacao"] = "Informe o ano."
+        if frota not in ("PROPRIA", "ALUGADA"):
+            errors["frota"] = "Selecione PROPRIA ou ALUGADA."
+        if not operacao:
+            errors["operacao"] = "Informe a operação (ex: PMSP / AGRO)."
+        if not placa:
+            errors["placa"] = "Informe a placa."
+
+        # valida responsável: se preencher, tem que estar na lista
+        if responsavel:
+            valid_values = {r["value"] for r in responsaveis}
+            if responsavel not in valid_values:
+                errors["responsavel"] = "Selecione um responsável válido."
+
+        # ano
+        ano_fabricacao = None
+        if ano_raw:
+            try:
+                ano_fabricacao = int(ano_raw)
+                if ano_fabricacao < 1900 or ano_fabricacao > 2100:
+                    errors["ano_fabricacao"] = "Ano inválido."
+            except ValueError:
+                errors["ano_fabricacao"] = "Ano inválido."
+
+        # km_atual
+        km_atual = 0
+        if km_atual_raw:
+            try:
+                km_atual = float(km_atual_raw.replace(",", "."))
+                if km_atual < 0:
+                    errors["km_atual"] = "KM atual não pode ser negativo."
+            except ValueError:
+                errors["km_atual"] = "KM atual inválido."
+
+        # km_prox_revisao
+        km_prox_revisao = None
+        if km_prox_raw:
+            try:
+                km_prox_revisao = float(km_prox_raw.replace(",", "."))
+                if km_prox_revisao < 0:
+                    errors["km_prox_revisao"] = "Próx revisão inválida."
+            except ValueError:
+                errors["km_prox_revisao"] = "Próx revisão inválida."
+
+        # revisao marcada
+        revisao_marcada_em = None
+        if revisao_marcada_raw:
+            try:
+                revisao_marcada_em = datetime.strptime(revisao_marcada_raw, "%Y-%m-%dT%H:%M")
+            except ValueError:
+                errors["revisao_marcada_em"] = "Data/hora inválida."
+
+        # placa única
+        if placa and not errors.get("placa"):
+            existe = Veiculos.query.filter_by(placa=placa).first()
+            if existe:
+                errors["placa"] = "Já existe um veículo com essa placa."
+
+        if errors:
+            flash("Corrija os campos destacados.", "warning")
+            return render_template(
+                "cadastrar_veiculo.html",
+                form=form,
+                errors=errors,
+                responsaveis=responsaveis
+            )
+
+        novo = Veiculos(
+            tipo_equipamento="veiculos",
+            status=status,
+            modelo=modelo,
+            ano_fabricacao=ano_fabricacao,
+            renomacao=placa,
+            categoria=None,
+            numero_serie=None,
+            ultima_manutencao=None,
+            frota=frota,
+            operacao=operacao,
+            placa=placa,
+            responsavel=responsavel or None,
+            km_atual=km_atual,
+            km_prox_revisao=km_prox_revisao,
+            revisao_marcada_em=revisao_marcada_em,
+            revisao_obs=revisao_obs or None,
+        )
+
+        try:
+            db.session.add(novo)
+            db.session.commit()
+            flash("Veículo cadastrado com sucesso!", "success")
+            return redirect(url_for("main.listar_veiculos"))
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Erro ao cadastrar veículo: {str(e)}", "danger")
+            return render_template(
+                "cadastrar_veiculo.html",
+                form=form,
+                errors=errors,
+                responsaveis=responsaveis
+            )
+
+    # GET
+    return render_template(
+        "cadastrar_veiculo.html",
+        form=form,
+        errors=errors,
+        responsaveis=responsaveis
+    )
+@bp.route("/veiculos/<int:veiculo_id>/editar", methods=["GET", "POST"], endpoint="editar_veiculo")
+@login_required
+def editar_veiculo(veiculo_id):
+    if getattr(current_user, "tipo_usuario", None) != "admin":
+        abort(403)
+
+    v = Veiculos.query.get_or_404(veiculo_id)
+    errors = {}
+
+    responsaveis = get_responsaveis_choices()
+    valid_values = {r["value"] for r in responsaveis}
+
+    if request.method == "POST":
+        modelo = (request.form.get("modelo") or "").strip()
+        ano_raw = (request.form.get("ano_fabricacao") or "").strip()
+        frota = (request.form.get("frota") or "").strip().upper()
+        operacao = (request.form.get("operacao") or "").strip().upper()
+        placa = (request.form.get("placa") or "").strip().upper()
+
+        responsavel = (request.form.get("responsavel") or "").strip()
+
+        km_atual_raw = (request.form.get("km_atual") or "").strip()
+        km_prox_raw = (request.form.get("km_prox_revisao") or "").strip()
+        status = (request.form.get("status") or "Ativo").strip()
+        revisao_marcada_raw = (request.form.get("revisao_marcada_em") or "").strip()
+        revisao_obs = (request.form.get("revisao_obs") or "").strip()
+
+        if not modelo:
+            errors["modelo"] = "Informe o modelo."
+        if not ano_raw:
+            errors["ano_fabricacao"] = "Informe o ano."
+        if frota not in ("PROPRIA", "ALUGADA"):
+            errors["frota"] = "Selecione PROPRIA ou ALUGADA."
+        if not operacao:
+            errors["operacao"] = "Informe a operação."
+        if not placa:
+            errors["placa"] = "Informe a placa."
+
+        if responsavel and responsavel not in valid_values:
+            errors["responsavel"] = "Selecione um responsável válido."
+
+        # ano
+        ano_fabricacao = None
+        if ano_raw:
+            try:
+                ano_fabricacao = int(ano_raw)
+                if ano_fabricacao < 1900 or ano_fabricacao > 2100:
+                    errors["ano_fabricacao"] = "Ano inválido."
+            except ValueError:
+                errors["ano_fabricacao"] = "Ano inválido."
+
+        # km_atual
+        km_atual = v.km_atual or 0
+        if km_atual_raw:
+            try:
+                km_atual = float(km_atual_raw.replace(",", "."))
+                if km_atual < 0:
+                    errors["km_atual"] = "KM atual inválido."
+            except ValueError:
+                errors["km_atual"] = "KM atual inválido."
+
+        # km_prox_revisao
+        km_prox_revisao = None
+        if km_prox_raw:
+            try:
+                km_prox_revisao = float(km_prox_raw.replace(",", "."))
+            except ValueError:
+                errors["km_prox_revisao"] = "Próx revisão inválida."
+
+        # revisao marcada
+        revisao_marcada_em = None
+        if revisao_marcada_raw:
+            try:
+                revisao_marcada_em = datetime.strptime(revisao_marcada_raw, "%Y-%m-%dT%H:%M")
+            except ValueError:
+                errors["revisao_marcada_em"] = "Data/hora inválida."
+
+        # placa única (exceto ele mesmo)
+        if placa and not errors.get("placa"):
+            existe = Veiculos.query.filter(Veiculos.placa == placa, Veiculos.id != v.id).first()
+            if existe:
+                errors["placa"] = "Já existe um veículo com essa placa."
+
+        if errors:
+            flash("Corrija os campos destacados.", "warning")
+            form = {
+                "modelo": modelo,
+                "ano_fabricacao": ano_raw,
+                "frota": frota,
+                "operacao": operacao,
+                "placa": placa,
+                "responsavel": responsavel,
+                "km_atual": km_atual_raw,
+                "km_prox_revisao": km_prox_raw,
+                "status": status,
+                "revisao_marcada_em": revisao_marcada_raw,
+                "revisao_obs": revisao_obs,
+            }
+            return render_template(
+                "cadastrar_veiculo.html",
+                form=form,
+                errors=errors,
+                veiculo=v,
+                responsaveis=responsaveis
+            )
+
+        v.modelo = modelo
+        v.ano_fabricacao = ano_fabricacao
+        v.frota = frota
+        v.operacao = operacao
+        v.placa = placa
+        v.responsavel = responsavel or None
+        v.km_atual = km_atual
+        v.km_prox_revisao = km_prox_revisao
+        v.status = status
+        v.revisao_marcada_em = revisao_marcada_em
+        v.revisao_obs = revisao_obs or None
+        v.renomacao = placa
+
+        try:
+            db.session.commit()
+            flash("Veículo atualizado!", "success")
+            return redirect(url_for("main.listar_veiculos"))
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Erro ao atualizar: {str(e)}", "danger")
+
+    # GET
+    form = {
+        "modelo": v.modelo or "",
+        "ano_fabricacao": str(v.ano_fabricacao or ""),
+        "frota": v.frota or "",
+        "operacao": v.operacao or "",
+        "placa": v.placa or "",
+        "responsavel": v.responsavel or "",
+        "km_atual": str(v.km_atual or ""),
+        "km_prox_revisao": str(v.km_prox_revisao or "") if v.km_prox_revisao is not None else "",
+        "status": v.status or "Ativo",
+        "revisao_marcada_em": v.revisao_marcada_em.strftime("%Y-%m-%dT%H:%M") if v.revisao_marcada_em else "",
+        "revisao_obs": v.revisao_obs or "",
+    }
+    return render_template(
+        "cadastrar_veiculo.html",
+        form=form,
+        errors=errors,
+        veiculo=v,
+        responsaveis=responsaveis
+    )
+
+# -----------------------------
+# DELETAR VEÍCULO
+# -----------------------------
+@bp.route("/veiculos/<int:veiculo_id>/deletar", methods=["POST"], endpoint="deletar_veiculo")
+@login_required
+def deletar_veiculo(veiculo_id):
+    if getattr(current_user, "tipo_usuario", None) != "admin":
+        abort(403)
+
+    v = Veiculos.query.get_or_404(veiculo_id)
+    try:
+        db.session.delete(v)
+        db.session.commit()
+        flash("Veículo removido!", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erro ao remover: {str(e)}", "danger")
+
+    return redirect(url_for("main.listar_veiculos"))

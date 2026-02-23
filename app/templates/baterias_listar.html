@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1200px">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="text-dark">
+        <i class="bi bi-battery-full me-2 text-primary"></i> Inventário de Baterias
+      </h2>
+      <p class="text-muted small mb-0">Controle de ciclos e rastreio de equipamentos.</p>
+    </div>
+    <a href="{{ url_for('main.cadastrar_bateria') }}" class="btn btn-success btn-sm d-flex align-items-center gap-2">
+      <i class="bi bi-plus-lg"></i> Nova Bateria
+    </a>
+  </div>
+
+  <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-3">Bateria</th>
+              <th>n° Série</th>
+              <th>Ciclos</th>
+              <th>Localização / Drone</th>
+              <th>Status</th>
+              <th class="text-center">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+
+            {% for b in baterias %}
+            <tr>
+                <td class="ps-3 fw-bold">{{ b.renomacao }}</td>
+                <td class="text-muted small">{{ b.numero_serie }}</td>
+                
+                <td style="width: 160px;">
+                    <div class="d-flex flex-column" style="max-width: 140px;">
+                        
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="text-muted fw-bold" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Ciclos:</span>
+                            <span class="badge text-success rounded-pill" id="valCiclo{{ b.id }}" style="font-size: 0.75rem;">
+                                {{ b.ciclo }}
+                            </span>
+                        </div>
+
+                        <div class="input-group input-group-sm shadow-sm border rounded-3 overflow-hidden mb-1">
+                            <button class="btn btn-outline-danger border-0 px-2" type="button" onclick="atualizarCiclo({{ b.id }}, 'sub')">
+                                <i class="bi bi-dash-lg text-danger" style="font-size: 0.8rem;"></i>
+                            </button>
+                            
+                            <input type="number" id="inputCiclo{{ b.id }}" 
+                                class="form-control border-0 text-center" 
+                                style="font-size: 0.8rem; height: 30px;" 
+                                placeholder="1">
+
+                            <button class="btn btn-outline-success border-0 px-2" type="button" onclick="atualizarCiclo({{ b.id }}, 'add')">
+                                <i class="bi bi-plus-lg text-success" style="font-size: 0.8rem;"></i>
+                            </button>
+                        </div>
+
+                        <div class="progress rounded-pill" style="height: 4px;">
+                            <div id="progresso{{ b.id }}" 
+                                class="progress-bar {% if b.ciclo > 200 %}bg-danger{% else %}bg-success{% endif %}" 
+                                style="width: {{ (b.ciclo / 2.5) if b.ciclo <= 250 else 100 }}%">
+                            </div>
+                        </div>
+                    </div>
+                </td>
+
+              <td>
+                {% if b.drone_vinculado %}
+                  <span class="badge bg-primary-light text-primary">
+                    <i class="bi bi-airplane me-1"></i>{{ b.drone_vinculado.renomacao }}
+                  </span>
+                {% else %}
+                  <span class="badge text-muted border">Em Estoque</span>
+                {% endif %}
+              </td>
+              <td>
+                <span class="badge {% if b.status == 'Ativo' %}bg-success{% else %}bg-secondary{% endif %}">
+                  {{ b.status }}
+                </span>
+              </td>
+              <td class="text-center">
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary ms-auto" type="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-three-dots-vertical"></i>
+                        </button>
+                        <ul class="dropdown-menu shadow border-0 rounded-3">
+                            <li><a class="dropdown-item py-2" href="{{ url_for('main.editar_bateria', bateria_id=b.id) }}"><i class="bi bi-pencil me-2"></i> Editar Dados</a></li>
+                            {% if is_admin %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form method="post" action="{{ url_for('main.deletar_bateria', bateria_id=b.id) }}" onsubmit="return confirm('Excluir bateria?');">
+                                    <button type="submit" class="dropdown-item py-2 text-danger"><i class="bi bi-trash me-2"></i> Excluir Bateria</button>
+                                </form>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+
+    <script>
+    function atualizarCiclo(id, operacao) {
+        let input = document.getElementById('inputCiclo' + id);
+        let valorInput = parseInt(input.value);
+        
+        // Se não digitar nada, assume 1
+        let quantidade = isNaN(valorInput) ? 1 : valorInput;
+
+        fetch("{{ url_for('main.update_ciclos', id=0) }}".replace('0', id), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': "{{ csrf_token() if csrf_token else '' }}"
+            },
+            body: JSON.stringify({
+                quantidade: quantidade,
+                operacao: operacao
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Atualiza o número na tela
+            document.getElementById('valCiclo' + id).innerText = data.novo_ciclo;
+            
+            // Atualiza a barra de progresso
+            let barra = document.getElementById('progresso' + id);
+            let porcentagem = (data.novo_ciclo / 2.5) > 100 ? 100 : (data.novo_ciclo / 2.5);
+            barra.style.width = porcentagem + '%';
+            
+            // Atualiza a cor
+            barra.classList.remove('bg-success', 'bg-danger');
+            barra.classList.add(data.cor);
+            
+            // Limpa o input
+            input.value = '';
+        })
+        .catch(error => console.error('Erro:', error));
+    }
+    </script>
+{% endblock %}
