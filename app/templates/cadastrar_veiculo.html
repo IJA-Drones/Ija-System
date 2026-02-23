@@ -72,11 +72,21 @@
             {% if errors.placa %}<div class="invalid-feedback">{{ errors.placa }}</div>{% endif %}
           </div>
 
-          <div class="col-md-4">
-            <label class="form-label">Responsável</label>
-            <input name="responsavel" class="form-control"
-                   value="{{ form.responsavel or '' }}" placeholder="Ex: WELLINGTON">
-          </div>
+          <label class="form-label">Responsável</label>
+            <select name="responsavel" class="form-select {% if errors.get('responsavel') %}is-invalid{% endif %}">
+            <option value="">-- Selecione --</option>
+
+            {% for r in responsaveis %}
+                <option value="{{ r.value }}"
+                {% if (form.responsavel or '') == r.value %}selected{% endif %}>
+                {{ r.label }}
+                </option>
+            {% endfor %}
+            </select>
+
+            {% if errors.get('responsavel') %}
+            <div class="invalid-feedback">{{ errors.get('responsavel') }}</div>
+            {% endif %}
 
           <div class="col-md-4">
             <label class="form-label">Status</label>

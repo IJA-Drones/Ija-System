@@ -7338,9 +7338,71 @@ def enviar_manutencao_drone(drone_id):
     return redirect(url_for("main.listar_drones"))
 
 
-# -----------------------------
-# LISTAR VEÍCULOS
-# -----------------------------
+def get_responsaveis_choices():
+    """
+    Retorna lista de opções para o select de responsável.
+    Inclui:
+      - Todos os Pilotos cadastrados
+      - E marca se ele aparece como 'piloto' e/ou 'auxiliar' em alguma equipe
+    """
+    # Mapa piloto_id -> set(papeis)
+    papeis_por_piloto = {}
+    for row in db.session.query(EquipePiloto.piloto_id, EquipePiloto.papel).all():
+        papeis_por_piloto.setdefault(row.piloto_id, set()).add((row.papel or "").lower())
+
+    pilotos = Pilotos.query.order_by(Pilotos.nome_piloto.asc()).all()
+
+    opts = []
+    for p in pilotos:
+        papeis = papeis_por_piloto.get(p.id, set())
+
+        # etiqueta: se tiver os dois papéis, mostra ambos
+        if "piloto" in papeis and "auxiliar" in papeis:
+            label = f"{p.nome_piloto} (Piloto/Aux)"
+        elif "auxiliar" in papeis:
+            label = f"{p.nome_piloto} (Auxiliar)"
+        else:
+            # default: piloto cadastrado (mesmo que não esteja em equipe ainda)
+            label = f"{p.nome_piloto} (Piloto)"
+
+        # value salvo no banco (string). Salva só o nome limpo.
+        value = p.nome_piloto
+
+        opts.append({"value": value, "label": label})
+
+    return opts
+
+
+from flask import render_template, request, abort, make_response
+from flask_login import login_required, current_user
+from app import db
+from app.models import Veiculos
+from datetime import datetime
+from io import BytesIO
+
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment
+from io import BytesIO
+from datetime import datetime
+
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.utils import get_column_letter
+from openpyxl.utils import get_column_letter
+
+
+from flask import render_template, request, abort, make_response
+from flask_login import login_required, current_user
+from app import db
+from app.models import Veiculos
+from datetime import datetime
+from io import BytesIO
+
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.utils import get_column_letter
+
+
 @bp.route("/veiculos", methods=["GET"], endpoint="listar_veiculos")
 @login_required
 def listar_veiculos():
@@ -7355,6 +7417,8 @@ def listar_veiculos():
     operacao = (request.args.get("operacao") or "").strip().upper()
     frota = (request.args.get("frota") or "").strip().upper()
     status = (request.args.get("status") or "").strip()
+
+    export = (request.args.get("export") or "").strip()  # se vier "1" exporta
 
     query = Veiculos.query
 
@@ -7379,9 +7443,161 @@ def listar_veiculos():
 
     veiculos = query.order_by(Veiculos.criado_em.desc()).all()
 
+    # -----------------------------
+    # EXPORTAR EXCEL (design próximo ao print)
+    # -----------------------------
+    if export in ("1", "true", "yes", "xlsx"):
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Veículos"
+
+        # Estilos
+        fill_title = PatternFill("solid", fgColor="FFD966")   # amarelo forte (título)
+        fill_header = PatternFill("solid", fgColor="FFF2CC")  # amarelo claro (cabeçalho)
+        fill_green  = PatternFill("solid", fgColor="C6EFCE")  # verde claro
+        fill_yellow = PatternFill("solid", fgColor="FFEB9C")  # amarelo alerta
+        fill_red    = PatternFill("solid", fgColor="FFC7CE")  # vermelho claro
+        fill_none   = PatternFill()  # sem fill
+
+        font_bold = Font(bold=True)
+        font_title = Font(bold=True, size=12)
+
+        align_center = Alignment(horizontal="center", vertical="center")
+        align_left = Alignment(horizontal="left", vertical="center")
+
+        thin = Side(style="thin", color="000000")
+        border_thin = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+        num_format = '#,##0.00'
+
+        headers = ["MODELO", "ANO", "FROTA", "OPERAÇÃO", "PLACA", "RESPONSAVEL", "KM ATUAL", "PROX REVISAO", "OBS"]
+
+        def write_section(title, rows, start_row):
+            # faixa do título (mescla B..H)
+            ws.merge_cells(start_row=start_row, start_column=2, end_row=start_row, end_column=8)
+            cell = ws.cell(row=start_row, column=2, value=title)
+            cell.font = font_title
+            cell.alignment = align_center
+            cell.fill = fill_title
+
+            # pinta faixa B..H
+            for c in range(2, 9):
+                ws.cell(row=start_row, column=c).fill = fill_title
+                ws.cell(row=start_row, column=c).border = border_thin
+
+            # cabeçalho (A..I)
+            header_row = start_row + 1
+            for col_idx, h in enumerate(headers, start=1):
+                ch = ws.cell(row=header_row, column=col_idx, value=h)
+                ch.font = font_bold
+                ch.alignment = align_center
+                ch.fill = fill_header
+                ch.border = border_thin
+
+            # dados
+            r = header_row + 1
+            for v in rows:
+                falt = v.km_restante_revisao
+
+                obs = ""
+                if v.revisao_marcada_em:
+                    obs = "MARCADO " + v.revisao_marcada_em.strftime("%d/%m %H:%M")
+                elif v.revisao_obs:
+                    obs = v.revisao_obs
+
+                data = [
+                    v.modelo or "",
+                    v.ano_fabricacao or "",
+                    v.frota or "",
+                    v.operacao or "",
+                    v.placa or "",
+                    v.responsavel or "",
+                    float(v.km_atual or 0),
+                    float(v.km_prox_revisao) if v.km_prox_revisao is not None else "",
+                    obs,
+                ]
+
+                for col_idx, value in enumerate(data, start=1):
+                    c = ws.cell(row=r, column=col_idx, value=value)
+                    c.border = border_thin
+                    c.alignment = align_left if col_idx in (1, 5, 6, 9) else align_center
+
+                    # números
+                    if col_idx in (7, 8) and isinstance(value, (int, float)):
+                        c.number_format = num_format
+
+                    # KM ATUAL verde
+                    if col_idx == 7 and isinstance(value, (int, float)):
+                        c.fill = fill_green
+
+                    # PROX REVISAO por status
+                    if col_idx == 8:
+                        if value == "" or falt is None:
+                            c.fill = fill_none
+                        else:
+                            if falt < 0:
+                                c.fill = fill_red
+                            elif falt <= 2000:
+                                c.fill = fill_yellow
+                            else:
+                                c.fill = fill_green
+
+                r += 1
+
+            return r + 2  # respiro
+
+        # separar por operação
+        by_op = {}
+        for v in veiculos:
+            op = (v.operacao or "OUTROS").upper()
+            by_op.setdefault(op, []).append(v)
+
+        # ordem PMSP, AGRO, resto
+        ops_order = []
+        for k in ("PMSP", "AGRO"):
+            if k in by_op:
+                ops_order.append(k)
+        for k in sorted(by_op.keys()):
+            if k not in ops_order:
+                ops_order.append(k)
+
+        current_row = 2
+        for op in ops_order:
+            current_row = write_section(f"VEICULOS {op}", by_op[op], current_row)
+
+        # larguras
+        col_widths = {
+            1: 16,  # MODELO
+            2: 8,   # ANO
+            3: 12,  # FROTA
+            4: 12,  # OPERAÇÃO
+            5: 14,  # PLACA
+            6: 18,  # RESPONSAVEL
+            7: 14,  # KM ATUAL
+            8: 14,  # PROX REVISAO
+            9: 26,  # OBS
+        }
+        for col_idx, w in col_widths.items():
+            ws.column_dimensions[get_column_letter(col_idx)].width = w
+
+        # gerar arquivo
+        file_stream = BytesIO()
+        wb.save(file_stream)
+        file_stream.seek(0)
+
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"veiculos_{ts}.xlsx"
+
+        response = make_response(file_stream.getvalue())
+        response.headers["Content-Type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
+
+    # -----------------------------
+    # RENDER NORMAL
+    # -----------------------------
     is_admin = (tipo == "admin")
 
-    # (Stats ficam no template via namespace)
     filters = {
         "q": q,
         "operacao": operacao,
@@ -7397,9 +7613,7 @@ def listar_veiculos():
         filters=filters
     )
 
-# -----------------------------
-# CADASTRAR VEÍCULO
-# -----------------------------
+
 @bp.route("/veiculos/cadastrar", methods=["GET", "POST"], endpoint="cadastrar_veiculo")
 @login_required
 def cadastrar_veiculo():
@@ -7409,23 +7623,24 @@ def cadastrar_veiculo():
     errors = {}
     form = {}
 
+    responsaveis = get_responsaveis_choices()
+
     if request.method == "POST":
         modelo = (request.form.get("modelo") or "").strip()
         ano_raw = (request.form.get("ano_fabricacao") or "").strip()
         frota = (request.form.get("frota") or "").strip().upper()
         operacao = (request.form.get("operacao") or "").strip().upper()
         placa = (request.form.get("placa") or "").strip().upper()
+
+        # vem do select
         responsavel = (request.form.get("responsavel") or "").strip()
 
         km_atual_raw = (request.form.get("km_atual") or "").strip()
         km_prox_raw = (request.form.get("km_prox_revisao") or "").strip()
-
         status = (request.form.get("status") or "Ativo").strip()
-
         revisao_marcada_raw = (request.form.get("revisao_marcada_em") or "").strip()
         revisao_obs = (request.form.get("revisao_obs") or "").strip()
 
-        # manter valores no form
         form = {
             "modelo": modelo,
             "ano_fabricacao": ano_raw,
@@ -7452,6 +7667,12 @@ def cadastrar_veiculo():
         if not placa:
             errors["placa"] = "Informe a placa."
 
+        # valida responsável: se preencher, tem que estar na lista
+        if responsavel:
+            valid_values = {r["value"] for r in responsaveis}
+            if responsavel not in valid_values:
+                errors["responsavel"] = "Selecione um responsável válido."
+
         # ano
         ano_fabricacao = None
         if ano_raw:
@@ -7472,7 +7693,7 @@ def cadastrar_veiculo():
             except ValueError:
                 errors["km_atual"] = "KM atual inválido."
 
-        # km_prox_revisao (opcional)
+        # km_prox_revisao
         km_prox_revisao = None
         if km_prox_raw:
             try:
@@ -7482,7 +7703,7 @@ def cadastrar_veiculo():
             except ValueError:
                 errors["km_prox_revisao"] = "Próx revisão inválida."
 
-        # revisao marcada (opcional) - formato datetime-local: 2026-02-23T09:30
+        # revisao marcada
         revisao_marcada_em = None
         if revisao_marcada_raw:
             try:
@@ -7498,21 +7719,22 @@ def cadastrar_veiculo():
 
         if errors:
             flash("Corrija os campos destacados.", "warning")
-            return render_template("cadastrar_veiculo.html", form=form, errors=errors)
+            return render_template(
+                "cadastrar_veiculo.html",
+                form=form,
+                errors=errors,
+                responsaveis=responsaveis
+            )
 
         novo = Veiculos(
             tipo_equipamento="veiculos",
             status=status,
-
             modelo=modelo,
             ano_fabricacao=ano_fabricacao,
-
-            # esses campos do Equipamentos não existem na planilha: pode deixar None
-            renomacao=placa,  # 👉 opcional: usar a placa como "renomacao" pra padronizar
+            renomacao=placa,
             categoria=None,
             numero_serie=None,
             ultima_manutencao=None,
-
             frota=frota,
             operacao=operacao,
             placa=placa,
@@ -7531,14 +7753,20 @@ def cadastrar_veiculo():
         except Exception as e:
             db.session.rollback()
             flash(f"Erro ao cadastrar veículo: {str(e)}", "danger")
-            return render_template("cadastrar_veiculo.html", form=form, errors=errors)
+            return render_template(
+                "cadastrar_veiculo.html",
+                form=form,
+                errors=errors,
+                responsaveis=responsaveis
+            )
 
-    return render_template("cadastrar_veiculo.html", form=form, errors=errors)
-
-
-# -----------------------------
-# EDITAR VEÍCULO
-# -----------------------------
+    # GET
+    return render_template(
+        "cadastrar_veiculo.html",
+        form=form,
+        errors=errors,
+        responsaveis=responsaveis
+    )
 @bp.route("/veiculos/<int:veiculo_id>/editar", methods=["GET", "POST"], endpoint="editar_veiculo")
 @login_required
 def editar_veiculo(veiculo_id):
@@ -7548,18 +7776,21 @@ def editar_veiculo(veiculo_id):
     v = Veiculos.query.get_or_404(veiculo_id)
     errors = {}
 
+    responsaveis = get_responsaveis_choices()
+    valid_values = {r["value"] for r in responsaveis}
+
     if request.method == "POST":
         modelo = (request.form.get("modelo") or "").strip()
         ano_raw = (request.form.get("ano_fabricacao") or "").strip()
         frota = (request.form.get("frota") or "").strip().upper()
         operacao = (request.form.get("operacao") or "").strip().upper()
         placa = (request.form.get("placa") or "").strip().upper()
+
         responsavel = (request.form.get("responsavel") or "").strip()
 
         km_atual_raw = (request.form.get("km_atual") or "").strip()
         km_prox_raw = (request.form.get("km_prox_revisao") or "").strip()
         status = (request.form.get("status") or "Ativo").strip()
-
         revisao_marcada_raw = (request.form.get("revisao_marcada_em") or "").strip()
         revisao_obs = (request.form.get("revisao_obs") or "").strip()
 
@@ -7574,6 +7805,10 @@ def editar_veiculo(veiculo_id):
         if not placa:
             errors["placa"] = "Informe a placa."
 
+        if responsavel and responsavel not in valid_values:
+            errors["responsavel"] = "Selecione um responsável válido."
+
+        # ano
         ano_fabricacao = None
         if ano_raw:
             try:
@@ -7583,6 +7818,7 @@ def editar_veiculo(veiculo_id):
             except ValueError:
                 errors["ano_fabricacao"] = "Ano inválido."
 
+        # km_atual
         km_atual = v.km_atual or 0
         if km_atual_raw:
             try:
@@ -7592,6 +7828,7 @@ def editar_veiculo(veiculo_id):
             except ValueError:
                 errors["km_atual"] = "KM atual inválido."
 
+        # km_prox_revisao
         km_prox_revisao = None
         if km_prox_raw:
             try:
@@ -7599,6 +7836,7 @@ def editar_veiculo(veiculo_id):
             except ValueError:
                 errors["km_prox_revisao"] = "Próx revisão inválida."
 
+        # revisao marcada
         revisao_marcada_em = None
         if revisao_marcada_raw:
             try:
@@ -7606,7 +7844,7 @@ def editar_veiculo(veiculo_id):
             except ValueError:
                 errors["revisao_marcada_em"] = "Data/hora inválida."
 
-        # placa única (exceto o próprio registro)
+        # placa única (exceto ele mesmo)
         if placa and not errors.get("placa"):
             existe = Veiculos.query.filter(Veiculos.placa == placa, Veiculos.id != v.id).first()
             if existe:
@@ -7627,7 +7865,13 @@ def editar_veiculo(veiculo_id):
                 "revisao_marcada_em": revisao_marcada_raw,
                 "revisao_obs": revisao_obs,
             }
-            return render_template("cadastrar_veiculo.html", form=form, errors=errors, veiculo=v)
+            return render_template(
+                "cadastrar_veiculo.html",
+                form=form,
+                errors=errors,
+                veiculo=v,
+                responsaveis=responsaveis
+            )
 
         v.modelo = modelo
         v.ano_fabricacao = ano_fabricacao
@@ -7640,8 +7884,6 @@ def editar_veiculo(veiculo_id):
         v.status = status
         v.revisao_marcada_em = revisao_marcada_em
         v.revisao_obs = revisao_obs or None
-
-        # opcional: manter "renomacao" igual placa (pra ficar consistente com o sistema)
         v.renomacao = placa
 
         try:
@@ -7666,8 +7908,13 @@ def editar_veiculo(veiculo_id):
         "revisao_marcada_em": v.revisao_marcada_em.strftime("%Y-%m-%dT%H:%M") if v.revisao_marcada_em else "",
         "revisao_obs": v.revisao_obs or "",
     }
-    return render_template("cadastrar_veiculo.html", form=form, errors=errors, veiculo=v)
-
+    return render_template(
+        "cadastrar_veiculo.html",
+        form=form,
+        errors=errors,
+        veiculo=v,
+        responsaveis=responsaveis
+    )
 
 # -----------------------------
 # DELETAR VEÍCULO
