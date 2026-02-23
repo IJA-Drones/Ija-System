@@ -358,7 +358,7 @@
               <i class="bi bi-gear-fill me-2"></i><span>Equipamentos</span>
             </a> 
           </li>
-          {% if current_user.tipo_usuario == 'admin' %}
+          {% if current_user.tipo_usuario in ['admin', 'operario'] %}
           {# ===================== VEÍCULOS ===================== #}
           <li class="nav-item">
             <button type="button"
