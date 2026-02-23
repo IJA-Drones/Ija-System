@@ -5190,7 +5190,7 @@ def listar_equipes():
     filters = {
         "q": q,
         "regiao": regiao,
-        "ativa": ativa,  # ✅ para UVIS sempre "1"
+        "ativa": ativa,  # para UVIS sempre "1"
         "piloto_id": piloto_id,
         "auxiliar_id": auxiliar_id,
         "sort": sort,
@@ -7282,3 +7282,37 @@ def update_ciclos(id):
         'novo_ciclo': bateria.ciclo,
         'cor': 'bg-danger' if bateria.ciclo > 200 else 'bg-success'
     }
+
+
+# -----------------------------
+# Rota: enviar drone para manutenção
+# -----------------------------
+@bp.route('/drones/<int:drone_id>/manutencao', methods=['POST'], endpoint='enviar_manutencao_drone')
+@login_required
+def enviar_manutencao_drone(drone_id):
+    # Segurança: só admin
+    if getattr(current_user, "tipo_usuario", None) != "admin":
+        abort(403)
+
+    drone = Drones.query.get_or_404(drone_id)
+
+    try:
+        # já está em manutenção? só avisa e volta
+        if (drone.status or "").strip() == "Em Manutenção":
+            flash("Este drone já está em manutenção.", "warning")
+            return redirect(url_for("main.listar_drones"))
+
+        drone.status = "Em Manutenção"
+
+        # opcional: registra a data (boa prática)
+        drone.ultima_manutencao = date.today()
+
+        db.session.commit()
+        flash(f"Drone {drone.renomacao} enviado para manutenção.", "success")
+
+    except Exception as e:
+        db.session.rollback()
+        print("ERRO AO ENVIAR DRONE PARA MANUTENÇÃO:", repr(e))
+        flash("Erro ao enviar o drone para manutenção.", "danger")
+
+    return redirect(url_for("main.listar_drones"))
