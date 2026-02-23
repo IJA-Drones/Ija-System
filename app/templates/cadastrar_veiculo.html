@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1000px">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="text-dark mb-1">
+        <i class="bi bi-truck-front-fill me-2 text-primary"></i>
+        {% if veiculo %}Editar Veículo{% else %}Cadastrar Veículo{% endif %}
+      </h2>
+      <p class="text-muted small mb-0">
+        Preencha os dados conforme a planilha (Modelo, Ano, Frota, Operação, Placa, Responsável, KM…)
+      </p>
+    </div>
+
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('main.listar_veiculos') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0 rounded-4">
+    <div class="card-body p-4">
+      <form method="POST">
+        <div class="row g-3">
+
+          <div class="col-md-6">
+            <label class="form-label">Modelo *</label>
+            <input name="modelo" class="form-control {% if errors.modelo %}is-invalid{% endif %}"
+                   value="{{ form.modelo or '' }}" placeholder="Ex: FIORINO, HILUX, MASTER">
+            {% if errors.modelo %}<div class="invalid-feedback">{{ errors.modelo }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label">Ano *</label>
+            <input name="ano_fabricacao" class="form-control {% if errors.ano_fabricacao %}is-invalid{% endif %}"
+                   value="{{ form.ano_fabricacao or '' }}" placeholder="2024">
+            {% if errors.ano_fabricacao %}<div class="invalid-feedback">{{ errors.ano_fabricacao }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label">Frota *</label>
+            <select name="frota" class="form-select {% if errors.frota %}is-invalid{% endif %}">
+              <option value="">Selecione</option>
+              <option value="PROPRIA" {% if (form.frota or '') == 'PROPRIA' %}selected{% endif %}>PROPRIA</option>
+              <option value="ALUGADA" {% if (form.frota or '') == 'ALUGADA' %}selected{% endif %}>ALUGADA</option>
+            </select>
+            {% if errors.frota %}<div class="invalid-feedback">{{ errors.frota }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label">Operação *</label>
+            <select name="operacao" class="form-select {% if errors.operacao %}is-invalid{% endif %}">
+              <option value="">Selecione</option>
+              <option value="PMSP" {% if (form.operacao or '') == 'PMSP' %}selected{% endif %}>PMSP</option>
+              <option value="AGRO" {% if (form.operacao or '') == 'AGRO' %}selected{% endif %}>AGRO</option>
+            </select>
+            {% if errors.operacao %}<div class="invalid-feedback">{{ errors.operacao }}</div>{% endif %}
+          </div>
+
+          <hr class="my-2">
+
+          <div class="col-md-4">
+            <label class="form-label">Placa *</label>
+            <input name="placa" class="form-control {% if errors.placa %}is-invalid{% endif %}"
+                   value="{{ form.placa or '' }}" placeholder="Ex: SVH9H36">
+            {% if errors.placa %}<div class="invalid-feedback">{{ errors.placa }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Responsável</label>
+            <input name="responsavel" class="form-control"
+                   value="{{ form.responsavel or '' }}" placeholder="Ex: WELLINGTON">
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Status</label>
+            <select name="status" class="form-select">
+              {% set st = form.status or 'Ativo' %}
+              <option value="Ativo" {% if st == 'Ativo' %}selected{% endif %}>Ativo</option>
+              <option value="Inativo" {% if st == 'Inativo' %}selected{% endif %}>Inativo</option>
+              <option value="Em Manutenção" {% if st == 'Em Manutenção' %}selected{% endif %}>Em Manutenção</option>
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">KM Atual</label>
+            <input name="km_atual" class="form-control {% if errors.km_atual %}is-invalid{% endif %}"
+                   value="{{ form.km_atual or '' }}" placeholder="Ex: 40000">
+            {% if errors.km_atual %}<div class="invalid-feedback">{{ errors.km_atual }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Próx Revisão (KM)</label>
+            <input name="km_prox_revisao" class="form-control {% if errors.km_prox_revisao %}is-invalid{% endif %}"
+                   value="{{ form.km_prox_revisao or '' }}" placeholder="Ex: 50000">
+            {% if errors.km_prox_revisao %}<div class="invalid-feedback">{{ errors.km_prox_revisao }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Revisão marcada (opcional)</label>
+            <input type="datetime-local" name="revisao_marcada_em"
+                   class="form-control {% if errors.revisao_marcada_em %}is-invalid{% endif %}"
+                   value="{{ form.revisao_marcada_em or '' }}">
+            {% if errors.revisao_marcada_em %}<div class="invalid-feedback">{{ errors.revisao_marcada_em }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Obs da revisão</label>
+            <input name="revisao_obs" class="form-control"
+                   value="{{ form.revisao_obs or '' }}"
+                   placeholder="Ex: MARCADO 06/02 09:30">
+          </div>
+
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 mt-4">
+          <a href="{{ url_for('main.listar_veiculos') }}" class="btn btn-outline-secondary">
+            Cancelar
+          </a>
+          <button type="submit" class="btn btn-success">
+            <i class="bi bi-check2-circle"></i>
+            {% if veiculo %}Salvar alterações{% else %}Cadastrar{% endif %}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

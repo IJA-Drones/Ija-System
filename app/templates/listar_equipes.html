@@ -84,8 +84,9 @@
     .equipes-table-wrap table.table tbody tr td:nth-child(4)::before { content: "Ativa"; }
     .equipes-table-wrap table.table tbody tr td:nth-child(5)::before { content: "Piloto Titular"; }
     .equipes-table-wrap table.table tbody tr td:nth-child(6)::before { content: "Auxiliar"; }
-    .equipes-table-wrap table.table tbody tr td:nth-child(7)::before { content: "Criada em"; }
-    .equipes-table-wrap table.table tbody tr td:nth-child(8)::before { content: "Ações"; }
+    .equipes-table-wrap table.table tbody tr td:nth-child(7)::before { content: "Drones"; }
+    .equipes-table-wrap table.table tbody tr td:nth-child(8)::before { content: "Criada em"; }
+    .equipes-table-wrap table.table tbody tr td:nth-child(9)::before { content: "Ações"; }
 
     .equipes-table-wrap table.table tbody tr td::before {
       flex: 0 0 130px;
@@ -102,11 +103,12 @@
       min-width: 0;
     }
 
-    .equipes-table-wrap td:nth-child(8) .d-flex.gap-2 {
+    /* ações agora é a 9ª coluna */
+    .equipes-table-wrap td:nth-child(9) .d-flex.gap-2 {
       flex-direction: column;
       width: 100%;
     }
-    .equipes-table-wrap td:nth-child(8) .d-flex.gap-2 .btn {
+    .equipes-table-wrap td:nth-child(9) .d-flex.gap-2 .btn {
       width: 100%;
       justify-content: center;
     }
@@ -193,21 +195,20 @@
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
 
-  {% if is_admin %}
-  <a href="{{ url_for('main.listar_equipes',
-                      export='xlsx',
-                      q=filters.q,
-                      regiao=filters.regiao,
-                      ativa=filters.ativa,
-                      piloto_id=filters.piloto_id,
-                      auxiliar_id=filters.auxiliar_id,
-                      sort=filters.sort,
-                      per_page=filters.per_page) }}"
-     class="btn btn-secondary d-flex align-items-center gap-2">
-    <i class="bi bi-file-earmark-excel-fill"></i> Exportar Excel
-  </a>
-{% endif %}
-
+      {% if is_admin %}
+        <a href="{{ url_for('main.listar_equipes',
+                            export='xlsx',
+                            q=filters.q,
+                            regiao=filters.regiao,
+                            ativa=filters.ativa,
+                            piloto_id=filters.piloto_id,
+                            auxiliar_id=filters.auxiliar_id,
+                            sort=filters.sort,
+                            per_page=filters.per_page) }}"
+           class="btn btn-secondary d-flex align-items-center gap-2">
+          <i class="bi bi-file-earmark-excel-fill"></i> Exportar Excel
+        </a>
+      {% endif %}
 
       {% if is_admin %}
         <a href="{{ url_for('main.cadastrar_equipes') }}" class="btn btn-success d-flex align-items-center gap-2">
@@ -331,6 +332,7 @@
               <th>Status</th>
               <th>Piloto Titular</th>
               <th>Auxiliar</th>
+              <th>Drones</th>
               <th>Criada em</th>
               <th class="text-center" style="width: 210px">Ações</th>
             </tr>
@@ -341,6 +343,7 @@
               {% for e in equipes %}
                 {% set piloto = e.piloto_titular %}
                 {% set aux = e.piloto_auxiliar %}
+                {% set drones = (e.equipamentos | selectattr('tipo_equipamento', 'equalto', 'drones') | list) %}
 
                 <tr>
                   <td class="ps-3 text-muted">#{{ e.id }}</td>
@@ -389,6 +392,22 @@
                   </td>
 
                   <td>
+                    {% if drones and drones|length > 0 %}
+                      <div class="d-flex flex-wrap gap-1">
+                        {% for d in drones %}
+                          <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                            {{ d.renomacao or d.modelo }}
+                            
+                          </span>
+                        {% endfor %}
+                      </div>
+                      <div class="text-muted small mt-1">{{ drones|length }} drone(s)</div>
+                    {% else %}
+                      <span class="text-muted">-</span>
+                    {% endif %}
+                  </td>
+
+                  <td>
                     {% if e.criada_em %}
                       <span class="text-muted">{{ e.criada_em.strftime('%d/%m/%Y %H:%M') }}</span>
                     {% else %}
@@ -420,7 +439,7 @@
               {% endfor %}
             {% else %}
               <tr>
-                <td colspan="8" class="text-center py-5">
+                <td colspan="9" class="text-center py-5">
                   <p class="text-muted mb-0">Nenhuma equipe encontrada com os filtros aplicados.</p>
                 </td>
               </tr>
