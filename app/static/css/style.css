@@ -548,6 +548,8 @@ body.dark-mode .bg-danger { background: var(--color-danger) !important; }
 body.dark-mode .bg-light { background: var(--color-text-muted) !important; color: var(--color-text-main) !important; }
 body.dark-mode .alert { background: #1f2a3e; color: var(--color-text-main); border: 1px solid #233549; }
 body.dark-mode .bg-filter-custom { background: var(--color-accent-hover) !important; color: #fff !important; }
+body.dark-mode .bg-recomended { background: #d69e2e !important; color: #fff !important; }
+
 
 /* Typography Dark */
 body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, body.dark-mode h4, body.dark-mode h6 { color: var(--color-primary-dark) !important; }
