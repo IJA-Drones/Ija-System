@@ -505,3 +505,43 @@ class Baterias(Equipamentos):
     __mapper_args__ = {
         "polymorphic_identity": "baterias"
     }
+
+class Veiculos(Equipamentos):
+    __tablename__ = "veiculos"
+
+    id = db.Column(db.Integer, db.ForeignKey("equipamentos.id"), primary_key=True)
+
+    # PLANILHA
+    # FROTA: PROPRIA | ALUGADA
+    frota = db.Column(db.String(20), nullable=False, index=True)
+
+    # OPERAÇÃO: PMSP | AGRO (ou outras no futuro)
+    operacao = db.Column(db.String(30), nullable=False, index=True)
+
+    # Placa do veículo
+    placa = db.Column(db.String(10), nullable=False, unique=True, index=True)
+
+    # Responsável pelo veículo
+    responsavel = db.Column(db.String(120), index=True)
+
+    # KM atual e próxima revisão (em KM)
+    km_atual = db.Column(db.Float, default=0, nullable=False)
+    km_prox_revisao = db.Column(db.Float, nullable=True)
+
+    # Campo opcional para registrar observações tipo "MARCADO 06/02 09:30"
+    revisao_marcada_em = db.Column(db.DateTime, nullable=True, index=True)
+    revisao_obs = db.Column(db.String(255))
+
+    __mapper_args__ = {
+        "polymorphic_identity": "veiculos"
+    }
+
+    @property
+    def km_restante_revisao(self):
+        """Se km_prox_revisao estiver preenchido, retorna quanto falta (pode ser negativo)."""
+        if self.km_prox_revisao is None:
+            return None
+        try:
+            return float(self.km_prox_revisao) - float(self.km_atual or 0)
+        except Exception:
+            return None

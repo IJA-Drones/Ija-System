@@ -46,7 +46,7 @@ from sqlalchemy.orm import joinedload
 # APP
 # ==========================
 from app import db
-from app.models import Notificacao, Solicitacao, Usuario, Clientes, Pilotos, Equipe, EquipePiloto, EquipeUvis
+from app.models import Notificacao, Solicitacao, Usuario, Clientes, Pilotos, Equipe, EquipePiloto, EquipeUvis, Veiculos
 TZ = ZoneInfo("America/Sao_Paulo")
 print("--- ROTAS CARREGADAS COM SUCESSO ---")
 
@@ -4093,7 +4093,7 @@ def format_phone_br(digits: str) -> str:
     return digits or ""
 
 
-REGIOES = {"NORTE", "SUL", "LESTE", "OESTE", "CENTRO", "SULDESTE"}
+REGIOES = {"NORTE", "SUL", "LESTE", "OESTE", "CENTRO", "SULDESTE", "CENTRO-OESTE"}
 
 
 # -------------------------------------------------------------
@@ -4921,7 +4921,7 @@ def cadastrar_equipes():
         regioes=regioes_lista
     )
 # -------------------------------------------------------------
-# LISTAR EQUIPES (admin e uvis) 
+# LISTAR EQUIPES (admin e uvis)
 # -------------------------------------------------------------
 
 @bp.route("/equipes", methods=["GET"], endpoint="listar_equipes")
@@ -4968,7 +4968,7 @@ def listar_equipes():
     # -----------------------------
     query = Equipe.query.options(
         db.selectinload(Equipe.membros).selectinload(EquipePiloto.piloto),
-        db.selectinload(Equipe.equipamentos),  # ✅ TRAZ equipamentos da equipe (inclui drones/baterias/etc)
+        db.selectinload(Equipe.equipamentos),  # ✅ traz equipamentos (inclui drones) vinculados à equipe
     )
 
     # -----------------------------
@@ -5000,8 +5000,6 @@ def listar_equipes():
     # -----------------------------
     # Filtros (aplicados após regra)
     # -----------------------------
-    # Para admin/outros, regiao é filtro normal
-    # Para uvis, regiao já está travada (isso só reforça)
     if regiao:
         query = query.filter(Equipe.regiao.ilike(regiao))
 
@@ -5113,7 +5111,9 @@ def listar_equipes():
         ws["A2"].font = Font(color="6B7280")
 
         start_row = 4
-        headers = ["ID", "Equipe", "Região", "Ativa", "Piloto Titular", "Auxiliar", "Criada em", "Descrição"]
+
+        # ✅ NOVO: coluna Drones
+        headers = ["ID", "Equipe", "Região", "Ativa", "Piloto Titular", "Auxiliar", "Drones", "Criada em", "Descrição"]
 
         for col_idx, h in enumerate(headers, start=1):
             cell = ws.cell(row=start_row, column=col_idx, value=h)
@@ -5126,6 +5126,23 @@ def listar_equipes():
             piloto_nome = e.piloto_titular.nome_piloto if e.piloto_titular else ""
             aux_nome = e.piloto_auxiliar.nome_piloto if e.piloto_auxiliar else ""
 
+            # ✅ monta string com drones vinculados (via equipamentos)
+            drones = [eq for eq in (e.equipamentos or []) if getattr(eq, "tipo_equipamento", None) == "drones"]
+
+            # Formato: RENOMAÇÃO (MODELO) [NS: ...]
+            drones_txt_parts = []
+            for d in drones:
+                nome = (getattr(d, "renomacao", None) or getattr(d, "modelo", None) or f"Drone {getattr(d, 'id', '')}").strip()
+                modelo = (getattr(d, "modelo", None) or "").strip()                
+
+                piece = nome
+                if modelo and modelo.lower() not in (nome.lower(),):
+                    piece = f"{nome} ({modelo})"       
+
+                drones_txt_parts.append(piece)
+
+            drones_txt = "; ".join(drones_txt_parts)
+
             values = [
                 e.id,
                 e.nome_equipe,
@@ -5133,6 +5150,7 @@ def listar_equipes():
                 "SIM" if e.ativa else "NÃO",
                 piloto_nome,
                 aux_nome,
+                drones_txt, 
                 e.criada_em.strftime("%d/%m/%Y %H:%M") if e.criada_em else "",
                 e.descricao or "",
             ]
@@ -5140,6 +5158,7 @@ def listar_equipes():
             for col_idx, v in enumerate(values, start=1):
                 cell = ws.cell(row=i, column=col_idx, value=v)
                 cell.border = border
+                # centraliza só ID e Ativa
                 cell.alignment = center_align if col_idx in (1, 4) else text_align
 
         last_row = start_row + len(rows)
@@ -5149,7 +5168,8 @@ def listar_equipes():
         ws.auto_filter.ref = f"A{start_row}:{get_column_letter(last_col)}{max(last_row, start_row)}"
         ws.row_dimensions[start_row].height = 22
 
-        max_widths = {1: 8, 2: 28, 3: 14, 4: 10, 5: 26, 6: 26, 7: 18, 8: 50}
+        # ✅ NOVO: max_widths ajustado (agora são 9 colunas)
+        max_widths = {1: 8, 2: 28, 3: 14, 4: 10, 5: 26, 6: 26, 7: 60, 8: 18, 9: 50}
         for col_idx in range(1, last_col + 1):
             max_len = len(headers[col_idx - 1])
             for r in range(start_row + 1, last_row + 1):
@@ -5209,7 +5229,7 @@ def listar_equipes():
         is_admin=(tipo == "admin"),
         is_editable=is_editable,
         tipo_usuario=tipo,
-    )    
+    )
 # -------------------------------------------------------------
 # EDITAR EQUIPE (admin)
 # -------------------------------------------------------------
@@ -7316,3 +7336,355 @@ def enviar_manutencao_drone(drone_id):
         flash("Erro ao enviar o drone para manutenção.", "danger")
 
     return redirect(url_for("main.listar_drones"))
+
+
+# -----------------------------
+# LISTAR VEÍCULOS
+# -----------------------------
+@bp.route("/veiculos", methods=["GET"], endpoint="listar_veiculos")
+@login_required
+def listar_veiculos():
+    tipo = getattr(current_user, "tipo_usuario", None)
+
+    # Permissões
+    if tipo not in ("admin", "visualizar", "operario", "uvis", "piloto"):
+        abort(403)
+
+    # Filtros
+    q = (request.args.get("q") or "").strip()
+    operacao = (request.args.get("operacao") or "").strip().upper()
+    frota = (request.args.get("frota") or "").strip().upper()
+    status = (request.args.get("status") or "").strip()
+
+    query = Veiculos.query
+
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            db.or_(
+                Veiculos.modelo.ilike(like),
+                Veiculos.placa.ilike(like),
+                Veiculos.responsavel.ilike(like),
+            )
+        )
+
+    if operacao:
+        query = query.filter(Veiculos.operacao == operacao)
+
+    if frota:
+        query = query.filter(Veiculos.frota == frota)
+
+    if status:
+        query = query.filter(Veiculos.status == status)
+
+    veiculos = query.order_by(Veiculos.criado_em.desc()).all()
+
+    is_admin = (tipo == "admin")
+
+    # (Stats ficam no template via namespace)
+    filters = {
+        "q": q,
+        "operacao": operacao,
+        "frota": frota,
+        "status": status,
+        "total": len(veiculos),
+    }
+
+    return render_template(
+        "veiculos_listar.html",
+        veiculos=veiculos,
+        is_admin=is_admin,
+        filters=filters
+    )
+
+# -----------------------------
+# CADASTRAR VEÍCULO
+# -----------------------------
+@bp.route("/veiculos/cadastrar", methods=["GET", "POST"], endpoint="cadastrar_veiculo")
+@login_required
+def cadastrar_veiculo():
+    if getattr(current_user, "tipo_usuario", None) != "admin":
+        abort(403)
+
+    errors = {}
+    form = {}
+
+    if request.method == "POST":
+        modelo = (request.form.get("modelo") or "").strip()
+        ano_raw = (request.form.get("ano_fabricacao") or "").strip()
+        frota = (request.form.get("frota") or "").strip().upper()
+        operacao = (request.form.get("operacao") or "").strip().upper()
+        placa = (request.form.get("placa") or "").strip().upper()
+        responsavel = (request.form.get("responsavel") or "").strip()
+
+        km_atual_raw = (request.form.get("km_atual") or "").strip()
+        km_prox_raw = (request.form.get("km_prox_revisao") or "").strip()
+
+        status = (request.form.get("status") or "Ativo").strip()
+
+        revisao_marcada_raw = (request.form.get("revisao_marcada_em") or "").strip()
+        revisao_obs = (request.form.get("revisao_obs") or "").strip()
+
+        # manter valores no form
+        form = {
+            "modelo": modelo,
+            "ano_fabricacao": ano_raw,
+            "frota": frota,
+            "operacao": operacao,
+            "placa": placa,
+            "responsavel": responsavel,
+            "km_atual": km_atual_raw,
+            "km_prox_revisao": km_prox_raw,
+            "status": status,
+            "revisao_marcada_em": revisao_marcada_raw,
+            "revisao_obs": revisao_obs,
+        }
+
+        # validações básicas
+        if not modelo:
+            errors["modelo"] = "Informe o modelo."
+        if not ano_raw:
+            errors["ano_fabricacao"] = "Informe o ano."
+        if frota not in ("PROPRIA", "ALUGADA"):
+            errors["frota"] = "Selecione PROPRIA ou ALUGADA."
+        if not operacao:
+            errors["operacao"] = "Informe a operação (ex: PMSP / AGRO)."
+        if not placa:
+            errors["placa"] = "Informe a placa."
+
+        # ano
+        ano_fabricacao = None
+        if ano_raw:
+            try:
+                ano_fabricacao = int(ano_raw)
+                if ano_fabricacao < 1900 or ano_fabricacao > 2100:
+                    errors["ano_fabricacao"] = "Ano inválido."
+            except ValueError:
+                errors["ano_fabricacao"] = "Ano inválido."
+
+        # km_atual
+        km_atual = 0
+        if km_atual_raw:
+            try:
+                km_atual = float(km_atual_raw.replace(",", "."))
+                if km_atual < 0:
+                    errors["km_atual"] = "KM atual não pode ser negativo."
+            except ValueError:
+                errors["km_atual"] = "KM atual inválido."
+
+        # km_prox_revisao (opcional)
+        km_prox_revisao = None
+        if km_prox_raw:
+            try:
+                km_prox_revisao = float(km_prox_raw.replace(",", "."))
+                if km_prox_revisao < 0:
+                    errors["km_prox_revisao"] = "Próx revisão inválida."
+            except ValueError:
+                errors["km_prox_revisao"] = "Próx revisão inválida."
+
+        # revisao marcada (opcional) - formato datetime-local: 2026-02-23T09:30
+        revisao_marcada_em = None
+        if revisao_marcada_raw:
+            try:
+                revisao_marcada_em = datetime.strptime(revisao_marcada_raw, "%Y-%m-%dT%H:%M")
+            except ValueError:
+                errors["revisao_marcada_em"] = "Data/hora inválida."
+
+        # placa única
+        if placa and not errors.get("placa"):
+            existe = Veiculos.query.filter_by(placa=placa).first()
+            if existe:
+                errors["placa"] = "Já existe um veículo com essa placa."
+
+        if errors:
+            flash("Corrija os campos destacados.", "warning")
+            return render_template("cadastrar_veiculo.html", form=form, errors=errors)
+
+        novo = Veiculos(
+            tipo_equipamento="veiculos",
+            status=status,
+
+            modelo=modelo,
+            ano_fabricacao=ano_fabricacao,
+
+            # esses campos do Equipamentos não existem na planilha: pode deixar None
+            renomacao=placa,  # 👉 opcional: usar a placa como "renomacao" pra padronizar
+            categoria=None,
+            numero_serie=None,
+            ultima_manutencao=None,
+
+            frota=frota,
+            operacao=operacao,
+            placa=placa,
+            responsavel=responsavel or None,
+            km_atual=km_atual,
+            km_prox_revisao=km_prox_revisao,
+            revisao_marcada_em=revisao_marcada_em,
+            revisao_obs=revisao_obs or None,
+        )
+
+        try:
+            db.session.add(novo)
+            db.session.commit()
+            flash("Veículo cadastrado com sucesso!", "success")
+            return redirect(url_for("main.listar_veiculos"))
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Erro ao cadastrar veículo: {str(e)}", "danger")
+            return render_template("cadastrar_veiculo.html", form=form, errors=errors)
+
+    return render_template("cadastrar_veiculo.html", form=form, errors=errors)
+
+
+# -----------------------------
+# EDITAR VEÍCULO
+# -----------------------------
+@bp.route("/veiculos/<int:veiculo_id>/editar", methods=["GET", "POST"], endpoint="editar_veiculo")
+@login_required
+def editar_veiculo(veiculo_id):
+    if getattr(current_user, "tipo_usuario", None) != "admin":
+        abort(403)
+
+    v = Veiculos.query.get_or_404(veiculo_id)
+    errors = {}
+
+    if request.method == "POST":
+        modelo = (request.form.get("modelo") or "").strip()
+        ano_raw = (request.form.get("ano_fabricacao") or "").strip()
+        frota = (request.form.get("frota") or "").strip().upper()
+        operacao = (request.form.get("operacao") or "").strip().upper()
+        placa = (request.form.get("placa") or "").strip().upper()
+        responsavel = (request.form.get("responsavel") or "").strip()
+
+        km_atual_raw = (request.form.get("km_atual") or "").strip()
+        km_prox_raw = (request.form.get("km_prox_revisao") or "").strip()
+        status = (request.form.get("status") or "Ativo").strip()
+
+        revisao_marcada_raw = (request.form.get("revisao_marcada_em") or "").strip()
+        revisao_obs = (request.form.get("revisao_obs") or "").strip()
+
+        if not modelo:
+            errors["modelo"] = "Informe o modelo."
+        if not ano_raw:
+            errors["ano_fabricacao"] = "Informe o ano."
+        if frota not in ("PROPRIA", "ALUGADA"):
+            errors["frota"] = "Selecione PROPRIA ou ALUGADA."
+        if not operacao:
+            errors["operacao"] = "Informe a operação."
+        if not placa:
+            errors["placa"] = "Informe a placa."
+
+        ano_fabricacao = None
+        if ano_raw:
+            try:
+                ano_fabricacao = int(ano_raw)
+                if ano_fabricacao < 1900 or ano_fabricacao > 2100:
+                    errors["ano_fabricacao"] = "Ano inválido."
+            except ValueError:
+                errors["ano_fabricacao"] = "Ano inválido."
+
+        km_atual = v.km_atual or 0
+        if km_atual_raw:
+            try:
+                km_atual = float(km_atual_raw.replace(",", "."))
+                if km_atual < 0:
+                    errors["km_atual"] = "KM atual inválido."
+            except ValueError:
+                errors["km_atual"] = "KM atual inválido."
+
+        km_prox_revisao = None
+        if km_prox_raw:
+            try:
+                km_prox_revisao = float(km_prox_raw.replace(",", "."))
+            except ValueError:
+                errors["km_prox_revisao"] = "Próx revisão inválida."
+
+        revisao_marcada_em = None
+        if revisao_marcada_raw:
+            try:
+                revisao_marcada_em = datetime.strptime(revisao_marcada_raw, "%Y-%m-%dT%H:%M")
+            except ValueError:
+                errors["revisao_marcada_em"] = "Data/hora inválida."
+
+        # placa única (exceto o próprio registro)
+        if placa and not errors.get("placa"):
+            existe = Veiculos.query.filter(Veiculos.placa == placa, Veiculos.id != v.id).first()
+            if existe:
+                errors["placa"] = "Já existe um veículo com essa placa."
+
+        if errors:
+            flash("Corrija os campos destacados.", "warning")
+            form = {
+                "modelo": modelo,
+                "ano_fabricacao": ano_raw,
+                "frota": frota,
+                "operacao": operacao,
+                "placa": placa,
+                "responsavel": responsavel,
+                "km_atual": km_atual_raw,
+                "km_prox_revisao": km_prox_raw,
+                "status": status,
+                "revisao_marcada_em": revisao_marcada_raw,
+                "revisao_obs": revisao_obs,
+            }
+            return render_template("cadastrar_veiculo.html", form=form, errors=errors, veiculo=v)
+
+        v.modelo = modelo
+        v.ano_fabricacao = ano_fabricacao
+        v.frota = frota
+        v.operacao = operacao
+        v.placa = placa
+        v.responsavel = responsavel or None
+        v.km_atual = km_atual
+        v.km_prox_revisao = km_prox_revisao
+        v.status = status
+        v.revisao_marcada_em = revisao_marcada_em
+        v.revisao_obs = revisao_obs or None
+
+        # opcional: manter "renomacao" igual placa (pra ficar consistente com o sistema)
+        v.renomacao = placa
+
+        try:
+            db.session.commit()
+            flash("Veículo atualizado!", "success")
+            return redirect(url_for("main.listar_veiculos"))
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Erro ao atualizar: {str(e)}", "danger")
+
+    # GET
+    form = {
+        "modelo": v.modelo or "",
+        "ano_fabricacao": str(v.ano_fabricacao or ""),
+        "frota": v.frota or "",
+        "operacao": v.operacao or "",
+        "placa": v.placa or "",
+        "responsavel": v.responsavel or "",
+        "km_atual": str(v.km_atual or ""),
+        "km_prox_revisao": str(v.km_prox_revisao or "") if v.km_prox_revisao is not None else "",
+        "status": v.status or "Ativo",
+        "revisao_marcada_em": v.revisao_marcada_em.strftime("%Y-%m-%dT%H:%M") if v.revisao_marcada_em else "",
+        "revisao_obs": v.revisao_obs or "",
+    }
+    return render_template("cadastrar_veiculo.html", form=form, errors=errors, veiculo=v)
+
+
+# -----------------------------
+# DELETAR VEÍCULO
+# -----------------------------
+@bp.route("/veiculos/<int:veiculo_id>/deletar", methods=["POST"], endpoint="deletar_veiculo")
+@login_required
+def deletar_veiculo(veiculo_id):
+    if getattr(current_user, "tipo_usuario", None) != "admin":
+        abort(403)
+
+    v = Veiculos.query.get_or_404(veiculo_id)
+    try:
+        db.session.delete(v)
+        db.session.commit()
+        flash("Veículo removido!", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erro ao remover: {str(e)}", "danger")
+
+    return redirect(url_for("main.listar_veiculos"))
