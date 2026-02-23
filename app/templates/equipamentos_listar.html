@@ -4,69 +4,89 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+    <style>
+        .hover-shadow:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4" style="max-width: 1200px">
-    <div class="mb-4">
-        <h2 class="text-dark"><i class="bi bi-box-seam me-2 text-primary"></i>Gestão de Equipamentos</h2>
-        <p class="text-muted">Visão geral de hardware e ativos da Oceano Azul.</p>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="text-dark"><i class="bi bi-box-seam-fill me-2 text-primary"></i>Gestão de Equipamentos</h2>
+            <p class="text-muted small mb-0">Visão geral de hardware e ativos da Oceano Azul.</p>
+        </div>
     </div>
 
     {# --- CARDS DE RESUMO / NAVEGAÇÃO --- #}
     <div class="row g-3 mb-4">
         <div class="col-md-4">
-            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 bg-primary text-white">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="mb-1 text-white-50">Drones</h6>
-                        <h3 class="mb-0">{{ total_drones }}</h3>
+            <a href="{{ url_for('main.listar_drones') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-primary border-4 hover-shadow" style="transition: all 0.2s ease; cursor: pointer;">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Drones</h6>
+                            <h3 class="mb-0 text-dark fw-bold">{{ total_drones }}</h3>
+                        </div>
+                        <div class="fs-1 text-primary opacity-75">
+                            <i class="bi bi-airplane-engines-fill"></i>
+                        </div>
                     </div>
-                    <div class="fs-1 opacity-50"><i class="bi bi-airplane-engines"></i></div>
-                </div>
-                <a href="{{ url_for('main.listar_drones') }}" class="btn btn-light btn-sm mt-3 w-100 rounded-3">Ver Frota</a>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 bg-warning">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="mb-1 text-black-50">Baterias</h6>
-                        <h3 class="mb-0">{{ total_baterias }}</h3>
+                    <div class="mt-3 d-flex align-items-center text-primary small fw-bold">
+                        <span>Ver frota completa</span>
+                        <i class="bi bi-arrow-right ms-2"></i>
                     </div>
-                    <div class="fs-1 opacity-50"><i class="bi bi-battery-half"></i></div>
-                </div>
-                <a href="{{ url_for('main.listar_baterias') }}" class="btn btn-dark btn-sm mt-3 w-100 rounded-3">Ver Estoque</a>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <a href="{{ url_for('main.equipamentos_manutencao') }}"
-                class="text-decoration-none">
-
-                <div class="card border-0 shadow-sm rounded-4 p-3 h-100 bg-white border-start border-danger border-4 hover-shadow"
-                    style="transition: all 0.2s ease; cursor: pointer;">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                    <h6 class="mb-1 text-muted">Em Manutenção</h6>
-                    <h3 class="mb-0 text-danger">{{ em_manutencao }}</h3>
-                    </div>
-                    <div class="fs-1 text-danger opacity-25">
-                    <i class="bi bi-tools"></i>
-                    </div>
-                </div>
-                <p class="small text-muted mt-3 mb-0">
-                    Aguardando reparo técnico.
-                </p>
                 </div>
             </a>
-            </div>
+        </div>
+
+        <div class="col-md-4">
+            <a href="{{ url_for('main.listar_baterias') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-warning border-4 hover-shadow" style="transition: all 0.2s ease; cursor: pointer;">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Baterias</h6>
+                            <h3 class="mb-0 text-dark fw-bold">{{ total_baterias }}</h3>
+                        </div>
+                        <div class="fs-1 text-warning opacity-75">
+                            <i class="bi bi-battery-charging"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3 d-flex align-items-center text-warning small fw-bold">
+                        <span>Ver estoque total</span>
+                        <i class="bi bi-arrow-right ms-2"></i>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-4">
+            <a href="{{ url_for('main.equipamentos_manutencao') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-danger border-4 hover-shadow" style="transition: all 0.2s ease; cursor: pointer;">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Em Manutenção</h6>
+                            <h3 class="mb-0 text-danger fw-bold">{{ em_manutencao }}</h3>
+                        </div>
+                        <div class="fs-1 text-danger opacity-75">
+                            <i class="bi bi-tools"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3 d-flex align-items-center text-danger small fw-bold">
+                        <span>Ver equipamentos parados</span>
+                        <i class="bi bi-arrow-right ms-2"></i>
+                    </div>
+                </div>
+            </a>
+        </div>
     </div>
 
     {# --- TABELA GERAL (LINHA DO TEMPO) --- #}
     <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
-        <div class="card-header bg-white py-3 border-0">
+        <div class="card-header py-3 border-0">
             <h6 class="mb-0 fw-bold"><i class="bi bi-clock-history me-2"></i>Atividades Recentes de Cadastro</h6>
         </div>
         <div class="card-body p-0">
@@ -86,22 +106,32 @@
                         <tr>
                             <td class="ps-3">
                                 {% if eq.tipo_equipamento == 'drone' %}
-                                    <i class="bi bi-airplane-engines text-primary" title="Drone"></i>
+                                    <i class="bi bi-airplane-engines-fill text-primary" title="Drone"></i>
                                 {% elif eq.tipo_equipamento == 'bateria' %}
-                                    <i class="bi bi-battery-half text-warning" title="Bateria"></i>
+                                    <i class="bi bi-battery-charging text-warning" title="Bateria"></i>
                                 {% else %}
-                                    <i class="bi bi-truck text-success"></i>
+                                    <i class="bi bi-cpu text-success"></i>
                                 {% endif %}
                             </td>
                             <td>
-                                <span class="fw-bold">{{ eq.renomacao }}</span>
+                                <span class="fw-bold text-dark">{{ eq.renomacao }}</span>
                                 <div class="text-muted small">{{ eq.modelo }}</div>
                             </td>
                             <td class="text-muted small">{{ eq.numero_serie or '-' }}</td>
                             <td>
-                                <span class="badge {% if eq.status == 'Ativo' %}bg-success-light text-success{% else %}bg-light text-muted border{% endif %}">
-                                    {{ eq.status }}
-                                </span>
+                                {% if eq.status == 'Ativo' %}
+                                    <span class="badge bg-success-light text-success px-3">
+                                        <i class="bi bi-check-circle me-1"></i>Ativo
+                                    </span>
+                                {% elif eq.status == 'Em Manutenção' %}
+                                    <span class="badge bg-danger-light text-danger px-3">
+                                        <i class="bi bi-tools me-1"></i>Manutenção
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-light text-muted border px-3">
+                                        {{ eq.status }}
+                                    </span>
+                                {% endif %}
                             </td>
                             <td class="text-muted small">
                                 {% if eq.criado_em %}
