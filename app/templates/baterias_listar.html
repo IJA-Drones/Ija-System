@@ -52,16 +52,16 @@
                         </div>
 
                         <div class="input-group input-group-sm shadow-sm border rounded-3 overflow-hidden mb-1">
-                            <button class="btn btn-light border-0 px-2" type="button" onclick="atualizarCiclo({{ b.id }}, 'sub')">
+                            <button class="btn btn-outline-danger border-0 px-2" type="button" onclick="atualizarCiclo({{ b.id }}, 'sub')">
                                 <i class="bi bi-dash-lg text-danger" style="font-size: 0.8rem;"></i>
                             </button>
                             
                             <input type="number" id="inputCiclo{{ b.id }}" 
-                                class="form-control border-0 text-center bg-white" 
+                                class="form-control border-0 text-center" 
                                 style="font-size: 0.8rem; height: 30px;" 
                                 placeholder="1">
 
-                            <button class="btn btn-light border-0 px-2" type="button" onclick="atualizarCiclo({{ b.id }}, 'add')">
+                            <button class="btn btn-outline-success border-0 px-2" type="button" onclick="atualizarCiclo({{ b.id }}, 'add')">
                                 <i class="bi bi-plus-lg text-success" style="font-size: 0.8rem;"></i>
                             </button>
                         </div>
