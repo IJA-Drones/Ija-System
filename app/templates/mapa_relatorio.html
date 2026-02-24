@@ -100,6 +100,15 @@
             display: inline-flex;
         }
 
+            /* Estilo adicional para garantir que o fundo das abas no Dark Mode acompanhe o sistema */
+        body.dark-mode #mapTabs {
+            background: rgba(255,255,255,0.1) !important;
+        }
+        /* Esconde a barra de scroll horizontal para as abas no mobile */
+        #mapTabs::-webkit-scrollbar {
+            display: none;
+        }
+
         .dark-mode #mapTabs { background: #334155; }
 
         #mapTabs .nav-link.active {
@@ -130,7 +139,7 @@
             <i class="bi bi-geo-fill me-2 text-primary"></i> Inteligência Geográfica
         </h2>
         {% if current_user.tipo_usuario == 'admin' %}
-        <a href="{{ url_for('main.relatorios') }}" class="btn btn-outline-primary shadow-sm rounded-pill">
+        <a href="{{ url_for('main.relatorios') }}" class="btn btn-outline-primary">
             <i class="bi bi-bar-chart-line me-1"></i> Ver Estatísticas
         </a>
         {% endif %}
@@ -197,16 +206,24 @@
 
     {# --- MAPA COM DESIGN CLEAN --- #}
     <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
-        <div class="card-header border-0 py-3 text-center">
-            <ul class="nav nav-pills" id="mapTabs" role="tablist">
-                <li class="nav-item">
-                    <a class="nav-link active" data-bs-toggle="tab" href="#tabCalor"><i class="bi bi-fire me-2"></i>Calor</a>
+        <div class="card-header border-0 py-3 d-flex justify-content-center">
+            <ul class="nav nav-pills flex-nowrap p-1 shadow-sm" id="mapTabs" role="tablist" 
+                style="background: rgba(0,0,0,0.05); border-radius: 50px; width: fit-content; overflow-x: auto; white-space: nowrap; -ms-overflow-style: none; scrollbar-width: none;">
+                
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link active rounded-pill px-4 fw-bold" data-bs-toggle="tab" href="#tabCalor" style="transition: 0.3s;">
+                        <i class="bi bi-fire me-2"></i>Calor
+                    </a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" data-bs-toggle="tab" href="#tabArea"><i class="bi bi-geo me-2"></i>Áreas</a>
+                
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link rounded-pill px-4 fw-bold" data-bs-toggle="tab" href="#tabArea" style="transition: 0.3s;">
+                        <i class="bi bi-geo me-2"></i>Áreas
+                    </a>
                 </li>
+                
                 <li class="nav-item" title="Funcionalidade em desenvolvimento" data-bs-toggle="tooltip">
-                    <a class="nav-link disabled" style="pointer-events: none; opacity: 0.5;">
+                    <a class="nav-link disabled rounded-pill px-4" style="pointer-events: none; opacity: 0.5;">
                         <i class="bi bi-truck me-2"></i>Logística
                     </a>
                 </li>
