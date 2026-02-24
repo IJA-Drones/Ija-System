@@ -1,199 +1,289 @@
 {% extends "base.html" %}
+
 {% block extra_styles %}
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+
+<style>
+    /* =========================================
+       DESIGN SYSTEM OCEANO AZUL
+       ========================================= */
+    .dashboard-header {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 12px !important;
+        flex-wrap: wrap;
+    }
+
+    .dashboard-header h2 {
+        margin: 0 !important;
+        white-space: nowrap;
+    }
+
+    .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .btn-pill {
+        border-radius: 999px !important;
+        padding: 8px 20px !important;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        height: 38px;
+    }
+
+    /* =========================================
+       RESPONSIVIDADE (MOBILE -> CARDS)
+       ========================================= */
+    @media (max-width: 768px) {
+        .dashboard-header {
+            flex-direction: column !important;
+            align-items: stretch !important;
+        }
+
+        .dashboard-header h2 { margin-right: 0 !important; white-space: normal; }
+        .header-actions { width: 100%; }
+        .header-actions a.btn { width: 100%; justify-content: center; flex: 1; }
+
+        /* Tabela vira Lista de Cards */
+        .table-responsive { background: transparent !important; border: 0 !important; overflow: visible !important; }
+        thead { display: none !important; }
+        tbody { display: flex !important; flex-direction: column !important; gap: 16px !important; padding: 10px 0 !important; }
+
+        tbody tr {
+            display: block !important;
+            background: var(--color-bg-white) !important;
+            border: 1px solid rgba(0, 0, 0, 0.10) !important;
+            border-radius: 18px !important;
+            box-shadow: var(--shadow-sm) !important;
+            padding: 10px !important;
+            margin-bottom: 5px;
+        }
+
+        tbody tr td {
+            display: grid !important;
+            grid-template-columns: 110px 1fr !important;
+            gap: 10px;
+            padding: 12px 8px !important;
+            border: 0 !important;
+            text-align: right !important;
+            align-items: center !important;
+        }
+
+        tbody tr td + td { border-top: 1px solid rgba(0, 0, 0, 0.05) !important; }
+
+        /* Labels Automáticos */
+        tbody tr td:nth-child(1)::before { content: "Veículo"; }
+        tbody tr td:nth-child(2)::before { content: "Frota / Op."; }
+        tbody tr td:nth-child(3)::before { content: "Responsável"; }
+        tbody tr td:nth-child(4)::before { content: "KM Restante"; }
+        tbody tr td:nth-child(5)::before { content: "Status"; }
+        tbody tr td:nth-child(6)::before { content: "Ações"; }
+
+        tbody tr td::before {
+            font-weight: 700;
+            color: var(--color-text-muted);
+            font-size: .70rem;
+            text-transform: uppercase;
+            text-align: left !important;
+        }
+
+        .dropdown { display: flex; justify-content: flex-end; }
+    }
+</style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4" style="max-width: 1200px;">
 
-  {# --- CABEÇALHO --- #}
-    <div class="d-flex justify-content-between align-items-center mb-4 dashboard-header">
-      <h2 class="text-dark">
-        <i class="bi bi-truck-front-fill me-2 text-primary"></i> Frota de Veículos
-      </h2>
+    {# --- CABEÇALHO PADRONIZADO --- #}
+    <div class="dashboard-header mb-4">
+        <div style="margin-right: auto !important;">
+            <h2 class="text-dark">
+                <i class="bi bi-truck-front-fill me-2 text-primary"></i> Frota de Veículos
+            </h2>
+        </div>
 
-      <div class="header-actions">
-        <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary align-items-center">
-            <i class="bi bi-arrow-left"></i> Voltar
-        </a>
-        
-        {% if is_admin %}
-            <a href="{{ url_for('main.cadastrar_veiculo') }}" 
-              class="btn btn-success shadow-sm btn-pill justify-content-center" 
-              style="min-width: 160px;">
-                <i class="bi bi-plus-lg"></i> Novo Veículo
+        <div class="header-actions">
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-pill border btn-light shadow-sm">
+                <i class="bi bi-arrow-left"></i> Voltar
             </a>
-
-            <a href="{{ url_for('main.listar_veiculos', export=1, **request.args) }}" 
-              class="btn btn-secondary shadow-sm btn-pill justify-content-center" 
-              style="min-width: 160px;">
-                <i class="bi bi-file-earmark-excel-fill"></i> Exportar
-            </a>
-        {% endif %}
-      </div>
-    </div>
-
-  {# --- STATS (Opcional, mantendo os cards coloridos que você gostou) --- #}
-  {% set ns = namespace(total=veiculos|length, atrasados=0, proximos=0, marcados=0) %}
-  {% for v in veiculos %}
-      {% if v.revisao_marcada_em %}{% set ns.marcados = ns.marcados + 1 %}{% endif %}
-      {% set falt = v.km_restante_revisao %}
-      {% if falt is not none %}
-          {% if falt < 0 %}{% set ns.atrasados = ns.atrasados + 1 %}
-          {% elif falt <= 2000 %}{% set ns.proximos = ns.proximos + 1 %}
-          {% endif %}
-      {% endif %}
-  {% endfor %}
-
-  <div class="row g-3 mb-4">
-    <div class="col-6 col-md-3">
-        <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-primary border-4 bg-white">
-            <small class="text-muted fw-bold text-uppercase" style="font-size: 0.65rem;">Frota</small>
-            <h3 class="fw-bold mb-0 text-dark">{{ ns.total }}</h3>
-        </div>
-    </div>
-    <div class="col-6 col-md-3">
-        <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-warning border-4 bg-white">
-            <small class="text-muted fw-bold text-uppercase" style="font-size: 0.65rem;">Revisões</small>
-            <h3 class="fw-bold mb-0 text-warning">{{ ns.proximos }}</h3>
-        </div>
-    </div>
-    <div class="col-6 col-md-3">
-        <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-danger border-4 bg-white">
-            <small class="text-muted fw-bold text-uppercase" style="font-size: 0.65rem;">Atrasados</small>
-            <h3 class="fw-bold mb-0 text-danger">{{ ns.atrasados }}</h3>
-        </div>
-    </div>
-    <div class="col-6 col-md-3">
-        <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-success border-4 bg-white">
-            <small class="text-muted fw-bold text-uppercase" style="font-size: 0.65rem;">Marcados</small>
-            <h3 class="fw-bold mb-0 text-success">{{ ns.marcados }}</h3>
-        </div>
-    </div>
-  </div>
-
-  {# --- FILTROS EM SANFONA --- #}
-  <div class="card shadow-sm rounded-4 mb-4 border-0">
-    <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center cursor-pointer"
-         data-bs-toggle="collapse" data-bs-target="#collapseFiltros" style="cursor: pointer; background: none;">
-      <div class="d-flex align-items-center gap-2">
-        <i class="bi bi-funnel-fill text-primary"></i>
-        <span class="text-dark">Filtros de Busca</span>
-        {% if filters.q or filters.operacao or filters.status %}
-          <span class="badge bg-danger rounded-circle p-1" style="width: 8px; height: 8px;"></span>
-        {% endif %}
-      </div>
-      <i class="bi bi-chevron-down text-muted"></i>
-    </div>
-
-    <div class="collapse {% if filters.q or filters.operacao or filters.status %}show{% endif %}" id="collapseFiltros">
-      <div class="card-body pt-0 pb-4">
-        <form method="GET">
-          <div class="row g-2 align-items-end">
-            <div class="col-md-4">
-              <label class="small text-muted">Busca Rápida:</label>
-              <input type="text" name="q" value="{{ filters.q or '' }}" class="form-control form-control-sm" placeholder="Modelo, placa...">
-            </div>
-            <div class="col-md-2">
-              <label class="small text-muted">Operação:</label>
-              <select name="operacao" class="form-select form-select-sm">
-                <option value="">Todas</option>
-                <option value="PMSP" {{ 'selected' if filters.operacao == 'PMSP' }}>PMSP</option>
-                <option value="AGRO" {{ 'selected' if filters.operacao == 'AGRO' }}>AGRO</option>
-              </select>
-            </div>
-            <div class="col-md-3">
-              <label class="small text-muted">Status:</label>
-              <select name="status" class="form-select form-select-sm">
-                <option value="">Todos</option>
-                <option value="Ativo" {{ 'selected' if filters.status == 'Ativo' }}>🟢 Ativo</option>
-                <option value="Em Manutenção" {{ 'selected' if filters.status == 'Em Manutenção' }}>🟡 Manutenção</option>
-              </select>
-            </div>
-            <div class="col-md-3 d-flex gap-2">
-              <button class="btn btn-success btn-sm w-100 d-flex gap-1 justify-content-center align-items-center" type="submit">
-                <i class="bi bi-search"></i> Filtrar
-              </button>
-              {% if filters.q or filters.operacao or filters.status %}
-                <a href="{{ url_for('main.listar_veiculos') }}" class="btn btn-outline-secondary btn-sm w-100 d-flex gap-1 justify-content-center align-items-center">
-                  <i class="bi bi-x-lg"></i> Limpar
+            
+            {% if is_admin %}
+                <a href="{{ url_for('main.cadastrar_veiculo') }}" class="btn btn-success shadow-sm btn-pill">
+                    <i class="bi bi-plus-lg"></i> Novo Veículo
                 </a>
-              {% endif %}
-            </div>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
 
-  {# --- TABELA / CARDS --- #}
-  <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
-    <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-          <thead class="table-light">
-            <tr>
-              <th class="ps-4">Veículo / Placa</th>
-              <th>Frota / Op.</th>
-              <th>Responsável</th>
-              <th class="text-center">KM Restante</th>
-              <th>Status</th>
-              <th class="text-center">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for v in veiculos %}
-            {% set falt = v.km_restante_revisao %}
-            <tr>
-              <td class="ps-4">
-                <div class="fw-bold text-dark">{{ v.modelo }}</div>
-                <div class="text-muted small">{{ v.placa }}</div>
-              </td>
-              <td>
-                <span class="badge bg-light text-dark border">{{ v.frota }}</span>
-                <span class="badge bg-light text-primary border">{{ v.operacao }}</span>
-              </td>
-              <td><div class="small">{{ v.responsavel or '-' }}</div></td>
-              <td class="text-center">
-                {% if falt is not none %}
-                  <span class="badge {% if falt < 0 %}bg-danger-light text-danger{% elif falt <= 2000 %}bg-warning-light text-warning{% else %}bg-success-light text-success{% endif %} rounded-pill px-3">
-                    {{ falt|round|int }} km
-                  </span>
-                {% else %}
-                  <span class="text-muted small">--</span>
-                {% endif %}
-              </td>
-              <td>
-                <span class="badge {% if v.status == 'Ativo' %}bg-success-light text-success{% else %}bg-warning-light text-warning{% endif %} rounded-pill px-3">
-                  <span class="status-dot {% if v.status == 'Ativo' %}bg-success{% else %}bg-warning{% endif %}"></span>{{ v.status }}
-                </span>
-              </td>
-              <td class="text-center">
-                <div class="dropdown">
-                  <button class="btn btn-outline-secondary btn-sm rounded-circle p-2" type="button" data-bs-toggle="dropdown">
-                    <i class="bi bi-three-dots-vertical"></i>
-                  </button>
-                  <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
-                    <li><a class="dropdown-item py-2" href="{{ url_for('main.editar_veiculo', veiculo_id=v.id) }}"><i class="bi bi-pencil me-2"></i> Editar</a></li>
-                    {% if is_admin %}
-                    <li><hr class="dropdown-divider"></li>
-                    <li>
-                      <form method="POST" action="{{ url_for('main.deletar_veiculo', veiculo_id=v.id) }}" onsubmit="return confirm('Excluir veículo?');">
-                        <button type="submit" class="dropdown-item py-2 text-danger"><i class="bi bi-trash me-2"></i> Excluir</button>
-                      </form>
-                    </li>
-                    {% endif %}
-                  </ul>
-                </div>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
+                <a href="{{ url_for('main.listar_veiculos', export=1, **request.args) }}" class="btn btn-secondary shadow-sm btn-pill">
+                    <i class="bi bi-file-earmark-excel-fill"></i> Exportar
+                </a>
+            {% endif %}
+        </div>
     </div>
-  </div>
+
+    {# --- STATS --- #}
+    {% set ns = namespace(total=veiculos|length, atrasados=0, proximos=0, marcados=0) %}
+    {% for v in veiculos %}
+        {% if v.revisao_marcada_em %}{% set ns.marcados = ns.marcados + 1 %}{% endif %}
+        {% set falt = v.km_restante_revisao %}
+        {% if falt is not none %}
+            {% if falt < 0 %}{% set ns.atrasados = ns.atrasados + 1 %}
+            {% elif falt <= 2000 %}{% set ns.proximos = ns.proximos + 1 %}
+            {% endif %}
+        {% endif %}
+    {% endfor %}
+
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-primary border-4 bg-white">
+                <small class="text-muted fw-bold text-uppercase" style="font-size: 0.65rem;">Frota</small>
+                <h3 class="fw-bold mb-0 text-dark">{{ ns.total }}</h3>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-warning border-4 bg-white">
+                <small class="text-muted fw-bold text-uppercase" style="font-size: 0.65rem;">Revisões</small>
+                <h3 class="fw-bold mb-0 text-warning">{{ ns.proximos }}</h3>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-danger border-4 bg-white">
+                <small class="text-muted fw-bold text-uppercase" style="font-size: 0.65rem;">Atrasados</small>
+                <h3 class="fw-bold mb-0 text-danger">{{ ns.atrasados }}</h3>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-success border-4 bg-white">
+                <small class="text-muted fw-bold text-uppercase" style="font-size: 0.65rem;">Marcados</small>
+                <h3 class="fw-bold mb-0 text-success">{{ ns.marcados }}</h3>
+            </div>
+        </div>
+    </div>
+
+    {# --- FILTROS EM SANFONA --- #}
+    <div class="card shadow-sm rounded-4 mb-4 border-0">
+        <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center cursor-pointer"
+             data-bs-toggle="collapse" data-bs-target="#collapseFiltros" style="cursor: pointer; background: none;">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-funnel-fill text-primary"></i>
+                <span class="text-dark fw-bold">Filtros de Busca</span>
+            </div>
+            <i class="bi bi-chevron-down text-muted"></i>
+        </div>
+
+        <div class="collapse {% if filters.q or filters.operacao or filters.status %}show{% endif %}" id="collapseFiltros">
+            <div class="card-body pt-0 pb-4">
+                <form method="GET">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-4">
+                            <label class="small text-muted">Busca Rápida:</label>
+                            <input type="text" name="q" value="{{ filters.q or '' }}" class="form-control" placeholder="Modelo, placa...">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="small text-muted">Operação:</label>
+                            <select name="operacao" class="form-select">
+                                <option value="">Todas</option>
+                                <option value="PMSP" {{ 'selected' if filters.operacao == 'PMSP' }}>PMSP</option>
+                                <option value="AGRO" {{ 'selected' if filters.operacao == 'AGRO' }}>AGRO</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="small text-muted">Status:</label>
+                            <select name="status" class="form-select">
+                                <option value="">Todos</option>
+                                <option value="Ativo" {{ 'selected' if filters.status == 'Ativo' }}>🟢 Ativo</option>
+                                <option value="Em Manutenção" {{ 'selected' if filters.status == 'Em Manutenção' }}>Manutenção</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 d-flex gap-2">
+                            <button class="btn btn-success w-100 d-flex gap-1 justify-content-center align-items-center" type="submit">
+                                <i class="bi bi-search"></i> Filtrar
+                            </button>
+                            {% if filters.q or filters.operacao or filters.status %}
+                                <a href="{{ url_for('main.listar_veiculos') }}" class="btn btn-outline-secondary w-100 d-flex gap-1 justify-content-center align-items-center">
+                                    <i class="bi bi-x-lg"></i> Limpar
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {# --- TABELA / CARDS --- #}
+    <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 text-center">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4 text-start">Veículo / Placa</th>
+                            <th>Frota / Op.</th>
+                            <th>Responsável</th>
+                            <th>KM Restante</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for v in veiculos %}
+                        {% set falt = v.km_restante_revisao %}
+                        <tr>
+                            <td class="ps-4 text-start">
+                                <div class="fw-bold text-dark">{{ v.modelo }}</div>
+                                <div class="text-muted small">{{ v.placa }}</div>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border">{{ v.frota }}</span>
+                                <span class="badge bg-light text-primary border">{{ v.operacao }}</span>
+                            </td>
+                            <td><div class="small">{{ v.responsavel or '-' }}</div></td>
+                            <td>
+                                {% if falt is not none %}
+                                    <span class="badge {% if falt < 0 %}bg-danger-light text-danger{% elif falt <= 2000 %}bg-warning-light text-warning{% else %}bg-success-light text-success{% endif %} rounded-pill px-3">
+                                        {{ falt|round|int }} km
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted small">--</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge {% if v.status == 'Ativo' %}bg-success-light text-success{% else %}bg-warning-light text-warning{% endif %} rounded-pill px-3">
+                                    {{ v.status }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="dropdown">
+                                    <button class="btn btn-outline-secondary btn-sm rounded-circle p-2" type="button" data-bs-toggle="dropdown">
+                                        <i class="bi bi-three-dots-vertical"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
+                                        <li><a class="dropdown-item py-2" href="{{ url_for('main.editar_veiculo', veiculo_id=v.id) }}"><i class="bi bi-pencil me-2"></i> Editar</a></li>
+                                        {% if is_admin %}
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <form method="POST" action="{{ url_for('main.deletar_veiculo', veiculo_id=v.id) }}" onsubmit="return confirm('Excluir veículo?');">
+                                                <button type="submit" class="dropdown-item py-2 text-danger"><i class="bi bi-trash me-2"></i> Excluir</button>
+                                            </form>
+                                        </li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

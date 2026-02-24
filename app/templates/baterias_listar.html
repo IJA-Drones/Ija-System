@@ -1,161 +1,265 @@
 {% extends "base.html" %}
 
 {% block extra_styles %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+
+<style>
+    /* =========================================
+       DESIGN SYSTEM OCEANO AZUL
+       ========================================= */
+    .dashboard-header {
+        display: flex !important;
+        align-items: center !important;
+        /* Removido o flex-start fixo para permitir a margem auto */
+        gap: 12px !important;
+        flex-wrap: wrap;
+    }
+
+    .dashboard-header h2 {
+        margin: 0 !important;
+        white-space: nowrap;
+    }
+
+    .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .btn-pill {
+        border-radius: 999px !important;
+        padding: 8px 16px !important;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+    }
+
+    .btn-voltar {
+        border: 1px solid rgba(0,0,0,.15) !important;
+        background: #fff !important;
+        color: var(--color-text-main) !important;
+    }
+
+    /* =========================================
+       RESPONSIVIDADE (MOBILE -> CARDS)
+       ========================================= */
+    @media (max-width: 768px) {
+        .dashboard-header {
+            flex-direction: column !important;
+            align-items: stretch !important;
+        }
+
+        .dashboard-header h2 { margin-right: 0 !important; white-space: normal; }
+        .header-actions { width: 100%; }
+        .header-actions a.btn { width: 100%; justify-content: center; }
+
+        .table-responsive { background: transparent !important; border: 0 !important; }
+        thead { display: none !important; }
+        tbody { display: flex !important; flex-direction: column !important; gap: 16px !important; padding: 10px 0 !important; }
+
+        tbody tr {
+            display: block !important;
+            background: var(--color-bg-white) !important;
+            border: 1px solid rgba(0, 0, 0, 0.10) !important;
+            border-radius: 18px !important;
+            box-shadow: var(--shadow-sm) !important;
+            padding: 10px !important;
+            margin-bottom: 5px;
+        }
+
+        tbody tr td {
+            display: grid !important;
+            grid-template-columns: 100px 1fr !important;
+            gap: 10px;
+            padding: 12px 8px !important;
+            border: 0 !important;
+            text-align: right !important;
+            align-items: center !important;
+        }
+
+        tbody tr td + td { border-top: 1px solid rgba(0, 0, 0, 0.05) !important; }
+
+        tbody tr td:nth-child(1)::before { content: "Bateria"; }
+        tbody tr td:nth-child(2)::before { content: "n° Série"; }
+        tbody tr td:nth-child(3)::before { content: "Ciclos"; }
+        tbody tr td:nth-child(4)::before { content: "Vínculo"; }
+        tbody tr td:nth-child(5)::before { content: "Status"; }
+        tbody tr td:nth-child(6)::before { content: "Ações"; }
+
+        tbody tr td::before {
+            font-weight: 700;
+            color: var(--color-text-muted);
+            font-size: .70rem;
+            text-transform: uppercase;
+            text-align: left !important;
+        }
+
+        .ciclo-control-wrapper {
+            max-width: 100% !important;
+            width: 100% !important;
+            align-items: flex-end !important;
+        }
+
+        .ciclo-control-wrapper .input-group {
+            width: 130px !important;
+        }
+
+        .dropdown {
+            display: flex;
+            justify-content: flex-end;
+        }
+    }
+
+    html.dark-mode .btn-voltar, body.dark-mode .btn-voltar {
+        background: transparent !important;
+        border-color: #233549 !important;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4" style="max-width: 1200px">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h2 class="text-dark">
-        <i class="bi bi-battery-full me-2 text-primary"></i> Inventário de Baterias
-      </h2>
-      <p class="text-muted small mb-0">Controle de ciclos e rastreio de equipamentos.</p>
+
+    {# --- CABEÇALHO PADRONIZADO (BOTÕES NA DIREITA) --- #}
+    <div class="dashboard-header mb-4">
+        {# Esta div agrupa o título e descrição e empurra as ações para a direita #}
+        <div style="margin-right: auto !important;"> 
+            <h2 class="text-dark mb-0">
+                <i class="bi bi-battery-full me-2 text-primary"></i> Inventário de Baterias
+            </h2>
+            <p class="text-muted small mb-0">Controle de ciclos e rastreio de equipamentos.</p>
+        </div>
+
+        <div class="header-actions">
+            <a href="{{ url_for('main.listar_equipamentos') }}" class="btn btn-pill btn-voltar shadow-sm">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+            {% if is_admin %}
+            <a href="{{ url_for('main.cadastrar_bateria') }}" class="btn btn-pill btn-success shadow-sm">
+                <i class="bi bi-plus-lg"></i> Nova Bateria
+            </a>
+            {% endif %}
+        </div>
     </div>
-    <a href="{{ url_for('main.cadastrar_bateria') }}" class="btn btn-success btn-sm d-flex align-items-center gap-2">
-      <i class="bi bi-plus-lg"></i> Nova Bateria
-    </a>
-  </div>
 
-  <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
-    <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-          <thead class="table-light">
-            <tr>
-              <th class="ps-3">Bateria</th>
-              <th>n° Série</th>
-              <th>Ciclos</th>
-              <th>Localização / Drone</th>
-              <th>Status</th>
-              <th class="text-center">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-
-            {% for b in baterias %}
-            <tr>
-                <td class="ps-3 fw-bold">{{ b.renomacao }}</td>
-                <td class="text-muted small">{{ b.numero_serie }}</td>
-                
-                <td style="width: 160px;">
-                    <div class="d-flex flex-column" style="max-width: 140px;">
-                        
-                        <div class="d-flex align-items-center gap-2 mb-1">
-                            <span class="text-muted fw-bold" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Ciclos:</span>
-                            <span class="badge text-success rounded-pill" id="valCiclo{{ b.id }}" style="font-size: 0.75rem;">
-                                {{ b.ciclo }}
-                            </span>
-                        </div>
-
-                        <div class="input-group input-group-sm shadow-sm border rounded-3 overflow-hidden mb-1">
-                            <button class="btn btn-outline-danger border-0 px-2" type="button" onclick="atualizarCiclo({{ b.id }}, 'sub')">
-                                <i class="bi bi-dash-lg text-danger" style="font-size: 0.8rem;"></i>
-                            </button>
+    {# --- LISTAGEM --- #}
+    <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 text-center">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4 text-start">Bateria</th>
+                            <th>n° Série</th>
+                            <th>Ciclos</th>
+                            <th>Localização / Drone</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for b in baterias %}
+                        <tr>
+                            <td class="ps-4 fw-bold text-dark text-start">{{ b.renomacao }}</td>
+                            <td class="text-muted small">{{ b.numero_serie }}</td>
                             
-                            <input type="number" id="inputCiclo{{ b.id }}" 
-                                class="form-control border-0 text-center" 
-                                style="font-size: 0.8rem; height: 30px;" 
-                                placeholder="1">
+                            <td style="width: 180px;">
+                                <div class="d-flex flex-column ciclo-control-wrapper mx-auto" style="max-width: 140px; align-items: center;">
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <span class="badge bg-light text-success border rounded-pill" id="valCiclo{{ b.id }}">
+                                            {{ b.ciclo }} ciclos
+                                        </span>
+                                    </div>
+                                    <div class="input-group input-group-sm shadow-sm border rounded-3 overflow-hidden mb-1">
+                                        <button class="btn btn-outline-danger border-0 px-2" type="button" onclick="atualizarCiclo({{ b.id }}, 'sub')">
+                                            <i class="bi bi-dash-lg"></i>
+                                        </button>
+                                        <input type="number" id="inputCiclo{{ b.id }}" class="form-control border-0 text-center bg-white" style="font-size: 0.8rem; height: 30px;" placeholder="1">
+                                        <button class="btn btn-outline-success border-0 px-2" type="button" onclick="atualizarCiclo({{ b.id }}, 'add')">
+                                            <i class="bi bi-plus-lg"></i>
+                                        </button>
+                                    </div>
+                                    <div class="progress rounded-pill w-100" style="height: 4px;">
+                                        <div id="progresso{{ b.id }}" class="progress-bar {% if b.ciclo > 200 %}bg-danger{% else %}bg-success{% endif %}" 
+                                             style="width: {{ (b.ciclo / 2.5) if b.ciclo <= 250 else 100 }}%"></div>
+                                    </div>
+                                </div>
+                            </td>
 
-                            <button class="btn btn-outline-success border-0 px-2" type="button" onclick="atualizarCiclo({{ b.id }}, 'add')">
-                                <i class="bi bi-plus-lg text-success" style="font-size: 0.8rem;"></i>
-                            </button>
-                        </div>
+                            <td>
+                                {% if b.drone_vinculado %}
+                                    <span class="badge bg-primary-light text-primary border border-primary-subtle">
+                                        <i class="bi bi-airplane me-1"></i>{{ b.drone_vinculado.renomacao }}
+                                    </span>
+                                {% else %}
+                                    <span class="badge text-muted border border-dashed">Em Estoque</span>
+                                {% endif %}
+                            </td>
 
-                        <div class="progress rounded-pill" style="height: 4px;">
-                            <div id="progresso{{ b.id }}" 
-                                class="progress-bar {% if b.ciclo > 200 %}bg-danger{% else %}bg-success{% endif %}" 
-                                style="width: {{ (b.ciclo / 2.5) if b.ciclo <= 250 else 100 }}%">
-                            </div>
-                        </div>
-                    </div>
-                </td>
+                            <td>
+                                <span class="badge {% if b.status == 'Ativo' %}bg-success{% else %}bg-secondary{% endif %} rounded-pill px-3">
+                                    {{ b.status }}
+                                </span>
+                            </td>
 
-              <td>
-                {% if b.drone_vinculado %}
-                  <span class="badge bg-primary-light text-primary">
-                    <i class="bi bi-airplane me-1"></i>{{ b.drone_vinculado.renomacao }}
-                  </span>
-                {% else %}
-                  <span class="badge text-muted border">Em Estoque</span>
-                {% endif %}
-              </td>
-              <td>
-                <span class="badge {% if b.status == 'Ativo' %}bg-success{% else %}bg-secondary{% endif %}">
-                  {{ b.status }}
-                </span>
-              </td>
-              <td class="text-center">
-                    <div class="dropdown">
-                        <button class="btn btn-outline-secondary ms-auto" type="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-three-dots-vertical"></i>
-                        </button>
-                        <ul class="dropdown-menu shadow border-0 rounded-3">
-                            <li><a class="dropdown-item py-2" href="{{ url_for('main.editar_bateria', bateria_id=b.id) }}"><i class="bi bi-pencil me-2"></i> Editar Dados</a></li>
-                            {% if is_admin %}
-                            <li><hr class="dropdown-divider"></li>
-                            <li>
-                                <form method="post" action="{{ url_for('main.deletar_bateria', bateria_id=b.id) }}" onsubmit="return confirm('Excluir bateria?');">
-                                    <button type="submit" class="dropdown-item py-2 text-danger"><i class="bi bi-trash me-2"></i> Excluir Bateria</button>
-                                </form>
-                            </li>
-                            {% endif %}
-                        </ul>
-                    </div>
-                </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
+                            <td>
+                                <div class="dropdown">
+                                    <button class="btn btn-outline-secondary btn-sm rounded-circle p-2" type="button" data-bs-toggle="dropdown">
+                                        <i class="bi bi-three-dots-vertical"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
+                                        <li><a class="dropdown-item py-2" href="{{ url_for('main.editar_bateria', bateria_id=b.id) }}"><i class="bi bi-pencil me-2"></i> Editar Dados</a></li>
+                                        {% if is_admin %}
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <form method="post" action="{{ url_for('main.deletar_bateria', bateria_id=b.id) }}" onsubmit="return confirm('Excluir bateria?');">
+                                                <button type="submit" class="dropdown-item py-2 text-danger"><i class="bi bi-trash me-2"></i> Excluir Bateria</button>
+                                            </form>
+                                        </li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-  </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
+<script>
+function atualizarCiclo(id, operacao) {
+    let input = document.getElementById('inputCiclo' + id);
+    let valorInput = parseInt(input.value);
+    let quantidade = isNaN(valorInput) ? 1 : valorInput;
 
-    <script>
-    function atualizarCiclo(id, operacao) {
-        let input = document.getElementById('inputCiclo' + id);
-        let valorInput = parseInt(input.value);
-        
-        // Se não digitar nada, assume 1
-        let quantidade = isNaN(valorInput) ? 1 : valorInput;
-
-        fetch("{{ url_for('main.update_ciclos', id=0) }}".replace('0', id), {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': "{{ csrf_token() if csrf_token else '' }}"
-            },
-            body: JSON.stringify({
-                quantidade: quantidade,
-                operacao: operacao
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            // Atualiza o número na tela
-            document.getElementById('valCiclo' + id).innerText = data.novo_ciclo;
-            
-            // Atualiza a barra de progresso
-            let barra = document.getElementById('progresso' + id);
-            let porcentagem = (data.novo_ciclo / 2.5) > 100 ? 100 : (data.novo_ciclo / 2.5);
-            barra.style.width = porcentagem + '%';
-            
-            // Atualiza a cor
-            barra.classList.remove('bg-success', 'bg-danger');
-            barra.classList.add(data.cor);
-            
-            // Limpa o input
-            input.value = '';
-        })
-        .catch(error => console.error('Erro:', error));
-    }
-    </script>
+    fetch("{{ url_for('main.update_ciclos', id=0) }}".replace('0', id), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': "{{ csrf_token() if csrf_token else '' }}"
+        },
+        body: JSON.stringify({ quantidade: quantidade, operacao: operacao })
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('valCiclo' + id).innerText = data.novo_ciclo + ' ciclos';
+        let barra = document.getElementById('progresso' + id);
+        let porcentagem = (data.novo_ciclo / 2.5) > 100 ? 100 : (data.novo_ciclo / 2.5);
+        barra.style.width = porcentagem + '%';
+        barra.classList.remove('bg-success', 'bg-danger');
+        barra.classList.add(data.cor);
+        input.value = '';
+    })
+    .catch(error => console.error('Erro:', error));
+}
+</script>
 {% endblock %}
