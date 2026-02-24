@@ -4,120 +4,6 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
-
-  <style>
-    /* =========================
-       RELATÓRIOS - HEADER (título + botões)
-       ========================= */
-
-    .rel-header{
-      display:flex;
-      align-items:flex-end;
-      justify-content:space-between;
-      gap: 14px;
-    }
-
-    .rel-title h2{
-      color: var(--bs-body-color);
-    }
-
-    .rel-actions{
-      display:flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    /* botão export mais “premium” */
-    .rel-btn{
-      display:flex;
-      align-items:center;
-      gap: 10px;
-      border-radius: 999px;
-      padding: .65rem 1rem;
-      font-weight: 700;
-      box-shadow: 0 8px 18px rgba(0,0,0,.08);
-      border: 1px solid rgba(0,0,0,.08);
-      white-space: nowrap;
-    }
-
-    /* ícone em bolinha (fica lindo no mobile) */
-    .rel-btn i{
-      width: 34px;
-      height: 34px;
-      display:grid;
-      place-items:center;
-      border-radius: 999px;
-      background: rgba(255,255,255,.18);
-    }
-
-    /* Desktop: deixa alinhado e equilibrado */
-    @media (min-width: 992px){
-      .rel-btn{
-        min-width: 190px;
-        justify-content: center;
-      }
-    }
-
-    /* ✅ Mobile: título em cima e botões em grade */
-    @media (max-width: 768px){
-      .rel-header{
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      .rel-actions{
-        display:grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
-      }
-
-      .rel-actions form{
-        width: 100%;
-      }
-
-      .rel-btn{
-        width: 100%;
-        justify-content: center;
-        padding: .9rem .8rem;
-        border-radius: 18px;
-        flex-direction: column;
-        gap: 8px;
-        text-align:center;
-      }
-
-      .rel-btn i{
-        width: 44px;
-        height: 44px;
-        font-size: 1.1rem;
-      }
-
-      .rel-btn span{
-        font-size: .92rem;
-        line-height: 1.1;
-      }
-    }
-
-    /* =========================
-       DARK MODE (header)
-       ========================= */
-    html.dark-mode .rel-btn,
-    body.dark-mode .rel-btn{
-      border-color: #233549 !important;
-      box-shadow: 0 14px 28px rgba(0,0,0,.35) !important;
-    }
-
-    /* PDF (btn-danger) no dark */
-    html.dark-mode .btn.btn-danger.rel-btn,
-    body.dark-mode .btn.btn-danger.rel-btn{
-      filter: saturate(1.05);
-    }
-
-    /* Excel (btn-success) no dark */
-    html.dark-mode .btn.btn-success.rel-btn,
-    body.dark-mode .btn.btn-success.rel-btn{
-      filter: saturate(1.05);
-    }
-  </style>
 {% endblock %}
 
 
@@ -138,36 +24,37 @@
 } %}
 <div class="container-fluid py-4" style="max-width: 1200px;">
 
-    {# --- Cabeçalho e Bloco de Exportação --- #}
-    <div class="rel-header mb-4">
+    <div class="rel-header mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
         <div class="rel-title">
-            <h2 class="m-0 fw-bold">
-            <i class="bi bi-bar-chart-fill me-2 text-primary"></i> Relatórios
+            <h2 class="text-dark">
+                <i class="bi bi-bar-chart-fill me-2 text-primary"></i> Relatórios
             </h2>
         </div>
 
-        <div class="rel-actions d-flex gap-2 mb-3">
-            <form method="GET" action="{{ url_for('main.exportar_relatorio_pdf') }}" class="form-exportar p-0 m-0 d-grid" style="width: 180px;">
-            <input type="hidden" name="mes" value="{{ mes_selecionado }}">
-            <input type="hidden" name="ano" value="{{ ano_selecionado }}">
-            <input type="hidden" name="uvis_id" value="{{ uvis_id_selecionado }}">
-            <button type="submit" class="btn btn-danger d-flex align-items-center justify-content-center gap-2" title="Exportar PDF">
-                <i class="bi bi-file-earmark-pdf-fill"></i>
-                <span>Exportar PDF</span>
-            </button>
+        <div class="rel-actions d-flex gap-2 flex-wrap align-items-center justify-content-md-end">
+            <form method="GET" action="{{ url_for('main.exportar_relatorio_pdf') }}" 
+                class="form-exportar p-0 m-0 d-grid flex-grow-1 flex-md-grow-0" style="width: 180px; min-width: 150px;">
+                <input type="hidden" name="mes" value="{{ mes_selecionado }}">
+                <input type="hidden" name="ano" value="{{ ano_selecionado }}">
+                <input type="hidden" name="uvis_id" value="{{ uvis_id_selecionado }}">
+                <button type="submit" class="btn btn-danger d-flex align-items-center justify-content-center gap-2" style="height: 38px;" title="Exportar PDF">
+                    <i class="bi bi-file-earmark-pdf-fill"></i>
+                    <span>Exportar PDF</span>
+                </button>
             </form>
 
-            <form method="GET" action="{{ url_for('main.exportar_relatorio_excel') }}" class="form-exportar p-0 m-0 d-grid" style="width: 180px;">
-            <input type="hidden" name="mes" value="{{ mes_selecionado }}">
-            <input type="hidden" name="ano" value="{{ ano_selecionado }}">
-            <input type="hidden" name="uvis_id" value="{{ uvis_id_selecionado }}">
-            <button type="submit" class="btn btn-secondary d-flex align-items-center justify-content-center gap-2" title="Exportar Excel">
-                <i class="bi bi-file-earmark-excel-fill"></i>
-                <span>Exportar Excel</span>
-            </button>
+            <form method="GET" action="{{ url_for('main.exportar_relatorio_excel') }}" 
+                class="form-exportar p-0 m-0 d-grid flex-grow-1 flex-md-grow-0" style="width: 180px; min-width: 150px;">
+                <input type="hidden" name="mes" value="{{ mes_selecionado }}">
+                <input type="hidden" name="ano" value="{{ ano_selecionado }}">
+                <input type="hidden" name="uvis_id" value="{{ uvis_id_selecionado }}">
+                <button type="submit" class="btn btn-secondary d-flex align-items-center justify-content-center gap-2" style="height: 38px;" title="Exportar Excel">
+                    <i class="bi bi-file-earmark-excel-fill"></i>
+                    <span>Exportar Excel</span>
+                </button>
             </form>
         </div>
-</div>
+    </div>
 
 {# --- FILTROS EM "SANFONA" (Accordion) --- #}
 <div class="card shadow-sm rounded-4 mb-4 border-0">
