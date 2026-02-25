@@ -610,9 +610,8 @@ body.dark-mode .dashboard-header .btn-canceladas {
                     {# ✅ CANCELAR #}
                     {% if p.status != 'CANCELADO' %}
                     <li>
-                      <form method="POST"
-                            action="{{ url_for('main.cancelar_solicitacao', id=p.id) }}"
-                            onsubmit="return confirm('Tem certeza que deseja cancelar esta solicitação?');">
+                      <form class="form-cancelar" method="POST"
+                            action="{{ url_for('main.cancelar_solicitacao', id=p.id) }}">
                         <button class="dropdown-item py-2 text-danger" type="submit">
                           <i class="bi bi-x-circle me-2"></i> Cancelar Solicitação
                         </button>
@@ -947,6 +946,46 @@ body.dark-mode .dashboard-header .btn-canceladas {
 {% endblock %}
 {% block scripts %}
 <script>
+  document.addEventListener("DOMContentLoaded", () => {
+      const body = document.body;
+      const toggle = document.getElementById("toggleDarkMode");
+      const sidebarToggle = document.getElementById("sidebarToggle");
+      const overlay = document.getElementById("sidebarOverlay");
+
+      // 1. CONFIRMAÇÃO DE EXCLUSÃO (Agora inclui anexo e qualquer outro delete)
+      document.querySelectorAll('.form-cancelar').forEach(form => {
+          form.addEventListener('submit', function (e) {
+              e.preventDefault(); // Trava o envio automático
+
+              const isDarkMode = document.body.classList.contains('dark-mode');
+              const submitButton = form.querySelector('button[type="submit"]');
+
+              Swal.fire({
+                  title: 'Deseja continuar?',
+                  text: 'O registro será cancelado permanentemente.',
+                  icon: 'warning',
+                  // ✅ Note que este script usa background/color manuais,
+                  // por isso estava diferente do que tinha a classe customClass
+                  customClass: {
+                      popup: isDarkMode ? 'swal2-dark-mode' : ''
+                  },
+                  showCancelButton: true,
+                  confirmButtonColor: '#d33',
+                  cancelButtonColor: '#6c757d',
+                  confirmButtonText: 'Sim, remover!',
+                  cancelButtonText: 'Cancelar'
+                  // Adicione a classe aqui também para garantir o estilo do anel do ícone
+
+              }).then((result) => {
+                  if (result.isConfirmed) {
+                      showLoadingState(submitButton); // Chama o loading só após confirmar
+                      form.submit();
+                  }
+              });
+          });
+      });
+  });
+
   (function () {
     if (window.UVIS_CHAT_INIT) return;
     window.UVIS_CHAT_INIT = true;
