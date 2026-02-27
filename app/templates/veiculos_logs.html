@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1200px;">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h2 class="text-dark mb-1">
+               <i class="bi bi-file-earmark-text-fill me-2 text-primary"></i> Logs de Veículos
+            </h2>
+            <div class="small text-muted">Consulta completa de abastecimento e quilometragem.</div>
+        </div>
+        <a href="{{ url_for('main.listar_veiculos') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar para veículos
+        </a>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-primary border-4 bg-white">
+                <small class="text-muted fw-bold text-uppercase" style="font-size: 0.65rem;">Total de Logs</small>
+                <h3 class="fw-bold mb-0 text-dark">{{ total_logs }}</h3>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-success border-4 bg-white">
+                <small class="text-muted fw-bold text-uppercase" style="font-size: 0.65rem;">Abastecimento (Página)</small>
+                <h3 class="fw-bold mb-0 text-success">R$ {{ '%.2f'|format(total_abastecido or 0) }}</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm rounded-4 mb-4 border-0">
+        <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center cursor-pointer"
+             data-bs-toggle="collapse" data-bs-target="#collapseFiltrosLogs" style="cursor: pointer; background: none;">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-funnel-fill text-primary"></i>
+                <span class="text-dark fw-bold">Filtros de Busca</span>
+            </div>
+            <i class="bi bi-chevron-down text-muted"></i>
+        </div>
+
+        <div class="collapse {% if filters.q or filters.data_inicio or filters.data_fim %}show{% endif %}" id="collapseFiltrosLogs">
+            <div class="card-body pt-0 pb-4">
+                <form method="GET" class="row g-2 align-items-end">
+                    <div class="col-md-4">
+                        <label class="small text-muted">Veículo / Placa / Piloto:</label>
+                        <input type="text" name="q" value="{{ filters.q or '' }}" class="form-control" placeholder="Modelo, placa, responsável...">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="small text-muted">Data inicial:</label>
+                        <input type="date" name="data_inicio" value="{{ filters.data_inicio or '' }}" class="form-control">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="small text-muted">Data final:</label>
+                        <input type="date" name="data_fim" value="{{ filters.data_fim or '' }}" class="form-control">
+                    </div>
+                    <div class="col-md-2 d-flex gap-2">
+                        <button class="btn btn-success w-100" type="submit">
+                            <i class="bi bi-search"></i> Filtrar
+                        </button>
+                    </div>
+                    {% if filters.q or filters.data_inicio or filters.data_fim %}
+                    <div class="col-md-2 d-flex gap-2">
+                        <a href="{{ url_for('main.veiculos_logs') }}" class="btn btn-outline-secondary w-100">
+                            <i class="bi bi-x-lg"></i> Limpar
+                        </a>
+                    </div>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 text-center">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4 text-start">Data</th>
+                            <th class="text-start">Veículo</th>
+                            <th>Piloto</th>
+                            <th>KM Inicial</th>
+                            <th>KM Final</th>
+                            <th>Abastecimento (R$)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                            <tr>
+                                <td class="ps-4 text-start">
+                                    {{ log.data_registro.strftime('%d/%m/%Y %H:%M') if log.data_registro else '-' }}
+                                </td>
+                                <td class="text-start">
+                                    <div class="fw-bold text-dark">{{ log.veiculo.modelo if log.veiculo else '-' }}</div>
+                                    <div class="text-muted small">
+                                        {{ log.veiculo.placa if log.veiculo else '-' }}
+                                        {% if log.veiculo and log.veiculo.responsavel %} • {{ log.veiculo.responsavel }}{% endif %}
+                                    </div>
+                                </td>
+                                <td>{{ log.piloto.nome_piloto if log.piloto else '-' }}</td>
+                                <td>{{ (log.km_inicial or 0)|round|int }} km</td>
+                                <td>{{ (log.km_final or 0)|round|int }} km</td>
+                                <td>
+                                    {% if log.valor_total is not none %}
+                                        <span class="badge bg-success-light text-success rounded-pill px-3">
+                                            {{ '%.2f'|format(log.valor_total) }}
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted small">Sem abastecimento</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="py-4 text-muted">Nenhum log encontrado para os filtros aplicados.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {% if paginacao and paginacao.pages > 1 %}
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+            <li class="page-item {{ 'disabled' if not paginacao.has_prev }}">
+                <a class="page-link" href="{{ url_for('main.veiculos_logs', page=paginacao.prev_num if paginacao.has_prev else 1, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}">Anterior</a>
+            </li>
+
+            {% for p in paginacao.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=1) %}
+                {% if p %}
+                    <li class="page-item {{ 'active' if p == paginacao.page else '' }}">
+                        <a class="page-link" href="{{ url_for('main.veiculos_logs', page=p, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}">{{ p }}</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">…</span></li>
+                {% endif %}
+            {% endfor %}
+
+            <li class="page-item {{ 'disabled' if not paginacao.has_next }}">
+                <a class="page-link" href="{{ url_for('main.veiculos_logs', page=paginacao.next_num if paginacao.has_next else paginacao.pages, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}">Próxima</a>
+            </li>
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}

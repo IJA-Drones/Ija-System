@@ -7640,6 +7640,83 @@ def listar_veiculos():
     )
 
 
+@bp.route("/veiculos/logs", methods=["GET"], endpoint="veiculos_logs")
+@login_required
+def veiculos_logs():
+    tipo = getattr(current_user, "tipo_usuario", None)
+    if tipo not in ("admin", "visualizar", "operario", "uvis", "piloto"):
+        abort(403)
+
+    q = (request.args.get("q") or "").strip()
+    data_inicio_raw = (request.args.get("data_inicio") or "").strip()
+    data_fim_raw = (request.args.get("data_fim") or "").strip()
+    page = request.args.get("page", 1, type=int)
+
+    data_inicio = None
+    data_fim = None
+
+    if data_inicio_raw:
+        try:
+            data_inicio = datetime.strptime(data_inicio_raw, "%Y-%m-%d")
+        except ValueError:
+            flash("Data inicial invalida.", "warning")
+            data_inicio_raw = ""
+
+    if data_fim_raw:
+        try:
+            # fim do dia para incluir todos os registros da data final
+            data_fim = datetime.strptime(data_fim_raw, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+        except ValueError:
+            flash("Data final invalida.", "warning")
+            data_fim_raw = ""
+
+    query = (
+        LogVeiculo.query
+        .join(Veiculos, LogVeiculo.veiculo_id == Veiculos.id)
+        .join(Pilotos, LogVeiculo.piloto_id == Pilotos.id)
+    )
+
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            db.or_(
+                Veiculos.modelo.ilike(like),
+                Veiculos.placa.ilike(like),
+                Veiculos.responsavel.ilike(like),
+                Pilotos.nome_piloto.ilike(like),
+            )
+        )
+
+    if data_inicio:
+        query = query.filter(LogVeiculo.data_registro >= data_inicio)
+    if data_fim:
+        query = query.filter(LogVeiculo.data_registro <= data_fim)
+
+    paginacao = (
+        query.order_by(LogVeiculo.data_registro.desc())
+        .paginate(page=page, per_page=40, error_out=False)
+    )
+
+    logs = paginacao.items
+    total_logs = paginacao.total
+    total_abastecido = sum((l.valor_total or 0) for l in logs)
+
+    filters = {
+        "q": q,
+        "data_inicio": data_inicio_raw,
+        "data_fim": data_fim_raw,
+    }
+
+    return render_template(
+        "veiculos_logs.html",
+        logs=logs,
+        paginacao=paginacao,
+        total_logs=total_logs,
+        total_abastecido=total_abastecido,
+        filters=filters,
+    )
+
+
 @bp.route("/veiculos/cadastrar", methods=["GET", "POST"], endpoint="cadastrar_veiculo")
 @login_required
 def cadastrar_veiculo():

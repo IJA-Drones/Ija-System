@@ -123,6 +123,10 @@
                     <i class="bi bi-plus-lg"></i> Novo Veículo
                 </a>
 
+                <a href="{{ url_for('main.veiculos_logs') }}" class="btn btn-primary shadow-sm btn-pill">
+                    <i class="bi bi-file-earmark-text-fill"></i> Ver Logs
+                </a>
+
                 <a href="{{ url_for('main.listar_veiculos', export=1, **request.args) }}" class="btn btn-secondary shadow-sm btn-pill">
                     <i class="bi bi-file-earmark-excel-fill"></i> Exportar
                 </a>
