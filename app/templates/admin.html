@@ -398,9 +398,9 @@
                                 {% endif %}
                                 <div class="mt-2 pt-2 border-top">
                                 {% if p.status != 'CANCELADO' %}
-                                    <form method="POST"
+                                    <form class = "form-cancelar" method="POST"
                                         action="{{ url_for('main.cancelar_solicitacao_admin', id=p.id) }}"
-                                        onsubmit="return confirm('Tem certeza que deseja cancelar esta solicitação?');">
+                                        >
                                     <button type="submit" class="btn btn-sm btn-outline-danger w-100">
                                         <i class="bi bi-x-circle"></i> Cancelar Solicitação
                                     </button>
@@ -760,6 +760,40 @@ function openMapModal({ lat, lng, title }) {
 
 // ✅ garante que os botões já existem antes de bindar evento
 document.addEventListener("DOMContentLoaded", () => {
+
+    // 1. CONFIRMAÇÃO DE EXCLUSÃO (Agora inclui anexo e qualquer outro delete)
+      document.querySelectorAll('.form-cancelar').forEach(form => {
+          form.addEventListener('submit', function (e) {
+              e.preventDefault(); // Trava o envio automático
+
+              const isDarkMode = document.body.classList.contains('dark-mode');
+              const submitButton = form.querySelector('button[type="submit"]');
+
+              Swal.fire({
+                  title: 'Deseja continuar?',
+                  text: 'O registro será cancelado permanentemente.',
+                  icon: 'warning',
+                  // ✅ Note que este script usa background/color manuais,
+                  // por isso estava diferente do que tinha a classe customClass
+                  customClass: {
+                      popup: isDarkMode ? 'swal2-dark-mode' : ''
+                  },
+                  showCancelButton: true,
+                  confirmButtonColor: '#d33',
+                  cancelButtonColor: '#6c757d',
+                  confirmButtonText: 'Sim, remover!',
+                  cancelButtonText: 'Cancelar'
+                  // Adicione a classe aqui também para garantir o estilo do anel do ícone
+
+              }).then((result) => {
+                  if (result.isConfirmed) {
+                      showLoadingState(submitButton); // Chama o loading só após confirmar
+                      form.submit();
+                  }
+              });
+          });
+      });
+
   document.querySelectorAll(".btn-open-map").forEach((btn) => {
     btn.addEventListener("click", async (e) => {
       e.stopPropagation();

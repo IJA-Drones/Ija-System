@@ -270,7 +270,7 @@
                                         {% if is_admin %}
                                         <li><hr class="dropdown-divider"></li>
                                         <li>
-                                            <form method="POST" action="{{ url_for('main.deletar_veiculo', veiculo_id=v.id) }}" onsubmit="return confirm('Excluir veículo?');">
+                                            <form class="form-deletar"method="POST" action="{{ url_for('main.deletar_veiculo', veiculo_id=v.id) }}" onsubmit="return;">
                                                 <button type="submit" class="dropdown-item py-2 text-danger"><i class="bi bi-trash me-2"></i> Excluir</button>
                                             </form>
                                         </li>
