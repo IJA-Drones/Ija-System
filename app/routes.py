@@ -7924,6 +7924,7 @@ def editar_veiculo(veiculo_id):
         responsaveis=responsaveis
     )
 
+from flask import flash, redirect, url_for, abort
 # -----------------------------
 # DELETAR VEÍCULO
 # -----------------------------
@@ -7944,10 +7945,7 @@ def deletar_veiculo(veiculo_id):
 
     return redirect(url_for("main.listar_veiculos"))
 
-    from flask import render_template, request, redirect, url_for, flash, abort
-from flask_login import login_required, current_user
-from app import db
-from app.models import Veiculos
+
 
 
 @bp.route("/piloto/veiculos", methods=["GET"], endpoint="piloto_veiculos")
