@@ -8204,19 +8204,59 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
 
+from datetime import datetime
+from io import BytesIO
+
+from flask import request, send_file, abort
+from flask_login import login_required, current_user
+
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.utils import get_column_letter
+from openpyxl.formatting.rule import CellIsRule
+
+from datetime import datetime
+from io import BytesIO
+from collections import defaultdict
+
+from flask import request, send_file, abort, redirect, url_for
+from flask_login import login_required, current_user
+
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.utils import get_column_letter
+from openpyxl.formatting.rule import CellIsRule, FormulaRule
+from openpyxl.worksheet.table import Table, TableStyleInfo
+from openpyxl.chart import BarChart, Reference
+from openpyxl.chart.label import DataLabelList
+
+
+from datetime import datetime
+from io import BytesIO
+from collections import defaultdict
+
+from flask import request, send_file, abort
+from flask_login import login_required, current_user
+
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.utils import get_column_letter
+
+
 # -------------------------------------------------------------
-# EXPORTAR LOGS DE VEÍCULOS (Excel bonito)
+# EXPORTAR LOGS DE VEÍCULOS (Excel Premium + Resumo) - SEM CORRUPÇÃO
 # -------------------------------------------------------------
 @bp.route("/veiculos/logs/exportar", methods=["GET"], endpoint="exportar_logs_veiculos_xlsx")
 @login_required
 def exportar_logs_veiculos_xlsx():
-    # Segurança: normalmente isso é área admin/operário.
-    # Ajuste se quiser permitir piloto também.
+    # 🔐 Segurança
     tipo = getattr(current_user, "tipo_usuario", None)
     if tipo not in ["admin", "operario", "visualizar"]:
         abort(403)
 
-    # filtros
+    # -----------------------------
+    # Filtros
+    # -----------------------------
     q = (request.args.get("q") or "").strip()
     data_inicio = (request.args.get("data_inicio") or "").strip()  # YYYY-MM-DD
     data_fim = (request.args.get("data_fim") or "").strip()        # YYYY-MM-DD
@@ -8227,12 +8267,10 @@ def exportar_logs_veiculos_xlsx():
         db.selectinload(LogVeiculo.piloto),
     )
 
-    # busca geral
+    # Busca geral
     if q:
         like = f"%{q}%"
-        query = query.join(Veiculos, LogVeiculo.veiculo_id == Veiculos.id).join(
-            Pilotos, LogVeiculo.piloto_id == Pilotos.id
-        ).filter(
+        query = query.join(Veiculos).join(Pilotos).filter(
             db.or_(
                 Veiculos.modelo.ilike(like),
                 Veiculos.placa.ilike(like),
@@ -8243,61 +8281,213 @@ def exportar_logs_veiculos_xlsx():
             )
         )
 
-    # datas (data_registro é DateTime)
-    # - inicio: >= 00:00
-    # - fim: <= 23:59:59
-    dt_ini = None
-    dt_fim = None
+    # Datas (data_registro DateTime)
     try:
         if data_inicio:
             dt_ini = datetime.strptime(data_inicio, "%Y-%m-%d")
             query = query.filter(LogVeiculo.data_registro >= dt_ini)
+
         if data_fim:
             dt_fim = datetime.strptime(data_fim, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
             query = query.filter(LogVeiculo.data_registro <= dt_fim)
     except ValueError:
-        # se vier data inválida, não quebra export (mas você pode preferir abortar)
         pass
 
-    # ordenação mais recente primeiro
-    query = query.order_by(LogVeiculo.data_registro.desc())
+    logs = query.order_by(LogVeiculo.data_registro.desc()).all()
 
-    logs = query.all()
-
-    # ---------- Excel ----------
+    # -----------------------------
+    # Estilo / Paleta
+    # -----------------------------
     wb = Workbook()
-    ws = wb.active
-    ws.title = "Logs Veículos"
 
-    header_fill = PatternFill("solid", fgColor="1F2937")  # cinza escuro
-    header_font = Font(bold=True, color="FFFFFF")
-    header_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    # Paleta (moderna / limpa)
+    C_NAVY = "0B1F3A"
+    C_NAVY_2 = "102A4C"
+    C_WHITE = "FFFFFF"
+    C_TEXT = "111827"
+    C_BORDER = "D7DCE5"
 
-    thin = Side(style="thin", color="E5E7EB")
+    C_HEADER = "0F2A4A"
+    C_ROW_ALT = "F6F8FC"
+
+    C_GREEN_BG = "E8F5E9"
+    C_GREEN_TXT = "1B5E20"
+    C_RED_BG = "FDEAEA"
+    C_RED_TXT = "B71C1C"
+    C_BLUE_BG = "EAF2FF"
+    C_BLUE_TXT = "1D4ED8"
+    C_AMBER_BG = "FFF8E1"
+    C_AMBER_TXT = "8A6D00"
+
+    def fill(hexcolor: str):
+        return PatternFill("solid", fgColor=hexcolor)
+
+    thin = Side(style="thin", color=C_BORDER)
     border = Border(left=thin, right=thin, top=thin, bottom=thin)
 
-    text_align = Alignment(horizontal="left", vertical="center", wrap_text=True)
-    center_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
-    money_align = Alignment(horizontal="right", vertical="center", wrap_text=True)
+    align_left = Alignment(horizontal="left", vertical="center", wrap_text=True)
+    align_center = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    align_right = Alignment(horizontal="right", vertical="center", wrap_text=True)
 
-    # Cabeçalho do relatório
-    ws["A1"] = "Relatório de Logs de Veículos"
-    ws["A1"].font = Font(bold=True, size=14)
-    ws["A2"] = f"Gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M')}"
-    ws["A2"].font = Font(color="6B7280")
+    def money_ptbr(v: float) -> str:
+        return f"{v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
-    filtro_txt = []
+    def set_cell(cell, *, value=None, f=None, ft=None, a=None, b=None, nf=None):
+        if value is not None:
+            cell.value = value
+        if f is not None:
+            cell.fill = f
+        if ft is not None:
+            cell.font = ft
+        if a is not None:
+            cell.alignment = a
+        if b is not None:
+            cell.border = b
+        if nf is not None:
+            cell.number_format = nf
+
+    # -----------------------------
+    # Métricas (Resumo)
+    # -----------------------------
+    total_logs = len(logs)
+    abastecimentos = [l for l in logs if getattr(l, "valor_total", None) not in (None, 0)]
+    total_abastecido = sum(float(l.valor_total or 0) for l in abastecimentos)
+
+    km_rodados = []
+    for l in logs:
+        if l.km_inicial is not None and l.km_final is not None:
+            km_rodados.append(float(l.km_final) - float(l.km_inicial))
+
+    total_km = sum(km_rodados) if km_rodados else 0.0
+    custo_por_km = (total_abastecido / total_km) if total_km else 0.0
+
+    km_abast = []
+    for l in abastecimentos:
+        if l.km_inicial is not None and l.km_final is not None:
+            km_abast.append(float(l.km_final) - float(l.km_inicial))
+    media_km_por_abast = (sum(km_abast) / len(km_abast)) if km_abast else 0.0
+
+    abaste_por_dia = defaultdict(float)
+    for l in abastecimentos:
+        dt = getattr(l, "data_registro", None)
+        if dt:
+            abaste_por_dia[dt.date().isoformat()] += float(l.valor_total or 0)
+    dias_ordenados = sorted(abaste_por_dia.keys())
+
+    # -----------------------------
+    # Aba RESUMO
+    # -----------------------------
+    wsR = wb.active
+    wsR.title = "Resumo"
+    wsR.sheet_view.showGridLines = False
+
+    wsR.merge_cells("A1:H2")
+    set_cell(
+        wsR["A1"],
+        value="Gestão de Veículos • Relatório de Logs",
+        f=fill(C_NAVY),
+        ft=Font(bold=True, size=18, color=C_WHITE),
+        a=Alignment(horizontal="left", vertical="center"),
+    )
+
+    wsR.merge_cells("A3:H3")
+    filtros_txt = []
     if q:
-        filtro_txt.append(f"Busca: {q}")
+        filtros_txt.append(f"Busca: {q}")
     if data_inicio:
-        filtro_txt.append(f"De: {datetime.strptime(data_inicio,'%Y-%m-%d').strftime('%d/%m/%Y') if data_inicio else ''}")
+        try:
+            filtros_txt.append(f"De: {datetime.strptime(data_inicio, '%Y-%m-%d').strftime('%d/%m/%Y')}")
+        except ValueError:
+            pass
     if data_fim:
-        filtro_txt.append(f"Até: {datetime.strptime(data_fim,'%Y-%m-%d').strftime('%d/%m/%Y') if data_fim else ''}")
+        try:
+            filtros_txt.append(f"Até: {datetime.strptime(data_fim, '%Y-%m-%d').strftime('%d/%m/%Y')}")
+        except ValueError:
+            pass
 
-    ws["A3"] = "Filtros: " + (" | ".join(filtro_txt) if filtro_txt else "Nenhum")
-    ws["A3"].font = Font(color="6B7280")
+    set_cell(
+        wsR["A3"],
+        value=f"Gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M')} • " + (" | ".join(filtros_txt) if filtros_txt else "Sem filtros"),
+        f=fill(C_NAVY_2),
+        ft=Font(size=11, color="E5E7EB"),
+        a=Alignment(horizontal="left", vertical="center"),
+    )
 
-    start_row = 5
+    cards = [
+        ("Total de Logs", total_logs, C_BLUE_BG, C_BLUE_TXT),
+        ("Total Abastecido (R$)", total_abastecido, C_GREEN_BG, C_GREEN_TXT),
+        ("Total KM Rodado", int(total_km), C_BLUE_BG, C_BLUE_TXT),
+        ("Qtd Abastecimentos", len(abastecimentos), C_GREEN_BG, C_GREEN_TXT),
+        ("Média R$/KM", custo_por_km, C_AMBER_BG, C_AMBER_TXT),
+        ("Média KM/Abastec.", media_km_por_abast, C_AMBER_BG, C_AMBER_TXT),
+    ]
+
+    start_card_row = 5
+    col_blocks = [("A", "B"), ("C", "D"), ("E", "F")]
+
+    idx = 0
+    for r_block in range(2):
+        row = start_card_row + (r_block * 4)
+        for b in range(3):
+            if idx >= len(cards):
+                break
+
+            title, val, bg, fg = cards[idx]
+            c1, c2 = col_blocks[b]
+
+            wsR.merge_cells(f"{c1}{row}:{c2}{row+2}")
+            box = wsR[f"{c1}{row}"]
+
+            if isinstance(val, float) and title.startswith("Total Abastecido"):
+                text_val = f"R$ {money_ptbr(val)}"
+            elif isinstance(val, float) and title.startswith("Média R$/KM"):
+                text_val = f"R$ {money_ptbr(val)}"
+            elif isinstance(val, float) and title.startswith("Média KM/Abastec."):
+                text_val = f"{int(val)} km"
+            else:
+                text_val = f"{val}"
+
+            set_cell(
+                box,
+                value=f"{title}\n{text_val}",
+                f=fill(bg),
+                ft=Font(bold=True, size=12, color=C_TEXT),
+                a=Alignment(horizontal="left", vertical="center", wrap_text=True),
+                b=border
+            )
+
+            idx += 1
+
+    wsR["A13"] = "Abastecimento por dia"
+    wsR["A13"].font = Font(bold=True, size=12, color=C_TEXT)
+
+    wsR["A14"] = "Data"
+    wsR["B14"] = "Valor (R$)"
+    wsR["A14"].font = Font(bold=True)
+    wsR["B14"].font = Font(bold=True)
+
+    for i, d in enumerate(dias_ordenados, start=15):
+        wsR[f"A{i}"] = datetime.strptime(d, "%Y-%m-%d").strftime("%d/%m/%Y")
+        wsR[f"B{i}"] = float(abaste_por_dia[d])
+        wsR[f"B{i}"].number_format = 'R$ #,##0.00'
+        wsR[f"A{i}"].alignment = align_left
+        wsR[f"B{i}"].alignment = align_right
+
+    # Larguras do resumo
+    wsR.column_dimensions["A"].width = 22
+    wsR.column_dimensions["B"].width = 18
+    wsR.column_dimensions["C"].width = 22
+    wsR.column_dimensions["D"].width = 18
+    wsR.column_dimensions["E"].width = 22
+    wsR.column_dimensions["F"].width = 18
+    wsR.column_dimensions["G"].width = 2
+    wsR.column_dimensions["H"].width = 2
+
+    # -----------------------------
+    # Aba LOGS
+    # -----------------------------
+    ws = wb.create_sheet("Logs")
+    ws.sheet_view.showGridLines = False
 
     headers = [
         "Data/Hora",
@@ -8313,108 +8503,130 @@ def exportar_logs_veiculos_xlsx():
         "Observação",
     ]
 
+    ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=len(headers))
+    set_cell(
+        ws.cell(row=1, column=1),
+        value="Logs detalhados",
+        f=fill(C_NAVY),
+        ft=Font(bold=True, size=14, color=C_WHITE),
+        a=Alignment(horizontal="left", vertical="center")
+    )
+
+    ws.merge_cells(start_row=2, start_column=1, end_row=2, end_column=len(headers))
+    set_cell(
+        ws.cell(row=2, column=1),
+        value="Use os filtros do Excel para segmentar por veículo, placa, piloto e período.",
+        f=fill(C_NAVY_2),
+        ft=Font(size=10, color="E5E7EB"),
+        a=Alignment(horizontal="left", vertical="center")
+    )
+
+    start_row = 4
+
+    # Header
     for col_idx, h in enumerate(headers, start=1):
         cell = ws.cell(row=start_row, column=col_idx, value=h)
-        cell.fill = header_fill
-        cell.font = header_font
-        cell.alignment = header_align
-        cell.border = border
+        set_cell(
+            cell,
+            f=fill(C_HEADER),
+            ft=Font(bold=True, color=C_WHITE, size=11),
+            a=align_center,
+            b=border
+        )
 
-    # Linhas
-    for i, log in enumerate(logs, start=start_row + 1):
+    data_start = start_row + 1
+
+    for i, log in enumerate(logs, start=data_start):
         veic = log.veiculo
         piloto = log.piloto
 
-        dt = log.data_registro.strftime("%d/%m/%Y %H:%M") if getattr(log, "data_registro", None) else ""
+        dt = log.data_registro.strftime("%d/%m/%Y %H:%M") if log.data_registro else ""
         modelo = veic.modelo if veic else ""
         placa = veic.placa if veic else ""
         responsavel = (veic.responsavel or "") if veic else ""
         piloto_nome = piloto.nome_piloto if piloto else ""
 
-        km_ini = float(log.km_inicial or 0)
-        km_fim = float(log.km_final or 0)
-        km_rodado = km_fim - km_ini if (log.km_inicial is not None and log.km_final is not None) else None
+        km_ini = float(log.km_inicial) if log.km_inicial is not None else None
+        km_fim = float(log.km_final) if log.km_final is not None else None
+        km_rodado = (km_fim - km_ini) if (km_ini is not None and km_fim is not None) else None
 
-        abasteceu = "SIM" if getattr(log, "abasteceu", False) else "NÃO"
-        valor = log.valor_total if getattr(log, "valor_total", None) is not None else None
+        abasteceu_bool = bool(getattr(log, "abasteceu", False))
+        abasteceu = "SIM" if abasteceu_bool else "NÃO"
+        valor = float(log.valor_total) if getattr(log, "valor_total", None) not in (None, 0) else None
         obs = (log.observacao or "") if getattr(log, "observacao", None) else ""
 
-        row_values = [
-            dt,
-            modelo,
-            placa,
-            responsavel,
-            piloto_nome,
-            km_ini if log.km_inicial is not None else None,
-            km_fim if log.km_final is not None else None,
-            km_rodado,
-            abasteceu,
-            valor,
-            obs,
-        ]
+        row_values = [dt, modelo, placa, responsavel, piloto_nome, km_ini, km_fim, km_rodado, abasteceu, valor, obs]
 
         for col_idx, v in enumerate(row_values, start=1):
             cell = ws.cell(row=i, column=col_idx, value=v)
             cell.border = border
 
-            # alinhamentos
-            if col_idx in (6, 7, 8, 9):  # KM + Abasteceu
-                cell.alignment = center_align
-            elif col_idx == 10:  # Valor
-                cell.alignment = money_align
+            # Zebra
+            if (i - data_start) % 2 == 1:
+                cell.fill = fill(C_ROW_ALT)
+
+            # Alinhamento / formatos
+            if col_idx in (6, 7, 8):  # KMs
+                cell.alignment = align_center
+                if v is not None:
+                    cell.number_format = "0"
+            elif col_idx == 10:  # valor
+                cell.alignment = align_right
+                if v is not None:
+                    cell.number_format = 'R$ #,##0.00'
+            elif col_idx == 9:  # SIM/NÃO
+                cell.alignment = align_center
             else:
-                cell.alignment = text_align
+                cell.alignment = align_left
 
-            # formatos
-            if col_idx in (6, 7, 8) and v is not None:
-                cell.number_format = '0'
-            if col_idx == 10 and v is not None:
-                cell.number_format = 'R$ #,##0.00'
+        # "Condicionais" SEM ConditionalFormatting (aplica na escrita)
+        # Abasteceu SIM -> verde na coluna I
+        if abasteceu == "SIM":
+            cI = ws.cell(row=i, column=9)
+            cI.fill = fill(C_GREEN_BG)
+            cI.font = Font(color=C_GREEN_TXT, bold=True)
 
-    last_row = start_row + len(logs)
-    last_col = len(headers)
+        # Valor > 0 -> verde na coluna J
+        if valor is not None and valor > 0:
+            cJ = ws.cell(row=i, column=10)
+            cJ.fill = fill(C_GREEN_BG)
+            cJ.font = Font(color=C_GREEN_TXT, bold=True)
 
-    # Freeze header
-    ws.freeze_panes = ws["A6"]
+        # KM Rodado negativo -> vermelho na coluna H
+        if km_rodado is not None and km_rodado < 0:
+            cH = ws.cell(row=i, column=8)
+            cH.fill = fill(C_RED_BG)
+            cH.font = Font(color=C_RED_TXT, bold=True)
 
-    # Auto-filter
-    ws.auto_filter.ref = f"A{start_row}:{get_column_letter(last_col)}{max(last_row, start_row)}"
-    ws.row_dimensions[start_row].height = 22
+    last_row = (data_start + len(logs) - 1) if logs else start_row
 
-    # Ajuste de colunas
-    max_widths = {
-        1: 18,  # Data/Hora
-        2: 24,  # Veículo
-        3: 12,  # Placa
-        4: 22,  # Responsável
-        5: 22,  # Piloto
-        6: 12,  # KM Inicial
-        7: 12,  # KM Final
-        8: 12,  # KM Rodado
-        9: 12,  # Abasteceu
-        10: 14, # Valor
-        11: 45, # Observação
+    # Congelar / filtro
+    ws.freeze_panes = ws["A5"]
+    ws.auto_filter.ref = f"A{start_row}:{get_column_letter(len(headers))}{max(last_row, start_row)}"
+
+    # Larguras
+    widths = {
+        1: 18,
+        2: 26,
+        3: 12,
+        4: 22,
+        5: 22,
+        6: 12,
+        7: 12,
+        8: 12,
+        9: 12,
+        10: 14,
+        11: 45,
     }
+    for col_idx in range(1, len(headers) + 1):
+        ws.column_dimensions[get_column_letter(col_idx)].width = widths.get(col_idx, 20)
 
-    for col_idx in range(1, last_col + 1):
-        # largura baseada no maior conteúdo (com limite)
-        max_len = len(headers[col_idx - 1])
-        for r in range(start_row + 1, last_row + 1):
-            val = ws.cell(row=r, column=col_idx).value
-            if val is None:
-                continue
-            max_len = max(max_len, len(str(val)))
-        width = min(max_len + 2, max_widths.get(col_idx, 30))
-        ws.column_dimensions[get_column_letter(col_idx)].width = width
+    # Metadados
+    wb.properties.creator = "IJA Drones • Sistema Oceano Azul"
+    wb.properties.title = "Logs de Veículos"
+    wb.properties.created = datetime.now()
 
-    # Zebra rows
-    zebra_fill = PatternFill("solid", fgColor="F9FAFB")
-    for r in range(start_row + 1, last_row + 1):
-        if (r - (start_row + 1)) % 2 == 1:
-            for c in range(1, last_col + 1):
-                ws.cell(row=r, column=c).fill = zebra_fill
-
-    # output
+    # Output
     output = BytesIO()
     wb.save(output)
     output.seek(0)
