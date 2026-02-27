@@ -545,3 +545,34 @@ class Veiculos(Equipamentos):
             return float(self.km_prox_revisao) - float(self.km_atual or 0)
         except Exception:
             return None
+
+# -------------------------------------------------------------
+# LOGS DE VEÍCULO (Registros diários de uso/abastecimento)
+# -------------------------------------------------------------
+class LogVeiculo(db.Model):
+    __tablename__ = "logs_veiculo"
+
+    id = db.Column(db.Integer, primary_key=True)
+    
+    veiculo_id = db.Column(db.Integer, db.ForeignKey("veiculos.id"), nullable=False, index=True)
+    piloto_id = db.Column(db.Integer, db.ForeignKey("pilotos.id"), nullable=False, index=True)
+    
+    data_registro = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+    
+    km_inicial = db.Column(db.Float, nullable=False)
+    km_final = db.Column(db.Float, nullable=False)
+    
+    # Campos de Abastecimento (Opcionais)
+    abasteceu = db.Column(db.Boolean, default=False)
+    litros = db.Column(db.Float, nullable=True)
+    valor_total = db.Column(db.Float, nullable=True)
+    km_no_abastecimento = db.Column(db.Float, nullable=True)
+    
+    observacao = db.Column(db.Text)
+
+    # Relacionamentos
+    veiculo = db.relationship(
+        "Veiculos",
+        backref=db.backref("logs", lazy="select", cascade="all, delete-orphan")
+    )
+    piloto = db.relationship("Pilotos", backref=db.backref("logs_veiculo", lazy="select"))

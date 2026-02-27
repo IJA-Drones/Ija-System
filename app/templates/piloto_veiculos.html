@@ -11,6 +11,62 @@
   .pill-warn { background: #fff3cd; color: #664d03; }
   .pill-bad { background: #f8d7da; color: #842029; }
 
+  .log-card {
+    background: linear-gradient(180deg, #fbfdff 0%, #f4f8fc 100%);
+    border: 1px solid rgba(44, 82, 130, 0.14);
+    border-radius: 14px;
+    padding: 10px;
+  }
+
+  .log-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 8px;
+    align-items: end;
+  }
+
+  .log-field label {
+    font-size: .72rem;
+    font-weight: 700;
+    color: #556070;
+    margin-bottom: 4px;
+    display: block;
+    text-transform: uppercase;
+    letter-spacing: .2px;
+  }
+
+  .input-unit {
+    position: relative;
+  }
+
+  .input-unit .form-control {
+    padding-right: 42px;
+    font-weight: 600;
+  }
+
+  .input-unit .unit {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: .75rem;
+    color: #6c757d;
+    font-weight: 700;
+    pointer-events: none;
+  }
+
+  .btn-log {
+    min-width: 120px;
+    border-radius: 10px;
+    font-weight: 700;
+  }
+
+  .log-hint {
+    margin-top: 8px;
+    font-size: .78rem;
+    color: #5f6b7a;
+  }
+
   @media (max-width: 768px) {
     thead { display:none; }
     tbody { display:flex; flex-direction:column; gap:14px; }
@@ -19,16 +75,16 @@
     tbody td + td { border-top:1px solid rgba(0,0,0,.08) !important; }
 
     tbody td::before { font-weight:800; color: rgba(0,0,0,.55); }
-    tbody td:nth-child(1)::before { content: "Veículo"; }
-    tbody td:nth-child(2)::before { content: "Operação"; }
+    tbody td:nth-child(1)::before { content: "Veiculo"; }
+    tbody td:nth-child(2)::before { content: "Operacao"; }
     tbody td:nth-child(3)::before { content: "KM"; }
-    tbody td:nth-child(4)::before { content: "Próx"; }
+    tbody td:nth-child(4)::before { content: "Prox"; }
     tbody td:nth-child(5)::before { content: "Falta"; }
-    tbody td:nth-child(6)::before { content: "Atualizar"; }
+    tbody td:nth-child(6)::before { content: "Registrar"; }
 
     .km-form { width: 100%; }
-    .km-form .d-flex { width:100%; flex-direction:column; }
-    .km-form input, .km-form button { width:100%; }
+    .log-fields { grid-template-columns: 1fr; }
+    .btn-log { width: 100%; }
   }
 </style>
 {% endblock %}
@@ -38,10 +94,10 @@
   <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
       <h2 class="text-dark m-0">
-        <i class="bi bi-car-front-fill me-2 text-primary"></i> Meus Veículoss
+        <i class="bi bi-car-front-fill me-2 text-primary"></i> Meus Veiculos
       </h2>
       <div class="text-muted small mt-1">
-        Aqui você atualiza o <b>KM atual</b> dos veículos onde você é o <b>responsável</b>.
+        Registre o log com valor do abastecimento e KM final. O KM inicial vem do KM atual do veiculo.
       </div>
     </div>
 
@@ -59,12 +115,12 @@
           <table class="table table-hover align-middle mb-0">
             <thead class="table-light">
               <tr>
-                <th class="ps-4">Veículo</th>
-                <th>Operação</th>
+                <th class="ps-4">Veiculo</th>
+                <th>Operacao</th>
                 <th class="text-end">KM Atual</th>
-                <th class="text-end">Próx Revisão</th>
+                <th class="text-end">Prox Revisao</th>
                 <th>Falta</th>
-                <th class="pe-4" style="width: 320px">Atualizar KM</th>
+                <th class="pe-4" style="width: 420px">Registrar Log</th>
               </tr>
             </thead>
 
@@ -108,41 +164,103 @@
                   </td>
 
                   <td class="pe-4">
-                    <form class="km-form" method="POST" action="{{ url_for('main.piloto_atualizar_km_veiculo', veiculo_id=v.id) }}">
-                      <div class="d-flex gap-2 align-items-center">
-                        <input
-                          type="text"
-                          name="km_atual"
-                          class="form-control form-control-sm"
-                          placeholder="Ex: 55000"
-                          inputmode="numeric"
-                          autocomplete="off"
-                          required
-                        />
-                        <button type="submit" class="btn btn-sm btn-success">
-                          <i class="bi bi-check2"></i> Salvar
-                        </button>
-                      </div>
-                      <div class="small text-muted mt-1">
-                        {% if v.revisao_marcada_em %}
-                          Revisão marcada: <b>{{ v.revisao_marcada_em.strftime('%d/%m %H:%M') }}</b>
-                        {% elif v.revisao_obs %}
-                          {{ v.revisao_obs }}
-                        {% endif %}
+                    <form class="km-form" method="POST" action="{{ url_for('main.piloto_registrar_log_veiculo', veiculo_id=v.id) }}">
+                      <div class="log-card">
+                        <div class="log-fields">
+                          <div class="log-field">
+                            <label>Valor abastecimento</label>
+                            <div class="input-unit">
+                              <input
+                                type="text"
+                                name="valor_abastecimento"
+                                class="form-control form-control-sm"
+                                placeholder="0,00"
+                                inputmode="decimal"
+                                autocomplete="off"
+                              />
+                              <span class="unit">R$</span>
+                            </div>
+                          </div>
+
+                          <div class="log-field">
+                            <label>KM final</label>
+                            <div class="input-unit">
+                              <input
+                                type="text"
+                                name="km_final"
+                                class="form-control form-control-sm"
+                                placeholder="Ex: 55000"
+                                inputmode="numeric"
+                                autocomplete="off"
+                                required
+                              />
+                              <span class="unit">km</span>
+                            </div>
+                          </div>
+
+                          <button type="submit" class="btn btn-sm btn-success btn-log">
+                            <i class="bi bi-check2-circle me-1"></i> Registrar
+                          </button>
+                        </div>
+
+                        <div class="log-hint">
+                          KM inicial atual: <b>{{ '%.0f'|format(v.km_atual or 0) }}</b>
+                          {% if v.revisao_marcada_em %}
+                            • Revisao marcada: <b>{{ v.revisao_marcada_em.strftime('%d/%m %H:%M') }}</b>
+                          {% elif v.revisao_obs %}
+                            • {{ v.revisao_obs }}
+                          {% endif %}
+                        </div>
                       </div>
                     </form>
                   </td>
                 </tr>
               {% endfor %}
             </tbody>
-
           </table>
         </div>
       </div>
     </div>
   {% else %}
     <div class="alert alert-info shadow-sm rounded-4 border-0">
-      Você não tem veículos atribuídos como responsável.
+      Voce nao tem veiculos atribuidos como responsavel.
+    </div>
+  {% endif %}
+
+  {% if logs_recentes and logs_recentes|length > 0 %}
+    <div class="card shadow-sm rounded-4 border-0 mt-4 overflow-hidden">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th class="ps-4">Data</th>
+                <th>Veiculo</th>
+                <th class="text-end">KM Inicial</th>
+                <th class="text-end">KM Final</th>
+                <th class="text-end pe-4">Abastecimento (R$)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for log in logs_recentes %}
+                <tr>
+                  <td class="ps-4">{{ log.data_registro.strftime('%d/%m/%Y %H:%M') }}</td>
+                  <td>{{ log.veiculo.modelo }} ({{ log.veiculo.placa }})</td>
+                  <td class="text-end">{{ '%.0f'|format(log.km_inicial or 0) }}</td>
+                  <td class="text-end">{{ '%.0f'|format(log.km_final or 0) }}</td>
+                  <td class="text-end pe-4">
+                    {% if log.valor_total is not none %}
+                      {{ '%.2f'|format(log.valor_total) }}
+                    {% else %}
+                      <span class="text-muted">-</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   {% endif %}
 </div>

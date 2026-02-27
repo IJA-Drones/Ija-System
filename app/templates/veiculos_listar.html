@@ -83,9 +83,11 @@
         tbody tr td:nth-child(1)::before { content: "Veículo"; }
         tbody tr td:nth-child(2)::before { content: "Frota / Op."; }
         tbody tr td:nth-child(3)::before { content: "Responsável"; }
-        tbody tr td:nth-child(4)::before { content: "KM Restante"; }
-        tbody tr td:nth-child(5)::before { content: "Status"; }
-        tbody tr td:nth-child(6)::before { content: "Ações"; }
+        tbody tr td:nth-child(4)::before { content: "KM Atual"; }
+        tbody tr td:nth-child(5)::before { content: "KM Restante"; }
+        tbody tr td:nth-child(6)::before { content: "Ultimo Log"; }
+        tbody tr td:nth-child(7)::before { content: "Status"; }
+        tbody tr td:nth-child(8)::before { content: "Ações"; }
 
         tbody tr td::before {
             font-weight: 700;
@@ -228,7 +230,9 @@
                             <th class="ps-4 text-start">Veículo / Placa</th>
                             <th>Frota / Op.</th>
                             <th>Responsável</th>
+                            <th>KM Atual</th>
                             <th>KM Restante</th>
+                            <th>Último Log</th>
                             <th>Status</th>
                             <th>Ações</th>
                         </tr>
@@ -247,12 +251,33 @@
                             </td>
                             <td><div class="small">{{ v.responsavel or '-' }}</div></td>
                             <td>
+                                <span class="badge bg-light text-dark border rounded-pill px-3">
+                                    {{ (v.km_atual or 0)|round|int }} km
+                                </span>
+                            </td>
+                            <td>
                                 {% if falt is not none %}
                                     <span class="badge {% if falt < 0 %}bg-danger-light text-danger{% elif falt <= 2000 %}bg-warning-light text-warning{% else %}bg-success-light text-success{% endif %} rounded-pill px-3">
                                         {{ falt|round|int }} km
                                     </span>
                                 {% else %}
                                     <span class="text-muted small">--</span>
+                                {% endif %}
+                            </td>
+                            <td class="small">
+                                {% set log = ultimos_logs.get(v.id) %}
+                                {% if log %}
+                                    <div class="fw-semibold text-dark">{{ (log.km_inicial or 0)|round|int }} → {{ (log.km_final or 0)|round|int }} km</div>
+                                    <div class="text-muted">
+                                        {% if log.valor_total is not none %}
+                                            R$ {{ '%.2f'|format(log.valor_total) }}
+                                        {% else %}
+                                            Sem abastecimento
+                                        {% endif %}
+                                        • {{ log.data_registro.strftime('%d/%m/%Y') }}
+                                    </div>
+                                {% else %}
+                                    <span class="text-muted">Sem log</span>
                                 {% endif %}
                             </td>
                             <td>

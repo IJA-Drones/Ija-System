@@ -46,7 +46,7 @@ from sqlalchemy.orm import joinedload
 # APP
 # ==========================
 from app import db
-from app.models import Notificacao, Solicitacao, Usuario, Clientes, Pilotos, Equipe, EquipePiloto, EquipeUvis, Veiculos
+from app.models import Notificacao, Solicitacao, Usuario, Clientes, Pilotos, Equipe, EquipePiloto, EquipeUvis, Veiculos, LogVeiculo
 TZ = ZoneInfo("America/Sao_Paulo")
 print("--- ROTAS CARREGADAS COM SUCESSO ---")
 
@@ -7454,6 +7454,20 @@ def listar_veiculos():
 
     veiculos = query.order_by(Veiculos.criado_em.desc()).all()
 
+    # Ultimo log por veiculo (para exibir no painel admin/operacional)
+    ultimos_logs = {}
+    veiculo_ids = [v.id for v in veiculos]
+    if veiculo_ids:
+        logs = (
+            LogVeiculo.query
+            .filter(LogVeiculo.veiculo_id.in_(veiculo_ids))
+            .order_by(LogVeiculo.veiculo_id.asc(), LogVeiculo.data_registro.desc())
+            .all()
+        )
+        for log in logs:
+            if log.veiculo_id not in ultimos_logs:
+                ultimos_logs[log.veiculo_id] = log
+
     # -----------------------------
     # EXPORTAR EXCEL (design próximo ao print)
     # -----------------------------
@@ -7621,7 +7635,8 @@ def listar_veiculos():
         "veiculos_listar.html",
         veiculos=veiculos,
         is_admin=is_admin,
-        filters=filters
+        filters=filters,
+        ultimos_logs=ultimos_logs
     )
 
 
@@ -7939,6 +7954,8 @@ def deletar_veiculo(veiculo_id):
 
     v = Veiculos.query.get_or_404(veiculo_id)
     try:
+        # Garante remocao dos logs vinculados antes do veiculo (FK NOT NULL em logs_veiculo.veiculo_id)
+        LogVeiculo.query.filter_by(veiculo_id=v.id).delete(synchronize_session=False)
         db.session.delete(v)
         db.session.commit()
         flash("Veículo removido!", "success")
@@ -7960,7 +7977,7 @@ def piloto_veiculos():
 
     if not nome_piloto:
         flash("Seu usuário piloto está sem nome vinculado. Contate o administrador.", "warning")
-        return render_template("piloto_veiculos.html", veiculos=[])
+        return render_template("piloto_veiculos.html", veiculos=[], logs_recentes=[])
 
     veiculos = (
         Veiculos.query
@@ -7969,7 +7986,16 @@ def piloto_veiculos():
         .all()
     )
 
-    return render_template("piloto_veiculos.html", veiculos=veiculos)
+    logs_recentes = (
+        LogVeiculo.query
+        .join(Veiculos, LogVeiculo.veiculo_id == Veiculos.id)
+        .filter(db.func.lower(Veiculos.responsavel) == nome_piloto.lower())
+        .order_by(LogVeiculo.data_registro.desc())
+        .limit(30)
+        .all()
+    )
+
+    return render_template("piloto_veiculos.html", veiculos=veiculos, logs_recentes=logs_recentes)
 
 
 @bp.route("/piloto/veiculos/<int:veiculo_id>/km", methods=["POST"], endpoint="piloto_atualizar_km_veiculo")
@@ -8009,3 +8035,85 @@ def piloto_atualizar_km_veiculo(veiculo_id):
         flash("Erro ao salvar o KM. Tente novamente.", "danger")
 
     return redirect(url_for("main.piloto_veiculos"))
+
+
+@bp.route("/piloto/veiculos/<int:veiculo_id>/logs", methods=["POST"], endpoint="piloto_registrar_log_veiculo")
+@login_required
+@roles_required("piloto")
+def piloto_registrar_log_veiculo(veiculo_id):
+    nome_piloto = (getattr(current_user, "nome_uvis", None) or "").strip()
+    if not nome_piloto:
+        abort(403)
+
+    veiculo = Veiculos.query.get_or_404(veiculo_id)
+
+    # Seguranca: piloto so registra log dos veiculos sob sua responsabilidade.
+    if (veiculo.responsavel or "").strip().lower() != nome_piloto.lower():
+        abort(403)
+
+    piloto = None
+    if getattr(current_user, "piloto_id", None):
+        piloto = Pilotos.query.get(current_user.piloto_id)
+    if not piloto:
+        piloto = Pilotos.query.filter(db.func.lower(Pilotos.nome_piloto) == nome_piloto.lower()).first()
+
+    if not piloto:
+        flash("Piloto nao encontrado para vincular o log.", "danger")
+        return redirect(url_for("main.piloto_veiculos"))
+
+    km_final_raw = (request.form.get("km_final") or "").strip().replace(".", "").replace(",", ".")
+    valor_raw = (request.form.get("valor_abastecimento") or "").strip().replace(".", "").replace(",", ".")
+
+    if not km_final_raw:
+        flash("Informe o KM final.", "warning")
+        return redirect(url_for("main.piloto_veiculos"))
+
+    try:
+        km_final = float(km_final_raw)
+        if km_final < 0:
+            raise ValueError()
+    except ValueError:
+        flash("KM final invalido. Use apenas numeros.", "warning")
+        return redirect(url_for("main.piloto_veiculos"))
+
+    km_inicial = float(veiculo.km_atual or 0)
+    if km_final < km_inicial:
+        flash(f"KM final ({km_final:.0f}) nao pode ser menor que o KM inicial atual ({km_inicial:.0f}).", "warning")
+        return redirect(url_for("main.piloto_veiculos"))
+
+    valor_total = None
+    if valor_raw:
+        try:
+            valor_total = float(valor_raw)
+            if valor_total < 0:
+                raise ValueError()
+        except ValueError:
+            flash("Valor de abastecimento invalido.", "warning")
+            return redirect(url_for("main.piloto_veiculos"))
+
+    novo_log = LogVeiculo(
+        veiculo_id=veiculo.id,
+        piloto_id=piloto.id,
+        km_inicial=km_inicial,
+        km_final=km_final,
+        abasteceu=bool(valor_total and valor_total > 0),
+        valor_total=valor_total,
+        km_no_abastecimento=km_final if valor_total and valor_total > 0 else None,
+        observacao=(request.form.get("observacao") or "").strip() or None
+    )
+
+    veiculo.km_atual = km_final
+
+    try:
+        db.session.add(novo_log)
+        db.session.commit()
+        flash(
+            f"Log salvo para {veiculo.modelo} ({veiculo.placa}). KM inicial: {km_inicial:.0f} -> KM final: {km_final:.0f}.",
+            "success"
+        )
+    except Exception:
+        db.session.rollback()
+        flash("Erro ao salvar o log do veiculo. Tente novamente.", "danger")
+
+    return redirect(url_for("main.piloto_veiculos"))
+
