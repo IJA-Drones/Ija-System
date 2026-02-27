@@ -5566,7 +5566,7 @@ def adicionar_membro_equipe_uvis(nome_equipe):
     return render_template("uvis_equipe_membro_adicionar.html", form=form, errors=errors, nome_equipe=nome_equipe)
 
 #-------------------------------------------------------------
-# Rota: criar nova equipe UVIS
+# Rota: criar nova equipe UVIS (NOME AUTOMÁTICO E TRAVADO)
 #-------------------------------------------------------------
 @bp.route("/uvis/equipes/nova", methods=["GET", "POST"], endpoint="criar_equipe_uvis")
 @login_required
@@ -5576,21 +5576,78 @@ def criar_equipe_uvis():
     errors = {}
     form = {}
 
-    if request.method == "POST":
-        nome_equipe = (request.form.get("nome_equipe") or "").strip()
+    def _base_uvis() -> str:
+        nome = (getattr(current_user, "nome_uvis", None) or "UVIS").strip()
+        nome = re.sub(r"\s+", " ", nome)
+        return nome.upper()
+
+    def _proximo_numero(uvis_usuario_id: int) -> int:
+        base = _base_uvis()
+
+        nomes = (
+            db.session.query(EquipeUvis.nome_equipe)
+            .filter(EquipeUvis.uvis_usuario_id == uvis_usuario_id)
+            .distinct()
+            .all()
+        )
+        nomes = [n[0] for n in nomes if n and n[0]]
+
+        # aceita: "BASE 01" ou "BASE - 01" ou "BASE_01"
+        pattern = re.compile(rf"^{re.escape(base)}\s*[-_ ]\s*(\d+)\s*$", re.IGNORECASE)
+
+        max_n = 0
+        for nome in nomes:
+            m = pattern.match((nome or "").strip())
+            if m:
+                try:
+                    max_n = max(max_n, int(m.group(1)))
+                except ValueError:
+                    pass
+
+        return max_n + 1
+
+    def _gerar_nome() -> str:
+        base = _base_uvis()
+        seq = _proximo_numero(current_user.id)
+        return f"{base} {seq:02d}"
+
+    # ✅ GET: só mostra o nome sugerido (travado no template)
+    if request.method == "GET":
+        form["nome_equipe"] = _gerar_nome()
+        return render_template("uvis_equipe_criar.html", form=form, errors=errors)
+
+    # ✅ POST: IGNORA COMPLETAMENTE o nome vindo do form (pra não burlar)
+    nome_equipe = _gerar_nome()
+    form["nome_equipe"] = nome_equipe
+
+    # ✅ checagem extra de colisão (muito raro, mas pode acontecer em dupla submissão)
+    existe = (
+        db.session.query(EquipeUvis.id)
+        .filter(
+            EquipeUvis.uvis_usuario_id == current_user.id,
+            EquipeUvis.nome_equipe == nome_equipe
+        )
+        .first()
+    )
+    if existe:
+        # recalcula de novo (pega próximo disponível)
+        nome_equipe = _gerar_nome()
         form["nome_equipe"] = nome_equipe
 
-        if not nome_equipe:
-            errors["nome_equipe"] = "Informe o nome da equipe."
-
-        if errors:
-            flash("Corrija os campos destacados.", "warning")
+        existe2 = (
+            db.session.query(EquipeUvis.id)
+            .filter(
+                EquipeUvis.uvis_usuario_id == current_user.id,
+                EquipeUvis.nome_equipe == nome_equipe
+            )
+            .first()
+        )
+        if existe2:
+            flash("Não foi possível gerar um nome único para a equipe. Tente novamente.", "danger")
             return render_template("uvis_equipe_criar.html", form=form, errors=errors)
 
-        # manda direto para adicionar o 1º membro
-        return redirect(url_for("main.adicionar_membro_equipe_uvis", nome_equipe=nome_equipe))
-
-    return render_template("uvis_equipe_criar.html", form=form, errors=errors)
+    # manda direto para adicionar o 1º membro
+    return redirect(url_for("main.adicionar_membro_equipe_uvis", nome_equipe=nome_equipe))
 # -------------------------------------------------------------
 # Rota: editar membro da equipe UVIS    
 #-------------------------------------------------------------

@@ -45,19 +45,19 @@
               <i class="bi bi-people me-1 text-primary"></i> Nome da Equipe *
             </label>
             <input
-              type="text"
-              class="form-control {% if errors.get('nome_equipe') %}is-invalid{% endif %}"
-              name="nome_equipe"
-              value="{{ form.get('nome_equipe','') }}"
-              placeholder="Ex: Equipe Alfa"
-              required
-            />
+            type="text"
+            class="form-control"
+            name="nome_equipe"
+            value="{{ form.get('nome_equipe','') }}"
+            readonly
+          />
             {% if errors.get('nome_equipe') %}
               <div class="invalid-feedback">{{ errors.get('nome_equipe') }}</div>
             {% endif %}
             <div class="form-text small">
-              Dica: use um nome fácil para identificar (ex: “Endemias 01”, “Fiscalização A”, “Apoio Dengue”).
-            </div>
+            <span class="badge bg-light text-dark border">Automático</span>
+            Nome gerado automaticamente (UVIS + sequência).
+          </div>
           </div>
 
           <div class="col-md-3">
