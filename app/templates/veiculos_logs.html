@@ -15,6 +15,13 @@
             </h2>
             <div class="small text-muted">Consulta completa de abastecimento e quilometragem.</div>
         </div>
+        <a href="{{ url_for('main.exportar_logs_veiculos_xlsx',
+                            q=filters.q,
+                            data_inicio=filters.data_inicio,
+                            data_fim=filters.data_fim) }}"
+            class="btn btn-secondary">
+            <i class="bi bi-file-earmark-excel-fill"></i> Exportar Excel
+        </a>
         <a href="{{ url_for('main.listar_veiculos') }}" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left"></i> Voltar para veículos
         </a>

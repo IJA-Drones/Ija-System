@@ -8194,3 +8194,237 @@ def piloto_registrar_log_veiculo(veiculo_id):
 
     return redirect(url_for("main.piloto_veiculos"))
 
+from datetime import datetime
+from io import BytesIO
+
+from flask import request, send_file, abort, flash, redirect, url_for
+from flask_login import login_required, current_user
+
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.utils import get_column_letter
+
+# -------------------------------------------------------------
+# EXPORTAR LOGS DE VEÍCULOS (Excel bonito)
+# -------------------------------------------------------------
+@bp.route("/veiculos/logs/exportar", methods=["GET"], endpoint="exportar_logs_veiculos_xlsx")
+@login_required
+def exportar_logs_veiculos_xlsx():
+    # Segurança: normalmente isso é área admin/operário.
+    # Ajuste se quiser permitir piloto também.
+    tipo = getattr(current_user, "tipo_usuario", None)
+    if tipo not in ["admin", "operario", "visualizar"]:
+        abort(403)
+
+    # filtros
+    q = (request.args.get("q") or "").strip()
+    data_inicio = (request.args.get("data_inicio") or "").strip()  # YYYY-MM-DD
+    data_fim = (request.args.get("data_fim") or "").strip()        # YYYY-MM-DD
+
+    # Query base
+    query = LogVeiculo.query.options(
+        db.selectinload(LogVeiculo.veiculo),
+        db.selectinload(LogVeiculo.piloto),
+    )
+
+    # busca geral
+    if q:
+        like = f"%{q}%"
+        query = query.join(Veiculos, LogVeiculo.veiculo_id == Veiculos.id).join(
+            Pilotos, LogVeiculo.piloto_id == Pilotos.id
+        ).filter(
+            db.or_(
+                Veiculos.modelo.ilike(like),
+                Veiculos.placa.ilike(like),
+                Veiculos.responsavel.ilike(like),
+                Pilotos.nome_piloto.ilike(like),
+                db.cast(LogVeiculo.km_inicial, db.String).ilike(like),
+                db.cast(LogVeiculo.km_final, db.String).ilike(like),
+            )
+        )
+
+    # datas (data_registro é DateTime)
+    # - inicio: >= 00:00
+    # - fim: <= 23:59:59
+    dt_ini = None
+    dt_fim = None
+    try:
+        if data_inicio:
+            dt_ini = datetime.strptime(data_inicio, "%Y-%m-%d")
+            query = query.filter(LogVeiculo.data_registro >= dt_ini)
+        if data_fim:
+            dt_fim = datetime.strptime(data_fim, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+            query = query.filter(LogVeiculo.data_registro <= dt_fim)
+    except ValueError:
+        # se vier data inválida, não quebra export (mas você pode preferir abortar)
+        pass
+
+    # ordenação mais recente primeiro
+    query = query.order_by(LogVeiculo.data_registro.desc())
+
+    logs = query.all()
+
+    # ---------- Excel ----------
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Logs Veículos"
+
+    header_fill = PatternFill("solid", fgColor="1F2937")  # cinza escuro
+    header_font = Font(bold=True, color="FFFFFF")
+    header_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+
+    thin = Side(style="thin", color="E5E7EB")
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    text_align = Alignment(horizontal="left", vertical="center", wrap_text=True)
+    center_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    money_align = Alignment(horizontal="right", vertical="center", wrap_text=True)
+
+    # Cabeçalho do relatório
+    ws["A1"] = "Relatório de Logs de Veículos"
+    ws["A1"].font = Font(bold=True, size=14)
+    ws["A2"] = f"Gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+    ws["A2"].font = Font(color="6B7280")
+
+    filtro_txt = []
+    if q:
+        filtro_txt.append(f"Busca: {q}")
+    if data_inicio:
+        filtro_txt.append(f"De: {datetime.strptime(data_inicio,'%Y-%m-%d').strftime('%d/%m/%Y') if data_inicio else ''}")
+    if data_fim:
+        filtro_txt.append(f"Até: {datetime.strptime(data_fim,'%Y-%m-%d').strftime('%d/%m/%Y') if data_fim else ''}")
+
+    ws["A3"] = "Filtros: " + (" | ".join(filtro_txt) if filtro_txt else "Nenhum")
+    ws["A3"].font = Font(color="6B7280")
+
+    start_row = 5
+
+    headers = [
+        "Data/Hora",
+        "Veículo",
+        "Placa",
+        "Responsável",
+        "Piloto",
+        "KM Inicial",
+        "KM Final",
+        "KM Rodado",
+        "Abasteceu",
+        "Valor (R$)",
+        "Observação",
+    ]
+
+    for col_idx, h in enumerate(headers, start=1):
+        cell = ws.cell(row=start_row, column=col_idx, value=h)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = header_align
+        cell.border = border
+
+    # Linhas
+    for i, log in enumerate(logs, start=start_row + 1):
+        veic = log.veiculo
+        piloto = log.piloto
+
+        dt = log.data_registro.strftime("%d/%m/%Y %H:%M") if getattr(log, "data_registro", None) else ""
+        modelo = veic.modelo if veic else ""
+        placa = veic.placa if veic else ""
+        responsavel = (veic.responsavel or "") if veic else ""
+        piloto_nome = piloto.nome_piloto if piloto else ""
+
+        km_ini = float(log.km_inicial or 0)
+        km_fim = float(log.km_final or 0)
+        km_rodado = km_fim - km_ini if (log.km_inicial is not None and log.km_final is not None) else None
+
+        abasteceu = "SIM" if getattr(log, "abasteceu", False) else "NÃO"
+        valor = log.valor_total if getattr(log, "valor_total", None) is not None else None
+        obs = (log.observacao or "") if getattr(log, "observacao", None) else ""
+
+        row_values = [
+            dt,
+            modelo,
+            placa,
+            responsavel,
+            piloto_nome,
+            km_ini if log.km_inicial is not None else None,
+            km_fim if log.km_final is not None else None,
+            km_rodado,
+            abasteceu,
+            valor,
+            obs,
+        ]
+
+        for col_idx, v in enumerate(row_values, start=1):
+            cell = ws.cell(row=i, column=col_idx, value=v)
+            cell.border = border
+
+            # alinhamentos
+            if col_idx in (6, 7, 8, 9):  # KM + Abasteceu
+                cell.alignment = center_align
+            elif col_idx == 10:  # Valor
+                cell.alignment = money_align
+            else:
+                cell.alignment = text_align
+
+            # formatos
+            if col_idx in (6, 7, 8) and v is not None:
+                cell.number_format = '0'
+            if col_idx == 10 and v is not None:
+                cell.number_format = 'R$ #,##0.00'
+
+    last_row = start_row + len(logs)
+    last_col = len(headers)
+
+    # Freeze header
+    ws.freeze_panes = ws["A6"]
+
+    # Auto-filter
+    ws.auto_filter.ref = f"A{start_row}:{get_column_letter(last_col)}{max(last_row, start_row)}"
+    ws.row_dimensions[start_row].height = 22
+
+    # Ajuste de colunas
+    max_widths = {
+        1: 18,  # Data/Hora
+        2: 24,  # Veículo
+        3: 12,  # Placa
+        4: 22,  # Responsável
+        5: 22,  # Piloto
+        6: 12,  # KM Inicial
+        7: 12,  # KM Final
+        8: 12,  # KM Rodado
+        9: 12,  # Abasteceu
+        10: 14, # Valor
+        11: 45, # Observação
+    }
+
+    for col_idx in range(1, last_col + 1):
+        # largura baseada no maior conteúdo (com limite)
+        max_len = len(headers[col_idx - 1])
+        for r in range(start_row + 1, last_row + 1):
+            val = ws.cell(row=r, column=col_idx).value
+            if val is None:
+                continue
+            max_len = max(max_len, len(str(val)))
+        width = min(max_len + 2, max_widths.get(col_idx, 30))
+        ws.column_dimensions[get_column_letter(col_idx)].width = width
+
+    # Zebra rows
+    zebra_fill = PatternFill("solid", fgColor="F9FAFB")
+    for r in range(start_row + 1, last_row + 1):
+        if (r - (start_row + 1)) % 2 == 1:
+            for c in range(1, last_col + 1):
+                ws.cell(row=r, column=c).fill = zebra_fill
+
+    # output
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    stamp = datetime.now().strftime("%Y-%m-%d_%H%M")
+    filename = f"logs_veiculos_{stamp}.xlsx"
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name=filename,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
