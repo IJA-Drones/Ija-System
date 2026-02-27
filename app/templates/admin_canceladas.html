@@ -51,6 +51,19 @@
             </select>
           </div>
 
+            <div class="col-md-4">
+            <label class="small text-muted">Foco:</label>
+            {% set foco = (request.args.get('foco','') or '')|upper %}
+            <select name="foco" class="form-select form-select-sm">
+              <option value="">Todas</option>
+              <option value="IMÓVEL ABANDONADO" {% if foco == 'IMÓVEL ABANDONADO' %}selected{% endif %}>Imóvel Abandonado</option>
+              <option value="PISCINA / CAIXA D'ÁGUA" {% if foco == "PISCINA / CAIXA D'ÁGUA" %}selected{% endif %}>Piscina / Caixa D'água</option>
+              <option value="TERRENO BALDIO" {% if foco == 'TERRENO BALDIO' %}selected{% endif %}>Terreno Baldio</option>
+              <option value="PONTO ESTRATÉGICO (PE)" {% if foco == 'PONTO ESTRATÉGICO (PE)' %}selected{% endif %}>Ponto Estratégico (PE)</option>
+            </select>
+            </div>
+          
+
           <div class="col-md-4 d-flex gap-2">
             <button class="btn btn-success btn-sm w-100" type="submit">
               <i class="bi bi-search"></i> Filtrar
@@ -73,6 +86,7 @@
         <tr>
           <th>Unidade</th>
           <th>Operação</th>
+          <th>Foco</th>
           <th>Status</th>
         </tr>
       </thead>
@@ -90,6 +104,7 @@
                 <span class="text-muted">{{ p.data_agendamento.strftime('%d/%m/%Y') }} às {{ p.hora_agendamento.strftime('%H:%M') }}</span>
               </div>
             </td>
+            <td>{{ p.foco }}</td>
             <td>
               <span class="badge bg-dark">CANCELADO</span>
             </td>
