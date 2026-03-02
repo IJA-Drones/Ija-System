@@ -134,7 +134,6 @@ class Pilotos(db.Model):
         cascade="all, delete-orphan"
     )
 
-
 # -------------------------------------------------------------
 # VÍNCULO PILOTO ↔ UVIS (N:N)
 # - serve para: "piloto ver somente as UVIS ligadas a ele"
@@ -279,6 +278,14 @@ class Solicitacao(db.Model):
     )
     equipe = db.relationship("Equipe", lazy="joined")
 
+    ordem_servico = db.relationship(
+        "OrdemServico",
+        back_populates="solicitacao",
+        uselist=False,
+        lazy="select",
+        cascade="all, delete-orphan"
+    )
+
     __table_args__ = (
         db.Index("ix_solicitacao_data_status", "data_criacao", "status"),
         db.Index("ix_solicitacao_usuario_data", "usuario_id", "data_criacao"),
@@ -288,7 +295,73 @@ class Solicitacao(db.Model):
 
 
 # -------------------------------------------------------------
-# NOTIFICAÇÕES
+# ORDEM DE SERVICO (execucao do voo)
+# -------------------------------------------------------------
+class OrdemServico(db.Model):
+    __tablename__ = "ordens_servico"
+    id = db.Column(db.Integer, primary_key=True)
+    # vinculo 1:1 com a solicitacao original
+    solicitacao_id = db.Column(
+        db.Integer,
+        db.ForeignKey("solicitacoes.id"),
+        nullable=False,
+        unique=True,
+        index=True
+    )
+    # equipe executora
+    equipe_id = db.Column(
+        db.Integer,
+        db.ForeignKey("equipes.id"),
+        nullable=False,
+        index=True
+    )
+    # campos do formulario Excel (aba: "formularios")
+    identificador_os = db.Column(db.String(100), index=True)
+    respondido_por = db.Column(db.String(150), index=True)
+    respondido_em = db.Column(db.DateTime, index=True)
+    situacao_aplicacao = db.Column(db.String(100), index=True)
+    larva_visualizada = db.Column(db.String(20))
+    retornar_proxima_semana_monitorar_larvas = db.Column(db.String(20))
+    distrito_administrativo = db.Column(db.String(100))
+    nome_rf_ace_responsavel_os = db.Column(db.String(200))
+    criadouro_os_tipo_volume = db.Column(db.Text)
+    data_aplicacao = db.Column(db.Date, index=True)
+    hora_inicio_aplicacao = db.Column(db.Time)
+    hora_termino_aplicacao = db.Column(db.Time)
+    tratamento_adicional_realizado = db.Column(db.String(20))
+    quantos_quais = db.Column(db.Text)
+    descricao_produto = db.Column(db.String(200))
+    formulacao_produto = db.Column(db.String(200))
+    dosagem_g_10l = db.Column(db.String(50))
+    tipo_aplicacao = db.Column(db.String(100), index=True)
+    quantidade_produto_administrada_ml = db.Column(db.Float)
+    pulverizacao_area_l_ha = db.Column(db.Float)
+    pulverizacao_foco_tempo_estimado_segundos = db.Column(db.Float)
+    pulverizacao_foco_l_min = db.Column(db.Float)
+    prefixo_aeronave_pulverizacao = db.Column(db.String(100), index=True)
+    prefixo_aeronave_monitoramento = db.Column(db.String(100), index=True)
+    quantidade_imagens_registradas = db.Column(db.Integer)
+    ponta_pulverizacao = db.Column(db.String(100))
+    temperatura_c = db.Column(db.Float)
+    umidade_relativa_pct = db.Column(db.Float)
+    velocidade_vento_kmh = db.Column(db.Float)
+    motivo_nao_realizacao = db.Column(db.String(255))
+    observacoes = db.Column(db.Text)
+    piloto = db.Column(db.String(150), index=True)
+    assinatura_piloto = db.Column(db.Text)
+    auxiliar = db.Column(db.String(150), index=True)
+    proprietario_ou_preposto = db.Column(db.String(200))
+    assinatura_proprietario_ou_preposto = db.Column(db.Text)
+    solicitacao = db.relationship("Solicitacao", back_populates="ordem_servico")
+    equipe = db.relationship("Equipe", back_populates="ordens_servico")
+    __table_args__ = (
+        db.Index("ix_os_equipe", "equipe_id"),
+        db.Index("ix_os_identificador", "identificador_os"),
+        db.Index("ix_os_respondido_em", "respondido_em"),
+        db.Index("ix_os_data_aplicacao", "data_aplicacao"),
+    )
+# -------------------------------------------------------------
+# NOTIFICACOES
 # -------------------------------------------------------------
 class Notificacao(db.Model):
     __tablename__ = "notificacoes"
@@ -363,6 +436,12 @@ class Equipe(db.Model):
     #Relacionamento com os equipamentos (Drones da equipe)
     equipamentos = db.relationship(
         "Equipamentos",
+        back_populates="equipe",
+        lazy="select"
+    )
+
+    ordens_servico = db.relationship(
+        "OrdemServico",
         back_populates="equipe",
         lazy="select"
     )
@@ -576,3 +655,39 @@ class LogVeiculo(db.Model):
         backref=db.backref("logs", lazy="select", cascade="all, delete-orphan")
     )
     piloto = db.relationship("Pilotos", backref=db.backref("logs_veiculo", lazy="select"))
+
+            return None
+
+# -------------------------------------------------------------
+# LOGS DE VEÍCULO (Registros diários de uso/abastecimento)
+# -------------------------------------------------------------
+class LogVeiculo(db.Model):
+    __tablename__ = "logs_veiculo"
+
+    id = db.Column(db.Integer, primary_key=True)
+    
+    veiculo_id = db.Column(db.Integer, db.ForeignKey("veiculos.id"), nullable=False, index=True)
+    piloto_id = db.Column(db.Integer, db.ForeignKey("pilotos.id"), nullable=False, index=True)
+    
+    data_registro = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+    
+    km_inicial = db.Column(db.Float, nullable=False)
+    km_final = db.Column(db.Float, nullable=False)
+    
+    # Campos de Abastecimento (Opcionais)
+    abasteceu = db.Column(db.Boolean, default=False)
+    litros = db.Column(db.Float, nullable=True)
+    valor_total = db.Column(db.Float, nullable=True)
+    km_no_abastecimento = db.Column(db.Float, nullable=True)
+    
+    observacao = db.Column(db.Text)
+
+    # Relacionamentos
+    veiculo = db.relationship(
+        "Veiculos",
+        backref=db.backref("logs", lazy="select", cascade="all, delete-orphan")
+    )
+    piloto = db.relationship("Pilotos", backref=db.backref("logs_veiculo", lazy="select"))
+    
+
+

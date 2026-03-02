@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}" />
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}" />
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1200px">
+  <div class="d-flex align-items-center mb-4">
+    <h2 class="text-dark m-0">
+      <i class="bi bi-clipboard-check-fill me-2 text-primary"></i> Formulario de Ordem de Servico
+    </h2>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm mb-4 rounded-3" role="alert">
+          <i class="bi bi-info-circle me-2"></i> {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <div class="card info status-primary shadow-sm rounded-4 border-0">
+    <div class="card-body p-4">
+      <form method="post" action="#" novalidate>
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-hash text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Identificacao</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Solicitacao ID *</label>
+            <input type="number" name="solicitacao_id" class="form-control" required />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Equipe ID *</label>
+            <input type="number" name="equipe_id" class="form-control" required />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Identificador OS</label>
+            <input type="text" name="identificador_os" class="form-control" />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Tipo de OS</label>
+            <input type="text" name="tipo_os" class="form-control" />
+          </div>
+        </div>
+
+        <hr class="text-muted opacity-25 my-4" />
+
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-person-vcard text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Cliente e Responsavel</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-4"><label class="form-label fw-bold small text-muted">Uvis</label><input type="text" name="nome_cliente" class="form-control" /></div>
+          <div class="col-md-3"><label class="form-label fw-bold small text-muted">Endereço</label><input type="text" name="bairro_cliente" class="form-control" /></div>
+
+          <div class="col-md-4"><label class="form-label fw-bold small text-muted">Respondido por</label><input type="text" name="respondido_por" class="form-control" /></div>
+          <div class="col-md-4"><label class="form-label fw-bold small text-muted">Numero de serie do equipamento</label><input type="text" name="numero_serie_equipamento" class="form-control" /></div>
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Respondido em</label>
+            <input type="datetime-local" name="respondido_em" id="respondido_em" class="form-control" />
+          </div>
+        </div>
+
+        <hr class="text-muted opacity-25 my-4" />
+
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-droplet-half text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Aplicacao</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-4"><label class="form-label fw-bold small text-muted">Situacao da aplicacao</label><input type="text" name="situacao_aplicacao" class="form-control" /></div>
+          <div class="col-md-4"><label class="form-label fw-bold small text-muted">Larva visualizada</label><select name="larva_visualizada" class="form-select"><option value="">Selecione...</option><option>SIM</option><option>NAO</option></select></div>
+          <div class="col-md-4"><label class="form-label fw-bold small text-muted">Retornar proxima semana para monitorar larvas?</label><select name="retornar_proxima_semana_monitorar_larvas" class="form-select"><option value="">Selecione...</option><option>SIM</option><option>NAO</option></select></div>
+
+          <div class="col-md-3"><label class="form-label fw-bold small text-muted">DA</label><input type="text" name="da" class="form-control" /></div>
+          <div class="col-md-5"><label class="form-label fw-bold small text-muted">Nome e RF do ACE responsavel pela OS</label><input type="text" name="nome_rf_ace_responsavel_os" class="form-control" /></div>
+          <div class="col-md-4"><label class="form-label fw-bold small text-muted">Criadouro da OS (tipo e volume)</label><input type="text" name="criadouro_os_tipo_volume" class="form-control" /></div>
+
+          <div class="col-md-3"><label class="form-label fw-bold small text-muted">Data da aplicacao</label><input type="date" name="data_aplicacao" class="form-control" /></div>
+          <div class="col-md-3"><label class="form-label fw-bold small text-muted">Hora inicio da aplicacao</label><input type="time" name="hora_inicio_aplicacao" class="form-control" /></div>
+          <div class="col-md-3"><label class="form-label fw-bold small text-muted">Hora termino da aplicacao</label><input type="time" name="hora_termino_aplicacao" class="form-control" /></div>
+          <div class="col-md-3"><label class="form-label fw-bold small text-muted">Tratamento adicional realizado?</label><select name="tratamento_adicional_realizado" class="form-select"><option value="">Selecione...</option><option>SIM</option><option>NAO</option></select></div>
+
+          <div class="col-12"><label class="form-label fw-bold small text-muted">Quantos? Quais?</label><textarea name="quantos_quais" class="form-control" rows="2"></textarea></div>
+        </div>
+
+        <hr class="text-muted opacity-25 my-4" />
+
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-box-seam text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Produto e Parametros</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-4"><label class="form-label fw-bold small text-muted">Descricao do produto</label><input type="text" name="descricao_produto" class="form-control" /></div>
+          <div class="col-md-4"><label class="form-label fw-bold small text-muted">Formulacao do produto</label><input type="text" name="formulacao_produto" class="form-control" /></div>
+          <div class="col-md-4"><label class="form-label fw-bold small text-muted">Dosagem (g/10L)</label><input type="text" name="dosagem_g_10l" class="form-control" /></div>
+
+          <div class="col-md-4"><label class="form-label fw-bold small text-muted">Tipo de aplicacao</label><input type="text" name="tipo_aplicacao" class="form-control" /></div>
+          <div class="col-md-4"><label class="form-label fw-bold small text-muted">Quantidade de produto administrada (ml)</label><input type="number" step="0.01" name="quantidade_produto_administrada_ml" class="form-control" /></div>
+          <div class="col-md-4"><label class="form-label fw-bold small text-muted">Pulverizacao de area (l/ha)</label><input type="number" step="0.01" name="pulverizacao_area_l_ha" class="form-control" /></div>
+
+          <div class="col-md-6"><label class="form-label fw-bold small text-muted">Pulverizacao de foco (tempo estimado em segundos)</label><input type="number" step="0.01" name="pulverizacao_foco_tempo_estimado_segundos" class="form-control" /></div>
+          <div class="col-md-6"><label class="form-label fw-bold small text-muted">Pulverizacao de foco (l/min)</label><input type="number" step="0.01" name="pulverizacao_foco_l_min" class="form-control" /></div>
+        </div>
+
+        <hr class="text-muted opacity-25 my-4" />
+
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-airplane-engines text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Aeronave e Condicoes Ambientais</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-4"><label class="form-label fw-bold small text-muted">Prefixo aeronave de pulverizacao</label><input type="text" name="prefixo_aeronave_pulverizacao" class="form-control" /></div>
+          <div class="col-md-4"><label class="form-label fw-bold small text-muted">Prefixo da aeronave de monitoramento</label><input type="text" name="prefixo_aeronave_monitoramento" class="form-control" /></div>
+          <div class="col-md-4"><label class="form-label fw-bold small text-muted">Quantidade de imagens registradas</label><input type="number" name="quantidade_imagens_registradas" class="form-control" /></div>
+
+          <div class="col-md-3"><label class="form-label fw-bold small text-muted">Ponta de pulverizacao</label><input type="text" name="ponta_pulverizacao" class="form-control" /></div>
+          <div class="col-md-3"><label class="form-label fw-bold small text-muted">Temperatura (C)</label><input type="number" step="0.1" name="temperatura_c" class="form-control" /></div>
+          <div class="col-md-3"><label class="form-label fw-bold small text-muted">Umidade relativa (%)</label><input type="number" step="0.1" name="umidade_relativa_pct" class="form-control" /></div>
+          <div class="col-md-3"><label class="form-label fw-bold small text-muted">Velocidade do vento (km/h)</label><input type="number" step="0.1" name="velocidade_vento_kmh" class="form-control" /></div>
+        </div>
+
+        <hr class="text-muted opacity-25 my-4" />
+
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-pen text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Fechamento e Assinaturas</h5>
+        </div>
+
+        <div class="row g-3 mb-2">
+          <div class="col-md-6"><label class="form-label fw-bold small text-muted">Motivo de nao realizacao</label><input type="text" name="motivo_nao_realizacao" class="form-control" /></div>
+          <div class="col-md-6"><label class="form-label fw-bold small text-muted">Observacoes</label><input type="text" name="observacoes" class="form-control" /></div>
+
+          <div class="col-md-6"><label class="form-label fw-bold small text-muted">Piloto</label><input type="text" name="piloto" class="form-control" /></div>
+          <div class="col-md-6"><label class="form-label fw-bold small text-muted">Auxiliar</label><input type="text" name="auxiliar" class="form-control" /></div>
+
+          <div class="col-md-6"><label class="form-label fw-bold small text-muted">Assinatura piloto</label><textarea name="assinatura_piloto" class="form-control" rows="2"></textarea></div>
+          <div class="col-md-6"><label class="form-label fw-bold small text-muted">Proprietario ou preposto</label><input type="text" name="proprietario_ou_preposto" class="form-control" /></div>
+          <div class="col-12"><label class="form-label fw-bold small text-muted">Assinatura proprietario ou preposto</label><textarea name="assinatura_proprietario_ou_preposto" class="form-control" rows="2"></textarea></div>
+        </div>
+
+        <small class="text-muted d-block mt-4">Campos com <span class="text-danger">*</span> sao obrigatorios.</small>
+
+        <div class="d-flex justify-content-end gap-2 mt-5">
+          <a href="javascript:history.back()" class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-x-lg me-1"></i> Cancelar
+          </a>
+          <button type="submit" class="btn btn-primary btn-sm">
+            <i class="bi bi-check-lg me-1"></i> Salvar Formulario
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    const responded = document.getElementById("respondido_em");
+    if (responded && !responded.value) {
+      const now = new Date();
+      const pad = (n) => String(n).padStart(2, "0");
+      responded.value = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    }
+  })();
+</script>
+{% endblock %}
