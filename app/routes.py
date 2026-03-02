@@ -46,7 +46,7 @@ from sqlalchemy.orm import joinedload
 # APP
 # ==========================
 from app import db
-from app.models import Notificacao, Solicitacao, Usuario, Clientes, Pilotos, Equipe, EquipePiloto, EquipeUvis, Veiculos, LogVeiculo
+from app.models import Notificacao, Solicitacao, Usuario, Clientes, Pilotos, Equipe, EquipePiloto, EquipeUvis, Veiculos, LogVeiculo, OrdemServico
 TZ = ZoneInfo("America/Sao_Paulo")
 print("--- ROTAS CARREGADAS COM SUCESSO ---")
 
@@ -4608,166 +4608,6 @@ def deletar_piloto(piloto_id):
     flash("Piloto excluído com sucesso.", "success")
     return redirect(url_for("main.listar_pilotos"))
 
-@bp.route('/piloto/os')
-@login_required
-@roles_required('piloto')
-def piloto_os():
-    if not current_user.piloto_id:
-        flash("Piloto sem vínculo cadastrado.", "danger")
-        return redirect(url_for('main.dashboard'))
-
-    google_maps_key = os.getenv("KEY_API_GOOGLE_MAPS") or current_app.config.get("GOOGLE_MAPS_API_KEY", "")
-    status_ok = ["APROVADO", "APROVADO COM RECOMENDAÇÕES", "APROVADA", "APROVADA COM RECOMENDAÇÕES"]
-
-    vinculo = (
-        EquipePiloto.query
-        .join(Equipe, Equipe.id == EquipePiloto.equipe_id)
-        .options(joinedload(EquipePiloto.equipe))
-        .filter(
-            EquipePiloto.piloto_id == current_user.piloto_id,
-            Equipe.ativa.is_(True)
-        )
-        .order_by(
-            db.case((EquipePiloto.papel == "piloto", 0), else_=1),
-            EquipePiloto.criado_em.desc()
-        )
-        .first()
-    )
-
-    if not vinculo or not vinculo.equipe_id:
-        flash("Você ainda não está vinculado a nenhuma equipe ativa.", "warning")
-        return render_template(
-            "piloto_os.html",
-            pedidos=[],
-            paginacao=None,
-            status_ok=status_ok,
-            pilot_team_nome=None,
-            pilot_team_regiao=None,
-            pilot_team_papel=None,
-            google_maps_key=google_maps_key,
-            drones_equipe=[],
-            baterias_equipe=[],
-            veiculos_equipe=[],
-        )
-
-    pilot_team_nome = vinculo.equipe.nome_equipe if vinculo.equipe else None
-    pilot_team_regiao = vinculo.equipe.regiao if vinculo.equipe else None
-    pilot_team_papel = (vinculo.papel or "").lower()
-
-    drones_equipe = (
-        Drones.query
-        .options(joinedload(Drones.equipe))
-        .filter(Drones.equipe_id == vinculo.equipe_id)
-        .order_by(Drones.renomacao.asc())
-        .all()
-    )
-
-    baterias_equipe = (
-        Baterias.query
-        .join(Drones, Baterias.drone_id == Drones.id)
-        .filter(Drones.equipe_id == vinculo.equipe_id)
-        .order_by(Baterias.renomacao.asc())
-        .all()
-    )
-
-    # ✅ VEÍCULOS vinculados à equipe ativa do piloto
-    veiculos_equipe = (
-        Veiculos.query
-        .filter(Veiculos.equipe_id == vinculo.equipe_id)
-        .order_by(Veiculos.operacao.asc(), Veiculos.modelo.asc())
-        .all()
-    )
-
-    query = (
-        Solicitacao.query
-        .options(
-            joinedload(Solicitacao.usuario),
-            joinedload(Solicitacao.equipe)
-        )
-        .filter(
-            Solicitacao.equipe_id == vinculo.equipe_id,
-            Solicitacao.status.in_(status_ok)
-        )
-    )
-
-    filtro_data = request.args.get("data")
-    uvis_id = request.args.get("uvis_id")
-    query = aplicar_filtros_base(query, filtro_data, uvis_id)
-
-    page = request.args.get("page", 1, type=int)
-    paginacao = query.order_by(
-        Solicitacao.data_agendamento.asc(),
-        Solicitacao.hora_agendamento.asc()
-    ).paginate(page=page, per_page=6, error_out=False)
-
-    return render_template(
-        "piloto_os.html",
-        pedidos=paginacao.items,
-        paginacao=paginacao,
-        status_ok=status_ok,
-        pilot_team_nome=pilot_team_nome,
-        pilot_team_regiao=pilot_team_regiao,
-        pilot_team_papel=pilot_team_papel,
-        google_maps_key=google_maps_key,
-        drones_equipe=drones_equipe,
-        baterias_equipe=baterias_equipe,
-        veiculos_equipe=veiculos_equipe,  
-    )
-
-@bp.route('/piloto/os/formulario', methods=['GET'])
-@login_required
-@roles_required('piloto')
-def piloto_os_formulario():
-    return render_template("piloto_os_formulario.html")
-
-@bp.route('/piloto/os/<int:os_id>/concluir', methods=['POST'])
-@login_required
-@roles_required('piloto')
-def piloto_concluir_os(os_id):
-
-    s = Solicitacao.query.get_or_404(os_id)
-
-    status_ok = ["APROVADO", "APROVADO COM RECOMENDAÇÕES", "APROVADA", "APROVADA COM RECOMENDAÇÕES"]
-    if s.status not in status_ok:
-        flash("A OS não está aprovada.", "warning")
-        return redirect(url_for('main.piloto_os'))
-
-    if not s.equipe_id:
-        flash("Esta OS não possui equipe atribuída.", "danger")
-        return redirect(url_for('main.piloto_os'))
-
-    # ✅ valida se o piloto logado faz parte da equipe da OS
-    vinculo = (
-        EquipePiloto.query
-        .join(Equipe, Equipe.id == EquipePiloto.equipe_id)
-        .options(joinedload(EquipePiloto.equipe))
-        .filter(
-            EquipePiloto.equipe_id == s.equipe_id,
-            EquipePiloto.piloto_id == current_user.piloto_id,
-            Equipe.ativa.is_(True)
-        )
-        .first()
-    )
-
-    if not vinculo:
-        flash("Você não faz parte da equipe atribuída a esta OS.", "danger")
-        return redirect(url_for('main.piloto_os'))
-
-    equipe_nome = vinculo.equipe.nome_equipe if vinculo.equipe else None
-    papel = (vinculo.papel or "").lower() if vinculo.papel else None
-
-    s.status = "CONCLUÍDO"
-    db.session.commit()
-
-    if equipe_nome and papel:
-        flash(f"OS #{s.id} concluída! Equipe: {equipe_nome} | Papel: {papel}.", "success")
-    elif equipe_nome:
-        flash(f"OS #{s.id} concluída! Equipe: {equipe_nome}.", "success")
-    else:
-        flash(f"OS #{s.id} concluída com sucesso!", "success")
-
-    return redirect(url_for('main.piloto_os'))
-
 
 REGIOES = {"NORTE", "SUL", "LESTE", "OESTE", "CENTRO", "SULDESTE", "CENTRO-OESTE"}
 
@@ -8701,3 +8541,1066 @@ def exportar_logs_veiculos_xlsx():
         download_name=filename,
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
+
+
+@bp.route("/piloto/veiculos/<int:veiculo_id>/logs", methods=["POST"], endpoint="piloto_registrar_log_veiculo")
+@login_required
+@roles_required("piloto")
+def piloto_registrar_log_veiculo(veiculo_id):
+    nome_piloto = (getattr(current_user, "nome_uvis", None) or "").strip()
+    if not nome_piloto:
+        abort(403)
+
+    veiculo = Veiculos.query.get_or_404(veiculo_id)
+
+    # Seguranca: piloto so registra log dos veiculos sob sua responsabilidade.
+    if (veiculo.responsavel or "").strip().lower() != nome_piloto.lower():
+        abort(403)
+
+    piloto = None
+    if getattr(current_user, "piloto_id", None):
+        piloto = Pilotos.query.get(current_user.piloto_id)
+    if not piloto:
+        piloto = Pilotos.query.filter(db.func.lower(Pilotos.nome_piloto) == nome_piloto.lower()).first()
+
+    if not piloto:
+        flash("Piloto nao encontrado para vincular o log.", "danger")
+        return redirect(url_for("main.piloto_veiculos"))
+
+    km_final_raw = (request.form.get("km_final") or "").strip().replace(".", "").replace(",", ".")
+    valor_raw = (request.form.get("valor_abastecimento") or "").strip().replace(".", "").replace(",", ".")
+
+    if not km_final_raw:
+        flash("Informe o KM final.", "warning")
+        return redirect(url_for("main.piloto_veiculos"))
+
+    try:
+        km_final = float(km_final_raw)
+        if km_final < 0:
+            raise ValueError()
+    except ValueError:
+        flash("KM final invalido. Use apenas numeros.", "warning")
+        return redirect(url_for("main.piloto_veiculos"))
+
+    km_inicial = float(veiculo.km_atual or 0)
+    if km_final < km_inicial:
+        flash(f"KM final ({km_final:.0f}) nao pode ser menor que o KM inicial atual ({km_inicial:.0f}).", "warning")
+        return redirect(url_for("main.piloto_veiculos"))
+
+    valor_total = None
+    if valor_raw:
+        try:
+            valor_total = float(valor_raw)
+            if valor_total < 0:
+                raise ValueError()
+        except ValueError:
+            flash("Valor de abastecimento invalido.", "warning")
+            return redirect(url_for("main.piloto_veiculos"))
+
+    novo_log = LogVeiculo(
+        veiculo_id=veiculo.id,
+        piloto_id=piloto.id,
+        km_inicial=km_inicial,
+        km_final=km_final,
+        abasteceu=bool(valor_total and valor_total > 0),
+        valor_total=valor_total,
+        km_no_abastecimento=km_final if valor_total and valor_total > 0 else None,
+        observacao=(request.form.get("observacao") or "").strip() or None
+    )
+
+    veiculo.km_atual = km_final
+
+    try:
+        db.session.add(novo_log)
+        db.session.commit()
+        flash(
+            f"Log salvo para {veiculo.modelo} ({veiculo.placa}). KM inicial: {km_inicial:.0f} -> KM final: {km_final:.0f}.",
+            "success"
+        )
+    except Exception:
+        db.session.rollback()
+        flash("Erro ao salvar o log do veiculo. Tente novamente.", "danger")
+
+    return redirect(url_for("main.piloto_veiculos"))
+
+from datetime import datetime
+from io import BytesIO
+
+from flask import request, send_file, abort, flash, redirect, url_for
+from flask_login import login_required, current_user
+
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.utils import get_column_letter
+
+from datetime import datetime
+from io import BytesIO
+
+from flask import request, send_file, abort
+from flask_login import login_required, current_user
+
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.utils import get_column_letter
+from openpyxl.formatting.rule import CellIsRule
+
+from datetime import datetime
+from io import BytesIO
+from collections import defaultdict
+
+from flask import request, send_file, abort, redirect, url_for
+from flask_login import login_required, current_user
+
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.utils import get_column_letter
+from openpyxl.formatting.rule import CellIsRule, FormulaRule
+from openpyxl.worksheet.table import Table, TableStyleInfo
+from openpyxl.chart import BarChart, Reference
+from openpyxl.chart.label import DataLabelList
+
+
+from datetime import datetime
+from io import BytesIO
+from collections import defaultdict
+
+from flask import request, send_file, abort
+from flask_login import login_required, current_user
+
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.utils import get_column_letter
+
+
+# -------------------------------------------------------------
+# EXPORTAR LOGS DE VEÍCULOS (Excel Premium + Resumo) - SEM CORRUPÇÃO
+# -------------------------------------------------------------
+@bp.route("/veiculos/logs/exportar", methods=["GET"], endpoint="exportar_logs_veiculos_xlsx")
+@login_required
+def exportar_logs_veiculos_xlsx():
+    # 🔐 Segurança
+    tipo = getattr(current_user, "tipo_usuario", None)
+    if tipo not in ["admin", "operario", "visualizar"]:
+        abort(403)
+
+    # -----------------------------
+    # Filtros
+    # -----------------------------
+    q = (request.args.get("q") or "").strip()
+    data_inicio = (request.args.get("data_inicio") or "").strip()  # YYYY-MM-DD
+    data_fim = (request.args.get("data_fim") or "").strip()        # YYYY-MM-DD
+
+    # Query base
+    query = LogVeiculo.query.options(
+        db.selectinload(LogVeiculo.veiculo),
+        db.selectinload(LogVeiculo.piloto),
+    )
+
+    # Busca geral
+    if q:
+        like = f"%{q}%"
+        query = query.join(Veiculos).join(Pilotos).filter(
+            db.or_(
+                Veiculos.modelo.ilike(like),
+                Veiculos.placa.ilike(like),
+                Veiculos.responsavel.ilike(like),
+                Pilotos.nome_piloto.ilike(like),
+                db.cast(LogVeiculo.km_inicial, db.String).ilike(like),
+                db.cast(LogVeiculo.km_final, db.String).ilike(like),
+            )
+        )
+
+    # Datas (data_registro DateTime)
+    try:
+        if data_inicio:
+            dt_ini = datetime.strptime(data_inicio, "%Y-%m-%d")
+            query = query.filter(LogVeiculo.data_registro >= dt_ini)
+
+        if data_fim:
+            dt_fim = datetime.strptime(data_fim, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+            query = query.filter(LogVeiculo.data_registro <= dt_fim)
+    except ValueError:
+        pass
+
+    logs = query.order_by(LogVeiculo.data_registro.desc()).all()
+
+    # -----------------------------
+    # Estilo / Paleta
+    # -----------------------------
+    wb = Workbook()
+
+    # Paleta (moderna / limpa)
+    C_NAVY = "0B1F3A"
+    C_NAVY_2 = "102A4C"
+    C_WHITE = "FFFFFF"
+    C_TEXT = "111827"
+    C_BORDER = "D7DCE5"
+
+    C_HEADER = "0F2A4A"
+    C_ROW_ALT = "F6F8FC"
+
+    C_GREEN_BG = "E8F5E9"
+    C_GREEN_TXT = "1B5E20"
+    C_RED_BG = "FDEAEA"
+    C_RED_TXT = "B71C1C"
+    C_BLUE_BG = "EAF2FF"
+    C_BLUE_TXT = "1D4ED8"
+    C_AMBER_BG = "FFF8E1"
+    C_AMBER_TXT = "8A6D00"
+
+    def fill(hexcolor: str):
+        return PatternFill("solid", fgColor=hexcolor)
+
+    thin = Side(style="thin", color=C_BORDER)
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    align_left = Alignment(horizontal="left", vertical="center", wrap_text=True)
+    align_center = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    align_right = Alignment(horizontal="right", vertical="center", wrap_text=True)
+
+    def money_ptbr(v: float) -> str:
+        return f"{v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+    def set_cell(cell, *, value=None, f=None, ft=None, a=None, b=None, nf=None):
+        if value is not None:
+            cell.value = value
+        if f is not None:
+            cell.fill = f
+        if ft is not None:
+            cell.font = ft
+        if a is not None:
+            cell.alignment = a
+        if b is not None:
+            cell.border = b
+        if nf is not None:
+            cell.number_format = nf
+
+    # -----------------------------
+    # Métricas (Resumo)
+    # -----------------------------
+    total_logs = len(logs)
+    abastecimentos = [l for l in logs if getattr(l, "valor_total", None) not in (None, 0)]
+    total_abastecido = sum(float(l.valor_total or 0) for l in abastecimentos)
+
+    km_rodados = []
+    for l in logs:
+        if l.km_inicial is not None and l.km_final is not None:
+            km_rodados.append(float(l.km_final) - float(l.km_inicial))
+
+    total_km = sum(km_rodados) if km_rodados else 0.0
+    custo_por_km = (total_abastecido / total_km) if total_km else 0.0
+
+    km_abast = []
+    for l in abastecimentos:
+        if l.km_inicial is not None and l.km_final is not None:
+            km_abast.append(float(l.km_final) - float(l.km_inicial))
+    media_km_por_abast = (sum(km_abast) / len(km_abast)) if km_abast else 0.0
+
+    abaste_por_dia = defaultdict(float)
+    for l in abastecimentos:
+        dt = getattr(l, "data_registro", None)
+        if dt:
+            abaste_por_dia[dt.date().isoformat()] += float(l.valor_total or 0)
+    dias_ordenados = sorted(abaste_por_dia.keys())
+
+    # -----------------------------
+    # Aba RESUMO
+    # -----------------------------
+    wsR = wb.active
+    wsR.title = "Resumo"
+    wsR.sheet_view.showGridLines = False
+
+    wsR.merge_cells("A1:H2")
+    set_cell(
+        wsR["A1"],
+        value="Gestão de Veículos • Relatório de Logs",
+        f=fill(C_NAVY),
+        ft=Font(bold=True, size=18, color=C_WHITE),
+        a=Alignment(horizontal="left", vertical="center"),
+    )
+
+    wsR.merge_cells("A3:H3")
+    filtros_txt = []
+    if q:
+        filtros_txt.append(f"Busca: {q}")
+    if data_inicio:
+        try:
+            filtros_txt.append(f"De: {datetime.strptime(data_inicio, '%Y-%m-%d').strftime('%d/%m/%Y')}")
+        except ValueError:
+            pass
+    if data_fim:
+        try:
+            filtros_txt.append(f"Até: {datetime.strptime(data_fim, '%Y-%m-%d').strftime('%d/%m/%Y')}")
+        except ValueError:
+            pass
+
+    set_cell(
+        wsR["A3"],
+        value=f"Gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M')} • " + (" | ".join(filtros_txt) if filtros_txt else "Sem filtros"),
+        f=fill(C_NAVY_2),
+        ft=Font(size=11, color="E5E7EB"),
+        a=Alignment(horizontal="left", vertical="center"),
+    )
+
+    cards = [
+        ("Total de Logs", total_logs, C_BLUE_BG, C_BLUE_TXT),
+        ("Total Abastecido (R$)", total_abastecido, C_GREEN_BG, C_GREEN_TXT),
+        ("Total KM Rodado", int(total_km), C_BLUE_BG, C_BLUE_TXT),
+        ("Qtd Abastecimentos", len(abastecimentos), C_GREEN_BG, C_GREEN_TXT),
+        ("Média R$/KM", custo_por_km, C_AMBER_BG, C_AMBER_TXT),
+        ("Média KM/Abastec.", media_km_por_abast, C_AMBER_BG, C_AMBER_TXT),
+    ]
+
+    start_card_row = 5
+    col_blocks = [("A", "B"), ("C", "D"), ("E", "F")]
+
+    idx = 0
+    for r_block in range(2):
+        row = start_card_row + (r_block * 4)
+        for b in range(3):
+            if idx >= len(cards):
+                break
+
+            title, val, bg, fg = cards[idx]
+            c1, c2 = col_blocks[b]
+
+            wsR.merge_cells(f"{c1}{row}:{c2}{row+2}")
+            box = wsR[f"{c1}{row}"]
+
+            if isinstance(val, float) and title.startswith("Total Abastecido"):
+                text_val = f"R$ {money_ptbr(val)}"
+            elif isinstance(val, float) and title.startswith("Média R$/KM"):
+                text_val = f"R$ {money_ptbr(val)}"
+            elif isinstance(val, float) and title.startswith("Média KM/Abastec."):
+                text_val = f"{int(val)} km"
+            else:
+                text_val = f"{val}"
+
+            set_cell(
+                box,
+                value=f"{title}\n{text_val}",
+                f=fill(bg),
+                ft=Font(bold=True, size=12, color=C_TEXT),
+                a=Alignment(horizontal="left", vertical="center", wrap_text=True),
+                b=border
+            )
+
+            idx += 1
+
+    wsR["A13"] = "Abastecimento por dia"
+    wsR["A13"].font = Font(bold=True, size=12, color=C_TEXT)
+
+    wsR["A14"] = "Data"
+    wsR["B14"] = "Valor (R$)"
+    wsR["A14"].font = Font(bold=True)
+    wsR["B14"].font = Font(bold=True)
+
+    for i, d in enumerate(dias_ordenados, start=15):
+        wsR[f"A{i}"] = datetime.strptime(d, "%Y-%m-%d").strftime("%d/%m/%Y")
+        wsR[f"B{i}"] = float(abaste_por_dia[d])
+        wsR[f"B{i}"].number_format = 'R$ #,##0.00'
+        wsR[f"A{i}"].alignment = align_left
+        wsR[f"B{i}"].alignment = align_right
+
+    # Larguras do resumo
+    wsR.column_dimensions["A"].width = 22
+    wsR.column_dimensions["B"].width = 18
+    wsR.column_dimensions["C"].width = 22
+    wsR.column_dimensions["D"].width = 18
+    wsR.column_dimensions["E"].width = 22
+    wsR.column_dimensions["F"].width = 18
+    wsR.column_dimensions["G"].width = 2
+    wsR.column_dimensions["H"].width = 2
+
+    # -----------------------------
+    # Aba LOGS
+    # -----------------------------
+    ws = wb.create_sheet("Logs")
+    ws.sheet_view.showGridLines = False
+
+    headers = [
+        "Data/Hora",
+        "Veículo",
+        "Placa",
+        "Responsável",
+        "Piloto",
+        "KM Inicial",
+        "KM Final",
+        "KM Rodado",
+        "Abasteceu",
+        "Valor (R$)",
+        "Observação",
+    ]
+
+    ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=len(headers))
+    set_cell(
+        ws.cell(row=1, column=1),
+        value="Logs detalhados",
+        f=fill(C_NAVY),
+        ft=Font(bold=True, size=14, color=C_WHITE),
+        a=Alignment(horizontal="left", vertical="center")
+    )
+
+    ws.merge_cells(start_row=2, start_column=1, end_row=2, end_column=len(headers))
+    set_cell(
+        ws.cell(row=2, column=1),
+        value="Use os filtros do Excel para segmentar por veículo, placa, piloto e período.",
+        f=fill(C_NAVY_2),
+        ft=Font(size=10, color="E5E7EB"),
+        a=Alignment(horizontal="left", vertical="center")
+    )
+
+    start_row = 4
+
+    # Header
+    for col_idx, h in enumerate(headers, start=1):
+        cell = ws.cell(row=start_row, column=col_idx, value=h)
+        set_cell(
+            cell,
+            f=fill(C_HEADER),
+            ft=Font(bold=True, color=C_WHITE, size=11),
+            a=align_center,
+            b=border
+        )
+
+    data_start = start_row + 1
+
+    for i, log in enumerate(logs, start=data_start):
+        veic = log.veiculo
+        piloto = log.piloto
+
+        dt = log.data_registro.strftime("%d/%m/%Y %H:%M") if log.data_registro else ""
+        modelo = veic.modelo if veic else ""
+        placa = veic.placa if veic else ""
+        responsavel = (veic.responsavel or "") if veic else ""
+        piloto_nome = piloto.nome_piloto if piloto else ""
+
+        km_ini = float(log.km_inicial) if log.km_inicial is not None else None
+        km_fim = float(log.km_final) if log.km_final is not None else None
+        km_rodado = (km_fim - km_ini) if (km_ini is not None and km_fim is not None) else None
+
+        abasteceu_bool = bool(getattr(log, "abasteceu", False))
+        abasteceu = "SIM" if abasteceu_bool else "NÃO"
+        valor = float(log.valor_total) if getattr(log, "valor_total", None) not in (None, 0) else None
+        obs = (log.observacao or "") if getattr(log, "observacao", None) else ""
+
+        row_values = [dt, modelo, placa, responsavel, piloto_nome, km_ini, km_fim, km_rodado, abasteceu, valor, obs]
+
+        for col_idx, v in enumerate(row_values, start=1):
+            cell = ws.cell(row=i, column=col_idx, value=v)
+            cell.border = border
+
+            # Zebra
+            if (i - data_start) % 2 == 1:
+                cell.fill = fill(C_ROW_ALT)
+
+            # Alinhamento / formatos
+            if col_idx in (6, 7, 8):  # KMs
+                cell.alignment = align_center
+                if v is not None:
+                    cell.number_format = "0"
+            elif col_idx == 10:  # valor
+                cell.alignment = align_right
+                if v is not None:
+                    cell.number_format = 'R$ #,##0.00'
+            elif col_idx == 9:  # SIM/NÃO
+                cell.alignment = align_center
+            else:
+                cell.alignment = align_left
+
+        # "Condicionais" SEM ConditionalFormatting (aplica na escrita)
+        # Abasteceu SIM -> verde na coluna I
+        if abasteceu == "SIM":
+            cI = ws.cell(row=i, column=9)
+            cI.fill = fill(C_GREEN_BG)
+            cI.font = Font(color=C_GREEN_TXT, bold=True)
+
+        # Valor > 0 -> verde na coluna J
+        if valor is not None and valor > 0:
+            cJ = ws.cell(row=i, column=10)
+            cJ.fill = fill(C_GREEN_BG)
+            cJ.font = Font(color=C_GREEN_TXT, bold=True)
+
+        # KM Rodado negativo -> vermelho na coluna H
+        if km_rodado is not None and km_rodado < 0:
+            cH = ws.cell(row=i, column=8)
+            cH.fill = fill(C_RED_BG)
+            cH.font = Font(color=C_RED_TXT, bold=True)
+
+    last_row = (data_start + len(logs) - 1) if logs else start_row
+
+    # Congelar / filtro
+    ws.freeze_panes = ws["A5"]
+    ws.auto_filter.ref = f"A{start_row}:{get_column_letter(len(headers))}{max(last_row, start_row)}"
+
+    # Larguras
+    widths = {
+        1: 18,
+        2: 26,
+        3: 12,
+        4: 22,
+        5: 22,
+        6: 12,
+        7: 12,
+        8: 12,
+        9: 12,
+        10: 14,
+        11: 45,
+    }
+    for col_idx in range(1, len(headers) + 1):
+        ws.column_dimensions[get_column_letter(col_idx)].width = widths.get(col_idx, 20)
+
+    # Metadados
+    wb.properties.creator = "IJA Drones • Sistema Oceano Azul"
+    wb.properties.title = "Logs de Veículos"
+    wb.properties.created = datetime.now()
+
+    # Output
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    stamp = datetime.now().strftime("%Y-%m-%d_%H%M")
+    filename = f"logs_veiculos_{stamp}.xlsx"
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name=filename,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
+
+@bp.route('/piloto/os')
+@login_required
+@roles_required('piloto')
+def piloto_os():
+    if not current_user.piloto_id:
+        flash("Piloto sem vínculo cadastrado.", "danger")
+        return redirect(url_for('main.dashboard'))
+
+    google_maps_key = os.getenv("KEY_API_GOOGLE_MAPS") or current_app.config.get("GOOGLE_MAPS_API_KEY", "")
+    status_ok = ["APROVADO", "APROVADO COM RECOMENDAÇÕES", "APROVADA", "APROVADA COM RECOMENDAÇÕES"]
+
+    vinculo = (
+        EquipePiloto.query
+        .join(Equipe, Equipe.id == EquipePiloto.equipe_id)
+        .options(joinedload(EquipePiloto.equipe))
+        .filter(
+            EquipePiloto.piloto_id == current_user.piloto_id,
+            Equipe.ativa.is_(True)
+        )
+        .order_by(
+            db.case((EquipePiloto.papel == "piloto", 0), else_=1),
+            EquipePiloto.criado_em.desc()
+        )
+        .first()
+    )
+
+    if not vinculo or not vinculo.equipe_id:
+        flash("Você ainda não está vinculado a nenhuma equipe ativa.", "warning")
+        return render_template(
+            "piloto_os.html",
+            pedidos=[],
+            paginacao=None,
+            status_ok=status_ok,
+            pilot_team_nome=None,
+            pilot_team_regiao=None,
+            pilot_team_papel=None,
+            google_maps_key=google_maps_key,
+            drones_equipe=[],
+            baterias_equipe=[],
+            veiculos_equipe=[],
+        )
+
+    pilot_team_nome = vinculo.equipe.nome_equipe if vinculo.equipe else None
+    pilot_team_regiao = vinculo.equipe.regiao if vinculo.equipe else None
+    pilot_team_papel = (vinculo.papel or "").lower()
+
+    drones_equipe = (
+        Drones.query
+        .options(joinedload(Drones.equipe))
+        .filter(Drones.equipe_id == vinculo.equipe_id)
+        .order_by(Drones.renomacao.asc())
+        .all()
+    )
+
+    baterias_equipe = (
+        Baterias.query
+        .join(Drones, Baterias.drone_id == Drones.id)
+        .filter(Drones.equipe_id == vinculo.equipe_id)
+        .order_by(Baterias.renomacao.asc())
+        .all()
+    )
+
+    # ✅ VEÍCULOS vinculados à equipe ativa do piloto
+    veiculos_equipe = (
+        Veiculos.query
+        .filter(Veiculos.equipe_id == vinculo.equipe_id)
+        .order_by(Veiculos.operacao.asc(), Veiculos.modelo.asc())
+        .all()
+    )
+
+    query = (
+        Solicitacao.query
+        .options(
+            joinedload(Solicitacao.usuario),
+            joinedload(Solicitacao.equipe)
+        )
+        .filter(
+            Solicitacao.equipe_id == vinculo.equipe_id,
+            Solicitacao.status.in_(status_ok)
+        )
+    )
+
+    filtro_data = request.args.get("data")
+    uvis_id = request.args.get("uvis_id")
+    query = aplicar_filtros_base(query, filtro_data, uvis_id)
+
+    page = request.args.get("page", 1, type=int)
+    paginacao = query.order_by(
+        Solicitacao.data_agendamento.asc(),
+        Solicitacao.hora_agendamento.asc()
+    ).paginate(page=page, per_page=6, error_out=False)
+
+    return render_template(
+        "piloto_os.html",
+        pedidos=paginacao.items,
+        paginacao=paginacao,
+        status_ok=status_ok,
+        pilot_team_nome=pilot_team_nome,
+        pilot_team_regiao=pilot_team_regiao,
+        pilot_team_papel=pilot_team_papel,
+        google_maps_key=google_maps_key,
+        drones_equipe=drones_equipe,
+        baterias_equipe=baterias_equipe,
+        veiculos_equipe=veiculos_equipe,  
+    )
+from datetime import datetime
+from flask import render_template, request, redirect, url_for, flash, current_app
+from flask_login import login_required, current_user
+from sqlalchemy.orm import joinedload
+
+from app import db
+# ajuste imports conforme sua estrutura
+from app.models import Solicitacao, OrdemServico, EquipePiloto, Equipe
+
+
+# ============================================================
+# CONCLUIR OS (mantive seu código)
+# ============================================================
+@bp.route('/piloto/os/<int:os_id>/concluir', methods=['POST'])
+@login_required
+@roles_required('piloto')
+def piloto_concluir_os(os_id):
+
+    s = Solicitacao.query.get_or_404(os_id)
+
+    status_ok = ["APROVADO", "APROVADO COM RECOMENDAÇÕES", "APROVADA", "APROVADA COM RECOMENDAÇÕES"]
+    if s.status not in status_ok:
+        flash("A OS não está aprovada.", "warning")
+        return redirect(url_for('main.piloto_os'))
+
+    if not s.equipe_id:
+        flash("Esta OS não possui equipe atribuída.", "danger")
+        return redirect(url_for('main.piloto_os'))
+
+    # ✅ valida se o piloto logado faz parte da equipe da OS
+    vinculo = (
+        EquipePiloto.query
+        .join(Equipe, Equipe.id == EquipePiloto.equipe_id)
+        .options(joinedload(EquipePiloto.equipe))
+        .filter(
+            EquipePiloto.equipe_id == s.equipe_id,
+            EquipePiloto.piloto_id == current_user.piloto_id,
+            Equipe.ativa.is_(True)
+        )
+        .first()
+    )
+
+    if not vinculo:
+        flash("Você não faz parte da equipe atribuída a esta OS.", "danger")
+        return redirect(url_for('main.piloto_os'))
+
+    equipe_nome = vinculo.equipe.nome_equipe if vinculo.equipe else None
+    papel = (vinculo.papel or "").lower() if vinculo.papel else None
+
+    s.status = "CONCLUÍDO"
+    db.session.commit()
+
+    if equipe_nome and papel:
+        flash(f"OS #{s.id} concluída! Equipe: {equipe_nome} | Papel: {papel}.", "success")
+    elif equipe_nome:
+        flash(f"OS #{s.id} concluída! Equipe: {equipe_nome}.", "success")
+    else:
+        flash(f"OS #{s.id} concluída com sucesso!", "success")
+
+    return redirect(url_for('main.piloto_os'))
+
+
+from datetime import datetime
+from flask import render_template, request, redirect, url_for, flash, current_app, jsonify
+from flask_login import login_required, current_user
+from sqlalchemy.orm import joinedload
+
+from app import db
+from app.models import (
+    Solicitacao, OrdemServico,
+    Equipe, EquipePiloto,
+    Drones
+)
+
+# se seu decorator roles_required estiver em outro módulo:
+# from app.decorators import roles_required
+
+
+# ============================================================
+# HELPERS DE PARSE (PT-BR friendly)
+# ============================================================
+def _clean(v):
+    if v is None:
+        return None
+    v = v.strip()
+    return v if v != "" else None
+
+def _to_int(v):
+    v = _clean(v)
+    if v is None:
+        return None
+    try:
+        return int(float(v))
+    except Exception:
+        return None
+
+def _to_float(v):
+    v = _clean(v)
+    if v is None:
+        return None
+
+    # aceita "1.234,56" ou "1234,56" ou "1234.56"
+    if "," in v and "." in v:
+        v = v.replace(".", "").replace(",", ".")
+    else:
+        v = v.replace(",", ".")
+
+    try:
+        return float(v)
+    except Exception:
+        return None
+
+def _to_date(v):
+    v = _clean(v)
+    if v is None:
+        return None
+    try:
+        return datetime.strptime(v, "%Y-%m-%d").date()
+    except Exception:
+        return None
+
+def _to_time(v):
+    v = _clean(v)
+    if v is None:
+        return None
+    for fmt in ("%H:%M", "%H:%M:%S"):
+        try:
+            return datetime.strptime(v, fmt).time()
+        except Exception:
+            pass
+    return None
+
+def _to_datetime_local(v):
+    """
+    input type="datetime-local" vem como "YYYY-MM-DDTHH:MM"
+    """
+    v = _clean(v)
+    if v is None:
+        return None
+    for fmt in ("%Y-%m-%dT%H:%M", "%Y-%m-%dT%H:%M:%S"):
+        try:
+            return datetime.strptime(v, fmt)
+        except Exception:
+            pass
+    return None
+
+
+# ============================================================
+# ROTA ANTIGA (AGORA SÓ REDIRECIONA)
+# /piloto/os/formulario?os_id=123
+# ============================================================
+@bp.route("/piloto/os/formulario", methods=["GET"])
+@login_required
+@roles_required("piloto")
+def piloto_os_formulario_redirect():
+    os_id = request.args.get("os_id", type=int) or request.args.get("solicitacao_id", type=int)
+
+    if not os_id:
+        flash("Selecione uma OS para preencher o formulário.", "info")
+        return redirect(url_for("main.piloto_os"))
+
+    return redirect(url_for("main.piloto_os_formulario_view", os_id=os_id))
+
+
+# ============================================================
+# ROTA REAL DO FORMULÁRIO (GET + POST)
+# /piloto/os/<os_id>/formulario
+# ============================================================
+@bp.route("/piloto/os/<int:os_id>/formulario", methods=["GET", "POST"])
+@login_required
+@roles_required("piloto")
+def piloto_os_formulario_view(os_id):
+
+    if not current_user.piloto_id:
+        flash("Piloto sem vínculo cadastrado.", "danger")
+        return redirect(url_for("main.dashboard"))
+
+    status_ok = ["APROVADO", "APROVADO COM RECOMENDAÇÕES", "APROVADA", "APROVADA COM RECOMENDAÇÕES"]
+    status_permitidos = set(status_ok + ["CONCLUÍDO"])
+
+    # Carrega OS + usuario (UVIS) + equipe
+    s = (
+        Solicitacao.query
+        .options(
+            joinedload(Solicitacao.usuario),
+            joinedload(Solicitacao.equipe),
+        )
+        .get_or_404(os_id)
+    )
+
+    if s.status not in status_permitidos:
+        flash("Esta OS não está liberada para preenchimento do formulário.", "warning")
+        return redirect(url_for("main.piloto_os"))
+
+    if not s.equipe_id:
+        flash("Esta OS não possui equipe atribuída.", "danger")
+        return redirect(url_for("main.piloto_os"))
+
+    # Segurança: piloto precisa estar na equipe ativa da OS
+    vinculo = (
+        EquipePiloto.query
+        .join(Equipe, Equipe.id == EquipePiloto.equipe_id)
+        .options(joinedload(EquipePiloto.equipe))
+        .filter(
+            EquipePiloto.equipe_id == s.equipe_id,
+            EquipePiloto.piloto_id == current_user.piloto_id,
+            Equipe.ativa.is_(True)
+        )
+        .first()
+    )
+
+    if not vinculo:
+        flash("Você não tem permissão para acessar esta OS.", "danger")
+        return redirect(url_for("main.piloto_os"))
+
+    equipe = vinculo.equipe
+    ordem = s.ordem_servico  # 1:1
+
+    # ✅ drones da equipe (só depois de validar permissão)
+    drones_equipe = (
+        Drones.query
+        .filter(
+            Drones.equipe_id == s.equipe_id,
+            Drones.tipo_equipamento == "drones",  # garante tipo correto no polimorfismo
+            Drones.status == "Ativo"              # opcional
+        )
+        .order_by(Drones.renomacao.asc())
+        .all()
+    )
+
+    # Defaults puxados das tabelas
+    uvis_nome = s.usuario.nome_uvis if s.usuario else ""
+    endereco_os = f"{s.logradouro or ''}, {s.numero or 'S/N'} - {s.bairro or ''} - {s.cidade or ''}/{s.uf or ''}"
+
+    piloto_padrao = (equipe.piloto_titular.nome_piloto if equipe and equipe.piloto_titular else "") if equipe else ""
+    auxiliar_padrao = (equipe.piloto_auxiliar.nome_piloto if equipe and equipe.piloto_auxiliar else "") if equipe else ""
+
+    respondido_por_padrao = ""
+    if getattr(current_user, "piloto", None) and current_user.piloto:
+        respondido_por_padrao = current_user.piloto.nome_piloto or ""
+    else:
+        respondido_por_padrao = getattr(current_user, "nome_uvis", "") or ""
+
+    # datetime-local
+    if ordem and ordem.respondido_em:
+        respondido_em_value = ordem.respondido_em.strftime("%Y-%m-%dT%H:%M")
+    else:
+        respondido_em_value = datetime.now().strftime("%Y-%m-%dT%H:%M")
+
+    # ----------------------------
+    # POST (salvar)
+    # ----------------------------
+    if request.method == "POST":
+
+        # cria registro se não existir
+        if ordem is None:
+            ordem = OrdemServico(
+                solicitacao_id=s.id,
+                equipe_id=s.equipe_id
+            )
+            db.session.add(ordem)
+
+        # ----------------------------
+        # ✅ Drone selecionado (OPCIONAL)
+        # ----------------------------
+        # Só ative se você tiver criado a coluna ordem.drone_id (e talvez snapshot)
+        #
+        drone_id = request.form.get("drone_id", type=int)
+        if drone_id:
+             drone = Drones.query.get(drone_id)
+             if (not drone) or (drone.equipe_id != s.equipe_id):
+                 flash("Drone inválido para a equipe desta OS.", "danger")
+                 return redirect(url_for("main.piloto_os_formulario_view", os_id=os_id))
+             ordem.drone_id = drone.id              
+             ordem.drone_renomacao = drone.renomacao
+             ordem.drone_modelo = drone.modelo
+             ordem.drone_numero_serie = drone.numero_serie
+             ordem.drone_registro_anatel = drone.registro_anatel
+             ordem.drone_registro_anac = drone.registro_anac
+        else:
+             ordem.drone_id = None
+             ordem.drone_renomacao = None
+             ordem.drone_modelo = None
+             ordem.drone_numero_serie = None
+             ordem.drone_registro_anatel = None
+             ordem.drone_registro_anac = None
+
+        ordem.identificador_os = _clean(request.form.get("identificador_os"))
+        ordem.respondido_por = _clean(request.form.get("respondido_por")) or respondido_por_padrao
+        ordem.respondido_em = _to_datetime_local(request.form.get("respondido_em")) or datetime.now()
+
+        ordem.situacao_aplicacao = _clean(request.form.get("situacao_aplicacao"))
+        ordem.larva_visualizada = _clean(request.form.get("larva_visualizada"))
+        ordem.retornar_proxima_semana_monitorar_larvas = _clean(request.form.get("retornar_proxima_semana_monitorar_larvas"))
+
+        # template usa name="da" mas model é distrito_administrativo
+        ordem.distrito_administrativo = _clean(request.form.get("da")) or _clean(request.form.get("distrito_administrativo"))
+
+        ordem.nome_rf_ace_responsavel_os = _clean(request.form.get("nome_rf_ace_responsavel_os"))
+        ordem.criadouro_os_tipo_volume = _clean(request.form.get("criadouro_os_tipo_volume"))
+
+        ordem.data_aplicacao = _to_date(request.form.get("data_aplicacao"))
+        ordem.hora_inicio_aplicacao = _to_time(request.form.get("hora_inicio_aplicacao"))
+        ordem.hora_termino_aplicacao = _to_time(request.form.get("hora_termino_aplicacao"))
+
+        ordem.tratamento_adicional_realizado = _clean(request.form.get("tratamento_adicional_realizado"))
+        ordem.quantos_quais = _clean(request.form.get("quantos_quais"))
+
+        ordem.descricao_produto = _clean(request.form.get("descricao_produto"))
+        ordem.formulacao_produto = _clean(request.form.get("formulacao_produto"))
+        ordem.dosagem_g_10l = _clean(request.form.get("dosagem_g_10l"))
+
+        ordem.tipo_aplicacao = _clean(request.form.get("tipo_aplicacao"))
+        ordem.quantidade_produto_administrada_ml = _to_float(request.form.get("quantidade_produto_administrada_ml"))
+        ordem.pulverizacao_area_l_ha = _to_float(request.form.get("pulverizacao_area_l_ha"))
+        ordem.pulverizacao_foco_tempo_estimado_segundos = _to_float(request.form.get("pulverizacao_foco_tempo_estimado_segundos"))
+        ordem.pulverizacao_foco_l_min = _to_float(request.form.get("pulverizacao_foco_l_min"))
+
+        ordem.prefixo_aeronave_pulverizacao = _clean(request.form.get("prefixo_aeronave_pulverizacao"))
+        ordem.prefixo_aeronave_monitoramento = _clean(request.form.get("prefixo_aeronave_monitoramento"))
+        ordem.quantidade_imagens_registradas = _to_int(request.form.get("quantidade_imagens_registradas"))
+
+        ordem.ponta_pulverizacao = _clean(request.form.get("ponta_pulverizacao"))
+        ordem.temperatura_c = _to_float(request.form.get("temperatura_c"))
+        ordem.umidade_relativa_pct = _to_float(request.form.get("umidade_relativa_pct"))
+        ordem.velocidade_vento_kmh = _to_float(request.form.get("velocidade_vento_kmh"))
+
+        ordem.motivo_nao_realizacao = _clean(request.form.get("motivo_nao_realizacao"))
+
+        # Campos extras do template que não existem no model -> guarda em observacoes
+        obs = _clean(request.form.get("observacoes"))
+        extras = []
+
+        tipo_os = _clean(request.form.get("tipo_os"))
+        if tipo_os:
+            extras.append(f"Tipo de OS: {tipo_os}")
+
+        numero_serie = _clean(request.form.get("numero_serie_equipamento"))
+        if numero_serie:
+            extras.append(f"Nº série equipamento: {numero_serie}")
+
+        # ✅ se você NÃO criou coluna drone_id e quer ao menos registrar em observacoes:
+        # drone_id_txt = _clean(request.form.get("drone_id"))
+        # if drone_id_txt:
+        #     extras.append(f"Drone ID: {drone_id_txt}")
+
+        if extras:
+            extra_txt = " | ".join(extras)
+            obs = f"{obs}\n{extra_txt}" if obs else extra_txt
+
+        ordem.observacoes = obs
+
+        ordem.piloto = _clean(request.form.get("piloto")) or piloto_padrao
+        ordem.assinatura_piloto = _clean(request.form.get("assinatura_piloto"))
+        ordem.auxiliar = _clean(request.form.get("auxiliar")) or auxiliar_padrao
+
+        ordem.proprietario_ou_preposto = _clean(request.form.get("proprietario_ou_preposto"))
+        ordem.assinatura_proprietario_ou_preposto = _clean(request.form.get("assinatura_proprietario_ou_preposto"))
+
+        try:
+            db.session.commit()
+            flash("Formulário salvo com sucesso!", "success")
+            return redirect(url_for("main.piloto_os"))
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("Erro ao salvar formulário da OS %s", os_id)
+            flash("Erro ao salvar o formulário. Verifique os campos e tente novamente.", "danger")
+
+    # ----------------------------
+    # GET (render)
+    # ----------------------------
+    return render_template(
+        "piloto_os_formulario.html",
+        solicitacao=s,
+        equipe=equipe,
+        ordem=ordem,
+        uvis_nome=uvis_nome,
+        endereco_os=endereco_os,
+        piloto_padrao=piloto_padrao,
+        auxiliar_padrao=auxiliar_padrao,
+        respondido_por_padrao=respondido_por_padrao,
+        respondido_em_value=respondido_em_value,
+        drones_equipe=drones_equipe,
+    )
+
+
+# ============================================================
+# API: detalhes do drone (para preencher campos do form)
+# ============================================================
+@bp.route("/piloto/api/drone/<int:drone_id>", methods=["GET"])
+@login_required
+@roles_required("piloto")
+def piloto_api_drone(drone_id):
+    if not current_user.piloto_id:
+        return jsonify({"error": "Piloto sem vínculo."}), 403
+
+    drone = Drones.query.get_or_404(drone_id)
+
+    # segurança: drone precisa estar vinculado a uma equipe
+    if not drone.equipe_id:
+        return jsonify({"error": "Drone sem equipe."}), 403
+
+    # segurança: piloto precisa estar na equipe ativa desse drone
+    vinculo = (
+        EquipePiloto.query
+        .join(Equipe, Equipe.id == EquipePiloto.equipe_id)
+        .filter(
+            EquipePiloto.equipe_id == drone.equipe_id,
+            EquipePiloto.piloto_id == current_user.piloto_id,
+            Equipe.ativa.is_(True)
+        )
+        .first()
+    )
+    if not vinculo:
+        return jsonify({"error": "Sem permissão."}), 403
+
+    return jsonify({
+        "id": drone.id,
+        "renomacao": drone.renomacao,
+        "modelo": drone.modelo,
+        "numero_serie": drone.numero_serie,
+        "registro_anatel": drone.registro_anatel,
+        "registro_anac": drone.registro_anac,
+        "status": drone.status,
+        "categoria": drone.categoria,
+        "pmd_kg": drone.pmd_kg,
+        "ano_fabricacao": drone.ano_fabricacao,
+    })

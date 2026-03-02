@@ -23,7 +23,7 @@ class Usuario(UserMixin, db.Model):
     # tipos esperados: "admin", "uvis", "operario", "visualizador", "piloto"
     tipo_usuario = db.Column(db.String(20), default="uvis", index=True)
 
-    # ✅ vínculo opcional com Pilotos (somente quando tipo_usuario="piloto")
+    # vínculo opcional com Pilotos (somente quando tipo_usuario="piloto")
     piloto_id = db.Column(
         db.Integer,
         db.ForeignKey("pilotos.id"),
@@ -39,7 +39,7 @@ class Usuario(UserMixin, db.Model):
         lazy="select"
     )
 
-    # ✅ vínculos de pilotos que atendem esta UVIS (para filtro do piloto)
+    # vínculos de pilotos que atendem esta UVIS (para filtro do piloto)
     vinculos_pilotos = db.relationship(
         "PilotoUvis",
         back_populates="uvis_usuario",
@@ -47,7 +47,7 @@ class Usuario(UserMixin, db.Model):
         cascade="all, delete-orphan"
     )
 
-    # ✅ NOVO: equipe da UVIS (até 5 pessoas) - 1 registro por membro
+    # equipe da UVIS (até 5 pessoas) - 1 registro por membro
     equipe_uvis_membros = db.relationship(
         "EquipeUvis",
         back_populates="uvis_usuario",
@@ -96,11 +96,8 @@ class EquipeUvis(db.Model):
     uvis_usuario = db.relationship("Usuario", back_populates="equipe_uvis_membros")
 
     __table_args__ = (
-        
         db.UniqueConstraint("uvis_usuario_id", "nome_equipe", "ordem", name="uq_equipe_uvis_equipe_slot"),
-
         db.CheckConstraint("ordem >= 1 AND ordem <= 5", name="ck_equipe_uvis_ordem_1_5"),
-
         db.Index("ix_equipe_uvis_uvis", "uvis_usuario_id"),
         db.Index("ix_equipe_uvis_uvis_equipe", "uvis_usuario_id", "nome_equipe"),
         db.Index("ix_equipe_uvis_uvis_equipe_ordem", "uvis_usuario_id", "nome_equipe", "ordem"),
@@ -119,14 +116,14 @@ class Pilotos(db.Model):
     regiao = db.Column(db.String(20))
     telefone = db.Column(db.String(20))
 
-    # ✅ Solicitações atribuídas ao piloto
+    # Solicitações atribuídas ao piloto
     solicitacoes = db.relationship(
         "Solicitacao",
         back_populates="piloto",
         lazy="select"
     )
 
-    # ✅ UVIS que este piloto atende (vínculo N:N via PilotoUvis)
+    # UVIS que este piloto atende (vínculo N:N via PilotoUvis)
     vinculos_uvis = db.relationship(
         "PilotoUvis",
         back_populates="piloto",
@@ -134,10 +131,9 @@ class Pilotos(db.Model):
         cascade="all, delete-orphan"
     )
 
+
 # -------------------------------------------------------------
 # VÍNCULO PILOTO ↔ UVIS (N:N)
-# - serve para: "piloto ver somente as UVIS ligadas a ele"
-# - e para reforçar segurança: piloto só vê OS de UVIS que ele atende
 # -------------------------------------------------------------
 class PilotoUvis(db.Model):
     __tablename__ = "piloto_uvis"
@@ -183,17 +179,13 @@ class Solicitacao(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
 
-    # ----------------------
     # Dados Básicos e Data
-    # ----------------------
     data_agendamento = db.Column(db.Date, nullable=False, index=True)
     hora_agendamento = db.Column(db.Time, nullable=False)
 
     foco = db.Column(db.String(50), nullable=False, index=True)
 
-    # ----------------------
     # Detalhes Operacionais
-    # ----------------------
     tipo_visita = db.Column(db.String(50), index=True)
     altura_voo = db.Column(db.String(20), index=True)
 
@@ -203,9 +195,7 @@ class Solicitacao(db.Model):
     observacao = db.Column(db.Text)
     area_restrita = db.Column(db.Boolean, default=False, nullable=False)
 
-    # ----------------------
     # Endereço
-    # ----------------------
     cep = db.Column(db.String(9), nullable=False)
     logradouro = db.Column(db.String(150), nullable=False)
     bairro = db.Column(db.String(100), nullable=False, index=True)
@@ -218,32 +208,21 @@ class Solicitacao(db.Model):
     # Geolocalização
     latitude = db.Column(db.String(50))
     longitude = db.Column(db.String(50))
-    perimetro_planejado = db.Column(db.Text)  # JSON com as coordenadas do desenho da UVIS
-    perimetro_executado = db.Column(db.Text)  # JSON com o log real do drone (telemetria)
+    perimetro_planejado = db.Column(db.Text)   # JSON com as coordenadas do desenho da UVIS
+    perimetro_executado = db.Column(db.Text)   # JSON com o log real do drone (telemetria)
 
     # Anexos
     anexo_path = db.Column(db.String(255))
     anexo_nome = db.Column(db.String(255))
 
-    # ----------------------
     # Controle Admin
-    # ----------------------
     protocolo = db.Column(db.String(50), index=True)
     justificativa = db.Column(db.String(255))
     equipe_uvis_nome = db.Column(db.String(100), index=True)
 
+    data_criacao = db.Column(db.DateTime, default=datetime.now, index=True)
 
-    data_criacao = db.Column(
-        db.DateTime,
-        default=datetime.now,
-        index=True
-    )
-
-    status = db.Column(
-        db.String(30),
-        default="EM ANÁLISE",
-        index=True
-    )
+    status = db.Column(db.String(30), default="EM ANÁLISE", index=True)
 
     # UVIS (usuário) que criou/abriu a OS
     usuario_id = db.Column(
@@ -252,24 +231,18 @@ class Solicitacao(db.Model):
         nullable=False,
         index=True
     )
-    usuario = db.relationship(
-        "Usuario",
-        back_populates="solicitacoes"
-    )
+    usuario = db.relationship("Usuario", back_populates="solicitacoes")
 
-    # Piloto responsável (para dashboard/agenda do piloto)
+    # Piloto responsável
     piloto_id = db.Column(
         db.Integer,
         db.ForeignKey("pilotos.id"),
         nullable=True,
         index=True
     )
-    piloto = db.relationship(
-        "Pilotos",
-        back_populates="solicitacoes"
-    )
+    piloto = db.relationship("Pilotos", back_populates="solicitacoes")
 
-    # Equipe responsável (novo)
+    # Equipe responsável
     equipe_id = db.Column(
         db.Integer,
         db.ForeignKey("equipes.id"),
@@ -299,8 +272,10 @@ class Solicitacao(db.Model):
 # -------------------------------------------------------------
 class OrdemServico(db.Model):
     __tablename__ = "ordens_servico"
+
     id = db.Column(db.Integer, primary_key=True)
-    # vinculo 1:1 com a solicitacao original
+
+    # vínculo 1:1 com a solicitação original
     solicitacao_id = db.Column(
         db.Integer,
         db.ForeignKey("solicitacoes.id"),
@@ -308,6 +283,7 @@ class OrdemServico(db.Model):
         unique=True,
         index=True
     )
+
     # equipe executora
     equipe_id = db.Column(
         db.Integer,
@@ -315,51 +291,84 @@ class OrdemServico(db.Model):
         nullable=False,
         index=True
     )
+
     # campos do formulario Excel (aba: "formularios")
     identificador_os = db.Column(db.String(100), index=True)
     respondido_por = db.Column(db.String(150), index=True)
     respondido_em = db.Column(db.DateTime, index=True)
+
     situacao_aplicacao = db.Column(db.String(100), index=True)
     larva_visualizada = db.Column(db.String(20))
     retornar_proxima_semana_monitorar_larvas = db.Column(db.String(20))
+
     distrito_administrativo = db.Column(db.String(100))
     nome_rf_ace_responsavel_os = db.Column(db.String(200))
     criadouro_os_tipo_volume = db.Column(db.Text)
+
     data_aplicacao = db.Column(db.Date, index=True)
     hora_inicio_aplicacao = db.Column(db.Time)
     hora_termino_aplicacao = db.Column(db.Time)
+
     tratamento_adicional_realizado = db.Column(db.String(20))
     quantos_quais = db.Column(db.Text)
+
     descricao_produto = db.Column(db.String(200))
     formulacao_produto = db.Column(db.String(200))
     dosagem_g_10l = db.Column(db.String(50))
+
     tipo_aplicacao = db.Column(db.String(100), index=True)
     quantidade_produto_administrada_ml = db.Column(db.Float)
+
     pulverizacao_area_l_ha = db.Column(db.Float)
     pulverizacao_foco_tempo_estimado_segundos = db.Column(db.Float)
     pulverizacao_foco_l_min = db.Column(db.Float)
+
     prefixo_aeronave_pulverizacao = db.Column(db.String(100), index=True)
     prefixo_aeronave_monitoramento = db.Column(db.String(100), index=True)
+
     quantidade_imagens_registradas = db.Column(db.Integer)
     ponta_pulverizacao = db.Column(db.String(100))
+
     temperatura_c = db.Column(db.Float)
     umidade_relativa_pct = db.Column(db.Float)
     velocidade_vento_kmh = db.Column(db.Float)
+
     motivo_nao_realizacao = db.Column(db.String(255))
     observacoes = db.Column(db.Text)
+
     piloto = db.Column(db.String(150), index=True)
     assinatura_piloto = db.Column(db.Text)
+
     auxiliar = db.Column(db.String(150), index=True)
+
     proprietario_ou_preposto = db.Column(db.String(200))
     assinatura_proprietario_ou_preposto = db.Column(db.Text)
+
+    # ----------------------------
+    # Drone usado na OS (FK) + snapshot
+    # ----------------------------
+    drone_id = db.Column(db.Integer, db.ForeignKey("drones.id"), nullable=True, index=True)
+    drone = db.relationship("Drones", lazy="joined")
+
+    # snapshot dos dados do drone (para histórico)
+    drone_renomacao = db.Column(db.String(100))
+    drone_modelo = db.Column(db.String(100))
+    drone_numero_serie = db.Column(db.String(100))
+    drone_registro_anatel = db.Column(db.String(50))
+    drone_registro_anac = db.Column(db.String(50))
+
     solicitacao = db.relationship("Solicitacao", back_populates="ordem_servico")
     equipe = db.relationship("Equipe", back_populates="ordens_servico")
+
     __table_args__ = (
         db.Index("ix_os_equipe", "equipe_id"),
         db.Index("ix_os_identificador", "identificador_os"),
         db.Index("ix_os_respondido_em", "respondido_em"),
         db.Index("ix_os_data_aplicacao", "data_aplicacao"),
+        db.Index("ix_os_equipe_drone", "equipe_id", "drone_id"),
     )
+
+
 # -------------------------------------------------------------
 # NOTIFICACOES
 # -------------------------------------------------------------
@@ -410,8 +419,6 @@ class Clientes(db.Model):
 
 # -------------------------------------------------------------
 # EQUIPES
-# - Uma equipe tem exatamente 2 membros: 1 PILOTO e 1 AUXILIAR
-# - A associação fica em EquipePiloto (pivot) com campo "papel"
 # -------------------------------------------------------------
 class Equipe(db.Model):
     __tablename__ = "equipes"
@@ -421,7 +428,7 @@ class Equipe(db.Model):
     nome_equipe = db.Column(db.String(100), nullable=False, index=True)
     descricao = db.Column(db.Text)
 
-    regiao = db.Column(db.String(20), index=True)  # opcional (ajuda filtro)
+    regiao = db.Column(db.String(20), index=True)
     ativa = db.Column(db.Boolean, default=True, nullable=False, index=True)
 
     criada_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
@@ -433,7 +440,7 @@ class Equipe(db.Model):
         cascade="all, delete-orphan"
     )
 
-    #Relacionamento com os equipamentos (Drones da equipe)
+    # relacionamento com os equipamentos (Drones/Baterias/Veículos da equipe)
     equipamentos = db.relationship(
         "Equipamentos",
         back_populates="equipe",
@@ -457,7 +464,6 @@ class Equipe(db.Model):
 
 # -------------------------------------------------------------
 # VÍNCULO EQUIPE <-> PILOTOS (com papel)
-# - papel: "piloto" | "auxiliar"
 # -------------------------------------------------------------
 class EquipePiloto(db.Model):
     __tablename__ = "equipe_pilotos"
@@ -487,22 +493,17 @@ class EquipePiloto(db.Model):
     piloto = db.relationship("Pilotos", lazy="joined")
 
     __table_args__ = (
-        # impede duplicar o mesmo piloto na mesma equipe
         db.UniqueConstraint("equipe_id", "piloto_id", name="uq_equipe_piloto_unico"),
-
-        # garante 1 único "piloto" por equipe e 1 único "auxiliar" por equipe
         db.UniqueConstraint("equipe_id", "papel", name="uq_equipe_papel_unico"),
-
         db.Index("ix_equipe_pilotos_equipe", "equipe_id"),
         db.Index("ix_equipe_pilotos_piloto", "piloto_id"),
-        db.Index("ix_equipe_pilotos_papel", "papel")
+        db.Index("ix_equipe_pilotos_papel", "papel"),
     )
 
 
 # -------------------------------------------------------------
-# EQUIPAMENTOS (Drones, Baterias, Veículos)
+# EQUIPAMENTOS (base) + subclasses (Drones, Baterias, Veículos)
 # -------------------------------------------------------------
-
 class Equipamentos(db.Model):
     __tablename__ = "equipamentos"
 
@@ -512,13 +513,12 @@ class Equipamentos(db.Model):
 
     # Status geral (ex: Ativo, Inativo, Em Manutenção)
     status = db.Column(db.String(20), default="Ativo", index=True)
-    
+
     modelo = db.Column(db.String(100), nullable=False, index=True)
 
-    # Referente à "RENOMAÇÃO" (ex: PLOA 19, ANDRE 020)
+    # RENOMAÇÃO (ex: PLOA 19, ANDRE 020)
     renomacao = db.Column(db.String(100), nullable=False, index=True)
 
-    # Dados técnicos gerais (pulverização, monitoramento)
     categoria = db.Column(db.String(100))
 
     ano_fabricacao = db.Column(db.Integer)
@@ -529,95 +529,80 @@ class Equipamentos(db.Model):
 
     criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
 
-    # ---------------------------------------------------------
-    # VÍNCULOS DE NEGÓCIO
-    # ---------------------------------------------------------
-    
-    # Vínculo com a Equipe (Baterias podem herdar isso através do drone ou ter o seu próprio)
+    # vínculo com a equipe
     equipe_id = db.Column(db.Integer, db.ForeignKey("equipes.id"), nullable=True, index=True)
     equipe = db.relationship("Equipe", back_populates="equipamentos")
 
-    # Configuração do Polimorfismo do SQLAlchemy
     __mapper_args__ = {
         "polymorphic_identity": "equipamentos",
         "polymorphic_on": tipo_equipamento
-    }    
+    }
+
 
 class Drones(Equipamentos):
-    __tablename__ = 'drones'
+    __tablename__ = "drones"
 
-    id = db.Column(db.Integer, db.ForeignKey('equipamentos.id'), primary_key=True)
+    id = db.Column(db.Integer, db.ForeignKey("equipamentos.id"), primary_key=True)
 
     registro_anatel = db.Column(db.String(50), nullable=False, index=True)
     registro_anac = db.Column(db.String(50), nullable=False, unique=True, index=True)
-    
+
     # pmd (peso máximo de decolagem)
     pmd_kg = db.Column(db.Float, nullable=False)
 
-    # Um drone possui várias baterias
     baterias = db.relationship(
-        "Baterias", 
-        back_populates="drone_vinculado", 
+        "Baterias",
+        back_populates="drone_vinculado",
         lazy="select",
         foreign_keys="[Baterias.drone_id]"
     )
 
-    __mapper_args__ = {
-        "polymorphic_identity": "drones"
-    }
+    __mapper_args__ = {"polymorphic_identity": "drones"}
+
 
 class Baterias(Equipamentos):
-    __tablename__ = 'baterias'
+    __tablename__ = "baterias"
 
-    id = db.Column(db.Integer, db.ForeignKey('equipamentos.id'), primary_key=True)
+    id = db.Column(db.Integer, db.ForeignKey("equipamentos.id"), primary_key=True)
 
     ciclo = db.Column(db.Integer, default=0)
 
-    # Vínculo específico: a qual Drone essa bateria pertence?
+    # a qual Drone essa bateria pertence
     drone_id = db.Column(db.Integer, db.ForeignKey("drones.id"), nullable=True, index=True)
     drone_vinculado = db.relationship(
-        "Drones", 
+        "Drones",
         back_populates="baterias",
         foreign_keys=[drone_id]
     )
 
-    __mapper_args__ = {
-        "polymorphic_identity": "baterias"
-    }
+    __mapper_args__ = {"polymorphic_identity": "baterias"}
+
 
 class Veiculos(Equipamentos):
     __tablename__ = "veiculos"
 
     id = db.Column(db.Integer, db.ForeignKey("equipamentos.id"), primary_key=True)
 
-    # PLANILHA
     # FROTA: PROPRIA | ALUGADA
     frota = db.Column(db.String(20), nullable=False, index=True)
 
     # OPERAÇÃO: PMSP | AGRO (ou outras no futuro)
     operacao = db.Column(db.String(30), nullable=False, index=True)
 
-    # Placa do veículo
     placa = db.Column(db.String(10), nullable=False, unique=True, index=True)
 
-    # Responsável pelo veículo
     responsavel = db.Column(db.String(120), index=True)
 
-    # KM atual e próxima revisão (em KM)
     km_atual = db.Column(db.Float, default=0, nullable=False)
     km_prox_revisao = db.Column(db.Float, nullable=True)
 
-    # Campo opcional para registrar observações tipo "MARCADO 06/02 09:30"
     revisao_marcada_em = db.Column(db.DateTime, nullable=True, index=True)
     revisao_obs = db.Column(db.String(255))
 
-    __mapper_args__ = {
-        "polymorphic_identity": "veiculos"
-    }
+    __mapper_args__ = {"polymorphic_identity": "veiculos"}
 
     @property
     def km_restante_revisao(self):
-        """Se km_prox_revisao estiver preenchido, retorna quanto falta (pode ser negativo)."""
         if self.km_prox_revisao is None:
             return None
         try:
@@ -625,69 +610,32 @@ class Veiculos(Equipamentos):
         except Exception:
             return None
 
-# -------------------------------------------------------------
-# LOGS DE VEÍCULO (Registros diários de uso/abastecimento)
-# -------------------------------------------------------------
-class LogVeiculo(db.Model):
-    __tablename__ = "logs_veiculo"
-
-    id = db.Column(db.Integer, primary_key=True)
-    
-    veiculo_id = db.Column(db.Integer, db.ForeignKey("veiculos.id"), nullable=False, index=True)
-    piloto_id = db.Column(db.Integer, db.ForeignKey("pilotos.id"), nullable=False, index=True)
-    
-    data_registro = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
-    
-    km_inicial = db.Column(db.Float, nullable=False)
-    km_final = db.Column(db.Float, nullable=False)
-    
-    # Campos de Abastecimento (Opcionais)
-    abasteceu = db.Column(db.Boolean, default=False)
-    litros = db.Column(db.Float, nullable=True)
-    valor_total = db.Column(db.Float, nullable=True)
-    km_no_abastecimento = db.Column(db.Float, nullable=True)
-    
-    observacao = db.Column(db.Text)
-
-    # Relacionamentos
-    veiculo = db.relationship(
-        "Veiculos",
-        backref=db.backref("logs", lazy="select", cascade="all, delete-orphan")
-    )
-    piloto = db.relationship("Pilotos", backref=db.backref("logs_veiculo", lazy="select"))
-
-            return None
 
 # -------------------------------------------------------------
-# LOGS DE VEÍCULO (Registros diários de uso/abastecimento)
+# LOGS DE VEÍCULO
 # -------------------------------------------------------------
 class LogVeiculo(db.Model):
     __tablename__ = "logs_veiculo"
 
     id = db.Column(db.Integer, primary_key=True)
-    
+
     veiculo_id = db.Column(db.Integer, db.ForeignKey("veiculos.id"), nullable=False, index=True)
     piloto_id = db.Column(db.Integer, db.ForeignKey("pilotos.id"), nullable=False, index=True)
-    
+
     data_registro = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
-    
+
     km_inicial = db.Column(db.Float, nullable=False)
     km_final = db.Column(db.Float, nullable=False)
-    
-    # Campos de Abastecimento (Opcionais)
+
     abasteceu = db.Column(db.Boolean, default=False)
     litros = db.Column(db.Float, nullable=True)
     valor_total = db.Column(db.Float, nullable=True)
     km_no_abastecimento = db.Column(db.Float, nullable=True)
-    
+
     observacao = db.Column(db.Text)
 
-    # Relacionamentos
     veiculo = db.relationship(
         "Veiculos",
         backref=db.backref("logs", lazy="select", cascade="all, delete-orphan")
     )
     piloto = db.relationship("Pilotos", backref=db.backref("logs_veiculo", lazy="select"))
-    
-
-
