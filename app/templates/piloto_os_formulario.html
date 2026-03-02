@@ -26,7 +26,12 @@
 
   <div class="card info status-primary shadow-sm rounded-4 border-0">
     <div class="card-body p-4">
-      <form method="post" action="#" novalidate>
+
+      <form method="post"
+            action="{{ url_for('main.piloto_os_formulario_view', os_id=solicitacao.id) }}"
+            novalidate>
+
+        {# ===================== IDENTIFICAÇÃO ===================== #}
         <div class="d-flex align-items-center mb-3">
           <i class="bi bi-hash text-primary me-2 fs-5"></i>
           <h5 class="m-0 text-primary fw-bold">Identificacao</h5>
@@ -35,132 +40,364 @@
         <div class="row g-3 mb-4">
           <div class="col-md-3">
             <label class="form-label fw-bold small text-muted">Solicitacao ID *</label>
-            <input type="number" name="solicitacao_id" class="form-control" required />
+            <input type="number" name="solicitacao_id" class="form-control"
+                   value="{{ solicitacao.id }}" readonly />
           </div>
+
           <div class="col-md-3">
             <label class="form-label fw-bold small text-muted">Equipe ID *</label>
-            <input type="number" name="equipe_id" class="form-control" required />
+            <input type="number" name="equipe_id" class="form-control"
+                   value="{{ solicitacao.equipe_id }}" readonly />
           </div>
+
           <div class="col-md-3">
             <label class="form-label fw-bold small text-muted">Identificador OS</label>
-            <input type="text" name="identificador_os" class="form-control" />
+            <input type="text" name="identificador_os" class="form-control"
+                   value="{{ ordem.identificador_os if ordem else '' }}" />
           </div>
+
           <div class="col-md-3">
             <label class="form-label fw-bold small text-muted">Tipo de OS</label>
-            <input type="text" name="tipo_os" class="form-control" />
+            <input type="text" name="tipo_os" class="form-control"
+                   value="" />
           </div>
         </div>
 
         <hr class="text-muted opacity-25 my-4" />
 
+        {# ===================== CLIENTE / RESPONSÁVEL ===================== #}
         <div class="d-flex align-items-center mb-3">
           <i class="bi bi-person-vcard text-primary me-2 fs-5"></i>
           <h5 class="m-0 text-primary fw-bold">Cliente e Responsavel</h5>
         </div>
 
         <div class="row g-3 mb-4">
-          <div class="col-md-4"><label class="form-label fw-bold small text-muted">Uvis</label><input type="text" name="nome_cliente" class="form-control" /></div>
-          <div class="col-md-3"><label class="form-label fw-bold small text-muted">Endereço</label><input type="text" name="bairro_cliente" class="form-control" /></div>
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Uvis</label>
+            <input type="text" class="form-control"
+                   value="{{ uvis_nome }}" readonly />
+          </div>
 
-          <div class="col-md-4"><label class="form-label fw-bold small text-muted">Respondido por</label><input type="text" name="respondido_por" class="form-control" /></div>
-          <div class="col-md-4"><label class="form-label fw-bold small text-muted">Numero de serie do equipamento</label><input type="text" name="numero_serie_equipamento" class="form-control" /></div>
+          <div class="col-md-8">
+            <label class="form-label fw-bold small text-muted">Endereço</label>
+            <input type="text" class="form-control"
+                   value="{{ endereco_os }}" readonly />
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Respondido por</label>
+            <input type="text" name="respondido_por" class="form-control"
+                   value="{{ (ordem.respondido_por if ordem and ordem.respondido_por else respondido_por_padrao) }}" />
+          </div>
+
+          {# ===================== DRONE (SELECT + AUTO-PREENCHIMENTO) ===================== #}
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Drone usado</label>
+            <select name="drone_id" id="drone_id" class="form-select">
+              <option value="">Selecione...</option>
+              {% for d in drones_equipe or [] %}
+                <option value="{{ d.id }}"
+                  {% if ordem and ordem.drone_id == d.id %}selected{% endif %}>
+                  {{ d.renomacao }} — {{ d.modelo }}
+                </option>
+              {% endfor %}
+            </select>
+            <small class="text-muted">A lista vem dos drones vinculados à equipe.</small>
+          </div>
+
           <div class="col-md-4">
             <label class="form-label fw-bold small text-muted">Respondido em</label>
-            <input type="datetime-local" name="respondido_em" id="respondido_em" class="form-control" />
+            <input type="datetime-local" name="respondido_em" id="respondido_em"
+                   class="form-control" value="{{ respondido_em_value }}" />
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Numero de serie do equipamento (Drone)</label>
+            <input type="text" name="numero_serie_equipamento" id="numero_serie_equipamento" class="form-control"
+                   value="{{ ordem.drone_numero_serie if ordem and ordem.drone_numero_serie else '' }}" />
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Modelo do Drone</label>
+            <input type="text" id="drone_modelo" class="form-control"
+                   value="{{ ordem.drone_modelo if ordem and ordem.drone_modelo else '' }}" readonly />
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Renomacao do Drone</label>
+            <input type="text" id="drone_renomacao" class="form-control"
+                   value="{{ ordem.drone_renomacao if ordem and ordem.drone_renomacao else '' }}" readonly />
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Registro ANATEL</label>
+            <input type="text" id="drone_registro_anatel" class="form-control"
+                   value="{{ ordem.drone_registro_anatel if ordem and ordem.drone_registro_anatel else '' }}" readonly />
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Registro ANAC</label>
+            <input type="text" id="drone_registro_anac" class="form-control"
+                   value="{{ ordem.drone_registro_anac if ordem and ordem.drone_registro_anac else '' }}" readonly />
           </div>
         </div>
 
         <hr class="text-muted opacity-25 my-4" />
 
+        {# ===================== APLICAÇÃO ===================== #}
         <div class="d-flex align-items-center mb-3">
           <i class="bi bi-droplet-half text-primary me-2 fs-5"></i>
           <h5 class="m-0 text-primary fw-bold">Aplicacao</h5>
         </div>
 
         <div class="row g-3 mb-4">
-          <div class="col-md-4"><label class="form-label fw-bold small text-muted">Situacao da aplicacao</label><input type="text" name="situacao_aplicacao" class="form-control" /></div>
-          <div class="col-md-4"><label class="form-label fw-bold small text-muted">Larva visualizada</label><select name="larva_visualizada" class="form-select"><option value="">Selecione...</option><option>SIM</option><option>NAO</option></select></div>
-          <div class="col-md-4"><label class="form-label fw-bold small text-muted">Retornar proxima semana para monitorar larvas?</label><select name="retornar_proxima_semana_monitorar_larvas" class="form-select"><option value="">Selecione...</option><option>SIM</option><option>NAO</option></select></div>
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Situacao da aplicacao</label>
+            <input type="text" name="situacao_aplicacao" class="form-control"
+                   value="{{ ordem.situacao_aplicacao if ordem else '' }}" />
+          </div>
 
-          <div class="col-md-3"><label class="form-label fw-bold small text-muted">DA</label><input type="text" name="da" class="form-control" /></div>
-          <div class="col-md-5"><label class="form-label fw-bold small text-muted">Nome e RF do ACE responsavel pela OS</label><input type="text" name="nome_rf_ace_responsavel_os" class="form-control" /></div>
-          <div class="col-md-4"><label class="form-label fw-bold small text-muted">Criadouro da OS (tipo e volume)</label><input type="text" name="criadouro_os_tipo_volume" class="form-control" /></div>
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Larva visualizada</label>
+            <select name="larva_visualizada" class="form-select">
+              <option value="">Selecione...</option>
+              <option value="SIM" {% if ordem and ordem.larva_visualizada == 'SIM' %}selected{% endif %}>SIM</option>
+              <option value="NAO" {% if ordem and ordem.larva_visualizada == 'NAO' %}selected{% endif %}>NAO</option>
+            </select>
+          </div>
 
-          <div class="col-md-3"><label class="form-label fw-bold small text-muted">Data da aplicacao</label><input type="date" name="data_aplicacao" class="form-control" /></div>
-          <div class="col-md-3"><label class="form-label fw-bold small text-muted">Hora inicio da aplicacao</label><input type="time" name="hora_inicio_aplicacao" class="form-control" /></div>
-          <div class="col-md-3"><label class="form-label fw-bold small text-muted">Hora termino da aplicacao</label><input type="time" name="hora_termino_aplicacao" class="form-control" /></div>
-          <div class="col-md-3"><label class="form-label fw-bold small text-muted">Tratamento adicional realizado?</label><select name="tratamento_adicional_realizado" class="form-select"><option value="">Selecione...</option><option>SIM</option><option>NAO</option></select></div>
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Retornar proxima semana para monitorar larvas?</label>
+            <select name="retornar_proxima_semana_monitorar_larvas" class="form-select">
+              <option value="">Selecione...</option>
+              <option value="SIM" {% if ordem and ordem.retornar_proxima_semana_monitorar_larvas == 'SIM' %}selected{% endif %}>SIM</option>
+              <option value="NAO" {% if ordem and ordem.retornar_proxima_semana_monitorar_larvas == 'NAO' %}selected{% endif %}>NAO</option>
+            </select>
+          </div>
 
-          <div class="col-12"><label class="form-label fw-bold small text-muted">Quantos? Quais?</label><textarea name="quantos_quais" class="form-control" rows="2"></textarea></div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">DA</label>
+            <input type="text" name="da" class="form-control"
+                   value="{{ ordem.distrito_administrativo if ordem else '' }}" />
+          </div>
+
+          <div class="col-md-5">
+            <label class="form-label fw-bold small text-muted">Nome e RF do ACE responsavel pela OS</label>
+            <input type="text" name="nome_rf_ace_responsavel_os" class="form-control"
+                   value="{{ ordem.nome_rf_ace_responsavel_os if ordem else '' }}" />
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Criadouro da OS (tipo e volume)</label>
+            <input type="text" name="criadouro_os_tipo_volume" class="form-control"
+                   value="{{ ordem.criadouro_os_tipo_volume if ordem else '' }}" />
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Data da aplicacao</label>
+            <input type="date" name="data_aplicacao" class="form-control"
+                   value="{{ ordem.data_aplicacao.strftime('%Y-%m-%d') if ordem and ordem.data_aplicacao else '' }}" />
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Hora inicio da aplicacao</label>
+            <input type="time" name="hora_inicio_aplicacao" class="form-control"
+                   value="{{ ordem.hora_inicio_aplicacao.strftime('%H:%M') if ordem and ordem.hora_inicio_aplicacao else '' }}" />
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Hora termino da aplicacao</label>
+            <input type="time" name="hora_termino_aplicacao" class="form-control"
+                   value="{{ ordem.hora_termino_aplicacao.strftime('%H:%M') if ordem and ordem.hora_termino_aplicacao else '' }}" />
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Tratamento adicional realizado?</label>
+            <select name="tratamento_adicional_realizado" class="form-select">
+              <option value="">Selecione...</option>
+              <option value="SIM" {% if ordem and ordem.tratamento_adicional_realizado == 'SIM' %}selected{% endif %}>SIM</option>
+              <option value="NAO" {% if ordem and ordem.tratamento_adicional_realizado == 'NAO' %}selected{% endif %}>NAO</option>
+            </select>
+          </div>
+
+          <div class="col-12">
+            <label class="form-label fw-bold small text-muted">Quantos? Quais?</label>
+            <textarea name="quantos_quais" class="form-control" rows="2">{{ ordem.quantos_quais if ordem else '' }}</textarea>
+          </div>
         </div>
 
         <hr class="text-muted opacity-25 my-4" />
 
+        {# ===================== PRODUTO / PARÂMETROS ===================== #}
         <div class="d-flex align-items-center mb-3">
           <i class="bi bi-box-seam text-primary me-2 fs-5"></i>
           <h5 class="m-0 text-primary fw-bold">Produto e Parametros</h5>
         </div>
 
         <div class="row g-3 mb-4">
-          <div class="col-md-4"><label class="form-label fw-bold small text-muted">Descricao do produto</label><input type="text" name="descricao_produto" class="form-control" /></div>
-          <div class="col-md-4"><label class="form-label fw-bold small text-muted">Formulacao do produto</label><input type="text" name="formulacao_produto" class="form-control" /></div>
-          <div class="col-md-4"><label class="form-label fw-bold small text-muted">Dosagem (g/10L)</label><input type="text" name="dosagem_g_10l" class="form-control" /></div>
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Descricao do produto</label>
+            <input type="text" name="descricao_produto" class="form-control"
+                   value="{{ ordem.descricao_produto if ordem else '' }}" />
+          </div>
 
-          <div class="col-md-4"><label class="form-label fw-bold small text-muted">Tipo de aplicacao</label><input type="text" name="tipo_aplicacao" class="form-control" /></div>
-          <div class="col-md-4"><label class="form-label fw-bold small text-muted">Quantidade de produto administrada (ml)</label><input type="number" step="0.01" name="quantidade_produto_administrada_ml" class="form-control" /></div>
-          <div class="col-md-4"><label class="form-label fw-bold small text-muted">Pulverizacao de area (l/ha)</label><input type="number" step="0.01" name="pulverizacao_area_l_ha" class="form-control" /></div>
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Formulacao do produto</label>
+            <input type="text" name="formulacao_produto" class="form-control"
+                   value="{{ ordem.formulacao_produto if ordem else '' }}" />
+          </div>
 
-          <div class="col-md-6"><label class="form-label fw-bold small text-muted">Pulverizacao de foco (tempo estimado em segundos)</label><input type="number" step="0.01" name="pulverizacao_foco_tempo_estimado_segundos" class="form-control" /></div>
-          <div class="col-md-6"><label class="form-label fw-bold small text-muted">Pulverizacao de foco (l/min)</label><input type="number" step="0.01" name="pulverizacao_foco_l_min" class="form-control" /></div>
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Dosagem (g/10L)</label>
+            <input type="text" name="dosagem_g_10l" class="form-control"
+                   value="{{ ordem.dosagem_g_10l if ordem else '' }}" />
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Tipo de aplicacao</label>
+            <input type="text" name="tipo_aplicacao" class="form-control"
+                   value="{{ ordem.tipo_aplicacao if ordem else '' }}" />
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Quantidade de produto administrada (ml)</label>
+            <input type="number" step="0.01" name="quantidade_produto_administrada_ml" class="form-control"
+                   value="{{ ordem.quantidade_produto_administrada_ml if ordem and ordem.quantidade_produto_administrada_ml is not none else '' }}" />
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Pulverizacao de area (l/ha)</label>
+            <input type="number" step="0.01" name="pulverizacao_area_l_ha" class="form-control"
+                   value="{{ ordem.pulverizacao_area_l_ha if ordem and ordem.pulverizacao_area_l_ha is not none else '' }}" />
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">Pulverizacao de foco (tempo estimado em segundos)</label>
+            <input type="number" step="0.01" name="pulverizacao_foco_tempo_estimado_segundos" class="form-control"
+                   value="{{ ordem.pulverizacao_foco_tempo_estimado_segundos if ordem and ordem.pulverizacao_foco_tempo_estimado_segundos is not none else '' }}" />
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">Pulverizacao de foco (l/min)</label>
+            <input type="number" step="0.01" name="pulverizacao_foco_l_min" class="form-control"
+                   value="{{ ordem.pulverizacao_foco_l_min if ordem and ordem.pulverizacao_foco_l_min is not none else '' }}" />
+          </div>
         </div>
 
         <hr class="text-muted opacity-25 my-4" />
 
+        {# ===================== AERONAVE / AMBIENTE ===================== #}
         <div class="d-flex align-items-center mb-3">
           <i class="bi bi-airplane-engines text-primary me-2 fs-5"></i>
           <h5 class="m-0 text-primary fw-bold">Aeronave e Condicoes Ambientais</h5>
         </div>
 
         <div class="row g-3 mb-4">
-          <div class="col-md-4"><label class="form-label fw-bold small text-muted">Prefixo aeronave de pulverizacao</label><input type="text" name="prefixo_aeronave_pulverizacao" class="form-control" /></div>
-          <div class="col-md-4"><label class="form-label fw-bold small text-muted">Prefixo da aeronave de monitoramento</label><input type="text" name="prefixo_aeronave_monitoramento" class="form-control" /></div>
-          <div class="col-md-4"><label class="form-label fw-bold small text-muted">Quantidade de imagens registradas</label><input type="number" name="quantidade_imagens_registradas" class="form-control" /></div>
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Prefixo aeronave de pulverizacao</label>
+            <input type="text" name="prefixo_aeronave_pulverizacao" class="form-control"
+                   value="{{ ordem.prefixo_aeronave_pulverizacao if ordem else '' }}" />
+          </div>
 
-          <div class="col-md-3"><label class="form-label fw-bold small text-muted">Ponta de pulverizacao</label><input type="text" name="ponta_pulverizacao" class="form-control" /></div>
-          <div class="col-md-3"><label class="form-label fw-bold small text-muted">Temperatura (C)</label><input type="number" step="0.1" name="temperatura_c" class="form-control" /></div>
-          <div class="col-md-3"><label class="form-label fw-bold small text-muted">Umidade relativa (%)</label><input type="number" step="0.1" name="umidade_relativa_pct" class="form-control" /></div>
-          <div class="col-md-3"><label class="form-label fw-bold small text-muted">Velocidade do vento (km/h)</label><input type="number" step="0.1" name="velocidade_vento_kmh" class="form-control" /></div>
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Prefixo da aeronave de monitoramento</label>
+            <input type="text" name="prefixo_aeronave_monitoramento" class="form-control"
+                   value="{{ ordem.prefixo_aeronave_monitoramento if ordem else '' }}" />
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Quantidade de imagens registradas</label>
+            <input type="number" name="quantidade_imagens_registradas" class="form-control"
+                   value="{{ ordem.quantidade_imagens_registradas if ordem and ordem.quantidade_imagens_registradas is not none else '' }}" />
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Ponta de pulverizacao</label>
+            <input type="text" name="ponta_pulverizacao" class="form-control"
+                   value="{{ ordem.ponta_pulverizacao if ordem else '' }}" />
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Temperatura (C)</label>
+            <input type="number" step="0.1" name="temperatura_c" class="form-control"
+                   value="{{ ordem.temperatura_c if ordem and ordem.temperatura_c is not none else '' }}" />
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Umidade relativa (%)</label>
+            <input type="number" step="0.1" name="umidade_relativa_pct" class="form-control"
+                   value="{{ ordem.umidade_relativa_pct if ordem and ordem.umidade_relativa_pct is not none else '' }}" />
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Velocidade do vento (km/h)</label>
+            <input type="number" step="0.1" name="velocidade_vento_kmh" class="form-control"
+                   value="{{ ordem.velocidade_vento_kmh if ordem and ordem.velocidade_vento_kmh is not none else '' }}" />
+          </div>
         </div>
 
         <hr class="text-muted opacity-25 my-4" />
 
+        {# ===================== FECHAMENTO / ASSINATURAS ===================== #}
         <div class="d-flex align-items-center mb-3">
           <i class="bi bi-pen text-primary me-2 fs-5"></i>
           <h5 class="m-0 text-primary fw-bold">Fechamento e Assinaturas</h5>
         </div>
 
         <div class="row g-3 mb-2">
-          <div class="col-md-6"><label class="form-label fw-bold small text-muted">Motivo de nao realizacao</label><input type="text" name="motivo_nao_realizacao" class="form-control" /></div>
-          <div class="col-md-6"><label class="form-label fw-bold small text-muted">Observacoes</label><input type="text" name="observacoes" class="form-control" /></div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">Motivo de nao realizacao</label>
+            <input type="text" name="motivo_nao_realizacao" class="form-control"
+                   value="{{ ordem.motivo_nao_realizacao if ordem else '' }}" />
+          </div>
 
-          <div class="col-md-6"><label class="form-label fw-bold small text-muted">Piloto</label><input type="text" name="piloto" class="form-control" /></div>
-          <div class="col-md-6"><label class="form-label fw-bold small text-muted">Auxiliar</label><input type="text" name="auxiliar" class="form-control" /></div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">Observacoes</label>
+            <input type="text" name="observacoes" class="form-control"
+                   value="{{ ordem.observacoes if ordem else '' }}" />
+          </div>
 
-          <div class="col-md-6"><label class="form-label fw-bold small text-muted">Assinatura piloto</label><textarea name="assinatura_piloto" class="form-control" rows="2"></textarea></div>
-          <div class="col-md-6"><label class="form-label fw-bold small text-muted">Proprietario ou preposto</label><input type="text" name="proprietario_ou_preposto" class="form-control" /></div>
-          <div class="col-12"><label class="form-label fw-bold small text-muted">Assinatura proprietario ou preposto</label><textarea name="assinatura_proprietario_ou_preposto" class="form-control" rows="2"></textarea></div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">Piloto</label>
+            <input type="text" name="piloto" class="form-control"
+                   value="{{ (ordem.piloto if ordem and ordem.piloto else piloto_padrao) }}" />
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">Auxiliar</label>
+            <input type="text" name="auxiliar" class="form-control"
+                   value="{{ (ordem.auxiliar if ordem and ordem.auxiliar else auxiliar_padrao) }}" />
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">Assinatura piloto</label>
+            <textarea name="assinatura_piloto" class="form-control" rows="2">{{ ordem.assinatura_piloto if ordem else '' }}</textarea>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">Proprietario ou preposto</label>
+            <input type="text" name="proprietario_ou_preposto" class="form-control"
+                   value="{{ ordem.proprietario_ou_preposto if ordem else '' }}" />
+          </div>
+
+          <div class="col-12">
+            <label class="form-label fw-bold small text-muted">Assinatura proprietario ou preposto</label>
+            <textarea name="assinatura_proprietario_ou_preposto" class="form-control" rows="2">{{ ordem.assinatura_proprietario_ou_preposto if ordem else '' }}</textarea>
+          </div>
         </div>
 
         <small class="text-muted d-block mt-4">Campos com <span class="text-danger">*</span> sao obrigatorios.</small>
 
         <div class="d-flex justify-content-end gap-2 mt-5">
-          <a href="javascript:history.back()" class="btn btn-outline-danger btn-sm">
+          <a href="{{ url_for('main.piloto_os') }}" class="btn btn-outline-danger btn-sm">
             <i class="bi bi-x-lg me-1"></i> Cancelar
           </a>
+
           <button type="submit" class="btn btn-primary btn-sm">
             <i class="bi bi-check-lg me-1"></i> Salvar Formulario
           </button>
         </div>
+
       </form>
     </div>
   </div>
@@ -170,11 +407,73 @@
 {% block scripts %}
 <script>
   (function () {
+    // preenche respondido_em se vier vazio
     const responded = document.getElementById("respondido_em");
     if (responded && !responded.value) {
       const now = new Date();
       const pad = (n) => String(n).padStart(2, "0");
       responded.value = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    }
+
+    // auto-preenche dados do drone quando selecionar
+    const sel = document.getElementById("drone_id");
+    const fields = {
+      numeroSerie: document.getElementById("numero_serie_equipamento"),
+      modelo: document.getElementById("drone_modelo"),
+      renomacao: document.getElementById("drone_renomacao"),
+      anatel: document.getElementById("drone_registro_anatel"),
+      anac: document.getElementById("drone_registro_anac"),
+    };
+
+    function clearDroneFields() {
+      if (fields.numeroSerie) fields.numeroSerie.value = "";
+      if (fields.modelo) fields.modelo.value = "";
+      if (fields.renomacao) fields.renomacao.value = "";
+      if (fields.anatel) fields.anatel.value = "";
+      if (fields.anac) fields.anac.value = "";
+    }
+
+    async function loadDrone(droneId) {
+      if (!droneId) { clearDroneFields(); return; }
+
+      try {
+        const res = await fetch(`{{ url_for('main.piloto_api_drone', drone_id=0) }}`.replace("0", droneId), {
+          headers: { "Accept": "application/json" }
+        });
+        const data = await res.json();
+
+        if (!res.ok || data.error) {
+          console.warn("Drone API error:", data);
+          clearDroneFields();
+          return;
+        }
+
+        if (fields.numeroSerie) fields.numeroSerie.value = data.numero_serie || "";
+        if (fields.modelo) fields.modelo.value = data.modelo || "";
+        if (fields.renomacao) fields.renomacao.value = data.renomacao || "";
+        if (fields.anatel) fields.anatel.value = data.registro_anatel || "";
+        if (fields.anac) fields.anac.value = data.registro_anac || "";
+      } catch (e) {
+        console.error(e);
+        clearDroneFields();
+      }
+    }
+
+    if (sel) {
+      sel.addEventListener("change", () => loadDrone(sel.value));
+
+      // se já veio selecionado (editando OS), tenta carregar dados (caso snapshot esteja vazio)
+      if (sel.value) {
+        const hasSnapshot =
+          (fields.numeroSerie && fields.numeroSerie.value) ||
+          (fields.modelo && fields.modelo.value) ||
+          (fields.anatel && fields.anatel.value) ||
+          (fields.anac && fields.anac.value);
+
+        if (!hasSnapshot) {
+          loadDrone(sel.value);
+        }
+      }
     }
   })();
 </script>

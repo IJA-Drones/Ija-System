@@ -46,7 +46,7 @@ from sqlalchemy.orm import joinedload
 # APP
 # ==========================
 from app import db
-from app.models import Notificacao, Solicitacao, Usuario, Clientes, Pilotos, Equipe, EquipePiloto, EquipeUvis, Veiculos
+from app.models import Notificacao, Solicitacao, Usuario, Clientes, Pilotos, Equipe, EquipePiloto, EquipeUvis, Veiculos, OrdemServico
 TZ = ZoneInfo("America/Sao_Paulo")
 print("--- ROTAS CARREGADAS COM SUCESSO ---")
 
@@ -4608,166 +4608,6 @@ def deletar_piloto(piloto_id):
     flash("Piloto excluído com sucesso.", "success")
     return redirect(url_for("main.listar_pilotos"))
 
-@bp.route('/piloto/os')
-@login_required
-@roles_required('piloto')
-def piloto_os():
-    if not current_user.piloto_id:
-        flash("Piloto sem vínculo cadastrado.", "danger")
-        return redirect(url_for('main.dashboard'))
-
-    google_maps_key = os.getenv("KEY_API_GOOGLE_MAPS") or current_app.config.get("GOOGLE_MAPS_API_KEY", "")
-    status_ok = ["APROVADO", "APROVADO COM RECOMENDAÇÕES", "APROVADA", "APROVADA COM RECOMENDAÇÕES"]
-
-    vinculo = (
-        EquipePiloto.query
-        .join(Equipe, Equipe.id == EquipePiloto.equipe_id)
-        .options(joinedload(EquipePiloto.equipe))
-        .filter(
-            EquipePiloto.piloto_id == current_user.piloto_id,
-            Equipe.ativa.is_(True)
-        )
-        .order_by(
-            db.case((EquipePiloto.papel == "piloto", 0), else_=1),
-            EquipePiloto.criado_em.desc()
-        )
-        .first()
-    )
-
-    if not vinculo or not vinculo.equipe_id:
-        flash("Você ainda não está vinculado a nenhuma equipe ativa.", "warning")
-        return render_template(
-            "piloto_os.html",
-            pedidos=[],
-            paginacao=None,
-            status_ok=status_ok,
-            pilot_team_nome=None,
-            pilot_team_regiao=None,
-            pilot_team_papel=None,
-            google_maps_key=google_maps_key,
-            drones_equipe=[],
-            baterias_equipe=[],
-            veiculos_equipe=[],
-        )
-
-    pilot_team_nome = vinculo.equipe.nome_equipe if vinculo.equipe else None
-    pilot_team_regiao = vinculo.equipe.regiao if vinculo.equipe else None
-    pilot_team_papel = (vinculo.papel or "").lower()
-
-    drones_equipe = (
-        Drones.query
-        .options(joinedload(Drones.equipe))
-        .filter(Drones.equipe_id == vinculo.equipe_id)
-        .order_by(Drones.renomacao.asc())
-        .all()
-    )
-
-    baterias_equipe = (
-        Baterias.query
-        .join(Drones, Baterias.drone_id == Drones.id)
-        .filter(Drones.equipe_id == vinculo.equipe_id)
-        .order_by(Baterias.renomacao.asc())
-        .all()
-    )
-
-    # ✅ VEÍCULOS vinculados à equipe ativa do piloto
-    veiculos_equipe = (
-        Veiculos.query
-        .filter(Veiculos.equipe_id == vinculo.equipe_id)
-        .order_by(Veiculos.operacao.asc(), Veiculos.modelo.asc())
-        .all()
-    )
-
-    query = (
-        Solicitacao.query
-        .options(
-            joinedload(Solicitacao.usuario),
-            joinedload(Solicitacao.equipe)
-        )
-        .filter(
-            Solicitacao.equipe_id == vinculo.equipe_id,
-            Solicitacao.status.in_(status_ok)
-        )
-    )
-
-    filtro_data = request.args.get("data")
-    uvis_id = request.args.get("uvis_id")
-    query = aplicar_filtros_base(query, filtro_data, uvis_id)
-
-    page = request.args.get("page", 1, type=int)
-    paginacao = query.order_by(
-        Solicitacao.data_agendamento.asc(),
-        Solicitacao.hora_agendamento.asc()
-    ).paginate(page=page, per_page=6, error_out=False)
-
-    return render_template(
-        "piloto_os.html",
-        pedidos=paginacao.items,
-        paginacao=paginacao,
-        status_ok=status_ok,
-        pilot_team_nome=pilot_team_nome,
-        pilot_team_regiao=pilot_team_regiao,
-        pilot_team_papel=pilot_team_papel,
-        google_maps_key=google_maps_key,
-        drones_equipe=drones_equipe,
-        baterias_equipe=baterias_equipe,
-        veiculos_equipe=veiculos_equipe,  
-    )
-
-@bp.route('/piloto/os/formulario', methods=['GET'])
-@login_required
-@roles_required('piloto')
-def piloto_os_formulario():
-    return render_template("piloto_os_formulario.html")
-
-@bp.route('/piloto/os/<int:os_id>/concluir', methods=['POST'])
-@login_required
-@roles_required('piloto')
-def piloto_concluir_os(os_id):
-
-    s = Solicitacao.query.get_or_404(os_id)
-
-    status_ok = ["APROVADO", "APROVADO COM RECOMENDAÇÕES", "APROVADA", "APROVADA COM RECOMENDAÇÕES"]
-    if s.status not in status_ok:
-        flash("A OS não está aprovada.", "warning")
-        return redirect(url_for('main.piloto_os'))
-
-    if not s.equipe_id:
-        flash("Esta OS não possui equipe atribuída.", "danger")
-        return redirect(url_for('main.piloto_os'))
-
-    # ✅ valida se o piloto logado faz parte da equipe da OS
-    vinculo = (
-        EquipePiloto.query
-        .join(Equipe, Equipe.id == EquipePiloto.equipe_id)
-        .options(joinedload(EquipePiloto.equipe))
-        .filter(
-            EquipePiloto.equipe_id == s.equipe_id,
-            EquipePiloto.piloto_id == current_user.piloto_id,
-            Equipe.ativa.is_(True)
-        )
-        .first()
-    )
-
-    if not vinculo:
-        flash("Você não faz parte da equipe atribuída a esta OS.", "danger")
-        return redirect(url_for('main.piloto_os'))
-
-    equipe_nome = vinculo.equipe.nome_equipe if vinculo.equipe else None
-    papel = (vinculo.papel or "").lower() if vinculo.papel else None
-
-    s.status = "CONCLUÍDO"
-    db.session.commit()
-
-    if equipe_nome and papel:
-        flash(f"OS #{s.id} concluída! Equipe: {equipe_nome} | Papel: {papel}.", "success")
-    elif equipe_nome:
-        flash(f"OS #{s.id} concluída! Equipe: {equipe_nome}.", "success")
-    else:
-        flash(f"OS #{s.id} concluída com sucesso!", "success")
-
-    return redirect(url_for('main.piloto_os'))
-
 
 REGIOES = {"NORTE", "SUL", "LESTE", "OESTE", "CENTRO", "SULDESTE", "CENTRO-OESTE"}
 
@@ -8012,3 +7852,538 @@ def piloto_atualizar_km_veiculo(veiculo_id):
         flash("Erro ao salvar o KM. Tente novamente.", "danger")
 
     return redirect(url_for("main.piloto_veiculos"))
+
+
+@bp.route('/piloto/os')
+@login_required
+@roles_required('piloto')
+def piloto_os():
+    if not current_user.piloto_id:
+        flash("Piloto sem vínculo cadastrado.", "danger")
+        return redirect(url_for('main.dashboard'))
+
+    google_maps_key = os.getenv("KEY_API_GOOGLE_MAPS") or current_app.config.get("GOOGLE_MAPS_API_KEY", "")
+    status_ok = ["APROVADO", "APROVADO COM RECOMENDAÇÕES", "APROVADA", "APROVADA COM RECOMENDAÇÕES"]
+
+    vinculo = (
+        EquipePiloto.query
+        .join(Equipe, Equipe.id == EquipePiloto.equipe_id)
+        .options(joinedload(EquipePiloto.equipe))
+        .filter(
+            EquipePiloto.piloto_id == current_user.piloto_id,
+            Equipe.ativa.is_(True)
+        )
+        .order_by(
+            db.case((EquipePiloto.papel == "piloto", 0), else_=1),
+            EquipePiloto.criado_em.desc()
+        )
+        .first()
+    )
+
+    if not vinculo or not vinculo.equipe_id:
+        flash("Você ainda não está vinculado a nenhuma equipe ativa.", "warning")
+        return render_template(
+            "piloto_os.html",
+            pedidos=[],
+            paginacao=None,
+            status_ok=status_ok,
+            pilot_team_nome=None,
+            pilot_team_regiao=None,
+            pilot_team_papel=None,
+            google_maps_key=google_maps_key,
+            drones_equipe=[],
+            baterias_equipe=[],
+            veiculos_equipe=[],
+        )
+
+    pilot_team_nome = vinculo.equipe.nome_equipe if vinculo.equipe else None
+    pilot_team_regiao = vinculo.equipe.regiao if vinculo.equipe else None
+    pilot_team_papel = (vinculo.papel or "").lower()
+
+    drones_equipe = (
+        Drones.query
+        .options(joinedload(Drones.equipe))
+        .filter(Drones.equipe_id == vinculo.equipe_id)
+        .order_by(Drones.renomacao.asc())
+        .all()
+    )
+
+    baterias_equipe = (
+        Baterias.query
+        .join(Drones, Baterias.drone_id == Drones.id)
+        .filter(Drones.equipe_id == vinculo.equipe_id)
+        .order_by(Baterias.renomacao.asc())
+        .all()
+    )
+
+    # ✅ VEÍCULOS vinculados à equipe ativa do piloto
+    veiculos_equipe = (
+        Veiculos.query
+        .filter(Veiculos.equipe_id == vinculo.equipe_id)
+        .order_by(Veiculos.operacao.asc(), Veiculos.modelo.asc())
+        .all()
+    )
+
+    query = (
+        Solicitacao.query
+        .options(
+            joinedload(Solicitacao.usuario),
+            joinedload(Solicitacao.equipe)
+        )
+        .filter(
+            Solicitacao.equipe_id == vinculo.equipe_id,
+            Solicitacao.status.in_(status_ok)
+        )
+    )
+
+    filtro_data = request.args.get("data")
+    uvis_id = request.args.get("uvis_id")
+    query = aplicar_filtros_base(query, filtro_data, uvis_id)
+
+    page = request.args.get("page", 1, type=int)
+    paginacao = query.order_by(
+        Solicitacao.data_agendamento.asc(),
+        Solicitacao.hora_agendamento.asc()
+    ).paginate(page=page, per_page=6, error_out=False)
+
+    return render_template(
+        "piloto_os.html",
+        pedidos=paginacao.items,
+        paginacao=paginacao,
+        status_ok=status_ok,
+        pilot_team_nome=pilot_team_nome,
+        pilot_team_regiao=pilot_team_regiao,
+        pilot_team_papel=pilot_team_papel,
+        google_maps_key=google_maps_key,
+        drones_equipe=drones_equipe,
+        baterias_equipe=baterias_equipe,
+        veiculos_equipe=veiculos_equipe,  
+    )
+from datetime import datetime
+from flask import render_template, request, redirect, url_for, flash, current_app
+from flask_login import login_required, current_user
+from sqlalchemy.orm import joinedload
+
+from app import db
+# ajuste imports conforme sua estrutura
+from app.models import Solicitacao, OrdemServico, EquipePiloto, Equipe
+
+
+# ============================================================
+# CONCLUIR OS (mantive seu código)
+# ============================================================
+@bp.route('/piloto/os/<int:os_id>/concluir', methods=['POST'])
+@login_required
+@roles_required('piloto')
+def piloto_concluir_os(os_id):
+
+    s = Solicitacao.query.get_or_404(os_id)
+
+    status_ok = ["APROVADO", "APROVADO COM RECOMENDAÇÕES", "APROVADA", "APROVADA COM RECOMENDAÇÕES"]
+    if s.status not in status_ok:
+        flash("A OS não está aprovada.", "warning")
+        return redirect(url_for('main.piloto_os'))
+
+    if not s.equipe_id:
+        flash("Esta OS não possui equipe atribuída.", "danger")
+        return redirect(url_for('main.piloto_os'))
+
+    # ✅ valida se o piloto logado faz parte da equipe da OS
+    vinculo = (
+        EquipePiloto.query
+        .join(Equipe, Equipe.id == EquipePiloto.equipe_id)
+        .options(joinedload(EquipePiloto.equipe))
+        .filter(
+            EquipePiloto.equipe_id == s.equipe_id,
+            EquipePiloto.piloto_id == current_user.piloto_id,
+            Equipe.ativa.is_(True)
+        )
+        .first()
+    )
+
+    if not vinculo:
+        flash("Você não faz parte da equipe atribuída a esta OS.", "danger")
+        return redirect(url_for('main.piloto_os'))
+
+    equipe_nome = vinculo.equipe.nome_equipe if vinculo.equipe else None
+    papel = (vinculo.papel or "").lower() if vinculo.papel else None
+
+    s.status = "CONCLUÍDO"
+    db.session.commit()
+
+    if equipe_nome and papel:
+        flash(f"OS #{s.id} concluída! Equipe: {equipe_nome} | Papel: {papel}.", "success")
+    elif equipe_nome:
+        flash(f"OS #{s.id} concluída! Equipe: {equipe_nome}.", "success")
+    else:
+        flash(f"OS #{s.id} concluída com sucesso!", "success")
+
+    return redirect(url_for('main.piloto_os'))
+
+
+from datetime import datetime
+from flask import render_template, request, redirect, url_for, flash, current_app, jsonify
+from flask_login import login_required, current_user
+from sqlalchemy.orm import joinedload
+
+from app import db
+from app.models import (
+    Solicitacao, OrdemServico,
+    Equipe, EquipePiloto,
+    Drones
+)
+
+# se seu decorator roles_required estiver em outro módulo:
+# from app.decorators import roles_required
+
+
+# ============================================================
+# HELPERS DE PARSE (PT-BR friendly)
+# ============================================================
+def _clean(v):
+    if v is None:
+        return None
+    v = v.strip()
+    return v if v != "" else None
+
+def _to_int(v):
+    v = _clean(v)
+    if v is None:
+        return None
+    try:
+        return int(float(v))
+    except Exception:
+        return None
+
+def _to_float(v):
+    v = _clean(v)
+    if v is None:
+        return None
+
+    # aceita "1.234,56" ou "1234,56" ou "1234.56"
+    if "," in v and "." in v:
+        v = v.replace(".", "").replace(",", ".")
+    else:
+        v = v.replace(",", ".")
+
+    try:
+        return float(v)
+    except Exception:
+        return None
+
+def _to_date(v):
+    v = _clean(v)
+    if v is None:
+        return None
+    try:
+        return datetime.strptime(v, "%Y-%m-%d").date()
+    except Exception:
+        return None
+
+def _to_time(v):
+    v = _clean(v)
+    if v is None:
+        return None
+    for fmt in ("%H:%M", "%H:%M:%S"):
+        try:
+            return datetime.strptime(v, fmt).time()
+        except Exception:
+            pass
+    return None
+
+def _to_datetime_local(v):
+    """
+    input type="datetime-local" vem como "YYYY-MM-DDTHH:MM"
+    """
+    v = _clean(v)
+    if v is None:
+        return None
+    for fmt in ("%Y-%m-%dT%H:%M", "%Y-%m-%dT%H:%M:%S"):
+        try:
+            return datetime.strptime(v, fmt)
+        except Exception:
+            pass
+    return None
+
+
+# ============================================================
+# ROTA ANTIGA (AGORA SÓ REDIRECIONA)
+# /piloto/os/formulario?os_id=123
+# ============================================================
+@bp.route("/piloto/os/formulario", methods=["GET"])
+@login_required
+@roles_required("piloto")
+def piloto_os_formulario_redirect():
+    os_id = request.args.get("os_id", type=int) or request.args.get("solicitacao_id", type=int)
+
+    if not os_id:
+        flash("Selecione uma OS para preencher o formulário.", "info")
+        return redirect(url_for("main.piloto_os"))
+
+    return redirect(url_for("main.piloto_os_formulario_view", os_id=os_id))
+
+
+# ============================================================
+# ROTA REAL DO FORMULÁRIO (GET + POST)
+# /piloto/os/<os_id>/formulario
+# ============================================================
+@bp.route("/piloto/os/<int:os_id>/formulario", methods=["GET", "POST"])
+@login_required
+@roles_required("piloto")
+def piloto_os_formulario_view(os_id):
+
+    if not current_user.piloto_id:
+        flash("Piloto sem vínculo cadastrado.", "danger")
+        return redirect(url_for("main.dashboard"))
+
+    status_ok = ["APROVADO", "APROVADO COM RECOMENDAÇÕES", "APROVADA", "APROVADA COM RECOMENDAÇÕES"]
+    status_permitidos = set(status_ok + ["CONCLUÍDO"])
+
+    # Carrega OS + usuario (UVIS) + equipe
+    s = (
+        Solicitacao.query
+        .options(
+            joinedload(Solicitacao.usuario),
+            joinedload(Solicitacao.equipe),
+        )
+        .get_or_404(os_id)
+    )
+
+    if s.status not in status_permitidos:
+        flash("Esta OS não está liberada para preenchimento do formulário.", "warning")
+        return redirect(url_for("main.piloto_os"))
+
+    if not s.equipe_id:
+        flash("Esta OS não possui equipe atribuída.", "danger")
+        return redirect(url_for("main.piloto_os"))
+
+    # Segurança: piloto precisa estar na equipe ativa da OS
+    vinculo = (
+        EquipePiloto.query
+        .join(Equipe, Equipe.id == EquipePiloto.equipe_id)
+        .options(joinedload(EquipePiloto.equipe))
+        .filter(
+            EquipePiloto.equipe_id == s.equipe_id,
+            EquipePiloto.piloto_id == current_user.piloto_id,
+            Equipe.ativa.is_(True)
+        )
+        .first()
+    )
+
+    if not vinculo:
+        flash("Você não tem permissão para acessar esta OS.", "danger")
+        return redirect(url_for("main.piloto_os"))
+
+    equipe = vinculo.equipe
+    ordem = s.ordem_servico  # 1:1
+
+    # ✅ drones da equipe (só depois de validar permissão)
+    drones_equipe = (
+        Drones.query
+        .filter(
+            Drones.equipe_id == s.equipe_id,
+            Drones.tipo_equipamento == "drones",  # garante tipo correto no polimorfismo
+            Drones.status == "Ativo"              # opcional
+        )
+        .order_by(Drones.renomacao.asc())
+        .all()
+    )
+
+    # Defaults puxados das tabelas
+    uvis_nome = s.usuario.nome_uvis if s.usuario else ""
+    endereco_os = f"{s.logradouro or ''}, {s.numero or 'S/N'} - {s.bairro or ''} - {s.cidade or ''}/{s.uf or ''}"
+
+    piloto_padrao = (equipe.piloto_titular.nome_piloto if equipe and equipe.piloto_titular else "") if equipe else ""
+    auxiliar_padrao = (equipe.piloto_auxiliar.nome_piloto if equipe and equipe.piloto_auxiliar else "") if equipe else ""
+
+    respondido_por_padrao = ""
+    if getattr(current_user, "piloto", None) and current_user.piloto:
+        respondido_por_padrao = current_user.piloto.nome_piloto or ""
+    else:
+        respondido_por_padrao = getattr(current_user, "nome_uvis", "") or ""
+
+    # datetime-local
+    if ordem and ordem.respondido_em:
+        respondido_em_value = ordem.respondido_em.strftime("%Y-%m-%dT%H:%M")
+    else:
+        respondido_em_value = datetime.now().strftime("%Y-%m-%dT%H:%M")
+
+    # ----------------------------
+    # POST (salvar)
+    # ----------------------------
+    if request.method == "POST":
+
+        # cria registro se não existir
+        if ordem is None:
+            ordem = OrdemServico(
+                solicitacao_id=s.id,
+                equipe_id=s.equipe_id
+            )
+            db.session.add(ordem)
+
+        # ----------------------------
+        # ✅ Drone selecionado (OPCIONAL)
+        # ----------------------------
+        # Só ative se você tiver criado a coluna ordem.drone_id (e talvez snapshot)
+        #
+        drone_id = request.form.get("drone_id", type=int)
+        if drone_id:
+             drone = Drones.query.get(drone_id)
+             if (not drone) or (drone.equipe_id != s.equipe_id):
+                 flash("Drone inválido para a equipe desta OS.", "danger")
+                 return redirect(url_for("main.piloto_os_formulario_view", os_id=os_id))
+             ordem.drone_id = drone.id              
+             ordem.drone_renomacao = drone.renomacao
+             ordem.drone_modelo = drone.modelo
+             ordem.drone_numero_serie = drone.numero_serie
+             ordem.drone_registro_anatel = drone.registro_anatel
+             ordem.drone_registro_anac = drone.registro_anac
+        else:
+             ordem.drone_id = None
+             ordem.drone_renomacao = None
+             ordem.drone_modelo = None
+             ordem.drone_numero_serie = None
+             ordem.drone_registro_anatel = None
+             ordem.drone_registro_anac = None
+
+        ordem.identificador_os = _clean(request.form.get("identificador_os"))
+        ordem.respondido_por = _clean(request.form.get("respondido_por")) or respondido_por_padrao
+        ordem.respondido_em = _to_datetime_local(request.form.get("respondido_em")) or datetime.now()
+
+        ordem.situacao_aplicacao = _clean(request.form.get("situacao_aplicacao"))
+        ordem.larva_visualizada = _clean(request.form.get("larva_visualizada"))
+        ordem.retornar_proxima_semana_monitorar_larvas = _clean(request.form.get("retornar_proxima_semana_monitorar_larvas"))
+
+        # template usa name="da" mas model é distrito_administrativo
+        ordem.distrito_administrativo = _clean(request.form.get("da")) or _clean(request.form.get("distrito_administrativo"))
+
+        ordem.nome_rf_ace_responsavel_os = _clean(request.form.get("nome_rf_ace_responsavel_os"))
+        ordem.criadouro_os_tipo_volume = _clean(request.form.get("criadouro_os_tipo_volume"))
+
+        ordem.data_aplicacao = _to_date(request.form.get("data_aplicacao"))
+        ordem.hora_inicio_aplicacao = _to_time(request.form.get("hora_inicio_aplicacao"))
+        ordem.hora_termino_aplicacao = _to_time(request.form.get("hora_termino_aplicacao"))
+
+        ordem.tratamento_adicional_realizado = _clean(request.form.get("tratamento_adicional_realizado"))
+        ordem.quantos_quais = _clean(request.form.get("quantos_quais"))
+
+        ordem.descricao_produto = _clean(request.form.get("descricao_produto"))
+        ordem.formulacao_produto = _clean(request.form.get("formulacao_produto"))
+        ordem.dosagem_g_10l = _clean(request.form.get("dosagem_g_10l"))
+
+        ordem.tipo_aplicacao = _clean(request.form.get("tipo_aplicacao"))
+        ordem.quantidade_produto_administrada_ml = _to_float(request.form.get("quantidade_produto_administrada_ml"))
+        ordem.pulverizacao_area_l_ha = _to_float(request.form.get("pulverizacao_area_l_ha"))
+        ordem.pulverizacao_foco_tempo_estimado_segundos = _to_float(request.form.get("pulverizacao_foco_tempo_estimado_segundos"))
+        ordem.pulverizacao_foco_l_min = _to_float(request.form.get("pulverizacao_foco_l_min"))
+
+        ordem.prefixo_aeronave_pulverizacao = _clean(request.form.get("prefixo_aeronave_pulverizacao"))
+        ordem.prefixo_aeronave_monitoramento = _clean(request.form.get("prefixo_aeronave_monitoramento"))
+        ordem.quantidade_imagens_registradas = _to_int(request.form.get("quantidade_imagens_registradas"))
+
+        ordem.ponta_pulverizacao = _clean(request.form.get("ponta_pulverizacao"))
+        ordem.temperatura_c = _to_float(request.form.get("temperatura_c"))
+        ordem.umidade_relativa_pct = _to_float(request.form.get("umidade_relativa_pct"))
+        ordem.velocidade_vento_kmh = _to_float(request.form.get("velocidade_vento_kmh"))
+
+        ordem.motivo_nao_realizacao = _clean(request.form.get("motivo_nao_realizacao"))
+
+        # Campos extras do template que não existem no model -> guarda em observacoes
+        obs = _clean(request.form.get("observacoes"))
+        extras = []
+
+        tipo_os = _clean(request.form.get("tipo_os"))
+        if tipo_os:
+            extras.append(f"Tipo de OS: {tipo_os}")
+
+        numero_serie = _clean(request.form.get("numero_serie_equipamento"))
+        if numero_serie:
+            extras.append(f"Nº série equipamento: {numero_serie}")
+
+        # ✅ se você NÃO criou coluna drone_id e quer ao menos registrar em observacoes:
+        # drone_id_txt = _clean(request.form.get("drone_id"))
+        # if drone_id_txt:
+        #     extras.append(f"Drone ID: {drone_id_txt}")
+
+        if extras:
+            extra_txt = " | ".join(extras)
+            obs = f"{obs}\n{extra_txt}" if obs else extra_txt
+
+        ordem.observacoes = obs
+
+        ordem.piloto = _clean(request.form.get("piloto")) or piloto_padrao
+        ordem.assinatura_piloto = _clean(request.form.get("assinatura_piloto"))
+        ordem.auxiliar = _clean(request.form.get("auxiliar")) or auxiliar_padrao
+
+        ordem.proprietario_ou_preposto = _clean(request.form.get("proprietario_ou_preposto"))
+        ordem.assinatura_proprietario_ou_preposto = _clean(request.form.get("assinatura_proprietario_ou_preposto"))
+
+        try:
+            db.session.commit()
+            flash("Formulário salvo com sucesso!", "success")
+            return redirect(url_for("main.piloto_os"))
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("Erro ao salvar formulário da OS %s", os_id)
+            flash("Erro ao salvar o formulário. Verifique os campos e tente novamente.", "danger")
+
+    # ----------------------------
+    # GET (render)
+    # ----------------------------
+    return render_template(
+        "piloto_os_formulario.html",
+        solicitacao=s,
+        equipe=equipe,
+        ordem=ordem,
+        uvis_nome=uvis_nome,
+        endereco_os=endereco_os,
+        piloto_padrao=piloto_padrao,
+        auxiliar_padrao=auxiliar_padrao,
+        respondido_por_padrao=respondido_por_padrao,
+        respondido_em_value=respondido_em_value,
+        drones_equipe=drones_equipe,
+    )
+
+
+# ============================================================
+# API: detalhes do drone (para preencher campos do form)
+# ============================================================
+@bp.route("/piloto/api/drone/<int:drone_id>", methods=["GET"])
+@login_required
+@roles_required("piloto")
+def piloto_api_drone(drone_id):
+    if not current_user.piloto_id:
+        return jsonify({"error": "Piloto sem vínculo."}), 403
+
+    drone = Drones.query.get_or_404(drone_id)
+
+    # segurança: drone precisa estar vinculado a uma equipe
+    if not drone.equipe_id:
+        return jsonify({"error": "Drone sem equipe."}), 403
+
+    # segurança: piloto precisa estar na equipe ativa desse drone
+    vinculo = (
+        EquipePiloto.query
+        .join(Equipe, Equipe.id == EquipePiloto.equipe_id)
+        .filter(
+            EquipePiloto.equipe_id == drone.equipe_id,
+            EquipePiloto.piloto_id == current_user.piloto_id,
+            Equipe.ativa.is_(True)
+        )
+        .first()
+    )
+    if not vinculo:
+        return jsonify({"error": "Sem permissão."}), 403
+
+    return jsonify({
+        "id": drone.id,
+        "renomacao": drone.renomacao,
+        "modelo": drone.modelo,
+        "numero_serie": drone.numero_serie,
+        "registro_anatel": drone.registro_anatel,
+        "registro_anac": drone.registro_anac,
+        "status": drone.status,
+        "categoria": drone.categoria,
+        "pmd_kg": drone.pmd_kg,
+        "ano_fabricacao": drone.ano_fabricacao,
+    })
