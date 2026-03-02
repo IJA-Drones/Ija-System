@@ -134,7 +134,6 @@ class Pilotos(db.Model):
         cascade="all, delete-orphan"
     )
 
-
 # -------------------------------------------------------------
 # VÍNCULO PILOTO ↔ UVIS (N:N)
 # - serve para: "piloto ver somente as UVIS ligadas a ele"
@@ -279,6 +278,14 @@ class Solicitacao(db.Model):
     )
     equipe = db.relationship("Equipe", lazy="joined")
 
+    ordem_servico = db.relationship(
+        "OrdemServico",
+        back_populates="solicitacao",
+        uselist=False,
+        lazy="select",
+        cascade="all, delete-orphan"
+    )
+
     __table_args__ = (
         db.Index("ix_solicitacao_data_status", "data_criacao", "status"),
         db.Index("ix_solicitacao_usuario_data", "usuario_id", "data_criacao"),
@@ -290,6 +297,45 @@ class Solicitacao(db.Model):
 # -------------------------------------------------------------
 # NOTIFICAÇÕES
 # -------------------------------------------------------------
+class OrdemServico(db.Model):
+    __tablename__ = "ordens_servico"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    solicitacao_id = db.Column(
+        db.Integer,
+        db.ForeignKey("solicitacoes.id"),
+        nullable=False,
+        unique=True,
+        index=True
+    )
+
+    equipe_id = db.Column(
+        db.Integer,
+        db.ForeignKey("equipes.id"),
+        nullable=False,
+        index=True
+    )
+
+    status = db.Column(db.String(30), default="RASCUNHO", nullable=False, index=True)
+    resumo_execucao = db.Column(db.Text)
+    observacoes = db.Column(db.Text)
+    checklist_json = db.Column(db.Text)
+    perimetro_executado = db.Column(db.Text)
+
+    criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+    atualizado_em = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
+    concluido_em = db.Column(db.DateTime, index=True)
+
+    solicitacao = db.relationship("Solicitacao", back_populates="ordem_servico")
+    equipe = db.relationship("Equipe", back_populates="ordens_servico")
+
+    __table_args__ = (
+        db.Index("ix_os_equipe_status", "equipe_id", "status"),
+        db.Index("ix_os_criacao", "criado_em"),
+    )
+
+
 class Notificacao(db.Model):
     __tablename__ = "notificacoes"
 
@@ -363,6 +409,12 @@ class Equipe(db.Model):
     #Relacionamento com os equipamentos (Drones da equipe)
     equipamentos = db.relationship(
         "Equipamentos",
+        back_populates="equipe",
+        lazy="select"
+    )
+
+    ordens_servico = db.relationship(
+        "OrdemServico",
         back_populates="equipe",
         lazy="select"
     )
@@ -544,4 +596,45 @@ class Veiculos(Equipamentos):
         try:
             return float(self.km_prox_revisao) - float(self.km_atual or 0)
         except Exception:
+<<<<<<< Updated upstream
             return None
+=======
+            return None
+
+# -------------------------------------------------------------
+# LOGS DE VEÍCULO (Registros diários de uso/abastecimento)
+# -------------------------------------------------------------
+class LogVeiculo(db.Model):
+    __tablename__ = "logs_veiculo"
+
+    id = db.Column(db.Integer, primary_key=True)
+    
+    veiculo_id = db.Column(db.Integer, db.ForeignKey("veiculos.id"), nullable=False, index=True)
+    piloto_id = db.Column(db.Integer, db.ForeignKey("pilotos.id"), nullable=False, index=True)
+    
+    data_registro = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+    
+    km_inicial = db.Column(db.Float, nullable=False)
+    km_final = db.Column(db.Float, nullable=False)
+    
+    # Campos de Abastecimento (Opcionais)
+    abasteceu = db.Column(db.Boolean, default=False)
+    litros = db.Column(db.Float, nullable=True)
+    valor_total = db.Column(db.Float, nullable=True)
+    km_no_abastecimento = db.Column(db.Float, nullable=True)
+    
+    observacao = db.Column(db.Text)
+
+    # Relacionamentos
+    veiculo = db.relationship(
+        "Veiculos",
+        backref=db.backref("logs", lazy="select", cascade="all, delete-orphan")
+    )
+    piloto = db.relationship("Pilotos", backref=db.backref("logs_veiculo", lazy="select"))
+
+class Os(db.Model):
+    __tablename__ = "os"
+
+    id = db.Column(db.Integer, primary_key=True)
+    
+>>>>>>> Stashed changes
