@@ -46,7 +46,7 @@ from sqlalchemy.orm import joinedload
 # APP
 # ==========================
 from app import db
-from app.models import Notificacao, Solicitacao, Usuario, Clientes, Pilotos, Equipe, EquipePiloto, EquipeUvis, Veiculos, OrdemServico
+from app.models import Notificacao, Solicitacao, Usuario, Clientes, Pilotos, Equipe, EquipePiloto, EquipeUvis, Veiculos, OrdemServico, LogVeiculo
 TZ = ZoneInfo("America/Sao_Paulo")
 print("--- ROTAS CARREGADAS COM SUCESSO ---")
 
@@ -7458,11 +7458,159 @@ def listar_veiculos():
         "total": len(veiculos),
     }
 
+    ultimos_logs = {}
+    if veiculos:
+        veiculo_ids = [v.id for v in veiculos]
+        logs = (
+            LogVeiculo.query
+            .filter(LogVeiculo.veiculo_id.in_(veiculo_ids))
+            .order_by(LogVeiculo.veiculo_id.asc(), LogVeiculo.data_registro.desc())
+            .all()
+        )
+        for log in logs:
+            if log.veiculo_id not in ultimos_logs:
+                ultimos_logs[log.veiculo_id] = log
+
     return render_template(
         "veiculos_listar.html",
         veiculos=veiculos,
         is_admin=is_admin,
-        filters=filters
+        filters=filters,
+        ultimos_logs=ultimos_logs
+    )
+
+
+@bp.route("/veiculos/logs", methods=["GET"], endpoint="veiculos_logs")
+@login_required
+def veiculos_logs():
+    tipo = getattr(current_user, "tipo_usuario", None)
+    if tipo not in ("admin", "visualizar", "operario"):
+        abort(403)
+
+    q = (request.args.get("q") or "").strip()
+    data_inicio = (request.args.get("data_inicio") or "").strip()
+    data_fim = (request.args.get("data_fim") or "").strip()
+    page = request.args.get("page", 1, type=int)
+
+    query = (
+        LogVeiculo.query
+        .options(joinedload(LogVeiculo.veiculo), joinedload(LogVeiculo.piloto))
+        .join(Veiculos, LogVeiculo.veiculo_id == Veiculos.id)
+        .join(Pilotos, LogVeiculo.piloto_id == Pilotos.id)
+    )
+
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            db.or_(
+                Veiculos.modelo.ilike(like),
+                Veiculos.placa.ilike(like),
+                Veiculos.responsavel.ilike(like),
+                Pilotos.nome_piloto.ilike(like),
+            )
+        )
+
+    if data_inicio:
+        try:
+            dt_ini = datetime.strptime(data_inicio, "%Y-%m-%d")
+            query = query.filter(LogVeiculo.data_registro >= dt_ini)
+        except ValueError:
+            pass
+
+    if data_fim:
+        try:
+            dt_fim = datetime.strptime(data_fim, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+            query = query.filter(LogVeiculo.data_registro <= dt_fim)
+        except ValueError:
+            pass
+
+    query = query.order_by(LogVeiculo.data_registro.desc())
+    paginacao = query.paginate(page=page, per_page=20, error_out=False)
+    logs = paginacao.items
+
+    filters = {"q": q, "data_inicio": data_inicio, "data_fim": data_fim}
+
+    return render_template(
+        "veiculos_logs.html",
+        logs=logs,
+        paginacao=paginacao,
+        total_logs=query.count(),
+        total_abastecido=sum((l.valor_total or 0) for l in logs),
+        filters=filters,
+    )
+
+
+@bp.route("/veiculos/logs/exportar", methods=["GET"], endpoint="exportar_logs_veiculos_xlsx")
+@login_required
+def exportar_logs_veiculos_xlsx():
+    tipo = getattr(current_user, "tipo_usuario", None)
+    if tipo not in ("admin", "visualizar", "operario"):
+        abort(403)
+
+    q = (request.args.get("q") or "").strip()
+    data_inicio = (request.args.get("data_inicio") or "").strip()
+    data_fim = (request.args.get("data_fim") or "").strip()
+
+    query = (
+        LogVeiculo.query
+        .options(joinedload(LogVeiculo.veiculo), joinedload(LogVeiculo.piloto))
+        .join(Veiculos, LogVeiculo.veiculo_id == Veiculos.id)
+        .join(Pilotos, LogVeiculo.piloto_id == Pilotos.id)
+    )
+
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            db.or_(
+                Veiculos.modelo.ilike(like),
+                Veiculos.placa.ilike(like),
+                Veiculos.responsavel.ilike(like),
+                Pilotos.nome_piloto.ilike(like),
+            )
+        )
+
+    if data_inicio:
+        try:
+            dt_ini = datetime.strptime(data_inicio, "%Y-%m-%d")
+            query = query.filter(LogVeiculo.data_registro >= dt_ini)
+        except ValueError:
+            pass
+
+    if data_fim:
+        try:
+            dt_fim = datetime.strptime(data_fim, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+            query = query.filter(LogVeiculo.data_registro <= dt_fim)
+        except ValueError:
+            pass
+
+    logs = query.order_by(LogVeiculo.data_registro.desc()).all()
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Logs Veiculos"
+    ws.append(["Data", "Veiculo", "Placa", "Responsavel", "Piloto", "KM Inicial", "KM Final", "Valor Abastecimento (R$)"])
+
+    for log in logs:
+        ws.append([
+            log.data_registro.strftime("%d/%m/%Y %H:%M") if log.data_registro else "",
+            (log.veiculo.modelo if log.veiculo else "") or "",
+            (log.veiculo.placa if log.veiculo else "") or "",
+            (log.veiculo.responsavel if log.veiculo else "") or "",
+            (log.piloto.nome_piloto if log.piloto else "") or "",
+            float(log.km_inicial or 0),
+            float(log.km_final or 0),
+            float(log.valor_total or 0),
+        ])
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name=f"logs_veiculos_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
 
 
@@ -7788,7 +7936,7 @@ def deletar_veiculo(veiculo_id):
 
     return redirect(url_for("main.listar_veiculos"))
 
-    from flask import render_template, request, redirect, url_for, flash, abort
+from flask import render_template, request, redirect, url_for, flash, abort
 from flask_login import login_required, current_user
 from app import db
 from app.models import Veiculos
@@ -8127,6 +8275,7 @@ def piloto_os_formulario_redirect():
 # ROTA REAL DO FORMULÁRIO (GET + POST)
 # /piloto/os/<os_id>/formulario
 # ============================================================
+
 @bp.route("/piloto/os/<int:os_id>/formulario", methods=["GET", "POST"])
 @login_required
 @roles_required("piloto")
@@ -8177,18 +8326,21 @@ def piloto_os_formulario_view(os_id):
     equipe = vinculo.equipe
     ordem = s.ordem_servico  # 1:1
 
-    # ✅ drones da equipe (só depois de validar permissão)
+    from sqlalchemy.orm import aliased
+
+    # Cria um apelido limpo para a consulta
+    d_alias = aliased(Drones, flat=True)
+
     drones_equipe = (
-        Drones.query
+        db.session.query(d_alias)
         .filter(
-            Drones.equipe_id == s.equipe_id,
-            Drones.tipo_equipamento == "drones",  # garante tipo correto no polimorfismo
-            Drones.status == "Ativo"              # opcional
+            d_alias.equipe_id == s.equipe_id,
+            d_alias.status == "Ativo"
         )
-        .order_by(Drones.renomacao.asc())
+        .order_by(d_alias.renomacao.asc())
         .all()
     )
-
+   
     # Defaults puxados das tabelas
     uvis_nome = s.usuario.nome_uvis if s.usuario else ""
     endereco_os = f"{s.logradouro or ''}, {s.numero or 'S/N'} - {s.bairro or ''} - {s.cidade or ''}/{s.uf or ''}"
@@ -8222,30 +8374,47 @@ def piloto_os_formulario_view(os_id):
             db.session.add(ordem)
 
         # ----------------------------
-        # ✅ Drone selecionado (OPCIONAL)
+        # ✅ Drone selecionado (SNAPSHOT E AUTOMAÇÃO)
         # ----------------------------
-        # Só ative se você tiver criado a coluna ordem.drone_id (e talvez snapshot)
-        #
-        drone_id = request.form.get("drone_id", type=int)
-        if drone_id:
-             drone = Drones.query.get(drone_id)
-             if (not drone) or (drone.equipe_id != s.equipe_id):
-                 flash("Drone inválido para a equipe desta OS.", "danger")
-                 return redirect(url_for("main.piloto_os_formulario_view", os_id=os_id))
-             ordem.drone_id = drone.id              
-             ordem.drone_renomacao = drone.renomacao
-             ordem.drone_modelo = drone.modelo
-             ordem.drone_numero_serie = drone.numero_serie
-             ordem.drone_registro_anatel = drone.registro_anatel
-             ordem.drone_registro_anac = drone.registro_anac
+       # ----------------------------
+        # ✅ Drones selecionados (PULVERIZAÇÃO E MONITORAMENTO)
+        # ----------------------------
+        drone_pulv_id = request.form.get("drone_id", type=int)
+        drone_monit_id = request.form.get("drone_id", type=int)
+        
+        # Processa o Drone de Pulverização (Principal para o Snapshot)
+        if drone_pulv_id:
+             drone_p = Drones.query.get(drone_pulv_id)
+             if drone_p and drone_p.equipe_id == s.equipe_id:
+                 ordem.drone_id = drone_p.id               
+                 ordem.drone_renomacao = drone_p.renomacao
+                 ordem.drone_modelo = drone_p.modelo
+                 ordem.drone_numero_serie = drone_p.numero_serie
+                 ordem.drone_registro_anatel = drone_p.registro_anatel
+                 ordem.drone_registro_anac = drone_p.registro_anac
+                 ordem.prefixo_aeronave_pulverizacao = drone_p.renomacao
+        
+        # Processa o Drone de Monitoramento (Apenas para o Prefixo)
+        if drone_monit_id:
+             drone_m = Drones.query.get(drone_monit_id)
+             if drone_m and drone_m.equipe_id == s.equipe_id:
+                 ordem.prefixo_aeronave_monitoramento = drone_m.renomacao
+
+             # ✅ AUTOMAÇÃO: Forçamos os prefixos a serem a renovação do dro
         else:
+             # Se nenhum drone foi selecionado no select, limpamos o snapshot
              ordem.drone_id = None
              ordem.drone_renomacao = None
              ordem.drone_modelo = None
              ordem.drone_numero_serie = None
              ordem.drone_registro_anatel = None
              ordem.drone_registro_anac = None
+             
+             # E aqui, caso não tenha drone, ele tenta pegar o que foi digitado manualmente
+             ordem.prefixo_aeronave_pulverizacao = _clean(request.form.get("prefixo_aeronave_pulverizacao"))
+             ordem.prefixo_aeronave_monitoramento = _clean(request.form.get("prefixo_aeronave_monitoramento"))
 
+        # --- Continuação normal dos campos ---
         ordem.identificador_os = _clean(request.form.get("identificador_os"))
         ordem.respondido_por = _clean(request.form.get("respondido_por")) or respondido_por_padrao
         ordem.respondido_em = _to_datetime_local(request.form.get("respondido_em")) or datetime.now()
@@ -8277,8 +8446,8 @@ def piloto_os_formulario_view(os_id):
         ordem.pulverizacao_foco_tempo_estimado_segundos = _to_float(request.form.get("pulverizacao_foco_tempo_estimado_segundos"))
         ordem.pulverizacao_foco_l_min = _to_float(request.form.get("pulverizacao_foco_l_min"))
 
-        ordem.prefixo_aeronave_pulverizacao = _clean(request.form.get("prefixo_aeronave_pulverizacao"))
-        ordem.prefixo_aeronave_monitoramento = _clean(request.form.get("prefixo_aeronave_monitoramento"))
+        # ordem.prefixo_aeronave_pulverizacao = _clean(request.form.get("prefixo_aeronave_pulverizacao"))
+        # ordem.prefixo_aeronave_monitoramento = _clean(request.form.get("prefixo_aeronave_monitoramento"))
         ordem.quantidade_imagens_registradas = _to_int(request.form.get("quantidade_imagens_registradas"))
 
         ordem.ponta_pulverizacao = _clean(request.form.get("ponta_pulverizacao"))
