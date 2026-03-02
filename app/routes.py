@@ -4607,6 +4607,7 @@ def deletar_piloto(piloto_id):
 
     flash("Piloto excluído com sucesso.", "success")
     return redirect(url_for("main.listar_pilotos"))
+
 @bp.route('/piloto/os')
 @login_required
 @roles_required('piloto')
@@ -4710,11 +4711,14 @@ def piloto_os():
         google_maps_key=google_maps_key,
         drones_equipe=drones_equipe,
         baterias_equipe=baterias_equipe,
-        veiculos_equipe=veiculos_equipe,  # ✅ novo
+        veiculos_equipe=veiculos_equipe,  
     )
 
-
-
+@bp.route('/piloto/os/formulario', methods=['GET'])
+@login_required
+@roles_required('piloto')
+def piloto_os_formulario():
+    return render_template("piloto_os_formulario.html")
 
 @bp.route('/piloto/os/<int:os_id>/concluir', methods=['POST'])
 @login_required
