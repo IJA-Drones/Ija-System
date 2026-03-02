@@ -596,9 +596,7 @@ class Veiculos(Equipamentos):
         try:
             return float(self.km_prox_revisao) - float(self.km_atual or 0)
         except Exception:
-<<<<<<< Updated upstream
             return None
-=======
             return None
 
 # -------------------------------------------------------------
@@ -631,10 +629,4 @@ class LogVeiculo(db.Model):
         backref=db.backref("logs", lazy="select", cascade="all, delete-orphan")
     )
     piloto = db.relationship("Pilotos", backref=db.backref("logs_veiculo", lazy="select"))
-
-class Os(db.Model):
-    __tablename__ = "os"
-
-    id = db.Column(db.Integer, primary_key=True)
     
->>>>>>> Stashed changes
