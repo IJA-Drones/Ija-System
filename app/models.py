@@ -316,7 +316,7 @@ class OrdemServico(db.Model):
         index=True
     )
     # campos do formulario Excel (aba: "formularios")
-    id = db.Column(db.String(100), index=True)
+    identificador_os = db.Column(db.String(100), index=True)
     respondido_por = db.Column(db.String(150), index=True)
     respondido_em = db.Column(db.DateTime, index=True)
     situacao_aplicacao = db.Column(db.String(100), index=True)
