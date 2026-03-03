@@ -5447,9 +5447,124 @@ def adicionar_membro_equipe_uvis(nome_equipe):
 
     return render_template("uvis_equipe_membro_adicionar.html", form=form, errors=errors, nome_equipe=nome_equipe)
 
+import re
+import unicodedata
+from flask import abort
+from flask_login import current_user
+
+def _uvis_only():
+    if getattr(current_user, "tipo_usuario", None) != "uvis":
+        abort(403)
+
+def _slug_upper(text: str) -> str:
+    """
+    Remove acentos, transforma separadores (/, _, espaços) em '-', remove chars inválidos e deixa MAIÚSCULO.
+    """
+    text = (text or "").strip()
+    if not text:
+        return ""
+
+    # normaliza acentos
+    text = unicodedata.normalize("NFKD", text)
+    text = "".join([c for c in text if not unicodedata.combining(c)])
+
+    text = text.upper()
+
+    # separadores comuns viram hífen
+    text = text.replace("/", "-").replace("\\", "-").replace("_", "-")
+    text = re.sub(r"\s+", "-", text)
+
+    # mantém só A-Z, 0-9 e hífen
+    text = re.sub(r"[^A-Z0-9\-]", "", text)
+
+    # limpa hífens duplicados
+    text = re.sub(r"\-+", "-", text).strip("-")
+
+    return text
+
+def _get_first_nonempty(*values) -> str:
+    for v in values:
+        if v is None:
+            continue
+        s = str(v).strip()
+        if s:
+            return s
+    return ""
+
+def _nome_uvis_base() -> str:
+    """
+    Pega o nome da UVIS e remove prefixos tipo 'UVIS ' / 'UVIS-' para não duplicar no nome final.
+    """
+    direto = _get_first_nonempty(
+        getattr(current_user, "nome_uvis", None),
+        getattr(current_user, "nome", None),
+        getattr(current_user, "name", None),
+        getattr(current_user, "nome_completo", None),
+        getattr(current_user, "username", None),
+    )
+
+    if not direto:
+        u = getattr(current_user, "usuario", None)
+        if u is not None:
+            direto = _get_first_nonempty(
+                getattr(u, "nome_uvis", None),
+                getattr(u, "nome", None),
+                getattr(u, "name", None),
+                getattr(u, "nome_completo", None),
+            )
+
+    if not direto:
+        email = getattr(current_user, "email", None)
+        if email and "@" in str(email):
+            direto = str(email).split("@", 1)[0]
+
+    if not direto:
+        direto = "SEM-NOME"
+
+    # ✅ remove "UVIS" do começo (ex: "UVIS Lapa/Pinheiros" ou "UVIS-Lapa")
+    direto = str(direto).strip()
+    direto = re.sub(r"^\s*UVIS\s*[-:\s]*", "", direto, flags=re.IGNORECASE).strip()
+
+    return direto or "SEM-NOME"
+
+def _proximo_nome_equipe_uvis(uvis_usuario_id: int) -> str:
+    """
+    Formato final: UVIS-<NOME_DA_UVIS>-<N>
+    Ex.: UVIS-LAPA-PINHEIROS-1
+    """
+    nome_uvis = _slug_upper(_nome_uvis_base())
+    if not nome_uvis:
+        nome_uvis = "SEM-NOME"
+
+    prefixo = f"UVIS-{nome_uvis}-"
+
+    rows = (
+        db.session.query(EquipeUvis.nome_equipe)
+        .filter(EquipeUvis.uvis_usuario_id == uvis_usuario_id)
+        .distinct()
+        .all()
+    )
+    existentes = [r[0] for r in rows if r and r[0]]
+
+    maior = 0
+    pattern = re.compile(rf"^{re.escape(prefixo)}(\d+)$", re.IGNORECASE)
+
+    for nome in existentes:
+        m = pattern.match(nome.strip())
+        if m:
+            try:
+                n = int(m.group(1))
+                if n > maior:
+                    maior = n
+            except ValueError:
+                pass
+
+    return f"{prefixo}{maior + 1}"
 #-------------------------------------------------------------
 # Rota: criar nova equipe UVIS
 #-------------------------------------------------------------
+from flask import request, flash, redirect, url_for, render_template
+from flask_login import login_required
 @bp.route("/uvis/equipes/nova", methods=["GET", "POST"], endpoint="criar_equipe_uvis")
 @login_required
 def criar_equipe_uvis():
@@ -5458,18 +5573,18 @@ def criar_equipe_uvis():
     errors = {}
     form = {}
 
+    form["nome_equipe"] = _proximo_nome_equipe_uvis(current_user.id)
+
     if request.method == "POST":
-        nome_equipe = (request.form.get("nome_equipe") or "").strip()
-        form["nome_equipe"] = nome_equipe
+        nome_equipe = _proximo_nome_equipe_uvis(current_user.id)
 
         if not nome_equipe:
-            errors["nome_equipe"] = "Informe o nome da equipe."
+            errors["nome_equipe"] = "Não foi possível gerar o nome automático da equipe."
 
         if errors:
             flash("Corrija os campos destacados.", "warning")
             return render_template("uvis_equipe_criar.html", form=form, errors=errors)
 
-        # manda direto para adicionar o 1º membro
         return redirect(url_for("main.adicionar_membro_equipe_uvis", nome_equipe=nome_equipe))
 
     return render_template("uvis_equipe_criar.html", form=form, errors=errors)
