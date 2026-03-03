@@ -324,6 +324,7 @@ class OrdemServico(db.Model):
     prefixo_aeronave_pulverizacao = db.Column(db.String(100), index=True)
     prefixo_aeronave_monitoramento = db.Column(db.String(100), index=True)
 
+    quantidade_videos_registradas = db.Column(db.Integer)
     quantidade_imagens_registradas = db.Column(db.Integer)
     ponta_pulverizacao = db.Column(db.String(100))
 
