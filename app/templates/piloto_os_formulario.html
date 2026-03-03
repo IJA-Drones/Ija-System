@@ -109,23 +109,28 @@
               <div class="row g-2">
                 <div class="col-6">
                   <label class="form-label-header small">Nº Série</label>
-                  <input type="text" name="numero_equipamento" id="drone_serie" class="form-control form-control-sm" readonly />
+                  <input type="text" name="numero_equipamento_pulv" id="drone_serie_pulv" class="form-control form-control-sm" readonly
+                         value="{{ ordem.drone_numero_serie if ordem and ordem.drone_numero_serie else '' }}" />
                 </div>
                 <div class="col-6">
                   <label class="form-label-header small">Modelo</label>
-                  <input type="text" id="drone_modelo" class="form-control form-control-sm" readonly />
+                  <input type="text" id="drone_modelo_pulv" class="form-control form-control-sm" readonly
+                         value="{{ ordem.drone_modelo if ordem and ordem.drone_modelo else '' }}" />
                 </div>
                 <div class="col-4">
-                  <label class="form-label-header small">Renovação</label>
-                  <input type="text" id="drone_renomacao" class="form-control form-control-sm" readonly />
+                  <label class="form-label-header small">Renomação</label>
+                  <input type="text" id="drone_renomacao_pulv" class="form-control form-control-sm" readonly
+                         value="{{ ordem.drone_renomacao if ordem and ordem.drone_renomacao else '' }}" />
                 </div>
                 <div class="col-4">
                   <label class="form-label-header small">ANATEL</label>
-                  <input type="text" id="drone_registro_anatel" class="form-control form-control-sm" readonly />
+                  <input type="text" id="drone_registro_anatel_pulv" class="form-control form-control-sm" readonly
+                         value="{{ ordem.drone_registro_anatel if ordem and ordem.drone_registro_anatel else '' }}" />
                 </div>
                 <div class="col-4">
                   <label class="form-label-header small">ANAC</label>
-                  <input type="text" id="drone_registro_anac" class="form-control form-control-sm" readonly />
+                  <input type="text" id="drone_registro_anac_pulv" class="form-control form-control-sm" readonly
+                         value="{{ ordem.drone_registro_anac if ordem and ordem.drone_registro_anac else '' }}" />
                 </div>
               </div>
             </div>
@@ -137,7 +142,9 @@
             <select name="drone_id" id="drone_id" class="form-select shadow-sm mb-3">
               <option value="">Selecione o drone de monitoramento...</option>
               {% for d in drones_equipe or [] %}
-                <option value="{{ d.id }}">{{ d.renomacao }} — {{ d.modelo }}</option>
+                <option value="{{ d.id }}" {% if ordem and ordem.drone_id == d.id %}selected{% endif %}>
+                  {{ d.renomacao }} — {{ d.modelo }}
+                </option>
               {% endfor %}
             </select>
 
@@ -146,23 +153,23 @@
               <div class="row g-2">
                 <div class="col-6">
                   <label class="form-label-header small">Nº Série</label>
-                  <input type="text" id="drone_serie" class="form-control form-control-sm" readonly />
+                  <input type="text" id="drone_serie_monit" class="form-control form-control-sm" readonly />
                 </div>
                 <div class="col-6">
                   <label class="form-label-header small">Modelo</label>
-                  <input type="text" id="drone_modelo" class="form-control form-control-sm" readonly />
+                  <input type="text" id="drone_modelo_monit" class="form-control form-control-sm" readonly />
                 </div>
                 <div class="col-4">
-                  <label class="form-label-header small">Renovação</label>
-                  <input type="text" id="drone_renomacao" class="form-control form-control-sm" readonly />
+                  <label class="form-label-header small">Renomação</label>
+                  <input type="text" id="drone_renomacao_monit" class="form-control form-control-sm" readonly />
                 </div>
                 <div class="col-4">
                   <label class="form-label-header small">ANATEL</label>
-                  <input type="text" id="drone_registro_anatel" class="form-control form-control-sm" readonly />
+                  <input type="text" id="drone_registro_anatel_monit" class="form-control form-control-sm" readonly />
                 </div>
                 <div class="col-4">
                   <label class="form-label-header small">ANAC</label>
-                  <input type="text" id="drone_registro_anac" class="form-control form-control-sm" readonly />
+                  <input type="text" id="drone_registro_anac_monit" class="form-control form-control-sm" readonly />
                 </div>
               </div>
             </div>
@@ -285,11 +292,13 @@
         <div class="row g-3 mb-4">
           <div class="col-md-4">
             <label class="form-label-header">Prefixo Pulverizacao (Auto)</label>
-            <input type="text" name="prefixo_aeronave_pulverizacao" id="prefixo_pulverizacao" class="form-control fw-bold text-primary" value="{{ ordem.prefixo_aeronave_pulverizacao if ordem else '' }}" />
+            <input type="text" name="prefixo_aeronave_pulverizacao" id="prefixo_pulverizacao" class="form-control fw-bold text-primary"
+                   value="{{ ordem.prefixo_aeronave_pulverizacao if ordem else '' }}" />
           </div>
           <div class="col-md-4">
             <label class="form-label-header">Prefixo Monitoramento (Auto)</label>
-            <input type="text" name="prefixo_aeronave_monitoramento" id="prefixo_monitoramento" class="form-control fw-bold text-primary" value="{{ ordem.prefixo_aeronave_monitoramento if ordem else '' }}" />
+            <input type="text" name="prefixo_aeronave_monitoramento" id="prefixo_monitoramento" class="form-control fw-bold text-primary"
+                   value="{{ ordem.prefixo_aeronave_monitoramento if ordem else '' }}" />
           </div>
           <div class="col-md-4">
             <label class="form-label-header">Imagens Registradas</label>
@@ -367,62 +376,89 @@
 {% block scripts %}
 <script>
 (function () {
-    const selPulv = document.getElementById("drone_id");
-    const selMonit = document.getElementById("drone_id");
-    
-    // Mapeamento dos campos de detalhes técnicos (ligados ao drone de pulverização)
-    const pulvSnapshot = {
-        serie: document.getElementById("drone_serie"),
-        modelo: document.getElementById("drone_modelo"),
-        renomacao: document.getElementById("drone_renomacao"),
-        anatel: document.getElementById("drone_registro_anatel"),
-        anac: document.getElementById("drone_registro_anac")
-    };
+  // ✅ selects corretos
+  const selPulv = document.getElementById("drone_pulv_id");
+  const selMonit = document.getElementById("drone_id");
 
-    const prefixoPulv = document.getElementById("prefixo_pulverizacao");
-    const prefixoMonit = document.getElementById("prefixo_monitoramento");
+  // Snapshot pulverização
+  const pulvSnapshot = {
+    serie: document.getElementById("drone_serie_pulv"),
+    modelo: document.getElementById("drone_modelo_pulv"),
+    renomacao: document.getElementById("drone_renomacao_pulv"),
+    anatel: document.getElementById("drone_registro_anatel_pulv"),
+    anac: document.getElementById("drone_registro_anac_pulv"),
+  };
 
-    async function loadDroneData(droneId, type) {
-        if (!droneId) {
-            if (type === 'pulv') {
-                Object.values(pulvSnapshot).forEach(f => f.value = "");
-                prefixoPulv.value = "";
-            } else {
-                prefixoMonit.value = "";
-            }
-            return;
-        }
+  // Snapshot monitoramento
+  const monitSnapshot = {
+    serie: document.getElementById("drone_serie_monit"),
+    modelo: document.getElementById("drone_modelo_monit"),
+    renomacao: document.getElementById("drone_renomacao_monit"),
+    anatel: document.getElementById("drone_registro_anatel_monit"),
+    anac: document.getElementById("drone_registro_anac_monit"),
+  };
 
-        try {
-            const url = `{{ url_for('main.piloto_api_drone', drone_id=0) }}`.replace("0", droneId);
-            const res = await fetch(url);
-            const data = await res.json();
-            
-            if (!res.ok) return;
+  const prefixoPulv = document.getElementById("prefixo_pulverizacao");
+  const prefixoMonit = document.getElementById("prefixo_monitoramento");
 
-            if (type === 'pulv') {
-                pulvSnapshot.serie.value = data.numero_serie || "";
-                pulvSnapshot.modelo.value = data.modelo || "";
-                pulvSnapshot.renomacao.value = data.renomacao || "";
-                pulvSnapshot.anatel.value = data.registro_anatel || "";
-                pulvSnapshot.anac.value = data.registro_anac || "";
-                prefixoPulv.value = data.renomacao || "";
-            } else {
-                prefixoMonit.value = data.renomacao || "";
-            }
-        } catch (e) { 
-            console.error("Erro ao carregar dados do drone:", e); 
-        }
+  function clearSnapshot(snapshot) {
+    Object.values(snapshot).forEach((el) => { if (el) el.value = ""; });
+  }
+
+  async function loadDroneData(droneId, type) {
+    if (!droneId) {
+      if (type === "pulv") {
+        clearSnapshot(pulvSnapshot);
+        if (prefixoPulv) prefixoPulv.value = "";
+      } else {
+        clearSnapshot(monitSnapshot);
+        if (prefixoMonit) prefixoMonit.value = "";
+      }
+      return;
     }
 
-    if (selPulv) selPulv.addEventListener("change", () => loadDroneData(selPulv.value, 'pulv'));
-    if (selMonit) selMonit.addEventListener("change", () => loadDroneData(selMonit.value, 'monit'));
+    try {
+      const url = `{{ url_for('main.piloto_api_drone', drone_id=0) }}`.replace("0", droneId);
+      const res = await fetch(url);
+      const data = await res.json();
+      if (!res.ok) return;
 
-    // Carregamento inicial (para edição)
-    window.addEventListener('DOMContentLoaded', () => {
-        if (selPulv && selPulv.value) loadDroneData(selPulv.value, 'pulv');
-        if (selMonit && selMonit.value) loadDroneData(selMonit.value, 'monit');
-    });
+      if (type === "pulv") {
+        if (pulvSnapshot.serie) pulvSnapshot.serie.value = data.numero_serie || "";
+        if (pulvSnapshot.modelo) pulvSnapshot.modelo.value = data.modelo || "";
+        if (pulvSnapshot.renomacao) pulvSnapshot.renomacao.value = data.renomacao || "";
+        if (pulvSnapshot.anatel) pulvSnapshot.anatel.value = data.registro_anatel || "";
+        if (pulvSnapshot.anac) pulvSnapshot.anac.value = data.registro_anac || "";
+        if (prefixoPulv) prefixoPulv.value = data.renomacao || "";
+      } else {
+        if (monitSnapshot.serie) monitSnapshot.serie.value = data.numero_serie || "";
+        if (monitSnapshot.modelo) monitSnapshot.modelo.value = data.modelo || "";
+        if (monitSnapshot.renomacao) monitSnapshot.renomacao.value = data.renomacao || "";
+        if (monitSnapshot.anatel) monitSnapshot.anatel.value = data.registro_anatel || "";
+        if (monitSnapshot.anac) monitSnapshot.anac.value = data.registro_anac || "";
+        if (prefixoMonit) prefixoMonit.value = data.renomacao || "";
+      }
+    } catch (e) {
+      console.error("Erro ao carregar dados do drone:", e);
+    }
+  }
+
+  if (selPulv) selPulv.addEventListener("change", () => loadDroneData(selPulv.value, "pulv"));
+  if (selMonit) selMonit.addEventListener("change", () => loadDroneData(selMonit.value, "monit"));
+
+  // datetime-local default
+  const responded = document.getElementById("respondido_em");
+  if (responded && !responded.value) {
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    responded.value = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  }
+
+  // Carregamento inicial (edição)
+  window.addEventListener("DOMContentLoaded", () => {
+    if (selPulv && selPulv.value) loadDroneData(selPulv.value, "pulv");
+    if (selMonit && selMonit.value) loadDroneData(selMonit.value, "monit");
+  });
 })();
 </script>
 {% endblock %}
