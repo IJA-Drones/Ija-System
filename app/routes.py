@@ -174,60 +174,98 @@ def roles_required(*roles):
         return wrapper
     return deco
 
-# --- DASHBOARD UVIS ---
+import os
+from datetime import datetime
+from flask import request, redirect, url_for, render_template
+from flask_login import login_required, current_user
+from sqlalchemy.orm import joinedload
+from sqlalchemy import func
+
+# ajuste imports conforme seu projeto:
+# from app import db
+# from app.models import Solicitacao, Equipe, EquipeUvis, EquipeUvis...
+
 @bp.route('/')
 @login_required
 def dashboard():
-    google_maps_key = os.getenv("KEY_API_GOOGLE_MAPS")  # a mesma do .env 
+    google_maps_key = os.getenv("KEY_API_GOOGLE_MAPS")  # a mesma do .env
+
     if current_user.tipo_usuario == 'piloto':
         return redirect(url_for('main.piloto_os'))
 
     if current_user.tipo_usuario in ['admin', 'operario', 'visualizar']:
         return redirect(url_for('main.admin_dashboard'))
-     
+
     # ✅ UVIS: só as solicitações dela + carrega equipe para exibir
     query = (
         Solicitacao.query
         .options(
             joinedload(Solicitacao.usuario),
-            joinedload(Solicitacao.equipe)  # ✅ aqui
+            joinedload(Solicitacao.equipe)
         )
         .filter(Solicitacao.usuario_id == current_user.id)
     )
 
     # ✅ NÃO MOSTRAR CANCELADAS NO DASHBOARD PRINCIPAL
     query = query.filter(Solicitacao.status != "CANCELADO")
-    
-    # Filtragem por status (original)
+
+    # =========================
+    # FILTROS (status, tipo, foco)
+    # =========================
     filtro_status = request.args.get('status')
     if filtro_status:
         query = query.filter(Solicitacao.status == filtro_status)
 
-    # Filtro por tipo de visita
     filtro_tipo_visita = request.args.get('tipo_visita')
     if filtro_tipo_visita:
         query = query.filter(Solicitacao.tipo_visita == filtro_tipo_visita)
 
-    # Filtro por foco da ação
     filtro_foco = request.args.get('foco')
     if filtro_foco:
         query = query.filter(Solicitacao.foco == filtro_foco)
 
-    # Paginação
+    # =========================
+    # ✅ FILTRO POR DATA (NOVO)
+    # =========================
+    data_ini = request.args.get("data_ini")  # YYYY-MM-DD
+    data_fim = request.args.get("data_fim")  # YYYY-MM-DD
+
+    if data_ini:
+        try:
+            dt_ini = datetime.strptime(data_ini, "%Y-%m-%d").date()
+            query = query.filter(Solicitacao.data_agendamento >= dt_ini)
+        except ValueError:
+            pass
+
+    if data_fim:
+        try:
+            dt_fim = datetime.strptime(data_fim, "%Y-%m-%d").date()
+            query = query.filter(Solicitacao.data_agendamento <= dt_fim)
+        except ValueError:
+            pass
+
+    # =========================
+    # PAGINAÇÃO
+    # =========================
     page = request.args.get("page", 1, type=int)
     paginacao = (
         query.order_by(Solicitacao.data_criacao.desc())
         .paginate(page=page, per_page=6, error_out=False)
     )
-    
+
+    # =========================
+    # EQUIPES (ATIVAS / POR REGIÃO)
+    # =========================
     equipes_query = Equipe.query.filter_by(ativa=True)
 
-    # opcional: filtra por região da UVIS
     if current_user.regiao:
         equipes_query = equipes_query.filter(Equipe.regiao == current_user.regiao)
 
     equipes = equipes_query.order_by(Equipe.nome_equipe.asc()).all()
 
+    # =========================
+    # EQUIPES UVIS (contagem)
+    # =========================
     rows = (
         db.session.query(EquipeUvis.nome_equipe, func.count(EquipeUvis.id).label("total"))
         .filter(EquipeUvis.uvis_usuario_id == current_user.id)
@@ -239,12 +277,12 @@ def dashboard():
     equipes_uvis = [{"nome_equipe": r[0], "total": int(r[1])} for r in rows]
 
     return render_template(
-    "dashboard.html",
-    solicitacoes=paginacao.items,
-    paginacao=paginacao,
-    google_maps_key=google_maps_key,
-    equipes_uvis=equipes_uvis  
-)
+        "dashboard.html",
+        solicitacoes=paginacao.items,
+        paginacao=paginacao,
+        google_maps_key=google_maps_key,
+        equipes_uvis=equipes_uvis
+    )
 
 # --- PAINEL DE GESTÃO (Visualização para todos) ---
 from flask_login import login_required, current_user

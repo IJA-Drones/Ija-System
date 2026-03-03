@@ -4,15 +4,9 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/chatbot.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
-  {# =========================================
-     RESPONSIVIDADE (somente overrides mobile)
-     - Tabela -> Cards no celular (com GAP real)
-     - Modal fullscreen no celular
-     - Respeita seu Design System + Dark Mode (html.dark-mode e body.dark-mode)
-     ========================================= #}
   <style>
-      .btn-tracar-rota {
-      background-color: #f44336; /* Vermelho mais vibrante */
+    .btn-tracar-rota {
+      background-color: #f44336;
       color: white;
       padding: 8px 16px;
       border-radius: 25px;
@@ -22,155 +16,85 @@
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      text-decoration: none; /* Retira underline */
+      text-decoration: none;
     }
+    .btn-tracar-rota:hover { background-color: #e53935; transform: scale(1.05); }
+    .btn-tracar-rota:focus { outline: none; box-shadow: 0 0 0 4px rgba(255, 105, 135, 0.4); }
+    .btn-tracar-rota i { font-size: 1.1rem; }
 
-    .btn-tracar-rota:hover {
-      background-color: #e53935; /* Cor de hover mais escura */
-      transform: scale(1.05); /* Aumenta um pouco o botão no hover */
-    }
-
-    .btn-tracar-rota:focus {
-      outline: none;
-      box-shadow: 0 0 0 4px rgba(255, 105, 135, 0.4); /* Sombra quando em foco */
-    }
-
-    .btn-tracar-rota i {
-      font-size: 1.1rem;
-    }
-    /* ========= MOBILE / TABLET ========= */
     @media (max-width: 768px) {
+      .container-fluid.py-4 { padding-left: 12px !important; padding-right: 12px !important; }
 
-      /* --- Ajustes gerais --- */
-      .container-fluid.py-4 {
-        padding-left: 12px !important;
-        padding-right: 12px !important;
-      }
-
-      /* --- Cabeçalho: título + botão --- */
       .d-flex.justify-content-between.align-items-center.mb-4 {
         flex-direction: column;
         align-items: flex-start !important;
         gap: 12px;
       }
-      .d-flex.justify-content-between.align-items-center.mb-4 a.btn {
-        width: 100%;
-      }
+      .d-flex.justify-content-between.align-items-center.mb-4 a.btn { width: 100%; }
 
-      /* --- Filtros --- */
-      form.card.p-3.mb-4 {
-        padding: 14px !important;
-        margin-bottom: 18px !important;
-      }
-      form.card.p-3.mb-4 .row.g-2.align-items-end > div {
-        width: 100%;
-      }
-      /* =====================================
-         LISTAGEM: "Card wrapper" no mobile
-         (o overflow-hidden do card pai estava
-          "colando" visualmente os cards e cortando sombra)
-         ===================================== */
+      form.card.p-3.mb-4 { padding: 14px !important; margin-bottom: 18px !important; }
+      form.card.p-3.mb-4 .row.g-2.align-items-end > div { width: 100%; }
+
       .card.shadow-sm.rounded-4.border-0.overflow-hidden {
         background: transparent !important;
         box-shadow: none !important;
         overflow: visible !important;
       }
-      .card.shadow-sm.rounded-4.border-0.overflow-hidden .card-body.p-0 {
-        padding: 0 !important;
+      .card.shadow-sm.rounded-4.border-0.overflow-hidden .card-body.p-0 { padding: 0 !important; }
+
+      .dashboard-header {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 12px !important;
+        flex-wrap: wrap;
       }
-
-      /* ===== Header (título + botões) ===== */
-.dashboard-header {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: flex-start !important; /* em vez de space-between */
-  gap: 12px !important;
-  flex-wrap: wrap; /* não quebra feio em telas médias */
-}
-
-.dashboard-header h2 {
-  margin: 0 !important;
-  margin-right: auto !important; /* empurra os botões pro lado direito */
-  white-space: nowrap;
-}
-
-.dashboard-header .header-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-/* Botão “Canceladas” com cara de pill e mais leve */
-.dashboard-header .btn-canceladas {
-  border-radius: 999px !important;
-  padding: 8px 14px !important;
-  border: 1px solid rgba(0,0,0,.15) !important;
-  background: #fff !important;
-}
-
-.dashboard-header .btn-canceladas:hover {
-  transform: translateY(-1px);
-}
-
-/* Mantém o botão “Nova Solicitação” consistente */
-.dashboard-header .btn-nova {
-  border-radius: 999px !important;
-  padding: 8px 16px !important;
-}
-
-/* ===== Mobile ===== */
-@media (max-width: 768px) {
-  .dashboard-header {
-    flex-direction: column !important;
-    align-items: stretch !important;
-  }
-
-  .dashboard-header h2 {
-    margin-right: 0 !important;
-    white-space: normal;
-  }
-
-  .dashboard-header .header-actions {
-    width: 100%;
-  }
-
-  .dashboard-header .header-actions a.btn {
-    width: 100%;
-  }
-}
-
-/* ===== Dark mode (seu cookie usa html.dark-mode/body.dark-mode) ===== */
-html.dark-mode .dashboard-header .btn-canceladas,
-body.dark-mode .dashboard-header .btn-canceladas {
-  background: transparent !important;
-  border-color: #233549 !important;
-  color: var(--color-text-main) !important;
-}
-      /* --- Tabela vira “lista” --- */
-      .table-responsive {
-        overflow: visible !important;
-        padding-bottom: 96px !important; /* espaço pra não ficar atrás do FAB */
-      }
-
-      table.table {
+      .dashboard-header h2 {
         margin: 0 !important;
-        border-collapse: separate !important;
-        border-spacing: 0 !important;
+        margin-right: auto !important;
+        white-space: nowrap;
+      }
+      .dashboard-header .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
       }
 
-      thead.table-light {
-        display: none !important;
+      .dashboard-header .btn-canceladas {
+        border-radius: 999px !important;
+        padding: 8px 14px !important;
+        border: 1px solid rgba(0,0,0,.15) !important;
+        background: #fff !important;
       }
+      .dashboard-header .btn-canceladas:hover { transform: translateY(-1px); }
+      .dashboard-header .btn-nova { border-radius: 999px !important; padding: 8px 16px !important; }
+
+      @media (max-width: 768px) {
+        .dashboard-header { flex-direction: column !important; align-items: stretch !important; }
+        .dashboard-header h2 { margin-right: 0 !important; white-space: normal; }
+        .dashboard-header .header-actions { width: 100%; }
+        .dashboard-header .header-actions a.btn { width: 100%; }
+      }
+
+      html.dark-mode .dashboard-header .btn-canceladas,
+      body.dark-mode .dashboard-header .btn-canceladas {
+        background: transparent !important;
+        border-color: #233549 !important;
+        color: var(--color-text-main) !important;
+      }
+
+      .table-responsive { overflow: visible !important; padding-bottom: 96px !important; }
+      table.table { margin: 0 !important; border-collapse: separate !important; border-spacing: 0 !important; }
+      thead.table-light { display: none !important; }
 
       tbody {
         display: flex !important;
         flex-direction: column !important;
-        gap: 24px !important;          /* <<< ESPAÇO ENTRE CARDS (maior) */
-        padding: 4px 0 0 0 !important; /* respiro superior */
+        gap: 24px !important;
+        padding: 4px 0 0 0 !important;
       }
 
-      /* --- Card (TR) --- */
       tbody tr {
         display: block !important;
         background: var(--color-bg-white) !important;
@@ -178,41 +102,28 @@ body.dark-mode .dashboard-header .btn-canceladas {
         border-radius: 18px !important;
         box-shadow: var(--shadow-md) !important;
         overflow: hidden !important;
-        transform: none !important; /* evita “pulos” do hover */
+        transform: none !important;
       }
 
-      /* remove hover “tabela” no mobile */
-      .table-hover > tbody > tr:hover > * {
-        background: transparent !important;
-      }
+      .table-hover > tbody > tr:hover > * { background: transparent !important; }
 
-      /* --- Linhas internas do card (TD) --- */
       tbody tr td {
         display: grid !important;
-        grid-template-columns: 128px 1fr; /* label | conteúdo */
+        grid-template-columns: 128px 1fr;
         column-gap: 14px;
         align-items: start !important;
-
-        padding: 16px 16px !important;   /* <<< MAIS ESPAÇOSO */
+        padding: 16px 16px !important;
         border: 0 !important;
         text-align: left !important;
         background: transparent !important;
         color: var(--color-text-main) !important;
       }
 
-      /* separador entre blocos do card */
-      tbody tr td + td {
-        border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
-      }
+      tbody tr td + td { border-top: 1px solid rgba(0, 0, 0, 0.08) !important; }
 
-      /* remove paddings laterais do desktop */
       tbody tr td.ps-4,
-      tbody tr td.pe-4 {
-        padding-left: 16px !important;
-        padding-right: 16px !important;
-      }
+      tbody tr td.pe-4 { padding-left: 16px !important; padding-right: 16px !important; }
 
-      /* Labels para cada campo do card (sem alterar HTML) */
       tbody tr td:nth-child(1)::before { content: "Data"; }
       tbody tr td:nth-child(2)::before { content: "Localização / Foco"; }
       tbody tr td:nth-child(3)::before { content: "Situação"; }
@@ -227,49 +138,19 @@ body.dark-mode .dashboard-header .btn-canceladas {
         letter-spacing: .2px;
       }
 
-      /* conteúdo do TD */
-      tbody tr td > * {
-        min-width: 0;
-      }
+      tbody tr td > * { min-width: 0; }
+      tbody tr td:nth-child(2) .d-flex.flex-column { width: 100%; }
+      .badge { white-space: normal !important; text-align: center !important; line-height: 1.15 !important; }
+      tbody tr td:nth-child(4) button.btn { width: 100%; }
 
-      /* coluna 2 (localização) vira bloco */
-      tbody tr td:nth-child(2) .d-flex.flex-column {
-        width: 100%;
-      }
-
-      /* badges: melhor encaixe */
-      .badge {
-        white-space: normal !important;
-        text-align: center !important;
-        line-height: 1.15 !important;
-      }
-
-      /* botão de ações ocupa a linha toda */
-      tbody tr td:nth-child(4) button.btn {
-        width: 100%;
-      }
-
-      /* --- “Nenhuma solicitação” (colspan) não vira card quebrado --- */
       tbody tr td[colspan] {
         display: block !important;
         padding: 26px 16px !important;
         text-align: center !important;
       }
-      tbody tr td[colspan]::before {
-        content: none !important;
-        display: none !important;
-      }
+      tbody tr td[colspan]::before { content: none !important; display: none !important; }
 
-      /* =========================
-         MODAL -> FULLSCREEN (Mobile)
-         ========================= */
-      .modal .modal-dialog {
-        margin: 0 !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        height: 100% !important;
-      }
-
+      .modal .modal-dialog { margin: 0 !important; width: 100% !important; max-width: 100% !important; height: 100% !important; }
       .modal .modal-content {
         height: 100vh !important;
         border-radius: 0 !important;
@@ -277,35 +158,16 @@ body.dark-mode .dashboard-header .btn-canceladas {
         background: var(--color-bg-white) !important;
         color: var(--color-text-main) !important;
       }
-
-      .modal .modal-header,
-      .modal .modal-footer {
+      .modal .modal-header, .modal .modal-footer {
         position: sticky;
         background: var(--color-bg-white) !important;
         z-index: 10;
       }
+      .modal .modal-header { top: 0; border-bottom: 1px solid rgba(0,0,0,.10) !important; }
+      .modal .modal-footer { bottom: 0; border-top: 1px solid rgba(0,0,0,.10) !important; }
+      .modal .modal-body { overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 16px !important; }
+      .modal .modal-footer .btn { width: 100%; }
 
-      .modal .modal-header {
-        top: 0;
-        border-bottom: 1px solid rgba(0,0,0,.10) !important;
-      }
-
-      .modal .modal-footer {
-        bottom: 0;
-        border-top: 1px solid rgba(0,0,0,.10) !important;
-      }
-
-      .modal .modal-body {
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-        padding: 16px !important;
-      }
-
-      .modal .modal-footer .btn {
-        width: 100%;
-      }
-
-      /* Chat: não estourar no mobile */
       .chat-window {
         width: calc(100% - 24px) !important;
         right: 12px !important;
@@ -314,9 +176,7 @@ body.dark-mode .dashboard-header .btn-canceladas {
         z-index: 1198 !important;
       }
 
-      /* FAB: sempre aparece, sempre por cima */
-      #uvisBotFab.bot-fab,
-      .bot-fab {
+      #uvisBotFab.bot-fab, .bot-fab {
         position: fixed !important;
         right: 14px !important;
         bottom: calc(14px + env(safe-area-inset-bottom)) !important;
@@ -327,53 +187,23 @@ body.dark-mode .dashboard-header .btn-canceladas {
       }
     }
 
-    /* ========= MOBILE MUITO PEQUENO ========= */
     @media (max-width: 420px) {
-      tbody tr td {
-        grid-template-columns: 112px 1fr !important;
-        padding: 15px 14px !important;
-      }
-      tbody tr td::before {
-        font-size: .78rem;
-      }
-      .d-flex.justify-content-between.align-items-center.mb-4 h2 {
-        font-size: 1.2rem;
-      }
+      tbody tr td { grid-template-columns: 112px 1fr !important; padding: 15px 14px !important; }
+      tbody tr td::before { font-size: .78rem; }
+      .d-flex.justify-content-between.align-items-center.mb-4 h2 { font-size: 1.2rem; }
     }
 
-    /* =========================================
-       DARK MODE (Cookie)
-       - Ajuste de bordas/divisórias no mobile
-       ========================================= */
     @media (max-width: 768px) {
-
-      html.dark-mode tbody tr,
-      body.dark-mode tbody tr {
-        border-color: #233549 !important;
-        box-shadow: var(--shadow-md) !important;
-      }
-
-      html.dark-mode tbody tr td + td,
-      body.dark-mode tbody tr td + td {
-        border-top-color: #233549 !important;
-      }
-
-      html.dark-mode .modal .modal-header,
-      body.dark-mode .modal .modal-header {
-        border-bottom-color: #233549 !important;
-      }
-
-      html.dark-mode .modal .modal-footer,
-      body.dark-mode .modal .modal-footer {
-        border-top-color: #233549 !important;
-      }
+      html.dark-mode tbody tr, body.dark-mode tbody tr { border-color: #233549 !important; box-shadow: var(--shadow-md) !important; }
+      html.dark-mode tbody tr td + td, body.dark-mode tbody tr td + td { border-top-color: #233549 !important; }
+      html.dark-mode .modal .modal-header, body.dark-mode .modal .modal-header { border-bottom-color: #233549 !important; }
+      html.dark-mode .modal .modal-footer, body.dark-mode .modal .modal-footer { border-top-color: #233549 !important; }
     }
   </style>
 {% endblock %}
 
 {% block content %}
 
-{# --- INÍCIO DO CONTAINER PADRONIZADO --- #}
 <div class="container-fluid py-4" style="max-width: 1200px;">
 
 <div class="d-flex justify-content-between align-items-center mb-4 dashboard-header">
@@ -391,7 +221,7 @@ body.dark-mode .dashboard-header .btn-canceladas {
     </a>
   </div>
 </div>
-  {# --- FILTROS EM "SANFONA" (Accordion) --- #}
+
   <div class="card shadow-sm rounded-4 mb-4 border-0">
       <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center cursor-pointer"
           data-bs-toggle="collapse"
@@ -402,18 +232,20 @@ body.dark-mode .dashboard-header .btn-canceladas {
           <div class="d-flex align-items-center gap-2">
               <i class="bi bi-funnel-fill text-primary"></i>
               <span class="text-dark">Filtros de Busca</span>
-              {% if request.args.get('status') or request.args.get('tipo_visita') or request.args.get('foco') %}
+              {% if request.args.get('status') or request.args.get('tipo_visita') or request.args.get('foco')
+                 or request.args.get('data_ini') or request.args.get('data_fim') %}
                   <span class="badge bg-danger rounded-circle p-1" style="width: 8px; height: 8px;"></span>
               {% endif %}
           </div>
           <i class="bi bi-chevron-down text-muted"></i>
       </div>
 
-      <div class="collapse {% if request.args.get('status') or request.args.get('tipo_visita') or request.args.get('foco') %}show{% endif %}" id="collapseFiltros">
+      <div class="collapse {% if request.args.get('status') or request.args.get('tipo_visita') or request.args.get('foco')
+         or request.args.get('data_ini') or request.args.get('data_fim') %}show{% endif %}" id="collapseFiltros">
           <div class="card-body pt-0">
               <form method="GET">
                   <div class="row g-2 align-items-end">
-                      <!-- Filtro por Status -->
+
                       <div class="col-md-3">
                           <label class="small text-muted mb-1">Filtrar por Status</label>
                           <select name="status" class="form-select form-select-sm">
@@ -426,7 +258,6 @@ body.dark-mode .dashboard-header .btn-canceladas {
                           </select>
                       </div>
 
-                      <!-- Filtro por Tipo de Visita -->
                       <div class="col-md-3">
                           <label class="small text-muted mb-1">Filtrar por Tipo de Visita</label>
                           <select name="tipo_visita" class="form-select form-select-sm">
@@ -437,45 +268,61 @@ body.dark-mode .dashboard-header .btn-canceladas {
                           </select>
                       </div>
 
-                      <!-- Filtro por Foco da Ação -->
-                    <div class="col-md-3">
-                      <label class="small text-muted mb-1">Filtrar por Foco da Ação</label>
-                      <select name="foco" class="form-select form-select-sm">
-                          <option value="">Todos os Focos</option>
+                      <div class="col-md-3">
+                        <label class="small text-muted mb-1">Filtrar por Foco da Ação</label>
+                        <select name="foco" class="form-select form-select-sm">
+                            <option value="">Todos os Focos</option>
 
-                          {% set opcoes_foco = [
-                              "Acumulador", "CAIXA D'AGUA", "Casa abandonada com inserviveis", 
-                              "Corrego", "Ferro velho", "Galpão com inserviveis", 
-                              "Imovel com Inserviveis", "Laje/telhado com Acumulo de agua", 
-                              "P.E Cadastrado", "Patio com Veiculos", "Piscina", 
-                              "Piscinão", "Reciclagem", "Terreno com inserviveis"
-                          ] %}
+                            {% set opcoes_foco = [
+                                "Acumulador", "CAIXA D'AGUA", "Casa abandonada com inserviveis",
+                                "Corrego", "Ferro velho", "Galpão com inserviveis",
+                                "Imovel com Inserviveis", "Laje/telhado com Acumulo de agua",
+                                "P.E Cadastrado", "Patio com Veiculos", "Piscina",
+                                "Piscinão", "Reciclagem", "Terreno com inserviveis"
+                            ] %}
 
-                          {% for opcao in opcoes_foco %}
-                              <option value="{{ opcao }}"
-                                  {{ 'selected' if request.args.get('foco') == opcao else '' }}>
-                                  {{ opcao }}
-                              </option>
-                          {% endfor %}
-                      </select>
-                  </div>
+                            {% for opcao in opcoes_foco %}
+                                <option value="{{ opcao }}"
+                                    {{ 'selected' if request.args.get('foco') == opcao else '' }}>
+                                    {{ opcao }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                      </div>
+
+                      {# ✅ NOVO: DATA INICIAL #}
+                      <div class="col-md-3">
+                        <label class="small text-muted mb-1">Data inicial</label>
+                        <input type="date" name="data_ini" class="form-control form-control-sm"
+                               value="{{ request.args.get('data_ini', '') }}">
+                      </div>
+
+                      {# ✅ NOVO: DATA FINAL #}
+                      <div class="col-md-3">
+                        <label class="small text-muted mb-1">Data final</label>
+                        <input type="date" name="data_fim" class="form-control form-control-sm"
+                               value="{{ request.args.get('data_fim', '') }}">
+                      </div>
 
                       <div class="col-md-3 d-flex gap-2">
-                            <button type="submit" class="btn btn-success btn-sm w-100">
-                              <i class="bi bi-funnel me-2"></i> Filtrar
+                          <button type="submit" class="btn btn-success btn-sm w-100">
+                            <i class="bi bi-funnel me-2"></i> Filtrar
                           </button>
-                            {% if request.args.get('status') or request.args.get('unidade') or request.args.get('regiao') %}
-                                <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary btn-sm w-100">
-                                    <i class="bi bi-x-lg"></i> Limpar
-                                </a>
-                            {% endif %}
+
+                          {% if request.args.get('status') or request.args.get('tipo_visita') or request.args.get('foco')
+                             or request.args.get('data_ini') or request.args.get('data_fim') %}
+                              <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary btn-sm w-100">
+                                  <i class="bi bi-x-lg"></i> Limpar
+                              </a>
+                          {% endif %}
                       </div>
+
                   </div>
               </form>
           </div>
       </div>
   </div>
-  {# Tabela #}
+
   <div class="card shadow-sm rounded-4 border-0 overflow-hidden">
     <div class="card-body p-0">
       <div class="table-responsive">
@@ -491,7 +338,6 @@ body.dark-mode .dashboard-header .btn-canceladas {
           <tbody>
             {% for p in solicitacoes %}
             <tr>
-              {# Coluna 1: Data e Hora #}
               <td class="ps-4">
                 <strong class="text-main">
                   {{ p.data_agendamento.strftime('%d/%m/%y') }}
@@ -500,7 +346,6 @@ body.dark-mode .dashboard-header .btn-canceladas {
                 <small class="text-muted">{{ p.hora_agendamento.strftime('%H:%M') }}</small>
               </td>
 
-              {# Coluna 2: Localização #}
               <td>
                 <div class="d-flex flex-column">
                   <span class="fw-bold text-main">
@@ -519,7 +364,7 @@ body.dark-mode .dashboard-header .btn-canceladas {
                   </div>
 
                   {% if p.latitude and p.longitude %}
-                    <a href="https://www.google.com/maps/dir/?api=1&destination={{ p.latitude }},{{ p.longitude }}" 
+                    <a href="https://www.google.com/maps/dir/?api=1&destination={{ p.latitude }},{{ p.longitude }}"
                       target="_blank" class="btn btn-sm btn-outline-primary mt-2 d-inline-block w-auto" style="max-width: fit-content;">
                       <i class="bi bi-sign-turn-right"></i> Traçar Rota
                     </a>
@@ -527,29 +372,27 @@ body.dark-mode .dashboard-header .btn-canceladas {
                 </div>
               </td>
 
-              {# Coluna 3: Status + MODAL (Correção aqui) #}
               <td class="text-center">
                 {% if p.status == 'PENDENTE' %}
                   <span class="badge bg-secondary rounded-pill">Pendente</span>
-                
+
                 {% elif p.status == 'APROVADO' %}
                   <span class="badge bg-success rounded-pill">Aprovado</span>
                   <div class="small text-dark mt-1 fw-bold font-monospace">{{ p.protocolo }}</div>
-                
+
                 {% elif p.status == 'APROVADO COM RECOMENDAÇÕES' %}
                   <span class="badge bg-recomended rounded-pill">Aprovado c/ Rec.</span>
                   <div class="small text-dark mt-1 fw-bold font-monospace">{{ p.protocolo }}</div>
-                
+
                 {% elif p.status == 'NEGADO' %}
                   <span class="badge bg-danger rounded-pill">Negado</span>
-                  
-                  {# Botão Ver Motivo #}
+
                   {% if p.justificativa %}
                     <div class="mt-1">
-                      <button type="button" 
-                              class="btn btn-link btn-sm text-danger text-decoration-none p-0 fw-bold" 
+                      <button type="button"
+                              class="btn btn-link btn-sm text-danger text-decoration-none p-0 fw-bold"
                               style="font-size: 0.8rem;"
-                              data-bs-toggle="modal" 
+                              data-bs-toggle="modal"
                               data-bs-target="#modalJustificativa{{ p.id }}">
                         <i class="bi bi-info-circle-fill me-1"></i>Ver Motivo
                       </button>
@@ -561,32 +404,28 @@ body.dark-mode .dashboard-header .btn-canceladas {
                 {% endif %}
               </td>
 
-              {# Coluna 4: Ações #}
               <td class="text-end pe-4">
                 <div class="dropdown">
                   <button class="btn btn-outline-secondary ms-auto" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi bi-three-dots-vertical"></i>
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end shadow border-0">
-                    
-                    {# Ação: Detalhes #}
+
                     <li>
                       <button class="dropdown-item py-2" type="button" data-bs-toggle="modal" data-bs-target="#modalDetalhes{{ p.id }}">
                         <i class="bi bi-eye text-primary me-2"></i> Ver Detalhes
                       </button>
                     </li>
 
-                    {# Ação: Equipe #}
                     <li>
                       <button class="dropdown-item py-2" type="button" data-bs-toggle="modal" data-bs-target="#modalEquipeUvis{{ p.id }}">
-                        <i class="bi bi-people text-dark me-2"></i> 
+                        <i class="bi bi-people text-dark me-2"></i>
                         {% if p.equipe_uvis_nome %} Trocar Equipe {% else %} Atribuir Equipe {% endif %}
                       </button>
                     </li>
 
                     <li><hr class="dropdown-divider"></li>
 
-                    {# Ação: Editar #}
                     {% if p.status == 'PENDENTE' or p.status == 'NEGADO' %}
                       <li>
                         <a class="dropdown-item py-2" href="{{ url_for('main.editar_solicitacao', id=p.id) }}">
@@ -600,9 +439,9 @@ body.dark-mode .dashboard-header .btn-canceladas {
                         </span>
                       </li>
                     {% endif %}
+
                     <li><hr class="dropdown-divider"></li>
 
-                    {# ✅ CANCELAR #}
                     {% if p.status != 'CANCELADO' %}
                     <li>
                       <form class="form-cancelar" method="POST"
@@ -632,12 +471,18 @@ body.dark-mode .dashboard-header .btn-canceladas {
     </div>
   </div>
 
-  {# Paginação #}
   {% if paginacao and paginacao.pages > 1 %}
   <nav aria-label="Navegação de páginas" class="mt-4">
     <ul class="pagination justify-content-center">
       <li class="page-item {% if not paginacao.has_prev %}disabled{% endif %}">
-        <a class="page-link" href="{{ url_for('main.dashboard', page=paginacao.prev_num, status=request.args.get('status', '')) }}">Anterior</a>
+        <a class="page-link" href="{{ url_for('main.dashboard',
+          page=paginacao.prev_num,
+          status=request.args.get('status',''),
+          tipo_visita=request.args.get('tipo_visita',''),
+          foco=request.args.get('foco',''),
+          data_ini=request.args.get('data_ini',''),
+          data_fim=request.args.get('data_fim','')
+        ) }}">Anterior</a>
       </li>
 
       {% for pg in paginacao.iter_pages() %}
@@ -645,7 +490,16 @@ body.dark-mode .dashboard-header .btn-canceladas {
           {% if pg == paginacao.page %}
             <li class="page-item active"><a class="page-link">{{ pg }}</a></li>
           {% else %}
-            <li class="page-item"><a class="page-link" href="{{ url_for('main.dashboard', page=pg, status=request.args.get('status', '')) }}">{{ pg }}</a></li>
+            <li class="page-item">
+              <a class="page-link" href="{{ url_for('main.dashboard',
+                page=pg,
+                status=request.args.get('status',''),
+                tipo_visita=request.args.get('tipo_visita',''),
+                foco=request.args.get('foco',''),
+                data_ini=request.args.get('data_ini',''),
+                data_fim=request.args.get('data_fim','')
+              ) }}">{{ pg }}</a>
+            </li>
           {% endif %}
         {% else %}
           <li class="page-item disabled"><a class="page-link">...</a></li>
@@ -653,7 +507,14 @@ body.dark-mode .dashboard-header .btn-canceladas {
       {% endfor %}
 
       <li class="page-item {% if not paginacao.has_next %}disabled{% endif %}">
-        <a class="page-link" href="{{ url_for('main.dashboard', page=paginacao.next_num, status=request.args.get('status', '')) }}">Próxima</a>
+        <a class="page-link" href="{{ url_for('main.dashboard',
+          page=paginacao.next_num,
+          status=request.args.get('status',''),
+          tipo_visita=request.args.get('tipo_visita',''),
+          foco=request.args.get('foco',''),
+          data_ini=request.args.get('data_ini',''),
+          data_fim=request.args.get('data_fim','')
+        ) }}">Próxima</a>
       </li>
     </ul>
   </nav>
@@ -662,7 +523,7 @@ body.dark-mode .dashboard-header .btn-canceladas {
   {# =========================
      MODAIS (1 por solicitação)
      ========================= #}
-  
+
   {% for p in solicitacoes %}
   <div class="modal fade" id="modalDetalhes{{ p.id }}" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -694,7 +555,7 @@ body.dark-mode .dashboard-header .btn-canceladas {
             <div>
               <small class="text-muted d-block">Coordenadas:</small>
               <strong class="font-monospace small">{{ p.latitude }}, {{ p.longitude }}</strong>
-            </div>           
+            </div>
           </div>
           {% endif %}
 
@@ -702,27 +563,26 @@ body.dark-mode .dashboard-header .btn-canceladas {
             <i class="bi bi-person-badge"></i> Responsável
           </h6>
 
-      <div class="row g-2 mb-3">
-        <div class="col-12">
-          <small class="text-muted d-block">Equipe:</small>
+          <div class="row g-2 mb-3">
+            <div class="col-12">
+              <small class="text-muted d-block">Equipe:</small>
 
-          {% if p.equipe and p.equipe.nome_equipe %}
-            <strong>{{ p.equipe.nome_equipe }}</strong>
+              {% if p.equipe and p.equipe.nome_equipe %}
+                <strong>{{ p.equipe.nome_equipe }}</strong>
 
-            {% if p.equipe.regiao %}
-              <div class="small mt-1">
-                <span class="text-muted">Região:</span>
-                <span class="fw-semibold">{{ p.equipe.regiao }}</span>
-              </div>
-            {% endif %}
+                {% if p.equipe.regiao %}
+                  <div class="small mt-1">
+                    <span class="text-muted">Região:</span>
+                    <span class="fw-semibold">{{ p.equipe.regiao }}</span>
+                  </div>
+                {% endif %}
 
-          {% else %}
-            <span class="badge bg-secondary">Ainda não atribuída</span>
-            <div class="small text-muted mt-1">Assim que atribuirmos uma equipe, aparecerá aqui.</div>
-          {% endif %}
-        </div>
-      </div>
-
+              {% else %}
+                <span class="badge bg-secondary">Ainda não atribuída</span>
+                <div class="small text-muted mt-1">Assim que atribuirmos uma equipe, aparecerá aqui.</div>
+              {% endif %}
+            </div>
+          </div>
 
           <h6 class="text-primary border-bottom pb-2 fw-bold mt-3">
             <i class="bi bi-paperclip"></i> Anexo
@@ -853,14 +713,14 @@ body.dark-mode .dashboard-header .btn-canceladas {
   <div class="modal fade" id="modalJustificativa{{ p.id }}" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
-        
+
         <div class="modal-header">
           <h5 class="modal-title">
             <i class="bi bi-exclamation-triangle-fill me-2"></i> Motivo da Recusa
           </h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
         </div>
-        
+
         <div class="modal-body p-4 text-center">
           <div class="mb-3">
               <i class="bi bi-x-circle text-danger" style="font-size: 3rem;"></i>
@@ -884,14 +744,12 @@ body.dark-mode .dashboard-header .btn-canceladas {
 {% endfor %}
 
 </div>
-{# --- FIM DO CONTAINER PADRONIZADO --- #}
 
 <button id="uvisBotFab" class="bot-fab" type="button" title="Ajuda UVIS" onclick="toggleUvisChat()">
   <i class="bi bi-robot"></i>
 </button>
 
 <div id="uvisChatWindow" class="chat-window">
-
   <div class="bot-header">
     <div class="bot-title">
       <i class="bi bi-robot fs-5"></i>
@@ -906,7 +764,6 @@ body.dark-mode .dashboard-header .btn-canceladas {
         <i class="bi bi-trash"></i>
       </button>
 
-      <!-- ❌ onclick removido aqui -->
       <button id="uvisBotClose" type="button" class="btn-close-chat">
         <i class="bi bi-x-lg"></i>
       </button>
@@ -914,9 +771,7 @@ body.dark-mode .dashboard-header .btn-canceladas {
   </div>
 
   <div class="bot-body">
-
-    <div id="uvisChatMessages" class="d-flex flex-column gap-2 mb-3">
-    </div>
+    <div id="uvisChatMessages" class="d-flex flex-column gap-2 mb-3"></div>
 
     <div class="chips-container mt-auto">
       <button class="chip" data-q="O que significa Em Análise?">Status</button>
@@ -927,7 +782,6 @@ body.dark-mode .dashboard-header .btn-canceladas {
       <button class="chip" data-q="Como trocar minha equipe UVIS?">Equipe UVIS</button>
       <button class="chip" data-q="Como editar uma solicitação?">Editar Pedido</button>
     </div>
-
   </div>
 
   <div class="bot-footer">
@@ -937,20 +791,16 @@ body.dark-mode .dashboard-header .btn-canceladas {
     </button>
   </div>
 </div>
+
 <script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_key }}&libraries=geometry"></script>
 {% endblock %}
+
 {% block scripts %}
 <script>
   document.addEventListener("DOMContentLoaded", () => {
-      const body = document.body;
-      const toggle = document.getElementById("toggleDarkMode");
-      const sidebarToggle = document.getElementById("sidebarToggle");
-      const overlay = document.getElementById("sidebarOverlay");
-
-      // 1. CONFIRMAÇÃO DE EXCLUSÃO (Agora inclui anexo e qualquer outro delete)
       document.querySelectorAll('.form-cancelar').forEach(form => {
           form.addEventListener('submit', function (e) {
-              e.preventDefault(); // Trava o envio automático
+              e.preventDefault();
 
               const isDarkMode = document.body.classList.contains('dark-mode');
               const submitButton = form.querySelector('button[type="submit"]');
@@ -959,21 +809,15 @@ body.dark-mode .dashboard-header .btn-canceladas {
                   title: 'Deseja continuar?',
                   text: 'O registro será cancelado permanentemente.',
                   icon: 'warning',
-                  // ✅ Note que este script usa background/color manuais,
-                  // por isso estava diferente do que tinha a classe customClass
-                  customClass: {
-                      popup: isDarkMode ? 'swal2-dark-mode' : ''
-                  },
+                  customClass: { popup: isDarkMode ? 'swal2-dark-mode' : '' },
                   showCancelButton: true,
                   confirmButtonColor: '#d33',
                   cancelButtonColor: '#6c757d',
                   confirmButtonText: 'Sim, remover!',
                   cancelButtonText: 'Cancelar'
-                  // Adicione a classe aqui também para garantir o estilo do anel do ícone
-
               }).then((result) => {
                   if (result.isConfirmed) {
-                      showLoadingState(submitButton); // Chama o loading só após confirmar
+                      showLoadingState(submitButton);
                       form.submit();
                   }
               });
@@ -990,7 +834,6 @@ body.dark-mode .dashboard-header .btn-canceladas {
     const sendBtn = document.getElementById("uvisChatSend");
     const clearBtn = document.getElementById("uvisBotClear");
     const chatWindow = document.getElementById("uvisChatWindow");
-    const fab = document.getElementById("uvisBotFab");
     const closeBtns = document.querySelectorAll("#uvisBotClose");
 
     if (!msgs || !input || !sendBtn || !chatWindow) return;
@@ -1108,126 +951,6 @@ body.dark-mode .dashboard-header .btn-canceladas {
 
       newBtn.addEventListener("click", () => {
         ask(newBtn.getAttribute("data-q"));
-      });
-    });
-
-    // === Google Maps Modal ===
-    const GOOGLE_MAPS_KEY = "{{ google_maps_key }}";  // Passe sua chave do Google Maps
-    let googleMapsLoaded = false;
-    let mapInstance = null;
-    let markerInstance = null;
-
-    function loadGoogleMaps() {
-      return new Promise((resolve, reject) => {
-        if (googleMapsLoaded && window.google && window.google.maps) return resolve();
-
-        if (!GOOGLE_MAPS_KEY) {
-          return reject(new Error("KEY_API_GOOGLE_MAPS não foi enviada ao template."));
-        }
-
-        // Prevenir carregamento múltiplo
-        if (document.getElementById("googleMapsScript")) {
-          const wait = setInterval(() => {
-            if (window.google && window.google.maps) {
-              clearInterval(wait);
-              googleMapsLoaded = true;
-              resolve();
-            }
-          }, 50);
-          return;
-        }
-
-        window.__initGoogleMaps = () => {
-          googleMapsLoaded = true;
-          resolve();
-        };
-
-        const script = document.createElement("script");
-        script.id = "googleMapsScript";
-        script.async = true;
-        script.defer = true;
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(GOOGLE_MAPS_KEY)}&callback=__initGoogleMaps`;
-        script.onerror = () => reject(new Error("Falha ao carregar Google Maps JS."));
-        document.head.appendChild(script);
-      });
-    }
-
-    function openMapModal({ lat, lng, title }) {
-      const modalEl = document.getElementById("mapModal");
-      const titleEl = document.getElementById("mapModalTitle");
-      const coordsEl = document.getElementById("mapCoords");
-      const btnOpen = document.getElementById("btnOpenGoogleMaps");
-      const btnDir = document.getElementById("btnDirections");
-
-      if (titleEl) titleEl.textContent = title || "Localização";
-      if (coordsEl) coordsEl.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-
-      // Links externos para Google Maps
-      const q = `${lat},${lng}`;
-      if (btnOpen) btnOpen.href = `https://www.google.com/maps?q=${encodeURIComponent(q)}`;
-      if (btnDir) btnDir.href = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(q)}`;
-
-      // Abrir modal com o mapa
-      let bsModal = bootstrap.Modal.getInstance(modalEl);
-      if (!bsModal) bsModal = new bootstrap.Modal(modalEl);
-      bsModal.show();
-
-      // Inicializar o mapa após abrir
-      setTimeout(() => {
-        const center = { lat, lng };
-        const canvas = document.getElementById("mapCanvas");
-
-        if (!canvas) {
-          console.error("Elemento #mapCanvas não encontrado.");
-          return;
-        }
-
-        if (!mapInstance) {
-          mapInstance = new google.maps.Map(canvas, {
-            center,
-            zoom: 18,
-            mapTypeControl: false,
-            streetViewControl: true,
-            fullscreenControl: true,
-          });
-        } else {
-          mapInstance.setCenter(center);
-          mapInstance.setZoom(18);
-        }
-
-        if (!markerInstance) {
-          markerInstance = new google.maps.Marker({
-            position: center,
-            map: mapInstance,
-            title: title || "Local",
-          });
-        } else {
-          markerInstance.setPosition(center);
-          markerInstance.setTitle(title || "Local");
-        }
-      }, 150);
-    }
-
-    document.querySelectorAll(".btn-open-map").forEach((btn) => {
-      btn.addEventListener("click", async (e) => {
-        e.stopPropagation();
-
-        const lat = parseFloat(btn.dataset.lat);
-        const lng = parseFloat(btn.dataset.lng);
-        const title = btn.dataset.title || "Localização";
-
-        if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-          alert("Sem coordenadas válidas.");
-          return;
-        }
-
-        try {
-          await loadGoogleMaps();
-          openMapModal({ lat, lng, title });
-        } catch (err) {
-          console.error(err);
-          window.open(`https://www.google.com/maps?q=${lat},${lng}`, "_blank");
-        }
       });
     });
   })();
