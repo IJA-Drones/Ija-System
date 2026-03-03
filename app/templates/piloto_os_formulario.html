@@ -58,7 +58,7 @@
 
         {# ===================== CLIENTE / RESPONSÁVEL ===================== #}
         <div class="section-title">
-          <h5 class="m-0 text-primary fw-bold">Cliente e Responsavel</h5>
+          <h5 class="m-0 text-primary fw-bold">Endereço e Responsável pela OS</h5>
         </div>
 
         <div class="row g-3 mb-4">
@@ -128,6 +128,11 @@
                   <input type="text" id="drone_registro_anac_pulv" class="form-control form-control-sm" readonly
                          value="{{ ordem.drone_registro_anac if ordem and ordem.drone_registro_anac else '' }}" />
                 </div>
+                <div class="col-md-4">
+                  <label class="form-label-header">Prefixo Pulverizacao</label>
+                  <input type="text" name="prefixo_aeronave_pulverizacao" id="prefixo_pulverizacao" class="form-control fw-bold text-primary"
+                        value="{{ ordem.prefixo_aeronave_pulverizacao if ordem else '' }}" />
+                </div>
               </div>
             </div>
           </div>
@@ -172,6 +177,11 @@
                   <input type="text" id="drone_registro_anac_monit" class="form-control form-control-sm" readonly
                          value="{{ ordem.drone_monitoramento_registro_anac if ordem and ordem.drone_monitoramento_registro_anac else '' }}" />
                 </div>
+                <div class="col-md-4">
+                  <label class="form-label-header">Prefixo Monitoramento</label>
+                  <input type="text" name="prefixo_aeronave_monitoramento" id="prefixo_monitoramento" class="form-control fw-bold text-primary"
+                        value="{{ ordem.prefixo_aeronave_monitoramento if ordem else '' }}" />
+                </div>
               </div>
             </div>
           </div>
@@ -184,8 +194,14 @@
 
         <div class="row g-3 mb-4">
           <div class="col-md-4">
-            <label class="form-label-header">Situacao da aplicacao</label>
-            <input type="text" name="situacao_aplicacao" class="form-control" value="{{ ordem.situacao_aplicacao if ordem else '' }}" />
+              <label class="form-label-header">Situacao da aplicacao</label>
+              <select name="situacao_aplicacao" class="form-select">
+                  <option value="">Selecione...</option>
+                  <option value="MONITORADO E LARVICIDA APLICADO" {% if ordem and ordem.situacao_aplicacao == 'MONITORADO E LARVICIDA APLICADO' %}selected{% endif %}>MONITORADO E LARVICIDA APLICADO</option>
+                  <option value="APENAS MONITORADO" {% if ordem and ordem.situacao_aplicacao == 'APENAS MONITORADO' %}selected{% endif %}>APENAS MONITORADO</option>
+                  <option value="APENAS LARVICIDA APLICADO (FALTA DE SEGURANÇA)" {% if ordem and ordem.situacao_aplicacao == 'APENAS LARVICIDA APLICADO (FALTA DE SEGURANÇA)' %}selected{% endif %}>APENAS LARVICIDA APLICADO (FALTA DE SEGURANÇA)</option>
+                  <option value="NENHUM VOO REALIZADO" {% if ordem and ordem.situacao_aplicacao == 'NENHUM VOO REALIZADO' %}selected{% endif %}>NENHUM VOO REALIZADO</option>
+              </select>
           </div>
           <div class="col-md-4">
             <label class="form-label-header">Larva visualizada</label>
@@ -287,20 +303,10 @@
 
         {# ===================== AERONAVE / AMBIENTE ===================== #}
         <div class="section-title">
-          <h5 class="m-0 text-primary fw-bold">Aeronave e Condicoes Ambientais</h5>
+          <h5 class="m-0 text-primary fw-bold">Condicoes Ambientais</h5>
         </div>
 
         <div class="row g-3 mb-4">
-          <div class="col-md-4">
-            <label class="form-label-header">Prefixo Pulverizacao (Auto)</label>
-            <input type="text" name="prefixo_aeronave_pulverizacao" id="prefixo_pulverizacao" class="form-control fw-bold text-primary"
-                   value="{{ ordem.prefixo_aeronave_pulverizacao if ordem else '' }}" />
-          </div>
-          <div class="col-md-4">
-            <label class="form-label-header">Prefixo Monitoramento (Auto)</label>
-            <input type="text" name="prefixo_aeronave_monitoramento" id="prefixo_monitoramento" class="form-control fw-bold text-primary"
-                   value="{{ ordem.prefixo_aeronave_monitoramento if ordem else '' }}" />
-          </div>
           <div class="col-md-4">
             <label class="form-label-header">Imagens Registradas</label>
             <input type="number" name="quantidade_imagens_registradas" class="form-control" value="{{ ordem.quantidade_imagens_registradas if ordem else '' }}" />

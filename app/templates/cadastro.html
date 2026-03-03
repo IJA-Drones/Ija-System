@@ -370,20 +370,30 @@
           <h5 class="m-0 text-primary fw-bold">Classificação</h5>
         </div>
 
-        <div class="mb-4">
-          <label class="form-label fw-bold small text-muted">
+        <div class="col-md-4">
+         <label class="form-label fw-bold small text-muted">
             <i class="bi bi-crosshair me-1 text-primary"></i> Foco da Ação *
           </label>
           <select name="foco" class="form-select" required>
-            <option value="" selected disabled>
-              Selecione o tipo de foco...
+            <option value="" disabled {{ 'selected' if not solicitacao or not solicitacao.foco }}>
+                Selecione o tipo de foco...
             </option>
-            <option>Imóvel Abandonado</option>
-            <option>Piscina / Caixa D'água</option>
-            <option>Terreno Baldio</option>
-            <option>Ponto Estratégico (PE)</option>
-          </select>
-        </div>
+            
+            {% set opcoes_foco = [
+                "Acumulador", "CAIXA D'AGUA", "Casa abandonada com inserviveis", 
+                "Corrego", "Ferro velho", "Galpão com inserviveis", 
+                "Imovel com Inserviveis", "Laje/telhado com Acumulo de agua", 
+                "P.E Cadastrado", "Patio com Veiculos", "Piscina", 
+                "Piscinão", "Reciclagem", "Terreno com inserviveis"
+            ] %}
+
+            {% for opcao in opcoes_foco %}
+                <option value="{{ opcao }}" {{ 'selected' if solicitacao and solicitacao.foco == opcao }}>
+                    {{ opcao }}
+                </option>
+            {% endfor %}
+        </select>
+      </div>
 
         {# BOTÕES #}
         <div class="d-flex justify-content-end gap-2 mt-5">

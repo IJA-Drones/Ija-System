@@ -535,14 +535,14 @@ body.dark-mode .dashboard-header .btn-canceladas {
               {# Coluna 3: Status + MODAL (Correção aqui) #}
               <td class="text-center">
                 {% if p.status == 'PENDENTE' %}
-                  <span class="badge bg-secondary text-dark">Pendente</span>
+                  <span class="badge bg-secondary rounded-pill">Pendente</span>
                 
                 {% elif p.status == 'APROVADO' %}
                   <span class="badge bg-success rounded-pill">Aprovado</span>
                   <div class="small text-dark mt-1 fw-bold font-monospace">{{ p.protocolo }}</div>
                 
                 {% elif p.status == 'APROVADO COM RECOMENDAÇÕES' %}
-                  <span class="badge bg-recomended text-dark rounded-pill">Aprovado c/ Rec.</span>
+                  <span class="badge bg-recomended rounded-pill">Aprovado c/ Rec.</span>
                   <div class="small text-dark mt-1 fw-bold font-monospace">{{ p.protocolo }}</div>
                 
                 {% elif p.status == 'NEGADO' %}
