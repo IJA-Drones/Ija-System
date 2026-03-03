@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
 {% block extra_styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}" />
@@ -6,598 +6,439 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}" />
 
 <style>
-  /* ========= MOBILE: tabela vira cards (mesmo padrão do dashboard) ========= */
+  .status-badge { font-weight: 600; padding: 0.45em 0.9em; }
+  .table-main thead th {
+    font-size: 0.78rem;
+    color: #6c757d;
+    border-top: none;
+    vertical-align: middle;
+  }
+
+  .team-chip {
+    border-radius: 999px;
+    padding: 0.4rem 0.7rem;
+    font-weight: 600;
+  }
+
+  .equipment-badge {
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 999px;
+    padding: 0.35rem 0.7rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.82rem;
+  }
+
+  .address-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .address-text {
+    min-width: 0;
+  }
+
+  .btn-map-inline {
+    padding: 0.2rem 0.5rem;
+    font-size: 0.74rem;
+    line-height: 1.2;
+    border-radius: 0.45rem;
+    white-space: nowrap;
+  }
+
+  /* ========= MOBILE: Ajustes de Refinamento ========= */
   @media (max-width: 768px) {
-    .container-fluid.py-4 {
-      padding-left: 12px !important;
-      padding-right: 12px !important;
+    .container-fluid.py-4 { padding-left: 16px !important; padding-right: 16px !important; }
+    
+    /* Grid de Cards no Mobile */
+    tbody { display: grid !important; grid-template-columns: 1fr; gap: 16px !important; }
+    tbody tr { 
+      border: 1px solid #e2e8f0 !important; 
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
+      transition: transform 0.2s;
     }
-
-    .d-flex.justify-content-between.align-items-center.mb-4 {
-      flex-direction: column;
-      align-items: flex-start !important;
-      gap: 12px;
-    }
-    .d-flex.justify-content-between.align-items-center.mb-4 .btn {
-      width: 100%;
-    }
-
-    .card.shadow-sm.rounded-4.border-0.overflow-hidden {
-      background: transparent !important;
-      box-shadow: none !important;
-      overflow: visible !important;
-    }
-    .card.shadow-sm.rounded-4.border-0.overflow-hidden .card-body.p-0 {
-      padding: 0 !important;
-    }
-
-    .table-responsive {
-      overflow: visible !important;
-      padding-bottom: 12px !important;
-    }
-
-    thead.table-light {
-      display: none !important;
-    }
-
-    tbody {
-      display: flex !important;
-      flex-direction: column !important;
-      gap: 18px !important;
-      padding: 4px 0 0 0 !important;
-    }
-
-    tbody tr {
-      display: block !important;
-      background: var(--color-bg-white) !important;
-      border: 1px solid rgba(0, 0, 0, 0.1) !important;
-      border-radius: 18px !important;
-      box-shadow: var(--shadow-md) !important;
-      overflow: hidden !important;
-    }
-
-    .table-hover > tbody > tr:hover > * {
-      background: transparent !important;
-    }
-
-    tbody tr td {
-      display: grid !important;
-      grid-template-columns: 128px 1fr;
-      column-gap: 14px;
-      align-items: start !important;
-      padding: 16px 16px !important;
-      border: 0 !important;
-      text-align: left !important;
-      background: transparent !important;
-      color: var(--color-text-main) !important;
-    }
-
-    tbody tr td + td {
-      border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
-    }
-
-    /* Labels (4 colunas) */
-    tbody tr td:nth-child(1)::before { content: "Agendamento"; }
-    tbody tr td:nth-child(2)::before { content: "Local / UVIS"; }
-    tbody tr td:nth-child(3)::before { content: "Status"; }
-    tbody tr td:nth-child(4)::before { content: "Ações"; }
-
-    tbody tr td::before {
-      font-weight: 700;
-      color: var(--color-text-muted);
-      font-size: 0.82rem;
-      line-height: 1.15;
-      padding-top: 2px;
-      letter-spacing: 0.2px;
-    }
-
-    tbody tr td > * { min-width: 0; }
-
-    /* ações em coluna */
-    tbody tr td:nth-child(4) .d-flex.gap-2 {
-      flex-direction: column;
-      width: 100%;
-    }
-    tbody tr td:nth-child(4) .btn,
-    tbody tr td:nth-child(4) button.btn {
-      width: 100%;
-      justify-content: center;
-    }
-
-    /* “vazio” */
-    tbody tr td[colspan] {
-      display: block !important;
-      padding: 26px 16px !important;
-      text-align: center !important;
-    }
-    tbody tr td[colspan]::before {
-      content: none !important;
-      display: none !important;
-    }
-
-    /* MODAL fullscreen no mobile */
-    .modal .modal-dialog {
-      margin: 0 !important;
-      width: 100% !important;
-      max-width: 100% !important;
-      height: 100% !important;
-    }
-    .modal .modal-content {
-      height: 100vh !important;
-      border-radius: 0 !important;
-      border: 0 !important;
-      background: var(--color-bg-white) !important;
-      color: var(--color-text-main) !important;
-    }
-    .modal .modal-header,
-    .modal .modal-footer {
-      position: sticky;
-      background: var(--color-bg-white) !important;
-      z-index: 10;
-    }
-    .modal .modal-header {
-      top: 0;
-      border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
-    }
-    .modal .modal-footer {
-      bottom: 0;
-      border-top: 1px solid rgba(0, 0, 0, 0.1) !important;
-    }
-    .modal .modal-body {
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-      padding: 16px !important;
-    }
-    .modal .modal-footer .btn { width: 100%; }
+    tbody tr td { grid-template-columns: 100px 1fr !important; padding: 12px 16px !important; }
+    
+    /* BotÃµes em tela cheia no mobile */
+    .btn-mobile-full { width: 100%; margin-bottom: 8px; }
+    .modal-fullscreen-mobile .modal-dialog { margin: 0; max-width: 100%; }
+    .btn-map-inline { padding: 0.18rem 0.45rem; font-size: 0.72rem; }
   }
 
-  @media (max-width: 420px) {
-    tbody tr td { grid-template-columns: 112px 1fr !important; }
-    tbody tr td::before { font-size: 0.78rem; }
-  }
-
-  /* ========= DARK MODE (divisórias do mobile) ========= */
-  @media (max-width: 768px) {
-    html.dark-mode tbody tr,
-    body.dark-mode tbody tr { border-color: #233549 !important; }
-
-    html.dark-mode tbody tr td + td,
-    body.dark-mode tbody tr td + td { border-top-color: #233549 !important; }
-
-    html.dark-mode .modal .modal-header,
-    body.dark-mode .modal .modal-header { border-bottom-color: #233549 !important; }
-
-    html.dark-mode .modal .modal-footer,
-    body.dark-mode .modal .modal-footer { border-top-color: #233549 !important; }
-  }
-
-  /* util */
   .mono {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-      "Liberation Mono", "Courier New", monospace;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 0.85rem;
+  }
+
+  .detail-section {
+    background: #f8f9fb;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    padding: 12px;
+  }
+
+  .detail-title {
+    font-size: 0.72rem;
+    letter-spacing: 0.35px;
+    text-transform: uppercase;
     font-weight: 700;
-    letter-spacing: 0.2px;
+    color: #6c757d;
+    margin-bottom: 8px;
   }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4" style="max-width: 1200px">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
+  
+  {# --- HEADER DA PÃGINA --- #}
+  <div class="row align-items-center mb-4 g-3">
+    <div class="col-md-7">
       <h2 class="text-dark m-0">
         <i class="bi bi-clipboard-check-fill me-2 text-primary"></i> Ordens de Serviço
       </h2>
-
-      <div class="text-muted small mt-1">
-        Exibindo apenas: <b>APROVADA</b> / <b>APROVADA COM RECOMENDAÇÕES</b>
-      </div>
-
-      <div class="text-muted small mt-2">
-        {% if pilot_team_nome %}
-          <span class="badge bg-light text-dark border">
-            <i class="bi bi-people-fill me-1"></i> {{ pilot_team_nome }}
-          </span>
-
-          {% if pilot_team_regiao %}
-            <span class="badge bg-light text-dark border">{{ pilot_team_regiao }}</span>
-          {% endif %}
-
-          {% if pilot_team_papel %}
-            <span class="badge bg-primary">
-              {% if pilot_team_papel == 'auxiliar' %}Auxiliar{% else %}Piloto{% endif %}
-            </span>
-          {% endif %}
-        {% else %}
-          <span class="badge bg-secondary">
-            <i class="bi bi-exclamation-triangle me-1"></i> Sem equipe vinculada
-          </span>
-        {% endif %}
-      </div>
-
-      {# ===================== NOVO: DRONES DA EQUIPE ===================== #}
-      <div class="mt-3">
-        {% if drones_equipe and drones_equipe|length > 0 %}
-          <div class="text-muted small mb-1">
-            <i class="bi bi-airplane-engines me-1"></i> Drones vinculados à sua equipe:
-          </div>
-
-          <div class="d-flex flex-wrap gap-2">
-            {% for d in drones_equipe %}
-              <span class="badge bg-light text-dark border">
-                <i class="bi bi-drone me-1 text-primary"></i>
-                <b>{{ d.renomacao }}</b>
-                <span class="text-muted">— {{ d.modelo }}</span>
-                {% if d.status %}
-                  <span class="ms-1 badge bg-white text-dark border">{{ d.status }}</span>
-                {% endif %}
-              </span>
-            {% endfor %}
-          </div>
-
-          {% if baterias_equipe and baterias_equipe|length > 0 %}
-            <div class="text-muted small mt-2 mb-1">
-              <i class="bi bi-battery-half me-1"></i> Baterias vinculadas aos drones da equipe:
-            </div>
-            <div class="d-flex flex-wrap gap-2">
-              {% for b in baterias_equipe %}
-                <span class="badge bg-warning text-dark border">
-                  <i class="bi bi-battery-charging me-1"></i>
-                  <b>{{ b.renomacao }}</b>
-                  <span class="text-muted">— {{ b.modelo }}</span>
-                  <span class="ms-1">({{ b.ciclo or 0 }}c)</span>
-                </span>
-              {% endfor %}
-            </div>
-          {% endif %}
-        {% else %}
-          <span class="badge bg-secondary">
-            <i class="bi bi-exclamation-triangle me-1"></i> Nenhum drone vinculado à sua equipe
-          </span>
-        {% endif %}
-      </div>
-      {# ================================================================ #}
-
     </div>
-
-    <a href="{{ url_for('main.piloto_veiculos') }}" class="btn btn-outline-primary me-2">
-    <i class="bi bi-speedometer2"></i> Veículos da Equipe
-    </a>
+    <div class="col-md-5 text-md-end">
+      <a href="{{ url_for('main.piloto_veiculos') }}" class="btn btn-outline-primary">
+        <i class="bi bi-speedometer2 me-1"></i> Veículos da Equipe
+      </a>
+    </div>
   </div>
 
-  {% if pedidos and pedidos|length > 0 %}
+  {# --- INFO DA EQUIPE E EQUIPAMENTOS --- #}
+  <div class="card border-0 shadow-sm rounded-4 mb-4">
+    <div class="card-body p-4">
+      <div class="row g-4">
+        {# Coluna Equipe #}
+        <div class="col-lg-4 border-end">
+          <h6 class="form-label-header mb-3"><i class="bi bi-people me-2"></i>Sua Equipe</h6>
+          {% if pilot_team_nome %}
+            <div class="d-flex flex-wrap gap-2">
+              <span class="badge bg-light text-dark border team-chip">
+                <i class="bi bi-people-fill me-1"></i> {{ pilot_team_nome }}
+              </span>
+              {% if pilot_team_regiao %}
+                <span class="badge bg-light text-dark border team-chip">{{ pilot_team_regiao }}</span>
+              {% endif %}
+              {% if pilot_team_papel %}
+                <span class="badge {% if pilot_team_papel == 'auxiliar' %}bg-info text-dark{% else %}bg-primary{% endif %} team-chip">
+                  {{ 'Auxiliar' if pilot_team_papel == 'auxiliar' else 'Piloto' }}
+                </span>
+              {% endif %}
+            </div>
+          {% else %}
+            <div class="alert alert-light border py-2 m-0 small text-muted">
+              <i class="bi bi-exclamation-circle me-2"></i>Sem equipe vinculada
+            </div>
+          {% endif %}
+        </div>
+
+        {# Coluna Drones #}
+        <div class="col-lg-8">
+          <h6 class="form-label-header mb-3"><i class="bi bi-drone me-2"></i>Equipamentos Disponíveis</h6>
+          <div class="d-flex flex-wrap gap-2">
+            {% if drones_equipe %}
+              {% for d in drones_equipe %}
+                <div class="equipment-badge shadow-sm">
+                  <i class="bi bi-airplane-engines text-primary"></i>
+                  <span class="small"><b>{{ d.renomacao }}</b> <span class="text-muted">({{ d.modelo }})</span></span>
+                </div>
+              {% endfor %}
+              {% for b in baterias_equipe %}
+                <div class="equipment-badge border-warning border-opacity-50">
+                  <i class="bi bi-battery-charging text-warning"></i>
+                  <span class="small">
+                    <b>{{ b.renomacao }}</b>
+                    <span class="text-muted">{{ b.ciclo or 0 }}c</span>
+                    <span class="text-muted">• Drone:
+                      {{ b.drone_vinculado.renomacao if b.drone_vinculado else 'Não vinculado' }}
+                    </span>
+                  </span>
+                </div>
+              {% endfor %}
+            {% else %}
+              <small class="text-muted">Nenhum drone vinculado.</small>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# --- LISTA DE PEDIDOS --- #}
+  {% if pedidos %}
   <div class="card shadow-sm rounded-4 border-0 overflow-hidden">
     <div class="card-body p-0">
       <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
+        <table class="table table-hover align-middle mb-0" style="min-height: 200px;">
           <thead class="table-light">
-            <tr>
-              <th class="ps-4">Agendamento</th>
-              <th style="width: 48%">Localização / UVIS</th>
-              <th class="text-center">Situação</th>
-              <th class="text-center pe-4" style="width: 220px">Ações</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {% for s in pedidos %}
-            <tr>
-              <td class="ps-4">
-                <strong class="text-main">
-                  {{ s.data_agendamento.strftime('%d/%m/%Y') if s.data_agendamento else '-' }}
-                </strong>
-                <br />
-                <small class="text-muted">
-                  {% if s.hora_agendamento %}
-                    {{ s.hora_agendamento.strftime("%H:%M") if s.hora_agendamento.strftime else s.hora_agendamento }}
-                  {% else %}
-                    -
-                  {% endif %}
-                </small>
-              </td>
-
-              <td>
-                <div class="d-flex flex-column">
-                  <span class="fw-bold text-main">
+          <tr>
+            <th class="ps-4 py-3">Agendamento</th>
+            <th class="py-3">Localização / UVIS</th>
+            <th class="text-center py-3">situação</th>
+            <th class="text-center pe-4 py-3">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in pedidos %}
+          <tr>
+            <td class="ps-4">
+              <div class="fw-bold text-dark">{{ s.data_agendamento.strftime('%d/%m/%Y') if s.data_agendamento else '-' }}</div>
+              <div class="text-muted small"><i class="bi bi-clock me-1"></i>{{ s.hora_agendamento.strftime("%H:%M") if s.hora_agendamento else '-' }}</div>
+            </td>
+            <td class="py-3">
+              <div class="d-flex flex-column">
+                {# Bloco Superior: EndereÃ§o Principal #}
+                <div class="mb-1">
+                  <span class="fw-bold text-dark fs-6 d-block d-md-inline">
                     {{ s.logradouro or '-' }}, {{ s.numero or 'S/N' }}
-                    {% if s.complemento %}
-                      <span class="fw-normal text-muted">({{ s.complemento }})</span>
-                    {% endif %}
+                  </span>
+                  {% if s.complemento %}
+                    <span class="text-muted fw-normal small ms-md-1">({{ s.complemento }})</span>
+                  {% endif %}
+                </div>
+
+                {# Bloco Intermediário: Bairro e Localização #}
+                <div class="d-flex flex-column flex-md-row align-items-md-center gap-md-3 mb-2">
+                  <span class="small text-muted">
+                    <i class="bi bi-geo-alt me-1"></i>{{ s.bairro or '-' }} — {{ s.cidade or '-' }}
                   </span>
 
-                  <small class="text-muted">
-                    {{ s.bairro or '-' }} - {{ s.cidade or '-' }}/{{ s.uf or '-' }}
-                  </small>
-
-                  <div class="mt-1 d-flex flex-wrap gap-2 align-items-center">
-                    {% if s.foco %}
-                      <span class="badge bg-secondary">{{ s.foco }}</span>
-                    {% endif %}
-
-                    {% if s.usuario %}
-                      <span class="badge bg-light text-dark border">
-                        <i class="bi bi-buildings-fill me-1"></i>{{ s.usuario.nome_uvis }}
-                      </span>
-
-                      {% if s.usuario.regiao %}
-                        <span class="badge bg-light text-dark border">{{ s.usuario.regiao }}</span>
-                      {% endif %}
-                    {% endif %}
-
-                    {% if s.latitude %}
-                      <i class="bi bi-geo-alt-fill text-danger" title="Localização GPS salva"></i>
-                    {% endif %}
-                  </div>
+                  {% if s.latitude and s.longitude %}
+                    <div class="mt-1 mt-md-0">
+                      <button
+                        type="button"
+                        class="btn btn-outline-danger btn-open-map btn-map-inline py-0 px-2"
+                        style="font-size: 0.75rem; height: 22px; line-height: 1;"
+                        data-lat="{{ s.latitude }}"
+                        data-lng="{{ s.longitude }}"
+                        data-title="OS #{{ s.id }} - {{ s.logradouro }}, {{ s.numero or 'S/N' }}"
+                      >
+                        <i class="bi bi-map me-1"></i> Ver mapa
+                      </button>
+                    </div>
+                  {% endif %}
                 </div>
-              </td>
 
-              <td class="text-center">
-                {% set st = (s.status or '') %}
-                {% if 'RECOMENDA' in st %}
-                  <span class="badge bg-warning text-dark rounded-pill">Aprovado c/ Recomendações</span>
-                {% elif 'APROVAD' in st %}
-                  <span class="badge bg-success rounded-pill">Aprovado</span>
-                {% elif 'CONCLU' in st %}
-                  <span class="badge bg-primary rounded-pill">Concluído</span>
-                {% else %}
-                  <span class="badge bg-secondary rounded-pill">{{ st or '—' }}</span>
-                {% endif %}
+                {# Bloco Inferior: Badges de Identificação #}
+                <div class="d-flex flex-wrap gap-2">
+                  <span class="badge bg-secondary text-white border rounded-pill small">
+                    {{ s.foco or 'Foco não definido' }}
+                  </span>
+                  
+                  {% if s.usuario %}
+                    <span class="badge bg-light text-primary border rounded-pill small">
+                      <i class="bi bi-buildings-fill me-1"></i>{{ s.usuario.nome_uvis }}
+                    </span>
+                  {% endif %}
+                </div>
+              </div>
+            </td>
+            <td class="text-center">
+              {% set st = (s.status or '') %}
+              {% if 'RECOMENDA' in st %}
+                <span class="badge bg-warning rounded-pill status-badge">Com Recomendações</span>
+              {% elif 'APROVAD' in st %}
+                <span class="badge bg-success rounded-pill status-badge">Aprovada</span>
+              {% else %}
+                <span class="badge bg-secondary rounded-pill status-badge">{{ st }}</span>
+              {% endif %}
+              {% if s.protocolo %}
+                <div class="mt-1"><code class="text-muted small">{{ s.protocolo }}</code></div>
+              {% endif %}
+            </td>
+            <td class="text-center pe-4">
+              <div class="d-flex gap-2 justify-content-center flex-wrap">
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-primary"
+                  data-bs-toggle="modal"
+                  data-bs-target="#modalDetalhes{{ s.id }}"
+                >
+                  <i class="bi bi-eye me-1"></i> Detalhes
+                </button>
 
-                {% if s.protocolo %}
-                  <div class="small text-muted mt-1 mono">{{ s.protocolo }}</div>
-                {% endif %}
-              </td>
+                <a href="{{ url_for('main.piloto_os_formulario_view', os_id=s.id) }}" class="btn btn-sm btn-primary">
+                  <i class="bi bi-clipboard2-check me-1"></i> Formulário
+                </a>
 
-              <td class="text-center pe-4">
-                <div class="d-flex gap-2 justify-content-center">
-                  <button
-                    type="button"
-                    class="btn btn-sm btn-outline-primary"
-                    data-bs-toggle="modal"
-                    data-bs-target="#modalDetalhes{{ s.id }}"
-                  >
-                    <i class="bi bi-eye"></i> Detalhes
+                <form method="POST" action="{{ url_for('main.piloto_concluir_os', os_id=s.id) }}" class="m-0 form-concluir d-inline">
+                  <button type="submit" class="btn btn-sm btn-success">
+                    <i class="bi bi-check2-circle me-1"></i> Concluir
                   </button>
-
-                  <form
-                    method="POST"
-                    action="{{ url_for('main.piloto_concluir_os', os_id=s.id) }}"
-                    class="m-0 form-concluir"
-                  >
-                    <button type="submit" class="btn btn-sm btn-success">
-                      <i class="bi bi-check2-circle"></i> Concluir
-                    </button>
-                    <a href="{{ url_for('main.piloto_os_formulario_view', os_id=s.id) }}"
-                      class="btn btn-sm btn-primary">
-                      <i class="bi bi-clipboard2-check"></i> Formulário
-                    </a>
-                  </form>
-                </div>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
   </div>
-
+  </div>
   {% else %}
-  <div class="alert alert-info shadow-sm rounded-4 border-0">
-    Nenhuma ordem de serviço liberada para você no momento.
+  <div class="text-center py-5 bg-white rounded-4 shadow-sm border">
+    <i class="bi bi-inbox text-muted display-4"></i>
+    <p class="mt-3 text-muted">Nenhuma ordem de serviço liberada para você.</p>
   </div>
   {% endif %}
 
-  {# Paginação #}
+  {# Paginação (Otimizada) #}
   {% if paginacao and paginacao.pages > 1 %}
-  <nav aria-label="Navegação de páginas" class="mt-4">
-    <ul class="pagination justify-content-center flex-wrap">
+  <nav class="mt-4">
+    <ul class="pagination pagination-sm justify-content-center">
       <li class="page-item {% if not paginacao.has_prev %}disabled{% endif %}">
-        <a class="page-link" href="{{ url_for('main.piloto_os', page=paginacao.prev_num, **request.args) }}">Anterior</a>
+        <a class="page-link shadow-sm" href="{{ url_for('main.piloto_os', page=paginacao.prev_num, **request.args) }}">Anterior</a>
       </li>
-
       {% for pg in paginacao.iter_pages() %}
         {% if pg %}
           {% if pg == paginacao.page %}
             <li class="page-item active"><span class="page-link">{{ pg }}</span></li>
           {% else %}
             <li class="page-item">
-              <a class="page-link" href="{{ url_for('main.piloto_os', page=pg, **request.args) }}">{{ pg }}</a>
+              <a class="page-link shadow-sm" href="{{ url_for('main.piloto_os', page=pg, **request.args) }}">{{ pg }}</a>
             </li>
           {% endif %}
         {% else %}
-          <li class="page-item disabled"><span class="page-link">…</span></li>
+          <li class="page-item disabled"><span class="page-link">â€¦</span></li>
         {% endif %}
       {% endfor %}
-
       <li class="page-item {% if not paginacao.has_next %}disabled{% endif %}">
-        <a class="page-link" href="{{ url_for('main.piloto_os', page=paginacao.next_num, **request.args) }}">Próxima</a>
+        <a class="page-link shadow-sm" href="{{ url_for('main.piloto_os', page=paginacao.next_num, **request.args) }}">Próxima</a>
       </li>
     </ul>
   </nav>
   {% endif %}
 
-  {# ========================= MODAIS DETALHES (1 por OS) ========================= #}
-  {% for p in pedidos %}
-  <div class="modal fade" id="modalDetalhes{{ p.id }}" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Detalhes da OS #{{ p.id }}</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+
+{# --- MODAL DE DETALHES --- #}
+{% for p in pedidos %}
+<div class="modal fade" id="modalDetalhes{{ p.id }}" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      <div class="modal-header border-0">
+        <div>
+          <h5 class="fw-bold m-0">OS #{{ p.id }}</h5>
+          <small class="text-muted">
+            {{ p.data_agendamento.strftime('%d/%m/%Y') if p.data_agendamento else '--' }}
+            {% if p.hora_agendamento %} as {{ p.hora_agendamento.strftime('%H:%M') if p.hora_agendamento.strftime else p.hora_agendamento }}{% endif %}
+          </small>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="detail-section mb-3">
+          <div class="detail-title">Localizacao</div>
+          <div class="fw-semibold">{{ p.logradouro }}, {{ p.numero or 'S/N' }}</div>
+          <div class="text-muted small">
+            {{ p.bairro or '--' }} - {{ p.cidade or '--' }}/{{ p.uf or '--' }}
+            {% if p.complemento %} ({{ p.complemento }}){% endif %}
+          </div>
+          {% if p.latitude and p.longitude %}
+            <div class="text-muted small mt-2">
+              <i class="bi bi-geo-alt-fill me-1 text-danger"></i>{{ p.latitude }}, {{ p.longitude }}
+            </div>
+          {% endif %}
         </div>
 
-        <div class="modal-body">
-          <h6 class="text-primary border-bottom pb-2 fw-bold">
-            <i class="bi bi-geo-alt-fill"></i> Localização
-          </h6>
-
-          <p class="mb-1 small">
-            <strong>Endereço:</strong>
-            {{ p.logradouro }}, {{ p.numero or 'S/N' }} {{ '(' ~ p.complemento ~ ')' if p.complemento else '' }}
-          </p>
-
-          <p class="mb-2 small">
-            <strong>Bairro:</strong> {{ p.bairro or '-' }} - {{ p.cidade or '-' }}/{{ p.uf or '-' }}
-          </p>
-
-          {% if p.latitude and p.longitude %}
-          <div class="d-flex justify-content-between align-items-center p-2 rounded border mb-3">
-            <div>
-              <small class="text-muted d-block">Coordenadas:</small>
-              <strong class="font-monospace small">{{ p.latitude }}, {{ p.longitude }}</strong>
-            </div>
-
-            <button
-              type="button"
-              class="btn btn-sm btn-outline-danger btn-open-map"
-              data-lat="{{ p.latitude }}"
-              data-lng="{{ p.longitude }}"
-              data-title="OS #{{ p.id }} - {{ p.logradouro }}, {{ p.numero or 'S/N' }}"
-            >
-              <i class="bi bi-map"></i> Ver Mapa
-            </button>
-          </div>
-          {% endif %}
-
-          <h6 class="text-primary border-bottom pb-2 fw-bold mt-3">
-            <i class="bi bi-building"></i> UVIS
-          </h6>
-
-          <div class="row g-2 mb-3">
-            <div class="col-12">
-              <small class="text-muted d-block">Unidade:</small>
-              <strong>{{ p.usuario.nome_uvis if p.usuario else '--' }}</strong>
-            </div>
-            <div class="col-6">
-              <small class="text-muted d-block">Região:</small>
-              <strong>{{ p.usuario.regiao if p.usuario and p.usuario.regiao else '--' }}</strong>
+        <div class="row g-3">
+          <div class="col-6">
+            <div class="detail-section h-100">
+              <div class="detail-title">Foco</div>
+              <div class="fw-semibold">{{ p.foco or '--' }}</div>
             </div>
           </div>
-
-          <h6 class="text-primary border-bottom pb-2 fw-bold mt-3">
-            <i class="bi bi-paperclip"></i> Anexo
-          </h6>
-
-          {% if p.anexo_path %}
-          <div class="d-flex justify-content-between align-items-center p-2 rounded border mb-3">
-            <div>
-              <small class="text-muted d-block">Arquivo:</small>
-              <strong class="small text-truncate" style="max-width: 200px; display: inline-block;">{{ p.anexo_nome or 'Anexo' }}</strong>
-            </div>
-
-            <a
-              href="{{ url_for('main.baixar_anexo', id=p.id) }}"
-              target="_blank"
-              rel="noopener"
-              class="btn btn-sm btn-outline-primary"
-            >
-              <i class="bi bi-download"></i> Abrir / Baixar
-            </a>
-          </div>
-          {% else %}
-          <div class="alert alert-secondary py-2 small mb-3">
-            Nenhum anexo enviado.
-          </div>
-          {% endif %}
-
-          <h6 class="text-primary border-bottom pb-2 fw-bold mt-3">
-            <i class="bi bi-sliders"></i> Operação
-          </h6>
-
-          <div class="row g-2 mb-2">
-            <div class="col-6">
-              <small class="text-muted d-block">Foco:</small>
-              <strong>{{ p.foco or '--' }}</strong>
-            </div>
-            <div class="col-6">
-              <small class="text-muted d-block">Tipo de Visita:</small>
-              <strong class="text-capitalize">{{ p.tipo_visita or '--' }}</strong>
+          <div class="col-6">
+            <div class="detail-section h-100">
+              <div class="detail-title">Tipo de visita</div>
+              <div class="fw-semibold text-capitalize">{{ p.tipo_visita or '--' }}</div>
             </div>
           </div>
-
-          <div class="row g-2 mb-2">
-            <div class="col-6">
-              <small class="text-muted d-block">Altura:</small>
-              <strong>{{ p.altura_voo or '--' }}</strong>
+          <div class="col-6">
+            <div class="detail-section h-100">
+              <div class="detail-title">Apoio CET</div>
+              <span class="badge {% if p.apoio_cet %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                {{ 'SIM' if p.apoio_cet else 'NAO' }}
+              </span>
             </div>
-            <div class="col-6">
-              <small class="text-muted d-block">Apoio CET?</small>
-              {% if p.apoio_cet %}
-                <span class="badge bg-warning text-dark">SIM</span>
+          </div>
+          <div class="col-6">
+            <div class="detail-section h-100">
+              <div class="detail-title">Status</div>
+              {% set st = (p.status or '') %}
+              {% if 'RECOMENDA' in st %}
+                <span class="badge bg-warning text-dark rounded-pill">Aprovada com recomendacoes</span>
+              {% elif 'APROVAD' in st %}
+                <span class="badge bg-success rounded-pill">Aprovada</span>
+              {% elif 'CONCLU' in st %}
+                <span class="badge bg-primary rounded-pill">Concluida</span>
               {% else %}
-                <span class="badge bg-secondary">NÃO</span>
+                <span class="badge bg-secondary rounded-pill">{{ st or '--' }}</span>
+              {% endif %}
+              {% if p.protocolo %}
+                <div class="small text-muted mt-2 mono">{{ p.protocolo }}</div>
               {% endif %}
             </div>
           </div>
-
-          {% if p.observacao %}
-          <div class="p-2 rounded border mb-3">
-            <small class="text-muted d-block fw-bold">Observação do Usuário:</small>
-            <em class="small">"{{ p.observacao }}"</em>
+          <div class="col-12">
+            <div class="detail-section">
+              <div class="detail-title">Anexo</div>
+              {% if p.anexo_path %}
+                <a href="{{ url_for('main.baixar_anexo', id=p.id) }}" class="btn btn-sm btn-outline-primary">
+                  <i class="bi bi-download me-1"></i> Abrir / Baixar arquivo
+                </a>
+              {% else %}
+                <span class="text-muted small">Sem anexo</span>
+              {% endif %}
+            </div>
           </div>
-          {% endif %}
-
-          <h6 class="text-primary border-bottom pb-2 fw-bold mt-3">
-            <i class="bi bi-shield-check"></i> Situação
-          </h6>
-
-          {% if p.status and ('RECOMENDA' in p.status) %}
-          <div class="alert alert-warning mb-0">
-            <strong class="d-block"><i class="bi bi-exclamation-triangle"></i> Aprovado com Recomendações</strong>
-            <small>Protocolo: {{ p.protocolo or '--' }}</small>
-          </div>
-          {% elif p.status and ('APROVAD' in p.status) %}
-          <div class="alert alert-success mb-0">
-            <strong class="d-block"><i class="bi bi-check-circle"></i> Aprovado</strong>
-            <small>Protocolo: {{ p.protocolo or '--' }}</small>
-          </div>
-          {% else %}
-          <div class="alert alert-secondary mb-0">
-            <strong class="d-block"><i class="bi bi-info-circle"></i> Status</strong>
-            <small>{{ p.status or '--' }}</small>
-          </div>
-          {% endif %}
         </div>
+      </div>
 
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-            Fechar
-          </button>
+      <div class="modal-footer border-0 d-flex justify-content-between">
+        <a href="{{ url_for('main.piloto_os_formulario_view', os_id=p.id) }}" class="btn btn-primary">
+          <i class="bi bi-clipboard2-check me-1"></i> Abrir formulario
+        </a>
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+{# ========================= MODAL MAPA (ÚNICO - FORA DO LOOP) ========================= #}
+<div class="modal fade" id="mapModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 overflow-hidden">
+      <div class="modal-header">
+        <h5 class="modal-title" id="mapModalTitle">Localização</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+
+      <div class="modal-body p-0">
+        <div id="mapCanvas" style="width:100%; height: 420px;"></div>
+      </div>
+
+      <div class="modal-footer d-flex justify-content-between">
+        <div class="small text-muted" id="mapCoords"></div>
+        <div class="d-flex gap-2">
+          <a id="btnOpenGoogleMaps" class="btn btn-outline-secondary" target="_blank" rel="noopener">
+            <i class="bi bi-box-arrow-up-right"></i> Abrir no Google Maps
+          </a>
+          <a id="btnDirections" class="btn btn-danger" target="_blank" rel="noopener">
+            <i class="bi bi-sign-turn-right"></i> Traçar rota
+          </a>
         </div>
       </div>
     </div>
   </div>
-  {% endfor %}
-
-  {# ========================= MODAL MAPA (ÚNICO - FORA DO LOOP) ========================= #}
-  <div class="modal fade" id="mapModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-      <div class="modal-content rounded-4 border-0 overflow-hidden">
-        <div class="modal-header">
-          <h5 class="modal-title" id="mapModalTitle">Localização</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-        </div>
-
-        <div class="modal-body p-0">
-          <div id="mapCanvas" style="width:100%; height: 420px;"></div>
-        </div>
-
-        <div class="modal-footer d-flex justify-content-between">
-          <div class="small text-muted" id="mapCoords"></div>
-          <div class="d-flex gap-2">
-            <a id="btnOpenGoogleMaps" class="btn btn-outline-secondary" target="_blank" rel="noopener">
-              <i class="bi bi-box-arrow-up-right"></i> Abrir no Google Maps
-            </a>
-            <a id="btnDirections" class="btn btn-danger" target="_blank" rel="noopener">
-              <i class="bi bi-sign-turn-right"></i> Traçar rota
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
 </div>
 {% endblock %}
 
@@ -606,7 +447,7 @@
   document.addEventListener("DOMContentLoaded", () => {
 
     // -------------------------
-    // Confirmação “Concluir OS”
+    // ConfirmaÃ§Ã£o â€œConcluir OSâ€
     // -------------------------
     document.querySelectorAll(".form-concluir").forEach((form) => {
       form.addEventListener("submit", function (e) {
@@ -616,7 +457,7 @@
 
         Swal.fire({
           title: "Concluir OS?",
-          text: "Ao confirmar, a ordem de serviço será marcada como CONCLUÍDO.",
+          text: "Ao confirmar, a ordem de serviço será marcada como CONCLUÍDA.",
           icon: "question",
           showCancelButton: true,
           confirmButtonText: "Sim, concluir",
@@ -765,3 +606,4 @@
   });
 </script>
 {% endblock %}
+
