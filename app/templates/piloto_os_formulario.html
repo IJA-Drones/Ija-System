@@ -52,10 +52,6 @@
             <label class="form-label-header">Identificador OS</label>
             <input type="text" name="identificador_os" class="form-control" value="{{ ordem.identificador_os if ordem else '' }}" />
           </div>
-          <div class="col-md-3">
-            <label class="form-label-header">Tipo de OS</label>
-            <input type="text" name="tipo_os" class="form-control" value="" />
-          </div>
         </div>
 
         <hr class="opacity-25 my-4" />
@@ -95,7 +91,7 @@
           {# --- DRONE DE PULVERIZAÇÃO --- #}
           <div class="col-md-6">
             <label class="form-label-header">Drone de Pulverização (Principal) *</label>
-            <select name="drone_pulv_id" id="drone_pulv_id" class="form-select border-primary shadow-sm mb-3">
+            <select name="drone_id" id="drone_id" class="form-select border-primary shadow-sm mb-3">
               <option value="">Selecione o drone de pulverização...</option>
               {% for d in drones_equipe or [] %}
                 <option value="{{ d.id }}" {% if ordem and ordem.drone_id == d.id %}selected{% endif %}>
@@ -139,10 +135,10 @@
           {# --- DRONE DE MONITORAMENTO --- #}
           <div class="col-md-6">
             <label class="form-label-header">Drone de Monitoramento</label>
-            <select name="drone_id" id="drone_id" class="form-select shadow-sm mb-3">
+            <select name="drone_monitoramento_id" id="drone_monitoramento_id" class="form-select shadow-sm mb-3">
               <option value="">Selecione o drone de monitoramento...</option>
               {% for d in drones_equipe or [] %}
-                <option value="{{ d.id }}" {% if ordem and ordem.drone_id == d.id %}selected{% endif %}>
+                <option value="{{ d.id }}" {% if ordem and ordem.drone_monitoramento_id == d.id %}selected{% endif %}>
                   {{ d.renomacao }} — {{ d.modelo }}
                 </option>
               {% endfor %}
@@ -153,23 +149,28 @@
               <div class="row g-2">
                 <div class="col-6">
                   <label class="form-label-header small">Nº Série</label>
-                  <input type="text" id="drone_serie_monit" class="form-control form-control-sm" readonly />
+                  <input type="text" id="drone_serie_monit" class="form-control form-control-sm" readonly
+                         value="{{ ordem.drone_monitoramento_numero_serie if ordem and ordem.drone_monitoramento_numero_serie else '' }}" />
                 </div>
                 <div class="col-6">
                   <label class="form-label-header small">Modelo</label>
-                  <input type="text" id="drone_modelo_monit" class="form-control form-control-sm" readonly />
+                  <input type="text" id="drone_modelo_monit" class="form-control form-control-sm" readonly
+                         value="{{ ordem.drone_monitoramento_modelo if ordem and ordem.drone_monitoramento_modelo else '' }}" />
                 </div>
                 <div class="col-4">
                   <label class="form-label-header small">Renomação</label>
-                  <input type="text" id="drone_renomacao_monit" class="form-control form-control-sm" readonly />
+                  <input type="text" id="drone_renomacao_monit" class="form-control form-control-sm" readonly
+                         value="{{ ordem.drone_monitoramento_renomacao if ordem and ordem.drone_monitoramento_renomacao else '' }}" />
                 </div>
                 <div class="col-4">
                   <label class="form-label-header small">ANATEL</label>
-                  <input type="text" id="drone_registro_anatel_monit" class="form-control form-control-sm" readonly />
+                  <input type="text" id="drone_registro_anatel_monit" class="form-control form-control-sm" readonly
+                         value="{{ ordem.drone_monitoramento_registro_anatel if ordem and ordem.drone_monitoramento_registro_anatel else '' }}" />
                 </div>
                 <div class="col-4">
                   <label class="form-label-header small">ANAC</label>
-                  <input type="text" id="drone_registro_anac_monit" class="form-control form-control-sm" readonly />
+                  <input type="text" id="drone_registro_anac_monit" class="form-control form-control-sm" readonly
+                         value="{{ ordem.drone_monitoramento_registro_anac if ordem and ordem.drone_monitoramento_registro_anac else '' }}" />
                 </div>
               </div>
             </div>
@@ -377,8 +378,8 @@
 <script>
 (function () {
   // ✅ selects corretos
-  const selPulv = document.getElementById("drone_pulv_id");
-  const selMonit = document.getElementById("drone_id");
+  const selPulv = document.getElementById("drone_id");
+  const selMonit = document.getElementById("drone_monitoramento_id");
 
   // Snapshot pulverização
   const pulvSnapshot = {

@@ -348,14 +348,34 @@ class OrdemServico(db.Model):
     # Drone usado na OS (FK) + snapshot
     # ----------------------------
     drone_id = db.Column(db.Integer, db.ForeignKey("drones.id"), nullable=True, index=True)
-    drone = db.relationship("Drones", lazy="joined")
+    drone = db.relationship(
+        "Drones", 
+        foreign_keys=[drone_id], # <--- ISSO RESOLVE O ERRO
+        lazy="joined"
+    )
 
-    # snapshot dos dados do drone (para histórico)
-    drone_renomacao = db.Column(db.String(100))
+    # Relacionamento 2: Drone de Monitoramento
+    drone_monitoramento_id = db.Column(db.Integer, db.ForeignKey("drones.id"), nullable=True, index=True)
+    drone_monitoramento = db.relationship(
+        "Drones", 
+        foreign_keys=[drone_monitoramento_id], # <--- ISSO RESOLVE O ERRO
+        lazy="joined"
+    )
+
+    # Snapshots do primeiro drone
+    drone_denominacao = db.Column(db.String(100)) # 'renomacao'
     drone_modelo = db.Column(db.String(100))
     drone_numero_serie = db.Column(db.String(100))
     drone_registro_anatel = db.Column(db.String(50))
     drone_registro_anac = db.Column(db.String(50))
+
+
+    # Snapshots do drone de monitoramento
+    drone_monitoramento_denominacao = db.Column(db.String(100)) #  'renomacao'
+    drone_monitoramento_modelo = db.Column(db.String(100))
+    drone_monitoramento_numero_serie = db.Column(db.String(100))
+    drone_monitoramento_registro_anatel = db.Column(db.String(50))
+    drone_monitoramento_registro_anac = db.Column(db.String(50))
 
     solicitacao = db.relationship("Solicitacao", back_populates="ordem_servico")
     equipe = db.relationship("Equipe", back_populates="ordens_servico")

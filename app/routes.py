@@ -8373,46 +8373,53 @@ def piloto_os_formulario_view(os_id):
             )
             db.session.add(ordem)
 
+    
         # ----------------------------
-        # ✅ Drone selecionado (SNAPSHOT E AUTOMAÇÃO)
-        # ----------------------------
-       # ----------------------------
         # ✅ Drones selecionados (PULVERIZAÇÃO E MONITORAMENTO)
         # ----------------------------
-        drone_pulv_id = request.form.get("drone_id", type=int)
-        drone_monit_id = request.form.get("drone_id", type=int)
-        
-        # Processa o Drone de Pulverização (Principal para o Snapshot)
-        if drone_pulv_id:
-             drone_p = Drones.query.get(drone_pulv_id)
-             if drone_p and drone_p.equipe_id == s.equipe_id:
-                 ordem.drone_id = drone_p.id               
-                 ordem.drone_renomacao = drone_p.renomacao
-                 ordem.drone_modelo = drone_p.modelo
-                 ordem.drone_numero_serie = drone_p.numero_serie
-                 ordem.drone_registro_anatel = drone_p.registro_anatel
-                 ordem.drone_registro_anac = drone_p.registro_anac
-                 ordem.prefixo_aeronave_pulverizacao = drone_p.renomacao
-        
-        # Processa o Drone de Monitoramento (Apenas para o Prefixo)
-        if drone_monit_id:
-             drone_m = Drones.query.get(drone_monit_id)
-             if drone_m and drone_m.equipe_id == s.equipe_id:
-                 ordem.prefixo_aeronave_monitoramento = drone_m.renomacao
+        # Certifique-se que no seu HTML os 'name' dos selects sejam diferentes!
+        drone_pulv_id = request.form.get("drone_id", type=int)           # Select do Drone Principal
+        drone_monit_id = request.form.get("drone_monitoramento_id", type=int) # Select do Drone Monit.
 
-             # ✅ AUTOMAÇÃO: Forçamos os prefixos a serem a renovação do dro
+        # --- PROCESSA DRONE DE PULVERIZAÇÃO (PRINCIPAL) ---
+        if drone_pulv_id:
+            drone_p = Drones.query.get(drone_pulv_id)
+            if drone_p and drone_p.equipe_id == s.equipe_id:
+                ordem.drone_id = drone_p.id               
+                # Snapshot para histórico
+                ordem.drone_denominacao = drone_p.renomacao
+                ordem.drone_modelo = drone_p.modelo
+                ordem.drone_numero_serie = drone_p.numero_serie
+                ordem.drone_registro_anatel = drone_p.registro_anatel
+                ordem.drone_registro_anac = drone_p.registro_anac
+                # Automação de Prefixo
+                ordem.prefixo_aeronave_pulverizacao = drone_p.renomacao
         else:
-             # Se nenhum drone foi selecionado no select, limpamos o snapshot
-             ordem.drone_id = None
-             ordem.drone_renomacao = None
-             ordem.drone_modelo = None
-             ordem.drone_numero_serie = None
-             ordem.drone_registro_anatel = None
-             ordem.drone_registro_anac = None
-             
-             # E aqui, caso não tenha drone, ele tenta pegar o que foi digitado manualmente
-             ordem.prefixo_aeronave_pulverizacao = _clean(request.form.get("prefixo_aeronave_pulverizacao"))
-             ordem.prefixo_aeronave_monitoramento = _clean(request.form.get("prefixo_aeronave_monitoramento"))
+            # Limpa se desmarcado
+            ordem.drone_id = None
+            ordem.drone_denominacao = None
+            ordem.prefixo_aeronave_pulverizacao = _clean(request.form.get("prefixo_aeronave_pulverizacao"))
+
+        # --- PROCESSA DRONE DE MONITORAMENTO ---
+        if drone_monit_id:
+            drone_m = Drones.query.get(drone_monit_id)
+            if drone_m and drone_m.equipe_id == s.equipe_id:
+                ordem.drone_monitoramento_id = drone_m.id
+                ordem.drone_monitoramento_denominacao = drone_m.renomacao
+                ordem.drone_monitoramento_modelo = drone_m.modelo
+                ordem.drone_monitoramento_numero_serie = drone_m.numero_serie
+                ordem.drone_monitoramento_registro_anatel = drone_m.registro_anatel
+                ordem.drone_monitoramento_registro_anac = drone_m.registro_anac
+                ordem.prefixo_aeronave_monitoramento = drone_m.renomacao
+        else:
+            # ✅ ADICIONE ISSO: Limpa os snapshots de monitoramento se desmarcado
+            ordem.drone_monitoramento_id = None
+            ordem.drone_monitoramento_denominacao = None
+            ordem.drone_monitoramento_modelo = None
+            ordem.drone_monitoramento_numero_serie = None
+            ordem.drone_monitoramento_registro_anatel = None
+            ordem.drone_monitoramento_registro_anac = None
+            ordem.prefixo_aeronave_monitoramento = _clean(request.form.get("prefixo_aeronave_monitoramento"))
 
         # --- Continuação normal dos campos ---
         ordem.identificador_os = _clean(request.form.get("identificador_os"))
@@ -8445,9 +8452,6 @@ def piloto_os_formulario_view(os_id):
         ordem.pulverizacao_area_l_ha = _to_float(request.form.get("pulverizacao_area_l_ha"))
         ordem.pulverizacao_foco_tempo_estimado_segundos = _to_float(request.form.get("pulverizacao_foco_tempo_estimado_segundos"))
         ordem.pulverizacao_foco_l_min = _to_float(request.form.get("pulverizacao_foco_l_min"))
-
-        # ordem.prefixo_aeronave_pulverizacao = _clean(request.form.get("prefixo_aeronave_pulverizacao"))
-        # ordem.prefixo_aeronave_monitoramento = _clean(request.form.get("prefixo_aeronave_monitoramento"))
         ordem.quantidade_imagens_registradas = _to_int(request.form.get("quantidade_imagens_registradas"))
 
         ordem.ponta_pulverizacao = _clean(request.form.get("ponta_pulverizacao"))
@@ -8459,24 +8463,6 @@ def piloto_os_formulario_view(os_id):
 
         # Campos extras do template que não existem no model -> guarda em observacoes
         obs = _clean(request.form.get("observacoes"))
-        extras = []
-
-        tipo_os = _clean(request.form.get("tipo_os"))
-        if tipo_os:
-            extras.append(f"Tipo de OS: {tipo_os}")
-
-        numero_serie = _clean(request.form.get("numero_serie_equipamento"))
-        if numero_serie:
-            extras.append(f"Nº série equipamento: {numero_serie}")
-
-        # ✅ se você NÃO criou coluna drone_id e quer ao menos registrar em observacoes:
-        # drone_id_txt = _clean(request.form.get("drone_id"))
-        # if drone_id_txt:
-        #     extras.append(f"Drone ID: {drone_id_txt}")
-
-        if extras:
-            extra_txt = " | ".join(extras)
-            obs = f"{obs}\n{extra_txt}" if obs else extra_txt
 
         ordem.observacoes = obs
 
