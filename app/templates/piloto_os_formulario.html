@@ -229,7 +229,7 @@
           </div>
           <div class="col-md-4">
             <label class="form-label-header">Criadouro OS (tipo/volume)</label>
-            <input type="text" name="criadouro_os_tipo_volume" class="form-control" value="{{ ordem.criadouro_os_tipo_volume if ordem else '' }}" />
+            <input type="text" name="criadouro_os_tipo_volume" class="form-control" value="{{ ordem.criadouro_os_tipo_volume if (ordem and ordem.criadouro_os_tipo_volume) else (solicitacao.foco if solicitacao else '') }}" />
           </div>
           <div class="col-md-4">
             <label class="form-label-header">Data aplicacao</label>
@@ -267,19 +267,26 @@
         <div class="row g-3 mb-4">
           <div class="col-md-4">
             <label class="form-label-header">Descricao produto</label>
-            <input type="text" name="descricao_produto" class="form-control" value="{{ ordem.descricao_produto if ordem else '' }}" />
+            <input type="text" name="descricao_produto" class="form-control" value="{{ ordem.descricao_produto if ordem else 'BTI' }}" />
           </div>
           <div class="col-md-4">
             <label class="form-label-header">Formulacao</label>
-            <input type="text" name="formulacao_produto" class="form-control" value="{{ ordem.formulacao_produto if ordem else '' }}" />
+            <input type="text" name="formulacao_produto" class="form-control" value="{{ ordem.formulacao_produto if ordem else 'Granulo dispersivel' }}" />
           </div>
           <div class="col-md-4">
             <label class="form-label-header">Dosagem (g/10L)</label>
             <input type="text" name="dosagem_g_10l" class="form-control" value="{{ ordem.dosagem_g_10l if ordem else '' }}" />
           </div>
           <div class="col-md-4">
-            <label class="form-label-header">Tipo aplicacao</label>
-            <input type="text" name="tipo_aplicacao" class="form-control" value="{{ ordem.tipo_aplicacao if ordem else '' }}" />
+              <label class="form-label-header">Tipo aplicacao</label>
+              <input type="text" name="tipo_aplicacao" list="lista_tipos_aplicacao" class="form-control" 
+                    value="{{ ordem.tipo_aplicacao if (ordem and ordem.tipo_aplicacao) else '' }}" 
+                    placeholder="Selecione ou digite..." />
+              
+              <datalist id="lista_tipos_aplicacao">
+                  <option value="Pulverização de área (liq)">
+                  <option value="Pulverização de foco (liq)">
+              </datalist>
           </div>
           <div class="col-md-4">
             <label class="form-label-header">Qtd Administrada (ml)</label>
@@ -287,15 +294,18 @@
           </div>
           <div class="col-md-4">
             <label class="form-label-header">Pulverizacao Area (l/ha)</label>
-            <input type="number" step="0.01" name="pulverizacao_area_l_ha" class="form-control" value="{{ ordem.pulverizacao_area_l_ha if ordem else '' }}" />
+            <input type="number" step="0.01" name="pulverizacao_area_l_ha" class="form-control" value="{{ ordem.pulverizacao_area_l_ha if ordem else '10' }}" />
           </div>
-          <div class="col-md-6">
-            <label class="form-label-header">Foco (Tempo estimado seg)</label>
-            <input type="number" step="0.01" name="pulverizacao_foco_tempo_estimado_segundos" class="form-control" value="{{ ordem.pulverizacao_foco_tempo_estimado_segundos if ordem else '' }}" />
-          </div>
-          <div class="col-md-6">
-            <label class="form-label-header">Foco (l/min)</label>
-            <input type="number" step="0.01" name="pulverizacao_foco_l_min" class="form-control" value="{{ ordem.pulverizacao_foco_l_min if ordem else '' }}" />
+          <div class="col-md-4">
+              <label class="form-label-header">Ponta de Pulverização</label>
+              <input type="text" name="ponta_pulverizacao" list="lista_pontas" class="form-control" 
+                    value="{{ ordem.ponta_pulverizacao if (ordem and ordem.ponta_pulverizacao) else '' }}" 
+                    placeholder="Selecione ou digite a ponta...">
+              
+              <datalist id="lista_pontas">
+                  <option value="TXA8001">
+                  <option value="TX11001">
+              </datalist>
           </div>
         </div>
 
@@ -310,10 +320,6 @@
           <div class="col-md-4">
             <label class="form-label-header">Imagens Registradas</label>
             <input type="number" name="quantidade_imagens_registradas" class="form-control" value="{{ ordem.quantidade_imagens_registradas if ordem else '' }}" />
-          </div>
-          <div class="col-md-3">
-            <label class="form-label-header">Ponta Pulverizacao</label>
-            <input type="text" name="ponta_pulverizacao" class="form-control" value="{{ ordem.ponta_pulverizacao if ordem else '' }}" />
           </div>
           <div class="col-md-3">
             <label class="form-label-header">Temperatura (C)</label>
@@ -336,34 +342,71 @@
           <h5 class="m-0 text-primary fw-bold">Fechamento e Assinaturas</h5>
         </div>
 
-        <div class="row g-3 mb-2">
-          <div class="col-md-6">
-            <label class="form-label-header">Motivo nao realizacao</label>
-            <input type="text" name="motivo_nao_realizacao" class="form-control" value="{{ ordem.motivo_nao_realizacao if ordem else '' }}" />
-          </div>
-          <div class="col-md-6">
-            <label class="form-label-header">Observacoes</label>
-            <input type="text" name="observacoes" class="form-control" value="{{ ordem.observacoes if ordem else '' }}" />
-          </div>
-          <div class="col-md-6">
-            <label class="form-label-header">Piloto</label>
-            <input type="text" name="piloto" class="form-control" value="{{ (ordem.piloto if ordem and ordem.piloto else piloto_padrao) }}" />
-          </div>
-          <div class="col-md-6">
-            <label class="form-label-header">Auxiliar</label>
-            <input type="text" name="auxiliar" class="form-control" value="{{ (ordem.auxiliar if ordem and ordem.auxiliar else auxiliar_padrao) }}" />
-          </div>
-          <div class="col-md-6">
-            <label class="form-label-header">Assinatura piloto</label>
-            <textarea name="assinatura_piloto" class="form-control" rows="2">{{ ordem.assinatura_piloto if ordem else '' }}</textarea>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label-header">Proprietario ou preposto</label>
-            <input type="text" name="proprietario_ou_preposto" class="form-control" value="{{ ordem.proprietario_ou_preposto if ordem else '' }}" />
-          </div>
+        <div class="row g-3 mb-4">
+          {# Linha 1: Observações (Inteira) #}
           <div class="col-12">
-            <label class="form-label-header">Assinatura proprietario ou preposto</label>
-            <textarea name="assinatura_proprietario_ou_preposto" class="form-control" rows="2">{{ ordem.assinatura_proprietario_ou_preposto if ordem else '' }}</textarea>
+            <label class="form-label-header">OBSERVAÇÕES GERAIS</label>
+            <input type="text" name="observacoes" class="form-control" 
+                  value="{{ ordem.observacoes if ordem else '' }}" 
+                  placeholder="Detalhes técnicos ou ocorrências na missão..." />
+          </div>
+
+          {# Linha 2: Motivo não realização (Inteira) #}
+          <div class="col-12">
+            <label class="form-label-header">MOTIVO NÃO REALIZAÇÃO</label>
+            <input type="text" name="motivo_nao_realizacao" class="form-control" 
+                  value="{{ ordem.motivo_nao_realizacao if ordem else '' }}" 
+                  placeholder="Descreva o motivo caso a aplicação não tenha sido concluída..." />
+          </div>
+
+          {# Linha 3: Equipe (Metade) e Proprietário (Metade) #}
+          <div class="col-md-6">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label-header">PILOTO</label>
+                <input type="text" name="piloto" class="form-control bg-light" 
+                      value="{{ (ordem.piloto if ordem and ordem.piloto else piloto_padrao) }}" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label-header">AUXILIAR</label>
+                <input type="text" name="auxiliar" class="form-control bg-light" 
+                      value="{{ (ordem.auxiliar if ordem and ordem.auxiliar else auxiliar_padrao) }}" />
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label-header">PROPRIETÁRIO OU PREPOSTO (NOME)</label>
+            <input type="text" name="proprietario_ou_preposto" class="form-control" 
+                  value="{{ ordem.proprietario_ou_preposto if ordem else '' }}" />
+          </div>
+
+          {# --- ASSINATURA DO PILOTO --- #}
+          <div class="col-md-6">
+              <label class="form-label-header">ASSINATURA DO PILOTO</label>
+              <div class="signature-container border rounded bg-white p-2">
+                  <canvas id="signature-pad-piloto" class="signature-pad" style="width: 100%; height: 150px; cursor: crosshair;"></canvas>
+                  <input type="hidden" name="assinatura_piloto" id="assinatura_data_piloto" value="{{ ordem.assinatura_piloto if ordem else '' }}">
+                  <div class="d-flex gap-2 mt-2">
+                      <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearSignature('piloto')">
+                          <i class="bi bi-trash"></i> Limpar
+                      </button>
+                  </div>
+              </div>
+          </div>
+
+          {# --- ASSINATURA DO RESPONSÁVEL --- #}
+          <div class="col-md-6">
+              <label class="form-label-header">ASSINATURA DO RESPONSÁVEL (LOCAL)</label>
+              <div class="signature-container border rounded bg-white p-2">
+                  <canvas id="signature-pad-cliente" class="signature-pad" style="width: 100%; height: 150px; cursor: crosshair;"></canvas>
+                  <input type="hidden" name="assinatura_proprietario_ou_preposto" id="assinatura_data_cliente" value="{{ ordem.assinatura_proprietario_ou_preposto if ordem else '' }}">
+                  <div class="d-flex gap-2 mt-2">
+                      <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearSignature('cliente')">
+                          <i class="bi bi-trash"></i> Limpar
+                      </button>
+                  </div>
+              </div>
           </div>
         </div>
 
@@ -383,11 +426,10 @@
 {% block scripts %}
 <script>
 (function () {
-  // ✅ selects corretos
+  // ✅ Lógica de Drones e Datetime (Mantida original)
   const selPulv = document.getElementById("drone_id");
   const selMonit = document.getElementById("drone_monitoramento_id");
 
-  // Snapshot pulverização
   const pulvSnapshot = {
     serie: document.getElementById("drone_serie_pulv"),
     modelo: document.getElementById("drone_modelo_pulv"),
@@ -396,7 +438,6 @@
     anac: document.getElementById("drone_registro_anac_pulv"),
   };
 
-  // Snapshot monitoramento
   const monitSnapshot = {
     serie: document.getElementById("drone_serie_monit"),
     modelo: document.getElementById("drone_modelo_monit"),
@@ -453,7 +494,6 @@
   if (selPulv) selPulv.addEventListener("change", () => loadDroneData(selPulv.value, "pulv"));
   if (selMonit) selMonit.addEventListener("change", () => loadDroneData(selMonit.value, "monit"));
 
-  // datetime-local default
   const responded = document.getElementById("respondido_em");
   if (responded && !responded.value) {
     const now = new Date();
@@ -461,11 +501,93 @@
     responded.value = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
   }
 
-  // Carregamento inicial (edição)
   window.addEventListener("DOMContentLoaded", () => {
     if (selPulv && selPulv.value) loadDroneData(selPulv.value, "pulv");
     if (selMonit && selMonit.value) loadDroneData(selMonit.value, "monit");
   });
 })();
+
+// ✅ Lógica de Assinaturas (Atualizada para Persistência e Precisão)
+const setupSignature = (canvasId, inputId) => {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    const sigInput = document.getElementById(inputId);
+    let writing = false;
+
+    const resize = () => {
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.strokeStyle = "#000000";
+
+        // ✨ Recarrega a assinatura do banco se ela existir no input
+        if (sigInput.value && sigInput.value.startsWith('data:image')) {
+            const img = new Image();
+            img.src = sigInput.value;
+            img.onload = () => {
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            };
+        }
+    };
+
+    window.addEventListener('resize', resize);
+    setTimeout(resize, 200); // Garante o desenho após o carregamento do layout
+
+    const getPos = (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return { x: clientX - rect.left, y: clientY - rect.top };
+    };
+
+    const start = (e) => {
+        writing = true;
+        const pos = getPos(e);
+        ctx.beginPath();
+        ctx.moveTo(pos.x, pos.y);
+    };
+
+    const draw = (e) => {
+        if (!writing) return;
+        e.preventDefault();
+        const pos = getPos(e);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+    };
+
+    const stop = () => {
+        if (writing) {
+            writing = false;
+            sigInput.value = canvas.toDataURL(); // Salva no input a cada traço finalizado
+        }
+    };
+
+    canvas.addEventListener('mousedown', start);
+    canvas.addEventListener('touchstart', start);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('touchmove', draw, { passive: false });
+    window.addEventListener('mouseup', stop);
+    window.addEventListener('touchend', stop);
+
+    canvas.clear = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        sigInput.value = "";
+    };
+};
+
+// Inicialização dos campos
+setupSignature('signature-pad-piloto', 'assinatura_data_piloto');
+setupSignature('signature-pad-cliente', 'assinatura_data_cliente');
+
+function clearSignature(tipo) {
+    const id = tipo === 'piloto' ? 'signature-pad-piloto' : 'signature-pad-cliente';
+    const canvas = document.getElementById(id);
+    if (canvas && canvas.clear) canvas.clear();
+}
 </script>
 {% endblock %}

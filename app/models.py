@@ -320,8 +320,6 @@ class OrdemServico(db.Model):
     quantidade_produto_administrada_ml = db.Column(db.Float)
 
     pulverizacao_area_l_ha = db.Column(db.Float)
-    pulverizacao_foco_tempo_estimado_segundos = db.Column(db.Float)
-    pulverizacao_foco_l_min = db.Column(db.Float)
 
     prefixo_aeronave_pulverizacao = db.Column(db.String(100), index=True)
     prefixo_aeronave_monitoramento = db.Column(db.String(100), index=True)
