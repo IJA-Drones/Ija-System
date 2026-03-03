@@ -98,6 +98,7 @@ html.dark-mode {
   --color-warning: #f3e526;
   --color-danger: #e53e3e;
   --color-recomended: #F7630C;
+  --color-completed: #9B30FF;
 
   /* Sombras */
   --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
@@ -476,6 +477,7 @@ body.sidebar-collapsed .app-content {
 .bg-danger { background: var(--color-danger); color: #fff !important; }
 .bg-light { background: var(--color-bg-white) !important; color: var(--color-text-main) !important; }
 .bg-filter-custom { background: var(--color-accent) !important; color: #fff !important; }
+.bg-completed { background: var(--color-completed); color: #fff !important; }
 
 .alert {
   padding: 0.75rem 1rem;
