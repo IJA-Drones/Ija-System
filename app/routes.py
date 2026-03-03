@@ -8195,17 +8195,34 @@ from app.models import (
 # se seu decorator roles_required estiver em outro módulo:
 # from app.decorators import roles_required
 
-
 # ============================================================
 # HELPERS DE PARSE (PT-BR friendly)
 # ============================================================
 def _clean(v):
+    """
+    Mantido para compatibilidade:
+    - retorna None quando vazio
+    """
     if v is None:
         return None
-    v = v.strip()
+    v = str(v).strip()
     return v if v != "" else None
 
+def _clean_str(v):
+    """
+    ✅ Para campos de TEXTO (String/Text):
+    - retorna "" quando vazio (nunca None)
+    """
+    if v is None:
+        return ""
+    return str(v).strip()  # se ficar "", ok
+
 def _to_int(v):
+    """
+    Para INT:
+    - vazio -> None
+    - inválido -> None
+    """
     v = _clean(v)
     if v is None:
         return None
@@ -8215,6 +8232,11 @@ def _to_int(v):
         return None
 
 def _to_float(v):
+    """
+    Para FLOAT:
+    - vazio -> None
+    - inválido -> None
+    """
     v = _clean(v)
     if v is None:
         return None
@@ -8231,6 +8253,10 @@ def _to_float(v):
         return None
 
 def _to_date(v):
+    """
+    Para DATE:
+    - vazio -> None
+    """
     v = _clean(v)
     if v is None:
         return None
@@ -8240,6 +8266,10 @@ def _to_date(v):
         return None
 
 def _to_time(v):
+    """
+    Para TIME:
+    - vazio -> None
+    """
     v = _clean(v)
     if v is None:
         return None
@@ -8253,6 +8283,7 @@ def _to_time(v):
 def _to_datetime_local(v):
     """
     input type="datetime-local" vem como "YYYY-MM-DDTHH:MM"
+    - vazio -> None
     """
     v = _clean(v)
     if v is None:
@@ -8286,7 +8317,6 @@ def piloto_os_formulario_redirect():
 # ROTA REAL DO FORMULÁRIO (GET + POST)
 # /piloto/os/<os_id>/formulario
 # ============================================================
-
 @bp.route("/piloto/os/<int:os_id>/formulario", methods=["GET", "POST"])
 @login_required
 @roles_required("piloto")
@@ -8338,8 +8368,6 @@ def piloto_os_formulario_view(os_id):
     ordem = s.ordem_servico  # 1:1
 
     from sqlalchemy.orm import aliased
-
-    # Cria um apelido limpo para a consulta
     d_alias = aliased(Drones, flat=True)
 
     drones_equipe = (
@@ -8351,7 +8379,7 @@ def piloto_os_formulario_view(os_id):
         .order_by(d_alias.renomacao.asc())
         .all()
     )
-   
+
     # Defaults puxados das tabelas
     uvis_nome = s.usuario.nome_uvis if s.usuario else ""
     endereco_os = f"{s.logradouro or ''}, {s.numero or 'S/N'} - {s.bairro or ''} - {s.cidade or ''}/{s.uf or ''}"
@@ -8384,19 +8412,20 @@ def piloto_os_formulario_view(os_id):
             )
             db.session.add(ordem)
 
-    
         # ----------------------------
         # ✅ Drones selecionados (PULVERIZAÇÃO E MONITORAMENTO)
         # ----------------------------
-        # Certifique-se que no seu HTML os 'name' dos selects sejam diferentes!
-        drone_pulv_id = request.form.get("drone_id", type=int)           # Select do Drone Principal
-        drone_monit_id = request.form.get("drone_monitoramento_id", type=int) # Select do Drone Monit.
+        # ⚠️ IMPORTANTE:
+        # Ajuste o name do select principal no HTML pra "drone_pulv_id"
+        # Aqui eu deixei compatível com seu código atual (drone_id) + o do monitoramento.
+        drone_pulv_id = request.form.get("drone_id", type=int)                 # principal (pulv)
+        drone_monit_id = request.form.get("drone_monitoramento_id", type=int) # monitoramento
 
         # --- PROCESSA DRONE DE PULVERIZAÇÃO (PRINCIPAL) ---
         if drone_pulv_id:
             drone_p = Drones.query.get(drone_pulv_id)
             if drone_p and drone_p.equipe_id == s.equipe_id:
-                ordem.drone_id = drone_p.id               
+                ordem.drone_id = drone_p.id
                 # Snapshot para histórico
                 ordem.drone_denominacao = drone_p.renomacao
                 ordem.drone_modelo = drone_p.modelo
@@ -8406,10 +8435,13 @@ def piloto_os_formulario_view(os_id):
                 # Automação de Prefixo
                 ordem.prefixo_aeronave_pulverizacao = drone_p.renomacao
         else:
-            # Limpa se desmarcado
             ordem.drone_id = None
-            ordem.drone_denominacao = None
-            ordem.prefixo_aeronave_pulverizacao = _clean(request.form.get("prefixo_aeronave_pulverizacao"))
+            ordem.drone_denominacao = ""          # ✅ vazio ao invés de None
+            ordem.drone_modelo = ""               # ✅ vazio ao invés de None
+            ordem.drone_numero_serie = ""         # ✅ vazio ao invés de None
+            ordem.drone_registro_anatel = ""      # ✅ vazio ao invés de None
+            ordem.drone_registro_anac = ""        # ✅ vazio ao invés de None
+            ordem.prefixo_aeronave_pulverizacao = _clean_str(request.form.get("prefixo_aeronave_pulverizacao"))
 
         # --- PROCESSA DRONE DE MONITORAMENTO ---
         if drone_monit_id:
@@ -8423,67 +8455,68 @@ def piloto_os_formulario_view(os_id):
                 ordem.drone_monitoramento_registro_anac = drone_m.registro_anac
                 ordem.prefixo_aeronave_monitoramento = drone_m.renomacao
         else:
-            # ✅ ADICIONE ISSO: Limpa os snapshots de monitoramento se desmarcado
             ordem.drone_monitoramento_id = None
-            ordem.drone_monitoramento_denominacao = None
-            ordem.drone_monitoramento_modelo = None
-            ordem.drone_monitoramento_numero_serie = None
-            ordem.drone_monitoramento_registro_anatel = None
-            ordem.drone_monitoramento_registro_anac = None
-            ordem.prefixo_aeronave_monitoramento = _clean(request.form.get("prefixo_aeronave_monitoramento"))
+            ordem.drone_monitoramento_denominacao = ""     # ✅ vazio
+            ordem.drone_monitoramento_modelo = ""          # ✅ vazio
+            ordem.drone_monitoramento_numero_serie = ""    # ✅ vazio
+            ordem.drone_monitoramento_registro_anatel = "" # ✅ vazio
+            ordem.drone_monitoramento_registro_anac = ""   # ✅ vazio
+            ordem.prefixo_aeronave_monitoramento = _clean_str(request.form.get("prefixo_aeronave_monitoramento"))
 
         # --- Continuação normal dos campos ---
-        ordem.identificador_os = _clean(request.form.get("identificador_os"))
-        ordem.respondido_por = _clean(request.form.get("respondido_por")) or respondido_por_padrao
+        # ✅ Textos -> _clean_str (vazio vira "")
+        # ✅ Números/datas/horas -> _to_* (vazio vira None)
+
+        ordem.identificador_os = _clean_str(request.form.get("identificador_os"))
+        ordem.respondido_por = _clean_str(request.form.get("respondido_por")) or respondido_por_padrao
         ordem.respondido_em = _to_datetime_local(request.form.get("respondido_em")) or datetime.now()
 
-        ordem.situacao_aplicacao = _clean(request.form.get("situacao_aplicacao"))
-        ordem.larva_visualizada = _clean(request.form.get("larva_visualizada"))
-        ordem.retornar_proxima_semana_monitorar_larvas = _clean(request.form.get("retornar_proxima_semana_monitorar_larvas"))
+        ordem.situacao_aplicacao = _clean_str(request.form.get("situacao_aplicacao"))
+        ordem.larva_visualizada = _clean_str(request.form.get("larva_visualizada"))
+        ordem.retornar_proxima_semana_monitorar_larvas = _clean_str(request.form.get("retornar_proxima_semana_monitorar_larvas"))
 
         # template usa name="da" mas model é distrito_administrativo
-        ordem.distrito_administrativo = _clean(request.form.get("da")) or _clean(request.form.get("distrito_administrativo"))
+        ordem.distrito_administrativo = _clean_str(request.form.get("da")) or _clean_str(request.form.get("distrito_administrativo"))
 
-        ordem.nome_rf_ace_responsavel_os = _clean(request.form.get("nome_rf_ace_responsavel_os"))
-        ordem.criadouro_os_tipo_volume = _clean(request.form.get("criadouro_os_tipo_volume"))
+        ordem.nome_rf_ace_responsavel_os = _clean_str(request.form.get("nome_rf_ace_responsavel_os"))
+        ordem.criadouro_os_tipo_volume = _clean_str(request.form.get("criadouro_os_tipo_volume"))
 
         ordem.data_aplicacao = _to_date(request.form.get("data_aplicacao"))
         ordem.hora_inicio_aplicacao = _to_time(request.form.get("hora_inicio_aplicacao"))
         ordem.hora_termino_aplicacao = _to_time(request.form.get("hora_termino_aplicacao"))
 
-        ordem.tratamento_adicional_realizado = _clean(request.form.get("tratamento_adicional_realizado"))
-        ordem.quantos_quais = _clean(request.form.get("quantos_quais"))
+        ordem.tratamento_adicional_realizado = _clean_str(request.form.get("tratamento_adicional_realizado"))
+        ordem.quantos_quais = _clean_str(request.form.get("quantos_quais"))
 
-        ordem.descricao_produto = _clean(request.form.get("descricao_produto"))
-        ordem.formulacao_produto = _clean(request.form.get("formulacao_produto"))
-        ordem.dosagem_g_10l = _clean(request.form.get("dosagem_g_10l"))
+        ordem.descricao_produto = _clean_str(request.form.get("descricao_produto"))
+        ordem.formulacao_produto = _clean_str(request.form.get("formulacao_produto"))
+        ordem.dosagem_g_10l = _clean_str(request.form.get("dosagem_g_10l"))
 
-        ordem.tipo_aplicacao = _clean(request.form.get("tipo_aplicacao"))
+        ordem.tipo_aplicacao = _clean_str(request.form.get("tipo_aplicacao"))
         ordem.quantidade_produto_administrada_ml = _to_float(request.form.get("quantidade_produto_administrada_ml"))
         ordem.pulverizacao_area_l_ha = _to_float(request.form.get("pulverizacao_area_l_ha"))
         ordem.pulverizacao_foco_tempo_estimado_segundos = _to_float(request.form.get("pulverizacao_foco_tempo_estimado_segundos"))
         ordem.pulverizacao_foco_l_min = _to_float(request.form.get("pulverizacao_foco_l_min"))
+
         ordem.quantidade_imagens_registradas = _to_int(request.form.get("quantidade_imagens_registradas"))
         ordem.quantidade_videos_registradas = _to_int(request.form.get("quantidade_videos_registradas"))
-        
-        ordem.ponta_pulverizacao = _clean(request.form.get("ponta_pulverizacao"))
+
+        ordem.ponta_pulverizacao = _clean_str(request.form.get("ponta_pulverizacao"))
         ordem.temperatura_c = _to_float(request.form.get("temperatura_c"))
         ordem.umidade_relativa_pct = _to_float(request.form.get("umidade_relativa_pct"))
         ordem.velocidade_vento_kmh = _to_float(request.form.get("velocidade_vento_kmh"))
 
-        ordem.motivo_nao_realizacao = _clean(request.form.get("motivo_nao_realizacao"))
+        ordem.motivo_nao_realizacao = _clean_str(request.form.get("motivo_nao_realizacao"))
 
-        # Campos extras do template que não existem no model -> guarda em observacoes
-        obs = _clean(request.form.get("observacoes"))
-
+        obs = _clean_str(request.form.get("observacoes"))
         ordem.observacoes = obs
 
-        ordem.piloto = _clean(request.form.get("piloto")) or piloto_padrao
-        ordem.assinatura_piloto = _clean(request.form.get("assinatura_piloto"))
-        ordem.auxiliar = _clean(request.form.get("auxiliar")) or auxiliar_padrao
+        ordem.piloto = _clean_str(request.form.get("piloto")) or piloto_padrao
+        ordem.assinatura_piloto = _clean_str(request.form.get("assinatura_piloto"))
+        ordem.auxiliar = _clean_str(request.form.get("auxiliar")) or auxiliar_padrao
 
-        ordem.proprietario_ou_preposto = _clean(request.form.get("proprietario_ou_preposto"))
-        ordem.assinatura_proprietario_ou_preposto = _clean(request.form.get("assinatura_proprietario_ou_preposto"))
+        ordem.proprietario_ou_preposto = _clean_str(request.form.get("proprietario_ou_preposto"))
+        ordem.assinatura_proprietario_ou_preposto = _clean_str(request.form.get("assinatura_proprietario_ou_preposto"))
 
         try:
             db.session.commit()
