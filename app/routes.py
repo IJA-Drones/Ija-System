@@ -8464,7 +8464,8 @@ def piloto_os_formulario_view(os_id):
         ordem.pulverizacao_foco_tempo_estimado_segundos = _to_float(request.form.get("pulverizacao_foco_tempo_estimado_segundos"))
         ordem.pulverizacao_foco_l_min = _to_float(request.form.get("pulverizacao_foco_l_min"))
         ordem.quantidade_imagens_registradas = _to_int(request.form.get("quantidade_imagens_registradas"))
-
+        ordem.quantidade_videos_registradas = _to_int(request.form.get("quantidade_videos_registradas"))
+        
         ordem.ponta_pulverizacao = _clean(request.form.get("ponta_pulverizacao"))
         ordem.temperatura_c = _to_float(request.form.get("temperatura_c"))
         ordem.umidade_relativa_pct = _to_float(request.form.get("umidade_relativa_pct"))
