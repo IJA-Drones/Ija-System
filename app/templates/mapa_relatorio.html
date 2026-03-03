@@ -1,531 +1,639 @@
 {% extends "base.html" %}
 
 {% block extra_styles %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
-    <style>/* 1. Definição de Variáveis (Modo Claro/Escuro) */
-        :root {
-            --glass-bg: rgba(255, 255, 255, 0.85);
-            --glass-text: #444;
-            --glass-border: rgba(0, 0, 0, 0.1);
-            --accent-color: #0d6efd;
-        }
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+<style>
+  :root {
+    --glass-bg: rgba(255, 255, 255, 0.85);
+    --glass-text: #444;
+    --glass-border: rgba(0, 0, 0, 0.1);
+    --accent-color: #0d6efd;
+  }
 
-        .dark-mode {
-            --glass-bg: rgba(15, 23, 42, 0.75); /* Azul marinho translúcido */
-            --glass-text: #f8fafc;
-            --glass-border: rgba(255, 255, 255, 0.15);
-            --accent-color: #38bdf8; /* Azul ciano para brilhar no escuro */
-        }
+  .dark-mode {
+    --glass-bg: rgba(15, 23, 42, 0.75);
+    --glass-text: #f8fafc;
+    --glass-border: rgba(255, 255, 255, 0.15);
+    --accent-color: #38bdf8;
+  }
 
-        /* 2. Container e Base */
-        .map-container { 
-            width: 100%; 
-            height: 65vh; 
-            background-color: #f8f9fa; 
-            border-radius: 0 0 16px 16px; 
-        }
+  .map-container {
+    width: 100%;
+    height: 65vh;
+    background-color: #f8f9fa;
+    border-radius: 0 0 16px 16px;
+  }
 
-        /* 3. Efeito de Vidro Universal (Glassmorphism) */
-        .glass-panel {
-            background: var(--glass-bg) !important;
-            backdrop-filter: blur(10px) saturate(160%) !important;
-            -webkit-backdrop-filter: blur(10px) saturate(160%) !important;
-            border: 1px solid var(--glass-border) !important;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15) !important;
-            border-radius: 12px !important;
-            color: var(--glass-text) !important;
-            transition: all 0.3s ease;
-        }
+  .glass-panel {
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(10px) saturate(160%) !important;
+    -webkit-backdrop-filter: blur(10px) saturate(160%) !important;
+    border: 1px solid var(--glass-border) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15) !important;
+    border-radius: 12px !important;
+    color: var(--glass-text) !important;
+    transition: all 0.3s ease;
+  }
 
-        /* 4. Ajuste dos Cards Flutuantes (Compactos) */
-        .focos-counter-card {
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            position: absolute;
-            z-index: 1000;
-            min-width: 150px;
-            padding: 8px 16px; /* Altura reduzida para não ficar "esticado" */
-            text-align: center;
-        }
+  .focos-counter-card {
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    position: absolute;
+    z-index: 1000;
+    min-width: 150px;
+    padding: 8px 16px;
+    text-align: center;
+  }
 
-        .focos-counter-card h3 {
-            color: var(--accent-color) !important;
-            font-weight: 800;
-            margin-bottom: 0;
-            line-height: 1.1;
-        }
+  .focos-counter-card h3 {
+    color: var(--accent-color) !important;
+    font-weight: 800;
+    margin-bottom: 0;
+    line-height: 1.1;
+  }
 
-        .focos-counter-card small {
-            color: var(--glass-text) !important;
-            opacity: 0.8;
-            font-size: 0.6rem;
-        }
+  .focos-counter-card small {
+    color: var(--glass-text) !important;
+    opacity: 0.8;
+    font-size: 0.6rem;
+  }
 
-        /* 5. Legendas (Design Minimalista) */
-        .map-legend-overlay, .map-category-legend {
-            position: absolute;
-            bottom: 25px;
-            left: 20px;
-            z-index: 1000;
-            width: 155px;
-            padding: 12px;
-        }
+  .map-legend-overlay,
+  .map-category-legend {
+    position: absolute;
+    bottom: 25px;
+    left: 20px;
+    z-index: 1000;
+    width: 170px;
+    padding: 12px;
+  }
 
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 6px;
-            font-size: 0.65rem;
-            font-weight: 600;
-            color: var(--glass-text) !important;
-        }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: 0.70rem;
+    font-weight: 700;
+    color: var(--glass-text) !important;
+    opacity: 0.65;
+    transition: all .2s ease;
+  }
 
-        .legend-color {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            border: 1.5px solid #fff;
-            flex-shrink: 0;
-        }
+  .legend-item.is-active {
+    opacity: 1;
+    transform: translateX(2px);
+  }
 
-        /* 6. Abas e Rodapé */
-        #mapTabs {
-            background: #f1f3f5;
-            padding: 4px;
-            border-radius: 50px;
-            display: inline-flex;
-        }
+  .legend-color {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 1.5px solid #fff;
+    flex-shrink: 0;
+  }
 
-            /* Estilo adicional para garantir que o fundo das abas no Dark Mode acompanhe o sistema */
-        body.dark-mode #mapTabs {
-            background: rgba(255,255,255,0.1) !important;
-        }
-        /* Esconde a barra de scroll horizontal para as abas no mobile */
-        #mapTabs::-webkit-scrollbar {
-            display: none;
-        }
+  #mapTabs {
+    background: #f1f3f5;
+    padding: 4px;
+    border-radius: 50px;
+    display: inline-flex;
+  }
 
-        .dark-mode #mapTabs { background: #334155; }
+  body.dark-mode #mapTabs { background: rgba(255, 255, 255, 0.1) !important; }
+  #mapTabs::-webkit-scrollbar { display: none; }
+  .dark-mode #mapTabs { background: #334155; }
 
-        #mapTabs .nav-link.active {
-            background: var(--card-bg) !important;
-            color: var(--accent-color) !important;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
-            border-radius: 50px;
-        }
+  #mapTabs .nav-link.active {
+    background: var(--card-bg) !important;
+    color: var(--accent-color) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+    border-radius: 50px;
+  }
 
-        .logistics-footer {
-            background: var(--card-bg);
-            border-top: 1px solid var(--glass-border);
-            padding: 15px 20px;
-            border-radius: 0 0 16px 16px;
-            color: var(--glass-text);
-        }
+  .logistics-footer {
+    background: var(--card-bg);
+    border-top: 1px solid var(--glass-border);
+    padding: 15px 20px;
+    border-radius: 0 0 16px 16px;
+    color: var(--glass-text);
+  }
 
-        .cursor-pointer { cursor: pointer; }
-    </style>
+  .cursor-pointer { cursor: pointer; }
+
+  .gradient-bar {
+    height: 10px;
+    border-radius: 999px;
+    margin: 8px 0 6px 0;
+    background: var(--legenda-gradiente, linear-gradient(to right, #00ffff, #00ff00, #ffff00, #ff0000));
+  }
+</style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4" style="max-width: 1200px;">
-    
-    {# --- CABEÇALHO PADRONIZADO --- #}
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="text-dark m-0">
-            <i class="bi bi-geo-fill me-2 text-primary"></i> Inteligência Geográfica
-        </h2>
-        {% if current_user.tipo_usuario == 'admin' %}
-        <a href="{{ url_for('main.relatorios') }}" class="btn btn-outline-primary">
-            <i class="bi bi-bar-chart-line me-1"></i> Ver Estatísticas
-        </a>
-        {% endif %}
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="text-dark m-0">
+      <i class="bi bi-geo-fill me-2 text-primary"></i> Inteligência Geográfica
+    </h2>
+    {% if current_user.tipo_usuario == 'admin' %}
+    <a href="{{ url_for('main.relatorios') }}" class="btn btn-outline-primary">
+      <i class="bi bi-bar-chart-line me-1"></i> Ver Estatísticas
+    </a>
+    {% endif %}
+  </div>
+
+  <div class="card shadow-sm rounded-4 mb-4 border-0">
+    <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center cursor-pointer"
+      data-bs-toggle="collapse" data-bs-target="#collapseFiltros">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-funnel-fill text-primary"></i>
+        <span class="text-dark fw-bold">Filtros de Busca</span>
+        <span id="filterBadge" class="badge bg-danger rounded-circle p-1 d-none"
+          style="width: 8px; height: 8px;"></span>
+      </div>
+      <i class="bi bi-chevron-down text-muted"></i>
     </div>
 
-    {# --- FILTROS EM "SANFONA" (PADRÃO IJA) --- #}
-    <div class="card shadow-sm rounded-4 mb-4 border-0">
-        <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center cursor-pointer"
-            data-bs-toggle="collapse" data-bs-target="#collapseFiltros">
-            <div class="d-flex align-items-center gap-2">
-                <i class="bi bi-funnel-fill text-primary"></i>
-                <span class="text-dark fw-bold">Filtros de Busca</span>
-                <span id="filterBadge" class="badge bg-danger rounded-circle p-1 d-none" style="width: 8px; height: 8px;"></span>
-            </div>
-            <i class="bi bi-chevron-down text-muted"></i>
+    <div class="collapse show" id="collapseFiltros">
+      <div class="card-body pt-0">
+        <div class="row g-2 align-items-end">
+          {% if current_user.tipo_usuario == 'admin' %}
+          <div class="col-md-3">
+            <label class="small text-muted mb-1 fw-bold">Unidade (UVIS)</label>
+            <select id="uvisFilter" class="form-select form-select-sm" onchange="atualizarMapas()">
+              <option value="">Todas as Unidades</option>
+              {% for id, nome_uvis in uvis_disponiveis %}
+              <option value="{{ id }}">{{ nome_uvis }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endif %}
+
+          <div class="col-md-3">
+            <label class="small text-muted mb-1 fw-bold">Mês de Referência</label>
+            <select id="mesFilter" class="form-select form-select-sm" onchange="atualizarMapas()">
+              {% for val in range(1, 13) %}
+              <option value="{{ val }}" {% if val == 2 %}selected{% endif %}>
+                {{ ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][val-1] }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-3">
+            <label class="small text-muted mb-1 fw-bold">Tipo de Foco</label>
+            <select id="focoFilter" class="form-select form-select-sm" onchange="atualizarMapas()">
+              <option value="todos">Todos os Focos</option>
+
+              {% set opcoes_foco = [
+                "Acumulador", "CAIXA D'AGUA", "Casa abandonada com inserviveis",
+                "Corrego", "Ferro velho", "Galpão com inserviveis",
+                "Imovel com Inserviveis", "Laje/telhado com Acumulo de agua",
+                "P.E Cadastrado", "Patio com Veiculos", "Piscina",
+                "Piscinão", "Reciclagem", "Terreno com inserviveis"
+              ] %}
+
+              {% for opcao in opcoes_foco %}
+              <option value="{{ opcao }}">{{ opcao }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-3 d-flex gap-2">
+            <button onclick="atualizarMapas()" class="btn btn-success btn-sm w-100 shadow-sm">
+              <i class="bi bi-funnel me-1"></i> Filtrar
+            </button>
+          </div>
         </div>
+      </div>
+    </div>
+  </div>
 
-        <div class="collapse show" id="collapseFiltros">
-            <div class="card-body pt-0">
-                <div class="row g-2 align-items-end">
-                    {% if current_user.tipo_usuario == 'admin' %}
-                    <div class="col-md-3">
-                        <label class="small text-muted mb-1 fw-bold">Unidade (UVIS)</label>
-                        <select id="uvisFilter" class="form-select form-select-sm" onchange="atualizarMapas()">
-                            <option value="">Todas as Unidades</option>
-                            {% for id, nome_uvis in uvis_disponiveis %}
-                            <option value="{{ id }}">{{ nome_uvis }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    {% endif %}
+  <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+    <div class="card-header border-0 py-3 d-flex justify-content-center">
+      <ul class="nav nav-pills flex-nowrap p-1 shadow-sm" id="mapTabs" role="tablist"
+        style="background: rgba(0,0,0,0.05); border-radius: 50px; width: fit-content; overflow-x: auto; white-space: nowrap; -ms-overflow-style: none; scrollbar-width: none;">
 
-                    <div class="col-md-3">
-                        <label class="small text-muted mb-1 fw-bold">Mês de Referência</label>
-                        <select id="mesFilter" class="form-select form-select-sm" onchange="atualizarMapas()">
-                            {% for val in range(1, 13) %}
-                            <option value="{{ val }}" {% if val == 2 %}selected{% endif %}>
-                                {{ ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][val-1] }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
+        <li class="nav-item" role="presentation">
+          <a class="nav-link active rounded-pill px-4 fw-bold" data-bs-toggle="tab" href="#tabCalor"
+            style="transition: 0.3s;">
+            <i class="bi bi-fire me-2"></i>Calor
+          </a>
+        </li>
 
-                    <div class="col-md-3">
-                        <label class="small text-muted mb-1 fw-bold">Tipo de Foco</label>
-                        <select id="focoFilter" class="form-select form-select-sm" onchange="atualizarMapas()">
-                            <option value="todos">Todos os Focos</option>
-                            <option value="piscina">Piscinas / Água Parada</option>
-                            <option value="abandonado">Imóveis Abandonados</option>
-                            <option value="terreno">Terrenos Baldios</option>
-                            <option value="outros">Outros</option>
-                        </select>
-                    </div>
-                    
-                    <div class="col-md-3 d-flex gap-2">
-                        <button onclick="atualizarMapas()" class="btn btn-success btn-sm w-100 shadow-sm">
-                            <i class="bi bi-funnel me-1"></i> Filtrar
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <li class="nav-item" role="presentation">
+          <a class="nav-link rounded-pill px-4 fw-bold" data-bs-toggle="tab" href="#tabArea"
+            style="transition: 0.3s;">
+            <i class="bi bi-geo me-2"></i>Áreas
+          </a>
+        </li>
+
+        <li class="nav-item" title="Funcionalidade em desenvolvimento" data-bs-toggle="tooltip">
+          <a class="nav-link disabled rounded-pill px-4" style="pointer-events: none; opacity: 0.5;">
+            <i class="bi bi-truck me-2"></i>Logística
+          </a>
+        </li>
+      </ul>
     </div>
 
-    {# --- MAPA COM DESIGN CLEAN --- #}
-    <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
-        <div class="card-header border-0 py-3 d-flex justify-content-center">
-            <ul class="nav nav-pills flex-nowrap p-1 shadow-sm" id="mapTabs" role="tablist" 
-                style="background: rgba(0,0,0,0.05); border-radius: 50px; width: fit-content; overflow-x: auto; white-space: nowrap; -ms-overflow-style: none; scrollbar-width: none;">
-                
-                <li class="nav-item" role="presentation">
-                    <a class="nav-link active rounded-pill px-4 fw-bold" data-bs-toggle="tab" href="#tabCalor" style="transition: 0.3s;">
-                        <i class="bi bi-fire me-2"></i>Calor
-                    </a>
-                </li>
-                
-                <li class="nav-item" role="presentation">
-                    <a class="nav-link rounded-pill px-4 fw-bold" data-bs-toggle="tab" href="#tabArea" style="transition: 0.3s;">
-                        <i class="bi bi-geo me-2"></i>Áreas
-                    </a>
-                </li>
-                
-                <li class="nav-item" title="Funcionalidade em desenvolvimento" data-bs-toggle="tooltip">
-                    <a class="nav-link disabled rounded-pill px-4" style="pointer-events: none; opacity: 0.5;">
-                        <i class="bi bi-truck me-2"></i>Logística
-                    </a>
-                </li>
-            </ul>
-        </div>
+    <div class="card-body p-0 position-relative">
 
-        <div class="card-body p-0 position-relative">
-            
-            {# Card Flutuante Central #}
-            <div class="focos-counter-card glass-panel border-0 text-center">
-                <small class="text-muted text-uppercase fw-bold" style="font-size: 0.55rem; min-width: 100px; min-height: 40px; letter-spacing: 1px;">Volume de Focos</small>
-                <h3 class="mb-0 fw-bold text-primary" id="count-total">0</h3>
+      <div class="focos-counter-card glass-panel border-0 text-center">
+        <small class="text-muted text-uppercase fw-bold"
+          style="font-size: 0.55rem; min-width: 100px; min-height: 40px; letter-spacing: 1px;">Volume de Focos</small>
+        <h3 class="mb-0 fw-bold text-primary" id="count-total">0</h3>
+      </div>
+
+      <div class="tab-content">
+        <div class="tab-pane fade show active" id="tabCalor">
+          <div id="mapHeatmap" class="map-container"></div>
+
+          <div class="map-legend-overlay glass-panel border-0">
+            <h6 class="fw-bold mb-2 text-uppercase">Densidade de Focos</h6>
+
+            <div class="gradient-bar"></div>
+
+            <div class="d-flex justify-content-between fw-bold" style="font-size: 0.6rem; opacity: 0.8;">
+              <span>Baixa</span>
+              <span>Alta</span>
             </div>
 
-            <div class="tab-content">
-                <div class="tab-pane fade show active" id="tabCalor">
-                    <div id="mapHeatmap" class="map-container"></div>
-                    
-                    <div class="map-legend-overlay glass-panel border-0">
-                        <h6 class="fw-bold mb-2 text-uppercase">Densidade de Focos</h6>
-                        
-                        <div class="gradient-bar"></div>
-                        
-                        <div class="d-flex justify-content-between fw-bold" style="font-size: 0.6rem; opacity: 0.8;">
-                            <span>Baixa</span>
-                            <span>Alta</span>
-                        </div>
-                        
-                        <hr class="my-2 opacity-25">
-                        
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span style="font-size: 0.65rem; opacity: 0.8;">Total:</span>
-                            <strong style="color: var(--accent-color) !important;" id="legend-count">0</strong>
-                        </div>
-                    </div>
-                </div>
-                <div class="tab-pane fade" id="tabArea"> 
-                    <div id="mapPolygons" class="map-container"></div>
-                    <div class="map-category-legend glass-panel p-3 border-0" style="bottom: 20px; left: 20px;">
-                        <h6 class="fw-bold text-muted small mb-3 text-uppercase">Legenda</h6>
-                        <div class="legend-item"><div class="legend-color" style="background: #0000ff;"></div><span>Piscina</span></div>
-                        <div class="legend-item"><div class="legend-color" style="background: #ff3c0b;"></div><span>Imóveis Abandonados</span></div>
-                        <div class="legend-item"><div class="legend-color" style="background: #006400;"></div><span>Terreno Baldio</span></div>
-                        <div class="legend-item"><div class="legend-color" style="background: #ffa500;"></div><span>Outros</span></div>
-                    </div>
-                </div>
-                <div class="tab-pane fade" id="tabLogistica">
-                    <div id="mapLogistics" class="map-container"></div>
-                    <div class="logistics-footer d-flex justify-content-around">
-                        <div class="text-center">
-                            <small class="text-muted d-block fw-bold" style="font-size: 0.6rem;">DISTÂNCIA</small>
-                            <span class="fw-bold fs-5 text-dark"><span id="distancia-km">0</span> <small>km</small></span>
-                        </div>
-                        <div class="text-center border-start border-end px-5">
-                            <small class="text-muted d-block fw-bold" style="font-size: 0.6rem;">CONSUMO</small>
-                            <span class="fw-bold fs-5 text-dark"><span id="consumo-litros">0</span> <small>L</small></span>
-                        </div>
-                        <div class="text-center">
-                            <small class="text-muted d-block fw-bold" style="font-size: 0.6rem;">CUSTO ESTIMADO</small>
-                            <span class="text-success fw-bold fs-5">R$ <span id="custo-total-log">0,00</span></span>
-                        </div>
-                    </div>
-                </div>
+            <hr class="my-2 opacity-25">
+
+            <div class="d-flex justify-content-between align-items-center">
+              <span style="font-size: 0.65rem; opacity: 0.8;">Total:</span>
+              <strong style="color: var(--accent-color) !important;" id="legend-count">0</strong>
             </div>
+          </div>
         </div>
+
+        <div class="tab-pane fade" id="tabArea">
+          <div id="mapPolygons" class="map-container"></div>
+
+          <!-- Legenda controlável por JS (ids por categoria) -->
+          <div class="map-category-legend glass-panel p-3 border-0" style="bottom: 20px; left: 20px;">
+            <h6 class="fw-bold text-muted small mb-3 text-uppercase">Legenda</h6>
+
+            <div class="legend-item is-active" id="legend-piscina">
+              <div class="legend-color" style="background: #0000ff;"></div><span>Água (Piscina / Caixa d'água / Acúmulo)</span>
+            </div>
+
+            <div class="legend-item is-active" id="legend-abandonado">
+              <div class="legend-color" style="background: #ff3c0b;"></div><span>Imóveis Abandonados</span>
+            </div>
+
+            <div class="legend-item is-active" id="legend-terreno">
+              <div class="legend-color" style="background: #006400;"></div><span>Terreno / Inservíveis / Reciclagem</span>
+            </div>
+
+            <div class="legend-item is-active" id="legend-outros">
+              <div class="legend-color" style="background: #ffa500;"></div><span>Outros</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-pane fade" id="tabLogistica">
+          <div id="mapLogistics" class="map-container"></div>
+          <div class="logistics-footer d-flex justify-content-around">
+            <div class="text-center">
+              <small class="text-muted d-block fw-bold" style="font-size: 0.6rem;">DISTÂNCIA</small>
+              <span class="fw-bold fs-5 text-dark"><span id="distancia-km">0</span> <small>km</small></span>
+            </div>
+            <div class="text-center border-start border-end px-5">
+              <small class="text-muted d-block fw-bold" style="font-size: 0.6rem;">CONSUMO</small>
+              <span class="fw-bold fs-5 text-dark"><span id="consumo-litros">0</span> <small>L</small></span>
+            </div>
+            <div class="text-center">
+              <small class="text-muted d-block fw-bold" style="font-size: 0.6rem;">CUSTO ESTIMADO</small>
+              <span class="text-success fw-bold fs-5">R$ <span id="custo-total-log">0,00</span></span>
+            </div>
+          </div>
+        </div>
+
+      </div>
     </div>
+  </div>
+
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    // Seus scripts permanecem iguais, apenas certifique-se de que atualizarMapas() 
-    // chama tanto carregarDadosCalor quanto carregarDadosOperacionais.
-    
-    let mapHeat, mapArea, mapLogistics, heatmap;
-    let markers = []; 
-    let circles = []; 
+  let mapHeat, mapArea, mapLogistics, heatmap;
+  let markers = [];
+  let circles = [];
 
-    function initMap() {
-        const center = { lat: -22.4279, lng: -45.4584 };
+  function initMap() {
+    const center = { lat: -22.4279, lng: -45.4584 };
 
-        // garante que os containers existem (evita erro se a aba/página não tiver algum deles)
-        const elHeat = document.getElementById("mapHeatmap");
-        const elPoly = document.getElementById("mapPolygons");
-        const elLogi = document.getElementById("mapLogistics");
+    const elHeat = document.getElementById("mapHeatmap");
+    const elPoly = document.getElementById("mapPolygons");
+    const elLogi = document.getElementById("mapLogistics");
 
-        if (!elHeat && !elPoly && !elLogi) {
-        console.warn("Containers do Google Maps não encontrados nesta página.");
-        return;
-        }
-
-        if (elHeat) {
-        mapHeat = new google.maps.Map(elHeat, {
-            zoom: 13,
-            center,
-            mapTypeId: "hybrid",
-        });
-        }
-
-        if (elPoly) {
-        mapArea = new google.maps.Map(elPoly, {
-            zoom: 13,
-            center,
-            mapTypeId: "hybrid",
-        });
-        }
-
-        if (elLogi) {
-        mapLogistics = new google.maps.Map(elLogi, {
-            zoom: 13,
-            center,
-        });
-        }
-
-        document.querySelectorAll('a[data-bs-toggle="tab"]').forEach((tab) => {
-        tab.addEventListener("shown.bs.tab", (e) => {
-            if (mapHeat) google.maps.event.trigger(mapHeat, "resize");
-            if (mapArea) google.maps.event.trigger(mapArea, "resize");
-            if (mapLogistics) google.maps.event.trigger(mapLogistics, "resize");
-
-            const target = e.target.getAttribute("href");
-            if (target === "#tabCalor") carregarDadosCalor();
-            if (target === "#tabArea") carregarDadosOperacionais();
-        });
-        });
-
-        carregarDadosCalor();
+    if (!elHeat && !elPoly && !elLogi) {
+      console.warn("Containers do Google Maps não encontrados nesta página.");
+      return;
     }
 
-    // ✅ inicia quando a API estiver pronta (base.html dispara googlemaps:ready)
-    function bootRelatorioMapas() {
-        // espera DOM pronto também
-        if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", initMap, { once: true });
-        } else {
-        initMap();
-        }
+    if (elHeat) {
+      mapHeat = new google.maps.Map(elHeat, { zoom: 13, center, mapTypeId: "hybrid" });
     }
 
-    if (window.__GOOGLE_MAPS_READY__) {
-        bootRelatorioMapas();
+    if (elPoly) {
+      mapArea = new google.maps.Map(elPoly, { zoom: 13, center, mapTypeId: "hybrid" });
+    }
+
+    if (elLogi) {
+      mapLogistics = new google.maps.Map(elLogi, { zoom: 13, center });
+    }
+
+    document.querySelectorAll('a[data-bs-toggle="tab"]').forEach((tab) => {
+      tab.addEventListener("shown.bs.tab", (e) => {
+        if (mapHeat) google.maps.event.trigger(mapHeat, "resize");
+        if (mapArea) google.maps.event.trigger(mapArea, "resize");
+        if (mapLogistics) google.maps.event.trigger(mapLogistics, "resize");
+
+        const target = e.target.getAttribute("href");
+        if (target === "#tabCalor") carregarDadosCalor();
+        if (target === "#tabArea") carregarDadosOperacionais();
+      });
+    });
+
+    carregarDadosCalor();
+  }
+
+  function bootRelatorioMapas() {
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initMap, { once: true });
     } else {
-        document.addEventListener("googlemaps:ready", bootRelatorioMapas, { once: true });
+      initMap();
     }
+  }
 
-    function atualizarMapas() {
-        const foco = document.getElementById("focoFilter").value;
-        const badge = document.getElementById("filterBadge");
-        if (foco !== "todos") badge.classList.remove("d-none");
-        else badge.classList.add("d-none");
-        
-        carregarDadosCalor();
-        carregarDadosOperacionais();
+  if (window.__GOOGLE_MAPS_READY__) {
+    bootRelatorioMapas();
+  } else {
+    document.addEventListener("googlemaps:ready", bootRelatorioMapas, { once: true });
+  }
+
+  function atualizarMapas() {
+    const foco = document.getElementById("focoFilter").value;
+    const badge = document.getElementById("filterBadge");
+
+    if (foco !== "todos") badge.classList.remove("d-none");
+    else badge.classList.add("d-none");
+
+    atualizarLegendaCategorias();   // mantém legenda coerente
+    carregarDadosCalor();
+    carregarDadosOperacionais();
+  }
+
+  function atualizarIndicadoresBI(total) {
+    document.getElementById("count-total").innerText = total;
+    if (document.getElementById("legend-count")) document.getElementById("legend-count").innerText = total;
+
+    document.getElementById("distancia-km").innerText = (total * 0.8).toFixed(1);
+    document.getElementById("consumo-litros").innerText = (total * 0.15).toFixed(2);
+    document.getElementById("custo-total-log").innerText = (total * 5.50).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+  }
+
+  function normalizarFoco(str) {
+    return (str || "").toString().trim().toLowerCase();
+  }
+
+  function getCategoriaPorFoco(foco) {
+    const f = normalizarFoco(foco);
+
+    // Água / piscina / caixa / acúmulo
+    if (
+      f.includes("piscina") ||
+      f.includes("piscinão") ||
+      f.includes("caixa") ||
+      f.includes("caixa d'agua") ||
+      f.includes("caixa dágua") ||
+      f.includes("Acumulador") ||
+      f.includes("agua") || f.includes("água") ||
+      f.includes("acumulo de agua") || f.includes("acúmulo de agua") ||
+      f.includes("acúmulo de água") || f.includes("acumulo de água") ||
+      f.includes("laje/telhado")
+    ) return "piscina";
+
+    // Abandonado
+    if (f.includes("abandonad")) return "abandonado";
+
+    // Terreno / inservíveis / ferro velho / reciclagem / pátio
+    if (
+      f.includes("terreno") ||
+      f.includes("inserviveis") || f.includes("inservíveis") ||
+      f.includes("ferro velho") ||
+      f.includes("reciclagem") ||
+      f.includes("pátio") || f.includes("patio")
+    ) return "terreno";
+
+    return "outros";
+  }
+
+  function getCorPorFoco(foco) {
+    const categoria = getCategoriaPorFoco(foco);
+    if (categoria === "piscina") return "#0000ff";
+    if (categoria === "abandonado") return "#ff3c0b";
+    if (categoria === "terreno") return "#006400";
+    if (categoria === "Acumulador") return "#006400";
+    return "#ffa500";
+  }
+
+  // legenda do mapa "Áreas" acompanha o filtro
+  function atualizarLegendaCategorias() {
+    const focoFiltro = document.getElementById("focoFilter")?.value || "todos";
+    const categoria = (focoFiltro === "todos") ? "todos" : getCategoriaPorFoco(focoFiltro);
+
+    const ids = ["piscina", "abandonado", "terreno", "outros"];
+    ids.forEach((id) => {
+      const el = document.getElementById(`legend-${id}`);
+      if (!el) return;
+      el.classList.remove("is-active");
+      // mantém tudo visível, só destaca a categoria
+      el.style.display = "flex";
+      el.style.opacity = "0.65";
+    });
+
+    if (categoria !== "todos") {
+      const elAtivo = document.getElementById(`legend-${categoria}`);
+      if (elAtivo) {
+        elAtivo.classList.add("is-active");
+        elAtivo.style.opacity = "1";
+      }
+    } else {
+      // todos => tudo ativo
+      ids.forEach((id) => {
+        const el = document.getElementById(`legend-${id}`);
+        if (!el) return;
+        el.classList.add("is-active");
+        el.style.opacity = "1";
+      });
     }
+  }
 
-    function atualizarIndicadoresBI(total) {
-        document.getElementById("count-total").innerText = total;
-        if (document.getElementById("legend-count")) document.getElementById("legend-count").innerText = total;
-        document.getElementById("distancia-km").innerText = (total * 0.8).toFixed(1);
-        document.getElementById("consumo-litros").innerText = (total * 0.15).toFixed(2);
-        document.getElementById("custo-total-log").innerText = (total * 5.50).toLocaleString('pt-BR', {minimumFractionDigits: 2});
+  async function carregarDadosCalor() {
+    if (!mapHeat) return;
+    try {
+      const uvisId = document.getElementById("uvisFilter")?.value || "";
+      const mes = document.getElementById("mesFilter").value;
+      const focoFiltro = document.getElementById("focoFilter")?.value || "todos";
+
+      const response = await fetch(`/api/heatmap-data?uvis_id=${uvisId}&mes=${mes}&ano=2026`);
+      let pontos = await response.json();
+
+      // filtro por foco EXATO (quando não for "todos")
+      if (focoFiltro !== "todos") {
+        const alvo = normalizarFoco(focoFiltro);
+        pontos = pontos.filter(p => normalizarFoco(p.foco) === alvo);
+      }
+
+      atualizarIndicadoresBI(pontos.length);
+
+      const heatData = pontos.map(p => new google.maps.LatLng(p.lat, p.lng));
+      if (heatmap) heatmap.setMap(null);
+
+      let gradienteMapa, gradienteCSS;
+      const categoria = (focoFiltro === "todos") ? "todos" : getCategoriaPorFoco(focoFiltro);
+
+      if (categoria === "piscina") {
+        gradienteMapa = [
+          'rgba(0, 255, 255, 0)',
+          'rgba(0, 255, 255, 1)',
+          'rgba(0, 150, 255, 1)',
+          'rgba(0, 0, 255, 1)'
+        ];
+        gradienteCSS = "linear-gradient(to right, #00ffff, #0096ff, #0000ff)";
+      } else if (categoria === "abandonado") {
+        gradienteMapa = [
+          'rgba(255, 0, 0, 0)',
+          'rgba(255, 0, 0, 1)',
+          'rgba(150, 0, 150, 1)',
+          'rgba(100, 0, 100, 1)'
+        ];
+        gradienteCSS = "linear-gradient(to right, #ff0000, #960096, #640064)";
+      } else if (categoria === "terreno") {
+        gradienteMapa = [
+          'rgba(0, 255, 0, 0)',
+          'rgba(173, 255, 47, 1)',
+          'rgba(0, 255, 0, 1)',
+          'rgba(0, 100, 0, 1)'
+        ];
+        gradienteCSS = "linear-gradient(to right, #adff2f, #00ff00, #006400)";
+      } else {
+        gradienteMapa = [
+          'rgba(0, 255, 255, 0)',
+          'rgba(0, 255, 0, 1)',
+          'rgba(255, 255, 0, 1)',
+          'rgba(255, 0, 0, 1)'
+        ];
+        gradienteCSS = "linear-gradient(to right, #00ffff, #00ff00, #ffff00, #ff0000)";
+      }
+
+      const barra = document.querySelector('.gradient-bar');
+      if (barra) barra.style.setProperty('--legenda-gradiente', gradienteCSS);
+
+      heatmap = new google.maps.visualization.HeatmapLayer({
+        data: heatData,
+        map: mapHeat,
+        radius: 40,
+        opacity: 0.8,
+        gradient: gradienteMapa
+      });
+
+      if (heatData.length > 0) {
+        const bounds = new google.maps.LatLngBounds();
+        heatData.forEach(p => bounds.extend(p));
+        mapHeat.fitBounds(bounds);
+      }
+    } catch (error) {
+      console.error(error);
     }
+  }
 
-    function getCorPorFoco(foco) {
-        const f = foco.toLowerCase();
-        if (f.includes("piscina") || f.includes("água")) return "#0000ff"; // Azul da legenda
-        if (f.includes("abandonado") || f.includes("vazio")) return "#ff3c0b"; // Vermelho da legenda
-        if (f.includes("terreno") || f.includes("lote")) return "#006400"; // Verde da legenda
-        return "#ffa500"; // Laranja para "Outros" 
+  async function carregarDadosOperacionais() {
+    if (!mapArea) return;
+    try {
+      const uvisId = document.getElementById("uvisFilter")?.value || "";
+      const mes = document.getElementById("mesFilter").value;
+      const focoFiltro = document.getElementById("focoFilter")?.value || "todos";
+
+      const response = await fetch(`/api/heatmap-data?uvis_id=${uvisId}&mes=${mes}&ano=2026`);
+      let pontos = await response.json();
+
+      // filtro por foco EXATO (quando não for "todos")
+      if (focoFiltro !== "todos") {
+        const alvo = normalizarFoco(focoFiltro);
+        pontos = pontos.filter(p => normalizarFoco(p.foco) === alvo);
+      }
+
+      markers.forEach(m => m.setMap(null));
+      circles.forEach(c => c.setMap(null));
+      markers = []; circles = [];
+
+      pontos.forEach(p => {
+        const cor = getCorPorFoco(p.foco);
+
+        const marker = new google.maps.Marker({
+          position: { lat: p.lat, lng: p.lng },
+          map: mapArea,
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 5,
+            fillColor: cor,
+            fillOpacity: 1,
+            strokeWeight: 1.5,
+            strokeColor: "#ffffff"
+          }
+        });
+        markers.push(marker);
+
+        const circle = new google.maps.Circle({
+          map: mapArea,
+          radius: 20,
+          fillColor: cor,
+          fillOpacity: 0.15,
+          strokeColor: cor,
+          strokeOpacity: 0.4,
+          strokeWeight: 1,
+          center: { lat: p.lat, lng: p.lng },
+          clickable: false
+        });
+        circles.push(circle);
+      });
+
+      if (pontos.length > 0) {
+        const bounds = new google.maps.LatLngBounds();
+        pontos.forEach(p => bounds.extend({ lat: p.lat, lng: p.lng }));
+        mapArea.fitBounds(bounds);
+      }
+    } catch (error) {
+      console.error(error);
     }
+  }
 
-    async function carregarDadosCalor() {
-        if (!mapHeat) return;
-        try {
-            const uvisId = document.getElementById("uvisFilter")?.value || "";
-            const mes = document.getElementById("mesFilter").value;
-            const focoFiltro = document.getElementById("focoFilter")?.value || "todos";
-            const response = await fetch(`/api/heatmap-data?uvis_id=${uvisId}&mes=${mes}&ano=2026`);
-            let pontos = await response.json();
+  const darkMapStyle = [
+    { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
+    { elementType: "labels.text.stroke", stylers: [{ color: "#242f3e" }] },
+    { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
+    { featureType: "administrative.locality", elementType: "labels.text.fill", stylers: [{ color: "#d59563" }] },
+    { featureType: "poi", elementType: "labels.text.fill", stylers: [{ color: "#d59563" }] },
+    { featureType: "road", elementType: "geometry", stylers: [{ color: "#38414e" }] },
+    { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#212a37" }] },
+    { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#9ca5b9" }] },
+    { featureType: "water", elementType: "geometry", stylers: [{ color: "#17263c" }] }
+  ];
 
-            if (focoFiltro !== "todos") {
-                pontos = pontos.filter(p => {
-                    const texto = p.foco.toLowerCase();
-                    if (focoFiltro === "piscina") return texto.includes("piscina") || texto.includes("água");
-                    if (focoFiltro === "abandonado") return texto.includes("abandonado");
-                    return true;
-                });
-            }
-
-            atualizarIndicadoresBI(pontos.length);
-            const heatData = pontos.map(p => new google.maps.LatLng(p.lat, p.lng));
-            if (heatmap) heatmap.setMap(null);
-
-            let gradienteMapa, gradienteCSS;
-
-            if (focoFiltro === "piscina") {
-            // ÁGUA: Tons de Ciano e Azul Profundo
-            gradienteMapa = [
-                'rgba(0, 255, 255, 0)', 
-                'rgba(0, 255, 255, 1)', 
-                'rgba(0, 150, 255, 1)', 
-                'rgba(0, 0, 255, 1)'
-            ];
-            gradienteCSS = "linear-gradient(to right, #00ffff, #0096ff, #0000ff)";
-
-            } else if (focoFiltro === "abandonado") {
-                // PERIGO/ABANDONO: Tons de Vermelho para Roxo Escuro
-                gradienteMapa = [
-                    'rgba(255, 0, 0, 0)', 
-                    'rgba(255, 0, 0, 1)', 
-                    'rgba(150, 0, 150, 1)', 
-                    'rgba(100, 0, 100, 1)'
-                ];
-                gradienteCSS = "linear-gradient(to right, #ff0000, #960096, #640064)";
-
-            } else if (focoFiltro === "terreno") {
-                // NATUREZA/TERRENO: Verde Lima para Esmeralda (O VERDE QUE VOCÊ PEDIU)
-                gradienteMapa = [
-                    'rgba(0, 255, 0, 0)', 
-                    'rgba(173, 255, 47, 1)', // GreenYellow
-                    'rgba(0, 255, 0, 1)',    // Limão
-                    'rgba(0, 100, 0, 1)'     // Verde Escuro
-                ];
-                gradienteCSS = "linear-gradient(to right, #adff2f, #00ff00, #006400)";
-
-            } else {
-                // PADRÃO: Gradiente de alto contraste
-                gradienteMapa = [
-                    'rgba(0, 255, 255, 0)', 
-                    'rgba(0, 255, 0, 1)', 
-                    'rgba(255, 255, 0, 1)', 
-                    'rgba(255, 0, 0, 1)'
-                ];
-                gradienteCSS = "linear-gradient(to right, #00ffff, #00ff00, #ffff00, #ff0000)";
-            }
-
-            const barra = document.querySelector('.gradient-bar');
-            if (barra) barra.style.setProperty('--legenda-gradiente', gradienteCSS);
-
-            heatmap = new google.maps.visualization.HeatmapLayer({ 
-                data: heatData, 
-                map: mapHeat, 
-                radius: 40, 
-                opacity: 0.8, 
-                gradient: gradienteMapa 
-            });
-            if (heatData.length > 0) {
-                const bounds = new google.maps.LatLngBounds();
-                heatData.forEach(p => bounds.extend(p));
-                mapHeat.fitBounds(bounds);
-            }
-        } catch (error) { console.error(error); }
-    }
-
-    async function carregarDadosOperacionais() {
-        if (!mapArea) return;
-        try {
-            const uvisId = document.getElementById("uvisFilter")?.value || "";
-            const mes = document.getElementById("mesFilter").value;
-            const focoFiltro = document.getElementById("focoFilter").value;
-            const response = await fetch(`/api/heatmap-data?uvis_id=${uvisId}&mes=${mes}&ano=2026`);
-            let pontos = await response.json();
-
-            if (focoFiltro !== "todos") {
-                pontos = pontos.filter(p => {
-                    const texto = p.foco.toLowerCase();
-                    if (focoFiltro === "piscina") return texto.includes("piscina");
-                    if (focoFiltro === "abandonado") return texto.includes("abandonado");
-                    return true;
-                });
-            }
-
-            markers.forEach(m => m.setMap(null));
-            circles.forEach(c => c.setMap(null));
-            markers = []; circles = [];
-
-            pontos.forEach(p => {
-                const cor = getCorPorFoco(p.foco);
-                const marker = new google.maps.Marker({ position: {lat: p.lat, lng: p.lng}, map: mapArea, icon: { path: google.maps.SymbolPath.CIRCLE, scale: 5, fillColor: cor, fillOpacity: 1, strokeWeight: 1.5, strokeColor: "#ffffff" } });
-                markers.push(marker);
-                const circle = new google.maps.Circle({ map: mapArea, radius: 20, fillColor: cor, fillOpacity: 0.15, strokeColor: cor, strokeOpacity: 0.4, strokeWeight: 1, center: {lat: p.lat, lng: p.lng}, clickable: false });
-                circles.push(circle);
-            });
-
-            if (pontos.length > 0) {
-                const bounds = new google.maps.LatLngBounds();
-                pontos.forEach(p => bounds.extend({lat: p.lat, lng: p.lng}));
-                mapArea.fitBounds(bounds);
-            }
-        } catch (error) { console.error(error); }
-    }
-
-        const darkMapStyle = [
-        { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
-        { elementType: "labels.text.stroke", stylers: [{ color: "#242f3e" }] },
-        { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
-        { featureType: "administrative.locality", elementType: "labels.text.fill", stylers: [{ color: "#d59563" }] },
-        { featureType: "poi", elementType: "labels.text.fill", stylers: [{ color: "#d59563" }] },
-        { featureType: "road", elementType: "geometry", stylers: [{ color: "#38414e" }] },
-        { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#212a37" }] },
-        { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#9ca5b9" }] },
-        { featureType: "water", elementType: "geometry", stylers: [{ color: "#17263c" }] }
-    ];
+  // garante legenda correta já na primeira carga
+  document.addEventListener("DOMContentLoaded", () => {
+    atualizarLegendaCategorias();
+  });
 </script>
 {% endblock %}

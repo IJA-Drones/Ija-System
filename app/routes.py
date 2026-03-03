@@ -5541,70 +5541,81 @@ def atribuir_equipe_uvis_solicitacao(id):
     flash("Equipe UVIS atribuída com sucesso!", "success")
     return redirect(url_for("main.dashboard"))
 
+from flask import request, jsonify, render_template, current_app
+from flask_login import login_required, current_user
+from sqlalchemy import extract
+import os
+
+# --- API: pontos do mapa ---
 @bp.route('/api/heatmap-data')
 @login_required
 def heatmap_data():
-    uvis_id = request.args.get('uvis_id')
-    mes = request.args.get('mes')
-    ano = request.args.get('ano')
-    
+    uvis_id = request.args.get('uvis_id', type=int)   # já converte pra int
+    mes = request.args.get('mes', type=int)
+    ano = request.args.get('ano', type=int)
+
     query = Solicitacao.query.filter(
         Solicitacao.latitude.isnot(None),
         Solicitacao.longitude.isnot(None),
         Solicitacao.status.in_(['APROVADO', 'APROVADO COM RECOMENDAÇÕES'])
     )
 
-    # Filtro de Data (Se você tiver a coluna data_agendamento ou similar)
+    # Filtro de data (só aplica se ambos existirem e forem válidos)
     if mes and ano:
-        from sqlalchemy import extract
         query = query.filter(
-            extract('month', Solicitacao.data_agendamento) == int(mes),
-            extract('year', Solicitacao.data_agendamento) == int(ano)
+            extract('month', Solicitacao.data_agendamento) == mes,
+            extract('year', Solicitacao.data_agendamento) == ano
         )
 
-    # AJUSTE AQUI: Trocamos uvis_id por usuario_id (ou o nome que está no seu model)
+    # Filtro por UVIS
+    # - UVIS só vê os próprios
+    # - Admin pode filtrar por uvis_id se vier
     if current_user.tipo_usuario == 'uvis':
-        query = query.filter_by(usuario_id=current_user.id) 
-    elif uvis_id and uvis_id != "":
-        # Aqui também: filtrando a coluna correta no banco
-        query = query.filter_by(usuario_id=uvis_id)
+        query = query.filter(Solicitacao.usuario_id == current_user.id)
+    elif current_user.tipo_usuario == 'admin' and uvis_id:
+        query = query.filter(Solicitacao.usuario_id == uvis_id)
 
     solicitacoes = query.all()
 
-    # Montamos a lista de dicionários para o JSON
     pontos = []
     for s in solicitacoes:
         try:
-            pontos.append({
-                "lat": float(s.latitude),
-                "lng": float(s.longitude),
-                "foco": s.foco if s.foco else "Outros"
-            })
+            lat = float(s.latitude)
+            lng = float(s.longitude)
         except (ValueError, TypeError):
-            # Caso alguma coordenada esteja em formato inválido no banco
             continue
+
+        pontos.append({
+            "lat": lat,
+            "lng": lng,
+            #IMPORTANTE: manter EXATAMENTE o texto do banco (pra bater com o select)
+            "foco": (s.foco or "").strip() or "Outros"
+        })
 
     return jsonify(pontos)
 
 
+# --- Página do mapa ---
 @bp.route('/mapa-relatorio')
 @login_required
 def mapa_relatorio():
-    # 1. Busca as UVIS (Lógica mantida)
     uvis_disponiveis = []
     if current_user.tipo_usuario == 'admin':
-        uvis_disponiveis = db.session.query(Usuario.id, Usuario.nome_uvis)\
-                    .filter(Usuario.tipo_usuario == 'uvis').all()
-        
-    # 2. Busca a chave (Lógica blindada: tenta o nome novo, depois o antigo)
-    key = current_app.config.get('Maps_KEY_FRONT') or os.getenv('KEY_API_GOOGLE_MAPS')
+        uvis_disponiveis = (
+            db.session.query(Usuario.id, Usuario.nome_uvis)
+            .filter(Usuario.tipo_usuario == 'uvis')
+            .order_by(Usuario.nome_uvis.asc())
+            .all()
+        )
 
-    # DEBUG para você ver no terminal qual chave está sendo enviada
-    print(f"DEBUG CHAVE MAPA-RELATORIO: {key}")
+    google_maps_key = current_app.config.get('Maps_KEY_FRONT') or os.getenv('KEY_API_GOOGLE_MAPS')
+    if not google_maps_key:
+        current_app.logger.warning("Google Maps API Key não encontrada (Maps_KEY_FRONT / KEY_API_GOOGLE_MAPS).")
 
-    return render_template('mapa_relatorio.html', 
-                    uvis_disponiveis=uvis_disponiveis,
-                    google_maps_key=key
+    return render_template(
+        'mapa_relatorio.html',
+        uvis_disponiveis=uvis_disponiveis,
+        google_maps_key=google_maps_key
     )
 
 from flask import abort, render_template

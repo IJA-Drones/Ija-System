@@ -438,32 +438,27 @@ body.dark-mode .dashboard-header .btn-canceladas {
                       </div>
 
                       <!-- Filtro por Foco da Ação -->
-                      <div class="col-md-3">
-                        <label class="small text-muted mb-1">Filtrar por Foco da Ação</label>
-                        <select name="foco" class="form-select form-select-sm">
+                    <div class="col-md-3">
+                      <label class="small text-muted mb-1">Filtrar por Foco da Ação</label>
+                      <select name="foco" class="form-select form-select-sm">
                           <option value="">Todos os Focos</option>
 
-                          <option value="Imóvel Abandonado"
-                            {{ 'selected' if request.args.get('foco') == 'Imóvel Abandonado' else '' }}>
-                            Imóvel Abandonado
-                          </option>
+                          {% set opcoes_foco = [
+                              "Acumulador", "CAIXA D'AGUA", "Casa abandonada com inserviveis", 
+                              "Corrego", "Ferro velho", "Galpão com inserviveis", 
+                              "Imovel com Inserviveis", "Laje/telhado com Acumulo de agua", 
+                              "P.E Cadastrado", "Patio com Veiculos", "Piscina", 
+                              "Piscinão", "Reciclagem", "Terreno com inserviveis"
+                          ] %}
 
-                          <option value="Piscina / Caixa D'água"
-                            {{ 'selected' if request.args.get('foco') == "Piscina / Caixa D'água" else '' }}>
-                            Piscina / Caixa D'água
-                          </option>
-
-                          <option value="Terreno Baldio"
-                            {{ 'selected' if request.args.get('foco') == 'Terreno Baldio' else '' }}>
-                            Terreno Baldio
-                          </option>
-
-                          <option value="Ponto Estratégico (PE)"
-                            {{ 'selected' if request.args.get('foco') == 'Ponto Estratégico (PE)' else '' }}>
-                            Ponto Estratégico (PE)
-                          </option>
-                        </select>
-                      </div>
+                          {% for opcao in opcoes_foco %}
+                              <option value="{{ opcao }}"
+                                  {{ 'selected' if request.args.get('foco') == opcao else '' }}>
+                                  {{ opcao }}
+                              </option>
+                          {% endfor %}
+                      </select>
+                  </div>
 
                       <div class="col-md-3 d-flex gap-2">
                             <button type="submit" class="btn btn-success btn-sm w-100">

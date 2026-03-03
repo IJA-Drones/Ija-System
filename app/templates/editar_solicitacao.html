@@ -65,14 +65,28 @@
                     </div>
 
                     <div class="col-md-5">
-                        <label class="form-label fw-bold small text-muted">Foco Principal</label>
-                        <select name="foco" class="form-select" required>
-                            {% set focos = ['Imóvel Abandonado', 'Piscina / Caixa D\'água', 'Terreno Baldio', 'Ponto Estratégico (PE)'] %}
-                            {% for foco_opcao in focos %}
-                                <option value="{{ foco_opcao }}" {% if pedido.foco == foco_opcao %}selected{% endif %}>{{ foco_opcao }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
+                    <label class="form-label fw-bold small text-muted">Foco Principal</label>
+                    <select name="foco" class="form-select" required>
+                        
+                        <option value="" disabled {% if not pedido or not pedido.foco %}selected{% endif %}>
+                            Selecione o tipo de foco...
+                        </option>
+
+                        {% set opcoes_foco = [
+                            "Acumulador", "CAIXA D'AGUA", "Casa abandonada com inserviveis", 
+                            "Corrego", "Ferro velho", "Galpão com inserviveis", 
+                            "Imovel com Inserviveis", "Laje/telhado com Acumulo de agua", 
+                            "P.E Cadastrado", "Patio com Veiculos", "Piscina", 
+                            "Piscinão", "Reciclagem", "Terreno com inserviveis"
+                        ] %}
+
+                        {% for opcao in opcoes_foco %}
+                            <option value="{{ opcao }}" {% if pedido and pedido.foco == opcao %}selected{% endif %}>
+                                {{ opcao }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
                 </div>
 
                 <hr class="text-muted opacity-25 my-4">
