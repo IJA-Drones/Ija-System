@@ -72,6 +72,7 @@
           <th>Operação</th>
           <th>Equipe</th>
           <th>Status</th>
+          <th>Ação</th>
         </tr>
       </thead>
       <tbody>
@@ -100,7 +101,12 @@
                 <span class="text-muted">Sem equipe</span>
               {% endif %}
             </td>
-            <td><span class="badge bg-primary">CONCLUÍDO</span></td>
+            <td><span class="badge bg-completed">CONCLUÍDO</span></td>
+            <td>
+              <a href="{{ url_for('main.admin_os_formulario_view', os_id=p.id) }}" class="btn btn-sm btn-outline-primary">
+                  <i class="bi bi-clipboard2-check me-1"></i> Formulário
+              </a>
+            </td>
           </tr>
         {% else %}
           <tr><td colspan="5" class="text-center py-5 text-muted">Nenhuma OS concluída encontrada.</td></tr>

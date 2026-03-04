@@ -44,13 +44,6 @@
                     <span>Canceladas</span>
                 </a>
             </div>
-
-            <div style="width: 180px; min-width: 150px;" class="flex-grow-1 flex-md-grow-0">
-                <a href="{{ url_for('main.admin_historico_os') }}" class="btn btn-outline-primary shadow-sm w-100 d-flex align-items-center justify-content-center gap-2" style="height: 38px;">
-                    <i class="bi bi-clock-history"></i>
-                    <span>Histórico OS</span>
-                </a>
-            </div>
         </div>
         {% endif %}
     </div>
@@ -555,6 +548,10 @@
 
                                     {% if current_user.tipo_usuario == 'admin' %}
                                     <div class="d-flex gap-1 mt-2 align-items-center justify-content-center">
+                                        <a href="{{ url_for('main.admin_os_formulario_view', os_id=p.id) }}"
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-clipboard2-check"></i> Formulário
+                                        </a>
                                         <a href="{{ url_for('main.editar_solicitacao', id=p.id) }}"
                                            class="btn btn-sm btn-success">
                                             <i class="bi bi-pencil-square"></i> Editar

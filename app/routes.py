@@ -8808,10 +8808,16 @@ def piloto_os_formulario_view(os_id):
     else:
         respondido_em_value = datetime.now().strftime("%Y-%m-%dT%H:%M")
 
+    os_concluida = (s.status or "").strip().upper() in {"CONCLUÍDO", "CONCLUIDO"}
+    modo_visualizacao = os_concluida
+
     # ----------------------------
     # POST (salvar)
     # ----------------------------
     if request.method == "POST":
+        if modo_visualizacao:
+            flash("Esta OS já foi concluída e não pode mais ser editada pelo piloto.", "warning")
+            return redirect(url_for("main.piloto_os_formulario_view", os_id=os_id))
 
         # cria registro se não existir
         if ordem is None:
@@ -8944,6 +8950,7 @@ def piloto_os_formulario_view(os_id):
         solicitacao=s,
         equipe=equipe,
         ordem=ordem,
+        modo_visualizacao=modo_visualizacao,
         uvis_nome=uvis_nome,
         endereco_os=endereco_os,
         piloto_padrao=piloto_padrao,
@@ -8951,6 +8958,64 @@ def piloto_os_formulario_view(os_id):
         respondido_por_padrao=respondido_por_padrao,
         respondido_em_value=respondido_em_value,
         drones_equipe=drones_equipe,
+        url_voltar=url_for("main.piloto_os"),
+        form_action=url_for("main.piloto_os_formulario_view", os_id=os_id),
+    )
+
+
+@bp.route("/admin/os/<int:os_id>/formulario", methods=["GET"])
+@login_required
+def admin_os_formulario_view(os_id):
+    if current_user.tipo_usuario not in ["admin", "operario", "visualizar"]:
+        flash("Acesso restrito.", "danger")
+        return redirect(url_for("main.dashboard"))
+
+    s = (
+        Solicitacao.query
+        .options(
+            joinedload(Solicitacao.usuario),
+            joinedload(Solicitacao.equipe),
+            joinedload(Solicitacao.ordem_servico),
+        )
+        .get_or_404(os_id)
+    )
+
+    equipe = s.equipe
+    ordem = s.ordem_servico
+
+    drones_equipe = []
+    if s.equipe_id:
+        from sqlalchemy.orm import aliased
+        d_alias = aliased(Drones, flat=True)
+        drones_equipe = (
+            db.session.query(d_alias)
+            .filter(d_alias.equipe_id == s.equipe_id)
+            .order_by(d_alias.renomacao.asc())
+            .all()
+        )
+
+    uvis_nome = s.usuario.nome_uvis if s.usuario else ""
+    endereco_os = f"{s.logradouro or ''}, {s.numero or 'S/N'} - {s.bairro or ''} - {s.cidade or ''}/{s.uf or ''}"
+    piloto_padrao = (equipe.piloto_titular.nome_piloto if equipe and equipe.piloto_titular else "") if equipe else ""
+    auxiliar_padrao = (equipe.piloto_auxiliar.nome_piloto if equipe and equipe.piloto_auxiliar else "") if equipe else ""
+    respondido_por_padrao = ""
+    respondido_em_value = ordem.respondido_em.strftime("%Y-%m-%dT%H:%M") if ordem and ordem.respondido_em else ""
+
+    return render_template(
+        "piloto_os_formulario.html",
+        solicitacao=s,
+        equipe=equipe,
+        ordem=ordem,
+        modo_visualizacao=True,
+        uvis_nome=uvis_nome,
+        endereco_os=endereco_os,
+        piloto_padrao=piloto_padrao,
+        auxiliar_padrao=auxiliar_padrao,
+        respondido_por_padrao=respondido_por_padrao,
+        respondido_em_value=respondido_em_value,
+        drones_equipe=drones_equipe,
+        url_voltar=url_for("main.admin_dashboard"),
+        form_action="#",
     )
 
 

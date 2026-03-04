@@ -7,6 +7,7 @@
   .section-title { border-left: 4px solid var(--bs-primary); padding-left: 15px; margin-bottom: 20px; margin-top: 30px; }
   .form-label-header { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: #6c757d; font-weight: 700; }
   .bg-snapshot { background-color: #f8f9fa; border: 1px solid #e9ecef; }
+  .readonly-form .signature-pad { pointer-events: none; }
 </style>
 {% endblock %}
 
@@ -30,9 +31,15 @@
   {% endwith %}
 
   <div class="card info status-primary shadow-sm rounded-4 border-0">
-    <div class="card-body p-4">
+    <div class="card-body p-4 {% if modo_visualizacao %}readonly-form{% endif %}">
+      {% if modo_visualizacao %}
+      <div class="alert alert-info border-0 shadow-sm">
+        <i class="bi bi-eye me-1"></i> Formulário em modo visualização.
+      </div>
+      {% endif %}
 
-      <form method="post" action="{{ url_for('main.piloto_os_formulario_view', os_id=solicitacao.id) }}" novalidate>
+      <form method="post" action="{{ form_action or url_for('main.piloto_os_formulario_view', os_id=solicitacao.id) }}" novalidate>
+      
 
         {# ===================== IDENTIFICAÇÃO ===================== #}
         <div class="section-title mt-0">
@@ -392,9 +399,11 @@
                   <canvas id="signature-pad-piloto" class="signature-pad" style="width: 100%; height: 150px; cursor: crosshair;"></canvas>
                   <input type="hidden" name="assinatura_piloto" id="assinatura_data_piloto" value="{{ ordem.assinatura_piloto if ordem else '' }}">
                   <div class="d-flex gap-2 mt-2">
+                      {% if not modo_visualizacao %}
                       <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearSignature('piloto')">
                           <i class="bi bi-trash"></i> Limpar
                       </button>
+                      {% endif %}
                   </div>
               </div>
           </div>
@@ -406,19 +415,23 @@
                   <canvas id="signature-pad-cliente" class="signature-pad" style="width: 100%; height: 150px; cursor: crosshair;"></canvas>
                   <input type="hidden" name="assinatura_proprietario_ou_preposto" id="assinatura_data_cliente" value="{{ ordem.assinatura_proprietario_ou_preposto if ordem else '' }}">
                   <div class="d-flex gap-2 mt-2">
+                      {% if not modo_visualizacao %}
                       <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearSignature('cliente')">
                           <i class="bi bi-trash"></i> Limpar
                       </button>
+                      {% endif %}
                   </div>
               </div>
           </div>
         </div>
 
         <div class="d-flex justify-content-end gap-2 mt-5">
-          <a href="{{ url_for('main.piloto_os') }}" class="btn btn-outline-danger btn-sm px-4">Cancelar</a>
+          <a href="{{ url_voltar or url_for('main.piloto_os') }}" class="btn btn-outline-danger btn-sm px-4">Voltar</a>
+          {% if not modo_visualizacao %}
           <button type="submit" class="btn btn-primary btn-sm px-4">
             <i class="bi bi-check-lg me-1"></i> Salvar Formulário
           </button>
+          {% endif %}
         </div>
 
       </form>
@@ -593,5 +606,15 @@ function clearSignature(tipo) {
     const canvas = document.getElementById(id);
     if (canvas && canvas.clear) canvas.clear();
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+  const modoVisualizacao = {{ "true" if modo_visualizacao else "false" }};
+  if (!modoVisualizacao) return;
+
+  document.querySelectorAll("form input, form select, form textarea, form button").forEach((el) => {
+    if (el.type === "hidden") return;
+    el.setAttribute("disabled", "disabled");
+  });
+});
 </script>
 {% endblock %}
