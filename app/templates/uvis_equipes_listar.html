@@ -81,13 +81,16 @@
               <th>Equipe</th>
               <th>Login da equipe</th>
               <th style="width: 140px">Membros</th>
-              <th style="width: 260px" class="text-end">Ações</th>
+              <th style="width: 320px" class="text-end">Ações</th>
             </tr>
           </thead>
 
           <tbody>
             {% if equipes and equipes|length %}
               {% for e in equipes %}
+                {# ID único do modal (não fica dentro da tabela) #}
+                {% set modal_id = "modalCredEquipeUvis_" ~ loop.index ~ "_" ~ (e.nome_equipe|replace(" ", "_")|replace("-", "_")) %}
+
                 <tr>
                   <td class="fw-semibold">
                     <i class="bi bi-people me-2 text-primary"></i>
@@ -134,18 +137,16 @@
                       <i class="bi bi-person-plus me-1"></i> Adicionar
                     </a>
 
-                    {# Opcional: botão pra gerenciar credenciais se você criar a rota #}
-                    {#
-                    {% if e.login %}
-                      <a
-                        href="{{ url_for('main.gerenciar_login_equipe_uvis', nome_equipe=e.nome_equipe) }}"
-                        class="btn btn-outline-dark btn-sm"
-                        title="Gerenciar login/senha"
-                      >
-                        <i class="bi bi-key me-1"></i> Credenciais
-                      </a>
-                    {% endif %}
-                    #}
+                    <button
+                      type="button"
+                      class="btn btn-outline-dark btn-sm"
+                      data-bs-toggle="modal"
+                      data-bs-target="#{{ modal_id }}"
+                      title="Editar login/senha"
+                      {% if not e.login %}disabled{% endif %}
+                    >
+                      <i class="bi bi-key me-1"></i> Credenciais
+                    </button>
                   </td>
                 </tr>
               {% endfor %}
@@ -174,6 +175,106 @@
 
     </div>
   </div>
+
+  {# ============================
+     MODAIS (FORA DA TABELA)
+     ============================ #}
+  {% if equipes and equipes|length %}
+    {% for e in equipes %}
+      {% set modal_id = "modalCredEquipeUvis_" ~ loop.index ~ "_" ~ (e.nome_equipe|replace(" ", "_")|replace("-", "_")) %}
+
+      <div class="modal fade" id="{{ modal_id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+
+            <div class="modal-header">
+              <h5 class="modal-title">
+                <i class="bi bi-shield-lock-fill me-2"></i> Credenciais da equipe
+              </h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+
+            {# 🔁 Ajuste a rota abaixo conforme você criar:
+               @bp.route("/uvis/equipes/<nome_equipe>/credenciais", methods=["POST"], endpoint="atualizar_credenciais_equipe_uvis")
+            #}
+            <form method="POST" action="{{ url_for('main.atualizar_credenciais_equipe_uvis', nome_equipe=e.nome_equipe) }}">
+              <div class="modal-body">
+
+                <div class="mb-2">
+                  <small class="text-muted d-block">Equipe:</small>
+                  <strong>{{ e.nome_equipe }}</strong>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label small text-muted fw-bold">
+                    <i class="bi bi-person-badge me-1"></i> Login
+                  </label>
+                  <input
+                    type="text"
+                    name="login_equipe"
+                    class="form-control"
+                    value="{{ e.login or '' }}"
+                    maxlength="50"
+                    autocomplete="off"
+                    required
+                  >
+                  <div class="form-text small">
+                    Use letras/números e . - _ (sem espaços).
+                  </div>
+                </div>
+
+                <hr class="text-muted opacity-25 my-3">
+
+                <div class="alert alert-light border rounded-3 py-2 small mb-3">
+                  <i class="bi bi-info-circle me-2 text-primary"></i>
+                  Para trocar a senha, preencha os dois campos abaixo.
+                  <strong>Se deixar em branco, a senha não muda.</strong>
+                </div>
+
+                <div class="row g-2">
+                  <div class="col-md-6">
+                    <label class="form-label small text-muted fw-bold">
+                      <i class="bi bi-key me-1"></i> Nova senha
+                    </label>
+                    <input
+                      type="password"
+                      name="senha"
+                      class="form-control"
+                      autocomplete="new-password"
+                    >
+                  </div>
+
+                  <div class="col-md-6">
+                    <label class="form-label small text-muted fw-bold">
+                      <i class="bi bi-key-fill me-1"></i> Confirmar senha
+                    </label>
+                    <input
+                      type="password"
+                      name="senha2"
+                      class="form-control"
+                      autocomplete="new-password"
+                    >
+                  </div>
+                </div>
+
+              </div>
+
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                  Cancelar
+                </button>
+                <button type="submit" class="btn btn-warning">
+                  <i class="bi bi-check2 me-1"></i> Salvar
+                </button>
+              </div>
+            </form>
+
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  {% endif %}
+
 </div>
 
 {% endblock %}

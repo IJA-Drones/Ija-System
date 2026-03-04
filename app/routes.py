@@ -5401,6 +5401,82 @@ def listar_equipes_uvis():
 
     return render_template("uvis_equipes_listar.html", equipes=equipes)
 
+import re
+from flask import request, flash, redirect, url_for, abort
+from werkzeug.security import generate_password_hash
+
+@bp.route("/uvis/equipes/<string:nome_equipe>/credenciais", methods=["POST"], endpoint="atualizar_credenciais_equipe_uvis")
+@login_required
+def atualizar_credenciais_equipe_uvis(nome_equipe):
+    _uvis_only()
+
+    nome_equipe = (nome_equipe or "").strip()
+    if not nome_equipe:
+        flash("Equipe inválida.", "danger")
+        return redirect(url_for("main.listar_equipes_uvis"))
+
+    # 🔒 pega a conta da equipe (se existir)
+    conta = (
+        Usuario.query
+        .filter(
+            Usuario.tipo_usuario == "equipe_uvis",
+            Usuario.equipe_uvis_uvis_usuario_id == current_user.id,
+            Usuario.equipe_uvis_nome == nome_equipe
+        )
+        .first()
+    )
+
+    if not conta:
+        flash("Conta (login) desta equipe não encontrada.", "warning")
+        return redirect(url_for("main.listar_equipes_uvis"))
+
+    login_novo = (request.form.get("login_equipe") or "").strip()
+    senha = (request.form.get("senha") or "").strip()
+    senha2 = (request.form.get("senha2") or "").strip()
+
+    # -------------------
+    # valida login (se veio)
+    # -------------------
+    if login_novo:
+        if len(login_novo) < 4:
+            flash("Login deve ter pelo menos 4 caracteres.", "warning")
+            return redirect(url_for("main.listar_equipes_uvis"))
+        if len(login_novo) > 50:
+            flash("Login deve ter no máximo 50 caracteres.", "warning")
+            return redirect(url_for("main.listar_equipes_uvis"))
+        if not re.match(r"^[A-Za-z0-9._\-]+$", login_novo):
+            flash("Login inválido: use apenas letras, números, ponto (.), hífen (-) e underscore (_).", "warning")
+            return redirect(url_for("main.listar_equipes_uvis"))
+
+        # se mudou, checa duplicado
+        if login_novo != conta.login:
+            existe = Usuario.query.filter(Usuario.login == login_novo).first()
+            if existe:
+                flash("Este login já está em uso. Escolha outro.", "danger")
+                return redirect(url_for("main.listar_equipes_uvis"))
+
+        conta.login = login_novo
+
+    # -------------------
+    # valida senha (só troca se preencher)
+    # -------------------
+    if senha or senha2:
+        if not senha:
+            flash("Informe a senha.", "warning")
+            return redirect(url_for("main.listar_equipes_uvis"))
+        if len(senha) < 6:
+            flash("A senha deve ter pelo menos 6 caracteres.", "warning")
+            return redirect(url_for("main.listar_equipes_uvis"))
+        if senha != senha2:
+            flash("As senhas não conferem.", "warning")
+            return redirect(url_for("main.listar_equipes_uvis"))
+
+        conta.set_senha(senha)
+
+    db.session.commit()
+    flash("Credenciais atualizadas com sucesso!", "success")
+    return redirect(url_for("main.listar_equipes_uvis"))
+
 @bp.route("/uvis/equipes/<string:nome_equipe>", methods=["GET"], endpoint="listar_membros_equipe_uvis")
 @login_required
 def listar_membros_equipe_uvis(nome_equipe):
