@@ -204,6 +204,26 @@
             </a>
           </li>
 
+          {% if current_user.tipo_usuario in ['admin', 'operario', 'visualizar'] %}
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint == 'main.admin_historico_os' %}active{% endif %}"
+              href="{{ url_for('main.admin_historico_os') }}"
+            >
+              <i class="bi bi-clock-history me-2"></i><span>Histórico OS</span>
+            </a>
+          </li>
+          {% elif current_user.tipo_usuario == 'piloto' %}
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint == 'main.piloto_os_historico' %}active{% endif %}"
+              href="{{ url_for('main.piloto_os_historico') }}"
+            >
+              <i class="bi bi-clock-history me-2"></i><span>Histórico OS</span>
+            </a>
+          </li>
+          {% endif %}
+
           <li class="nav-item">
             <a
               class="nav-link {% if request.endpoint == 'main.notificacoes' %}active{% endif %}"

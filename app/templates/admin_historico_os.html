@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1200px;">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h2 class="text-dark m-0">
+      <i class="bi bi-clock-history me-2 text-primary"></i> Histórico de OS Concluídas
+    </h2>
+    <a href="{{ url_for('main.admin_dashboard') }}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i> Voltar
+    </a>
+  </div>
+
+  <div class="card shadow-sm rounded-4 mb-4 border-0">
+    <div class="card-body">
+      <form method="GET">
+        <div class="row g-2 align-items-end">
+          <div class="col-md-4">
+            <label class="small text-muted">Unidade:</label>
+            <select name="unidade" class="form-select form-select-sm">
+              <option value="">Todas as UVIS</option>
+              {% for u in unidades_select %}
+                <option value="{{ u.nome_uvis }}" {% if request.args.get('unidade') == u.nome_uvis %}selected{% endif %}>
+                  {{ u.nome_uvis }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-4">
+            <label class="small text-muted">Região:</label>
+            {% set reg = (request.args.get('regiao','') or '')|upper %}
+            <select name="regiao" class="form-select form-select-sm">
+              <option value="">Todas</option>
+              <option value="NORTE" {% if reg == 'NORTE' %}selected{% endif %}>NORTE</option>
+              <option value="SUL" {% if reg == 'SUL' %}selected{% endif %}>SUL</option>
+              <option value="LESTE" {% if reg == 'LESTE' %}selected{% endif %}>LESTE</option>
+              <option value="OESTE" {% if reg == 'OESTE' %}selected{% endif %}>OESTE</option>
+              <option value="CENTRO" {% if reg == 'CENTRO' %}selected{% endif %}>CENTRO</option>
+              <option value="SUDESTE" {% if reg == 'SUDESTE' %}selected{% endif %}>SUDESTE</option>
+              <option value="CENTRO-OESTE" {% if reg == 'CENTRO-OESTE' %}selected{% endif %}>CENTRO-OESTE</option>
+            </select>
+          </div>
+
+          <div class="col-md-4 d-flex gap-2">
+            <button class="btn btn-success btn-sm w-100" type="submit">
+              <i class="bi bi-search"></i> Filtrar
+            </button>
+            {% if request.args.get('unidade') or request.args.get('regiao') %}
+              <a href="{{ url_for('main.admin_historico_os') }}" class="btn btn-outline-secondary btn-sm w-100">
+                <i class="bi bi-x-lg"></i> Limpar
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card shadow-sm rounded-4 border-0 overflow-hidden">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>OS</th>
+          <th>Unidade</th>
+          <th>Operação</th>
+          <th>Equipe</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in pedidos %}
+          <tr>
+            <td><strong>#{{ p.id }}</strong></td>
+            <td>
+              <strong class="text-primary">{{ p.usuario.nome_uvis if p.usuario else '-' }}</strong><br>
+              <small class="text-muted">{{ p.usuario.regiao if p.usuario else '-' }}</small>
+            </td>
+            <td>
+              <div class="small">
+                <strong>{{ p.logradouro or '-' }}, {{ p.numero or 'S/N' }}</strong><br>
+                {{ p.bairro or '-' }} - {{ p.cidade or '-' }}/{{ p.uf or '-' }}<br>
+                <span class="text-muted">
+                  {{ p.data_agendamento.strftime('%d/%m/%Y') if p.data_agendamento else '-' }}
+                  às
+                  {{ p.hora_agendamento.strftime('%H:%M') if p.hora_agendamento else '-' }}
+                </span>
+              </div>
+            </td>
+            <td>
+              {% if p.equipe %}
+                {{ p.equipe.nome_equipe }}
+              {% else %}
+                <span class="text-muted">Sem equipe</span>
+              {% endif %}
+            </td>
+            <td><span class="badge bg-primary">CONCLUÍDO</span></td>
+          </tr>
+        {% else %}
+          <tr><td colspan="5" class="text-center py-5 text-muted">Nenhuma OS concluída encontrada.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% if paginacao and paginacao.pages > 1 %}
+      <nav class="mt-4 pb-3">
+        <ul class="pagination justify-content-center">
+          <li class="page-item {% if not paginacao.has_prev %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('main.admin_historico_os', page=paginacao.prev_num, unidade=request.args.get('unidade',''), regiao=request.args.get('regiao','')) }}">Anterior</a>
+          </li>
+          <li class="page-item disabled"><span class="page-link">{{ paginacao.page }} / {{ paginacao.pages }}</span></li>
+          <li class="page-item {% if not paginacao.has_next %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('main.admin_historico_os', page=paginacao.next_num, unidade=request.args.get('unidade',''), regiao=request.args.get('regiao','')) }}">Próxima</a>
+          </li>
+        </ul>
+      </nav>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

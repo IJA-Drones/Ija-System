@@ -6506,6 +6506,55 @@ def admin_canceladas():
         google_maps_key=google_maps_key
     )
 
+
+@bp.route("/admin/historico-os")
+@login_required
+def admin_historico_os():
+    if current_user.tipo_usuario not in ["admin", "operario", "visualizar"]:
+        flash("Acesso restrito.", "danger")
+        return redirect(url_for("main.dashboard"))
+
+    filtro_unidade = (request.args.get("unidade") or "").strip()
+    filtro_regiao = (request.args.get("regiao") or "").strip()
+
+    unidades_select = (
+        Usuario.query
+        .filter_by(tipo_usuario="uvis")
+        .order_by(Usuario.nome_uvis.asc())
+        .all()
+    )
+
+    status_concluido = ["CONCLUÍDO", "CONCLUIDO"]
+
+    query = (
+        Solicitacao.query
+        .options(
+            joinedload(Solicitacao.usuario),
+            joinedload(Solicitacao.equipe)
+        )
+        .join(Usuario)
+        .filter(Solicitacao.status.in_(status_concluido))
+    )
+
+    if filtro_unidade:
+        query = query.filter(Usuario.nome_uvis.ilike(f"%{filtro_unidade}%"))
+    if filtro_regiao:
+        query = query.filter(Usuario.regiao.ilike(f"%{filtro_regiao}%"))
+
+    page = request.args.get("page", 1, type=int)
+    paginacao = (
+        query
+        .order_by(Solicitacao.data_criacao.desc(), Solicitacao.id.desc())
+        .paginate(page=page, per_page=6, error_out=False)
+    )
+
+    return render_template(
+        "admin_historico_os.html",
+        pedidos=paginacao.items,
+        paginacao=paginacao,
+        unidades_select=unidades_select
+    )
+
 import os
 import subprocess
 import threading
@@ -8432,6 +8481,52 @@ def piloto_os():
         baterias_equipe=baterias_equipe,
         veiculos_equipe=veiculos_equipe,  
     )
+
+
+@bp.route("/piloto/os/historico")
+@login_required
+@roles_required("piloto")
+def piloto_os_historico():
+    if not current_user.piloto_id:
+        flash("Piloto sem vínculo cadastrado.", "danger")
+        return redirect(url_for("main.dashboard"))
+
+    status_concluido = ["CONCLUÍDO", "CONCLUIDO"]
+
+    equipes_vinculadas = (
+        db.session.query(EquipePiloto.equipe_id)
+        .filter(
+            EquipePiloto.piloto_id == current_user.piloto_id,
+            EquipePiloto.equipe_id.isnot(None)
+        )
+        .distinct()
+    )
+
+    query = (
+        Solicitacao.query
+        .options(
+            joinedload(Solicitacao.usuario),
+            joinedload(Solicitacao.equipe)
+        )
+        .filter(
+            Solicitacao.equipe_id.in_(equipes_vinculadas),
+            Solicitacao.status.in_(status_concluido)
+        )
+    )
+
+    page = request.args.get("page", 1, type=int)
+    paginacao = (
+        query
+        .order_by(Solicitacao.data_criacao.desc(), Solicitacao.id.desc())
+        .paginate(page=page, per_page=6, error_out=False)
+    )
+
+    return render_template(
+        "piloto_os_historico.html",
+        pedidos=paginacao.items,
+        paginacao=paginacao
+    )
+
 from datetime import datetime
 from flask import render_template, request, redirect, url_for, flash, current_app
 from flask_login import login_required, current_user

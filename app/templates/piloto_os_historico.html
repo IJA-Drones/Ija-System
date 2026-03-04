@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1200px;">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h2 class="text-dark m-0">
+      <i class="bi bi-clock-history me-2 text-primary"></i> Histórico de OS Concluídas
+    </h2>
+    <a href="{{ url_for('main.piloto_os') }}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i> Voltar para Ordens Ativas
+    </a>
+  </div>
+
+  <div class="card shadow-sm rounded-4 border-0 overflow-hidden">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>OS</th>
+          <th>Local</th>
+          <th>Data</th>
+          <th>Equipe</th>
+          <th>Status</th>
+          <th>Ação</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in pedidos %}
+          <tr>
+            <td><strong>#{{ p.id }}</strong></td>
+            <td>
+              <div class="small">
+                <strong>{{ p.logradouro or '-' }}, {{ p.numero or 'S/N' }}</strong><br>
+                {{ p.bairro or '-' }} - {{ p.cidade or '-' }}
+              </div>
+            </td>
+            <td>
+              {{ p.data_agendamento.strftime('%d/%m/%Y') if p.data_agendamento else '-' }}<br>
+              <small class="text-muted">{{ p.hora_agendamento.strftime('%H:%M') if p.hora_agendamento else '-' }}</small>
+            </td>
+            <td>{{ p.equipe.nome_equipe if p.equipe else '-' }}</td>
+            <td><span class="badge bg-primary">CONCLUÍDO</span></td>
+            <td>
+              <a href="{{ url_for('main.piloto_os_formulario_view', os_id=p.id) }}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-clipboard2-check me-1"></i> Formulário
+              </a>
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="6" class="text-center py-5 text-muted">Nenhuma OS concluída encontrada.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% if paginacao and paginacao.pages > 1 %}
+      <nav class="mt-4 pb-3">
+        <ul class="pagination justify-content-center">
+          <li class="page-item {% if not paginacao.has_prev %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('main.piloto_os_historico', page=paginacao.prev_num) }}">Anterior</a>
+          </li>
+          <li class="page-item disabled"><span class="page-link">{{ paginacao.page }} / {{ paginacao.pages }}</span></li>
+          <li class="page-item {% if not paginacao.has_next %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('main.piloto_os_historico', page=paginacao.next_num) }}">Próxima</a>
+          </li>
+        </ul>
+      </nav>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
