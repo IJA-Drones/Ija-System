@@ -32,6 +32,13 @@
         </div>
 
         <div class="rel-actions d-flex gap-2 flex-wrap align-items-center justify-content-md-end">
+            <div class="d-grid flex-grow-1 flex-md-grow-0" style="width: 180px; min-width: 150px;">
+                <a href="{{ url_for('main.relatorios_os') }}" class="btn btn-outline-primary d-flex align-items-center justify-content-center gap-2" style="height: 38px;" title="Abrir relatórios de OS">
+                    <i class="bi bi-clipboard-data-fill"></i>
+                    <span>Relatório OS</span>
+                </a>
+            </div>
+
             <form method="GET" action="{{ url_for('main.exportar_relatorio_pdf') }}" 
                 class="form-exportar p-0 m-0 d-grid flex-grow-1 flex-md-grow-0" style="width: 180px; min-width: 150px;">
                 <input type="hidden" name="mes" value="{{ mes_selecionado }}">

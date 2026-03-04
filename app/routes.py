@@ -899,7 +899,7 @@ from app.models import Solicitacao, Usuario
 from sqlalchemy import extract, func
 from datetime import datetime
 
-@bp.route('/relatorios', methods=['GET'])
+@bp.route('/relatorios/solicitacoes', methods=['GET'], endpoint='relatorios_solicitacoes')
 def relatorios():
     if not current_user.is_authenticated:
         return redirect(url_for('main.login'))
@@ -1065,6 +1065,163 @@ def relatorios():
             mensagem="Houve um erro técnico ao processar os dados."
         )
     
+
+@bp.route('/relatorios', methods=['GET'], endpoint='relatorios')
+@login_required
+def relatorios_menu():
+    if current_user.tipo_usuario not in ['admin', 'operario', 'visualizar']:
+        flash('Acesso restrito.', 'danger')
+        return redirect(url_for('main.dashboard'))
+    return render_template('relatorios_menu.html')
+
+
+@bp.route('/relatorios-os', methods=['GET'])
+@login_required
+def relatorios_os():
+    try:
+        from sqlalchemy import and_, or_
+
+        uvis_disponiveis = []
+        if current_user.tipo_usuario in ['admin', 'operario', 'visualizar']:
+            uvis_disponiveis = (
+                db.session.query(Usuario.id, Usuario.nome_uvis)
+                .filter(Usuario.tipo_usuario == 'uvis')
+                .order_by(Usuario.nome_uvis)
+                .all()
+            )
+
+        mes_atual = request.args.get('mes', datetime.now().month, type=int)
+        ano_atual = request.args.get('ano', datetime.now().year, type=int)
+        uvis_id = request.args.get('uvis_id', type=int) if current_user.tipo_usuario != 'uvis' else current_user.id
+
+        base_query = (
+            db.session.query(OrdemServico)
+            .join(Solicitacao, Solicitacao.id == OrdemServico.solicitacao_id)
+            .join(Usuario, Usuario.id == Solicitacao.usuario_id)
+        )
+
+        base_query = base_query.filter(
+            or_(
+                and_(
+                    OrdemServico.respondido_em.isnot(None),
+                    extract('year', OrdemServico.respondido_em) == ano_atual,
+                    extract('month', OrdemServico.respondido_em) == mes_atual
+                ),
+                and_(
+                    OrdemServico.respondido_em.is_(None),
+                    OrdemServico.data_aplicacao.isnot(None),
+                    extract('year', OrdemServico.data_aplicacao) == ano_atual,
+                    extract('month', OrdemServico.data_aplicacao) == mes_atual
+                )
+            )
+        )
+
+        if uvis_id:
+            base_query = base_query.filter(Solicitacao.usuario_id == uvis_id)
+
+        total_os = base_query.count()
+        total_concluidas = base_query.filter(Solicitacao.status.in_(["CONCLUÍDO", "CONCLUIDO"])).count()
+        total_larva_sim = base_query.filter(func.upper(func.coalesce(OrdemServico.larva_visualizada, "")) == "SIM").count()
+        total_tratamento_adicional = base_query.filter(func.upper(func.coalesce(OrdemServico.tratamento_adicional_realizado, "")) == "SIM").count()
+        total_nao_realizadas = base_query.filter(func.length(func.trim(func.coalesce(OrdemServico.motivo_nao_realizacao, ""))) > 0).count()
+
+        def agrupar_por(campo):
+            return [
+                (valor or "Não informado", total)
+                for valor, total in (
+                    base_query
+                    .with_entities(campo, func.count(OrdemServico.id))
+                    .group_by(campo)
+                    .order_by(func.count(OrdemServico.id).desc())
+                    .all()
+                )
+            ]
+
+        dados_situacao_aplicacao = agrupar_por(OrdemServico.situacao_aplicacao)
+        dados_tipo_aplicacao = agrupar_por(OrdemServico.tipo_aplicacao)
+        dados_larva = agrupar_por(OrdemServico.larva_visualizada)
+        dados_piloto = agrupar_por(OrdemServico.piloto)
+
+        dados_unidade = [
+            (uvis or "Não informado", total)
+            for uvis, total in (
+                base_query
+                .with_entities(Usuario.nome_uvis, func.count(OrdemServico.id))
+                .group_by(Usuario.nome_uvis)
+                .order_by(func.count(OrdemServico.id).desc())
+                .all()
+            )
+        ]
+
+        mensal_query = (
+            db.session.query(
+                func.coalesce(
+                    extract('year', OrdemServico.respondido_em),
+                    extract('year', OrdemServico.data_aplicacao)
+                ).label("ano_ref"),
+                func.coalesce(
+                    extract('month', OrdemServico.respondido_em),
+                    extract('month', OrdemServico.data_aplicacao)
+                ).label("mes_ref"),
+                func.count(OrdemServico.id)
+            )
+            .join(Solicitacao, Solicitacao.id == OrdemServico.solicitacao_id)
+            .join(Usuario, Usuario.id == Solicitacao.usuario_id)
+        )
+
+        if uvis_id:
+            mensal_query = mensal_query.filter(Solicitacao.usuario_id == uvis_id)
+
+        dados_mensais = [
+            (f"{int(ano_h):04d}-{int(mes_h):02d}", total)
+            for ano_h, mes_h, total in (
+                mensal_query
+                .filter(
+                    or_(
+                        OrdemServico.respondido_em.isnot(None),
+                        OrdemServico.data_aplicacao.isnot(None)
+                    )
+                )
+                .group_by("ano_ref", "mes_ref")
+                .order_by("ano_ref", "mes_ref")
+                .all()
+            )
+            if ano_h and mes_h
+        ]
+
+        anos_disponiveis = (
+            sorted({m.split('-')[0] for m, _ in dados_mensais}, reverse=True)
+            if dados_mensais else [ano_atual]
+        )
+
+        return render_template(
+            "relatorios_os.html",
+            total_os=total_os,
+            total_concluidas=total_concluidas,
+            total_larva_sim=total_larva_sim,
+            total_tratamento_adicional=total_tratamento_adicional,
+            total_nao_realizadas=total_nao_realizadas,
+            dados_situacao_aplicacao=dados_situacao_aplicacao,
+            dados_tipo_aplicacao=dados_tipo_aplicacao,
+            dados_larva=dados_larva,
+            dados_piloto=dados_piloto,
+            dados_unidade=dados_unidade,
+            dados_mensais=dados_mensais,
+            mes_selecionado=mes_atual,
+            ano_selecionado=ano_atual,
+            anos_disponiveis=anos_disponiveis,
+            uvis_id_selecionado=uvis_id,
+            uvis_disponiveis=uvis_disponiveis,
+        )
+    except Exception as e:
+        db.session.rollback()
+        print(f"ERRO NOS RELATÓRIOS DE OS: {e}")
+        return render_template(
+            "erro.html",
+            codigo=500,
+            titulo="Erro nos Relatórios de OS",
+            mensagem="Houve um erro técnico ao processar os dados das ordens de serviço."
+        )
 
 import os
 import tempfile

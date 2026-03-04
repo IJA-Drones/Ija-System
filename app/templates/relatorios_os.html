@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+{% endblock %}
+
+{% block content %}
+{% set meses = {
+    1: "Janeiro", 2: "Fevereiro", 3: "Março", 4: "Abril",
+    5: "Maio", 6: "Junho", 7: "Julho", 8: "Agosto",
+    9: "Setembro", 10: "Outubro", 11: "Novembro", 12: "Dezembro"
+} %}
+
+<div class="container-fluid py-4" style="max-width: 1200px;">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h2 class="text-dark m-0">
+      <i class="bi bi-clipboard-data-fill me-2 text-primary"></i> Relatórios de OS
+    </h2>
+    <a href="{{ url_for('main.relatorios') }}" class="btn btn-outline-primary">
+      <i class="bi bi-bar-chart-fill me-1"></i> Relatórios de Solicitações
+    </a>
+  </div>
+
+  <div class="card shadow-sm rounded-4 mb-4 border-0">
+    <div class="card-body">
+      <form method="GET">
+        <div class="row g-2 align-items-end">
+          <div class="col-md-3">
+            <label class="small text-muted">Mês:</label>
+            <select name="mes" class="form-select form-select-sm">
+              {% for num, nome in meses.items() %}
+                <option value="{{ num }}" {% if num|int == mes_selecionado|int %}selected{% endif %}>{{ nome }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="small text-muted">Ano:</label>
+            <select name="ano" class="form-select form-select-sm">
+              {% for ano in anos_disponiveis %}
+                <option value="{{ ano }}" {% if ano|int == ano_selecionado|int %}selected{% endif %}>{{ ano }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="small text-muted">Unidade (UVIS):</label>
+            <select name="uvis_id" class="form-select form-select-sm">
+              <option value="">Todas as Unidades</option>
+              {% for id, nome in uvis_disponiveis %}
+                <option value="{{ id }}" {% if id|int == uvis_id_selecionado|int %}selected{% endif %}>{{ nome }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-3 d-flex gap-2">
+            <button class="btn btn-success btn-sm w-100" type="submit">
+              <i class="bi bi-funnel"></i> Filtrar
+            </button>
+            <a href="{{ url_for('main.relatorios_os') }}" class="btn btn-outline-secondary btn-sm w-100">
+              <i class="bi bi-x-lg"></i> Limpar
+            </a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="row g-2 mb-4">
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="card info status-primary h-100 shadow-sm rounded-4">
+        <div class="card-body">
+          <h6 class="text-uppercase mb-2 text-muted">Total OS</h6>
+          <h2 class="mb-0 fw-bold text-primary">{{ total_os }}</h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="card info status-success h-100 shadow-sm rounded-4">
+        <div class="card-body">
+          <h6 class="text-uppercase mb-2 text-muted">Concluídas</h6>
+          <h2 class="mb-0 fw-bold text-success">{{ total_concluidas }}</h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="card info h-100 shadow-sm rounded-4">
+        <div class="card-body">
+          <h6 class="text-uppercase mb-2 text-muted">Larva (SIM)</h6>
+          <h2 class="mb-0 fw-bold text-warning">{{ total_larva_sim }}</h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-3">
+      <div class="card info h-100 shadow-sm rounded-4">
+        <div class="card-body">
+          <h6 class="text-uppercase mb-2 text-muted">Tratamento adicional</h6>
+          <h2 class="mb-0 fw-bold text-info">{{ total_tratamento_adicional }}</h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-3">
+      <div class="card info h-100 shadow-sm rounded-4">
+        <div class="card-body">
+          <h6 class="text-uppercase mb-2 text-muted">Não realizadas</h6>
+          <h2 class="mb-0 fw-bold text-danger">{{ total_nao_realizadas }}</h2>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <div class="col-lg-6">
+      <div class="card shadow-sm rounded-4 p-4 h-100">
+        <h5 class="mb-3 text-dark"><i class="bi bi-pie-chart-fill me-2"></i>Situação da Aplicação</h5>
+        <div style="height:320px;"><canvas id="chartSituacao"></canvas></div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card shadow-sm rounded-4 p-4 h-100">
+        <h5 class="mb-3 text-dark"><i class="bi bi-journal-text me-2"></i>Tipo de Aplicação</h5>
+        <div style="height:320px;"><canvas id="chartTipo"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <div class="col-lg-6">
+      <div class="card shadow-sm rounded-4 p-4 h-100">
+        <h5 class="mb-3 text-dark"><i class="bi bi-building-check me-2"></i>OS por Unidade</h5>
+        <div style="height:320px;"><canvas id="chartUnidade"></canvas></div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card shadow-sm rounded-4 p-4 h-100">
+        <h5 class="mb-3 text-dark"><i class="bi bi-graph-up me-2"></i>Histórico Mensal de OS</h5>
+        <div style="height:320px;"><canvas id="chartMensal"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <div class="col-lg-6">
+      <div class="card shadow-sm rounded-4 p-4 h-100">
+        <h5 class="mb-3 text-dark"><i class="bi bi-bug-fill me-2"></i>Larva Visualizada</h5>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead><tr><th>Resposta</th><th class="text-center">Total</th></tr></thead>
+            <tbody>
+              {% for item, total in dados_larva %}
+                <tr><td>{{ item }}</td><td class="text-center">{{ total }}</td></tr>
+              {% else %}
+                <tr><td colspan="2" class="text-center text-muted">Sem dados.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card shadow-sm rounded-4 p-4 h-100">
+        <h5 class="mb-3 text-dark"><i class="bi bi-person-badge me-2"></i>Pilotos (Top 10)</h5>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead><tr><th>Piloto</th><th class="text-center">Total</th></tr></thead>
+            <tbody>
+              {% for item, total in dados_piloto[:10] %}
+                <tr><td>{{ item }}</td><td class="text-center">{{ total }}</td></tr>
+              {% else %}
+                <tr><td colspan="2" class="text-center text-muted">Sem dados.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script id="dados-situacao-json" type="application/json">{{ dados_situacao_aplicacao | tojson | safe }}</script>
+<script id="dados-tipo-json" type="application/json">{{ dados_tipo_aplicacao | tojson | safe }}</script>
+<script id="dados-unidade-json" type="application/json">{{ dados_unidade | tojson | safe }}</script>
+<script id="dados-mensais-json" type="application/json">{{ dados_mensais | tojson | safe }}</script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+  const readJson = (id) => {
+    const el = document.getElementById(id);
+    return el ? JSON.parse(el.textContent) : [];
+  };
+  const clean = (v) => (v === null || v === undefined || v === "" ? "Não informado" : String(v));
+  const palette = ["#0d6efd", "#20c997", "#ffc107", "#dc3545", "#6f42c1", "#0dcaf0", "#fd7e14", "#198754", "#adb5bd", "#343a40"];
+
+  const dadosSituacao = readJson("dados-situacao-json").map(([a, b]) => [clean(a), b]);
+  const dadosTipo = readJson("dados-tipo-json").map(([a, b]) => [clean(a), b]);
+  const dadosUnidade = readJson("dados-unidade-json").map(([a, b]) => [clean(a), b]).slice(0, 10);
+  const dadosMensais = readJson("dados-mensais-json");
+
+  new Chart(document.getElementById("chartSituacao"), {
+    type: "doughnut",
+    data: {
+      labels: dadosSituacao.map(x => x[0]),
+      datasets: [{ data: dadosSituacao.map(x => x[1]), backgroundColor: dadosSituacao.map((_, i) => palette[i % palette.length]) }]
+    },
+    options: { cutout: "65%", plugins: { legend: { position: "bottom" } }, maintainAspectRatio: false }
+  });
+
+  new Chart(document.getElementById("chartTipo"), {
+    type: "bar",
+    data: {
+      labels: dadosTipo.map(x => x[0]),
+      datasets: [{ label: "Total", data: dadosTipo.map(x => x[1]), backgroundColor: "#6f42c1", borderRadius: 10 }]
+    },
+    options: { plugins: { legend: { display: false } }, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+  });
+
+  new Chart(document.getElementById("chartUnidade"), {
+    type: "bar",
+    data: {
+      labels: dadosUnidade.map(x => x[0]),
+      datasets: [{ label: "Total", data: dadosUnidade.map(x => x[1]), backgroundColor: "#20c997", borderRadius: 10 }]
+    },
+    options: { plugins: { legend: { display: false } }, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+  });
+
+  const labelsMensais = dadosMensais.map(item => item[0]);
+  const countsMensais = dadosMensais.map(item => item[1]);
+  new Chart(document.getElementById("chartMensal"), {
+    type: "line",
+    data: {
+      labels: labelsMensais,
+      datasets: [{
+        label: "Total de OS",
+        data: countsMensais,
+        borderColor: "#0d6efd",
+        backgroundColor: "rgba(13, 110, 253, 0.15)",
+        fill: true,
+        tension: 0.35
+      }]
+    },
+    options: { plugins: { legend: { display: false } }, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+  });
+</script>
+{% endblock %}
