@@ -51,17 +51,27 @@
             </select>
           </div>
 
-            <div class="col-md-4">
-            <label class="small text-muted">Foco:</label>
-            {% set foco = (request.args.get('foco','') or '')|upper %}
-            <select name="foco" class="form-select form-select-sm">
-              <option value="">Todas</option>
-              <option value="IMÓVEL ABANDONADO" {% if foco == 'IMÓVEL ABANDONADO' %}selected{% endif %}>Imóvel Abandonado</option>
-              <option value="PISCINA / CAIXA D'ÁGUA" {% if foco == "PISCINA / CAIXA D'ÁGUA" %}selected{% endif %}>Piscina / Caixa D'água</option>
-              <option value="TERRENO BALDIO" {% if foco == 'TERRENO BALDIO' %}selected{% endif %}>Terreno Baldio</option>
-              <option value="PONTO ESTRATÉGICO (PE)" {% if foco == 'PONTO ESTRATÉGICO (PE)' %}selected{% endif %}>Ponto Estratégico (PE)</option>
-            </select>
-            </div>
+            <div class="col-md-3">
+                        <label class="small text-muted mb-1">Filtrar por Foco da Ação</label>
+                        <select name="foco" class="form-select form-select-sm">
+                            <option value="">Todos os Focos</option>
+
+                            {% set opcoes_foco = [
+                                "Acumulador", "CAIXA D'AGUA", "Casa abandonada com inserviveis",
+                                "Corrego", "Ferro velho", "Galpão com inserviveis",
+                                "Imovel com Inserviveis", "Laje/telhado com Acumulo de agua",
+                                "P.E Cadastrado", "Patio com Veiculos", "Piscina",
+                                "Piscinão", "Reciclagem", "Terreno com inserviveis"
+                            ] %}
+
+                            {% for opcao in opcoes_foco %}
+                                <option value="{{ opcao }}"
+                                    {{ 'selected' if request.args.get('foco') == opcao else '' }}>
+                                    {{ opcao }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                      </div>
           
 
           <div class="col-md-4 d-flex gap-2">

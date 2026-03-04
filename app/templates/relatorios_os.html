@@ -14,28 +14,53 @@
 } %}
 
 <div class="container-fluid py-4" style="max-width: 1200px;">
-  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-    <h2 class="text-dark m-0">
-      <i class="bi bi-clipboard-data-fill me-2 text-primary"></i> Relatórios de OS
-    </h2>
-    <a href="{{ url_for('main.relatorios') }}" class="btn btn-outline-primary">
-      <i class="bi bi-bar-chart-fill me-1"></i> Relatórios de Solicitações
-    </a>
-    <div class="d-flex gap-2">
-  <a
-    class="btn btn-outline-danger btn-sm"
-    href="{{ url_for('main.relatorios_os_export_pdf', mes=mes_selecionado, ano=ano_selecionado, uvis_id=uvis_id_selecionado) }}"
-  >
-    <i class="bi bi-filetype-pdf me-1"></i> Exportar PDF
-  </a>
+  <div class="rel-header mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div class="rel-title">
+      <h2 class="text-dark m-0">
+        <i class="bi bi-clipboard-data-fill me-2 text-primary"></i> Relatórios de OS
+      </h2>
+    </div>
 
-  <a
-    class="btn btn-outline-success btn-sm"
-    href="{{ url_for('main.relatorios_os_export_excel', mes=mes_selecionado, ano=ano_selecionado, uvis_id=uvis_id_selecionado) }}"
-  >
-    <i class="bi bi-file-earmark-excel me-1"></i> Exportar Excel
-  </a>
-</div>
+    <div class="rel-actions d-flex gap-2 flex-wrap align-items-center justify-content-md-end">
+      <div class="d-grid flex-grow-1 flex-md-grow-0" style="width: 220px; min-width: 180px;">
+        <a href="{{ url_for('main.relatorios_solicitacoes') }}"
+           class="btn btn-outline-primary d-flex align-items-center justify-content-center gap-2"
+           style="height: 38px;">
+          <i class="bi bi-bar-chart-fill"></i>
+          <span>Relatórios de Solicitações</span>
+        </a>
+      </div>
+
+      <form method="GET" action="{{ url_for('main.relatorios_os_export_pdf') }}"
+            class="form-exportar p-0 m-0 d-grid flex-grow-1 flex-md-grow-0"
+            style="width: 180px; min-width: 150px;">
+        <input type="hidden" name="mes" value="{{ mes_selecionado }}">
+        <input type="hidden" name="ano" value="{{ ano_selecionado }}">
+        <input type="hidden" name="uvis_id" value="{{ uvis_id_selecionado }}">
+        <button type="submit"
+                class="btn btn-danger d-flex align-items-center justify-content-center gap-2"
+                style="height: 38px;"
+                title="Exportar PDF">
+          <i class="bi bi-file-earmark-pdf-fill"></i>
+          <span>Exportar PDF</span>
+        </button>
+      </form>
+
+      <form method="GET" action="{{ url_for('main.relatorios_os_export_excel') }}"
+            class="form-exportar p-0 m-0 d-grid flex-grow-1 flex-md-grow-0"
+            style="width: 180px; min-width: 150px;">
+        <input type="hidden" name="mes" value="{{ mes_selecionado }}">
+        <input type="hidden" name="ano" value="{{ ano_selecionado }}">
+        <input type="hidden" name="uvis_id" value="{{ uvis_id_selecionado }}">
+        <button type="submit"
+                class="btn btn-secondary d-flex align-items-center justify-content-center gap-2"
+                style="height: 38px;"
+                title="Exportar Excel">
+          <i class="bi bi-file-earmark-excel-fill"></i>
+          <span>Exportar Excel</span>
+        </button>
+      </form>
+    </div>
   </div>
 
   <div class="card shadow-sm rounded-4 mb-4 border-0">
@@ -98,7 +123,7 @@
       </div>
     </div>
     <div class="col-6 col-md-4 col-lg-2">
-      <div class="card info h-100 shadow-sm rounded-4">
+      <div class="card info status-warning h-100 shadow-sm rounded-4">
         <div class="card-body">
           <h6 class="text-uppercase mb-2 text-muted">Larva (SIM)</h6>
           <h2 class="mb-0 fw-bold text-warning">{{ total_larva_sim }}</h2>
@@ -255,6 +280,21 @@
       }]
     },
     options: { plugins: { legend: { display: false } }, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+  });
+</script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const exportForms = document.querySelectorAll("form.form-exportar");
+    exportForms.forEach((form) => {
+      form.addEventListener("submit", function () {
+        const submitButton = this.querySelector("button[type='submit']");
+        if (!submitButton) return;
+        setTimeout(() => {
+          if (typeof hideLoadingState === "function") hideLoadingState(submitButton);
+        }, 4000);
+      });
+    });
   });
 </script>
 {% endblock %}

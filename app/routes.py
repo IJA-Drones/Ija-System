@@ -6633,6 +6633,7 @@ def admin_canceladas():
     # filtros (mantém unidade/região igual ao admin)
     filtro_unidade = (request.args.get("unidade") or "").strip()
     filtro_regiao = (request.args.get("regiao") or "").strip()
+    filtro_foco = (request.args.get("foco") or "").strip()
 
     unidades_select = Usuario.query.filter_by(tipo_usuario='uvis').order_by(Usuario.nome_uvis.asc()).all()
 
@@ -6650,6 +6651,8 @@ def admin_canceladas():
         query = query.filter(Usuario.nome_uvis.ilike(f"%{filtro_unidade}%"))
     if filtro_regiao:
         query = query.filter(Usuario.regiao.ilike(f"%{filtro_regiao}%"))
+    if filtro_foco: 
+        query = query.filter(Solicitacao.foco == filtro_foco)
 
     page = request.args.get("page", 1, type=int)
     paginacao = query.order_by(Solicitacao.data_criacao.desc()).paginate(page=page, per_page=6, error_out=False)
@@ -6660,7 +6663,8 @@ def admin_canceladas():
         paginacao=paginacao,
         now=datetime.now(),
         unidades_select=unidades_select,
-        google_maps_key=google_maps_key
+        google_maps_key=google_maps_key,
+        foco_selecionado=filtro_foco
     )
 
 
