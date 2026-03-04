@@ -21,6 +21,21 @@
     <a href="{{ url_for('main.relatorios') }}" class="btn btn-outline-primary">
       <i class="bi bi-bar-chart-fill me-1"></i> Relatórios de Solicitações
     </a>
+    <div class="d-flex gap-2">
+  <a
+    class="btn btn-outline-danger btn-sm"
+    href="{{ url_for('main.relatorios_os_export_pdf', mes=mes_selecionado, ano=ano_selecionado, uvis_id=uvis_id_selecionado) }}"
+  >
+    <i class="bi bi-filetype-pdf me-1"></i> Exportar PDF
+  </a>
+
+  <a
+    class="btn btn-outline-success btn-sm"
+    href="{{ url_for('main.relatorios_os_export_excel', mes=mes_selecionado, ano=ano_selecionado, uvis_id=uvis_id_selecionado) }}"
+  >
+    <i class="bi bi-file-earmark-excel me-1"></i> Exportar Excel
+  </a>
+</div>
   </div>
 
   <div class="card shadow-sm rounded-4 mb-4 border-0">

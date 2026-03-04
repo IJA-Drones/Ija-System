@@ -106,6 +106,12 @@
               <a href="{{ url_for('main.admin_os_formulario_view', os_id=p.id) }}" class="btn btn-sm btn-outline-primary">
                   <i class="bi bi-clipboard2-check me-1"></i> Formulário
               </a>
+              <a href="{{ url_for('main.admin_export_os_pdf_v2', os_id=p.id) }}" class="btn btn-sm btn-outline-danger">
+              <i class="bi bi-filetype-pdf me-1"></i> PDF
+            </a>
+            <a href="{{ url_for('main.admin_export_os_excel_v2', os_id=p.id) }}" class="btn btn-sm btn-outline-success">
+              <i class="bi bi-file-earmark-excel me-1"></i> Excel
+            </a>
             </td>
           </tr>
         {% else %}

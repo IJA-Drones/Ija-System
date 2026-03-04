@@ -199,7 +199,7 @@ def dashboard():
     if current_user.tipo_usuario in ['admin', 'operario', 'visualizar']:
         return redirect(url_for('main.admin_dashboard'))
 
-    # ✅ UVIS: só as solicitações dela + carrega equipe para exibir
+    #  UVIS: só as solicitações dela + carrega equipe para exibir
     query = (
         Solicitacao.query
         .options(
@@ -209,7 +209,7 @@ def dashboard():
         .filter(Solicitacao.usuario_id == current_user.id)
     )
 
-    # ✅ NÃO MOSTRAR CANCELADAS NO DASHBOARD PRINCIPAL
+    #  NÃO MOSTRAR CANCELADAS NO DASHBOARD PRINCIPAL
     query = query.filter(Solicitacao.status != "CANCELADO")
 
     # =========================
@@ -228,7 +228,7 @@ def dashboard():
         query = query.filter(Solicitacao.foco == filtro_foco)
 
     # =========================
-    # ✅ FILTRO POR DATA (NOVO)
+    #  FILTRO POR DATA (NOVO)
     # =========================
     data_ini = request.args.get("data_ini")  # YYYY-MM-DD
     data_fim = request.args.get("data_fim")  # YYYY-MM-DD
@@ -319,7 +319,7 @@ def admin_dashboard():
     filtro_unidade = (request.args.get("unidade") or "").strip()
     filtro_regiao = (request.args.get("regiao") or "").strip()
 
-    # ✅ novo filtro (SIM / NAO)
+    #  novo filtro (SIM / NAO)
     filtro_apoio_cet = (request.args.get("apoio_cet") or "").strip().upper()
 
     # 🔁 Se alguém tentar acessar CANCELADO pelo filtro, redireciona
@@ -348,7 +348,7 @@ def admin_dashboard():
         .join(Usuario)
     )
 
-    # ✅ NÃO MOSTRAR CANCELADAS NO PAINEL PRINCIPAL
+    #  NÃO MOSTRAR CANCELADAS NO PAINEL PRINCIPAL
     query = query.filter(Solicitacao.status != "CANCELADO")
 
     # --- Aplicação dos filtros ---
@@ -361,7 +361,7 @@ def admin_dashboard():
     if filtro_regiao:
         query = query.filter(Usuario.regiao.ilike(f"%{filtro_regiao}%"))
 
-    # ✅ filtro apoio CET
+    #  filtro apoio CET
     if filtro_apoio_cet == "SIM":
         query = query.filter(Solicitacao.apoio_cet.is_(True))
     elif filtro_apoio_cet == "NAO":
@@ -427,7 +427,7 @@ def exportar_excel():
             .join(Usuario)
             .options(
                 joinedload(Solicitacao.usuario),
-                joinedload(Solicitacao.equipe)  # ✅ agora puxa equipe
+                joinedload(Solicitacao.equipe)  #  agora puxa equipe
             )
         )
 
@@ -450,7 +450,7 @@ def exportar_excel():
         ws.title = "Relatório de Solicitações"
 
         headers = [
-            "ID", "Unidade", "Região", "Equipe Responsável",  # ✅ adicionada
+            "ID", "Unidade", "Região", "Equipe Responsável",  #  adicionada
             "Data Agendada", "Hora",
             "Endereço Completo", "Latitude", "Longitude",
             "Foco", "Tipo Visita", "Altura", "Apoio CET?",
@@ -502,7 +502,7 @@ def exportar_excel():
                 p.id,
                 uvis_nome,
                 uvis_regiao,
-                equipe_nome,  # ✅ adicionada
+                equipe_nome,  #  adicionada
                 data_formatada,
                 str(p.hora_agendamento or ""),
                 endereco_completo,
@@ -571,7 +571,7 @@ def atualizar(id):
     pedido.latitude = request.form.get('latitude')
     pedido.longitude = request.form.get('longitude')
 
-    # ✅ Atribuição de equipe (opcional)
+    #  Atribuição de equipe (opcional)
     equipe_id = request.form.get("equipe_id")
 
     if equipe_id in (None, "", "null", "undefined"):
@@ -592,7 +592,7 @@ def atualizar(id):
             flash("Equipe inválida.", "warning")
             return redirect(request.referrer or url_for("main.admin_dashboard"))
 
-    # ✅ Regra de negócio: se aprovou, precisa ter equipe
+    #  Regra de negócio: se aprovou, precisa ter equipe
     status_aprovacao = ["APROVADO", "APROVADO COM RECOMENDAÇÕES"]
     if pedido.status in status_aprovacao and not pedido.equipe_id:
         flash("Para aprovar, selecione uma equipe responsável.", "warning")
@@ -1563,7 +1563,7 @@ def exportar_relatorio_pdf():
     add_count_table("Histórico Mensal (tabela)", dados_mensais, col1="Mês")
 
     # -------------------------
-    # ✅ GRÁFICOS (AGORA DEPOIS DOS DADOS ESCRITOS)
+    #  GRÁFICOS (AGORA DEPOIS DOS DADOS ESCRITOS)
     # -------------------------
     story.append(PageBreak())
     story.append(Paragraph("Gráficos", section_h))
@@ -1701,13 +1701,13 @@ def exportar_relatorio_pdf():
             Paragraph(str(obs), cell_style_small),
         ])
 
-    # ✅ Larguras base (as suas), mas vamos “encaixar” no doc.width automaticamente
+    #  Larguras base (as suas), mas vamos “encaixar” no doc.width automaticamente
     base_col_widths = [
         18*mm, 14*mm, 28*mm, 22*mm, 22*mm,
         22*mm, 22*mm, 26*mm, 18*mm, 60*mm
     ]
 
-    # ✅ Se a soma estourar a largura útil da página, escala proporcionalmente
+    #  Se a soma estourar a largura útil da página, escala proporcionalmente
     total_w = sum(base_col_widths)
     max_w = doc.width  # largura útil = página - margens
 
@@ -1717,7 +1717,7 @@ def exportar_relatorio_pdf():
     else:
         colWidths = base_col_widths
 
-    # ✅ Quantidade de linhas por página (ajuste fino)
+    #  Quantidade de linhas por página (ajuste fino)
     chunk_size = 28 if orient == 'landscape' else 24
 
     # 🔥 renderiza em blocos para não ficar pesado e manter header repetido
@@ -1728,7 +1728,7 @@ def exportar_relatorio_pdf():
             chunk,
             repeatRows=1,
             colWidths=colWidths,
-            hAlign='LEFT'  # ✅ evita “puxar” pro centro e cortar laterais
+            hAlign='LEFT'  #  evita “puxar” pro centro e cortar laterais
         )
 
         tbl.setStyle(TableStyle([
@@ -1748,7 +1748,7 @@ def exportar_relatorio_pdf():
             ('TOPPADDING', (0,0), (-1,-1), 2),
             ('BOTTOMPADDING', (0,0), (-1,-1), 2),
 
-            # ✅ reforço de quebra de linha dentro das células
+            #  reforço de quebra de linha dentro das células
             ('WORDWRAP', (0,0), (-1,-1), 'CJK'),
         ]))
 
@@ -1899,7 +1899,7 @@ def exportar_relatorio_excel():
     ws = wb.active
     ws.title = "Relatório"
 
-    # ✅ UVIS vem no começo agora
+    #  UVIS vem no começo agora
     colunas = [
         "UVIS", "Região",
         "ID", "Status", "Foco", "Tipo Visita", "Altura Voo",
@@ -1916,7 +1916,7 @@ def exportar_relatorio_excel():
     zebra1 = PatternFill(start_color="FFFFFFFF", end_color="FFFFFFFF", fill_type="solid")
     zebra2 = PatternFill(start_color="FFF7FBFF", end_color="FFF7FBFF", fill_type="solid")
 
-    # ✅ alinhamento igual ao print (compacto e central vertical)
+    #  alinhamento igual ao print (compacto e central vertical)
     center = Alignment(horizontal="center", vertical="center")
     left_center = Alignment(horizontal="left", vertical="center")
 
@@ -1973,7 +1973,7 @@ def exportar_relatorio_excel():
     # Auto-filtro no cabeçalho
     ws.auto_filter.ref = f"A1:{get_column_letter(len(colunas))}1"
 
-    # ✅ Larguras “na mão” (fica igual ao print / bem organizado)
+    #  Larguras “na mão” (fica igual ao print / bem organizado)
     larguras = {
         "A": 24,  # UVIS
         "B": 12,  # Região
@@ -2164,7 +2164,7 @@ import os
 @login_required
 def agenda():
     try:
-        # ✅ Key pro mapa no modal
+        #  Key pro mapa no modal
         google_maps_key = current_app.config.get("Maps_KEY_FRONT") or os.getenv("KEY_API_GOOGLE_MAPS") or ""
 
         # --- Usuário atual ---
@@ -2177,7 +2177,7 @@ def agenda():
         mes = request.args.get("mes", datetime.now().month, type=int)
         ano = request.args.get("ano", datetime.now().year, type=int)
 
-        # ✅ Se não vier "d", abre na data de HOJE (evita cair no dia 01)
+        #  Se não vier "d", abre na data de HOJE (evita cair no dia 01)
         d = (request.args.get("d") or "").strip()
         initial_date = d or datetime.now().strftime("%Y-%m-%d")
 
@@ -2276,7 +2276,7 @@ def agenda():
                     "hora": hora,
                     "status": e.status,
 
-                    # ✅ padrão único pro JS (modal + rota)
+                    #  padrão único pro JS (modal + rota)
                     "lat": lat,
                     "lng": lng,
                     "endereco": endereco_txt
@@ -2326,7 +2326,7 @@ def agenda():
             anos_disponiveis=anos_disponiveis,
             initial_date=initial_date,
             pode_filtrar_uvis=pode_filtrar_uvis,
-            google_maps_key=google_maps_key,   # ✅ pro modal com mapa
+            google_maps_key=google_maps_key,   #  pro modal com mapa
         )
 
     except Exception as e:
@@ -2365,7 +2365,7 @@ def agenda_rotas_dia():
             if filtro_uvis_id:
                 query = query.filter(Solicitacao.usuario_id == filtro_uvis_id)
 
-        # ✅ SOMENTE status permitidos para rota
+        #  SOMENTE status permitidos para rota
         query = query.filter(
             Solicitacao.status.in_(["APROVADO", "APROVADO COM RECOMENDAÇÕES"])
         )
@@ -2585,7 +2585,7 @@ def criar_notificacao(usuario_id, titulo, mensagem="", link=None):
         titulo=titulo,
         mensagem=mensagem or "",
         link=link,
-        criada_em=agora_brasilia_naive(),  # ✅ Brasília
+        criada_em=agora_brasilia_naive(),  #  Brasília
     )
     db.session.add(n)
     db.session.commit()
@@ -2594,7 +2594,7 @@ def criar_notificacao(usuario_id, titulo, mensagem="", link=None):
 
 # -------------------------------------------------
 # GARANTIR NOTIFICAÇÕES DO DIA (sem duplicar)
-# ✅ REGRA: se já existiu (mesmo apagada), NÃO recria
+#  REGRA: se já existiu (mesmo apagada), NÃO recria
 # -------------------------------------------------
 def garantir_notificacoes_do_dia(usuario_id):
     hoje = date.today()
@@ -2613,7 +2613,7 @@ def garantir_notificacoes_do_dia(usuario_id):
         # 🔒 chave estável (muda por dia por conta do d=hoje)
         link = url_for("main.agenda", sid=s.id, d=hoje.isoformat())
 
-        # ✅ Se já existe (inclusive apagada), NÃO cria novamente
+        #  Se já existe (inclusive apagada), NÃO cria novamente
         ja_existe = (
             Notificacao.query
             .filter_by(usuario_id=usuario_id, link=link)
@@ -2646,7 +2646,7 @@ def ler_notificacao(notif_id):
              .first_or_404())
 
     if n.lida_em is None:
-        n.lida_em = agora_brasilia_naive()  # ✅ Brasília
+        n.lida_em = agora_brasilia_naive()  #  Brasília
         db.session.commit()
 
     return redirect(n.link or url_for("main.notificacoes"))
@@ -2660,13 +2660,13 @@ def ler_notificacao(notif_id):
 def notificacoes():
     user_tipo = current_user.tipo_usuario
 
-    # ✅ só UVIS gera lembrete do dia (pro próprio usuário)
+    #  só UVIS gera lembrete do dia (pro próprio usuário)
     if user_tipo not in ["admin", "operario", "visualizar"]:
         garantir_notificacoes_do_dia(current_user.id)
 
     base = Notificacao.query.filter(Notificacao.apagada_em.is_(None))
 
-    # ✅ admin/operário/visualizar vê tudo, uvis só as dela
+    #  admin/operário/visualizar vê tudo, uvis só as dela
     if user_tipo in ["admin", "operario", "visualizar"]:
         itens = base.order_by(Notificacao.criada_em.desc()).all()
     else:
@@ -2693,7 +2693,7 @@ def excluir_notificacao(notif_id):
              .filter_by(id=notif_id, usuario_id=current_user.id)
              .first_or_404())
 
-    n.apagada_em = agora_brasilia_naive()  # ✅ Brasília
+    n.apagada_em = agora_brasilia_naive()  #  Brasília
     db.session.commit()
 
     return redirect(url_for("main.notificacoes"))
@@ -2706,7 +2706,7 @@ def excluir_notificacao(notif_id):
 @login_required
 def limpar_notificacoes():
     user_tipo = current_user.tipo_usuario
-    agora = agora_brasilia_naive()  # ✅ Brasília
+    agora = agora_brasilia_naive()  #  Brasília
 
     q = Notificacao.query.filter(Notificacao.apagada_em.is_(None))
 
@@ -2769,7 +2769,7 @@ UVIS_FAQ = [
         "title": "Campos obrigatórios ao criar uma solicitação",
         "keywords": ["novo", "nova solicitacao", "cadastro", "campos", "obrigatorio", "cep", "numero", "tipo de visita", "altura", "foco"],
         "answer": (
-            "✅ No cadastro de uma nova solicitação, atenção aos campos:\n"
+            " No cadastro de uma nova solicitação, atenção aos campos:\n"
             "- **Data** e **Hora** (obrigatórios)\n"
             "- **CEP** (8 dígitos) para preencher endereço automático\n"
             "- **Logradouro** (confirmar) e **Número** (preencher manualmente)\n"
@@ -2901,10 +2901,10 @@ def baixar_anexo(id):
     if not pedido.anexo_path:
         abort(404)
 
-    # ✅ mesma pasta do upload
+    #  mesma pasta do upload
     upload_folder = get_upload_folder()
 
-    # ✅ normaliza o caminho salvo no banco
+    #  normaliza o caminho salvo no banco
     rel = (pedido.anexo_path or "").replace("\\", "/")
     if rel.startswith("upload-files/"):
         rel = rel.split("upload-files/", 1)[1]
@@ -2932,7 +2932,7 @@ def remover_anexo(id):
     pedido.anexo_nome = None
     db.session.commit()
 
-    # ✅ Isso fará o Toast "Removido com sucesso" aparecer no topo igual aos outros deletes
+    #  Isso fará o Toast "Removido com sucesso" aparecer no topo igual aos outros deletes
     flash('PDF removido com sucesso!', 'success') 
     return redirect(url_for('main.dashboard'))
 
@@ -3017,7 +3017,7 @@ def admin_uvis_listar():
 
     query = db.session.query(Solicitacao).options(
         joinedload(Solicitacao.usuario),
-        joinedload(Solicitacao.piloto)  # ✅
+        joinedload(Solicitacao.piloto)  # 
     ).filter(Solicitacao.usuario_id == current_user.id)
 
 
@@ -4379,7 +4379,7 @@ def cadastrar_pilotos():
 
             # 2) cria usuário do piloto (nome_uvis é obrigatório no seu model)
             user_piloto = Usuario(
-                nome_uvis=nome_piloto,          # ✅ obrigatório
+                nome_uvis=nome_piloto,          #  obrigatório
                 regiao=regiao or None,          # opcional, mas útil
                 codigo_setor=None,
                 login=login,
@@ -4433,7 +4433,7 @@ def listar_pilotos():
 
     export = (request.args.get("export") or "").strip().lower()
 
-    # ✅ Controle de região para UVIS (força a regiao da uvis)
+    #  Controle de região para UVIS (força a regiao da uvis)
     uvis_regiao = (getattr(current_user, "regiao", None) or "").strip().upper()
     if user_tipo == "uvis":
         if not uvis_regiao:
@@ -4473,7 +4473,7 @@ def listar_pilotos():
     # Exportação Excel
     # -----------------------------
     if export == "xlsx":
-        # ✅ Liberamos a exportação para o perfil visualizar também
+        #  Liberamos a exportação para o perfil visualizar também
         if user_tipo not in ["admin", "visualizar"]:
             abort(403)
 
@@ -4779,7 +4779,7 @@ def deletar_piloto(piloto_id):
 
     piloto = Pilotos.query.get_or_404(piloto_id)
 
-    # ✅ BLOQUEIO: não pode excluir se estiver vinculado a alguma equipe (titular/auxiliar)
+    #  BLOQUEIO: não pode excluir se estiver vinculado a alguma equipe (titular/auxiliar)
     vinculo = (
         EquipePiloto.query
         .filter(EquipePiloto.piloto_id == piloto.id)
@@ -4890,7 +4890,7 @@ def cadastrar_equipes():
                 errors["auxiliar_id"] = "Piloto auxiliar inválido."
 
         # -----------------------------
-        # ✅ NOVO: Bloqueio de piloto em outra equipe (titular OU auxiliar)
+        #  NOVO: Bloqueio de piloto em outra equipe (titular OU auxiliar)
         # -----------------------------
         def piloto_ja_em_equipe(piloto_id_check: int):
             """Retorna (EquipePiloto, Equipe) se o piloto já estiver em alguma equipe."""
@@ -4986,7 +4986,7 @@ def listar_equipes():
     # -----------------------------
     q = (request.args.get("q") or "").strip()
 
-    # ✅ TRAVAS PARA UVIS:
+    #  TRAVAS PARA UVIS:
     # - regiao sempre a do usuário
     # - ativa sempre somente ativas
     if tipo == "uvis":
@@ -5019,7 +5019,7 @@ def listar_equipes():
     # -----------------------------
     query = Equipe.query.options(
         db.selectinload(Equipe.membros).selectinload(EquipePiloto.piloto),
-        db.selectinload(Equipe.equipamentos),  # ✅ traz equipamentos (inclui drones) vinculados à equipe
+        db.selectinload(Equipe.equipamentos),  #  traz equipamentos (inclui drones) vinculados à equipe
     )
 
     # -----------------------------
@@ -5054,7 +5054,7 @@ def listar_equipes():
     if regiao:
         query = query.filter(Equipe.regiao.ilike(regiao))
 
-    # ✅ ativa: só deixa o admin/outros mexerem; uvis já foi travado em True acima
+    #  ativa: só deixa o admin/outros mexerem; uvis já foi travado em True acima
     if tipo != "uvis":
         if ativa in ("1", "true", "sim", "yes"):
             query = query.filter(Equipe.ativa.is_(True))
@@ -5163,7 +5163,7 @@ def listar_equipes():
 
         start_row = 4
 
-        # ✅ NOVO: coluna Drones
+        #  NOVO: coluna Drones
         headers = ["ID", "Equipe", "Região", "Ativa", "Piloto Titular", "Auxiliar", "Drones", "Criada em", "Descrição"]
 
         for col_idx, h in enumerate(headers, start=1):
@@ -5177,7 +5177,7 @@ def listar_equipes():
             piloto_nome = e.piloto_titular.nome_piloto if e.piloto_titular else ""
             aux_nome = e.piloto_auxiliar.nome_piloto if e.piloto_auxiliar else ""
 
-            # ✅ monta string com drones vinculados (via equipamentos)
+            #  monta string com drones vinculados (via equipamentos)
             drones = [eq for eq in (e.equipamentos or []) if getattr(eq, "tipo_equipamento", None) == "drones"]
 
             # Formato: RENOMAÇÃO (MODELO) [NS: ...]
@@ -5219,7 +5219,7 @@ def listar_equipes():
         ws.auto_filter.ref = f"A{start_row}:{get_column_letter(last_col)}{max(last_row, start_row)}"
         ws.row_dimensions[start_row].height = 22
 
-        # ✅ NOVO: max_widths ajustado (agora são 9 colunas)
+        #  NOVO: max_widths ajustado (agora são 9 colunas)
         max_widths = {1: 8, 2: 28, 3: 14, 4: 10, 5: 26, 6: 26, 7: 60, 8: 18, 9: 50}
         for col_idx in range(1, last_col + 1):
             max_len = len(headers[col_idx - 1])
@@ -5378,7 +5378,7 @@ def editar_equipe(equipe_id):
             errors["auxiliar_id"] = "Auxiliar não encontrado."
 
         # ---------------------------------------------------------------------
-        # ✅ BLOQUEIO FORTE: piloto não pode estar em OUTRA equipe (qualquer papel)
+        #  BLOQUEIO FORTE: piloto não pode estar em OUTRA equipe (qualquer papel)
         # ---------------------------------------------------------------------
         if piloto_id and "piloto_id" not in errors:
             vinc, eq = conflito_em_outra_equipe(piloto_id, equipe.id)
@@ -5782,7 +5782,7 @@ def _nome_uvis_base() -> str:
     if not direto:
         direto = "SEM-NOME"
 
-    # ✅ remove "UVIS" do começo (ex: "UVIS Lapa/Pinheiros" ou "UVIS-Lapa")
+    #  remove "UVIS" do começo (ex: "UVIS Lapa/Pinheiros" ou "UVIS-Lapa")
     direto = str(direto).strip()
     direto = re.sub(r"^\s*UVIS\s*[-:\s]*", "", direto, flags=re.IGNORECASE).strip()
 
@@ -5995,7 +5995,7 @@ def atribuir_equipe_uvis_solicitacao(id):
         flash("Selecione uma equipe.", "warning")
         return redirect(url_for("main.dashboard"))
 
-    # ✅ valida se existe ESSA equipe para ESSA UVIS
+    #  valida se existe ESSA equipe para ESSA UVIS
     existe = (
         db.session.query(EquipeUvis.id)
         .filter(EquipeUvis.uvis_usuario_id == current_user.id)
@@ -6537,13 +6537,13 @@ def _render_error(code: int, titulo=None, mensagem=None):
     ), code
 
 
-# ✅ pega qualquer HTTPException (abort(403), abort(404) etc.)
+#  pega qualquer HTTPException (abort(403), abort(404) etc.)
 @bp.app_errorhandler(HTTPException)
 def handle_http_exception(e: HTTPException):
     return _render_error(e.code or 500)
 
 
-# ✅ pega exceptions “reais” (500)
+#  pega exceptions “reais” (500)
 @bp.app_errorhandler(Exception)
 def handle_exception(e: Exception):
     # loga no console (ou usa logging)
@@ -6602,11 +6602,11 @@ def solicitacoes_canceladas():
 def cancelar_solicitacao_admin(id):
     s = Solicitacao.query.get_or_404(id)
 
-    # ✅ perfis do admin painel podem cancelar tudo
+    #  perfis do admin painel podem cancelar tudo
     if current_user.tipo_usuario in ["admin", "operario", "visualizar"]:
         pass
     else:
-        # ✅ UVIS só cancela as próprias
+        #  UVIS só cancela as próprias
         if s.usuario_id != current_user.id:
             abort(403)
 
@@ -6770,7 +6770,7 @@ def upload_to_dropbox(file_path):
         dest_path = f"/backups/{zipped_file.name}"
         with open(zipped_file, "rb") as f:
             meta = dbx.files_upload(f.read(), dest_path, mode=dropbox.files.WriteMode.overwrite)
-            print(f"✅ SUCESSO ABSOLUTO! Salvo em: {meta.path_display}")
+            print(f" SUCESSO ABSOLUTO! Salvo em: {meta.path_display}")
         
         if zipped_file.exists(): os.remove(zipped_file)
         if file_path.exists(): os.remove(file_path)
@@ -8595,7 +8595,7 @@ def piloto_os():
         .all()
     )
 
-    # ✅ VEÍCULOS vinculados à equipe ativa do piloto
+    #  VEÍCULOS vinculados à equipe ativa do piloto
     veiculos_equipe = (
         Veiculos.query
         .filter(Veiculos.equipe_id == vinculo.equipe_id)
@@ -8713,7 +8713,7 @@ def piloto_concluir_os(os_id):
         flash("Esta OS não possui equipe atribuída.", "danger")
         return redirect(url_for('main.piloto_os'))
 
-    # ✅ valida se o piloto logado faz parte da equipe da OS
+    #  valida se o piloto logado faz parte da equipe da OS
     vinculo = (
         EquipePiloto.query
         .join(Equipe, Equipe.id == EquipePiloto.equipe_id)
@@ -8776,7 +8776,7 @@ def _clean(v):
 
 def _clean_str(v):
     """
-    ✅ Para campos de TEXTO (String/Text):
+     Para campos de TEXTO (String/Text):
     - retorna "" quando vazio (nunca None)
     """
     if v is None:
@@ -8985,7 +8985,7 @@ def piloto_os_formulario_view(os_id):
             db.session.add(ordem)
 
         # ----------------------------
-        # ✅ Drones selecionados (PULVERIZAÇÃO E MONITORAMENTO)
+        #  Drones selecionados (PULVERIZAÇÃO E MONITORAMENTO)
         # ----------------------------
         # ⚠️ IMPORTANTE:
         # Ajuste o name do select principal no HTML pra "drone_pulv_id"
@@ -9008,11 +9008,11 @@ def piloto_os_formulario_view(os_id):
                 ordem.prefixo_aeronave_pulverizacao = drone_p.renomacao
         else:
             ordem.drone_id = None
-            ordem.drone_denominacao = ""          # ✅ vazio ao invés de None
-            ordem.drone_modelo = ""               # ✅ vazio ao invés de None
-            ordem.drone_numero_serie = ""         # ✅ vazio ao invés de None
-            ordem.drone_registro_anatel = ""      # ✅ vazio ao invés de None
-            ordem.drone_registro_anac = ""        # ✅ vazio ao invés de None
+            ordem.drone_denominacao = ""          #  vazio ao invés de None
+            ordem.drone_modelo = ""               #  vazio ao invés de None
+            ordem.drone_numero_serie = ""         #  vazio ao invés de None
+            ordem.drone_registro_anatel = ""      #  vazio ao invés de None
+            ordem.drone_registro_anac = ""        #  vazio ao invés de None
             ordem.prefixo_aeronave_pulverizacao = _clean_str(request.form.get("prefixo_aeronave_pulverizacao"))
 
         # --- PROCESSA DRONE DE MONITORAMENTO ---
@@ -9028,16 +9028,16 @@ def piloto_os_formulario_view(os_id):
                 ordem.prefixo_aeronave_monitoramento = drone_m.renomacao
         else:
             ordem.drone_monitoramento_id = None
-            ordem.drone_monitoramento_denominacao = ""     # ✅ vazio
-            ordem.drone_monitoramento_modelo = ""          # ✅ vazio
-            ordem.drone_monitoramento_numero_serie = ""    # ✅ vazio
-            ordem.drone_monitoramento_registro_anatel = "" # ✅ vazio
-            ordem.drone_monitoramento_registro_anac = ""   # ✅ vazio
+            ordem.drone_monitoramento_denominacao = ""     #  vazio
+            ordem.drone_monitoramento_modelo = ""          #  vazio
+            ordem.drone_monitoramento_numero_serie = ""    #  vazio
+            ordem.drone_monitoramento_registro_anatel = "" #  vazio
+            ordem.drone_monitoramento_registro_anac = ""   #  vazio
             ordem.prefixo_aeronave_monitoramento = _clean_str(request.form.get("prefixo_aeronave_monitoramento"))
 
         # --- Continuação normal dos campos ---
-        # ✅ Textos -> _clean_str (vazio vira "")
-        # ✅ Números/datas/horas -> _to_* (vazio vira None)
+        #  Textos -> _clean_str (vazio vira "")
+        #  Números/datas/horas -> _to_* (vazio vira None)
 
         ordem.identificador_os = _clean_str(request.form.get("identificador_os"))
         ordem.respondido_por = _clean_str(request.form.get("respondido_por")) or respondido_por_padrao
@@ -9302,4 +9302,1436 @@ def dashboard_equipe_uvis():
         paginacao=paginacao,
         google_maps_key=google_maps_key,
         nome_equipe=nome_equipe,
+    )
+
+# ============================================================
+#  EXPORTAÇÃO OS (ADMIN) — PDF + EXCEL BALA NA AGULHA + ASSINATURAS
+# ============================================================
+
+
+import tempfile
+import base64
+import re
+from datetime import datetime
+from io import BytesIO
+
+from flask import send_file, request
+from flask_login import login_required
+from sqlalchemy.orm import joinedload
+
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.platypus import Image as RLImage
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import mm
+from reportlab.lib import colors
+
+from openpyxl import Workbook
+from openpyxl.utils import get_column_letter
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.drawing.image import Image as XLImage
+
+# Seus imports reais:
+# from app import db
+# from app.models import Solicitacao, OrdemServico
+# from app.decorators import roles_required
+
+
+# ============================================================
+#  PDF V2 (mais bonito) — com LOGO + Assinaturas (imagem)
+# ============================================================
+
+import os
+import base64
+import re
+import tempfile
+from datetime import datetime
+from io import BytesIO
+
+from flask import send_file, request, current_app
+from flask_login import login_required
+from sqlalchemy.orm import joinedload
+
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.platypus import (
+    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+)
+from reportlab.platypus import Image as RLImage
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import mm
+from reportlab.lib import colors
+
+def _fmt_dt(v):
+    if not v:
+        return ""
+    try:
+        return v.strftime("%d/%m/%Y %H:%M")
+    except Exception:
+        return str(v)
+
+def _fmt_date(v):
+    if not v:
+        return ""
+    try:
+        return v.strftime("%d/%m/%Y")
+    except Exception:
+        return str(v)
+
+def _fmt_time(v):
+    if not v:
+        return ""
+    try:
+        return v.strftime("%H:%M")
+    except Exception:
+        return str(v)
+
+def _safe(v):
+    if v is None:
+        return ""
+    return str(v)
+
+
+
+# -------------------------
+#  Logo (static/img/...)
+# -------------------------
+def _get_logo_path():
+    """
+    Escolhe a logo do static. Use:
+      ?logo=dark  -> logo_oceano_azul_dark.png
+      ?logo=light -> logo_oceano_azul_light.png (default)
+    """
+    logo_mode = (request.args.get("logo") or "light").strip().lower()
+    filename = "img/logo_oceano_azul_dark.png" if logo_mode == "dark" else "img/logo_oceano_azul_light.png"
+    # caminho absoluto do Flask para /static
+    return os.path.join(current_app.root_path, "static", filename)
+
+
+def _try_make_logo(width_mm=34):
+    """
+    Retorna RLImage da logo (ou None se não existir/erro).
+    """
+    try:
+        p = _get_logo_path()
+        if not os.path.exists(p):
+            return None
+        img = RLImage(p)
+        # mantém proporção: define só largura
+        img.drawWidth = width_mm * mm
+        # altura proporcional aproximada (o ReportLab não lê DPI sempre bem),
+        # mas isso fica ok para logos horizontais:
+        img.drawHeight = (width_mm * 0.55) * mm
+        return img
+    except Exception:
+        return None
+
+
+# -------------------------
+#  Assinatura dataURL -> imagem
+# -------------------------
+_DATAURL_RE = re.compile(r"^data:image/(?P<fmt>png|jpeg|jpg);base64,(?P<data>.+)$", re.I)
+
+def _dataurl_to_rlimage(dataurl: str, width_mm=80, height_mm=32):
+    if not dataurl or not isinstance(dataurl, str):
+        return None
+    m = _DATAURL_RE.match(dataurl.strip())
+    if not m:
+        return None
+    try:
+        raw = base64.b64decode(m.group("data"))
+    except Exception:
+        return None
+    bio = BytesIO(raw)
+    img = RLImage(bio)
+    img.drawWidth = width_mm * mm
+    img.drawHeight = height_mm * mm
+    return img
+
+
+# -------------------------
+#  Componentes visuais do PDF
+# -------------------------
+def _pdf_styles():
+    styles = getSampleStyleSheet()
+
+    title = ParagraphStyle(
+        "p_title",
+        parent=styles["Title"],
+        fontSize=18,
+        leading=22,
+        textColor=colors.HexColor("#0D6EFD"),
+        spaceAfter=2
+    )
+    subtitle = ParagraphStyle(
+        "p_subtitle",
+        parent=styles["Normal"],
+        fontSize=9.5,
+        leading=13,
+        textColor=colors.HexColor("#6B7280"),
+        spaceAfter=10
+    )
+    section = ParagraphStyle(
+        "p_section",
+        parent=styles["Heading2"],
+        fontSize=11.5,
+        leading=15,
+        textColor=colors.HexColor("#0D6EFD"),
+        spaceBefore=10,
+        spaceAfter=6
+    )
+    cell = ParagraphStyle(
+        "p_cell",
+        parent=styles["BodyText"],
+        fontSize=9,
+        leading=12,
+        textColor=colors.HexColor("#111827"),
+        wordWrap="CJK",
+        splitLongWords=True
+    )
+    hint = ParagraphStyle(
+        "p_hint",
+        parent=styles["Normal"],
+        fontSize=8.5,
+        leading=11.5,
+        textColor=colors.HexColor("#6B7280"),
+        spaceAfter=6
+    )
+    return styles, title, subtitle, section, cell, hint
+
+
+def _pdf_header_block(os_id: int, status_txt: str):
+    """
+    Topo: logo + título + metadados.
+    """
+    styles, title_s, subtitle_s, *_ = _pdf_styles()
+
+    logo = _try_make_logo(width_mm=34)
+    title = Paragraph(f"OS #{os_id} — Formulário (Admin)", title_s)
+    subtitle = Paragraph(f"Gerado em {_fmt_dt(datetime.now())} • Status: {_safe(status_txt)}", subtitle_s)
+
+    left = [title, subtitle]
+    right = [logo] if logo else [Paragraph("", styles["Normal"])]
+
+    tbl = Table([[left, right]], colWidths=[None, 40*mm])
+    tbl.setStyle(TableStyle([
+        ("VALIGN", (0,0), (-1,-1), "TOP"),
+        ("ALIGN", (1,0), (1,0), "RIGHT"),
+        ("LEFTPADDING", (0,0), (-1,-1), 0),
+        ("RIGHTPADDING", (0,0), (-1,-1), 0),
+        ("TOPPADDING", (0,0), (-1,-1), 0),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 2),
+    ]))
+    return [tbl, Spacer(1, 2)]
+
+
+def _pdf_kv_table_nice(section_title: str, items: list[tuple[str, object]], cell_style, section_style, doc_width, orient="portrait"):
+    """
+    Tabela 2 colunas com layout mais “clean”.
+    """
+    key_w = (62*mm if orient == "portrait" else 75*mm)
+    val_w = doc_width - key_w
+
+    rows = [[
+        Paragraph("<b>Campo</b>", ParagraphStyle("th1", parent=cell_style, textColor=colors.white)),
+        Paragraph("<b>Valor</b>", ParagraphStyle("th2", parent=cell_style, textColor=colors.white)),
+    ]]
+
+    for k, v in items:
+        rows.append([
+            Paragraph(_safe(k), cell_style),
+            Paragraph(_safe(v), cell_style),
+        ])
+
+    tbl = Table(rows, repeatRows=1, colWidths=[key_w, val_w])
+    tbl.setStyle(TableStyle([
+        ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#0D6EFD")),
+        ("TEXTCOLOR", (0,0), (-1,0), colors.white),
+        ("GRID", (0,0), (-1,-1), 0.25, colors.HexColor("#E5E7EB")),
+        ("ROWBACKGROUNDS", (0,1), (-1,-1), [colors.white, colors.HexColor("#FBFDFF")]),
+        ("VALIGN", (0,0), (-1,-1), "TOP"),
+        ("LEFTPADDING", (0,0), (-1,-1), 6),
+        ("RIGHTPADDING", (0,0), (-1,-1), 6),
+        ("TOPPADDING", (0,0), (-1,-1), 4),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 4),
+    ]))
+
+    return [
+        Paragraph(section_title, section_style),
+        tbl,
+        Spacer(1, 8)
+    ]
+
+
+def _header_footer_factory_pretty(title):
+    """
+    Header/Footer com barra e paginação.
+    """
+    def _hf(canvas, doc):
+        canvas.saveState()
+        w, h = doc.pagesize
+
+        # Barra topo
+        canvas.setFillColor(colors.HexColor("#0D6EFD"))
+        canvas.rect(doc.leftMargin, h-(11*mm), doc.width, 2.6, fill=1, stroke=0)
+
+        # Rodapé
+        canvas.setFont("Helvetica", 8)
+        canvas.setFillColor(colors.HexColor("#6B7280"))
+        canvas.drawString(doc.leftMargin, 9*mm, title)
+        canvas.drawRightString(doc.leftMargin + doc.width, 9*mm, f"Página {canvas.getPageNumber()}")
+        canvas.restoreState()
+    return _hf
+
+
+# ============================================================
+#  ROTA PDF V2 (bonita com logo)
+# ============================================================
+@bp.route("/admin/os/<int:os_id>/export/pdf/v2", methods=["GET"])
+@login_required
+@roles_required("admin")
+def admin_export_os_pdf_v2(os_id):
+    orient = request.args.get("orient", "portrait")  # portrait | landscape
+    pagesize = landscape(A4) if orient == "landscape" else A4
+
+    try:
+        s = (
+            Solicitacao.query
+            .options(
+                joinedload(Solicitacao.usuario),
+                joinedload(Solicitacao.equipe),
+                joinedload(Solicitacao.ordem_servico),
+            )
+            .get_or_404(os_id)
+        )
+        ordem = s.ordem_servico
+
+        tmp_pdf = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
+        caminho_pdf = tmp_pdf.name
+        tmp_pdf.close()
+
+        doc = SimpleDocTemplate(
+            caminho_pdf,
+            pagesize=pagesize,
+            leftMargin=14*mm, rightMargin=14*mm,
+            topMargin=16*mm, bottomMargin=16*mm
+        )
+
+        styles, title_s, subtitle_s, section_s, cell_s, hint_s = _pdf_styles()
+
+        story = []
+        story += _pdf_header_block(s.id, s.status)
+
+        # linha separadora “soft”
+        story.append(Spacer(1, 2))
+
+        endereco_os = f"{s.logradouro or ''}, {s.numero or 'S/N'} - {s.bairro or ''} - {s.cidade or ''}/{s.uf or ''}"
+
+        story += _pdf_kv_table_nice("Identificação", [
+            ("Solicitação ID", s.id),
+            ("Equipe ID", s.equipe_id or ""),
+            ("Equipe", (s.equipe.nome_equipe if s.equipe else "")),
+            ("UVIS", (s.usuario.nome_uvis if s.usuario else "")),
+            ("Endereço", endereco_os),
+            ("Data agendamento", _fmt_date(s.data_agendamento)),
+            ("Hora agendamento", _fmt_time(s.hora_agendamento)),
+            ("Foco", s.foco or ""),
+            ("Status", s.status or ""),
+            ("Protocolo", getattr(s, "protocolo", "") or ""),
+        ], cell_s, section_s, doc.width, orient=orient)
+
+        if not ordem:
+            story.append(Paragraph("Formulário", section_s))
+            story.append(Paragraph("Esta OS não possui formulário preenchido.", styles["Normal"]))
+        else:
+            story += _pdf_kv_table_nice("Responsável / Registro", [
+                ("Identificador OS", ordem.identificador_os or ""),
+                ("Respondido por", ordem.respondido_por or ""),
+                ("Respondido em", _fmt_dt(ordem.respondido_em)),
+            ], cell_s, section_s, doc.width, orient=orient)
+
+            story += _pdf_kv_table_nice("Aeronaves — Pulverização (Principal)", [
+                ("Drone ID", ordem.drone_id or ""),
+                ("Prefixo", ordem.prefixo_aeronave_pulverizacao or ""),
+                ("Denominação", ordem.drone_denominacao or ""),
+                ("Modelo", ordem.drone_modelo or ""),
+                ("Nº Série", ordem.drone_numero_serie or ""),
+                ("Registro ANATEL", ordem.drone_registro_anatel or ""),
+                ("Registro ANAC", ordem.drone_registro_anac or ""),
+            ], cell_s, section_s, doc.width, orient=orient)
+
+            story += _pdf_kv_table_nice("Aeronaves — Monitoramento", [
+                ("Drone Monitoramento ID", ordem.drone_monitoramento_id or ""),
+                ("Prefixo", ordem.prefixo_aeronave_monitoramento or ""),
+                ("Denominação", ordem.drone_monitoramento_denominacao or ""),
+                ("Modelo", ordem.drone_monitoramento_modelo or ""),
+                ("Nº Série", ordem.drone_monitoramento_numero_serie or ""),
+                ("Registro ANATEL", ordem.drone_monitoramento_registro_anatel or ""),
+                ("Registro ANAC", ordem.drone_monitoramento_registro_anac or ""),
+            ], cell_s, section_s, doc.width, orient=orient)
+
+            story += _pdf_kv_table_nice("Aplicação", [
+                ("Situação da aplicação", ordem.situacao_aplicacao or ""),
+                ("Larva visualizada", ordem.larva_visualizada or ""),
+                ("Retornar monitorar larvas", ordem.retornar_proxima_semana_monitorar_larvas or ""),
+                ("DA (Distrito)", ordem.distrito_administrativo or ""),
+                ("Nome/RF ACE responsável", ordem.nome_rf_ace_responsavel_os or ""),
+                ("Criadouro OS (tipo/volume)", ordem.criadouro_os_tipo_volume or ""),
+                ("Data aplicação", _fmt_date(ordem.data_aplicacao)),
+                ("Hora início", _fmt_time(ordem.hora_inicio_aplicacao)),
+                ("Hora término", _fmt_time(ordem.hora_termino_aplicacao)),
+                ("Tratamento adicional", ordem.tratamento_adicional_realizado or ""),
+                ("Quantos / Quais", ordem.quantos_quais or ""),
+            ], cell_s, section_s, doc.width, orient=orient)
+
+            story += _pdf_kv_table_nice("Produto e Parâmetros", [
+                ("Descrição produto", ordem.descricao_produto or ""),
+                ("Formulação", ordem.formulacao_produto or ""),
+                ("Dosagem (g/10L)", ordem.dosagem_g_10l or ""),
+                ("Tipo aplicação", ordem.tipo_aplicacao or ""),
+                ("Qtd administrada (ml)", ordem.quantidade_produto_administrada_ml or ""),
+                ("Pulverização área (l/ha)", ordem.pulverizacao_area_l_ha or ""),
+                ("Tempo estimado (seg)", getattr(ordem, "pulverizacao_foco_tempo_estimado_segundos", "") or ""),
+                ("L/min (foco)", getattr(ordem, "pulverizacao_foco_l_min", "") or ""),
+                ("Ponta pulverização", ordem.ponta_pulverizacao or ""),
+            ], cell_s, section_s, doc.width, orient=orient)
+
+            story += _pdf_kv_table_nice("Condições Ambientais", [
+                ("Imagens registradas", ordem.quantidade_imagens_registradas or ""),
+                ("Vídeos registrados", ordem.quantidade_videos_registradas or ""),
+                ("Temperatura (°C)", ordem.temperatura_c or ""),
+                ("Umidade (%)", ordem.umidade_relativa_pct or ""),
+                ("Vento (km/h)", ordem.velocidade_vento_kmh or ""),
+            ], cell_s, section_s, doc.width, orient=orient)
+
+            story += _pdf_kv_table_nice("Fechamento", [
+                ("Observações gerais", ordem.observacoes or ""),
+                ("Motivo não realização", ordem.motivo_nao_realizacao or ""),
+                ("Piloto", ordem.piloto or ""),
+                ("Auxiliar", ordem.auxiliar or ""),
+                ("Proprietário/Preposto", ordem.proprietario_ou_preposto or ""),
+            ], cell_s, section_s, doc.width, orient=orient)
+
+            #  Assinaturas como imagem no PDF (cartões)
+            ass_piloto = _dataurl_to_rlimage(getattr(ordem, "assinatura_piloto", None), width_mm=82, height_mm=32)
+            ass_resp = _dataurl_to_rlimage(getattr(ordem, "assinatura_proprietario_ou_preposto", None), width_mm=82, height_mm=32)
+
+            story.append(Paragraph("Assinaturas", section_s))
+            story.append(Paragraph("Exportadas diretamente do formulário.", hint_s))
+            story.append(Spacer(1, 4))
+
+            def _sig_card(title_html, who, img_or_none):
+                inner = [
+                    Paragraph(f"<b>{title_html}</b>", styles["Normal"]),
+                    Paragraph(_safe(who) if who else "—", hint_s),
+                    Spacer(1, 3),
+                    img_or_none if img_or_none else Paragraph("Não informada.", styles["Normal"]),
+                ]
+                card = Table([[inner]], colWidths=[doc.width/2 - 6*mm])
+                card.setStyle(TableStyle([
+                    ("BACKGROUND", (0,0), (-1,-1), colors.HexColor("#F8FAFF")),
+                    ("BOX", (0,0), (-1,-1), 0.6, colors.HexColor("#E5E7EB")),
+                    ("LEFTPADDING", (0,0), (-1,-1), 8),
+                    ("RIGHTPADDING", (0,0), (-1,-1), 8),
+                    ("TOPPADDING", (0,0), (-1,-1), 7),
+                    ("BOTTOMPADDING", (0,0), (-1,-1), 7),
+                    ("VALIGN", (0,0), (-1,-1), "TOP"),
+                ]))
+                return card
+
+            card_left = _sig_card("Assinatura do Piloto", getattr(ordem, "piloto", ""), ass_piloto)
+            card_right = _sig_card("Assinatura do Responsável (Local)", getattr(ordem, "proprietario_ou_preposto", ""), ass_resp)
+
+            cards = Table([[card_left, card_right]], colWidths=[doc.width/2, doc.width/2])
+            cards.setStyle(TableStyle([
+                ("LEFTPADDING", (0,0), (-1,-1), 0),
+                ("RIGHTPADDING", (0,0), (-1,-1), 0),
+                ("TOPPADDING", (0,0), (-1,-1), 0),
+                ("BOTTOMPADDING", (0,0), (-1,-1), 0),
+                ("VALIGN", (0,0), (-1,-1), "TOP"),
+            ]))
+            story.append(cards)
+            story.append(Spacer(1, 8))
+
+        header_title = f"OS #{s.id} — Oceano Azul / IJA Drones"
+        doc.build(
+            story,
+            onFirstPage=_header_footer_factory_pretty(header_title),
+            onLaterPages=_header_footer_factory_pretty(header_title)
+        )
+
+        nome_arquivo = f"os_{s.id}_formulario_v2.pdf"
+        return send_file(
+            caminho_pdf,
+            as_attachment=True,
+            download_name=nome_arquivo,
+            mimetype="application/pdf"
+        )
+
+    except Exception:
+        db.session.rollback()
+        raise
+
+# ============================================================
+#  EXPORTAÇÃO OS (ADMIN) — EXCEL V2 (BONITO) + ASSINATURAS EM IMAGEM
+# - OpenPyXL (sem libs extras)
+# - Layout com títulos, seções, cabeçalho azul, zebra, bordas
+# - Assinaturas:
+#     - Aba "Formulário": OK / Não informada
+#     - Aba "Assinaturas" (imagem): habilita com ?assinaturas=1
+# ============================================================
+
+import tempfile
+import base64
+import re
+from datetime import datetime
+from io import BytesIO
+
+from flask import send_file, request
+from flask_login import login_required
+from sqlalchemy.orm import joinedload
+
+from openpyxl import Workbook
+from openpyxl.utils import get_column_letter
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.drawing.image import Image as XLImage
+
+# Seus imports reais:
+# from app import db
+# from app.models import Solicitacao, OrdemServico
+# from app.decorators import roles_required
+# from app.routes import bp  (ou onde estiver seu blueprint)
+
+
+# ------------------------------------------------------------
+# Helpers básicos
+# ------------------------------------------------------------
+def _fmt_dt(v):
+    if not v:
+        return ""
+    try:
+        return v.strftime("%d/%m/%Y %H:%M")
+    except Exception:
+        return str(v)
+
+def _fmt_date(v):
+    if not v:
+        return ""
+    try:
+        return v.strftime("%d/%m/%Y")
+    except Exception:
+        return str(v)
+
+def _fmt_time(v):
+    if not v:
+        return ""
+    try:
+        return v.strftime("%H:%M")
+    except Exception:
+        return str(v)
+
+def _safe(v):
+    if v is None:
+        return ""
+    return str(v)
+
+
+# ------------------------------------------------------------
+#  Assinatura (dataURL base64 -> bytes)
+# ------------------------------------------------------------
+_DATAURL_RE = re.compile(r"^data:image/(?P<fmt>png|jpeg|jpg);base64,(?P<data>.+)$", re.I)
+
+def _dataurl_to_png_bytes(dataurl: str):
+    """
+    Recebe 'data:image/png;base64,...' ou 'data:image/jpeg;base64,...'
+    e devolve os bytes decodificados (PNG/JPEG).
+    Retorna None se inválido.
+    """
+    if not dataurl or not isinstance(dataurl, str):
+        return None
+
+    m = _DATAURL_RE.match(dataurl.strip())
+    if not m:
+        return None
+
+    try:
+        return base64.b64decode(m.group("data"))
+    except Exception:
+        return None
+
+
+# ------------------------------------------------------------
+#  Excel helpers (layout bonito)
+# ------------------------------------------------------------
+THIN = Side(style="thin", color="D0D7DE")
+BORDER = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
+
+FILL_HEADER = PatternFill("solid", fgColor="0D6EFD")
+FILL_SECTION = PatternFill("solid", fgColor="EAF2FF")
+FILL_ZEBRA = PatternFill("solid", fgColor="FBFDFF")
+
+FONT_HEADER = Font(bold=True, color="FFFFFF")
+FONT_TITLE = Font(bold=True, size=16, color="0D6EFD")
+FONT_SUBTITLE = Font(size=10, color="555555")
+FONT_SECTION = Font(bold=True, color="0D6EFD")
+
+def _excel_add_title(ws, title: str, subtitle: str = ""):
+    ws.merge_cells("A1:B1")
+    ws["A1"] = title
+    ws["A1"].font = FONT_TITLE
+    ws["A1"].alignment = Alignment(horizontal="center", vertical="center")
+    ws.row_dimensions[1].height = 28
+
+    ws.merge_cells("A2:B2")
+    ws["A2"] = subtitle
+    ws["A2"].font = FONT_SUBTITLE
+    ws["A2"].alignment = Alignment(horizontal="center", vertical="center")
+    ws.row_dimensions[2].height = 18
+
+def _excel_add_section(ws, row: int, title: str):
+    ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=2)
+    c = ws.cell(row=row, column=1, value=title)
+    c.fill = FILL_SECTION
+    c.font = FONT_SECTION
+    c.alignment = Alignment(vertical="center")
+    c.border = BORDER
+    ws.cell(row=row, column=2).border = BORDER
+    ws.row_dimensions[row].height = 18
+
+def _excel_apply_table_style(ws, header_row: int, end_row: int, col_count: int = 2):
+    # header row
+    for col in range(1, col_count + 1):
+        cell = ws.cell(row=header_row, column=col)
+        cell.fill = FILL_HEADER
+        cell.font = FONT_HEADER
+        cell.border = BORDER
+        cell.alignment = Alignment(vertical="center", horizontal="center", wrap_text=True)
+
+    # body zebra + borders
+    for r in range(header_row + 1, end_row + 1):
+        for c in range(1, col_count + 1):
+            cell = ws.cell(row=r, column=c)
+            cell.border = BORDER
+            cell.alignment = Alignment(vertical="top", wrap_text=True)
+            if (r - header_row) % 2 == 0:
+                cell.fill = FILL_ZEBRA
+
+def _excel_write_kv(ws, start_row: int, items: list[tuple[str, object]]):
+    ws.cell(row=start_row, column=1, value="Campo")
+    ws.cell(row=start_row, column=2, value="Valor")
+
+    r = start_row + 1
+    for k, v in items:
+        ws.cell(row=r, column=1, value=str(k))
+        ws.cell(row=r, column=2, value=_safe(v))
+        r += 1
+
+    _excel_apply_table_style(ws, start_row, r - 1, col_count=2)
+    return r
+
+def _excel_auto_width(ws, max_col=2, min_w=18, max_w=75):
+    for col in range(1, max_col + 1):
+        letter = get_column_letter(col)
+        best = 0
+        for cell in ws[letter]:
+            if cell.value:
+                best = max(best, len(str(cell.value)))
+        ws.column_dimensions[letter].width = max(min_w, min(max_w, best + 2))
+
+
+# ============================================================
+#  ROTA — EXCEL V2 COMPLETA (como você pediu)
+# ============================================================
+@bp.route("/admin/os/<int:os_id>/export/excel/v2")
+@login_required
+@roles_required("admin")
+def admin_export_os_excel_v2(os_id):
+    """
+    Excel mais organizado e bonito (seções + estilo).
+    (Opcional) para incluir imagens das assinaturas na aba "Assinaturas":
+      /admin/os/<id>/export/excel/v2?assinaturas=1
+    """
+    try:
+        s = (
+            Solicitacao.query
+            .options(
+                joinedload(Solicitacao.usuario),
+                joinedload(Solicitacao.equipe),
+                joinedload(Solicitacao.ordem_servico),
+            )
+            .get_or_404(os_id)
+        )
+        ordem = s.ordem_servico
+
+        wb = Workbook()
+
+        # =========================
+        # ABA 1 — OS (Resumo)
+        # =========================
+        ws_os = wb.active
+        ws_os.title = "OS (Resumo)"
+
+        _excel_add_title(
+            ws_os,
+            f"OS #{s.id} — Exportação",
+            f"Gerado em {_fmt_dt(datetime.now())} | Status: {_safe(s.status)}"
+        )
+
+        endereco = f"{s.logradouro or ''}, {s.numero or 'S/N'} - {s.bairro or ''} - {s.cidade or ''}/{s.uf or ''}"
+
+        r = 4
+        _excel_add_section(ws_os, r, "Identificação")
+        r += 1
+        r = _excel_write_kv(ws_os, r, [
+            ("Solicitação ID", s.id),
+            ("Status", s.status or ""),
+            ("Equipe ID", s.equipe_id or ""),
+            ("Equipe", (s.equipe.nome_equipe if s.equipe else "")),
+            ("UVIS", (s.usuario.nome_uvis if s.usuario else "")),
+            ("Endereço", endereco),
+            ("Data agendamento", _fmt_date(s.data_agendamento)),
+            ("Hora agendamento", _fmt_time(s.hora_agendamento)),
+            ("Foco", s.foco or ""),
+            ("Protocolo", getattr(s, "protocolo", "") or ""),
+        ])
+
+        r += 1
+        _excel_add_section(ws_os, r, "Endereço / Coordenadas")
+        r += 1
+        r = _excel_write_kv(ws_os, r, [
+            ("CEP", s.cep or ""),
+            ("Logradouro", s.logradouro or ""),
+            ("Número", s.numero or ""),
+            ("Bairro", s.bairro or ""),
+            ("Cidade", s.cidade or ""),
+            ("UF", s.uf or ""),
+            ("Complemento", s.complemento or ""),
+            ("Latitude", s.latitude or ""),
+            ("Longitude", s.longitude or ""),
+        ])
+
+        ws_os.freeze_panes = "A5"
+        _excel_auto_width(ws_os, max_col=2, min_w=18, max_w=75)
+
+        # =========================
+        # ABA 2 — Formulário
+        # =========================
+        ws_f = wb.create_sheet("Formulário")
+        _excel_add_title(ws_f, f"Formulário — OS #{s.id}", "Campos preenchidos pelo piloto")
+
+        r = 4
+        if not ordem:
+            _excel_add_section(ws_f, r, "Sem formulário")
+            r += 1
+            r = _excel_write_kv(ws_f, r, [("Status", "Esta OS não possui formulário preenchido.")])
+        else:
+            _excel_add_section(ws_f, r, "Responsável / Registro")
+            r += 1
+            r = _excel_write_kv(ws_f, r, [
+                ("Identificador OS", ordem.identificador_os or ""),
+                ("Respondido por", ordem.respondido_por or ""),
+                ("Respondido em", _fmt_dt(ordem.respondido_em)),
+            ])
+
+            r += 1
+            _excel_add_section(ws_f, r, "Aeronaves — Pulverização (Principal)")
+            r += 1
+            r = _excel_write_kv(ws_f, r, [
+                ("Drone ID", ordem.drone_id or ""),
+                ("Prefixo", ordem.prefixo_aeronave_pulverizacao or ""),
+                ("Denominação", ordem.drone_denominacao or ""),
+                ("Modelo", ordem.drone_modelo or ""),
+                ("Nº Série", ordem.drone_numero_serie or ""),
+                ("Registro ANATEL", ordem.drone_registro_anatel or ""),
+                ("Registro ANAC", ordem.drone_registro_anac or ""),
+            ])
+
+            r += 1
+            _excel_add_section(ws_f, r, "Aeronaves — Monitoramento")
+            r += 1
+            r = _excel_write_kv(ws_f, r, [
+                ("Drone Monitoramento ID", ordem.drone_monitoramento_id or ""),
+                ("Prefixo", ordem.prefixo_aeronave_monitoramento or ""),
+                ("Denominação", ordem.drone_monitoramento_denominacao or ""),
+                ("Modelo", ordem.drone_monitoramento_modelo or ""),
+                ("Nº Série", ordem.drone_monitoramento_numero_serie or ""),
+                ("Registro ANATEL", ordem.drone_monitoramento_registro_anatel or ""),
+                ("Registro ANAC", ordem.drone_monitoramento_registro_anac or ""),
+            ])
+
+            r += 1
+            _excel_add_section(ws_f, r, "Aplicação")
+            r += 1
+            r = _excel_write_kv(ws_f, r, [
+                ("Situação da aplicação", ordem.situacao_aplicacao or ""),
+                ("Larva visualizada", ordem.larva_visualizada or ""),
+                ("Retornar monitorar larvas", ordem.retornar_proxima_semana_monitorar_larvas or ""),
+                ("DA (Distrito)", ordem.distrito_administrativo or ""),
+                ("Nome/RF ACE responsável", ordem.nome_rf_ace_responsavel_os or ""),
+                ("Criadouro OS (tipo/volume)", ordem.criadouro_os_tipo_volume or ""),
+                ("Data aplicação", _fmt_date(ordem.data_aplicacao)),
+                ("Hora início", _fmt_time(ordem.hora_inicio_aplicacao)),
+                ("Hora término", _fmt_time(ordem.hora_termino_aplicacao)),
+                ("Tratamento adicional", ordem.tratamento_adicional_realizado or ""),
+                ("Quantos / Quais", ordem.quantos_quais or ""),
+            ])
+
+            r += 1
+            _excel_add_section(ws_f, r, "Produto e Parâmetros")
+            r += 1
+            r = _excel_write_kv(ws_f, r, [
+                ("Descrição produto", ordem.descricao_produto or ""),
+                ("Formulação", ordem.formulacao_produto or ""),
+                ("Dosagem (g/10L)", ordem.dosagem_g_10l or ""),
+                ("Tipo aplicação", ordem.tipo_aplicacao or ""),
+                ("Qtd administrada (ml)", ordem.quantidade_produto_administrada_ml or ""),
+                ("Pulverização área (l/ha)", ordem.pulverizacao_area_l_ha or ""),
+                ("Tempo estimado (seg)", getattr(ordem, "pulverizacao_foco_tempo_estimado_segundos", "") or ""),
+                ("L/min (foco)", getattr(ordem, "pulverizacao_foco_l_min", "") or ""),
+                ("Ponta pulverização", ordem.ponta_pulverizacao or ""),
+            ])
+
+            r += 1
+            _excel_add_section(ws_f, r, "Condições Ambientais")
+            r += 1
+            r = _excel_write_kv(ws_f, r, [
+                ("Imagens registradas", ordem.quantidade_imagens_registradas or ""),
+                ("Vídeos registrados", ordem.quantidade_videos_registradas or ""),
+                ("Temperatura (°C)", ordem.temperatura_c or ""),
+                ("Umidade (%)", ordem.umidade_relativa_pct or ""),
+                ("Vento (km/h)", ordem.velocidade_vento_kmh or ""),
+            ])
+
+            r += 1
+            _excel_add_section(ws_f, r, "Fechamento")
+            r += 1
+            r = _excel_write_kv(ws_f, r, [
+                ("Observações gerais", ordem.observacoes or ""),
+                ("Motivo não realização", ordem.motivo_nao_realizacao or ""),
+                ("Piloto", ordem.piloto or ""),
+                ("Auxiliar", ordem.auxiliar or ""),
+                ("Proprietário/Preposto", ordem.proprietario_ou_preposto or ""),
+            ])
+
+            #  Assinaturas (texto: OK / Não informada)
+            r += 1
+            _excel_add_section(ws_f, r, "Assinaturas")
+            r += 1
+
+            has_piloto = bool(ordem.assinatura_piloto and str(ordem.assinatura_piloto).startswith("data:image"))
+            has_resp = bool(ordem.assinatura_proprietario_ou_preposto and str(ordem.assinatura_proprietario_ou_preposto).startswith("data:image"))
+
+            r = _excel_write_kv(ws_f, r, [
+                ("Assinatura piloto", "OK" if has_piloto else "Não informada"),
+                ("Assinatura responsável", "OK" if has_resp else "Não informada"),
+            ])
+
+        ws_f.freeze_panes = "A5"
+        _excel_auto_width(ws_f, max_col=2, min_w=18, max_w=75)
+
+        # =========================
+        # ABA 3 — Assinaturas (imagem)   (nova aba)
+        # =========================
+        want_sigs = request.args.get("assinaturas", "0") == "1"
+        if want_sigs and ordem:
+            ws_sig = wb.create_sheet("Assinaturas")
+            _excel_add_title(ws_sig, f"Assinaturas — OS #{s.id}", "Imagens exportadas do formulário")
+
+            ws_sig.column_dimensions["A"].width = 26
+            ws_sig.column_dimensions["B"].width = 55
+
+            ws_sig["A4"] = "Piloto"
+            ws_sig["A4"].font = Font(bold=True)
+            ws_sig["A5"] = ordem.piloto or ""
+
+            ws_sig["A8"] = "Responsável"
+            ws_sig["A8"].font = Font(bold=True)
+            ws_sig["A9"] = ordem.proprietario_ou_preposto or ""
+
+            # Piloto
+            png1 = _dataurl_to_png_bytes(getattr(ordem, "assinatura_piloto", None))
+            if png1:
+                tmp1 = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
+                tmp1.write(png1)
+                tmp1.close()
+
+                img1 = XLImage(tmp1.name)
+                img1.width = 420
+                img1.height = 140
+                ws_sig.add_image(img1, "B4")
+            else:
+                ws_sig["B4"] = "Assinatura não informada"
+
+            # Responsável
+            png2 = _dataurl_to_png_bytes(getattr(ordem, "assinatura_proprietario_ou_preposto", None))
+            if png2:
+                tmp2 = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
+                tmp2.write(png2)
+                tmp2.close()
+
+                img2 = XLImage(tmp2.name)
+                img2.width = 420
+                img2.height = 140
+                ws_sig.add_image(img2, "B8")
+            else:
+                ws_sig["B8"] = "Assinatura não informada"
+
+        # -------------------------
+        # enviar em memória
+        # -------------------------
+        bio = BytesIO()
+        wb.save(bio)
+        bio.seek(0)
+
+        nome_arquivo = f"os_{s.id}_formulario_v2.xlsx"
+        return send_file(
+            bio,
+            as_attachment=True,
+            download_name=nome_arquivo,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+
+    except Exception:
+        db.session.rollback()
+        raise
+
+    # ============================================================
+# ✅ EXPORTAÇÃO RELATÓRIO OS — EXCEL + PDF (RESPEITA FILTROS)
+# Rotas novas:
+#   /relatorios-os/export/excel
+#   /relatorios-os/export/pdf
+# ============================================================
+
+import tempfile
+from datetime import datetime
+from io import BytesIO
+
+from flask import send_file, request
+from flask_login import login_required, current_user
+
+from sqlalchemy import and_, or_
+from sqlalchemy.sql import func
+from sqlalchemy.sql.expression import extract
+
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import mm
+from reportlab.lib import colors
+
+from openpyxl import Workbook
+from openpyxl.utils import get_column_letter
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+
+# Seus imports reais:
+# from app import db
+# from app.models import Usuario, Solicitacao, OrdemServico
+# from app.decorators import roles_required  (se quiser restringir)
+# from app.routes import bp
+
+
+# ------------------------------------------------------------
+# helpers básicos (se já tiver, pode reaproveitar)
+# ------------------------------------------------------------
+def _fmt_dt(v):
+    if not v:
+        return ""
+    try:
+        return v.strftime("%d/%m/%Y %H:%M")
+    except Exception:
+        return str(v)
+
+def _safe(v):
+    if v is None:
+        return ""
+    return str(v)
+
+
+# ------------------------------------------------------------
+# ✅ Excel helpers (bonito) — mesmo padrão do seu v2
+# ------------------------------------------------------------
+THIN = Side(style="thin", color="D0D7DE")
+BORDER = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
+
+FILL_HEADER = PatternFill("solid", fgColor="0D6EFD")
+FILL_SECTION = PatternFill("solid", fgColor="EAF2FF")
+FILL_ZEBRA = PatternFill("solid", fgColor="FBFDFF")
+
+FONT_HEADER = Font(bold=True, color="FFFFFF")
+FONT_TITLE = Font(bold=True, size=16, color="0D6EFD")
+FONT_SUBTITLE = Font(size=10, color="555555")
+FONT_SECTION = Font(bold=True, color="0D6EFD")
+
+def _excel_add_title(ws, title: str, subtitle: str = ""):
+    ws.merge_cells("A1:B1")
+    ws["A1"] = title
+    ws["A1"].font = FONT_TITLE
+    ws["A1"].alignment = Alignment(horizontal="center", vertical="center")
+    ws.row_dimensions[1].height = 28
+
+    ws.merge_cells("A2:B2")
+    ws["A2"] = subtitle
+    ws["A2"].font = FONT_SUBTITLE
+    ws["A2"].alignment = Alignment(horizontal="center", vertical="center")
+    ws.row_dimensions[2].height = 18
+
+def _excel_add_section(ws, row: int, title: str):
+    ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=2)
+    c = ws.cell(row=row, column=1, value=title)
+    c.fill = FILL_SECTION
+    c.font = FONT_SECTION
+    c.alignment = Alignment(vertical="center")
+    c.border = BORDER
+    ws.cell(row=row, column=2).border = BORDER
+    ws.row_dimensions[row].height = 18
+
+def _excel_apply_table_style(ws, header_row: int, end_row: int, col_count: int = 2):
+    for col in range(1, col_count + 1):
+        cell = ws.cell(row=header_row, column=col)
+        cell.fill = FILL_HEADER
+        cell.font = FONT_HEADER
+        cell.border = BORDER
+        cell.alignment = Alignment(vertical="center", horizontal="center", wrap_text=True)
+
+    for r in range(header_row + 1, end_row + 1):
+        for c in range(1, col_count + 1):
+            cell = ws.cell(row=r, column=c)
+            cell.border = BORDER
+            cell.alignment = Alignment(vertical="top", wrap_text=True)
+            if (r - header_row) % 2 == 0:
+                cell.fill = FILL_ZEBRA
+
+def _excel_write_kv(ws, start_row: int, items: list[tuple[str, object]]):
+    ws.cell(row=start_row, column=1, value="Campo")
+    ws.cell(row=start_row, column=2, value="Valor")
+
+    r = start_row + 1
+    for k, v in items:
+        ws.cell(row=r, column=1, value=str(k))
+        ws.cell(row=r, column=2, value=_safe(v))
+        r += 1
+
+    _excel_apply_table_style(ws, start_row, r - 1, col_count=2)
+    return r
+
+def _excel_write_table(ws, start_row: int, headers: list[str], rows: list[tuple], col_widths=None):
+    # headers
+    for i, h in enumerate(headers, start=1):
+        ws.cell(row=start_row, column=i, value=h)
+
+    # body
+    r = start_row + 1
+    for row in rows:
+        for c, val in enumerate(row, start=1):
+            ws.cell(row=r, column=c, value=_safe(val))
+        r += 1
+
+    # style
+    _excel_apply_table_style(ws, start_row, r - 1, col_count=len(headers))
+
+    # widths
+    if col_widths:
+        for i, w in enumerate(col_widths, start=1):
+            ws.column_dimensions[get_column_letter(i)].width = w
+    return r
+
+def _excel_auto_width(ws, max_col=2, min_w=12, max_w=60):
+    for col in range(1, max_col + 1):
+        letter = get_column_letter(col)
+        best = 0
+        for cell in ws[letter]:
+            if cell.value:
+                best = max(best, len(str(cell.value)))
+        ws.column_dimensions[letter].width = max(min_w, min(max_w, best + 2))
+
+
+# ------------------------------------------------------------
+# ✅ PDF helpers simples e bonitos
+# ------------------------------------------------------------
+def _pdf_header_footer_factory(title: str):
+    def _hf(canvas, doc):
+        canvas.saveState()
+        w, h = doc.pagesize
+
+        canvas.setFillColor(colors.HexColor("#0d6efd"))
+        canvas.rect(doc.leftMargin, h - 12 * mm, doc.width, 3, fill=1, stroke=0)
+
+        canvas.setFont("Helvetica", 8)
+        canvas.setFillColor(colors.HexColor("#666"))
+        canvas.drawString(doc.leftMargin, 9 * mm, title)
+        canvas.drawRightString(doc.leftMargin + doc.width, 9 * mm, f"Página {canvas.getPageNumber()}")
+        canvas.restoreState()
+    return _hf
+
+def _pdf_table(title: str, rows: list[list[str]], styles, col_widths=None):
+    section = ParagraphStyle(
+        "sec",
+        parent=styles["Heading2"],
+        fontSize=12,
+        leading=16,
+        textColor=colors.HexColor("#0d6efd"),
+        spaceBefore=10,
+        spaceAfter=6
+    )
+    story = [Paragraph(title, section)]
+
+    tbl = Table(rows, colWidths=col_widths, repeatRows=1)
+    tbl.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0d6efd")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#d9dee7")),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#fbfdff")]),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+        ("TOPPADDING", (0, 0), (-1, -1), 4),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+    ]))
+    story.append(tbl)
+    story.append(Spacer(1, 8))
+    return story
+
+
+# ------------------------------------------------------------
+# ✅ Builder do relatório (MESMA LÓGICA do relatorios_os)
+# ------------------------------------------------------------
+def _build_relatorio_os_data():
+    """
+    Lê filtros (mes/ano/uvis_id) e retorna dicionário com tudo:
+    totals + agrupamentos (situação/tipo/larva/piloto/unidade/mensal) + labels do filtro.
+    """
+    mes_atual = request.args.get("mes", datetime.now().month, type=int)
+    ano_atual = request.args.get("ano", datetime.now().year, type=int)
+
+    # regra igual a sua:
+    uvis_id = request.args.get("uvis_id", type=int) if current_user.tipo_usuario != "uvis" else current_user.id
+
+    base_query = (
+        db.session.query(OrdemServico)
+        .join(Solicitacao, Solicitacao.id == OrdemServico.solicitacao_id)
+        .join(Usuario, Usuario.id == Solicitacao.usuario_id)
+    )
+
+    base_query = base_query.filter(
+        or_(
+            and_(
+                OrdemServico.respondido_em.isnot(None),
+                extract("year", OrdemServico.respondido_em) == ano_atual,
+                extract("month", OrdemServico.respondido_em) == mes_atual
+            ),
+            and_(
+                OrdemServico.respondido_em.is_(None),
+                OrdemServico.data_aplicacao.isnot(None),
+                extract("year", OrdemServico.data_aplicacao) == ano_atual,
+                extract("month", OrdemServico.data_aplicacao) == mes_atual
+            )
+        )
+    )
+
+    if uvis_id:
+        base_query = base_query.filter(Solicitacao.usuario_id == uvis_id)
+
+    total_os = base_query.count()
+    total_concluidas = base_query.filter(Solicitacao.status.in_(["CONCLUÍDO", "CONCLUIDO"])).count()
+    total_larva_sim = base_query.filter(func.upper(func.coalesce(OrdemServico.larva_visualizada, "")) == "SIM").count()
+    total_tratamento_adicional = base_query.filter(func.upper(func.coalesce(OrdemServico.tratamento_adicional_realizado, "")) == "SIM").count()
+    total_nao_realizadas = base_query.filter(func.length(func.trim(func.coalesce(OrdemServico.motivo_nao_realizacao, ""))) > 0).count()
+
+    def agrupar_por(campo):
+        return [
+            (valor or "Não informado", total)
+            for valor, total in (
+                base_query
+                .with_entities(campo, func.count(OrdemServico.id))
+                .group_by(campo)
+                .order_by(func.count(OrdemServico.id).desc())
+                .all()
+            )
+        ]
+
+    dados_situacao_aplicacao = agrupar_por(OrdemServico.situacao_aplicacao)
+    dados_tipo_aplicacao = agrupar_por(OrdemServico.tipo_aplicacao)
+    dados_larva = agrupar_por(OrdemServico.larva_visualizada)
+    dados_piloto = agrupar_por(OrdemServico.piloto)
+
+    dados_unidade = [
+        (uvis or "Não informado", total)
+        for uvis, total in (
+            base_query
+            .with_entities(Usuario.nome_uvis, func.count(OrdemServico.id))
+            .group_by(Usuario.nome_uvis)
+            .order_by(func.count(OrdemServico.id).desc())
+            .all()
+        )
+    ]
+
+    mensal_query = (
+        db.session.query(
+            func.coalesce(
+                extract("year", OrdemServico.respondido_em),
+                extract("year", OrdemServico.data_aplicacao)
+            ).label("ano_ref"),
+            func.coalesce(
+                extract("month", OrdemServico.respondido_em),
+                extract("month", OrdemServico.data_aplicacao)
+            ).label("mes_ref"),
+            func.count(OrdemServico.id)
+        )
+        .join(Solicitacao, Solicitacao.id == OrdemServico.solicitacao_id)
+        .join(Usuario, Usuario.id == Solicitacao.usuario_id)
+    )
+
+    if uvis_id:
+        mensal_query = mensal_query.filter(Solicitacao.usuario_id == uvis_id)
+
+    dados_mensais = [
+        (f"{int(ano_h):04d}-{int(mes_h):02d}", total)
+        for ano_h, mes_h, total in (
+            mensal_query
+            .filter(or_(OrdemServico.respondido_em.isnot(None), OrdemServico.data_aplicacao.isnot(None)))
+            .group_by("ano_ref", "mes_ref")
+            .order_by("ano_ref", "mes_ref")
+            .all()
+        )
+        if ano_h and mes_h
+    ]
+
+    # nome da UVIS selecionada (só pra título)
+    nome_uvis = None
+    if uvis_id:
+        nome_uvis = db.session.query(Usuario.nome_uvis).filter(Usuario.id == uvis_id).scalar()
+
+    return {
+        "mes": mes_atual,
+        "ano": ano_atual,
+        "uvis_id": uvis_id,
+        "uvis_nome": nome_uvis or "Todas as Unidades",
+
+        "total_os": total_os,
+        "total_concluidas": total_concluidas,
+        "total_larva_sim": total_larva_sim,
+        "total_tratamento_adicional": total_tratamento_adicional,
+        "total_nao_realizadas": total_nao_realizadas,
+
+        "dados_situacao_aplicacao": dados_situacao_aplicacao,
+        "dados_tipo_aplicacao": dados_tipo_aplicacao,
+        "dados_larva": dados_larva,
+        "dados_piloto": dados_piloto,
+        "dados_unidade": dados_unidade,
+        "dados_mensais": dados_mensais,
+    }
+
+
+# ============================================================
+# ✅ ROTA NOVA — EXCEL
+# ============================================================
+@bp.route("/relatorios-os/export/excel", methods=["GET"])
+@login_required
+def relatorios_os_export_excel():
+    data = _build_relatorio_os_data()
+
+    wb = Workbook()
+
+    # -------------------------
+    # Aba 1 — Resumo
+    # -------------------------
+    ws = wb.active
+    ws.title = "Resumo"
+
+    _excel_add_title(
+        ws,
+        "Relatório Geral de OS",
+        f"Filtro: {data['mes']:02d}/{data['ano']} | Unidade: {data['uvis_nome']} | Gerado em {_fmt_dt(datetime.now())}"
+    )
+
+    r = 4
+    _excel_add_section(ws, r, "Indicadores")
+    r += 1
+    r = _excel_write_kv(ws, r, [
+        ("Total OS", data["total_os"]),
+        ("Concluídas", data["total_concluidas"]),
+        ("Larva (SIM)", data["total_larva_sim"]),
+        ("Tratamento adicional", data["total_tratamento_adicional"]),
+        ("Não realizadas", data["total_nao_realizadas"]),
+    ])
+
+    ws.freeze_panes = "A5"
+    _excel_auto_width(ws, max_col=2, min_w=18, max_w=70)
+
+    # -------------------------
+    # Aba 2 — Agrupamentos
+    # -------------------------
+    ws2 = wb.create_sheet("Detalhamento")
+    _excel_add_title(ws2, "Detalhamento do Relatório", "Agrupamentos por campos")
+
+    r = 4
+    _excel_add_section(ws2, r, "Situação da Aplicação")
+    r += 1
+    r = _excel_write_table(ws2, r, ["Situação", "Total"], data["dados_situacao_aplicacao"], col_widths=[45, 12])
+
+    r += 1
+    _excel_add_section(ws2, r, "Tipo de Aplicação")
+    r += 1
+    r = _excel_write_table(ws2, r, ["Tipo", "Total"], data["dados_tipo_aplicacao"], col_widths=[45, 12])
+
+    r += 1
+    _excel_add_section(ws2, r, "Larva Visualizada")
+    r += 1
+    r = _excel_write_table(ws2, r, ["Resposta", "Total"], data["dados_larva"], col_widths=[45, 12])
+
+    r += 1
+    _excel_add_section(ws2, r, "Pilotos (Top 10)")
+    r += 1
+    r = _excel_write_table(ws2, r, ["Piloto", "Total"], data["dados_piloto"][:10], col_widths=[45, 12])
+
+    r += 1
+    _excel_add_section(ws2, r, "OS por Unidade")
+    r += 1
+    r = _excel_write_table(ws2, r, ["Unidade (UVIS)", "Total"], data["dados_unidade"], col_widths=[45, 12])
+
+    r += 1
+    _excel_add_section(ws2, r, "Histórico Mensal")
+    r += 1
+    r = _excel_write_table(ws2, r, ["Mês", "Total"], data["dados_mensais"], col_widths=[18, 12])
+
+    ws2.freeze_panes = "A5"
+
+    # -------------------------
+    # enviar
+    # -------------------------
+    bio = BytesIO()
+    wb.save(bio)
+    bio.seek(0)
+
+    nome = f"relatorio_os_{data['ano']}_{data['mes']:02d}"
+    if data["uvis_id"]:
+        nome += f"_uvis_{data['uvis_id']}"
+    nome += ".xlsx"
+
+    return send_file(
+        bio,
+        as_attachment=True,
+        download_name=nome,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+
+# ============================================================
+# ✅ ROTA NOVA — PDF
+# ============================================================
+@bp.route("/relatorios-os/export/pdf", methods=["GET"])
+@login_required
+def relatorios_os_export_pdf():
+    data = _build_relatorio_os_data()
+
+    tmp_pdf = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
+    path = tmp_pdf.name
+    tmp_pdf.close()
+
+    doc = SimpleDocTemplate(
+        path,
+        pagesize=A4,
+        leftMargin=14 * mm,
+        rightMargin=14 * mm,
+        topMargin=16 * mm,
+        bottomMargin=16 * mm,
+    )
+    styles = getSampleStyleSheet()
+
+    title_style = ParagraphStyle(
+        "title",
+        parent=styles["Title"],
+        fontSize=18,
+        leading=22,
+        alignment=1,
+        textColor=colors.HexColor("#0d6efd"),
+        spaceAfter=6,
+    )
+    subtitle_style = ParagraphStyle(
+        "sub",
+        parent=styles["Normal"],
+        fontSize=10,
+        leading=14,
+        alignment=1,
+        textColor=colors.HexColor("#555"),
+        spaceAfter=12,
+    )
+
+    story = []
+    story.append(Paragraph("Relatório Geral de OS", title_style))
+    story.append(Paragraph(
+        f"Filtro: {data['mes']:02d}/{data['ano']} | Unidade: {data['uvis_nome']} | Gerado em {_fmt_dt(datetime.now())}",
+        subtitle_style
+    ))
+
+    # Indicadores
+    story += _pdf_table(
+        "Indicadores",
+        rows=[
+            ["Indicador", "Total"],
+            ["Total OS", str(data["total_os"])],
+            ["Concluídas", str(data["total_concluidas"])],
+            ["Larva (SIM)", str(data["total_larva_sim"])],
+            ["Tratamento adicional", str(data["total_tratamento_adicional"])],
+            ["Não realizadas", str(data["total_nao_realizadas"])],
+        ],
+        styles=styles,
+        col_widths=[120 * mm, 50 * mm],
+    )
+
+    # Agrupamentos (Top para não ficar gigante)
+    story += _pdf_table(
+        "Situação da Aplicação",
+        rows=[["Situação", "Total"]] + [[a, str(b)] for a, b in data["dados_situacao_aplicacao"]],
+        styles=styles,
+        col_widths=[120 * mm, 50 * mm],
+    )
+
+    story += _pdf_table(
+        "Tipo de Aplicação",
+        rows=[["Tipo", "Total"]] + [[a, str(b)] for a, b in data["dados_tipo_aplicacao"]],
+        styles=styles,
+        col_widths=[120 * mm, 50 * mm],
+    )
+
+    story += _pdf_table(
+        "Larva Visualizada",
+        rows=[["Resposta", "Total"]] + [[a, str(b)] for a, b in data["dados_larva"]],
+        styles=styles,
+        col_widths=[120 * mm, 50 * mm],
+    )
+
+    story += _pdf_table(
+        "Pilotos (Top 10)",
+        rows=[["Piloto", "Total"]] + [[a, str(b)] for a, b in data["dados_piloto"][:10]],
+        styles=styles,
+        col_widths=[120 * mm, 50 * mm],
+    )
+
+    story += _pdf_table(
+        "OS por Unidade",
+        rows=[["Unidade (UVIS)", "Total"]] + [[a, str(b)] for a, b in data["dados_unidade"]],
+        styles=styles,
+        col_widths=[120 * mm, 50 * mm],
+    )
+
+    story += _pdf_table(
+        "Histórico Mensal",
+        rows=[["Mês", "Total"]] + [[a, str(b)] for a, b in data["dados_mensais"]],
+        styles=styles,
+        col_widths=[60 * mm, 110 * mm],
+    )
+
+    header_title = f"Relatório OS — {data['mes']:02d}/{data['ano']}"
+    doc.build(story, onFirstPage=_pdf_header_footer_factory(header_title), onLaterPages=_pdf_header_footer_factory(header_title))
+
+    nome = f"relatorio_os_{data['ano']}_{data['mes']:02d}"
+    if data["uvis_id"]:
+        nome += f"_uvis_{data['uvis_id']}"
+    nome += ".pdf"
+
+    return send_file(
+        path,
+        as_attachment=True,
+        download_name=nome,
+        mimetype="application/pdf"
     )
