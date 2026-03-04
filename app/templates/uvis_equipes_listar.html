@@ -79,8 +79,9 @@
           <thead class="table-light">
             <tr>
               <th>Equipe</th>
+              <th>Login da equipe</th>
               <th style="width: 140px">Membros</th>
-              <th style="width: 220px" class="text-end">Ações</th>
+              <th style="width: 260px" class="text-end">Ações</th>
             </tr>
           </thead>
 
@@ -91,6 +92,24 @@
                   <td class="fw-semibold">
                     <i class="bi bi-people me-2 text-primary"></i>
                     {{ e.nome_equipe }}
+                  </td>
+
+                  <td>
+                    {% if e.login %}
+                      <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-light text-dark border">{{ e.login }}</span>
+                        <button
+                          type="button"
+                          class="btn btn-outline-secondary btn-sm"
+                          title="Copiar login"
+                          onclick="navigator.clipboard.writeText('{{ e.login }}')"
+                        >
+                          <i class="bi bi-clipboard"></i>
+                        </button>
+                      </div>
+                    {% else %}
+                      <span class="text-muted small">Sem login</span>
+                    {% endif %}
                   </td>
 
                   <td>
@@ -114,12 +133,25 @@
                     >
                       <i class="bi bi-person-plus me-1"></i> Adicionar
                     </a>
+
+                    {# Opcional: botão pra gerenciar credenciais se você criar a rota #}
+                    {#
+                    {% if e.login %}
+                      <a
+                        href="{{ url_for('main.gerenciar_login_equipe_uvis', nome_equipe=e.nome_equipe) }}"
+                        class="btn btn-outline-dark btn-sm"
+                        title="Gerenciar login/senha"
+                      >
+                        <i class="bi bi-key me-1"></i> Credenciais
+                      </a>
+                    {% endif %}
+                    #}
                   </td>
                 </tr>
               {% endfor %}
             {% else %}
               <tr>
-                <td colspan="3" class="text-center text-muted py-4">
+                <td colspan="4" class="text-center text-muted py-4">
                   Nenhuma equipe cadastrada ainda.
                   <div class="mt-2">
                     <a href="{{ url_for('main.criar_equipe_uvis') }}" class="btn btn-primary btn-sm">

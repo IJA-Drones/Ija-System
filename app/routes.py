@@ -193,6 +193,9 @@ def dashboard():
     if current_user.tipo_usuario == 'piloto':
         return redirect(url_for('main.piloto_os'))
 
+    if current_user.tipo_usuario == "equipe_uvis":
+        return redirect(url_for("main.dashboard_equipe_uvis"))
+
     if current_user.tipo_usuario in ['admin', 'operario', 'visualizar']:
         return redirect(url_for('main.admin_dashboard'))
 
@@ -820,33 +823,34 @@ def novo():
 # --- LOGIN ---
 from flask_login import login_user
 
-from flask_login import login_user, current_user
-
+from flask_login import login_user, current_user 
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
-    # Se já estiver logado, redireciona
     if current_user.is_authenticated:
-        if current_user.tipo_usuario in ['admin', 'operario', 'visualizar']:
+        if current_user.tipo_usuario in ['admin', 'operario', 'visualizar', 'visualizador']:
             return redirect(url_for('main.admin_dashboard'))
+        if current_user.tipo_usuario == 'equipe_uvis':
+            return redirect(url_for('main.dashboard_equipe_uvis'))
         return redirect(url_for('main.dashboard'))
 
     if request.method == 'POST':
         login_form = request.form.get('login')
         senha_form = request.form.get('senha')
+
         user = Usuario.query.filter_by(login=login_form).first()
         if user and user.check_senha(senha_form):
-            login_user(user)  # 🔥 ÚNICO controle de login
-            flash(
-                f'Bem-vindo, {user.nome_uvis}! Login realizado com sucesso.',
-                'success'
-            )
-            if user.tipo_usuario in ['admin', 'operario', 'visualizar']:
+            login_user(user)
+            flash(f'Bem-vindo, {user.nome_uvis}! Login realizado com sucesso.', 'success')
+
+            if user.tipo_usuario in ['admin', 'operario', 'visualizar', 'visualizador']:
                 return redirect(url_for('main.admin_dashboard'))
+            if user.tipo_usuario == 'equipe_uvis':
+                return redirect(url_for('main.dashboard_equipe_uvis'))
             return redirect(url_for('main.dashboard'))
+
         flash('Login ou senha incorretos. Tente novamente.', 'danger')
 
     return render_template('login.html')
-
 # --- LOGOUT ---
 from flask_login import logout_user, login_required
 
@@ -5348,28 +5352,52 @@ def _proximo_slot_equipe_uvis(uvis_usuario_id: int, nome_equipe: str):
             return slot
     return None  # cheio
 
-# -------------------------------------------------------------
-# Rota: listar equipe da UVIS logada (somente a dela)
-# -------------------------------------------------------------
+from sqlalchemy import func
+
 @bp.route("/uvis/equipes", methods=["GET"], endpoint="listar_equipes_uvis")
 @login_required
 def listar_equipes_uvis():
     _uvis_only()
 
-    # pega nomes das equipes e contagem de membros (só da UVIS logada)
-    rows = (
+    uvis_id = current_user.id
+
+    # 1) total de membros por equipe (pode não existir se equipe ainda não tem membro)
+    membros_rows = (
         db.session.query(
-            EquipeUvis.nome_equipe,
-            db.func.count(EquipeUvis.id).label("total")
+            EquipeUvis.nome_equipe.label("nome_equipe"),
+            func.count(EquipeUvis.id).label("total")
         )
-        .filter(EquipeUvis.uvis_usuario_id == current_user.id)
+        .filter(EquipeUvis.uvis_usuario_id == uvis_id)
         .group_by(EquipeUvis.nome_equipe)
-        .order_by(EquipeUvis.nome_equipe.asc())
         .all()
     )
+    membros_map = {r.nome_equipe: int(r.total) for r in membros_rows}
 
-    # lista simples pro template
-    equipes = [{"nome_equipe": r[0], "total": int(r[1])} for r in rows]
+    # 2) contas (login) por equipe
+    contas_rows = (
+        db.session.query(
+            Usuario.equipe_uvis_nome.label("nome_equipe"),
+            Usuario.login.label("login")
+        )
+        .filter(
+            Usuario.tipo_usuario == "equipe_uvis",
+            Usuario.equipe_uvis_uvis_usuario_id == uvis_id,
+            Usuario.equipe_uvis_nome.isnot(None),
+        )
+        .all()
+    )
+    login_map = {r.nome_equipe: r.login for r in contas_rows if r.nome_equipe}
+
+    # 3) conjunto final de equipes: as que têm membros OU as que têm conta
+    nomes_equipes = sorted(set(membros_map.keys()) | set(login_map.keys()))
+
+    equipes = []
+    for nome in nomes_equipes:
+        equipes.append({
+            "nome_equipe": nome,
+            "total": int(membros_map.get(nome, 0)),
+            "login": login_map.get(nome),  # pode ser None
+        })
 
     return render_template("uvis_equipes_listar.html", equipes=equipes)
 
@@ -5565,6 +5593,11 @@ def _proximo_nome_equipe_uvis(uvis_usuario_id: int) -> str:
 #-------------------------------------------------------------
 from flask import request, flash, redirect, url_for, render_template
 from flask_login import login_required
+import secrets
+def _login_equipe_sugerido(nome_equipe: str) -> str:
+    # sugestão automática, mas editável no template
+    return f"EQUIPE-{_slug_upper(nome_equipe)}"[:50]
+
 @bp.route("/uvis/equipes/nova", methods=["GET", "POST"], endpoint="criar_equipe_uvis")
 @login_required
 def criar_equipe_uvis():
@@ -5573,18 +5606,70 @@ def criar_equipe_uvis():
     errors = {}
     form = {}
 
-    form["nome_equipe"] = _proximo_nome_equipe_uvis(current_user.id)
+    # sempre gera o nome automático (imutável)
+    nome_equipe = _proximo_nome_equipe_uvis(current_user.id)
+    form["nome_equipe"] = nome_equipe
+
+    # sugestão de login (editável)
+    form["login_equipe"] = _login_equipe_sugerido(nome_equipe)
 
     if request.method == "POST":
+        # nome da equipe continua automático
         nome_equipe = _proximo_nome_equipe_uvis(current_user.id)
+        form["nome_equipe"] = nome_equipe
+
+        login_equipe = (request.form.get("login_equipe") or "").strip()
+        senha = (request.form.get("senha") or "").strip()
+        senha2 = (request.form.get("senha2") or "").strip()
+
+        form["login_equipe"] = login_equipe  # preserva se der erro
 
         if not nome_equipe:
             errors["nome_equipe"] = "Não foi possível gerar o nome automático da equipe."
+
+        # ---- valida login
+        if not login_equipe:
+            errors["login_equipe"] = "Informe o login da equipe."
+        elif len(login_equipe) < 4:
+            errors["login_equipe"] = "O login deve ter pelo menos 4 caracteres."
+        elif len(login_equipe) > 50:
+            errors["login_equipe"] = "O login deve ter no máximo 50 caracteres."
+        elif not re.match(r"^[A-Za-z0-9._\-]+$", login_equipe):
+            errors["login_equipe"] = "Use apenas letras, números, ponto (.), hífen (-) e underscore (_)."
+        else:
+            existente = Usuario.query.filter_by(login=login_equipe).first()
+            if existente:
+                errors["login_equipe"] = "Este login já está em uso. Escolha outro."
+
+        # ---- valida senha
+        if not senha:
+            errors["senha"] = "Informe a senha da equipe."
+        elif len(senha) < 6:
+            errors["senha"] = "A senha deve ter pelo menos 6 caracteres."
+        elif senha != senha2:
+            errors["senha2"] = "As senhas não conferem."
 
         if errors:
             flash("Corrija os campos destacados.", "warning")
             return render_template("uvis_equipe_criar.html", form=form, errors=errors)
 
+        # cria usuario da equipe (com senha DEFINIDA, não temporária)
+        usuario_equipe = Usuario(
+            nome_uvis=nome_equipe,
+            regiao=current_user.regiao,
+            codigo_setor=current_user.codigo_setor,
+            login=login_equipe,
+            tipo_usuario="equipe_uvis",
+            piloto_id=None,
+            equipe_uvis_uvis_usuario_id=current_user.id,
+            equipe_uvis_nome=nome_equipe,
+        )
+        usuario_equipe.set_senha(senha)
+
+        db.session.add(usuario_equipe)
+        db.session.commit()
+
+        flash("Equipe criada! Login da equipe definido com sucesso.", "success")
         return redirect(url_for("main.adicionar_membro_equipe_uvis", nome_equipe=nome_equipe))
 
     return render_template("uvis_equipe_criar.html", form=form, errors=errors)
@@ -8740,3 +8825,88 @@ def piloto_api_drone(drone_id):
         "pmd_kg": drone.pmd_kg,
         "ano_fabricacao": drone.ano_fabricacao,
     })
+
+    import os
+from datetime import datetime
+from flask import request, render_template, redirect, url_for, flash
+from flask_login import login_required, current_user
+from sqlalchemy.orm import joinedload
+
+@bp.route("/equipe-uvis", methods=["GET"], endpoint="dashboard_equipe_uvis")
+@login_required
+def dashboard_equipe_uvis():
+    google_maps_key = os.getenv("KEY_API_GOOGLE_MAPS")
+
+    # 🔒 só conta de equipe
+    if getattr(current_user, "tipo_usuario", None) != "equipe_uvis":
+        return redirect(url_for("main.dashboard"))
+
+    uvis_id = getattr(current_user, "equipe_uvis_uvis_usuario_id", None)
+    nome_equipe = (getattr(current_user, "equipe_uvis_nome", "") or "").strip()
+
+    if not uvis_id or not nome_equipe:
+        flash("Conta de equipe sem vínculo com UVIS/equipe. Contate o administrador.", "danger")
+        return redirect(url_for("main.login"))
+
+    query = (
+        Solicitacao.query
+        .options(
+            joinedload(Solicitacao.usuario),
+            joinedload(Solicitacao.equipe)
+        )
+        .filter(Solicitacao.usuario_id == uvis_id)
+        .filter(Solicitacao.equipe_uvis_nome == nome_equipe)
+        .filter(Solicitacao.status != "CANCELADO")
+    )
+
+    # =========================
+    # FILTROS (status, tipo, foco)
+    # =========================
+    filtro_status = request.args.get('status')
+    if filtro_status:
+        query = query.filter(Solicitacao.status == filtro_status)
+
+    filtro_tipo_visita = request.args.get('tipo_visita')
+    if filtro_tipo_visita:
+        query = query.filter(Solicitacao.tipo_visita == filtro_tipo_visita)
+
+    filtro_foco = request.args.get('foco')
+    if filtro_foco:
+        query = query.filter(Solicitacao.foco == filtro_foco)
+
+    # =========================
+    # FILTRO POR DATA
+    # =========================
+    data_ini = request.args.get("data_ini")  # YYYY-MM-DD
+    data_fim = request.args.get("data_fim")  # YYYY-MM-DD
+
+    if data_ini:
+        try:
+            dt_ini = datetime.strptime(data_ini, "%Y-%m-%d").date()
+            query = query.filter(Solicitacao.data_agendamento >= dt_ini)
+        except ValueError:
+            pass
+
+    if data_fim:
+        try:
+            dt_fim = datetime.strptime(data_fim, "%Y-%m-%d").date()
+            query = query.filter(Solicitacao.data_agendamento <= dt_fim)
+        except ValueError:
+            pass
+
+    # =========================
+    # PAGINAÇÃO
+    # =========================
+    page = request.args.get("page", 1, type=int)
+    paginacao = (
+        query.order_by(Solicitacao.data_criacao.desc())
+        .paginate(page=page, per_page=6, error_out=False)
+    )
+
+    return render_template(
+        "dashboard_equipe_uvis.html",
+        solicitacoes=paginacao.items,
+        paginacao=paginacao,
+        google_maps_key=google_maps_key,
+        nome_equipe=nome_equipe,
+    )

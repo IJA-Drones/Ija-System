@@ -20,26 +20,48 @@ class Usuario(UserMixin, db.Model):
     login = db.Column(db.String(50), unique=True, nullable=False, index=True)
     senha_hash = db.Column(db.String(200), nullable=False)
 
-    # tipos esperados: "admin", "uvis", "operario", "visualizador", "piloto"
+    # + incluir "equipe_uvis"
+    # tipos esperados: "admin", "uvis", "operario", "visualizador", "piloto", "equipe_uvis"
     tipo_usuario = db.Column(db.String(20), default="uvis", index=True)
 
-    # vínculo opcional com Pilotos (somente quando tipo_usuario="piloto")
-    piloto_id = db.Column(
+    # ----------------------------
+    # Piloto (já existe)
+    # ----------------------------
+    piloto_id = db.Column(db.Integer, db.ForeignKey("pilotos.id"), nullable=True, index=True)
+    piloto = db.relationship("Pilotos", lazy="joined")
+
+    # ----------------------------
+    # Equipe UVIS (NOVO)
+    # Essa "conta" representa uma equipe específica de uma UVIS dona.
+    # ----------------------------
+    equipe_uvis_uvis_usuario_id = db.Column(
         db.Integer,
-        db.ForeignKey("pilotos.id"),
+        db.ForeignKey("usuarios.id"),
         nullable=True,
         index=True
     )
-    piloto = db.relationship("Pilotos", lazy="joined")
+    equipe_uvis_nome = db.Column(db.String(100), nullable=True, index=True)
 
-    # Solicitações criadas por este usuário (normalmente UVIS cria)
-    solicitacoes = db.relationship(
-        "Solicitacao",
-        back_populates="usuario",
-        lazy="select"
+    # relação para pegar a UVIS "dona" da equipe
+    equipe_uvis_dona = db.relationship(
+        "Usuario",
+        foreign_keys=[equipe_uvis_uvis_usuario_id],
+        lazy="joined"
     )
 
-    # vínculos de pilotos que atendem esta UVIS (para filtro do piloto)
+    __table_args__ = (
+        # evita duas contas de login para a mesma equipe da mesma uvis
+        db.UniqueConstraint(
+            "equipe_uvis_uvis_usuario_id",
+            "equipe_uvis_nome",
+            name="uq_usuario_conta_equipe_uvis"
+        ),
+        db.Index("ix_usuario_equipe_uvis", "equipe_uvis_uvis_usuario_id", "equipe_uvis_nome"),
+    )
+
+    # Solicitações criadas por este usuário
+    solicitacoes = db.relationship("Solicitacao", back_populates="usuario", lazy="select")
+
     vinculos_pilotos = db.relationship(
         "PilotoUvis",
         back_populates="uvis_usuario",
@@ -47,7 +69,6 @@ class Usuario(UserMixin, db.Model):
         cascade="all, delete-orphan"
     )
 
-    # equipe da UVIS (até 5 pessoas) - 1 registro por membro
     equipe_uvis_membros = db.relationship(
         "EquipeUvis",
         back_populates="uvis_usuario",
@@ -61,7 +82,6 @@ class Usuario(UserMixin, db.Model):
 
     def check_senha(self, senha):
         return check_password_hash(self.senha_hash, senha)
-
 
 # -------------------------------------------------------------
 # EQUIPE UVIS (até 5 pessoas por UVIS)
