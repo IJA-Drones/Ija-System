@@ -8502,37 +8502,61 @@ def piloto_veiculos():
 @login_required
 @roles_required("piloto")
 def piloto_atualizar_km_veiculo(veiculo_id):
+    # Obtém o nome do piloto para validação de segurança
     nome_piloto = (getattr(current_user, "nome_uvis", None) or "").strip()
     if not nome_piloto:
         abort(403)
 
     v = Veiculos.query.get_or_404(veiculo_id)
 
-    # 🔒 Segurança: só pode editar se ele for o responsável
+    # Segurança: valida se o usuário é o responsável pelo veículo
     if (v.responsavel or "").strip().lower() != nome_piloto.lower():
         abort(403)
 
-    km_raw = (request.form.get("km_atual") or "").strip().replace(".", "").replace(",", ".")
+    # 1. Captura dos dados (Sincronizado com os 'name' do HTML)
+    km_raw = (request.form.get("km_final") or "").strip().replace(".", "").replace(",", ".")
+    valor_raw = (request.form.get("valor_abastecimento") or "").strip().replace(".", "").replace(",", ".")
+
     if not km_raw:
-        flash("Informe o KM atual.", "warning")
+        flash("Informe o KM final para realizar o registro.", "warning")
         return redirect(url_for("main.piloto_veiculos"))
 
     try:
-        km = float(km_raw)
-        if km < 0:
-            raise ValueError()
-    except ValueError:
-        flash("KM atual inválido. Use apenas números.", "warning")
-        return redirect(url_for("main.piloto_veiculos"))
+        km_final = float(km_raw)
+        valor_abastecimento = float(valor_raw) if valor_raw else 0.0
+        
+        # O KM Inicial do registro é o KM Atual que já consta no banco
+        km_inicial_do_log = v.km_atual or 0
 
-    v.km_atual = km
+        # Validação de integridade
+        if km_final < km_inicial_do_log:
+            flash(f"O KM final ({km_final:.0f}) não pode ser menor que o KM inicial ({km_inicial_do_log:.0f}).", "danger")
+            return redirect(url_for("main.piloto_veiculos"))
 
-    try:
+        # 2. Registro no Histórico (Sincronizado com a rota de visualização de logs)
+        novo_log = LogVeiculo(
+            veiculo_id=v.id,
+            piloto_id=current_user.piloto_id,
+            km_inicial=km_inicial_do_log,
+            km_final=km_final,
+            valor_total=valor_abastecimento,
+            data_registro=datetime.now()
+        )
+        db.session.add(novo_log)
+
+        # 3. Atualização do cadastro principal
+        v.km_atual = km_final
+
         db.session.commit()
-        flash(f"KM atualizado para {km:.0f} no veículo {v.modelo} ({v.placa}).", "success")
-    except Exception:
+        flash(f"Registro realizado! KM de {v.modelo} atualizado para {km_final:.0f}.", "success")
+
+    except ValueError:
+        flash("Valores inválidos. Use apenas números.", "warning")
+        return redirect(url_for("main.piloto_veiculos"))
+    except Exception as e:
         db.session.rollback()
-        flash("Erro ao salvar o KM. Tente novamente.", "danger")
+        print(f"Erro ao salvar KM: {e}")
+        flash("Erro técnico ao salvar. Tente novamente.", "danger")
 
     return redirect(url_for("main.piloto_veiculos"))
 
