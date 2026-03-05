@@ -8123,7 +8123,24 @@ def exportar_logs_veiculos_xlsx():
     wb = Workbook()
     ws = wb.active
     ws.title = "Logs Veiculos"
-    ws.append(["Data", "Veiculo", "Placa", "Responsavel", "Piloto", "KM Inicial", "KM Final", "Valor Abastecimento (R$)"])
+    ws.append([
+        "Data",
+        "Veiculo",
+        "Placa",
+        "Responsavel",
+        "Piloto",
+        "Check Diario",
+        "KM Inicial",
+        "KM Final",
+        "Abasteceu",
+        "Litros",
+        "Valor Abastecimento (R$)",
+        "KM no Abastecimento",
+        "Foto Painel",
+        "Foto NF",
+        "Assinatura",
+        "Observacao",
+    ])
 
     for log in logs:
         ws.append([
@@ -8132,9 +8149,17 @@ def exportar_logs_veiculos_xlsx():
             (log.veiculo.placa if log.veiculo else "") or "",
             (log.veiculo.responsavel if log.veiculo else "") or "",
             (log.piloto.nome_piloto if log.piloto else "") or "",
+            "SIM" if log.check_diario else "NAO",
             float(log.km_inicial or 0),
-            float(log.km_final or 0),
+            "" if log.km_final is None else float(log.km_final),
+            "SIM" if log.abasteceu else "NAO",
+            "" if log.litros is None else float(log.litros),
             float(log.valor_total or 0),
+            "" if log.km_no_abastecimento is None else float(log.km_no_abastecimento),
+            (log.foto_painel_path or ""),
+            (log.foto_nf_path or ""),
+            "SIM" if log.assinatura_piloto else "NAO",
+            (log.observacao or ""),
         ])
 
     output = BytesIO()
@@ -8495,71 +8520,172 @@ def piloto_veiculos():
         .all()
     )
 
-    return render_template("piloto_veiculos.html", veiculos=veiculos)
+    hoje = datetime.now().date()
+    turnos_abertos = {}
+    veiculo_ids = [v.id for v in veiculos]
+
+    if veiculo_ids:
+        logs_hoje = (
+            LogVeiculo.query
+            .filter(
+                LogVeiculo.piloto_id == current_user.piloto_id,
+                LogVeiculo.veiculo_id.in_(veiculo_ids),
+                db.func.date(LogVeiculo.data_registro) == hoje
+            )
+            .order_by(LogVeiculo.veiculo_id.asc(), LogVeiculo.data_registro.desc())
+            .all()
+        )
+        ultimos_por_veiculo = {}
+        for log in logs_hoje:
+            if log.veiculo_id not in ultimos_por_veiculo:
+                ultimos_por_veiculo[log.veiculo_id] = log
+        for veiculo_id, ultimo_log in ultimos_por_veiculo.items():
+            turnos_abertos[veiculo_id] = (ultimo_log.km_final is None)
+
+    return render_template("piloto_veiculos.html", veiculos=veiculos, turnos_abertos=turnos_abertos)
 
 
 @bp.route("/piloto/veiculos/<int:veiculo_id>/km", methods=["POST"], endpoint="piloto_atualizar_km_veiculo")
 @login_required
 @roles_required("piloto")
 def piloto_atualizar_km_veiculo(veiculo_id):
-    # Obtém o nome do piloto para validação de segurança
     nome_piloto = (getattr(current_user, "nome_uvis", None) or "").strip()
     if not nome_piloto:
         abort(403)
 
     v = Veiculos.query.get_or_404(veiculo_id)
-
-    # Segurança: valida se o usuário é o responsável pelo veículo
     if (v.responsavel or "").strip().lower() != nome_piloto.lower():
         abort(403)
 
-    # 1. Captura dos dados (Sincronizado com os 'name' do HTML)
-    km_raw = (request.form.get("km_final") or "").strip().replace(".", "").replace(",", ".")
+    km_inicial = request.form.get("km_inicial", type=float)
     valor_raw = (request.form.get("valor_abastecimento") or "").strip().replace(".", "").replace(",", ".")
+    litros_raw = (request.form.get("litros") or "").strip().replace(".", "").replace(",", ".")
+    assinatura_b64 = request.form.get("assinatura_b64")
+    houve_abs = request.form.get("houve_abastecimento") == "on"
+    foto_painel = request.files.get("foto_painel")
+    foto_nf = request.files.get("foto_nf")
 
-    if not km_raw:
-        flash("Informe o KM final para realizar o registro.", "warning")
+    if km_inicial is None or not assinatura_b64 or not foto_painel or not foto_painel.filename:
+        flash("Kilometragem inicial, foto do painel e assinatura sao obrigatorias.", "warning")
         return redirect(url_for("main.piloto_veiculos"))
 
     try:
-        km_final = float(km_raw)
-        valor_abastecimento = float(valor_raw) if valor_raw else 0.0
-        
-        # O KM Inicial do registro é o KM Atual que já consta no banco
-        km_inicial_do_log = v.km_atual or 0
+        valor_abastecimento = float(valor_raw) if houve_abs and valor_raw else 0.0
+        litros = float(litros_raw) if houve_abs and litros_raw else None
+        km_atual_veiculo = v.km_atual or 0
 
-        # Validação de integridade
-        if km_final < km_inicial_do_log:
-            flash(f"O KM final ({km_final:.0f}) não pode ser menor que o KM inicial ({km_inicial_do_log:.0f}).", "danger")
+        if km_inicial < km_atual_veiculo:
+            flash(f"KM inicial ({km_inicial:.0f}) menor que o KM atual do veiculo.", "danger")
             return redirect(url_for("main.piloto_veiculos"))
 
-        # 2. Registro no Histórico (Sincronizado com a rota de visualização de logs)
+        hoje = datetime.now().date()
+        turno_aberto_hoje = LogVeiculo.query.filter(
+            LogVeiculo.veiculo_id == v.id,
+            LogVeiculo.piloto_id == current_user.piloto_id,
+            db.func.date(LogVeiculo.data_registro) == hoje,
+            LogVeiculo.km_final.is_(None)
+        ).first()
+
+        if turno_aberto_hoje:
+            flash("Ja existe um turno aberto para este veiculo hoje. Finalize-o antes de iniciar outro.", "warning")
+            return redirect(url_for("main.piloto_veiculos"))
+
         novo_log = LogVeiculo(
             veiculo_id=v.id,
             piloto_id=current_user.piloto_id,
-            km_inicial=km_inicial_do_log,
-            km_final=km_final,
+            km_inicial=km_inicial,
+            km_final=None,
+            abasteceu=houve_abs,
+            litros=litros,
             valor_total=valor_abastecimento,
+            check_diario=True,
+            assinatura_piloto=assinatura_b64,
             data_registro=datetime.now()
         )
-        db.session.add(novo_log)
 
-        # 3. Atualização do cadastro principal
-        v.km_atual = km_final
+        upload_dir = os.path.join(current_app.root_path, "static", "uploads", "veiculos")
+        paineis_dir = os.path.join(upload_dir, "paineis")
+        notas_dir = os.path.join(upload_dir, "notas")
+        os.makedirs(paineis_dir, exist_ok=True)
+        os.makedirs(notas_dir, exist_ok=True)
+
+        if foto_painel and foto_painel.filename:
+            ext = os.path.splitext(secure_filename(foto_painel.filename))[1] or ".jpg"
+            nome = secure_filename(f"painel_{v.placa}_{datetime.now().strftime('%Y%m%d%H%M%S')}{ext}")
+            foto_painel.save(os.path.join(paineis_dir, nome))
+            novo_log.foto_painel_path = f"uploads/veiculos/paineis/{nome}"
+
+        if houve_abs and foto_nf and foto_nf.filename:
+            ext_nf = os.path.splitext(secure_filename(foto_nf.filename))[1] or ".jpg"
+            nome_nf = secure_filename(f"nf_{v.placa}_{datetime.now().strftime('%Y%m%d%H%M%S')}{ext_nf}")
+            foto_nf.save(os.path.join(notas_dir, nome_nf))
+            novo_log.foto_nf_path = f"uploads/veiculos/notas/{nome_nf}"
+
+        db.session.add(novo_log)
+        v.km_atual = km_inicial
 
         db.session.commit()
-        flash(f"Registro realizado! KM de {v.modelo} atualizado para {km_final:.0f}.", "success")
+        flash(f"Turno de {v.modelo} iniciado com sucesso!", "success")
 
     except ValueError:
-        flash("Valores inválidos. Use apenas números.", "warning")
-        return redirect(url_for("main.piloto_veiculos"))
-    except Exception as e:
+        flash("Dados numericos invalidos.", "warning")
+    except IntegrityError as e:
         db.session.rollback()
-        print(f"Erro ao salvar KM: {e}")
-        flash("Erro técnico ao salvar. Tente novamente.", "danger")
+        current_app.logger.exception("Erro de integridade ao iniciar turno de veiculo.")
+        if "km_final" in str(e.orig).lower():
+            flash("Erro de banco: o campo km_final ainda nao aceita vazio. Rode a migracao para permitir NULL.", "danger")
+        else:
+            flash("Erro de integridade ao salvar. Verifique os dados e a estrutura do banco.", "danger")
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception("Erro tecnico ao iniciar turno de veiculo.")
+        flash("Erro tecnico ao salvar.", "danger")
 
     return redirect(url_for("main.piloto_veiculos"))
 
+
+@bp.route("/piloto/veiculos/<int:veiculo_id>/encerrar", methods=["POST"])
+@login_required
+@roles_required("piloto")
+def piloto_encerrar_turno(veiculo_id):
+    nome_piloto = (getattr(current_user, "nome_uvis", None) or "").strip()
+    if not nome_piloto:
+        abort(403)
+
+    v = Veiculos.query.get_or_404(veiculo_id)
+    if (v.responsavel or "").strip().lower() != nome_piloto.lower():
+        abort(403)
+
+    hoje = datetime.now().date()
+    km_final = request.form.get("km_final", type=float)
+    observacao = (request.form.get("observacao") or "").strip() or None
+
+    if km_final is None:
+        flash("Informe a kilometragem final para encerrar o turno.", "warning")
+        return redirect(url_for("main.piloto_veiculos"))
+
+    log = LogVeiculo.query.filter(
+        LogVeiculo.veiculo_id == veiculo_id,
+        LogVeiculo.piloto_id == current_user.piloto_id,
+        db.func.date(LogVeiculo.data_registro) == hoje,
+        LogVeiculo.km_final.is_(None)
+    ).order_by(LogVeiculo.data_registro.desc()).first()
+
+    if not log:
+        flash("Nenhum turno aberto encontrado para hoje.", "warning")
+        return redirect(url_for("main.piloto_veiculos"))
+
+    if km_final < (log.km_inicial or 0):
+        flash("KM final nao pode ser menor que o KM inicial do turno.", "danger")
+        return redirect(url_for("main.piloto_veiculos"))
+
+    log.km_final = km_final
+    log.observacao = observacao
+    log.veiculo.km_atual = km_final
+
+    db.session.commit()
+    flash("Turno encerrado com sucesso!", "success")
+    return redirect(url_for("main.piloto_veiculos"))
 
 @bp.route('/piloto/os')
 @login_required

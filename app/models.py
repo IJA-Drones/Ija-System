@@ -651,28 +651,38 @@ class Veiculos(Equipamentos):
 
 
 # -------------------------------------------------------------
-# LOGS DE VEÍCULO
+# LOGS DE VEÍCULO (UNIFICADO: ABS + CCD)
 # -------------------------------------------------------------
 class LogVeiculo(db.Model):
     __tablename__ = "logs_veiculo"
 
     id = db.Column(db.Integer, primary_key=True)
 
+    # Identificação e Relacionamentos
     veiculo_id = db.Column(db.Integer, db.ForeignKey("veiculos.id"), nullable=False, index=True)
     piloto_id = db.Column(db.Integer, db.ForeignKey("pilotos.id"), nullable=False, index=True)
-
     data_registro = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
 
+    # Quilometragem (Essencial para ambos os formulários)
     km_inicial = db.Column(db.Float, nullable=False)
-    km_final = db.Column(db.Float, nullable=False)
+    km_final = db.Column(db.Float, nullable=True)
 
+    # Seção de Abastecimento (ABS)
     abasteceu = db.Column(db.Boolean, default=False)
-    litros = db.Column(db.Float, nullable=True)
-    valor_total = db.Column(db.Float, nullable=True)
+    litros = db.Column(db.Float, nullable=True) # Litragem abastecida 
+    valor_total = db.Column(db.Float, nullable=True) # Valor total do abastecimento 
+    foto_nf_path = db.Column(db.String(255), nullable=True) # Foto da NF com CNPJ e Placa [cite: 26]
     km_no_abastecimento = db.Column(db.Float, nullable=True)
 
+    # Seção de Checklist Diário (CCD)
+    check_diario = db.Column(db.Boolean, default=False) # Define se este registro é o checklist do dia 
+    foto_painel_path = db.Column(db.String(255), nullable=True) # Foto comprovando Nível de Combustível/KM [cite: 62]
+    
+    # Validação e Assinatura
+    assinatura_piloto = db.Column(db.Text) # Armazena o Base64 do seu Canvas 
     observacao = db.Column(db.Text)
 
+    # Relacionamentos
     veiculo = db.relationship(
         "Veiculos",
         backref=db.backref("logs", lazy="select", cascade="all, delete-orphan")

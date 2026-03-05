@@ -106,7 +106,7 @@
                 <form method="GET" class="row g-2 align-items-end">
                     <div class="col-md-4">
                         <label class="small text-muted">Veículo / Placa / Piloto:</label>
-                        <input type="text" name="q" value="{{ filters.q or '' }}" class="form-control" placeholder="Modelo, placa, responsável...">
+                        <input type="text" name="q" value="{{ filters.q or '' }}" class="form-control" placeholder="Modelo, placa, responsÃ¡vel...">
                     </div>
                     <div class="col-md-3">
                         <label class="small text-muted">Data inicial:</label>
@@ -145,6 +145,7 @@
                             <th>KM Inicial</th>
                             <th>KM Final</th>
                             <th>Abastecimento (R$)</th>
+                            <th class="pe-4">Detalhes</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -162,7 +163,7 @@
                                 </td>
                                 <td>{{ log.piloto.nome_piloto if log.piloto else '-' }}</td>
                                 <td>{{ (log.km_inicial or 0)|round|int }} km</td>
-                                <td>{{ (log.km_final or 0)|round|int }} km</td>
+                                <td>{% if log.km_final is not none %}{{ (log.km_final or 0)|round|int }} km{% else %}<span class="text-warning">Turno aberto</span>{% endif %}</td>
                                 <td>
                                     {% if log.valor_total is not none %}
                                         <span class="badge bg-success-light text-success rounded-pill px-3">
@@ -172,10 +173,96 @@
                                         <span class="text-muted small">Sem abastecimento</span>
                                     {% endif %}
                                 </td>
+                                <td class="pe-4">
+                                    <button class="btn btn-sm btn-outline-primary rounded-pill px-3" type="button"
+                                            data-bs-toggle="collapse" data-bs-target="#detalhes-log-{{ log.id }}"
+                                            aria-expanded="false" aria-controls="detalhes-log-{{ log.id }}">
+                                        <i class="bi bi-card-list me-1"></i> Ver dados
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr class="collapse-row">
+                                <td colspan="7" class="p-0 border-0">
+                                    <div class="collapse" id="detalhes-log-{{ log.id }}">
+                                        <div class="p-3 p-md-4 bg-light border-top">
+                                            <div class="row g-3">
+                                                <div class="col-md-4">
+                                                    <div class="card border-0 shadow-sm h-100">
+                                                        <div class="card-body">
+                                                            <h6 class="fw-bold text-primary mb-3">Checklist</h6>
+                                                            <div class="small mb-1"><b>Check Diario:</b> {{ 'Sim' if log.check_diario else 'Nao' }}</div>
+                                                            <div class="small mb-1"><b>KM Inicial:</b> {{ (log.km_inicial or 0)|round|int }} km</div>
+                                                            <div class="small mb-0"><b>KM Final:</b> {% if log.km_final is not none %}{{ (log.km_final or 0)|round|int }} km{% else %}<span class="text-warning">Turno aberto</span>{% endif %}</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <div class="card border-0 shadow-sm h-100">
+                                                        <div class="card-body">
+                                                            <h6 class="fw-bold text-success mb-3">Abastecimento</h6>
+                                                            <div class="small mb-1"><b>Abasteceu:</b> {{ 'Sim' if log.abasteceu else 'Nao' }}</div>
+                                                            <div class="small mb-1"><b>Litros:</b> {{ '%.2f'|format(log.litros) if log.litros is not none else '-' }}</div>
+                                                            <div class="small mb-1"><b>Valor Total:</b> R$ {{ '%.2f'|format(log.valor_total) if log.valor_total is not none else '0.00' }}</div>
+                                                            <div class="small mb-0"><b>KM no Abastecimento:</b> {% if log.km_no_abastecimento is not none %}{{ (log.km_no_abastecimento or 0)|round|int }} km{% else %}-{% endif %}</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <div class="card border-0 shadow-sm h-100">
+                                                        <div class="card-body">
+                                                            <h6 class="fw-bold text-dark mb-3">Conferencia</h6>
+                                                            <div class="small mb-2"><b>Assinatura:</b> {{ 'Preenchida' if log.assinatura_piloto else 'Nao preenchida' }}</div>
+                                                            <div class="small"><b>Observacoes:</b></div>
+                                                            <div class="small text-muted">{{ log.observacao or 'Sem observacoes.' }}</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="card border-0 shadow-sm h-100">
+                                                        <div class="card-body">
+                                                            <h6 class="fw-bold mb-2">Foto do Painel</h6>
+                                                            {% if log.foto_painel_path %}
+                                                                <a href="{{ url_for('static', filename=log.foto_painel_path) }}" target="_blank" class="small d-block mb-2">Abrir imagem</a>
+                                                                <img src="{{ url_for('static', filename=log.foto_painel_path) }}" alt="Foto do painel" class="img-fluid rounded border">
+                                                            {% else %}
+                                                                <span class="small text-muted">Nao anexada.</span>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="card border-0 shadow-sm h-100">
+                                                        <div class="card-body">
+                                                            <h6 class="fw-bold mb-2">Foto da Nota Fiscal</h6>
+                                                            {% if log.foto_nf_path %}
+                                                                <a href="{{ url_for('static', filename=log.foto_nf_path) }}" target="_blank" class="small d-block mb-2">Abrir imagem</a>
+                                                                <img src="{{ url_for('static', filename=log.foto_nf_path) }}" alt="Foto da nota fiscal" class="img-fluid rounded border">
+                                                            {% else %}
+                                                                <span class="small text-muted">Nao anexada.</span>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-12">
+                                                    <div class="card border-0 shadow-sm">
+                                                        <div class="card-body">
+                                                            <h6 class="fw-bold mb-2">Assinatura</h6>
+                                                            {% if log.assinatura_piloto %}
+                                                                <img src="{{ log.assinatura_piloto }}" alt="Assinatura do piloto" class="img-fluid rounded border bg-white" style="max-height: 180px;">
+                                                            {% else %}
+                                                                <span class="small text-muted">Sem assinatura registrada.</span>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
                             </tr>
                         {% else %}
                             <tr>
-                                <td colspan="6" class="py-4 text-muted">Nenhum log encontrado para os filtros aplicados.</td>
+                                <td colspan="7" class="py-4 text-muted">Nenhum log encontrado para os filtros aplicados.</td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -197,15 +284,16 @@
                         <a class="page-link" href="{{ url_for('main.veiculos_logs', page=p, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}">{{ p }}</a>
                     </li>
                 {% else %}
-                    <li class="page-item disabled"><span class="page-link">…</span></li>
+                    <li class="page-item disabled"><span class="page-link">â€¦</span></li>
                 {% endif %}
             {% endfor %}
 
             <li class="page-item {{ 'disabled' if not paginacao.has_next }}">
-                <a class="page-link" href="{{ url_for('main.veiculos_logs', page=paginacao.next_num if paginacao.has_next else paginacao.pages, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}">Próxima</a>
+                <a class="page-link" href="{{ url_for('main.veiculos_logs', page=paginacao.next_num if paginacao.has_next else paginacao.pages, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}">PrÃ³xima</a>
             </li>
         </ul>
     </nav>
     {% endif %}
 </div>
 {% endblock %}
+
