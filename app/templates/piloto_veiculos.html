@@ -6,6 +6,52 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}" />
 
 <style>
+  .table-frota {
+    width: 100%;
+    table-layout: fixed;
+  }
+  .table-frota col:nth-child(1) { width: 28%; }
+  .table-frota col:nth-child(2) { width: 16%; }
+  .table-frota col:nth-child(3) { width: 14%; }
+  .table-frota col:nth-child(4) { width: 14%; }
+  .table-frota col:nth-child(5) { width: 12%; }
+  .table-frota col:nth-child(6) { width: 16%; }
+
+  .table-frota thead th {
+    vertical-align: middle;
+    font-weight: 700;
+    white-space: nowrap;
+    text-align: left;
+  }
+  .table-frota tbody td {
+    vertical-align: middle;
+    text-align: left;
+  }
+  .table-frota thead th,
+  .table-frota tbody td {
+    padding-top: 0.85rem;
+    padding-bottom: 0.85rem;
+  }
+  .table-frota thead th:first-child,
+  .table-frota tbody td:first-child {
+    padding-left: 1.25rem;
+  }
+  .table-frota thead th:last-child,
+  .table-frota tbody td:last-child {
+    padding-right: 1.25rem;
+  }
+  .table-frota thead th:nth-child(3),
+  .table-frota thead th:nth-child(4),
+  .table-frota tbody td:nth-child(3),
+  .table-frota tbody td:nth-child(4) {
+    text-align: right;
+  }
+  .table-frota thead th:nth-child(6),
+  .table-frota tbody td:nth-child(6) {
+    text-align: center;
+    white-space: nowrap;
+  }
+
   .stat-pill { border-radius: 999px; padding: 6px 10px; font-weight: 700; font-size: .85rem; }
   .pill-ok { background: #d1e7dd; color: #0f5132; }
   .pill-warn { background: #fff3cd; color: #664d03; }
@@ -37,17 +83,17 @@
   }
 
   @media (max-width: 768px) {
-    thead { display:none; }
-    tbody { display:flex; flex-direction:column; gap:14px; }
-    tbody tr { display:block; border:1px solid rgba(0,0,0,.1); border-radius:16px; overflow:hidden; box-shadow: 0 10px 22px rgba(0,0,0,.06); margin-bottom: 10px; }
-    tbody td { display:flex; justify-content:space-between; gap:12px; padding:12px 14px; border:0 !important; text-align: right !important; }
-    tbody td::before { font-weight:800; color: rgba(0,0,0,.55); float: left; }
-    tbody td:nth-child(1)::before { content: "Veiculo"; }
-    tbody td:nth-child(2)::before { content: "Operacao"; }
-    tbody td:nth-child(3)::before { content: "KM Atual"; }
-    tbody td:nth-child(4)::before { content: "Prox Revisao"; }
-    tbody td:nth-child(5)::before { content: "Falta"; }
-    tbody td:nth-child(6)::before { content: "AÃ§Ãµes"; }
+    .table-frota thead { display:none; }
+    .table-frota tbody { display:flex; flex-direction:column; gap:14px; }
+    .table-frota tbody tr { display:block; border:1px solid rgba(0,0,0,.1); border-radius:16px; overflow:hidden; box-shadow: 0 10px 22px rgba(0,0,0,.06); margin-bottom: 10px; }
+    .table-frota tbody td { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px 14px; border:0 !important; text-align: right !important; }
+    .table-frota tbody td::before { font-weight:800; color: rgba(0,0,0,.55); float: left; text-align:left; }
+    .table-frota tbody td:nth-child(1)::before { content: "Veículo"; }
+    .table-frota tbody td:nth-child(2)::before { content: "Operação"; }
+    .table-frota tbody td:nth-child(3)::before { content: "KM Atual"; }
+    .table-frota tbody td:nth-child(4)::before { content: "Prox Revisão"; }
+    .table-frota tbody td:nth-child(5)::before { content: "Status"; }
+    .table-frota tbody td:nth-child(6)::before { content: "Ações"; }
   }
 </style>
 {% endblock %}
@@ -71,34 +117,37 @@
   {% if veiculos %}
     <div class="card shadow-sm rounded-4 border-0 overflow-hidden">
       <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
+        <table class="table table-hover align-middle mb-0 table-frota">
+          <colgroup>
+            <col><col><col><col><col><col>
+          </colgroup>
           <thead class="table-light">
             <tr>
-              <th class="ps-4">Veículo</th>
+              <th>Veículo</th>
               <th>Operação</th>
-              <th class="text-end">KM Atual</th>
-              <th class="text-end">Prox Revisão</th>
+              <th>KM Atual</th>
+              <th>Prox Revisão</th>
               <th>Status</th>
-              <th class="pe-4 text-center">Ações de Turno</th>
+              <th>Ações de Turno</th>
             </tr>
           </thead>
           <tbody>
             {% for v in veiculos %}
               <tr>
-                <td class="ps-4">
+                <td>
                   <div class="fw-bold">{{ v.modelo }}</div>
                   <div class="text-muted small">{{ v.placa }}</div>
                 </td>
                 <td><span class="badge bg-light text-dark border">{{ v.operacao }}</span></td>
-                <td class="text-end fw-bold">{{ '%.0f'|format(v.km_atual or 0) }}</td>
-                <td class="text-end fw-bold">{{ '%.0f'|format(v.km_prox_revisao or 0) }}</td>
+                <td class="fw-bold">{{ '%.0f'|format(v.km_atual or 0) }}</td>
+                <td class="fw-bold">{{ '%.0f'|format(v.km_prox_revisao or 0) }}</td>
                 <td>
                   {% set falt = v.km_restante_revisao %}
                   <span class="stat-pill {% if falt < 0 %}pill-bad{% elif falt <= 2000 %}pill-warn{% else %}pill-ok{% endif %}">
                     {{ '%.0f'|format(falt or 0) }} km
                   </span>
                 </td>
-                <td class="pe-4 text-center">
+                <td>
                   {% if turnos_abertos.get(v.id) %}
                     <button class="btn btn-sm btn-warning rounded-pill px-3 shadow-sm" 
                             data-bs-toggle="modal" data-bs-target="#modalEncerramento{{ v.id }}">
