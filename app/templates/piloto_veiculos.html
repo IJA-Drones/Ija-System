@@ -66,6 +66,22 @@
     padding-left: 10px; 
     margin: 20px 0 10px;
   }
+  .modal-soft-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 14px;
+  }
+  .modal-km-highlight {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #0d6efd;
+    line-height: 1;
+  }
+  .hint-line {
+    font-size: 0.78rem;
+    color: #64748b;
+  }
 
   .signature-container {
     border: 2px dashed #cbd5e0;
@@ -178,16 +194,25 @@
               </div>
               
               <div class="modal-body p-4">
+                <div class="modal-soft-card mb-3 d-flex justify-content-between align-items-center">
+                  <div>
+                    <div class="small text-muted">KM atual do veículo</div>
+                    <div class="modal-km-highlight">{{ '%.0f'|format(v.km_atual or 0) }} km</div>
+                  </div>
+                  <span class="badge bg-primary-subtle text-primary-emphasis border">Checklist obrigatório</span>
+                </div>
+
                 <div class="modal-section-title">1. Checklist Diário (CCD)</div>
                 <div class="row g-3">
                   <div class="col-md-6">
                     <label class="form-label small fw-bold">Kilometragem de Início</label>
-                    <input type="number" name="km_inicial" class="form-control" value="{{ v.km_atual }}" required>
-                    <div class="form-text">Confirme o KM atual do painel.</div>
+                    <input type="number" name="km_inicial" class="form-control" value="{{ v.km_atual }}" min="{{ v.km_atual or 0 }}" required>
+                    <div class="hint-line mt-1">Informe exatamente o KM mostrado no painel.</div>
                   </div>
                   <div class="col-md-6">
                     <label class="form-label small fw-bold">Foto do Painel</label>
                     <input type="file" name="foto_painel" class="form-control" accept="image/*" required>
+                    <div class="hint-line mt-1">A foto valida o KM e o nível de combustível.</div>
                   </div>
                 </div>
 
@@ -201,17 +226,18 @@
                   <div class="row g-3">
                     <div class="col-md-4">
                       <label class="form-label small fw-bold">Valor Total (R$)</label>
-                      <input type="text" name="valor_abastecimento" class="form-control" placeholder="0,00">
+                      <input type="number" step="0.01" min="0" name="valor_abastecimento" class="form-control abs-input-{{ v.id }}" placeholder="0,00">
                     </div>
                     <div class="col-md-4">
                       <label class="form-label small fw-bold">Litros</label>
-                      <input type="text" name="litros" class="form-control" placeholder="0.00">
+                      <input type="number" step="0.01" min="0" name="litros" class="form-control abs-input-{{ v.id }}" placeholder="0.00">
                     </div>
                     <div class="col-md-4">
                       <label class="form-label small fw-bold">Foto da NF</label>
-                      <input type="file" name="foto_nf" class="form-control" accept="image/*">
+                      <input type="file" name="foto_nf" class="form-control abs-input-{{ v.id }}" accept="image/*">
                     </div>
                   </div>
+                  <div class="hint-line mt-2">Se marcar abastecimento, preencha valor, litros e anexe a nota.</div>
                 </div>
 
                 <div class="modal-section-title">3. Assinatura do Piloto</div>
@@ -244,9 +270,18 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
               </div>
               <div class="modal-body p-4">
+                <div class="modal-soft-card mb-3">
+                  <div class="small text-muted">Referência de encerramento</div>
+                  <div class="d-flex justify-content-between align-items-center mt-1">
+                    <span class="small">Último KM registrado</span>
+                    <span class="modal-km-highlight">{{ '%.0f'|format(v.km_atual or 0) }} km</span>
+                  </div>
+                </div>
+
                 <div class="mb-3">
                   <label class="form-label small fw-bold">Kilometragem Final (Painel)</label>
-                  <input type="number" name="km_final" class="form-control" value="{{ v.km_atual or '' }}" placeholder="KM mostrado no fim do dia" required>
+                  <input type="number" name="km_final" class="form-control" min="{{ v.km_atual or 0 }}" value="{{ v.km_atual or '' }}" placeholder="KM mostrado no fim do dia" required>
+                  <div class="hint-line mt-1">O KM final não pode ser menor que o KM inicial.</div>
                 </div>
                 <div class="mb-0">
                   <label class="form-label small fw-bold">Observações do Dia</label>
@@ -346,8 +381,13 @@ document.querySelectorAll('.modal').forEach(modal => {
         const fieldsAbs = document.getElementById('abs-fields-' + id);
         if (switchAbs && fieldsAbs) {
             fieldsAbs.style.display = switchAbs.checked ? 'block' : 'none';
+            const absInputs = document.querySelectorAll('.abs-input-' + id);
+            absInputs.forEach((el) => { el.required = switchAbs.checked; });
             if (!switchAbs.dataset.bound) {
-                switchAbs.addEventListener('change', () => fieldsAbs.style.display = switchAbs.checked ? 'block' : 'none');
+                switchAbs.addEventListener('change', () => {
+                    fieldsAbs.style.display = switchAbs.checked ? 'block' : 'none';
+                    absInputs.forEach((el) => { el.required = switchAbs.checked; });
+                });
                 switchAbs.dataset.bound = '1';
             }
         }
