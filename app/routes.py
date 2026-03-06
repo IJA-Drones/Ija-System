@@ -12,6 +12,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from zoneinfo import ZoneInfo
 
 from flask_login import login_required, current_user
+from pyparsing import col
 from werkzeug.utils import secure_filename
 import uuid
 import os
@@ -8014,7 +8015,8 @@ def listar_veiculos():
         ultimos_logs=ultimos_logs
     )
 
-
+from openpyxl.formatting.rule import FormulaRule
+from openpyxl.formatting.rule import CellIsRule
 @bp.route("/veiculos/logs", methods=["GET"], endpoint="veiculos_logs")
 @login_required
 def veiculos_logs():
@@ -8074,6 +8076,18 @@ def veiculos_logs():
         filters=filters,
     )
 
+from flask import request, abort, send_file
+from flask_login import login_required, current_user
+from datetime import datetime
+from io import BytesIO
+
+from sqlalchemy.orm import joinedload
+
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
+from openpyxl.formatting.rule import FormulaRule
+
 
 @bp.route("/veiculos/logs/exportar", methods=["GET"], endpoint="exportar_logs_veiculos_xlsx")
 @login_required
@@ -8120,28 +8134,74 @@ def exportar_logs_veiculos_xlsx():
 
     logs = query.order_by(LogVeiculo.data_registro.desc()).all()
 
+    # -----------------------------
+    # Helpers de estilo/estrutura
+    # -----------------------------
+    header_fill = PatternFill("solid", fgColor="1F4E79")  # azul escuro
+    header_font = Font(color="FFFFFF", bold=True)
+    header_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    thin = Side(style="thin", color="D9D9D9")
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    def style_header(ws, row=1, height=28):
+        ws.row_dimensions[row].height = height
+        for cell in ws[row]:
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = header_alignment
+            cell.border = border
+
+    def auto_width(ws, max_col, min_w=10, max_w=48):
+        for col in range(1, max_col + 1):
+            letter = get_column_letter(col)
+            max_len = 0
+            for cell in ws[letter]:
+                if cell.value is None:
+                    continue
+                s = str(cell.value)
+                max_len = max(max_len, len(s))
+            ws.column_dimensions[letter].width = max(min_w, min(max_w, max_len + 2))
+
+    def center_cols(ws, cols, start_row, end_row):
+        for c in cols:
+            for r in range(start_row, end_row + 1):
+                ws.cell(row=r, column=c).alignment = Alignment(
+                    horizontal="center", vertical="center", wrap_text=True
+                )
+
+    # -----------------------------
+    # Workbook / Abas
+    # -----------------------------
     wb = Workbook()
+
+    # 1) Aba DETALHAMENTO
     ws = wb.active
-    ws.title = "Logs Veiculos"
-    ws.append([
+    ws.title = "Detalhamento"
+
+    # >>> Campos "direitinho" (sem KM no Abastecimento) <<<
+    headers = [
         "Data",
-        "Veiculo",
+        "Veículo",
         "Placa",
-        "Responsavel",
+        "Responsável",
         "Piloto",
-        "Check Diario",
+        "Check Diário",
         "KM Inicial",
         "KM Final",
+        "KM Rodado",              # calculado
         "Abasteceu",
         "Litros",
         "Valor Abastecimento (R$)",
-        "KM no Abastecimento",
-        "Foto Painel",
-        "Foto NF",
+        "Valor por Litro (R$)",   # calculado
+        "Custo por KM (R$)",      # calculado
         "Assinatura",
-        "Observacao",
-    ])
+        "Observação",
+    ]
+    ws.append(headers)
+    style_header(ws, row=1)
+    ws.freeze_panes = "A2"
 
+    # Escreve dados
     for log in logs:
         ws.append([
             log.data_registro.strftime("%d/%m/%Y %H:%M") if log.data_registro else "",
@@ -8149,19 +8209,300 @@ def exportar_logs_veiculos_xlsx():
             (log.veiculo.placa if log.veiculo else "") or "",
             (log.veiculo.responsavel if log.veiculo else "") or "",
             (log.piloto.nome_piloto if log.piloto else "") or "",
-            "SIM" if log.check_diario else "NAO",
+            "SIM" if log.check_diario else "NÃO",
             float(log.km_inicial or 0),
             "" if log.km_final is None else float(log.km_final),
-            "SIM" if log.abasteceu else "NAO",
+            None,  # KM Rodado (formula)
+            "SIM" if log.abasteceu else "NÃO",
             "" if log.litros is None else float(log.litros),
             float(log.valor_total or 0),
-            "" if log.km_no_abastecimento is None else float(log.km_no_abastecimento),
-            (log.foto_painel_path or ""),
-            (log.foto_nf_path or ""),
-            "SIM" if log.assinatura_piloto else "NAO",
+            None,  # Valor por Litro (formula)
+            None,  # Custo por KM (formula)
+            "SIM" if log.assinatura_piloto else "NÃO",
             (log.observacao or ""),
         ])
 
+    last_row = ws.max_row
+    last_col = ws.max_column  # 16 colunas (A..P)
+
+    # Filtro no range real (sem Table, compatível com openpyxl antigo)
+    ws.auto_filter.ref = f"A1:{get_column_letter(last_col)}{last_row}"
+
+    # Colunas (1-based) conforme a lista de headers acima (16 colunas)
+    COL_DATA = 1
+    COL_CHECK = 6
+    COL_KM_INI = 7
+    COL_KM_FIM = 8
+    COL_KM_ROD = 9
+    COL_ABAST = 10
+    COL_LITROS = 11
+    COL_VALOR = 12
+    COL_VAL_LITRO = 13
+    COL_CUSTO_KM = 14
+    COL_ASS = 15
+
+    # Formatação numérica / fórmulas por linha + bordas/alinhamento
+    for r in range(2, last_row + 1):
+        # KM Rodado
+        ws.cell(r, COL_KM_ROD).value = (
+            f'=IF({get_column_letter(COL_KM_FIM)}{r}="","",'
+            f'{get_column_letter(COL_KM_FIM)}{r}-{get_column_letter(COL_KM_INI)}{r})'
+        )
+
+        # Valor por Litro
+        ws.cell(r, COL_VAL_LITRO).value = (
+            f'=IF(OR({get_column_letter(COL_LITROS)}{r}="",{get_column_letter(COL_LITROS)}{r}=0),"",'
+            f'{get_column_letter(COL_VALOR)}{r}/{get_column_letter(COL_LITROS)}{r})'
+        )
+
+        # Custo por KM
+        ws.cell(r, COL_CUSTO_KM).value = (
+            f'=IF(OR({get_column_letter(COL_KM_ROD)}{r}="",{get_column_letter(COL_KM_ROD)}{r}=0),"",'
+            f'{get_column_letter(COL_VALOR)}{r}/{get_column_letter(COL_KM_ROD)}{r})'
+        )
+
+        # formatos numéricos
+        ws.cell(r, COL_KM_INI).number_format = "#,##0.00"
+        ws.cell(r, COL_KM_FIM).number_format = "#,##0.00"
+        ws.cell(r, COL_KM_ROD).number_format = "#,##0.00"
+        ws.cell(r, COL_LITROS).number_format = "#,##0.00"
+        ws.cell(r, COL_VALOR).number_format = '"R$" #,##0.00'
+        ws.cell(r, COL_VAL_LITRO).number_format = '"R$" #,##0.00'
+        ws.cell(r, COL_CUSTO_KM).number_format = '"R$" #,##0.00'
+
+        # bordas + wrap
+        for c in range(1, last_col + 1):
+            cell = ws.cell(r, c)
+            cell.border = border
+            cell.alignment = Alignment(vertical="center", wrap_text=True)
+
+    # Centraliza colunas "SIM/NÃO" e data
+    center_cols(ws, cols=[COL_DATA, COL_CHECK, COL_ABAST, COL_ASS], start_row=2, end_row=last_row)
+
+    # Zebra + destaque de colunas de custo (bem fácil de ler)
+    stripe_fill = PatternFill("solid", fgColor="F2F2F2")
+    white_fill = PatternFill("solid", fgColor="FFFFFF")
+    highlight_fill = PatternFill("solid", fgColor="FFF2CC")  # amarelo claro
+    highlight_cols = {COL_LITROS, COL_VALOR, COL_VAL_LITRO, COL_CUSTO_KM}
+
+    for r in range(2, last_row + 1):
+        row_fill = stripe_fill if (r % 2 == 0) else white_fill
+        for c in range(1, last_col + 1):
+            cell = ws.cell(r, c)
+            cell.fill = row_fill
+            if c in highlight_cols and cell.value not in (None, ""):
+                cell.fill = highlight_fill
+
+    # Condicional: "SIM" verde e "NÃO" vermelho (Check Diário, Abasteceu, Assinatura)
+    green_fill = PatternFill("solid", fgColor="C6EFCE")
+    green_font = Font(color="006100", bold=True)
+    red_fill = PatternFill("solid", fgColor="FFC7CE")
+    red_font = Font(color="9C0006", bold=True)
+
+    for col in (COL_CHECK, COL_ABAST, COL_ASS):
+        col_letter = get_column_letter(col)
+        rng = f"{col_letter}2:{col_letter}{last_row}"
+
+        ws.conditional_formatting.add(
+            rng,
+            FormulaRule(formula=[f'{col_letter}2="SIM"'], fill=green_fill, font=green_font)
+        )
+        ws.conditional_formatting.add(
+            rng,
+            FormulaRule(formula=[f'{col_letter}2="NÃO"'], fill=red_fill, font=red_font)
+        )
+
+    # Ajusta largura
+    auto_width(ws, last_col, min_w=10, max_w=48)
+
+    # 2) Aba RESUMO (médias e indicadores) - layout bonito e explicativo
+    ws2 = wb.create_sheet("Resumo (Médias)")
+
+    # Cores auxiliares
+    title_fill = PatternFill("solid", fgColor="0B2F4F")
+    card_fill  = PatternFill("solid", fgColor="E7EFF8")
+    info_fill  = PatternFill("solid", fgColor="F8F8F8")
+    kpi_fill   = PatternFill("solid", fgColor="D9E1F2")
+    warn_fill  = PatternFill("solid", fgColor="FFF2CC")
+    ok_fill    = PatternFill("solid", fgColor="C6EFCE")
+    bad_fill   = PatternFill("solid", fgColor="FFC7CE")
+
+    title_font = Font(color="FFFFFF", bold=True, size=14)
+    section_font = Font(color="1F4E79", bold=True, size=12)
+    label_font = Font(color="1F4E79", bold=True)
+    small_font = Font(color="404040", size=10)
+    big_font = Font(color="1F4E79", bold=True, size=16)
+
+    # ranges fixos no Detalhamento
+    has_data = last_row >= 2
+    rng_km_rod = f"Detalhamento!{get_column_letter(COL_KM_ROD)}2:{get_column_letter(COL_KM_ROD)}{last_row}"
+    rng_valor  = f"Detalhamento!{get_column_letter(COL_VALOR)}2:{get_column_letter(COL_VALOR)}{last_row}"
+    rng_litros = f"Detalhamento!{get_column_letter(COL_LITROS)}2:{get_column_letter(COL_LITROS)}{last_row}"
+    rng_vl     = f"Detalhamento!{get_column_letter(COL_VAL_LITRO)}2:{get_column_letter(COL_VAL_LITRO)}{last_row}"
+    rng_ckm    = f"Detalhamento!{get_column_letter(COL_CUSTO_KM)}2:{get_column_letter(COL_CUSTO_KM)}{last_row}"
+    rng_ab     = f"Detalhamento!{get_column_letter(COL_ABAST)}2:{get_column_letter(COL_ABAST)}{last_row}"
+
+    # Cabeçalho
+    ws2.merge_cells("A1:H1")
+    ws2["A1"] = "RESUMO — MÉDIAS E INDICADORES (FROTA)"
+    ws2["A1"].fill = title_fill
+    ws2["A1"].font = title_font
+    ws2["A1"].alignment = Alignment(horizontal="center", vertical="center")
+    ws2.row_dimensions[1].height = 30
+
+    ws2.merge_cells("A2:H2")
+    ws2["A2"] = "Painel de custos, consumo e produtividade com base nos registros da aba “Detalhamento”."
+    ws2["A2"].font = small_font
+    ws2["A2"].alignment = Alignment(horizontal="center", vertical="center")
+    ws2.row_dimensions[2].height = 18
+
+    # Cards KPI
+    ws2.merge_cells("A4:C4")
+    ws2.merge_cells("A5:C6")
+    ws2["A4"] = "Total de Registros"
+    ws2["A5"] = (f"={max(0, last_row-1)}" if has_data else "")
+    ws2["A4"].font = label_font
+    ws2["A5"].font = big_font
+    ws2["A4"].alignment = Alignment(horizontal="center", vertical="center")
+    ws2["A5"].alignment = Alignment(horizontal="center", vertical="center")
+    ws2["A4"].fill = kpi_fill
+    ws2["A5"].fill = card_fill
+
+    ws2.merge_cells("D4:F4")
+    ws2.merge_cells("D5:F6")
+    ws2["D4"] = "Total Abastecido (R$)"
+    ws2["D5"] = (f"=SUM({rng_valor})" if has_data else "")
+    ws2["D4"].font = label_font
+    ws2["D5"].font = big_font
+    ws2["D4"].alignment = Alignment(horizontal="center", vertical="center")
+    ws2["D5"].alignment = Alignment(horizontal="center", vertical="center")
+    ws2["D4"].fill = kpi_fill
+    ws2["D5"].fill = card_fill
+    ws2["D5"].number_format = '"R$" #,##0.00'
+
+    ws2.merge_cells("G4:H4")
+    ws2.merge_cells("G5:H6")
+    ws2["G4"] = "Total de Litros"
+    ws2["G5"] = (f"=SUM({rng_litros})" if has_data else "")
+    ws2["G4"].font = label_font
+    ws2["G5"].font = big_font
+    ws2["G4"].alignment = Alignment(horizontal="center", vertical="center")
+    ws2["G5"].alignment = Alignment(horizontal="center", vertical="center")
+    ws2["G4"].fill = kpi_fill
+    ws2["G5"].fill = card_fill
+    ws2["G5"].number_format = "#,##0.00"
+
+    for r in range(4, 7):
+        for c in range(1, 9):
+            ws2.cell(r, c).border = border
+            ws2.cell(r, c).alignment = Alignment(wrap_text=True, vertical="center")
+
+    # Seção Médias
+    ws2["A8"] = "MÉDIAS PRINCIPAIS"
+    ws2["A8"].font = section_font
+    ws2.merge_cells("A8:H8")
+
+    ws2["A9"] = "Métrica"
+    ws2["D9"] = "Resultado"
+    ws2["F9"] = "Como interpretar"
+    ws2.merge_cells("A9:C9")
+    ws2.merge_cells("D9:E9")
+    ws2.merge_cells("F9:H9")
+
+    for cell in ws2["A9:H9"][0]:
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        cell.border = border
+    ws2.row_dimensions[9].height = 22
+
+    metrics = [
+        ("Média de KM Rodado", f'=AVERAGEIF({rng_km_rod},">0")',
+         "Média de km por registro (desconsidera valores zerados)."),
+        ("Média Valor Abastecimento (R$)", f'=AVERAGEIF({rng_valor},">0")',
+         "Valor médio por abastecimento (considera apenas valores > 0)."),
+        ("Média Valor por Litro (R$)", f'=AVERAGEIF({rng_vl},">0")',
+         "Preço médio pago por litro (filtra valores > 0)."),
+        ("Média Custo por KM (R$)", f'=AVERAGEIF({rng_ckm},">0")',
+         "Custo médio por km: (valor abastecido / km rodado)."),
+        ("Qtd. de Abastecimentos", f'=COUNTIF({rng_ab},"SIM")',
+         "Quantidade de registros marcados como abastecimento."),
+    ]
+
+    base_r = 10
+    for i, (name, formula, tip) in enumerate(metrics):
+        r = base_r + i
+        ws2.merge_cells(f"A{r}:C{r}")
+        ws2.merge_cells(f"D{r}:E{r}")
+        ws2.merge_cells(f"F{r}:H{r}")
+
+        ws2[f"A{r}"] = name
+        ws2[f"D{r}"] = (formula if has_data else "")
+        ws2[f"F{r}"] = tip
+
+        ws2[f"A{r}"].font = Font(bold=True, color="1F4E79")
+        ws2[f"F{r}"].font = small_font
+
+        for c in range(1, 9):
+            cell = ws2.cell(r, c)
+            cell.border = border
+            cell.alignment = Alignment(vertical="center", wrap_text=True)
+            cell.fill = info_fill if (i % 2 == 0) else PatternFill("solid", fgColor="FFFFFF")
+
+    if has_data:
+        ws2[f"D{base_r}"].number_format = "#,##0.00"
+        ws2[f"D{base_r+1}"].number_format = '"R$" #,##0.00'
+        ws2[f"D{base_r+2}"].number_format = '"R$" #,##0.00'
+        ws2[f"D{base_r+3}"].number_format = '"R$" #,##0.00'
+        ws2[f"D{base_r+4}"].number_format = "0"
+
+    # Seção Alertas
+    alert_r = base_r + len(metrics) + 2
+    ws2[f"A{alert_r}"] = "ALERTAS (LEITURA RÁPIDA)"
+    ws2[f"A{alert_r}"].font = section_font
+    ws2.merge_cells(f"A{alert_r}:H{alert_r}")
+
+    limiar_ckm = 1.50  # ajuste livre
+    ws2.merge_cells(f"A{alert_r+1}:E{alert_r+1}")
+    ws2.merge_cells(f"F{alert_r+1}:H{alert_r+1}")
+    ws2[f"A{alert_r+1}"] = f"Custo por KM acima de R$ {limiar_ckm:.2f}"
+    ws2[f"F{alert_r+1}"] = (
+        f'=IF(AVERAGEIF({rng_ckm},">0")>{limiar_ckm},"ATENÇÃO: ALTO","OK")'
+        if has_data else ""
+    )
+    ws2[f"A{alert_r+1}"].font = Font(bold=True, color="1F4E79")
+    ws2[f"F{alert_r+1}"].font = Font(bold=True)
+
+    for c in range(1, 9):
+        cell = ws2.cell(alert_r + 1, c)
+        cell.border = border
+        cell.alignment = Alignment(vertical="center", wrap_text=True)
+        cell.fill = warn_fill
+
+    rng_alert = f"F{alert_r+1}:H{alert_r+1}"
+    ws2.conditional_formatting.add(
+        rng_alert,
+        FormulaRule(formula=[f'F{alert_r+1}="OK"'], fill=ok_fill, font=Font(color="006100", bold=True))
+    )
+    ws2.conditional_formatting.add(
+        rng_alert,
+        FormulaRule(formula=[f'F{alert_r+1}<>"OK"'], fill=bad_fill, font=Font(color="9C0006", bold=True))
+    )
+
+    # Ajustes finais Resumo
+    ws2.freeze_panes = "A10"
+    ws2.column_dimensions["A"].width = 24
+    ws2.column_dimensions["B"].width = 10
+    ws2.column_dimensions["C"].width = 10
+    ws2.column_dimensions["D"].width = 16
+    ws2.column_dimensions["E"].width = 10
+    ws2.column_dimensions["F"].width = 22
+    ws2.column_dimensions["G"].width = 14
+    ws2.column_dimensions["H"].width = 14
+
+    # -----------------------------
+    # Salva e retorna
+    # -----------------------------
     output = BytesIO()
     wb.save(output)
     output.seek(0)
@@ -8172,7 +8513,6 @@ def exportar_logs_veiculos_xlsx():
         download_name=f"logs_veiculos_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
-
 
 @bp.route("/veiculos/cadastrar", methods=["GET", "POST"], endpoint="cadastrar_veiculo")
 @login_required
