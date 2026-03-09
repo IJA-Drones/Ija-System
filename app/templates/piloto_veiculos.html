@@ -283,6 +283,10 @@
                   <input type="number" name="km_final" class="form-control" min="{{ v.km_atual or 0 }}" value="{{ v.km_atual or '' }}" placeholder="KM mostrado no fim do dia" required>
                   <div class="hint-line mt-1">O KM final não pode ser menor que o KM inicial.</div>
                 </div>
+                 <div class="mb-3">
+                  <label class="form-label small fw-bold">Quantidade de Fazendas/Endereços Atendidos</label>
+                  <input type="number" name="qtd_fazendas_enderecos" class="form-control" min="0" value="" placeholder="Quantas fazendas ou endereços foram atendidos no dia?" required>
+                  <div class="hint-line mt-1">Informe quantas fazendas ou endereços foram atendidos durante o turno.</div>
                 <div class="mb-0">
                   <label class="form-label small fw-bold">Observações do Dia</label>
                   <textarea name="observacao" class="form-control" rows="2" placeholder="Relate qualquer problema com o veículos..."></textarea>

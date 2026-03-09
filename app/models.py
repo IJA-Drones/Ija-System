@@ -676,6 +676,7 @@ class LogVeiculo(db.Model):
 
     # Seção de Checklist Diário (CCD)
     check_diario = db.Column(db.Boolean, default=False) # Define se este registro é o checklist do dia 
+    qtd_fazendas_enderecos = db.Column(db.Integer) #Quantos endereços fez no dia (final)
     foto_painel_path = db.Column(db.String(255), nullable=True) # Foto comprovando Nível de Combustível/KM [cite: 62]
     
     # Validação e Assinatura

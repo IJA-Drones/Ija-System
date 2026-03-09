@@ -1,4 +1,4 @@
-# ==========================
+﻿# ==========================
 # IMPORTS PADRÃO PYTHON
 # ==========================
 import os
@@ -8998,6 +8998,7 @@ def piloto_encerrar_turno(veiculo_id):
 
     hoje = datetime.now().date()
     km_final = request.form.get("km_final", type=float)
+    qtd_fazendas_endereços = request.form.get("qtd_fazendas_enderecos", type=int)
     observacao = (request.form.get("observacao") or "").strip() or None
 
     if km_final is None:
@@ -9019,6 +9020,7 @@ def piloto_encerrar_turno(veiculo_id):
         flash("KM final nao pode ser menor que o KM inicial do turno.", "danger")
         return redirect(url_for("main.piloto_veiculos"))
 
+    log.qtd_fazendas_enderecos = qtd_fazendas_endereços
     log.km_final = km_final
     log.observacao = observacao
     log.veiculo.km_atual = km_final
