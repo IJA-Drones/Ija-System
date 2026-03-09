@@ -10183,9 +10183,7 @@ def admin_export_os_pdf_v2(os_id):
                 ("Dosagem (g/10L)", ordem.dosagem_g_10l or ""),
                 ("Tipo aplicação", ordem.tipo_aplicacao or ""),
                 ("Qtd administrada (ml)", ordem.quantidade_produto_administrada_ml or ""),
-                ("Pulverização área (l/ha)", ordem.pulverizacao_area_l_ha or ""),
-                ("Tempo estimado (seg)", getattr(ordem, "pulverizacao_foco_tempo_estimado_segundos", "") or ""),
-                ("L/min (foco)", getattr(ordem, "pulverizacao_foco_l_min", "") or ""),
+                ("Pulverização área (l/ha)", ordem.pulverizacao_area_l_ha or ""),               
                 ("Ponta pulverização", ordem.ponta_pulverizacao or ""),
             ], cell_s, section_s, doc.width, orient=orient)
 
@@ -10578,9 +10576,7 @@ def admin_export_os_excel_v2(os_id):
                 ("Dosagem (g/10L)", ordem.dosagem_g_10l or ""),
                 ("Tipo aplicação", ordem.tipo_aplicacao or ""),
                 ("Qtd administrada (ml)", ordem.quantidade_produto_administrada_ml or ""),
-                ("Pulverização área (l/ha)", ordem.pulverizacao_area_l_ha or ""),
-                ("Tempo estimado (seg)", getattr(ordem, "pulverizacao_foco_tempo_estimado_segundos", "") or ""),
-                ("L/min (foco)", getattr(ordem, "pulverizacao_foco_l_min", "") or ""),
+                ("Pulverização área (l/ha)", ordem.pulverizacao_area_l_ha or ""),               
                 ("Ponta pulverização", ordem.ponta_pulverizacao or ""),
             ])
 
