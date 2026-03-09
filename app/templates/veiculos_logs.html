@@ -193,6 +193,7 @@
                                                             <div class="small mb-1"><b>Check Diario:</b> {{ 'Sim' if log.check_diario else 'Nao' }}</div>
                                                             <div class="small mb-1"><b>KM Inicial:</b> {{ (log.km_inicial or 0)|round|int }} km</div>
                                                             <div class="small mb-0"><b>KM Final:</b> {% if log.km_final is not none %}{{ (log.km_final or 0)|round|int }} km{% else %}<span class="text-warning">Turno aberto</span>{% endif %}</div>
+                                                            <div class="small mb-0"><b>Quantidade de Endereços/fazendas:</b> {{ log.qtd_fazendas_enderecos or 0 }}</div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -203,7 +204,6 @@
                                                             <div class="small mb-1"><b>Abasteceu:</b> {{ 'Sim' if log.abasteceu else 'Nao' }}</div>
                                                             <div class="small mb-1"><b>Litros:</b> {{ '%.2f'|format(log.litros) if log.litros is not none else '-' }}</div>
                                                             <div class="small mb-1"><b>Valor Total:</b> R$ {{ '%.2f'|format(log.valor_total) if log.valor_total is not none else '0.00' }}</div>
-                                                            <div class="small mb-0"><b>KM no Abastecimento:</b> {% if log.km_no_abastecimento is not none %}{{ (log.km_no_abastecimento or 0)|round|int }} km{% else %}-{% endif %}</div>
                                                         </div>
                                                     </div>
                                                 </div>
