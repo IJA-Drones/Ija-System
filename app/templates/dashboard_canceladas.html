@@ -3,12 +3,118 @@
 {% block extra_styles %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <style>
+    .dashboard-canceladas-page {
+      max-width: 1200px;
+    }
+
+    .dashboard-canceladas-toolbar {
+      gap: 1rem;
+    }
+
+    .dashboard-canceladas-table-wrap table {
+      margin-bottom: 0;
+    }
+
+    .dashboard-canceladas-pagination .pagination {
+      margin-bottom: 0;
+    }
+
+    @media (max-width: 767.98px) {
+      .dashboard-canceladas-page {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+      }
+
+      .dashboard-canceladas-toolbar {
+        align-items: stretch !important;
+        flex-direction: column;
+      }
+
+      .dashboard-canceladas-toolbar .btn {
+        align-self: flex-start;
+      }
+
+      .dashboard-canceladas-table-wrap {
+        overflow: visible;
+      }
+
+      .dashboard-canceladas-table-wrap .table-responsive {
+        overflow: visible;
+      }
+
+      .dashboard-canceladas-table-wrap table,
+      .dashboard-canceladas-table-wrap thead,
+      .dashboard-canceladas-table-wrap tbody,
+      .dashboard-canceladas-table-wrap tr,
+      .dashboard-canceladas-table-wrap th,
+      .dashboard-canceladas-table-wrap td {
+        display: block;
+        width: 100%;
+      }
+
+      .dashboard-canceladas-table-wrap thead {
+        display: none;
+      }
+
+      .dashboard-canceladas-table-wrap tbody {
+        padding: 0.75rem;
+      }
+
+      .dashboard-canceladas-table-wrap tbody tr {
+        background: #fff;
+        border: 1px solid rgba(16, 25, 39, 0.08);
+        border-radius: 1rem;
+        box-shadow: 0 10px 24px rgba(16, 25, 39, 0.08);
+        margin-bottom: 0.75rem;
+        overflow: hidden;
+        padding: 0.25rem 0;
+      }
+
+      .dashboard-canceladas-table-wrap tbody tr:last-child {
+        margin-bottom: 0;
+      }
+
+      .dashboard-canceladas-table-wrap tbody td {
+        border: 0;
+        padding: 0.75rem 1rem !important;
+        text-align: left !important;
+      }
+
+      .dashboard-canceladas-table-wrap tbody td::before {
+        color: #6c757d;
+        content: attr(data-label);
+        display: block;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        margin-bottom: 0.35rem;
+        text-transform: uppercase;
+      }
+
+      .dashboard-canceladas-pagination .pagination {
+        flex-wrap: wrap;
+        gap: 0.35rem;
+        justify-content: center;
+      }
+    }
+
+    .dark-mode .dashboard-canceladas-table-wrap tbody tr {
+      background: #162133;
+      border-color: rgba(255, 255, 255, 0.08);
+      box-shadow: none;
+    }
+
+    .dark-mode .dashboard-canceladas-table-wrap tbody td::before {
+      color: rgba(255, 255, 255, 0.65);
+    }
+  </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4" style="max-width: 1200px;">
+<div class="container-fluid py-4 dashboard-canceladas-page">
 
-  <div class="d-flex justify-content-between align-items-center mb-4">
+  <div class="d-flex justify-content-between align-items-center mb-4 dashboard-canceladas-toolbar">
     <h2 class="text-dark m-0">
       <i class="bi bi-x-circle me-2 text-danger"></i> Solicitações Canceladas
     </h2>
@@ -18,7 +124,7 @@
     </a>
   </div>
 
-  <div class="card shadow-sm rounded-4 border-0 overflow-hidden">
+  <div class="card shadow-sm rounded-4 border-0 overflow-hidden dashboard-canceladas-table-wrap">
     <div class="card-body p-0">
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0" style="min-height: 200px;">
@@ -33,7 +139,7 @@
           <tbody>
             {% for p in solicitacoes %}
             <tr>
-              <td class="ps-4">
+              <td class="ps-4" data-label="Data">
                 <strong class="text-main">
                   {{ p.data_agendamento.strftime('%d/%m/%y') }}
                 </strong>
@@ -41,7 +147,7 @@
                 <small class="text-muted">{{ p.hora_agendamento.strftime('%H:%M') }}</small>
               </td>
 
-              <td>
+              <td data-label="Localização / Foco">
                 <div class="d-flex flex-column">
                   <span class="fw-bold text-main">
                     {{ p.logradouro }}, {{ p.numero or 'S/N' }}
@@ -57,7 +163,7 @@
                 </div>
               </td>
 
-              <td class="text-center">
+              <td class="text-center" data-label="Situação">
                 <span class="badge bg-dark rounded-pill">Cancelado</span>
               </td>
             </tr>
@@ -78,7 +184,7 @@
   </div>
 
   {% if paginacao and paginacao.pages > 1 %}
-  <nav aria-label="Navegação de páginas" class="mt-4">
+  <nav aria-label="Navegação de páginas" class="mt-4 dashboard-canceladas-pagination">
     <ul class="pagination justify-content-center">
 
       <li class="page-item {% if not paginacao.has_prev %}disabled{% endif %}">

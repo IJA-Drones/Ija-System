@@ -4,16 +4,92 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}" />
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}" />
 <style>
+  .piloto-os-form-page { width: 100%; }
+  .piloto-os-form-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
   .section-title { border-left: 4px solid var(--bs-primary); padding-left: 15px; margin-bottom: 20px; margin-top: 30px; }
   .form-label-header { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: #6c757d; font-weight: 700; }
   .bg-snapshot { background-color: #f8f9fa; border: 1px solid #e9ecef; }
   .readonly-form .signature-pad { pointer-events: none; }
+
+  @media (max-width: 991.98px) {
+    .piloto-os-form-page.container-fluid.py-4 {
+      padding-left: 12px !important;
+      padding-right: 12px !important;
+    }
+    .piloto-os-form-header {
+      align-items: flex-start;
+    }
+    .piloto-os-form-page .card-body.p-4 {
+      padding: 1rem !important;
+    }
+    .piloto-os-form-page .row.g-4,
+    .piloto-os-form-page .row.g-3 {
+      --bs-gutter-x: 0.85rem;
+    }
+    .piloto-os-form-page .bg-snapshot {
+      padding: 0.9rem !important;
+    }
+    .piloto-os-form-page .signature-container .d-flex.gap-2.mt-2 {
+      flex-direction: column;
+    }
+    .piloto-os-form-page .signature-container .d-flex.gap-2.mt-2 .btn {
+      width: 100%;
+    }
+    .piloto-os-form-actions {
+      flex-direction: column-reverse;
+    }
+    .piloto-os-form-actions .btn {
+      width: 100%;
+    }
+  }
+
+  @media (max-width: 767.98px) {
+    .piloto-os-form-page .section-title {
+      padding-left: 12px;
+      margin-top: 24px;
+      margin-bottom: 16px;
+    }
+    .piloto-os-form-page .section-title h5 {
+      font-size: 1rem;
+    }
+    .piloto-os-form-page .bg-snapshot .row.g-2 > [class*="col-"] {
+      width: 100%;
+    }
+    .piloto-os-form-page .signature-container {
+      padding: 0.5rem;
+    }
+    .piloto-os-form-page .signature-pad {
+      height: 140px !important;
+    }
+    .piloto-os-form-page input,
+    .piloto-os-form-page select,
+    .piloto-os-form-page textarea {
+      font-size: 16px;
+    }
+  }
+
+  @media (max-width: 420px) {
+    .piloto-os-form-page .card-body.p-4 {
+      padding: 0.85rem !important;
+    }
+    .piloto-os-form-page .form-label-header {
+      font-size: 0.68rem;
+      letter-spacing: 0.35px;
+    }
+    .piloto-os-form-page .signature-pad {
+      height: 128px !important;
+    }
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4" style="max-width: 1200px">
-  <div class="d-flex align-items-center mb-4">
+<div class="container-fluid py-4 piloto-os-form-page" style="max-width: 1200px">
+  <div class="piloto-os-form-header mb-4">
     <h2 class="text-dark m-0">
       <i class="bi bi-clipboard-check-fill me-2 text-primary"></i> Formulario de Ordem de Servico
     </h2>
@@ -425,7 +501,7 @@
           </div>
         </div>
 
-        <div class="d-flex justify-content-end gap-2 mt-5">
+        <div class="d-flex justify-content-end gap-2 mt-5 piloto-os-form-actions">
           <a href="{{ url_voltar or url_for('main.piloto_os') }}" class="btn btn-outline-danger btn-sm px-4">Voltar</a>
           {% if not modo_visualizacao %}
           <button type="submit" class="btn btn-primary btn-sm px-4">

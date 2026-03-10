@@ -4,12 +4,144 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <style>
+    .canceladas-page {
+      width: 100%;
+    }
+    .canceladas-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+    .canceladas-filter-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    @media (max-width: 991.98px) {
+      .canceladas-page.container-fluid.py-4 {
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+      }
+      .canceladas-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .canceladas-toolbar .btn {
+        width: 100%;
+        justify-content: center;
+      }
+      .canceladas-filters .row.g-2.align-items-end > div {
+        width: 100%;
+      }
+      .canceladas-filter-actions {
+        flex-direction: column;
+      }
+      .canceladas-filter-actions > * {
+        width: 100%;
+      }
+      .canceladas-table-wrap table thead {
+        display: none;
+      }
+      .canceladas-table-wrap table,
+      .canceladas-table-wrap table tbody,
+      .canceladas-table-wrap table tr,
+      .canceladas-table-wrap table td {
+        display: block;
+        width: 100%;
+      }
+      .canceladas-table-wrap table tbody {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        padding: 12px;
+      }
+      .canceladas-table-wrap table tbody tr {
+        border: 1px solid rgba(0,0,0,.08);
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 10px 22px rgba(0,0,0,.06);
+        background: #fff;
+      }
+      .canceladas-table-wrap table tbody td {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 14px;
+        border: 0 !important;
+        text-align: left !important;
+      }
+      .canceladas-table-wrap table tbody td + td {
+        border-top: 1px solid rgba(0,0,0,.06) !important;
+      }
+      .canceladas-table-wrap table tbody td::before {
+        flex: 0 0 90px;
+        max-width: 90px;
+        font-weight: 700;
+        font-size: .82rem;
+        color: rgba(0,0,0,.55);
+        line-height: 1.1;
+        padding-top: 2px;
+      }
+      .canceladas-table-wrap table tbody td:nth-child(1)::before { content: "Unidade"; }
+      .canceladas-table-wrap table tbody td:nth-child(2)::before { content: "Operação"; }
+      .canceladas-table-wrap table tbody td:nth-child(3)::before { content: "Foco"; }
+      .canceladas-table-wrap table tbody td:nth-child(4)::before { content: "Status"; }
+      .canceladas-table-wrap table tbody td > * {
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+      .canceladas-table-wrap .badge {
+        white-space: normal;
+        text-align: center;
+      }
+      .canceladas-pagination .pagination {
+        flex-wrap: wrap;
+      }
+    }
+
+    @media (max-width: 420px) {
+      .canceladas-table-wrap table tbody td {
+        flex-direction: column;
+        gap: 6px;
+      }
+      .canceladas-table-wrap table tbody td::before {
+        flex-basis: auto;
+        max-width: none;
+        padding-top: 0;
+      }
+    }
+
+    @media (max-width: 991.98px) {
+      html.dark-mode .canceladas-table-wrap table tbody tr,
+      body.dark-mode .canceladas-table-wrap table tbody tr {
+        background: #0f1a24 !important;
+        border-color: #233549 !important;
+        box-shadow: 0 14px 30px rgba(0,0,0,.35) !important;
+        color: rgba(255,255,255,.92) !important;
+      }
+      html.dark-mode .canceladas-table-wrap table tbody td + td,
+      body.dark-mode .canceladas-table-wrap table tbody td + td {
+        border-top-color: #233549 !important;
+      }
+      html.dark-mode .canceladas-table-wrap table tbody td::before,
+      body.dark-mode .canceladas-table-wrap table tbody td::before {
+        color: rgba(255,255,255,.72) !important;
+      }
+      html.dark-mode .canceladas-table-wrap .text-muted,
+      body.dark-mode .canceladas-table-wrap .text-muted {
+        color: rgba(255,255,255,.70) !important;
+      }
+    }
+  </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4" style="max-width: 1200px;">
+<div class="container-fluid py-4 canceladas-page" style="max-width: 1200px;">
 
-  <div class="d-flex justify-content-between align-items-center mb-4">
+  <div class="canceladas-toolbar mb-4">
     <h2 class="text-dark">
       <i class="bi bi-x-circle me-2 text-danger"></i> Solicitações Canceladas (Geral)
     </h2>
@@ -20,7 +152,7 @@
   </div>
 
   {# filtros (unidade/região) #}
-  <div class="card shadow-sm rounded-4 mb-4 border-0">
+  <div class="card shadow-sm rounded-4 mb-4 border-0 canceladas-filters">
     <div class="card-body">
       <form method="GET">
         <div class="row g-2 align-items-end">
@@ -74,7 +206,7 @@
                       </div>
           
 
-          <div class="col-md-4 d-flex gap-2">
+          <div class="col-md-4 canceladas-filter-actions">
             <button class="btn btn-success btn-sm w-100" type="submit">
               <i class="bi bi-search"></i> Filtrar
             </button>
@@ -90,7 +222,7 @@
   </div>
 
   {# tabela (pode reaproveitar sua table-accordion se quiser copiar do admin.html) #}
-  <div class="card shadow-sm rounded-4 border-0 overflow-hidden">
+  <div class="card shadow-sm rounded-4 border-0 overflow-hidden canceladas-table-wrap">
     <table class="table table-hover align-middle mb-0">
       <thead>
         <tr>
@@ -126,7 +258,7 @@
     </table>
 
     {% if paginacao.pages > 1 %}
-      <nav class="mt-4 pb-3">
+      <nav class="mt-4 pb-3 canceladas-pagination">
         <ul class="pagination justify-content-center">
           <li class="page-item {% if not paginacao.has_prev %}disabled{% endif %}">
             <a class="page-link" href="{{ url_for('main.admin_canceladas', page=paginacao.prev_num, unidade=request.args.get('unidade',''), regiao=request.args.get('regiao','')) }}">Anterior</a>
