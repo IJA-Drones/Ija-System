@@ -176,7 +176,7 @@
                                     {% endif %}
 
                                 {# --- ALERTA DE CORREÇÃO PARA O ADMIN --- #}
-                                {% if p.status == 'PENDENTE' and p.justificativa and p.justificativa.startswith('CORREÇÃO:') %}
+                                {% if p.status == 'PENDENTE' and p.justificativa and (p.justificativa|upper|trim)[:9] == 'CORREÇÃO:' %}
                                     {# Removi o 'd-lg-none' para que apareça no PC também #}
                                     <div class="mt-2"> 
                                         <span class="badge bg-info text-dark animate-pulse shadow-sm" style="font-size: 0.75rem;">

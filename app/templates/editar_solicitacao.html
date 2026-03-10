@@ -40,7 +40,10 @@
             
             {# Rota genérica atualizada #}
             <form action="{{ url_for('main.editar_solicitacao', id=pedido.id) }}" method="POST">
-                
+                <input type="hidden" name="latitude" value="{{ pedido.latitude if pedido.latitude is not none else '' }}">
+                <input type="hidden" name="longitude" value="{{ pedido.longitude if pedido.longitude is not none else '' }}">
+                <input type="hidden" name="risco_aereo" value="{{ '1' if pedido.area_restrita else '0' }}">
+
                 <h5 class="text-secondary mb-4 small fw-bold text-uppercase border-bottom pb-2">
                     Pedido #{{ pedido.id }} - {{ pedido.usuario.nome_uvis }}
                 </h5>

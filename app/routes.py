@@ -5,6 +5,7 @@ import os
 import re
 import tempfile
 import unicodedata
+import math
 from datetime import date, datetime
 from io import BytesIO
 import json
@@ -109,6 +110,28 @@ def calcular_distancia(lat1, lon1, lat2, lon2):
     
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     return R * c
+
+
+AREAS_GEOFENCING = [
+    {"nome": "Aeroporto de Congonhas (CGH)", "lat": -23.6273, "lng": -46.6565, "raio": 5400},
+    {"nome": "Aeroporto Campo de Marte (RTE)", "lat": -23.5092, "lng": -46.6377, "raio": 5400},
+    {"nome": "Aeroporto de Guarulhos (GRU)", "lat": -23.4356, "lng": -46.4731, "raio": 9000},
+    {"nome": "Aeroporto de Viracopos (VCP)", "lat": -23.0069, "lng": -47.1344, "raio": 9000},
+    {"nome": "Zona de Helipontos (Av. Paulista)", "lat": -23.5615, "lng": -46.6559, "raio": 2000},
+    {"nome": "Base Aérea de Santos", "lat": -23.9275, "lng": -46.2975, "raio": 5400},
+]
+
+
+def detectar_area_restrita(latitude, longitude):
+    if latitude is None or longitude is None:
+        return False
+
+    for area in AREAS_GEOFENCING:
+        distancia = calcular_distancia(latitude, longitude, area["lat"], area["lng"])
+        if distancia < area["raio"]:
+            return True
+
+    return False
 
 def get_upload_folder():
     """
@@ -784,6 +807,7 @@ def novo():
             lng_raw = (request.form.get('longitude') or "").strip()
             latitude = float(lat_raw.replace(",", ".")) if lat_raw else None
             longitude = float(lng_raw.replace(",", ".")) if lng_raw else None
+            area_restrita = detectar_area_restrita(latitude, longitude) or request.form.get('risco_aereo') == '1'
 
             # --- Criação da Solicitação ---
             nova_solicitacao = Solicitacao(
@@ -803,6 +827,7 @@ def novo():
                 observacao=request.form.get('observacao'),
                 latitude=latitude,
                 longitude=longitude,
+                area_restrita=area_restrita,
                 perimetro_planejado=perimetro_planejado, 
                 usuario_id=uvis_id_final, 
                 status='PENDENTE'
@@ -2071,24 +2096,27 @@ def editar_solicitacao(id):
             pedido.bairro = request.form.get('bairro') or pedido.bairro
             pedido.cidade = request.form.get('cidade') or pedido.cidade
             pedido.uf = request.form.get('uf') or pedido.uf
-            pedido.latitude = float(request.form.get('latitude')) if request.form.get('latitude') else pedido.latitude
-            pedido.longitude = float(request.form.get('longitude')) if request.form.get('longitude') else pedido.longitude
+            lat_raw = (request.form.get('latitude') or "").strip()
+            lng_raw = (request.form.get('longitude') or "").strip()
+            pedido.latitude = float(lat_raw.replace(",", ".")) if lat_raw else pedido.latitude
+            pedido.longitude = float(lng_raw.replace(",", ".")) if lng_raw else pedido.longitude
+            pedido.area_restrita = detectar_area_restrita(pedido.latitude, pedido.longitude) or request.form.get('risco_aereo') == '1'
 
             # 5️⃣ Lógica de Status e Hierarquia
             if is_admin:
                 pedido.status = request.form.get('status') or pedido.status
                 pedido.protocolo = request.form.get('protocolo') or pedido.protocolo
-                # Se o Admin salvar, ele provavelmente limpou a correção ou deu nova justificativa
-                pedido.justificativa = request.form.get('justificativa') or pedido.justificativa
+                justificativa = (request.form.get('justificativa') or '').strip()
+                pedido.justificativa = justificativa or None
             else:
                 # Se a UVIS está editando um pedido que estava NEGADO
                 if pedido.status == 'NEGADO':
                     # Mantemos o status PENDENTE, mas marcamos a justificativa
                     # Isso ativa o badge "CORREÇÃO RECEBIDA" no Painel do Admin
-                    motivo_original = pedido.justificativa or ""
+                    motivo_original = (pedido.justificativa or "").strip()
                     # Evitamos duplicar o prefixo se ela editar várias vezes
-                    limpo = motivo_original.replace("CORREÇÃO: ", "")
-                    pedido.justificativa = f"CORREÇÃO: {limpo}"
+                    limpo = re.sub(r'^\s*CORREÇÃO:\s*', '', motivo_original, flags=re.IGNORECASE)
+                    pedido.justificativa = "CORREÇÃO: corrigido pela UVIS" if not limpo else f"CORREÇÃO: {limpo}"
                 else:
                     # Se era PENDENTE e ela só editou dados (como o CEP), 
                     # mantemos limpo ou como estava.
