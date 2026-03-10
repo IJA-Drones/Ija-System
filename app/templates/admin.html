@@ -115,7 +115,7 @@
                         <select name="apoio_cet" class="form-select form-select-sm">
                             <option value="" {{ 'selected' if not request.args.get('apoio_cet') else '' }}>Todos</option>
                             <option value="SIM" {{ 'selected' if request.args.get('apoio_cet')=='SIM' else '' }}>SIM</option>
-                            <option value="NAO" {{ 'selected' if request.args.get('apoio_cet')=='NAO' else '' }}>NÃO</option>
+                            <option value="NAO" {{ 'selected' if request.args.get('apoio_cet')=='NAO' else '' }}>NÃO</option>
                         </select>
                         </div>
                         <div class="col-md-3 d-flex gap-2">
@@ -132,7 +132,7 @@
         </div>
     </div>
 
-    {# --- TABELA HÍBRIDA (SANFONA NO MOBILE / TABELA NO PC) --- #}
+    {# --- TABELA HÃBRIDA (SANFONA NO MOBILE / TABELA NO PC) --- #}
     <div class="card shadow-sm rounded-4 border-0 overflow-hidden">
         <table class="table table-hover align-middle mb-0 table-accordion">
 
@@ -165,8 +165,10 @@
                                 <strong class="text-primary fs-6">
                                     {{ p.usuario.nome_uvis }}
                                 </strong>
-
-                                {# --- ALERTA GEOFENCING (MINIMALISTA) --- #}
+                                {# FILTRO DE PERFIL: Aplica-se a ambos os alertas abaixo #}
+                                {% if current_user.tipo_usuario|lower in ['admin', 'visualizar', 'operario'] %}
+                                    
+                                    {# 1. ALERTA GEOFENCING #}
                                     {% if p.area_restrita %}
                                         <div class="mt-1">
                                             <span class="badge bg-danger animate-pulse-red shadow-sm" style="font-size: 0.65rem; letter-spacing: 0.5px;">
@@ -175,14 +177,16 @@
                                         </div>
                                     {% endif %}
 
-                                {# --- ALERTA DE CORREÇÃO PARA O ADMIN --- #}
-                                {% if p.status == 'PENDENTE' and p.justificativa and (p.justificativa|upper|trim)[:9] == 'CORREÇÃO:' %}
-                                    {# Removi o 'd-lg-none' para que apareça no PC também #}
-                                    <div class="mt-2"> 
-                                        <span class="badge bg-info text-dark animate-pulse shadow-sm" style="font-size: 0.75rem;">
-                                            <i class="bi bi-arrow-repeat me-1"></i> CORREÇÃO RECEBIDA
-                                        </span>
-                                    </div>
+                                    {# 2. ALERTA DE CORREÇÃO #}
+                                    {# Verifica se o status é PENDENTE e se a justificativa começa com CORREÇÃO #}
+                                    {% if p.status == 'PENDENTE' and p.justificativa and (p.justificativa.upper().startswith('CORREÇÃO') or p.justificativa.upper().startswith('CORRECAO')) %}
+                                        <div class="mt-2"> 
+                                            <span class="badge bg-info text-dark animate-pulse shadow-sm" style="font-size: 0.75rem;">
+                                                <i class="bi bi-arrow-repeat me-1"></i> CORREÇÃO RECEBIDA
+                                            </span>
+                                        </div>
+                                    {% endif %}
+
                                 {% endif %}
 
                                 <div class="mt-3">
@@ -190,8 +194,8 @@
                                     <div class="mt-1">
                                         <span class="badge
                                             {% if p.status=='PENDENTE' %}bg-secondary
-                                            {% elif p.status=='EM ANÁLISE' %}bg-warning
-                                            {% elif p.status=='APROVADO COM RECOMENDAÇÕES' %}bg-recomended
+                                            {% elif p.status=='EM ANÃLISE' %}bg-warning
+                                            {% elif p.status=='APROVADO COM RECOMENDAÃÃES' %}bg-recomended
                                             {% elif p.status=='APROVADO' %}bg-success
                                             {% elif p.status=='NEGADO' %}bg-danger
                                             {% else %}bg-completed text-dark{% endif %}">
@@ -199,14 +203,14 @@
                                         </span>
                                     </div>
 
-                                    <!-- REGIÃO -->
+                                    <!-- REGIÃO -->
                                     <div class="mt-1">
                                         <span class="badge bg-secondary">
                                             {{ p.usuario.regiao }}
                                         </span>
                                     </div>
 
-                                    <!-- EQUIPE (exibição rápida) -->
+                                    <!-- EQUIPE (exibiÃ§Ã£o rÃ¡pida) -->
                                     <div class="mt-2 small text-muted">
                                         <i class="bi bi-people-fill me-1"></i>
                                         {% if p.equipe %}
@@ -225,7 +229,7 @@
                         </div>
 
                         <div class="small text-muted mt-4 border-top pt-2">
-                            <i class="bi bi-calendar-event me-1"></i> {{ p.data_agendamento.strftime('%d/%m/%Y') }} às {{ p.hora_agendamento.strftime('%H:%M') }}
+                            <i class="bi bi-calendar-event me-1"></i> {{ p.data_agendamento.strftime('%d/%m/%Y') }} Ã s {{ p.hora_agendamento.strftime('%H:%M') }}
                         </div>
 
                         {# Endereço Desktop (Escondido no Mobile) #}
@@ -252,7 +256,7 @@
                         {% endif %}
                     </td>
 
-                    {# COLUNA 2: DADOS (SÓ DESKTOP) #}
+                    {# COLUNA 2: DADOS (SÃO DESKTOP) #}
                     <td class="align-top pt-3 d-none d-lg-table-cell">
                         {% if p.latitude %}
                         <div class="d-flex justify-content-between p-2 rounded border mb-2">
@@ -311,8 +315,8 @@
                                         <label class="form-label">Status</label>
                                         <select name="status" class="form-select form-select-sm" data-jid="{{ p.id }}" onchange="toggleJustificativa(this, this.dataset.jid)">
                                             <option value="PENDENTE" {% if p.status=='PENDENTE' %}selected{% endif %}>⚪️ Pendente</option>
-                                            <option value="EM ANÁLISE" {% if p.status=='EM ANÁLISE' %}selected{% endif %}>🟡 Em Análise</option>
-                                            <option value="APROVADO COM RECOMENDAÇÕES" {% if p.status=='APROVADO COM RECOMENDAÇÕES' %}selected{% endif %}>🟠 Aprovado com Recomendações</option>
+                                            <option value="EM ANÃLISE" {% if p.status=='EM ANÁLISE' %}selected{% endif %}>🟡 Em Análise</option>
+                                            <option value="APROVADO COM RECOMENDAÇÕES" {% if p.status=='APROVADO COM RECOMENDAÇÕES' %}selected{% endif %}>🟠 Aprovar com Recomendações</option>
                                             <option value="APROVADO" {% if p.status=='APROVADO' %}selected{% endif %}>🟢 Aprovar</option>
                                             <option value="NEGADO" {% if p.status=='NEGADO' %}selected{% endif %}>🔴 Negar</option>
                                         </select>
@@ -321,7 +325,7 @@
                                     <div>
                                         <label class="form-label mt-2">Equipe responsável</label>
                                         <select class="form-select form-select-sm" name="equipe_id">
-                                            <option value="" {% if not p.equipe_id %}selected{% endif %}>— Sem equipe —</option>
+                                            <option value="" {% if not p.equipe_id %}selected{% endif %}>- Sem equipe -</option>
                                             {% for e in equipes %}
                                                 <option value="{{ e.id }}" {% if p.equipe_id == e.id %}selected{% endif %}>
                                                     {{ e.nome_equipe }}{% if e.regiao %} ({{ e.regiao }}){% endif %}
@@ -362,7 +366,7 @@
                                 </div>
                             </form>
                         {% else %}
-                            {# --- VISÃO EXCLUSIVA PARA O PERFIL 'VISUALIZAR' --- #}
+                            {# --- VISÃO EXCLUSIVA PARA O PERFIL 'VISUALIZAR' --- #}
                             <div class="p-3 border rounded bg-light shadow-sm" style="min-height: 180px;">
                                 <div class="mb-2">
                                     <small class="text-muted d-block text-uppercase fw-bold" style="font-size: 0.65rem;">Protocolo DECEA</small>
@@ -412,7 +416,7 @@
                     </td>
                 </tr>
 
-                {# === LINHA 2: SANFONA DETALHES (SÓ MOBILE) === #}
+                {# === LINHA 2: SANFONA DETALHES (MOBILE) === #}
                 <tr class="d-lg-none p-0 border-0">
                     <td colspan="3" class="p-0 border-0">
                         <div class="collapse" id="accordion{{ p.id }}">
@@ -479,10 +483,10 @@
 
                                         <input name="protocolo" class="form-control mb-3" placeholder="Protocolo DECEA" value="{{ p.protocolo or '' }}">
 
-                                        <label class="form-label mt-2">Equipe responsável</label>
+                                        <label class="form-label mt-2">Equipe responsáveis</label>
                                         <select class="form-select form-select-sm" name="equipe_id">
-                                            <option value="" {% if not p.equipe_id %}selected{% endif %}>— Sem equipe (remover atribuição) —</option>
-                                            <option value="" disabled>────────────</option>
+                                            <option value="" {% if not p.equipe_id %}selected{% endif %}>- Sem equipe (remover atribuição) —</option>
+                                            <option value="" disabled>────────────────</option>
 
                                             {% for e in equipes %}
                                                 <option value="{{ e.id }}" {% if p.equipe_id == e.id %}selected{% endif %}>
@@ -496,11 +500,11 @@
                                                 class="form-select mb-3"
                                                 data-jid="{{ p.id }}_mob"
                                                 onchange="toggleJustificativa(this, this.dataset.jid)">
-                                            <option value="PENDENTE" {% if p.status=='PENDENTE' %}selected{% endif %}>⚪️ Pendente</option>
-                                            <option value="EM ANÁLISE" {% if p.status=='EM ANÁLISE' %}selected{% endif %}>🟡 Em Análise</option>
-                                            <option value="APROVADO" {% if p.status=='APROVADO' %}selected{% endif %}>🟢 Aprovar</option>
-                                            <option value="APROVADO COM RECOMENDAÇÕES" {% if p.status=='APROVADO COM RECOMENDAÇÕES' %}selected{% endif %}>🟠 Aprovado com Recomendações</option>
-                                            <option value="NEGADO" {% if p.status=='NEGADO' %}selected{% endif %}>🔴 Negar</option>
+                                            <option value="PENDENTE" {% if p.status=='PENDENTE' %}selected{% endif %}>âªï¸ Pendente</option>
+                                            <option value="EM ANÃLISE" {% if p.status=='EM ANÃLISE' %}selected{% endif %}>ð¡ Em AnÃ¡lise</option>
+                                            <option value="APROVADO" {% if p.status=='APROVADO' %}selected{% endif %}>ð¢ Aprovar</option>
+                                            <option value="APROVADO COM RECOMENDAÃÃES" {% if p.status=='APROVADO COM RECOMENDAÃÃES' %}selected{% endif %}>ð  Aprovado com RecomendaÃ§Ãµes</option>
+                                            <option value="NEGADO" {% if p.status=='NEGADO' %}selected{% endif %}>ð´ Negar</option>
                                         </select>
 
                                         <div id="boxJustificativa{{ p.id }}_mob" style="display: none;" class="mb-3">
@@ -577,7 +581,7 @@
             </tbody>
         </table>
 
-        {# --- PAGINAÇÃO (MANTIDA IGUAL) --- #}
+        {# --- PAGINAÃÃO (MANTIDA IGUAL) --- #}
         {% if paginacao.pages > 1 %}
         <nav class="mt-4 pb-3">
             <ul class="pagination justify-content-center">
@@ -617,12 +621,12 @@
         <div class="chips-container mt-auto">
             <button class="chip" data-q="Como filtrar por status/unidade?">Filtros</button>
             <button class="chip" data-q="suporte">Suporte</button>
-            <button class="chip" data-q="Como salvar decisão?">Salvar decisão</button>
+            <button class="chip" data-q="Como salvar decisÃ£o?">Salvar decisÃ£o</button>
             <button class="chip" data-q="Como exportar Excel?">Exportar Excel</button>
         </div>
     </div>
     <div class="bot-footer">
-        <input id="adminBotInput" type="text" placeholder="Digite sua dúvida..." autocomplete="off">
+        <input id="adminBotInput" type="text" placeholder="Digite sua dÃºvida..." autocomplete="off">
         <button id="adminBotSend" class="btn-send"><i class="bi bi-send-fill"></i></button>
     </div>
 </div>
@@ -645,7 +649,7 @@
             <i class="bi bi-box-arrow-up-right"></i> Abrir no Google Maps
           </a>
           <a id="btnDirections" class="btn btn-danger" target="_blank" rel="noopener">
-            <i class="bi bi-sign-turn-right"></i> Traçar rota
+            <i class="bi bi-sign-turn-right"></i> TraÃ§ar rota
           </a>
         </div>
       </div>
@@ -721,18 +725,18 @@ function openMapModal({ lat, lng, title }) {
   if (btnOpen) btnOpen.href = `https://www.google.com/maps?q=${encodeURIComponent(q)}`;
   if (btnDir) btnDir.href = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(q)}`;
 
-  // ✅ Bootstrap 5.0/5.1 compat (sem getOrCreateInstance)
+  // â Bootstrap 5.0/5.1 compat (sem getOrCreateInstance)
   let bsModal = bootstrap.Modal.getInstance(modalEl);
   if (!bsModal) bsModal = new bootstrap.Modal(modalEl);
   bsModal.show();
 
-  // Render do mapa após abrir (garante que o container tem tamanho)
+  // Render do mapa apÃ³s abrir (garante que o container tem tamanho)
   setTimeout(() => {
     const center = { lat, lng };
     const canvas = document.getElementById("mapCanvas");
 
     if (!canvas) {
-      console.error("Elemento #mapCanvas não existe no HTML.");
+    console.error("Elemento #mapCanvas não existe no HTML.");
       return;
     }
 
@@ -762,10 +766,10 @@ function openMapModal({ lat, lng, title }) {
   }, 150);
 }
 
-// ✅ garante que os botões já existem antes de bindar evento
+// â garante que os botÃµes jÃ¡ existem antes de bindar evento
 document.addEventListener("DOMContentLoaded", () => {
 
-    // 1. CONFIRMAÇÃO DE EXCLUSÃO (Agora inclui anexo e qualquer outro delete)
+    // 1. CONFIRMAÃÃO DE EXCLUSÃO (Agora inclui anexo e qualquer outro delete)
       document.querySelectorAll('.form-cancelar').forEach(form => {
           form.addEventListener('submit', function (e) {
               e.preventDefault(); // Trava o envio automático
@@ -775,9 +779,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
               Swal.fire({
                   title: 'Deseja continuar?',
-                  text: 'O registro será cancelado permanentemente.',
+                  text: 'O registro serÃ¡ cancelado permanentemente.',
                   icon: 'warning',
-                  // ✅ Note que este script usa background/color manuais,
+                  // â Note que este script usa background/color manuais,
                   // por isso estava diferente do que tinha a classe customClass
                   customClass: {
                       popup: isDarkMode ? 'swal2-dark-mode' : ''
@@ -787,11 +791,11 @@ document.addEventListener("DOMContentLoaded", () => {
                   cancelButtonColor: '#6c757d',
                   confirmButtonText: 'Sim, remover!',
                   cancelButtonText: 'Cancelar'
-                  // Adicione a classe aqui também para garantir o estilo do anel do ícone
+                  // Adicione a classe aqui tambÃ©m para garantir o estilo do anel do Ã­cone
 
               }).then((result) => {
                   if (result.isConfirmed) {
-                      showLoadingState(submitButton); // Chama o loading só após confirmar
+                      showLoadingState(submitButton); // Chama o loading sÃ³ apÃ³s confirmar
                       form.submit();
                   }
               });
@@ -829,7 +833,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-  // --- LÓGICA DE INTERFACE DE ARQUIVO ---
+  // --- LÃGICA DE INTERFACE DE ARQUIVO ---
   function processarArquivo(input, id) {
     if (!input.files || !input.files.length) return;
 
@@ -885,7 +889,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // --- INICIALIZAÇÃO ---
+  // --- INICIALIZAÃÃO ---
   document.addEventListener("DOMContentLoaded", () => {
     // Resumo de nome (sem depender de .btn-anexo > span)
     document.querySelectorAll('[id^="textoDisplay"]').forEach((span) => {
@@ -895,11 +899,11 @@ document.addEventListener("DOMContentLoaded", () => {
       // tooltip com nome completo
       span.setAttribute("title", original);
 
-      // tenta separar o nome do arquivo se tiver "📎" textual, senão usa tudo
-      const cleaned = original.replace(/^📎\s*/, "").trim();
+      // tenta separar o nome do arquivo se tiver "ð" textual, senÃ£o usa tudo
+      const cleaned = original.replace(/^ð\s*/, "").trim();
       const resumido = resumirNomeArquivo(cleaned, 22);
 
-      // preserva ícone <i> se existir
+      // preserva Ã­cone <i> se existir
       const icon = span.querySelector("i");
       if (icon) {
         const iconClone = icon.cloneNode(true);
@@ -931,7 +935,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (!fab || !chatWindow || !box || !input) return;
 
-      // ✅ Mensagem inicial do FAQ
+      // â Mensagem inicial do FAQ
       const FAQ_WELCOME_HTML = `
         Olá! Sou o <b>assistente virtual</b> do <b>painel administrativo</b>.<br>
         <b>Posso ajudar</b> com dúvidas sobre:<br>
@@ -950,7 +954,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <b>Como posso ajudar você hoje?</b>
       `;
 
-      // ✅ Garante que aparece só 1x (e reaparece se limpar)
+      // â Garante que aparece sÃ³ 1x (e reaparece se limpar)
       function ensureWelcomeMessage() {
         const hasAnyMessage = box.querySelector(".message");
         if (hasAnyMessage) return;
@@ -1027,3 +1031,4 @@ document.addEventListener("DOMContentLoaded", () => {
 </script>
 
 {% endblock %}
+
