@@ -6,6 +6,10 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
 
 <style>
+    .veiculos-logs-page {
+        max-width: 1200px;
+    }
+
     .dashboard-header {
         display: flex !important;
         align-items: center !important;
@@ -32,7 +36,16 @@
         height: 38px;
     }
 
+    .veiculos-logs-pagination .pagination {
+        margin-bottom: 0;
+    }
+
     @media (max-width: 768px) {
+        .veiculos-logs-page {
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+        }
+
         .dashboard-header {
             flex-direction: column !important;
             align-items: stretch !important;
@@ -48,12 +61,112 @@
             justify-content: center;
             flex: 1;
         }
+
+        .veiculos-logs-filter-actions {
+            flex-direction: column;
+        }
+
+        .veiculos-logs-table-wrap {
+            overflow: visible;
+        }
+
+        .veiculos-logs-table-wrap .table-responsive {
+            overflow: visible;
+        }
+
+        .veiculos-logs-table-wrap table,
+        .veiculos-logs-table-wrap thead,
+        .veiculos-logs-table-wrap tbody,
+        .veiculos-logs-table-wrap tr,
+        .veiculos-logs-table-wrap th,
+        .veiculos-logs-table-wrap td {
+            display: block;
+            width: 100%;
+        }
+
+        .veiculos-logs-table-wrap thead {
+            display: none;
+        }
+
+        .veiculos-logs-table-wrap tbody {
+            padding: 0.75rem;
+        }
+
+        .veiculos-logs-table-wrap tbody > tr:not(.collapse-row) {
+            background: #fff;
+            border: 1px solid rgba(16, 25, 39, 0.08);
+            border-radius: 1rem;
+            box-shadow: 0 10px 24px rgba(16, 25, 39, 0.08);
+            margin-bottom: 0.75rem;
+            overflow: hidden;
+            padding: 0.25rem 0;
+        }
+
+        .veiculos-logs-table-wrap tbody > tr:not(.collapse-row) td {
+            border: 0;
+            padding: 0.75rem 1rem !important;
+            text-align: left !important;
+        }
+
+        .veiculos-logs-table-wrap tbody > tr:not(.collapse-row) td::before {
+            color: #6c757d;
+            content: attr(data-label);
+            display: block;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            margin-bottom: 0.35rem;
+            text-transform: uppercase;
+        }
+
+        .veiculos-logs-table-wrap .collapse-row {
+            margin-top: -0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .veiculos-logs-table-wrap .collapse-row td {
+            border: 0;
+            padding: 0 !important;
+        }
+
+        .veiculos-logs-table-wrap .collapse-row td::before {
+            display: none;
+        }
+
+        .veiculos-logs-table-wrap .collapse-row .bg-light {
+            border-radius: 0 0 1rem 1rem;
+            padding: 1rem !important;
+        }
+
+        .veiculos-logs-table-wrap .collapse-row .card-body {
+            padding: 1rem;
+        }
+
+        .veiculos-logs-table-wrap .collapse-row img {
+            width: 100%;
+        }
+
+        .veiculos-logs-pagination .pagination {
+            flex-wrap: wrap;
+            gap: 0.35rem;
+            justify-content: center;
+        }
+    }
+
+    .dark-mode .veiculos-logs-table-wrap tbody > tr:not(.collapse-row) {
+        background: #162133;
+        border-color: rgba(255, 255, 255, 0.08);
+        box-shadow: none;
+    }
+
+    .dark-mode .veiculos-logs-table-wrap tbody > tr:not(.collapse-row) td::before {
+        color: rgba(255, 255, 255, 0.65);
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4" style="max-width: 1200px;">
+<div class="container-fluid py-4 veiculos-logs-page">
     <div class="dashboard-header mb-4">
         <div style="margin-right: auto !important;">
             <h2 class="text-dark mb-1">
@@ -62,15 +175,14 @@
             <div class="small text-muted">Consulta completa de abastecimento e quilometragem.</div>
         </div>
 
-        {# Agrupamos os botões aqui para que fiquem juntos na direita #}
         <div class="header-actions">
             <a href="{{ url_for('main.listar_veiculos') }}" class="btn btn-outline-secondary d-flex align-items-center">
                 <i class="bi bi-arrow-left"></i> Voltar para veículos
             </a>
-            <a href="{{ url_for('main.exportar_logs_veiculos_xlsx', 
-                                q=filters.q, 
-                                data_inicio=filters.data_inicio, 
-                                data_fim=filters.data_fim) }}" 
+            <a href="{{ url_for('main.exportar_logs_veiculos_xlsx',
+                                q=filters.q,
+                                data_inicio=filters.data_inicio,
+                                data_fim=filters.data_fim) }}"
             class="btn btn-pill btn-secondary shadow-sm">
                 <i class="bi bi-file-earmark-excel-fill"></i> Exportar Excel
             </a>
@@ -106,7 +218,7 @@
                 <form method="GET" class="row g-2 align-items-end">
                     <div class="col-md-4">
                         <label class="small text-muted">Veículo / Placa / Piloto:</label>
-                        <input type="text" name="q" value="{{ filters.q or '' }}" class="form-control" placeholder="Modelo, placa, responsÃ¡vel...">
+                        <input type="text" name="q" value="{{ filters.q or '' }}" class="form-control" placeholder="Modelo, placa, responsável...">
                     </div>
                     <div class="col-md-3">
                         <label class="small text-muted">Data inicial:</label>
@@ -116,13 +228,13 @@
                         <label class="small text-muted">Data final:</label>
                         <input type="date" name="data_fim" value="{{ filters.data_fim or '' }}" class="form-control">
                     </div>
-                    <div class="col-md-2 d-flex gap-2">
+                    <div class="col-md-2 d-flex gap-2 veiculos-logs-filter-actions">
                         <button class="btn btn-success w-100" type="submit">
                             <i class="bi bi-search"></i> Filtrar
                         </button>
                     </div>
                     {% if filters.q or filters.data_inicio or filters.data_fim %}
-                    <div class="col-md-2 d-flex gap-2">
+                    <div class="col-md-2 d-flex gap-2 veiculos-logs-filter-actions">
                         <a href="{{ url_for('main.veiculos_logs') }}" class="btn btn-outline-secondary w-100">
                             <i class="bi bi-x-lg"></i> Limpar
                         </a>
@@ -133,7 +245,7 @@
         </div>
     </div>
 
-    <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+    <div class="card shadow-sm border-0 rounded-4 overflow-hidden veiculos-logs-table-wrap">
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0 text-center">
@@ -151,20 +263,20 @@
                     <tbody>
                         {% for log in logs %}
                             <tr>
-                                <td class="ps-4 text-start">
+                                <td class="ps-4 text-start" data-label="Data">
                                     {{ log.data_registro.strftime('%d/%m/%Y %H:%M') if log.data_registro else '-' }}
                                 </td>
-                                <td class="text-start">
+                                <td class="text-start" data-label="Veículo">
                                     <div class="fw-bold text-dark">{{ log.veiculo.modelo if log.veiculo else '-' }}</div>
                                     <div class="text-muted small">
                                         {{ log.veiculo.placa if log.veiculo else '-' }}
                                         {% if log.veiculo and log.veiculo.responsavel %} • {{ log.veiculo.responsavel }}{% endif %}
                                     </div>
                                 </td>
-                                <td>{{ log.piloto.nome_piloto if log.piloto else '-' }}</td>
-                                <td>{{ (log.km_inicial or 0)|round|int }} km</td>
-                                <td>{% if log.km_final is not none %}{{ (log.km_final or 0)|round|int }} km{% else %}<span class="text-warning">Turno aberto</span>{% endif %}</td>
-                                <td>
+                                <td data-label="Piloto">{{ log.piloto.nome_piloto if log.piloto else '-' }}</td>
+                                <td data-label="KM Inicial">{{ (log.km_inicial or 0)|round|int }} km</td>
+                                <td data-label="KM Final">{% if log.km_final is not none %}{{ (log.km_final or 0)|round|int }} km{% else %}<span class="text-warning">Turno aberto</span>{% endif %}</td>
+                                <td data-label="Abastecimento (R$)">
                                     {% if log.valor_total is not none %}
                                         <span class="badge bg-success-light text-success rounded-pill px-3">
                                             {{ '%.2f'|format(log.valor_total) }}
@@ -173,7 +285,7 @@
                                         <span class="text-muted small">Sem abastecimento</span>
                                     {% endif %}
                                 </td>
-                                <td class="pe-4">
+                                <td class="pe-4" data-label="Detalhes">
                                     <button class="btn btn-sm btn-outline-primary rounded-pill px-3" type="button"
                                             data-bs-toggle="collapse" data-bs-target="#detalhes-log-{{ log.id }}"
                                             aria-expanded="false" aria-controls="detalhes-log-{{ log.id }}">
@@ -190,7 +302,7 @@
                                                     <div class="card border-0 shadow-sm h-100">
                                                         <div class="card-body">
                                                             <h6 class="fw-bold text-primary mb-3">Checklist</h6>
-                                                            <div class="small mb-1"><b>Check Diario:</b> {{ 'Sim' if log.check_diario else 'Nao' }}</div>
+                                                            <div class="small mb-1"><b>Check Diário:</b> {{ 'Sim' if log.check_diario else 'Não' }}</div>
                                                             <div class="small mb-1"><b>KM Inicial:</b> {{ (log.km_inicial or 0)|round|int }} km</div>
                                                             <div class="small mb-0"><b>KM Final:</b> {% if log.km_final is not none %}{{ (log.km_final or 0)|round|int }} km{% else %}<span class="text-warning">Turno aberto</span>{% endif %}</div>
                                                             <div class="small mb-0"><b>Quantidade de Endereços/fazendas:</b> {{ log.qtd_fazendas_enderecos or 0 }}</div>
@@ -201,7 +313,7 @@
                                                     <div class="card border-0 shadow-sm h-100">
                                                         <div class="card-body">
                                                             <h6 class="fw-bold text-success mb-3">Abastecimento</h6>
-                                                            <div class="small mb-1"><b>Abasteceu:</b> {{ 'Sim' if log.abasteceu else 'Nao' }}</div>
+                                                            <div class="small mb-1"><b>Abasteceu:</b> {{ 'Sim' if log.abasteceu else 'Não' }}</div>
                                                             <div class="small mb-1"><b>Litros:</b> {{ '%.2f'|format(log.litros) if log.litros is not none else '-' }}</div>
                                                             <div class="small mb-1"><b>Valor Total:</b> R$ {{ '%.2f'|format(log.valor_total) if log.valor_total is not none else '0.00' }}</div>
                                                         </div>
@@ -210,10 +322,10 @@
                                                 <div class="col-md-4">
                                                     <div class="card border-0 shadow-sm h-100">
                                                         <div class="card-body">
-                                                            <h6 class="fw-bold text-dark mb-3">Conferencia</h6>
-                                                            <div class="small mb-2"><b>Assinatura:</b> {{ 'Preenchida' if log.assinatura_piloto else 'Nao preenchida' }}</div>
-                                                            <div class="small"><b>Observacoes:</b></div>
-                                                            <div class="small text-muted">{{ log.observacao or 'Sem observacoes.' }}</div>
+                                                            <h6 class="fw-bold text-dark mb-3">Conferência</h6>
+                                                            <div class="small mb-2"><b>Assinatura:</b> {{ 'Preenchida' if log.assinatura_piloto else 'Não preenchida' }}</div>
+                                                            <div class="small"><b>Observações:</b></div>
+                                                            <div class="small text-muted">{{ log.observacao or 'Sem observações.' }}</div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -225,7 +337,7 @@
                                                                 <a href="{{ url_for('static', filename=log.foto_painel_path) }}" target="_blank" class="small d-block mb-2">Abrir imagem</a>
                                                                 <img src="{{ url_for('static', filename=log.foto_painel_path) }}" alt="Foto do painel" class="img-fluid rounded border">
                                                             {% else %}
-                                                                <span class="small text-muted">Nao anexada.</span>
+                                                                <span class="small text-muted">Não anexada.</span>
                                                             {% endif %}
                                                         </div>
                                                     </div>
@@ -238,7 +350,7 @@
                                                                 <a href="{{ url_for('static', filename=log.foto_nf_path) }}" target="_blank" class="small d-block mb-2">Abrir imagem</a>
                                                                 <img src="{{ url_for('static', filename=log.foto_nf_path) }}" alt="Foto da nota fiscal" class="img-fluid rounded border">
                                                             {% else %}
-                                                                <span class="small text-muted">Nao anexada.</span>
+                                                                <span class="small text-muted">Não anexada.</span>
                                                             {% endif %}
                                                         </div>
                                                     </div>
@@ -272,7 +384,7 @@
     </div>
 
     {% if paginacao and paginacao.pages > 1 %}
-    <nav class="mt-4">
+    <nav class="mt-4 veiculos-logs-pagination">
         <ul class="pagination justify-content-center">
             <li class="page-item {{ 'disabled' if not paginacao.has_prev }}">
                 <a class="page-link" href="{{ url_for('main.veiculos_logs', page=paginacao.prev_num if paginacao.has_prev else 1, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}">Anterior</a>
@@ -284,16 +396,15 @@
                         <a class="page-link" href="{{ url_for('main.veiculos_logs', page=p, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}">{{ p }}</a>
                     </li>
                 {% else %}
-                    <li class="page-item disabled"><span class="page-link">â€¦</span></li>
+                    <li class="page-item disabled"><span class="page-link">…</span></li>
                 {% endif %}
             {% endfor %}
 
             <li class="page-item {{ 'disabled' if not paginacao.has_next }}">
-                <a class="page-link" href="{{ url_for('main.veiculos_logs', page=paginacao.next_num if paginacao.has_next else paginacao.pages, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}">PrÃ³xima</a>
+                <a class="page-link" href="{{ url_for('main.veiculos_logs', page=paginacao.next_num if paginacao.has_next else paginacao.pages, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}">Próxima</a>
             </li>
         </ul>
     </nav>
     {% endif %}
 </div>
 {% endblock %}
-

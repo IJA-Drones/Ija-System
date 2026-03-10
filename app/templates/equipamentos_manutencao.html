@@ -3,12 +3,108 @@
 {% block extra_styles %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+    <style>
+        .equipamentos-manutencao-page {
+            max-width: 1200px;
+        }
+
+        .equipamentos-manutencao-toolbar {
+            gap: 1rem;
+        }
+
+        .equipamentos-manutencao-table-wrap table {
+            margin-bottom: 0;
+        }
+
+        @media (max-width: 767.98px) {
+            .equipamentos-manutencao-page {
+                padding-left: 0.75rem;
+                padding-right: 0.75rem;
+            }
+
+            .equipamentos-manutencao-toolbar {
+                align-items: stretch !important;
+                flex-direction: column;
+            }
+
+            .equipamentos-manutencao-toolbar .btn {
+                align-self: flex-start;
+            }
+
+            .equipamentos-manutencao-table-wrap {
+                overflow: visible;
+            }
+
+            .equipamentos-manutencao-table-wrap .table-responsive {
+                overflow: visible;
+            }
+
+            .equipamentos-manutencao-table-wrap table,
+            .equipamentos-manutencao-table-wrap thead,
+            .equipamentos-manutencao-table-wrap tbody,
+            .equipamentos-manutencao-table-wrap tr,
+            .equipamentos-manutencao-table-wrap th,
+            .equipamentos-manutencao-table-wrap td {
+                display: block;
+                width: 100%;
+            }
+
+            .equipamentos-manutencao-table-wrap thead {
+                display: none;
+            }
+
+            .equipamentos-manutencao-table-wrap tbody {
+                padding: 0.75rem;
+            }
+
+            .equipamentos-manutencao-table-wrap tbody tr {
+                background: #fff;
+                border: 1px solid rgba(16, 25, 39, 0.08);
+                border-radius: 1rem;
+                box-shadow: 0 10px 24px rgba(16, 25, 39, 0.08);
+                margin-bottom: 0.75rem;
+                overflow: hidden;
+                padding: 0.25rem 0;
+            }
+
+            .equipamentos-manutencao-table-wrap tbody tr:last-child {
+                margin-bottom: 0;
+            }
+
+            .equipamentos-manutencao-table-wrap tbody td {
+                border: 0;
+                padding: 0.75rem 1rem !important;
+                text-align: left !important;
+            }
+
+            .equipamentos-manutencao-table-wrap tbody td::before {
+                color: #6c757d;
+                content: attr(data-label);
+                display: block;
+                font-size: 0.72rem;
+                font-weight: 700;
+                letter-spacing: 0.04em;
+                margin-bottom: 0.35rem;
+                text-transform: uppercase;
+            }
+        }
+
+        .dark-mode .equipamentos-manutencao-table-wrap tbody tr {
+            background: #162133;
+            border-color: rgba(255, 255, 255, 0.08);
+            box-shadow: none;
+        }
+
+        .dark-mode .equipamentos-manutencao-table-wrap tbody td::before {
+            color: rgba(255, 255, 255, 0.65);
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4" style="max-width: 1200px">
+<div class="container-fluid py-4 equipamentos-manutencao-page">
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 equipamentos-manutencao-toolbar">
         <div>
             <h2 class="text-dark mb-0">
                 <i class="bi bi-tools me-2 text-primary"></i>
@@ -25,7 +121,7 @@
         </a>
     </div>
 
-    <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+    <div class="card shadow-sm border-0 rounded-4 overflow-hidden equipamentos-manutencao-table-wrap">
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
@@ -43,7 +139,7 @@
                         {% if equipamentos %}
                             {% for eq in equipamentos %}
                             <tr>
-                                <td class="ps-3">
+                                <td class="ps-3" data-label="Tipo">
                                     {% if eq.tipo_equipamento == 'drones' %}
                                         <i class="bi bi-airplane-engines text-primary" title="Drone"></i>
                                     {% elif eq.tipo_equipamento == 'baterias' %}
@@ -53,19 +149,19 @@
                                     {% endif %}
                                 </td>
 
-                                <td class="fw-bold text-danger">
+                                <td class="fw-bold text-danger" data-label="Renomação">
                                     {{ eq.renomacao }}
                                 </td>
 
-                                <td>
+                                <td data-label="Modelo">
                                     {{ eq.modelo }}
                                 </td>
 
-                                <td class="text-muted small">
+                                <td class="text-muted small" data-label="Nº de Série">
                                     {{ eq.numero_serie or '-' }}
                                 </td>
 
-                                <td>
+                                <td data-label="Equipe">
                                     {% if eq.equipe %}
                                         <span class="badge bg-light border text-dark">
                                             {{ eq.equipe.nome_equipe }}
@@ -75,7 +171,7 @@
                                     {% endif %}
                                 </td>
 
-                                <td class="text-muted small">
+                                <td class="text-muted small" data-label="Data Cadastro">
                                     {% if eq.criado_em %}
                                         {{ eq.criado_em.strftime('%d/%m/%Y') }}
                                     {% else %}

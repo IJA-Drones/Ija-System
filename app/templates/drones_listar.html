@@ -253,7 +253,7 @@
                                             {% if is_admin %}
                                             <li>
                                                 <form method="post" action="{{ url_for('main.enviar_manutencao_drone', drone_id=d.id) }}">
-                                                    <button type="submit" class="dropdown-item py-2 text-warning" {% if d.status == 'Em Manutenção' %}disabled{% endif %}>
+                                                    <button type="submit" class="dropdown-item py-2 text-danger" {% if d.status == 'Em Manutenção' %}disabled{% endif %}>
                                                         <i class="bi bi-tools me-2"></i> Enviar Manutenção
                                                     </button>
                                                 </form>
