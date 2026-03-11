@@ -422,7 +422,7 @@
         </div>
         <div class="col-md-4">
           <label class="form-label small fw-bold text-muted">KILOMETRAGEM</label>
-          <input type="number" step="0.01" class="form-control border-2" name="km_leitura" id="km_leitura" />
+          <input type="number" step="0.01" class="form-control border-2" name="km_leitura" id="km_leitura" readonly />
         </div>
       </div>
 
@@ -735,8 +735,8 @@
     const field = document.querySelector(`[name="${name}"]`);
     if (field) field.value = value === null || value === undefined ? fallback : value;
   }
-
-  function applyVehiclePrefill() {
+  
+function applyVehiclePrefill() {
     const select = document.getElementById("veiculo_id");
     if (!select) return;
 
@@ -745,9 +745,14 @@
     const prefill = veiculoPrefill[veiculoId] || {};
 
     document.getElementById("summary-veiculo").textContent = meta ? meta.label : "Selecione";
-    document.getElementById("summary-km").textContent = meta ? `${Number(prefill.km_leitura ?? meta.km_atual ?? 0).toFixed(0)} km` : "-";
+    document.getElementById("summary-km").textContent = meta
+      ? `${Number(meta.km_atual ?? 0).toFixed(0)} km`
+      : "-";
 
-    setFieldValue("km_leitura", prefill.km_leitura ?? (meta ? meta.km_atual : ""));
+    // SEMPRE usa o km_atual do veículo, nunca o km_leitura do checklist anterior
+    setFieldValue("km_leitura", meta ? meta.km_atual : "");
+
+    // mantém o reaproveitamento dos demais campos do checklist anterior
     veiculoBoolFields.forEach((field) => setRadioValue(field, prefill[field], true));
     veiculoTextFields.forEach((field) => setFieldValue(field, prefill[field], ""));
   }
