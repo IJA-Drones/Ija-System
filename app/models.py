@@ -746,6 +746,11 @@ class ChecklistSemanalVeiculo(db.Model):
     radio = db.Column(db.Boolean, default=True)
     condicao_itens_carro_interno = db.Column(db.Text)
 
+    giroflex = db.Column(db.Boolean, default=True)
+    isqueiro = db.Column(db.Boolean, default=True)
+    carregador = db.Column(db.Boolean, default=True)
+    condicao_giroflex_isqueiro_carregador = db.Column(db.Text)
+    
     # Itens carro externo (Lataria)
     lataria_frontal = db.Column(db.Boolean, default=True) 
     lataria_lateral = db.Column(db.Boolean, default=True) 
