@@ -1,22 +1,36 @@
 {% extends "base.html" %}
 
-{# MACRO COM BOTÕES AZUIS E LÓGICA DE GRUPO #}
 {% macro bool_choice(name, label, group_field_id) %}
-<div class="check-row-container mb-2">
-    <div class="check-row shadow-sm">
-        <div class="check-row-title">
-            <span class="fw-bold text-dark-blue" style="font-size: 0.82rem;">{{ label }}</span>
-        </div>
-        <div class="btn-group btn-group-sm check-toggle" role="group">
-            <input class="btn-check group-monitor" type="radio" name="{{ name }}" id="{{ name }}_ok" value="1" checked 
-                   data-group="{{ group_field_id }}" onchange="checkGroupStatus('{{ group_field_id }}')">
-            <label class="btn btn-outline-primary border-2 fw-bold" for="{{ name }}_ok">FUNCIONAL</label>
-            
-            <input class="btn-check group-monitor" type="radio" name="{{ name }}" id="{{ name }}_na" value="0"
-                   data-group="{{ group_field_id }}" onchange="checkGroupStatus('{{ group_field_id }}')">
-            <label class="btn btn-outline-primary border-2 fw-bold" for="{{ name }}_na">DEFEITUOSO</label>
-        </div>
+<div class="check-row-container">
+  <div class="check-row shadow-sm">
+    <div class="check-row-title">
+      <span class="fw-bold text-dark-blue">{{ label }}</span>
     </div>
+    <div class="btn-group btn-group-sm check-toggle" role="group" aria-label="{{ label }}">
+      <input
+        class="btn-check group-monitor"
+        type="radio"
+        name="{{ name }}"
+        id="{{ name }}_ok"
+        value="1"
+        checked
+        data-group="{{ group_field_id }}"
+        onchange="checkGroupStatus('{{ group_field_id }}')"
+      >
+      <label class="btn btn-outline-primary border-2 fw-bold" for="{{ name }}_ok">FUNCIONAL</label>
+
+      <input
+        class="btn-check group-monitor"
+        type="radio"
+        name="{{ name }}"
+        id="{{ name }}_na"
+        value="0"
+        data-group="{{ group_field_id }}"
+        onchange="checkGroupStatus('{{ group_field_id }}')"
+      >
+      <label class="btn btn-outline-primary border-2 fw-bold" for="{{ name }}_na">DEFEITUOSO</label>
+    </div>
+  </div>
 </div>
 {% endmacro %}
 
@@ -24,270 +38,731 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}" />
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}" />
 <style>
-    :root { --color-primary-dark: #1a365d; --color-text-muted: #64748b; }
-    .text-dark-blue { color: var(--color-primary-dark); }
-    
-    .topic-divider {
-        font-size: 0.75rem;
-        font-weight: 800;
-        color: var(--color-primary);
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        margin: 25px 0 12px 0;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-    .topic-divider::after { content: ""; flex: 1; height: 1px; background: #e2e8f0; }
+  :root {
+    --color-primary-dark-local: #1a365d;
+    --color-text-muted-local: #64748b;
+  }
 
-    .check-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 10px; }
-    .check-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: var(--bg-light, #f8fafc); border-radius: 10px; border: 1px solid rgba(0,0,0,0.05); }
-    
-    /* Estilo Azul para o Checkbox Ativo */
-    .check-toggle .btn-check:checked + .btn-outline-primary {
-        background-color: var(--color-primary) !important;
-        border-color: var(--color-primary) !important;
-        color: #fff !important;
+  .text-dark-blue {
+    color: var(--color-primary-dark-local);
+  }
+
+  .summary-card {
+    padding: 1rem;
+    border-radius: 14px;
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-left: 4px solid var(--color-primary);
+  }
+
+  .summary-card .label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--color-text-muted-local);
+    letter-spacing: 0.04em;
+  }
+
+  .summary-card .value {
+    font-size: 0.98rem;
+    font-weight: 800;
+    color: var(--color-primary-dark-local);
+    margin-top: 0.15rem;
+  }
+
+  .section-box {
+    background: #fff;
+    border-radius: 18px;
+    padding: 1.4rem;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+  }
+
+  .section-title-line {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 1rem;
+    padding-bottom: 0.85rem;
+    border-bottom: 2px solid #edf2f7;
+  }
+
+  .section-subtitle {
+    font-size: 0.85rem;
+    color: var(--color-text-muted-local);
+    margin-top: -0.25rem;
+    margin-bottom: 1rem;
+  }
+
+  .topic-divider {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: var(--color-primary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 1.5rem 0 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .topic-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: #e2e8f0;
+  }
+
+  .check-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 10px;
+  }
+
+  .check-row-container {
+    min-width: 0;
+  }
+
+  .check-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: #f8fafc;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+  }
+
+  .check-row-title {
+    min-width: 0;
+    font-size: 0.82rem;
+  }
+
+  .check-toggle .btn {
+    min-width: 128px;
+    justify-content: center;
+    box-shadow: none;
+  }
+
+  .check-toggle .btn-check:checked + .btn-outline-primary {
+    background-color: var(--color-primary) !important;
+    border-color: var(--color-primary) !important;
+    color: #fff !important;
+  }
+
+  .obs-container {
+    display: none;
+    animation: slideIn 0.25s ease-out;
+    background: #ebf8ff;
+    padding: 15px;
+    border-radius: 12px;
+    border: 1px solid #bee3f8;
+    margin-top: 10px;
+    margin-bottom: 6px;
+  }
+
+  .signature-container {
+    background: #fff;
+    border: 2px dashed var(--color-primary);
+    border-radius: 12px;
+    padding: 8px;
+  }
+
+  #signature-pad {
+    width: 100%;
+    height: 180px;
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #cbd5e0;
+    touch-action: none;
+    cursor: crosshair;
+  }
+
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  body.dark-mode .section-box,
+  body.dark-mode .summary-card,
+  body.dark-mode .check-row,
+  body.dark-mode .signature-container {
+    background: #1a2634;
+    border-color: rgba(255, 255, 255, 0.06);
+  }
+
+  body.dark-mode .summary-card .value,
+  body.dark-mode .text-dark-blue {
+    color: #e2e8f0;
+  }
+
+  body.dark-mode .obs-container {
+    background: #1a365d;
+    border-color: #2c5282;
+  }
+
+  @media (max-width: 991.98px) {
+    .check-toggle .btn {
+      min-width: 110px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .check-grid {
+      grid-template-columns: 1fr;
     }
 
-    .obs-container { display: none; animation: slideIn 0.3s ease-out; background: #ebf8ff; padding: 15px; border-radius: 12px; border: 1px solid #bee3f8; margin-top: 10px; margin-bottom: 20px; }
-    .signature-container { background: #fff; border: 2px dashed var(--color-primary); border-radius: 12px; padding: 8px; }
-    
-    @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-    body.dark-mode .obs-container { background: #1a365d; border-color: #2c5282; }
+    .check-row {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .check-toggle {
+      width: 100%;
+    }
+
+    .check-toggle .btn {
+      min-width: 0;
+      width: 50%;
+    }
+  }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4" style="max-width: 1500px;">
-    
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="text-dark m-0"><i class="bi bi-ui-checks-grid text-primary me-2"></i>Checklist Semanal Unificado</h2>
-            <p class="text-muted small m-0">Inspeção obrigatória de frota e equipamentos</p>
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div>
+      <h2 class="text-dark m-0"><i class="bi bi-ui-checks-grid text-primary me-2"></i>Checklist Semanal Unificado</h2>
+      <p class="text-muted small m-0">Inspecao obrigatoria de frota e equipamentos</p>
+    </div>
+    <a href="{{ url_for('main.piloto_os') }}" class="btn btn-secondary shadow-sm">
+      <i class="bi bi-arrow-left me-1"></i> Voltar
+    </a>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm mb-4 rounded-3" role="alert">
+          <i class="bi bi-info-circle me-2"></i> {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
-        <a href="{{ url_for('main.piloto_os') }}" class="btn btn-secondary shadow-sm"><i class="bi bi-arrow-left me-1"></i> Voltar</a>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <form method="post" id="formChecklist">
+    <div class="row g-3 mb-4">
+      <div class="col-md-3">
+        <div class="summary-card shadow-sm">
+          <div class="label">Veiculo</div>
+          <div class="value" id="summary-veiculo">Selecione</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="summary-card shadow-sm" style="border-left-color: #f59e0b;">
+          <div class="label">KM atual</div>
+          <div class="value" id="summary-km">-</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="summary-card shadow-sm" style="border-left-color: #00a3c4;">
+          <div class="label">Drone</div>
+          <div class="value" id="summary-drone">Selecione</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="summary-card shadow-sm" style="border-left-color: #16a34a;">
+          <div class="label">Baterias</div>
+          <div class="value" id="summary-baterias">-</div>
+        </div>
+      </div>
     </div>
 
-    <form method="post" id="formChecklist">
-        <div class="row g-4">
-            <div class="col-xl-7">
-                <div class="section-box shadow-sm">
-                    <div class="section-title-line">
-                        <i class="bi bi-car-front fs-4 text-primary"></i>
-                        <h5 class="m-0 fw-bold text-dark-blue">Inspeção do Veículo</h5>
-                    </div>
-
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-8">
-                            <label class="form-label small fw-bold text-muted">PLACA DO VEÍCULO</label>
-                            <select class="form-select border-2" name="veiculo_id" id="veiculo_id" required>
-                                <option value="">Selecione...</option>
-                                {% for v in veiculos_equipe %}<option value="{{ v.id }}">{{ v.placa }} - {{ v.modelo }}</option>{% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label small fw-bold text-muted">KILOMETRAGEM</label>
-                            <input type="number" class="form-control border-2" name="km_leitura" id="km_leitura" required />
-                        </div>
-                    </div>
-
-                    <div class="topic-divider">Luzes de Direção e Sinalização</div>
-                    <div class="check-grid">
-                        {{ bool_choice('farois_funcionando', 'Faróis / Lanternas', 'group_luzes') }}
-                        {{ bool_choice('setas_funcionando', 'Setas / Pisca Alerta', 'group_luzes') }}
-                    </div>
-                    <div id="group_luzes" class="obs-container shadow-sm">
-                        <label class="form-label small fw-bold text-primary">CONDIÇÕES LUZES/SINALIZAÇÃO</label>
-                        <textarea class="form-control border-2" name="condicao_luzes_direcao" placeholder="Descreva o defeito observado..."></textarea>
-                    </div>
-
-                    <div class="topic-divider">Painel de Instrumentos</div>
-                    {{ bool_choice('luz_painel', 'Luzes / Indicadores do Painel', 'group_painel') }}
-                    <div id="group_painel" class="obs-container shadow-sm">
-                        <label class="form-label small fw-bold text-primary">CONDIÇÕES LUZ/INDICADORES DO PAINEL</label>
-                        <textarea class="form-control border-2" name="condicao_luz_painel"></textarea>
-                    </div>
-
-                    <div class="topic-divider">Níveis e Fluidos (Motor)</div>
-                    <div class="check-grid">
-                        {{ bool_choice('limpador_parabrisa', 'Limpador Parabrisa', 'group_manutencao') }}
-                        {{ bool_choice('agua_radiador', 'Água do Radiador', 'group_manutencao') }}
-                        {{ bool_choice('fluido_freio', 'Fluido de Freio', 'group_manutencao') }}
-                        {{ bool_choice('oleo_motor', 'Óleo do Motor', 'group_manutencao') }}
-                    </div>
-                    <div id="group_manutencao" class="obs-container shadow-sm">
-                        <label class="form-label small fw-bold text-primary">CONDIÇÕES LIMPADOR/ÁGUA/FLUIDO/ÓLEO</label>
-                        <textarea class="form-control border-2" name="condicao_itens_manutencao"></textarea>
-                    </div>
-
-                    <div class="topic-divider">Acessórios e Segurança</div>
-                    <div class="check-grid">
-                        {{ bool_choice('vidros', 'Vidros / Parabrisa', 'group_seguranca') }}
-                        {{ bool_choice('giroflex', 'Giroflex / Isqueiro / Carregador', 'group_seguranca') }}
-                        {{ bool_choice('estepe', 'Estepe / Triângulo / Macaco', 'group_seguranca') }}
-                        {{ bool_choice('alarme', 'Alarme / Ar / Rádio', 'group_seguranca') }}
-                    </div>
-                    <div id="group_seguranca" class="obs-container shadow-sm">
-                        <label class="form-label small fw-bold text-primary">CONDIÇÕES ACESSÓRIOS/SEGURANÇA</label>
-                        <textarea class="form-control border-2" name="condicao_itens_seguranca"></textarea>
-                    </div>
-
-                    <div class="topic-divider">Lataria e Portas</div>
-                    <div class="check-grid">
-                        {{ bool_choice('lataria_frontal', 'Latarias Laterais/Frontal/Traseira', 'group_lataria') }}
-                        {{ bool_choice('lataria_porta_frontal', 'Portas Laterais/Frontal/Traseira', 'group_lataria') }}
-                    </div>
-                    <div id="group_lataria" class="obs-container shadow-sm">
-                        <label class="form-label small fw-bold text-primary">CONDIÇÕES LATARIA / PORTAS</label>
-                        <textarea class="form-control border-2" name="condicao_lataria"></textarea>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-xl-5">
-                <div class="section-box shadow-sm border-top border-4 border-primary">
-                    <div class="section-title-line">
-                        <i class="bi bi-airplane-engines fs-4 text-primary"></i>
-                        <h5 class="m-0 fw-bold text-dark-blue">Inspeção do Drone</h5>
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="form-label small fw-bold text-muted">MODELO E CÓDIGO DO DRONE</label>
-                        <select class="form-select border-2" name="drone_id" id="drone_id">
-                            <option value="">Selecione...</option>
-                            {% for d in drones_equipe %}<option value="{{ d.id }}">{{ d.renomacao }} - {{ d.modelo }}</option>{% endfor %}
-                        </select>
-                    </div>
-
-                    <div class="topic-divider">Componentes de Voo</div>
-                    <div class="check-grid mb-3">
-                        {{ bool_choice('helices_status', 'Hélices CW e CCW', 'group_voo') }}
-                        {{ bool_choice('tanque', 'Tanque / Trem / Câmeras', 'group_voo') }}
-                    </div>
-                    <div id="group_voo" class="obs-container shadow-sm">
-                        <label class="form-label small fw-bold text-primary">CONDIÇÃO DO EQUIPAMENTO</label>
-                        <textarea class="form-control border-2" name="condicao_estrutura"></textarea>
-                    </div>
-
-                    <div class="topic-divider">Energia e Carregamento</div>
-                    <div class="row g-3 mb-3">
-                        <div class="col-6">
-                            <label class="small fw-bold text-muted">NÚMERO DE BATERIAS</label>
-                            <input type="number" class="form-control border-2" name="num_baterias">
-                        </div>
-                        <div class="col-6">
-                            <label class="small fw-bold text-muted">BATERIAS WB</label>
-                            <input type="number" class="form-control border-2" name="num_baterias_wb">
-                        </div>
-                    </div>
-                    {{ bool_choice('carregador_controle', 'Carregador / WB / Baterias', 'group_carga') }}
-                    {{ bool_choice('cabos_carregador', 'Cabo Carregador / Correia', 'group_carga') }}
-                    
-                    <div id="group_carga" class="obs-container shadow-sm">
-                        <label class="form-label small fw-bold text-primary">CONDIÇÃO CARREGADORES/ACESSÓRIOS</label>
-                        <textarea class="form-control border-2" name="condicao_carregador_bateria"></textarea>
-                    </div>
-                </div>
-
-                <div class="section-box shadow-sm mt-4">
-                    <div class="section-title-line"><i class="bi bi-pen fs-4 text-primary"></i><h5 class="m-0 fw-bold text-dark-blue">Assinatura</h5></div>
-                    
-                    <label class="small fw-bold text-muted">NOME DO PILOTO / RESPONSÁVEL</label>
-                    <input type="text" class="form-control mb-3 border-2 fw-bold text-primary" name="nome_responsavel" value="{{ piloto_nome }}">
-                    
-                    <div class="signature-container mb-3 shadow-inner">
-                        <canvas id="signature-pad"></canvas>
-                    </div>
-                    <input type="hidden" name="assinatura_piloto" id="assinatura_piloto">
-                    
-                    <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-outline-secondary flex-grow-1" id="btn-clear-signature">LIMPAR</button>
-                        <button type="submit" class="btn btn-primary flex-grow-2 px-5 fw-bold shadow-sm">
-                            <i class="bi bi-check2-all me-2"></i>SALVAR CHECKLIST
-                        </button>
-                    </div>
-                </div>
-            </div>
+    <div class="section-box shadow-sm mb-4">
+      <div class="section-title-line">
+        <i class="bi bi-car-front fs-4 text-primary"></i>
+        <div>
+          <h5 class="m-0 fw-bold text-dark-blue">Inspecao do Veiculo</h5>
+          <div class="section-subtitle">Campos separados para seguir exatamente a estrutura do model.</div>
         </div>
-    </form>
+      </div>
+
+      <div class="row g-3 mb-4">
+        <div class="col-md-8">
+          <label class="form-label small fw-bold text-muted">PLACA DO VEICULO</label>
+          <select class="form-select border-2" name="veiculo_id" id="veiculo_id">
+            <option value="">Selecione...</option>
+            {% for v in veiculos_equipe %}
+              <option value="{{ v.id }}" {% if veiculo_padrao_id == v.id %}selected{% endif %}>{{ v.placa }} - {{ v.modelo }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label small fw-bold text-muted">KILOMETRAGEM</label>
+          <input type="number" step="0.01" class="form-control border-2" name="km_leitura" id="km_leitura" />
+        </div>
+      </div>
+
+      <div class="topic-divider">Luzes direcao / iluminacao</div>
+      <div class="check-grid">
+        {{ bool_choice('farois_funcionando', 'Farois', 'group_luzes') }}
+        {{ bool_choice('setas_funcionando', 'Setas', 'group_luzes') }}
+        {{ bool_choice('lanternas_funcionando', 'Lanternas', 'group_luzes') }}
+        {{ bool_choice('piscaalerta_funcionando', 'Pisca-alerta', 'group_luzes') }}
+      </div>
+      <div id="group_luzes" class="obs-container shadow-sm">
+        <label class="form-label small fw-bold text-primary">CONDICAO LUZES / DIRECAO</label>
+        <textarea class="form-control border-2" name="condicao_luzes_direcao" placeholder="Descreva o defeito observado..."></textarea>
+      </div>
+
+      <div class="topic-divider">Luzes do painel</div>
+      <div class="check-grid">
+        {{ bool_choice('luz_painel', 'Luz do painel', 'group_painel') }}
+      </div>
+      <div id="group_painel" class="obs-container shadow-sm">
+        <label class="form-label small fw-bold text-primary">CONDICAO LUZ DO PAINEL</label>
+        <textarea class="form-control border-2" name="condicao_luz_painel"></textarea>
+      </div>
+
+      <div class="topic-divider">Itens de manutencao preventiva</div>
+      <div class="check-grid">
+        {{ bool_choice('limpador_parabrisa', 'Limpador parabrisa', 'group_manutencao') }}
+        {{ bool_choice('agua_radiador', 'Agua do radiador', 'group_manutencao') }}
+        {{ bool_choice('fluido_freio', 'Fluido de freio', 'group_manutencao') }}
+        {{ bool_choice('oleo_motor', 'Oleo do motor', 'group_manutencao') }}
+      </div>
+      <div id="group_manutencao" class="obs-container shadow-sm">
+        <label class="form-label small fw-bold text-primary">CONDICAO ITENS MANUTENCAO</label>
+        <textarea class="form-control border-2" name="condicao_itens_manutencao"></textarea>
+      </div>
+
+      <div class="topic-divider">Vidros e retrovisores</div>
+      <div class="check-grid">
+        {{ bool_choice('vidros', 'Vidros', 'group_vidros') }}
+        {{ bool_choice('retrovisores', 'Retrovisores', 'group_vidros') }}
+      </div>
+      <div id="group_vidros" class="obs-container shadow-sm">
+        <label class="form-label small fw-bold text-primary">CONDICAO VIDROS / RETROVISORES</label>
+        <textarea class="form-control border-2" name="condicao_vidros_retrovisores"></textarea>
+      </div>
+
+      <div class="topic-divider">Pneus e itens de apoio</div>
+      <div class="check-grid">
+        {{ bool_choice('pneus', 'Pneus', 'group_pneus') }}
+        {{ bool_choice('estepe', 'Estepe', 'group_pneus') }}
+        {{ bool_choice('macaco', 'Macaco', 'group_pneus') }}
+        {{ bool_choice('triangulo', 'Triangulo', 'group_pneus') }}
+        {{ bool_choice('chave_roda', 'Chave de roda', 'group_pneus') }}
+      </div>
+      <div id="group_pneus" class="obs-container shadow-sm">
+        <label class="form-label small fw-bold text-primary">CONDICAO PNEUS / ESTEPE</label>
+        <textarea class="form-control border-2" name="condicao_pneus_estepe"></textarea>
+      </div>
+
+      <div class="topic-divider">Itens de seguranca</div>
+      <div class="check-grid">
+        {{ bool_choice('extintor', 'Extintor', 'group_seg') }}
+        {{ bool_choice('cinto_seguranca', 'Cinto de seguranca', 'group_seg') }}
+      </div>
+      <div id="group_seg" class="obs-container shadow-sm">
+        <label class="form-label small fw-bold text-primary">CONDICAO ITENS SEGURANCA</label>
+        <textarea class="form-control border-2" name="condicao_itens_seguranca"></textarea>
+      </div>
+
+      <div class="topic-divider">Itens internos do carro</div>
+      <div class="check-grid">
+        {{ bool_choice('alarme', 'Alarme', 'group_interno') }}
+        {{ bool_choice('ar_condicionado', 'Ar condicionado', 'group_interno') }}
+        {{ bool_choice('radio', 'Radio', 'group_interno') }}
+      </div>
+      <div id="group_interno" class="obs-container shadow-sm">
+        <label class="form-label small fw-bold text-primary">CONDICAO ITENS INTERNOS</label>
+        <textarea class="form-control border-2" name="condicao_itens_carro_interno"></textarea>
+      </div>
+
+      <div class="topic-divider">Giroflex / isqueiro / carregador</div>
+      <div class="check-grid">
+        {{ bool_choice('giroflex', 'Giroflex', 'group_energia') }}
+        {{ bool_choice('isqueiro', 'Isqueiro', 'group_energia') }}
+        {{ bool_choice('carregador', 'Carregador', 'group_energia') }}
+      </div>
+      <div id="group_energia" class="obs-container shadow-sm">
+        <label class="form-label small fw-bold text-primary">CONDICAO GIROFLEX / ISQUEIRO / CARREGADOR</label>
+        <textarea class="form-control border-2" name="condicao_giroflex_isqueiro_carregador"></textarea>
+      </div>
+
+      <div class="topic-divider">Lataria</div>
+      <div class="check-grid">
+        {{ bool_choice('lataria_frontal', 'Lataria frontal', 'group_lataria') }}
+        {{ bool_choice('lataria_lateral', 'Lataria lateral', 'group_lataria') }}
+        {{ bool_choice('lataria_traseira', 'Lataria traseira', 'group_lataria') }}
+      </div>
+      <div id="group_lataria" class="obs-container shadow-sm">
+        <label class="form-label small fw-bold text-primary">CONDICAO LATARIA</label>
+        <textarea class="form-control border-2" name="condicao_lataria"></textarea>
+      </div>
+
+      <div class="topic-divider">Portas</div>
+      <div class="check-grid">
+        {{ bool_choice('lataria_porta_frontal', 'Porta frontal', 'group_portas') }}
+        {{ bool_choice('lataria_porta_traseira', 'Porta traseira', 'group_portas') }}
+        {{ bool_choice('lataria_porta_lateral', 'Porta lateral', 'group_portas') }}
+      </div>
+      <div id="group_portas" class="obs-container shadow-sm">
+        <label class="form-label small fw-bold text-primary">CONDICAO LATARIA PORTAS</label>
+        <textarea class="form-control border-2" name="condicao_lataria_portas"></textarea>
+      </div>
+
+      <div class="topic-divider">Parachoques e externos</div>
+      <div class="check-grid">
+        {{ bool_choice('parachoque_frontal', 'Parachoque frontal', 'group_externo') }}
+        {{ bool_choice('parachoque_traseiro', 'Parachoque traseiro', 'group_externo') }}
+      </div>
+      <div id="group_externo" class="obs-container shadow-sm">
+        <label class="form-label small fw-bold text-primary">CONDICAO ITENS CARRO EXTERNO</label>
+        <textarea class="form-control border-2" name="condicao_itens_carro_externo"></textarea>
+      </div>
+    </div>
+
+    <div class="section-box shadow-sm mb-4">
+      <div class="section-title-line">
+        <i class="bi bi-airplane-engines fs-4 text-primary"></i>
+        <div>
+          <h5 class="m-0 fw-bold text-dark-blue">Inspecao do Drone</h5>
+          <div class="section-subtitle">Cada item separado conforme os campos de checklist do equipamento.</div>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-4">
+        <div class="col-lg-7">
+          <label class="form-label small fw-bold text-muted">MODELO E CODIGO DO DRONE</label>
+          <select class="form-select border-2" name="drone_id" id="drone_id">
+            <option value="">Selecione...</option>
+            {% for d in drones_equipe %}
+              <option value="{{ d.id }}" {% if drone_padrao_id == d.id %}selected{% endif %}>{{ d.renomacao }} - {{ d.modelo }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-lg-3 col-md-6">
+          <label class="form-label small fw-bold text-muted">NUMERO DE BATERIAS</label>
+          <input type="number" min="0" class="form-control border-2" name="num_baterias" id="num_baterias">
+        </div>
+        <div class="col-lg-2 col-md-6">
+          <label class="form-label small fw-bold text-muted">BATERIAS WB</label>
+          <input type="number" min="0" class="form-control border-2" name="num_baterias_wb" id="num_baterias_wb">
+        </div>
+      </div>
+
+      <div class="topic-divider">Helices</div>
+      <div class="check-grid">
+        {{ bool_choice('helices_status', 'Helices', 'group_helices') }}
+      </div>
+      <div id="group_helices" class="obs-container shadow-sm">
+        <label class="form-label small fw-bold text-primary">CONDICAO HELICES</label>
+        <textarea class="form-control border-2" name="condicao_helices"></textarea>
+      </div>
+
+      <div class="topic-divider">Tanque, trem de pouso e cameras</div>
+      <div class="check-grid">
+        {{ bool_choice('tanque', 'Tanque', 'group_estrutura') }}
+        {{ bool_choice('trem_pouso', 'Trem de pouso', 'group_estrutura') }}
+        {{ bool_choice('cameras', 'Cameras', 'group_estrutura') }}
+      </div>
+      <div id="group_estrutura" class="obs-container shadow-sm">
+        <label class="form-label small fw-bold text-primary">CONDICAO ESTRUTURA</label>
+        <textarea class="form-control border-2" name="condicao_estrutura"></textarea>
+      </div>
+
+      <div class="topic-divider">Energia e carregamento</div>
+      <div class="check-grid">
+        {{ bool_choice('carregador_controle', 'Carregador do controle', 'group_carga') }}
+        {{ bool_choice('baterias', 'Baterias', 'group_carga') }}
+      </div>
+      <div id="group_carga" class="obs-container shadow-sm">
+        <label class="form-label small fw-bold text-primary">CONDICAO CARREGADOR / BATERIA</label>
+        <textarea class="form-control border-2" name="condicao_carregador_bateria"></textarea>
+      </div>
+
+      <div class="topic-divider">Cabos e correia</div>
+      <div class="check-grid">
+        {{ bool_choice('cabos_carregador', 'Cabos do carregador', 'group_acessorios') }}
+        {{ bool_choice('correia_pescoco', 'Correia de pescoco', 'group_acessorios') }}
+      </div>
+      <div id="group_acessorios" class="obs-container shadow-sm">
+        <label class="form-label small fw-bold text-primary">CONDICAO CABOS / CORREIA</label>
+        <textarea class="form-control border-2" name="condicao_cabos_correia"></textarea>
+      </div>
+
+      <div class="topic-divider">Observacoes do equipamento</div>
+      <textarea class="form-control border-2" rows="3" name="observacoes_equipamento" placeholder="Qualquer outra observacao relevante sobre o drone..."></textarea>
+    </div>
+
+    <div class="section-box shadow-sm">
+      <div class="section-title-line">
+        <i class="bi bi-pen fs-4 text-primary"></i>
+        <div>
+          <h5 class="m-0 fw-bold text-dark-blue">Informacoes do Piloto</h5>
+          <div class="section-subtitle">Responsavel pelo checklist e assinatura digital.</div>
+        </div>
+      </div>
+
+      <div class="row g-4 align-items-start">
+        <div class="col-lg-5">
+          <label class="small fw-bold text-muted">NOME DO PILOTO / RESPONSAVEL</label>
+          <input type="text" class="form-control mb-3 border-2 fw-bold text-primary" name="nome_responsavel" id="nome_responsavel" value="{{ piloto_nome }}">
+        </div>
+        <div class="col-lg-7">
+          <div class="signature-container mb-3 shadow-inner">
+            <canvas id="signature-pad"></canvas>
+          </div>
+          <input type="hidden" name="assinatura_piloto" id="assinatura_piloto">
+
+          <div class="d-flex gap-2 flex-wrap">
+            <button type="button" class="btn btn-outline-secondary flex-grow-1" id="btn-clear-signature">LIMPAR</button>
+            <button type="submit" class="btn btn-primary flex-grow-1 px-4 fw-bold shadow-sm">
+              <i class="bi bi-check2-all me-2"></i>SALVAR CHECKLIST
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    // LÓGICA DE GRUPO: Mostra o campo de texto logo abaixo do grupo se houver algum erro
-    function checkGroupStatus(groupId) {
-        const container = document.getElementById(groupId);
-        if (!container) return;
-        
-        const monitors = document.querySelectorAll(`.group-monitor[data-group="${groupId}"]`);
-        let hasIssue = Array.from(monitors).some(input => input.checked && input.value === "0");
-        
-        if (hasIssue) {
-            container.style.display = 'block';
-            container.querySelector('textarea').required = true;
-        } else {
-            container.style.display = 'none';
-            container.querySelector('textarea').required = false;
-        }
-    }
+  const veiculoMeta = {{ veiculo_meta|tojson }};
+  const droneMeta = {{ drone_meta|tojson }};
+  const veiculoPrefill = {{ veiculo_prefill|tojson }};
+  const dronePrefill = {{ drone_prefill|tojson }};
 
-    // Gerenciamento do Canvas de Assinatura
-    const canvas = document.getElementById("signature-pad");
-    const ctx = canvas.getContext("2d");
-    let drawing = false;
+  const veiculoBoolFields = {{ [
+    'farois_funcionando', 'setas_funcionando', 'lanternas_funcionando', 'piscaalerta_funcionando',
+    'luz_painel', 'limpador_parabrisa', 'agua_radiador', 'fluido_freio', 'oleo_motor',
+    'vidros', 'retrovisores', 'pneus', 'estepe', 'macaco', 'triangulo', 'chave_roda',
+    'extintor', 'cinto_seguranca', 'alarme', 'ar_condicionado', 'radio', 'giroflex',
+    'isqueiro', 'carregador', 'lataria_frontal', 'lataria_lateral', 'lataria_traseira',
+    'lataria_porta_frontal', 'lataria_porta_traseira', 'lataria_porta_lateral',
+    'parachoque_frontal', 'parachoque_traseiro'
+  ]|tojson }};
 
-    function resizeCanvas() {
-        const ratio = Math.max(window.devicePixelRatio || 1, 1);
-        canvas.width = canvas.offsetWidth * ratio;
-        canvas.height = canvas.offsetHeight * ratio;
-        ctx.scale(ratio, ratio);
-        ctx.lineWidth = 3;
-        ctx.lineCap = "round";
-        ctx.strokeStyle = "#1a365d";
-    }
-    window.addEventListener("resize", resizeCanvas);
+  const veiculoTextFields = {{ [
+    'condicao_luzes_direcao', 'condicao_luz_painel', 'condicao_itens_manutencao',
+    'condicao_vidros_retrovisores', 'condicao_pneus_estepe', 'condicao_itens_seguranca',
+    'condicao_itens_carro_interno', 'condicao_giroflex_isqueiro_carregador',
+    'condicao_lataria', 'condicao_lataria_portas', 'condicao_itens_carro_externo'
+  ]|tojson }};
+
+  const droneBoolFields = {{ [
+    'helices_status', 'tanque', 'trem_pouso', 'cameras',
+    'carregador_controle', 'baterias', 'cabos_carregador', 'correia_pescoco'
+  ]|tojson }};
+
+  const droneTextFields = {{ [
+    'condicao_helices', 'condicao_estrutura', 'condicao_carregador_bateria',
+    'condicao_cabos_correia', 'observacoes_equipamento'
+  ]|tojson }};
+
+  const groupIds = [
+    'group_luzes',
+    'group_painel',
+    'group_manutencao',
+    'group_vidros',
+    'group_pneus',
+    'group_seg',
+    'group_interno',
+    'group_energia',
+    'group_lataria',
+    'group_portas',
+    'group_externo',
+    'group_helices',
+    'group_estrutura',
+    'group_carga',
+    'group_acessorios'
+  ];
+
+  function checkGroupStatus(groupId) {
+    const container = document.getElementById(groupId);
+    if (!container) return;
+
+    const monitors = document.querySelectorAll(`.group-monitor[data-group="${groupId}"]`);
+    const hasIssue = Array.from(monitors).some((input) => input.checked && input.value === "0");
+    const textarea = container.querySelector("textarea");
+
+    container.style.display = hasIssue ? "block" : "none";
+    if (textarea) textarea.required = hasIssue;
+  }
+
+  function setRadioValue(name, value, defaultValue = true) {
+    const finalValue = value === null || value === undefined ? defaultValue : value;
+    const target = String(finalValue ? 1 : 0);
+    document.querySelectorAll(`input[name="${name}"]`).forEach((input) => {
+      input.checked = input.value === target;
+    });
+  }
+
+  function setFieldValue(name, value, fallback = "") {
+    const field = document.querySelector(`[name="${name}"]`);
+    if (field) field.value = value === null || value === undefined ? fallback : value;
+  }
+
+  function applyVehiclePrefill() {
+    const select = document.getElementById("veiculo_id");
+    if (!select) return;
+
+    const veiculoId = select.value;
+    const meta = veiculoMeta[veiculoId] || null;
+    const prefill = veiculoPrefill[veiculoId] || {};
+
+    document.getElementById("summary-veiculo").textContent = meta ? meta.label : "Selecione";
+    document.getElementById("summary-km").textContent = meta ? `${Number(prefill.km_leitura ?? meta.km_atual ?? 0).toFixed(0)} km` : "-";
+
+    setFieldValue("km_leitura", prefill.km_leitura ?? (meta ? meta.km_atual : ""));
+    veiculoBoolFields.forEach((field) => setRadioValue(field, prefill[field], true));
+    veiculoTextFields.forEach((field) => setFieldValue(field, prefill[field], ""));
+  }
+
+  function applyDronePrefill() {
+    const select = document.getElementById("drone_id");
+    if (!select) return;
+
+    const droneId = select.value;
+    const meta = droneMeta[droneId] || null;
+    const prefill = dronePrefill[droneId] || {};
+
+    document.getElementById("summary-drone").textContent = meta ? meta.label : "Selecione";
+    document.getElementById("summary-baterias").textContent = meta ? `${prefill.num_baterias ?? meta.num_baterias ?? 0}` : "-";
+
+    setFieldValue("num_baterias", prefill.num_baterias ?? (meta ? meta.num_baterias : 0), 0);
+    setFieldValue("num_baterias_wb", prefill.num_baterias_wb ?? 0, 0);
+    setFieldValue("nome_responsavel", prefill.nome_responsavel || document.getElementById("nome_responsavel").value || "", "");
+
+    droneBoolFields.forEach((field) => setRadioValue(field, prefill[field], true));
+    droneTextFields.forEach((field) => setFieldValue(field, prefill[field], ""));
+  }
+
+  const canvas = document.getElementById("signature-pad");
+  const ctx = canvas.getContext("2d");
+  const signatureInput = document.getElementById("assinatura_piloto");
+  let drawing = false;
+
+  function redrawSignature(dataUrl) {
+    if (!dataUrl || !dataUrl.startsWith("data:image")) return;
+    const img = new Image();
+    img.src = dataUrl;
+    img.onload = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    };
+  }
+
+  function resizeCanvas() {
+    const ratio = Math.max(window.devicePixelRatio || 1, 1);
+    const previous = signatureInput.value;
+    canvas.width = canvas.offsetWidth * ratio;
+    canvas.height = canvas.offsetHeight * ratio;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(ratio, ratio);
+    ctx.lineWidth = 3;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.strokeStyle = "#1a365d";
+    if (previous) redrawSignature(previous);
+  }
+
+  function getCanvasPos(event) {
+    const rect = canvas.getBoundingClientRect();
+    const point = event.touches ? event.touches[0] : event;
+    return {
+      x: point.clientX - rect.left,
+      y: point.clientY - rect.top
+    };
+  }
+
+  function startDraw(event) {
+    drawing = true;
+    const pos = getCanvasPos(event);
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
+  }
+
+  function draw(event) {
+    if (!drawing) return;
+    if (event.cancelable) event.preventDefault();
+    const pos = getCanvasPos(event);
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+  }
+
+  function stopDraw() {
+    if (!drawing) return;
+    drawing = false;
+    signatureInput.value = canvas.toDataURL();
+  }
+
+  window.addEventListener("resize", resizeCanvas);
+  canvas.addEventListener("mousedown", startDraw);
+  canvas.addEventListener("mousemove", draw);
+  canvas.addEventListener("touchstart", startDraw, { passive: true });
+  canvas.addEventListener("touchmove", draw, { passive: false });
+  window.addEventListener("mouseup", stopDraw);
+  window.addEventListener("touchend", stopDraw);
+
+  document.getElementById("btn-clear-signature").addEventListener("click", () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    signatureInput.value = "";
+  });
+
+  document.addEventListener("DOMContentLoaded", () => {
     resizeCanvas();
+    applyVehiclePrefill();
+    applyDronePrefill();
+    groupIds.forEach(checkGroupStatus);
 
-    canvas.addEventListener("mousedown", () => drawing = true);
-    window.addEventListener("mouseup", () => {
-        drawing = false;
-        document.getElementById("assinatura_piloto").value = canvas.toDataURL();
-    });
-    canvas.addEventListener("mousemove", e => {
-        if (!drawing) return;
-        const rect = canvas.getBoundingClientRect();
-        ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+    document.getElementById("veiculo_id")?.addEventListener("change", () => {
+      applyVehiclePrefill();
+      groupIds.forEach(checkGroupStatus);
     });
 
-    // Suporte para Touch (Celular)
-    canvas.addEventListener("touchstart", e => {
-        drawing = true;
-        const touch = e.touches[0];
-        const rect = canvas.getBoundingClientRect();
-        ctx.moveTo(touch.clientX - rect.left, touch.clientY - rect.top);
-    });
-    canvas.addEventListener("touchmove", e => {
-        if (!drawing) return;
-        e.preventDefault();
-        const touch = e.touches[0];
-        const rect = canvas.getBoundingClientRect();
-        ctx.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
-        ctx.stroke();
+    document.getElementById("drone_id")?.addEventListener("change", () => {
+      applyDronePrefill();
+      groupIds.forEach(checkGroupStatus);
     });
 
-    document.getElementById("btn-clear-signature").addEventListener("click", () => {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        document.getElementById("assinatura_piloto").value = "";
-    });
+    const vehicleSelect = document.getElementById("veiculo_id");
+    const droneSelect = document.getElementById("drone_id");
+    const initialVehiclePrefill = veiculoPrefill[vehicleSelect?.value || ""];
+    const initialDronePrefill = dronePrefill[droneSelect?.value || ""];
+    const signaturePrefill = signatureInput.value || initialVehiclePrefill?.assinatura_piloto || initialDronePrefill?.assinatura_piloto || "";
+    if (signaturePrefill) {
+      signatureInput.value = signaturePrefill;
+      redrawSignature(signaturePrefill);
+    }
 
-    document.addEventListener("DOMContentLoaded", () => {
-        // Inicializa a visibilidade dos grupos
-        ['group_luzes', 'group_painel', 'group_manutencao', 'group_seguranca', 'group_lataria', 'group_voo', 'group_carga'].forEach(checkGroupStatus);
+    document.getElementById("formChecklist")?.addEventListener("submit", (event) => {
+      const hasVehicle = !!document.getElementById("veiculo_id")?.value;
+      const hasDrone = !!document.getElementById("drone_id")?.value;
+
+      if (!hasVehicle && !hasDrone) {
+        event.preventDefault();
+        alert("Selecione ao menos um veiculo ou um drone.");
+        return;
+      }
+
+      if (!signatureInput.value) {
+        event.preventDefault();
+        alert("A assinatura do piloto e obrigatoria.");
+      }
     });
+  });
 </script>
 {% endblock %}
