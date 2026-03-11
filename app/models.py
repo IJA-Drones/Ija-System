@@ -689,3 +689,121 @@ class LogVeiculo(db.Model):
         backref=db.backref("logs", lazy="select", cascade="all, delete-orphan")
     )
     piloto = db.relationship("Pilotos", backref=db.backref("logs_veiculo", lazy="select"))
+
+# ... (Mantenha as classes Usuario até LogVeiculo iguais)
+
+# -------------------------------------------------------------
+# CHECKLIST SEMANAL DE VEÍCULO
+# -------------------------------------------------------------
+class ChecklistSemanalVeiculo(db.Model):
+    __tablename__ = "checklists_semanais_veiculo"
+
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # Identificação
+    veiculo_id = db.Column(db.Integer, db.ForeignKey("veiculos.id"), nullable=False, index=True)
+    piloto_id = db.Column(db.Integer, db.ForeignKey("pilotos.id"), nullable=False, index=True)
+    data_registro = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+    km_leitura = db.Column(db.Float, nullable=False)
+
+    # Luzes direção / iluminação
+    farois_funcionando = db.Column(db.Boolean, default=True)
+    setas_funcionando = db.Column(db.Boolean, default=True)
+    lanternas_funcionando = db.Column(db.Boolean, default=True)
+    piscaalerta_funcionando = db.Column(db.Boolean, default=True)
+    condicao_luzes_direcao = db.Column(db.Text) 
+
+    # Luzes painel
+    luz_painel = db.Column(db.Boolean, default=True)
+    condicao_luz_painel = db.Column(db.Text) 
+
+    # Itens de Manutenção Preventiva
+    limpador_parabrisa = db.Column(db.Boolean, default=True)
+    agua_radiador = db.Column(db.Boolean, default=True)
+    fluido_freio = db.Column(db.Boolean, default=True)
+    oleo_motor = db.Column(db.Boolean, default=True)
+    condicao_itens_manutencao = db.Column(db.Text)  
+
+    # Itens de Segurança motorista
+    vidros = db.Column(db.Boolean, default=True)
+    retrovisores = db.Column(db.Boolean, default=True)
+    condicao_vidros_retrovisores = db.Column(db.Text)
+
+    pneus = db.Column(db.Boolean, default=True)
+    estepe = db.Column(db.Boolean, default=True)
+    macaco = db.Column(db.Boolean, default=True)
+    triangulo = db.Column(db.Boolean, default=True)
+    chave_roda = db.Column(db.Boolean, default=True)
+    condicao_pneus_estepe = db.Column(db.Text)
+
+    extintor = db.Column(db.Boolean, default=True)
+    cinto_seguranca = db.Column(db.Boolean, default=True)
+    condicao_itens_seguranca = db.Column(db.Text) 
+
+    # Itens carro interno
+    alarme = db.Column(db.Boolean, default=True)
+    ar_condicionado = db.Column(db.Boolean, default=True)
+    radio = db.Column(db.Boolean, default=True)
+    condicao_itens_carro_interno = db.Column(db.Text)
+
+    # Itens carro externo (Lataria)
+    lataria_frontal = db.Column(db.Boolean, default=True) 
+    lataria_lateral = db.Column(db.Boolean, default=True) 
+    lataria_traseira = db.Column(db.Boolean, default=True) 
+    condicao_lataria = db.Column(db.Text)
+    lataria_porta_frontal = db.Column(db.Boolean, default=True) 
+    lataria_porta_traseira = db.Column(db.Boolean, default=True) 
+    lataria_porta_lateral = db.Column(db.Boolean, default=True) 
+    condicao_lataria_portas = db.Column(db.Text)
+
+    para_choque_frontal = db.Column(db.Boolean, default=True)
+    para_choque_traseiro = db.Column(db.Boolean, default=True)
+    condicao_itens_carro_externo = db.Column(db.Text)
+
+    assinatura_piloto = db.Column(db.Text) # Base64
+    
+    # Relacionamentos
+    veiculo = db.relationship("Veiculos", backref=db.backref("checklists_semanais", lazy="select"))
+    piloto = db.relationship("Pilotos", backref=db.backref("checklists_veiculo", lazy="select"))
+
+
+# -------------------------------------------------------------
+# CHECKLIST SEMANAL DE EQUIPAMENTO (DRONE)
+# -------------------------------------------------------------
+class ChecklistSemanalDrone(db.Model):
+    __tablename__ = "checklists_semanais_drone"
+
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # Identificação
+    drone_id = db.Column(db.Integer, db.ForeignKey("drones.id"), nullable=False, index=True)
+    piloto_id = db.Column(db.Integer, db.ForeignKey("pilotos.id"), nullable=False, index=True)
+    data_registro = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+
+    # Itens do Drone
+    helices_status = db.Column(db.Boolean, default=True) # CW e CCW funcional/defeituoso
+    condicao_helices = db.Column(db.Text) # Observações sobre as hélices (ex: "Hélice 1 com rachadura leve")
+
+    tanque = db.Column(db.Boolean, default=True) # Tanque/Trem de Pouso/Câmeras
+    trem_pouso = db.Column(db.Boolean, default=True)
+    cameras = db.Column(db.Boolean, default=True)
+    condicao_estrutura = db.Column(db.Text)
+
+    carregadore_controle = db.Column(db.Boolean, default=True) # Carregador Controle/WB/Baterias
+    baterias = db.Column(db.Boolean, default=True) # WB/Baterias
+    condicao_carregador_bateria = db.Column(db.Text)
+
+    cabos_carregador = db.Column(db.Boolean, default=True) # Cabo do carregador / Correia
+    correia_pescoco = db.Column(db.Boolean, default=True)
+    condicao_cabos_correia = db.Column(db.Text)
+
+    # Quantidades
+    num_baterias = db.Column(db.Integer, default=0)
+    num_baterias_wb = db.Column(db.Integer, default=0)
+    
+    observacoes_equipamento = db.Column(db.Text)
+    assinatura_piloto = db.Column(db.Text) # Base64
+
+    # Relacionamentos
+    drone = db.relationship("Drones", backref=db.backref("checklists_semanais", lazy="select"))
+    piloto = db.relationship("Pilotos", backref=db.backref("checklists_drone", lazy="select"))
