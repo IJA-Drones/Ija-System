@@ -1,297 +1,696 @@
 {% extends "base.html" %}
 
-{# MACRO COM BOTÕES AZUIS E LÓGICA DE GRUPO #}
-{% macro bool_choice(name, label, group_field_id) %}
-<div class="check-row-container mb-2">
-    <div class="check-row shadow-sm">
-        <div class="check-row-title">
-            <span class="fw-bold text-dark-blue" style="font-size: 0.82rem;">{{ label }}</span>
-        </div>
-        <div class="btn-group btn-group-sm check-toggle" role="group">
-            <input class="btn-check group-monitor" type="radio" name="{{ name }}" id="{{ name }}_ok" value="1" checked 
-                   data-group="{{ group_field_id }}" onchange="checkGroupStatus('{{ group_field_id }}')">
-            <label class="btn btn-outline-primary border-2 fw-bold" for="{{ name }}_ok">FUNCIONAL</label>
-            
-            <input class="btn-check group-monitor" type="radio" name="{{ name }}" id="{{ name }}_na" value="0"
-                   data-group="{{ group_field_id }}" onchange="checkGroupStatus('{{ group_field_id }}')">
-            <label class="btn btn-outline-primary border-2 fw-bold" for="{{ name }}_na">DEFEITUOSO</label>
-        </div>
-    </div>
-</div>
-{% endmacro %}
-
 {% block extra_styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}" />
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}" />
 <style>
-    :root { --color-primary-dark: #1a365d; --color-text-muted: #64748b; }
-    .text-dark-blue { color: var(--color-primary-dark); }
-    
-    .summary-card { padding: 1rem; border-radius: 12px; background: var(--bg-card, #fff); border: 1px solid rgba(0,0,0,0.05); border-left: 4px solid var(--color-primary); }
-    .summary-card .label { font-size: 0.7rem; text-transform: uppercase; font-weight: 700; color: var(--color-text-muted); }
-    .summary-card .value { font-size: 0.95rem; font-weight: 800; color: var(--color-primary-dark); margin-top: 2px; }
+  .piloto-os-form-page { width: 100%; }
+  .piloto-os-form-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .section-title { border-left: 4px solid var(--bs-primary); padding-left: 15px; margin-bottom: 20px; margin-top: 30px; }
+  .form-label-header { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: #6c757d; font-weight: 700; }
+  .bg-snapshot { background-color: #f8f9fa; border: 1px solid #e9ecef; }
+  .readonly-form .signature-pad { pointer-events: none; }
 
-    .topic-divider { font-size: 0.75rem; font-weight: 800; color: var(--color-primary); text-transform: uppercase; letter-spacing: 1px; margin: 25px 0 12px 0; display: flex; align-items: center; gap: 10px; }
-    .topic-divider::after { content: ""; flex: 1; height: 1px; background: #e2e8f0; }
+  @media (max-width: 991.98px) {
+    .piloto-os-form-page.container-fluid.py-4 {
+      padding-left: 12px !important;
+      padding-right: 12px !important;
+    }
+    .piloto-os-form-header {
+      align-items: flex-start;
+    }
+    .piloto-os-form-page .card-body.p-4 {
+      padding: 1rem !important;
+    }
+    .piloto-os-form-page .row.g-4,
+    .piloto-os-form-page .row.g-3 {
+      --bs-gutter-x: 0.85rem;
+    }
+    .piloto-os-form-page .bg-snapshot {
+      padding: 0.9rem !important;
+    }
+    .piloto-os-form-page .signature-container .d-flex.gap-2.mt-2 {
+      flex-direction: column;
+    }
+    .piloto-os-form-page .signature-container .d-flex.gap-2.mt-2 .btn {
+      width: 100%;
+    }
+    .piloto-os-form-actions {
+      flex-direction: column-reverse;
+    }
+    .piloto-os-form-actions .btn {
+      width: 100%;
+    }
+  }
 
-    .check-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 10px; }
-    .check-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: var(--bg-light, #f8fafc); border-radius: 10px; border: 1px solid rgba(0,0,0,0.05); }
-    
-    .check-toggle .btn-check:checked + .btn-outline-primary { background-color: var(--color-primary) !important; border-color: var(--color-primary) !important; color: #fff !important; }
+  @media (max-width: 767.98px) {
+    .piloto-os-form-page .section-title {
+      padding-left: 12px;
+      margin-top: 24px;
+      margin-bottom: 16px;
+    }
+    .piloto-os-form-page .section-title h5 {
+      font-size: 1rem;
+    }
+    .piloto-os-form-page .bg-snapshot .row.g-2 > [class*="col-"] {
+      width: 100%;
+    }
+    .piloto-os-form-page .signature-container {
+      padding: 0.5rem;
+    }
+    .piloto-os-form-page .signature-pad {
+      height: 140px !important;
+    }
+    .piloto-os-form-page input,
+    .piloto-os-form-page select,
+    .piloto-os-form-page textarea {
+      font-size: 16px;
+    }
+  }
 
-    .obs-container { display: none; animation: slideIn 0.3s ease-out; background: #ebf8ff; padding: 15px; border-radius: 12px; border: 1px solid #bee3f8; mt: 10px; mb: 20px; }
-    .signature-container { background: #fff; border: 2px dashed var(--color-primary); border-radius: 12px; padding: 8px; }
-    
-    @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-    @media (max-width: 768px) { .check-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 420px) {
+    .piloto-os-form-page .card-body.p-4 {
+      padding: 0.85rem !important;
+    }
+    .piloto-os-form-page .form-label-header {
+      font-size: 0.68rem;
+      letter-spacing: 0.35px;
+    }
+    .piloto-os-form-page .signature-pad {
+      height: 128px !important;
+    }
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4" style="max-width: 1500px;">
-    
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="text-dark m-0"><i class="bi bi-ui-checks-grid text-primary me-2"></i>Checklist Semanal Unificado</h2>
-            <p class="text-muted small m-0">Veículo e Equipamento (IJA Drones)</p>
-        </div>
-        <a href="{{ url_for('main.piloto_os') }}" class="btn btn-secondary shadow-sm"><i class="bi bi-arrow-left me-1"></i> Voltar</a>
-    </div>
+<div class="container-fluid py-4 piloto-os-form-page" style="max-width: 1200px">
+  <div class="piloto-os-form-header mb-4">
+    <h2 class="text-dark m-0">
+      <i class="bi bi-clipboard-check-fill me-2 text-primary"></i> Formulario de Ordem de Servico
+    </h2>
+  </div>
 
-    <form method="post" id="formChecklist">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm mb-4 rounded-3" role="alert">
+          <i class="bi bi-info-circle me-2"></i> {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <div class="card info status-primary shadow-sm rounded-4 border-0">
+    <div class="card-body p-4 {% if modo_visualizacao %}readonly-form{% endif %}">
+      {% if modo_visualizacao %}
+      <div class="alert alert-info border-0 shadow-sm">
+        <i class="bi bi-eye me-1"></i> Formulário em modo visualização.
+      </div>
+      {% endif %}
+
+      <form method="post" action="{{ form_action or url_for('main.piloto_os_formulario_view', os_id=solicitacao.id) }}" novalidate>
+      
+
+        {# ===================== IDENTIFICAÇÃO ===================== #}
+        <div class="section-title mt-0">
+          <h5 class="m-0 text-primary fw-bold">Identificacao</h5>
+        </div>
+
         <div class="row g-3 mb-4">
-            <div class="col-md-3">
-                <div class="summary-card shadow-sm">
-                    <div class="label">Veículo Selecionado</div>
-                    <div class="value" id="summary-veiculo">...</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="summary-card shadow-sm" style="border-left-color: #f59e0b;">
-                    <div class="label">Último KM Registrado</div>
-                    <div class="value" id="summary-km">-</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="summary-card shadow-sm" style="border-left-color: #00a3c4;">
-                    <div class="label">Drone Selecionado</div>
-                    <div class="value" id="summary-drone">...</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="summary-card shadow-sm" style="border-left-color: #16a34a;">
-                    <div class="label">Baterias do Drone</div>
-                    <div class="value" id="summary-baterias">-</div>
-                </div>
-            </div>
+          <div class="col-md-3">
+            <label class="form-label-header">Solicitacao ID *</label>
+            <input type="number" name="solicitacao_id" class="form-control bg-light" value="{{ solicitacao.id }}" readonly />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label-header">Equipe ID *</label>
+            <input type="number" name="equipe_id" class="form-control bg-light" value="{{ solicitacao.equipe_id }}" readonly />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label-header">Identificador OS</label>
+            <input type="text" name="identificador_os" class="form-control" value="{{ ordem.identificador_os if ordem else '' }}" />
+          </div>
+        </div>
+
+        <hr class="opacity-25 my-4" />
+
+        {# ===================== CLIENTE / RESPONSÁVEL ===================== #}
+        <div class="section-title">
+          <h5 class="m-0 text-primary fw-bold">Endereço e Responsável pela OS</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <label class="form-label-header">Uvis</label>
+            <input type="text" class="form-control bg-light" value="{{ uvis_nome }}" readonly />
+          </div>
+          <div class="col-md-8">
+            <label class="form-label-header">Endereço</label>
+            <input type="text" class="form-control bg-light" value="{{ endereco_os }}" readonly />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label-header">Respondido por</label>
+            <input type="text" name="respondido_por" class="form-control" value="{{ (ordem.respondido_por if ordem and ordem.respondido_por else respondido_por_padrao) }}" />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label-header">Respondido em</label>
+            <input type="datetime-local" name="respondido_em" id="respondido_em" class="form-control" value="{{ respondido_em_value }}" />
+          </div>
+        </div>
+
+        <hr class="opacity-25 my-4" />
+
+        {# ===================== SELEÇÃO DE AERONAVES ===================== #}
+        <div class="section-title">
+          <h5 class="m-0 text-primary fw-bold">Seleção de Aeronaves</h5>
         </div>
 
         <div class="row g-4">
-            <div class="col-xl-7">
-                <div class="section-box shadow-sm">
-                    <div class="section-title-line">
-                        <i class="bi bi-car-front fs-4 text-primary"></i>
-                        <h5 class="m-0 fw-bold text-dark-blue">Inspeção do Veículo</h5>
-                    </div>
+          {# --- DRONE DE PULVERIZAÇÃO --- #}
+          <div class="col-md-6">
+            <label class="form-label-header">Drone de Pulverização (Principal) *</label>
+            <select name="drone_id" id="drone_id" class="form-select border-primary shadow-sm mb-3">
+              <option value="">Selecione o drone de pulverização...</option>
+              {% for d in drones_equipe or [] %}
+                <option value="{{ d.id }}" {% if ordem and ordem.drone_id == d.id %}selected{% endif %}>
+                  {{ d.renomacao }} — {{ d.modelo }}
+                </option>
+              {% endfor %}
+            </select>
 
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-8">
-                            <label class="form-label small fw-bold text-muted">PLACA DO VEÍCULO</label>
-                            <select class="form-select border-2" name="veiculo_id" id="veiculo_id" required>
-                                <option value="">Selecione...</option>
-                                {% for v in veiculos_equipe %}<option value="{{ v.id }}">{{ v.placa }} - {{ v.modelo }}</option>{% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label small fw-bold text-muted">KILOMETRAGEM</label>
-                            <input type="number" class="form-control border-2" name="km_leitura" id="km_leitura" required />
-                        </div>
-                    </div>
-
-                    <div class="topic-divider">Luzes de Direção e Sinalização</div>
-                    <div class="check-grid">
-                        {{ bool_choice('farois_funcionando', 'Faróis / Lanternas / Setas / Pisca Alerta', 'group_luzes') }}
-                    </div>
-                    <div id="group_luzes" class="obs-container shadow-sm">
-                        <label class="form-label small fw-bold text-primary">CONDIÇÕES LUZES/SINALIZAÇÃO</label>
-                        <textarea class="form-control border-2" name="condicao_luzes_direcao" placeholder="Relate o defeito observado..."></textarea>
-                    </div>
-
-                    <div class="topic-divider">Painel de Instrumentos</div>
-                    {{ bool_choice('luz_painel', 'Luzes / Indicadores do Painel', 'group_painel') }}
-                    <div id="group_painel" class="obs-container shadow-sm">
-                        <label class="form-label small fw-bold text-primary">CONDIÇÕES LUZ/INDICADORES DO PAINEL</label>
-                        <textarea class="form-control border-2" name="condicao_luz_painel" placeholder="Ex: Alerta do air-bag"></textarea>
-                    </div>
-
-                    <div class="topic-divider">Níveis e Fluidos (Motor)</div>
-                    <div class="check-grid">
-                        {{ bool_choice('limpador_parabrisa', 'Limpador Parabrisa', 'group_manutencao') }}
-                        {{ bool_choice('agua_radiador', 'Água do Radiador', 'group_manutencao') }}
-                        {{ bool_choice('fluido_freio', 'Fluido de Freio', 'group_manutencao') }}
-                        {{ bool_choice('oleo_motor', 'Óleo do Motor', 'group_manutencao') }}
-                    </div>
-                    <div id="group_manutencao" class="obs-container shadow-sm">
-                        <label class="form-label small fw-bold text-primary">CONDIÇÕES FLUIDOS/ÓLEO</label>
-                        <textarea class="form-control border-2" name="condicao_itens_manutencao" placeholder="Ex: Precisa repor fluidos"></textarea>
-                    </div>
-
-                    <div class="topic-divider">Segurança e Vidros</div>
-                    <div class="check-grid">
-                        {{ bool_choice('vidros', 'Vidros', 'group_seguranca') }}
-                        {{ bool_choice('estepe', 'Estepe / Chave de Rodas / Triângulo / Macaco', 'group_seguranca') }}
-                    </div>
-                    <div id="group_seguranca" class="obs-container shadow-sm">
-                        <label class="form-label small fw-bold text-primary">OBSERVAÇÕES SEGURANÇA/VIDROS</label>
-                        <textarea class="form-control border-2" name="condicao_itens_seguranca"></textarea>
-                    </div>
-
-                    <div class="topic-divider">Lataria e Portas</div>
-                    <div class="check-grid">
-                        {{ bool_choice('lataria_frontal', 'Latarias (Laterais/Frontal/Traseira)', 'group_lataria') }}
-                        {{ bool_choice('lataria_porta_frontal', 'Lataria Portas', 'group_lataria') }}
-                    </div>
-                    <div id="group_lataria" class="obs-container shadow-sm">
-                        <label class="form-label small fw-bold text-primary">CONDIÇÕES LATARIA / PORTAS</label>
-                        <textarea class="form-control border-2" name="condicao_lataria" placeholder="Ex: Amassado pelo antigo piloto"></textarea>
-                    </div>
+            {# Detalhes Técnicos Pulverização #}
+            <div class="p-3 rounded-3 bg-snapshot border">
+              <div class="row g-2">
+                <div class="col-6">
+                  <label class="form-label-header small">Nº Série</label>
+                  <input type="text" name="numero_equipamento_pulv" id="drone_serie_pulv" class="form-control form-control-sm" readonly
+                         value="{{ ordem.drone_numero_serie if ordem and ordem.drone_numero_serie else '' }}" />
                 </div>
+                <div class="col-6">
+                  <label class="form-label-header small">Modelo</label>
+                  <input type="text" id="drone_modelo_pulv" class="form-control form-control-sm" readonly
+                         value="{{ ordem.drone_modelo if ordem and ordem.drone_modelo else '' }}" />
+                </div>
+                <div class="col-4">
+                  <label class="form-label-header small">Renomação</label>
+                  <input type="text" id="drone_renomacao_pulv" class="form-control form-control-sm" readonly
+                         value="{{ ordem.drone_renomacao if ordem and ordem.drone_renomacao else '' }}" />
+                </div>
+                <div class="col-4">
+                  <label class="form-label-header small">ANATEL</label>
+                  <input type="text" id="drone_registro_anatel_pulv" class="form-control form-control-sm" readonly
+                         value="{{ ordem.drone_registro_anatel if ordem and ordem.drone_registro_anatel else '' }}" />
+                </div>
+                <div class="col-4">
+                  <label class="form-label-header small">ANAC</label>
+                  <input type="text" id="drone_registro_anac_pulv" class="form-control form-control-sm" readonly
+                         value="{{ ordem.drone_registro_anac if ordem and ordem.drone_registro_anac else '' }}" />
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label-header">Prefixo Pulverizacao</label>
+                  <input type="text" name="prefixo_aeronave_pulverizacao" id="prefixo_pulverizacao" class="form-control fw-bold text-primary"
+                        value="{{ ordem.prefixo_aeronave_pulverizacao if ordem else '' }}" />
+                </div>
+              </div>
             </div>
+          </div>
 
-            <div class="col-xl-5">
-                <div class="section-box shadow-sm border-top border-4 border-primary">
-                    <div class="section-title-line">
-                        <i class="bi bi-airplane-engines fs-4 text-primary"></i>
-                        <h5 class="m-0 fw-bold text-dark-blue">Inspeção do Drone</h5>
-                    </div>
+          {# --- DRONE DE MONITORAMENTO --- #}
+          <div class="col-md-6">
+            <label class="form-label-header">Drone de Monitoramento</label>
+            <select name="drone_monitoramento_id" id="drone_monitoramento_id" class="form-select shadow-sm mb-3">
+              <option value="">Selecione o drone de monitoramento...</option>
+              {% for d in drones_equipe or [] %}
+                <option value="{{ d.id }}" {% if ordem and ordem.drone_monitoramento_id == d.id %}selected{% endif %}>
+                  {{ d.renomacao }} — {{ d.modelo }}
+                </option>
+              {% endfor %}
+            </select>
 
-                    <div class="mb-4">
-                        <label class="form-label small fw-bold text-muted">MODELO E CÓDIGO DO DRONE</label>
-                        <select class="form-select border-2" name="drone_id" id="drone_id">
-                            <option value="">Selecione...</option>
-                            {% for d in drones_equipe %}<option value="{{ d.id }}">{{ d.renomacao }} - {{ d.modelo }}</option>{% endfor %}
-                        </select>
-                        <div id="drone_details_text" class="small text-muted mt-2">Selecione um drone para ver os registros.</div>
-                    </div>
-
-                    <div class="topic-divider">Componentes de Voo</div>
-                    <div class="check-grid mb-3">
-                        {{ bool_choice('helices_status', 'Hélices CW e CCW', 'group_voo') }}
-                        {{ bool_choice('tanque', 'Tanque / Trem de Pouso / Câmeras', 'group_voo') }}
-                    </div>
-                    <div id="group_voo" class="obs-container shadow-sm">
-                        <label class="form-label small fw-bold text-primary">CONDIÇÃO DO EQUIPAMENTO</label>
-                        <textarea class="form-control border-2" name="condicao_estrutura"></textarea>
-                    </div>
-
-                    <div class="topic-divider">Energia e Acessórios</div>
-                    <div class="row g-3 mb-3">
-                        <div class="col-6">
-                            <label class="small fw-bold text-muted">NÚMERO DE BATERIAS</label>
-                            <input type="number" class="form-control border-2" name="num_baterias" id="num_baterias">
-                        </div>
-                        <div class="col-6">
-                            <label class="small fw-bold text-muted">BATERIAS WB</label>
-                            <input type="number" class="form-control border-2" name="num_baterias_wb" id="num_baterias_wb">
-                        </div>
-                    </div>
-                    {{ bool_choice('carregador_controle', 'Carregador Controle/WB/Baterias', 'group_carga') }}
-                    {{ bool_choice('cabos_carregador', 'Cabo do Carregador / Correia', 'group_carga') }}
-                    
-                    <div id="group_carga" class="obs-container shadow-sm">
-                        <label class="form-label small fw-bold text-primary">CONDIÇÃO CARREGADORES/ACESSÓRIOS</label>
-                        <textarea class="form-control border-2" name="condicao_carregador_bateria"></textarea>
-                    </div>
+            {# Detalhes Técnicos Monitoramento #}
+            <div class="p-3 rounded-3 bg-snapshot border">
+              <div class="row g-2">
+                <div class="col-6">
+                  <label class="form-label-header small">Nº Série</label>
+                  <input type="text" id="drone_serie_monit" class="form-control form-control-sm" readonly
+                         value="{{ ordem.drone_monitoramento_numero_serie if ordem and ordem.drone_monitoramento_numero_serie else '' }}" />
                 </div>
-
-                <div class="section-box shadow-sm mt-4">
-                    <div class="section-title-line"><i class="bi bi-pen fs-4 text-primary"></i><h5 class="m-0 fw-bold text-dark-blue">Fechamento</h5></div>
-                    
-                    <label class="small fw-bold text-muted">NOME DO PILOTO / RESPONSÁVEL</label>
-                    <input type="text" class="form-control mb-3 border-2 fw-bold text-primary" name="nome_responsavel" value="{{ piloto_nome }}">
-                    
-                    <div class="signature-container mb-3 shadow-inner">
-                        <canvas id="signature-pad"></canvas>
-                    </div>
-                    <input type="hidden" name="assinatura_piloto" id="assinatura_piloto">
-                    
-                    <button type="submit" class="btn btn-primary w-100 py-3 fw-bold shadow-sm">
-                        <i class="bi bi-check2-all me-2"></i>SALVAR CHECKLIST SEMANAL
-                    </button>
+                <div class="col-6">
+                  <label class="form-label-header small">Modelo</label>
+                  <input type="text" id="drone_modelo_monit" class="form-control form-control-sm" readonly
+                         value="{{ ordem.drone_monitoramento_modelo if ordem and ordem.drone_monitoramento_modelo else '' }}" />
                 </div>
+                <div class="col-4">
+                  <label class="form-label-header small">Renomação</label>
+                  <input type="text" id="drone_renomacao_monit" class="form-control form-control-sm" readonly
+                         value="{{ ordem.drone_monitoramento_renomacao if ordem and ordem.drone_monitoramento_renomacao else '' }}" />
+                </div>
+                <div class="col-4">
+                  <label class="form-label-header small">ANATEL</label>
+                  <input type="text" id="drone_registro_anatel_monit" class="form-control form-control-sm" readonly
+                         value="{{ ordem.drone_monitoramento_registro_anatel if ordem and ordem.drone_monitoramento_registro_anatel else '' }}" />
+                </div>
+                <div class="col-4">
+                  <label class="form-label-header small">ANAC</label>
+                  <input type="text" id="drone_registro_anac_monit" class="form-control form-control-sm" readonly
+                         value="{{ ordem.drone_monitoramento_registro_anac if ordem and ordem.drone_monitoramento_registro_anac else '' }}" />
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label-header">Prefixo Monitoramento</label>
+                  <input type="text" name="prefixo_aeronave_monitoramento" id="prefixo_monitoramento" class="form-control fw-bold text-primary"
+                        value="{{ ordem.prefixo_aeronave_monitoramento if ordem else '' }}" />
+                </div>
+              </div>
             </div>
+          </div>
         </div>
-    </form>
+
+        {# ===================== APLICAÇÃO ===================== #}
+        <div class="section-title">
+          <h5 class="m-0 text-primary fw-bold">Aplicacao</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+              <label class="form-label-header">Situacao da aplicacao</label>
+              <select name="situacao_aplicacao" class="form-select">
+                  <option value="">Selecione...</option>
+                  <option value="MONITORADO E LARVICIDA APLICADO" {% if ordem and ordem.situacao_aplicacao == 'MONITORADO E LARVICIDA APLICADO' %}selected{% endif %}>MONITORADO E LARVICIDA APLICADO</option>
+                  <option value="APENAS MONITORADO" {% if ordem and ordem.situacao_aplicacao == 'APENAS MONITORADO' %}selected{% endif %}>APENAS MONITORADO</option>
+                  <option value="APENAS LARVICIDA APLICADO (FALTA DE SEGURANÇA)" {% if ordem and ordem.situacao_aplicacao == 'APENAS LARVICIDA APLICADO (FALTA DE SEGURANÇA)' %}selected{% endif %}>APENAS LARVICIDA APLICADO (FALTA DE SEGURANÇA)</option>
+                  <option value="NENHUM VOO REALIZADO" {% if ordem and ordem.situacao_aplicacao == 'NENHUM VOO REALIZADO' %}selected{% endif %}>NENHUM VOO REALIZADO</option>
+              </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label-header">Larva visualizada</label>
+            <select name="larva_visualizada" class="form-select">
+              <option value="">Selecione...</option>
+              <option value="SIM" {% if ordem and ordem.larva_visualizada == 'SIM' %}selected{% endif %}>SIM</option>
+              <option value="NAO" {% if ordem and ordem.larva_visualizada == 'NAO' %}selected{% endif %}>NAO</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label-header">Retornar monitorar larvas?</label>
+            <select name="retornar_proxima_semana_monitorar_larvas" class="form-select">
+              <option value="">Selecione...</option>
+              <option value="SIM" {% if ordem and ordem.retornar_proxima_semana_monitorar_larvas == 'SIM' %}selected{% endif %}>SIM</option>
+              <option value="NAO" {% if ordem and ordem.retornar_proxima_semana_monitorar_larvas == 'NAO' %}selected{% endif %}>NAO</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label-header">DA (Distrito)</label>
+            <input type="text" name="da" class="form-control" value="{{ ordem.distrito_administrativo if ordem else '' }}" />
+          </div>
+          <div class="col-md-5">
+            <label class="form-label-header">Nome/RF do ACE responsavel</label>
+            <input type="text" name="nome_rf_ace_responsavel_os" class="form-control" value="{{ ordem.nome_rf_ace_responsavel_os if ordem else '' }}" />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label-header">Criadouro OS (tipo/volume)</label>
+            <input type="text" name="criadouro_os_tipo_volume" class="form-control" value="{{ ordem.criadouro_os_tipo_volume if (ordem and ordem.criadouro_os_tipo_volume) else (solicitacao.foco if solicitacao else '') }}" />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label-header">Data aplicacao</label>
+            <input type="date" name="data_aplicacao" class="form-control" value="{{ ordem.data_aplicacao.strftime('%Y-%m-%d') if ordem and ordem.data_aplicacao else '' }}" />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label-header">Hora Inicio</label>
+            <input type="time" name="hora_inicio_aplicacao" class="form-control" value="{{ ordem.hora_inicio_aplicacao.strftime('%H:%M') if ordem and ordem.hora_inicio_aplicacao else '' }}" />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label-header">Hora Termino</label>
+            <input type="time" name="hora_termino_aplicacao" class="form-control" value="{{ ordem.hora_termino_aplicacao.strftime('%H:%M') if ordem and ordem.hora_termino_aplicacao else '' }}" />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label-header">Tratamento adicional?</label>
+            <select name="tratamento_adicional_realizado" class="form-select">
+              <option value="">Selecione...</option>
+              <option value="SIM" {% if ordem and ordem.tratamento_adicional_realizado == 'SIM' %}selected{% endif %}>SIM</option>
+              <option value="NAO" {% if ordem and ordem.tratamento_adicional_realizado == 'NAO' %}selected{% endif %}>NAO</option>
+            </select>
+          </div>
+          <div class="col-md-8">
+            <label class="form-label-header">Quantos? Quais?</label>
+            <input type="text" name="quantos_quais" class="form-control" value="{{ ordem.quantos_quais if ordem else '' }}" />
+          </div>
+        </div>
+
+        <hr class="opacity-25 my-4" />
+
+        {# ===================== PRODUTO / PARÂMETROS ===================== #}
+        <div class="section-title">
+          <h5 class="m-0 text-primary fw-bold">Produto e Parametros</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <label class="form-label-header">Descricao produto</label>
+            <input type="text" name="descricao_produto" class="form-control" value="{{ ordem.descricao_produto if ordem else 'BTI' }}" />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label-header">Formulacao</label>
+            <input type="text" name="formulacao_produto" class="form-control" value="{{ ordem.formulacao_produto if ordem else 'Granulo dispersivel' }}" />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label-header">Dosagem (g/10L)</label>
+            <input type="text" name="dosagem_g_10l" class="form-control" value="{{ ordem.dosagem_g_10l if ordem else '' }}" />
+          </div>
+          <div class="col-md-4">
+              <label class="form-label-header">Tipo aplicacao</label>
+              <input type="text" name="tipo_aplicacao" list="lista_tipos_aplicacao" class="form-control" 
+                    value="{{ ordem.tipo_aplicacao if (ordem and ordem.tipo_aplicacao) else '' }}" 
+                    placeholder="Selecione ou digite..." />
+              
+              <datalist id="lista_tipos_aplicacao">
+                  <option value="Pulverização de área (liq)">
+                  <option value="Pulverização de foco (liq)">
+              </datalist>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label-header">Qtd Administrada (ml)</label>
+            <input type="number" step="0.01" name="quantidade_produto_administrada_ml" class="form-control" value="{{ ordem.quantidade_produto_administrada_ml if ordem else '' }}" />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label-header">Pulverizacao Area (l/ha)</label>
+            <input type="number" step="0.01" name="pulverizacao_area_l_ha" class="form-control" value="{{ ordem.pulverizacao_area_l_ha if ordem else '10' }}" />
+          </div>
+          <div class="col-md-4">
+              <label class="form-label-header">Ponta de Pulverização</label>
+              <input type="text" name="ponta_pulverizacao" list="lista_pontas" class="form-control" 
+                    value="{{ ordem.ponta_pulverizacao if (ordem and ordem.ponta_pulverizacao) else '' }}" 
+                    placeholder="Selecione ou digite a ponta...">
+              
+              <datalist id="lista_pontas">
+                  <option value="TXA8001">
+                  <option value="TX11001">
+              </datalist>
+          </div>
+        </div>
+
+        <hr class="opacity-25 my-4" />
+
+        {# ===================== AERONAVE / AMBIENTE ===================== #}
+        <div class="section-title">
+          <h5 class="m-0 text-primary fw-bold">Condicoes Ambientais</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <label class="form-label-header">Imagens Registradas</label>
+            <input type="number" name="quantidade_imagens_registradas" class="form-control" value="{{ ordem.quantidade_imagens_registradas if ordem else '' }}" />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label-header">Vídeos Registrados</label>
+            <input type="number" name="quantidade_videos_registradas" class="form-control" value="{{ ordem.quantidade_videos_registradas if ordem else '' }}" />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label-header">Temperatura (C)</label>
+            <input type="number" step="0.1" name="temperatura_c" class="form-control" value="{{ ordem.temperatura_c if ordem else '' }}" />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label-header">Umidade (%)</label>
+            <input type="number" step="0.1" name="umidade_relativa_pct" class="form-control" value="{{ ordem.umidade_relativa_pct if ordem else '' }}" />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label-header">Vento (km/h)</label>
+            <input type="number" step="0.1" name="velocidade_vento_kmh" class="form-control" value="{{ ordem.velocidade_vento_kmh if ordem else '' }}" />
+          </div>
+        </div>
+
+        <hr class="opacity-25 my-4" />
+
+        {# ===================== FECHAMENTO / ASSINATURAS ===================== #}
+        <div class="section-title">
+          <h5 class="m-0 text-primary fw-bold">Fechamento e Assinaturas</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          {# Linha 1: Observações (Inteira) #}
+          <div class="col-12">
+            <label class="form-label-header">OBSERVAÇÕES GERAIS</label>
+            <input type="text" name="observacoes" class="form-control" 
+                  value="{{ ordem.observacoes if ordem else '' }}" 
+                  placeholder="Detalhes técnicos ou ocorrências na missão..." />
+          </div>
+
+          {# Linha 2: Motivo não realização (Inteira) #}
+          <div class="col-12">
+            <label class="form-label-header">MOTIVO NÃO REALIZAÇÃO</label>
+            <input type="text" name="motivo_nao_realizacao" class="form-control" 
+                  value="{{ ordem.motivo_nao_realizacao if ordem else '' }}" 
+                  placeholder="Descreva o motivo caso a aplicação não tenha sido concluída..." />
+          </div>
+
+          {# Linha 3: Equipe (Metade) e Proprietário (Metade) #}
+          <div class="col-md-6">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label-header">PILOTO</label>
+                <input type="text" name="piloto" class="form-control bg-light" 
+                      value="{{ (ordem.piloto if ordem and ordem.piloto else piloto_padrao) }}" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label-header">AUXILIAR</label>
+                <input type="text" name="auxiliar" class="form-control bg-light" 
+                      value="{{ (ordem.auxiliar if ordem and ordem.auxiliar else auxiliar_padrao) }}" />
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label-header">PROPRIETÁRIO OU PREPOSTO (NOME)</label>
+            <input type="text" name="proprietario_ou_preposto" class="form-control" 
+                  value="{{ ordem.proprietario_ou_preposto if ordem else '' }}" />
+          </div>
+
+          {# --- ASSINATURA DO PILOTO --- #}
+          <div class="col-md-6">
+              <label class="form-label-header">ASSINATURA DO PILOTO</label>
+              <div class="signature-container border rounded bg-white p-2">
+                  <canvas id="signature-pad-piloto" class="signature-pad" style="width: 100%; height: 150px; cursor: crosshair;"></canvas>
+                  <input type="hidden" name="assinatura_piloto" id="assinatura_data_piloto" value="{{ ordem.assinatura_piloto if ordem else '' }}">
+                  <div class="d-flex gap-2 mt-2">
+                      {% if not modo_visualizacao %}
+                      <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearSignature('piloto')">
+                          <i class="bi bi-trash"></i> Limpar
+                      </button>
+                      {% endif %}
+                  </div>
+              </div>
+          </div>
+
+          {# --- ASSINATURA DO RESPONSÁVEL --- #}
+          <div class="col-md-6">
+              <label class="form-label-header">ASSINATURA DO RESPONSÁVEL (LOCAL)</label>
+              <div class="signature-container border rounded bg-white p-2">
+                  <canvas id="signature-pad-cliente" class="signature-pad" style="width: 100%; height: 150px; cursor: crosshair;"></canvas>
+                  <input type="hidden" name="assinatura_proprietario_ou_preposto" id="assinatura_data_cliente" value="{{ ordem.assinatura_proprietario_ou_preposto if ordem else '' }}">
+                  <div class="d-flex gap-2 mt-2">
+                      {% if not modo_visualizacao %}
+                      <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearSignature('cliente')">
+                          <i class="bi bi-trash"></i> Limpar
+                      </button>
+                      {% endif %}
+                  </div>
+              </div>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 mt-5 piloto-os-form-actions">
+          <a href="{{ url_voltar or url_for('main.piloto_os') }}" class="btn btn-outline-danger btn-sm px-4">Voltar</a>
+          {% if not modo_visualizacao %}
+          <button type="submit" class="btn btn-primary btn-sm px-4">
+            <i class="bi bi-check-lg me-1"></i> Salvar Formulário
+          </button>
+          {% endif %}
+        </div>
+
+      </form>
+    </div>
+  </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    const veiculoMeta = {{ veiculo_meta|tojson }};
-    const droneMeta = {{ drone_meta|tojson }};
+(function () {
+  // ✅ Lógica de Drones e Datetime (Mantida original)
+  const selPulv = document.getElementById("drone_id");
+  const selMonit = document.getElementById("drone_monitoramento_id");
 
-    function checkGroupStatus(groupId) {
-        const container = document.getElementById(groupId);
-        if (!container) return;
-        const monitors = document.querySelectorAll(`.group-monitor[data-group="${groupId}"]`);
-        let hasIssue = Array.from(monitors).some(input => input.checked && input.value === "0");
-        container.style.display = hasIssue ? 'block' : 'none';
-        container.querySelector('textarea').required = hasIssue;
+  const pulvSnapshot = {
+    serie: document.getElementById("drone_serie_pulv"),
+    modelo: document.getElementById("drone_modelo_pulv"),
+    renomacao: document.getElementById("drone_renomacao_pulv"),
+    anatel: document.getElementById("drone_registro_anatel_pulv"),
+    anac: document.getElementById("drone_registro_anac_pulv"),
+  };
+
+  const monitSnapshot = {
+    serie: document.getElementById("drone_serie_monit"),
+    modelo: document.getElementById("drone_modelo_monit"),
+    renomacao: document.getElementById("drone_renomacao_monit"),
+    anatel: document.getElementById("drone_registro_anatel_monit"),
+    anac: document.getElementById("drone_registro_anac_monit"),
+  };
+
+  const prefixoPulv = document.getElementById("prefixo_pulverizacao");
+  const prefixoMonit = document.getElementById("prefixo_monitoramento");
+
+  function clearSnapshot(snapshot) {
+    Object.values(snapshot).forEach((el) => { if (el) el.value = ""; });
+  }
+
+  async function loadDroneData(droneId, type) {
+    if (!droneId) {
+      if (type === "pulv") {
+        clearSnapshot(pulvSnapshot);
+        if (prefixoPulv) prefixoPulv.value = "";
+      } else {
+        clearSnapshot(monitSnapshot);
+        if (prefixoMonit) prefixoMonit.value = "";
+      }
+      return;
     }
 
-    document.getElementById("veiculo_id")?.addEventListener("change", function() {
-        const meta = veiculoMeta[this.value];
-        document.getElementById("summary-veiculo").textContent = meta ? meta.label : "...";
-        document.getElementById("summary-km").textContent = meta ? `${meta.km_atual} km` : "-";
-        if(meta) document.getElementById("km_leitura").value = meta.km_atual;
-    });
+    try {
+      const url = `{{ url_for('main.piloto_api_drone', drone_id=0) }}`.replace("0", droneId);
+      const res = await fetch(url);
+      const data = await res.json();
+      if (!res.ok) return;
 
-    document.getElementById("drone_id")?.addEventListener("change", function() {
-        const meta = droneMeta[this.value];
-        document.getElementById("summary-drone").textContent = meta ? meta.label : "...";
-        document.getElementById("summary-baterias").textContent = meta ? meta.num_baterias : "-";
-        document.getElementById("drone_details_text").textContent = meta 
-            ? `Série: ${meta.numero_serie} | ANATEL: ${meta.registro_anatel} | ANAC: ${meta.registro_anac}`
-            : "Selecione um drone para ver os registros.";
-        if(meta) {
-            document.getElementById("num_baterias").value = meta.num_baterias;
-            document.getElementById("num_baterias_wb").value = 0;
-        }
-    });
-
-    // Signature Pad Logic (Mantida)
-    const canvas = document.getElementById("signature-pad");
-    const ctx = canvas.getContext("2d");
-    let drawing = false;
-
-    function resizeCanvas() {
-        const ratio = Math.max(window.devicePixelRatio || 1, 1);
-        canvas.width = canvas.offsetWidth * ratio;
-        canvas.height = canvas.offsetHeight * ratio;
-        ctx.scale(ratio, ratio);
-        ctx.lineWidth = 3; ctx.lineCap = "round"; ctx.strokeStyle = "#1a365d";
+      if (type === "pulv") {
+        if (pulvSnapshot.serie) pulvSnapshot.serie.value = data.numero_serie || "";
+        if (pulvSnapshot.modelo) pulvSnapshot.modelo.value = data.modelo || "";
+        if (pulvSnapshot.renomacao) pulvSnapshot.renomacao.value = data.renomacao || "";
+        if (pulvSnapshot.anatel) pulvSnapshot.anatel.value = data.registro_anatel || "";
+        if (pulvSnapshot.anac) pulvSnapshot.anac.value = data.registro_anac || "";
+        if (prefixoPulv) prefixoPulv.value = data.renomacao || "";
+      } else {
+        if (monitSnapshot.serie) monitSnapshot.serie.value = data.numero_serie || "";
+        if (monitSnapshot.modelo) monitSnapshot.modelo.value = data.modelo || "";
+        if (monitSnapshot.renomacao) monitSnapshot.renomacao.value = data.renomacao || "";
+        if (monitSnapshot.anatel) monitSnapshot.anatel.value = data.registro_anatel || "";
+        if (monitSnapshot.anac) monitSnapshot.anac.value = data.registro_anac || "";
+        if (prefixoMonit) prefixoMonit.value = data.renomacao || "";
+      }
+    } catch (e) {
+      console.error("Erro ao carregar dados do drone:", e);
     }
-    window.addEventListener("resize", resizeCanvas); resizeCanvas();
+  }
 
-    canvas.addEventListener("mousedown", () => drawing = true);
-    window.addEventListener("mouseup", () => { 
-        drawing = false; 
-        document.getElementById("assinatura_piloto").value = canvas.toDataURL(); 
-    });
-    canvas.addEventListener("mousemove", e => {
-        if (!drawing) return;
+  if (selPulv) selPulv.addEventListener("change", () => loadDroneData(selPulv.value, "pulv"));
+  if (selMonit) selMonit.addEventListener("change", () => loadDroneData(selMonit.value, "monit"));
+
+  const responded = document.getElementById("respondido_em");
+  if (responded && !responded.value) {
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    responded.value = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  }
+
+  window.addEventListener("DOMContentLoaded", () => {
+    if (selPulv && selPulv.value) loadDroneData(selPulv.value, "pulv");
+    if (selMonit && selMonit.value) loadDroneData(selMonit.value, "monit");
+  });
+})();
+
+// ✅ Lógica de Assinaturas (Atualizada para Persistência e Precisão)
+const setupSignature = (canvasId, inputId) => {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    const sigInput = document.getElementById(inputId);
+    let writing = false;
+
+    const resize = () => {
         const rect = canvas.getBoundingClientRect();
-        ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
-        ctx.stroke(); ctx.beginPath(); ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
-    });
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.strokeStyle = "#000000";
 
-    document.getElementById("btn-clear-signature")?.addEventListener("click", () => {
+        // ✨ Recarrega a assinatura do banco se ela existir no input
+        if (sigInput.value && sigInput.value.startsWith('data:image')) {
+            const img = new Image();
+            img.src = sigInput.value;
+            img.onload = () => {
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            };
+        }
+    };
+
+    window.addEventListener('resize', resize);
+    setTimeout(resize, 200); // Garante o desenho após o carregamento do layout
+
+    const getPos = (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return { x: clientX - rect.left, y: clientY - rect.top };
+    };
+
+    const start = (e) => {
+        writing = true;
+        const pos = getPos(e);
+        ctx.beginPath();
+        ctx.moveTo(pos.x, pos.y);
+    };
+
+    const draw = (e) => {
+        if (!writing) return;
+        e.preventDefault();
+        const pos = getPos(e);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+    };
+
+    const stop = () => {
+        if (writing) {
+            writing = false;
+            sigInput.value = canvas.toDataURL(); // Salva no input a cada traço finalizado
+        }
+    };
+
+    canvas.addEventListener('mousedown', start);
+    canvas.addEventListener('touchstart', start);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('touchmove', draw, { passive: false });
+    window.addEventListener('mouseup', stop);
+    window.addEventListener('touchend', stop);
+
+    canvas.clear = () => {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        document.getElementById("assinatura_piloto").value = "";
-    });
+        sigInput.value = "";
+    };
+};
 
-    document.addEventListener("DOMContentLoaded", () => {
-        ['group_luzes', 'group_painel', 'group_manutencao', 'group_seguranca', 'group_lataria', 'group_voo', 'group_carga'].forEach(checkGroupStatus);
-    });
+// Inicialização dos campos
+setupSignature('signature-pad-piloto', 'assinatura_data_piloto');
+setupSignature('signature-pad-cliente', 'assinatura_data_cliente');
+
+function clearSignature(tipo) {
+    const id = tipo === 'piloto' ? 'signature-pad-piloto' : 'signature-pad-cliente';
+    const canvas = document.getElementById(id);
+    if (canvas && canvas.clear) canvas.clear();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const modoVisualizacao = {{ "true" if modo_visualizacao else "false" }};
+  if (!modoVisualizacao) return;
+
+  document.querySelectorAll("form input, form select, form textarea, form button").forEach((el) => {
+    if (el.type === "hidden") return;
+    el.setAttribute("disabled", "disabled");
+  });
+});
 </script>
-{% endblock}
+{% endblock %}
