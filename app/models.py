@@ -803,6 +803,8 @@ class ChecklistSemanalDrone(db.Model):
     
     observacoes_equipamento = db.Column(db.Text)
     assinatura_piloto = db.Column(db.Text) # Base64
+    nome_responsavel = db.Column(db.String(150), index=True) # Nome do piloto que fez o checklist (para facilitar consulta)
+    assinatura_responsavel = db.Column(db.Text) # Base64 da assinatura do piloto (para facilitar consulta)
 
     # Relacionamentos
     drone = db.relationship("Drones", backref=db.backref("checklists_semanais", lazy="select"))
