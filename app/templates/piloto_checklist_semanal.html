@@ -43,16 +43,55 @@
     --color-text-muted-local: #64748b;
   }
 
+  .checklist-page {
+    width: 100%;
+  }
+
+  .checklist-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .checklist-intro {
+    background: linear-gradient(180deg, rgba(44, 82, 130, 0.05), rgba(0, 163, 196, 0.03));
+    border: 1px solid rgba(44, 82, 130, 0.08);
+    border-radius: 18px;
+    padding: 1rem 1.15rem;
+  }
+
+  .checklist-intro-title {
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--color-primary-dark-local);
+  }
+
+  .checklist-intro-text {
+    font-size: 0.84rem;
+    color: var(--color-text-muted-local);
+    margin-top: 0.2rem;
+    line-height: 1.45;
+  }
+
   .text-dark-blue {
     color: var(--color-primary-dark-local);
   }
 
+  .summary-row {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+  }
+
   .summary-card {
-    padding: 1rem;
+    padding: 0.85rem 0.95rem;
     border-radius: 14px;
     background: #fff;
     border: 1px solid rgba(0, 0, 0, 0.06);
     border-left: 4px solid var(--color-primary);
+    box-shadow: var(--shadow-sm);
+    min-height: 84px;
   }
 
   .summary-card .label {
@@ -64,33 +103,51 @@
   }
 
   .summary-card .value {
-    font-size: 0.98rem;
+    font-size: 0.92rem;
     font-weight: 800;
     color: var(--color-primary-dark-local);
     margin-top: 0.15rem;
+    line-height: 1.25;
   }
 
   .section-box {
     background: #fff;
     border-radius: 18px;
-    padding: 1.4rem;
+    padding: 1.15rem 1.2rem;
     border: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: var(--shadow-sm);
   }
 
   .section-title-line {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     margin-bottom: 1rem;
-    padding-bottom: 0.85rem;
+    padding-bottom: 0.9rem;
     border-bottom: 2px solid #edf2f7;
   }
 
+  .section-title-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(44, 82, 130, 0.08);
+    color: var(--color-primary);
+    flex: 0 0 42px;
+  }
+
+  .section-head-copy {
+    min-width: 0;
+  }
+
   .section-subtitle {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     color: var(--color-text-muted-local);
-    margin-top: -0.25rem;
-    margin-bottom: 1rem;
+    margin-top: 0.1rem;
+    line-height: 1.4;
   }
 
   .topic-divider {
@@ -99,7 +156,7 @@
     color: var(--color-primary);
     text-transform: uppercase;
     letter-spacing: 1px;
-    margin: 1.5rem 0 0.85rem;
+    margin: 1.1rem 0 0.55rem;
     display: flex;
     align-items: center;
     gap: 10px;
@@ -114,8 +171,8 @@
 
   .check-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 7px;
   }
 
   .check-row-container {
@@ -126,22 +183,25 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 12px;
-    padding: 10px 14px;
+    gap: 10px;
+    padding: 6px 10px;
     background: #f8fafc;
-    border-radius: 12px;
+    border-radius: 9px;
     border: 1px solid rgba(0, 0, 0, 0.05);
   }
 
   .check-row-title {
     min-width: 0;
-    font-size: 0.82rem;
+    font-size: 0.75rem;
+    line-height: 1.2;
   }
 
   .check-toggle .btn {
-    min-width: 128px;
+    min-width: 96px;
     justify-content: center;
     box-shadow: none;
+    padding: 0.3rem 0.65rem;
+    font-size: 0.72rem;
   }
 
   .check-toggle .btn-check:checked + .btn-outline-primary {
@@ -150,15 +210,33 @@
     color: #fff !important;
   }
 
+  .form-control,
+  .form-select {
+    padding: 0.5rem 0.85rem;
+    font-size: 0.92rem;
+  }
+
+  textarea.form-control {
+    min-height: 84px;
+  }
+
   .obs-container {
     display: none;
     animation: slideIn 0.25s ease-out;
     background: #ebf8ff;
-    padding: 15px;
+    padding: 12px;
     border-radius: 12px;
     border: 1px solid #bee3f8;
-    margin-top: 10px;
-    margin-bottom: 6px;
+    margin-top: 8px;
+    margin-bottom: 4px;
+  }
+
+  .pilot-info-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 0.95rem;
+    height: 100%;
   }
 
   .signature-container {
@@ -170,12 +248,19 @@
 
   #signature-pad {
     width: 100%;
-    height: 180px;
+    height: 160px;
     background: #fff;
     border-radius: 12px;
     border: 1px solid #cbd5e0;
     touch-action: none;
     cursor: crosshair;
+  }
+
+  .checklist-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
 
   @keyframes slideIn {
@@ -192,14 +277,23 @@
   body.dark-mode .section-box,
   body.dark-mode .summary-card,
   body.dark-mode .check-row,
-  body.dark-mode .signature-container {
+  body.dark-mode .signature-container,
+  body.dark-mode .pilot-info-box,
+  body.dark-mode .checklist-intro {
     background: #1a2634;
     border-color: rgba(255, 255, 255, 0.06);
   }
 
   body.dark-mode .summary-card .value,
-  body.dark-mode .text-dark-blue {
+  body.dark-mode .text-dark-blue,
+  body.dark-mode .checklist-intro-title {
     color: #e2e8f0;
+  }
+
+  body.dark-mode .checklist-intro-text,
+  body.dark-mode .section-subtitle,
+  body.dark-mode .summary-card .label {
+    color: rgba(255, 255, 255, 0.68);
   }
 
   body.dark-mode .obs-container {
@@ -208,12 +302,30 @@
   }
 
   @media (max-width: 991.98px) {
+    .summary-row {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .check-toggle .btn {
       min-width: 110px;
     }
   }
 
   @media (max-width: 768px) {
+    .checklist-page.container-fluid.py-4 {
+      padding-left: 12px !important;
+      padding-right: 12px !important;
+    }
+
+    .checklist-topbar {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .summary-row {
+      grid-template-columns: 1fr;
+    }
+
     .check-grid {
       grid-template-columns: 1fr;
     }
@@ -231,20 +343,29 @@
       min-width: 0;
       width: 50%;
     }
+
+    .checklist-actions > * {
+      width: 100%;
+    }
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4" style="max-width: 1500px;">
-  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+<div class="container-fluid py-4 checklist-page" style="max-width: 1500px;">
+  <div class="checklist-topbar mb-3 flex-wrap">
     <div>
       <h2 class="text-dark m-0"><i class="bi bi-ui-checks-grid text-primary me-2"></i>Checklist Semanal Unificado</h2>
       <p class="text-muted small m-0">Inspecao obrigatoria de frota e equipamentos</p>
     </div>
-    <a href="{{ url_for('main.piloto_os') }}" class="btn btn-secondary shadow-sm">
+    <a href="{{ url_for('main.piloto_os') }}" class="btn btn-outline-secondary">
       <i class="bi bi-arrow-left me-1"></i> Voltar
     </a>
+  </div>
+
+  <div class="checklist-intro mb-4">
+    <div class="checklist-intro-title">Preenchimento semanal consolidado</div>
+    <div class="checklist-intro-text">Revise primeiro o veiculo, depois o drone e finalize com os dados do piloto. O ultimo checklist salvo continua sendo usado como base para reduzir retrabalho.</div>
   </div>
 
   {% with messages = get_flashed_messages(with_categories=true) %}
@@ -259,37 +380,31 @@
   {% endwith %}
 
   <form method="post" id="formChecklist">
-    <div class="row g-3 mb-4">
-      <div class="col-md-3">
-        <div class="summary-card shadow-sm">
-          <div class="label">Veiculo</div>
-          <div class="value" id="summary-veiculo">Selecione</div>
-        </div>
+    <div class="summary-row mb-4">
+      <div class="summary-card">
+        <div class="label">Veiculo</div>
+        <div class="value" id="summary-veiculo">Selecione</div>
       </div>
-      <div class="col-md-3">
-        <div class="summary-card shadow-sm" style="border-left-color: #f59e0b;">
-          <div class="label">KM atual</div>
-          <div class="value" id="summary-km">-</div>
-        </div>
+      <div class="summary-card" style="border-left-color: #f59e0b;">
+        <div class="label">KM atual</div>
+        <div class="value" id="summary-km">-</div>
       </div>
-      <div class="col-md-3">
-        <div class="summary-card shadow-sm" style="border-left-color: #00a3c4;">
-          <div class="label">Drone</div>
-          <div class="value" id="summary-drone">Selecione</div>
-        </div>
+      <div class="summary-card" style="border-left-color: #00a3c4;">
+        <div class="label">Drone</div>
+        <div class="value" id="summary-drone">Selecione</div>
       </div>
-      <div class="col-md-3">
-        <div class="summary-card shadow-sm" style="border-left-color: #16a34a;">
-          <div class="label">Baterias</div>
-          <div class="value" id="summary-baterias">-</div>
-        </div>
+      <div class="summary-card" style="border-left-color: #16a34a;">
+        <div class="label">Baterias</div>
+        <div class="value" id="summary-baterias">-</div>
       </div>
     </div>
 
-    <div class="section-box shadow-sm mb-4">
+    <div class="section-box mb-4">
       <div class="section-title-line">
-        <i class="bi bi-car-front fs-4 text-primary"></i>
-        <div>
+        <span class="section-title-icon">
+          <i class="bi bi-car-front fs-5"></i>
+        </span>
+        <div class="section-head-copy">
           <h5 class="m-0 fw-bold text-dark-blue">Inspecao do Veiculo</h5>
           <div class="section-subtitle">Campos separados para seguir exatamente a estrutura do model.</div>
         </div>
@@ -432,10 +547,12 @@
       </div>
     </div>
 
-    <div class="section-box shadow-sm mb-4">
+    <div class="section-box mb-4">
       <div class="section-title-line">
-        <i class="bi bi-airplane-engines fs-4 text-primary"></i>
-        <div>
+        <span class="section-title-icon">
+          <i class="bi bi-airplane-engines fs-5"></i>
+        </span>
+        <div class="section-head-copy">
           <h5 class="m-0 fw-bold text-dark-blue">Inspecao do Drone</h5>
           <div class="section-subtitle">Cada item separado conforme os campos de checklist do equipamento.</div>
         </div>
@@ -505,10 +622,12 @@
       <textarea class="form-control border-2" rows="3" name="observacoes_equipamento" placeholder="Qualquer outra observacao relevante sobre o drone..."></textarea>
     </div>
 
-    <div class="section-box shadow-sm">
+    <div class="section-box">
       <div class="section-title-line">
-        <i class="bi bi-pen fs-4 text-primary"></i>
-        <div>
+        <span class="section-title-icon">
+          <i class="bi bi-pen fs-5"></i>
+        </span>
+        <div class="section-head-copy">
           <h5 class="m-0 fw-bold text-dark-blue">Informacoes do Piloto</h5>
           <div class="section-subtitle">Responsavel pelo checklist e assinatura digital.</div>
         </div>
@@ -516,8 +635,10 @@
 
       <div class="row g-4 align-items-start">
         <div class="col-lg-5">
-          <label class="small fw-bold text-muted">NOME DO PILOTO / RESPONSAVEL</label>
-          <input type="text" class="form-control mb-3 border-2 fw-bold text-primary" name="nome_responsavel" id="nome_responsavel" value="{{ piloto_nome }}">
+          <div class="pilot-info-box">
+            <label class="small fw-bold text-muted">NOME DO PILOTO / RESPONSAVEL</label>
+            <input type="text" class="form-control mt-2 border-2 fw-bold text-primary" name="nome_responsavel" id="nome_responsavel" value="{{ piloto_nome }}">
+          </div>
         </div>
         <div class="col-lg-7">
           <div class="signature-container mb-3 shadow-inner">
@@ -525,7 +646,7 @@
           </div>
           <input type="hidden" name="assinatura_piloto" id="assinatura_piloto">
 
-          <div class="d-flex gap-2 flex-wrap">
+          <div class="checklist-actions">
             <button type="button" class="btn btn-outline-secondary flex-grow-1" id="btn-clear-signature">LIMPAR</button>
             <button type="submit" class="btn btn-primary flex-grow-1 px-4 fw-bold shadow-sm">
               <i class="bi bi-check2-all me-2"></i>SALVAR CHECKLIST
@@ -660,17 +781,20 @@
     const img = new Image();
     img.src = dataUrl;
     img.onload = () => {
+      const rect = canvas.getBoundingClientRect();
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, rect.width, rect.height);
     };
   }
 
   function resizeCanvas() {
     const ratio = Math.max(window.devicePixelRatio || 1, 1);
     const previous = signatureInput.value;
-    canvas.width = canvas.offsetWidth * ratio;
-    canvas.height = canvas.offsetHeight * ratio;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * ratio;
+    canvas.height = rect.height * ratio;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.scale(ratio, ratio);
     ctx.lineWidth = 3;
     ctx.lineCap = "round";
