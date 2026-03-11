@@ -750,7 +750,7 @@ class ChecklistSemanalVeiculo(db.Model):
     isqueiro = db.Column(db.Boolean, default=True)
     carregador = db.Column(db.Boolean, default=True)
     condicao_giroflex_isqueiro_carregador = db.Column(db.Text)
-    
+
     # Itens carro externo (Lataria)
     lataria_frontal = db.Column(db.Boolean, default=True) 
     lataria_lateral = db.Column(db.Boolean, default=True) 
@@ -761,8 +761,8 @@ class ChecklistSemanalVeiculo(db.Model):
     lataria_porta_lateral = db.Column(db.Boolean, default=True) 
     condicao_lataria_portas = db.Column(db.Text)
 
-    para_choque_frontal = db.Column(db.Boolean, default=True)
-    para_choque_traseiro = db.Column(db.Boolean, default=True)
+    parachoque_frontal = db.Column(db.Boolean, default=True)
+    parachoque_traseiro = db.Column(db.Boolean, default=True)
     condicao_itens_carro_externo = db.Column(db.Text)
 
     assinatura_piloto = db.Column(db.Text) # Base64
@@ -794,7 +794,7 @@ class ChecklistSemanalDrone(db.Model):
     cameras = db.Column(db.Boolean, default=True)
     condicao_estrutura = db.Column(db.Text)
 
-    carregadore_controle = db.Column(db.Boolean, default=True) # Carregador Controle/WB/Baterias
+    carregador_controle = db.Column(db.Boolean, default=True) # Carregador Controle/WB/Baterias
     baterias = db.Column(db.Boolean, default=True) # WB/Baterias
     condicao_carregador_bateria = db.Column(db.Text)
 
