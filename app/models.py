@@ -667,13 +667,6 @@ class LogVeiculo(db.Model):
     km_inicial = db.Column(db.Float, nullable=False)
     km_final = db.Column(db.Float, nullable=True)
 
-    # Seção de Abastecimento (ABS)
-    abasteceu = db.Column(db.Boolean, default=False)
-    litros = db.Column(db.Float, nullable=True) # Litragem abastecida 
-    valor_total = db.Column(db.Float, nullable=True) # Valor total do abastecimento 
-    foto_nf_path = db.Column(db.String(255), nullable=True) # Foto da NF com CNPJ e Placa [cite: 26]
-    km_no_abastecimento = db.Column(db.Float, nullable=True)
-
     # Seção de Checklist Diário (CCD)
     check_diario = db.Column(db.Boolean, default=False) # Define se este registro é o checklist do dia 
     qtd_fazendas_enderecos = db.Column(db.Integer) #Quantos endereços fez no dia (final)
@@ -683,6 +676,13 @@ class LogVeiculo(db.Model):
     assinatura_piloto = db.Column(db.Text) # Armazena o Base64 do seu Canvas 
     observacao = db.Column(db.Text)
 
+    # Relacionamento com os diversos abastecimentos que podem ocorrer
+    abastecimentos_detalhados = db.relationship(
+        "Abastecimento", 
+        back_populates="log_pai", 
+        cascade="all, delete-orphan"
+    )
+    
     # Relacionamentos
     veiculo = db.relationship(
         "Veiculos",
@@ -690,8 +690,73 @@ class LogVeiculo(db.Model):
     )
     piloto = db.relationship("Pilotos", backref=db.backref("logs_veiculo", lazy="select"))
 
-# ... (Mantenha as classes Usuario até LogVeiculo iguais)
+    @property
+    def abastecimentos_ordenados(self):
+        return sorted(
+            self.abastecimentos_detalhados or [],
+            key=lambda item: item.data_hora or self.data_registro or datetime.min
+        )
 
+    @property
+    def teve_abastecimento(self):
+        return bool(self.abastecimentos_detalhados)
+
+    @property
+    def qtd_abastecimentos(self):
+        return len(self.abastecimentos_detalhados or [])
+
+    @property
+    def total_litros_abastecidos(self):
+        return sum((item.litros or 0) for item in (self.abastecimentos_detalhados or []))
+
+    @property
+    def total_valor_abastecido(self):
+        return sum((item.valor_total or 0) for item in (self.abastecimentos_detalhados or []))
+
+    @property
+    def ultima_movimentacao_em(self):
+        datas = [self.data_registro] if self.data_registro else []
+        datas.extend(
+            item.data_hora
+            for item in (self.abastecimentos_detalhados or [])
+            if item.data_hora is not None
+        )
+        return max(datas) if datas else None
+
+    @property
+    def ultimo_km_registrado(self):
+        kms = [self.km_inicial or 0]
+        kms.extend(
+            item.km_registro
+            for item in (self.abastecimentos_detalhados or [])
+            if item.km_registro is not None
+        )
+        if self.km_final is not None:
+            kms.append(self.km_final)
+        return max(kms) if kms else 0
+
+# -------------------------------------------------------------
+# ABASTECIMENTOS (Pode haver vários em um turno)
+# -------------------------------------------------------------
+class Abastecimento(db.Model):
+    __tablename__ = "abastecimentos"
+
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # Vincula ao log do veículo (que é o turno atual do piloto)
+    log_veiculo_id = db.Column(db.Integer, db.ForeignKey("logs_veiculo.id"), nullable=False, index=True)
+    
+    data_hora = db.Column(db.DateTime, default=datetime.now, nullable=False)
+    
+    km_registro = db.Column(db.Float, nullable=False) # KM no momento do abastecimento
+    litros = db.Column(db.Float, nullable=False)
+    valor_total = db.Column(db.Float, nullable=True)
+    
+    # Caminho da foto da NF capturada NA HORA (capture="environment")
+    foto_nf_path = db.Column(db.String(255), nullable=False)
+    
+    # Relacionamento
+    log_pai = db.relationship("LogVeiculo", back_populates="abastecimentos_detalhados")
 # -------------------------------------------------------------
 # CHECKLIST SEMANAL DE VEÍCULO
 # -------------------------------------------------------------

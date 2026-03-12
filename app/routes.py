@@ -42,13 +42,26 @@ from reportlab.lib.pagesizes import landscape
 # SQLALCHEMY / BANCO
 # ==========================
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 
 # ==========================
 # APP
 # ==========================
 from app import db
-from app.models import Notificacao, Solicitacao, Usuario, Clientes, Pilotos, Equipe, EquipePiloto, EquipeUvis, Veiculos, OrdemServico, LogVeiculo
+from app.models import (
+    Abastecimento,
+    Clientes,
+    Equipe,
+    EquipePiloto,
+    EquipeUvis,
+    LogVeiculo,
+    Notificacao,
+    OrdemServico,
+    Pilotos,
+    Solicitacao,
+    Usuario,
+    Veiculos,
+)
 TZ = ZoneInfo("America/Sao_Paulo")
 print("--- ROTAS CARREGADAS COM SUCESSO ---")
 
@@ -8034,6 +8047,7 @@ def listar_veiculos():
         veiculo_ids = [v.id for v in veiculos]
         logs = (
             LogVeiculo.query
+            .options(selectinload(LogVeiculo.abastecimentos_detalhados))
             .filter(LogVeiculo.veiculo_id.in_(veiculo_ids))
             .order_by(LogVeiculo.veiculo_id.asc(), LogVeiculo.data_registro.desc())
             .all()
@@ -8052,6 +8066,19 @@ def listar_veiculos():
 
 from openpyxl.formatting.rule import FormulaRule
 from openpyxl.formatting.rule import CellIsRule
+
+
+def _ultima_movimentacao_log_subquery():
+    return (
+        db.session.query(
+            Abastecimento.log_veiculo_id.label("log_id"),
+            db.func.max(Abastecimento.data_hora).label("ultima_movimentacao_em"),
+        )
+        .group_by(Abastecimento.log_veiculo_id)
+        .subquery()
+    )
+
+
 @bp.route("/veiculos/logs", methods=["GET"], endpoint="veiculos_logs")
 @login_required
 def veiculos_logs():
@@ -8063,10 +8090,20 @@ def veiculos_logs():
     data_inicio = (request.args.get("data_inicio") or "").strip()
     data_fim = (request.args.get("data_fim") or "").strip()
     page = request.args.get("page", 1, type=int)
+    ultima_movimentacao_subq = _ultima_movimentacao_log_subquery()
+    ultima_movimentacao_expr = db.func.coalesce(
+        ultima_movimentacao_subq.c.ultima_movimentacao_em,
+        LogVeiculo.data_registro,
+    )
 
     query = (
         LogVeiculo.query
-        .options(joinedload(LogVeiculo.veiculo), joinedload(LogVeiculo.piloto))
+        .options(
+            joinedload(LogVeiculo.veiculo),
+            joinedload(LogVeiculo.piloto),
+            selectinload(LogVeiculo.abastecimentos_detalhados),
+        )
+        .outerjoin(ultima_movimentacao_subq, ultima_movimentacao_subq.c.log_id == LogVeiculo.id)
         .join(Veiculos, LogVeiculo.veiculo_id == Veiculos.id)
         .join(Pilotos, LogVeiculo.piloto_id == Pilotos.id)
     )
@@ -8085,18 +8122,18 @@ def veiculos_logs():
     if data_inicio:
         try:
             dt_ini = datetime.strptime(data_inicio, "%Y-%m-%d")
-            query = query.filter(LogVeiculo.data_registro >= dt_ini)
+            query = query.filter(ultima_movimentacao_expr >= dt_ini)
         except ValueError:
             pass
 
     if data_fim:
         try:
             dt_fim = datetime.strptime(data_fim, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
-            query = query.filter(LogVeiculo.data_registro <= dt_fim)
+            query = query.filter(ultima_movimentacao_expr <= dt_fim)
         except ValueError:
             pass
 
-    query = query.order_by(LogVeiculo.data_registro.desc())
+    query = query.order_by(ultima_movimentacao_expr.desc(), LogVeiculo.id.desc())
     paginacao = query.paginate(page=page, per_page=20, error_out=False)
     logs = paginacao.items
 
@@ -8107,7 +8144,7 @@ def veiculos_logs():
         logs=logs,
         paginacao=paginacao,
         total_logs=query.count(),
-        total_abastecido=sum((l.valor_total or 0) for l in logs),
+        total_abastecido=sum((l.total_valor_abastecido or 0) for l in logs),
         filters=filters,
     )
 
@@ -8134,10 +8171,20 @@ def exportar_logs_veiculos_xlsx():
     q = (request.args.get("q") or "").strip()
     data_inicio = (request.args.get("data_inicio") or "").strip()
     data_fim = (request.args.get("data_fim") or "").strip()
+    ultima_movimentacao_subq = _ultima_movimentacao_log_subquery()
+    ultima_movimentacao_expr = db.func.coalesce(
+        ultima_movimentacao_subq.c.ultima_movimentacao_em,
+        LogVeiculo.data_registro,
+    )
 
     query = (
         LogVeiculo.query
-        .options(joinedload(LogVeiculo.veiculo), joinedload(LogVeiculo.piloto))
+        .options(
+            joinedload(LogVeiculo.veiculo),
+            joinedload(LogVeiculo.piloto),
+            selectinload(LogVeiculo.abastecimentos_detalhados),
+        )
+        .outerjoin(ultima_movimentacao_subq, ultima_movimentacao_subq.c.log_id == LogVeiculo.id)
         .join(Veiculos, LogVeiculo.veiculo_id == Veiculos.id)
         .join(Pilotos, LogVeiculo.piloto_id == Pilotos.id)
     )
@@ -8156,18 +8203,18 @@ def exportar_logs_veiculos_xlsx():
     if data_inicio:
         try:
             dt_ini = datetime.strptime(data_inicio, "%Y-%m-%d")
-            query = query.filter(LogVeiculo.data_registro >= dt_ini)
+            query = query.filter(ultima_movimentacao_expr >= dt_ini)
         except ValueError:
             pass
 
     if data_fim:
         try:
             dt_fim = datetime.strptime(data_fim, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
-            query = query.filter(LogVeiculo.data_registro <= dt_fim)
+            query = query.filter(ultima_movimentacao_expr <= dt_fim)
         except ValueError:
             pass
 
-    logs = query.order_by(LogVeiculo.data_registro.desc()).all()
+    logs = query.order_by(ultima_movimentacao_expr.desc(), LogVeiculo.id.desc()).all()
 
     # -----------------------------
     # Helpers de estilo/estrutura
@@ -8215,7 +8262,7 @@ def exportar_logs_veiculos_xlsx():
 
     # >>> Campos "direitinho" (sem KM no Abastecimento) <<<
     headers = [
-        "Data",
+        "Ultima Movimentacao",
         "Veículo",
         "Placa",
         "Responsável",
@@ -8225,6 +8272,7 @@ def exportar_logs_veiculos_xlsx():
         "KM Final",
         "KM Rodado",              # calculado
         "Abasteceu",
+        "Qtd. Abastecimentos",
         "Litros",
         "Valor Abastecimento (R$)",
         "Valor por Litro (R$)",   # calculado
@@ -8239,7 +8287,7 @@ def exportar_logs_veiculos_xlsx():
     # Escreve dados
     for log in logs:
         ws.append([
-            log.data_registro.strftime("%d/%m/%Y %H:%M") if log.data_registro else "",
+            log.ultima_movimentacao_em.strftime("%d/%m/%Y %H:%M") if log.ultima_movimentacao_em else "",
             (log.veiculo.modelo if log.veiculo else "") or "",
             (log.veiculo.placa if log.veiculo else "") or "",
             (log.veiculo.responsavel if log.veiculo else "") or "",
@@ -8248,9 +8296,10 @@ def exportar_logs_veiculos_xlsx():
             float(log.km_inicial or 0),
             "" if log.km_final is None else float(log.km_final),
             None,  # KM Rodado (formula)
-            "SIM" if log.abasteceu else "NÃO",
-            "" if log.litros is None else float(log.litros),
-            float(log.valor_total or 0),
+            "SIM" if log.teve_abastecimento else "NÃO",
+            int(log.qtd_abastecimentos or 0),
+            float(log.total_litros_abastecidos or 0),
+            float(log.total_valor_abastecido or 0),
             None,  # Valor por Litro (formula)
             None,  # Custo por KM (formula)
             "SIM" if log.assinatura_piloto else "NÃO",
@@ -8258,23 +8307,24 @@ def exportar_logs_veiculos_xlsx():
         ])
 
     last_row = ws.max_row
-    last_col = ws.max_column  # 16 colunas (A..P)
+    last_col = ws.max_column
 
     # Filtro no range real (sem Table, compatível com openpyxl antigo)
     ws.auto_filter.ref = f"A1:{get_column_letter(last_col)}{last_row}"
 
-    # Colunas (1-based) conforme a lista de headers acima (16 colunas)
+    # Colunas (1-based) conforme a lista de headers acima
     COL_DATA = 1
     COL_CHECK = 6
     COL_KM_INI = 7
     COL_KM_FIM = 8
     COL_KM_ROD = 9
     COL_ABAST = 10
-    COL_LITROS = 11
-    COL_VALOR = 12
-    COL_VAL_LITRO = 13
-    COL_CUSTO_KM = 14
-    COL_ASS = 15
+    COL_QTD_AB = 11
+    COL_LITROS = 12
+    COL_VALOR = 13
+    COL_VAL_LITRO = 14
+    COL_CUSTO_KM = 15
+    COL_ASS = 16
 
     # Formatação numérica / fórmulas por linha + bordas/alinhamento
     for r in range(2, last_row + 1):
@@ -8300,6 +8350,7 @@ def exportar_logs_veiculos_xlsx():
         ws.cell(r, COL_KM_INI).number_format = "#,##0.00"
         ws.cell(r, COL_KM_FIM).number_format = "#,##0.00"
         ws.cell(r, COL_KM_ROD).number_format = "#,##0.00"
+        ws.cell(r, COL_QTD_AB).number_format = "0"
         ws.cell(r, COL_LITROS).number_format = "#,##0.00"
         ws.cell(r, COL_VALOR).number_format = '"R$" #,##0.00'
         ws.cell(r, COL_VAL_LITRO).number_format = '"R$" #,##0.00'
@@ -8376,6 +8427,7 @@ def exportar_logs_veiculos_xlsx():
     rng_vl     = f"Detalhamento!{get_column_letter(COL_VAL_LITRO)}2:{get_column_letter(COL_VAL_LITRO)}{last_row}"
     rng_ckm    = f"Detalhamento!{get_column_letter(COL_CUSTO_KM)}2:{get_column_letter(COL_CUSTO_KM)}{last_row}"
     rng_ab     = f"Detalhamento!{get_column_letter(COL_ABAST)}2:{get_column_letter(COL_ABAST)}{last_row}"
+    rng_qtd_ab = f"Detalhamento!{get_column_letter(COL_QTD_AB)}2:{get_column_letter(COL_QTD_AB)}{last_row}"
 
     # Cabeçalho
     ws2.merge_cells("A1:H1")
@@ -8460,8 +8512,8 @@ def exportar_logs_veiculos_xlsx():
          "Preço médio pago por litro (filtra valores > 0)."),
         ("Média Custo por KM (R$)", f'=AVERAGEIF({rng_ckm},">0")',
          "Custo médio por km: (valor abastecido / km rodado)."),
-        ("Qtd. de Abastecimentos", f'=COUNTIF({rng_ab},"SIM")',
-         "Quantidade de registros marcados como abastecimento."),
+        ("Qtd. de Abastecimentos", f"=SUM({rng_qtd_ab})",
+         "Quantidade total de abastecimentos registrados nos turnos filtrados."),
     ]
 
     base_r = 10
@@ -8871,22 +8923,66 @@ def deletar_veiculo(veiculo_id):
 
     return redirect(url_for("main.listar_veiculos"))
 
-from flask import render_template, request, redirect, url_for, flash, abort
-from flask_login import login_required, current_user
-from app import db
-from app.models import Veiculos
+def _piloto_nome_logado():
+    return (getattr(current_user, "nome_uvis", None) or "").strip()
+
+
+def _parse_decimal_form(raw_value):
+    raw_value = (raw_value or "").strip()
+    if not raw_value:
+        return None
+
+    if "," in raw_value and "." in raw_value:
+        raw_value = raw_value.replace(".", "").replace(",", ".")
+    else:
+        raw_value = raw_value.replace(",", ".")
+
+    return float(raw_value)
+
+
+def _veiculo_do_piloto_logado(veiculo_id, nome_piloto):
+    veiculo = Veiculos.query.get_or_404(veiculo_id)
+    if (veiculo.responsavel or "").strip().lower() != nome_piloto.lower():
+        abort(403)
+    return veiculo
+
+
+def _buscar_turno_aberto_piloto(veiculo_id, incluir_abastecimentos=False):
+    query = LogVeiculo.query.filter(
+        LogVeiculo.veiculo_id == veiculo_id,
+        LogVeiculo.piloto_id == current_user.piloto_id,
+        LogVeiculo.km_final.is_(None),
+    )
+    if incluir_abastecimentos:
+        query = query.options(selectinload(LogVeiculo.abastecimentos_detalhados))
+    return query.order_by(LogVeiculo.data_registro.desc()).first()
+
+
+def _salvar_upload_veiculo(arquivo, subpasta, prefixo, placa):
+    if not arquivo or not arquivo.filename:
+        return None
+
+    pasta_base = os.path.join(current_app.root_path, "static", "uploads", "veiculos")
+    pasta_destino = os.path.join(pasta_base, subpasta)
+    os.makedirs(pasta_destino, exist_ok=True)
+
+    ext = os.path.splitext(secure_filename(arquivo.filename))[1] or ".jpg"
+    stamp = datetime.now().strftime("%Y%m%d%H%M%S%f")
+    nome = secure_filename(f"{prefixo}_{placa}_{stamp}{ext}")
+    arquivo.save(os.path.join(pasta_destino, nome))
+
+    return f"uploads/veiculos/{subpasta}/{nome}"
 
 
 @bp.route("/piloto/veiculos", methods=["GET"], endpoint="piloto_veiculos")
 @login_required
 @roles_required("piloto")
 def piloto_veiculos():
-    # nome do piloto logado (no seu model Usuario, nome_uvis é obrigatório e no cadastro do piloto você grava nome_piloto ali)
-    nome_piloto = (getattr(current_user, "nome_uvis", None) or "").strip()
+    nome_piloto = _piloto_nome_logado()
 
-    if not nome_piloto:
-        flash("Seu usuário piloto está sem nome vinculado. Contate o administrador.", "warning")
-        return render_template("piloto_veiculos.html", veiculos=[])
+    if not nome_piloto or not getattr(current_user, "piloto_id", None):
+        flash("Seu usuário piloto está sem vínculo completo. Contate o administrador.", "warning")
+        return render_template("piloto_veiculos.html", veiculos=[], turnos_abertos={})
 
     veiculos = (
         Veiculos.query
@@ -8895,27 +8991,24 @@ def piloto_veiculos():
         .all()
     )
 
-    hoje = datetime.now().date()
     turnos_abertos = {}
     veiculo_ids = [v.id for v in veiculos]
 
     if veiculo_ids:
-        logs_hoje = (
+        logs_abertos = (
             LogVeiculo.query
+            .options(selectinload(LogVeiculo.abastecimentos_detalhados))
             .filter(
                 LogVeiculo.piloto_id == current_user.piloto_id,
                 LogVeiculo.veiculo_id.in_(veiculo_ids),
-                db.func.date(LogVeiculo.data_registro) == hoje
+                LogVeiculo.km_final.is_(None),
             )
             .order_by(LogVeiculo.veiculo_id.asc(), LogVeiculo.data_registro.desc())
             .all()
         )
-        ultimos_por_veiculo = {}
-        for log in logs_hoje:
-            if log.veiculo_id not in ultimos_por_veiculo:
-                ultimos_por_veiculo[log.veiculo_id] = log
-        for veiculo_id, ultimo_log in ultimos_por_veiculo.items():
-            turnos_abertos[veiculo_id] = (ultimo_log.km_final is None)
+        for log in logs_abertos:
+            if log.veiculo_id not in turnos_abertos:
+                turnos_abertos[log.veiculo_id] = log
 
     return render_template("piloto_veiculos.html", veiculos=veiculos, turnos_abertos=turnos_abertos)
 
@@ -8924,45 +9017,35 @@ def piloto_veiculos():
 @login_required
 @roles_required("piloto")
 def piloto_atualizar_km_veiculo(veiculo_id):
-    nome_piloto = (getattr(current_user, "nome_uvis", None) or "").strip()
-    if not nome_piloto:
+    nome_piloto = _piloto_nome_logado()
+    if not nome_piloto or not getattr(current_user, "piloto_id", None):
         abort(403)
 
-    v = Veiculos.query.get_or_404(veiculo_id)
-    if (v.responsavel or "").strip().lower() != nome_piloto.lower():
-        abort(403)
+    v = _veiculo_do_piloto_logado(veiculo_id, nome_piloto)
 
-    km_inicial = request.form.get("km_inicial", type=float)
-    valor_raw = (request.form.get("valor_abastecimento") or "").strip().replace(".", "").replace(",", ".")
-    litros_raw = (request.form.get("litros") or "").strip().replace(".", "").replace(",", ".")
+    try:
+        km_inicial = _parse_decimal_form(request.form.get("km_inicial"))
+    except ValueError:
+        flash("Kilometragem inicial invalida.", "warning")
+        return redirect(url_for("main.piloto_veiculos"))
+
     assinatura_b64 = request.form.get("assinatura_b64")
-    houve_abs = request.form.get("houve_abastecimento") == "on"
     foto_painel = request.files.get("foto_painel")
-    foto_nf = request.files.get("foto_nf")
 
     if km_inicial is None or not assinatura_b64 or not foto_painel or not foto_painel.filename:
         flash("Kilometragem inicial, foto do painel e assinatura sao obrigatorias.", "warning")
         return redirect(url_for("main.piloto_veiculos"))
 
     try:
-        valor_abastecimento = float(valor_raw) if houve_abs and valor_raw else 0.0
-        litros = float(litros_raw) if houve_abs and litros_raw else None
         km_atual_veiculo = v.km_atual or 0
 
         if km_inicial < km_atual_veiculo:
             flash(f"KM inicial ({km_inicial:.0f}) menor que o KM atual do veiculo.", "danger")
             return redirect(url_for("main.piloto_veiculos"))
 
-        hoje = datetime.now().date()
-        turno_aberto_hoje = LogVeiculo.query.filter(
-            LogVeiculo.veiculo_id == v.id,
-            LogVeiculo.piloto_id == current_user.piloto_id,
-            db.func.date(LogVeiculo.data_registro) == hoje,
-            LogVeiculo.km_final.is_(None)
-        ).first()
-
-        if turno_aberto_hoje:
-            flash("Ja existe um turno aberto para este veiculo hoje. Finalize-o antes de iniciar outro.", "warning")
+        turno_aberto = _buscar_turno_aberto_piloto(v.id)
+        if turno_aberto:
+            flash("Ja existe um turno aberto para este veiculo. Finalize-o antes de iniciar outro.", "warning")
             return redirect(url_for("main.piloto_veiculos"))
 
         novo_log = LogVeiculo(
@@ -8970,31 +9053,11 @@ def piloto_atualizar_km_veiculo(veiculo_id):
             piloto_id=current_user.piloto_id,
             km_inicial=km_inicial,
             km_final=None,
-            abasteceu=houve_abs,
-            litros=litros,
-            valor_total=valor_abastecimento,
             check_diario=True,
             assinatura_piloto=assinatura_b64,
-            data_registro=datetime.now()
+            data_registro=datetime.now(),
         )
-
-        upload_dir = os.path.join(current_app.root_path, "static", "uploads", "veiculos")
-        paineis_dir = os.path.join(upload_dir, "paineis")
-        notas_dir = os.path.join(upload_dir, "notas")
-        os.makedirs(paineis_dir, exist_ok=True)
-        os.makedirs(notas_dir, exist_ok=True)
-
-        if foto_painel and foto_painel.filename:
-            ext = os.path.splitext(secure_filename(foto_painel.filename))[1] or ".jpg"
-            nome = secure_filename(f"painel_{v.placa}_{datetime.now().strftime('%Y%m%d%H%M%S')}{ext}")
-            foto_painel.save(os.path.join(paineis_dir, nome))
-            novo_log.foto_painel_path = f"uploads/veiculos/paineis/{nome}"
-
-        if houve_abs and foto_nf and foto_nf.filename:
-            ext_nf = os.path.splitext(secure_filename(foto_nf.filename))[1] or ".jpg"
-            nome_nf = secure_filename(f"nf_{v.placa}_{datetime.now().strftime('%Y%m%d%H%M%S')}{ext_nf}")
-            foto_nf.save(os.path.join(notas_dir, nome_nf))
-            novo_log.foto_nf_path = f"uploads/veiculos/notas/{nome_nf}"
+        novo_log.foto_painel_path = _salvar_upload_veiculo(foto_painel, "paineis", "painel", v.placa)
 
         db.session.add(novo_log)
         v.km_atual = km_inicial
@@ -9002,8 +9065,6 @@ def piloto_atualizar_km_veiculo(veiculo_id):
         db.session.commit()
         flash(f"Turno de {v.modelo} iniciado com sucesso!", "success")
 
-    except ValueError:
-        flash("Dados numericos invalidos.", "warning")
     except IntegrityError as e:
         db.session.rollback()
         current_app.logger.exception("Erro de integridade ao iniciar turno de veiculo.")
@@ -9019,46 +9080,101 @@ def piloto_atualizar_km_veiculo(veiculo_id):
     return redirect(url_for("main.piloto_veiculos"))
 
 
+@bp.route("/piloto/veiculos/<int:veiculo_id>/abastecimento", methods=["POST"], endpoint="piloto_registrar_abastecimento_turno")
+@login_required
+@roles_required("piloto")
+def piloto_registrar_abastecimento_turno(veiculo_id):
+    nome_piloto = _piloto_nome_logado()
+    if not nome_piloto or not getattr(current_user, "piloto_id", None):
+        abort(403)
+
+    v = _veiculo_do_piloto_logado(veiculo_id, nome_piloto)
+    log = _buscar_turno_aberto_piloto(v.id, incluir_abastecimentos=True)
+
+    if not log:
+        flash("Nenhum turno aberto encontrado para registrar abastecimento.", "warning")
+        return redirect(url_for("main.piloto_veiculos"))
+
+    try:
+        km_registro = _parse_decimal_form(request.form.get("km_abastecimento"))
+        litros = _parse_decimal_form(request.form.get("litros"))
+        valor_total = _parse_decimal_form(request.form.get("valor_abastecimento"))
+    except ValueError:
+        flash("Os dados do abastecimento estao invalidos.", "warning")
+        return redirect(url_for("main.piloto_veiculos"))
+
+    foto_nf = request.files.get("foto_nf")
+
+    if km_registro is None or litros is None or valor_total is None or not foto_nf or not foto_nf.filename:
+        flash("KM, litros, valor total e foto da nota sao obrigatorios no abastecimento.", "warning")
+        return redirect(url_for("main.piloto_veiculos"))
+
+    ultimo_km_turno = log.ultimo_km_registrado or 0
+    if km_registro < ultimo_km_turno:
+        flash(f"O KM do abastecimento nao pode ser menor que o ultimo KM do turno ({ultimo_km_turno:.0f}).", "danger")
+        return redirect(url_for("main.piloto_veiculos"))
+
+    try:
+        novo_abastecimento = Abastecimento(
+            log_veiculo_id=log.id,
+            data_hora=datetime.now(),
+            km_registro=km_registro,
+            litros=litros,
+            valor_total=valor_total,
+            foto_nf_path=_salvar_upload_veiculo(foto_nf, "notas", "nf", v.placa),
+        )
+
+        db.session.add(novo_abastecimento)
+        v.km_atual = max(v.km_atual or 0, km_registro)
+        db.session.commit()
+        flash("Abastecimento registrado com sucesso!", "success")
+
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception("Erro tecnico ao registrar abastecimento do turno.")
+        flash("Erro tecnico ao registrar abastecimento.", "danger")
+
+    return redirect(url_for("main.piloto_veiculos"))
+
+
 @bp.route("/piloto/veiculos/<int:veiculo_id>/encerrar", methods=["POST"])
 @login_required
 @roles_required("piloto")
 def piloto_encerrar_turno(veiculo_id):
-    nome_piloto = (getattr(current_user, "nome_uvis", None) or "").strip()
-    if not nome_piloto:
+    nome_piloto = _piloto_nome_logado()
+    if not nome_piloto or not getattr(current_user, "piloto_id", None):
         abort(403)
 
-    v = Veiculos.query.get_or_404(veiculo_id)
-    if (v.responsavel or "").strip().lower() != nome_piloto.lower():
-        abort(403)
+    v = _veiculo_do_piloto_logado(veiculo_id, nome_piloto)
 
-    hoje = datetime.now().date()
-    km_final = request.form.get("km_final", type=float)
-    qtd_fazendas_endereços = request.form.get("qtd_fazendas_enderecos", type=int)
+    try:
+        km_final = _parse_decimal_form(request.form.get("km_final"))
+    except ValueError:
+        flash("Kilometragem final invalida.", "warning")
+        return redirect(url_for("main.piloto_veiculos"))
+
+    qtd_fazendas_enderecos = request.form.get("qtd_fazendas_enderecos", type=int)
     observacao = (request.form.get("observacao") or "").strip() or None
 
     if km_final is None:
         flash("Informe a kilometragem final para encerrar o turno.", "warning")
         return redirect(url_for("main.piloto_veiculos"))
 
-    log = LogVeiculo.query.filter(
-        LogVeiculo.veiculo_id == veiculo_id,
-        LogVeiculo.piloto_id == current_user.piloto_id,
-        db.func.date(LogVeiculo.data_registro) == hoje,
-        LogVeiculo.km_final.is_(None)
-    ).order_by(LogVeiculo.data_registro.desc()).first()
+    log = _buscar_turno_aberto_piloto(veiculo_id, incluir_abastecimentos=True)
 
     if not log:
-        flash("Nenhum turno aberto encontrado para hoje.", "warning")
+        flash("Nenhum turno aberto encontrado.", "warning")
         return redirect(url_for("main.piloto_veiculos"))
 
-    if km_final < (log.km_inicial or 0):
-        flash("KM final nao pode ser menor que o KM inicial do turno.", "danger")
+    ultimo_km_turno = log.ultimo_km_registrado or 0
+    if km_final < ultimo_km_turno:
+        flash(f"KM final nao pode ser menor que o ultimo KM registrado no turno ({ultimo_km_turno:.0f}).", "danger")
         return redirect(url_for("main.piloto_veiculos"))
 
-    log.qtd_fazendas_enderecos = qtd_fazendas_endereços
+    log.qtd_fazendas_enderecos = qtd_fazendas_enderecos
     log.km_final = km_final
     log.observacao = observacao
-    log.veiculo.km_atual = km_final
+    v.km_atual = km_final
 
     db.session.commit()
     flash("Turno encerrado com sucesso!", "success")

@@ -291,6 +291,7 @@
           </thead>
           <tbody>
             {% for v in veiculos %}
+              {% set turno_aberto = turnos_abertos.get(v.id) %}
               <tr>
                 <td>
                   <div class="fw-bold">{{ v.modelo }}</div>
@@ -306,11 +307,25 @@
                   </span>
                 </td>
                 <td>
-                  {% if turnos_abertos.get(v.id) %}
-                    <button class="btn btn-sm btn-warning rounded-pill px-3 shadow-sm" 
-                            data-bs-toggle="modal" data-bs-target="#modalEncerramento{{ v.id }}">
-                      <i class="bi bi-flag-fill me-1"></i> Finalizar Turno
-                    </button>
+                  {% if turno_aberto %}
+                    <div class="d-flex flex-column align-items-center gap-2">
+                      <div class="small text-muted">
+                        Aberto em {{ turno_aberto.data_registro.strftime('%d/%m/%Y %H:%M') if turno_aberto.data_registro else '-' }}
+                      </div>
+                      <div class="small text-muted">
+                        {{ turno_aberto.qtd_abastecimentos }} abast. • R$ {{ '%.2f'|format(turno_aberto.total_valor_abastecido or 0) }}
+                      </div>
+                      <div class="d-flex flex-wrap justify-content-center gap-2">
+                        <button class="btn btn-sm btn-outline-success rounded-pill px-3 shadow-sm"
+                                data-bs-toggle="modal" data-bs-target="#modalAbastecimento{{ v.id }}">
+                          <i class="bi bi-fuel-pump-fill me-1"></i> Abastecimento
+                        </button>
+                        <button class="btn btn-sm btn-warning rounded-pill px-3 shadow-sm"
+                                data-bs-toggle="modal" data-bs-target="#modalEncerramento{{ v.id }}">
+                          <i class="bi bi-flag-fill me-1"></i> Finalizar Turno
+                        </button>
+                      </div>
+                    </div>
                   {% else %}
                     <button class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm" 
                             data-bs-toggle="modal" data-bs-target="#modalChecklist{{ v.id }}">
@@ -326,6 +341,7 @@
     </div>
 
     {% for v in veiculos %}
+      {% set turno_aberto = turnos_abertos.get(v.id) %}
       <div class="modal fade" id="modalChecklist{{ v.id }}" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
           <div class="modal-content border-0 shadow-lg rounded-4">
@@ -353,36 +369,16 @@
                   </div>
                   <div class="col-md-6">
                     <label class="form-label small fw-bold">Foto do Painel</label>
-                    <input type="file" name="foto_painel" class="form-control" accept="image/*" required>
+                    <input type="file" accept="image/*" capture="environment" name="foto_painel" class="form-control" accept="image/*" required>
                     <div class="hint-line mt-1">A foto valida o KM e o nível de combustível.</div>
                   </div>
                 </div>
 
-                <div class="modal-section-title">2. Abastecimento (Opcional - ABS)</div>
-                <div class="form-check form-switch mb-3">
-                  <input class="form-check-input" type="checkbox" id="abs-switch-{{ v.id }}" name="houve_abastecimento">
-                  <label class="form-check-label fw-bold" for="abs-switch-{{ v.id }}">Houve abastecimento agora?</label>
+                <div class="modal-section-title">2. Assinatura do Piloto</div>
+                <div class="modal-soft-card mb-3">
+                  <div class="small text-muted">Fluxo do turno</div>
+                  <div class="hint-line mt-1">Depois de iniciar o turno, use o botão de abastecimento para registrar quantos lançamentos forem necessários até o encerramento.</div>
                 </div>
-
-                <div id="abs-fields-{{ v.id }}" style="display: none;" class="bg-light p-3 rounded-3 border">
-                  <div class="row g-3">
-                    <div class="col-md-4">
-                      <label class="form-label small fw-bold">Valor Total (R$)</label>
-                      <input type="number" step="0.01" min="0" name="valor_abastecimento" class="form-control abs-input-{{ v.id }}" placeholder="0,00">
-                    </div>
-                    <div class="col-md-4">
-                      <label class="form-label small fw-bold">Litros</label>
-                      <input type="number" step="0.01" min="0" name="litros" class="form-control abs-input-{{ v.id }}" placeholder="0.00">
-                    </div>
-                    <div class="col-md-4">
-                      <label class="form-label small fw-bold">Foto da NF</label>
-                      <input type="file" name="foto_nf" class="form-control abs-input-{{ v.id }}" accept="image/*">
-                    </div>
-                  </div>
-                  <div class="hint-line mt-2">Se marcar abastecimento, preencha valor, litros e anexe a nota.</div>
-                </div>
-
-                <div class="modal-section-title">3. Assinatura do Piloto</div>
                 <div class="signature-container text-center">
                     <canvas id="sig-canvas-{{ v.id }}" class="shadow-sm bg-white border rounded-3"></canvas>
                     <input type="hidden" name="assinatura_b64" id="sig-input-{{ v.id }}">
@@ -403,6 +399,52 @@
         </div>
       </div>
 
+      {% if turno_aberto %}
+      <div class="modal fade" id="modalAbastecimento{{ v.id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content border-0 shadow-lg rounded-4">
+            <form method="POST" action="{{ url_for('main.piloto_registrar_abastecimento_turno', veiculo_id=v.id) }}" enctype="multipart/form-data">
+              <div class="modal-header border-0 bg-light rounded-top-4">
+                <h5 class="fw-bold m-0 text-success"><i class="bi bi-fuel-pump-fill me-2"></i>Registrar Abastecimento - {{ v.placa }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body p-4">
+                <div class="modal-soft-card mb-3">
+                  <div class="small text-muted">Turno aberto desde</div>
+                  <div class="fw-bold">{{ turno_aberto.data_registro.strftime('%d/%m/%Y %H:%M') if turno_aberto.data_registro else '-' }}</div>
+                  <div class="hint-line mt-2">Último KM registrado no turno: {{ '%.0f'|format(turno_aberto.ultimo_km_registrado or 0) }} km</div>
+                </div>
+
+                <div class="row g-3">
+                  <div class="col-md-4">
+                    <label class="form-label small fw-bold">KM no Abastecimento</label>
+                    <input type="number" name="km_abastecimento" class="form-control" min="{{ turno_aberto.ultimo_km_registrado or 0 }}" value="{{ turno_aberto.ultimo_km_registrado or '' }}" required>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label small fw-bold">Litros</label>
+                    <input type="number" step="0.01" min="0" name="litros" class="form-control" placeholder="0.00" required>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label small fw-bold">Valor Total (R$)</label>
+                    <input type="number" step="0.01" min="0" name="valor_abastecimento" class="form-control" placeholder="0,00" required>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label small fw-bold">Foto da Nota Fiscal</label>
+                    <input type="file" accept="image/*" capture="environment" name="foto_nf" class="form-control" required>
+                    <div class="hint-line mt-1">Cada abastecimento gera um registro independente dentro do turno.</div>
+                  </div>
+                </div>
+              </div>
+              <div class="modal-footer border-0 bg-light rounded-bottom-4">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-success px-4 shadow">Salvar Abastecimento</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
       <div class="modal fade" id="modalEncerramento{{ v.id }}" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content border-0 shadow-lg rounded-4">
@@ -416,14 +458,17 @@
                   <div class="small text-muted">Referência de encerramento</div>
                   <div class="d-flex justify-content-between align-items-center mt-1">
                     <span class="small">Último KM registrado</span>
-                    <span class="modal-km-highlight">{{ '%.0f'|format(v.km_atual or 0) }} km</span>
+                    <span class="modal-km-highlight">{{ '%.0f'|format((turno_aberto.ultimo_km_registrado if turno_aberto else v.km_atual) or 0) }} km</span>
                   </div>
+                  {% if turno_aberto %}
+                    <div class="hint-line mt-2">{{ turno_aberto.qtd_abastecimentos }} abastecimento(s) registrados • Total R$ {{ '%.2f'|format(turno_aberto.total_valor_abastecido or 0) }}</div>
+                  {% endif %}
                 </div>
 
                 <div class="mb-3">
                   <label class="form-label small fw-bold">Kilometragem Final (Painel)</label>
-                  <input type="number" name="km_final" class="form-control" min="{{ v.km_atual or 0 }}" value="{{ v.km_atual or '' }}" placeholder="KM mostrado no fim do dia" required>
-                  <div class="hint-line mt-1">O KM final não pode ser menor que o KM inicial.</div>
+                  <input type="number" name="km_final" class="form-control" min="{{ (turno_aberto.ultimo_km_registrado if turno_aberto else v.km_atual) or 0 }}" value="{{ (turno_aberto.ultimo_km_registrado if turno_aberto else v.km_atual) or '' }}" placeholder="KM mostrado no fim do dia" required>
+                  <div class="hint-line mt-1">O KM final não pode ser menor que o último KM registrado no turno.</div>
                 </div>
                 <div class="mb-3">
                   <label class="form-label small fw-bold">Quantidade de Fazendas/Endereços Atendidos</label>
@@ -516,27 +561,14 @@ const setupSignature = (canvasId, inputId) => {
 
 document.querySelectorAll('.modal').forEach(modal => {
     modal.addEventListener('shown.bs.modal', function () {
-        const id = this.id.replace('modalChecklist', '').replace('modalEncerramento', '');
+        const id = this.id
+            .replace('modalChecklist', '')
+            .replace('modalEncerramento', '')
+            .replace('modalAbastecimento', '');
         
-        // Inicializa assinatura apenas se for o modal de checklist
         if (this.id.startsWith('modalChecklist')) {
             const signature = setupSignature('sig-canvas-' + id, 'sig-input-' + id);
             if (signature) signature.resize();
-        }
-
-        const switchAbs = document.getElementById('abs-switch-' + id);
-        const fieldsAbs = document.getElementById('abs-fields-' + id);
-        if (switchAbs && fieldsAbs) {
-            fieldsAbs.style.display = switchAbs.checked ? 'block' : 'none';
-            const absInputs = document.querySelectorAll('.abs-input-' + id);
-            absInputs.forEach((el) => { el.required = switchAbs.checked; });
-            if (!switchAbs.dataset.bound) {
-                switchAbs.addEventListener('change', () => {
-                    fieldsAbs.style.display = switchAbs.checked ? 'block' : 'none';
-                    absInputs.forEach((el) => { el.required = switchAbs.checked; });
-                });
-                switchAbs.dataset.bound = '1';
-            }
         }
     });
 });

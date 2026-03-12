@@ -85,7 +85,7 @@
         tbody tr td:nth-child(3)::before { content: "Responsável"; }
         tbody tr td:nth-child(4)::before { content: "KM Atual"; }
         tbody tr td:nth-child(5)::before { content: "KM Restante"; }
-        tbody tr td:nth-child(6)::before { content: "Ultimo Log"; }
+        tbody tr td:nth-child(6)::before { content: "Ultima Movimentacao"; }
         tbody tr td:nth-child(7)::before { content: "Status"; }
         tbody tr td:nth-child(8)::before { content: "Ações"; }
 
@@ -236,7 +236,7 @@
                             <th>Responsável</th>
                             <th>KM Atual</th>
                             <th>KM Restante</th>
-                            <th>Último Log</th>
+                            <th>Ultima Movimentacao</th>
                             <th>Status</th>
                             <th>Ações</th>
                         </tr>
@@ -271,17 +271,23 @@
                             <td class="small">
                                 {% set log = ultimos_logs.get(v.id) %}
                                 {% if log %}
-                                    <div class="fw-semibold text-dark">{{ (log.km_inicial or 0)|round|int }} → {{ (log.km_final or 0)|round|int }} km</div>
+                                    {% set km_resumo = log.km_final if log.km_final is not none else log.ultimo_km_registrado %}
+                                    <div class="fw-semibold text-dark">{{ (log.km_inicial or 0)|round|int }} -> {{ (km_resumo or 0)|round|int }} km</div>
                                     <div class="text-muted">
-                                        {% if log.valor_total is not none %}
-                                            R$ {{ '%.2f'|format(log.valor_total) }}
+                                        {% if log.km_final is none %}
+                                            Turno aberto |
+                                        {% else %}
+                                            Turno encerrado |
+                                        {% endif %}
+                                        {% if log.teve_abastecimento %}
+                                            R$ {{ '%.2f'|format(log.total_valor_abastecido) }} | {{ log.qtd_abastecimentos }} abast.
                                         {% else %}
                                             Sem abastecimento
                                         {% endif %}
-                                        • {{ log.data_registro.strftime('%d/%m/%Y') }}
+                                        | {{ log.ultima_movimentacao_em.strftime('%d/%m/%Y %H:%M') if log.ultima_movimentacao_em else '-' }}
                                     </div>
                                 {% else %}
-                                    <span class="text-muted">Sem log</span>
+                                    <span class="text-muted">Sem historico</span>
                                 {% endif %}
                             </td>
                             <td>

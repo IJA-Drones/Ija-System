@@ -26,6 +26,10 @@
         margin-left: auto;
     }
 
+    .veiculos-logs-filter-actions {
+        display: flex;
+    }
+
     .btn-pill {
         border-radius: 999px !important;
         padding: 8px 20px !important;
@@ -34,6 +38,57 @@
         gap: 8px;
         font-weight: 600;
         height: 38px;
+    }
+
+    .bg-success-light {
+        background: rgba(25, 135, 84, 0.14) !important;
+    }
+
+    .veiculos-logs-table-wrap .table {
+        margin-bottom: 0;
+    }
+
+    .veiculos-logs-table-wrap tbody > tr > td {
+        vertical-align: middle;
+    }
+
+    .veiculos-logs-table-wrap tbody > tr:not(.collapse-row):hover {
+        background-color: rgba(13, 110, 253, 0.02);
+    }
+
+    .collapse-row .bg-light {
+        background-color: #f8fafc !important;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    .collapse-row .card {
+        border-radius: 1rem;
+        overflow: hidden;
+    }
+
+    .collapse-row .card-body {
+        padding: 1.25rem;
+    }
+
+    .collapse-row .card img {
+        display: block;
+        width: 100%;
+        max-height: 260px;
+        object-fit: cover;
+        background: #fff;
+    }
+
+    .signature-image {
+        max-height: 180px !important;
+        width: auto !important;
+        object-fit: contain !important;
+    }
+
+    .abastecimento-item {
+        border: 1px solid #e2e8f0;
+        border-radius: 0.85rem;
+        padding: 0.75rem;
+        background: #fff;
     }
 
     .veiculos-logs-pagination .pagination {
@@ -142,8 +197,8 @@
             padding: 1rem;
         }
 
-        .veiculos-logs-table-wrap .collapse-row img {
-            width: 100%;
+        .veiculos-logs-table-wrap .collapse-row .card img {
+            max-height: none;
         }
 
         .veiculos-logs-pagination .pagination {
@@ -161,6 +216,30 @@
 
     .dark-mode .veiculos-logs-table-wrap tbody > tr:not(.collapse-row) td::before {
         color: rgba(255, 255, 255, 0.65);
+    }
+
+    .dark-mode .collapse-row .bg-light {
+        background-color: #122033 !important;
+        border-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .dark-mode .collapse-row .card {
+        background: #162133;
+        color: #e2e8f0;
+    }
+
+    .dark-mode .collapse-row .text-muted,
+    .dark-mode .collapse-row .small.text-muted {
+        color: rgba(255, 255, 255, 0.65) !important;
+    }
+
+    .dark-mode .abastecimento-item {
+        background: #122033;
+        border-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .dark-mode .bg-success-light {
+        background: rgba(25, 135, 84, 0.2) !important;
     }
 </style>
 {% endblock %}
@@ -188,6 +267,7 @@
             </a>
         </div>
     </div>
+
     <div class="row g-3 mb-4">
         <div class="col-6 col-md-3">
             <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-primary border-4 bg-white">
@@ -251,7 +331,7 @@
                 <table class="table table-hover align-middle mb-0 text-center">
                     <thead class="table-light">
                         <tr>
-                            <th class="ps-4 text-start">Data</th>
+                            <th class="ps-4 text-start">Ultima Movimentacao</th>
                             <th class="text-start">Veículo</th>
                             <th>Piloto</th>
                             <th>KM Inicial</th>
@@ -263,8 +343,15 @@
                     <tbody>
                         {% for log in logs %}
                             <tr>
-                                <td class="ps-4 text-start" data-label="Data">
-                                    {{ log.data_registro.strftime('%d/%m/%Y %H:%M') if log.data_registro else '-' }}
+                                <td class="ps-4 text-start" data-label="Ultima Movimentacao">
+                                    {{ log.ultima_movimentacao_em.strftime('%d/%m/%Y %H:%M') if log.ultima_movimentacao_em else '-' }}
+                                    <div class="small text-muted">
+                                        {% if log.km_final is none %}
+                                            Turno aberto
+                                        {% else %}
+                                            Turno encerrado
+                                        {% endif %}
+                                    </div>
                                 </td>
                                 <td class="text-start" data-label="Veículo">
                                     <div class="fw-bold text-dark">{{ log.veiculo.modelo if log.veiculo else '-' }}</div>
@@ -275,12 +362,20 @@
                                 </td>
                                 <td data-label="Piloto">{{ log.piloto.nome_piloto if log.piloto else '-' }}</td>
                                 <td data-label="KM Inicial">{{ (log.km_inicial or 0)|round|int }} km</td>
-                                <td data-label="KM Final">{% if log.km_final is not none %}{{ (log.km_final or 0)|round|int }} km{% else %}<span class="text-warning">Turno aberto</span>{% endif %}</td>
+                                <td data-label="KM Final">
+                                    {% if log.km_final is not none %}
+                                        {{ (log.km_final or 0)|round|int }} km
+                                    {% else %}
+                                        <span class="text-warning">Turno aberto</span>
+                                        <div class="small text-muted">{{ (log.ultimo_km_registrado or 0)|round|int }} km registrados</div>
+                                    {% endif %}
+                                </td>
                                 <td data-label="Abastecimento (R$)">
-                                    {% if log.valor_total is not none %}
+                                    {% if log.teve_abastecimento %}
                                         <span class="badge bg-success-light text-success rounded-pill px-3">
-                                            {{ '%.2f'|format(log.valor_total) }}
+                                            {{ '%.2f'|format(log.total_valor_abastecido) }}
                                         </span>
+                                        <div class="small text-muted mt-1">{{ log.qtd_abastecimentos }} registro(s)</div>
                                     {% else %}
                                         <span class="text-muted small">Sem abastecimento</span>
                                     {% endif %}
@@ -302,10 +397,13 @@
                                                     <div class="card border-0 shadow-sm h-100">
                                                         <div class="card-body">
                                                             <h6 class="fw-bold text-primary mb-3">Checklist</h6>
-                                                            <div class="small mb-1"><b>Check Diário:</b> {{ 'Sim' if log.check_diario else 'Não' }}</div>
+                                                            <div class="small mb-1"><b>Inicio do turno:</b> {{ log.data_registro.strftime('%d/%m/%Y %H:%M') if log.data_registro else '-' }}</div>
+                                                            <div class="small mb-1"><b>Ultima movimentacao:</b> {{ log.ultima_movimentacao_em.strftime('%d/%m/%Y %H:%M') if log.ultima_movimentacao_em else '-' }}</div>
+                                                            <div class="small mb-1"><b>Check Diario:</b> {{ 'Sim' if log.check_diario else 'Nao' }}</div>
                                                             <div class="small mb-1"><b>KM Inicial:</b> {{ (log.km_inicial or 0)|round|int }} km</div>
+                                                            <div class="small mb-1"><b>Ultimo KM registrado:</b> {{ (log.ultimo_km_registrado or 0)|round|int }} km</div>
                                                             <div class="small mb-0"><b>KM Final:</b> {% if log.km_final is not none %}{{ (log.km_final or 0)|round|int }} km{% else %}<span class="text-warning">Turno aberto</span>{% endif %}</div>
-                                                            <div class="small mb-0"><b>Quantidade de Endereços/fazendas:</b> {{ log.qtd_fazendas_enderecos or 0 }}</div>
+                                                            <div class="small mb-0"><b>Quantidade de Enderecos/fazendas:</b> {{ log.qtd_fazendas_enderecos or 0 }}</div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -313,19 +411,32 @@
                                                     <div class="card border-0 shadow-sm h-100">
                                                         <div class="card-body">
                                                             <h6 class="fw-bold text-success mb-3">Abastecimento</h6>
-                                                            <div class="small mb-1"><b>Abasteceu:</b> {{ 'Sim' if log.abasteceu else 'Não' }}</div>
-                                                            <div class="small mb-1"><b>Litros:</b> {{ '%.2f'|format(log.litros) if log.litros is not none else '-' }}</div>
-                                                            <div class="small mb-1"><b>Valor Total:</b> R$ {{ '%.2f'|format(log.valor_total) if log.valor_total is not none else '0.00' }}</div>
+                                                            <div class="small mb-1"><b>Abasteceu:</b> {{ 'Sim' if log.teve_abastecimento else 'Nao' }}</div>
+                                                            <div class="small mb-1"><b>Qtd. de registros:</b> {{ log.qtd_abastecimentos }}</div>
+                                                            <div class="small mb-1"><b>Litros:</b> {{ '%.2f'|format(log.total_litros_abastecidos) if log.teve_abastecimento else '-' }}</div>
+                                                            <div class="small mb-3"><b>Valor Total:</b> R$ {{ '%.2f'|format(log.total_valor_abastecido) if log.teve_abastecimento else '0.00' }}</div>
+                                                            {% if log.abastecimentos_ordenados %}
+                                                                {% for abastecimento in log.abastecimentos_ordenados %}
+                                                                    <div class="abastecimento-item {% if not loop.last %}mb-2{% endif %}">
+                                                                        <div class="small fw-bold">{{ abastecimento.data_hora.strftime('%d/%m/%Y %H:%M') if abastecimento.data_hora else '-' }}</div>
+                                                                        <div class="small">KM: {{ (abastecimento.km_registro or 0)|round|int }} km</div>
+                                                                        <div class="small">Litros: {{ '%.2f'|format(abastecimento.litros or 0) }}</div>
+                                                                        <div class="small">Valor: R$ {{ '%.2f'|format(abastecimento.valor_total or 0) }}</div>
+                                                                    </div>
+                                                                {% endfor %}
+                                                            {% else %}
+                                                                <div class="small text-muted">Nenhum abastecimento vinculado a este turno.</div>
+                                                            {% endif %}
                                                         </div>
                                                     </div>
                                                 </div>
                                                 <div class="col-md-4">
                                                     <div class="card border-0 shadow-sm h-100">
                                                         <div class="card-body">
-                                                            <h6 class="fw-bold text-dark mb-3">Conferência</h6>
-                                                            <div class="small mb-2"><b>Assinatura:</b> {{ 'Preenchida' if log.assinatura_piloto else 'Não preenchida' }}</div>
-                                                            <div class="small"><b>Observações:</b></div>
-                                                            <div class="small text-muted">{{ log.observacao or 'Sem observações.' }}</div>
+                                                            <h6 class="fw-bold text-dark mb-3">Conferencia</h6>
+                                                            <div class="small mb-2"><b>Assinatura:</b> {{ 'Preenchida' if log.assinatura_piloto else 'Nao preenchida' }}</div>
+                                                            <div class="small"><b>Observacoes:</b></div>
+                                                            <div class="small text-muted">{{ log.observacao or 'Sem observacoes.' }}</div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -345,10 +456,21 @@
                                                 <div class="col-md-6">
                                                     <div class="card border-0 shadow-sm h-100">
                                                         <div class="card-body">
-                                                            <h6 class="fw-bold mb-2">Foto da Nota Fiscal</h6>
-                                                            {% if log.foto_nf_path %}
-                                                                <a href="{{ url_for('static', filename=log.foto_nf_path) }}" target="_blank" class="small d-block mb-2">Abrir imagem</a>
-                                                                <img src="{{ url_for('static', filename=log.foto_nf_path) }}" alt="Foto da nota fiscal" class="img-fluid rounded border">
+                                                            <h6 class="fw-bold mb-2">Notas Fiscais dos Abastecimentos</h6>
+                                                            {% if log.abastecimentos_ordenados %}
+                                                                {% for abastecimento in log.abastecimentos_ordenados %}
+                                                                    <div class="{% if not loop.last %}mb-3{% endif %}">
+                                                                        <div class="small fw-bold mb-1">
+                                                                            {{ abastecimento.data_hora.strftime('%d/%m/%Y %H:%M') if abastecimento.data_hora else 'Abastecimento' }}
+                                                                        </div>
+                                                                        {% if abastecimento.foto_nf_path %}
+                                                                            <a href="{{ url_for('static', filename=abastecimento.foto_nf_path) }}" target="_blank" class="small d-block mb-2">Abrir imagem</a>
+                                                                            <img src="{{ url_for('static', filename=abastecimento.foto_nf_path) }}" alt="Foto da nota fiscal" class="img-fluid rounded border">
+                                                                        {% else %}
+                                                                            <span class="small text-muted">Não anexada.</span>
+                                                                        {% endif %}
+                                                                    </div>
+                                                                {% endfor %}
                                                             {% else %}
                                                                 <span class="small text-muted">Não anexada.</span>
                                                             {% endif %}
@@ -360,7 +482,7 @@
                                                         <div class="card-body">
                                                             <h6 class="fw-bold mb-2">Assinatura</h6>
                                                             {% if log.assinatura_piloto %}
-                                                                <img src="{{ log.assinatura_piloto }}" alt="Assinatura do piloto" class="img-fluid rounded border bg-white" style="max-height: 180px;">
+                                                                <img src="{{ log.assinatura_piloto }}" alt="Assinatura do piloto" class="img-fluid rounded border bg-white signature-image">
                                                             {% else %}
                                                                 <span class="small text-muted">Sem assinatura registrada.</span>
                                                             {% endif %}
