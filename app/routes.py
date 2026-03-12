@@ -11543,7 +11543,7 @@ def piloto_checklist_semanal():
             flash("Selecione ao menos um veículo ou um drone para registrar o checklist.", "warning")
             return redirect(url_for("main.piloto_checklist_semanal"))
 
-        if not signature_piloto: # Se o nome da var no seu form for assinatura_piloto, use ela
+        if not assinatura_piloto: # Se o nome da var no seu form for assinatura_piloto, use ela
              if not assinatura_piloto:
                 flash("A assinatura do piloto é obrigatória.", "warning")
                 return redirect(url_for("main.piloto_checklist_semanal"))
