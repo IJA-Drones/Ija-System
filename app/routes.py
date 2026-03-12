@@ -11390,111 +11390,124 @@ def _serialize_checklist_drone(checklist):
 @login_required
 @roles_required("piloto")
 def piloto_checklist_semanal():
-    vinculo = _piloto_vinculo_ativo()
-    if not vinculo or not vinculo.equipe_id:
-        flash("Você ainda não está vinculado a nenhuma equipe ativa.", "warning")
-        return redirect(url_for("main.piloto_os"))
+    # Bloco principal para capturar erros de transação no GET
+    try:
+        vinculo = _piloto_vinculo_ativo()
+        if not vinculo or not vinculo.equipe_id:
+            flash("Você ainda não está vinculado a nenhuma equipe ativa.", "warning")
+            return redirect(url_for("main.piloto_os"))
 
-    equipe = vinculo.equipe
-    piloto_nome = (
-        current_user.piloto.nome_piloto
-        if getattr(current_user, "piloto", None) and current_user.piloto
-        else (getattr(current_user, "nome_uvis", "") or "")
-    )
-
-    veiculos_equipe = (
-    Veiculos.query
-    .filter(
-        db.or_(
-            Veiculos.equipe_id == equipe.id,
-            db.func.lower(Veiculos.responsavel) == piloto_nome.lower()
+        equipe = vinculo.equipe
+        piloto_nome = (
+            current_user.piloto.nome_piloto
+            if getattr(current_user, "piloto", None) and current_user.piloto
+            else (getattr(current_user, "nome_uvis", "") or "")
         )
-    )
-    .distinct()
-    .order_by(Veiculos.operacao.asc(), Veiculos.modelo.asc(), Veiculos.placa.asc())
-    .all()
-)
-    drones_equipe = (
-        Drones.query
-        .filter(
-            Drones.equipe_id == equipe.id,
-            Drones.status == "Ativo"
+
+        # Busca de Veículos
+        veiculos_equipe = (
+            Veiculos.query
+            .filter(
+                db.or_(
+                    Veiculos.equipe_id == equipe.id,
+                    db.func.lower(Veiculos.responsavel) == piloto_nome.lower()
+                )
+            )
+            .distinct()
+            .order_by(Veiculos.operacao.asc(), Veiculos.modelo.asc(), Veiculos.placa.asc())
+            .all()
         )
-        .order_by(Drones.renomacao.asc())
-        .all()
-    )
 
-    veiculo_ids = [item.id for item in veiculos_equipe]
-    drone_ids = [item.id for item in drones_equipe]
+        # Busca de Drones
+        drones_equipe = (
+            Drones.query
+            .filter(
+                Drones.equipe_id == equipe.id,
+                Drones.status == "Ativo"
+            )
+            .order_by(Drones.renomacao.asc())
+            .all()
+        )
 
-    veiculo_meta = {
-        str(item.id): {
-            "id": item.id,
-            "label": f"{item.modelo} - {item.placa}",
-            "km_atual": float(item.km_atual or 0),
-            "operacao": item.operacao or "",
-            "responsavel": item.responsavel or "",
+        veiculo_ids = [item.id for item in veiculos_equipe]
+        drone_ids = [item.id for item in drones_equipe]
+
+        # Metadados para o Frontend
+        veiculo_meta = {
+            str(item.id): {
+                "id": item.id,
+                "label": f"{item.modelo} - {item.placa}",
+                "km_atual": float(item.km_atual or 0),
+                "operacao": item.operacao or "",
+                "responsavel": item.responsavel or "",
+            }
+            for item in veiculos_equipe
         }
-        for item in veiculos_equipe
-    }
 
-    baterias_por_drone = {}
-    if drone_ids:
-        baterias_por_drone = {
-            int(drone_id): total
-            for drone_id, total in (
-                db.session.query(Baterias.drone_id, db.func.count(Baterias.id))
-                .filter(Baterias.drone_id.in_(drone_ids))
-                .group_by(Baterias.drone_id)
+        baterias_por_drone = {}
+        if drone_ids:
+            baterias_por_drone = {
+                int(drone_id): total
+                for drone_id, total in (
+                    db.session.query(Baterias.drone_id, db.func.count(Baterias.id))
+                    .filter(Baterias.drone_id.in_(drone_ids))
+                    .group_by(Baterias.drone_id)
+                    .all()
+                )
+            }
+
+        drone_meta = {
+            str(item.id): {
+                "id": item.id,
+                "label": f"{item.renomacao} - {item.modelo}",
+                "renomacao": item.renomacao or "",
+                "modelo": item.modelo or "",
+                "numero_serie": item.numero_serie or "",
+                "registro_anatel": item.registro_anatel or "",
+                "registro_anac": item.registro_anac or "",
+                "num_baterias": int(baterias_por_drone.get(item.id, 0) or 0),
+            }
+            for item in drones_equipe
+        }
+
+        # Preenchimento automático (Prefill) - Onde o erro costuma ocorrer
+        veiculo_prefill = {}
+        if veiculo_ids:
+            ultimos_veiculos = (
+                ChecklistSemanalVeiculo.query
+                .filter(ChecklistSemanalVeiculo.veiculo_id.in_(veiculo_ids))
+                .order_by(
+                    ChecklistSemanalVeiculo.veiculo_id.asc(),
+                    ChecklistSemanalVeiculo.data_registro.desc()
+                )
                 .all()
             )
-        }
+            for item in ultimos_veiculos:
+                key = str(item.veiculo_id)
+                if key not in veiculo_prefill:
+                    veiculo_prefill[key] = _serialize_checklist_veiculo(item)
 
-    drone_meta = {
-        str(item.id): {
-            "id": item.id,
-            "label": f"{item.renomacao} - {item.modelo}",
-            "renomacao": item.renomacao or "",
-            "modelo": item.modelo or "",
-            "numero_serie": item.numero_serie or "",
-            "registro_anatel": item.registro_anatel or "",
-            "registro_anac": item.registro_anac or "",
-            "num_baterias": int(baterias_por_drone.get(item.id, 0) or 0),
-        }
-        for item in drones_equipe
-    }
-
-    veiculo_prefill = {}
-    if veiculo_ids:
-        ultimos_veiculos = (
-            ChecklistSemanalVeiculo.query
-            .filter(ChecklistSemanalVeiculo.veiculo_id.in_(veiculo_ids))
-            .order_by(
-                ChecklistSemanalVeiculo.veiculo_id.asc(),
-                ChecklistSemanalVeiculo.data_registro.desc()
+        drone_prefill = {}
+        if drone_ids:
+            ultimos_drones = (
+                ChecklistSemanalDrone.query
+                .filter(ChecklistSemanalDrone.drone_id.in_(drone_ids))
+                .order_by(
+                    ChecklistSemanalDrone.drone_id.asc(),
+                    ChecklistSemanalDrone.data_registro.desc()
+                )
+                .all()
             )
-            .all()
-        )
-        for item in ultimos_veiculos:
-            key = str(item.veiculo_id)
-            if key not in veiculo_prefill:
-                veiculo_prefill[key] = _serialize_checklist_veiculo(item)
+            for item in ultimos_drones:
+                key = str(item.drone_id)
+                if key not in drone_prefill:
+                    drone_prefill[key] = _serialize_checklist_drone(item)
 
-    drone_prefill = {}
-    if drone_ids:
-        ultimos_drones = (
-            ChecklistSemanalDrone.query
-            .filter(ChecklistSemanalDrone.drone_id.in_(drone_ids))
-            .order_by(
-                ChecklistSemanalDrone.drone_id.asc(),
-                ChecklistSemanalDrone.data_registro.desc()
-            )
-            .all()
-        )
-        for item in ultimos_drones:
-            key = str(item.drone_id)
-            if key not in drone_prefill:
-                drone_prefill[key] = _serialize_checklist_drone(item)
+    except Exception as e:
+        db.session.rollback() # Limpa a transação para o inject_globals não quebrar
+        current_app.logger.error(f"Erro no carregamento dos checklists (GET): {str(e)}")
+        flash("Erro interno ao carregar dados do checklist. Tente novamente.", "danger")
+        return redirect(url_for("main.piloto_os"))
 
     hoje = date.today()
     inicio_semana = hoje - timedelta(days=hoje.weekday())
@@ -11510,17 +11523,19 @@ def piloto_checklist_semanal():
     if drone_padrao_id not in drone_ids:
         drone_padrao_id = drones_equipe[0].id if len(drones_equipe) == 1 else None
 
+    # --- LÓGICA DO POST ---
     if request.method == "POST":
         veiculo_id = request.form.get("veiculo_id", type=int)
         drone_id = request.form.get("drone_id", type=int)
         assinatura_piloto = _clean_str(request.form.get("assinatura_piloto"))
         nome_responsavel = _clean_str(request.form.get("nome_responsavel")) or piloto_nome
 
-        if veiculos_equipe and veiculo_id not in veiculo_ids:
+        # Validações Básicas
+        if veiculos_equipe and veiculo_id and veiculo_id not in veiculo_ids:
             flash("Selecione um veículo válido da sua equipe.", "warning")
             return redirect(url_for("main.piloto_checklist_semanal"))
 
-        if drones_equipe and drone_id not in drone_ids:
+        if drones_equipe and drone_id and drone_id not in drone_ids:
             flash("Selecione um drone válido da sua equipe.", "warning")
             return redirect(url_for("main.piloto_checklist_semanal"))
 
@@ -11528,11 +11543,13 @@ def piloto_checklist_semanal():
             flash("Selecione ao menos um veículo ou um drone para registrar o checklist.", "warning")
             return redirect(url_for("main.piloto_checklist_semanal"))
 
-        if not assinatura_piloto:
-            flash("A assinatura do piloto é obrigatória para salvar o checklist semanal.", "warning")
-            return redirect(url_for("main.piloto_checklist_semanal"))
+        if not signature_piloto: # Se o nome da var no seu form for assinatura_piloto, use ela
+             if not assinatura_piloto:
+                flash("A assinatura do piloto é obrigatória.", "warning")
+                return redirect(url_for("main.piloto_checklist_semanal"))
 
         try:
+            # Salvando Veículo
             if veiculo_id:
                 veiculo = next((item for item in veiculos_equipe if item.id == veiculo_id), None)
                 checklist_veiculo = (
@@ -11543,27 +11560,23 @@ def piloto_checklist_semanal():
                         ChecklistSemanalVeiculo.data_registro >= inicio_semana_dt,
                         ChecklistSemanalVeiculo.data_registro < proxima_semana_dt,
                     )
-                    .order_by(ChecklistSemanalVeiculo.data_registro.desc())
                     .first()
                 )
-                if checklist_veiculo is None:
-                    checklist_veiculo = ChecklistSemanalVeiculo(
-                        veiculo_id=veiculo_id,
-                        piloto_id=current_user.piloto_id,
-                    )
+                if not checklist_veiculo:
+                    checklist_veiculo = ChecklistSemanalVeiculo(veiculo_id=veiculo_id, piloto_id=current_user.piloto_id)
                     db.session.add(checklist_veiculo)
 
                 checklist_veiculo.data_registro = datetime.now()
                 checklist_veiculo.km_leitura = float(veiculo.km_atual or 0)
-
+                
                 for field in CHECKLIST_VEICULO_BOOL_FIELDS:
                     setattr(checklist_veiculo, field, _bool_from_form(request.form.get(field), default=True))
-
                 for field in CHECKLIST_VEICULO_TEXT_FIELDS:
                     setattr(checklist_veiculo, field, _clean_str(request.form.get(field)))
-
+                
                 checklist_veiculo.assinatura_piloto = assinatura_piloto
 
+            # Salvando Drone
             if drone_id:
                 checklist_drone = (
                     ChecklistSemanalDrone.query
@@ -11573,47 +11586,36 @@ def piloto_checklist_semanal():
                         ChecklistSemanalDrone.data_registro >= inicio_semana_dt,
                         ChecklistSemanalDrone.data_registro < proxima_semana_dt,
                     )
-                    .order_by(ChecklistSemanalDrone.data_registro.desc())
                     .first()
                 )
-                if checklist_drone is None:
-                    checklist_drone = ChecklistSemanalDrone(
-                        drone_id=drone_id,
-                        piloto_id=current_user.piloto_id,
-                    )
+                if not checklist_drone:
+                    checklist_drone = ChecklistSemanalDrone(drone_id=drone_id, piloto_id=current_user.piloto_id)
                     db.session.add(checklist_drone)
 
                 checklist_drone.data_registro = datetime.now()
-
+                
                 for field in CHECKLIST_DRONE_BOOL_FIELDS:
                     setattr(checklist_drone, field, _bool_from_form(request.form.get(field), default=True))
-
                 for field in CHECKLIST_DRONE_TEXT_FIELDS:
                     setattr(checklist_drone, field, _clean_str(request.form.get(field)))
 
+                # Lógica de Baterias
                 default_baterias = baterias_por_drone.get(drone_id, 0)
-                checklist_drone.num_baterias = _to_int(request.form.get("num_baterias"))
-                if checklist_drone.num_baterias is None:
-                    checklist_drone.num_baterias = int(default_baterias or 0)
-
-                checklist_drone.num_baterias_wb = _to_int(request.form.get("num_baterias_wb"))
-                if checklist_drone.num_baterias_wb is None:
-                    checklist_drone.num_baterias_wb = 0
+                checklist_drone.num_baterias = _to_int(request.form.get("num_baterias")) or int(default_baterias or 0)
+                checklist_drone.num_baterias_wb = _to_int(request.form.get("num_baterias_wb")) or 0
 
                 checklist_drone.assinatura_piloto = assinatura_piloto
                 checklist_drone.nome_responsavel = nome_responsavel
                 checklist_drone.assinatura_responsavel = assinatura_piloto
 
             db.session.commit()
-            flash(
-                f"Checklist semanal salvo para a semana de {inicio_semana.strftime('%d/%m/%Y')} a {fim_semana.strftime('%d/%m/%Y')}.",
-                "success"
-            )
+            flash("Checklist semanal salvo com sucesso.", "success")
             return redirect(url_for("main.piloto_checklist_semanal", veiculo_id=veiculo_id, drone_id=drone_id))
-        except Exception:
+
+        except Exception as e:
             db.session.rollback()
-            current_app.logger.exception("Erro ao salvar checklist semanal do piloto %s", current_user.piloto_id)
-            flash("Erro ao salvar o checklist semanal. Revise os campos e tente novamente.", "danger")
+            current_app.logger.error(f"Erro ao salvar checklist (POST): {str(e)}")
+            flash(f"Erro ao salvar: {str(e)}", "danger")
 
     return render_template(
         "piloto_checklist_semanal.html",
