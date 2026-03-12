@@ -58,20 +58,27 @@ bp = Blueprint('main', __name__)
 @bp.context_processor
 def inject_globals():
     """
-    Otimizado para não travar a navegação. 
-    Faz apenas uma consulta de contagem simples por página carregada.
+    Otimizado e blindado contra erros de transação. 
+    Se o banco falhar, retorna 0 notificações mas não derruba o sistema.
     """
     if current_user.is_authenticated:
-        # Consulta de contagem direta no banco (muito mais rápida que carregar objetos)
-        q = db.session.query(db.func.count(Notificacao.id)).filter(
-            Notificacao.lida_em.is_(None),
-            Notificacao.apagada_em.is_(None)
-        )
-        
-        if current_user.tipo_usuario not in ["admin", "operario", "visualizar"]:
-            q = q.filter(Notificacao.usuario_id == current_user.id)
+        try:
+            # Consulta de contagem direta no banco
+            q = db.session.query(db.func.count(Notificacao.id)).filter(
+                Notificacao.lida_em.is_(None),
+                Notificacao.apagada_em.is_(None)
+            )
             
-        return dict(notif_count=q.scalar() or 0)
+            if current_user.tipo_usuario not in ["admin", "operario", "visualizar"]:
+                q = q.filter(Notificacao.usuario_id == current_user.id)
+                
+            return dict(notif_count=q.scalar() or 0)
+        except Exception as e:
+            # Se houver erro de transação (Transaction Aborted), limpamos aqui
+            db.session.rollback()
+            # Opcional: print(f"Erro no inject_globals (notificações): {e}")
+            return dict(notif_count=0) 
+            
     return dict(notif_count=0)
 
 def inject_google_key():
