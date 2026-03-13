@@ -127,6 +127,10 @@
                     <i class="bi bi-file-earmark-text-fill"></i> Ver Logs
                 </a>
 
+                <a href="{{ url_for('main.admin_checklists_semanais') }}" class="btn btn-outline-primary shadow-sm btn-pill">
+                    <i class="bi bi-ui-checks-grid"></i> Checklist Semanal
+                </a>
+
                 <a href="{{ url_for('main.listar_veiculos', export=1, **request.args) }}" class="btn btn-secondary shadow-sm btn-pill">
                     <i class="bi bi-file-earmark-excel-fill"></i> Exportar
                 </a>

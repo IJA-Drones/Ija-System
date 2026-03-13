@@ -2628,7 +2628,7 @@ def agora_brasilia_naive():
 # -------------------------------------------------
 # CRIAR NOTIFICAÇÃO
 # -------------------------------------------------
-def criar_notificacao(usuario_id, titulo, mensagem="", link=None):
+def criar_notificacao(usuario_id, titulo, mensagem="", link=None, commit=True):
     n = Notificacao(
         usuario_id=usuario_id,
         titulo=titulo,
@@ -2637,7 +2637,8 @@ def criar_notificacao(usuario_id, titulo, mensagem="", link=None):
         criada_em=agora_brasilia_naive(),  #  Brasília
     )
     db.session.add(n)
-    db.session.commit()
+    if commit:
+        db.session.commit()
     return n
 
 
@@ -8273,6 +8274,7 @@ def exportar_logs_veiculos_xlsx():
         "KM Rodado",              # calculado
         "Abasteceu",
         "Qtd. Abastecimentos",
+        "Tipos de Abastecimento",
         "Litros",
         "Valor Abastecimento (R$)",
         "Valor por Litro (R$)",   # calculado
@@ -8298,6 +8300,7 @@ def exportar_logs_veiculos_xlsx():
             None,  # KM Rodado (formula)
             "SIM" if log.teve_abastecimento else "NÃO",
             int(log.qtd_abastecimentos or 0),
+            log.tipos_abastecimento_resumo or "",
             float(log.total_litros_abastecidos or 0),
             float(log.total_valor_abastecido or 0),
             None,  # Valor por Litro (formula)
@@ -8320,11 +8323,11 @@ def exportar_logs_veiculos_xlsx():
     COL_KM_ROD = 9
     COL_ABAST = 10
     COL_QTD_AB = 11
-    COL_LITROS = 12
-    COL_VALOR = 13
-    COL_VAL_LITRO = 14
-    COL_CUSTO_KM = 15
-    COL_ASS = 16
+    COL_LITROS = 13
+    COL_VALOR = 14
+    COL_VAL_LITRO = 15
+    COL_CUSTO_KM = 16
+    COL_ASS = 17
 
     # Formatação numérica / fórmulas por linha + bordas/alinhamento
     for r in range(2, last_row + 1):
@@ -9103,10 +9106,22 @@ def piloto_registrar_abastecimento_turno(veiculo_id):
         flash("Os dados do abastecimento estao invalidos.", "warning")
         return redirect(url_for("main.piloto_veiculos"))
 
+    tipo_abastecimento = (request.form.get("tipo_abastecimento") or "").strip()
     foto_nf = request.files.get("foto_nf")
 
-    if km_registro is None or litros is None or valor_total is None or not foto_nf or not foto_nf.filename:
-        flash("KM, litros, valor total e foto da nota sao obrigatorios no abastecimento.", "warning")
+    if (
+        km_registro is None
+        or litros is None
+        or valor_total is None
+        or not tipo_abastecimento
+        or not foto_nf
+        or not foto_nf.filename
+    ):
+        flash("KM, tipo, litros, valor total e foto da nota sao obrigatorios no abastecimento.", "warning")
+        return redirect(url_for("main.piloto_veiculos"))
+
+    if len(tipo_abastecimento) > 100:
+        flash("O tipo de abastecimento deve ter no maximo 100 caracteres.", "warning")
         return redirect(url_for("main.piloto_veiculos"))
 
     ultimo_km_turno = log.ultimo_km_registrado or 0
@@ -9119,6 +9134,7 @@ def piloto_registrar_abastecimento_turno(veiculo_id):
             log_veiculo_id=log.id,
             data_hora=datetime.now(),
             km_registro=km_registro,
+            tipo_abastecimento=tipo_abastecimento,
             litros=litros,
             valor_total=valor_total,
             foto_nf_path=_salvar_upload_veiculo(foto_nf, "notas", "nf", v.placa),
@@ -11454,6 +11470,347 @@ CHECKLIST_DRONE_TEXT_FIELDS = [
     "observacoes_equipamento",
 ]
 
+CHECKLIST_VEICULO_BOOL_LABELS = [
+    ("farois_funcionando", "Farois"),
+    ("setas_funcionando", "Setas"),
+    ("lanternas_funcionando", "Lanternas"),
+    ("piscaalerta_funcionando", "Pisca-alerta"),
+    ("luz_painel", "Luz do painel"),
+    ("limpador_parabrisa", "Limpador de parabrisa"),
+    ("agua_radiador", "Agua do radiador"),
+    ("fluido_freio", "Fluido de freio"),
+    ("oleo_motor", "Oleo do motor"),
+    ("vidros", "Vidros"),
+    ("retrovisores", "Retrovisores"),
+    ("pneus", "Pneus"),
+    ("estepe", "Estepe"),
+    ("macaco", "Macaco"),
+    ("triangulo", "Triangulo"),
+    ("chave_roda", "Chave de roda"),
+    ("extintor", "Extintor"),
+    ("cinto_seguranca", "Cinto de seguranca"),
+    ("alarme", "Alarme"),
+    ("ar_condicionado", "Ar-condicionado"),
+    ("radio", "Radio"),
+    ("giroflex", "Giroflex"),
+    ("isqueiro", "Isqueiro"),
+    ("carregador", "Carregador"),
+    ("lataria_frontal", "Lataria frontal"),
+    ("lataria_lateral", "Lataria lateral"),
+    ("lataria_traseira", "Lataria traseira"),
+    ("lataria_porta_frontal", "Porta frontal"),
+    ("lataria_porta_traseira", "Porta traseira"),
+    ("lataria_porta_lateral", "Porta lateral"),
+    ("parachoque_frontal", "Parachoque frontal"),
+    ("parachoque_traseiro", "Parachoque traseiro"),
+]
+
+CHECKLIST_VEICULO_TEXT_LABELS = [
+    ("condicao_luzes_direcao", "Condicao luzes / direcao"),
+    ("condicao_luz_painel", "Condicao luz do painel"),
+    ("condicao_itens_manutencao", "Condicao manutencao preventiva"),
+    ("condicao_vidros_retrovisores", "Condicao vidros / retrovisores"),
+    ("condicao_pneus_estepe", "Condicao pneus / estepe"),
+    ("condicao_itens_seguranca", "Condicao itens de seguranca"),
+    ("condicao_itens_carro_interno", "Condicao itens internos"),
+    ("condicao_giroflex_isqueiro_carregador", "Condicao giroflex / isqueiro / carregador"),
+    ("condicao_lataria", "Condicao lataria"),
+    ("condicao_lataria_portas", "Condicao lataria portas"),
+    ("condicao_itens_carro_externo", "Condicao itens externos"),
+]
+
+CHECKLIST_DRONE_BOOL_LABELS = [
+    ("helices_status", "Helices"),
+    ("tanque", "Tanque"),
+    ("trem_pouso", "Trem de pouso"),
+    ("cameras", "Cameras"),
+    ("carregador_controle", "Carregador do controle"),
+    ("baterias", "Baterias"),
+    ("cabos_carregador", "Cabos do carregador"),
+    ("correia_pescoco", "Correia de pescoco"),
+]
+
+CHECKLIST_DRONE_TEXT_LABELS = [
+    ("condicao_helices", "Condicao helices"),
+    ("condicao_estrutura", "Condicao estrutura"),
+    ("condicao_carregador_bateria", "Condicao carregador / bateria"),
+    ("condicao_cabos_correia", "Condicao cabos / correia"),
+    ("observacoes_equipamento", "Observacoes do equipamento"),
+]
+
+
+def _format_km_admin(value):
+    try:
+        return f"{float(value or 0):.0f} km"
+    except Exception:
+        return "-"
+
+
+def _checklist_status_items(checklist, labels):
+    itens = []
+    falhas = 0
+
+    for field, label in labels:
+        ok = bool(getattr(checklist, field))
+        if not ok:
+            falhas += 1
+        itens.append({"label": label, "ok": ok})
+
+    return itens, falhas
+
+
+def _checklist_notes_items(checklist, labels):
+    observacoes = []
+
+    for field, label in labels:
+        valor = _clean_str(getattr(checklist, field))
+        if valor:
+            observacoes.append({"label": label, "value": valor})
+
+    return observacoes
+
+
+def _campos_defeituosos_checklist(checklist, labels):
+    defeitos = []
+    for field, label in labels:
+        if not bool(getattr(checklist, field)):
+            defeitos.append(label)
+    return defeitos
+
+
+def _identificacao_checklist_veiculo(checklist):
+    veiculo = checklist.veiculo
+    if veiculo and veiculo.placa:
+        return veiculo.placa
+    if veiculo and veiculo.modelo:
+        return veiculo.modelo
+    return f"ID {checklist.veiculo_id}"
+
+
+def _identificacao_checklist_drone(checklist):
+    drone = checklist.drone
+    if drone and drone.renomacao:
+        return drone.renomacao
+    if drone and drone.modelo:
+        return drone.modelo
+    return f"ID {checklist.drone_id}"
+
+
+def _coletar_pendencias_checklists_semanais(piloto_id, inicio_semana_dt, proxima_semana_dt):
+    pendencias = []
+
+    checklists_veiculo = (
+        ChecklistSemanalVeiculo.query
+        .options(joinedload(ChecklistSemanalVeiculo.veiculo))
+        .filter(
+            ChecklistSemanalVeiculo.piloto_id == piloto_id,
+            ChecklistSemanalVeiculo.data_registro >= inicio_semana_dt,
+            ChecklistSemanalVeiculo.data_registro < proxima_semana_dt,
+        )
+        .order_by(ChecklistSemanalVeiculo.data_registro.desc())
+        .all()
+    )
+    for checklist in checklists_veiculo:
+        defeitos = _campos_defeituosos_checklist(checklist, CHECKLIST_VEICULO_BOOL_LABELS)
+        if defeitos:
+            pendencias.append(
+                f"Veiculo {_identificacao_checklist_veiculo(checklist)}: {', '.join(defeitos)}"
+            )
+
+    checklists_drone = (
+        ChecklistSemanalDrone.query
+        .options(joinedload(ChecklistSemanalDrone.drone))
+        .filter(
+            ChecklistSemanalDrone.piloto_id == piloto_id,
+            ChecklistSemanalDrone.data_registro >= inicio_semana_dt,
+            ChecklistSemanalDrone.data_registro < proxima_semana_dt,
+        )
+        .order_by(ChecklistSemanalDrone.data_registro.desc())
+        .all()
+    )
+    for checklist in checklists_drone:
+        defeitos = _campos_defeituosos_checklist(checklist, CHECKLIST_DRONE_BOOL_LABELS)
+        if defeitos:
+            pendencias.append(
+                f"Drone {_identificacao_checklist_drone(checklist)}: {', '.join(defeitos)}"
+            )
+
+    return pendencias
+
+
+def _sincronizar_notificacoes_pendencia_checklist(admin_ids, link, titulo, mensagem=None):
+    if not admin_ids or not link:
+        return
+
+    existentes = {}
+    for notif in (
+        Notificacao.query
+        .filter(
+            Notificacao.usuario_id.in_(admin_ids),
+            Notificacao.link == link,
+        )
+        .order_by(Notificacao.id.desc())
+        .all()
+    ):
+        if notif.usuario_id not in existentes:
+            existentes[notif.usuario_id] = notif
+
+    if mensagem:
+        agora = agora_brasilia_naive()
+        for admin_id in admin_ids:
+            notif = existentes.get(admin_id)
+            if notif:
+                notif.titulo = titulo
+                notif.mensagem = mensagem
+                notif.criada_em = agora
+                notif.lida_em = None
+                notif.apagada_em = None
+            else:
+                criar_notificacao(
+                    usuario_id=admin_id,
+                    titulo=titulo,
+                    mensagem=mensagem,
+                    link=link,
+                    commit=False,
+                )
+        return
+
+    agora = agora_brasilia_naive()
+    for notif in existentes.values():
+        if notif.apagada_em is None:
+            notif.apagada_em = agora
+
+
+def _normalize_checklist_veiculo_admin(checklist):
+    itens, falhas = _checklist_status_items(checklist, CHECKLIST_VEICULO_BOOL_LABELS)
+    observacoes = _checklist_notes_items(checklist, CHECKLIST_VEICULO_TEXT_LABELS)
+    veiculo = checklist.veiculo
+    piloto = checklist.piloto
+
+    meta = [
+        {"label": "Placa", "value": (veiculo.placa if veiculo else "") or "-"},
+        {"label": "Operacao", "value": (veiculo.operacao if veiculo else "") or "-"},
+        {"label": "Responsavel", "value": (veiculo.responsavel if veiculo else "") or "-"},
+        {"label": "KM lido", "value": _format_km_admin(checklist.km_leitura)},
+    ]
+
+    total_itens = len(CHECKLIST_VEICULO_BOOL_LABELS)
+    return {
+        "id": checklist.id,
+        "tipo": "veiculo",
+        "tipo_label": "Veiculo",
+        "data_registro": checklist.data_registro,
+        "piloto_id": checklist.piloto_id,
+        "titulo": (veiculo.modelo if veiculo else "") or "Veiculo sem identificacao",
+        "subtitulo": (veiculo.placa if veiculo else "") or "-",
+        "complemento": (veiculo.responsavel if veiculo else "") or "",
+        "piloto_nome": (piloto.nome_piloto if piloto else "") or "-",
+        "status_label": "Conforme" if falhas == 0 else f"{falhas} pendencia(s)",
+        "status_class": "success" if falhas == 0 else "warning",
+        "falhas": falhas,
+        "itens_ok": total_itens - falhas,
+        "itens_total": total_itens,
+        "observacoes_total": len(observacoes),
+        "meta": meta,
+        "detalhes_itens": itens,
+        "observacoes": observacoes,
+        "assinatura": checklist.assinatura_piloto or "",
+    }
+
+
+def _normalize_checklist_drone_admin(checklist):
+    itens, falhas = _checklist_status_items(checklist, CHECKLIST_DRONE_BOOL_LABELS)
+    observacoes = _checklist_notes_items(checklist, CHECKLIST_DRONE_TEXT_LABELS)
+    drone = checklist.drone
+    piloto = checklist.piloto
+
+    meta = [
+        {"label": "Renomacao", "value": (drone.renomacao if drone else "") or "-"},
+        {"label": "Modelo", "value": (drone.modelo if drone else "") or "-"},
+        {"label": "Serie", "value": (drone.numero_serie if drone else "") or "-"},
+        {"label": "Baterias", "value": str(int(checklist.num_baterias or 0))},
+        {"label": "Baterias WB", "value": str(int(checklist.num_baterias_wb or 0))},
+        {"label": "Responsavel informado", "value": checklist.nome_responsavel or "-"},
+    ]
+
+    total_itens = len(CHECKLIST_DRONE_BOOL_LABELS)
+    return {
+        "id": checklist.id,
+        "tipo": "drone",
+        "tipo_label": "Drone",
+        "data_registro": checklist.data_registro,
+        "piloto_id": checklist.piloto_id,
+        "titulo": (drone.renomacao if drone else "") or "Drone sem identificacao",
+        "subtitulo": (drone.modelo if drone else "") or "-",
+        "complemento": (drone.numero_serie if drone else "") or "",
+        "piloto_nome": (piloto.nome_piloto if piloto else "") or "-",
+        "status_label": "Conforme" if falhas == 0 else f"{falhas} pendencia(s)",
+        "status_class": "success" if falhas == 0 else "warning",
+        "falhas": falhas,
+        "itens_ok": total_itens - falhas,
+        "itens_total": total_itens,
+        "observacoes_total": len(observacoes),
+        "meta": meta,
+        "detalhes_itens": itens,
+        "observacoes": observacoes,
+        "assinatura": checklist.assinatura_piloto or "",
+    }
+
+
+def _group_admin_checklists_by_week(registros):
+    grupos = {}
+
+    for item in registros:
+        data_registro = item.get("data_registro")
+        if not data_registro:
+            continue
+
+        data_base = data_registro.date()
+        semana_inicio = data_base - timedelta(days=data_base.weekday())
+        semana_fim = semana_inicio + timedelta(days=6)
+        grupo_key = (item.get("piloto_id"), semana_inicio.isoformat())
+
+        grupo = grupos.setdefault(
+            grupo_key,
+            {
+                "piloto_id": item.get("piloto_id"),
+                "piloto_nome": item.get("piloto_nome") or "-",
+                "semana_inicio": semana_inicio,
+                "semana_fim": semana_fim,
+                "ultima_movimentacao": data_registro,
+                "veiculos": [],
+                "drones": [],
+                "falhas": 0,
+                "itens_ok": 0,
+                "itens_total": 0,
+                "observacoes_total": 0,
+            },
+        )
+
+        if data_registro > (grupo["ultima_movimentacao"] or datetime.min):
+            grupo["ultima_movimentacao"] = data_registro
+
+        if item.get("tipo") == "veiculo":
+            grupo["veiculos"].append(item)
+        elif item.get("tipo") == "drone":
+            grupo["drones"].append(item)
+
+        grupo["falhas"] += int(item.get("falhas") or 0)
+        grupo["itens_ok"] += int(item.get("itens_ok") or 0)
+        grupo["itens_total"] += int(item.get("itens_total") or 0)
+        grupo["observacoes_total"] += int(item.get("observacoes_total") or 0)
+
+    grupos_lista = []
+    for grupo in grupos.values():
+        grupo["veiculos"].sort(key=lambda item: item.get("data_registro") or datetime.min, reverse=True)
+        grupo["drones"].sort(key=lambda item: item.get("data_registro") or datetime.min, reverse=True)
+        grupo["status_label"] = "Conforme" if grupo["falhas"] == 0 else f"{grupo['falhas']} pendencia(s)"
+        grupo["resumo_label"] = f"{len(grupo['veiculos'])} veiculo(s) • {len(grupo['drones'])} drone(s)"
+        grupos_lista.append(grupo)
+
+    grupos_lista.sort(key=lambda item: item["ultima_movimentacao"] or datetime.min, reverse=True)
+    return grupos_lista
+
 
 def _piloto_vinculo_ativo():
     if not getattr(current_user, "piloto_id", None):
@@ -11724,7 +12081,44 @@ def piloto_checklist_semanal():
                 checklist_drone.nome_responsavel = nome_responsavel
                 checklist_drone.assinatura_responsavel = assinatura_piloto
 
+            db.session.flush()
+
+            pendencias_semanais = _coletar_pendencias_checklists_semanais(
+                current_user.piloto_id,
+                inicio_semana_dt,
+                proxima_semana_dt,
+            )
+
+            detalhe_link = url_for(
+                "main.admin_checklist_semanal_detalhe",
+                piloto_id=current_user.piloto_id,
+                semana_inicio=inicio_semana.isoformat(),
+            )
+            titulo_notificacao = f"Pendências no checklist semanal de {piloto_nome}"
+
+            admin_ids = [
+                row[0]
+                for row in (
+                    db.session.query(Usuario.id)
+                    .filter(Usuario.tipo_usuario == "admin")
+                    .all()
+                )
+            ]
+
+            _sincronizar_notificacoes_pendencia_checklist(
+                admin_ids=admin_ids,
+                link=detalhe_link,
+                titulo=titulo_notificacao,
+                mensagem=" | ".join(pendencias_semanais) if pendencias_semanais else None,
+            )
+
             db.session.commit()
+
+            if pendencias_semanais:
+                flash(
+                    "Checklist salvo com pendências: " + " | ".join(pendencias_semanais),
+                    "warning",
+                )
             flash("Checklist semanal salvo com sucesso.", "success")
             return redirect(url_for("main.piloto_checklist_semanal", veiculo_id=veiculo_id, drone_id=drone_id))
 
@@ -11749,4 +12143,206 @@ def piloto_checklist_semanal():
         semana_inicio=inicio_semana.strftime("%d/%m/%Y"),
         semana_fim=fim_semana.strftime("%d/%m/%Y"),
         agora=datetime.now().strftime("%d/%m/%Y %H:%M"),
+    )
+
+
+@bp.route("/admin/checklists/semanais", methods=["GET"], endpoint="admin_checklists_semanais")
+@login_required
+@roles_required("admin")
+def admin_checklists_semanais():
+    q = (request.args.get("q") or "").strip()
+    data_inicio = (request.args.get("data_inicio") or "").strip()
+    data_fim = (request.args.get("data_fim") or "").strip()
+
+    registros = []
+
+    query_veiculos = (
+        ChecklistSemanalVeiculo.query
+        .options(
+            joinedload(ChecklistSemanalVeiculo.veiculo),
+            joinedload(ChecklistSemanalVeiculo.piloto),
+        )
+        .join(Veiculos, ChecklistSemanalVeiculo.veiculo_id == Veiculos.id)
+        .join(Pilotos, ChecklistSemanalVeiculo.piloto_id == Pilotos.id)
+    )
+
+    if q:
+        like = f"%{q}%"
+        query_veiculos = query_veiculos.filter(
+            db.or_(
+                Veiculos.modelo.ilike(like),
+                Veiculos.placa.ilike(like),
+                Veiculos.responsavel.ilike(like),
+                Pilotos.nome_piloto.ilike(like),
+            )
+        )
+
+    if data_inicio:
+        try:
+            dt_ini = datetime.strptime(data_inicio, "%Y-%m-%d")
+            query_veiculos = query_veiculos.filter(ChecklistSemanalVeiculo.data_registro >= dt_ini)
+        except ValueError:
+            pass
+
+    if data_fim:
+        try:
+            dt_fim = datetime.strptime(data_fim, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+            query_veiculos = query_veiculos.filter(ChecklistSemanalVeiculo.data_registro <= dt_fim)
+        except ValueError:
+            pass
+
+    registros.extend(
+        _normalize_checklist_veiculo_admin(item)
+        for item in query_veiculos.order_by(ChecklistSemanalVeiculo.data_registro.desc()).all()
+    )
+
+    query_drones = (
+        ChecklistSemanalDrone.query
+        .options(
+            joinedload(ChecklistSemanalDrone.drone),
+            joinedload(ChecklistSemanalDrone.piloto),
+        )
+        .join(Drones, ChecklistSemanalDrone.drone_id == Drones.id)
+        .join(Pilotos, ChecklistSemanalDrone.piloto_id == Pilotos.id)
+    )
+
+    if q:
+        like = f"%{q}%"
+        query_drones = query_drones.filter(
+            db.or_(
+                Drones.renomacao.ilike(like),
+                Drones.modelo.ilike(like),
+                Drones.numero_serie.ilike(like),
+                Pilotos.nome_piloto.ilike(like),
+            )
+        )
+
+    if data_inicio:
+        try:
+            dt_ini = datetime.strptime(data_inicio, "%Y-%m-%d")
+            query_drones = query_drones.filter(ChecklistSemanalDrone.data_registro >= dt_ini)
+        except ValueError:
+            pass
+
+    if data_fim:
+        try:
+            dt_fim = datetime.strptime(data_fim, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+            query_drones = query_drones.filter(ChecklistSemanalDrone.data_registro <= dt_fim)
+        except ValueError:
+            pass
+
+    registros.extend(
+        _normalize_checklist_drone_admin(item)
+        for item in query_drones.order_by(ChecklistSemanalDrone.data_registro.desc()).all()
+    )
+
+    grupos = _group_admin_checklists_by_week(registros)
+
+    hoje = datetime.now().date()
+    inicio_semana = hoje - timedelta(days=hoje.weekday())
+
+    totais = {
+        "geral": len(grupos),
+        "veiculo": sum(len(item["veiculos"]) for item in grupos),
+        "drone": sum(len(item["drones"]) for item in grupos),
+        "pendencias": sum(1 for item in grupos if item["falhas"] > 0),
+        "semana_atual": sum(1 for item in grupos if item["semana_inicio"] == inicio_semana),
+    }
+
+    return render_template(
+        "admin_checklists_semanais.html",
+        grupos=grupos,
+        totais=totais,
+        filters={
+            "q": q,
+            "data_inicio": data_inicio,
+            "data_fim": data_fim,
+        },
+    )
+
+
+@bp.route(
+    "/admin/checklists/semanais/<int:piloto_id>/<string:semana_inicio>",
+    methods=["GET"],
+    endpoint="admin_checklist_semanal_detalhe",
+)
+@login_required
+@roles_required("admin")
+def admin_checklist_semanal_detalhe(piloto_id, semana_inicio):
+    try:
+        semana_inicio_date = datetime.strptime(semana_inicio, "%Y-%m-%d").date()
+    except ValueError:
+        abort(404)
+
+    semana_inicio_dt = datetime.combine(semana_inicio_date, datetime.min.time())
+    semana_fim_dt = semana_inicio_dt + timedelta(days=7)
+
+    veiculos = [
+        _normalize_checklist_veiculo_admin(item)
+        for item in (
+            ChecklistSemanalVeiculo.query
+            .options(
+                joinedload(ChecklistSemanalVeiculo.veiculo),
+                joinedload(ChecklistSemanalVeiculo.piloto),
+            )
+            .filter(
+                ChecklistSemanalVeiculo.piloto_id == piloto_id,
+                ChecklistSemanalVeiculo.data_registro >= semana_inicio_dt,
+                ChecklistSemanalVeiculo.data_registro < semana_fim_dt,
+            )
+            .order_by(ChecklistSemanalVeiculo.data_registro.desc())
+            .all()
+        )
+    ]
+
+    drones = [
+        _normalize_checklist_drone_admin(item)
+        for item in (
+            ChecklistSemanalDrone.query
+            .options(
+                joinedload(ChecklistSemanalDrone.drone),
+                joinedload(ChecklistSemanalDrone.piloto),
+            )
+            .filter(
+                ChecklistSemanalDrone.piloto_id == piloto_id,
+                ChecklistSemanalDrone.data_registro >= semana_inicio_dt,
+                ChecklistSemanalDrone.data_registro < semana_fim_dt,
+            )
+            .order_by(ChecklistSemanalDrone.data_registro.desc())
+            .all()
+        )
+    ]
+
+    if not veiculos and not drones:
+        abort(404)
+
+    piloto_nome = "-"
+    if veiculos:
+        piloto_nome = veiculos[0]["piloto_nome"]
+    elif drones:
+        piloto_nome = drones[0]["piloto_nome"]
+
+    ultima_movimentacao = max(
+        [item["data_registro"] for item in (veiculos + drones) if item.get("data_registro")],
+        default=None,
+    )
+
+    totais = {
+        "veiculo": len(veiculos),
+        "drone": len(drones),
+        "pendencias": sum(item["falhas"] for item in (veiculos + drones)),
+        "itens_ok": sum(item["itens_ok"] for item in (veiculos + drones)),
+        "itens_total": sum(item["itens_total"] for item in (veiculos + drones)),
+    }
+
+    return render_template(
+        "admin_checklist_semanal_detalhe.html",
+        piloto_id=piloto_id,
+        piloto_nome=piloto_nome,
+        semana_inicio=semana_inicio_date,
+        semana_fim=semana_inicio_date + timedelta(days=6),
+        ultima_movimentacao=ultima_movimentacao,
+        veiculos=veiculos,
+        drones=drones,
+        totais=totais,
     )

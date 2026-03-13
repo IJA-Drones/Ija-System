@@ -1,0 +1,529 @@
+{% extends "base.html" %}
+
+{% macro render_checklist_table(registros, prefix) %}
+  <div class="card shadow-sm border-0 rounded-4 overflow-hidden checklist-detail-table-wrap">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 text-center">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-4 text-start">Registro</th>
+              <th class="text-start">Equipamento</th>
+              <th>Resumo</th>
+              <th>Status</th>
+              <th class="pe-4">Detalhes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for registro in registros %}
+            <tr>
+              <td class="ps-4 text-start" data-label="Registro">
+                {{ registro.data_registro.strftime('%d/%m/%Y %H:%M') if registro.data_registro else '-' }}
+                <div class="small text-muted">{{ registro.piloto_nome }}</div>
+              </td>
+              <td class="text-start" data-label="Equipamento">
+                <div class="fw-bold text-dark">{{ registro.titulo }}</div>
+                <div class="small text-muted">
+                  {{ registro.subtitulo }}{% if registro.complemento %} • {{ registro.complemento }}{% endif %}
+                </div>
+              </td>
+              <td data-label="Resumo">
+                <div class="fw-semibold text-dark">{{ registro.itens_ok }}/{{ registro.itens_total }} itens ok</div>
+                <div class="small text-muted">{{ registro.observacoes_total }} observacao(oes)</div>
+              </td>
+              <td data-label="Status">
+                <span class="badge rounded-pill px-3 {{ 'bg-success-subtle text-success-emphasis' if registro.falhas == 0 else 'bg-warning-subtle text-warning-emphasis' }}">
+                  {{ registro.status_label }}
+                </span>
+              </td>
+              <td class="pe-4" data-label="Detalhes">
+                <button class="btn btn-sm btn-outline-primary rounded-pill px-3" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#{{ prefix }}-{{ registro.id }}"
+                        aria-expanded="false" aria-controls="{{ prefix }}-{{ registro.id }}">
+                  <i class="bi bi-card-list me-1"></i> Ver dados
+                </button>
+              </td>
+            </tr>
+            <tr class="collapse-row">
+              <td colspan="5" class="p-0 border-0">
+                <div class="collapse" id="{{ prefix }}-{{ registro.id }}">
+                  <div class="p-3 p-md-4 bg-light border-top">
+                    {% if registro.falhas > 0 %}
+                    <div class="alert alert-warning border-0 shadow-sm checklist-inline-alert mb-3" role="alert">
+                      <div class="fw-bold mb-1">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i> Itens defeituosos encontrados
+                      </div>
+                      <div class="small">
+                        {% for item in registro.detalhes_itens if not item.ok %}
+                          <span>{{ item.label }}</span>{% if not loop.last %} | {% endif %}
+                        {% endfor %}
+                      </div>
+                    </div>
+                    {% endif %}
+                    <div class="row g-3">
+                      <div class="col-lg-4">
+                        <div class="card border-0 shadow-sm h-100">
+                          <div class="card-body">
+                            <h6 class="fw-bold text-primary mb-3">Resumo</h6>
+                            {% for meta in registro.meta %}
+                              <div class="meta-line"><b>{{ meta.label }}:</b> {{ meta.value }}</div>
+                            {% endfor %}
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-lg-4">
+                        <div class="card border-0 shadow-sm h-100">
+                          <div class="card-body">
+                            <h6 class="fw-bold text-success mb-3">Itens Verificados</h6>
+                            <div class="d-flex flex-wrap gap-2">
+                              {% for item in registro.detalhes_itens %}
+                                <span class="status-chip {{ 'status-chip-ok' if item.ok else 'status-chip-bad' }}">
+                                  <i class="bi {{ 'bi-check-circle-fill' if item.ok else 'bi-exclamation-circle-fill' }}"></i>
+                                  {{ item.label }}
+                                </span>
+                              {% endfor %}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-lg-4">
+                        <div class="card border-0 shadow-sm h-100">
+                          <div class="card-body">
+                            <h6 class="fw-bold text-dark mb-3">Observacoes</h6>
+                            {% if registro.observacoes %}
+                              <div class="d-flex flex-column gap-2">
+                                {% for obs in registro.observacoes %}
+                                  <div class="obs-item">
+                                    <div class="small fw-bold mb-1">{{ obs.label }}</div>
+                                    <div class="small text-muted">{{ obs.value }}</div>
+                                  </div>
+                                {% endfor %}
+                              </div>
+                            {% else %}
+                              <div class="small text-muted">Sem observacoes registradas.</div>
+                            {% endif %}
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-12">
+                        <div class="card border-0 shadow-sm">
+                          <div class="card-body">
+                            <h6 class="fw-bold mb-2">Assinatura</h6>
+                            {% if registro.assinatura %}
+                              <img src="{{ registro.assinatura }}" alt="Assinatura do piloto" class="img-fluid rounded border bg-white signature-image">
+                            {% else %}
+                              <span class="small text-muted">Sem assinatura registrada.</span>
+                            {% endif %}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="5" class="py-4 text-muted">Nenhum checklist encontrado nesta seção.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endmacro %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+
+<style>
+  .checklist-detail-page {
+    max-width: 1360px;
+  }
+
+  .detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .summary-strip {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .summary-card {
+    background: #fff;
+    border-radius: 18px;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: var(--shadow-sm);
+    padding: 1rem 1.1rem;
+  }
+
+  .summary-card .label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    color: #64748b;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+  }
+
+  .summary-card .value {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #1f2937;
+    margin-top: 0.25rem;
+  }
+
+  .section-box {
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 20px;
+    box-shadow: var(--shadow-sm);
+    padding: 1.1rem;
+  }
+
+  .section-title-line {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 1rem;
+    padding-bottom: 0.9rem;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .section-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(13, 110, 253, 0.08);
+    color: #0d6efd;
+    flex: 0 0 42px;
+  }
+
+  .checklist-detail-table-wrap .table {
+    margin-bottom: 0;
+  }
+
+  .checklist-detail-table-wrap tbody > tr > td {
+    vertical-align: middle;
+  }
+
+  .checklist-detail-table-wrap tbody > tr:not(.collapse-row):hover {
+    background-color: rgba(13, 110, 253, 0.02);
+  }
+
+  .collapse-row .bg-light {
+    background-color: #f8fafc !important;
+    border-top: 1px solid #e2e8f0;
+  }
+
+  .collapse-row .card {
+    border-radius: 1rem;
+    overflow: hidden;
+  }
+
+  .collapse-row .card-body {
+    padding: 1.25rem;
+  }
+
+  .meta-line {
+    font-size: 0.88rem;
+    margin-bottom: 0.45rem;
+  }
+
+  .status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.4rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    border: 1px solid transparent;
+  }
+
+  .status-chip-ok {
+    background: #e8f7ee;
+    color: #146c43;
+    border-color: #badbcc;
+  }
+
+  .status-chip-bad {
+    background: #fff4e5;
+    color: #9a6700;
+    border-color: #ffe69c;
+  }
+
+  .obs-item {
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 0.8rem;
+    background: #fff;
+  }
+
+  .checklist-inline-alert {
+    border-radius: 14px;
+  }
+
+  .signature-image {
+    max-height: 190px !important;
+    width: auto !important;
+    object-fit: contain !important;
+  }
+
+  @media (max-width: 992px) {
+    .summary-strip {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 768px) {
+    .checklist-detail-page {
+      padding-left: 12px !important;
+      padding-right: 12px !important;
+    }
+
+    .detail-header {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .detail-header .btn {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .summary-strip {
+      grid-template-columns: 1fr;
+    }
+
+    .checklist-detail-table-wrap {
+      overflow: visible;
+    }
+
+    .checklist-detail-table-wrap .table-responsive {
+      overflow: visible;
+    }
+
+    .checklist-detail-table-wrap table,
+    .checklist-detail-table-wrap thead,
+    .checklist-detail-table-wrap tbody,
+    .checklist-detail-table-wrap tr,
+    .checklist-detail-table-wrap th,
+    .checklist-detail-table-wrap td {
+      display: block;
+      width: 100%;
+    }
+
+    .checklist-detail-table-wrap thead {
+      display: none;
+    }
+
+    .checklist-detail-table-wrap tbody {
+      padding: 0.75rem;
+    }
+
+    .checklist-detail-table-wrap tbody > tr:not(.collapse-row) {
+      background: #fff;
+      border: 1px solid rgba(16, 25, 39, 0.08);
+      border-radius: 1rem;
+      box-shadow: 0 10px 24px rgba(16, 25, 39, 0.08);
+      margin-bottom: 0.75rem;
+      overflow: hidden;
+      padding: 0.25rem 0;
+    }
+
+    .checklist-detail-table-wrap tbody > tr:not(.collapse-row) td {
+      border: 0;
+      padding: 0.75rem 1rem !important;
+      text-align: left !important;
+    }
+
+    .checklist-detail-table-wrap tbody > tr:not(.collapse-row) td::before {
+      color: #6c757d;
+      content: attr(data-label);
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.35rem;
+      text-transform: uppercase;
+    }
+
+    .checklist-detail-table-wrap .collapse-row {
+      margin-top: -0.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .checklist-detail-table-wrap .collapse-row td {
+      border: 0;
+      padding: 0 !important;
+    }
+
+    .checklist-detail-table-wrap .collapse-row td::before {
+      display: none;
+    }
+
+    .checklist-detail-table-wrap .collapse-row .bg-light {
+      border-radius: 0 0 1rem 1rem;
+      padding: 1rem !important;
+    }
+
+    .checklist-detail-table-wrap .collapse-row .card-body {
+      padding: 1rem;
+    }
+  }
+
+  .dark-mode .summary-card,
+  .dark-mode .section-box,
+  .dark-mode .collapse-row .card,
+  .dark-mode .obs-item {
+    background: #162133;
+    border-color: rgba(255, 255, 255, 0.08);
+    color: #e2e8f0;
+  }
+
+  .dark-mode .summary-card .label,
+  .dark-mode .text-muted,
+  .dark-mode .small.text-muted {
+    color: rgba(255, 255, 255, 0.65) !important;
+  }
+
+  .dark-mode .summary-card .value {
+    color: #e2e8f0;
+  }
+
+  .dark-mode .checklist-detail-table-wrap tbody > tr:not(.collapse-row) {
+    background: #162133;
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: none;
+  }
+
+  .dark-mode .checklist-detail-table-wrap tbody > tr:not(.collapse-row) td::before {
+    color: rgba(255, 255, 255, 0.65);
+  }
+
+  .dark-mode .collapse-row .bg-light {
+    background-color: #122033 !important;
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 checklist-detail-page">
+  <div class="detail-header mb-4">
+    <div>
+      <h2 class="text-dark mb-1">
+        <i class="bi bi-card-checklist text-primary me-2"></i> Detalhe do Checklist Semanal
+      </h2>
+      <div class="small text-muted">
+        {{ piloto_nome }} • Semana de {{ semana_inicio.strftime('%d/%m/%Y') }} a {{ semana_fim.strftime('%d/%m/%Y') }}
+      </div>
+    </div>
+    <a href="{{ url_for('main.admin_checklists_semanais') }}" class="btn btn-outline-secondary d-flex align-items-center">
+      <i class="bi bi-arrow-left me-1"></i> Voltar para a lista
+    </a>
+  </div>
+
+  <div class="summary-strip mb-4">
+    <div class="summary-card">
+      <div class="label">Piloto</div>
+      <div class="value">{{ piloto_nome }}</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">Ultima Atualizacao</div>
+      <div class="value">{{ ultima_movimentacao.strftime('%d/%m/%Y %H:%M') if ultima_movimentacao else '-' }}</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">Checklists de Veiculo</div>
+      <div class="value">{{ totais.veiculo }}</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">Checklists de Drone</div>
+      <div class="value">{{ totais.drone }}</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">Itens OK</div>
+      <div class="value">{{ totais.itens_ok }}/{{ totais.itens_total }}</div>
+    </div>
+  </div>
+
+  {% if totais.pendencias > 0 %}
+  <div class="alert alert-warning border-0 shadow-sm rounded-4 d-flex align-items-center gap-2 mb-4" role="alert">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    <div>
+      Foram encontrados itens defeituosos nesta semana. Verifique os alertas nas seções de veículo e drone.
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="section-box mb-4">
+    <div class="section-title-line">
+      <span class="section-icon"><i class="bi bi-car-front fs-5"></i></span>
+      <div>
+        <h5 class="m-0 fw-bold text-dark">Veiculos</h5>
+        <div class="small text-muted">Clique em cada linha para abrir os dados do checklist de veiculo.</div>
+      </div>
+    </div>
+
+    {% set ns_veiculos = namespace(has_fault=false) %}
+    {% for registro in veiculos %}
+      {% if registro.falhas > 0 %}
+        {% set ns_veiculos.has_fault = true %}
+      {% endif %}
+    {% endfor %}
+    {% if veiculos and ns_veiculos.has_fault %}
+      <div class="alert alert-warning border-0 shadow-sm rounded-4 d-flex align-items-center gap-2 mb-3" role="alert">
+        <i class="bi bi-exclamation-diamond-fill"></i>
+        <div>Existem checklists de veículo com itens defeituosos nesta semana.</div>
+      </div>
+    {% endif %}
+
+    {% if veiculos %}
+      {{ render_checklist_table(veiculos, 'detalhe-veiculo') }}
+    {% else %}
+      <div class="alert alert-light border rounded-4 mb-0">Nenhum checklist de veiculo encontrado nesta semana.</div>
+    {% endif %}
+  </div>
+
+  <div class="section-box">
+    <div class="section-title-line">
+      <span class="section-icon"><i class="bi bi-airplane-engines fs-5"></i></span>
+      <div>
+        <h5 class="m-0 fw-bold text-dark">Drones</h5>
+        <div class="small text-muted">Clique em cada linha para abrir os dados do checklist de drone.</div>
+      </div>
+    </div>
+
+    {% set ns_drones = namespace(has_fault=false) %}
+    {% for registro in drones %}
+      {% if registro.falhas > 0 %}
+        {% set ns_drones.has_fault = true %}
+      {% endif %}
+    {% endfor %}
+    {% if drones and ns_drones.has_fault %}
+      <div class="alert alert-warning border-0 shadow-sm rounded-4 d-flex align-items-center gap-2 mb-3" role="alert">
+        <i class="bi bi-exclamation-diamond-fill"></i>
+        <div>Existem checklists de drone com itens defeituosos nesta semana.</div>
+      </div>
+    {% endif %}
+
+    {% if drones %}
+      {{ render_checklist_table(drones, 'detalhe-drone') }}
+    {% else %}
+      <div class="alert alert-light border rounded-4 mb-0">Nenhum checklist de drone encontrado nesta semana.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

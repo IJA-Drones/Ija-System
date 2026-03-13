@@ -706,6 +706,19 @@ class LogVeiculo(db.Model):
         return len(self.abastecimentos_detalhados or [])
 
     @property
+    def tipos_abastecimento(self):
+        tipos = []
+        for item in self.abastecimentos_ordenados:
+            tipo = (item.tipo_abastecimento or "").strip()
+            if tipo and tipo not in tipos:
+                tipos.append(tipo)
+        return tipos
+
+    @property
+    def tipos_abastecimento_resumo(self):
+        return ", ".join(self.tipos_abastecimento)
+
+    @property
     def total_litros_abastecidos(self):
         return sum((item.litros or 0) for item in (self.abastecimentos_detalhados or []))
 
@@ -748,7 +761,8 @@ class Abastecimento(db.Model):
     
     data_hora = db.Column(db.DateTime, default=datetime.now, nullable=False)
     
-    km_registro = db.Column(db.Float, nullable=False) # KM no momento do abastecimento
+    km_registro = db.Column(db.Float, nullable=False)
+    tipo_abastecimento = db.Column(db.String(100), nullable=False) # Tipo registrado na nota fiscal
     litros = db.Column(db.Float, nullable=False)
     valor_total = db.Column(db.Float, nullable=True)
     

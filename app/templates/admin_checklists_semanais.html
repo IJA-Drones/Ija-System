@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+
+<style>
+  .checklist-admin-page {
+    max-width: 1240px;
+  }
+
+  .dashboard-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 12px !important;
+    flex-wrap: wrap;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-left: auto;
+  }
+
+  .checklist-admin-table-wrap .table {
+    margin-bottom: 0;
+  }
+
+  .checklist-admin-table-wrap tbody > tr > td {
+    vertical-align: middle;
+  }
+
+  .checklist-admin-table-wrap tbody > tr:hover {
+    background-color: rgba(13, 110, 253, 0.02);
+  }
+
+  .badge-soft-success {
+    background: rgba(25, 135, 84, 0.14);
+    color: #198754;
+  }
+
+  .badge-soft-warning {
+    background: rgba(255, 193, 7, 0.16);
+    color: #9a6700;
+  }
+
+  .row-alert {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #9a6700;
+    margin-top: 0.35rem;
+  }
+
+  @media (max-width: 768px) {
+    .checklist-admin-page {
+      padding-left: 0.75rem;
+      padding-right: 0.75rem;
+    }
+
+    .dashboard-header {
+      flex-direction: column !important;
+      align-items: stretch !important;
+    }
+
+    .header-actions {
+      width: 100%;
+      margin-left: 0;
+    }
+
+    .header-actions a.btn {
+      width: 100%;
+      justify-content: center;
+      flex: 1;
+    }
+
+    .checklist-admin-table-wrap {
+      overflow: visible;
+    }
+
+    .checklist-admin-table-wrap .table-responsive {
+      overflow: visible;
+    }
+
+    .checklist-admin-table-wrap table,
+    .checklist-admin-table-wrap thead,
+    .checklist-admin-table-wrap tbody,
+    .checklist-admin-table-wrap tr,
+    .checklist-admin-table-wrap th,
+    .checklist-admin-table-wrap td {
+      display: block;
+      width: 100%;
+    }
+
+    .checklist-admin-table-wrap thead {
+      display: none;
+    }
+
+    .checklist-admin-table-wrap tbody {
+      padding: 0.75rem;
+    }
+
+    .checklist-admin-table-wrap tbody > tr {
+      background: #fff;
+      border: 1px solid rgba(16, 25, 39, 0.08);
+      border-radius: 1rem;
+      box-shadow: 0 10px 24px rgba(16, 25, 39, 0.08);
+      margin-bottom: 0.75rem;
+      overflow: hidden;
+      padding: 0.25rem 0;
+    }
+
+    .checklist-admin-table-wrap tbody > tr td {
+      border: 0;
+      padding: 0.75rem 1rem !important;
+      text-align: left !important;
+    }
+
+    .checklist-admin-table-wrap tbody > tr td::before {
+      color: #6c757d;
+      content: attr(data-label);
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.35rem;
+      text-transform: uppercase;
+    }
+  }
+
+  .dark-mode .checklist-admin-table-wrap tbody > tr {
+    background: #162133;
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: none;
+  }
+
+  .dark-mode .checklist-admin-table-wrap tbody > tr td::before {
+    color: rgba(255, 255, 255, 0.65);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 checklist-admin-page">
+  <div class="dashboard-header mb-4">
+    <div style="margin-right: auto !important;">
+      <h2 class="text-dark mb-1">
+        <i class="bi bi-ui-checks-grid me-2 text-primary"></i> Checklists Semanais
+      </h2>
+      <div class="small text-muted">A lista mostra a semana e o piloto. O detalhe abre veiculo e drone separados.</div>
+    </div>
+
+    <div class="header-actions">
+      <a href="{{ url_for('main.listar_veiculos') }}" class="btn btn-outline-secondary d-flex align-items-center">
+        <i class="bi bi-arrow-left"></i> Voltar para veiculos
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-2">
+      <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-primary border-4 bg-white">
+        <small class="text-muted fw-bold text-uppercase" style="font-size: 0.65rem;">Semanas</small>
+        <h3 class="fw-bold mb-0 text-dark">{{ totais.geral }}</h3>
+      </div>
+    </div>
+    <div class="col-6 col-md-2">
+      <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-info border-4 bg-white">
+        <small class="text-muted fw-bold text-uppercase" style="font-size: 0.65rem;">Veiculos</small>
+        <h3 class="fw-bold mb-0 text-dark">{{ totais.veiculo }}</h3>
+      </div>
+    </div>
+    <div class="col-6 col-md-2">
+      <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-secondary border-4 bg-white">
+        <small class="text-muted fw-bold text-uppercase" style="font-size: 0.65rem;">Drones</small>
+        <h3 class="fw-bold mb-0 text-dark">{{ totais.drone }}</h3>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-warning border-4 bg-white">
+        <small class="text-muted fw-bold text-uppercase" style="font-size: 0.65rem;">Semanas com Pendencia</small>
+        <h3 class="fw-bold mb-0 text-warning">{{ totais.pendencias }}</h3>
+      </div>
+    </div>
+    <div class="col-12 col-md-3">
+      <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-success border-4 bg-white">
+        <small class="text-muted fw-bold text-uppercase" style="font-size: 0.65rem;">Semana Atual</small>
+        <h3 class="fw-bold mb-0 text-success">{{ totais.semana_atual }}</h3>
+      </div>
+    </div>
+  </div>
+
+  {% if totais.pendencias > 0 %}
+  <div class="alert alert-warning border-0 shadow-sm rounded-4 d-flex align-items-center gap-2 mb-4" role="alert">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    <div>
+      Existem {{ totais.pendencias }} semana(s) com itens defeituosos. Abra o checklist da semana para ver os detalhes de veículo e drone.
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="card shadow-sm rounded-4 mb-4 border-0">
+    <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center cursor-pointer"
+         data-bs-toggle="collapse" data-bs-target="#collapseFiltrosChecklistAdmin" style="cursor: pointer; background: none;">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-funnel-fill text-primary"></i>
+        <span class="text-dark fw-bold">Filtros de Busca</span>
+      </div>
+      <i class="bi bi-chevron-down text-muted"></i>
+    </div>
+
+    <div class="collapse {% if filters.q or filters.data_inicio or filters.data_fim %}show{% endif %}" id="collapseFiltrosChecklistAdmin">
+      <div class="card-body pt-0 pb-4">
+        <form method="GET" class="row g-2 align-items-end">
+          <div class="col-md-6">
+            <label class="small text-muted">Piloto, placa, modelo, renomacao ou serie:</label>
+            <input type="text" name="q" value="{{ filters.q or '' }}" class="form-control" placeholder="Ex.: Piloto Exemplo, PLOA, placa, serie...">
+          </div>
+          <div class="col-md-2">
+            <label class="small text-muted">Data inicial:</label>
+            <input type="date" name="data_inicio" value="{{ filters.data_inicio or '' }}" class="form-control">
+          </div>
+          <div class="col-md-2">
+            <label class="small text-muted">Data final:</label>
+            <input type="date" name="data_fim" value="{{ filters.data_fim or '' }}" class="form-control">
+          </div>
+          <div class="col-md-2 d-flex gap-2">
+            <button class="btn btn-success w-100" type="submit">
+              <i class="bi bi-search"></i> Filtrar
+            </button>
+          </div>
+          {% if filters.q or filters.data_inicio or filters.data_fim %}
+          <div class="col-md-2 d-flex gap-2">
+            <a href="{{ url_for('main.admin_checklists_semanais') }}" class="btn btn-outline-secondary w-100">
+              <i class="bi bi-x-lg"></i> Limpar
+            </a>
+          </div>
+          {% endif %}
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0 rounded-4 overflow-hidden checklist-admin-table-wrap">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 text-center">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-4 text-start">Ultimo Registro</th>
+              <th>Semana</th>
+              <th class="text-start">Piloto</th>
+              <th>Resumo</th>
+              <th>Status</th>
+              <th class="pe-4">Detalhes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for grupo in grupos %}
+            <tr>
+              <td class="ps-4 text-start" data-label="Ultimo Registro">
+                {{ grupo.ultima_movimentacao.strftime('%d/%m/%Y %H:%M') if grupo.ultima_movimentacao else '-' }}
+                <div class="small text-muted">{{ grupo.observacoes_total }} observacao(oes)</div>
+              </td>
+              <td data-label="Semana">
+                {{ grupo.semana_inicio.strftime('%d/%m/%Y') }} a {{ grupo.semana_fim.strftime('%d/%m/%Y') }}
+              </td>
+              <td class="text-start" data-label="Piloto">
+                <div class="fw-bold text-dark">{{ grupo.piloto_nome }}</div>
+                <div class="small text-muted">Semana consolidada</div>
+              </td>
+              <td data-label="Resumo">
+                <div class="fw-semibold text-dark">{{ grupo.resumo_label }}</div>
+                <div class="small text-muted">{{ grupo.itens_ok }}/{{ grupo.itens_total }} itens ok</div>
+              </td>
+              <td data-label="Status">
+                <span class="badge rounded-pill px-3 {{ 'badge-soft-success' if grupo.falhas == 0 else 'badge-soft-warning' }}">
+                  {{ grupo.status_label }}
+                </span>
+                {% if grupo.falhas > 0 %}
+                <div class="row-alert">
+                  <i class="bi bi-exclamation-circle-fill me-1"></i> Alerta de pendência
+                </div>
+                {% endif %}
+              </td>
+              <td class="pe-4" data-label="Detalhes">
+                <a class="btn btn-sm btn-outline-primary rounded-pill px-3"
+                   href="{{ url_for('main.admin_checklist_semanal_detalhe', piloto_id=grupo.piloto_id, semana_inicio=grupo.semana_inicio.isoformat()) }}">
+                  <i class="bi bi-card-list me-1"></i> Ver checklist
+                </a>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="6" class="py-4 text-muted">Nenhum checklist semanal encontrado para os filtros aplicados.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
