@@ -1,4 +1,9 @@
 import os
+import os
+from dotenv import load_dotenv
+
+# Adicione isso aqui para garantir que o config.py leia o .env antes de definir a classe
+load_dotenv()
 
 class Config:
     # Gera uma chave secreta aleatória ou usa uma fixa
