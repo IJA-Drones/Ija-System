@@ -21,6 +21,8 @@ class Config:
     
     # Caminho do Banco de Dados
 
+    KEY_API_GOOGLE_MAPS = os.getenv("KEY_API_GOOGLE_MAPS")
+    
     if uri and uri.startswith("postgres://"):
         uri = uri.replace("postgres://", "postgresql://", 1)
 
