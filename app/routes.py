@@ -9972,49 +9972,15 @@ def dashboard_equipe_uvis():
         nome_equipe=nome_equipe,
     )
 
-# ============================================================
-#  EXPORTAÇÃO OS (ADMIN) — PDF + EXCEL BALA NA AGULHA + ASSINATURAS
-# ============================================================
-
-
-import tempfile
-import base64
-import re
-from datetime import datetime
-from io import BytesIO
-
-from flask import send_file, request
-from flask_login import login_required
-from sqlalchemy.orm import joinedload
-
-from reportlab.lib.pagesizes import A4, landscape
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-from reportlab.platypus import Image as RLImage
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import mm
-from reportlab.lib import colors
-
-from openpyxl import Workbook
-from openpyxl.utils import get_column_letter
-from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
-from openpyxl.drawing.image import Image as XLImage
-
-# Seus imports reais:
-# from app import db
-# from app.models import Solicitacao, OrdemServico
-# from app.decorators import roles_required
-
-
-# ============================================================
-#  PDF V2 (mais bonito) — com LOGO + Assinaturas (imagem)
-# ============================================================
-
 import os
 import base64
 import re
 import tempfile
 from datetime import datetime
 from io import BytesIO
+from urllib.parse import urlencode
+
+import requests
 
 from flask import send_file, request, current_app
 from flask_login import login_required
@@ -10029,6 +9995,12 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import mm
 from reportlab.lib import colors
 
+# Seus imports reais:
+# from app import db
+# from app.models import Solicitacao, OrdemServico
+# from app.decorators import roles_required
+
+
 def _fmt_dt(v):
     if not v:
         return ""
@@ -10036,6 +10008,7 @@ def _fmt_dt(v):
         return v.strftime("%d/%m/%Y %H:%M")
     except Exception:
         return str(v)
+
 
 def _fmt_date(v):
     if not v:
@@ -10045,6 +10018,7 @@ def _fmt_date(v):
     except Exception:
         return str(v)
 
+
 def _fmt_time(v):
     if not v:
         return ""
@@ -10053,41 +10027,38 @@ def _fmt_time(v):
     except Exception:
         return str(v)
 
+
 def _safe(v):
     if v is None:
         return ""
     return str(v)
 
 
+def _normalize_coord(v):
+    if v is None:
+        return ""
+    s = str(v).strip()
+    if not s:
+        return ""
+    return s.replace(",", ".")
+
 
 # -------------------------
 #  Logo (static/img/...)
 # -------------------------
 def _get_logo_path():
-    """
-    Escolhe a logo do static. Use:
-      ?logo=dark  -> logo_oceano_azul_dark.png
-      ?logo=light -> logo_oceano_azul_light.png (default)
-    """
     logo_mode = (request.args.get("logo") or "light").strip().lower()
     filename = "img/logo_oceano_azul_dark.png" if logo_mode == "dark" else "img/logo_oceano_azul_light.png"
-    # caminho absoluto do Flask para /static
     return os.path.join(current_app.root_path, "static", filename)
 
 
 def _try_make_logo(width_mm=34):
-    """
-    Retorna RLImage da logo (ou None se não existir/erro).
-    """
     try:
         p = _get_logo_path()
         if not os.path.exists(p):
             return None
         img = RLImage(p)
-        # mantém proporção: define só largura
         img.drawWidth = width_mm * mm
-        # altura proporcional aproximada (o ReportLab não lê DPI sempre bem),
-        # mas isso fica ok para logos horizontais:
         img.drawHeight = (width_mm * 0.55) * mm
         return img
     except Exception:
@@ -10099,21 +10070,69 @@ def _try_make_logo(width_mm=34):
 # -------------------------
 _DATAURL_RE = re.compile(r"^data:image/(?P<fmt>png|jpeg|jpg);base64,(?P<data>.+)$", re.I)
 
+
 def _dataurl_to_rlimage(dataurl: str, width_mm=80, height_mm=32):
     if not dataurl or not isinstance(dataurl, str):
         return None
+
     m = _DATAURL_RE.match(dataurl.strip())
     if not m:
         return None
+
     try:
         raw = base64.b64decode(m.group("data"))
     except Exception:
         return None
+
     bio = BytesIO(raw)
     img = RLImage(bio)
     img.drawWidth = width_mm * mm
     img.drawHeight = height_mm * mm
     return img
+
+
+# -------------------------
+#  Google Maps Static API -> imagem
+# -------------------------
+def _try_make_static_map(lat, lng, width_mm=165, height_mm=88, zoom=19, maptype="satellite"):
+    lat = _normalize_coord(lat)
+    lng = _normalize_coord(lng)
+
+    if not lat or not lng:
+        return None
+
+    api_key = current_app.config.get("KEY_API_GOOGLE_MAPS")
+    if not api_key:
+        return None
+
+    try:
+        params = {
+            "center": f"{lat},{lng}",
+            "zoom": zoom,
+            "size": "1200x650",
+            "scale": "2",
+            "maptype": maptype,
+            "markers": f"color:red|label:O|{lat},{lng}",
+            "key": api_key,
+        }
+
+        url = "https://maps.googleapis.com/maps/api/staticmap?" + urlencode(params)
+
+        r = requests.get(url, timeout=15)
+        r.raise_for_status()
+
+        content_type = (r.headers.get("Content-Type") or "").lower()
+        if "image" not in content_type:
+            return None
+
+        bio = BytesIO(r.content)
+        img = RLImage(bio)
+        img.drawWidth = width_mm * mm
+        img.drawHeight = height_mm * mm
+        return img
+
+    except Exception:
+        return None
 
 
 # -------------------------
@@ -10127,76 +10146,87 @@ def _pdf_styles():
         parent=styles["Title"],
         fontSize=18,
         leading=22,
-        textColor=colors.HexColor("#0D6EFD"),
+        textColor=colors.HexColor("#0F3D75"),
         spaceAfter=2
     )
+
     subtitle = ParagraphStyle(
         "p_subtitle",
         parent=styles["Normal"],
-        fontSize=9.5,
-        leading=13,
-        textColor=colors.HexColor("#6B7280"),
+        fontSize=9.2,
+        leading=12.5,
+        textColor=colors.HexColor("#667085"),
         spaceAfter=10
     )
+
     section = ParagraphStyle(
         "p_section",
         parent=styles["Heading2"],
         fontSize=11.5,
         leading=15,
-        textColor=colors.HexColor("#0D6EFD"),
-        spaceBefore=10,
-        spaceAfter=6
+        textColor=colors.HexColor("#0F3D75"),
+        spaceBefore=8,
+        spaceAfter=5
     )
+
     cell = ParagraphStyle(
         "p_cell",
         parent=styles["BodyText"],
         fontSize=9,
-        leading=12,
+        leading=11.8,
         textColor=colors.HexColor("#111827"),
         wordWrap="CJK",
         splitLongWords=True
     )
+
     hint = ParagraphStyle(
         "p_hint",
         parent=styles["Normal"],
-        fontSize=8.5,
-        leading=11.5,
-        textColor=colors.HexColor("#6B7280"),
-        spaceAfter=6
+        fontSize=8.3,
+        leading=11,
+        textColor=colors.HexColor("#667085"),
+        spaceAfter=5
     )
-    return styles, title, subtitle, section, cell, hint
+
+    small = ParagraphStyle(
+        "p_small",
+        parent=styles["Normal"],
+        fontSize=8,
+        leading=10,
+        textColor=colors.HexColor("#475467"),
+    )
+
+    return styles, title, subtitle, section, cell, hint, small
 
 
 def _pdf_header_block(os_id: int, status_txt: str):
-    """
-    Topo: logo + título + metadados.
-    """
     styles, title_s, subtitle_s, *_ = _pdf_styles()
 
-    logo = _try_make_logo(width_mm=34)
+    logo = _try_make_logo(width_mm=35)
     title = Paragraph(f"OS #{os_id} — Formulário (Admin)", title_s)
-    subtitle = Paragraph(f"Gerado em {_fmt_dt(datetime.now())} • Status: {_safe(status_txt)}", subtitle_s)
+    subtitle = Paragraph(
+        f"Gerado em {_fmt_dt(datetime.now())} • Status: {_safe(status_txt)}",
+        subtitle_s
+    )
 
     left = [title, subtitle]
     right = [logo] if logo else [Paragraph("", styles["Normal"])]
 
-    tbl = Table([[left, right]], colWidths=[None, 40*mm])
+    tbl = Table([[left, right]], colWidths=[None, 42 * mm])
     tbl.setStyle(TableStyle([
-        ("VALIGN", (0,0), (-1,-1), "TOP"),
-        ("ALIGN", (1,0), (1,0), "RIGHT"),
-        ("LEFTPADDING", (0,0), (-1,-1), 0),
-        ("RIGHTPADDING", (0,0), (-1,-1), 0),
-        ("TOPPADDING", (0,0), (-1,-1), 0),
-        ("BOTTOMPADDING", (0,0), (-1,-1), 2),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("ALIGN", (1, 0), (1, 0), "RIGHT"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 0),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+        ("TOPPADDING", (0, 0), (-1, -1), 0),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
     ]))
-    return [tbl, Spacer(1, 2)]
+
+    return [tbl, Spacer(1, 3)]
 
 
 def _pdf_kv_table_nice(section_title: str, items: list[tuple[str, object]], cell_style, section_style, doc_width, orient="portrait"):
-    """
-    Tabela 2 colunas com layout mais “clean”.
-    """
-    key_w = (62*mm if orient == "portrait" else 75*mm)
+    key_w = 60 * mm if orient == "portrait" else 73 * mm
     val_w = doc_width - key_w
 
     rows = [[
@@ -10212,53 +10242,64 @@ def _pdf_kv_table_nice(section_title: str, items: list[tuple[str, object]], cell
 
     tbl = Table(rows, repeatRows=1, colWidths=[key_w, val_w])
     tbl.setStyle(TableStyle([
-        ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#0D6EFD")),
-        ("TEXTCOLOR", (0,0), (-1,0), colors.white),
-        ("GRID", (0,0), (-1,-1), 0.25, colors.HexColor("#E5E7EB")),
-        ("ROWBACKGROUNDS", (0,1), (-1,-1), [colors.white, colors.HexColor("#FBFDFF")]),
-        ("VALIGN", (0,0), (-1,-1), "TOP"),
-        ("LEFTPADDING", (0,0), (-1,-1), 6),
-        ("RIGHTPADDING", (0,0), (-1,-1), 6),
-        ("TOPPADDING", (0,0), (-1,-1), 4),
-        ("BOTTOMPADDING", (0,0), (-1,-1), 4),
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1565C0")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("LINEBELOW", (0, 0), (-1, 0), 0.6, colors.HexColor("#1565C0")),
+        ("GRID", (0, 1), (-1, -1), 0.25, colors.HexColor("#DDE3EA")),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#F8FAFC")]),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 7),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 7),
+        ("TOPPADDING", (0, 0), (-1, -1), 5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
     ]))
 
     return [
         Paragraph(section_title, section_style),
         tbl,
-        Spacer(1, 8)
+        Spacer(1, 7)
     ]
 
 
+def _pdf_card(flowables, doc_width, bg="#F8FAFC", border="#D0D5DD", padding=8):
+    card = Table([[flowables]], colWidths=[doc_width])
+    card.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(bg)),
+        ("BOX", (0, 0), (-1, -1), 0.7, colors.HexColor(border)),
+        ("LEFTPADDING", (0, 0), (-1, -1), padding),
+        ("RIGHTPADDING", (0, 0), (-1, -1), padding),
+        ("TOPPADDING", (0, 0), (-1, -1), padding),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), padding),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+    ]))
+    return card
+
+
 def _header_footer_factory_pretty(title):
-    """
-    Header/Footer com barra e paginação.
-    """
     def _hf(canvas, doc):
         canvas.saveState()
         w, h = doc.pagesize
 
-        # Barra topo
-        canvas.setFillColor(colors.HexColor("#0D6EFD"))
-        canvas.rect(doc.leftMargin, h-(11*mm), doc.width, 2.6, fill=1, stroke=0)
+        canvas.setFillColor(colors.HexColor("#1565C0"))
+        canvas.rect(doc.leftMargin, h - (11 * mm), doc.width, 2.8, fill=1, stroke=0)
 
-        # Rodapé
         canvas.setFont("Helvetica", 8)
-        canvas.setFillColor(colors.HexColor("#6B7280"))
-        canvas.drawString(doc.leftMargin, 9*mm, title)
-        canvas.drawRightString(doc.leftMargin + doc.width, 9*mm, f"Página {canvas.getPageNumber()}")
+        canvas.setFillColor(colors.HexColor("#667085"))
+        canvas.drawString(doc.leftMargin, 9 * mm, title)
+        canvas.drawRightString(doc.leftMargin + doc.width, 9 * mm, f"Página {canvas.getPageNumber()}")
         canvas.restoreState()
+
     return _hf
 
 
 # ============================================================
-#  ROTA PDF V2 (bonita com logo)
+#  ROTA PDF V2 (bonita com logo + coordenadas + mapa)
 # ============================================================
 @bp.route("/admin/os/<int:os_id>/export/pdf/v2", methods=["GET"])
 @login_required
 @roles_required("admin")
 def admin_export_os_pdf_v2(os_id):
-    orient = request.args.get("orient", "portrait")  # portrait | landscape
+    orient = request.args.get("orient", "portrait")
     pagesize = landscape(A4) if orient == "landscape" else A4
 
     try:
@@ -10280,19 +10321,21 @@ def admin_export_os_pdf_v2(os_id):
         doc = SimpleDocTemplate(
             caminho_pdf,
             pagesize=pagesize,
-            leftMargin=14*mm, rightMargin=14*mm,
-            topMargin=16*mm, bottomMargin=16*mm
+            leftMargin=14 * mm,
+            rightMargin=14 * mm,
+            topMargin=16 * mm,
+            bottomMargin=16 * mm
         )
 
-        styles, title_s, subtitle_s, section_s, cell_s, hint_s = _pdf_styles()
+        styles, title_s, subtitle_s, section_s, cell_s, hint_s, small_s = _pdf_styles()
 
         story = []
         story += _pdf_header_block(s.id, s.status)
-
-        # linha separadora “soft”
         story.append(Spacer(1, 2))
 
         endereco_os = f"{s.logradouro or ''}, {s.numero or 'S/N'} - {s.bairro or ''} - {s.cidade or ''}/{s.uf or ''}"
+        lat = _normalize_coord(getattr(s, "latitude", None))
+        lng = _normalize_coord(getattr(s, "longitude", None))
 
         story += _pdf_kv_table_nice("Identificação", [
             ("Solicitação ID", s.id),
@@ -10306,6 +10349,53 @@ def admin_export_os_pdf_v2(os_id):
             ("Status", s.status or ""),
             ("Protocolo", getattr(s, "protocolo", "") or ""),
         ], cell_s, section_s, doc.width, orient=orient)
+
+        story += _pdf_kv_table_nice("Endereço / Coordenadas", [
+            ("CEP", s.cep or ""),
+            ("Logradouro", s.logradouro or ""),
+            ("Número", s.numero or ""),
+            ("Bairro", s.bairro or ""),
+            ("Cidade", s.cidade or ""),
+            ("UF", s.uf or ""),
+            ("Complemento", s.complemento or ""),
+            ("Latitude", lat or ""),
+            ("Longitude", lng or ""),
+        ], cell_s, section_s, doc.width, orient=orient)
+
+        if lat and lng:
+            maps_link = f"https://www.google.com/maps?q={lat},{lng}"
+            map_img = _try_make_static_map(
+                lat=lat,
+                lng=lng,
+                width_mm=175 if orient == "landscape" else 165,
+                height_mm=92,
+                zoom=19,
+                maptype="satellite"
+            )
+
+            map_block = [
+                Paragraph("Localização no mapa", section_s),
+                Paragraph(
+                    "Visual gerado automaticamente a partir da latitude e longitude da solicitação.",
+                    hint_s
+                ),
+                Paragraph(
+                    f'Para acessar o Google Maps, clique aqui: <link href="{maps_link}">{maps_link}</link>',
+                    small_s
+                ),
+                Spacer(1, 5),
+            ]
+
+            if map_img:
+                map_block.append(map_img)
+            else:
+                map_block.append(Paragraph(
+                    "Não foi possível gerar a imagem do mapa no momento.",
+                    styles["Normal"]
+                ))
+
+            story.append(_pdf_card(map_block, doc.width, bg="#F8FAFC", border="#D0D5DD", padding=8))
+            story.append(Spacer(1, 8))
 
         if not ordem:
             story.append(Paragraph("Formulário", section_s))
@@ -10357,7 +10447,7 @@ def admin_export_os_pdf_v2(os_id):
                 ("Dosagem (g/10L)", ordem.dosagem_g_10l or ""),
                 ("Tipo aplicação", ordem.tipo_aplicacao or ""),
                 ("Qtd administrada (ml)", ordem.quantidade_produto_administrada_ml or ""),
-                ("Pulverização área (l/ha)", ordem.pulverizacao_area_l_ha or ""),               
+                ("Pulverização área (l/ha)", ordem.pulverizacao_area_l_ha or ""),
                 ("Ponta pulverização", ordem.ponta_pulverizacao or ""),
             ], cell_s, section_s, doc.width, orient=orient)
 
@@ -10377,9 +10467,16 @@ def admin_export_os_pdf_v2(os_id):
                 ("Proprietário/Preposto", ordem.proprietario_ou_preposto or ""),
             ], cell_s, section_s, doc.width, orient=orient)
 
-            #  Assinaturas como imagem no PDF (cartões)
-            ass_piloto = _dataurl_to_rlimage(getattr(ordem, "assinatura_piloto", None), width_mm=82, height_mm=32)
-            ass_resp = _dataurl_to_rlimage(getattr(ordem, "assinatura_proprietario_ou_preposto", None), width_mm=82, height_mm=32)
+            ass_piloto = _dataurl_to_rlimage(
+                getattr(ordem, "assinatura_piloto", None),
+                width_mm=82,
+                height_mm=32
+            )
+            ass_resp = _dataurl_to_rlimage(
+                getattr(ordem, "assinatura_proprietario_ou_preposto", None),
+                width_mm=82,
+                height_mm=32
+            )
 
             story.append(Paragraph("Assinaturas", section_s))
             story.append(Paragraph("Exportadas diretamente do formulário.", hint_s))
@@ -10389,43 +10486,52 @@ def admin_export_os_pdf_v2(os_id):
                 inner = [
                     Paragraph(f"<b>{title_html}</b>", styles["Normal"]),
                     Paragraph(_safe(who) if who else "—", hint_s),
-                    Spacer(1, 3),
+                    Spacer(1, 4),
                     img_or_none if img_or_none else Paragraph("Não informada.", styles["Normal"]),
                 ]
-                card = Table([[inner]], colWidths=[doc.width/2 - 6*mm])
+                card = Table([[inner]], colWidths=[doc.width / 2 - 5 * mm])
                 card.setStyle(TableStyle([
-                    ("BACKGROUND", (0,0), (-1,-1), colors.HexColor("#F8FAFF")),
-                    ("BOX", (0,0), (-1,-1), 0.6, colors.HexColor("#E5E7EB")),
-                    ("LEFTPADDING", (0,0), (-1,-1), 8),
-                    ("RIGHTPADDING", (0,0), (-1,-1), 8),
-                    ("TOPPADDING", (0,0), (-1,-1), 7),
-                    ("BOTTOMPADDING", (0,0), (-1,-1), 7),
-                    ("VALIGN", (0,0), (-1,-1), "TOP"),
+                    ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#F8FAFC")),
+                    ("BOX", (0, 0), (-1, -1), 0.7, colors.HexColor("#D0D5DD")),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 9),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 9),
+                    ("TOPPADDING", (0, 0), (-1, -1), 8),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
                 ]))
                 return card
 
-            card_left = _sig_card("Assinatura do Piloto", getattr(ordem, "piloto", ""), ass_piloto)
-            card_right = _sig_card("Assinatura do Responsável (Local)", getattr(ordem, "proprietario_ou_preposto", ""), ass_resp)
+            card_left = _sig_card(
+                "Assinatura do Piloto",
+                getattr(ordem, "piloto", ""),
+                ass_piloto
+            )
+            card_right = _sig_card(
+                "Assinatura do Responsável (Local)",
+                getattr(ordem, "proprietario_ou_preposto", ""),
+                ass_resp
+            )
 
-            cards = Table([[card_left, card_right]], colWidths=[doc.width/2, doc.width/2])
+            cards = Table([[card_left, card_right]], colWidths=[doc.width / 2, doc.width / 2])
             cards.setStyle(TableStyle([
-                ("LEFTPADDING", (0,0), (-1,-1), 0),
-                ("RIGHTPADDING", (0,0), (-1,-1), 0),
-                ("TOPPADDING", (0,0), (-1,-1), 0),
-                ("BOTTOMPADDING", (0,0), (-1,-1), 0),
-                ("VALIGN", (0,0), (-1,-1), "TOP"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                ("TOPPADDING", (0, 0), (-1, -1), 0),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
             ]))
             story.append(cards)
             story.append(Spacer(1, 8))
 
         header_title = f"OS #{s.id} — Oceano Azul / IJA Drones"
+
         doc.build(
             story,
             onFirstPage=_header_footer_factory_pretty(header_title),
             onLaterPages=_header_footer_factory_pretty(header_title)
         )
 
-        nome_arquivo = f"os_{s.id}_formulario_v2.pdf"
+        nome_arquivo = f"os_{s.id}_formulario.pdf"
         return send_file(
             caminho_pdf,
             as_attachment=True,
@@ -10436,7 +10542,6 @@ def admin_export_os_pdf_v2(os_id):
     except Exception:
         db.session.rollback()
         raise
-
 # ============================================================
 #  EXPORTAÇÃO OS (ADMIN) — EXCEL V2 (BONITO) + ASSINATURAS EM IMAGEM
 # - OpenPyXL (sem libs extras)
@@ -10846,7 +10951,7 @@ def admin_export_os_excel_v2(os_id):
         wb.save(bio)
         bio.seek(0)
 
-        nome_arquivo = f"os_{s.id}_formulario_v2.xlsx"
+        nome_arquivo = f"os_{s.id}_formulario.xlsx"
         return send_file(
             bio,
             as_attachment=True,
