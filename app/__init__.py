@@ -29,7 +29,7 @@ def create_app():
         Talisman(app, content_security_policy=None)
 
     login_manager.init_app(app)
-    login_manager.login_view = "main.login"
+    login_manager.login_view = "auth.login"
 
     from app.models import Usuario
 
@@ -64,8 +64,10 @@ def create_app():
             mensagem="Ocorreu um erro inesperado.",
         ), 500
 
-    from app.routes import bp
+    from app.modules.auth import bp as auth_bp
+    from app.routes import bp as main_bp
 
-    app.register_blueprint(bp)
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(main_bp)
 
     return app
