@@ -1,0 +1,269 @@
+from flask import abort, flash, jsonify, redirect, render_template, request, url_for
+from flask_login import current_user, login_required
+
+from app.extensions import db
+from app.models import Baterias, Drones
+from app.modules.equipamentos.service import (
+    build_bateria_edit_form,
+    build_drone_edit_form,
+    create_bateria,
+    create_drone,
+    delete_bateria,
+    delete_drone,
+    list_active_equipes,
+    list_baterias,
+    list_drones,
+    list_drones_for_baterias,
+    list_equipamentos_dashboard,
+    list_equipamentos_manutencao,
+    send_drone_to_manutencao,
+    update_bateria,
+    update_bateria_ciclos,
+    update_drone,
+    validate_bateria_form,
+    validate_drone_form,
+)
+
+
+def _require_admin():
+    if getattr(current_user, "tipo_usuario", None) != "admin":
+        abort(403)
+
+
+def register_routes(bp):
+    @bp.route("/equipamentos", methods=["GET"], endpoint="listar_equipamentos")
+    @login_required
+    def listar_equipamentos():
+        return render_template("equipamentos_listar.html", **list_equipamentos_dashboard())
+
+    @bp.route("/equipamentos/drones", methods=["GET"], endpoint="listar_drones")
+    @login_required
+    def listar_drones_view():
+        return render_template(
+            "drones_listar.html",
+            drones=list_drones(),
+            is_admin=getattr(current_user, "tipo_usuario", None) == "admin",
+        )
+
+    @bp.route("/equipamentos/baterias", methods=["GET"], endpoint="listar_baterias")
+    @login_required
+    def listar_baterias_view():
+        return render_template(
+            "baterias_listar.html",
+            baterias=list_baterias(),
+            is_admin=getattr(current_user, "tipo_usuario", None) == "admin",
+        )
+
+    @bp.route("/drones/cadastrar", methods=["GET", "POST"], endpoint="cadastrar_drone")
+    @login_required
+    def cadastrar_drone():
+        _require_admin()
+
+        errors = {}
+        form = {}
+        equipes = list_active_equipes()
+
+        if request.method == "POST":
+            form, cleaned, errors = validate_drone_form(request.form)
+
+            if errors:
+                flash("Corrija os campos destacados.", "warning")
+                return render_template("cadastrar_drone.html", form=form, errors=errors, equipes=equipes)
+
+            try:
+                create_drone(cleaned)
+                flash("Drone cadastrado com sucesso!", "success")
+                return redirect(url_for("main.cadastrar_drone"))
+            except Exception as exc:
+                db.session.rollback()
+                flash(f"Erro ao cadastrar drone: {str(exc)}", "danger")
+                return render_template("cadastrar_drone.html", form=form, errors=errors, equipes=equipes)
+
+        return render_template("cadastrar_drone.html", form=form, errors=errors, equipes=equipes)
+
+    @bp.route("/drones/<int:drone_id>/editar", methods=["GET", "POST"], endpoint="editar_drone")
+    @login_required
+    def editar_drone(drone_id):
+        _require_admin()
+
+        drone = Drones.query.get_or_404(drone_id)
+        errors = {}
+        equipes = list_active_equipes()
+
+        if request.method == "POST":
+            form, cleaned, errors = validate_drone_form(request.form, existing_drone=drone)
+
+            if errors:
+                flash("Corrija os campos destacados.", "warning")
+                return render_template(
+                    "editar_drone.html",
+                    drone=drone,
+                    form=form,
+                    errors=errors,
+                    equipes=equipes,
+                )
+
+            try:
+                update_drone(drone, cleaned)
+                flash("Drone atualizado com sucesso!", "success")
+                return redirect(url_for("main.listar_drones"))
+            except Exception as exc:
+                db.session.rollback()
+                flash(f"Erro ao atualizar drone: {str(exc)}", "danger")
+                return render_template(
+                    "editar_drone.html",
+                    drone=drone,
+                    form=form,
+                    errors=errors,
+                    equipes=equipes,
+                )
+
+        return render_template(
+            "editar_drone.html",
+            drone=drone,
+            form=build_drone_edit_form(drone),
+            errors=errors,
+            equipes=equipes,
+        )
+
+    @bp.route("/drones/<int:drone_id>/deletar", methods=["POST"], endpoint="deletar_drone")
+    @login_required
+    def deletar_drone_view(drone_id):
+        _require_admin()
+
+        drone = Drones.query.get_or_404(drone_id)
+        try:
+            delete_drone(drone)
+            flash("Drone removido com sucesso.", "success")
+        except Exception as exc:
+            db.session.rollback()
+            print("ERRO AO DELETAR DRONE:", repr(exc))
+            flash("Erro ao remover drone. Verifique vinculos (baterias/OS) e tente novamente.", "danger")
+
+        return redirect(url_for("main.listar_drones"))
+
+    @bp.route("/baterias/cadastrar", methods=["GET", "POST"], endpoint="cadastrar_bateria")
+    @login_required
+    def cadastrar_bateria():
+        _require_admin()
+
+        errors = {}
+        form = {}
+        drones = list_drones_for_baterias()
+        drone_id_pre = request.args.get("drone_id", type=int)
+
+        if request.method == "POST":
+            form, cleaned, errors = validate_bateria_form(request.form)
+
+            if errors:
+                flash("Corrija os campos destacados.", "warning")
+                return render_template("cadastrar_bateria.html", form=form, errors=errors, drones=drones)
+
+            try:
+                create_bateria(cleaned)
+                flash("Bateria cadastrada com sucesso!", "success")
+                return redirect(url_for("main.listar_baterias"))
+            except Exception as exc:
+                db.session.rollback()
+                flash(f"Erro ao cadastrar bateria: {str(exc)}", "danger")
+                return render_template("cadastrar_bateria.html", form=form, errors=errors, drones=drones)
+
+        if drone_id_pre and db.session.get(Drones, drone_id_pre):
+            form["drone_id"] = str(drone_id_pre)
+
+        return render_template("cadastrar_bateria.html", form=form, errors=errors, drones=drones)
+
+    @bp.route("/baterias/<int:bateria_id>/editar", methods=["GET", "POST"], endpoint="editar_bateria")
+    @login_required
+    def editar_bateria(bateria_id):
+        _require_admin()
+
+        bateria = Baterias.query.get_or_404(bateria_id)
+        drones = list_drones_for_baterias()
+        errors = {}
+
+        if request.method == "POST":
+            form, cleaned, errors = validate_bateria_form(request.form, existing_bateria=bateria)
+
+            if errors:
+                flash("Corrija os campos destacados.", "warning")
+                return render_template(
+                    "editar_bateria.html",
+                    bateria=bateria,
+                    form=form,
+                    errors=errors,
+                    drones=drones,
+                )
+
+            try:
+                update_bateria(bateria, cleaned)
+                flash("Bateria atualizada com sucesso!", "success")
+                return redirect(url_for("main.listar_baterias"))
+            except Exception as exc:
+                db.session.rollback()
+                flash(f"Erro ao atualizar bateria: {str(exc)}", "danger")
+                return render_template(
+                    "editar_bateria.html",
+                    bateria=bateria,
+                    form=form,
+                    errors=errors,
+                    drones=drones,
+                )
+
+        return render_template(
+            "editar_bateria.html",
+            bateria=bateria,
+            form=build_bateria_edit_form(bateria),
+            errors=errors,
+            drones=drones,
+        )
+
+    @bp.route("/baterias/<int:bateria_id>/deletar", methods=["POST"], endpoint="deletar_bateria")
+    @login_required
+    def deletar_bateria_view(bateria_id):
+        _require_admin()
+
+        bateria = Baterias.query.get_or_404(bateria_id)
+        try:
+            delete_bateria(bateria)
+            flash("Bateria removida com sucesso.", "success")
+        except Exception as exc:
+            db.session.rollback()
+            flash(f"Erro ao remover bateria: {str(exc)}", "danger")
+
+        return redirect(url_for("main.listar_baterias"))
+
+    @bp.route("/equipamentos/em-manutencao", methods=["GET"], endpoint="equipamentos_manutencao")
+    @login_required
+    def equipamentos_manutencao():
+        equipamentos = list_equipamentos_manutencao()
+        return render_template(
+            "equipamentos_manutencao.html",
+            equipamentos=equipamentos,
+            total=len(equipamentos),
+        )
+
+    @bp.route("/equipamentos/baterias/update_ciclos/<int:id>", methods=["POST"], endpoint="update_ciclos")
+    @login_required
+    def update_ciclos(id):
+        bateria = Baterias.query.get_or_404(id)
+        return jsonify(update_bateria_ciclos(bateria, request.get_json() or {}))
+
+    @bp.route("/drones/<int:drone_id>/manutencao", methods=["POST"], endpoint="enviar_manutencao_drone")
+    @login_required
+    def enviar_manutencao_drone(drone_id):
+        _require_admin()
+
+        drone = Drones.query.get_or_404(drone_id)
+        try:
+            if not send_drone_to_manutencao(drone):
+                flash("Este drone ja esta em manutencao.", "warning")
+                return redirect(url_for("main.listar_drones"))
+
+            flash(f"Drone {drone.renomacao} enviado para manutencao.", "success")
+        except Exception as exc:
+            db.session.rollback()
+            print("ERRO AO ENVIAR DRONE PARA MANUTENCAO:", repr(exc))
+            flash("Erro ao enviar o drone para manutencao.", "danger")
+
+        return redirect(url_for("main.listar_drones"))
