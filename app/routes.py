@@ -61,21 +61,17 @@ from app.models import (
     Usuario,
     Veiculos,
 )
-from app.modules.admin_uvis import register_routes as register_admin_uvis_routes
 from app.modules.clientes import register_routes as register_clientes_routes
 from app.modules.equipes import register_routes as register_equipes_routes
 from app.modules.pilotos import register_routes as register_pilotos_routes
-from app.modules.uvis_equipes import register_routes as register_uvis_equipes_routes
 from app.modules.usuarios import register_routes as register_usuarios_routes
 TZ = ZoneInfo("America/Sao_Paulo")
 print("--- ROTAS CARREGADAS COM SUCESSO ---")
 
 bp = Blueprint('main', __name__)
-register_admin_uvis_routes(bp)
 register_clientes_routes(bp)
 register_equipes_routes(bp)
 register_pilotos_routes(bp)
-register_uvis_equipes_routes(bp)
 register_usuarios_routes(bp)
 
 # --- 1: GLOBAL CONTEXT  ---
@@ -2954,6 +2950,189 @@ def remover_anexo(id):
     flash('PDF removido com sucesso!', 'success') 
     return redirect(url_for('main.dashboard'))
 
+@bp.route("/admin/uvis/novo", methods=["GET", "POST"], endpoint="admin_uvis_novo")
+@login_required
+def admin_uvis_novo():
+    # SOMENTE ADMIN
+    if current_user.tipo_usuario != "admin":
+        abort(403)
+
+    if request.method == "POST":
+        nome_uvis = (request.form.get("nome_uvis") or "").strip()
+        regiao = (request.form.get("regiao") or "").strip() or None
+        codigo_setor = (request.form.get("codigo_setor") or "").strip() or None
+
+        login = (request.form.get("login") or "").strip()
+        senha = request.form.get("senha") or ""
+        confirmar = request.form.get("confirmar") or ""
+
+        if not nome_uvis or not login or not senha:
+            flash("Preencha: Nome da UVIS, Login e Senha.", "warning")
+            return render_template("admin_uvis_novo.html")
+
+        if senha != confirmar:
+            flash("As senhas não conferem.", "warning")
+            return render_template("admin_uvis_novo.html")
+
+        novo_user = Usuario(
+            nome_uvis=nome_uvis,
+            regiao=regiao,            
+            login=login,
+            tipo_usuario="uvis",
+        )
+        novo_user.set_senha(senha)
+
+        try:
+            db.session.add(novo_user)
+            db.session.commit()
+            flash("UVIS cadastrada com sucesso!", "success")
+            return redirect(url_for("main.admin_uvis_listar"))
+        except IntegrityError:
+            db.session.rollback()
+            flash("Esse login já está em uso. Escolha outro.", "danger")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Erro ao cadastrar UVIS: {e}", "danger")
+
+    return render_template("admin_uvis_novo.html")
+
+
+@bp.route("/admin/uvis", methods=["GET"], endpoint="admin_uvis_listar")
+@login_required
+def admin_uvis_listar():
+    if current_user.tipo_usuario is ["admin", "operario", "visualizar"]:
+        abort(403)
+
+    q = (request.args.get("q") or "").strip()
+    regiao = (request.args.get("regiao") or "").strip()
+    codigo_setor = (request.args.get("codigo_setor") or "").strip()
+
+    query = Usuario.query.filter(Usuario.tipo_usuario == "uvis")
+
+    if q:
+        query = query.filter(
+            db.or_(
+                Usuario.nome_uvis.ilike(f"%{q}%"),
+                Usuario.login.ilike(f"%{q}%")
+            )
+        )
+
+    if regiao:
+        query = query.filter(Usuario.regiao.ilike(f"%{regiao}%"))
+
+    if codigo_setor:
+        query = query.filter(Usuario.codigo_setor.ilike(f"%{codigo_setor}%"))
+
+    total = query.count()
+    page = request.args.get("page", 1, type=int)
+    paginacao = query.order_by(Usuario.nome_uvis.asc()).paginate(
+        page=page, per_page=10, error_out=False
+    )
+
+    query = db.session.query(Solicitacao).options(
+        joinedload(Solicitacao.usuario),
+        joinedload(Solicitacao.piloto)  # 
+    ).filter(Solicitacao.usuario_id == current_user.id)
+
+
+    filters = {
+        "q": q,
+        "regiao": regiao,        
+        "total": total
+    }
+
+    return render_template(
+        "admin_uvis_listar.html",
+        uvis=paginacao.items,
+        paginacao=paginacao,
+        filters=filters,
+        q=q,
+        regiao=regiao        
+    )
+
+def _admin_only_redirect():
+    if current_user.tipo_usuario != "admin":
+        flash("Você não tem permissão para acessar esta função.", "danger")
+        return redirect(request.referrer or url_for("main.admin_uvis_listar"))
+    return None
+@bp.route("/admin/uvis/<int:id>/editar", methods=["GET", "POST"], endpoint="admin_uvis_editar")
+@login_required
+def admin_uvis_editar(id):
+    resp = _admin_only_redirect()
+    if resp: 
+        return resp
+
+    uvis = Usuario.query.get_or_404(id)
+
+    if uvis.tipo_usuario != "uvis":
+        flash("Registro inválido para edição.", "danger")
+        return redirect(url_for("main.admin_uvis_listar"))
+
+    if request.method == "POST":
+        nome_uvis = (request.form.get("nome_uvis") or "").strip()
+        regiao = (request.form.get("regiao") or "").strip() or None
+        login = (request.form.get("login") or "").strip()
+
+        senha = (request.form.get("senha") or "").strip()
+        confirmar = (request.form.get("confirmar") or "").strip()
+
+        if not nome_uvis or not login:
+            flash("Preencha: Nome da UVIS e Login.", "warning")
+            return render_template("admin_uvis_editar.html", uvis=uvis)
+
+        if senha:
+            if senha != confirmar:
+                flash("As senhas não conferem.", "warning")
+                return render_template("admin_uvis_editar.html", uvis=uvis)
+            uvis.set_senha(senha)
+
+        uvis.nome_uvis = nome_uvis
+        uvis.regiao = regiao
+        uvis.login = login
+
+        try:
+            db.session.commit()
+            flash("UVIS atualizada com sucesso!", "success")
+            return redirect(url_for("main.admin_uvis_listar"))
+        except IntegrityError:
+            db.session.rollback()
+            flash("Esse login já está em uso. Escolha outro.", "danger")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Erro ao salvar: {e}", "danger")
+
+    return render_template("admin_uvis_editar.html", uvis=uvis)
+
+
+@bp.route("/admin/uvis/<int:id>/excluir", methods=["POST"], endpoint="admin_uvis_excluir")
+@login_required
+def admin_uvis_excluir(id):
+    resp = _admin_only_redirect()
+    if resp:
+        return resp
+
+    uvis = Usuario.query.get_or_404(id)
+
+    if uvis.tipo_usuario != "uvis":
+        flash("Registro inválido para exclusão.", "danger")
+        return redirect(url_for("main.admin_uvis_listar"))
+
+    existe = Solicitacao.query.filter_by(usuario_id=uvis.id).first()
+    if existe:
+        flash("Não é possível excluir: esta UVIS possui solicitações vinculadas.", "warning")
+        return redirect(url_for("main.admin_uvis_listar"))
+
+    try:
+        db.session.delete(uvis)
+        db.session.commit()
+        flash("UVIS excluída com sucesso!", "success")
+    except Exception:
+        db.session.rollback()
+        flash("Erro ao excluir UVIS.", "danger")
+
+    return redirect(url_for("main.admin_uvis_listar"))
+
+
 # ==========================
 # CHATBOT ADMIN (FAQ inteligente) - Flask-Login
 # ==========================
@@ -3272,9 +3451,641 @@ def api_cep(cep):
 
             return jsonify(ok=False, error="Falha ao consultar o serviço de CEP."), 502
 
+from flask import request, abort, send_file
+from flask_login import login_required, current_user
+from io import BytesIO
+from datetime import datetime
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+
+@bp.route("/admin/uvis/exportar", methods=["GET"], endpoint="admin_uvis_exportar")
+@login_required
+def admin_uvis_exportar():
+    if current_user.tipo_usuario != "admin":
+        abort(403)
+
+    q = (request.args.get("q") or "").strip()
+    regiao = (request.args.get("regiao") or "").strip()    
+
+    query = Usuario.query.filter(Usuario.tipo_usuario == "uvis")
+
+    if q:
+        query = query.filter(
+            db.or_(
+                Usuario.nome_uvis.ilike(f"%{q}%"),
+                Usuario.login.ilike(f"%{q}%")
+            )
+        )
+    if regiao:
+        query = query.filter(Usuario.regiao.ilike(f"%{regiao}%"))
+        
+    rows = query.order_by(Usuario.nome_uvis.asc()).all()
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "UVIS"
+
+    # ---------- ESTILOS ----------
+    title_font = Font(bold=True, size=14)
+    meta_font = Font(size=10, color="666666")
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill("solid", fgColor="1F4E79")
+    zebra_fill = PatternFill("solid", fgColor="F3F6FA")
+
+    thin = Side(style="thin", color="D0D7DE")
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    left = Alignment(horizontal="left", vertical="center")
+    center = Alignment(horizontal="center", vertical="center")
+
+    # ---------- TÍTULO / META (FORA DA TABELA) ----------
+    ws["A1"] = "UVIS Cadastradas"
+    ws["A1"].font = title_font
+
+    ws["A3"] = f"Exportado em: {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+    ws["A3"].font = meta_font
+
+    start_header_row = 5
+
+    # ---------- CABEÇALHO ----------
+    headers = ["ID", "Nome", "Região", "Login"]
+    for col, h in enumerate(headers, start=1):
+        cell = ws.cell(row=start_header_row, column=col, value=h)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = center
+        cell.border = border
+
+    # ---------- DADOS ----------
+    start_data_row = start_header_row + 1
+    for i, u in enumerate(rows):
+        r = start_data_row + i
+        values = [u.id, u.nome_uvis, u.regiao, u.login]
+
+        for c, v in enumerate(values, start=1):
+            cell = ws.cell(row=r, column=c, value=v)
+            cell.border = border
+            cell.alignment = center if c == 1 else left
+
+            if i % 2 == 1:
+                cell.fill = zebra_fill
+
+    end_data_row = start_data_row + len(rows) - 1
+
+    # ---------- AUTOFILTER (SEGURO) ----------
+    if rows:
+        ws.auto_filter.ref = f"A{start_header_row}:E{end_data_row}"
+        ws.freeze_panes = f"A{start_data_row}"
+
+    # ---------- LARGURAS ----------
+    ws.column_dimensions["A"].width = 8
+    ws.column_dimensions["B"].width = 34
+    ws.column_dimensions["C"].width = 14
+    ws.column_dimensions["D"].width = 16
+    ws.column_dimensions["E"].width = 24
+
+    # ---------- TOTAL ----------
+    total_row = end_data_row + 2
+    ws.cell(row=total_row, column=1, value="Total de UVIS:").font = Font(bold=True)
+    ws.cell(row=total_row, column=2, value=len(rows)).font = Font(bold=True)
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    filename = f"uvis_{datetime.now().strftime('%Y-%m-%d_%H-%M')}.xlsx"
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name=filename,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
+
 @bp.route('/sw.js')
 def serve_sw():
     return bp.send_static_file('sw.js')
+
+def _uvis_only():
+    if getattr(current_user, "tipo_usuario", None) != "uvis":
+        abort(403)
+
+def _proximo_slot_equipe_uvis(uvis_usuario_id: int, nome_equipe: str):
+    usados = {
+        x[0] for x in (
+            db.session.query(EquipeUvis.ordem)
+            .filter_by(uvis_usuario_id=uvis_usuario_id, nome_equipe=nome_equipe)
+            .all()
+        )
+    }
+    for slot in range(1, 6):
+        if slot not in usados:
+            return slot
+    return None  # cheio
+
+from sqlalchemy import func
+
+@bp.route("/uvis/equipes", methods=["GET"], endpoint="listar_equipes_uvis")
+@login_required
+def listar_equipes_uvis():
+    _uvis_only()
+
+    uvis_id = current_user.id
+
+    # 1) total de membros por equipe (pode não existir se equipe ainda não tem membro)
+    membros_rows = (
+        db.session.query(
+            EquipeUvis.nome_equipe.label("nome_equipe"),
+            func.count(EquipeUvis.id).label("total")
+        )
+        .filter(EquipeUvis.uvis_usuario_id == uvis_id)
+        .group_by(EquipeUvis.nome_equipe)
+        .all()
+    )
+    membros_map = {r.nome_equipe: int(r.total) for r in membros_rows}
+
+    # 2) contas (login) por equipe
+    contas_rows = (
+        db.session.query(
+            Usuario.equipe_uvis_nome.label("nome_equipe"),
+            Usuario.login.label("login")
+        )
+        .filter(
+            Usuario.tipo_usuario == "equipe_uvis",
+            Usuario.equipe_uvis_uvis_usuario_id == uvis_id,
+            Usuario.equipe_uvis_nome.isnot(None),
+        )
+        .all()
+    )
+    login_map = {r.nome_equipe: r.login for r in contas_rows if r.nome_equipe}
+
+    # 3) conjunto final de equipes: as que têm membros OU as que têm conta
+    nomes_equipes = sorted(set(membros_map.keys()) | set(login_map.keys()))
+
+    equipes = []
+    for nome in nomes_equipes:
+        equipes.append({
+            "nome_equipe": nome,
+            "total": int(membros_map.get(nome, 0)),
+            "login": login_map.get(nome),  # pode ser None
+        })
+
+    return render_template("uvis_equipes_listar.html", equipes=equipes)
+
+import re
+from flask import request, flash, redirect, url_for, abort
+from werkzeug.security import generate_password_hash
+
+@bp.route("/uvis/equipes/<string:nome_equipe>/credenciais", methods=["POST"], endpoint="atualizar_credenciais_equipe_uvis")
+@login_required
+def atualizar_credenciais_equipe_uvis(nome_equipe):
+    _uvis_only()
+
+    nome_equipe = (nome_equipe or "").strip()
+    if not nome_equipe:
+        flash("Equipe inválida.", "danger")
+        return redirect(url_for("main.listar_equipes_uvis"))
+
+    # 🔒 pega a conta da equipe (se existir)
+    conta = (
+        Usuario.query
+        .filter(
+            Usuario.tipo_usuario == "equipe_uvis",
+            Usuario.equipe_uvis_uvis_usuario_id == current_user.id,
+            Usuario.equipe_uvis_nome == nome_equipe
+        )
+        .first()
+    )
+
+    if not conta:
+        flash("Conta (login) desta equipe não encontrada.", "warning")
+        return redirect(url_for("main.listar_equipes_uvis"))
+
+    login_novo = (request.form.get("login_equipe") or "").strip()
+    senha = (request.form.get("senha") or "").strip()
+    senha2 = (request.form.get("senha2") or "").strip()
+
+    # -------------------
+    # valida login (se veio)
+    # -------------------
+    if login_novo:
+        if len(login_novo) < 4:
+            flash("Login deve ter pelo menos 4 caracteres.", "warning")
+            return redirect(url_for("main.listar_equipes_uvis"))
+        if len(login_novo) > 50:
+            flash("Login deve ter no máximo 50 caracteres.", "warning")
+            return redirect(url_for("main.listar_equipes_uvis"))
+        if not re.match(r"^[A-Za-z0-9._\-]+$", login_novo):
+            flash("Login inválido: use apenas letras, números, ponto (.), hífen (-) e underscore (_).", "warning")
+            return redirect(url_for("main.listar_equipes_uvis"))
+
+        # se mudou, checa duplicado
+        if login_novo != conta.login:
+            existe = Usuario.query.filter(Usuario.login == login_novo).first()
+            if existe:
+                flash("Este login já está em uso. Escolha outro.", "danger")
+                return redirect(url_for("main.listar_equipes_uvis"))
+
+        conta.login = login_novo
+
+    # -------------------
+    # valida senha (só troca se preencher)
+    # -------------------
+    if senha or senha2:
+        if not senha:
+            flash("Informe a senha.", "warning")
+            return redirect(url_for("main.listar_equipes_uvis"))
+        if len(senha) < 6:
+            flash("A senha deve ter pelo menos 6 caracteres.", "warning")
+            return redirect(url_for("main.listar_equipes_uvis"))
+        if senha != senha2:
+            flash("As senhas não conferem.", "warning")
+            return redirect(url_for("main.listar_equipes_uvis"))
+
+        conta.set_senha(senha)
+
+    db.session.commit()
+    flash("Credenciais atualizadas com sucesso!", "success")
+    return redirect(url_for("main.listar_equipes_uvis"))
+
+@bp.route("/uvis/equipes/<string:nome_equipe>", methods=["GET"], endpoint="listar_membros_equipe_uvis")
+@login_required
+def listar_membros_equipe_uvis(nome_equipe):
+    _uvis_only()
+
+    nome_equipe = (nome_equipe or "").strip()
+    if not nome_equipe:
+        abort(404)
+
+    membros = (
+        EquipeUvis.query
+        .filter_by(uvis_usuario_id=current_user.id, nome_equipe=nome_equipe)
+        .order_by(EquipeUvis.ordem.asc())
+        .all()
+    )
+
+    total = len(membros)
+    maximo = 5
+
+    return render_template(
+        "uvis_equipe_membros_listar.html",
+        nome_equipe=nome_equipe,
+        membros=membros,
+        total=total,
+        maximo=maximo
+    )
+from flask import request, flash, redirect, url_for
+
+@bp.route("/uvis/equipes/<string:nome_equipe>/adicionar", methods=["GET", "POST"], endpoint="adicionar_membro_equipe_uvis")
+@login_required
+def adicionar_membro_equipe_uvis(nome_equipe):
+    _uvis_only()
+
+    nome_equipe = (nome_equipe or "").strip()
+    if not nome_equipe:
+        abort(404)
+
+    errors = {}
+    form = {"nome_equipe": nome_equipe}
+
+    if request.method == "POST":
+        nome = (request.form.get("nome") or "").strip()
+        funcao = (request.form.get("funcao") or "").strip()
+        contato = (request.form.get("contato") or "").strip()
+
+        form.update({"nome": nome, "funcao": funcao, "contato": contato})
+
+        if not nome:
+            errors["nome"] = "Informe o nome do membro."
+
+        slot = _proximo_slot_equipe_uvis(current_user.id, nome_equipe)
+        if not slot:
+            errors["limite"] = "Limite máximo de 5 pessoas nesta equipe atingido."
+
+        if errors:
+            flash("Corrija os campos destacados.", "warning")
+            return render_template("uvis_equipe_membro_adicionar.html", form=form, errors=errors, nome_equipe=nome_equipe)
+
+        novo = EquipeUvis(
+            uvis_usuario_id=current_user.id,
+            nome_equipe=nome_equipe,
+            ordem=slot,
+            nome=nome,
+            funcao=funcao or None,
+            contato=contato or None
+        )
+        db.session.add(novo)
+        db.session.commit()
+
+        flash("Membro adicionado com sucesso!", "success")
+        return redirect(url_for("main.listar_membros_equipe_uvis", nome_equipe=nome_equipe))
+
+    return render_template("uvis_equipe_membro_adicionar.html", form=form, errors=errors, nome_equipe=nome_equipe)
+
+import re
+import unicodedata
+from flask import abort
+from flask_login import current_user
+
+def _uvis_only():
+    if getattr(current_user, "tipo_usuario", None) != "uvis":
+        abort(403)
+
+def _slug_upper(text: str) -> str:
+    """
+    Remove acentos, transforma separadores (/, _, espaços) em '-', remove chars inválidos e deixa MAIÚSCULO.
+    """
+    text = (text or "").strip()
+    if not text:
+        return ""
+
+    # normaliza acentos
+    text = unicodedata.normalize("NFKD", text)
+    text = "".join([c for c in text if not unicodedata.combining(c)])
+
+    text = text.upper()
+
+    # separadores comuns viram hífen
+    text = text.replace("/", "-").replace("\\", "-").replace("_", "-")
+    text = re.sub(r"\s+", "-", text)
+
+    # mantém só A-Z, 0-9 e hífen
+    text = re.sub(r"[^A-Z0-9\-]", "", text)
+
+    # limpa hífens duplicados
+    text = re.sub(r"\-+", "-", text).strip("-")
+
+    return text
+
+def _get_first_nonempty(*values) -> str:
+    for v in values:
+        if v is None:
+            continue
+        s = str(v).strip()
+        if s:
+            return s
+    return ""
+
+def _nome_uvis_base() -> str:
+    """
+    Pega o nome da UVIS e remove prefixos tipo 'UVIS ' / 'UVIS-' para não duplicar no nome final.
+    """
+    direto = _get_first_nonempty(
+        getattr(current_user, "nome_uvis", None),
+        getattr(current_user, "nome", None),
+        getattr(current_user, "name", None),
+        getattr(current_user, "nome_completo", None),
+        getattr(current_user, "username", None),
+    )
+
+    if not direto:
+        u = getattr(current_user, "usuario", None)
+        if u is not None:
+            direto = _get_first_nonempty(
+                getattr(u, "nome_uvis", None),
+                getattr(u, "nome", None),
+                getattr(u, "name", None),
+                getattr(u, "nome_completo", None),
+            )
+
+    if not direto:
+        email = getattr(current_user, "email", None)
+        if email and "@" in str(email):
+            direto = str(email).split("@", 1)[0]
+
+    if not direto:
+        direto = "SEM-NOME"
+
+    #  remove "UVIS" do começo (ex: "UVIS Lapa/Pinheiros" ou "UVIS-Lapa")
+    direto = str(direto).strip()
+    direto = re.sub(r"^\s*UVIS\s*[-:\s]*", "", direto, flags=re.IGNORECASE).strip()
+
+    return direto or "SEM-NOME"
+
+def _proximo_nome_equipe_uvis(uvis_usuario_id: int) -> str:
+    """
+    Formato final: UVIS-<NOME_DA_UVIS>-<N>
+    Ex.: UVIS-LAPA-PINHEIROS-1
+    """
+    nome_uvis = _slug_upper(_nome_uvis_base())
+    if not nome_uvis:
+        nome_uvis = "SEM-NOME"
+
+    prefixo = f"UVIS-{nome_uvis}-"
+
+    rows = (
+        db.session.query(EquipeUvis.nome_equipe)
+        .filter(EquipeUvis.uvis_usuario_id == uvis_usuario_id)
+        .distinct()
+        .all()
+    )
+    existentes = [r[0] for r in rows if r and r[0]]
+
+    maior = 0
+    pattern = re.compile(rf"^{re.escape(prefixo)}(\d+)$", re.IGNORECASE)
+
+    for nome in existentes:
+        m = pattern.match(nome.strip())
+        if m:
+            try:
+                n = int(m.group(1))
+                if n > maior:
+                    maior = n
+            except ValueError:
+                pass
+
+    return f"{prefixo}{maior + 1}"
+#-------------------------------------------------------------
+# Rota: criar nova equipe UVIS
+#-------------------------------------------------------------
+from flask import request, flash, redirect, url_for, render_template
+from flask_login import login_required
+import secrets
+def _login_equipe_sugerido(nome_equipe: str) -> str:
+    # sugestão automática, mas editável no template
+    return f"EQUIPE-{_slug_upper(nome_equipe)}"[:50]
+
+@bp.route("/uvis/equipes/nova", methods=["GET", "POST"], endpoint="criar_equipe_uvis")
+@login_required
+def criar_equipe_uvis():
+    _uvis_only()
+
+    errors = {}
+    form = {}
+
+    # sempre gera o nome automático (imutável)
+    nome_equipe = _proximo_nome_equipe_uvis(current_user.id)
+    form["nome_equipe"] = nome_equipe
+
+    # sugestão de login (editável)
+    form["login_equipe"] = _login_equipe_sugerido(nome_equipe)
+
+    if request.method == "POST":
+        # nome da equipe continua automático
+        nome_equipe = _proximo_nome_equipe_uvis(current_user.id)
+        form["nome_equipe"] = nome_equipe
+
+        login_equipe = (request.form.get("login_equipe") or "").strip()
+        senha = (request.form.get("senha") or "").strip()
+        senha2 = (request.form.get("senha2") or "").strip()
+
+        form["login_equipe"] = login_equipe  # preserva se der erro
+
+        if not nome_equipe:
+            errors["nome_equipe"] = "Não foi possível gerar o nome automático da equipe."
+
+        # ---- valida login
+        if not login_equipe:
+            errors["login_equipe"] = "Informe o login da equipe."
+        elif len(login_equipe) < 4:
+            errors["login_equipe"] = "O login deve ter pelo menos 4 caracteres."
+        elif len(login_equipe) > 50:
+            errors["login_equipe"] = "O login deve ter no máximo 50 caracteres."
+        elif not re.match(r"^[A-Za-z0-9._\-]+$", login_equipe):
+            errors["login_equipe"] = "Use apenas letras, números, ponto (.), hífen (-) e underscore (_)."
+        else:
+            existente = Usuario.query.filter_by(login=login_equipe).first()
+            if existente:
+                errors["login_equipe"] = "Este login já está em uso. Escolha outro."
+
+        # ---- valida senha
+        if not senha:
+            errors["senha"] = "Informe a senha da equipe."
+        elif len(senha) < 6:
+            errors["senha"] = "A senha deve ter pelo menos 6 caracteres."
+        elif senha != senha2:
+            errors["senha2"] = "As senhas não conferem."
+
+        if errors:
+            flash("Corrija os campos destacados.", "warning")
+            return render_template("uvis_equipe_criar.html", form=form, errors=errors)
+
+        # cria usuario da equipe (com senha DEFINIDA, não temporária)
+        usuario_equipe = Usuario(
+            nome_uvis=nome_equipe,
+            regiao=current_user.regiao,
+            codigo_setor=current_user.codigo_setor,
+            login=login_equipe,
+            tipo_usuario="equipe_uvis",
+            piloto_id=None,
+            equipe_uvis_uvis_usuario_id=current_user.id,
+            equipe_uvis_nome=nome_equipe,
+        )
+        usuario_equipe.set_senha(senha)
+
+        db.session.add(usuario_equipe)
+        db.session.commit()
+
+        flash("Equipe criada! Login da equipe definido com sucesso.", "success")
+        return redirect(url_for("main.adicionar_membro_equipe_uvis", nome_equipe=nome_equipe))
+
+    return render_template("uvis_equipe_criar.html", form=form, errors=errors)
+# -------------------------------------------------------------
+# Rota: editar membro da equipe UVIS    
+#-------------------------------------------------------------
+
+@bp.route("/uvis/equipe-membro/<int:membro_id>/editar", methods=["GET", "POST"], endpoint="editar_membro_equipe_uvis")
+@login_required
+def editar_membro_equipe_uvis(membro_id):
+    _uvis_only()
+
+    membro = EquipeUvis.query.get_or_404(membro_id)
+
+    # 🔒 só a UVIS dona
+    if membro.uvis_usuario_id != current_user.id:
+        abort(403)
+
+    errors = {}
+    form = {}
+
+    if request.method == "POST":
+        nome = (request.form.get("nome") or "").strip()
+        funcao = (request.form.get("funcao") or "").strip()
+        contato = (request.form.get("contato") or "").strip()
+
+        form = {"nome": nome, "funcao": funcao, "contato": contato}
+
+        if not nome:
+            errors["nome"] = "Informe o nome do membro."
+
+        if errors:
+            flash("Corrija os campos destacados.", "warning")
+            return render_template("uvis_equipe_membro_editar.html", membro=membro, form=form, errors=errors)
+
+        membro.nome = nome
+        membro.funcao = funcao or None
+        membro.contato = contato or None
+
+        db.session.commit()
+        flash("Membro atualizado com sucesso!", "success")
+        return redirect(url_for("main.listar_membros_equipe_uvis", nome_equipe=membro.nome_equipe))
+
+    form = {
+        "nome": membro.nome or "",
+        "funcao": membro.funcao or "",
+        "contato": membro.contato or "",
+    }
+    return render_template("uvis_equipe_membro_editar.html", membro=membro, form=form, errors=errors)
+
+#-------------------------------------------------------------
+# Rota: deletar membro da equipe UVIS   
+#-------------------------------------------------------------
+@bp.route("/uvis/equipe-membro/<int:membro_id>/deletar", methods=["POST"], endpoint="deletar_membro_equipe_uvis")
+@login_required
+def deletar_membro_equipe_uvis(membro_id):
+    _uvis_only()
+
+    membro = EquipeUvis.query.get_or_404(membro_id)
+    if membro.uvis_usuario_id != current_user.id:
+        abort(403)
+
+    nome_equipe = membro.nome_equipe
+
+    db.session.delete(membro)
+    db.session.commit()
+
+    flash("Membro removido com sucesso.", "success")
+
+    # se ficou sem ninguém, volta para lista de equipes
+    restante = EquipeUvis.query.filter_by(uvis_usuario_id=current_user.id, nome_equipe=nome_equipe).count()
+    if restante == 0:
+        flash("Equipe ficou sem membros e não será mais exibida.", "info")
+        return redirect(url_for("main.listar_equipes_uvis"))
+
+    return redirect(url_for("main.listar_membros_equipe_uvis", nome_equipe=nome_equipe))
+
+@bp.route("/solicitacao/<int:id>/atribuir-equipe-uvis", methods=["POST"], endpoint="atribuir_equipe_uvis_solicitacao")
+@login_required
+def atribuir_equipe_uvis_solicitacao(id):
+    sol = Solicitacao.query.get_or_404(id)
+
+    # 🔒 Segurança: só a UVIS dona da solicitação (ou admin, se quiser permitir)
+    if sol.usuario_id != current_user.id and current_user.tipo_usuario != "admin":
+        flash("Você não tem permissão para alterar esta solicitação.", "danger")
+        return redirect(url_for("main.dashboard"))
+
+    nome_equipe = (request.form.get("nome_equipe") or "").strip()
+    if not nome_equipe:
+        flash("Selecione uma equipe.", "warning")
+        return redirect(url_for("main.dashboard"))
+
+    #  valida se existe ESSA equipe para ESSA UVIS
+    existe = (
+        db.session.query(EquipeUvis.id)
+        .filter(EquipeUvis.uvis_usuario_id == current_user.id)
+        .filter(EquipeUvis.nome_equipe == nome_equipe)
+        .first()
+    )
+    if not existe:
+        flash("Equipe UVIS não encontrada para seu usuário.", "danger")
+        return redirect(url_for("main.dashboard"))
+
+    sol.equipe_uvis_nome = nome_equipe
+    db.session.commit()
+
+    flash("Equipe UVIS atribuída com sucesso!", "success")
+    return redirect(url_for("main.dashboard"))
 
 from flask import request, jsonify, render_template, current_app
 from flask_login import login_required, current_user
@@ -3351,6 +4162,80 @@ def mapa_relatorio():
         'mapa_relatorio.html',
         uvis_disponiveis=uvis_disponiveis,
         google_maps_key=google_maps_key
+    )
+
+from flask import abort, render_template
+from sqlalchemy import func
+def _admin_only():
+    if getattr(current_user, "tipo_usuario", None) != "admin":
+        abort(403)
+
+# -------------------------------------------------------------
+# ADMIN: listar todas as equipes criadas por todas as UVIS
+# -------------------------------------------------------------
+@bp.route("/admin/uvis/equipes", methods=["GET"], endpoint="admin_listar_equipes_uvis")
+@login_required
+def admin_listar_equipes_uvis():
+    _admin_only()
+
+    # Agrupa por UVIS + nome_equipe
+    rows = (
+        db.session.query(
+            Usuario.id.label("uvis_id"),
+            Usuario.nome_uvis.label("uvis_nome"),
+            EquipeUvis.nome_equipe.label("nome_equipe"),
+            func.count(EquipeUvis.id).label("total")
+        )
+        .join(Usuario, Usuario.id == EquipeUvis.uvis_usuario_id)
+        .filter(Usuario.tipo_usuario == "uvis")
+        .group_by(Usuario.id, Usuario.nome_uvis, EquipeUvis.nome_equipe)
+        .order_by(Usuario.nome_uvis.asc(), EquipeUvis.nome_equipe.asc())
+        .all()
+    )
+
+    equipes = [
+        {
+            "uvis_id": int(r.uvis_id),
+            "uvis_nome": r.uvis_nome or "",
+            "nome_equipe": r.nome_equipe,
+            "total": int(r.total),
+        }
+        for r in rows
+    ]
+
+    # Pode reaproveitar um template específico do admin
+    return render_template("admin_uvis_equipes_listar.html", equipes=equipes)
+
+# -------------------------------------------------------------
+# ADMIN: listar membros de uma equipe específica de uma UVIS
+# -------------------------------------------------------------
+@bp.route("/admin/uvis/<int:uvis_id>/equipes/<string:nome_equipe>", methods=["GET"], endpoint="admin_listar_membros_equipe_uvis")
+@login_required
+def admin_listar_membros_equipe_uvis(uvis_id, nome_equipe):
+    _admin_only()
+
+    nome_equipe = (nome_equipe or "").strip()
+    if not nome_equipe:
+        abort(404)
+
+    membros = (
+        EquipeUvis.query
+        .filter_by(uvis_usuario_id=uvis_id, nome_equipe=nome_equipe)
+        .order_by(EquipeUvis.ordem.asc())
+        .all()
+    )
+
+    uvis = Usuario.query.get(uvis_id)
+    uvis_nome = (uvis.nome_uvis if uvis else "") or ""
+
+    return render_template(
+        "admin_uvis_equipe_membros_listar.html",
+        uvis_id=uvis_id,
+        uvis_nome=uvis_nome,
+        nome_equipe=nome_equipe,
+        membros=membros,
+        total=len(membros),
+        maximo=5
     )
 
 @bp.route('/consultar_endereco_geolocalizacao', methods=['GET'])
