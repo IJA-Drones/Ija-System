@@ -271,6 +271,39 @@ class Solicitacao(db.Model):
     )
     equipe = db.relationship("Equipe", lazy="joined")
 
+    origem_retorno_id = db.Column(
+        db.Integer,
+        db.ForeignKey("solicitacoes.id"),
+        nullable=True,
+        index=True
+    )
+    gerada_automaticamente = db.Column(
+        db.Boolean,
+        default=False,
+        nullable=False,
+        index=True
+    )
+    origem_retorno = db.relationship(
+        "Solicitacao",
+        remote_side=[id],
+        backref=db.backref("retornos_automaticos", lazy="select")
+    )
+
+    ordem_servico = db.relationship(
+        "OrdemServico",
+        back_populates="solicitacao",
+        uselist=False,
+        lazy="select",
+        cascade="all, delete-orphan"
+    )
+
+    __table_args__ = (
+        db.Index("ix_solicitacao_data_status", "data_criacao", "status"),
+        db.Index("ix_solicitacao_usuario_data", "usuario_id", "data_criacao"),
+        db.Index("ix_solicitacao_piloto_data", "piloto_id", "data_criacao"),
+        db.Index("ix_solicitacao_agenda", "data_agendamento", "hora_agendamento"),
+    )
+
     ordem_servico = db.relationship(
         "OrdemServico",
         back_populates="solicitacao",

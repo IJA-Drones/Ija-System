@@ -296,11 +296,11 @@
           </div>
           <div class="col-md-4">
             <label class="form-label-header">Retornar monitorar larvas?</label>
-            <select name="retornar_proxima_semana_monitorar_larvas" class="form-select">
-              <option value="">Selecione...</option>
-              <option value="SIM" {% if ordem and ordem.retornar_proxima_semana_monitorar_larvas == 'SIM' %}selected{% endif %}>SIM</option>
-              <option value="NAO" {% if ordem and ordem.retornar_proxima_semana_monitorar_larvas == 'NAO' %}selected{% endif %}>NAO</option>
-            </select>
+          <select name="retornar_proxima_semana_monitorar_larvas" class="form-select">
+            <option value="">Selecione...</option>
+            <option value="SIM" {% if ordem and ordem.retornar_proxima_semana_monitorar_larvas == 'SIM' %}selected{% endif %}>SIM</option>
+            <option value="NAO" {% if ordem and ordem.retornar_proxima_semana_monitorar_larvas == 'NAO' %}selected{% endif %}>NAO</option>
+          </select>
           </div>
           <div class="col-md-3">
             <label class="form-label-header">DA (Distrito)</label>
