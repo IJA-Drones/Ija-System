@@ -216,7 +216,7 @@ def roles_required(*roles):
     return deco
 
 import os
-from datetime import datetime
+from datetime import datetime, date, timedelta
 from flask import request, redirect, url_for, render_template
 from flask_login import login_required, current_user
 from sqlalchemy.orm import joinedload
@@ -225,3 +225,4 @@ from sqlalchemy import func
 # ajuste imports conforme seu projeto:
 # from app import db
 # from app.models import Solicitacao, Equipe, EquipeUvis, EquipeUvis...
+

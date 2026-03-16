@@ -9544,6 +9544,134 @@ def piloto_os_formulario_redirect():
     return redirect(url_for("main.piloto_os_formulario_view", os_id=os_id))
 
 
+
+from datetime import datetime, date, timedelta
+
+def criar_solicitacao_retorno_monitoramento(solicitacao_original, ordem_atual):
+    """
+    Cria uma nova solicitação 7 dias após a data da aplicação
+    para retorno de monitoramento de larvas.
+    """
+
+    data_base = (
+        ordem_atual.data_aplicacao
+        or solicitacao_original.data_agendamento
+        or date.today()
+    )
+    nova_data = data_base + timedelta(days=7)
+
+    observacao_original = (solicitacao_original.observacao or "").strip()
+    complemento = f"Retorno automático para monitoramento de larvas gerado a partir da solicitação #{solicitacao_original.id}."
+    nova_observacao = f"{observacao_original}\n{complemento}".strip() if observacao_original else complemento
+
+    nova_solicitacao = Solicitacao(
+        data_agendamento=nova_data,
+        hora_agendamento=solicitacao_original.hora_agendamento,
+        foco=solicitacao_original.foco,
+        tipo_visita=solicitacao_original.tipo_visita,
+        altura_voo=solicitacao_original.altura_voo,
+        criadouro=solicitacao_original.criadouro,
+        apoio_cet=solicitacao_original.apoio_cet,
+        observacao=nova_observacao,
+        area_restrita=solicitacao_original.area_restrita,
+        cep=solicitacao_original.cep,
+        logradouro=solicitacao_original.logradouro,
+        bairro=solicitacao_original.bairro,
+        cidade=solicitacao_original.cidade,
+        uf=solicitacao_original.uf,
+        numero=solicitacao_original.numero,
+        complemento=solicitacao_original.complemento,
+        latitude=solicitacao_original.latitude,
+        longitude=solicitacao_original.longitude,
+        perimetro_planejado=solicitacao_original.perimetro_planejado,
+        perimetro_executado=None,
+        anexo_path=solicitacao_original.anexo_path,
+        anexo_nome=solicitacao_original.anexo_nome,
+        protocolo=None,
+        justificativa=None,
+        equipe_uvis_nome=solicitacao_original.equipe_uvis_nome,
+        status="PENDENTE",  # troque para APROVADO se quiser liberar direto
+        usuario_id=solicitacao_original.usuario_id,
+        piloto_id=solicitacao_original.piloto_id,
+        equipe_id=solicitacao_original.equipe_id,
+        origem_retorno_id=solicitacao_original.id,
+        gerada_automaticamente=True,
+    )
+
+    db.session.add(nova_solicitacao)
+    db.session.flush()  # garante ID da nova solicitacao
+
+    # opcional: já cria uma OrdemServico "espelho" com os mesmos dados-base
+    nova_ordem = OrdemServico(
+        solicitacao_id=nova_solicitacao.id,
+        equipe_id=solicitacao_original.equipe_id,
+
+        identificador_os="",
+        respondido_por="",
+        respondido_em=None,
+
+        situacao_aplicacao="",
+        larva_visualizada="",
+        retornar_proxima_semana_monitorar_larvas="NAO",
+
+        distrito_administrativo=ordem_atual.distrito_administrativo,
+        nome_rf_ace_responsavel_os=ordem_atual.nome_rf_ace_responsavel_os,
+        criadouro_os_tipo_volume=ordem_atual.criadouro_os_tipo_volume,
+
+        data_aplicacao=None,
+        hora_inicio_aplicacao=None,
+        hora_termino_aplicacao=None,
+
+        tratamento_adicional_realizado="",
+        quantos_quais="",
+
+        descricao_produto=ordem_atual.descricao_produto,
+        formulacao_produto=ordem_atual.formulacao_produto,
+        dosagem_g_10l=ordem_atual.dosagem_g_10l,
+        tipo_aplicacao=ordem_atual.tipo_aplicacao,
+        quantidade_produto_administrada_ml=None,
+        pulverizacao_area_l_ha=ordem_atual.pulverizacao_area_l_ha,
+
+        prefixo_aeronave_pulverizacao=ordem_atual.prefixo_aeronave_pulverizacao,
+        prefixo_aeronave_monitoramento=ordem_atual.prefixo_aeronave_monitoramento,
+
+        quantidade_videos_registradas=None,
+        quantidade_imagens_registradas=None,
+        ponta_pulverizacao=ordem_atual.ponta_pulverizacao,
+
+        temperatura_c=None,
+        umidade_relativa_pct=None,
+        velocidade_vento_kmh=None,
+
+        motivo_nao_realizacao="",
+        observacoes="",
+
+        piloto=ordem_atual.piloto,
+        assinatura_piloto="",
+        auxiliar=ordem_atual.auxiliar,
+        proprietario_ou_preposto="",
+        assinatura_proprietario_ou_preposto="",
+
+        drone_id=ordem_atual.drone_id,
+        drone_monitoramento_id=ordem_atual.drone_monitoramento_id,
+
+        drone_denominacao=ordem_atual.drone_denominacao,
+        drone_modelo=ordem_atual.drone_modelo,
+        drone_numero_serie=ordem_atual.drone_numero_serie,
+        drone_registro_anatel=ordem_atual.drone_registro_anatel,
+        drone_registro_anac=ordem_atual.drone_registro_anac,
+
+        drone_monitoramento_denominacao=ordem_atual.drone_monitoramento_denominacao,
+        drone_monitoramento_modelo=ordem_atual.drone_monitoramento_modelo,
+        drone_monitoramento_numero_serie=ordem_atual.drone_monitoramento_numero_serie,
+        drone_monitoramento_registro_anatel=ordem_atual.drone_monitoramento_registro_anatel,
+        drone_monitoramento_registro_anac=ordem_atual.drone_monitoramento_registro_anac,
+    )
+
+    db.session.add(nova_ordem)
+    return nova_solicitacao
+
+
 # ============================================================
 # ROTA REAL DO FORMULÁRIO (GET + POST)
 # /piloto/os/<os_id>/formulario
@@ -9756,9 +9884,42 @@ def piloto_os_formulario_view(os_id):
         ordem.assinatura_proprietario_ou_preposto = _clean_str(request.form.get("assinatura_proprietario_ou_preposto"))
 
         try:
+            gerar_retorno = (
+                (ordem.retornar_proxima_semana_monitorar_larvas or "").strip().upper() == "SIM"
+            )
+
+            current_app.logger.warning(
+                "OS %s - retornar_proxima_semana_monitorar_larvas=%s",
+                os_id,
+                ordem.retornar_proxima_semana_monitorar_larvas
+            )
+            current_app.logger.warning("OS %s - gerar_retorno=%s", os_id, gerar_retorno)
+
+            if gerar_retorno:
+                retorno_existente = Solicitacao.query.filter_by(origem_retorno_id=s.id).first()
+                current_app.logger.warning(
+                    "OS %s - retorno_existente=%s",
+                    os_id,
+                    bool(retorno_existente)
+                )
+
+                if not retorno_existente:
+                    nova = criar_solicitacao_retorno_monitoramento(s, ordem)
+                    current_app.logger.warning(
+                        "OS %s - nova solicitacao de retorno criada id=%s",
+                        os_id,
+                        nova.id
+                    )
+
             db.session.commit()
-            flash("Formulário salvo com sucesso!", "success")
+
+            if gerar_retorno:
+                flash("Formulário salvo com sucesso! Uma nova OS de retorno foi criada para 7 dias depois.", "success")
+            else:
+                flash("Formulário salvo com sucesso!", "success")
+
             return redirect(url_for("main.piloto_os"))
+
         except Exception:
             db.session.rollback()
             current_app.logger.exception("Erro ao salvar formulário da OS %s", os_id)
