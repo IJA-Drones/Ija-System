@@ -3930,13 +3930,13 @@ from datetime import datetime, date, timedelta
 
 def criar_solicitacao_retorno_monitoramento(solicitacao_original, ordem_atual):
     """
-    Cria uma nova solicitação 7 dias após a data da aplicação
+    Cria uma nova solicitacao 7 dias apos a data do agendamento
     para retorno de monitoramento de larvas.
     """
 
     data_base = (
-        ordem_atual.data_aplicacao
-        or solicitacao_original.data_agendamento
+        solicitacao_original.data_agendamento
+        or ordem_atual.data_aplicacao
         or date.today()
     )
     nova_data = data_base + timedelta(days=7)

@@ -405,6 +405,11 @@
                   <span class="badge bg-secondary text-white border rounded-pill small">
                     {{ s.foco or 'Foco não definido' }}
                   </span>
+                  {% if s.gerada_automaticamente %}
+                    <span class="badge bg-info text-dark border rounded-pill small">
+                      <i class="bi bi-arrow-repeat me-1"></i>Retorno automático
+                    </span>
+                  {% endif %}
                   
                   {% if s.usuario %}
                     <span class="badge bg-light text-primary border rounded-pill small">
@@ -509,6 +514,15 @@
       </div>
 
       <div class="modal-body">
+        {% if p.gerada_automaticamente %}
+          <div class="alert alert-info py-2 mb-3">
+            <strong><i class="bi bi-arrow-repeat me-1"></i>Retorno automático de monitoramento</strong>
+            <div class="small mb-0">Esta solicitação foi gerada automaticamente pelo monitoramento de larvas.</div>
+            {% if p.origem_retorno_id %}
+              <div class="small mb-0">Solicitação de origem: #{{ p.origem_retorno_id }}</div>
+            {% endif %}
+          </div>
+        {% endif %}
         <div class="detail-section mb-3">
           <div class="detail-title">Localizacao</div>
           <div class="fw-semibold">{{ p.logradouro }}, {{ p.numero or 'S/N' }}</div>

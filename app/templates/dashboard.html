@@ -358,6 +358,9 @@
 
                   <div class="mt-1">
                     <span class="badge bg-secondary">{{ p.foco }}</span>
+                    {% if p.gerada_automaticamente %}
+                      <span class="badge bg-info text-dark ms-1">Retorno automático</span>
+                    {% endif %}
                     {% if p.latitude %}
                       <i class="bi bi-geo-alt-fill text-danger ms-1" title="Localização GPS salva"></i>
                     {% endif %}
@@ -535,6 +538,15 @@
         </div>
 
         <div class="modal-body">
+          {% if p.gerada_automaticamente %}
+          <div class="alert alert-info py-2 mb-3">
+            <strong><i class="bi bi-arrow-repeat me-1"></i>Retorno automático de monitoramento</strong>
+            <div class="small mb-0">Esta solicitação foi gerada automaticamente pelo monitoramento de larvas.</div>
+            {% if p.origem_retorno_id %}
+            <div class="small mb-0">Solicitação de origem: #{{ p.origem_retorno_id }}</div>
+            {% endif %}
+          </div>
+          {% endif %}
 
           <h6 class="text-primary border-bottom pb-2 fw-bold">
             <i class="bi bi-geo-alt-fill"></i> Localização
