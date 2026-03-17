@@ -1,0 +1,213 @@
+import re
+from datetime import date, datetime
+
+from sqlalchemy.orm import joinedload
+
+from app.extensions import db
+from app.models import Solicitacao, Usuario
+from app.shared.geofencing import detectar_area_restrita
+
+STATUS_OPCOES_EDICAO = [
+    "PENDENTE",
+    "EM ANÁLISE",
+    "APROVADO",
+    "APROVADO COM RECOMENDAÇÕES",
+    "NEGADO",
+]
+FOCO_OPCOES_EDICAO = ["Foco 1", "Foco 2", "Foco 3"]
+TIPO_VISITA_OPCOES_EDICAO = ["Tipo 1", "Tipo 2", "Tipo 3"]
+UF_OPCOES = [
+    "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG",
+    "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO",
+]
+
+
+class NovoCadastroValidationError(Exception):
+    def __init__(self, message, *, category="warning"):
+        super().__init__(message)
+        self.message = message
+        self.category = category
+
+
+class SolicitacaoAccessError(Exception):
+    def __init__(self, message, *, category="danger", redirect_endpoint="main.dashboard"):
+        super().__init__(message)
+        self.message = message
+        self.category = category
+        self.redirect_endpoint = redirect_endpoint
+
+
+def build_novo_cadastro_context(user, google_maps_key):
+    uvis_lista = []
+    if user.tipo_usuario in ["admin", "visualizar"]:
+        uvis_lista = (
+            Usuario.query.filter_by(tipo_usuario="uvis")
+            .order_by(Usuario.nome_uvis.asc())
+            .all()
+        )
+
+    return {
+        "hoje": date.today().isoformat(),
+        "google_maps_key": google_maps_key,
+        "uvis_lista": uvis_lista,
+    }
+
+
+def create_nova_solicitacao(user, form_data):
+    data_str = form_data.get("data")
+    hora_str = form_data.get("hora")
+    data_obj = datetime.strptime(data_str, "%Y-%m-%d").date() if data_str else None
+    hora_obj = datetime.strptime(hora_str, "%H:%M").time() if hora_str else None
+
+    if user.tipo_usuario in ["admin", "visualizar"]:
+        uvis_id_final = form_data.get("uvis_responsavel_id")
+        if not uvis_id_final:
+            raise NovoCadastroValidationError("Por favor, selecione a UVIS responsavel.")
+    else:
+        uvis_id_final = user.id
+
+    lat_raw = (form_data.get("latitude") or "").strip()
+    lng_raw = (form_data.get("longitude") or "").strip()
+    latitude = float(lat_raw.replace(",", ".")) if lat_raw else None
+    longitude = float(lng_raw.replace(",", ".")) if lng_raw else None
+    area_restrita = detectar_area_restrita(latitude, longitude) or form_data.get("risco_aereo") == "1"
+
+    nova_solicitacao = Solicitacao(
+        data_agendamento=data_obj,
+        hora_agendamento=hora_obj,
+        cep=form_data.get("cep"),
+        logradouro=form_data.get("logradouro"),
+        bairro=form_data.get("bairro"),
+        cidade=form_data.get("cidade"),
+        numero=form_data.get("numero"),
+        uf=form_data.get("uf"),
+        complemento=form_data.get("complemento"),
+        foco=form_data.get("foco"),
+        tipo_visita=form_data.get("tipo_visita"),
+        altura_voo=form_data.get("altura_voo"),
+        apoio_cet=form_data.get("apoio_cet") == "sim",
+        observacao=form_data.get("observacao"),
+        latitude=latitude,
+        longitude=longitude,
+        area_restrita=area_restrita,
+        perimetro_planejado=form_data.get("perimetro_planejado"),
+        usuario_id=uvis_id_final,
+        status="PENDENTE",
+    )
+
+    try:
+        db.session.add(nova_solicitacao)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        raise
+
+    return nova_solicitacao
+
+
+def build_editar_solicitacao_context(user, solicitacao_id):
+    pedido = (
+        Solicitacao.query.options(joinedload(Solicitacao.usuario))
+        .get_or_404(solicitacao_id)
+    )
+    is_admin = user.tipo_usuario == "admin"
+
+    if not is_admin:
+        if pedido.usuario_id != user.id:
+            raise SolicitacaoAccessError(
+                "Permiss\u00e3o negada. Voc\u00ea s\u00f3 pode editar suas pr\u00f3prias solicita\u00e7\u00f5es."
+            )
+
+        if pedido.status not in ["PENDENTE", "NEGADO"]:
+            raise SolicitacaoAccessError(
+                "Esta solicita\u00e7\u00e3o j\u00e1 est\u00e1 em processo de aprova\u00e7\u00e3o e n\u00e3o pode ser editada.",
+                category="warning",
+            )
+
+    return {
+        "pedido": pedido,
+        "is_admin": is_admin,
+        "status_opcoes": STATUS_OPCOES_EDICAO,
+        "foco_opcoes": FOCO_OPCOES_EDICAO,
+        "tipo_visita_opcoes": TIPO_VISITA_OPCOES_EDICAO,
+        "uf_opcoes": UF_OPCOES,
+    }
+
+
+def atualizar_solicitacao(user, solicitacao_id, form_data):
+    context = build_editar_solicitacao_context(user, solicitacao_id)
+    pedido = context["pedido"]
+    is_admin = context["is_admin"]
+
+    pedido.data_agendamento = (
+        datetime.strptime(form_data.get("data_agendamento"), "%Y-%m-%d").date()
+        if form_data.get("data_agendamento")
+        else None
+    )
+    pedido.hora_agendamento = (
+        datetime.strptime(form_data.get("hora_agendamento"), "%H:%M").time()
+        if form_data.get("hora_agendamento")
+        else None
+    )
+
+    pedido.foco = form_data.get("foco") or pedido.foco
+    pedido.tipo_visita = form_data.get("tipo_visita") or pedido.tipo_visita
+    pedido.altura_voo = form_data.get("altura_voo") or pedido.altura_voo
+    pedido.apoio_cet = (form_data.get("apoio_cet", "n\u00e3o") or "").lower() == "sim"
+    pedido.observacao = form_data.get("observacao") or pedido.observacao
+
+    pedido.cep = form_data.get("cep") or pedido.cep
+    pedido.logradouro = form_data.get("logradouro") or pedido.logradouro
+    pedido.numero = form_data.get("numero") or pedido.numero
+    pedido.bairro = form_data.get("bairro") or pedido.bairro
+    pedido.cidade = form_data.get("cidade") or pedido.cidade
+    pedido.uf = form_data.get("uf") or pedido.uf
+
+    lat_raw = (form_data.get("latitude") or "").strip()
+    lng_raw = (form_data.get("longitude") or "").strip()
+    pedido.latitude = float(lat_raw.replace(",", ".")) if lat_raw else pedido.latitude
+    pedido.longitude = float(lng_raw.replace(",", ".")) if lng_raw else pedido.longitude
+    pedido.area_restrita = detectar_area_restrita(pedido.latitude, pedido.longitude) or form_data.get("risco_aereo") == "1"
+
+    if is_admin:
+        pedido.status = form_data.get("status") or pedido.status
+        pedido.protocolo = form_data.get("protocolo") or pedido.protocolo
+        justificativa = (form_data.get("justificativa") or "").strip()
+        pedido.justificativa = justificativa or None
+    else:
+        if pedido.status == "NEGADO":
+            motivo_original = (pedido.justificativa or "").strip()
+            limpo = re.sub(r"^\s*CORRE\u00c7\u00c3O:\s*", "", motivo_original, flags=re.IGNORECASE)
+            pedido.justificativa = "CORRE\u00c7\u00c3O: corrigido pela UVIS" if not limpo else f"CORRE\u00c7\u00c3O: {limpo}"
+        else:
+            pedido.justificativa = None
+
+        pedido.status = "PENDENTE"
+
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        raise
+
+    return "main.admin_dashboard" if is_admin else "main.dashboard"
+
+
+def deletar_solicitacao_admin(user, solicitacao_id):
+    if user.tipo_usuario != "admin":
+        raise SolicitacaoAccessError(
+            "Permiss\u00e3o negada. Apenas administradores podem deletar registros.",
+            redirect_endpoint="main.admin_dashboard",
+        )
+
+    pedido = Solicitacao.query.get_or_404(solicitacao_id)
+    pedido_id = pedido.id
+    autor_nome = pedido.usuario.nome_uvis if pedido.usuario else "UVIS"
+
+    try:
+        db.session.delete(pedido)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+    return f"Pedido #{pedido_id} da {autor_nome} deletado permanentemente."

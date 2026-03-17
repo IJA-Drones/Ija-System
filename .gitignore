@@ -14,7 +14,7 @@ env/
 *.sqlite
 sqlite3.db
 instance/
-backup/
+app/backup/
 sgsv.db
 *.env
 
