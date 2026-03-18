@@ -236,7 +236,7 @@
         {% for p in pedidos %}
           <tr>
             <td>
-              <strong class="text-primary">{{ p.usuario.nome_uvis }}</strong><br>
+              <strong class="text-primary">#{{ p.id }} {{ p.usuario.nome_uvis }}</strong><br>
               <small class="text-muted">{{ p.usuario.regiao }}</small>
             </td>
             <td>

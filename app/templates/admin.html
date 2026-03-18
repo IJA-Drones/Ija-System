@@ -291,7 +291,7 @@
 
                                 <!-- NOME -->
                                 <strong class="text-primary fs-6">
-                                    {{ p.usuario.nome_uvis }}
+                                    #{{ p.id }} {{ p.usuario.nome_uvis }}
                                 </strong>
                                 {# FILTRO DE PERFIL: Aplica-se a ambos os alertas abaixo #}
                                 {% if current_user.tipo_usuario|lower in ['admin', 'visualizar', 'operario'] %}
@@ -394,7 +394,7 @@
                                 class="btn btn-sm btn-outline-danger py-0 btn-open-map"
                                 data-lat="{{ p.latitude }}"
                                 data-lng="{{ p.longitude }}"
-                                data-title="{{ p.usuario.nome_uvis }} - {{ p.logradouro }}, {{ p.numero or 'S/N' }}"
+                                data-title="#{{ p.id }} {{ p.usuario.nome_uvis }} - {{ p.logradouro }}, {{ p.numero or 'S/N' }}"
                                 title="Ver no mapa"
                                 >
                                 <i class="bi bi-map-fill"></i>
@@ -577,7 +577,7 @@
                                         class="btn btn-sm btn-outline-danger py-0 btn-open-map"
                                         data-lat="{{ p.latitude }}"
                                         data-lng="{{ p.longitude }}"
-                                        data-title="{{ p.usuario.nome_uvis }} - {{ p.logradouro }}, {{ p.numero or 'S/N' }}"
+                                        data-title="#{{ p.id }} {{ p.usuario.nome_uvis }} - {{ p.logradouro }}, {{ p.numero or 'S/N' }}"
                                         title="Ver no mapa"
                                         onclick="event.stopPropagation();"
                                         >

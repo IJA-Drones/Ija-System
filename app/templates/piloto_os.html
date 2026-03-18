@@ -364,7 +364,7 @@
           <tr>
             <td class="ps-4">
               <div class="fw-bold text-dark">{{ s.data_agendamento.strftime('%d/%m/%Y') if s.data_agendamento else '-' }}</div>
-              <div class="text-muted small"><i class="bi bi-clock me-1"></i>{{ s.hora_agendamento.strftime("%H:%M") if s.hora_agendamento else '-' }}</div>
+              <div class="text-muted small"><i class="bi bi-clock me-1"></i>#{{ s.id }} · {{ s.hora_agendamento.strftime("%H:%M") if s.hora_agendamento else '-' }}</div>
             </td>
             <td class="py-3">
               <div class="d-flex flex-column">
