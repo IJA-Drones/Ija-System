@@ -1,7 +1,9 @@
+from datetime import date, datetime, timedelta
+
 from sqlalchemy.orm import joinedload
 
 from app.extensions import db
-from app.models import Baterias, Drones, Equipe, EquipePiloto, Solicitacao, Veiculos
+from app.models import Baterias, Drones, Equipe, EquipePiloto, OrdemServico, Solicitacao, Veiculos
 from app.shared.query_filters import aplicar_filtros_base
 
 
@@ -16,10 +18,10 @@ STATUS_OS_APROVADAS_COM_ACENTO = [
     "APROVADO COM RECOMENDACOES",
     "APROVADA",
     "APROVADA COM RECOMENDACOES",
-    "APROVADO COM RECOMENDAÇÕES",
-    "APROVADA COM RECOMENDAÇÕES",
+    "APROVADO COM RECOMENDA\u00c7\u00d5ES",
+    "APROVADA COM RECOMENDA\u00c7\u00d5ES",
 ]
-STATUS_OS_CONCLUIDAS = ["CONCLUIDO", "CONCLUÍDO"]
+STATUS_OS_CONCLUIDAS = ["CONCLUIDO", "CONCLU\u00cdDO"]
 
 
 class PilotoOsError(Exception):
@@ -142,6 +144,9 @@ def build_piloto_os_historico_context(user, args):
 
 
 def concluir_os_piloto(user, os_id):
+    if not getattr(user, "piloto_id", None):
+        raise PilotoOsError("Piloto sem vinculo cadastrado.", "danger", redirect_endpoint="main.dashboard")
+
     solicitacao = Solicitacao.query.get_or_404(os_id)
 
     if solicitacao.status not in STATUS_OS_APROVADAS_COM_ACENTO:
@@ -165,6 +170,454 @@ def concluir_os_piloto(user, os_id):
     if equipe_nome:
         return f"OS #{solicitacao.id} concluida! Equipe: {equipe_nome}."
     return f"OS #{solicitacao.id} concluida com sucesso!"
+
+
+def build_piloto_os_form_context(user, os_id):
+    if not getattr(user, "piloto_id", None):
+        raise PilotoOsError("Piloto sem vinculo cadastrado.", "danger", redirect_endpoint="main.dashboard")
+
+    solicitacao = (
+        Solicitacao.query
+        .options(
+            joinedload(Solicitacao.usuario),
+            joinedload(Solicitacao.equipe),
+            joinedload(Solicitacao.ordem_servico),
+        )
+        .get_or_404(os_id)
+    )
+
+    status_permitidos = set(STATUS_OS_APROVADAS_COM_ACENTO + STATUS_OS_CONCLUIDAS)
+    if solicitacao.status not in status_permitidos:
+        raise PilotoOsError("Esta OS nao esta liberada para preenchimento do formulario.", "warning")
+
+    if not solicitacao.equipe_id:
+        raise PilotoOsError("Esta OS nao possui equipe atribuida.", "danger")
+
+    vinculo = _buscar_vinculo_piloto_na_equipe(user.piloto_id, solicitacao.equipe_id)
+    if not vinculo:
+        raise PilotoOsError("Voce nao tem permissao para acessar esta OS.", "danger")
+
+    equipe = vinculo.equipe
+    ordem = solicitacao.ordem_servico
+    drones_equipe = (
+        Drones.query
+        .filter(
+            Drones.equipe_id == solicitacao.equipe_id,
+            Drones.status == "Ativo",
+        )
+        .order_by(Drones.renomacao.asc())
+        .all()
+    )
+
+    respondido_por_padrao = ""
+    if getattr(user, "piloto", None):
+        respondido_por_padrao = user.piloto.nome_piloto or ""
+    else:
+        respondido_por_padrao = getattr(user, "nome_uvis", "") or ""
+
+    return {
+        "solicitacao": solicitacao,
+        "equipe": equipe,
+        "ordem": ordem,
+        "modo_visualizacao": (solicitacao.status or "").strip().upper() in {"CONCLUIDO", "CONCLU\u00cdDO"},
+        "uvis_nome": solicitacao.usuario.nome_uvis if solicitacao.usuario else "",
+        "endereco_os": (
+            f"{solicitacao.logradouro or ''}, {solicitacao.numero or 'S/N'} - "
+            f"{solicitacao.bairro or ''} - {solicitacao.cidade or ''}/{solicitacao.uf or ''}"
+        ),
+        "piloto_padrao": (
+            equipe.piloto_titular.nome_piloto if equipe and equipe.piloto_titular else ""
+        ) if equipe else "",
+        "auxiliar_padrao": (
+            equipe.piloto_auxiliar.nome_piloto if equipe and equipe.piloto_auxiliar else ""
+        ) if equipe else "",
+        "respondido_por_padrao": respondido_por_padrao,
+        "respondido_em_value": (
+            ordem.respondido_em.strftime("%Y-%m-%dT%H:%M")
+            if ordem and ordem.respondido_em else datetime.now().strftime("%Y-%m-%dT%H:%M")
+        ),
+        "drones_equipe": drones_equipe,
+    }
+
+
+def salvar_piloto_os_form(user, os_id, form_data):
+    context = build_piloto_os_form_context(user, os_id)
+
+    if context["modo_visualizacao"]:
+        raise PilotoOsError(
+            "Esta OS ja foi concluida e nao pode mais ser editada pelo piloto.",
+            "warning",
+            redirect_endpoint="main.piloto_os_formulario_view",
+        )
+
+    solicitacao = context["solicitacao"]
+    ordem = context["ordem"]
+
+    if ordem is None:
+        ordem = OrdemServico(
+            solicitacao_id=solicitacao.id,
+            equipe_id=solicitacao.equipe_id,
+        )
+        db.session.add(ordem)
+
+    _aplicar_campos_formulario(
+        user=user,
+        solicitacao=solicitacao,
+        ordem=ordem,
+        form_data=form_data,
+        piloto_padrao=context["piloto_padrao"],
+        auxiliar_padrao=context["auxiliar_padrao"],
+        respondido_por_padrao=context["respondido_por_padrao"],
+    )
+
+    gerar_retorno = ((ordem.retornar_proxima_semana_monitorar_larvas or "").strip().upper() == "SIM")
+    if gerar_retorno:
+        retorno_existente = Solicitacao.query.filter_by(origem_retorno_id=solicitacao.id).first()
+        if not retorno_existente:
+            criar_solicitacao_retorno_monitoramento(solicitacao, ordem)
+
+    db.session.commit()
+
+    if gerar_retorno:
+        return "Formulario salvo com sucesso! Uma nova OS de retorno foi criada para 7 dias depois."
+    return "Formulario salvo com sucesso!"
+
+
+def get_piloto_drone_payload(user, drone_id):
+    if not getattr(user, "piloto_id", None):
+        raise PilotoOsError("Piloto sem vinculo.", "danger")
+
+    drone = Drones.query.get_or_404(drone_id)
+    if not drone.equipe_id:
+        raise PilotoOsError("Drone sem equipe.", "danger")
+
+    vinculo = _buscar_vinculo_piloto_na_equipe(user.piloto_id, drone.equipe_id)
+    if not vinculo:
+        raise PilotoOsError("Sem permissao.", "danger")
+
+    return {
+        "id": drone.id,
+        "renomacao": drone.renomacao,
+        "modelo": drone.modelo,
+        "numero_serie": drone.numero_serie,
+        "registro_anatel": drone.registro_anatel,
+        "registro_anac": drone.registro_anac,
+        "status": drone.status,
+        "categoria": drone.categoria,
+        "pmd_kg": drone.pmd_kg,
+        "ano_fabricacao": drone.ano_fabricacao,
+    }
+
+
+def build_admin_os_form_context(user, os_id):
+    if getattr(user, "tipo_usuario", None) not in ["admin", "operario", "visualizar"]:
+        raise PilotoOsError("Acesso restrito.", "danger", redirect_endpoint="main.dashboard")
+
+    solicitacao = (
+        Solicitacao.query
+        .options(
+            joinedload(Solicitacao.usuario),
+            joinedload(Solicitacao.equipe),
+            joinedload(Solicitacao.ordem_servico),
+        )
+        .get_or_404(os_id)
+    )
+
+    equipe = solicitacao.equipe
+    ordem = solicitacao.ordem_servico
+    drones_equipe = []
+    if solicitacao.equipe_id:
+        drones_equipe = (
+            Drones.query
+            .filter(Drones.equipe_id == solicitacao.equipe_id)
+            .order_by(Drones.renomacao.asc())
+            .all()
+        )
+
+    return {
+        "solicitacao": solicitacao,
+        "equipe": equipe,
+        "ordem": ordem,
+        "modo_visualizacao": True,
+        "uvis_nome": solicitacao.usuario.nome_uvis if solicitacao.usuario else "",
+        "endereco_os": (
+            f"{solicitacao.logradouro or ''}, {solicitacao.numero or 'S/N'} - "
+            f"{solicitacao.bairro or ''} - {solicitacao.cidade or ''}/{solicitacao.uf or ''}"
+        ),
+        "piloto_padrao": (
+            equipe.piloto_titular.nome_piloto if equipe and equipe.piloto_titular else ""
+        ) if equipe else "",
+        "auxiliar_padrao": (
+            equipe.piloto_auxiliar.nome_piloto if equipe and equipe.piloto_auxiliar else ""
+        ) if equipe else "",
+        "respondido_por_padrao": "",
+        "respondido_em_value": (
+            ordem.respondido_em.strftime("%Y-%m-%dT%H:%M")
+            if ordem and ordem.respondido_em else ""
+        ),
+        "drones_equipe": drones_equipe,
+    }
+
+
+def criar_solicitacao_retorno_monitoramento(solicitacao_original, ordem_atual):
+    data_base = (
+        solicitacao_original.data_agendamento
+        or ordem_atual.data_aplicacao
+        or date.today()
+    )
+    nova_data = data_base + timedelta(days=7)
+
+    observacao_original = (solicitacao_original.observacao or "").strip()
+    complemento = (
+        f"Retorno automatico para monitoramento de larvas gerado a partir da solicitacao #{solicitacao_original.id}."
+    )
+    nova_observacao = (
+        f"{observacao_original}\n{complemento}".strip()
+        if observacao_original else complemento
+    )
+
+    nova_solicitacao = Solicitacao(
+        data_agendamento=nova_data,
+        hora_agendamento=solicitacao_original.hora_agendamento,
+        foco=solicitacao_original.foco,
+        tipo_visita=solicitacao_original.tipo_visita,
+        altura_voo=solicitacao_original.altura_voo,
+        criadouro=solicitacao_original.criadouro,
+        apoio_cet=solicitacao_original.apoio_cet,
+        observacao=nova_observacao,
+        area_restrita=solicitacao_original.area_restrita,
+        cep=solicitacao_original.cep,
+        logradouro=solicitacao_original.logradouro,
+        bairro=solicitacao_original.bairro,
+        cidade=solicitacao_original.cidade,
+        uf=solicitacao_original.uf,
+        numero=solicitacao_original.numero,
+        complemento=solicitacao_original.complemento,
+        latitude=solicitacao_original.latitude,
+        longitude=solicitacao_original.longitude,
+        perimetro_planejado=solicitacao_original.perimetro_planejado,
+        perimetro_executado=None,
+        anexo_path=solicitacao_original.anexo_path,
+        anexo_nome=solicitacao_original.anexo_nome,
+        protocolo=None,
+        justificativa=None,
+        equipe_uvis_nome=solicitacao_original.equipe_uvis_nome,
+        status="PENDENTE",
+        usuario_id=solicitacao_original.usuario_id,
+        piloto_id=solicitacao_original.piloto_id,
+        equipe_id=solicitacao_original.equipe_id,
+        origem_retorno_id=solicitacao_original.id,
+        gerada_automaticamente=True,
+    )
+
+    db.session.add(nova_solicitacao)
+    db.session.flush()
+
+    nova_ordem = OrdemServico(
+        solicitacao_id=nova_solicitacao.id,
+        equipe_id=solicitacao_original.equipe_id,
+        identificador_os="",
+        respondido_por="",
+        respondido_em=None,
+        situacao_aplicacao="",
+        larva_visualizada="",
+        retornar_proxima_semana_monitorar_larvas="NAO",
+        distrito_administrativo=ordem_atual.distrito_administrativo,
+        nome_rf_ace_responsavel_os=ordem_atual.nome_rf_ace_responsavel_os,
+        criadouro_os_tipo_volume=ordem_atual.criadouro_os_tipo_volume,
+        data_aplicacao=None,
+        hora_inicio_aplicacao=None,
+        hora_termino_aplicacao=None,
+        tratamento_adicional_realizado="",
+        quantos_quais="",
+        descricao_produto=ordem_atual.descricao_produto,
+        formulacao_produto=ordem_atual.formulacao_produto,
+        dosagem_g_10l=ordem_atual.dosagem_g_10l,
+        tipo_aplicacao=ordem_atual.tipo_aplicacao,
+        quantidade_produto_administrada_ml=None,
+        pulverizacao_area_l_ha=ordem_atual.pulverizacao_area_l_ha,
+        prefixo_aeronave_pulverizacao=ordem_atual.prefixo_aeronave_pulverizacao,
+        prefixo_aeronave_monitoramento=ordem_atual.prefixo_aeronave_monitoramento,
+        quantidade_videos_registradas=None,
+        quantidade_imagens_registradas=None,
+        ponta_pulverizacao=ordem_atual.ponta_pulverizacao,
+        temperatura_c=None,
+        umidade_relativa_pct=None,
+        velocidade_vento_kmh=None,
+        motivo_nao_realizacao="",
+        observacoes="",
+        piloto=ordem_atual.piloto,
+        assinatura_piloto="",
+        auxiliar=ordem_atual.auxiliar,
+        proprietario_ou_preposto="",
+        assinatura_proprietario_ou_preposto="",
+        drone_id=ordem_atual.drone_id,
+        drone_monitoramento_id=ordem_atual.drone_monitoramento_id,
+        drone_denominacao=ordem_atual.drone_denominacao,
+        drone_modelo=ordem_atual.drone_modelo,
+        drone_numero_serie=ordem_atual.drone_numero_serie,
+        drone_registro_anatel=ordem_atual.drone_registro_anatel,
+        drone_registro_anac=ordem_atual.drone_registro_anac,
+        drone_monitoramento_denominacao=ordem_atual.drone_monitoramento_denominacao,
+        drone_monitoramento_modelo=ordem_atual.drone_monitoramento_modelo,
+        drone_monitoramento_numero_serie=ordem_atual.drone_monitoramento_numero_serie,
+        drone_monitoramento_registro_anatel=ordem_atual.drone_monitoramento_registro_anatel,
+        drone_monitoramento_registro_anac=ordem_atual.drone_monitoramento_registro_anac,
+    )
+    db.session.add(nova_ordem)
+    return nova_solicitacao
+
+
+def _aplicar_campos_formulario(*, user, solicitacao, ordem, form_data, piloto_padrao, auxiliar_padrao, respondido_por_padrao):
+    drone_pulv_id = _to_int(form_data.get("drone_id"))
+    drone_monit_id = _to_int(form_data.get("drone_monitoramento_id"))
+
+    if drone_pulv_id:
+        drone_p = Drones.query.get(drone_pulv_id)
+        if drone_p and drone_p.equipe_id == solicitacao.equipe_id:
+            ordem.drone_id = drone_p.id
+            ordem.drone_denominacao = drone_p.renomacao
+            ordem.drone_modelo = drone_p.modelo
+            ordem.drone_numero_serie = drone_p.numero_serie
+            ordem.drone_registro_anatel = drone_p.registro_anatel
+            ordem.drone_registro_anac = drone_p.registro_anac
+            ordem.prefixo_aeronave_pulverizacao = drone_p.renomacao
+    else:
+        ordem.drone_id = None
+        ordem.drone_denominacao = ""
+        ordem.drone_modelo = ""
+        ordem.drone_numero_serie = ""
+        ordem.drone_registro_anatel = ""
+        ordem.drone_registro_anac = ""
+        ordem.prefixo_aeronave_pulverizacao = _clean_str(form_data.get("prefixo_aeronave_pulverizacao"))
+
+    if drone_monit_id:
+        drone_m = Drones.query.get(drone_monit_id)
+        if drone_m and drone_m.equipe_id == solicitacao.equipe_id:
+            ordem.drone_monitoramento_id = drone_m.id
+            ordem.drone_monitoramento_denominacao = drone_m.renomacao
+            ordem.drone_monitoramento_modelo = drone_m.modelo
+            ordem.drone_monitoramento_numero_serie = drone_m.numero_serie
+            ordem.drone_monitoramento_registro_anatel = drone_m.registro_anatel
+            ordem.drone_monitoramento_registro_anac = drone_m.registro_anac
+            ordem.prefixo_aeronave_monitoramento = drone_m.renomacao
+    else:
+        ordem.drone_monitoramento_id = None
+        ordem.drone_monitoramento_denominacao = ""
+        ordem.drone_monitoramento_modelo = ""
+        ordem.drone_monitoramento_numero_serie = ""
+        ordem.drone_monitoramento_registro_anatel = ""
+        ordem.drone_monitoramento_registro_anac = ""
+        ordem.prefixo_aeronave_monitoramento = _clean_str(form_data.get("prefixo_aeronave_monitoramento"))
+
+    ordem.identificador_os = _clean_str(form_data.get("identificador_os"))
+    ordem.respondido_por = _clean_str(form_data.get("respondido_por")) or respondido_por_padrao
+    ordem.respondido_em = _to_datetime_local(form_data.get("respondido_em")) or datetime.now()
+    ordem.situacao_aplicacao = _clean_str(form_data.get("situacao_aplicacao"))
+    ordem.larva_visualizada = _clean_str(form_data.get("larva_visualizada"))
+    ordem.retornar_proxima_semana_monitorar_larvas = _clean_str(form_data.get("retornar_proxima_semana_monitorar_larvas"))
+    ordem.distrito_administrativo = _clean_str(form_data.get("da")) or _clean_str(form_data.get("distrito_administrativo"))
+    ordem.nome_rf_ace_responsavel_os = _clean_str(form_data.get("nome_rf_ace_responsavel_os"))
+    ordem.criadouro_os_tipo_volume = _clean_str(form_data.get("criadouro_os_tipo_volume"))
+    ordem.data_aplicacao = _to_date(form_data.get("data_aplicacao"))
+    ordem.hora_inicio_aplicacao = _to_time(form_data.get("hora_inicio_aplicacao"))
+    ordem.hora_termino_aplicacao = _to_time(form_data.get("hora_termino_aplicacao"))
+    ordem.tratamento_adicional_realizado = _clean_str(form_data.get("tratamento_adicional_realizado"))
+    ordem.quantos_quais = _clean_str(form_data.get("quantos_quais"))
+    ordem.descricao_produto = _clean_str(form_data.get("descricao_produto"))
+    ordem.formulacao_produto = _clean_str(form_data.get("formulacao_produto"))
+    ordem.dosagem_g_10l = _clean_str(form_data.get("dosagem_g_10l"))
+    ordem.tipo_aplicacao = _clean_str(form_data.get("tipo_aplicacao"))
+    ordem.quantidade_produto_administrada_ml = _to_float(form_data.get("quantidade_produto_administrada_ml"))
+    ordem.pulverizacao_area_l_ha = _to_float(form_data.get("pulverizacao_area_l_ha"))
+    ordem.pulverizacao_foco_tempo_estimado_segundos = _to_float(form_data.get("pulverizacao_foco_tempo_estimado_segundos"))
+    ordem.pulverizacao_foco_l_min = _to_float(form_data.get("pulverizacao_foco_l_min"))
+    ordem.quantidade_imagens_registradas = _to_int(form_data.get("quantidade_imagens_registradas"))
+    ordem.quantidade_videos_registradas = _to_int(form_data.get("quantidade_videos_registradas"))
+    ordem.ponta_pulverizacao = _clean_str(form_data.get("ponta_pulverizacao"))
+    ordem.temperatura_c = _to_float(form_data.get("temperatura_c"))
+    ordem.umidade_relativa_pct = _to_float(form_data.get("umidade_relativa_pct"))
+    ordem.velocidade_vento_kmh = _to_float(form_data.get("velocidade_vento_kmh"))
+    ordem.motivo_nao_realizacao = _clean_str(form_data.get("motivo_nao_realizacao"))
+    ordem.observacoes = _clean_str(form_data.get("observacoes"))
+    ordem.piloto = _clean_str(form_data.get("piloto")) or piloto_padrao
+    ordem.assinatura_piloto = _clean_str(form_data.get("assinatura_piloto"))
+    ordem.auxiliar = _clean_str(form_data.get("auxiliar")) or auxiliar_padrao
+    ordem.proprietario_ou_preposto = _clean_str(form_data.get("proprietario_ou_preposto"))
+    ordem.assinatura_proprietario_ou_preposto = _clean_str(form_data.get("assinatura_proprietario_ou_preposto"))
+
+
+def _clean(value):
+    if value is None:
+        return None
+    value = str(value).strip()
+    return value if value != "" else None
+
+
+def _clean_str(value):
+    if value is None:
+        return ""
+    return str(value).strip()
+
+
+def _to_int(value):
+    value = _clean(value)
+    if value is None:
+        return None
+    try:
+        return int(float(value))
+    except Exception:
+        return None
+
+
+def _to_float(value):
+    value = _clean(value)
+    if value is None:
+        return None
+
+    if "," in value and "." in value:
+        value = value.replace(".", "").replace(",", ".")
+    else:
+        value = value.replace(",", ".")
+
+    try:
+        return float(value)
+    except Exception:
+        return None
+
+
+def _to_date(value):
+    value = _clean(value)
+    if value is None:
+        return None
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").date()
+    except Exception:
+        return None
+
+
+def _to_time(value):
+    value = _clean(value)
+    if value is None:
+        return None
+    for fmt in ("%H:%M", "%H:%M:%S"):
+        try:
+            return datetime.strptime(value, fmt).time()
+        except Exception:
+            pass
+    return None
+
+
+def _to_datetime_local(value):
+    value = _clean(value)
+    if value is None:
+        return None
+    for fmt in ("%Y-%m-%dT%H:%M", "%Y-%m-%dT%H:%M:%S"):
+        try:
+            return datetime.strptime(value, fmt)
+        except Exception:
+            pass
+    return None
 
 
 def _buscar_vinculo_ativo_piloto(piloto_id):
