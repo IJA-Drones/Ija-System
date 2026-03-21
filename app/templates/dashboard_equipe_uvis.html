@@ -251,7 +251,7 @@
                               <option value="APROVADO" {{ 'selected' if request.args.get('status')=='APROVADO' else '' }}>🟢 Aprovados</option>
                               <option value="APROVADO COM RECOMENDAÇÕES" {{ 'selected' if request.args.get('status')=='APROVADO COM RECOMENDAÇÕES' else ''}}>🟠 Aprovado c/ Recomendações</option>
                               <option value="NEGADO" {{ 'selected' if request.args.get('status')=='NEGADO' else '' }}>🔴 Negados</option>
-                              <option value="CONCLUÍDO" {{ 'selected' if request.args.get('status') in ['CONCLUÍDO', 'CONCLUIDO'] else '' }}>Concluídos</option>
+                              <option value="CONCLUÍDO" {{ 'selected' if request.args.get('status') in ['CONCLUÍDO', 'CONCLUIDO'] else '' }}>🟣 Concluídos</option>
                           </select>
                       </div>
 
