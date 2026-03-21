@@ -367,14 +367,7 @@ def criar_solicitacao_retorno_monitoramento(solicitacao_original, ordem_atual):
     )
     nova_data = data_base + timedelta(days=7)
 
-    observacao_original = (solicitacao_original.observacao or "").strip()
-    complemento = (
-        f"Retorno automatico para monitoramento de larvas gerado a partir da solicitacao #{solicitacao_original.id}."
-    )
-    nova_observacao = (
-        f"{observacao_original}\n{complemento}".strip()
-        if observacao_original else complemento
-    )
+    nova_observacao = (solicitacao_original.observacao or "").strip() or None
 
     nova_solicitacao = Solicitacao(
         data_agendamento=nova_data,

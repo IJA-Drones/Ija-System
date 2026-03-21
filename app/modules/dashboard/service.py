@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.orm import joinedload
 
 from app.extensions import db
@@ -19,7 +19,15 @@ def build_dashboard_context(user, args, google_maps_key):
 
     filtro_status = args.get("status")
     if filtro_status:
-        query = query.filter(Solicitacao.status == filtro_status)
+        if filtro_status in {"CONCLUIDO", "CONCLUÍDO"}:
+            query = query.filter(
+                or_(
+                    Solicitacao.status == "CONCLUIDO",
+                    Solicitacao.status == "CONCLUÍDO",
+                )
+            )
+        else:
+            query = query.filter(Solicitacao.status == filtro_status)
 
     filtro_tipo_visita = args.get("tipo_visita")
     if filtro_tipo_visita:

@@ -251,6 +251,7 @@
                               <option value="APROVADO" {{ 'selected' if request.args.get('status')=='APROVADO' else '' }}>🟢 Aprovados</option>
                               <option value="APROVADO COM RECOMENDAÇÕES" {{ 'selected' if request.args.get('status')=='APROVADO COM RECOMENDAÇÕES' else ''}}>🟠 Aprovado c/ Recomendações</option>
                               <option value="NEGADO" {{ 'selected' if request.args.get('status')=='NEGADO' else '' }}>🔴 Negados</option>
+                              <option value="CONCLUÍDO" {{ 'selected' if request.args.get('status') in ['CONCLUÍDO', 'CONCLUIDO'] else '' }}>Concluídos</option>
                           </select>
                       </div>
 
@@ -398,6 +399,9 @@
                       </button>
                     </div>
                   {% endif %}
+
+                {% elif 'CONCLU' in (p.status or '') %}
+                  <span class="badge bg-completed rounded-pill">Concluído</span>
 
                 {% else %}
                   <span class="badge bg-warning text-dark rounded-pill">Em Análise</span>
@@ -630,6 +634,11 @@
           <div class="alert alert-success mb-0">
             <strong class="d-block"><i class="bi bi-check-circle"></i> Pedido Aprovado</strong>
             <small>Protocolo: {{ p.protocolo }}</small>
+          </div>
+          {% elif 'CONCLU' in (p.status or '') %}
+          <div class="alert alert-primary mb-0">
+            <strong class="d-block"><i class="bi bi-check2-circle"></i> Pedido Concluído</strong>
+            <small>A ordem de serviço foi concluída pelo piloto.</small>
           </div>
           {% endif %}
 
