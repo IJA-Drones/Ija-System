@@ -1,7 +1,12 @@
-from flask import current_app, redirect, render_template, request, url_for
+from flask import current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
-from app.modules.dashboard.service import build_dashboard_context
+from app.modules.dashboard.service import (
+    DashboardError,
+    build_dashboard_context,
+    build_uvis_historico_os_context,
+    build_uvis_os_form_context,
+)
 
 
 def register_routes(bp):
@@ -21,3 +26,40 @@ def register_routes(bp):
 
         context = build_dashboard_context(current_user, request.args, google_maps_key)
         return render_template("dashboard.html", **context)
+
+    @bp.route("/uvis/historico-os", methods=["GET"], endpoint="uvis_historico_os")
+    @login_required
+    def uvis_historico_os():
+        try:
+            context = build_uvis_historico_os_context(current_user, request.args)
+        except DashboardError as exc:
+            flash(exc.message, exc.category)
+            return redirect(url_for(exc.redirect_endpoint))
+
+        return render_template("uvis_os_historico.html", **context)
+
+    @bp.route("/uvis/os/<int:os_id>/formulario", methods=["GET"], endpoint="uvis_os_formulario_view")
+    @login_required
+    def uvis_os_formulario_view(os_id):
+        try:
+            context = build_uvis_os_form_context(current_user, os_id)
+        except DashboardError as exc:
+            flash(exc.message, exc.category)
+            return redirect(url_for(exc.redirect_endpoint))
+
+        return render_template(
+            "piloto_os_formulario.html",
+            solicitacao=context["solicitacao"],
+            equipe=context["equipe"],
+            ordem=context["ordem"],
+            modo_visualizacao=context["modo_visualizacao"],
+            uvis_nome=context["uvis_nome"],
+            endereco_os=context["endereco_os"],
+            piloto_padrao=context["piloto_padrao"],
+            auxiliar_padrao=context["auxiliar_padrao"],
+            respondido_por_padrao=context["respondido_por_padrao"],
+            respondido_em_value=context["respondido_em_value"],
+            drones_equipe=context["drones_equipe"],
+            url_voltar=url_for("main.uvis_historico_os"),
+            form_action="#",
+        )

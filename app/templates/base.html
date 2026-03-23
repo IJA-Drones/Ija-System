@@ -222,6 +222,15 @@
               <i class="bi bi-clock-history me-2"></i><span>Histórico OS</span>
             </a>
           </li>
+          {% elif current_user.tipo_usuario == 'uvis' %}
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint in ['main.uvis_historico_os', 'main.uvis_os_formulario_view'] %}active{% endif %}"
+              href="{{ url_for('main.uvis_historico_os') }}"
+            >
+              <i class="bi bi-clock-history me-2"></i><span>Histórico OS</span>
+            </a>
+          </li>
           {% endif %}
 
           <li class="nav-item">
