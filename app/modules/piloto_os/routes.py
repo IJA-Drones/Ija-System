@@ -27,7 +27,7 @@ def _require_admin_os_view():
 
 
 def _require_admin_only():
-    if getattr(current_user, "tipo_usuario", None) != "admin":
+    if getattr(current_user, "tipo_usuario", None) not in ["admin", "visualizar"]:
         abort(403)
 
 
