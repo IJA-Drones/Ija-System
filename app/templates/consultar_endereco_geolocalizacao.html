@@ -18,14 +18,24 @@
       <label class="form-label fw-bold small text-muted">
         <i class="bi bi-house-door me-1 text-primary"></i> CEP
       </label>
-      <input
-        type="text"
-        id="cep"
-        class="form-control"
-        placeholder="Digite o CEP"
-        maxlength="8"
-        onblur="consultarCep()"
-      />
+      <div class="input-group">
+        <input
+          type="text"
+          id="cep"
+          class="form-control"
+          placeholder="Digite o CEP"
+          maxlength="9"
+          onblur="consultarCep()"
+        />
+        <button
+          type="button"
+          id="btnBuscarCepEndereco"
+          class="btn btn-outline-primary"
+          title="Buscar CEP pelo endereço preenchido"
+        >
+          <i class="bi bi-arrow-left-right me-1"></i> Descobrir CEP
+        </button>
+      </div>
       <div class="invalid-feedback" id="cep-error"></div>
     </div>
     <div class="col-md-4">
@@ -146,6 +156,15 @@
 {% block scripts %}
 <script>
   let map, directionsService, directionsRenderer, userLocation;
+  function onlyDigits(value) {
+    return (value || "").replace(/\D/g, "");
+  }
+
+  function formatarCep(value) {
+    const digits = onlyDigits(value).slice(0, 8);
+    if (digits.length <= 5) return digits;
+    return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+  }
 
   function initMap() {
     // Inicializando o mapa
@@ -180,17 +199,18 @@
   }
 
   function consultarCep() {
-    const cep = document.getElementById('cep').value;
+    const cep = onlyDigits(document.getElementById('cep').value);
 
     if (cep.length !== 8) {
       document.getElementById('cep-error').textContent = "CEP inválido. Use 8 dígitos.";
       return;
     }
 
-    fetch(`/api/cep/${cep}`)
+    fetch(`{{ url_for('main.api_cep', cep='__CEP__') }}`.replace('__CEP__', cep))
       .then(response => response.json())
       .then(data => {
         if (data.ok) {
+          document.getElementById('cep').value = formatarCep(data.cep || cep);
           document.getElementById('logradouro').value = data.logradouro;
           document.getElementById('bairro').value = data.bairro;
           document.getElementById('cidade').value = data.cidade;
@@ -203,6 +223,64 @@
       .catch(error => {
         document.getElementById('cep-error').textContent = "Erro ao consultar o CEP.";
       });
+  }
+
+  async function buscarCepPorEndereco() {
+    const btn = document.getElementById('btnBuscarCepEndereco');
+    const payload = {
+      logradouro: (document.getElementById('logradouro').value || '').trim(),
+      bairro: (document.getElementById('bairro').value || '').trim(),
+      cidade: (document.getElementById('cidade').value || '').trim(),
+      uf: (document.getElementById('uf').value || '').trim(),
+    };
+
+    if (!payload.logradouro || !payload.bairro || !payload.cidade || !payload.uf) {
+      document.getElementById('cep-error').textContent =
+        "Preencha logradouro, bairro, cidade e UF para descobrir o CEP.";
+      return;
+    }
+
+    document.getElementById('cep-error').textContent = "";
+
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Buscando';
+    }
+
+    try {
+      const response = await fetch("{{ url_for('main.api_cep_by_address') }}", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error || 'Não foi possível descobrir o CEP.');
+      }
+
+      document.getElementById('cep').value = formatarCep(data.cep || '');
+      document.getElementById('logradouro').value = data.logradouro || payload.logradouro;
+      document.getElementById('bairro').value = data.bairro || payload.bairro;
+      document.getElementById('cidade').value = data.cidade || payload.cidade;
+      document.getElementById('uf').value = data.uf || payload.uf;
+      document.getElementById('cep-error').textContent = "";
+
+      if ((document.getElementById('numero').value || '').trim()) {
+        consultarGeocode();
+      }
+    } catch (error) {
+      document.getElementById('cep-error').textContent =
+        error.message || "Erro ao buscar CEP pelo endereÃ§o.";
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-arrow-left-right me-1"></i> Descobrir CEP';
+      }
+    }
   }
 
   function consultarGeocode() {
@@ -262,7 +340,21 @@
   }
 
   // Inicializa o mapa quando a página carrega
-  window.onload = initMap;
+  window.onload = function () {
+    initMap();
+
+    const cepInput = document.getElementById('cep');
+    if (cepInput) {
+      cepInput.addEventListener('input', function () {
+        this.value = formatarCep(this.value);
+      });
+    }
+
+    const btnBuscarCepEndereco = document.getElementById('btnBuscarCepEndereco');
+    if (btnBuscarCepEndereco) {
+      btnBuscarCepEndereco.addEventListener('click', buscarCepPorEndereco);
+    }
+  };
 </script>
 <script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_key }}&libraries=geometry,visualization,directions"></script>
 {% endblock %}

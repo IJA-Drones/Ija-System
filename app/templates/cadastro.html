@@ -97,15 +97,28 @@
             <label class="form-label fw-bold small text-muted">
               <i class="bi bi-search me-1 text-primary"></i> CEP *
             </label>
-            <input
-              type="text"
-              id="cep"
-              name="cep"
-              maxlength="9"
-              class="form-control"
-              placeholder="00000-000"
-              required
-            />
+            <div class="input-group">
+              <input
+                type="text"
+                id="cep"
+                name="cep"
+                maxlength="9"
+                class="form-control"
+                placeholder="00000-000"
+                required
+              />
+              <button
+                type="button"
+                id="btnBuscarCepEndereco"
+                class="btn btn-outline-primary"
+                title="Buscar CEP pelo endereço preenchido"
+              >
+                <i class="bi bi-arrow-left-right me-1"></i> Descobrir CEP
+              </button>
+            </div>
+            <small class="text-muted d-block mt-1">
+              Você pode informar o CEP ou descobrir o CEP a partir do endereço.
+            </small>
           </div>
         </div>
 
@@ -529,6 +542,7 @@
 
   document.addEventListener("DOMContentLoaded", function () {
     const cepInput = document.getElementById("cep");
+    const btnBuscarCepEndereco = document.getElementById("btnBuscarCepEndereco");
     const enderecoInput = document.getElementById("endereco");
     const bairroInput = document.getElementById("bairro");
     const cidadeInput = document.getElementById("cidade");
@@ -543,6 +557,12 @@
     function limparLatLng() {
       if (latInput) latInput.value = "";
       if (lngInput) lngInput.value = "";
+    }
+
+    function formatarCep(value) {
+      const digits = (value || "").replace(/\D/g, "").slice(0, 8);
+      if (digits.length <= 5) return digits;
+      return `${digits.slice(0, 5)}-${digits.slice(5)}`;
     }
 
     async function chamarGeocode() {
@@ -600,6 +620,98 @@
     function agendarGeocode(ms = 450) {
       clearTimeout(geocodeTimer);
       geocodeTimer = setTimeout(chamarGeocode, ms);
+    }
+
+    async function buscarCepPorEndereco() {
+      const payload = {
+        logradouro: (enderecoInput?.value || "").trim(),
+        bairro: (bairroInput?.value || "").trim(),
+        cidade: (cidadeInput?.value || "").trim(),
+        uf: (ufInput?.value || "").trim(),
+      };
+
+      if (!payload.logradouro || !payload.bairro || !payload.cidade || !payload.uf) {
+        if (typeof Swal !== "undefined") {
+          Swal.fire({
+            toast: true,
+            position: "top-end",
+            icon: "warning",
+            title: "Preencha logradouro, bairro, cidade e UF para descobrir o CEP.",
+            showConfirmButton: false,
+            timer: 3200,
+            customClass: {
+              popup: document.body.classList.contains("dark-mode")
+                ? "swal2-dark-mode"
+                : "",
+            },
+          });
+        }
+        return;
+      }
+
+      if (btnBuscarCepEndereco) {
+        btnBuscarCepEndereco.disabled = true;
+        btnBuscarCepEndereco.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Buscando';
+      }
+
+      try {
+        const res = await fetch("{{ url_for('main.api_cep_by_address') }}", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          throw new Error(data.error || "Não foi possível descobrir o CEP.");
+        }
+
+        if (cepInput) cepInput.value = formatarCep(data.cep || "");
+
+        if (typeof Swal !== "undefined") {
+          const titulo =
+            (data.matches || 1) > 1
+              ? `CEP encontrado. Foram localizados ${data.matches} resultados e usamos o mais compatível com o bairro informado.`
+              : "CEP encontrado pelo endereço.";
+          Swal.fire({
+            toast: true,
+            position: "top-end",
+            icon: "success",
+            title: titulo,
+            showConfirmButton: false,
+            timer: 3500,
+            customClass: {
+              popup: document.body.classList.contains("dark-mode")
+                ? "swal2-dark-mode"
+                : "",
+            },
+          });
+        }
+      } catch (err) {
+        if (typeof Swal !== "undefined") {
+          Swal.fire({
+            toast: true,
+            position: "top-end",
+            icon: "error",
+            title: err.message || "Erro ao buscar CEP pelo endereço.",
+            showConfirmButton: false,
+            timer: 3500,
+            customClass: {
+              popup: document.body.classList.contains("dark-mode")
+                ? "swal2-dark-mode"
+                : "",
+            },
+          });
+        }
+      } finally {
+        if (btnBuscarCepEndereco) {
+          btnBuscarCepEndereco.disabled = false;
+          btnBuscarCepEndereco.innerHTML = '<i class="bi bi-arrow-left-right me-1"></i> Descobrir CEP';
+        }
+      }
     }
 
     // -----------------------------
@@ -679,6 +791,10 @@
             });
         }
       });
+    }
+
+    if (btnBuscarCepEndereco) {
+      btnBuscarCepEndereco.addEventListener("click", buscarCepPorEndereco);
     }
 
     // -----------------------------

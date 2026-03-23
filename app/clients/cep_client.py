@@ -1,4 +1,6 @@
 import requests
+import unicodedata
+from urllib.parse import quote
 
 
 class CepNotFoundError(Exception):
@@ -14,6 +16,12 @@ def _request_json(url: str, timeout: int = 3):
     response = requests.get(url, timeout=timeout, headers=headers, verify=False)
     response.raise_for_status()
     return response.json()
+
+
+def _normalize_text(value: str) -> str:
+    normalized = unicodedata.normalize("NFKD", value or "")
+    ascii_text = normalized.encode("ascii", "ignore").decode("ascii")
+    return " ".join(ascii_text.upper().split())
 
 
 def lookup_cep(cep_digits: str, logger=None):
@@ -50,3 +58,46 @@ def lookup_cep(cep_digits: str, logger=None):
         if logger:
             logger.exception("Falha BrasilAPI: %s", exc)
         raise CepLookupError("Falha ao consultar o servico de CEP.") from exc
+
+
+def lookup_cep_by_address(*, logradouro: str, bairro: str, cidade: str, uf: str, logger=None):
+    uf_value = (uf or "").strip().upper()
+    cidade_value = (cidade or "").strip()
+    logradouro_value = (logradouro or "").strip()
+    bairro_value = (bairro or "").strip()
+
+    try:
+        data = _request_json(
+            "https://viacep.com.br/ws/"
+            f"{quote(uf_value)}/{quote(cidade_value)}/{quote(logradouro_value)}/json/"
+        )
+
+        if not isinstance(data, list) or not data:
+            raise CepNotFoundError("CEP nao encontrado para o endereco informado.")
+
+        candidatos = data
+        bairro_normalizado = _normalize_text(bairro_value)
+        if bairro_normalizado:
+            candidatos_bairro = [
+                item for item in data
+                if _normalize_text(item.get("bairro", "")) == bairro_normalizado
+            ]
+            if candidatos_bairro:
+                candidatos = candidatos_bairro
+
+        escolhido = candidatos[0]
+        return {
+            "cep": escolhido.get("cep", ""),
+            "logradouro": escolhido.get("logradouro", ""),
+            "complemento": escolhido.get("complemento", ""),
+            "bairro": escolhido.get("bairro", ""),
+            "cidade": escolhido.get("localidade", ""),
+            "uf": escolhido.get("uf", ""),
+            "matches": len(candidatos),
+        }
+    except CepNotFoundError:
+        raise
+    except Exception as exc:
+        if logger:
+            logger.exception("Falha ViaCEP busca por endereco: %s", exc)
+        raise CepLookupError("Falha ao consultar o servico de CEP pelo endereco.") from exc
