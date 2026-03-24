@@ -433,11 +433,14 @@
 
     if (statusText === "APROVADO") el.classList.add("bg-success");
     else if (statusText === "NEGADO") el.classList.add("bg-danger");
-    else if (statusText === "EM ANÁLISE")
+    else if (statusText === "EM ANÁLISE" || statusText === "EM ANALISE")
       el.classList.add("bg-warning", "text-dark");
-    else if (statusText === "APROVADO COM RECOMENDAÇÕES")
-      el.classList.add("bg-warning", "text-dark");
+    else if (statusText === "APROVADO COM RECOMENDAÇÕES" || statusText === "APROVADO COM RECOMENDACOES")
+      el.classList.add("bg-recomended");
     else if (statusText === "PENDENTE") el.classList.add("bg-secondary");
+    else if (statusText === "CANCELADO") el.classList.add("bg-dark");
+    else if (statusText === "CONCLUÍDO" || statusText === "CONCLUIDO")
+      el.classList.add("bg-completed");
     else el.classList.add("bg-secondary");
   }
 

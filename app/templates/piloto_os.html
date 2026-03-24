@@ -422,9 +422,13 @@
             <td class="text-center">
               {% set st = (s.status or '') %}
               {% if 'RECOMENDA' in st %}
-                <span class="badge bg-warning rounded-pill status-badge">Com Recomendações</span>
+                <span class="badge bg-recomended rounded-pill status-badge">Com Recomendações</span>
               {% elif 'APROVAD' in st %}
                 <span class="badge bg-success rounded-pill status-badge">Aprovada</span>
+              {% elif 'CONCLU' in st %}
+                <span class="badge bg-completed rounded-pill status-badge">Concluída</span>
+              {% elif st == 'CANCELADO' %}
+                <span class="badge bg-dark rounded-pill status-badge">Cancelada</span>
               {% else %}
                 <span class="badge bg-secondary rounded-pill status-badge">{{ st }}</span>
               {% endif %}
@@ -563,11 +567,13 @@
               <div class="detail-title">Status</div>
               {% set st = (p.status or '') %}
               {% if 'RECOMENDA' in st %}
-                <span class="badge bg-warning text-dark rounded-pill">Aprovada com recomendacoes</span>
+                <span class="badge bg-recomended rounded-pill">Aprovada com recomendacoes</span>
               {% elif 'APROVAD' in st %}
                 <span class="badge bg-success rounded-pill">Aprovada</span>
               {% elif 'CONCLU' in st %}
-                <span class="badge bg-primary rounded-pill">Concluida</span>
+                <span class="badge bg-completed rounded-pill">Concluida</span>
+              {% elif st == 'CANCELADO' %}
+                <span class="badge bg-dark rounded-pill">Cancelada</span>
               {% else %}
                 <span class="badge bg-secondary rounded-pill">{{ st or '--' }}</span>
               {% endif %}

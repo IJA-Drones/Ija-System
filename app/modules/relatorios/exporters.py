@@ -273,10 +273,10 @@ def build_relatorio_pdf_export(user, args):
         cards = [
             ("Total", data["total_solicitacoes"], "#0d6efd"),
             ("Aprovadas", data["total_aprovadas"], "#198754"),
-            ("Aprov. c/ Recom.", data["total_aprovadas_com_recomendacoes"], "#6c757d"),
+            ("Aprov. c/ Recom.", data["total_aprovadas_com_recomendacoes"], "#F7630C"),
             ("Negadas", data["total_recusadas"], "#dc3545"),
             ("Em Análise", data["total_analise"], "#ffc107"),
-            ("Pendentes", data["total_pendentes"], "#0dcaf0"),
+            ("Pendentes", data["total_pendentes"], "#718096"),
         ]
 
         rows = []
