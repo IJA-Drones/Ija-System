@@ -324,7 +324,7 @@
                                     <div class="mt-1">
                                         <span class="badge
                                             {% if p.status=='PENDENTE' %}bg-secondary
-                                            {% elif p.status=='EM ANALISE' %}bg-warning
+                                            {% elif p.status=='EM ANALISE' or p.status=='EM ANÁLISE' %}bg-warning
                                             {% elif p.status=='APROVADO COM RECOMENDAÇÕES' %}bg-recomended
                                             {% elif p.status=='APROVADO' %}bg-success
                                             {% elif p.status=='NEGADO' %}bg-danger
