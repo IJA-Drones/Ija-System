@@ -1,4 +1,4 @@
-from flask import abort, flash, redirect, render_template, request, send_file, url_for
+from flask import abort, current_app, flash, redirect, render_template, request, send_file, url_for
 from flask_login import current_user, login_required
 from sqlalchemy.exc import IntegrityError
 
@@ -60,9 +60,10 @@ def register_routes(bp):
             except IntegrityError:
                 db.session.rollback()
                 flash("Esse login ja esta em uso. Escolha outro.", "danger")
-            except Exception as exc:
+            except Exception:
                 db.session.rollback()
-                flash(f"Erro ao cadastrar UVIS: {exc}", "danger")
+                current_app.logger.exception("Erro ao cadastrar UVIS.")
+                flash("Erro interno ao cadastrar a UVIS. Tente novamente.", "danger")
 
         return render_template("admin_uvis_novo.html")
 
@@ -147,9 +148,10 @@ def register_routes(bp):
             except IntegrityError:
                 db.session.rollback()
                 flash("Esse login ja esta em uso. Escolha outro.", "danger")
-            except Exception as exc:
+            except Exception:
                 db.session.rollback()
-                flash(f"Erro ao salvar: {exc}", "danger")
+                current_app.logger.exception("Erro ao editar UVIS %s.", uvis.id)
+                flash("Erro interno ao salvar a UVIS. Tente novamente.", "danger")
 
         return render_template("admin_uvis_editar.html", uvis=uvis)
 

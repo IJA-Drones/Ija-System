@@ -102,10 +102,18 @@ def build_relatorios_solicitacoes_context(user, args):
 
     print(f"DEBUG FILTRO: Mes selecionado: {mes_atual} | String gerada: {filtro_data}")
 
+    total_concluidas = sum(
+        total for status, total in status_counts.items()
+        if "CONCLU" in (status or "").upper()
+    )
+    total_canceladas = status_counts.get("CANCELADO", 0)
+
     return {
         "total_solicitacoes": sum(status_counts.values()),
         "total_aprovadas": status_counts.get("APROVADO", 0),
         "total_aprovadas_com_recomendacoes": status_counts.get("APROVADO COM RECOMENDAÇÕES", 0),
+        "total_concluidas": total_concluidas,
+        "total_canceladas": total_canceladas,
         "total_recusadas": status_counts.get("NEGADO", 0),
         "total_analise": status_counts.get("EM ANÁLISE", 0),
         "total_pendentes": status_counts.get("PENDENTE", 0),

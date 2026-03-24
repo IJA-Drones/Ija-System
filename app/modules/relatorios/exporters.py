@@ -191,11 +191,14 @@ def build_relatorio_pdf_export(user, args):
     data = _build_pdf_export_data(user, args)
 
     status_colors = {
-        "APROVADO": "#2ecc71",
-        "APROVADO COM RECOMENDAÇÕES": "#ee650a",
-        "EM ANÁLISE": "#f1c40f",
-        "PENDENTE": "#3498db",
-        "NEGADO": "#e74c3c",
+        "APROVADO": "#2f855a",
+        "APROVADO COM RECOMENDAÇÕES": "#F7630C",
+        "EM ANÁLISE": "#f3e526",
+        "PENDENTE": "#718096",
+        "NEGADO": "#e53e3e",
+        "CANCELADO": "#343a40",
+        "CONCLUÍDO": "#9B30FF",
+        "CONCLUIDO": "#9B30FF",
     }
 
     tmp_pdf = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")

@@ -33,8 +33,8 @@ def register_routes(bp):
             except NovoCadastroValidationError as exc:
                 flash(exc.message, exc.category)
                 return render_template("cadastro.html", **context)
-            except Exception as exc:
-                print(f"ERRO NOVO CADASTRO: {exc}")
+            except Exception:
+                current_app.logger.exception("Erro ao criar nova solicitacao.")
                 flash("Erro ao salvar o pedido.", "danger")
 
         return render_template("cadastro.html", **context)
@@ -56,8 +56,9 @@ def register_routes(bp):
             except SolicitacaoAccessError as exc:
                 flash(exc.message, exc.category)
                 return redirect(url_for(exc.redirect_endpoint))
-            except Exception as exc:
-                flash(f"Erro ao salvar a solicita\u00e7\u00e3o: {exc}", "danger")
+            except Exception:
+                current_app.logger.exception("Erro ao editar solicitacao %s.", id)
+                flash("Erro interno ao salvar a solicitacao. Tente novamente.", "danger")
                 context = build_editar_solicitacao_context(current_user, id)
 
         return render_template("editar_solicitacao.html", **context)

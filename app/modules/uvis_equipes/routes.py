@@ -1,4 +1,4 @@
-from flask import abort, flash, redirect, render_template, request, url_for
+from flask import abort, current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 from sqlalchemy.exc import IntegrityError
 
@@ -192,9 +192,10 @@ def register_routes(bp):
             except IntegrityError:
                 db.session.rollback()
                 errors["login_equipe"] = "Este login ja esta em uso. Escolha outro."
-            except Exception as exc:
+            except Exception:
                 db.session.rollback()
-                flash(f"Erro ao criar equipe: {exc}", "danger")
+                current_app.logger.exception("Erro ao criar equipe UVIS para usuario %s.", current_user.id)
+                flash("Erro interno ao criar a equipe. Tente novamente.", "danger")
 
             return render_template("uvis_equipe_criar.html", form=form, errors=errors)
 

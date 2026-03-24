@@ -1,4 +1,4 @@
-from flask import abort, flash, jsonify, redirect, render_template, request, url_for
+from flask import abort, current_app, flash, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
 from app.extensions import db
@@ -74,9 +74,10 @@ def register_routes(bp):
                 create_drone(cleaned)
                 flash("Drone cadastrado com sucesso!", "success")
                 return redirect(url_for("main.cadastrar_drone"))
-            except Exception as exc:
+            except Exception:
                 db.session.rollback()
-                flash(f"Erro ao cadastrar drone: {str(exc)}", "danger")
+                current_app.logger.exception("Erro ao cadastrar drone.")
+                flash("Erro interno ao cadastrar o drone. Tente novamente.", "danger")
                 return render_template("cadastrar_drone.html", form=form, errors=errors, equipes=equipes)
 
         return render_template("cadastrar_drone.html", form=form, errors=errors, equipes=equipes)
@@ -107,9 +108,10 @@ def register_routes(bp):
                 update_drone(drone, cleaned)
                 flash("Drone atualizado com sucesso!", "success")
                 return redirect(url_for("main.listar_drones"))
-            except Exception as exc:
+            except Exception:
                 db.session.rollback()
-                flash(f"Erro ao atualizar drone: {str(exc)}", "danger")
+                current_app.logger.exception("Erro ao atualizar drone %s.", drone.id)
+                flash("Erro interno ao atualizar o drone. Tente novamente.", "danger")
                 return render_template(
                     "editar_drone.html",
                     drone=drone,
@@ -135,9 +137,9 @@ def register_routes(bp):
         try:
             delete_drone(drone)
             flash("Drone removido com sucesso.", "success")
-        except Exception as exc:
+        except Exception:
             db.session.rollback()
-            print("ERRO AO DELETAR DRONE:", repr(exc))
+            current_app.logger.exception("Erro ao deletar drone %s.", drone.id)
             flash("Erro ao remover drone. Verifique vinculos (baterias/OS) e tente novamente.", "danger")
 
         return redirect(url_for("main.listar_drones"))
@@ -163,9 +165,10 @@ def register_routes(bp):
                 create_bateria(cleaned)
                 flash("Bateria cadastrada com sucesso!", "success")
                 return redirect(url_for("main.listar_baterias"))
-            except Exception as exc:
+            except Exception:
                 db.session.rollback()
-                flash(f"Erro ao cadastrar bateria: {str(exc)}", "danger")
+                current_app.logger.exception("Erro ao cadastrar bateria.")
+                flash("Erro interno ao cadastrar a bateria. Tente novamente.", "danger")
                 return render_template("cadastrar_bateria.html", form=form, errors=errors, drones=drones)
 
         if drone_id_pre and db.session.get(Drones, drone_id_pre):
@@ -199,9 +202,10 @@ def register_routes(bp):
                 update_bateria(bateria, cleaned)
                 flash("Bateria atualizada com sucesso!", "success")
                 return redirect(url_for("main.listar_baterias"))
-            except Exception as exc:
+            except Exception:
                 db.session.rollback()
-                flash(f"Erro ao atualizar bateria: {str(exc)}", "danger")
+                current_app.logger.exception("Erro ao atualizar bateria %s.", bateria.id)
+                flash("Erro interno ao atualizar a bateria. Tente novamente.", "danger")
                 return render_template(
                     "editar_bateria.html",
                     bateria=bateria,
@@ -227,9 +231,10 @@ def register_routes(bp):
         try:
             delete_bateria(bateria)
             flash("Bateria removida com sucesso.", "success")
-        except Exception as exc:
+        except Exception:
             db.session.rollback()
-            flash(f"Erro ao remover bateria: {str(exc)}", "danger")
+            current_app.logger.exception("Erro ao remover bateria %s.", bateria.id)
+            flash("Erro interno ao remover a bateria. Tente novamente.", "danger")
 
         return redirect(url_for("main.listar_baterias"))
 
@@ -246,6 +251,7 @@ def register_routes(bp):
     @bp.route("/equipamentos/baterias/update_ciclos/<int:id>", methods=["POST"], endpoint="update_ciclos")
     @login_required
     def update_ciclos(id):
+        _require_admin()
         bateria = Baterias.query.get_or_404(id)
         return jsonify(update_bateria_ciclos(bateria, request.get_json() or {}))
 
@@ -261,9 +267,9 @@ def register_routes(bp):
                 return redirect(url_for("main.listar_drones"))
 
             flash(f"Drone {drone.renomacao} enviado para manutencao.", "success")
-        except Exception as exc:
+        except Exception:
             db.session.rollback()
-            print("ERRO AO ENVIAR DRONE PARA MANUTENCAO:", repr(exc))
+            current_app.logger.exception("Erro ao enviar drone %s para manutencao.", drone.id)
             flash("Erro ao enviar o drone para manutencao.", "danger")
 
         return redirect(url_for("main.listar_drones"))

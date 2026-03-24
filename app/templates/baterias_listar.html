@@ -175,11 +175,11 @@
                                         </span>
                                     </div>
                                     <div class="input-group input-group-sm shadow-sm border rounded-3 overflow-hidden mb-1">
-                                        <button class="btn btn-outline-danger border-0 px-2" type="button" onclick="atualizarCiclo({{ b.id }}, 'sub')">
+                                        <button class="btn btn-outline-danger border-0 px-2" type="button" onclick="atualizarCiclo({{ b.id }}, 'sub', this)">
                                             <i class="bi bi-dash-lg"></i>
                                         </button>
                                         <input type="number" id="inputCiclo{{ b.id }}" class="form-control border-0 text-center bg-white" style="font-size: 0.8rem; height: 30px;" placeholder="1">
-                                        <button class="btn btn-outline-success border-0 px-2" type="button" onclick="atualizarCiclo({{ b.id }}, 'add')">
+                                        <button class="btn btn-outline-success border-0 px-2" type="button" onclick="atualizarCiclo({{ b.id }}, 'add', this)">
                                             <i class="bi bi-plus-lg"></i>
                                         </button>
                                     </div>
@@ -216,7 +216,7 @@
                                         {% if is_admin %}
                                         <li><hr class="dropdown-divider"></li>
                                         <li>
-                                            <form method="post" action="{{ url_for('main.deletar_bateria', bateria_id=b.id) }}" onsubmit="return confirm('Excluir bateria?');">
+                                            <form method="post" action="{{ url_for('main.deletar_bateria', bateria_id=b.id) }}" class="form-deletar m-0">
                                                 <button type="submit" class="dropdown-item py-2 text-danger"><i class="bi bi-trash me-2"></i> Excluir Bateria</button>
                                             </form>
                                         </li>
@@ -236,10 +236,58 @@
 
 {% block scripts %}
 <script>
-function atualizarCiclo(id, operacao) {
-    let input = document.getElementById('inputCiclo' + id);
-    let valorInput = parseInt(input.value);
-    let quantidade = isNaN(valorInput) ? 1 : valorInput;
+function showBatteryCycleToast(icon, title) {
+    if (typeof Swal === 'undefined') return;
+
+    Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon,
+        title,
+        showConfirmButton: false,
+        timer: 1800,
+        timerProgressBar: true
+    });
+}
+
+function setBatteryCycleLoading(inputGroup, triggerButton, isLoading) {
+    if (!inputGroup) return;
+
+    const input = inputGroup.querySelector('input');
+    const buttons = inputGroup.querySelectorAll('button');
+
+    buttons.forEach((button) => {
+        button.disabled = isLoading;
+    });
+
+    if (input) {
+        input.disabled = isLoading;
+    }
+
+    if (!triggerButton) return;
+
+    if (isLoading) {
+        triggerButton.dataset.originalHtml = triggerButton.innerHTML;
+        triggerButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+        inputGroup.classList.add('opacity-75');
+        return;
+    }
+
+    if (triggerButton.dataset.originalHtml) {
+        triggerButton.innerHTML = triggerButton.dataset.originalHtml;
+        delete triggerButton.dataset.originalHtml;
+    }
+
+    inputGroup.classList.remove('opacity-75');
+}
+
+function atualizarCiclo(id, operacao, triggerButton) {
+    const input = document.getElementById('inputCiclo' + id);
+    const inputGroup = input ? input.closest('.input-group') : null;
+    const valorInput = parseInt(input.value, 10);
+    const quantidade = Number.isNaN(valorInput) ? 1 : valorInput;
+
+    setBatteryCycleLoading(inputGroup, triggerButton, true);
 
     fetch("{{ url_for('main.update_ciclos', id=0) }}".replace('0', id), {
         method: 'POST',
@@ -249,17 +297,33 @@ function atualizarCiclo(id, operacao) {
         },
         body: JSON.stringify({ quantidade: quantidade, operacao: operacao })
     })
-    .then(response => response.json())
-    .then(data => {
+    .then(async (response) => {
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok || data.error) {
+            throw new Error(data.error || 'Nao foi possivel atualizar os ciclos.');
+        }
+
+        return data;
+    })
+    .then((data) => {
         document.getElementById('valCiclo' + id).innerText = data.novo_ciclo + ' ciclos';
-        let barra = document.getElementById('progresso' + id);
-        let porcentagem = (data.novo_ciclo / 2.5) > 100 ? 100 : (data.novo_ciclo / 2.5);
+        const barra = document.getElementById('progresso' + id);
+        const porcentagem = (data.novo_ciclo / 2.5) > 100 ? 100 : (data.novo_ciclo / 2.5);
+
         barra.style.width = porcentagem + '%';
         barra.classList.remove('bg-success', 'bg-danger');
         barra.classList.add(data.cor);
         input.value = '';
+
+        showBatteryCycleToast('success', 'Ciclo atualizado com sucesso.');
     })
-    .catch(error => console.error('Erro:', error));
+    .catch((error) => {
+        showBatteryCycleToast('error', error.message || 'Erro ao atualizar os ciclos.');
+    })
+    .finally(() => {
+        setBatteryCycleLoading(inputGroup, triggerButton, false);
+    });
 }
 </script>
 {% endblock %}

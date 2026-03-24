@@ -89,9 +89,10 @@ def register_routes(bp):
                 create_veiculo(cleaned)
                 flash("Veículo cadastrado com sucesso!", "success")
                 return redirect(url_for("main.listar_veiculos"))
-            except Exception as exc:
+            except Exception:
                 db.session.rollback()
-                flash(f"Erro ao cadastrar veículo: {str(exc)}", "danger")
+                current_app.logger.exception("Erro ao cadastrar veiculo.")
+                flash("Erro interno ao cadastrar o veiculo. Tente novamente.", "danger")
                 return render_template(
                     "cadastrar_veiculo.html",
                     form=form,
@@ -136,9 +137,10 @@ def register_routes(bp):
                 update_veiculo(veiculo, cleaned)
                 flash("Veículo atualizado!", "success")
                 return redirect(url_for("main.listar_veiculos"))
-            except Exception as exc:
+            except Exception:
                 db.session.rollback()
-                flash(f"Erro ao atualizar: {str(exc)}", "danger")
+                current_app.logger.exception("Erro ao atualizar veiculo %s.", veiculo.id)
+                flash("Erro interno ao atualizar o veiculo. Tente novamente.", "danger")
                 return render_template(
                     "cadastrar_veiculo.html",
                     form=form,
@@ -164,9 +166,10 @@ def register_routes(bp):
         try:
             delete_veiculo(veiculo)
             flash("Veículo removido!", "success")
-        except Exception as exc:
+        except Exception:
             db.session.rollback()
-            flash(f"Erro ao remover: {str(exc)}", "danger")
+            current_app.logger.exception("Erro ao remover veiculo %s.", veiculo.id)
+            flash("Erro interno ao remover o veiculo. Tente novamente.", "danger")
 
         return redirect(url_for("main.listar_veiculos"))
 

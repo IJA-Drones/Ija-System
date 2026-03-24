@@ -17,10 +17,15 @@
 
 {% set status_cores = {
     "APROVADO": "success",
-    "APROVADO COM RECOMENDAÇÕES": "success",
+    "APROVADO COM RECOMENDAÇÕES": "recomended",
+    "APROVADO COM RECOMENDACOES": "recomended",
     "NEGADO": "danger",
     "EM ANÁLISE": "warning",
-    "PENDENTE": "info"
+    "EM ANALISE": "warning",
+    "PENDENTE": "secondary",
+    "CANCELADO": "dark",
+    "CONCLUÍDO": "completed",
+    "CONCLUIDO": "completed"
 } %}
 <div class="container-fluid py-4" style="max-width: 1200px;">
 
@@ -165,7 +170,7 @@
 
     <div class="row g-2 mb-4">
 
-    <div class="col-6 col-md-4 col-lg-2">
+    <div class="col-6 col-md-4 col-lg-3">
         <div class="card info status-primary h-100 shadow-sm rounded-4 overflow-hidden">
         <div class="card-body">
             <h6 class="text-uppercase mb-2 text-muted">Total</h6>
@@ -174,7 +179,25 @@
         </div>
     </div>
 
-    <div class="col-6 col-md-4 col-lg-2">
+    <div class="col-6 col-md-4 col-lg-3">
+        <div class="card info status-secondary h-100 shadow-sm rounded-4 overflow-hidden">
+        <div class="card-body">
+            <h6 class="text-uppercase mb-2 text-muted">Pendentes</h6>
+            <h2 class="mb-0 fw-bold text-secondary">{{ total_pendentes }}</h2>
+        </div>
+        </div>
+    </div>
+
+    <div class="col-6 col-md-4 col-lg-3">
+        <div class="card info status-warning h-100 shadow-sm rounded-4 overflow-hidden">
+        <div class="card-body">
+            <h6 class="text-uppercase mb-2 text-muted">Em Análise</h6>
+            <h2 class="mb-0 fw-bold text-warning">{{ total_analise }}</h2>
+        </div>
+        </div>
+    </div>
+
+    <div class="col-6 col-md-4 col-lg-3">
         <div class="card info status-success h-100 shadow-sm rounded-4 overflow-hidden">
         <div class="card-body">
             <h6 class="text-uppercase mb-2 text-muted">Aprovadas</h6>
@@ -183,7 +206,7 @@
         </div>
     </div>
 
-    <div class="col-6 col-md-4 col-lg-2">
+    <div class="col-6 col-md-4 col-lg-3">
         <div class="card info status-recomended h-100 shadow-sm rounded-4 overflow-hidden">
         <div class="card-body">
             <h6 class="text-uppercase mb-2 text-muted" style="font-size: 0.85rem;">
@@ -194,7 +217,16 @@
         </div>
     </div>
 
-    <div class="col-6 col-md-4 col-lg-2">
+    <div class="col-6 col-md-4 col-lg-3">
+        <div class="card info status-completed h-100 shadow-sm rounded-4 overflow-hidden">
+        <div class="card-body">
+            <h6 class="text-uppercase mb-2 text-muted">Concluídas</h6>
+            <h2 class="mb-0 fw-bold text-completed">{{ total_concluidas }}</h2>
+        </div>
+        </div>
+    </div>
+
+    <div class="col-6 col-md-4 col-lg-3">
         <div class="card info status-danger h-100 shadow-sm rounded-4 overflow-hidden">
         <div class="card-body">
             <h6 class="text-uppercase mb-2 text-muted">Recusadas</h6>
@@ -203,20 +235,11 @@
         </div>
     </div>
 
-    <div class="col-6 col-md-4 col-lg-2">
-        <div class="card info status-warning h-100 shadow-sm rounded-4 overflow-hidden">
+    <div class="col-6 col-md-4 col-lg-3">
+        <div class="card info status-cancelled h-100 shadow-sm rounded-4 overflow-hidden">
         <div class="card-body">
-            <h6 class="text-uppercase mb-2 text-muted">Em Análise</h6>
-            <h2 class="mb-0 fw-bold text-warning">{{ total_analise }}</h2>
-        </div>
-        </div>
-    </div>
-
-    <div class="col-6 col-md-4 col-lg-2">
-        <div class="card info status-info h-100 shadow-sm rounded-4 overflow-hidden">
-        <div class="card-body">
-            <h6 class="text-uppercase mb-2 text-muted">Pendentes</h6>
-            <h2 class="mb-0 fw-bold text-info">{{ total_pendentes }}</h2>
+            <h6 class="text-uppercase mb-2 text-muted">Canceladas</h6>
+            <h2 class="mb-0 fw-bold text-cancelled">{{ total_canceladas }}</h2>
         </div>
         </div>
     </div>
@@ -520,7 +543,20 @@
     Chart.defaults.responsive = true;
     Chart.defaults.maintainAspectRatio = false;
 
-    const palette = ["#0d6efd", "#20c997", "#ffc107", "#dc3545", "#6f42c1", "#0dcaf0", "#fd7e14", "#198754", "#adb5bd", "#343a40"];
+    const cssVars = getComputedStyle(document.documentElement);
+    const cssColor = (name, fallback) => cssVars.getPropertyValue(name).trim() || fallback;
+    const palette = [
+        cssColor("--color-primary", "#2c5282"),
+        cssColor("--color-accent", "#00a3c4"),
+        cssColor("--color-success", "#2f855a"),
+        cssColor("--color-recomended", "#F7630C"),
+        cssColor("--color-completed", "#9B30FF"),
+        cssColor("--color-danger", "#e53e3e"),
+        cssColor("--color-warning", "#f3e526"),
+        cssColor("--color-text-muted", "#718096"),
+        "#343a40",
+        "#0dcaf0"
+    ];
 
     // =========================
     
@@ -706,23 +742,31 @@
     // Mapa fixo de cores por status
     // =========================
     const statusColorsMap = {
-        "APROVADO": "#198754",     // verde
-        "APROVADA": "#198754",
-        "APROVADOS": "#198754",
+        "APROVADO": cssColor("--color-success", "#2f855a"),
+        "APROVADA": cssColor("--color-success", "#2f855a"),
+        "APROVADOS": cssColor("--color-success", "#2f855a"),
 
-        "RECUSADO": "#dc3545",     // vermelho
-        "RECUSADA": "#dc3545",
-        "RECUSADOS": "#dc3545",
-        "NEGADO": "#dc3545",
+        "RECUSADO": cssColor("--color-danger", "#e53e3e"),
+        "RECUSADA": cssColor("--color-danger", "#e53e3e"),
+        "RECUSADOS": cssColor("--color-danger", "#e53e3e"),
+        "NEGADO": cssColor("--color-danger", "#e53e3e"),
 
-        "EM ANÁLISE": "#ffc107",   // amarelo
-        "EM ANALISE": "#ffc107",
+        "EM ANÁLISE": cssColor("--color-warning", "#f3e526"),
+        "EM ANALISE": cssColor("--color-warning", "#f3e526"),
 
-        "PENDENTE": "#0d6efd",     // azul
-        "PENDENTES": "#0d6efd",
+        "PENDENTE": cssColor("--color-text-muted", "#718096"),
+        "PENDENTES": cssColor("--color-text-muted", "#718096"),
 
-        "APROVADO COM RECOMENDAÇÕES": "#ee650a",     // laranja
-        "APROVADO COM RECOMENDACOES": "#ee650a"
+        "CANCELADO": "#343a40",
+        "CANCELADA": "#343a40",
+
+        "CONCLUÍDO": cssColor("--color-completed", "#9B30FF"),
+        "CONCLUÍDA": cssColor("--color-completed", "#9B30FF"),
+        "CONCLUIDO": cssColor("--color-completed", "#9B30FF"),
+        "CONCLUIDA": cssColor("--color-completed", "#9B30FF"),
+
+        "APROVADO COM RECOMENDAÇÕES": cssColor("--color-recomended", "#F7630C"),
+        "APROVADO COM RECOMENDACOES": cssColor("--color-recomended", "#F7630C")
     };
 
     // =========================

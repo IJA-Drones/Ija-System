@@ -368,17 +368,6 @@
     <div class="checklist-intro-text">Revise primeiro o veiculo, depois o drone e finalize com os dados do piloto. O ultimo checklist salvo continua sendo usado como base para reduzir retrabalho.</div>
   </div>
 
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      {% for category, message in messages %}
-        <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm mb-4 rounded-3" role="alert">
-          <i class="bi bi-info-circle me-2"></i> {{ message }}
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-      {% endfor %}
-    {% endif %}
-  {% endwith %}
-
   <form method="post" id="formChecklist">
     <div class="summary-row mb-4">
       <div class="summary-card">

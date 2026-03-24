@@ -20,20 +20,25 @@ def register_routes(bp):
     def agenda():
         try:
             return render_template("agenda.html", **build_agenda_context(current_user, request.args))
-        except Exception as exc:
+        except Exception:
             current_app.logger.exception("Erro na agenda.")
-            return f"ERRO NA AGENDA: {str(exc)}"
+            return render_template(
+                "erro.html",
+                codigo=500,
+                titulo="Erro na agenda",
+                mensagem="Nao foi possivel carregar a agenda no momento. Tente novamente em instantes.",
+            ), 500
 
     @bp.route("/agenda/rotas-dia", endpoint="agenda_rotas_dia")
     @login_required
     def agenda_rotas_dia():
         try:
             return jsonify(build_agenda_rotas_payload(current_user, request.args))
-        except ValueError as exc:
-            return jsonify(ok=False, error=str(exc)), 400
-        except Exception as exc:
+        except ValueError:
+            return jsonify(ok=False, error="Dados invalidos para montar a rota."), 400
+        except Exception:
             current_app.logger.exception("Erro ao montar rota do dia.")
-            return jsonify(ok=False, error=str(exc)), 500
+            return jsonify(ok=False, error="Erro interno ao montar a rota do dia."), 500
 
     @bp.route("/agenda/exportar_excel", endpoint="agenda_exportar_excel")
     @login_required

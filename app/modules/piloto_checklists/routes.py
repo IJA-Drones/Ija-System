@@ -50,10 +50,10 @@ def register_routes(bp):
             except PilotoChecklistError as exc:
                 flash(str(exc), exc.category)
                 return redirect(url_for(exc.redirect_endpoint))
-            except Exception as exc:
+            except Exception:
                 db.session.rollback()
-                current_app.logger.error("Erro ao salvar checklist (POST): %s", exc)
-                flash(f"Erro ao salvar: {exc}", "danger")
+                current_app.logger.exception("Erro ao salvar checklist semanal.")
+                flash("Erro interno ao salvar o checklist. Tente novamente.", "danger")
 
                 try:
                     context = build_piloto_checklist_context(current_user, request.args)

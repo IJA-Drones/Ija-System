@@ -448,6 +448,9 @@ body.sidebar-collapsed .app-content {
 .card.info.status-warning::before { background: var(--color-warning); }
 .card.info.status-info::before { background: var(--color-accent); }
 .card.info.status-recomended::before { background: var(--color-recomended); }
+.card.info.status-completed::before { background: var(--color-completed); }
+.card.info.status-secondary::before { background: var(--color-text-muted); }
+.card.info.status-cancelled::before { background: #343a40; }
 
 /* Helpers de Texto */
 .text-primary { color: var(--color-primary) !important; }
@@ -456,6 +459,8 @@ body.sidebar-collapsed .app-content {
 .text-warning { color: var(--color-warning) !important; }
 .text-info { color: var(--color-accent) !important; }
 .text-recomended { color: var(--color-recomended) !important; }
+.text-completed { color: var(--color-completed) !important; }
+.text-cancelled { color: #343a40 !important; }
 
 .text-dark { color: var(--color-primary-dark) !important; }
 .text-muted { color: var(--color-text-muted) !important; }

@@ -1,4 +1,4 @@
-from flask import abort, flash, redirect, render_template, request, url_for
+from flask import abort, current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 from sqlalchemy.exc import IntegrityError
 
@@ -74,9 +74,10 @@ def register_routes(bp):
                 db.session.rollback()
                 errors["login"] = "Esse login ja esta em uso."
                 flash(errors["login"], "danger")
-            except Exception as exc:
+            except Exception:
                 db.session.rollback()
-                flash(f"Erro ao salvar: {exc}", "danger")
+                current_app.logger.exception("Erro ao criar usuario administrativo.")
+                flash("Erro interno ao criar o usuario. Tente novamente.", "danger")
 
         return render_template("admin_usuario_novo.html", errors=errors, form=form)
 
@@ -169,9 +170,10 @@ def register_routes(bp):
             except IntegrityError:
                 db.session.rollback()
                 errors["login"] = "Esse login ja esta em uso."
-            except Exception as exc:
+            except Exception:
                 db.session.rollback()
-                flash(f"Erro ao salvar: {exc}", "danger")
+                current_app.logger.exception("Erro ao atualizar usuario administrativo %s.", usuario.id)
+                flash("Erro interno ao atualizar o usuario. Tente novamente.", "danger")
 
             return render_template(
                 "admin_usuario_editar.html",
@@ -208,7 +210,11 @@ def register_routes(bp):
 
         senha = (request.form.get("senha") or "").strip()
         senha2 = (request.form.get("senha2") or "").strip()
-        reset_error = validate_password_reset(senha, senha2)
+        reset_error = validate_password_reset(
+            senha,
+            senha2,
+            user_inputs=(user.nome_uvis, user.login, user.regiao, user.tipo_usuario),
+        )
         if reset_error:
             flash(reset_error, "warning")
             return redirect(url_for("main.admin_usuarios_listar"))
@@ -217,9 +223,10 @@ def register_routes(bp):
             user.set_senha(senha)
             db.session.commit()
             flash("Senha atualizada com sucesso!", "success")
-        except Exception as exc:
+        except Exception:
             db.session.rollback()
-            flash(f"Erro ao atualizar senha: {exc}", "danger")
+            current_app.logger.exception("Erro ao redefinir senha do usuario %s.", user.id)
+            flash("Erro interno ao atualizar a senha. Tente novamente.", "danger")
 
         return redirect(url_for("main.admin_usuarios_listar"))
 
@@ -245,8 +252,9 @@ def register_routes(bp):
         except IntegrityError:
             db.session.rollback()
             flash("Nao foi possivel excluir o usuario porque ainda existem registros vinculados a ele no sistema.", "danger")
-        except Exception as exc:
+        except Exception:
             db.session.rollback()
-            flash(f"Erro ao excluir: {exc}", "danger")
+            current_app.logger.exception("Erro ao excluir usuario administrativo %s.", user.id)
+            flash("Erro interno ao excluir o usuario. Tente novamente.", "danger")
 
         return redirect(url_for("main.admin_usuarios_listar"))
