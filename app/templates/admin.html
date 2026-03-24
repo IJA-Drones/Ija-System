@@ -515,8 +515,13 @@
                                 <div class="mb-2">
                                     <small class="text-muted d-block text-uppercase fw-bold" style="font-size: 0.65rem;">Status Atual</small>
                                     <span class="badge w-100 py-2 mt-1
-                                        {% if p.status == 'APROVADO' %}bg-success
+                                        {% if p.status == 'PENDENTE' %}bg-secondary
+                                        {% elif p.status == 'EM ANALISE' or p.status == 'EM ANÁLISE' %}bg-warning text-dark
+                                        {% elif p.status == 'APROVADO COM RECOMENDAÇÕES' %}bg-recomended
+                                        {% elif p.status == 'APROVADO' %}bg-success
                                         {% elif p.status == 'NEGADO' %}bg-danger
+                                        {% elif 'CONCLU' in (p.status or '') %}bg-completed
+                                        {% elif p.status == 'CANCELADO' %}bg-dark
                                         {% else %}bg-warning text-dark{% endif %}">
                                         {{ p.status }}
                                     </span>
