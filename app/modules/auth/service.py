@@ -1,7 +1,5 @@
 from app.models import Usuario
-
-
-ADMIN_USER_TYPES = {"admin", "operario", "visualizar", "visualizador"}
+from app.shared.access import ADMIN_PANEL_VIEW_TYPES
 
 
 def authenticate_user(login_value, password):
@@ -12,7 +10,7 @@ def authenticate_user(login_value, password):
 
 
 def get_authenticated_redirect_endpoint(user):
-    if user.tipo_usuario in ADMIN_USER_TYPES:
+    if user.tipo_usuario in ADMIN_PANEL_VIEW_TYPES:
         return "main.admin_dashboard"
     if user.tipo_usuario == "equipe_uvis":
         return "main.dashboard_equipe_uvis"

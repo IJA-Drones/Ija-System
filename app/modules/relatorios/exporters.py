@@ -15,6 +15,7 @@ from reportlab.platypus import PageBreak, Paragraph, SimpleDocTemplate, Spacer, 
 from app.extensions import db
 from app.models import Solicitacao, Usuario
 from app.modules.relatorios.service import build_relatorio_os_export_data
+from app.shared.access import apply_regiao_scope, apply_solicitacao_regiao_scope
 from app.shared.query_filters import aplicar_filtros_base
 
 try:
@@ -47,12 +48,14 @@ def _build_pdf_export_data(user, args):
         filtro_data,
         uvis_id,
     )
+    base_query = apply_solicitacao_regiao_scope(base_query, user)
 
     query_detalhe = aplicar_filtros_base(
         db.session.query(Solicitacao, Usuario).join(Usuario, Usuario.id == Solicitacao.usuario_id),
         filtro_data,
         uvis_id,
     )
+    query_detalhe = apply_regiao_scope(query_detalhe, user, Usuario.regiao)
 
     query_results = query_detalhe.order_by(Solicitacao.data_criacao.desc()).all()
 
@@ -68,10 +71,14 @@ def _build_pdf_export_data(user, args):
     dados_regiao = [
         (regiao or "Não informado", total)
         for regiao, total in (
-            aplicar_filtros_base(
-                db.session.query(Usuario.regiao, db.func.count(Solicitacao.id)).join(Usuario),
-                filtro_data,
-                uvis_id,
+            apply_regiao_scope(
+                aplicar_filtros_base(
+                    db.session.query(Usuario.regiao, db.func.count(Solicitacao.id)).join(Usuario),
+                    filtro_data,
+                    uvis_id,
+                ),
+                user,
+                Usuario.regiao,
             )
             .group_by(Usuario.regiao)
             .all()
@@ -121,12 +128,16 @@ def _build_pdf_export_data(user, args):
     dados_unidade = [
         (uvis_nome or "Não informado", total)
         for uvis_nome, total in (
-            aplicar_filtros_base(
-                db.session.query(Usuario.nome_uvis, db.func.count(Solicitacao.id))
-                .join(Usuario)
-                .filter(Usuario.tipo_usuario == "uvis"),
-                filtro_data,
-                uvis_id,
+            apply_regiao_scope(
+                aplicar_filtros_base(
+                    db.session.query(Usuario.nome_uvis, db.func.count(Solicitacao.id))
+                    .join(Usuario)
+                    .filter(Usuario.tipo_usuario == "uvis"),
+                    filtro_data,
+                    uvis_id,
+                ),
+                user,
+                Usuario.regiao,
             )
             .group_by(Usuario.nome_uvis)
             .all()
@@ -141,7 +152,12 @@ def _build_pdf_export_data(user, args):
     dados_mensais = [
         tuple(row)
         for row in (
-            db.session.query(func_mes.label("mes"), db.func.count(Solicitacao.id))
+            apply_solicitacao_regiao_scope(
+                db.session.query(func_mes.label("mes"), db.func.count(Solicitacao.id)).filter(
+                    Solicitacao.data_agendamento.isnot(None)
+                ),
+                user,
+            )
             .group_by("mes")
             .order_by("mes")
             .all()
@@ -558,6 +574,7 @@ def build_relatorio_excel_export(user, args):
         Usuario.nome_uvis,
         Usuario.regiao,
     ).join(Usuario, Usuario.id == Solicitacao.usuario_id)
+    query_dados = apply_regiao_scope(query_dados, user, Usuario.regiao)
 
     if db.engine.name == "postgresql":
         query_dados = query_dados.filter(
@@ -580,7 +597,14 @@ def build_relatorio_excel_export(user, args):
 
     nome_uvis_filtro = None
     if uvis_id:
-        nome_uvis_filtro = db.session.query(Usuario.nome_uvis).filter(Usuario.id == uvis_id).scalar()
+        nome_uvis_filtro = (
+            apply_regiao_scope(
+                db.session.query(Usuario.nome_uvis).filter(Usuario.id == uvis_id),
+                user,
+                Usuario.regiao,
+            )
+            .scalar()
+        )
 
     wb = Workbook()
     ws = wb.active

@@ -204,7 +204,7 @@
             </a>
           </li>
 
-          {% if current_user.tipo_usuario in ['admin', 'operario', 'visualizar'] %}
+          {% if current_user.tipo_usuario in ['admin', 'operario', 'visualizar', 'regional'] %}
           <li class="nav-item">
             <a
               class="nav-link {% if request.endpoint == 'main.admin_historico_os' %}active{% endif %}"
@@ -247,7 +247,7 @@
             </a>
           </li>
 
-          {% if current_user.tipo_usuario in ['admin', 'visualizar', 'operario'] %}
+          {% if current_user.tipo_usuario in ['admin', 'visualizar', 'operario', 'regional'] %}
           <li class="nav-item">
             <a
               class="nav-link {% if request.endpoint in ['main.relatorios', 'main.relatorios_solicitacoes', 'main.relatorios_os'] %}active{% endif %}"
@@ -338,7 +338,7 @@
 {% endif %}
           {% endif %} 
           {# ===================== PILOTOS ===================== #} 
-          {% if current_user.tipo_usuario in ['admin', 'visualizar'] %}
+          {% if current_user.tipo_usuario in ['admin', 'visualizar', 'regional'] %}
           <li class="nav-item">
             <button
               type="button"
@@ -422,7 +422,7 @@
         {% endif %}
 
           {% endif %} {# ===================== EQUIPES (ADMIN COMPLETO / UVIS SÓ LISTAR) ===================== #} 
-          {% if current_user.tipo_usuario in ['admin', 'uvis'] %}
+          {% if current_user.tipo_usuario in ['admin', 'uvis', 'regional'] %}
           <li class="nav-item">
             <button type="button" class="nav-link nav-link-toggle" data-bs-toggle="collapse" data-bs-target="#menuEquipes">
               <span>

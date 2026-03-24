@@ -2,7 +2,7 @@ import re
 import unicodedata
 
 
-ADMIN_CHATBOT_TYPES = {"admin", "operario", "visualizar"}
+ADMIN_CHATBOT_TYPES = {"admin", "operario", "visualizar", "regional"}
 
 
 UVIS_FAQ = [
@@ -99,12 +99,13 @@ UVIS_FAQ = [
 ADMIN_FAQ = [
     {
         "title": "Perfis e permissoes",
-        "keywords": ["acesso", "perfil", "permissao", "permissoes", "admin", "operario", "visualizar", "quem pode"],
+        "keywords": ["acesso", "perfil", "permissao", "permissoes", "admin", "operario", "visualizar", "regional", "quem pode"],
         "answer": (
             "<b>Perfis do painel:</b><br>"
             "- <b>Administrador</b>: acesso total (<b>editar</b>, <b>excluir</b>, <b>gerenciar UVIS</b>, <b>relatorios</b> e <b>agenda</b>).<br>"
             "- <b>Operario</b>: consegue <b>salvar decisoes</b> (<b>status</b>, <b>protocolo</b> e <b>justificativa</b>).<br>"
             "- <b>Visualizar</b>: <b>apenas leitura</b>.<br>"
+            "- <b>Regional</b>: <b>apenas leitura</b>, com acesso limitado a <b>sua regiao</b>.<br>"
         ),
     },
     {
@@ -147,7 +148,7 @@ ADMIN_FAQ = [
             "- <b>Status</b><br>"
             "- <b>Protocolo</b><br>"
             "- <b>Justificativa</b> (obrigatoria ao <b>negar</b> ou <b>orientar</b>)<br>"
-            "Se o perfil for <b>Visualizar</b>, fica em <b>somente leitura</b>."
+            "Se o perfil for <b>Visualizar</b> ou <b>Regional</b>, fica em <b>somente leitura</b>."
         ),
     },
     {

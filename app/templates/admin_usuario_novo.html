@@ -78,6 +78,9 @@
             {% if errors.get('regiao') %}
               <div class="invalid-feedback">{{ errors.get('regiao') }}</div>
             {% endif %}
+            <div class="form-text small">
+              Obrigatoria quando o tipo de usuario for regional.
+            </div>
           </div>
         </div>
 
@@ -91,6 +94,7 @@
             <select name="tipo_usuario" class="form-select {% if errors.get('tipo_usuario') %}is-invalid{% endif %}" required>
               <option value="">Selecione...</option>
               <option value="admin" {% if tipo == 'admin' %}selected{% endif %}>Admin</option>
+              <option value="regional" {% if tipo == 'regional' %}selected{% endif %}>Regional</option>
               <option value="operario" {% if tipo == 'operario' %}selected{% endif %}>Operário</option>
             </select>
 
@@ -99,6 +103,7 @@
             {% endif %}
             <div class="form-text small">
               Admin: total. Operário: alterações no painel (sem gestão geral).
+              Regional: consulta regional em modo leitura.
             </div>
           </div>
 

@@ -5,6 +5,7 @@ from app.modules.agenda_notificacoes.service import (
     build_agenda_context,
     build_agenda_export,
     build_agenda_rotas_payload,
+    can_export_agenda,
     clear_notificacoes,
     get_notificacao_or_404,
     list_notificacoes,
@@ -37,10 +38,10 @@ def register_routes(bp):
     @bp.route("/agenda/exportar_excel", endpoint="agenda_exportar_excel")
     @login_required
     def agenda_exportar_excel():
-        if getattr(current_user, "tipo_usuario", None) != "admin":
+        if not can_export_agenda(current_user):
             abort(403)
 
-        output, nome = build_agenda_export(request.args)
+        output, nome = build_agenda_export(current_user, request.args)
         return send_file(
             output,
             as_attachment=True,

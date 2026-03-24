@@ -144,17 +144,19 @@
         <h2 class="text-dark"><i class="bi bi-shield-lock-fill me-2 text-primary"></i> Painel de Gestão</h2>
 
         {# BOTÕES EXPORTAR #}
-        {% if current_user.tipo_usuario in ['admin', 'visualizar'] %}
+        {% if current_user.tipo_usuario in ['admin', 'visualizar', 'regional'] %}
         {# 'flex-wrap' aqui garante que os botões se organizem entre si se a tela for muito estreita #}
         <div class="admin-toolbar-actions">
             
             {# Substituímos o style fixo por uma classe que o Bootstrap entende, ou mantemos o style mas permitimos que ele diminua #}
+            {% if current_user.tipo_usuario in ['admin', 'visualizar'] %}
             <div class="admin-toolbar-slot flex-grow-1 flex-md-grow-0">
                 <a href="{{ url_for('main.novo') }}" class="btn btn-success shadow-sm w-100 d-flex align-items-center justify-content-center gap-2" style="height: 38px;">
                     <i class="bi bi-plus-lg"></i> 
                     <span>Nova Solicitação</span>
                 </a>
             </div>
+            {% endif %}
 
             <form method="GET" action="{{ url_for('main.exportar_excel') }}" class="p-0 m-0 flex-grow-1 flex-md-grow-0 admin-toolbar-slot">
                 <input type="hidden" name="status" value="{{ request.args.get('status', '') }}">
@@ -294,7 +296,7 @@
                                     #{{ p.id }} {{ p.usuario.nome_uvis }}
                                 </strong>
                                 {# FILTRO DE PERFIL: Aplica-se a ambos os alertas abaixo #}
-                                {% if current_user.tipo_usuario|lower in ['admin', 'visualizar', 'operario'] %}
+                                {% if current_user.tipo_usuario|lower in ['admin', 'visualizar', 'operario', 'regional'] %}
                                     
                                     {# 1. ALERTA GEOFENCING #}
                                     {% if p.area_restrita %}
@@ -536,7 +538,7 @@
                                 </div>
                                 {% endif %}
                                 <div class="mt-2 pt-2 border-top">
-                                {% if p.status != 'CANCELADO' %}
+                                {% if is_editable and p.status != 'CANCELADO' %}
                                     <form class = "form-cancelar" method="POST"
                                         action="{{ url_for('main.cancelar_solicitacao_admin', id=p.id) }}"
                                         >
@@ -742,7 +744,7 @@
 {# --- FIM DO CONTAINER PADRONIZADO --- #}
 
 {# --- CHATBOT (Mantido igual) --- #}
-{% if current_user.tipo_usuario in ['admin', 'operario', 'visualizar'] %}
+{% if current_user.tipo_usuario in ['admin', 'operario', 'visualizar', 'regional'] %}
 <button id="adminBotFab" class="bot-fab" title="Ajuda do painel" onclick="toggleAdminChat()">
     <i class="bi bi-robot"></i>
 </button>

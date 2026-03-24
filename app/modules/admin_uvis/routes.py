@@ -77,7 +77,7 @@ def register_routes(bp):
         codigo_setor = (request.args.get("codigo_setor") or "").strip()
         page = request.args.get("page", 1, type=int)
 
-        query = build_uvis_query(q, regiao, codigo_setor)
+        query = build_uvis_query(current_user, q, regiao, codigo_setor)
         total = query.count()
         paginacao = query.paginate(page=page, per_page=10, error_out=False)
 
@@ -195,7 +195,7 @@ def register_routes(bp):
         q = (request.args.get("q") or "").strip()
         regiao = (request.args.get("regiao") or "").strip()
         codigo_setor = (request.args.get("codigo_setor") or "").strip()
-        rows = build_uvis_query(q, regiao, codigo_setor).all()
+        rows = build_uvis_query(current_user, q, regiao, codigo_setor).all()
         output, filename = build_uvis_export(rows)
 
         return send_file(

@@ -17,9 +17,11 @@ from app.modules.relatorios.service import (
 
 def register_routes(bp):
     @bp.route("/relatorios/solicitacoes", methods=["GET"], endpoint="relatorios_solicitacoes")
+    @login_required
     def relatorios_solicitacoes():
-        if not current_user.is_authenticated:
-            return redirect(url_for("auth.login"))
+        if not can_access_relatorios_menu(current_user):
+            flash("Acesso restrito.", "danger")
+            return redirect(url_for("main.dashboard"))
 
         try:
             context = build_relatorios_solicitacoes_context(current_user, request.args)
@@ -45,6 +47,10 @@ def register_routes(bp):
     @bp.route("/relatorios-os", methods=["GET"], endpoint="relatorios_os")
     @login_required
     def relatorios_os():
+        if not can_access_relatorios_menu(current_user):
+            flash("Acesso restrito.", "danger")
+            return redirect(url_for("main.dashboard"))
+
         try:
             context = build_relatorios_os_context(current_user, request.args)
             return render_template("relatorios_os.html", **context)
@@ -61,6 +67,10 @@ def register_routes(bp):
     @bp.route("/admin/exportar_relatorio_pdf", endpoint="exportar_relatorio_pdf")
     @login_required
     def exportar_relatorio_pdf():
+        if not can_access_relatorios_menu(current_user):
+            flash("Acesso restrito.", "danger")
+            return redirect(url_for("main.dashboard"))
+
         caminho_pdf, download_name = build_relatorio_pdf_export(current_user, request.args)
         return send_file(
             caminho_pdf,
@@ -72,6 +82,10 @@ def register_routes(bp):
     @bp.route("/admin/exportar_relatorio_excel", endpoint="exportar_relatorio_excel")
     @login_required
     def exportar_relatorio_excel():
+        if not can_access_relatorios_menu(current_user):
+            flash("Acesso restrito.", "danger")
+            return redirect(url_for("main.dashboard"))
+
         output, download_name = build_relatorio_excel_export(current_user, request.args)
         return send_file(
             output,
@@ -83,6 +97,10 @@ def register_routes(bp):
     @bp.route("/relatorios-os/export/excel", methods=["GET"], endpoint="relatorios_os_export_excel")
     @login_required
     def relatorios_os_export_excel():
+        if not can_access_relatorios_menu(current_user):
+            flash("Acesso restrito.", "danger")
+            return redirect(url_for("main.dashboard"))
+
         output, download_name = build_relatorio_os_excel_export(current_user, request.args)
         return send_file(
             output,
@@ -94,6 +112,10 @@ def register_routes(bp):
     @bp.route("/relatorios-os/export/pdf", methods=["GET"], endpoint="relatorios_os_export_pdf")
     @login_required
     def relatorios_os_export_pdf():
+        if not can_access_relatorios_menu(current_user):
+            flash("Acesso restrito.", "danger")
+            return redirect(url_for("main.dashboard"))
+
         caminho_pdf, download_name = build_relatorio_os_pdf_export(current_user, request.args)
         return send_file(
             caminho_pdf,

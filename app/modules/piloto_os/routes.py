@@ -3,6 +3,8 @@ import os
 from flask import abort, current_app, flash, jsonify, redirect, render_template, request, send_file, url_for
 from flask_login import current_user, login_required
 
+from app.extensions import db
+from app.models import Solicitacao
 from app.modules.piloto_os.exporters import build_admin_os_excel_v2_export, build_admin_os_pdf_v2_export
 from app.modules.piloto_os.service import (
     PilotoOsError,
@@ -14,6 +16,7 @@ from app.modules.piloto_os.service import (
     get_piloto_drone_payload,
     salvar_piloto_os_form,
 )
+from app.shared.access import ADMIN_PANEL_VIEW_TYPES, can_access_regiao
 
 
 def _require_piloto():
@@ -22,12 +25,25 @@ def _require_piloto():
 
 
 def _require_admin_os_view():
-    if getattr(current_user, "tipo_usuario", None) not in ["admin", "operario", "visualizar"]:
+    if getattr(current_user, "tipo_usuario", None) not in ADMIN_PANEL_VIEW_TYPES:
         abort(403)
 
 
-def _require_admin_only():
-    if getattr(current_user, "tipo_usuario", None) not in ["admin", "visualizar"]:
+def _require_admin_os_export():
+    if getattr(current_user, "tipo_usuario", None) not in {"admin", "visualizar", "regional"}:
+        abort(403)
+
+
+def _ensure_os_region_access(os_id):
+    solicitacao = (
+        Solicitacao.query
+        .options(
+            db.selectinload(Solicitacao.usuario),
+        )
+        .get_or_404(os_id)
+    )
+    pedido_regiao = getattr(getattr(solicitacao, "usuario", None), "regiao", None)
+    if not can_access_regiao(current_user, pedido_regiao):
         abort(403)
 
 
@@ -195,7 +211,8 @@ def register_routes(bp):
     @bp.route("/admin/os/<int:os_id>/export/pdf/v2", methods=["GET"], endpoint="admin_export_os_pdf_v2")
     @login_required
     def admin_export_os_pdf_v2(os_id):
-        _require_admin_only()
+        _require_admin_os_export()
+        _ensure_os_region_access(os_id)
 
         caminho_pdf, download_name = build_admin_os_pdf_v2_export(os_id, request.args)
         return send_file(
@@ -208,7 +225,8 @@ def register_routes(bp):
     @bp.route("/admin/os/<int:os_id>/export/excel/v2", methods=["GET"], endpoint="admin_export_os_excel_v2")
     @login_required
     def admin_export_os_excel_v2(os_id):
-        _require_admin_only()
+        _require_admin_os_export()
+        _ensure_os_region_access(os_id)
 
         output, download_name = build_admin_os_excel_v2_export(os_id, request.args)
         return send_file(

@@ -130,11 +130,11 @@ def build_pilotos_export(rows, user_tipo: str, uvis_regiao: str):
     sheet["A2"] = f"Gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M')}"
     sheet["A2"].font = Font(color="6B7280")
 
-    if user_tipo == "uvis":
-        sheet["A3"] = f"Regiao (UVIS): {uvis_regiao}"
+    if user_tipo in {"uvis", "regional"}:
+        sheet["A3"] = f"Regiao do usuario: {uvis_regiao}"
         sheet["A3"].font = Font(color="6B7280")
 
-    start_row = 5 if user_tipo == "uvis" else 4
+    start_row = 5 if user_tipo in {"uvis", "regional"} else 4
     headers = ["ID", "Nome", "Regiao", "Telefone"]
 
     for col_idx, header in enumerate(headers, start=1):

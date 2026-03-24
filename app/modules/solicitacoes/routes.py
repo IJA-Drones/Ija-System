@@ -18,6 +18,10 @@ def register_routes(bp):
     @bp.route("/novo_cadastro", methods=["GET", "POST"], endpoint="novo")
     @login_required
     def novo():
+        if getattr(current_user, "tipo_usuario", None) not in {"uvis", "admin", "visualizar"}:
+            flash("Seu perfil nao possui permissao para criar solicitacoes.", "warning")
+            return redirect(url_for("main.dashboard"))
+
         google_maps_key = current_app.config.get("Maps_KEY_FRONT") or os.getenv("KEY_API_GOOGLE_MAPS")
         context = build_novo_cadastro_context(current_user, google_maps_key)
 

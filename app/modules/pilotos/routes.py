@@ -104,7 +104,7 @@ def register_routes(bp):
     @login_required
     def listar_pilotos():
         user_tipo = getattr(current_user, "tipo_usuario", None)
-        if user_tipo not in ("admin", "uvis", "visualizar"):
+        if user_tipo not in ("admin", "uvis", "visualizar", "regional"):
             abort(403)
 
         q = (request.args.get("q") or "").strip()
@@ -116,18 +116,18 @@ def register_routes(bp):
         export = (request.args.get("export") or "").strip().lower()
 
         uvis_regiao = (getattr(current_user, "regiao", None) or "").strip().upper()
-        if user_tipo == "uvis":
+        if user_tipo in {"uvis", "regional"}:
             regiao = uvis_regiao
 
-        if user_tipo == "uvis" and not uvis_regiao:
+        if user_tipo in {"uvis", "regional"} and not uvis_regiao:
             filters = build_pilotos_filters(q, regiao, telefone, sort, page, per_page, 0, 1)
-            flash("Sua UVIS esta sem regiao cadastrada. Contate o administrador.", "warning")
+            flash("Seu usuario esta sem regiao cadastrada. Contate o administrador.", "warning")
             return render_template("listar_pilotos.html", pilotos=[], filters=filters, is_admin=False)
 
         query = build_pilotos_query(user_tipo, regiao, telefone, q, sort)
 
         if export == "xlsx":
-            if user_tipo not in ["admin", "visualizar"]:
+            if user_tipo not in ["admin", "visualizar", "regional"]:
                 abort(403)
 
             output, filename = build_pilotos_export(query.all(), user_tipo, uvis_regiao)
@@ -150,7 +150,7 @@ def register_routes(bp):
             is_admin=(user_tipo == "admin"),
             is_editable=user_tipo in ["admin", "operario"],
             tipo_usuario=user_tipo,
-            uvis_regiao=(uvis_regiao if user_tipo == "uvis" else None),
+            uvis_regiao=(uvis_regiao if user_tipo in {"uvis", "regional"} else None),
         )
 
     @bp.route("/pilotos/<int:piloto_id>/editar", methods=["GET", "POST"], endpoint="editar_piloto")

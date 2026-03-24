@@ -12,9 +12,12 @@ from sqlalchemy.orm import joinedload
 
 from app.extensions import db
 from app.models import Notificacao, Solicitacao, Usuario
+from app.shared.access import apply_regiao_scope, apply_solicitacao_regiao_scope
 
 
-ADMIN_VIEW_TYPES = {"admin", "operario", "visualizar"}
+AGENDA_VIEW_TYPES = {"admin", "operario", "visualizar", "regional"}
+AGENDA_EXPORT_TYPES = {"admin", "visualizar", "regional"}
+NOTIFICATION_GLOBAL_VIEW_TYPES = {"admin", "operario", "visualizar"}
 AGENDA_ROUTE_STATUSES = (
     "APROVADO",
     "APROVADO COM RECOMENDACOES",
@@ -40,7 +43,15 @@ def agora_brasilia_naive():
 
 
 def can_view_all_agenda(user):
-    return getattr(user, "tipo_usuario", None) in ADMIN_VIEW_TYPES
+    return getattr(user, "tipo_usuario", None) in AGENDA_VIEW_TYPES
+
+
+def can_export_agenda(user):
+    return getattr(user, "tipo_usuario", None) in AGENDA_EXPORT_TYPES
+
+
+def can_view_all_notifications(user):
+    return getattr(user, "tipo_usuario", None) in NOTIFICATION_GLOBAL_VIEW_TYPES
 
 
 def get_agenda_google_maps_key():
@@ -53,6 +64,7 @@ def build_agenda_query(user, *, filtro_status=None, filtro_uvis_id=None, mes=Non
         .options(joinedload(Solicitacao.usuario))
         .filter(Solicitacao.status != "CANCELADO")
     )
+    query = apply_solicitacao_regiao_scope(query, user)
 
     if not can_view_all_agenda(user):
         query = query.filter(Solicitacao.usuario_id == user.id)
@@ -144,8 +156,11 @@ def build_agenda_uvis_disponiveis(user):
         return []
 
     return (
-        db.session.query(Usuario.id, Usuario.nome_uvis)
-        .filter(Usuario.tipo_usuario == "uvis")
+        apply_regiao_scope(
+            db.session.query(Usuario.id, Usuario.nome_uvis).filter(Usuario.tipo_usuario == "uvis"),
+            user,
+            Usuario.regiao,
+        )
         .order_by(Usuario.nome_uvis)
         .all()
     )
@@ -218,7 +233,10 @@ def build_agenda_rotas_payload(user, args):
 
     filtro_uvis_id = args.get("uvis_id", type=int)
 
-    query = Solicitacao.query.options(joinedload(Solicitacao.usuario))
+    query = apply_solicitacao_regiao_scope(
+        Solicitacao.query.options(joinedload(Solicitacao.usuario)),
+        user,
+    )
     if not can_view_all_agenda(user):
         query = query.filter(Solicitacao.usuario_id == user.id)
     elif filtro_uvis_id:
@@ -275,7 +293,7 @@ def build_agenda_rotas_payload(user, args):
     }
 
 
-def build_agenda_export(args):
+def build_agenda_export(user, args):
     export_all = args.get("all") == "1"
 
     filtro_status = None if export_all else (args.get("status") or None)
@@ -283,7 +301,10 @@ def build_agenda_export(args):
     mes = None if export_all else args.get("mes", type=int)
     ano = None if export_all else args.get("ano", type=int)
 
-    query = Solicitacao.query.options(joinedload(Solicitacao.usuario))
+    query = apply_solicitacao_regiao_scope(
+        Solicitacao.query.options(joinedload(Solicitacao.usuario)),
+        user,
+    )
 
     if filtro_uvis_id:
         query = query.filter(Solicitacao.usuario_id == filtro_uvis_id)
@@ -433,7 +454,7 @@ def garantir_notificacoes_do_dia(usuario_id):
 
 
 def get_notificacao_or_404(user, notif_id):
-    if can_view_all_agenda(user):
+    if can_view_all_notifications(user):
         return Notificacao.query.get_or_404(notif_id)
 
     return (
@@ -444,11 +465,11 @@ def get_notificacao_or_404(user, notif_id):
 
 
 def list_notificacoes(user):
-    if not can_view_all_agenda(user):
+    if not can_view_all_notifications(user):
         garantir_notificacoes_do_dia(user.id)
 
     base = Notificacao.query.filter(Notificacao.apagada_em.is_(None))
-    if can_view_all_agenda(user):
+    if can_view_all_notifications(user):
         return base.order_by(Notificacao.criada_em.desc()).all()
 
     return (
@@ -474,7 +495,7 @@ def clear_notificacoes(user):
     agora = agora_brasilia_naive()
     query = Notificacao.query.filter(Notificacao.apagada_em.is_(None))
 
-    if not can_view_all_agenda(user):
+    if not can_view_all_notifications(user):
         query = query.filter_by(usuario_id=user.id)
 
     query.update({"apagada_em": agora}, synchronize_session=False)

@@ -20,8 +20,8 @@ class Usuario(UserMixin, db.Model):
     login = db.Column(db.String(50), unique=True, nullable=False, index=True)
     senha_hash = db.Column(db.String(200), nullable=False)
 
-    # + incluir "equipe_uvis"
-    # tipos esperados: "admin", "uvis", "operario", "visualizador", "piloto", "equipe_uvis"
+    # + incluir "equipe_uvis" e "regional"
+    # tipos esperados: "admin", "uvis", "operario", "visualizador", "regional", "piloto", "equipe_uvis"
     tipo_usuario = db.Column(db.String(20), default="uvis", index=True)
 
     # ----------------------------

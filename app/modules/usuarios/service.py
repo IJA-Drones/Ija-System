@@ -2,9 +2,10 @@ from sqlalchemy import or_
 
 from app.extensions import db
 from app.models import Notificacao, Usuario
+from app.shared.access import REGIONAL_USER_TYPE, normalize_regiao
 
 
-ADMIN_USER_TYPES = ("admin", "operario")
+ADMIN_USER_TYPES = ("admin", "operario", REGIONAL_USER_TYPE)
 
 
 def admin_user_types():
@@ -43,7 +44,7 @@ def build_admin_users_query(q: str, tipo: str):
     return query.order_by(Usuario.tipo_usuario.asc(), Usuario.nome_uvis.asc())
 
 
-def validate_new_admin_user(nome: str, login: str, tipo_usuario: str, senha: str, senha2: str):
+def validate_new_admin_user(nome: str, login: str, tipo_usuario: str, regiao: str, senha: str, senha2: str):
     errors = {}
 
     if not nome:
@@ -51,7 +52,9 @@ def validate_new_admin_user(nome: str, login: str, tipo_usuario: str, senha: str
     if not login:
         errors["login"] = "Informe o login."
     if tipo_usuario not in ADMIN_USER_TYPES:
-        errors["tipo_usuario"] = "Selecione um tipo valido (admin ou operario)."
+        errors["tipo_usuario"] = "Selecione um tipo valido (admin, operario ou regional)."
+    if tipo_usuario == REGIONAL_USER_TYPE and not normalize_regiao(regiao):
+        errors["regiao"] = "Informe a regiao do usuario regional."
     if not senha:
         errors["senha"] = "Informe uma senha."
     if not senha2:
@@ -64,7 +67,15 @@ def validate_new_admin_user(nome: str, login: str, tipo_usuario: str, senha: str
     return errors
 
 
-def validate_edit_admin_user(nome_uvis: str, login: str, tipo_usuario: str, senha: str, senha2: str, usuario_id: int):
+def validate_edit_admin_user(
+    nome_uvis: str,
+    login: str,
+    tipo_usuario: str,
+    regiao: str,
+    senha: str,
+    senha2: str,
+    usuario_id: int,
+):
     errors = {}
 
     if not nome_uvis:
@@ -73,6 +84,8 @@ def validate_edit_admin_user(nome_uvis: str, login: str, tipo_usuario: str, senh
         errors["login"] = "Informe o login."
     if tipo_usuario not in ADMIN_USER_TYPES:
         errors["tipo_usuario"] = "Tipo invalido."
+    if tipo_usuario == REGIONAL_USER_TYPE and not normalize_regiao(regiao):
+        errors["regiao"] = "Informe a regiao do usuario regional."
 
     if senha or senha2:
         if len(senha) < 4:

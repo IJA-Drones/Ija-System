@@ -1,10 +1,12 @@
 import os
 
 from app.extensions import db
+from app.shared.access import can_access_regiao
 from app.shared.uploads import get_upload_folder
 
 
-ALLOWED_ATTACHMENT_VIEW_TYPES = {"admin", "operario", "visualizar", "uvis"}
+ALLOWED_ATTACHMENT_VIEW_TYPES = {"admin", "operario", "visualizar", "uvis", "regional"}
+ALLOWED_ATTACHMENT_EDIT_TYPES = {"admin", "operario"}
 
 
 def can_view_attachment(user, pedido) -> bool:
@@ -13,7 +15,14 @@ def can_view_attachment(user, pedido) -> bool:
         return False
     if user_type == "uvis" and pedido.usuario_id != user.id:
         return False
+    if user_type == "regional":
+        pedido_regiao = getattr(getattr(pedido, "usuario", None), "regiao", None)
+        return can_access_regiao(user, pedido_regiao)
     return True
+
+
+def can_remove_attachment(user, pedido) -> bool:
+    return getattr(user, "tipo_usuario", None) in ALLOWED_ATTACHMENT_EDIT_TYPES and can_view_attachment(user, pedido)
 
 
 def resolve_attachment_file(pedido):

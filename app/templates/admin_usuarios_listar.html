@@ -232,7 +232,7 @@
                      name="q"
                      class="form-control form-control-sm"
                      value="{{ q }}"
-                     placeholder="Ex: admin, operario, joao..." />
+                     placeholder="Ex: admin, regional, joao..." />
             </div>
 
             <div class="col-md-3">
@@ -241,6 +241,7 @@
                 <option value="">Todos</option>
                 <option value="admin" {% if tipo == 'admin' %}selected{% endif %}>Admin</option>
                 <option value="operario" {% if tipo == 'operario' %}selected{% endif %}>Operário</option>
+                <option value="regional" {% if tipo == 'regional' %}selected{% endif %}>Regional</option>
               </select>
             </div>
 
@@ -294,6 +295,8 @@
                 <td>
                   {% if u.tipo_usuario == 'admin' %}
                     <span class="badge bg-primary">ADMIN</span>
+                  {% elif u.tipo_usuario == 'regional' %}
+                    <span class="badge bg-info text-dark">REGIONAL</span>
                   {% else %}
                     <span class="badge bg-warning text-dark">OPERÁRIO</span>
                   {% endif %}

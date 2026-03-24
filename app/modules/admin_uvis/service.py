@@ -7,13 +7,11 @@ from sqlalchemy import or_
 
 from app.extensions import db
 from app.models import EquipeUvis, Notificacao, PilotoUvis, Usuario
-
-
-ADMIN_UVIS_VIEWER_TYPES = {"admin", "operario", "visualizar", "visualizador"}
+from app.shared.access import ADMIN_PANEL_VIEW_TYPES, apply_regiao_scope
 
 
 def can_access_admin_uvis(user) -> bool:
-    return getattr(user, "tipo_usuario", None) in ADMIN_UVIS_VIEWER_TYPES
+    return getattr(user, "tipo_usuario", None) in ADMIN_PANEL_VIEW_TYPES
 
 
 def is_admin_user(user) -> bool:
@@ -34,8 +32,9 @@ def login_em_uso(login: str, exclude_user_id=None):
     return query.first()
 
 
-def build_uvis_query(q: str, regiao: str, codigo_setor: str):
+def build_uvis_query(user, q: str, regiao: str, codigo_setor: str):
     query = Usuario.query.filter(Usuario.tipo_usuario == "uvis")
+    query = apply_regiao_scope(query, user, Usuario.regiao)
 
     if q:
         like = f"%{q}%"

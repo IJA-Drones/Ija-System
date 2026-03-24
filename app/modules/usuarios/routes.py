@@ -35,7 +35,7 @@ def register_routes(bp):
         if request.method == "POST":
             nome = (request.form.get("nome") or "").strip()
             login = (request.form.get("login") or "").strip()
-            tipo_usuario = (request.form.get("tipo_usuario") or "").strip()
+            tipo_usuario = (request.form.get("tipo_usuario") or "").strip().lower()
             regiao = (request.form.get("regiao") or "").strip() or None
             codigo_setor = (request.form.get("codigo_setor") or "").strip() or None
             senha = (request.form.get("senha") or "").strip()
@@ -51,7 +51,7 @@ def register_routes(bp):
                 "senha2": senha2,
             }
 
-            errors = validate_new_admin_user(nome, login, tipo_usuario, senha, senha2)
+            errors = validate_new_admin_user(nome, login, tipo_usuario, regiao, senha, senha2)
             if errors:
                 flash("Revise os campos destacados.", "warning")
                 return render_template("admin_usuario_novo.html", errors=errors, form=form)
@@ -140,6 +140,7 @@ def register_routes(bp):
                 nome_uvis=nome_uvis,
                 login=login,
                 tipo_usuario=tipo_usuario,
+                regiao=regiao,
                 senha=senha,
                 senha2=senha2,
                 usuario_id=usuario.id,

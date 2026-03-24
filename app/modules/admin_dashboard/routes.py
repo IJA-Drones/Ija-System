@@ -61,6 +61,7 @@ def register_routes(bp):
 
         page = request.args.get("page", 1, type=int)
         query = build_admin_dashboard_query(
+            current_user,
             filtro_status=filtro_status,
             filtro_unidade=filtro_unidade,
             filtro_regiao=filtro_regiao,
@@ -78,8 +79,8 @@ def register_routes(bp):
             paginacao=paginacao,
             is_editable=can_edit_admin_panel(current_user),
             now=datetime.now(),
-            equipes=build_active_teams(),
-            unidades_select=build_uvis_select(),
+            equipes=build_active_teams(current_user),
+            unidades_select=build_uvis_select(current_user),
             google_maps_key=get_google_maps_key(),
         )
 
@@ -97,6 +98,7 @@ def register_routes(bp):
             filtro_apoio_cet = (request.args.get("apoio_cet") or "").strip().upper()
 
             output = build_admin_dashboard_export(
+                user=current_user,
                 filtro_status=filtro_status,
                 filtro_unidade=filtro_unidade,
                 filtro_regiao=filtro_regiao,
@@ -165,7 +167,7 @@ def register_routes(bp):
     def cancelar_solicitacao_admin(id):
         solicitacao = Solicitacao.query.get_or_404(id)
 
-        if not can_access_admin_panel(current_user) and solicitacao.usuario_id != current_user.id:
+        if not can_edit_admin_panel(current_user) and solicitacao.usuario_id != current_user.id:
             abort(403)
 
         if solicitacao.status == "CANCELADO":
@@ -191,6 +193,7 @@ def register_routes(bp):
         page = request.args.get("page", 1, type=int)
 
         query = build_admin_canceladas_query(
+            current_user,
             filtro_unidade=filtro_unidade,
             filtro_regiao=filtro_regiao,
             filtro_foco=filtro_foco,
@@ -206,7 +209,7 @@ def register_routes(bp):
             pedidos=paginacao.items,
             paginacao=paginacao,
             now=datetime.now(),
-            unidades_select=build_uvis_select(),
+            unidades_select=build_uvis_select(current_user),
             google_maps_key=get_google_maps_key(),
             foco_selecionado=filtro_foco,
         )
@@ -224,6 +227,7 @@ def register_routes(bp):
 
         paginacao = (
             build_admin_historico_os_query(
+                current_user,
                 filtro_unidade=filtro_unidade,
                 filtro_regiao=filtro_regiao,
             )
@@ -235,5 +239,5 @@ def register_routes(bp):
             "admin_historico_os.html",
             pedidos=paginacao.items,
             paginacao=paginacao,
-            unidades_select=build_uvis_select(),
+            unidades_select=build_uvis_select(current_user),
         )

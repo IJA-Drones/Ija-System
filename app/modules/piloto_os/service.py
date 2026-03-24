@@ -4,6 +4,7 @@ from sqlalchemy.orm import joinedload
 
 from app.extensions import db
 from app.models import Baterias, Drones, Equipe, EquipePiloto, OrdemServico, Solicitacao, Veiculos
+from app.shared.access import ADMIN_PANEL_VIEW_TYPES, can_access_regiao
 from app.shared.query_filters import aplicar_filtros_base
 
 
@@ -310,7 +311,7 @@ def get_piloto_drone_payload(user, drone_id):
 
 
 def build_admin_os_form_context(user, os_id):
-    if getattr(user, "tipo_usuario", None) not in ["admin", "operario", "visualizar"]:
+    if getattr(user, "tipo_usuario", None) not in ADMIN_PANEL_VIEW_TYPES:
         raise PilotoOsError("Acesso restrito.", "danger", redirect_endpoint="main.dashboard")
 
     solicitacao = (
@@ -322,6 +323,9 @@ def build_admin_os_form_context(user, os_id):
         )
         .get_or_404(os_id)
     )
+    pedido_regiao = getattr(getattr(solicitacao, "usuario", None), "regiao", None)
+    if not can_access_regiao(user, pedido_regiao):
+        raise PilotoOsError("Voce nao tem permissao para acessar esta OS.", "danger", redirect_endpoint="main.dashboard")
 
     equipe = solicitacao.equipe
     ordem = solicitacao.ordem_servico

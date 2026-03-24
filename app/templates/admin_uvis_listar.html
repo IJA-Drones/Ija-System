@@ -376,6 +376,7 @@ body.dark-mode) ========================= #}
                 <td>{{ u.regiao or "-" }}</td>                
                 <td><code>{{ u.login }}</code></td>
                 <td>
+                  {% if is_admin %}
                   <div class="d-flex gap-2">
                     <a
                       class="btn btn-sm btn-success"
@@ -394,6 +395,9 @@ body.dark-mode) ========================= #}
                       </button>
                     </form>
                   </div>
+                  {% else %}
+                  <span class="text-muted small">Somente leitura</span>
+                  {% endif %}
                 </td>
               </tr>
               {% endfor %} {% else %}

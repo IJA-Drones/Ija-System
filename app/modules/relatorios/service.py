@@ -4,10 +4,11 @@ from sqlalchemy import and_, extract, func, or_
 
 from app.extensions import db
 from app.models import OrdemServico, Solicitacao, Usuario
+from app.shared.access import ADMIN_PANEL_VIEW_TYPES, apply_regiao_scope, apply_solicitacao_regiao_scope
 from app.shared.query_filters import aplicar_filtros_base
 
 
-RELATORIOS_MENU_TYPES = {"admin", "operario", "visualizar"}
+RELATORIOS_MENU_TYPES = ADMIN_PANEL_VIEW_TYPES
 
 
 def can_access_relatorios_menu(user) -> bool:
@@ -18,12 +19,9 @@ def build_uvis_disponiveis(user):
     if getattr(user, "tipo_usuario", None) not in RELATORIOS_MENU_TYPES:
         return []
 
-    return (
-        db.session.query(Usuario.id, Usuario.nome_uvis)
-        .filter(Usuario.tipo_usuario == "uvis")
-        .order_by(Usuario.nome_uvis)
-        .all()
-    )
+    query = db.session.query(Usuario.id, Usuario.nome_uvis).filter(Usuario.tipo_usuario == "uvis")
+    query = apply_regiao_scope(query, user, Usuario.regiao)
+    return query.order_by(Usuario.nome_uvis).all()
 
 
 def _agrupar_por(base_query, campo):
@@ -46,6 +44,7 @@ def build_relatorios_solicitacoes_context(user, args):
     filtro_data = f"{ano_atual}-{mes_atual:02d}"
 
     base_query = aplicar_filtros_base(db.session.query(Solicitacao), filtro_data, uvis_id)
+    base_query = apply_solicitacao_regiao_scope(base_query, user)
     print("SQL EXECUTADO:", str(base_query.statement.compile(dialect=db.engine.dialect)))
 
     status_counts = {
@@ -84,10 +83,14 @@ def build_relatorios_solicitacoes_context(user, args):
     dados_mensais = [
         (f"{int(ano_h):04d}-{int(mes_h):02d}", total)
         for ano_h, mes_h, total in (
-            db.session.query(
-                extract("year", Solicitacao.data_agendamento),
-                extract("month", Solicitacao.data_agendamento),
-                func.count(Solicitacao.id),
+            apply_solicitacao_regiao_scope(
+                db.session.query(
+                    extract("year", Solicitacao.data_agendamento),
+                    extract("month", Solicitacao.data_agendamento),
+                    func.count(Solicitacao.id),
+                )
+                .filter(Solicitacao.data_agendamento.isnot(None)),
+                user,
             )
             .group_by(extract("year", Solicitacao.data_agendamento), extract("month", Solicitacao.data_agendamento))
             .order_by(extract("year", Solicitacao.data_agendamento), extract("month", Solicitacao.data_agendamento))
@@ -134,6 +137,7 @@ def build_relatorios_os_context(user, args):
         .join(Solicitacao, Solicitacao.id == OrdemServico.solicitacao_id)
         .join(Usuario, Usuario.id == Solicitacao.usuario_id)
     )
+    base_query = apply_regiao_scope(base_query, user, Usuario.regiao)
 
     base_query = base_query.filter(
         or_(
@@ -182,6 +186,7 @@ def build_relatorios_os_context(user, args):
         .join(Solicitacao, Solicitacao.id == OrdemServico.solicitacao_id)
         .join(Usuario, Usuario.id == Solicitacao.usuario_id)
     )
+    mensal_query = apply_regiao_scope(mensal_query, user, Usuario.regiao)
 
     if uvis_id:
         mensal_query = mensal_query.filter(Solicitacao.usuario_id == uvis_id)
@@ -242,6 +247,7 @@ def build_relatorio_os_export_data(user, args):
         .join(Solicitacao, Solicitacao.id == OrdemServico.solicitacao_id)
         .join(Usuario, Usuario.id == Solicitacao.usuario_id)
     )
+    base_query = apply_regiao_scope(base_query, user, Usuario.regiao)
 
     base_query = base_query.filter(
         or_(
@@ -315,6 +321,7 @@ def build_relatorio_os_export_data(user, args):
         .join(Solicitacao, Solicitacao.id == OrdemServico.solicitacao_id)
         .join(Usuario, Usuario.id == Solicitacao.usuario_id)
     )
+    mensal_query = apply_regiao_scope(mensal_query, user, Usuario.regiao)
 
     if uvis_id:
         mensal_query = mensal_query.filter(Solicitacao.usuario_id == uvis_id)
@@ -338,7 +345,14 @@ def build_relatorio_os_export_data(user, args):
 
     nome_uvis = None
     if uvis_id:
-        nome_uvis = db.session.query(Usuario.nome_uvis).filter(Usuario.id == uvis_id).scalar()
+        nome_uvis = (
+            apply_regiao_scope(
+                db.session.query(Usuario.nome_uvis).filter(Usuario.id == uvis_id),
+                user,
+                Usuario.regiao,
+            )
+            .scalar()
+        )
 
     return {
         "mes": mes_atual,

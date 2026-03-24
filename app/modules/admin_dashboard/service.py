@@ -12,11 +12,8 @@ from werkzeug.utils import secure_filename
 
 from app.extensions import db
 from app.models import Equipe, Solicitacao, Usuario
+from app.shared.access import ADMIN_PANEL_EDIT_TYPES, ADMIN_PANEL_VIEW_TYPES, apply_regiao_scope
 from app.shared.uploads import allowed_file, get_upload_folder
-
-
-ADMIN_PANEL_VIEW_TYPES = {"admin", "operario", "visualizar", "visualizador"}
-ADMIN_PANEL_EDIT_TYPES = {"admin", "operario"}
 APPROVAL_STATUSES = {"APROVADO", "APROVADO COM RECOMENDAÇÕES"}
 
 
@@ -32,17 +29,18 @@ def get_google_maps_key():
     return current_app.config.get("KEY_API_GOOGLE_MAPS") or os.getenv("KEY_API_GOOGLE_MAPS")
 
 
-def build_uvis_select():
-    return Usuario.query.filter_by(tipo_usuario="uvis").order_by(Usuario.nome_uvis.asc()).all()
+def build_uvis_select(user=None):
+    query = Usuario.query.filter_by(tipo_usuario="uvis")
+    if user is not None:
+        query = apply_regiao_scope(query, user, Usuario.regiao)
+    return query.order_by(Usuario.nome_uvis.asc()).all()
 
 
-def build_active_teams():
-    return (
-        Equipe.query
-        .filter(Equipe.ativa.is_(True))
-        .order_by(Equipe.regiao.asc(), Equipe.nome_equipe.asc())
-        .all()
-    )
+def build_active_teams(user=None):
+    query = Equipe.query.filter(Equipe.ativa.is_(True))
+    if user is not None:
+        query = apply_regiao_scope(query, user, Equipe.regiao)
+    return query.order_by(Equipe.regiao.asc(), Equipe.nome_equipe.asc()).all()
 
 
 def build_status_order():
@@ -63,7 +61,7 @@ def build_status_order():
     )
 
 
-def build_admin_dashboard_query(filtro_status: str, filtro_unidade: str, filtro_regiao: str, filtro_apoio_cet: str):
+def build_admin_dashboard_query(user, filtro_status: str, filtro_unidade: str, filtro_regiao: str, filtro_apoio_cet: str):
     query = (
         Solicitacao.query
         .options(
@@ -73,6 +71,7 @@ def build_admin_dashboard_query(filtro_status: str, filtro_unidade: str, filtro_
         .join(Usuario)
         .filter(Solicitacao.status != "CANCELADO")
     )
+    query = apply_regiao_scope(query, user, Usuario.regiao)
 
     if filtro_status:
         query = query.filter(Solicitacao.status == filtro_status)
@@ -91,7 +90,7 @@ def build_admin_dashboard_query(filtro_status: str, filtro_unidade: str, filtro_
     return query
 
 
-def build_admin_canceladas_query(filtro_unidade: str, filtro_regiao: str, filtro_foco: str):
+def build_admin_canceladas_query(user, filtro_unidade: str, filtro_regiao: str, filtro_foco: str):
     query = (
         Solicitacao.query
         .options(
@@ -101,6 +100,7 @@ def build_admin_canceladas_query(filtro_unidade: str, filtro_regiao: str, filtro
         .join(Usuario)
         .filter(Solicitacao.status == "CANCELADO")
     )
+    query = apply_regiao_scope(query, user, Usuario.regiao)
 
     if filtro_unidade:
         query = query.filter(Usuario.nome_uvis.ilike(f"%{filtro_unidade}%"))
@@ -114,7 +114,7 @@ def build_admin_canceladas_query(filtro_unidade: str, filtro_regiao: str, filtro
     return query
 
 
-def build_admin_historico_os_query(filtro_unidade: str, filtro_regiao: str):
+def build_admin_historico_os_query(user, filtro_unidade: str, filtro_regiao: str):
     query = (
         Solicitacao.query
         .options(
@@ -124,6 +124,7 @@ def build_admin_historico_os_query(filtro_unidade: str, filtro_regiao: str):
         .join(Usuario)
         .filter(Solicitacao.status.in_(["CONCLUÍDO", "CONCLUIDO"]))
     )
+    query = apply_regiao_scope(query, user, Usuario.regiao)
 
     if filtro_unidade:
         query = query.filter(Usuario.nome_uvis.ilike(f"%{filtro_unidade}%"))
@@ -134,7 +135,7 @@ def build_admin_historico_os_query(filtro_unidade: str, filtro_regiao: str):
     return query
 
 
-def build_admin_export_query(filtro_status: str, filtro_unidade: str, filtro_regiao: str, filtro_apoio_cet: str):
+def build_admin_export_query(user, filtro_status: str, filtro_unidade: str, filtro_regiao: str, filtro_apoio_cet: str):
     query = (
         Solicitacao.query
         .join(Usuario)
@@ -143,6 +144,7 @@ def build_admin_export_query(filtro_status: str, filtro_unidade: str, filtro_reg
             joinedload(Solicitacao.equipe),
         )
     )
+    query = apply_regiao_scope(query, user, Usuario.regiao)
 
     if filtro_status:
         query = query.filter(Solicitacao.status == filtro_status)
@@ -161,8 +163,9 @@ def build_admin_export_query(filtro_status: str, filtro_unidade: str, filtro_reg
     return query.order_by(Solicitacao.data_criacao.desc())
 
 
-def build_admin_dashboard_export(filtro_status: str, filtro_unidade: str, filtro_regiao: str, filtro_apoio_cet: str):
+def build_admin_dashboard_export(user, filtro_status: str, filtro_unidade: str, filtro_regiao: str, filtro_apoio_cet: str):
     pedidos = build_admin_export_query(
+        user=user,
         filtro_status=filtro_status,
         filtro_unidade=filtro_unidade,
         filtro_regiao=filtro_regiao,
