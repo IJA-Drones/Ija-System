@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
 {% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
 <style>
   .error-page-bg { position: relative; overflow: hidden; }
@@ -8,13 +9,19 @@
     content: "";
     position: absolute;
     inset: -200px;
-    background:
-      radial-gradient(circle at 20% 10%, rgba(220,53,69,.10), transparent 55%),
-      radial-gradient(circle at 80% 30%, rgba(13,110,253,.08), transparent 55%),
-      radial-gradient(circle at 50% 90%, rgba(25,135,84,.06), transparent 55%);
-    z-index: 0;
   }
   .error-card { position: relative; z-index: 1; backdrop-filter: blur(6px); background: rgba(255,255,255,.96); }
+  body.dark-mode .error-card {
+    background: rgba(21, 34, 51, .94);
+    border: 1px solid #233549 !important;
+    color: var(--color-text-main);
+  }
+  body.dark-mode .error-card .table-responsive {
+    background: transparent;
+  }
+  body.dark-mode .error-card .text-muted {
+    color: var(--color-text-muted) !important;
+  }
 </style>
 {% endblock %}
 
@@ -53,7 +60,7 @@
               </div>
             {% else %}
               <div class="table-responsive">
-                <table class="table align-middle">
+                <table class="table align-middle mb-0">
                   <thead>
                     <tr>
                       <th>Arquivo</th>

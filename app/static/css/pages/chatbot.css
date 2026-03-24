@@ -292,7 +292,8 @@ body.dark-mode .bot-fab::after {
 }
 
 /* --- Botão Flutuante (FAB) --- */
-body.dark-mode {#adminBotFab , #uvisBotFab {
+body.dark-mode #adminBotFab,
+body.dark-mode #uvisBotFab {
     position: fixed;
     right: 18px;
     bottom: 18px;
@@ -305,18 +306,19 @@ body.dark-mode {#adminBotFab , #uvisBotFab {
     background: linear-gradient(135deg, var(--color-primary), var(--color-accent-hover));
     border: none;
     box-shadow: 0 12px 28px rgba(0,0,0,.25);
-  }
 }
 
-body.dark-mode {
-  #adminBotFab:hover, #uvisBotFab:hover{ transform: translateY(-1px); }
-  #adminBotFab:active, #uvisBotFab:active{ transform: translateY(0px); }
+body.dark-mode #adminBotFab:hover,
+body.dark-mode #uvisBotFab:hover { transform: translateY(-1px); }
 
-  #adminBotFab i , #uvisBotFab i {
-    font-size: 1.5rem;
-    transition: transform 0.2s;
-    color: var(--color-text-main);
-  }
+body.dark-mode #adminBotFab:active,
+body.dark-mode #uvisBotFab:active { transform: translateY(0px); }
+
+body.dark-mode #adminBotFab i,
+body.dark-mode #uvisBotFab i {
+  font-size: 1.5rem;
+  transition: transform 0.2s;
+  color: var(--color-text-main);
 }
 
 /* Botão de anexo minimalista */
