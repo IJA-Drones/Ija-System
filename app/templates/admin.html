@@ -302,7 +302,7 @@
                                     {% if p.area_restrita %}
                                         <div class="mt-1">
                                             <span class="badge bg-danger animate-pulse-red shadow-sm" style="font-size: 0.65rem; letter-spacing: 0.5px;">
-                                                <i class="bi bi-exclamation-triangle-fill"></i> ÁREA RESTRITA
+                                                <i class="bi bi-exclamation-triangle-fill me-1"></i> ÁREA RESTRITA
                                             </span>
                                         </div>
                                     {% endif %}
@@ -311,7 +311,7 @@
                                     {# Verifica se o status é PENDENTE e se a justificativa começa com CORREÇÃO #}
                                     {% if p.status == 'PENDENTE' and p.justificativa and (p.justificativa.upper().startswith('CORREÇÃO') or p.justificativa.upper().startswith('CORRECAO')) %}
                                         <div class="mt-2"> 
-                                            <span class="badge bg-info text-dark animate-pulse shadow-sm" style="font-size: 0.75rem;">
+                                            <span class="badge bg-info animate-pulse shadow-sm" style="font-size: 0.75rem;">
                                                 <i class="bi bi-arrow-repeat me-1"></i> CORREÇÃO RECEBIDA
                                             </span>
                                         </div>
