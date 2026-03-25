@@ -926,3 +926,121 @@ class ChecklistSemanalDrone(db.Model):
     # Relacionamentos
     drone = db.relationship("Drones", backref=db.backref("checklists_semanais", lazy="select"))
     piloto = db.relationship("Pilotos", backref=db.backref("checklists_drone", lazy="select"))
+
+
+# -------------------------------------------------------------
+# IMPORTACAO DE LOGS DJI (IMPORTAR EXCEL)
+# -------------------------------------------------------------
+class DjiFlightLogImport(db.Model):
+    __tablename__ = "dji_flight_log_imports"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    uploaded_by_id = db.Column(
+        db.Integer,
+        db.ForeignKey("usuarios.id"),
+        nullable=True,
+        index=True,
+    )
+
+    original_filename = db.Column(db.String(255), nullable=False)
+    stored_filename = db.Column(db.String(255), nullable=False)
+    stored_path = db.Column(db.String(255), nullable=False)
+    file_sha256 = db.Column(db.String(64), nullable=False, index=True)
+
+    total_rows = db.Column(db.Integer, nullable=False, default=0)
+    imported_rows = db.Column(db.Integer, nullable=False, default=0)
+    skipped_rows = db.Column(db.Integer, nullable=False, default=0)
+
+    period_start = db.Column(db.DateTime, index=True)
+    period_end = db.Column(db.DateTime, index=True)
+    uploaded_at = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+
+    uploaded_by = db.relationship("Usuario", lazy="joined")
+    records = db.relationship(
+        "DjiFlightRecord",
+        back_populates="import_batch",
+        lazy="select",
+        cascade="all, delete-orphan",
+    )
+
+    @property
+    def period_display(self):
+        if self.period_start and self.period_end:
+            return f"{self.period_start.strftime('%d/%m/%Y %H:%M')} ate {self.period_end.strftime('%d/%m/%Y %H:%M')}"
+        return "Periodo nao identificado"
+
+
+class DjiFlightRecord(db.Model):
+    __tablename__ = "dji_flight_records"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    import_id = db.Column(
+        db.Integer,
+        db.ForeignKey("dji_flight_log_imports.id"),
+        nullable=False,
+        index=True,
+    )
+
+    source_row_number = db.Column(db.Integer, nullable=False)
+    fingerprint = db.Column(db.String(64), nullable=False, unique=True, index=True)
+
+    flight_window = db.Column(db.String(80), nullable=False)
+    flight_start = db.Column(db.DateTime, nullable=False, index=True)
+    flight_end = db.Column(db.DateTime, nullable=False, index=True)
+
+    location = db.Column(db.Text)
+    aircraft_name = db.Column(db.String(120), index=True)
+    task_type = db.Column(db.String(80), index=True)
+    sprayed_area_ha = db.Column(db.Float, default=0)
+    total_amount_l_kg = db.Column(db.Float, default=0)
+    flight_duration_seconds = db.Column(db.Integer, default=0)
+    flight_duration_label = db.Column(db.String(20))
+
+    crop = db.Column(db.String(80), index=True)
+    pilot_name = db.Column(db.String(120), index=True)
+    team_name = db.Column(db.String(120), index=True)
+    field_name = db.Column(db.String(150), index=True)
+    serial_number = db.Column(db.String(120), index=True)
+
+    starting_battery_level = db.Column(db.Integer)
+    ending_battery_level = db.Column(db.Integer)
+    battery_consumed_level = db.Column(db.Integer)
+    battery_sn = db.Column(db.String(120), index=True)
+
+    raw_payload = db.Column(db.Text)
+    imported_at = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+
+    import_batch = db.relationship("DjiFlightLogImport", back_populates="records")
+
+    __table_args__ = (
+        db.Index("ix_dji_flight_record_aircraft_start", "aircraft_name", "flight_start"),
+        db.Index("ix_dji_flight_record_pilot_start", "pilot_name", "flight_start"),
+        db.Index("ix_dji_flight_record_team_start", "team_name", "flight_start"),
+        db.Index("ix_dji_flight_record_serial_start", "serial_number", "flight_start"),
+    )
+
+    @property
+    def duration_display(self):
+        total_seconds = int(self.flight_duration_seconds or 0)
+        hours, remainder = divmod(total_seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        if hours:
+            return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+        return f"{minutes:02d}:{seconds:02d}"
+
+    @property
+    def location_short(self):
+        value = (self.location or "").strip()
+        if not value:
+            return "Nao informado"
+        return value.split(",")[0].strip() or "Nao informado"
+
+    @property
+    def battery_consumption_pct(self):
+        if self.battery_consumed_level is not None:
+            return self.battery_consumed_level
+        if self.starting_battery_level is None or self.ending_battery_level is None:
+            return None
+        return self.starting_battery_level - self.ending_battery_level

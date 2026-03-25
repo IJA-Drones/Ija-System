@@ -1,0 +1,898 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <style>
+    .metric-card {
+      border: 0;
+      border-radius: 18px;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+    }
+    .metric-label {
+      color: #6b7280;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .metric-value {
+      color: #0f172a;
+      font-size: 1.9rem;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+    .section-card {
+      border: 0;
+      border-radius: 22px;
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.07);
+    }
+    .table-sm td,
+    .table-sm th {
+      vertical-align: middle;
+    }
+    .analytics-card {
+      border: 0;
+      border-radius: 22px;
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.07);
+      overflow: hidden;
+    }
+    .analytics-card .nav-tabs {
+      border-bottom: 0;
+      background: linear-gradient(135deg, #f8fbff 0%, #eef5fb 100%);
+      padding: 0.85rem 1rem 0;
+      gap: 0.5rem;
+    }
+    .analytics-card .nav-tabs .nav-link {
+      border: 0;
+      border-top-left-radius: 14px;
+      border-top-right-radius: 14px;
+      color: #5b6472;
+      font-weight: 700;
+    }
+    .analytics-card .nav-tabs .nav-link.active {
+      background: #ffffff;
+      color: #0d6efd;
+      box-shadow: 0 -2px 10px rgba(13, 110, 253, 0.08);
+    }
+    .chart-panel {
+      border: 1px solid rgba(13, 110, 253, 0.08);
+      border-radius: 18px;
+      background: #ffffff;
+      padding: 1rem;
+      height: 100%;
+    }
+    .chart-panel canvas {
+      width: 100% !important;
+      height: 320px !important;
+    }
+    .comparison-card {
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      border-radius: 18px;
+      padding: 1rem;
+      background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+      height: 100%;
+    }
+    .comparison-kicker {
+      color: #6b7280;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .comparison-value {
+      color: #0f172a;
+      font-size: 1.8rem;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+    .delta-positive {
+      color: #198754;
+      font-weight: 700;
+    }
+    .delta-negative {
+      color: #dc3545;
+      font-weight: 700;
+    }
+    .delta-neutral {
+      color: #6c757d;
+      font-weight: 700;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1280px;">
+  <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+    <div>
+      <h2 class="text-dark mb-1">
+        <i class="bi bi-airplane-engines-fill me-2 text-primary"></i>Relatório de Logs DJI
+      </h2>
+      <p class="text-muted mb-0">
+        Importe semanalmente o Excel da DJI e acompanhe o consolidado acumulado dos voos.
+      </p>
+    </div>
+    <a href="{{ url_for('main.relatorios') }}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i> Voltar
+    </a>
+  </div>
+
+  {% if can_import %}
+  <div class="card section-card mb-4">
+    <div class="card-body">
+      <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-3">
+        <div>
+          <h5 class="mb-1">Importação semanal</h5>
+          <p class="text-muted small mb-0">
+            Envie o arquivo <strong>.xlsx</strong> exportado da DJI. O sistema soma apenas os voos novos e ignora linhas repetidas.
+          </p>
+        </div>
+      </div>
+
+      <form method="POST" action="{{ url_for('main.importar_dji_logs') }}" enctype="multipart/form-data" class="row g-3 align-items-end">
+        <div class="col-lg-8">
+          <label class="form-label small text-muted">Arquivo Excel da DJI</label>
+          <input type="file" name="arquivo" class="form-control" accept=".xlsx" required>
+        </div>
+        <div class="col-lg-4">
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="bi bi-upload me-1"></i> Importar arquivo
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-6 col-xl-3">
+      <div class="card metric-card h-100">
+        <div class="card-body">
+          <div class="metric-label">Voos acumulados</div>
+          <div class="metric-value">{{ total_voos }}</div>
+          <div class="small text-muted mt-2">{{ total_importacoes }} importações registradas</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+      <div class="card metric-card h-100">
+        <div class="card-body">
+          <div class="metric-label">Área pulverizada</div>
+          <div class="metric-value">{{ "%.3f"|format(total_area) }}</div>
+          <div class="small text-muted mt-2">ha processados</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+      <div class="card metric-card h-100">
+        <div class="card-body">
+          <div class="metric-label">Produto aplicado</div>
+          <div class="metric-value">{{ "%.2f"|format(total_volume) }}</div>
+          <div class="small text-muted mt-2">L/Kg acumulados</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+      <div class="card metric-card h-100">
+        <div class="card-body">
+          <div class="metric-label">Tempo de voo</div>
+          <div class="metric-value">{{ total_duracao }}</div>
+          <div class="small text-muted mt-2">média de bateria consumida: {{ media_bateria if media_bateria is not none else "-" }}%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <div class="col-xl-8">
+      <div class="card section-card h-100">
+        <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h5 class="mb-1">Filtros do relatório</h5>
+          <p class="text-muted small mb-0">Aplique recortes por período, piloto, aeronave e equipe.</p>
+        </div>
+        <a
+          href="{{ url_for('main.exportar_dji_logs_excel', data_inicio=filtros.data_inicio, data_fim=filtros.data_fim, piloto=filtros.piloto, aeronave=filtros.aeronave, equipe=filtros.equipe) }}"
+          class="btn btn-success"
+        >
+          <i class="bi bi-file-earmark-excel-fill me-1"></i> Exportar Excel
+        </a>
+      </div>
+
+          <form method="GET" class="row g-3 align-items-end">
+            <div class="col-md-6 col-xl-3">
+              <label class="form-label small text-muted">Data inicial</label>
+              <input type="date" name="data_inicio" class="form-control" value="{{ filtros.data_inicio }}">
+            </div>
+            <div class="col-md-6 col-xl-3">
+              <label class="form-label small text-muted">Data final</label>
+              <input type="date" name="data_fim" class="form-control" value="{{ filtros.data_fim }}">
+            </div>
+            <div class="col-md-6 col-xl-2">
+              <label class="form-label small text-muted">Piloto</label>
+              <select name="piloto" class="form-select">
+                <option value="">Todos</option>
+                {% for item in pilotos_disponiveis %}
+                  <option value="{{ item }}" {% if filtros.piloto == item %}selected{% endif %}>{{ item }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6 col-xl-2">
+              <label class="form-label small text-muted">Aeronave</label>
+              <select name="aeronave" class="form-select">
+                <option value="">Todas</option>
+                {% for item in aeronaves_disponiveis %}
+                  <option value="{{ item }}" {% if filtros.aeronave == item %}selected{% endif %}>{{ item }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6 col-xl-2">
+              <label class="form-label small text-muted">Equipe</label>
+              <select name="equipe" class="form-select">
+                <option value="">Todas</option>
+                {% for item in equipes_disponiveis %}
+                  <option value="{{ item }}" {% if filtros.equipe == item %}selected{% endif %}>{{ item }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-12 d-flex flex-wrap gap-2">
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-search me-1"></i> Filtrar
+              </button>
+              <a href="{{ url_for('main.relatorios_dji_logs') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-x-lg me-1"></i> Limpar
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-4">
+      <div class="card section-card h-100">
+        <div class="card-body">
+          <h5 class="mb-3">Cobertura atual</h5>
+          <div class="d-flex justify-content-between border rounded-4 p-3 mb-3">
+            <div>
+              <div class="small text-muted">Pilotos únicos</div>
+              <div class="fs-4 fw-bold text-dark">{{ total_pilotos }}</div>
+            </div>
+            <div class="text-end">
+              <div class="small text-muted">Aeronaves únicas</div>
+              <div class="fs-4 fw-bold text-dark">{{ total_aeronaves }}</div>
+            </div>
+          </div>
+          <div class="small text-muted">
+            Filtro atual retornou <strong>{{ filtros.total }}</strong> voos válidos para análise.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card analytics-card mb-4">
+    <ul class="nav nav-tabs" id="analyticsTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="graficos-tab" data-bs-toggle="tab" data-bs-target="#graficos-pane" type="button" role="tab" aria-controls="graficos-pane" aria-selected="true">
+          <i class="bi bi-bar-chart-line-fill me-1"></i> Gráficos comparativos
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="mensal-tab" data-bs-toggle="tab" data-bs-target="#mensal-pane" type="button" role="tab" aria-controls="mensal-pane" aria-selected="false">
+          <i class="bi bi-calendar3 me-1"></i> Comparativo mensal
+        </button>
+      </li>
+    </ul>
+
+    <div class="tab-content p-4">
+      <div class="tab-pane fade show active" id="graficos-pane" role="tabpanel" aria-labelledby="graficos-tab" tabindex="0">
+        <div class="row g-4">
+          <div class="col-xl-8">
+            <div class="chart-panel">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                  <h5 class="mb-1">Evolução mensal</h5>
+                  <p class="text-muted small mb-0">Comparativo de voos, área e volume ao longo dos meses filtrados.</p>
+                </div>
+              </div>
+              <canvas id="chartMensalDji"></canvas>
+            </div>
+          </div>
+          <div class="col-xl-4">
+            <div class="chart-panel">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                  <h5 class="mb-1">Top pilotos</h5>
+                  <p class="text-muted small mb-0">Quantidade de voos por piloto dentro do filtro atual.</p>
+                </div>
+              </div>
+              <canvas id="chartTopPilotosDji"></canvas>
+            </div>
+          </div>
+          <div class="col-xl-6">
+            <div class="chart-panel">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                  <h5 class="mb-1">Top aeronaves</h5>
+                  <p class="text-muted small mb-0">Comparativo por prefixo/aeronave mais utilizada.</p>
+                </div>
+              </div>
+              <canvas id="chartTopAeronavesDji"></canvas>
+            </div>
+          </div>
+          <div class="col-xl-6">
+            <div class="chart-panel">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                  <h5 class="mb-1">Ritmo semanal</h5>
+                  <p class="text-muted small mb-0">Comparativo recente entre voos, área e volume por semana.</p>
+                </div>
+              </div>
+              <canvas id="chartSemanalDji"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-pane fade" id="mensal-pane" role="tabpanel" aria-labelledby="mensal-tab" tabindex="0">
+        <div class="row g-4 mb-4">
+          <div class="col-lg-3">
+            <div class="comparison-card">
+              <div class="comparison-kicker">Mês de referência</div>
+              <div class="comparison-value">
+                {{ comparativo_mensal.atual.mes_label if comparativo_mensal.atual else "-" }}
+              </div>
+              <div class="small text-muted mt-2">
+                {% if comparativo_mensal.anterior %}
+                  Comparando com {{ comparativo_mensal.anterior.mes_label }}
+                {% else %}
+                  Ainda sem mês anterior para comparação
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-3">
+            <div class="comparison-card">
+              <div class="comparison-kicker">Voos no mês</div>
+              <div class="comparison-value">
+                {{ comparativo_mensal.atual.voos if comparativo_mensal.atual else 0 }}
+              </div>
+              <div class="small mt-2">
+                {% if comparativo_mensal.voos_delta_pct is not none %}
+                  <span class="{% if comparativo_mensal.voos_delta_pct >= 0 %}delta-positive{% else %}delta-negative{% endif %}">
+                    {{ "%+.1f"|format(comparativo_mensal.voos_delta_pct) }}%
+                  </span>
+                  <span class="text-muted">vs. mês anterior</span>
+                {% else %}
+                  <span class="delta-neutral">Sem base anterior</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-3">
+            <div class="comparison-card">
+              <div class="comparison-kicker">Área no mês</div>
+              <div class="comparison-value">
+                {{ "%.3f"|format(comparativo_mensal.atual.area) if comparativo_mensal.atual else "0.000" }}
+              </div>
+              <div class="small text-muted mt-1">ha</div>
+              <div class="small mt-2">
+                {% if comparativo_mensal.area_delta_pct is not none %}
+                  <span class="{% if comparativo_mensal.area_delta_pct >= 0 %}delta-positive{% else %}delta-negative{% endif %}">
+                    {{ "%+.1f"|format(comparativo_mensal.area_delta_pct) }}%
+                  </span>
+                  <span class="text-muted">vs. mês anterior</span>
+                {% else %}
+                  <span class="delta-neutral">Sem base anterior</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-3">
+            <div class="comparison-card">
+              <div class="comparison-kicker">Volume e duração</div>
+              <div class="small text-muted">Volume</div>
+              <div class="fw-bold fs-4 text-dark">
+                {{ "%.2f"|format(comparativo_mensal.atual.volume) if comparativo_mensal.atual else "0.00" }}
+              </div>
+              <div class="small mt-1">
+                {% if comparativo_mensal.volume_delta_pct is not none %}
+                  <span class="{% if comparativo_mensal.volume_delta_pct >= 0 %}delta-positive{% else %}delta-negative{% endif %}">
+                    {{ "%+.1f"|format(comparativo_mensal.volume_delta_pct) }}%
+                  </span>
+                {% else %}
+                  <span class="delta-neutral">Sem base anterior</span>
+                {% endif %}
+              </div>
+              <div class="small text-muted mt-3">Duração</div>
+              <div class="fw-bold fs-5 text-dark">
+                {{ comparativo_mensal.atual.duracao if comparativo_mensal.atual else "00:00" }}
+              </div>
+              <div class="small mt-1">
+                {% if comparativo_mensal.duracao_delta_pct is not none %}
+                  <span class="{% if comparativo_mensal.duracao_delta_pct >= 0 %}delta-positive{% else %}delta-negative{% endif %}">
+                    {{ "%+.1f"|format(comparativo_mensal.duracao_delta_pct) }}%
+                  </span>
+                {% else %}
+                  <span class="delta-neutral">Sem base anterior</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Mês</th>
+                <th class="text-end">Voos</th>
+                <th class="text-end">Área (ha)</th>
+                <th class="text-end">Volume</th>
+                <th class="text-end">Duração</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in resumo_mensal|reverse %}
+              <tr>
+                <td>{{ item.mes_label }}</td>
+                <td class="text-end">{{ item.voos }}</td>
+                <td class="text-end">{{ "%.3f"|format(item.area) }}</td>
+                <td class="text-end">{{ "%.2f"|format(item.volume) }}</td>
+                <td class="text-end">{{ item.duracao }}</td>
+              </tr>
+              {% else %}
+              <tr><td colspan="5" class="text-center text-muted py-4">Sem histórico mensal suficiente.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <div class="col-lg-4">
+      <div class="card section-card h-100">
+        <div class="card-body">
+          <h5 class="mb-3">Top pilotos</h5>
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Piloto</th>
+                  <th class="text-end">Voos</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in top_pilotos %}
+                <tr>
+                  <td>{{ item.label }}</td>
+                  <td class="text-end">{{ item.total }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="2" class="text-center text-muted py-3">Sem dados.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card section-card h-100">
+        <div class="card-body">
+          <h5 class="mb-3">Top aeronaves</h5>
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Aeronave</th>
+                  <th class="text-end">Voos</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in top_aeronaves %}
+                <tr>
+                  <td>{{ item.label }}</td>
+                  <td class="text-end">{{ item.total }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="2" class="text-center text-muted py-3">Sem dados.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card section-card h-100">
+        <div class="card-body">
+          <h5 class="mb-3">Top equipes</h5>
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Equipe</th>
+                  <th class="text-end">Voos</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in top_equipes %}
+                <tr>
+                  <td>{{ item.label }}</td>
+                  <td class="text-end">{{ item.total }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="2" class="text-center text-muted py-3">Sem dados.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <div class="col-xl-7">
+      <div class="card section-card h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <h5 class="mb-1">Resumo semanal</h5>
+              <p class="text-muted small mb-0">Consolidado por semana operacional para acompanhar o crescimento do banco.</p>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Semana</th>
+                  <th class="text-end">Voos</th>
+                  <th class="text-end">Área (ha)</th>
+                  <th class="text-end">Volume</th>
+                  <th class="text-end">Duração</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in resumo_semanal %}
+                <tr>
+                  <td>{{ item.semana_label }}</td>
+                  <td class="text-end">{{ item.voos }}</td>
+                  <td class="text-end">{{ "%.3f"|format(item.area) }}</td>
+                  <td class="text-end">{{ "%.2f"|format(item.volume) }}</td>
+                  <td class="text-end">{{ item.duracao }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" class="text-center text-muted py-4">Nenhum voo importado ainda.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-5">
+      <div class="card section-card h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <h5 class="mb-1">Histórico de importações</h5>
+              <p class="text-muted small mb-0">Últimos arquivos enviados pelo admin.</p>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Arquivo</th>
+                  <th>Importado em</th>
+                  <th class="text-end">Novos</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in importacoes_recentes %}
+                <tr>
+                  <td>
+                    <div class="fw-semibold">{{ item.original_filename }}</div>
+                    <div class="small text-muted">{{ item.period_display }}</div>
+                  </td>
+                  <td>{{ item.uploaded_at.strftime("%d/%m/%Y %H:%M") }}</td>
+                  <td class="text-end">
+                    <div class="fw-semibold">{{ item.imported_rows }}</div>
+                    <div class="small text-muted">{{ item.skipped_rows }} repetidos</div>
+                  </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="3" class="text-center text-muted py-4">Sem importações realizadas.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card section-card">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h5 class="mb-1">Voos processados</h5>
+          <p class="text-muted small mb-0">Detalhamento individual de cada linha importada do Excel da DJI.</p>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Período</th>
+              <th>Piloto</th>
+              <th>Aeronave</th>
+              <th>Equipe</th>
+              <th>Local</th>
+              <th class="text-end">Área</th>
+              <th class="text-end">Volume</th>
+              <th class="text-end">Duração</th>
+              <th class="text-end">Bateria</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for registro in registros %}
+            <tr>
+              <td>
+                <div class="fw-semibold">{{ registro.flight_start.strftime("%d/%m/%Y %H:%M") }}</div>
+                <div class="small text-muted">{{ registro.flight_end.strftime("%H:%M") }}</div>
+              </td>
+              <td>{{ registro.pilot_name or "-" }}</td>
+              <td>
+                <div class="fw-semibold">{{ registro.aircraft_name or "-" }}</div>
+                <div class="small text-muted">{{ registro.serial_number or "-" }}</div>
+              </td>
+              <td>{{ registro.team_name or "-" }}</td>
+              <td>{{ registro.location_short }}</td>
+              <td class="text-end">{{ "%.3f"|format(registro.sprayed_area_ha or 0) }}</td>
+              <td class="text-end">{{ "%.2f"|format(registro.total_amount_l_kg or 0) }}</td>
+              <td class="text-end">{{ registro.duration_display }}</td>
+              <td class="text-end">
+                {% if registro.battery_consumption_pct is not none %}
+                  {{ registro.battery_consumption_pct }}%
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="9" class="text-center text-muted py-5">Nenhum voo encontrado para os filtros atuais.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% if paginacao.pages > 1 %}
+      <nav class="mt-4">
+        <ul class="pagination justify-content-center flex-wrap">
+          <li class="page-item {% if not paginacao.has_prev %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('main.relatorios_dji_logs', page=paginacao.prev_num, data_inicio=filtros.data_inicio, data_fim=filtros.data_fim, piloto=filtros.piloto, aeronave=filtros.aeronave, equipe=filtros.equipe) }}">Anterior</a>
+          </li>
+          <li class="page-item disabled">
+            <span class="page-link">{{ paginacao.page }} / {{ paginacao.pages }}</span>
+          </li>
+          <li class="page-item {% if not paginacao.has_next %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('main.relatorios_dji_logs', page=paginacao.next_num, data_inicio=filtros.data_inicio, data_fim=filtros.data_fim, piloto=filtros.piloto, aeronave=filtros.aeronave, equipe=filtros.equipe) }}">Próxima</a>
+          </li>
+        </ul>
+      </nav>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script>
+    (() => {
+      const monthlyLabels = {{ resumo_mensal | map(attribute='mes_label') | list | tojson }};
+      const monthlyVoos = {{ resumo_mensal | map(attribute='voos') | list | tojson }};
+      const monthlyArea = {{ resumo_mensal | map(attribute='area') | list | tojson }};
+      const monthlyVolume = {{ resumo_mensal | map(attribute='volume') | list | tojson }};
+
+      const topPilotosLabels = {{ top_pilotos | map(attribute='label') | list | tojson }};
+      const topPilotosValores = {{ top_pilotos | map(attribute='total') | list | tojson }};
+
+      const topAeronavesLabels = {{ top_aeronaves | map(attribute='label') | list | tojson }};
+      const topAeronavesValores = {{ top_aeronaves | map(attribute='total') | list | tojson }};
+
+      const weeklyLabels = {{ resumo_semanal | map(attribute='semana_label') | list | tojson }}.slice().reverse();
+      const weeklyVoos = {{ resumo_semanal | map(attribute='voos') | list | tojson }}.slice().reverse();
+      const weeklyArea = {{ resumo_semanal | map(attribute='area') | list | tojson }}.slice().reverse();
+      const weeklyVolume = {{ resumo_semanal | map(attribute='volume') | list | tojson }}.slice().reverse();
+
+      const textColor = document.body.classList.contains('dark-mode') ? '#e5e7eb' : '#334155';
+      const gridColor = document.body.classList.contains('dark-mode') ? 'rgba(148, 163, 184, 0.18)' : 'rgba(148, 163, 184, 0.2)';
+
+      const baseOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            labels: {
+              color: textColor,
+              boxWidth: 12,
+              usePointStyle: true,
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: textColor },
+            grid: { color: gridColor }
+          },
+          y: {
+            ticks: { color: textColor },
+            grid: { color: gridColor }
+          }
+        }
+      };
+
+      const mensalCanvas = document.getElementById('chartMensalDji');
+      if (mensalCanvas) {
+        new Chart(mensalCanvas, {
+          data: {
+            labels: monthlyLabels,
+            datasets: [
+              {
+                type: 'bar',
+                label: 'Voos',
+                data: monthlyVoos,
+                backgroundColor: 'rgba(13, 110, 253, 0.72)',
+                borderRadius: 8,
+                yAxisID: 'y'
+              },
+              {
+                type: 'line',
+                label: 'Área (ha)',
+                data: monthlyArea,
+                borderColor: '#198754',
+                backgroundColor: 'rgba(25, 135, 84, 0.18)',
+                tension: 0.35,
+                fill: false,
+                yAxisID: 'y1'
+              },
+              {
+                type: 'line',
+                label: 'Volume',
+                data: monthlyVolume,
+                borderColor: '#fd7e14',
+                backgroundColor: 'rgba(253, 126, 20, 0.18)',
+                tension: 0.35,
+                fill: false,
+                yAxisID: 'y1'
+              }
+            ]
+          },
+          options: {
+            ...baseOptions,
+            scales: {
+              x: {
+                ticks: { color: textColor },
+                grid: { color: gridColor }
+              },
+              y: {
+                position: 'left',
+                ticks: { color: textColor },
+                grid: { color: gridColor }
+              },
+              y1: {
+                position: 'right',
+                ticks: { color: textColor },
+                grid: { drawOnChartArea: false }
+              }
+            }
+          }
+        });
+      }
+
+      const topPilotosCanvas = document.getElementById('chartTopPilotosDji');
+      if (topPilotosCanvas) {
+        new Chart(topPilotosCanvas, {
+          type: 'bar',
+          data: {
+            labels: topPilotosLabels,
+            datasets: [{
+              label: 'Voos',
+              data: topPilotosValores,
+              backgroundColor: 'rgba(111, 66, 193, 0.78)',
+              borderRadius: 8
+            }]
+          },
+          options: {
+            ...baseOptions,
+            indexAxis: 'y'
+          }
+        });
+      }
+
+      const topAeronavesCanvas = document.getElementById('chartTopAeronavesDji');
+      if (topAeronavesCanvas) {
+        new Chart(topAeronavesCanvas, {
+          type: 'bar',
+          data: {
+            labels: topAeronavesLabels,
+            datasets: [{
+              label: 'Voos',
+              data: topAeronavesValores,
+              backgroundColor: 'rgba(32, 201, 151, 0.78)',
+              borderRadius: 8
+            }]
+          },
+          options: baseOptions
+        });
+      }
+
+      const semanalCanvas = document.getElementById('chartSemanalDji');
+      if (semanalCanvas) {
+        new Chart(semanalCanvas, {
+          data: {
+            labels: weeklyLabels,
+            datasets: [
+              {
+                type: 'bar',
+                label: 'Voos',
+                data: weeklyVoos,
+                backgroundColor: 'rgba(108, 117, 125, 0.65)',
+                borderRadius: 8,
+                yAxisID: 'y'
+              },
+              {
+                type: 'line',
+                label: 'Área (ha)',
+                data: weeklyArea,
+                borderColor: '#0dcaf0',
+                backgroundColor: 'rgba(13, 202, 240, 0.18)',
+                tension: 0.35,
+                yAxisID: 'y1'
+              },
+              {
+                type: 'line',
+                label: 'Volume',
+                data: weeklyVolume,
+                borderColor: '#dc3545',
+                backgroundColor: 'rgba(220, 53, 69, 0.18)',
+                tension: 0.35,
+                yAxisID: 'y1'
+              }
+            ]
+          },
+          options: {
+            ...baseOptions,
+            scales: {
+              x: {
+                ticks: { color: textColor, maxRotation: 0, autoSkip: true },
+                grid: { color: gridColor }
+              },
+              y: {
+                position: 'left',
+                ticks: { color: textColor },
+                grid: { color: gridColor }
+              },
+              y1: {
+                position: 'right',
+                ticks: { color: textColor },
+                grid: { drawOnChartArea: false }
+              }
+            }
+          }
+        });
+      }
+    })();
+  </script>
+{% endblock %}
