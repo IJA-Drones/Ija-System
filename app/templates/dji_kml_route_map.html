@@ -3,24 +3,117 @@
 {% block extra_styles %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
   <style>
-    .route-layout {
-      display: grid;
-      grid-template-columns: 340px 1fr;
-      gap: 1rem;
-      min-height: calc(100vh - 180px);
+    .route-hero {
+      position: relative;
+      overflow: hidden;
+      border: 0;
+      border-radius: 28px;
+      background:
+        radial-gradient(circle at top right, rgba(13, 110, 253, 0.16), transparent 34%),
+        linear-gradient(135deg, #0f172a 0%, #133a63 52%, #eef5ff 160%);
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+      color: #fff;
     }
-    .route-sidebar,
+    .route-hero::after {
+      content: "";
+      position: absolute;
+      inset: auto -10% -35% auto;
+      width: 320px;
+      height: 320px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      filter: blur(6px);
+    }
+    .route-hero-kicker {
+      color: rgba(255, 255, 255, 0.78);
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .route-hero-title {
+      font-size: clamp(2rem, 4vw, 3rem);
+      line-height: 1;
+      font-weight: 800;
+      margin-bottom: 0.4rem;
+    }
+    .route-hero-subtitle {
+      color: rgba(255, 255, 255, 0.82);
+      max-width: 720px;
+      margin-bottom: 0;
+    }
+    .route-hero-stat {
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      padding: 1rem 1.1rem;
+      height: 100%;
+    }
+    .route-hero-stat-label {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 0.76rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .route-hero-stat-value {
+      color: #fff;
+      font-size: 1.45rem;
+      font-weight: 800;
+      line-height: 1.1;
+      margin-top: 0.35rem;
+    }
+    .route-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, 380px) 1fr;
+      gap: 1rem;
+      align-items: start;
+    }
+    .route-panel,
     .route-map-card {
       border: 0;
-      border-radius: 22px;
-      box-shadow: 0 16px 32px rgba(15, 23, 42, 0.08);
+      border-radius: 26px;
       overflow: hidden;
+      box-shadow: 0 18px 42px rgba(15, 23, 42, 0.09);
+      background: #fff;
     }
-    .route-sidebar {
+    .route-panel {
       background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
     }
-    .route-map-card {
-      background: #ffffff;
+    .route-panel-body {
+      padding: 1.25rem;
+    }
+    .route-group-title {
+      color: #0f172a;
+      font-size: 1rem;
+      font-weight: 800;
+      margin-bottom: 0.9rem;
+    }
+    .route-info-card {
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.86);
+      padding: 0.95rem 1rem;
+      height: 100%;
+    }
+    .route-info-card + .route-info-card {
+      margin-top: 0.8rem;
+    }
+    .route-info-label {
+      color: #64748b;
+      font-size: 0.76rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.35rem;
+    }
+    .route-info-value {
+      color: #0f172a;
+      font-size: 1.02rem;
+      font-weight: 800;
+      line-height: 1.25;
+      word-break: break-word;
     }
     .route-map-toolbar {
       padding: 1rem 1.25rem;
@@ -31,41 +124,33 @@
       gap: 1rem;
       flex-wrap: wrap;
     }
+    .route-map-title {
+      color: #0f172a;
+      font-weight: 800;
+      margin-bottom: 0.15rem;
+    }
+    .route-map-subtitle {
+      color: #64748b;
+      font-size: 0.9rem;
+      margin-bottom: 0;
+    }
     .route-map-canvas-full {
       width: 100%;
-      height: calc(100vh - 270px);
-      min-height: 520px;
+      height: calc(100vh - 320px);
+      min-height: 560px;
       background: #eef2f7;
     }
-    .route-kicker {
-      color: #6b7280;
-      font-size: 0.78rem;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-    }
-    .route-title {
-      color: #0f172a;
-      font-size: 1.8rem;
-      font-weight: 800;
-      line-height: 1.1;
-    }
-    .route-stat {
-      border: 1px solid rgba(15, 23, 42, 0.08);
-      border-radius: 18px;
-      padding: 0.9rem 1rem;
-      background: rgba(255, 255, 255, 0.85);
-    }
-    .route-stat-value {
-      color: #0f172a;
-      font-size: 1.15rem;
-      font-weight: 800;
-    }
-    .route-stat + .route-stat {
-      margin-top: 0.75rem;
+    .route-color-chip {
+      width: 16px;
+      height: 16px;
+      border-radius: 999px;
+      display: inline-block;
+      border: 2px solid #fff;
+      box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.12);
+      flex-shrink: 0;
     }
     @media (max-width: 991.98px) {
-      .route-layout {
+      .route-grid {
         grid-template-columns: 1fr;
       }
       .route-map-canvas-full {
@@ -77,66 +162,102 @@
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4" style="max-width: 1400px;">
-  <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
-    <div>
-      <div class="route-kicker">Rota DJI em mapa</div>
-      <h2 class="route-title mb-1">{{ route.aircraft_name or "Rota do drone" }}</h2>
-      <p class="text-muted mb-0">
-        Trilha renderizada com a API do Google Maps a partir do arquivo KML importado.
-      </p>
+<div class="container-fluid py-4" style="max-width: 1440px;">
+  <div class="route-hero mb-4">
+    <div class="p-4 p-lg-5 position-relative">
+      <div class="d-flex flex-column flex-lg-row justify-content-between gap-4 align-items-lg-start mb-4">
+        <div>
+          <div class="route-hero-kicker">Detalhamento da rota KML</div>
+          <h1 class="route-hero-title">{{ route.aircraft_name or "Rota do drone" }}</h1>
+          <p class="route-hero-subtitle">
+            Codigo {{ route.route_code }}{% if route.route_timestamp %} | {{ route.route_timestamp }}{% endif %}.
+            Visualizacao consolidada da trilha, metricas de percurso e dados principais da operacao.
+          </p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+          <a href="{{ url_for('main.relatorios_dji_logs') }}" class="btn btn-light">
+            <i class="bi bi-arrow-left me-1"></i> Voltar aos logs
+          </a>
+          <a
+            href="{{ url_for('main.baixar_dji_kml_route', route_id=route.id) }}"
+            class="btn btn-outline-light"
+          >
+            <i class="bi bi-download me-1"></i> Baixar KML
+          </a>
+        </div>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-sm-6 col-xl-3">
+          <div class="route-hero-stat">
+            <div class="route-hero-stat-label">Distancia estimada</div>
+            <div class="route-hero-stat-value">{{ route.distance_label or "-" }}</div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+          <div class="route-hero-stat">
+            <div class="route-hero-stat-label">Pontos da trilha</div>
+            <div class="route-hero-stat-value">{{ route.point_count }}</div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+          <div class="route-hero-stat">
+            <div class="route-hero-stat-label">Area da tarefa</div>
+            <div class="route-hero-stat-value">
+              {% if route.task_area is not none %}
+                {{ "%.3f"|format(route.task_area) }} ha
+              {% else %}
+                -
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+          <div class="route-hero-stat">
+            <div class="route-hero-stat-label">Faixa de altitude</div>
+            <div class="route-hero-stat-value">{{ route.altitude_label or "-" }}</div>
+          </div>
+        </div>
+      </div>
     </div>
-    <a href="{{ url_for('main.relatorios_dji_logs') }}" class="btn btn-outline-secondary">
-      <i class="bi bi-arrow-left me-1"></i> Voltar aos logs
-    </a>
   </div>
 
-  <div class="route-layout">
-    <div class="route-sidebar p-4">
-      <div class="route-kicker">Código da rota</div>
-      <div class="route-title mb-4">{{ route.route_code }}</div>
-
-      <div class="route-stat">
-        <div class="route-kicker">Piloto</div>
-        <div class="route-stat-value">{{ route.pilot_name or "-" }}</div>
-      </div>
-      <div class="route-stat">
-        <div class="route-kicker">Controlador de voo</div>
-        <div class="route-stat-value">{{ route.flight_controller_id or "-" }}</div>
-      </div>
-      <div class="route-stat">
-        <div class="route-kicker">Data da rota</div>
-        <div class="route-stat-value">{{ route.route_timestamp or "-" }}</div>
-      </div>
-      <div class="route-stat">
-        <div class="route-kicker">Pontos da trilha</div>
-        <div class="route-stat-value">{{ route.point_count }}</div>
-      </div>
-      <div class="route-stat">
-        <div class="route-kicker">Área da tarefa</div>
-        <div class="route-stat-value">
-          {% if route.task_area is not none %}
-            {{ "%.3f"|format(route.task_area) }} ha
-          {% else %}
-            -
-          {% endif %}
+  <div class="route-grid">
+    <div class="route-panel">
+      <div class="route-panel-body">
+        <div class="route-group-title">Resumo operacional</div>
+        <div class="route-info-card">
+          <div class="route-info-label">Piloto</div>
+          <div class="route-info-value">{{ route.pilot_name or "-" }}</div>
         </div>
-      </div>
-      <div class="route-stat">
-        <div class="route-kicker">Volume pulverizado</div>
-        <div class="route-stat-value">
-          {% if route.spray_amount is not none %}
-            {{ "%.2f"|format(route.spray_amount) }}
-          {% else %}
-            -
-          {% endif %}
+        <div class="route-info-card">
+          <div class="route-info-label">Controlador de voo</div>
+          <div class="route-info-value">{{ route.flight_controller_id or "-" }}</div>
         </div>
-      </div>
-      <div class="route-stat">
-        <div class="route-kicker">Cor da rota</div>
-        <div class="d-flex align-items-center gap-2 mt-2">
-          <span style="width: 18px; height: 18px; border-radius: 999px; background: {{ route.route_color_css }}; display: inline-block; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(15,23,42,.12);"></span>
-          <span class="route-stat-value" style="font-size: 1rem;">{{ route.route_color_css }}</span>
+        <div class="route-info-card">
+          <div class="route-info-label">Volume pulverizado</div>
+          <div class="route-info-value">
+            {% if route.spray_amount is not none %}
+              {{ "%.2f"|format(route.spray_amount) }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+        <div class="route-info-card">
+          <div class="route-info-label">Inicio da rota</div>
+          <div class="route-info-value">{{ route.start_label or "-" }}</div>
+        </div>
+        <div class="route-info-card">
+          <div class="route-info-label">Fim da rota</div>
+          <div class="route-info-value">{{ route.end_label or "-" }}</div>
+        </div>
+        <div class="route-info-card">
+          <div class="route-info-label">Cor da rota</div>
+          <div class="route-info-value d-flex align-items-center gap-2">
+            <span class="route-color-chip" style="background: {{ route.route_color_css }};"></span>
+            <span>{{ route.route_color_css }}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -144,32 +265,19 @@
     <div class="route-map-card">
       <div class="route-map-toolbar">
         <div>
-          <div class="route-kicker">Visualização</div>
-          <div class="fw-semibold text-dark">Mapa satélite com trilha exata do KML</div>
+          <div class="route-map-title">Mapa da trilha</div>
+          <p class="route-map-subtitle">Visualizacao da rota importada do KML com enquadramento automatico.</p>
         </div>
         <div class="d-flex gap-2 flex-wrap">
-          <a
-            class="btn btn-dark btn-sm"
-            href="{{ url_for('main.baixar_dji_kml_route', route_id=route.id) }}"
-          >
-            <i class="bi bi-download me-1"></i> Baixar KML
-          </a>
           <button type="button" class="btn btn-outline-primary btn-sm" onclick="setMapType('satellite')">
-            <i class="bi bi-globe-americas me-1"></i> Satélite
+            <i class="bi bi-globe-americas me-1"></i> Satelite
           </button>
           <button type="button" class="btn btn-outline-primary btn-sm" onclick="setMapType('hybrid')">
-            <i class="bi bi-layers me-1"></i> Híbrido
+            <i class="bi bi-layers me-1"></i> Hibrido
           </button>
-          {% if route.center %}
-          <a
-            class="btn btn-outline-secondary btn-sm"
-            target="_blank"
-            rel="noopener"
-            href="https://www.google.com/maps?q={{ route.center.lat }},{{ route.center.lng }}"
-          >
-            <i class="bi bi-box-arrow-up-right me-1"></i> Abrir ponto central
-          </a>
-          {% endif %}
+          <button type="button" class="btn btn-outline-primary btn-sm" onclick="setMapType('roadmap')">
+            <i class="bi bi-signpost-split me-1"></i> Mapa
+          </button>
         </div>
       </div>
       <div id="routeMapCanvas" class="route-map-canvas-full"></div>
@@ -221,7 +329,7 @@
       new google.maps.Marker({
         position: points[0],
         map: routeMapInstance,
-        title: "Início da rota",
+        title: "Inicio da rota",
         icon: {
           path: google.maps.SymbolPath.CIRCLE,
           scale: 6,

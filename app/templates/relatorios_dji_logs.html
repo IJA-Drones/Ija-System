@@ -87,6 +87,47 @@
       text-transform: uppercase;
       letter-spacing: 0.04em;
     }
+    .route-summary-card {
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      border-radius: 20px;
+      padding: 1rem 1.1rem;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+      height: 100%;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+    }
+    .route-summary-value {
+      color: #0f172a;
+      font-size: 1.35rem;
+      font-weight: 800;
+      line-height: 1.1;
+      margin-top: 0.35rem;
+    }
+    .route-summary-meta {
+      color: #64748b;
+      font-size: 0.85rem;
+      margin-top: 0.35rem;
+    }
+    .route-detail-panel {
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      border-radius: 20px;
+      background: #fff;
+      padding: 1rem 1.1rem;
+      height: 100%;
+    }
+    .route-detail-label {
+      color: #64748b;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.4rem;
+    }
+    .route-detail-text {
+      color: #0f172a;
+      font-size: 1rem;
+      font-weight: 700;
+      word-break: break-word;
+    }
     .comparison-value {
       color: #0f172a;
       font-size: 1.8rem;
@@ -129,13 +170,13 @@
     <div class="card-body">
       <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-3">
         <div>
-          <h5 class="mb-1">Importação semanalllllssssss</h5>
+          <h5 class="mb-1">Importação semanal</h5>
           <p class="text-muted small mb-0">
             Envie o arquivo <strong>.xlsx</strong> exportado da DJI. O sistema soma apenas os voos novos e ignora linhas repetidas.
           </p>
         </div>
         <div class="small text-muted text-lg-end">
-          <div><strong>{{ total_importacoes }}</strong> loaaates Excel importados</div>
+          <div><strong>{{ total_importacoes }}</strong> lotes Excel importados</div>
           <div><strong>{{ total_rotas_kml }}</strong> rotas KML processadas</div>
         </div>
       </div>
@@ -753,28 +794,52 @@
       </div>
       <div class="modal-body">
         <div class="row g-3 mb-3">
-          <div class="col-md-3">
-            <div class="comparison-card">
+          <div class="col-md-6 col-xl-3">
+            <div class="route-summary-card">
               <div class="comparison-kicker">Aeronave</div>
-              <div class="fw-bold text-dark" id="rotaKmlAeronave">-</div>
+              <div class="route-summary-value" id="rotaKmlAeronave">-</div>
+              <div class="route-summary-meta" id="rotaKmlControlador">Controlador: -</div>
             </div>
           </div>
-          <div class="col-md-3">
-            <div class="comparison-card">
+          <div class="col-md-6 col-xl-3">
+            <div class="route-summary-card">
               <div class="comparison-kicker">Piloto</div>
-              <div class="fw-bold text-dark" id="rotaKmlPiloto">-</div>
+              <div class="route-summary-value" id="rotaKmlPiloto">-</div>
+              <div class="route-summary-meta" id="rotaKmlCor">Cor da rota: -</div>
             </div>
           </div>
-          <div class="col-md-3">
-            <div class="comparison-card">
-              <div class="comparison-kicker">Pontos</div>
-              <div class="fw-bold text-dark" id="rotaKmlPontos">0</div>
+          <div class="col-md-6 col-xl-3">
+            <div class="route-summary-card">
+              <div class="comparison-kicker">Trajeto</div>
+              <div class="route-summary-value" id="rotaKmlDistancia">-</div>
+              <div class="route-summary-meta"><span id="rotaKmlPontos">0</span> pontos registrados</div>
             </div>
           </div>
-          <div class="col-md-3">
-            <div class="comparison-card">
+          <div class="col-md-6 col-xl-3">
+            <div class="route-summary-card">
               <div class="comparison-kicker">Área da tarefa</div>
-              <div class="fw-bold text-dark" id="rotaKmlArea">-</div>
+              <div class="route-summary-value" id="rotaKmlArea">-</div>
+              <div class="route-summary-meta">Volume: <span id="rotaKmlVolume">-</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="row g-3 mb-3">
+          <div class="col-lg-4">
+            <div class="route-detail-panel">
+              <div class="route-detail-label">Altitude</div>
+              <div class="route-detail-text" id="rotaKmlAltitude">-</div>
+            </div>
+          </div>
+          <div class="col-lg-4">
+            <div class="route-detail-panel">
+              <div class="route-detail-label">Inicio da rota</div>
+              <div class="route-detail-text" id="rotaKmlInicio">-</div>
+            </div>
+          </div>
+          <div class="col-lg-4">
+            <div class="route-detail-panel">
+              <div class="route-detail-label">Fim da rota</div>
+              <div class="route-detail-text" id="rotaKmlFim">-</div>
             </div>
           </div>
         </div>
@@ -1021,8 +1086,15 @@
       document.getElementById("rotaKmlSubtitulo").textContent = route.route_timestamp || "Sem data de rota";
       document.getElementById("rotaKmlAeronave").textContent = route.aircraft_name || "-";
       document.getElementById("rotaKmlPiloto").textContent = route.pilot_name || "-";
+      document.getElementById("rotaKmlControlador").textContent = `Controlador: ${route.flight_controller_id || "-"}`;
+      document.getElementById("rotaKmlCor").textContent = `Cor da rota: ${route.route_color_css || "-"}`;
+      document.getElementById("rotaKmlDistancia").textContent = route.distance_label || "-";
       document.getElementById("rotaKmlPontos").textContent = route.point_count || 0;
       document.getElementById("rotaKmlArea").textContent = route.task_area != null ? Number(route.task_area).toFixed(3) : "-";
+      document.getElementById("rotaKmlVolume").textContent = route.spray_amount != null ? Number(route.spray_amount).toFixed(2) : "-";
+      document.getElementById("rotaKmlAltitude").textContent = route.altitude_label || "-";
+      document.getElementById("rotaKmlInicio").textContent = route.start_label || "-";
+      document.getElementById("rotaKmlFim").textContent = route.end_label || "-";
       document.getElementById("rotaKmlDownloadLink").href = `/relatorios/dji-logs/rota/${routeId}/kml`;
 
       const centerPoint = points[0];

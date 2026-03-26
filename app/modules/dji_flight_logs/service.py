@@ -1,5 +1,6 @@
 import hashlib
 import json
+import math
 import os
 import re
 import xml.etree.ElementTree as ET
@@ -334,6 +335,12 @@ def get_dji_route_payload(route_id):
     route = DjiFlightKmlRoute.query.get_or_404(route_id)
     points = json.loads(route.points_json or "[]")
     center_point = points[0] if points else None
+    start_point = points[0] if points else None
+    end_point = points[-1] if points else None
+    altitude_values = [float(point.get("alt", 0) or 0) for point in points if point.get("alt") is not None]
+    route_distance_meters = _compute_route_distance_meters(points)
+    altitude_min = min(altitude_values) if altitude_values else None
+    altitude_max = max(altitude_values) if altitude_values else None
     return {
         "id": route.id,
         "route_code": route.route_code,
@@ -347,6 +354,15 @@ def get_dji_route_payload(route_id):
         "route_color_css": _kml_color_to_css(route.route_color) or "#ff3b30",
         "route_width": route.route_width or 2,
         "center": center_point,
+        "start_point": start_point,
+        "end_point": end_point,
+        "start_label": _format_coordinate_label(start_point),
+        "end_label": _format_coordinate_label(end_point),
+        "distance_meters": route_distance_meters,
+        "distance_label": _format_distance_label(route_distance_meters),
+        "altitude_min": altitude_min,
+        "altitude_max": altitude_max,
+        "altitude_label": _format_altitude_range_label(altitude_min, altitude_max),
         "points": points,
     }
 
@@ -1031,6 +1047,67 @@ def _parse_kml_coordinates(raw_text):
             continue
         points.append({"lat": lat, "lng": lng, "alt": alt})
     return points
+
+
+def _compute_route_distance_meters(points):
+    if len(points or []) < 2:
+        return 0.0
+
+    total = 0.0
+    for index in range(1, len(points)):
+        previous = points[index - 1]
+        current = points[index]
+        total += _haversine_distance_meters(
+            previous.get("lat"),
+            previous.get("lng"),
+            current.get("lat"),
+            current.get("lng"),
+        )
+    return round(total, 2)
+
+
+def _haversine_distance_meters(lat1, lng1, lat2, lng2):
+    try:
+        lat1 = math.radians(float(lat1))
+        lng1 = math.radians(float(lng1))
+        lat2 = math.radians(float(lat2))
+        lng2 = math.radians(float(lng2))
+    except (TypeError, ValueError):
+        return 0.0
+
+    delta_lat = lat2 - lat1
+    delta_lng = lng2 - lng1
+    a = (
+        math.sin(delta_lat / 2) ** 2
+        + math.cos(lat1) * math.cos(lat2) * math.sin(delta_lng / 2) ** 2
+    )
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    earth_radius_meters = 6_371_000
+    return earth_radius_meters * c
+
+
+def _format_distance_label(distance_meters):
+    distance_meters = float(distance_meters or 0)
+    if distance_meters >= 1000:
+        return f"{distance_meters / 1000:.2f} km"
+    return f"{distance_meters:.0f} m"
+
+
+def _format_coordinate_label(point):
+    if not point:
+        return "-"
+    try:
+        return f"{float(point.get('lat')):.6f}, {float(point.get('lng')):.6f}"
+    except (TypeError, ValueError):
+        return "-"
+
+
+def _format_altitude_range_label(altitude_min, altitude_max):
+    if altitude_min is None or altitude_max is None:
+        return "-"
+    if abs(float(altitude_max) - float(altitude_min)) < 0.01:
+        return f"{float(altitude_min):.1f} m"
+    return f"{float(altitude_min):.1f} m a {float(altitude_max):.1f} m"
 
 
 def _xml_local_name(tag):
