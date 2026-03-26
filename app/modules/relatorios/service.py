@@ -1,10 +1,13 @@
+import json
+from collections import Counter
 from datetime import datetime
+from math import ceil
 
 from sqlalchemy import and_, extract, func, or_
 
 from app.extensions import db
 from app.models import OrdemServico, Solicitacao, Usuario
-from app.shared.access import ADMIN_PANEL_VIEW_TYPES, apply_regiao_scope, apply_solicitacao_regiao_scope
+from app.shared.access import ADMIN_PANEL_VIEW_TYPES, apply_regiao_scope, apply_solicitacao_regiao_scope, normalize_regiao
 from app.shared.query_filters import aplicar_filtros_base
 
 
@@ -15,13 +18,136 @@ def can_access_relatorios_menu(user) -> bool:
     return getattr(user, "tipo_usuario", None) in RELATORIOS_MENU_TYPES
 
 
-def build_uvis_disponiveis(user):
+class SimplePagination:
+    def __init__(self, items, page, per_page):
+        self.total = len(items)
+        self.per_page = per_page
+        self.pages = max(1, ceil(self.total / per_page)) if self.total else 1
+        self.page = max(1, min(page, self.pages))
+        self.has_prev = self.page > 1
+        self.has_next = self.page < self.pages
+        self.prev_num = self.page - 1
+        self.next_num = self.page + 1
+        start = (self.page - 1) * self.per_page
+        end = start + self.per_page
+        self.items = items[start:end]
+
+    def iter_pages(self):
+        return range(1, self.pages + 1)
+
+
+def build_uvis_disponiveis(user, regiao: str | None = None):
     if getattr(user, "tipo_usuario", None) not in RELATORIOS_MENU_TYPES:
         return []
 
     query = db.session.query(Usuario.id, Usuario.nome_uvis).filter(Usuario.tipo_usuario == "uvis")
     query = apply_regiao_scope(query, user, Usuario.regiao)
+    if regiao:
+        query = query.filter(func.upper(func.coalesce(Usuario.regiao, "")) == normalize_regiao(regiao))
     return query.order_by(Usuario.nome_uvis).all()
+
+
+def build_regioes_disponiveis(user):
+    if getattr(user, "tipo_usuario", None) not in RELATORIOS_MENU_TYPES:
+        return []
+
+    query = (
+        db.session.query(Usuario.regiao)
+        .filter(
+            Usuario.tipo_usuario == "uvis",
+            Usuario.regiao.isnot(None),
+            Usuario.regiao != "",
+        )
+    )
+    query = apply_regiao_scope(query, user, Usuario.regiao)
+    return [value for (value,) in query.distinct().order_by(Usuario.regiao.asc()).all() if value]
+
+
+def _parse_media_list(value):
+    if not value:
+        return []
+    if isinstance(value, list):
+        return [str(item).replace("\\", "/") for item in value if item]
+    try:
+        parsed = json.loads(value)
+    except Exception:
+        return []
+    if not isinstance(parsed, list):
+        return []
+    return [str(item).replace("\\", "/") for item in parsed if item]
+
+
+def _format_endereco(solicitacao):
+    if not solicitacao:
+        return "-"
+    return (
+        f"{solicitacao.logradouro or ''}, {solicitacao.numero or 'S/N'} - "
+        f"{solicitacao.bairro or ''} - {solicitacao.cidade or ''}/{solicitacao.uf or ''}"
+    ).strip(" -")
+
+
+def _format_data_coleta(ordem, solicitacao):
+    if ordem and ordem.data_aplicacao:
+        return ordem.data_aplicacao.strftime("%d/%m/%Y")
+    if ordem and ordem.respondido_em:
+        return ordem.respondido_em.strftime("%d/%m/%Y")
+    if solicitacao and solicitacao.data_agendamento:
+        return solicitacao.data_agendamento.strftime("%d/%m/%Y")
+    return "-"
+
+
+def _serialize_coleta_imagem_row(ordem, solicitacao, usuario):
+    outras_imagens = _parse_media_list(getattr(ordem, "outras_imagens", None))
+    regiao_nome = (
+        getattr(usuario, "regiao", None)
+        or getattr(getattr(solicitacao, "equipe", None), "regiao", None)
+        or "Nao informado"
+    )
+    latitude = solicitacao.latitude if solicitacao and solicitacao.latitude is not None else "-"
+    longitude = solicitacao.longitude if solicitacao and solicitacao.longitude is not None else "-"
+
+    return {
+        "solicitacao_id": solicitacao.id if solicitacao else None,
+        "ordem_id": ordem.id if ordem else None,
+        "uvis_nome": (usuario.nome_uvis if usuario else "") or "Nao informado",
+        "regiao_nome": regiao_nome,
+        "foco": (solicitacao.foco if solicitacao else "") or "Nao informado",
+        "endereco": _format_endereco(solicitacao),
+        "cep": (solicitacao.cep if solicitacao else "") or "-",
+        "coordenadas": f"{latitude}, {longitude}",
+        "data_coleta_label": _format_data_coleta(ordem, solicitacao),
+        "imagem_principal_path": getattr(ordem, "imagem_principal", None),
+        "outras_imagens_paths": outras_imagens,
+        "outras_imagens_count": len(outras_imagens),
+        "video_path": getattr(ordem, "video", None),
+        "tem_video": bool(getattr(ordem, "video", None)),
+        "total_midias": 1 + len(outras_imagens) + (1 if getattr(ordem, "video", None) else 0),
+        "quantidade_imagens_registradas": getattr(ordem, "quantidade_imagens_registradas", None),
+        "quantidade_videos_registradas": getattr(ordem, "quantidade_videos_registradas", None),
+    }
+
+
+def _resolve_coleta_imagens_filters(user, args):
+    regiao = (args.get("regiao") or "").strip()
+    uvis_id = args.get("uvis_id", type=int) if getattr(user, "tipo_usuario", None) != "uvis" else user.id
+    return regiao, uvis_id
+
+
+def _build_coleta_imagens_query(user, *, regiao="", uvis_id=None):
+    query = (
+        db.session.query(OrdemServico, Solicitacao, Usuario)
+        .join(Solicitacao, Solicitacao.id == OrdemServico.solicitacao_id)
+        .join(Usuario, Usuario.id == Solicitacao.usuario_id)
+        .filter(func.length(func.trim(func.coalesce(OrdemServico.imagem_principal, ""))) > 0)
+    )
+    query = apply_regiao_scope(query, user, Usuario.regiao)
+
+    if regiao:
+        query = query.filter(func.upper(func.coalesce(Usuario.regiao, "")) == normalize_regiao(regiao))
+    if uvis_id:
+        query = query.filter(Solicitacao.usuario_id == uvis_id)
+
+    return query
 
 
 def _agrupar_por(base_query, campo):
@@ -378,4 +504,75 @@ def build_relatorio_os_export_data(user, args):
         "dados_piloto": dados_piloto,
         "dados_unidade": dados_unidade,
         "dados_mensais": dados_mensais,
+    }
+
+
+def build_relatorio_coleta_imagens_export_data(user, args):
+    regiao_selecionada, uvis_id = _resolve_coleta_imagens_filters(user, args)
+    base_query = _build_coleta_imagens_query(user, regiao=regiao_selecionada, uvis_id=uvis_id)
+
+    rows = (
+        base_query
+        .order_by(
+            Usuario.nome_uvis.asc(),
+            OrdemServico.data_aplicacao.desc(),
+            OrdemServico.respondido_em.desc(),
+            OrdemServico.id.desc(),
+        )
+        .all()
+    )
+
+    levantamentos = [_serialize_coleta_imagem_row(ordem, solicitacao, usuario) for ordem, solicitacao, usuario in rows]
+
+    dados_unidade_counter = Counter(item["uvis_nome"] for item in levantamentos)
+    dados_regiao_counter = Counter(item["regiao_nome"] for item in levantamentos)
+
+    total_imagens_complementares = sum(item["outras_imagens_count"] for item in levantamentos)
+    total_videos = sum(1 for item in levantamentos if item["tem_video"])
+    total_midias = sum(item["total_midias"] for item in levantamentos)
+    total_uvis = len({item["uvis_nome"] for item in levantamentos if item["uvis_nome"] and item["uvis_nome"] != "Nao informado"})
+    total_regioes = len({item["regiao_nome"] for item in levantamentos if item["regiao_nome"] and item["regiao_nome"] != "Nao informado"})
+
+    uvis_disponiveis = build_uvis_disponiveis(user, regiao_selecionada)
+    regioes_disponiveis = build_regioes_disponiveis(user)
+
+    nome_uvis = None
+    if uvis_id:
+        nome_uvis = (
+            apply_regiao_scope(
+                db.session.query(Usuario.nome_uvis).filter(Usuario.id == uvis_id),
+                user,
+                Usuario.regiao,
+            )
+            .scalar()
+        )
+
+    return {
+        "levantamentos": levantamentos,
+        "total_levantamentos": len(levantamentos),
+        "total_uvis_com_registro": total_uvis,
+        "total_regioes_com_registro": total_regioes,
+        "total_imagens_complementares": total_imagens_complementares,
+        "total_videos": total_videos,
+        "total_midias": total_midias,
+        "dados_unidade": sorted(dados_unidade_counter.items(), key=lambda item: (-item[1], item[0])),
+        "dados_regiao": sorted(dados_regiao_counter.items(), key=lambda item: (-item[1], item[0])),
+        "uvis_disponiveis": uvis_disponiveis,
+        "regioes_disponiveis": regioes_disponiveis,
+        "uvis_id_selecionado": uvis_id,
+        "regiao_selecionada": regiao_selecionada,
+        "uvis_nome_selecionado": nome_uvis or "Todas as Unidades",
+        "regiao_nome_selecionada": regiao_selecionada or "Todas as Regioes",
+    }
+
+
+def build_relatorios_coleta_imagens_context(user, args):
+    data = build_relatorio_coleta_imagens_export_data(user, args)
+    page = args.get("page", 1, type=int)
+    paginacao = SimplePagination(data["levantamentos"], page, per_page=9)
+
+    return {
+        **data,
+        "levantamentos": paginacao.items,
+        "paginacao": paginacao,
     }

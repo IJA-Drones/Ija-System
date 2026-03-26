@@ -250,7 +250,7 @@
           {% if current_user.tipo_usuario in ['admin', 'visualizar', 'operario', 'regional'] %}
           <li class="nav-item">
             <a
-              class="nav-link {% if request.endpoint in ['main.relatorios', 'main.relatorios_solicitacoes', 'main.relatorios_os'] %}active{% endif %}"
+              class="nav-link {% if request.endpoint in ['main.relatorios', 'main.relatorios_solicitacoes', 'main.relatorios_os', 'main.relatorios_coleta_imagens'] %}active{% endif %}"
               href="{{ url_for('main.relatorios') }}"
             >
               <i class="bi bi-bar-chart-fill me-2"></i><span>Relatórios</span>

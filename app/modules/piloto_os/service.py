@@ -1,6 +1,9 @@
+import json
+import os
 from datetime import date, datetime, timedelta
 
 from sqlalchemy.orm import joinedload
+from werkzeug.utils import secure_filename
 
 from app.extensions import db
 from app.models import Baterias, Drones, Equipe, EquipePiloto, OrdemServico, Solicitacao, Veiculos
@@ -23,6 +26,8 @@ STATUS_OS_APROVADAS_COM_ACENTO = [
     "APROVADA COM RECOMENDA\u00c7\u00d5ES",
 ]
 STATUS_OS_CONCLUIDAS = ["CONCLUIDO", "CONCLU\u00cdDO"]
+OS_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png"}
+OS_VIDEO_EXTENSIONS = {"mp4", "mov", "webm", "m4v"}
 
 
 class PilotoOsError(Exception):
@@ -222,10 +227,16 @@ def build_piloto_os_form_context(user, os_id):
         "ordem": ordem,
         "modo_visualizacao": (solicitacao.status or "").strip().upper() in {"CONCLUIDO", "CONCLU\u00cdDO"},
         "uvis_nome": solicitacao.usuario.nome_uvis if solicitacao.usuario else "",
+        "regiao_nome": (
+            getattr(solicitacao.usuario, "regiao", None)
+            or getattr(equipe, "regiao", None)
+            or ""
+        ),
         "endereco_os": (
             f"{solicitacao.logradouro or ''}, {solicitacao.numero or 'S/N'} - "
             f"{solicitacao.bairro or ''} - {solicitacao.cidade or ''}/{solicitacao.uf or ''}"
         ),
+        "data_coleta_imagem_label": _build_data_coleta_imagem_label(solicitacao, ordem),
         "piloto_padrao": (
             equipe.piloto_titular.nome_piloto if equipe and equipe.piloto_titular else ""
         ) if equipe else "",
@@ -238,10 +249,11 @@ def build_piloto_os_form_context(user, os_id):
             if ordem and ordem.respondido_em else datetime.now().strftime("%Y-%m-%dT%H:%M")
         ),
         "drones_equipe": drones_equipe,
+        **_build_os_media_context(ordem),
     }
 
 
-def salvar_piloto_os_form(user, os_id, form_data):
+def salvar_piloto_os_form(user, os_id, form_data, files_data, root_path):
     context = build_piloto_os_form_context(user, os_id)
 
     if context["modo_visualizacao"]:
@@ -266,6 +278,8 @@ def salvar_piloto_os_form(user, os_id, form_data):
         solicitacao=solicitacao,
         ordem=ordem,
         form_data=form_data,
+        files_data=files_data,
+        root_path=root_path,
         piloto_padrao=context["piloto_padrao"],
         auxiliar_padrao=context["auxiliar_padrao"],
         respondido_por_padrao=context["respondido_por_padrao"],
@@ -344,10 +358,16 @@ def build_admin_os_form_context(user, os_id):
         "ordem": ordem,
         "modo_visualizacao": True,
         "uvis_nome": solicitacao.usuario.nome_uvis if solicitacao.usuario else "",
+        "regiao_nome": (
+            getattr(solicitacao.usuario, "regiao", None)
+            or getattr(equipe, "regiao", None)
+            or ""
+        ),
         "endereco_os": (
             f"{solicitacao.logradouro or ''}, {solicitacao.numero or 'S/N'} - "
             f"{solicitacao.bairro or ''} - {solicitacao.cidade or ''}/{solicitacao.uf or ''}"
         ),
+        "data_coleta_imagem_label": _build_data_coleta_imagem_label(solicitacao, ordem),
         "piloto_padrao": (
             equipe.piloto_titular.nome_piloto if equipe and equipe.piloto_titular else ""
         ) if equipe else "",
@@ -360,6 +380,7 @@ def build_admin_os_form_context(user, os_id):
             if ordem and ordem.respondido_em else ""
         ),
         "drones_equipe": drones_equipe,
+        **_build_os_media_context(ordem),
     }
 
 
@@ -465,7 +486,18 @@ def criar_solicitacao_retorno_monitoramento(solicitacao_original, ordem_atual):
     return nova_solicitacao
 
 
-def _aplicar_campos_formulario(*, user, solicitacao, ordem, form_data, piloto_padrao, auxiliar_padrao, respondido_por_padrao):
+def _aplicar_campos_formulario(
+    *,
+    user,
+    solicitacao,
+    ordem,
+    form_data,
+    files_data,
+    root_path,
+    piloto_padrao,
+    auxiliar_padrao,
+    respondido_por_padrao,
+):
     drone_pulv_id = _to_int(form_data.get("drone_id"))
     drone_monit_id = _to_int(form_data.get("drone_monitoramento_id"))
 
@@ -542,6 +574,19 @@ def _aplicar_campos_formulario(*, user, solicitacao, ordem, form_data, piloto_pa
     ordem.auxiliar = _clean_str(form_data.get("auxiliar")) or auxiliar_padrao
     ordem.proprietario_ou_preposto = _clean_str(form_data.get("proprietario_ou_preposto"))
     ordem.assinatura_proprietario_ou_preposto = _clean_str(form_data.get("assinatura_proprietario_ou_preposto"))
+    _aplicar_midias_os(
+        solicitacao=solicitacao,
+        ordem=ordem,
+        form_data=form_data,
+        files_data=files_data,
+        root_path=root_path,
+    )
+    if ordem.quantidade_imagens_registradas is None:
+        total_midias_salvas = (1 if ordem.imagem_principal else 0) + len(_parse_json_list(ordem.outras_imagens))
+        if total_midias_salvas:
+            ordem.quantidade_imagens_registradas = total_midias_salvas
+    if ordem.quantidade_videos_registradas is None and ordem.video:
+        ordem.quantidade_videos_registradas = 1
 
 
 def _clean(value):
@@ -615,6 +660,181 @@ def _to_datetime_local(value):
         except Exception:
             pass
     return None
+
+
+def _build_data_coleta_imagem_label(solicitacao, ordem):
+    if ordem and ordem.data_aplicacao:
+        return ordem.data_aplicacao.strftime("%d/%m/%Y")
+    if ordem and ordem.respondido_em:
+        return ordem.respondido_em.strftime("%d/%m/%Y")
+    if solicitacao and solicitacao.data_agendamento:
+        return solicitacao.data_agendamento.strftime("%d/%m/%Y")
+    return ""
+
+
+def _build_os_media_context(ordem):
+    imagem_principal_path = getattr(ordem, "imagem_principal", None) if ordem else None
+    outras_imagens_paths = _parse_json_list(getattr(ordem, "outras_imagens", None) if ordem else None)
+    video_path = getattr(ordem, "video", None) if ordem else None
+    return {
+        "imagem_principal_path": imagem_principal_path,
+        "outras_imagens_paths": outras_imagens_paths,
+        "video_path": video_path,
+        "total_midias_formulario": (
+            (1 if imagem_principal_path else 0)
+            + len(outras_imagens_paths)
+            + (1 if video_path else 0)
+        ),
+    }
+
+
+def _parse_json_list(value):
+    if not value:
+        return []
+    if isinstance(value, list):
+        return [str(item).replace("\\", "/") for item in value if item]
+    try:
+        data = json.loads(value)
+    except Exception:
+        return []
+    if not isinstance(data, list):
+        return []
+    return [str(item).replace("\\", "/") for item in data if item]
+
+
+def _validar_arquivo_imagem_os(arquivo):
+    nome_seguro = secure_filename((arquivo.filename or "").strip())
+    ext = os.path.splitext(nome_seguro)[1].lower().lstrip(".")
+    if not nome_seguro or ext not in OS_IMAGE_EXTENSIONS:
+        raise PilotoOsError(
+            "Envie apenas imagens nos formatos JPG, JPEG ou PNG para o levantamento.",
+            "warning",
+            redirect_endpoint="main.piloto_os_formulario_view",
+        )
+    return ext
+
+
+def _validar_arquivo_video_os(arquivo):
+    nome_seguro = secure_filename((arquivo.filename or "").strip())
+    ext = os.path.splitext(nome_seguro)[1].lower().lstrip(".")
+    if not nome_seguro or ext not in OS_VIDEO_EXTENSIONS:
+        raise PilotoOsError(
+            "Envie apenas videos nos formatos MP4, MOV, WEBM ou M4V para o levantamento.",
+            "warning",
+            redirect_endpoint="main.piloto_os_formulario_view",
+        )
+    return ext
+
+
+def _salvar_upload_os_imagem(arquivo, root_path, os_id, prefixo):
+    if not arquivo or not arquivo.filename:
+        return None
+
+    ext = _validar_arquivo_imagem_os(arquivo)
+    pasta_destino = os.path.join(root_path, "static", "uploads", "os", str(os_id))
+    os.makedirs(pasta_destino, exist_ok=True)
+
+    stamp = datetime.now().strftime("%Y%m%d%H%M%S%f")
+    nome = secure_filename(f"{prefixo}_os_{os_id}_{stamp}.{ext}")
+    arquivo.save(os.path.join(pasta_destino, nome))
+    return f"uploads/os/{os_id}/{nome}"
+
+
+def _salvar_upload_os_video(arquivo, root_path, os_id, prefixo):
+    if not arquivo or not arquivo.filename:
+        return None
+
+    ext = _validar_arquivo_video_os(arquivo)
+    pasta_destino = os.path.join(root_path, "static", "uploads", "os", str(os_id))
+    os.makedirs(pasta_destino, exist_ok=True)
+
+    stamp = datetime.now().strftime("%Y%m%d%H%M%S%f")
+    nome = secure_filename(f"{prefixo}_os_{os_id}_{stamp}.{ext}")
+    arquivo.save(os.path.join(pasta_destino, nome))
+    return f"uploads/os/{os_id}/{nome}"
+
+
+def _remover_upload_os_arquivo(root_path, rel_path):
+    if not rel_path:
+        return
+
+    static_root = os.path.abspath(os.path.join(root_path, "static"))
+    abs_path = os.path.abspath(os.path.join(static_root, rel_path.replace("/", os.sep)))
+    if not abs_path.startswith(static_root):
+        return
+    if os.path.exists(abs_path) and os.path.isfile(abs_path):
+        try:
+            os.remove(abs_path)
+        except OSError:
+            pass
+
+
+def _aplicar_midias_os(*, solicitacao, ordem, form_data, files_data, root_path):
+    files_data = files_data or {}
+    getlist = getattr(files_data, "getlist", None)
+    imagem_principal_file = files_data.get("imagem_principal_file") if hasattr(files_data, "get") else None
+    outras_imagens_files = [arquivo for arquivo in (getlist("outras_imagens_files") if callable(getlist) else []) if arquivo and arquivo.filename]
+    video_file = files_data.get("video_file") if hasattr(files_data, "get") else None
+
+    remover_imagem_principal = form_data.get("remover_imagem_principal") == "1"
+    limpar_outras_imagens = form_data.get("limpar_outras_imagens") == "1"
+    remover_video = form_data.get("remover_video") == "1"
+
+    imagem_principal_atual = getattr(ordem, "imagem_principal", None)
+    outras_imagens_atuais = _parse_json_list(getattr(ordem, "outras_imagens", None))
+    video_atual = getattr(ordem, "video", None)
+
+    if remover_imagem_principal and imagem_principal_atual:
+        _remover_upload_os_arquivo(root_path, imagem_principal_atual)
+        ordem.imagem_principal = None
+        imagem_principal_atual = None
+
+    if imagem_principal_file and imagem_principal_file.filename:
+        if imagem_principal_atual:
+            _remover_upload_os_arquivo(root_path, imagem_principal_atual)
+        ordem.imagem_principal = _salvar_upload_os_imagem(
+            imagem_principal_file,
+            root_path,
+            solicitacao.id,
+            "principal",
+        )
+
+    if limpar_outras_imagens and outras_imagens_atuais:
+        for rel_path in outras_imagens_atuais:
+            _remover_upload_os_arquivo(root_path, rel_path)
+        outras_imagens_atuais = []
+
+    if outras_imagens_files:
+        inicio = len(outras_imagens_atuais) + 1
+        for indice, arquivo in enumerate(outras_imagens_files, start=inicio):
+            outras_imagens_atuais.append(
+                _salvar_upload_os_imagem(
+                    arquivo,
+                    root_path,
+                    solicitacao.id,
+                    f"complementar_{indice}",
+                )
+            )
+
+    ordem.outras_imagens = (
+        json.dumps(outras_imagens_atuais, ensure_ascii=False)
+        if outras_imagens_atuais else None
+    )
+
+    if remover_video and video_atual:
+        _remover_upload_os_arquivo(root_path, video_atual)
+        ordem.video = None
+        video_atual = None
+
+    if video_file and video_file.filename:
+        if video_atual:
+            _remover_upload_os_arquivo(root_path, video_atual)
+        ordem.video = _salvar_upload_os_video(
+            video_file,
+            root_path,
+            solicitacao.id,
+            "video",
+        )
 
 
 def _buscar_vinculo_ativo_piloto(piloto_id):

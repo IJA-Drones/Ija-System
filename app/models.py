@@ -379,6 +379,11 @@ class OrdemServico(db.Model):
 
     quantidade_videos_registradas = db.Column(db.Integer)
     quantidade_imagens_registradas = db.Column(db.Integer)
+
+    imagem_principal = db.Column(db.String(255))
+    outras_imagens = db.Column(db.Text)  # JSON array de paths
+    video = db.Column(db.String(255))
+
     ponta_pulverizacao = db.Column(db.String(100))
 
     temperatura_c = db.Column(db.Float)

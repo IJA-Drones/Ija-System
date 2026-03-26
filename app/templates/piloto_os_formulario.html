@@ -14,6 +14,310 @@
   .form-label-header { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: #6c757d; font-weight: 700; }
   .bg-snapshot { background-color: #f8f9fa; border: 1px solid #e9ecef; }
   .readonly-form .signature-pad { pointer-events: none; }
+  .os-form-tabs {
+    border-bottom: 0;
+    gap: 0.75rem;
+  }
+  .os-form-tabs .nav-link {
+    border: 1px solid rgba(21, 101, 192, 0.18);
+    border-radius: 999px;
+    font-weight: 700;
+    color: var(--color-primary);
+    background: rgba(21, 101, 192, 0.06);
+  }
+  .os-form-tabs .nav-link.active {
+    color: #fff;
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-sm);
+  }
+  .os-tab-pane {
+    min-height: 280px;
+  }
+  .os-image-card {
+    height: 100%;
+    border: 1px solid #dbe4f0;
+    border-radius: 1rem;
+    background: linear-gradient(180deg, #fbfdff 0%, #f4f8fc 100%);
+    box-shadow: var(--shadow-sm);
+  }
+  .os-image-preview {
+    width: 100%;
+    min-height: 260px;
+    max-height: 420px;
+    object-fit: cover;
+    border-radius: 0.9rem;
+    border: 1px solid #d9e3ef;
+    background: #eef4fb;
+  }
+  .os-video-preview {
+    width: 100%;
+    min-height: 260px;
+    max-height: 420px;
+    border-radius: 0.9rem;
+    border: 1px solid #d9e3ef;
+    background: #0f172a;
+  }
+  .os-image-empty {
+    min-height: 260px;
+    border: 1px dashed #b8c7da;
+    border-radius: 0.9rem;
+    background: #f8fbff;
+    color: #5f6f84;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 1.25rem;
+  }
+  .os-image-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.85rem;
+  }
+  .os-image-thumb {
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+    border-radius: 0.8rem;
+    border: 1px solid #d9e3ef;
+    background: #eef4fb;
+  }
+  .os-image-thumb-card {
+    border: 1px solid #dbe4f0;
+    border-radius: 0.9rem;
+    background: #fff;
+    padding: 0.65rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    height: 100%;
+  }
+  .os-image-thumb-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+  }
+  .os-image-thumb-name {
+    font-size: 0.78rem;
+    color: #5f6f84;
+    word-break: break-word;
+  }
+  .os-media-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    background: rgba(21, 101, 192, 0.08);
+    color: var(--color-primary);
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+  .os-muted-panel {
+    opacity: 0.55;
+    transition: opacity 0.2s ease;
+  }
+  .os-media-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+  .os-media-hero {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(17, 78, 131, 0.12);
+    border-radius: 1.25rem;
+    padding: 1.35rem;
+    background: linear-gradient(135deg, #0c4d88 0%, #1567aa 58%, #2b85c4 100%);
+    box-shadow: var(--shadow-sm);
+  }
+  .os-media-hero::after {
+    content: "";
+    position: absolute;
+    right: -42px;
+    bottom: -52px;
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.14);
+  }
+  .os-media-hero-copy-wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 680px;
+  }
+  .os-media-hero-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 999px;
+    margin-bottom: 0.85rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #eff6ff;
+    background: rgba(255, 255, 255, 0.16);
+  }
+  .os-media-hero-title {
+    margin: 0 0 0.45rem;
+    color: #ffffff;
+    font-size: 1.28rem;
+    font-weight: 800;
+    line-height: 1.2;
+  }
+  .os-media-hero-copy {
+    margin: 0;
+    max-width: 540px;
+    color: rgba(255, 255, 255, 0.9);
+    line-height: 1.6;
+  }
+  .os-media-count.is-hero {
+    position: relative;
+    z-index: 1;
+    background: rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.24);
+  }
+  .os-media-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 0.85rem;
+  }
+  .os-media-summary-card {
+    border: 1px solid #dbe4f0;
+    border-radius: 1rem;
+    background: #ffffff;
+    padding: 1rem 1.05rem;
+    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.05);
+  }
+  .os-media-summary-label {
+    display: block;
+    margin-bottom: 0.35rem;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 700;
+    color: #7a8798;
+  }
+  .os-media-summary-value {
+    color: #163d66;
+    font-size: 0.98rem;
+    font-weight: 700;
+    line-height: 1.4;
+    word-break: break-word;
+  }
+  .os-media-card {
+    position: relative;
+    overflow: hidden;
+  }
+  .os-media-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 4px;
+    background: linear-gradient(90deg, #1d6eb3, #8dc0ea);
+  }
+  .os-media-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  .os-media-card-kicker {
+    margin-bottom: 0.3rem;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 700;
+    color: #728197;
+  }
+  .os-media-card-title {
+    margin: 0 0 0.3rem;
+    color: #173b62;
+    font-size: 1.08rem;
+    font-weight: 800;
+  }
+  .os-media-card-description {
+    margin: 0;
+    color: #627287;
+    line-height: 1.55;
+    font-size: 0.92rem;
+  }
+  .os-media-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.42rem 0.8rem;
+    border-radius: 999px;
+    border: 1px solid #d1dfef;
+    background: #ffffff;
+    color: #2f557e;
+    font-size: 0.75rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .os-media-pill-primary {
+    border-color: rgba(21, 101, 192, 0.16);
+    background: rgba(21, 101, 192, 0.08);
+    color: #0d57a1;
+  }
+  .os-media-preview-frame {
+    border: 1px solid #dbe4f0;
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.78);
+    padding: 0.85rem;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  }
+  .os-media-upload-box {
+    border: 1px dashed #bfd1e4;
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.82);
+    padding: 1rem;
+  }
+  .os-media-upload-box .form-control {
+    border-color: #d7e4f2;
+    box-shadow: none;
+  }
+  .os-media-help {
+    font-size: 0.83rem;
+    color: #6a7b91;
+    line-height: 1.5;
+  }
+  .os-media-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+  }
+  .os-media-gallery-label {
+    margin: 0 0 0.75rem;
+    font-size: 0.73rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 700;
+    color: #7a8798;
+  }
+  .os-media-thumb-link {
+    color: #1a5ea6;
+    font-size: 0.83rem;
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .os-media-thumb-link:hover {
+    color: #0e4f8b;
+    text-decoration: underline;
+  }
+  .os-empty-title {
+    display: block;
+    margin-bottom: 0.35rem;
+    color: #24476d;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+  .os-empty-subtitle {
+    color: #708197;
+    font-size: 0.84rem;
+    line-height: 1.55;
+  }
 
   @media (max-width: 991.98px) {
     .piloto-os-form-page.container-fluid.py-4 {
@@ -45,6 +349,20 @@
     .piloto-os-form-actions .btn {
       width: 100%;
     }
+    .os-form-tabs {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      padding-bottom: 0.35rem;
+    }
+    .os-form-tabs .nav-item {
+      flex: 0 0 auto;
+    }
+    .os-media-hero {
+      background: linear-gradient(160deg, #0c4d88 0%, #1567aa 60%, #2b85c4 100%);
+    }
+    .os-media-card-header {
+      flex-direction: column;
+    }
   }
 
   @media (max-width: 767.98px) {
@@ -69,6 +387,20 @@
     .piloto-os-form-page select,
     .piloto-os-form-page textarea {
       font-size: 16px;
+    }
+    .os-image-preview,
+    .os-video-preview,
+    .os-image-empty {
+      min-height: 220px;
+    }
+    .os-media-hero {
+      padding: 1.1rem;
+    }
+    .os-media-hero-title {
+      font-size: 1.08rem;
+    }
+    .os-media-summary-grid {
+      grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
     }
   }
 
@@ -103,8 +435,22 @@
       </div>
       {% endif %}
 
-      <form method="post" action="{{ form_action or url_for('main.piloto_os_formulario_view', os_id=solicitacao.id) }}" novalidate>
-      
+      <form method="post" action="{{ form_action or url_for('main.piloto_os_formulario_view', os_id=solicitacao.id) }}" enctype="multipart/form-data" novalidate>
+        <ul class="nav nav-tabs os-form-tabs mb-4" id="osFormTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="os-dados-tab" data-bs-toggle="tab" data-bs-target="#os-dados-pane" type="button" role="tab" aria-controls="os-dados-pane" aria-selected="true">
+              <i class="bi bi-clipboard-data me-2"></i>Formulario da OS
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="os-imagens-tab" data-bs-toggle="tab" data-bs-target="#os-imagens-pane" type="button" role="tab" aria-controls="os-imagens-pane" aria-selected="false">
+              <i class="bi bi-images me-2"></i>Levantamento de Midias{% if total_midias_formulario %} ({{ total_midias_formulario }}){% endif %}
+            </button>
+          </li>
+        </ul>
+
+        <div class="tab-content">
+        <div class="tab-pane fade show active os-tab-pane" id="os-dados-pane" role="tabpanel" aria-labelledby="os-dados-tab">
 
         {# ===================== IDENTIFICAÇÃO ===================== #}
         <div class="section-title mt-0">
@@ -490,6 +836,242 @@
           </div>
         </div>
 
+        </div>
+        <div class="tab-pane fade os-tab-pane" id="os-imagens-pane" role="tabpanel" aria-labelledby="os-imagens-tab">
+          <div class="os-media-shell">
+            <div class="os-media-hero">
+              <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+                <div class="os-media-hero-copy-wrap">
+                  <span class="os-media-hero-label">
+                    <i class="bi bi-camera-fill"></i>Levantamento visual da OS
+                  </span>
+                  <h5 class="os-media-hero-title">Relatorio de Levantamento de Midias</h5>
+                  <p class="os-media-hero-copy">
+                    A foto principal vai para o PDF final da ordem de servico. As imagens complementares e o video ficam arquivados aqui para consulta interna da equipe.
+                  </p>
+                </div>
+                <span class="os-media-count is-hero" id="os-media-count">
+                  <i class="bi bi-images"></i><span id="os-media-count-value">{{ total_midias_formulario }} midia(s) salva(s)</span>
+                </span>
+              </div>
+            </div>
+
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label-header">UVIS</label>
+                <input type="text" class="form-control bg-light" value="{{ uvis_nome or '-' }}" readonly />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label-header">Regiao</label>
+                <input type="text" class="form-control bg-light" value="{{ regiao_nome or '-' }}" readonly />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label-header">Foco</label>
+                <input type="text" class="form-control bg-light" value="{{ solicitacao.foco or '-' }}" readonly />
+              </div>
+              <div class="col-md-8">
+                <label class="form-label-header">Endereco</label>
+                <input type="text" class="form-control bg-light" value="{{ endereco_os or '-' }}" readonly />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label-header">CEP</label>
+                <input type="text" class="form-control bg-light" value="{{ solicitacao.cep or '-' }}" readonly />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label-header">Coordenadas</label>
+                <input type="text" class="form-control bg-light" value="{{ (solicitacao.latitude if solicitacao.latitude is not none else '-') ~ ', ' ~ (solicitacao.longitude if solicitacao.longitude is not none else '-') }}" readonly />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label-header">Data de Coleta</label>
+                <input type="text" class="form-control bg-light" value="{{ data_coleta_imagem_label or '-' }}" readonly />
+              </div>
+            </div>
+
+            <div class="row g-4">
+              <div class="col-lg-5">
+                <div class="os-image-card os-media-card p-3 p-lg-4">
+                  <div class="os-media-card-header">
+                    <div>
+                      <div class="os-media-card-kicker">Destaque do relatorio</div>
+                      <h6 class="os-media-card-title">Foto principal</h6>
+                      <p class="os-media-card-description">Selecione a imagem que melhor representa esta OS no documento final.</p>
+                    </div>
+                    <span class="os-media-pill os-media-pill-primary">Vai para o PDF final</span>
+                  </div>
+
+                  <div class="os-media-preview-frame mb-3">
+                    {% if imagem_principal_path %}
+                    <div id="imagem-principal-salva">
+                      <img src="{{ url_for('static', filename=imagem_principal_path) }}" alt="Foto principal da OS" class="os-image-preview">
+                    </div>
+                    <div class="os-media-actions mt-3" id="imagem-principal-salva-acoes">
+                      <a href="{{ url_for('static', filename=imagem_principal_path) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-arrows-fullscreen me-1"></i>Abrir imagem
+                      </a>
+                    </div>
+                    {% else %}
+                    <div class="os-image-empty" id="imagem-principal-vazio">
+                      <div>
+                        <i class="bi bi-image fs-1 d-block mb-2 text-primary"></i>
+                        <span class="os-empty-title">Nenhuma foto principal definida</span>
+                        <div class="os-empty-subtitle">Escolha uma imagem de destaque para compor o relatorio final desta OS.</div>
+                      </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="d-none{% if imagem_principal_path %} mt-3{% endif %}" id="imagem-principal-pendente">
+                      <img src="" alt="Preview da foto principal" class="os-image-preview" id="imagem-principal-preview">
+                      <div class="os-image-thumb-name mt-2" id="imagem-principal-preview-nome"></div>
+                    </div>
+                  </div>
+
+                  {% if not modo_visualizacao %}
+                  <div class="os-media-upload-box">
+                    <label class="form-label-header">Enviar nova foto principal</label>
+                    <input type="file" name="imagem_principal_file" id="imagem_principal_file" class="form-control" accept="image/png,image/jpeg,image/jpg" />
+                    <div class="os-media-help mt-2">Use JPG ou PNG. Se voce enviar uma nova imagem, ela substitui a foto principal atual ao salvar.</div>
+                    {% if imagem_principal_path %}
+                    <div class="form-check mt-3">
+                      <input class="form-check-input" type="checkbox" value="1" id="remover_imagem_principal" name="remover_imagem_principal">
+                      <label class="form-check-label small" for="remover_imagem_principal">
+                        Remover a foto principal atual ao salvar.
+                      </label>
+                    </div>
+                    {% endif %}
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="col-lg-7">
+                <div class="os-image-card os-media-card p-3 p-lg-4">
+                  <div class="os-media-card-header">
+                    <div>
+                      <div class="os-media-card-kicker">Galeria interna</div>
+                      <h6 class="os-media-card-title">Imagens complementares</h6>
+                      <p class="os-media-card-description">Fotos extras para consulta interna, sem entrar no PDF final da OS.</p>
+                    </div>
+                    <span class="os-media-pill" id="outras-imagens-badge" data-saved-count="{{ outras_imagens_paths|length }}">{{ outras_imagens_paths|length }} arquivo(s)</span>
+                  </div>
+
+                  {% if not modo_visualizacao %}
+                  <div class="os-media-upload-box mb-3">
+                    <label class="form-label-header">Adicionar imagens</label>
+                    <input type="file" name="outras_imagens_files" id="outras_imagens_files" class="form-control" accept="image/png,image/jpeg,image/jpg" multiple />
+                    <div class="d-flex flex-wrap align-items-center gap-2 mt-2">
+                      <div class="os-media-help">Voce pode selecionar varias imagens de uma vez ou montar a selecao em etapas antes de salvar.</div>
+                      <button type="button" class="btn btn-sm btn-outline-secondary d-none" id="limpar-selecao-outras-imagens">
+                        <i class="bi bi-x-circle me-1"></i>Limpar selecao
+                      </button>
+                    </div>
+                    {% if outras_imagens_paths %}
+                    <div class="form-check mt-3">
+                      <input class="form-check-input" type="checkbox" value="1" id="limpar_outras_imagens" name="limpar_outras_imagens">
+                      <label class="form-check-label small" for="limpar_outras_imagens">
+                        Limpar a galeria atual antes de salvar novas imagens.
+                      </label>
+                    </div>
+                    {% endif %}
+                  </div>
+                  {% endif %}
+
+                  <div class="os-media-preview-frame">
+                    {% if outras_imagens_paths %}
+                    <div id="outras-imagens-salvas-wrapper">
+                      <div class="os-media-gallery-label">Galeria atual</div>
+                      <div class="os-image-grid" id="outras-imagens-salvas-grid">
+                        {% for imagem_path in outras_imagens_paths %}
+                        <div class="os-image-thumb-card">
+                          <img src="{{ url_for('static', filename=imagem_path) }}" alt="Imagem complementar {{ loop.index }}" class="os-image-thumb mb-2">
+                          <a href="{{ url_for('static', filename=imagem_path) }}" target="_blank" class="os-media-thumb-link">
+                            Abrir imagem {{ loop.index }}
+                          </a>
+                        </div>
+                        {% endfor %}
+                      </div>
+                    </div>
+                    {% else %}
+                    <div class="os-image-empty" id="outras-imagens-vazio">
+                      <div>
+                        <i class="bi bi-images fs-1 d-block mb-2 text-primary"></i>
+                        <span class="os-empty-title">Nenhuma imagem complementar anexada</span>
+                        <div class="os-empty-subtitle">Use esta galeria para registrar angulos extras, detalhes do local e imagens de apoio.</div>
+                      </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="d-none mt-3" id="outras-imagens-pendentes">
+                      <div class="os-media-gallery-label text-primary">Novas imagens selecionadas</div>
+                      <div class="os-image-grid" id="outras-imagens-pendentes-grid"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="row g-4">
+              <div class="col-12">
+                <div class="os-image-card os-media-card p-3 p-lg-4">
+                  <div class="os-media-card-header">
+                    <div>
+                      <div class="os-media-card-kicker">Arquivo complementar</div>
+                      <h6 class="os-media-card-title">Video da OS</h6>
+                      <p class="os-media-card-description">Guarde aqui um video de apoio da operacao para consulta interna da equipe.</p>
+                    </div>
+                    <span class="os-media-pill" id="video-badge" data-saved-count="{{ 1 if video_path else 0 }}">{{ 1 if video_path else 0 }} video(s)</span>
+                  </div>
+
+                  <div class="os-media-preview-frame mb-3">
+                    {% if video_path %}
+                    <div id="video-salvo-wrapper">
+                      <video controls preload="metadata" class="os-video-preview" id="video-salvo">
+                        <source src="{{ url_for('static', filename=video_path) }}">
+                        Seu navegador nao suporta a exibicao de video.
+                      </video>
+                    </div>
+                    <div class="os-media-actions mt-3" id="video-salvo-acoes">
+                      <a href="{{ url_for('static', filename=video_path) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-play-btn me-1"></i>Abrir video
+                      </a>
+                    </div>
+                    {% else %}
+                    <div class="os-image-empty" id="video-vazio">
+                      <div>
+                        <i class="bi bi-camera-video fs-1 d-block mb-2 text-primary"></i>
+                        <span class="os-empty-title">Nenhum video anexado</span>
+                        <div class="os-empty-subtitle">Adicione um video quando for importante registrar movimento, percurso ou contexto do local.</div>
+                      </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="d-none{% if video_path %} mt-3{% endif %}" id="video-pendente">
+                      <video controls preload="metadata" class="os-video-preview" id="video-preview"></video>
+                      <div class="os-image-thumb-name mt-2" id="video-preview-nome"></div>
+                    </div>
+                  </div>
+
+                  {% if not modo_visualizacao %}
+                  <div class="os-media-upload-box">
+                    <label class="form-label-header">Enviar novo video</label>
+                    <input type="file" name="video_file" id="video_file" class="form-control" accept="video/mp4,video/webm,video/quicktime,.mp4,.mov,.webm,.m4v" />
+                    <div class="os-media-help mt-2">Formatos aceitos: MP4, MOV, WEBM e M4V. O video fica salvo apenas no formulario da OS.</div>
+                    {% if video_path %}
+                    <div class="form-check mt-3">
+                      <input class="form-check-input" type="checkbox" value="1" id="remover_video" name="remover_video">
+                      <label class="form-check-label small" for="remover_video">
+                        Remover o video atual ao salvar.
+                      </label>
+                    </div>
+                    {% endif %}
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        </div>
+
         <div class="d-flex justify-content-end gap-2 mt-5 piloto-os-form-actions">
           <a href="{{ url_voltar or url_for('main.piloto_os') }}" class="btn btn-outline-danger btn-sm px-4">Voltar</a>
           {% if not modo_visualizacao %}
@@ -677,9 +1259,243 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!modoVisualizacao) return;
 
   document.querySelectorAll("form input, form select, form textarea, form button").forEach((el) => {
-    if (el.type === "hidden") return;
+    if (el.type === "hidden" || el.dataset.bsToggle === "tab") return;
     el.setAttribute("disabled", "disabled");
   });
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  const tabButtons = document.querySelectorAll('#osFormTabs button[data-bs-toggle="tab"]');
+  if (!tabButtons.length || typeof bootstrap === "undefined") return;
+
+  const storageKey = 'os-form-tab-{{ solicitacao.id }}';
+  const savedTab = sessionStorage.getItem(storageKey);
+
+  tabButtons.forEach((button) => {
+    button.addEventListener('shown.bs.tab', () => {
+      sessionStorage.setItem(storageKey, button.getAttribute('data-bs-target') || '');
+    });
+  });
+
+  if (savedTab) {
+    const targetButton = document.querySelector(`#osFormTabs button[data-bs-target="${savedTab}"]`);
+    if (targetButton) {
+      bootstrap.Tab.getOrCreateInstance(targetButton).show();
+    }
+  }
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  const principalInput = document.getElementById("imagem_principal_file");
+  const principalSaved = document.getElementById("imagem-principal-salva");
+  const principalSavedActions = document.getElementById("imagem-principal-salva-acoes");
+  const principalEmpty = document.getElementById("imagem-principal-vazio");
+  const principalPending = document.getElementById("imagem-principal-pendente");
+  const principalPreview = document.getElementById("imagem-principal-preview");
+  const principalPreviewNome = document.getElementById("imagem-principal-preview-nome");
+  const principalRemove = document.getElementById("remover_imagem_principal");
+
+  const extrasInput = document.getElementById("outras_imagens_files");
+  const extrasBadge = document.getElementById("outras-imagens-badge");
+  const extrasSavedWrapper = document.getElementById("outras-imagens-salvas-wrapper");
+  const extrasEmpty = document.getElementById("outras-imagens-vazio");
+  const extrasPending = document.getElementById("outras-imagens-pendentes");
+  const extrasPendingGrid = document.getElementById("outras-imagens-pendentes-grid");
+  const extrasClear = document.getElementById("limpar_outras_imagens");
+  const extrasClearPending = document.getElementById("limpar-selecao-outras-imagens");
+  const videoInput = document.getElementById("video_file");
+  const videoBadge = document.getElementById("video-badge");
+  const videoSavedWrapper = document.getElementById("video-salvo-wrapper");
+  const videoSavedActions = document.getElementById("video-salvo-acoes");
+  const videoEmpty = document.getElementById("video-vazio");
+  const videoPending = document.getElementById("video-pendente");
+  const videoPreview = document.getElementById("video-preview");
+  const videoPreviewNome = document.getElementById("video-preview-nome");
+  const videoRemove = document.getElementById("remover_video");
+  const totalBadgeValue = document.getElementById("os-media-count-value");
+
+  const savedExtrasCount = Number(extrasBadge?.dataset.savedCount || 0);
+  const savedPrincipalCount = Number('{{ 1 if imagem_principal_path else 0 }}');
+  const savedVideoCount = Number(videoBadge?.dataset.savedCount || 0);
+  const canAccumulateFiles = typeof DataTransfer !== "undefined";
+  let extrasSelectedFiles = [];
+
+  const setText = (el, text) => {
+    if (el) el.textContent = text;
+  };
+
+  const fileSignature = (file) => `${file.name}::${file.size}::${file.lastModified}`;
+
+  const syncExtrasInput = () => {
+    if (!extrasInput || !canAccumulateFiles) return;
+    const transfer = new DataTransfer();
+    extrasSelectedFiles.forEach((file) => transfer.items.add(file));
+    extrasInput.files = transfer.files;
+  };
+
+  const updateBadges = () => {
+    const principalPendingCount = principalInput?.files?.length ? 1 : 0;
+    const principalMarkedForRemoval = !!principalRemove?.checked;
+    const extrasPendingCount = extrasSelectedFiles.length;
+    const clearExtras = !!extrasClear?.checked;
+    const videoPendingCount = videoInput?.files?.length ? 1 : 0;
+    const videoMarkedForRemoval = !!videoRemove?.checked;
+    const visiblePrincipalCount = principalPendingCount ? 1 : (principalMarkedForRemoval ? 0 : savedPrincipalCount);
+    const visibleExtrasCount = clearExtras ? extrasPendingCount : savedExtrasCount + extrasPendingCount;
+    const visibleVideoCount = videoPendingCount ? 1 : (videoMarkedForRemoval ? 0 : savedVideoCount);
+    const visibleTotal = visiblePrincipalCount + visibleExtrasCount + visibleVideoCount;
+
+    if (extrasBadge) {
+      setText(extrasBadge, `${visibleExtrasCount} arquivo(s)`);
+    }
+    if (videoBadge) {
+      setText(videoBadge, `${visibleVideoCount} video(s)`);
+    }
+    if (totalBadgeValue) {
+      setText(totalBadgeValue, `${visibleTotal} midia(s) no formulario`);
+    }
+    if (extrasSavedWrapper) {
+      extrasSavedWrapper.classList.toggle("os-muted-panel", clearExtras);
+    }
+    if (extrasClearPending) {
+      extrasClearPending.classList.toggle("d-none", extrasPendingCount === 0);
+    }
+    if (principalSaved) {
+      principalSaved.classList.toggle("os-muted-panel", principalMarkedForRemoval && !principalPendingCount);
+    }
+    if (principalSavedActions) {
+      principalSavedActions.classList.toggle("os-muted-panel", principalMarkedForRemoval && !principalPendingCount);
+    }
+    if (videoSavedWrapper) {
+      videoSavedWrapper.classList.toggle("os-muted-panel", videoMarkedForRemoval && !videoPendingCount);
+    }
+    if (videoSavedActions) {
+      videoSavedActions.classList.toggle("os-muted-panel", videoMarkedForRemoval && !videoPendingCount);
+    }
+  };
+
+  if (principalInput && principalPending && principalPreview) {
+    principalInput.addEventListener("change", () => {
+      const file = principalInput.files && principalInput.files[0];
+      if (!file) {
+        principalPending.classList.add("d-none");
+        if (principalSaved) principalSaved.classList.remove("d-none");
+        if (principalSavedActions) principalSavedActions.classList.remove("d-none");
+        if (!principalSaved && principalEmpty) principalEmpty.classList.remove("d-none");
+        updateBadges();
+        return;
+      }
+
+      const previewUrl = URL.createObjectURL(file);
+      principalPreview.src = previewUrl;
+      setText(principalPreviewNome, file.name);
+      principalPending.classList.remove("d-none");
+      if (principalSaved) principalSaved.classList.add("d-none");
+      if (principalSavedActions) principalSavedActions.classList.add("d-none");
+      if (principalEmpty) principalEmpty.classList.add("d-none");
+      updateBadges();
+    });
+  }
+
+  if (videoInput && videoPending && videoPreview) {
+    videoInput.addEventListener("change", () => {
+      const file = videoInput.files && videoInput.files[0];
+      if (!file) {
+        videoPending.classList.add("d-none");
+        if (videoSavedWrapper) videoSavedWrapper.classList.remove("d-none");
+        if (videoSavedActions) videoSavedActions.classList.remove("d-none");
+        if (!videoSavedWrapper && videoEmpty) videoEmpty.classList.remove("d-none");
+        updateBadges();
+        return;
+      }
+
+      const previewUrl = URL.createObjectURL(file);
+      videoPreview.src = previewUrl;
+      videoPreview.load();
+      setText(videoPreviewNome, file.name);
+      videoPending.classList.remove("d-none");
+      if (videoSavedWrapper) videoSavedWrapper.classList.add("d-none");
+      if (videoSavedActions) videoSavedActions.classList.add("d-none");
+      if (videoEmpty) videoEmpty.classList.add("d-none");
+      updateBadges();
+    });
+  }
+
+  if (extrasInput && extrasPending && extrasPendingGrid) {
+    const renderPendingExtras = () => {
+      const files = extrasSelectedFiles.filter((file) => file.type.startsWith("image/"));
+      extrasPendingGrid.innerHTML = "";
+
+      if (!files.length) {
+        extrasPending.classList.add("d-none");
+        if (!savedExtrasCount && extrasEmpty) extrasEmpty.classList.remove("d-none");
+        updateBadges();
+        return;
+      }
+
+      files.forEach((file, index) => {
+        const card = document.createElement("div");
+        card.className = "os-image-thumb-card";
+
+        const img = document.createElement("img");
+        img.className = "os-image-thumb mb-2";
+        img.alt = `Preview complementar ${index + 1}`;
+        img.src = URL.createObjectURL(file);
+
+        const label = document.createElement("div");
+        label.className = "os-image-thumb-name";
+        label.textContent = file.name;
+
+        card.appendChild(img);
+        card.appendChild(label);
+        extrasPendingGrid.appendChild(card);
+      });
+
+      extrasPending.classList.remove("d-none");
+      if (extrasEmpty) extrasEmpty.classList.add("d-none");
+      updateBadges();
+    };
+
+    extrasInput.addEventListener("change", () => {
+      const incomingFiles = Array.from(extrasInput.files || []).filter((file) => file.type.startsWith("image/"));
+      if (canAccumulateFiles) {
+        const knownFiles = new Set(extrasSelectedFiles.map(fileSignature));
+        incomingFiles.forEach((file) => {
+          const signature = fileSignature(file);
+          if (!knownFiles.has(signature)) {
+            extrasSelectedFiles.push(file);
+            knownFiles.add(signature);
+          }
+        });
+      } else {
+        extrasSelectedFiles = incomingFiles;
+      }
+
+      syncExtrasInput();
+      renderPendingExtras();
+    });
+
+    if (extrasClearPending) {
+      extrasClearPending.addEventListener("click", () => {
+        extrasSelectedFiles = [];
+        extrasInput.value = "";
+        syncExtrasInput();
+        renderPendingExtras();
+      });
+    }
+  }
+
+  if (extrasClear) {
+    extrasClear.addEventListener("change", updateBadges);
+  }
+  if (principalRemove) {
+    principalRemove.addEventListener("change", updateBadges);
+  }
+  if (videoRemove) {
+    videoRemove.addEventListener("change", updateBadges);
+  }
+
+  updateBadges();
 });
 </script>
 {% endblock %}

@@ -14,7 +14,8 @@ from reportlab.platypus import PageBreak, Paragraph, SimpleDocTemplate, Spacer, 
 
 from app.extensions import db
 from app.models import Solicitacao, Usuario
-from app.modules.relatorios.service import build_relatorio_os_export_data
+from app.modules.piloto_os.exporters import _fmt_date, _try_make_local_rlimage, _try_make_logo
+from app.modules.relatorios.service import build_relatorio_coleta_imagens_export_data, build_relatorio_os_export_data
 from app.shared.access import apply_regiao_scope, apply_solicitacao_regiao_scope
 from app.shared.query_filters import aplicar_filtros_base
 
@@ -1036,5 +1037,287 @@ def build_relatorio_os_pdf_export(user, args):
     nome = f"relatorio_os_{data['ano']}_{data['mes']:02d}"
     if data["uvis_id"]:
         nome += f"_uvis_{data['uvis_id']}"
+    nome += ".pdf"
+    return path, nome
+
+
+def build_relatorio_coleta_imagens_pdf_export(user, args):
+    data = build_relatorio_coleta_imagens_export_data(user, args)
+
+    tmp_pdf = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
+    path = tmp_pdf.name
+    tmp_pdf.close()
+
+    doc = SimpleDocTemplate(
+        path,
+        pagesize=A4,
+        leftMargin=21 * mm,
+        rightMargin=21 * mm,
+        topMargin=18 * mm,
+        bottomMargin=20 * mm,
+    )
+    styles = getSampleStyleSheet()
+
+    page_inner_width = min(doc.width, 162 * mm)
+    summary_width = min(doc.width - (20 * mm), 128 * mm)
+    detail_label_width = 44 * mm
+
+    title_style = ParagraphStyle(
+        "coleta_title",
+        parent=styles["Title"],
+        fontSize=14.4,
+        leading=19,
+        alignment=1,
+        textColor=colors.HexColor("#111827"),
+        spaceAfter=0,
+    )
+    top_info_style = ParagraphStyle(
+        "coleta_top_info",
+        parent=styles["BodyText"],
+        fontSize=9.2,
+        leading=12.2,
+        alignment=1,
+        textColor=colors.HexColor("#111827"),
+    )
+    detail_label_style = ParagraphStyle(
+        "coleta_detail_label",
+        parent=styles["BodyText"],
+        fontSize=7.4,
+        leading=10.2,
+        textColor=colors.HexColor("#111827"),
+    )
+    detail_value_style = ParagraphStyle(
+        "coleta_detail_value",
+        parent=styles["BodyText"],
+        fontSize=7.4,
+        leading=10.2,
+        textColor=colors.HexColor("#111827"),
+    )
+    footer_company_style = ParagraphStyle(
+        "coleta_footer_company",
+        parent=styles["Normal"],
+        fontSize=7.2,
+        leading=8.4,
+        alignment=1,
+        textColor=colors.HexColor("#4f81c7"),
+    )
+    footer_text_style = ParagraphStyle(
+        "coleta_footer_text",
+        parent=styles["Normal"],
+        fontSize=5.8,
+        leading=7,
+        alignment=1,
+        textColor=colors.HexColor("#a0a7b3"),
+    )
+    empty_state_style = ParagraphStyle(
+        "coleta_empty",
+        parent=styles["Normal"],
+        fontSize=9.4,
+        leading=13,
+        alignment=1,
+        textColor=colors.HexColor("#4b5563"),
+    )
+
+    story = []
+
+    if not data["levantamentos"]:
+        logo = _try_make_logo(args, width_mm=30)
+        if logo:
+            logo_box = Table([[logo]], colWidths=[doc.width])
+            logo_box.setStyle(TableStyle([
+                ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                ("TOPPADDING", (0, 0), (-1, -1), 0),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+            ]))
+            story.append(logo_box)
+            story.append(Spacer(1, 24))
+
+        story.append(Paragraph("Relatorio de Coleta de Imagens - Operacao Dengue PMSP", title_style))
+        story.append(Spacer(1, 24))
+
+        filtro_box = Table([[
+            Paragraph(f"<b>UVIS:</b> {_os_safe(data['uvis_nome_selecionado'])}", top_info_style),
+            Paragraph(f"<b>REGIAO:</b> {_os_safe(data['regiao_nome_selecionada'])}", top_info_style),
+        ]], colWidths=[summary_width / 2, summary_width / 2])
+        filtro_box.setStyle(TableStyle([
+            ("BOX", (0, 0), (-1, -1), 1, colors.black),
+            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 10),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+            ("TOPPADDING", (0, 0), (-1, -1), 5.5),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 5.5),
+        ]))
+        filtro_wrap = Table([[filtro_box]], colWidths=[doc.width])
+        filtro_wrap.setStyle(TableStyle([
+            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 0),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+            ("TOPPADDING", (0, 0), (-1, -1), 0),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+        ]))
+        story.append(filtro_wrap)
+        story.append(Spacer(1, 22))
+
+        vazio = Table(
+            [[Paragraph("Nenhum levantamento com foto principal foi encontrado para os filtros selecionados.", empty_state_style)]],
+            colWidths=[page_inner_width],
+            rowHeights=[102 * mm],
+        )
+        vazio.setStyle(TableStyle([
+            ("BOX", (0, 0), (-1, -1), 1, colors.black),
+            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ]))
+        vazio_wrap = Table([[vazio]], colWidths=[doc.width])
+        vazio_wrap.setStyle(TableStyle([
+            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 0),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+            ("TOPPADDING", (0, 0), (-1, -1), 0),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+        ]))
+        story.append(vazio_wrap)
+        story.append(Spacer(1, 28))
+        story.append(Paragraph("OCEANO AZUL COMERCIO INTERNACIONAL LTDA", footer_company_style))
+        story.append(Paragraph("Alameda Rio Negro, 503 - sala 2401", footer_text_style))
+        story.append(Paragraph("Alphaville Centro Industrial e Empresarial - Barueri SP", footer_text_style))
+
+        doc.build(story)
+        return path, "relatorio_coleta_imagens.pdf"
+
+    for index, item in enumerate(data["levantamentos"]):
+        if index:
+            story.append(PageBreak())
+
+        logo = _try_make_logo(args, width_mm=30)
+        if logo:
+            logo_box = Table([[logo]], colWidths=[doc.width])
+            logo_box.setStyle(TableStyle([
+                ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                ("TOPPADDING", (0, 0), (-1, -1), 0),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+            ]))
+            story.append(logo_box)
+            story.append(Spacer(1, 24))
+
+        story.append(Paragraph("Relatorio de Coleta de Imagens - Operacao Dengue PMSP", title_style))
+        story.append(Spacer(1, 24))
+
+        resumo_topo = Table([[
+            Paragraph(f"<b>UVIS:</b> {_os_safe(item['uvis_nome'])}", top_info_style),
+            Paragraph(f"<b>REGIAO:</b> {_os_safe(item['regiao_nome'])}", top_info_style),
+        ]], colWidths=[summary_width / 2, summary_width / 2])
+        resumo_topo.setStyle(TableStyle([
+            ("BOX", (0, 0), (-1, -1), 1, colors.black),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 10),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+            ("TOPPADDING", (0, 0), (-1, -1), 5.5),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 5.5),
+        ]))
+        resumo_wrap = Table([[resumo_topo]], colWidths=[doc.width])
+        resumo_wrap.setStyle(TableStyle([
+            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 0),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+            ("TOPPADDING", (0, 0), (-1, -1), 0),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+        ]))
+        story.append(resumo_wrap)
+        story.append(Spacer(1, 22))
+
+        imagem_principal = _try_make_local_rlimage(
+            item["imagem_principal_path"],
+            width_mm=148,
+            max_height_mm=96,
+        )
+
+        if imagem_principal:
+            imagem_box = Table([[imagem_principal]], colWidths=[page_inner_width])
+            imagem_box.setStyle(TableStyle([
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 10),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+                ("TOPPADDING", (0, 0), (-1, -1), 14),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+            ]))
+        else:
+            imagem_box = Table(
+                [[Paragraph("Imagem principal indisponivel no momento da exportacao.", empty_state_style)]],
+                colWidths=[page_inner_width],
+                rowHeights=[96 * mm],
+            )
+            imagem_box.setStyle(TableStyle([
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 10),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+                ("TOPPADDING", (0, 0), (-1, -1), 14),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+            ]))
+
+        detalhes = Table(
+            [
+                [Paragraph("<b>ENDERECO:</b>", detail_label_style), Paragraph(_os_safe(item["endereco"]), detail_value_style)],
+                [Paragraph("<b>CEP:</b>", detail_label_style), Paragraph(_os_safe(item["cep"]), detail_value_style)],
+                [Paragraph("<b>COORDENADAS:</b>", detail_label_style), Paragraph(_os_safe(item["coordenadas"]), detail_value_style)],
+                [Paragraph("<b>DATA DE COLETA DE IMG:</b>", detail_label_style), Paragraph(_os_safe(item["data_coleta_label"]), detail_value_style)],
+                [Paragraph("<b>FOCO:</b>", detail_label_style), Paragraph(_os_safe(item["foco"]), detail_value_style)],
+            ],
+            colWidths=[detail_label_width, page_inner_width - detail_label_width],
+        )
+        detalhes.setStyle(TableStyle([
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("ALIGN", (0, 0), (0, -1), "LEFT"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 8),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+            ("TOPPADDING", (0, 0), (-1, -1), 4),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+        ]))
+
+        bloco_principal = Table(
+            [[imagem_box], [detalhes]],
+            colWidths=[page_inner_width],
+        )
+        bloco_principal.setStyle(TableStyle([
+            ("BOX", (0, 0), (-1, -1), 1, colors.black),
+            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 0),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+            ("TOPPADDING", (0, 0), (-1, -1), 0),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+            ("BOTTOMPADDING", (0, 0), (0, 0), 16),
+            ("TOPPADDING", (0, 1), (0, 1), 10),
+            ("BOTTOMPADDING", (0, 1), (0, 1), 12),
+        ]))
+        bloco_wrap = Table([[bloco_principal]], colWidths=[doc.width])
+        bloco_wrap.setStyle(TableStyle([
+            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 0),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+            ("TOPPADDING", (0, 0), (-1, -1), 0),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+        ]))
+        story.append(bloco_wrap)
+        story.append(Spacer(1, 28))
+        story.append(Paragraph("OCEANO AZUL COMERCIO INTERNACIONAL LTDA", footer_company_style))
+        story.append(Paragraph("Alameda Rio Negro, 503 - sala 2401", footer_text_style))
+        story.append(Paragraph("Alphaville Centro Industrial e Empresarial - Barueri SP", footer_text_style))
+
+    doc.build(story)
+
+    nome = "relatorio_coleta_imagens"
+    if data["regiao_selecionada"]:
+        nome += f"_regiao_{data['regiao_selecionada'].replace(' ', '_').lower()}"
+    if data["uvis_id_selecionado"]:
+        nome += f"_uvis_{data['uvis_id_selecionado']}"
     nome += ".pdf"
     return path, nome

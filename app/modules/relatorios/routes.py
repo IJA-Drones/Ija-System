@@ -3,12 +3,14 @@ from flask_login import current_user, login_required
 
 from app.extensions import db
 from app.modules.relatorios.exporters import (
+    build_relatorio_coleta_imagens_pdf_export,
     build_relatorio_excel_export,
     build_relatorio_os_excel_export,
     build_relatorio_os_pdf_export,
     build_relatorio_pdf_export,
 )
 from app.modules.relatorios.service import (
+    build_relatorios_coleta_imagens_context,
     build_relatorios_os_context,
     build_relatorios_solicitacoes_context,
     can_access_relatorios_menu,
@@ -64,6 +66,26 @@ def register_routes(bp):
                 mensagem="Houve um erro tecnico ao processar os dados das ordens de servico.",
             )
 
+    @bp.route("/relatorios-coleta-imagens", methods=["GET"], endpoint="relatorios_coleta_imagens")
+    @login_required
+    def relatorios_coleta_imagens():
+        if not can_access_relatorios_menu(current_user):
+            flash("Acesso restrito.", "danger")
+            return redirect(url_for("main.dashboard"))
+
+        try:
+            context = build_relatorios_coleta_imagens_context(current_user, request.args)
+            return render_template("relatorios_coleta_imagens.html", **context)
+        except Exception as exc:
+            db.session.rollback()
+            print(f"ERRO NOS RELATORIOS DE COLETA DE IMAGENS: {exc}")
+            return render_template(
+                "erro.html",
+                codigo=500,
+                titulo="Erro no Relatorio de Coleta de Imagens",
+                mensagem="Houve um erro tecnico ao processar os dados do levantamento de midias.",
+            )
+
     @bp.route("/admin/exportar_relatorio_pdf", endpoint="exportar_relatorio_pdf")
     @login_required
     def exportar_relatorio_pdf():
@@ -117,6 +139,21 @@ def register_routes(bp):
             return redirect(url_for("main.dashboard"))
 
         caminho_pdf, download_name = build_relatorio_os_pdf_export(current_user, request.args)
+        return send_file(
+            caminho_pdf,
+            as_attachment=True,
+            download_name=download_name,
+            mimetype="application/pdf",
+        )
+
+    @bp.route("/relatorios-coleta-imagens/export/pdf", methods=["GET"], endpoint="relatorios_coleta_imagens_export_pdf")
+    @login_required
+    def relatorios_coleta_imagens_export_pdf():
+        if not can_access_relatorios_menu(current_user):
+            flash("Acesso restrito.", "danger")
+            return redirect(url_for("main.dashboard"))
+
+        caminho_pdf, download_name = build_relatorio_coleta_imagens_pdf_export(current_user, request.args)
         return send_file(
             caminho_pdf,
             as_attachment=True,

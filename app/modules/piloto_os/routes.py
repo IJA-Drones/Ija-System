@@ -139,7 +139,16 @@ def register_routes(bp):
                 return redirect(url_for("main.piloto_os_formulario_view", os_id=os_id))
 
             try:
-                flash(salvar_piloto_os_form(current_user, os_id, request.form), "success")
+                flash(
+                    salvar_piloto_os_form(
+                        current_user,
+                        os_id,
+                        request.form,
+                        request.files,
+                        current_app.root_path,
+                    ),
+                    "success",
+                )
                 return redirect(url_for("main.piloto_os"))
             except PilotoOsError as exc:
                 flash(str(exc), exc.category)
@@ -155,17 +164,7 @@ def register_routes(bp):
 
         return render_template(
             "piloto_os_formulario.html",
-            solicitacao=context["solicitacao"],
-            equipe=context["equipe"],
-            ordem=context["ordem"],
-            modo_visualizacao=context["modo_visualizacao"],
-            uvis_nome=context["uvis_nome"],
-            endereco_os=context["endereco_os"],
-            piloto_padrao=context["piloto_padrao"],
-            auxiliar_padrao=context["auxiliar_padrao"],
-            respondido_por_padrao=context["respondido_por_padrao"],
-            respondido_em_value=context["respondido_em_value"],
-            drones_equipe=context["drones_equipe"],
+            **context,
             url_voltar=url_for("main.piloto_os"),
             form_action=url_for("main.piloto_os_formulario_view", os_id=os_id),
         )
@@ -193,17 +192,7 @@ def register_routes(bp):
 
         return render_template(
             "piloto_os_formulario.html",
-            solicitacao=context["solicitacao"],
-            equipe=context["equipe"],
-            ordem=context["ordem"],
-            modo_visualizacao=context["modo_visualizacao"],
-            uvis_nome=context["uvis_nome"],
-            endereco_os=context["endereco_os"],
-            piloto_padrao=context["piloto_padrao"],
-            auxiliar_padrao=context["auxiliar_padrao"],
-            respondido_por_padrao=context["respondido_por_padrao"],
-            respondido_em_value=context["respondido_em_value"],
-            drones_equipe=context["drones_equipe"],
+            **context,
             url_voltar=url_for("main.admin_dashboard"),
             form_action="#",
         )

@@ -17,7 +17,7 @@ from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.platypus import Image as RLImage
-from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from reportlab.platypus import PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 from sqlalchemy.orm import joinedload
 
 from app.extensions import db
@@ -80,6 +80,31 @@ def _try_make_logo(args, width_mm=34):
         image = RLImage(path)
         image.drawWidth = width_mm * mm
         image.drawHeight = (width_mm * 0.55) * mm
+        return image
+    except Exception:
+        return None
+
+
+def _try_make_local_rlimage(rel_path, width_mm=165, max_height_mm=110):
+    if not rel_path:
+        return None
+
+    abs_path = os.path.join(current_app.root_path, "static", rel_path.replace("/", os.sep))
+    if not os.path.exists(abs_path):
+        return None
+
+    try:
+        image = RLImage(abs_path)
+        base_width = width_mm * mm
+        img_width = float(getattr(image, "imageWidth", 0) or 1)
+        img_height = float(getattr(image, "imageHeight", 0) or 1)
+        image.drawWidth = base_width
+        image.drawHeight = base_width * (img_height / img_width)
+
+        if max_height_mm and image.drawHeight > max_height_mm * mm:
+            scale = (max_height_mm * mm) / image.drawHeight
+            image.drawHeight = max_height_mm * mm
+            image.drawWidth = image.drawWidth * scale
         return image
     except Exception:
         return None
@@ -457,6 +482,100 @@ def build_admin_os_pdf_v2_export(os_id, args):
                 ("Auxiliar", ordem.auxiliar or ""),
                 ("Proprietario/Preposto", ordem.proprietario_ou_preposto or ""),
             ], cell_style, section_style, doc.width, orient=orient)
+
+            if getattr(ordem, "imagem_principal", None):
+                image_report_title = ParagraphStyle(
+                    "p_image_report_title",
+                    parent=styles["Title"],
+                    fontSize=14.5,
+                    leading=18,
+                    alignment=1,
+                    textColor=colors.HexColor("#111827"),
+                    spaceAfter=8,
+                )
+                image_report_info = ParagraphStyle(
+                    "p_image_report_info",
+                    parent=cell_style,
+                    alignment=1,
+                    fontSize=9.2,
+                    leading=11.5,
+                )
+
+                uvis_nome = solicitacao.usuario.nome_uvis if solicitacao.usuario else ""
+                regiao_nome = (
+                    getattr(getattr(solicitacao, "usuario", None), "regiao", None)
+                    or getattr(getattr(solicitacao, "equipe", None), "regiao", None)
+                    or ""
+                )
+                data_coleta = (
+                    _fmt_date(ordem.data_aplicacao)
+                    or _fmt_date(ordem.respondido_em.date() if ordem.respondido_em else None)
+                    or _fmt_date(solicitacao.data_agendamento)
+                )
+                coordenadas = f"{lat}, {lng}" if lat and lng else ""
+                imagem_principal = _try_make_local_rlimage(
+                    ordem.imagem_principal,
+                    width_mm=175 if orient == "portrait" else 230,
+                    max_height_mm=120,
+                )
+
+                story.append(PageBreak())
+                logo_relatorio = _try_make_logo(args, width_mm=28)
+                if logo_relatorio:
+                    logo_box = Table([[logo_relatorio]], colWidths=[doc.width])
+                    logo_box.setStyle(TableStyle([
+                        ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                        ("TOPPADDING", (0, 0), (-1, -1), 0),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                    ]))
+                    story.append(logo_box)
+                    story.append(Spacer(1, 6))
+
+                story.append(Paragraph("Relatorio de Coleta de Imagens - Operacao Dengue PMSP", image_report_title))
+
+                resumo_topo = Table([[
+                    Paragraph(f"<b>UVIS:</b> {uvis_nome or '-'}", image_report_info),
+                    Paragraph(f"<b>REGIAO:</b> {regiao_nome or '-'}", image_report_info),
+                ]], colWidths=[doc.width / 2, doc.width / 2])
+                resumo_topo.setStyle(TableStyle([
+                    ("BOX", (0, 0), (-1, -1), 1, colors.black),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 8),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+                    ("TOPPADDING", (0, 0), (-1, -1), 6),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                ]))
+                story.append(resumo_topo)
+                story.append(Spacer(1, 8))
+
+                if imagem_principal:
+                    imagem_box = Table([[imagem_principal]], colWidths=[doc.width])
+                    imagem_box.setStyle(TableStyle([
+                        ("BOX", (0, 0), (-1, -1), 1, colors.black),
+                        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 5),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+                        ("TOPPADDING", (0, 0), (-1, -1), 5),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+                    ]))
+                    story.append(imagem_box)
+                    story.append(Spacer(1, 6))
+                else:
+                    story.append(Paragraph("A foto principal foi registrada, mas o arquivo nao foi encontrado para exportacao.", hint_style))
+                    story.append(Spacer(1, 6))
+
+                story += _pdf_kv_table_nice("Detalhes do levantamento", [
+                    ("Endereco", endereco_os),
+                    ("CEP", solicitacao.cep or ""),
+                    ("Coordenadas", coordenadas),
+                    ("Data de coleta de img", data_coleta),
+                    ("Foco", solicitacao.foco or ""),
+                    ("Imagens registradas", ordem.quantidade_imagens_registradas or ""),
+                ], cell_style, section_style, doc.width, orient=orient)
 
             ass_piloto = _dataurl_to_rlimage(getattr(ordem, "assinatura_piloto", None), width_mm=82, height_mm=32)
             ass_resp = _dataurl_to_rlimage(

@@ -1,0 +1,373 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <style>
+    .media-report-card {
+      border: 1px solid #dbe4f0;
+      border-radius: 1rem;
+      overflow: hidden;
+      background: #fff;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+      height: 100%;
+    }
+    .media-report-thumb {
+      width: 100%;
+      height: 220px;
+      object-fit: cover;
+      background: #eff5fb;
+    }
+    .media-report-empty {
+      height: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 1rem;
+      background: #f7fbff;
+      color: #6a7b91;
+      border-bottom: 1px solid #dbe4f0;
+    }
+    .media-report-meta {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+    .media-report-meta-item {
+      background: #f8fbff;
+      border: 1px solid #e3ebf5;
+      border-radius: 0.85rem;
+      padding: 0.7rem 0.8rem;
+    }
+    .media-report-meta-label {
+      display: block;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #7a8798;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+    }
+    .media-report-meta-value {
+      font-size: 0.92rem;
+      color: #193b62;
+      font-weight: 700;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+    .media-report-address {
+      min-height: 72px;
+    }
+    .media-summary-card {
+      border: 0;
+      border-radius: 1rem;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+      height: 100%;
+    }
+    .media-summary-card .card-body {
+      padding: 1.15rem;
+    }
+    .media-summary-label {
+      color: #7a8798;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.3rem;
+    }
+    .media-summary-value {
+      color: #133a63;
+      font-size: 1.9rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+    .media-filter-card,
+    .media-table-card {
+      border: 0;
+      border-radius: 1rem;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+    }
+    .media-table-card .table th {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #6e7f94;
+    }
+    .media-table-card .table td {
+      vertical-align: middle;
+    }
+    @media (max-width: 767.98px) {
+      .media-report-meta {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1280px;">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+      <h2 class="text-dark m-0">
+        <i class="bi bi-images me-2 text-primary"></i>Relatorio de Coleta de Imagens
+      </h2>
+      <p class="text-muted small mb-0">Painel administrativo dos levantamentos com foto principal vinculados as OS.</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('main.relatorios') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Voltar
+      </a>
+      <form method="GET" action="{{ url_for('main.relatorios_coleta_imagens_export_pdf') }}" class="m-0">
+        <input type="hidden" name="uvis_id" value="{{ uvis_id_selecionado or '' }}">
+        <input type="hidden" name="regiao" value="{{ regiao_selecionada or '' }}">
+        <button type="submit" class="btn btn-danger">
+          <i class="bi bi-file-earmark-pdf-fill me-1"></i>Exportar PDF
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="card media-filter-card mb-4">
+    <div class="card-body">
+      <form method="GET">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-4">
+            <label class="small text-muted">Regiao</label>
+            <select name="regiao" class="form-select">
+              <option value="">Todas as Regioes</option>
+              {% for regiao in regioes_disponiveis %}
+                <option value="{{ regiao }}" {% if regiao == regiao_selecionada %}selected{% endif %}>{{ regiao }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="small text-muted">UVIS</label>
+            <select name="uvis_id" class="form-select">
+              <option value="">Todas as Unidades</option>
+              {% for id, nome in uvis_disponiveis %}
+                <option value="{{ id }}" {% if id|int == uvis_id_selecionado|int %}selected{% endif %}>{{ nome }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-4 d-flex gap-2">
+            <button class="btn btn-success w-100" type="submit">
+              <i class="bi bi-funnel me-1"></i>Filtrar
+            </button>
+            <a href="{{ url_for('main.relatorios_coleta_imagens') }}" class="btn btn-outline-secondary w-100">
+              <i class="bi bi-x-lg me-1"></i>Limpar
+            </a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-4 col-xl">
+      <div class="card media-summary-card">
+        <div class="card-body">
+          <div class="media-summary-label">Levantamentos</div>
+          <div class="media-summary-value">{{ total_levantamentos }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl">
+      <div class="card media-summary-card">
+        <div class="card-body">
+          <div class="media-summary-label">UVIS com registro</div>
+          <div class="media-summary-value">{{ total_uvis_com_registro }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl">
+      <div class="card media-summary-card">
+        <div class="card-body">
+          <div class="media-summary-label">Regioes</div>
+          <div class="media-summary-value">{{ total_regioes_com_registro }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl">
+      <div class="card media-summary-card">
+        <div class="card-body">
+          <div class="media-summary-label">Imagens extras</div>
+          <div class="media-summary-value">{{ total_imagens_complementares }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl">
+      <div class="card media-summary-card">
+        <div class="card-body">
+          <div class="media-summary-label">Videos</div>
+          <div class="media-summary-value">{{ total_videos }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl">
+      <div class="card media-summary-card">
+        <div class="card-body">
+          <div class="media-summary-label">Midias totais</div>
+          <div class="media-summary-value">{{ total_midias }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <div class="col-lg-4">
+      <div class="card media-table-card h-100">
+        <div class="card-body">
+          <h5 class="text-dark mb-3"><i class="bi bi-globe-americas me-2 text-primary"></i>Por Regiao</h5>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Regiao</th>
+                  <th class="text-center">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for nome, total in dados_regiao %}
+                  <tr>
+                    <td>{{ nome }}</td>
+                    <td class="text-center">{{ total }}</td>
+                  </tr>
+                {% else %}
+                  <tr>
+                    <td colspan="2" class="text-center text-muted">Sem dados para os filtros atuais.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-8">
+      <div class="card media-table-card h-100">
+        <div class="card-body">
+          <h5 class="text-dark mb-3"><i class="bi bi-building-check me-2 text-primary"></i>Por UVIS</h5>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>UVIS</th>
+                  <th class="text-center">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for nome, total in dados_unidade[:10] %}
+                  <tr>
+                    <td>{{ nome }}</td>
+                    <td class="text-center">{{ total }}</td>
+                  </tr>
+                {% else %}
+                  <tr>
+                    <td colspan="2" class="text-center text-muted">Sem dados para os filtros atuais.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if levantamentos %}
+    <div class="row g-4">
+      {% for item in levantamentos %}
+        <div class="col-md-6 col-xl-4">
+          <div class="media-report-card">
+            {% if item.imagem_principal_path %}
+              <img src="{{ url_for('static', filename=item.imagem_principal_path) }}" alt="Imagem principal da OS {{ item.solicitacao_id }}" class="media-report-thumb">
+            {% else %}
+              <div class="media-report-empty">
+                <div>
+                  <i class="bi bi-image fs-2 d-block mb-2 text-primary"></i>
+                  Sem imagem principal disponivel.
+                </div>
+              </div>
+            {% endif %}
+
+            <div class="p-3">
+              <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                <div>
+                  <div class="small text-muted fw-semibold">OS #{{ item.solicitacao_id }}</div>
+                  <h5 class="mb-0 text-dark">{{ item.uvis_nome }}</h5>
+                </div>
+                <span class="badge bg-light text-secondary border">{{ item.regiao_nome }}</span>
+              </div>
+
+              <div class="d-flex flex-wrap gap-2 mb-3">
+                <span class="badge bg-primary-subtle text-primary">Foco: {{ item.foco }}</span>
+                <span class="badge bg-light text-dark border">{{ item.outras_imagens_count }} imagem(ns) extra(s)</span>
+                {% if item.tem_video %}
+                  <span class="badge bg-light text-dark border">Video anexado</span>
+                {% endif %}
+              </div>
+
+              <div class="media-report-meta mb-3">
+                <div class="media-report-meta-item media-report-address">
+                  <span class="media-report-meta-label">Endereco</span>
+                  <div class="media-report-meta-value">{{ item.endereco }}</div>
+                </div>
+                <div class="media-report-meta-item">
+                  <span class="media-report-meta-label">Data de coleta</span>
+                  <div class="media-report-meta-value">{{ item.data_coleta_label }}</div>
+                </div>
+                <div class="media-report-meta-item">
+                  <span class="media-report-meta-label">CEP</span>
+                  <div class="media-report-meta-value">{{ item.cep }}</div>
+                </div>
+                <div class="media-report-meta-item">
+                  <span class="media-report-meta-label">Coordenadas</span>
+                  <div class="media-report-meta-value">{{ item.coordenadas }}</div>
+                </div>
+              </div>
+
+              <div class="d-flex gap-2 flex-wrap">
+                <a href="{{ url_for('main.admin_os_formulario_view', os_id=item.solicitacao_id) }}" class="btn btn-sm btn-primary">
+                  <i class="bi bi-eye me-1"></i>Abrir OS
+                </a>
+                <a href="{{ url_for('static', filename=item.imagem_principal_path) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                  <i class="bi bi-arrows-fullscreen me-1"></i>Abrir imagem
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    {% if paginacao and paginacao.pages > 1 %}
+      <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+          <li class="page-item {% if not paginacao.has_prev %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('main.relatorios_coleta_imagens', page=paginacao.prev_num, uvis_id=uvis_id_selecionado, regiao=regiao_selecionada) }}">Anterior</a>
+          </li>
+          {% for pg in paginacao.iter_pages() %}
+            {% if pg == paginacao.page %}
+              <li class="page-item active"><span class="page-link">{{ pg }}</span></li>
+            {% else %}
+              <li class="page-item">
+                <a class="page-link" href="{{ url_for('main.relatorios_coleta_imagens', page=pg, uvis_id=uvis_id_selecionado, regiao=regiao_selecionada) }}">{{ pg }}</a>
+              </li>
+            {% endif %}
+          {% endfor %}
+          <li class="page-item {% if not paginacao.has_next %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('main.relatorios_coleta_imagens', page=paginacao.next_num, uvis_id=uvis_id_selecionado, regiao=regiao_selecionada) }}">Proxima</a>
+          </li>
+        </ul>
+      </nav>
+    {% endif %}
+  {% else %}
+    <div class="alert alert-light border shadow-sm rounded-4 text-center py-4">
+      <i class="bi bi-images fs-3 d-block mb-2 text-primary"></i>
+      Nenhum levantamento com foto principal foi encontrado para os filtros selecionados.
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
