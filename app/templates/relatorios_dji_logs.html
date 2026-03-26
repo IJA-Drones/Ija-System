@@ -192,7 +192,7 @@
       <div class="card metric-card h-100">
         <div class="card-body">
           <div class="metric-label">Área pulverizada</div>
-          <div class="metric-value">{{ "%.3f"|format(total_area) }}</div>
+          <div class="metric-value">{{ "{:,.3f}".format(total_area or 0).replace(",", "_").replace(".", ",").replace("_", ".") }}</div>
           <div class="small text-muted mt-2">ha processados</div>
         </div>
       </div>
@@ -201,7 +201,7 @@
       <div class="card metric-card h-100">
         <div class="card-body">
           <div class="metric-label">Produto aplicado</div>
-          <div class="metric-value">{{ "%.2f"|format(total_volume) }}</div>
+          <div class="metric-value">{{ "{:,.2f}".format(total_volume or 0).replace(",", "_").replace(".", ",").replace("_", ".") }}</div>
           <div class="small text-muted mt-2">L/Kg acumulados</div>
         </div>
       </div>
