@@ -214,8 +214,14 @@
         </div>
         <div class="col-sm-6 col-xl-3">
           <div class="route-hero-stat">
-            <div class="route-hero-stat-label">Faixa de altitude</div>
-            <div class="route-hero-stat-value">{{ route.altitude_label or "-" }}</div>
+            <div class="route-hero-stat-label">Volume pulverizado</div>
+            <div class="route-hero-stat-value">
+              {% if route.spray_amount is not none %}
+                {{ "%.2f"|format(route.spray_amount) }}
+              {% else %}
+                -
+              {% endif %}
+            </div>
           </div>
         </div>
       </div>

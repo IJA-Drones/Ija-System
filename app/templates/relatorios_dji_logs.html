@@ -824,19 +824,13 @@
           </div>
         </div>
         <div class="row g-3 mb-3">
-          <div class="col-lg-4">
-            <div class="route-detail-panel">
-              <div class="route-detail-label">Altitude</div>
-              <div class="route-detail-text" id="rotaKmlAltitude">-</div>
-            </div>
-          </div>
-          <div class="col-lg-4">
+          <div class="col-lg-6">
             <div class="route-detail-panel">
               <div class="route-detail-label">Inicio da rota</div>
               <div class="route-detail-text" id="rotaKmlInicio">-</div>
             </div>
           </div>
-          <div class="col-lg-4">
+          <div class="col-lg-6">
             <div class="route-detail-panel">
               <div class="route-detail-label">Fim da rota</div>
               <div class="route-detail-text" id="rotaKmlFim">-</div>
@@ -1092,7 +1086,6 @@
       document.getElementById("rotaKmlPontos").textContent = route.point_count || 0;
       document.getElementById("rotaKmlArea").textContent = route.task_area != null ? Number(route.task_area).toFixed(3) : "-";
       document.getElementById("rotaKmlVolume").textContent = route.spray_amount != null ? Number(route.spray_amount).toFixed(2) : "-";
-      document.getElementById("rotaKmlAltitude").textContent = route.altitude_label || "-";
       document.getElementById("rotaKmlInicio").textContent = route.start_label || "-";
       document.getElementById("rotaKmlFim").textContent = route.end_label || "-";
       document.getElementById("rotaKmlDownloadLink").href = `/relatorios/dji-logs/rota/${routeId}/kml`;
