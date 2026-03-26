@@ -67,6 +67,12 @@
       width: 100% !important;
       height: 320px !important;
     }
+    .route-map-canvas {
+      width: 100%;
+      height: 420px;
+      border-radius: 16px;
+      background: #f8fafc;
+    }
     .comparison-card {
       border: 1px solid rgba(15, 23, 42, 0.08);
       border-radius: 18px;
@@ -128,6 +134,10 @@
             Envie o arquivo <strong>.xlsx</strong> exportado da DJI. O sistema soma apenas os voos novos e ignora linhas repetidas.
           </p>
         </div>
+        <div class="small text-muted text-lg-end">
+          <div><strong>{{ total_importacoes }}</strong> lotes Excel importados</div>
+          <div><strong>{{ total_rotas_kml }}</strong> rotas KML processadas</div>
+        </div>
       </div>
 
       <form method="POST" action="{{ url_for('main.importar_dji_logs') }}" enctype="multipart/form-data" class="row g-3 align-items-end">
@@ -138,6 +148,29 @@
         <div class="col-lg-4">
           <button type="submit" class="btn btn-primary w-100">
             <i class="bi bi-upload me-1"></i> Importar arquivo
+          </button>
+        </div>
+      </form>
+
+      <hr class="my-4">
+
+      <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-3">
+        <div>
+          <h5 class="mb-1">Importação de rotas KML</h5>
+          <p class="text-muted small mb-0">
+            Envie um ou mais arquivos <strong>.kml</strong>. O sistema tenta vincular cada rota ao voo correspondente pelo código/serial do registro.
+          </p>
+        </div>
+      </div>
+
+      <form method="POST" action="{{ url_for('main.importar_dji_kml') }}" enctype="multipart/form-data" class="row g-3 align-items-end">
+        <div class="col-lg-8">
+          <label class="form-label small text-muted">Arquivos KML das rotas</label>
+          <input type="file" name="arquivos" class="form-control" accept=".kml" multiple required>
+        </div>
+        <div class="col-lg-4">
+          <button type="submit" class="btn btn-outline-primary w-100">
+            <i class="bi bi-diagram-3-fill me-1"></i> Importar rotas KML
           </button>
         </div>
       </form>
@@ -638,12 +671,13 @@
               <th>Equipe</th>
               <th>Local</th>
               <th class="text-end">Área</th>
-              <th class="text-end">Volume</th>
-              <th class="text-end">Duração</th>
-              <th class="text-end">Bateria</th>
-            </tr>
-          </thead>
-          <tbody>
+                  <th class="text-end">Volume</th>
+                  <th class="text-end">Duração</th>
+                  <th class="text-end">Bateria</th>
+                  <th class="text-center">Rota</th>
+                </tr>
+              </thead>
+              <tbody>
             {% for registro in registros %}
             <tr>
               <td>
@@ -667,9 +701,22 @@
                   -
                 {% endif %}
               </td>
+              <td class="text-center">
+                {% if registro.route_kml %}
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-primary"
+                    onclick="abrirRotaKml({{ registro.route_kml.id }})"
+                  >
+                    <i class="bi bi-map me-1"></i> Ver rota
+                  </button>
+                {% else %}
+                  <span class="badge text-bg-light">Sem KML</span>
+                {% endif %}
+              </td>
             </tr>
             {% else %}
-            <tr><td colspan="9" class="text-center text-muted py-5">Nenhum voo encontrado para os filtros atuais.</td></tr>
+            <tr><td colspan="10" class="text-center text-muted py-5">Nenhum voo encontrado para os filtros atuais.</td></tr>
             {% endfor %}
           </tbody>
         </table>
@@ -690,6 +737,58 @@
         </ul>
       </nav>
       {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="rotaKmlModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content border-0 rounded-4 overflow-hidden">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title" id="rotaKmlTitulo">Rota do drone</h5>
+          <div class="small text-muted" id="rotaKmlSubtitulo"></div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3 mb-3">
+          <div class="col-md-3">
+            <div class="comparison-card">
+              <div class="comparison-kicker">Aeronave</div>
+              <div class="fw-bold text-dark" id="rotaKmlAeronave">-</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="comparison-card">
+              <div class="comparison-kicker">Piloto</div>
+              <div class="fw-bold text-dark" id="rotaKmlPiloto">-</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="comparison-card">
+              <div class="comparison-kicker">Pontos</div>
+              <div class="fw-bold text-dark" id="rotaKmlPontos">0</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="comparison-card">
+              <div class="comparison-kicker">Área da tarefa</div>
+              <div class="fw-bold text-dark" id="rotaKmlArea">-</div>
+            </div>
+          </div>
+        </div>
+        <div id="rotaKmlMap" class="route-map-canvas"></div>
+      </div>
+      <div class="modal-footer">
+        <a id="rotaKmlGoogleLink" class="btn btn-outline-secondary" target="_blank" rel="noopener">
+          <i class="bi bi-box-arrow-up-right me-1"></i> Abrir ponto central
+        </a>
+        <a id="rotaKmlMapaCompletoLink" class="btn btn-primary" target="_blank" rel="noopener">
+          <i class="bi bi-map me-1"></i> Abrir mapa completo
+        </a>
+        <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">Fechar</button>
+      </div>
     </div>
   </div>
 </div>
@@ -894,5 +993,90 @@
         });
       }
     })();
+
+    let rotaKmlMap = null;
+    let rotaKmlPolyline = null;
+    let rotaKmlMarkers = [];
+
+    function resetarRotaKml() {
+      if (rotaKmlPolyline) {
+        rotaKmlPolyline.setMap(null);
+        rotaKmlPolyline = null;
+      }
+      rotaKmlMarkers.forEach((marker) => marker.setMap(null));
+      rotaKmlMarkers = [];
+    }
+
+    async function abrirRotaKml(routeId) {
+      const response = await fetch(`/api/dji-kml-route/${routeId}`);
+      const payload = await response.json();
+      if (!payload.ok) {
+        return;
+      }
+
+      const route = payload.route || {};
+      const points = (route.points || []).map((item) => ({ lat: item.lat, lng: item.lng }));
+      if (!points.length || !(window.google && window.google.maps)) {
+        return;
+      }
+
+      document.getElementById("rotaKmlTitulo").textContent = `Rota ${route.route_code || ""}`.trim();
+      document.getElementById("rotaKmlSubtitulo").textContent = route.route_timestamp || "Sem data de rota";
+      document.getElementById("rotaKmlAeronave").textContent = route.aircraft_name || "-";
+      document.getElementById("rotaKmlPiloto").textContent = route.pilot_name || "-";
+      document.getElementById("rotaKmlPontos").textContent = route.point_count || 0;
+      document.getElementById("rotaKmlArea").textContent = route.task_area != null ? Number(route.task_area).toFixed(3) : "-";
+      document.getElementById("rotaKmlMapaCompletoLink").href = `/relatorios/dji-logs/rota/${routeId}`;
+
+      const centerPoint = points[0];
+      document.getElementById("rotaKmlGoogleLink").href = `https://www.google.com/maps?q=${centerPoint.lat},${centerPoint.lng}`;
+
+      const modalElement = document.getElementById("rotaKmlModal");
+      const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+      modal.show();
+
+      setTimeout(() => {
+        if (!rotaKmlMap) {
+          rotaKmlMap = new google.maps.Map(document.getElementById("rotaKmlMap"), {
+            zoom: 16,
+            center: centerPoint,
+            mapTypeId: "hybrid",
+          });
+        }
+
+        resetarRotaKml();
+
+        rotaKmlPolyline = new google.maps.Polyline({
+          path: points,
+          geodesic: true,
+          strokeColor: route.route_color_css || "#ff3b30",
+          strokeOpacity: 0.95,
+          strokeWeight: Number(route.route_width || 2),
+          map: rotaKmlMap,
+        });
+
+        rotaKmlMarkers.push(
+          new google.maps.Marker({
+            position: points[0],
+            map: rotaKmlMap,
+            label: "I",
+            title: "Início da rota",
+          })
+        );
+
+        rotaKmlMarkers.push(
+          new google.maps.Marker({
+            position: points[points.length - 1],
+            map: rotaKmlMap,
+            label: "F",
+            title: "Fim da rota",
+          })
+        );
+
+        const bounds = new google.maps.LatLngBounds();
+        points.forEach((point) => bounds.extend(point));
+        rotaKmlMap.fitBounds(bounds);
+      }, 180);
+    }
   </script>
 {% endblock %}

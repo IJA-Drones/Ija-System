@@ -2,6 +2,7 @@ import hashlib
 import json
 import os
 import re
+import xml.etree.ElementTree as ET
 from collections import defaultdict
 from datetime import datetime, timedelta
 from io import BytesIO
@@ -11,10 +12,11 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 from sqlalchemy import func
+from sqlalchemy.orm import joinedload
 from werkzeug.utils import secure_filename
 
 from app.extensions import db
-from app.models import DjiFlightLogImport, DjiFlightRecord
+from app.models import DjiFlightKmlRoute, DjiFlightLogImport, DjiFlightRecord
 from app.shared.uploads import get_upload_folder
 
 
@@ -216,6 +218,12 @@ def build_dji_logs_context(args):
         .limit(10)
         .all()
     )
+    kml_rotas_recentes = (
+        DjiFlightKmlRoute.query
+        .order_by(DjiFlightKmlRoute.imported_at.desc(), DjiFlightKmlRoute.id.desc())
+        .limit(10)
+        .all()
+    )
 
     return {
         "registros": paginacao.items,
@@ -232,7 +240,9 @@ def build_dji_logs_context(args):
         "aeronaves_disponiveis": aeronaves_disponiveis,
         "equipes_disponiveis": equipes_disponiveis,
         "importacoes_recentes": importacoes_recentes,
+        "kml_rotas_recentes": kml_rotas_recentes,
         "total_importacoes": DjiFlightLogImport.query.count(),
+        "total_rotas_kml": DjiFlightKmlRoute.query.count(),
         "total_voos": total_voos or 0,
         "total_area": float(total_area or 0),
         "total_volume": float(total_volume or 0),
@@ -246,6 +256,98 @@ def build_dji_logs_context(args):
         "resumo_semanal": _build_weekly_summary(weekly_rows),
         "resumo_mensal": resumo_mensal,
         "comparativo_mensal": comparativo_mensal,
+    }
+
+
+def import_dji_kml_files(files, user):
+    valid_files = [file for file in (files or []) if file and file.filename]
+    if not valid_files:
+        raise ValueError("Selecione ao menos um arquivo KML para importar.")
+
+    imported = 0
+    skipped = 0
+    linked = 0
+
+    for file_storage in valid_files:
+        original_filename = (file_storage.filename or "").strip()
+        if not original_filename.lower().endswith(".kml"):
+            raise ValueError("Todos os arquivos enviados devem estar no formato .kml.")
+
+        file_bytes = file_storage.read()
+        if not file_bytes:
+            continue
+
+        file_sha256 = hashlib.sha256(file_bytes).hexdigest()
+        if DjiFlightKmlRoute.query.filter(DjiFlightKmlRoute.file_sha256 == file_sha256).first():
+            skipped += 1
+            continue
+
+        parsed = _parse_kml_payload(file_bytes, original_filename)
+        if DjiFlightKmlRoute.query.filter(DjiFlightKmlRoute.route_code == parsed["route_code"]).first():
+            skipped += 1
+            continue
+
+        stored_filename, stored_path = _save_uploaded_kml(original_filename, file_bytes)
+        matched_record = (
+            DjiFlightRecord.query
+            .filter(DjiFlightRecord.serial_number == parsed["route_code"])
+            .order_by(DjiFlightRecord.flight_start.desc(), DjiFlightRecord.id.desc())
+            .first()
+        )
+
+        route = DjiFlightKmlRoute(
+            flight_record_id=matched_record.id if matched_record else None,
+            uploaded_by_id=getattr(user, "id", None),
+            route_code=parsed["route_code"],
+            original_filename=original_filename,
+            stored_filename=stored_filename,
+            stored_path=stored_path,
+            file_sha256=file_sha256,
+            aircraft_name=parsed["aircraft_name"],
+            pilot_name=parsed["pilot_name"],
+            flight_controller_id=parsed["flight_controller_id"],
+            route_timestamp=parsed["route_timestamp"],
+            mode_selection=parsed["mode_selection"],
+            flight_time_raw=parsed["flight_time_raw"],
+            task_area=parsed["task_area"],
+            spray_amount=parsed["spray_amount"],
+            route_color=parsed["route_color"],
+            route_width=parsed["route_width"],
+            point_count=len(parsed["points"]),
+            points_json=json.dumps(parsed["points"], ensure_ascii=False),
+        )
+        db.session.add(route)
+        imported += 1
+        if matched_record:
+            linked += 1
+
+    db.session.commit()
+    return {
+        "imported": imported,
+        "skipped": skipped,
+        "linked": linked,
+        "unlinked": imported - linked,
+    }
+
+
+def get_dji_route_payload(route_id):
+    route = DjiFlightKmlRoute.query.get_or_404(route_id)
+    points = json.loads(route.points_json or "[]")
+    center_point = points[0] if points else None
+    return {
+        "id": route.id,
+        "route_code": route.route_code,
+        "aircraft_name": route.aircraft_name,
+        "pilot_name": route.pilot_name,
+        "flight_controller_id": route.flight_controller_id,
+        "route_timestamp": route.route_timestamp.strftime("%d/%m/%Y %H:%M:%S") if route.route_timestamp else "",
+        "task_area": route.task_area,
+        "spray_amount": route.spray_amount,
+        "point_count": route.point_count,
+        "route_color_css": _kml_color_to_css(route.route_color) or "#ff3b30",
+        "route_width": route.route_width or 2,
+        "center": center_point,
+        "points": points,
     }
 
 
@@ -724,9 +826,27 @@ def _save_uploaded_excel(original_filename, file_bytes):
     return stored_filename, relative_path
 
 
+def _save_uploaded_kml(original_filename, file_bytes):
+    base_folder = os.path.join(get_upload_folder(), "dji-flight-routes")
+    os.makedirs(base_folder, exist_ok=True)
+
+    name_root, extension = os.path.splitext(original_filename)
+    safe_root = secure_filename(name_root) or "dji_flight_route"
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    short_hash = hashlib.sha256(file_bytes).hexdigest()[:10]
+    stored_filename = f"{safe_root}_{stamp}_{short_hash}{extension or '.kml'}"
+    absolute_path = os.path.join(base_folder, stored_filename)
+
+    with open(absolute_path, "wb") as file_handle:
+        file_handle.write(file_bytes)
+
+    relative_path = os.path.join("dji-flight-routes", stored_filename).replace("\\", "/")
+    return stored_filename, relative_path
+
+
 def _build_filtered_query(*, data_inicio="", data_fim="", piloto="", aeronave="", equipe=""):
     return _apply_dji_filters(
-        DjiFlightRecord.query,
+        DjiFlightRecord.query.options(joinedload(DjiFlightRecord.route_kml)),
         data_inicio=data_inicio,
         data_fim=data_fim,
         piloto=piloto,
@@ -813,6 +933,133 @@ def _build_weekly_summary(rows):
             }
         )
     return summary[:12]
+
+
+def _parse_kml_payload(file_bytes, filename):
+    try:
+        root = ET.fromstring(file_bytes.decode("utf-8", errors="ignore"))
+    except Exception as exc:
+        raise ValueError(f"Nao foi possivel ler o KML {filename}.") from exc
+
+    placemark = next((elem for elem in root.iter() if _xml_local_name(elem.tag) == "Placemark"), None)
+    if placemark is None:
+        raise ValueError(f"O arquivo {filename} nao possui um Placemark valido.")
+
+    route_code = _xml_child_text(placemark, "name")
+    extended_data = {}
+    for data_elem in placemark.iter():
+        if _xml_local_name(data_elem.tag) != "Data":
+            continue
+        name = (data_elem.attrib.get("name") or "").strip()
+        value = ""
+        for child in data_elem:
+            if _xml_local_name(child.tag) == "value":
+                value = (child.text or "").strip()
+                break
+        if name:
+            extended_data[name] = value
+
+    coordinates_text = None
+    for elem in placemark.iter():
+        if _xml_local_name(elem.tag) == "coordinates":
+            coordinates_text = elem.text or ""
+            break
+    points = _parse_kml_coordinates(coordinates_text or "")
+    if not points:
+        raise ValueError(f"O arquivo {filename} nao possui coordenadas de rota.")
+
+    route_color = None
+    route_width = None
+    for elem in placemark.iter():
+        local_name = _xml_local_name(elem.tag)
+        if local_name == "color" and route_color is None:
+            route_color = (elem.text or "").strip()
+        if local_name == "width" and route_width is None:
+            try:
+                route_width = float((elem.text or "").strip())
+            except ValueError:
+                route_width = None
+
+    aircraft_name, route_timestamp, route_code_from_filename = _parse_kml_filename(filename)
+    final_route_code = route_code or route_code_from_filename
+    if not final_route_code:
+        raise ValueError(f"Nao foi possivel identificar o codigo da rota no arquivo {filename}.")
+
+    return {
+        "route_code": final_route_code,
+        "aircraft_name": extended_data.get("Aircraft Name") or aircraft_name,
+        "pilot_name": extended_data.get("Pilot Name") or "",
+        "flight_controller_id": extended_data.get("Flight Controller ID") or "",
+        "route_timestamp": route_timestamp,
+        "mode_selection": extended_data.get("Mode Selection") or "",
+        "flight_time_raw": extended_data.get("Flight Time") or "",
+        "task_area": _parse_optional_float(extended_data.get("Task Area")),
+        "spray_amount": _parse_optional_float(extended_data.get("Spray amount")),
+        "route_color": route_color,
+        "route_width": route_width,
+        "points": points,
+    }
+
+
+def _parse_kml_filename(filename):
+    match = re.match(r"^(?P<aircraft>.+?)_(?P<stamp>\d{14})_(?P<code>[^.]+)\.kml$", filename, re.IGNORECASE)
+    if not match:
+        return "", None, ""
+
+    aircraft = match.group("aircraft").strip()
+    stamp_raw = match.group("stamp")
+    route_code = match.group("code").strip()
+    route_timestamp = None
+    try:
+        route_timestamp = datetime.strptime(stamp_raw, "%Y%m%d%H%M%S")
+    except ValueError:
+        route_timestamp = None
+    return aircraft, route_timestamp, route_code
+
+
+def _parse_kml_coordinates(raw_text):
+    points = []
+    for chunk in (raw_text or "").strip().split():
+        parts = chunk.split(",")
+        if len(parts) < 2:
+            continue
+        try:
+            lng = float(parts[0])
+            lat = float(parts[1])
+            alt = float(parts[2]) if len(parts) > 2 and parts[2] != "" else 0.0
+        except ValueError:
+            continue
+        points.append({"lat": lat, "lng": lng, "alt": alt})
+    return points
+
+
+def _xml_local_name(tag):
+    return str(tag).split("}", 1)[-1]
+
+
+def _xml_child_text(parent, local_name):
+    for child in parent:
+        if _xml_local_name(child.tag) == local_name:
+            return (child.text or "").strip()
+    return ""
+
+
+def _kml_color_to_css(raw_color):
+    value = (raw_color or "").strip().lstrip("#")
+    if len(value) != 8:
+        return None
+    alpha = value[0:2]
+    blue = value[2:4]
+    green = value[4:6]
+    red = value[6:8]
+    try:
+        int(alpha, 16)
+        int(blue, 16)
+        int(green, 16)
+        int(red, 16)
+    except ValueError:
+        return None
+    return f"#{red}{green}{blue}"
 
 
 def _build_monthly_summary(rows):

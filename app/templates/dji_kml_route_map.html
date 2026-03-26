@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <style>
+    .route-layout {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 1rem;
+      min-height: calc(100vh - 180px);
+    }
+    .route-sidebar,
+    .route-map-card {
+      border: 0;
+      border-radius: 22px;
+      box-shadow: 0 16px 32px rgba(15, 23, 42, 0.08);
+      overflow: hidden;
+    }
+    .route-sidebar {
+      background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+    }
+    .route-map-card {
+      background: #ffffff;
+    }
+    .route-map-toolbar {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .route-map-canvas-full {
+      width: 100%;
+      height: calc(100vh - 270px);
+      min-height: 520px;
+      background: #eef2f7;
+    }
+    .route-kicker {
+      color: #6b7280;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .route-title {
+      color: #0f172a;
+      font-size: 1.8rem;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+    .route-stat {
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      border-radius: 18px;
+      padding: 0.9rem 1rem;
+      background: rgba(255, 255, 255, 0.85);
+    }
+    .route-stat-value {
+      color: #0f172a;
+      font-size: 1.15rem;
+      font-weight: 800;
+    }
+    .route-stat + .route-stat {
+      margin-top: 0.75rem;
+    }
+    @media (max-width: 991.98px) {
+      .route-layout {
+        grid-template-columns: 1fr;
+      }
+      .route-map-canvas-full {
+        min-height: 420px;
+        height: 60vh;
+      }
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1400px;">
+  <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+    <div>
+      <div class="route-kicker">Rota DJI em mapa</div>
+      <h2 class="route-title mb-1">{{ route.aircraft_name or "Rota do drone" }}</h2>
+      <p class="text-muted mb-0">
+        Trilha renderizada com a API do Google Maps a partir do arquivo KML importado.
+      </p>
+    </div>
+    <a href="{{ url_for('main.relatorios_dji_logs') }}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i> Voltar aos logs
+    </a>
+  </div>
+
+  <div class="route-layout">
+    <div class="route-sidebar p-4">
+      <div class="route-kicker">Código da rota</div>
+      <div class="route-title mb-4">{{ route.route_code }}</div>
+
+      <div class="route-stat">
+        <div class="route-kicker">Piloto</div>
+        <div class="route-stat-value">{{ route.pilot_name or "-" }}</div>
+      </div>
+      <div class="route-stat">
+        <div class="route-kicker">Controlador de voo</div>
+        <div class="route-stat-value">{{ route.flight_controller_id or "-" }}</div>
+      </div>
+      <div class="route-stat">
+        <div class="route-kicker">Data da rota</div>
+        <div class="route-stat-value">{{ route.route_timestamp or "-" }}</div>
+      </div>
+      <div class="route-stat">
+        <div class="route-kicker">Pontos da trilha</div>
+        <div class="route-stat-value">{{ route.point_count }}</div>
+      </div>
+      <div class="route-stat">
+        <div class="route-kicker">Área da tarefa</div>
+        <div class="route-stat-value">
+          {% if route.task_area is not none %}
+            {{ "%.3f"|format(route.task_area) }} ha
+          {% else %}
+            -
+          {% endif %}
+        </div>
+      </div>
+      <div class="route-stat">
+        <div class="route-kicker">Volume pulverizado</div>
+        <div class="route-stat-value">
+          {% if route.spray_amount is not none %}
+            {{ "%.2f"|format(route.spray_amount) }}
+          {% else %}
+            -
+          {% endif %}
+        </div>
+      </div>
+      <div class="route-stat">
+        <div class="route-kicker">Cor da rota</div>
+        <div class="d-flex align-items-center gap-2 mt-2">
+          <span style="width: 18px; height: 18px; border-radius: 999px; background: {{ route.route_color_css }}; display: inline-block; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(15,23,42,.12);"></span>
+          <span class="route-stat-value" style="font-size: 1rem;">{{ route.route_color_css }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="route-map-card">
+      <div class="route-map-toolbar">
+        <div>
+          <div class="route-kicker">Visualização</div>
+          <div class="fw-semibold text-dark">Mapa satélite com trilha exata do KML</div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+          <button type="button" class="btn btn-outline-primary btn-sm" onclick="setMapType('satellite')">
+            <i class="bi bi-globe-americas me-1"></i> Satélite
+          </button>
+          <button type="button" class="btn btn-outline-primary btn-sm" onclick="setMapType('hybrid')">
+            <i class="bi bi-layers me-1"></i> Híbrido
+          </button>
+          {% if route.center %}
+          <a
+            class="btn btn-outline-secondary btn-sm"
+            target="_blank"
+            rel="noopener"
+            href="https://www.google.com/maps?q={{ route.center.lat }},{{ route.center.lng }}"
+          >
+            <i class="bi bi-box-arrow-up-right me-1"></i> Abrir ponto central
+          </a>
+          {% endif %}
+        </div>
+      </div>
+      <div id="routeMapCanvas" class="route-map-canvas-full"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script>
+    const routePayload = {{ route | tojson }};
+    let routeMapInstance = null;
+    let routePolyline = null;
+
+    function setMapType(mapType) {
+      if (routeMapInstance) {
+        routeMapInstance.setMapTypeId(mapType);
+      }
+    }
+
+    function initRouteMapPage() {
+      if (!(window.google && window.google.maps)) return;
+      const mapCanvas = document.getElementById("routeMapCanvas");
+      if (!mapCanvas) return;
+
+      const points = (routePayload.points || []).map((item) => ({ lat: item.lat, lng: item.lng }));
+      if (!points.length) return;
+
+      routeMapInstance = new google.maps.Map(mapCanvas, {
+        center: points[0],
+        zoom: 20,
+        mapTypeId: "satellite",
+        tilt: 0,
+        streetViewControl: false,
+        fullscreenControl: true,
+        mapTypeControl: false,
+      });
+
+      routePolyline = new google.maps.Polyline({
+        path: points,
+        geodesic: true,
+        strokeColor: routePayload.route_color_css || "#ff3b30",
+        strokeOpacity: 0.95,
+        strokeWeight: Number(routePayload.route_width || 2),
+        map: routeMapInstance,
+      });
+
+      new google.maps.Marker({
+        position: points[0],
+        map: routeMapInstance,
+        title: "Início da rota",
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 6,
+          fillColor: "#16a34a",
+          fillOpacity: 1,
+          strokeColor: "#ffffff",
+          strokeWeight: 2,
+        }
+      });
+
+      new google.maps.Marker({
+        position: points[points.length - 1],
+        map: routeMapInstance,
+        title: "Fim da rota",
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 6,
+          fillColor: "#dc2626",
+          fillOpacity: 1,
+          strokeColor: "#ffffff",
+          strokeWeight: 2,
+        }
+      });
+
+      const bounds = new google.maps.LatLngBounds();
+      points.forEach((point) => bounds.extend(point));
+      routeMapInstance.fitBounds(bounds, 40);
+    }
+
+    if (window.__GOOGLE_MAPS_READY__) {
+      initRouteMapPage();
+    } else {
+      document.addEventListener("googlemaps:ready", initRouteMapPage, { once: true });
+    }
+  </script>
+{% endblock %}

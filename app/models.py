@@ -1018,6 +1018,12 @@ class DjiFlightRecord(db.Model):
     imported_at = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
 
     import_batch = db.relationship("DjiFlightLogImport", back_populates="records")
+    route_kml = db.relationship(
+        "DjiFlightKmlRoute",
+        back_populates="flight_record",
+        uselist=False,
+        lazy="select",
+    )
 
     __table_args__ = (
         db.Index("ix_dji_flight_record_aircraft_start", "aircraft_name", "flight_start"),
@@ -1049,3 +1055,53 @@ class DjiFlightRecord(db.Model):
         if self.starting_battery_level is None or self.ending_battery_level is None:
             return None
         return self.starting_battery_level - self.ending_battery_level
+
+
+class DjiFlightKmlRoute(db.Model):
+    __tablename__ = "dji_flight_kml_routes"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    flight_record_id = db.Column(
+        db.Integer,
+        db.ForeignKey("dji_flight_records.id"),
+        nullable=True,
+        unique=True,
+        index=True,
+    )
+
+    uploaded_by_id = db.Column(
+        db.Integer,
+        db.ForeignKey("usuarios.id"),
+        nullable=True,
+        index=True,
+    )
+
+    route_code = db.Column(db.String(120), nullable=False, unique=True, index=True)
+    original_filename = db.Column(db.String(255), nullable=False)
+    stored_filename = db.Column(db.String(255), nullable=False)
+    stored_path = db.Column(db.String(255), nullable=False)
+    file_sha256 = db.Column(db.String(64), nullable=False, unique=True, index=True)
+
+    aircraft_name = db.Column(db.String(120), index=True)
+    pilot_name = db.Column(db.String(120), index=True)
+    flight_controller_id = db.Column(db.String(120), index=True)
+    route_timestamp = db.Column(db.DateTime, index=True)
+    mode_selection = db.Column(db.String(40))
+    flight_time_raw = db.Column(db.String(40))
+    task_area = db.Column(db.Float)
+    spray_amount = db.Column(db.Float)
+
+    route_color = db.Column(db.String(20))
+    route_width = db.Column(db.Float)
+    point_count = db.Column(db.Integer, nullable=False, default=0)
+    points_json = db.Column(db.Text, nullable=False)
+
+    imported_at = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+
+    flight_record = db.relationship("DjiFlightRecord", back_populates="route_kml")
+    uploaded_by = db.relationship("Usuario", lazy="joined")
+
+    @property
+    def has_points(self):
+        return bool(self.point_count)
