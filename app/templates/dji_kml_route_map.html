@@ -154,9 +154,6 @@
           >
             <i class="bi bi-download me-1"></i> Baixar KML
           </a>
-          <button type="button" class="btn btn-success btn-sm" onclick="tentarAbrirNoGoogleEarth({{ route.id }})">
-            <i class="bi bi-globe-americas me-1"></i> Tentar no Google Earth
-          </button>
           <button type="button" class="btn btn-outline-primary btn-sm" onclick="setMapType('satellite')">
             <i class="bi bi-globe-americas me-1"></i> Satélite
           </button>
@@ -252,26 +249,6 @@
       const bounds = new google.maps.LatLngBounds();
       points.forEach((point) => bounds.extend(point));
       routeMapInstance.fitBounds(bounds, 40);
-    }
-
-    function tentarAbrirNoGoogleEarth(routeId) {
-      window.open("https://earth.google.com/web/", "_blank", "noopener");
-
-      const anchor = document.createElement("a");
-      anchor.href = `/relatorios/dji-logs/rota/${routeId}/kml`;
-      anchor.download = "";
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-
-      if (window.Swal) {
-        Swal.fire({
-          icon: "info",
-          title: "KML baixado para importacao",
-          text: "O Google Earth foi aberto em nova aba. Importe o KML baixado para visualizar a rota.",
-          confirmButtonText: "Entendi",
-        });
-      }
     }
 
     if (window.__GOOGLE_MAPS_READY__) {
