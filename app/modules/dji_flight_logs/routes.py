@@ -1,7 +1,10 @@
+import os
+
 from flask import current_app, flash, jsonify, redirect, render_template, request, send_file, url_for
 from flask_login import current_user, login_required
 
 from app.extensions import db
+from app.models import DjiFlightKmlRoute
 from app.modules.dji_flight_logs.service import (
     build_dji_logs_context,
     build_dji_logs_excel_export,
@@ -11,6 +14,7 @@ from app.modules.dji_flight_logs.service import (
     import_dji_log_excel,
     import_dji_kml_files,
 )
+from app.shared.uploads import get_upload_folder
 
 
 def register_routes(bp):
@@ -127,3 +131,23 @@ def register_routes(bp):
 
         route = get_dji_route_payload(route_id)
         return render_template("dji_kml_route_map.html", route=route)
+
+    @bp.route("/relatorios/dji-logs/rota/<int:route_id>/kml", methods=["GET"], endpoint="baixar_dji_kml_route")
+    @login_required
+    def baixar_dji_kml_route(route_id):
+        if not can_access_dji_logs(current_user):
+            flash("Acesso restrito.", "danger")
+            return redirect(url_for("main.dashboard"))
+
+        route = DjiFlightKmlRoute.query.get_or_404(route_id)
+        absolute_path = os.path.join(get_upload_folder(), route.stored_path)
+        if not os.path.exists(absolute_path):
+            flash("Arquivo KML nao encontrado no servidor.", "warning")
+            return redirect(url_for("main.relatorios_dji_logs"))
+
+        return send_file(
+            absolute_path,
+            as_attachment=True,
+            download_name=route.original_filename,
+            mimetype="application/vnd.google-earth.kml+xml",
+        )

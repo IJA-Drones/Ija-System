@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml>
+  <Document>
+    <Placemark>
+      <name>R5656506462</name>
+      <ExtendedData>
+        
+          <Data name="Aircraft Name">
+            <value>PLOA-19</value>
+          </Data>
+          <Data name="Flight Controller ID">
+            <value>3TNDL3F002RE9M</value>
+          </Data>
+          <Data name="Pilot Name">
+            <value>Matheus Rodrigues</value>
+          </Data>
+          <Data name="Flight Time">
+            <value> 152700</value>
+          </Data>
+          <Data name="Mode Selection">
+            <value>M/M+</value>
+          </Data>
+          <Data name="Height">
+            <value></value>
+          </Data>
+          <Data name="Route Spacing">
+            <value></value>
+          </Data>
+          <Data name="Task Flight Speed">
+            <value></value>
+          </Data>
+          <Data name="Task Area">
+            <value>0.00866666671</value>
+          </Data>
+          <Data name="Spray amount">
+            <value>1015</value>
+          </Data>
+        
+      </ExtendedData>
+      <Style>
+        <LineStyle>
+          <color>#FF0000FF</color>
+          <width>1</width>
+          </LineStyle>
+      </Style>
+      <LineString>
+        <coordinates>-46.70990966453356,-23.479308734201336,0 -46.709939869684625,-23.479068608276478,0 -46.70994395181204,-23.4790542501164,0 -46.70996480577637,-23.479108710716144,0 -46.70996690680709,-23.479070239873142,0 -46.70991552520326,-23.47899359336541,0 -46.70998409856715,-23.47922888802669,0 -46.70996010914352,-23.47931834145666,0 -46.70993905119238,-23.479320043548668,0</coordinates>
+      </LineString>
+    </Placemark>
+  </Document>
+</kml>

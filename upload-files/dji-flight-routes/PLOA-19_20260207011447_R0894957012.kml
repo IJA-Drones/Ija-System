@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml>
+  <Document>
+    <Placemark>
+      <name>R0894957012</name>
+      <ExtendedData>
+        
+          <Data name="Aircraft Name">
+            <value>PLOA-19</value>
+          </Data>
+          <Data name="Flight Controller ID">
+            <value>3TNDL3F002RE9M</value>
+          </Data>
+          <Data name="Pilot Name">
+            <value>Matheus Rodrigues</value>
+          </Data>
+          <Data name="Flight Time">
+            <value> 186600</value>
+          </Data>
+          <Data name="Mode Selection">
+            <value>M/M+</value>
+          </Data>
+          <Data name="Height">
+            <value></value>
+          </Data>
+          <Data name="Route Spacing">
+            <value></value>
+          </Data>
+          <Data name="Task Flight Speed">
+            <value></value>
+          </Data>
+          <Data name="Task Area">
+            <value>0.02933333348</value>
+          </Data>
+          <Data name="Spray amount">
+            <value>1427</value>
+          </Data>
+        
+      </ExtendedData>
+      <Style>
+        <LineStyle>
+          <color>#FF0000FF</color>
+          <width>1</width>
+          </LineStyle>
+      </Style>
+      <LineString>
+        <coordinates>-46.75061979809464,-23.499949930343874,0 -46.75051938390413,-23.49989736818475,0 -46.75052729445089,-23.499776192634776,0 -46.75046133526737,-23.499764189465267,0 -46.750450152417415,-23.499740494276303,0 -46.75044595515561,-23.499767122045384,0 -46.750560753589674,-23.499776770732396,0 -46.750502325677864,-23.499773569758656,0 -46.750481364364475,-23.499753029373785,0 -46.750539360983105,-23.499765856014854,0 -46.75054417835714,-23.499782258536555,0 -46.75052521497302,-23.49978261335496,0 -46.75049443136516,-23.499808773578227,0 -46.75048573248557,-23.499842232148772,0 -46.750551678750966,-23.49997792319094,0 -46.75063028957949,-23.499995948325182,0 -46.75064897217411,-23.49997955170496,0</coordinates>
+      </LineString>
+    </Placemark>
+  </Document>
+</kml>

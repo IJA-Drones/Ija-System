@@ -781,6 +781,12 @@
         <div id="rotaKmlMap" class="route-map-canvas"></div>
       </div>
       <div class="modal-footer">
+        <a id="rotaKmlDownloadLink" class="btn btn-outline-dark" target="_blank" rel="noopener">
+          <i class="bi bi-download me-1"></i> Baixar KML
+        </a>
+        <button id="rotaKmlEarthLink" type="button" class="btn btn-success" onclick="tentarAbrirNoGoogleEarth()">
+          <i class="bi bi-globe-americas me-1"></i> Tentar no Google Earth
+        </button>
         <a id="rotaKmlGoogleLink" class="btn btn-outline-secondary" target="_blank" rel="noopener">
           <i class="bi bi-box-arrow-up-right me-1"></i> Abrir ponto central
         </a>
@@ -1027,6 +1033,8 @@
       document.getElementById("rotaKmlPontos").textContent = route.point_count || 0;
       document.getElementById("rotaKmlArea").textContent = route.task_area != null ? Number(route.task_area).toFixed(3) : "-";
       document.getElementById("rotaKmlMapaCompletoLink").href = `/relatorios/dji-logs/rota/${routeId}`;
+      document.getElementById("rotaKmlDownloadLink").href = `/relatorios/dji-logs/rota/${routeId}/kml`;
+      document.getElementById("rotaKmlEarthLink").dataset.routeId = String(routeId);
 
       const centerPoint = points[0];
       document.getElementById("rotaKmlGoogleLink").href = `https://www.google.com/maps?q=${centerPoint.lat},${centerPoint.lng}`;
@@ -1077,6 +1085,30 @@
         points.forEach((point) => bounds.extend(point));
         rotaKmlMap.fitBounds(bounds);
       }, 180);
+    }
+
+    function tentarAbrirNoGoogleEarth() {
+      const earthLink = document.getElementById("rotaKmlEarthLink");
+      const routeId = earthLink ? earthLink.dataset.routeId : "";
+      if (!routeId) return;
+
+      window.open("https://earth.google.com/web/", "_blank", "noopener");
+
+      const anchor = document.createElement("a");
+      anchor.href = `/relatorios/dji-logs/rota/${routeId}/kml`;
+      anchor.download = "";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+
+      if (window.Swal) {
+        Swal.fire({
+          icon: "info",
+          title: "KML baixado para importacao",
+          text: "O Google Earth foi aberto em nova aba. Importe o KML baixado para visualizar a rota fora do sistema.",
+          confirmButtonText: "Entendi",
+        });
+      }
     }
   </script>
 {% endblock %}

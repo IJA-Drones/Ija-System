@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml>
+  <Document>
+    <Placemark>
+      <name>R6418318036</name>
+      <ExtendedData>
+        
+          <Data name="Aircraft Name">
+            <value>PLOA-19</value>
+          </Data>
+          <Data name="Flight Controller ID">
+            <value>3TNDL3F002RE9M</value>
+          </Data>
+          <Data name="Pilot Name">
+            <value>Matheus Rodrigues</value>
+          </Data>
+          <Data name="Flight Time">
+            <value> 217200</value>
+          </Data>
+          <Data name="Mode Selection">
+            <value>M/M+</value>
+          </Data>
+          <Data name="Height">
+            <value></value>
+          </Data>
+          <Data name="Route Spacing">
+            <value></value>
+          </Data>
+          <Data name="Task Flight Speed">
+            <value></value>
+          </Data>
+          <Data name="Task Area">
+            <value>0.06466666699000001</value>
+          </Data>
+          <Data name="Spray amount">
+            <value>2305</value>
+          </Data>
+        
+      </ExtendedData>
+      <Style>
+        <LineStyle>
+          <color>#FF0000FF</color>
+          <width>1</width>
+          </LineStyle>
+      </Style>
+      <LineString>
+        <coordinates>-46.745173408403225,-23.492080394226882,0 -46.74520348383351,-23.492110429023644,0 -46.74519853594946,-23.492206824458265,0 -46.7452579298828,-23.492283477675187,0 -46.745268879983094,-23.49222100106638,0 -46.74526942378636,-23.49222377060668,0 -46.74555361177846,-23.49220936032337,0 -46.745437537753695,-23.49232925142511,0 -46.74534590619251,-23.49223326530803,0 -46.74529390254583,-23.492221369511604,0 -46.74547886956705,-23.492228678215785,0 -46.74535102285807,-23.492244977767715,0 -46.7452826945962,-23.492259284794653,0 -46.745242291340325,-23.49205831257066,0 -46.745195901679665,-23.49201268320835,0 -46.745217611435656,-23.492067995979355,0 -46.74521804610374,-23.492067341613563,0 -46.74519512187325,-23.49208346752797,0</coordinates>
+      </LineString>
+    </Placemark>
+  </Document>
+</kml>
