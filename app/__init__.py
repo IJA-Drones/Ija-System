@@ -39,7 +39,14 @@ def create_app():
 
     @app.context_processor
     def inject_google_maps_key():
-        return dict(google_maps_key=app.config.get("Maps_KEY_FRONT"))
+        return dict(
+            google_maps_key=(
+                app.config.get("Maps_KEY_FRONT")
+                or app.config.get("KEY_API_GOOGLE_MAPS")
+                or os.getenv("KEY_API_GOOGLE_MAPS")
+                or ""
+            )
+        )
 
     @app.context_processor
     def inject_global_vars():

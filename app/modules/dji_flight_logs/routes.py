@@ -30,6 +30,11 @@ def register_routes(bp):
             return render_template(
                 "relatorios_dji_logs.html",
                 can_import=can_import_dji_logs(current_user),
+                google_maps_key=(
+                    current_app.config.get("Maps_KEY_FRONT")
+                    or current_app.config.get("KEY_API_GOOGLE_MAPS")
+                    or ""
+                ),
                 **context,
             )
         except Exception:
@@ -130,7 +135,15 @@ def register_routes(bp):
             return redirect(url_for("main.dashboard"))
 
         route = get_dji_route_payload(route_id)
-        return render_template("dji_kml_route_map.html", route=route)
+        return render_template(
+            "dji_kml_route_map.html",
+            route=route,
+            google_maps_key=(
+                current_app.config.get("Maps_KEY_FRONT")
+                or current_app.config.get("KEY_API_GOOGLE_MAPS")
+                or ""
+            ),
+        )
 
     @bp.route("/relatorios/dji-logs/rota/<int:route_id>/kml", methods=["GET"], endpoint="baixar_dji_kml_route")
     @login_required
