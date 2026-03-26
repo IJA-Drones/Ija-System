@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml>
+  <Document>
+    <Placemark>
+      <name>R1706118853</name>
+      <ExtendedData>
+        
+          <Data name="Aircraft Name">
+            <value>PLOA-19</value>
+          </Data>
+          <Data name="Flight Controller ID">
+            <value>3TNDL3F002RE9M</value>
+          </Data>
+          <Data name="Pilot Name">
+            <value>Matheus Rodrigues</value>
+          </Data>
+          <Data name="Flight Time">
+            <value> 129100</value>
+          </Data>
+          <Data name="Mode Selection">
+            <value>M/M+</value>
+          </Data>
+          <Data name="Height">
+            <value></value>
+          </Data>
+          <Data name="Route Spacing">
+            <value></value>
+          </Data>
+          <Data name="Task Flight Speed">
+            <value></value>
+          </Data>
+          <Data name="Task Area">
+            <value>0.052000000260000005</value>
+          </Data>
+          <Data name="Spray amount">
+            <value>1128</value>
+          </Data>
+        
+      </ExtendedData>
+      <Style>
+        <LineStyle>
+          <color>#FF0000FF</color>
+          <width>1</width>
+          </LineStyle>
+      </Style>
+      <LineString>
+        <coordinates>-46.52620735552692,-23.507215069176542,0 -46.5264384935683,-23.507261749725508,0 -46.52644012429339,-23.507227185089743,0 -46.52646963468751,-23.50720464848006,0 -46.52657649649247,-23.507190211988565,0 -46.52698337651516,-23.50721032778272,0 -46.52691611883433,-23.507239992072236,0 -46.526789159805084,-23.507256556435216,0 -46.52667585595694,-23.507221133622494,0 -46.52683536854606,-23.507170203310203,0 -46.52683804154001,-23.507197356242703,0 -46.52654241673518,-23.507167748053895,0 -46.526412354551205,-23.507203242374032,0 -46.52633541448806,-23.507266278864684,0 -46.52623186797109,-23.50729573864769,0 -46.526192501539995,-23.507238145351607,0 -46.52620365208538,-23.50721250590147,0</coordinates>
+      </LineString>
+    </Placemark>
+  </Document>
+</kml>

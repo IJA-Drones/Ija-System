@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml>
+  <Document>
+    <Placemark>
+      <name>R1750214347</name>
+      <ExtendedData>
+        
+          <Data name="Aircraft Name">
+            <value>PLOA-19</value>
+          </Data>
+          <Data name="Flight Controller ID">
+            <value>3TNDL3F002RE9M</value>
+          </Data>
+          <Data name="Pilot Name">
+            <value>Matheus Rodrigues</value>
+          </Data>
+          <Data name="Flight Time">
+            <value> 190600</value>
+          </Data>
+          <Data name="Mode Selection">
+            <value>M/M+</value>
+          </Data>
+          <Data name="Height">
+            <value></value>
+          </Data>
+          <Data name="Route Spacing">
+            <value></value>
+          </Data>
+          <Data name="Task Flight Speed">
+            <value></value>
+          </Data>
+          <Data name="Task Area">
+            <value>0.02866666681</value>
+          </Data>
+          <Data name="Spray amount">
+            <value>2005</value>
+          </Data>
+        
+      </ExtendedData>
+      <Style>
+        <LineStyle>
+          <color>#FF0000FF</color>
+          <width>1</width>
+          </LineStyle>
+      </Style>
+      <LineString>
+        <coordinates>-46.72354212153438,-23.428855869911338,0 -46.7235530063995,-23.42884365986563,0 -46.72346841020013,-23.428867452521853,0 -46.723372767186596,-23.42878690842298,0 -46.72337715809797,-23.42873855433189,0 -46.72341042657255,-23.428740468926065,0 -46.72342146802343,-23.428759267234117,0 -46.72345442997517,-23.428701890749064,0 -46.72341205308359,-23.428645000940783,0 -46.72337231753137,-23.428645291181613,0 -46.72335696995441,-23.428681448722212,0 -46.72337183432424,-23.42872427309951,0 -46.72341420207633,-23.428723036758768,0 -46.72345391668896,-23.428691625272602,0 -46.72346665390652,-23.42870609701991,0 -46.72345166218603,-23.428727859258878,0 -46.7233745983885,-23.428778775478612,0 -46.723491859156255,-23.428820854973054,0 -46.723492695517216,-23.42885540824843,0 -46.72357627796653,-23.428843854728495,0</coordinates>
+      </LineString>
+    </Placemark>
+  </Document>
+</kml>
