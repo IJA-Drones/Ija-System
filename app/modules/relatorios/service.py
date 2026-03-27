@@ -7,15 +7,40 @@ from sqlalchemy import and_, extract, func, or_
 
 from app.extensions import db
 from app.models import OrdemServico, Solicitacao, Usuario
-from app.shared.access import ADMIN_PANEL_VIEW_TYPES, apply_regiao_scope, apply_solicitacao_regiao_scope, normalize_regiao
+from app.shared.access import (
+    ADMIN_PANEL_VIEW_TYPES,
+    apply_regiao_scope,
+    apply_solicitacao_regiao_scope,
+    is_regional_user,
+    normalize_regiao,
+)
 from app.shared.query_filters import aplicar_filtros_base
 
 
 RELATORIOS_MENU_TYPES = ADMIN_PANEL_VIEW_TYPES
+RELATORIOS_COLETA_IMAGENS_TYPES = RELATORIOS_MENU_TYPES | {"uvis"}
+COLETA_IMAGENS_MONTH_NAMES = {
+    1: "Janeiro",
+    2: "Fevereiro",
+    3: "Marco",
+    4: "Abril",
+    5: "Maio",
+    6: "Junho",
+    7: "Julho",
+    8: "Agosto",
+    9: "Setembro",
+    10: "Outubro",
+    11: "Novembro",
+    12: "Dezembro",
+}
 
 
 def can_access_relatorios_menu(user) -> bool:
     return getattr(user, "tipo_usuario", None) in RELATORIOS_MENU_TYPES
+
+
+def can_access_relatorio_coleta_imagens(user) -> bool:
+    return getattr(user, "tipo_usuario", None) in RELATORIOS_COLETA_IMAGENS_TYPES
 
 
 class SimplePagination:
@@ -37,19 +62,27 @@ class SimplePagination:
 
 
 def build_uvis_disponiveis(user, regiao: str | None = None):
-    if getattr(user, "tipo_usuario", None) not in RELATORIOS_MENU_TYPES:
+    user_type = getattr(user, "tipo_usuario", None)
+    if user_type not in RELATORIOS_COLETA_IMAGENS_TYPES:
         return []
 
     query = db.session.query(Usuario.id, Usuario.nome_uvis).filter(Usuario.tipo_usuario == "uvis")
-    query = apply_regiao_scope(query, user, Usuario.regiao)
-    if regiao:
+    if user_type == "uvis":
+        query = query.filter(Usuario.id == user.id)
+    else:
+        query = apply_regiao_scope(query, user, Usuario.regiao)
+    if regiao and user_type != "uvis":
         query = query.filter(func.upper(func.coalesce(Usuario.regiao, "")) == normalize_regiao(regiao))
     return query.order_by(Usuario.nome_uvis).all()
 
 
 def build_regioes_disponiveis(user):
-    if getattr(user, "tipo_usuario", None) not in RELATORIOS_MENU_TYPES:
+    user_type = getattr(user, "tipo_usuario", None)
+    if user_type not in RELATORIOS_COLETA_IMAGENS_TYPES:
         return []
+    if user_type == "uvis":
+        regiao = (getattr(user, "regiao", None) or "").strip()
+        return [regiao] if regiao else []
 
     query = (
         db.session.query(Usuario.regiao)
@@ -96,6 +129,31 @@ def _format_data_coleta(ordem, solicitacao):
     return "-"
 
 
+def _coleta_period_exprs():
+    ano_ref = func.coalesce(
+        extract("year", OrdemServico.data_aplicacao),
+        extract("year", OrdemServico.respondido_em),
+        extract("year", Solicitacao.data_agendamento),
+    )
+    mes_ref = func.coalesce(
+        extract("month", OrdemServico.data_aplicacao),
+        extract("month", OrdemServico.respondido_em),
+        extract("month", Solicitacao.data_agendamento),
+    )
+    return ano_ref, mes_ref
+
+
+def _format_coleta_periodo_label(mes=None, ano=None):
+    nome_mes = COLETA_IMAGENS_MONTH_NAMES.get(int(mes)) if mes else None
+    if nome_mes and ano:
+        return f"{nome_mes} de {ano}"
+    if ano:
+        return f"Ano {ano}"
+    if nome_mes:
+        return nome_mes
+    return "Todos os periodos"
+
+
 def _serialize_coleta_imagem_row(ordem, solicitacao, usuario):
     outras_imagens = _parse_media_list(getattr(ordem, "outras_imagens", None))
     regiao_nome = (
@@ -128,12 +186,20 @@ def _serialize_coleta_imagem_row(ordem, solicitacao, usuario):
 
 
 def _resolve_coleta_imagens_filters(user, args):
+    user_type = getattr(user, "tipo_usuario", None)
+    mes = args.get("mes", type=int)
+    ano = args.get("ano", type=int)
+    if user_type == "uvis":
+        return (getattr(user, "regiao", None) or "").strip(), user.id, mes, ano
+    if is_regional_user(user):
+        return (getattr(user, "regiao", None) or "").strip(), args.get("uvis_id", type=int), mes, ano
+
     regiao = (args.get("regiao") or "").strip()
-    uvis_id = args.get("uvis_id", type=int) if getattr(user, "tipo_usuario", None) != "uvis" else user.id
-    return regiao, uvis_id
+    uvis_id = args.get("uvis_id", type=int)
+    return regiao, uvis_id, mes, ano
 
 
-def _build_coleta_imagens_query(user, *, regiao="", uvis_id=None):
+def _build_coleta_imagens_query(user, *, regiao="", uvis_id=None, mes=None, ano=None):
     query = (
         db.session.query(OrdemServico, Solicitacao, Usuario)
         .join(Solicitacao, Solicitacao.id == OrdemServico.solicitacao_id)
@@ -146,6 +212,12 @@ def _build_coleta_imagens_query(user, *, regiao="", uvis_id=None):
         query = query.filter(func.upper(func.coalesce(Usuario.regiao, "")) == normalize_regiao(regiao))
     if uvis_id:
         query = query.filter(Solicitacao.usuario_id == uvis_id)
+    if ano or mes:
+        ano_ref, mes_ref = _coleta_period_exprs()
+        if ano:
+            query = query.filter(ano_ref == ano)
+        if mes:
+            query = query.filter(mes_ref == mes)
 
     return query
 
@@ -508,8 +580,19 @@ def build_relatorio_os_export_data(user, args):
 
 
 def build_relatorio_coleta_imagens_export_data(user, args):
-    regiao_selecionada, uvis_id = _resolve_coleta_imagens_filters(user, args)
-    base_query = _build_coleta_imagens_query(user, regiao=regiao_selecionada, uvis_id=uvis_id)
+    user_type = getattr(user, "tipo_usuario", None)
+    is_uvis = user_type == "uvis"
+    is_regional = is_regional_user(user)
+
+    regiao_selecionada, uvis_id, mes_selecionado, ano_selecionado = _resolve_coleta_imagens_filters(user, args)
+    periodos_query = _build_coleta_imagens_query(user, regiao=regiao_selecionada, uvis_id=uvis_id)
+    base_query = _build_coleta_imagens_query(
+        user,
+        regiao=regiao_selecionada,
+        uvis_id=uvis_id,
+        mes=mes_selecionado,
+        ano=ano_selecionado,
+    )
 
     rows = (
         base_query
@@ -535,6 +618,20 @@ def build_relatorio_coleta_imagens_export_data(user, args):
 
     uvis_disponiveis = build_uvis_disponiveis(user, regiao_selecionada)
     regioes_disponiveis = build_regioes_disponiveis(user)
+    ano_ref, mes_ref = _coleta_period_exprs()
+    dados_mensais = [
+        (f"{int(ano_h):04d}-{int(mes_h):02d}", total)
+        for ano_h, mes_h, total in (
+            periodos_query
+            .with_entities(ano_ref.label("ano_ref"), mes_ref.label("mes_ref"), func.count(OrdemServico.id))
+            .filter(ano_ref.isnot(None), mes_ref.isnot(None))
+            .group_by("ano_ref", "mes_ref")
+            .order_by("ano_ref", "mes_ref")
+            .all()
+        )
+        if ano_h and mes_h
+    ]
+    anos_disponiveis = sorted({int(periodo.split("-")[0]) for periodo, _ in dados_mensais}, reverse=True) if dados_mensais else [datetime.now().year]
 
     nome_uvis = None
     if uvis_id:
@@ -546,6 +643,23 @@ def build_relatorio_coleta_imagens_export_data(user, args):
             )
             .scalar()
         )
+    if is_uvis and not nome_uvis:
+        nome_uvis = getattr(user, "nome_uvis", None)
+
+    if is_uvis:
+        descricao_painel = "Acompanhe as fotos vinculadas as suas OS e exporte o relatorio em PDF."
+        voltar_endpoint = "main.dashboard"
+        voltar_label = "Voltar ao painel"
+    elif is_regional:
+        descricao_painel = "Acompanhe as fotos vinculadas as OS das UVIS da sua regiao e exporte o relatorio em PDF."
+        voltar_endpoint = "main.relatorios"
+        voltar_label = "Voltar aos relatorios"
+    else:
+        descricao_painel = "Painel administrativo dos levantamentos com foto principal vinculados as OS."
+        voltar_endpoint = "main.relatorios"
+        voltar_label = "Voltar"
+
+    periodo_label = _format_coleta_periodo_label(mes_selecionado, ano_selecionado)
 
     return {
         "levantamentos": levantamentos,
@@ -561,8 +675,19 @@ def build_relatorio_coleta_imagens_export_data(user, args):
         "regioes_disponiveis": regioes_disponiveis,
         "uvis_id_selecionado": uvis_id,
         "regiao_selecionada": regiao_selecionada,
+        "mes_selecionado": mes_selecionado,
+        "ano_selecionado": ano_selecionado,
+        "anos_disponiveis": anos_disponiveis,
+        "dados_mensais": dados_mensais,
+        "periodo_label": periodo_label,
         "uvis_nome_selecionado": nome_uvis or "Todas as Unidades",
         "regiao_nome_selecionada": regiao_selecionada or "Todas as Regioes",
+        "descricao_painel": descricao_painel,
+        "voltar_endpoint": voltar_endpoint,
+        "voltar_label": voltar_label,
+        "os_detail_endpoint": "main.uvis_os_formulario_view" if is_uvis else "main.admin_os_formulario_view",
+        "pode_filtrar_uvis": not is_uvis,
+        "pode_filtrar_regiao": not (is_uvis or is_regional),
     }
 
 
