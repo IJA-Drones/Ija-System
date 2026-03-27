@@ -1140,7 +1140,8 @@ def build_relatorio_coleta_imagens_pdf_export(user, args):
         filtro_box = Table([[
             Paragraph(f"<b>UVIS:</b> {_os_safe(data['uvis_nome_selecionado'])}", top_info_style),
             Paragraph(f"<b>REGIAO:</b> {_os_safe(data['regiao_nome_selecionada'])}", top_info_style),
-        ]], colWidths=[summary_width / 2, summary_width / 2])
+            Paragraph(f"<b>PERIODO:</b> {_os_safe(data['periodo_label'])}", top_info_style),
+        ]], colWidths=[summary_width / 3, summary_width / 3, summary_width / 3])
         filtro_box.setStyle(TableStyle([
             ("BOX", (0, 0), (-1, -1), 1, colors.black),
             ("ALIGN", (0, 0), (-1, -1), "CENTER"),
@@ -1211,7 +1212,8 @@ def build_relatorio_coleta_imagens_pdf_export(user, args):
         resumo_topo = Table([[
             Paragraph(f"<b>UVIS:</b> {_os_safe(item['uvis_nome'])}", top_info_style),
             Paragraph(f"<b>REGIAO:</b> {_os_safe(item['regiao_nome'])}", top_info_style),
-        ]], colWidths=[summary_width / 2, summary_width / 2])
+            Paragraph(f"<b>PERIODO:</b> {_os_safe(data['periodo_label'])}", top_info_style),
+        ]], colWidths=[summary_width / 3, summary_width / 3, summary_width / 3])
         resumo_topo.setStyle(TableStyle([
             ("BOX", (0, 0), (-1, -1), 1, colors.black),
             ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
@@ -1315,6 +1317,10 @@ def build_relatorio_coleta_imagens_pdf_export(user, args):
     doc.build(story)
 
     nome = "relatorio_coleta_imagens"
+    if data["ano_selecionado"]:
+        nome += f"_{data['ano_selecionado']}"
+    if data["mes_selecionado"]:
+        nome += f"_{int(data['mes_selecionado']):02d}"
     if data["regiao_selecionada"]:
         nome += f"_regiao_{data['regiao_selecionada'].replace(' ', '_').lower()}"
     if data["uvis_id_selecionado"]:

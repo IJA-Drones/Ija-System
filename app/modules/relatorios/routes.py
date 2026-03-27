@@ -13,6 +13,7 @@ from app.modules.relatorios.service import (
     build_relatorios_coleta_imagens_context,
     build_relatorios_os_context,
     build_relatorios_solicitacoes_context,
+    can_access_relatorio_coleta_imagens,
     can_access_relatorios_menu,
 )
 
@@ -69,7 +70,7 @@ def register_routes(bp):
     @bp.route("/relatorios-coleta-imagens", methods=["GET"], endpoint="relatorios_coleta_imagens")
     @login_required
     def relatorios_coleta_imagens():
-        if not can_access_relatorios_menu(current_user):
+        if not can_access_relatorio_coleta_imagens(current_user):
             flash("Acesso restrito.", "danger")
             return redirect(url_for("main.dashboard"))
 
@@ -149,7 +150,7 @@ def register_routes(bp):
     @bp.route("/relatorios-coleta-imagens/export/pdf", methods=["GET"], endpoint="relatorios_coleta_imagens_export_pdf")
     @login_required
     def relatorios_coleta_imagens_export_pdf():
-        if not can_access_relatorios_menu(current_user):
+        if not can_access_relatorio_coleta_imagens(current_user):
             flash("Acesso restrito.", "danger")
             return redirect(url_for("main.dashboard"))
 

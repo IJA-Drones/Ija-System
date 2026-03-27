@@ -247,6 +247,17 @@
             </a>
           </li>
 
+          {% if current_user.tipo_usuario == 'uvis' %}
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint == 'main.relatorios_coleta_imagens' %}active{% endif %}"
+              href="{{ url_for('main.relatorios_coleta_imagens') }}"
+            >
+              <i class="bi bi-images me-2"></i><span>Coleta de Imagens</span>
+            </a>
+          </li>
+          {% endif %}
+
           {% if current_user.tipo_usuario in ['admin', 'visualizar', 'operario', 'regional'] %}
           <li class="nav-item">
             <a

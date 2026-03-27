@@ -107,19 +107,26 @@
 {% endblock %}
 
 {% block content %}
+{% set meses = {
+  1: "Janeiro", 2: "Fevereiro", 3: "Marco", 4: "Abril",
+  5: "Maio", 6: "Junho", 7: "Julho", 8: "Agosto",
+  9: "Setembro", 10: "Outubro", 11: "Novembro", 12: "Dezembro"
+} %}
 <div class="container-fluid py-4" style="max-width: 1280px;">
   <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
     <div>
       <h2 class="text-dark m-0">
         <i class="bi bi-images me-2 text-primary"></i>Relatorio de Coleta de Imagens
       </h2>
-      <p class="text-muted small mb-0">Painel administrativo dos levantamentos com foto principal vinculados as OS.</p>
+      <p class="text-muted small mb-0">{{ descricao_painel }}</p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
-      <a href="{{ url_for('main.relatorios') }}" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left me-1"></i>Voltar
+      <a href="{{ url_for(voltar_endpoint) }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>{{ voltar_label }}
       </a>
       <form method="GET" action="{{ url_for('main.relatorios_coleta_imagens_export_pdf') }}" class="m-0">
+        <input type="hidden" name="mes" value="{{ mes_selecionado or '' }}">
+        <input type="hidden" name="ano" value="{{ ano_selecionado or '' }}">
         <input type="hidden" name="uvis_id" value="{{ uvis_id_selecionado or '' }}">
         <input type="hidden" name="regiao" value="{{ regiao_selecionada or '' }}">
         <button type="submit" class="btn btn-danger">
@@ -133,7 +140,26 @@
     <div class="card-body">
       <form method="GET">
         <div class="row g-3 align-items-end">
-          <div class="col-md-4">
+          <div class="col-md-2">
+            <label class="small text-muted">Mes</label>
+            <select name="mes" class="form-select">
+              <option value="">Todos</option>
+              {% for numero, nome in meses.items() %}
+                <option value="{{ numero }}" {% if numero|int == mes_selecionado|int %}selected{% endif %}>{{ nome }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="small text-muted">Ano</label>
+            <select name="ano" class="form-select">
+              <option value="">Todos</option>
+              {% for ano in anos_disponiveis %}
+                <option value="{{ ano }}" {% if ano|int == ano_selecionado|int %}selected{% endif %}>{{ ano }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% if pode_filtrar_regiao %}
+          <div class="col-md-3">
             <label class="small text-muted">Regiao</label>
             <select name="regiao" class="form-select">
               <option value="">Todas as Regioes</option>
@@ -142,7 +168,15 @@
               {% endfor %}
             </select>
           </div>
-          <div class="col-md-4">
+          {% else %}
+          <div class="col-md-3">
+            <label class="small text-muted">Regiao</label>
+            <input type="text" class="form-control" value="{{ regiao_nome_selecionada }}" disabled>
+          </div>
+          {% endif %}
+
+          {% if pode_filtrar_uvis %}
+          <div class="col-md-3">
             <label class="small text-muted">UVIS</label>
             <select name="uvis_id" class="form-select">
               <option value="">Todas as Unidades</option>
@@ -151,7 +185,14 @@
               {% endfor %}
             </select>
           </div>
-          <div class="col-md-4 d-flex gap-2">
+          {% else %}
+          <div class="col-md-3">
+            <label class="small text-muted">UVIS</label>
+            <input type="text" class="form-control" value="{{ uvis_nome_selecionado }}" disabled>
+          </div>
+          {% endif %}
+
+          <div class="col-md-2 d-flex gap-2">
             <button class="btn btn-success w-100" type="submit">
               <i class="bi bi-funnel me-1"></i>Filtrar
             </button>
@@ -161,6 +202,12 @@
           </div>
         </div>
       </form>
+    </div>
+  </div>
+
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div class="text-muted small">
+      Periodo selecionado: <strong>{{ periodo_label }}</strong>
     </div>
   </div>
 
@@ -329,7 +376,7 @@
               </div>
 
               <div class="d-flex gap-2 flex-wrap">
-                <a href="{{ url_for('main.admin_os_formulario_view', os_id=item.solicitacao_id) }}" class="btn btn-sm btn-primary">
+                <a href="{{ url_for(os_detail_endpoint, os_id=item.solicitacao_id) }}" class="btn btn-sm btn-primary">
                   <i class="bi bi-eye me-1"></i>Abrir OS
                 </a>
                 <a href="{{ url_for('static', filename=item.imagem_principal_path) }}" target="_blank" class="btn btn-sm btn-outline-primary">
