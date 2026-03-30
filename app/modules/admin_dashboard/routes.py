@@ -29,6 +29,12 @@ def _redirect_back_to_admin():
     return redirect(request.referrer or url_for("main.admin_dashboard"))
 
 
+def _query_args_without_page():
+    args = request.args.to_dict(flat=True)
+    args.pop("page", None)
+    return args
+
+
 def _admin_update_error(message: str, status_code: int, category: str):
     if _prefers_html_response():
         flash(message, category)
@@ -240,4 +246,5 @@ def register_routes(bp):
             pedidos=paginacao.items,
             paginacao=paginacao,
             unidades_select=build_uvis_select(current_user),
+            pagination_args=_query_args_without_page(),
         )

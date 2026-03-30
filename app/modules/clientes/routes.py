@@ -18,6 +18,12 @@ from app.modules.clientes.service import (
 )
 
 
+def _query_args_without_page():
+    args = request.args.to_dict(flat=True)
+    args.pop("page", None)
+    return args
+
+
 def register_routes(bp):
     @bp.route("/clientes/cadastrar", methods=["GET", "POST"], endpoint="cadastrar_clientes")
     @login_required
@@ -169,7 +175,12 @@ def register_routes(bp):
             "total_pages": total_pages,
         }
 
-        return render_template("listar_clientes.html", clientes=clientes, filters=filters)
+        return render_template(
+            "listar_clientes.html",
+            clientes=clientes,
+            filters=filters,
+            pagination_args=_query_args_without_page(),
+        )
 
     @bp.route("/clientes/<int:cliente_id>/editar", methods=["GET", "POST"], endpoint="editar_cliente")
     @login_required

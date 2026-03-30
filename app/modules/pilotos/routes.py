@@ -19,6 +19,12 @@ from app.modules.pilotos.service import (
 )
 
 
+def _query_args_without_page():
+    args = request.args.to_dict(flat=True)
+    args.pop("page", None)
+    return args
+
+
 def register_routes(bp):
     @bp.route("/pilotos/cadastrar", methods=["GET", "POST"], endpoint="cadastrar_pilotos")
     @login_required
@@ -122,7 +128,13 @@ def register_routes(bp):
         if user_tipo in {"uvis", "regional"} and not uvis_regiao:
             filters = build_pilotos_filters(q, regiao, telefone, sort, page, per_page, 0, 1)
             flash("Seu usuario esta sem regiao cadastrada. Contate o administrador.", "warning")
-            return render_template("listar_pilotos.html", pilotos=[], filters=filters, is_admin=False)
+            return render_template(
+                "listar_pilotos.html",
+                pilotos=[],
+                filters=filters,
+                is_admin=False,
+                pagination_args=_query_args_without_page(),
+            )
 
         query = build_pilotos_query(user_tipo, regiao, telefone, q, sort)
 
@@ -151,6 +163,7 @@ def register_routes(bp):
             is_editable=user_tipo in ["admin", "operario"],
             tipo_usuario=user_tipo,
             uvis_regiao=(uvis_regiao if user_tipo in {"uvis", "regional"} else None),
+            pagination_args=_query_args_without_page(),
         )
 
     @bp.route("/pilotos/<int:piloto_id>/editar", methods=["GET", "POST"], endpoint="editar_piloto")
