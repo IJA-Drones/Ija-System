@@ -477,7 +477,7 @@
   <nav class="mt-4">
     <ul class="pagination pagination-sm justify-content-center">
       <li class="page-item {% if not paginacao.has_prev %}disabled{% endif %}">
-        <a class="page-link shadow-sm" href="{{ url_for('main.piloto_os', page=paginacao.prev_num, **request.args) }}">Anterior</a>
+        <a class="page-link shadow-sm" href="{{ url_for('main.piloto_os', page=paginacao.prev_num, **pagination_args) }}">Anterior</a>
       </li>
       {% for pg in paginacao.iter_pages() %}
         {% if pg %}
@@ -485,7 +485,7 @@
             <li class="page-item active"><span class="page-link">{{ pg }}</span></li>
           {% else %}
             <li class="page-item">
-              <a class="page-link shadow-sm" href="{{ url_for('main.piloto_os', page=pg, **request.args) }}">{{ pg }}</a>
+              <a class="page-link shadow-sm" href="{{ url_for('main.piloto_os', page=pg, **pagination_args) }}">{{ pg }}</a>
             </li>
           {% endif %}
         {% else %}
@@ -493,7 +493,7 @@
         {% endif %}
       {% endfor %}
       <li class="page-item {% if not paginacao.has_next %}disabled{% endif %}">
-        <a class="page-link shadow-sm" href="{{ url_for('main.piloto_os', page=paginacao.next_num, **request.args) }}">Próxima</a>
+        <a class="page-link shadow-sm" href="{{ url_for('main.piloto_os', page=paginacao.next_num, **pagination_args) }}">Próxima</a>
       </li>
     </ul>
   </nav>
