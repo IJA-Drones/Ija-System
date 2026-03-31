@@ -144,7 +144,7 @@
         <h2 class="text-dark"><i class="bi bi-shield-lock-fill me-2 text-primary"></i> Painel de Gestão</h2>
 
         {# BOTÕES EXPORTAR #}
-        {% if current_user.tipo_usuario in ['admin', 'visualizar', 'regional'] %}
+        {% if current_user.tipo_usuario in ['admin', 'operario', 'visualizar', 'regional'] %}
         {# 'flex-wrap' aqui garante que os botões se organizem entre si se a tela for muito estreita #}
         <div class="admin-toolbar-actions">
             

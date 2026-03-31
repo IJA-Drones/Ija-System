@@ -30,7 +30,7 @@ def _require_admin_os_view():
 
 
 def _require_admin_os_export():
-    if getattr(current_user, "tipo_usuario", None) not in {"admin", "visualizar", "regional"}:
+    if getattr(current_user, "tipo_usuario", None) not in ADMIN_PANEL_VIEW_TYPES:
         abort(403)
 
 

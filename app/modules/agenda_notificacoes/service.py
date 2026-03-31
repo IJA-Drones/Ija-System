@@ -16,7 +16,7 @@ from app.shared.access import apply_regiao_scope, apply_solicitacao_regiao_scope
 
 
 AGENDA_VIEW_TYPES = {"admin", "operario", "visualizar", "regional"}
-AGENDA_EXPORT_TYPES = {"admin", "visualizar", "regional"}
+AGENDA_EXPORT_TYPES = {"admin", "operario", "visualizar", "regional"}
 NOTIFICATION_GLOBAL_VIEW_TYPES = {"admin", "operario", "visualizar"}
 AGENDA_ROUTE_STATUSES = (
     "APROVADO",

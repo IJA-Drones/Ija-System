@@ -35,7 +35,7 @@
       {% endif %}
 
       {# ✅ Exportar Tudo #}
-      {% if current_user.is_authenticated and current_user.tipo_usuario in ["admin", "visualizar", "regional"] %}
+      {% if current_user.is_authenticated and current_user.tipo_usuario in ["admin", "operario", "visualizar", "regional"] %}
         {# ✅ Exportar Atual #}
         <div style="width: 180px; min-width: 150px;" class="flex-grow-1 flex-md-grow-0">
           <a href="{{ url_for('main.agenda_exportar_excel', **request.args.to_dict()) }}"
