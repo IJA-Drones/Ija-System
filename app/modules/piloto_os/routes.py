@@ -47,6 +47,12 @@ def _ensure_os_region_access(os_id):
         abort(403)
 
 
+def _query_args_without_page():
+    args = request.args.to_dict(flat=True)
+    args.pop("page", None)
+    return args
+
+
 def register_routes(bp):
     @bp.route("/piloto/os", methods=["GET"], endpoint="piloto_os")
     @login_required

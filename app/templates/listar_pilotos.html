@@ -441,12 +441,12 @@
           <ul class="pagination pagination-sm mb-0">
             <li class="page-item {% if filters.page <= 1 %}disabled{% endif %}">
               <a class="page-link shadow-none"
-                 href="{{ url_for('main.listar_pilotos', page=filters.page-1, **request.args) }}">Anterior</a>
+                 href="{{ url_for('main.listar_pilotos', page=filters.page-1, **pagination_args) }}">Anterior</a>
             </li>
             <li class="page-item active"><span class="page-link shadow-none">{{ filters.page }}</span></li>
             <li class="page-item {% if filters.page >= filters.total_pages %}disabled{% endif %}">
               <a class="page-link shadow-none"
-                 href="{{ url_for('main.listar_pilotos', page=filters.page+1, **request.args) }}">Próxima</a>
+                 href="{{ url_for('main.listar_pilotos', page=filters.page+1, **pagination_args) }}">Próxima</a>
             </li>
           </ul>
         </nav>
