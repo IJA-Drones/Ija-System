@@ -14,14 +14,19 @@ from app.modules.equipes.service import (
     parse_optional_int,
     regiao_valida,
 )
+from app.shared.access import normalize_role
+
+
+def _require_admin_or_operario():
+    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"admin", "operario", "operador"}:
+        abort(403)
 
 
 def register_routes(bp):
     @bp.route("/equipes/cadastrar", methods=["GET", "POST"], endpoint="cadastrar_equipes")
     @login_required
     def cadastrar_equipes():
-        if getattr(current_user, "tipo_usuario", None) != "admin":
-            abort(403)
+        _require_admin_or_operario()
 
         errors = {}
         form = {}
@@ -146,7 +151,7 @@ def register_routes(bp):
     @bp.route("/equipes", methods=["GET"], endpoint="listar_equipes")
     @login_required
     def listar_equipes():
-        tipo = getattr(current_user, "tipo_usuario", None)
+        tipo = normalize_role(getattr(current_user, "tipo_usuario", None))
         q = (request.args.get("q") or "").strip()
         regiao = (request.args.get("regiao") or "").strip()
         ativa = (request.args.get("ativa") or "").strip().lower()
@@ -192,7 +197,7 @@ def register_routes(bp):
 
         pagination = query.paginate(page=page, per_page=per_page, error_out=False)
         equipes = pagination.items
-        is_editable = tipo in ["admin", "operario"]
+        is_editable = tipo in ["admin", "operario", "operador"]
         filters = build_equipes_filters(
             q=q,
             regiao=regiao,
@@ -220,8 +225,7 @@ def register_routes(bp):
     @bp.route("/equipes/<int:equipe_id>/editar", methods=["GET", "POST"], endpoint="editar_equipe")
     @login_required
     def editar_equipe(equipe_id):
-        if getattr(current_user, "tipo_usuario", None) != "admin":
-            abort(403)
+        _require_admin_or_operario()
 
         equipe = (
             Equipe.query.options(
@@ -354,8 +358,7 @@ def register_routes(bp):
     @bp.route("/equipes/<int:equipe_id>/deletar", methods=["POST"], endpoint="deletar_equipe")
     @login_required
     def deletar_equipe(equipe_id):
-        if getattr(current_user, "tipo_usuario", None) != "admin":
-            abort(403)
+        _require_admin_or_operario()
 
         equipe = Equipe.query.get_or_404(equipe_id)
 

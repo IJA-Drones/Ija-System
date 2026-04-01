@@ -19,6 +19,7 @@ from app.modules.uvis_equipes.service import (
     validate_team_login,
     validate_team_password,
 )
+from app.shared.access import normalize_role
 
 
 def _uvis_only():
@@ -28,6 +29,11 @@ def _uvis_only():
 
 def _admin_only():
     if getattr(current_user, "tipo_usuario", None) != "admin":
+        abort(403)
+
+
+def _admin_or_operario_view_only():
+    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"admin", "operario", "operador"}:
         abort(403)
 
 
@@ -293,14 +299,14 @@ def register_routes(bp):
     @bp.route("/admin/uvis/equipes", methods=["GET"], endpoint="admin_listar_equipes_uvis")
     @login_required
     def admin_listar_equipes_uvis():
-        _admin_only()
+        _admin_or_operario_view_only()
         equipes = build_admin_uvis_teams_listing()
         return render_template("admin_uvis_equipes_listar.html", equipes=equipes)
 
     @bp.route("/admin/uvis/<int:uvis_id>/equipes/<string:nome_equipe>", methods=["GET"], endpoint="admin_listar_membros_equipe_uvis")
     @login_required
     def admin_listar_membros_equipe_uvis(uvis_id, nome_equipe):
-        _admin_only()
+        _admin_or_operario_view_only()
 
         nome_equipe = (nome_equipe or "").strip()
         if not nome_equipe:

@@ -20,10 +20,11 @@ from app.modules.veiculos.service import (
     update_veiculo,
     validate_veiculo_form,
 )
+from app.shared.access import normalize_role
 
 
-def _require_admin():
-    if getattr(current_user, "tipo_usuario", None) != "admin":
+def _require_admin_or_operario():
+    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"admin", "operario", "operador"}:
         abort(403)
 
 
@@ -67,7 +68,7 @@ def register_routes(bp):
     @bp.route("/veiculos/cadastrar", methods=["GET", "POST"], endpoint="cadastrar_veiculo")
     @login_required
     def cadastrar_veiculo():
-        _require_admin()
+        _require_admin_or_operario()
 
         errors = {}
         form = {}
@@ -110,7 +111,7 @@ def register_routes(bp):
     @bp.route("/veiculos/<int:veiculo_id>/editar", methods=["GET", "POST"], endpoint="editar_veiculo")
     @login_required
     def editar_veiculo(veiculo_id):
-        _require_admin()
+        _require_admin_or_operario()
 
         veiculo = Veiculos.query.get_or_404(veiculo_id)
         errors = {}
@@ -160,7 +161,7 @@ def register_routes(bp):
     @bp.route("/veiculos/<int:veiculo_id>/deletar", methods=["POST"], endpoint="deletar_veiculo")
     @login_required
     def deletar_veiculo_view(veiculo_id):
-        _require_admin()
+        _require_admin_or_operario()
 
         veiculo = Veiculos.query.get_or_404(veiculo_id)
         try:
