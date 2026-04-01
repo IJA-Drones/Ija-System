@@ -163,7 +163,7 @@
             <a href="{{ url_for('main.listar_equipamentos') }}" class="btn btn-outline-secondary d-flex align-items-center">
                 <i class="bi bi-arrow-left"></i> Voltar
             </a>
-            {% if is_admin %}
+            {% if can_manage %}
             <a href="{{ url_for('main.cadastrar_drone') }}" class="btn btn-success shadow-sm">
                 <i class="bi bi-plus-lg"></i> Novo Drone
             </a>
@@ -238,8 +238,8 @@
                                             <i class="bi bi-three-dots-vertical"></i>
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
+                                            {% if can_manage %}
                                             <li><a class="dropdown-item py-2" href="{{ url_for('main.editar_drone', drone_id=d.id) }}"><i class="bi bi-pencil me-2"></i> Editar Dados</a></li>
-                                            {% if is_admin %}
                                             <li>
                                                 <form method="post" action="{{ url_for('main.enviar_manutencao_drone', drone_id=d.id) }}">
                                                     <button type="submit" class="dropdown-item py-2 text-danger" {% if d.status == 'Em Manutenção' %}disabled{% endif %}>
@@ -253,6 +253,8 @@
                                                     <button type="submit" class="dropdown-item py-2 text-danger"><i class="bi bi-trash me-2"></i> Excluir Drone</button>
                                                 </form>
                                             </li>
+                                            {% else %}
+                                            <li><span class="dropdown-item-text text-muted">Somente leitura</span></li>
                                             {% endif %}
                                         </ul>
                                     </div>
@@ -286,7 +288,7 @@
             </div>
             <div class="modal-footer border-0">
                 <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Fechar</button>
-                {% if is_admin %}<a href="{{ url_for('main.editar_bateria', bateria_id=bat.id) }}" class="btn btn-primary btn-sm">Editar</a>{% endif %}
+                {% if can_manage %}<a href="{{ url_for('main.editar_bateria', bateria_id=bat.id) }}" class="btn btn-primary btn-sm">Editar</a>{% endif %}
             </div>
         </div>
     </div>

@@ -12,10 +12,11 @@ from werkzeug.utils import secure_filename
 
 from app.extensions import db
 from app.models import Abastecimento, EquipePiloto, LogVeiculo, Pilotos, Veiculos
+from app.shared.access import normalize_role
 
 
-VEICULOS_ALLOWED_TYPES = ("admin", "visualizar", "operario", "uvis", "piloto")
-VEICULOS_LOGS_ALLOWED_TYPES = ("admin", "visualizar", "operario")
+VEICULOS_ALLOWED_TYPES = ("admin", "visualizar", "operario", "operador", "uvis", "piloto")
+VEICULOS_LOGS_ALLOWED_TYPES = ("admin", "visualizar", "operario", "operador")
 
 
 class VeiculoTurnoError(Exception):
@@ -25,6 +26,7 @@ class VeiculoTurnoError(Exception):
 
 
 def list_veiculos(tipo_usuario, args):
+    tipo_usuario = normalize_role(tipo_usuario)
     if tipo_usuario not in VEICULOS_ALLOWED_TYPES:
         raise PermissionError
 
@@ -59,6 +61,7 @@ def list_veiculos(tipo_usuario, args):
     return {
         "veiculos": veiculos,
         "is_admin": tipo_usuario == "admin",
+        "can_manage": tipo_usuario in {"admin", "operario", "operador"},
         "filters": {
             "q": q,
             "operacao": operacao,
@@ -555,6 +558,7 @@ def _salvar_upload_veiculo(arquivo, root_path, subpasta, prefixo, placa):
 
 
 def build_veiculos_export_response(tipo_usuario, args):
+    tipo_usuario = normalize_role(tipo_usuario)
     if tipo_usuario not in VEICULOS_ALLOWED_TYPES:
         raise PermissionError
 
@@ -732,6 +736,7 @@ def _ultima_movimentacao_log_subquery():
 
 
 def list_veiculos_logs(tipo_usuario, args):
+    tipo_usuario = normalize_role(tipo_usuario)
     if tipo_usuario not in VEICULOS_LOGS_ALLOWED_TYPES:
         raise PermissionError
 
@@ -754,6 +759,7 @@ def list_veiculos_logs(tipo_usuario, args):
 
 
 def build_veiculos_logs_export(tipo_usuario, args):
+    tipo_usuario = normalize_role(tipo_usuario)
     if tipo_usuario not in VEICULOS_LOGS_ALLOWED_TYPES:
         raise PermissionError
 

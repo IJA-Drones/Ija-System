@@ -23,10 +23,11 @@ from app.modules.equipamentos.service import (
     validate_bateria_form,
     validate_drone_form,
 )
+from app.shared.access import normalize_role
 
 
-def _require_admin():
-    if getattr(current_user, "tipo_usuario", None) != "admin":
+def _require_admin_or_operario():
+    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"admin", "operario", "operador"}:
         abort(403)
 
 
@@ -39,25 +40,29 @@ def register_routes(bp):
     @bp.route("/equipamentos/drones", methods=["GET"], endpoint="listar_drones")
     @login_required
     def listar_drones_view():
+        tipo_usuario = normalize_role(getattr(current_user, "tipo_usuario", None))
         return render_template(
             "drones_listar.html",
             drones=list_drones(),
-            is_admin=getattr(current_user, "tipo_usuario", None) == "admin",
+            is_admin=tipo_usuario == "admin",
+            can_manage=tipo_usuario in {"admin", "operario", "operador"},
         )
 
     @bp.route("/equipamentos/baterias", methods=["GET"], endpoint="listar_baterias")
     @login_required
     def listar_baterias_view():
+        tipo_usuario = normalize_role(getattr(current_user, "tipo_usuario", None))
         return render_template(
             "baterias_listar.html",
             baterias=list_baterias(),
-            is_admin=getattr(current_user, "tipo_usuario", None) == "admin",
+            is_admin=tipo_usuario == "admin",
+            can_manage=tipo_usuario in {"admin", "operario", "operador"},
         )
 
     @bp.route("/drones/cadastrar", methods=["GET", "POST"], endpoint="cadastrar_drone")
     @login_required
     def cadastrar_drone():
-        _require_admin()
+        _require_admin_or_operario()
 
         errors = {}
         form = {}
@@ -85,7 +90,7 @@ def register_routes(bp):
     @bp.route("/drones/<int:drone_id>/editar", methods=["GET", "POST"], endpoint="editar_drone")
     @login_required
     def editar_drone(drone_id):
-        _require_admin()
+        _require_admin_or_operario()
 
         drone = Drones.query.get_or_404(drone_id)
         errors = {}
@@ -131,7 +136,7 @@ def register_routes(bp):
     @bp.route("/drones/<int:drone_id>/deletar", methods=["POST"], endpoint="deletar_drone")
     @login_required
     def deletar_drone_view(drone_id):
-        _require_admin()
+        _require_admin_or_operario()
 
         drone = Drones.query.get_or_404(drone_id)
         try:
@@ -147,7 +152,7 @@ def register_routes(bp):
     @bp.route("/baterias/cadastrar", methods=["GET", "POST"], endpoint="cadastrar_bateria")
     @login_required
     def cadastrar_bateria():
-        _require_admin()
+        _require_admin_or_operario()
 
         errors = {}
         form = {}
@@ -179,7 +184,7 @@ def register_routes(bp):
     @bp.route("/baterias/<int:bateria_id>/editar", methods=["GET", "POST"], endpoint="editar_bateria")
     @login_required
     def editar_bateria(bateria_id):
-        _require_admin()
+        _require_admin_or_operario()
 
         bateria = Baterias.query.get_or_404(bateria_id)
         drones = list_drones_for_baterias()
@@ -225,7 +230,7 @@ def register_routes(bp):
     @bp.route("/baterias/<int:bateria_id>/deletar", methods=["POST"], endpoint="deletar_bateria")
     @login_required
     def deletar_bateria_view(bateria_id):
-        _require_admin()
+        _require_admin_or_operario()
 
         bateria = Baterias.query.get_or_404(bateria_id)
         try:
@@ -251,14 +256,14 @@ def register_routes(bp):
     @bp.route("/equipamentos/baterias/update_ciclos/<int:id>", methods=["POST"], endpoint="update_ciclos")
     @login_required
     def update_ciclos(id):
-        _require_admin()
+        _require_admin_or_operario()
         bateria = Baterias.query.get_or_404(id)
         return jsonify(update_bateria_ciclos(bateria, request.get_json() or {}))
 
     @bp.route("/drones/<int:drone_id>/manutencao", methods=["POST"], endpoint="enviar_manutencao_drone")
     @login_required
     def enviar_manutencao_drone(drone_id):
-        _require_admin()
+        _require_admin_or_operario()
 
         drone = Drones.query.get_or_404(drone_id)
         try:

@@ -54,6 +54,7 @@ def register_routes(bp):
         filtro_unidade = (request.args.get("unidade") or "").strip()
         filtro_regiao = (request.args.get("regiao") or "").strip()
         filtro_apoio_cet = (request.args.get("apoio_cet") or "").strip().upper()
+        filtro_protocolo = (request.args.get("protocolo") or "").strip()
 
         if filtro_status == "CANCELADO":
             return redirect(
@@ -61,7 +62,7 @@ def register_routes(bp):
                     "main.admin_canceladas",
                     unidade=filtro_unidade,
                     regiao=filtro_regiao,
-                    apoio_cet=filtro_apoio_cet,
+                    protocolo=filtro_protocolo,
                 )
             )
 
@@ -72,6 +73,7 @@ def register_routes(bp):
             filtro_unidade=filtro_unidade,
             filtro_regiao=filtro_regiao,
             filtro_apoio_cet=filtro_apoio_cet,
+            filtro_protocolo=filtro_protocolo,
         )
         paginacao = query.order_by(build_status_order(), Solicitacao.data_criacao.desc()).paginate(
             page=page,
@@ -88,6 +90,7 @@ def register_routes(bp):
             equipes=build_active_teams(current_user),
             unidades_select=build_uvis_select(current_user),
             google_maps_key=get_google_maps_key(),
+            pagination_args=_query_args_without_page(),
         )
 
     @bp.route("/admin/exportar_excel")
@@ -102,6 +105,7 @@ def register_routes(bp):
             filtro_unidade = (request.args.get("unidade") or "").strip()
             filtro_regiao = (request.args.get("regiao") or "").strip()
             filtro_apoio_cet = (request.args.get("apoio_cet") or "").strip().upper()
+            filtro_protocolo = (request.args.get("protocolo") or "").strip()
 
             output = build_admin_dashboard_export(
                 user=current_user,
@@ -109,6 +113,7 @@ def register_routes(bp):
                 filtro_unidade=filtro_unidade,
                 filtro_regiao=filtro_regiao,
                 filtro_apoio_cet=filtro_apoio_cet,
+                filtro_protocolo=filtro_protocolo,
             )
 
             return send_file(
@@ -196,6 +201,7 @@ def register_routes(bp):
         filtro_unidade = (request.args.get("unidade") or "").strip()
         filtro_regiao = (request.args.get("regiao") or "").strip()
         filtro_foco = (request.args.get("foco") or "").strip()
+        filtro_protocolo = (request.args.get("protocolo") or "").strip()
         page = request.args.get("page", 1, type=int)
 
         query = build_admin_canceladas_query(
@@ -203,6 +209,7 @@ def register_routes(bp):
             filtro_unidade=filtro_unidade,
             filtro_regiao=filtro_regiao,
             filtro_foco=filtro_foco,
+            filtro_protocolo=filtro_protocolo,
         )
         paginacao = query.order_by(Solicitacao.data_criacao.desc()).paginate(
             page=page,
@@ -218,6 +225,7 @@ def register_routes(bp):
             unidades_select=build_uvis_select(current_user),
             google_maps_key=get_google_maps_key(),
             foco_selecionado=filtro_foco,
+            pagination_args=_query_args_without_page(),
         )
 
     @bp.route("/admin/historico-os")
