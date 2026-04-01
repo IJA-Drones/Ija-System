@@ -5,6 +5,7 @@ from app.core.templating import register_template_helpers
 from app.modules.admin_checklists import register_routes as register_admin_checklists_routes
 from app.modules.admin_dashboard import register_routes as register_admin_dashboard_routes
 from app.modules.admin_uvis import register_routes as register_admin_uvis_routes
+from app.modules.auditoria import register_routes as register_auditoria_routes
 from app.modules.agenda_notificacoes import register_routes as register_agenda_notificacoes_routes
 from app.modules.anexos import register_routes as register_anexos_routes
 from app.modules.backup import register_routes as register_backup_routes
@@ -37,6 +38,7 @@ register_template_helpers(bp)
 register_admin_checklists_routes(bp)
 register_admin_dashboard_routes(bp)
 register_admin_uvis_routes(bp)
+register_auditoria_routes(bp)
 register_agenda_notificacoes_routes(bp)
 register_anexos_routes(bp)
 register_backup_routes(bp)

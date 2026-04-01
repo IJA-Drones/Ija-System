@@ -347,6 +347,17 @@
     </div>
   </li>
 {% endif %}
+
+{% if current_user.tipo_usuario == 'admin' %}
+  <li class="nav-item">
+    <a
+      class="nav-link {% if request.endpoint == 'main.admin_logs_usuarios' %}active{% endif %}"
+      href="{{ url_for('main.admin_logs_usuarios') }}"
+    >
+      <i class="bi bi-clipboard-data-fill me-2"></i><span>Logs de Usuario</span>
+    </a>
+  </li>
+{% endif %}
           {% endif %} 
           {# ===================== PILOTOS ===================== #} 
           {% if current_user.tipo_usuario in ['admin', 'visualizar', 'regional', 'operario', 'operador'] %}

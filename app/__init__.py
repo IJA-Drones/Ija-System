@@ -1,11 +1,55 @@
 import os
+from datetime import datetime
 
 from dotenv import load_dotenv
-from flask import Flask, render_template, request
+from flask import Flask, g, render_template, request
+from flask_login import current_user
 from flask_talisman import Talisman
 from whitenoise import WhiteNoise
 
 from app.extensions import db, login_manager, migrate
+
+
+AUDIT_ACTION_KEYWORDS = (
+    "cadastrar",
+    "cadastro",
+    "novo",
+    "criar",
+    "editar",
+    "update",
+    "atualizar",
+    "excluir",
+    "delete",
+    "deletar",
+    "remover",
+    "reset_senha",
+)
+
+
+def _resolve_request_ip():
+    forwarded_for = (request.headers.get("X-Forwarded-For") or "").split(",")[0].strip()
+    if forwarded_for:
+        return forwarded_for
+
+    real_ip = (request.headers.get("X-Real-IP") or "").strip()
+    if real_ip:
+        return real_ip
+
+    return request.remote_addr or None
+
+
+def _should_audit_request():
+    endpoint = (request.endpoint or "").strip().lower()
+    path = (request.path or "").strip().lower()
+
+    if request.method not in {"POST", "PUT", "PATCH", "DELETE"}:
+        return False
+
+    if path.startswith("/static/") or endpoint.startswith("static"):
+        return False
+
+    haystack = f"{endpoint} {path}"
+    return any(keyword in haystack for keyword in AUDIT_ACTION_KEYWORDS)
 
 
 def create_app():
@@ -31,11 +75,80 @@ def create_app():
     login_manager.init_app(app)
     login_manager.login_view = "auth.login"
 
-    from app.models import Usuario
+    from app.models import AuditoriaUsuario, Usuario
 
     @login_manager.user_loader
     def load_user(user_id):
         return Usuario.query.get(int(user_id))
+
+    @app.before_request
+    def capture_audit_user():
+        if not getattr(current_user, "is_authenticated", False):
+            return
+
+        g.audit_user_id = getattr(current_user, "id", None)
+        g.audit_user_nome = (
+            getattr(current_user, "nome_uvis", None)
+            or getattr(current_user, "login", None)
+            or "Usuario sem nome"
+        )
+        g.audit_user_login = getattr(current_user, "login", None)
+        g.audit_tipo_usuario = getattr(current_user, "tipo_usuario", None)
+
+    @app.after_request
+    def register_user_audit(response):
+        endpoint = (request.endpoint or "").strip()
+
+        if not _should_audit_request():
+            return response
+
+        user_id = getattr(g, "audit_user_id", None)
+        user_name = getattr(g, "audit_user_nome", None)
+        user_login = getattr(g, "audit_user_login", None)
+        user_type = getattr(g, "audit_tipo_usuario", None)
+
+        if not user_name and getattr(current_user, "is_authenticated", False):
+            user_id = getattr(current_user, "id", None)
+            user_name = (
+                getattr(current_user, "nome_uvis", None)
+                or getattr(current_user, "login", None)
+                or "Usuario sem nome"
+            )
+            user_login = getattr(current_user, "login", None)
+            user_type = getattr(current_user, "tipo_usuario", None)
+
+        if not user_name:
+            return response
+
+        query_string = request.query_string.decode("utf-8", errors="ignore").strip() or None
+        user_agent = (request.headers.get("User-Agent") or "").strip() or None
+        referrer = (request.referrer or "").strip() or None
+        tipo_evento = "ACAO"
+
+        try:
+            with db.engine.begin() as conn:
+                conn.execute(
+                    AuditoriaUsuario.__table__.insert().values(
+                        usuario_id=user_id,
+                        usuario_nome=(user_name or "Usuario sem nome")[:100],
+                        usuario_login=user_login or None,
+                        tipo_usuario=user_type or None,
+                        metodo=request.method,
+                        tipo_evento=tipo_evento,
+                        endpoint=endpoint or None,
+                        path=(request.path or "/")[:255],
+                        query_string=query_string,
+                        status_code=int(response.status_code or 0),
+                        ip=_resolve_request_ip(),
+                        user_agent=user_agent,
+                        referrer=referrer[:255] if referrer else None,
+                        criado_em=datetime.now(),
+                    )
+                )
+        except Exception:
+            app.logger.exception("Erro ao registrar auditoria de usuario.")
+
+        return response
 
     @app.context_processor
     def inject_google_maps_key():
