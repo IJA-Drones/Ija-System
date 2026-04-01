@@ -206,6 +206,7 @@ class Solicitacao(db.Model):
     foco = db.Column(db.String(50), nullable=False, index=True)
 
     # Detalhes Operacionais
+    tipo_operacao = db.Column(db.String(50), index=True) #monitoramento ou tratamento
     tipo_visita = db.Column(db.String(50), index=True)
     altura_voo = db.Column(db.String(20), index=True)
 

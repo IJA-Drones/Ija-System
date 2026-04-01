@@ -206,116 +206,117 @@
 
 <div class="container-fluid py-4" style="max-width: 1200px;">
 
-<div class="d-flex justify-content-between align-items-center mb-4 dashboard-header">
-  <h2 class="text-dark m-0">
-    <i class="bi bi-list-task me-2 text-primary"></i> Minhas Solicitações
-  </h2>
+  <div class="d-flex justify-content-between align-items-center mb-4 dashboard-header">
+    <h2 class="text-dark m-0">
+      <i class="bi bi-list-task me-2 text-primary"></i> Minhas Solicitações
+    </h2>
 
-  <div class="header-actions">
-    <a href="{{ url_for('main.solicitacoes_canceladas') }}" class="btn btn-outline-dark shadow-sm btn-canceladas">
-      <i class="bi bi-x-circle"></i> Canceladas
-    </a>
+    <div class="header-actions">
+      <a href="{{ url_for('main.solicitacoes_canceladas') }}" class="btn btn-outline-dark shadow-sm btn-canceladas">
+        <i class="bi bi-x-circle"></i> Canceladas
+      </a>
 
-    <a href="{{ url_for('main.novo') }}" class="btn btn-success shadow-sm btn-nova">
-      <i class="bi bi-plus-lg"></i> Nova Solicitação
-    </a>
+      <a href="{{ url_for('main.novo') }}" class="btn btn-success shadow-sm btn-nova">
+        <i class="bi bi-plus-lg"></i> Nova Solicitação
+      </a>
+    </div>
   </div>
-</div>
 
   <div class="card shadow-sm rounded-4 mb-4 border-0">
-      <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center cursor-pointer"
-          data-bs-toggle="collapse"
-          data-bs-target="#collapseFiltros"
-          aria-expanded="false"
-          style="cursor: pointer;">
+    <div class="card-header bg-white border-0 p-3 d-flex justify-content-between align-items-center"
+        data-bs-toggle="collapse"
+        data-bs-target="#collapseFiltros"
+        role="button"
+        aria-expanded="false"
+        style="cursor: pointer;">
 
-          <div class="d-flex align-items-center gap-2">
-              <i class="bi bi-funnel-fill text-primary"></i>
-              <span class="text-dark">Filtros de Busca</span>
-              {% if request.args.get('status') or request.args.get('tipo_visita') or request.args.get('foco')
-                 or request.args.get('data_ini') or request.args.get('data_fim') %}
-                  <span class="badge bg-danger rounded-circle p-1" style="width: 8px; height: 8px;"></span>
-              {% endif %}
-          </div>
-          <i class="bi bi-chevron-down text-muted"></i>
-      </div>
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-funnel-fill text-primary"></i>
+            <span class="fw-bold text-dark">Filtros de Busca</span>
+            {% if request.args.get('status') or request.args.get('tipo_visita') or request.args.get('foco')
+               or request.args.get('data_ini') or request.args.get('data_fim') or request.args.get('operacao') %}
+                <span class="badge rounded-pill bg-primary" style="font-size: 0.7rem;">Filtros Ativos</span>
+            {% endif %}
+        </div>
+        <i class="bi bi-chevron-down text-muted"></i>
+    </div>
 
-      <div class="collapse {% if request.args.get('status') or request.args.get('tipo_visita') or request.args.get('foco')
-         or request.args.get('data_ini') or request.args.get('data_fim') %}show{% endif %}" id="collapseFiltros">
+    <div class="collapse {% if request.args.get('status') or request.args.get('tipo_visita') or request.args.get('foco')
+         or request.args.get('data_ini') or request.args.get('data_fim') or request.args.get('operacao') %}show{% endif %}" id="collapseFiltros">
           <div class="card-body pt-0">
               <form method="GET">
-                  <div class="row g-2 align-items-end">
-
-                      <div class="col-md-3">
-                          <label class="small text-muted mb-1">Filtrar por Status</label>
-                          <select name="status" class="form-select form-select-sm">
-                              <option value="">Todos os Pedidos</option>
-                              <option value="PENDENTE" {{ 'selected' if request.args.get('status')=='PENDENTE' else '' }}>⚪️ Pendentes</option>
-                              <option value="EM ANÁLISE" {{ 'selected' if request.args.get('status')=='EM ANÁLISE' else '' }}>🟡 Em Análise</option>
-                              <option value="APROVADO" {{ 'selected' if request.args.get('status')=='APROVADO' else '' }}>🟢 Aprovados</option>
-                              <option value="APROVADO COM RECOMENDAÇÕES" {{ 'selected' if request.args.get('status')=='APROVADO COM RECOMENDAÇÕES' else ''}}>🟠 Aprovado c/ Recomendações</option>
-                              <option value="NEGADO" {{ 'selected' if request.args.get('status')=='NEGADO' else '' }}>🔴 Negados</option>
-                              <option value="CONCLUÍDO" {{ 'selected' if request.args.get('status') in ['CONCLUÍDO', 'CONCLUIDO'] else '' }}>🟣 Concluídos</option>
-                          </select>
+                  <div class="row g-3">
+                      
+                      {# --- COLUNA 1 (Antes da Linha Vermelha) --- #}
+                      <div class="col-md-4">
+                          <div class="mb-3">
+                              <label class="small fw-bold text-muted mb-1 text-uppercase">Status</label>
+                              <select name="status" class="form-select shadow-sm border-light-subtle">
+                                  <option value="">Todos os Pedidos</option>
+                                  <option value="PENDENTE" {{ 'selected' if request.args.get('status')=='PENDENTE' }}>⚪️ Pendentes</option>
+                                  <option value="EM ANÁLISE" {{ 'selected' if request.args.get('status')=='EM ANÁLISE' }}>🟡 Em Análise</option>
+                                  <option value="APROVADO" {{ 'selected' if request.args.get('status')=='APROVADO' }}>🟢 Aprovados</option>
+                                  <option value="NEGADO" {{ 'selected' if request.args.get('status')=='NEGADO' }}>🔴 Negados</option>
+                                  <option value="CONCLUÍDO" {{ 'selected' if request.args.get('status') in ['CONCLUÍDO', 'CONCLUIDO'] }}>🟣 Concluídos</option>
+                              </select>
+                          </div>
+                          <div>
+                              <label class="small fw-bold text-muted mb-1 text-uppercase">Foco da Ação</label>
+                              <select name="foco" class="form-select shadow-sm border-light-subtle">
+                                  <option value="">Todos os Focos</option>
+                                  {% set opcoes_foco = ["Acumulador", "CAIXA D'AGUA", "Casa abandonada", "Corrego", "Ferro velho", "Piscina", "Terreno com inserviveis"] %}
+                                  {% for opcao in opcoes_foco %}
+                                      <option value="{{ opcao }}" {{ 'selected' if request.args.get('foco') == opcao }}>{{ opcao }}</option>
+                                  {% endfor %}
+                              </select>
+                          </div>
                       </div>
 
-                      <div class="col-md-3">
-                          <label class="small text-muted mb-1">Filtrar por Tipo de Visita</label>
-                          <select name="tipo_visita" class="form-select form-select-sm">
-                              <option value="">Todos os tipos</option>
-                              <option value="Monitoramento" {{ 'selected' if request.args.get('tipo_visita')=='Monitoramento' else '' }}>Monitoramento</option>
-                              <option value="Aedes" {{ 'selected' if request.args.get('tipo_visita')=='Aedes' else '' }}>Aedes</option>
-                              <option value="Culex" {{ 'selected' if request.args.get('tipo_visita')=='Culex' else '' }}>Culex</option>
-                          </select>
+                      {# --- COLUNA 2 (Entre Vermelha e Azul - Divisão de Datas) --- #}
+                      <div class="col-md-4">
+                          <div class="mb-3">
+                              <label class="small fw-bold text-muted mb-1 text-uppercase">Tipo de Visita</label>
+                              <select name="tipo_visita" class="form-select shadow-sm border-light-subtle">
+                                  <option value="">Todos os tipos</option>
+                                  <option value="Aedes" {{ 'selected' if request.args.get('tipo_visita')=='Aedes' }}>Aedes</option>
+                                  <option value="Culex" {{ 'selected' if request.args.get('tipo_visita')=='Culex' }}>Culex</option>
+                                  <option value="Outro" {{ 'selected' if request.args.get('tipo_visita')=='Outro' }}>Outro</option>
+                              </select>
+                          </div>
+                          <div class="row g-2">
+                              <div class="col-6">
+                                  <label class="small fw-bold text-muted mb-1 text-uppercase">Data Inicial</label>
+                                  <input type="date" name="data_ini" class="form-control shadow-sm border-light-subtle"
+                                        value="{{ request.args.get('data_ini', '') }}">
+                              </div>
+                              <div class="col-6">
+                                  <label class="small fw-bold text-muted mb-1 text-uppercase">Data Final</label>
+                                  <input type="date" name="data_fim" class="form-control shadow-sm border-light-subtle"
+                                        value="{{ request.args.get('data_fim', '') }}">
+                              </div>
+                          </div>
                       </div>
 
-                      <div class="col-md-3">
-                        <label class="small text-muted mb-1">Filtrar por Foco da Ação</label>
-                        <select name="foco" class="form-select form-select-sm">
-                            <option value="">Todos os Focos</option>
-
-                            {% set opcoes_foco = [
-                                "Acumulador", "CAIXA D'AGUA", "Casa abandonada com inserviveis",
-                                "Corrego", "Ferro velho", "Galpão com inserviveis",
-                                "Imovel com Inserviveis", "Laje/telhado com Acumulo de agua",
-                                "P.E Cadastrado", "Patio com Veiculos", "Piscina",
-                                "Piscinão", "Reciclagem", "Terreno com inserviveis"
-                            ] %}
-
-                            {% for opcao in opcoes_foco %}
-                                <option value="{{ opcao }}"
-                                    {{ 'selected' if request.args.get('foco') == opcao else '' }}>
-                                    {{ opcao }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                      </div>
-
-                      {# ✅ NOVO: DATA INICIAL #}
-                      <div class="col-md-3">
-                        <label class="small text-muted mb-1">Data inicial</label>
-                        <input type="date" name="data_ini" class="form-control form-control-sm"
-                               value="{{ request.args.get('data_ini', '') }}">
-                      </div>
-
-                      {# ✅ NOVO: DATA FINAL #}
-                      <div class="col-md-3">
-                        <label class="small text-muted mb-1">Data final</label>
-                        <input type="date" name="data_fim" class="form-control form-control-sm"
-                               value="{{ request.args.get('data_fim', '') }}">
-                      </div>
-
-                      <div class="col-md-3 d-flex gap-2">
-                          <button type="submit" class="btn btn-success btn-sm w-100">
-                            <i class="bi bi-funnel me-2"></i> Filtrar
-                          </button>
-
-                          {% if request.args.get('status') or request.args.get('tipo_visita') or request.args.get('foco')
-                             or request.args.get('data_ini') or request.args.get('data_fim') %}
-                              <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary btn-sm w-100">
-                                  <i class="bi bi-x-lg"></i> Limpar
-                              </a>
-                          {% endif %}
+                      {# --- COLUNA 3 (Depois da Linha Azul) --- #}
+                      <div class="col-md-4">
+                          <div class="mb-3">
+                              <label class="small fw-bold text-muted mb-1 text-uppercase">Tipo de Operação</label>
+                              <select name="operacao" class="form-select shadow-sm border-light-subtle">
+                                  <option value="">Todas as Operações</option>
+                                  <option value="Monitoramento" {{ 'selected' if request.args.get('operacao')=='Monitoramento' }}>Monitoramento</option>
+                                  <option value="Tratamento" {{ 'selected' if request.args.get('operacao')=='Tratamento' }}>Tratamento</option>
+                              </select>
+                          </div>
+                          <div class="d-flex align-items-end gap-2" style="height: 38px; margin-top: 45px;">
+                              <button type="submit" class="btn btn-primary w-100 fw-bold shadow-sm d-flex align-items-center justify-content-center" style="background-color: #2c5282; border: none; height: 38px;">
+                                  <i class="bi bi-search me-2"></i> Filtrar
+                              </button>
+                              {% if request.args.get('status') or request.args.get('tipo_visita') or request.args.get('operacao') or request.args.get('foco') or request.args.get('data_ini') or request.args.get('data_fim') %}
+                                  <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary px-3 shadow-sm d-flex align-items-center justify-content-center" style="height: 38px;" title="Limpar Filtros">
+                                      <i class="bi bi-x-lg"></i> Limpar
+                                  </a>
+                              {% endif %}
+                          </div>
                       </div>
 
                   </div>

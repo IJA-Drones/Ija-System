@@ -84,6 +84,7 @@ def create_nova_solicitacao(user, form_data):
         complemento=form_data.get("complemento"),
         foco=form_data.get("foco"),
         tipo_visita=form_data.get("tipo_visita"),
+        tipo_operacao=form_data.get("tipo_operacao"),
         altura_voo=form_data.get("altura_voo"),
         apoio_cet=form_data.get("apoio_cet") == "sim",
         observacao=form_data.get("observacao"),
@@ -152,6 +153,7 @@ def atualizar_solicitacao(user, solicitacao_id, form_data):
 
     pedido.foco = form_data.get("foco") or pedido.foco
     pedido.tipo_visita = form_data.get("tipo_visita") or pedido.tipo_visita
+    pedido.tipo_operacao = form_data.get("tipo_operacao") or pedido.tipo_operacao
     pedido.altura_voo = form_data.get("altura_voo") or pedido.altura_voo
     pedido.apoio_cet = (form_data.get("apoio_cet", "n\u00e3o") or "").lower() == "sim"
     pedido.observacao = form_data.get("observacao") or pedido.observacao

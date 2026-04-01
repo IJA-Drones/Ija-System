@@ -73,7 +73,7 @@
 
         {% if current_user.tipo_usuario in ['admin', 'visualizar'] %}
           <div class="mb-4">
-              <label class="form-label fw-bold"><i class="bi bi-geo-alt me-2"></i>Unidade (UVIS) Responsável</label>
+              <label class="form-label fw-bold small text-muted"><i class="bi bi-geo-alt me-2"></i>Unidade (UVIS) Responsável</label>
               <select class="form-select border-primary" name="uvis_responsavel_id" required>
                   <option value="" selected disabled>Escolha a UVIS que executará este serviço...</option>
                   {% for uvis in uvis_lista %}
@@ -306,24 +306,24 @@
           <h5 class="m-0 text-primary fw-bold">Detalhes da Operação</h5>
         </div>
 
-        <div class="row g-3 mb-3">
+        <div class="row g-4 mb-4">
           <div class="col-md-6">
-            <label class="form-label fw-bold small text-muted">
-              <i class="bi bi-list-task me-1 text-primary"></i> Tipo de Visita *
+            <label class="form-label fw-bold small text-muted mb-2">
+              <i class="bi bi-list-task me-1 text-primary"></i> TIPO DE VISITA *
             </label>
-            <select class="form-select" name="tipo_visita" required>
+            <select class="form-select shadow-sm" name="tipo_visita" required>
               <option value="" selected disabled>Selecione...</option>
-              <option value="Monitoramento">Monitoramento</option>
               <option value="Aedes">Aedes</option>
               <option value="Culex">Culex</option>
+              <option value="Outros">Outros</option>
             </select>
           </div>
 
           <div class="col-md-6">
-            <label class="form-label fw-bold small text-muted">
-              <i class="bi bi-arrow-up me-1 text-primary"></i> Altura do Voo *
+            <label class="form-label fw-bold small text-muted mb-2">
+              <i class="bi bi-arrow-up me-1 text-primary"></i> ALTURA DO VOO *
             </label>
-            <select class="form-select" name="altura_voo" required>
+            <select class="form-select shadow-sm" name="altura_voo" required>
               <option value="" selected disabled>Selecione...</option>
               <option value="10m">10 Metros</option>
               <option value="20m">20 Metros</option>
@@ -331,51 +331,49 @@
               <option value="40m">40 Metros</option>
             </select>
           </div>
-        </div>
 
-        <div class="row mb-3 p-3 rounded mx-1 border">
-          <label class="fw-bold d-block mb-2 text-muted small">
-            <i class="bi bi-cone-striped me-1 text-primary"></i> Necessário
-            Apoio CET?
-          </label>
-          <div class="d-flex gap-4">
-            <div class="form-check">
-              <input
-                class="form-check-input"
-                type="radio"
-                name="apoio_cet"
-                id="cetSim"
-                value="sim"
-              />
-              <label class="form-check-label" for="cetSim">Sim</label>
+          <div class="col-12">
+            <div class="p-3 border rounded bg-white shadow-sm">
+              <label class="form-label fw-bold small text-muted mb-2">
+                <i class="bi bi-check2-square me-1 text-primary"></i> TIPO DE OPERAÇÃO *
+              </label>
+              <div class="d-flex gap-4">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="tipo_operacao" id="monitoramento" value="Monitoramento" />
+                  <label class="form-check-label small fw-medium" for="monitoramento">Monitoramento</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="tipo_operacao" id="tratamento" value="Tratamento" checked />
+                  <label class="form-check-label small fw-medium" for="tratamento">Tratamento</label>
+                </div>
+              </div>
             </div>
-            <div class="form-check">
-              <input
-                class="form-check-input"
-                type="radio"
-                name="apoio_cet"
-                id="cetNao"
-                value="nao"
-                checked
-              />
-              <label class="form-check-label" for="cetNao">Não</label>
+          </div>
+          <div class="col-12">
+            <div class="p-3 border rounded bg-white shadow-sm">
+              <label class="fw-bold small text-muted d-block mb-3">
+                <i class="bi bi-cone-striped me-1 text-primary"></i> NECESSÁRIO APOIO CET?
+              </label>
+              <div class="d-flex gap-4">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="apoio_cet" id="cetSim" value="sim" />
+                  <label class="form-check-label small fw-medium" for="cetSim">Sim</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="apoio_cet" id="cetNao" value="nao" checked />
+                  <label class="form-check-label small fw-medium" for="cetNao">Não</label>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
         <div class="mb-4">
-          <label class="form-label fw-bold small text-muted">
-            <i class="bi bi-card-text me-1 text-primary"></i> Observações
+          <label class="form-label fw-bold small text-muted mb-2">
+            <i class="bi bi-card-text me-1 text-primary"></i> OBSERVAÇÕES
           </label>
-          <textarea
-            class="form-control"
-            name="observacao"
-            rows="3"
-            placeholder="Informações adicionais relevantes..."
-          ></textarea>
+          <textarea class="form-control shadow-sm" name="observacao" rows="3" placeholder="Informações adicionais relevantes..."></textarea>
         </div>
-
-        <hr class="text-muted opacity-25 my-4" />
 
         {# SEÇÃO 4: CLASSIFICAÇÃO #}
         <div class="d-flex align-items-center mb-3">
