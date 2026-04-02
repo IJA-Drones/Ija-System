@@ -277,7 +277,19 @@
     </div>
 
     <div class="row g-4 mb-4">
-    <div class="col-lg-6">
+    <div class="col-lg-4">
+        <div class="card shadow-sm rounded-4 p-4 h-100">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5 class="mb-0 text-dark"><i class="bi bi-sliders me-2"></i>Tipo de Operação</h5>
+            <span class="badge bg-light text-dark ">Período filtrado</span>
+        </div>
+        <div style="height:320px;">
+            <canvas id="chartTipoOperacao"></canvas>
+        </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
         <div class="card shadow-sm rounded-4 p-4 h-100">
         <div class="d-flex justify-content-between align-items-center mb-2">
             <h5 class="mb-0 text-dark"><i class="bi bi-building-check me-2"></i>Unidades (UVIS)</h5>
@@ -289,7 +301,7 @@
         </div>
     </div>
 
-    <div class="col-lg-6">
+    <div class="col-lg-4">
         <div class="card shadow-sm rounded-4 p-4 h-100">
         <div class="d-flex justify-content-between align-items-center mb-2">
             <h5 class="mb-0 text-dark"><i class="bi bi-bullseye me-2"></i>Foco</h5>
@@ -382,7 +394,35 @@
     </div>
 
     <div class="row g-4 mb-4">
-        <div class="col-md-6">
+        <div class="col-lg-4 col-md-6">
+            <div class="card shadow-sm rounded-4 p-4 h-100">
+                <h4 class="mb-3 text-dark"><i class="bi bi-sliders me-2"></i>Solicitações por Tipo de Operação</h4>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Tipo de Operação</th>
+                                <th class="text-center">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for tipo, count in dados_tipo_operacao %}
+                            <tr>
+                                <td>{{ tipo | capitalize or 'Não informado' }}</td>
+                                <td class="text-center">{{ count }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="2" class="text-center text-muted">Nenhuma solicitação encontrada por tipo de operação.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-md-6">
             <div class="card shadow-sm rounded-4 p-4 h-100">
                 <h4 class="mb-3 text-dark"><i class="bi bi-list-task me-2"></i>Status Detalhado</h4>
                 <div class="table-responsive">
@@ -410,7 +450,7 @@
             </div>
         </div>
 
-        <div class="col-md-6">
+        <div class="col-lg-4 col-md-6">
             <div class="card shadow-sm rounded-4 p-4 h-100">
                 <h4 class="mb-3 text-dark"><i class="bi bi-bullseye me-2"></i>Solicitações por Foco</h4>
                 <div class="table-responsive">
@@ -516,6 +556,7 @@
 <script id="dados-regiao-json" type="application/json">{{ dados_regiao | tojson | safe }}</script>
 <script id="dados-unidade-json" type="application/json">{{ dados_unidade | tojson | safe }}</script>
 <script id="dados-foco-json" type="application/json">{{ dados_foco | tojson | safe }}</script>
+<script id="dados-tipo-operacao-json" type="application/json">{{ dados_tipo_operacao | tojson | safe }}</script>
 <script id="dados-tipo-visita-json" type="application/json">{{ dados_tipo_visita | tojson | safe }}</script>
 <script id="dados-altura-json" type="application/json">{{ dados_altura_voo | tojson | safe }}</script>
 
@@ -683,6 +724,29 @@
                     x: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.06)" }, ticks: { precision: 0 } },
                     y: { grid: { display: false } }
                 }
+            }
+        });
+    }
+
+    // =========================
+    // Tipo de operação (doughnut)
+    // =========================
+    const dadosTipoOperacao = readJson("dados-tipo-operacao-json").map(([t, c]) => [cleanLabel(t), c]);
+    if (document.getElementById("chartTipoOperacao")) {
+        new Chart(document.getElementById("chartTipoOperacao"), {
+            type: "doughnut",
+            data: {
+                labels: dadosTipoOperacao.map(x => x[0]),
+                datasets: [{
+                    data: dadosTipoOperacao.map(x => x[1]),
+                    backgroundColor: dadosTipoOperacao.map((_, i) => palette[i % palette.length]),
+                    borderWidth: 0,
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                cutout: "65%",
+                plugins: { legend: { position: "bottom" } }
             }
         });
     }

@@ -398,6 +398,7 @@ def criar_solicitacao_retorno_monitoramento(solicitacao_original, ordem_atual):
         data_agendamento=nova_data,
         hora_agendamento=solicitacao_original.hora_agendamento,
         foco=solicitacao_original.foco,
+        tipo_operacao=solicitacao_original.tipo_operacao,
         tipo_visita=solicitacao_original.tipo_visita,
         altura_voo=solicitacao_original.altura_voo,
         criadouro=solicitacao_original.criadouro,

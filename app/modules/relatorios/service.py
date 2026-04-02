@@ -318,6 +318,7 @@ def build_relatorios_solicitacoes_context(user, args):
         "dados_regiao": dados_regiao,
         "dados_status": _agrupar_por(base_query, Solicitacao.status),
         "dados_foco": _agrupar_por(base_query, Solicitacao.foco),
+        "dados_tipo_operacao": _agrupar_por(base_query, Solicitacao.tipo_operacao),
         "dados_tipo_visita": _agrupar_por(base_query, Solicitacao.tipo_visita),
         "dados_altura_voo": _agrupar_por(base_query, Solicitacao.altura_voo),
         "dados_unidade": dados_unidade,

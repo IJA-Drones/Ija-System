@@ -96,16 +96,24 @@
 
                 {# --- SEÇÃO 2: DETALHES OPERACIONAIS --- #}
                 <div class="row g-3 mb-3">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label class="form-label fw-bold small text-muted">Tipo de Visita</label>
                         <select name="tipo_visita" class="form-select">
-                            <option value="Monitoramento" {% if pedido.tipo_visita == 'Monitoramento' %}selected{% endif %}>Monitoramento</option>
                             <option value="Aedes" {% if pedido.tipo_visita == 'Aedes' %}selected{% endif %}>Aedes</option>
                             <option value="Culex" {% if pedido.tipo_visita == 'Culex' %}selected{% endif %}>Culex</option>
+                            <option value="Outro" {% if pedido.tipo_visita == 'Outro' %}selected{% endif %}>Outro</option>
                         </select>
                     </div>
 
-                    <div class="col-md-6">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-muted">Tipo de Operação</label>
+                        <select name="tipo_operacao" class="form-select">
+                            <option value="Monitoramento" {% if pedido.tipo_operacao == 'Monitoramento' %}selected{% endif %}>Monitoramento</option>
+                            <option value="Tratamento" {% if pedido.tipo_operacao == 'Tratamento' %}selected{% endif %}>Tratamento</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
                         <label class="form-label fw-bold small text-muted">Altura Máxima</label>
                         <select name="altura_voo" class="form-select">
                             {% for h in ['10m', '20m', '30m', '40m'] %}

@@ -44,6 +44,10 @@ def build_dashboard_context(user, args, google_maps_key):
     if filtro_tipo_visita:
         query = query.filter(Solicitacao.tipo_visita == filtro_tipo_visita)
 
+    filtro_tipo_operacao = (args.get("tipo_operacao") or args.get("operacao") or "").strip()
+    if filtro_tipo_operacao:
+        query = query.filter(Solicitacao.tipo_operacao == filtro_tipo_operacao)
+
     filtro_foco = args.get("foco")
     if filtro_foco:
         query = query.filter(Solicitacao.foco == filtro_foco)

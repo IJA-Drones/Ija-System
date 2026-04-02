@@ -26,6 +26,7 @@ UVIS_FAQ = [
             "Na tela **Minhas Solicitacoes** voce encontra:\n"
             "- Botao **Nova Solicitacao** (abre o formulario)\n"
             "- **Filtro por status** (Pendente, Em Analise, Aprovado, Aprovado com Recomendacoes, Negado)\n"
+            "- **Filtros por tipo de operacao e tipo de visita**\n"
             "- **Tabela** com data/hora, localizacao e foco\n"
             "- Botao **Detalhes** (abre um modal com informacoes completas)\n"
             "- Botao **Adicionar/Editar Equipes** (abre um modal para inserir a equipe responsavel)\n"
@@ -34,13 +35,14 @@ UVIS_FAQ = [
     },
     {
         "title": "Campos obrigatorios ao criar uma solicitacao",
-        "keywords": ["novo", "nova solicitacao", "cadastro", "campos", "obrigatorio", "cep", "numero", "tipo de visita", "altura", "foco"],
+        "keywords": ["novo", "nova solicitacao", "cadastro", "campos", "obrigatorio", "cep", "numero", "tipo de operacao", "tipo de visita", "altura", "foco"],
         "answer": (
             "No cadastro de uma nova solicitacao, atencao aos campos:\n"
             "- **Data** e **Hora** (obrigatorios)\n"
             "- **CEP** (8 digitos) para preencher endereco automatico\n"
             "- **Logradouro** (confirmar) e **Numero** (preencher manualmente)\n"
-            "- **Tipo de visita** (Monitoramento / Aedes / Culex)\n"
+            "- **Tipo de operacao** (Monitoramento / Tratamento)\n"
+            "- **Tipo de visita** (Aedes / Culex / Outro)\n"
             "- **Altura do voo** (10m, 20m, 30m, 40m)\n"
             "- **Foco da acao** (ex.: Imovel Abandonado, Piscina/Caixa d'agua, Terreno Baldio, Ponto Estrategico)\n"
         ),
@@ -82,7 +84,7 @@ UVIS_FAQ = [
             "[] Data e hora corretas\n"
             "[] CEP valido e endereco conferido\n"
             "[] Numero preenchido\n"
-            "[] Tipo de visita e altura do voo selecionados\n"
+            "[] Tipo de operacao, tipo de visita e altura do voo selecionados\n"
             "[] Foco da acao selecionado\n"
             "[] Endereco valido?\n"
             "[] Observacoes (se necessario) com informacoes objetivas\n"
@@ -156,7 +158,7 @@ ADMIN_FAQ = [
         "keywords": ["editar", "editar completo", "corrigir", "alterar", "data", "hora", "endereco", "agendamento"],
         "answer": (
             "<b>Editar completo</b> serve para <b>corrigir todos os dados</b> do pedido:<br>"
-            "<b>Data/Hora</b>, <b>Endereco</b>, <b>Foco</b>, <b>Tipo de visita</b>, <b>Altura</b> e <b>Observacoes</b>.<br>"
+            "<b>Data/Hora</b>, <b>Endereco</b>, <b>Foco</b>, <b>Tipo de operacao</b>, <b>Tipo de visita</b>, <b>Altura</b> e <b>Observacoes</b>.<br>"
             "Em alguns casos o sistema pode gerar <b>notificacao para a unidade</b>."
         ),
     },
