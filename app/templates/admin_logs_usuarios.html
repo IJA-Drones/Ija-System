@@ -1,0 +1,986 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+<style>
+  :root {
+    --audit-accent: #0f766e;
+    --audit-accent-soft: #dff7f3;
+    --audit-ink: #12313a;
+    --audit-border: rgba(15, 118, 110, 0.14);
+    --audit-shadow: 0 20px 50px rgba(15, 23, 42, 0.10);
+    --audit-surface: linear-gradient(180deg, #fbfffe 0%, #f4f8fb 100%);
+  }
+
+  .auditoria-page {
+    width: 100%;
+  }
+
+  .auditoria-hero {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--audit-border);
+    border-radius: 28px;
+    padding: 28px;
+    margin-bottom: 22px;
+    background:
+      radial-gradient(circle at top right, rgba(14, 165, 164, 0.18), transparent 34%),
+      radial-gradient(circle at left bottom, rgba(59, 130, 246, 0.12), transparent 28%),
+      var(--audit-surface);
+    box-shadow: var(--audit-shadow);
+  }
+
+  .auditoria-hero::after {
+    content: "";
+    position: absolute;
+    inset: auto -40px -55px auto;
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(15, 118, 110, 0.18), transparent 68%);
+    pointer-events: none;
+  }
+
+  .auditoria-hero-top {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 18px;
+    margin-bottom: 22px;
+  }
+
+  .auditoria-title-wrap h2 {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--audit-ink);
+    font-weight: 700;
+    letter-spacing: -.02em;
+  }
+
+  .auditoria-title-icon {
+    width: 52px;
+    height: 52px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 16px;
+    color: #fff;
+    font-size: 1.35rem;
+    background: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
+    box-shadow: 0 14px 28px rgba(15, 118, 110, 0.22);
+  }
+
+  .auditoria-title-wrap p {
+    margin: 10px 0 0;
+    max-width: 680px;
+    color: rgba(18, 49, 58, 0.72);
+    font-size: .96rem;
+  }
+
+  .auditoria-toolbar-actions {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .auditoria-toolbar-actions .btn {
+    min-height: 42px;
+    border-radius: 999px;
+    padding-inline: 18px;
+  }
+
+  .auditoria-summary {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .auditoria-stat {
+    padding: 18px 18px 16px;
+    border-radius: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 14px 28px rgba(15, 23, 42, 0.06);
+  }
+
+  .auditoria-stat-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: rgba(18, 49, 58, 0.70);
+    font-size: .83rem;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+
+  .auditoria-stat-value {
+    margin-top: 12px;
+    font-size: 1.85rem;
+    line-height: 1;
+    font-weight: 700;
+    color: var(--audit-ink);
+  }
+
+  .auditoria-stat-note {
+    margin-top: 8px;
+    color: rgba(18, 49, 58, 0.62);
+    font-size: .84rem;
+  }
+
+  .auditoria-panel {
+    border: 1px solid var(--audit-border);
+    border-radius: 24px;
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+    overflow: hidden;
+    background: #fff;
+  }
+
+  .auditoria-panel .card-header {
+    background:
+      linear-gradient(180deg, rgba(245, 251, 252, 0.96), rgba(255, 255, 255, 0.96));
+  }
+
+  .auditoria-panel .card-body {
+    background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(247,250,252,0.98));
+  }
+
+  .auditoria-card-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--audit-ink);
+    font-weight: 600;
+  }
+
+  .auditoria-filter-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ef4444, #f97316);
+    box-shadow: 0 0 0 5px rgba(239, 68, 68, 0.12);
+  }
+
+  .auditoria-filter-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .auditoria-filter-card label {
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: rgba(18, 49, 58, 0.72);
+  }
+
+  .auditoria-filter-card .form-control,
+  .auditoria-filter-card .form-select {
+    min-height: 40px;
+    border-radius: 14px;
+    border-color: rgba(148, 163, 184, 0.35);
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: none;
+  }
+
+  .auditoria-filter-card .form-control:focus,
+  .auditoria-filter-card .form-select:focus {
+    border-color: rgba(20, 184, 166, 0.65);
+    box-shadow: 0 0 0 0.25rem rgba(20, 184, 166, 0.14);
+  }
+
+  .auditoria-table-wrap {
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 24px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 16px 38px rgba(15, 23, 42, 0.08);
+  }
+
+  .auditoria-table-wrap .table-responsive {
+    overflow-x: auto;
+  }
+
+  .auditoria-table-wrap table {
+    margin: 0;
+  }
+
+  .auditoria-table-wrap thead th {
+    border: 0 !important;
+    padding: 18px 18px;
+    font-size: .77rem;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: rgba(18, 49, 58, 0.68);
+    background: linear-gradient(180deg, #f3faf9 0%, #edf5f7 100%);
+  }
+
+  .auditoria-table-wrap tbody tr {
+    transition: transform .18s ease, box-shadow .18s ease, background-color .18s ease;
+  }
+
+  .auditoria-table-wrap tbody tr:hover {
+    transform: translateY(-1px);
+    box-shadow: inset 0 0 0 999px rgba(20, 184, 166, 0.03);
+  }
+
+  .auditoria-table-wrap tbody td {
+    padding: 18px;
+    vertical-align: top;
+    border-color: rgba(148, 163, 184, 0.14) !important;
+  }
+
+  .auditoria-table-wrap code {
+    display: inline-block;
+    max-width: 100%;
+    padding: 6px 10px;
+    border-radius: 10px;
+    white-space: normal;
+    word-break: break-word;
+    color: #0f766e;
+    background: rgba(15, 118, 110, 0.08);
+  }
+
+  .auditoria-time {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px 14px;
+    min-width: 122px;
+    border-radius: 18px;
+    background: linear-gradient(180deg, #f7fbfb 0%, #eef6f7 100%);
+    border: 1px solid rgba(15, 118, 110, 0.10);
+  }
+
+  .auditoria-date {
+    font-weight: 700;
+    color: var(--audit-ink);
+  }
+
+  .auditoria-hour {
+    font-size: .9rem;
+    color: rgba(18, 49, 58, 0.62);
+  }
+
+  .auditoria-user-name {
+    font-weight: 700;
+    color: var(--audit-ink);
+  }
+
+  .auditoria-user-login {
+    margin-top: 4px;
+    color: rgba(18, 49, 58, 0.62);
+    font-size: .92rem;
+  }
+
+  .auditoria-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }
+
+  .auditoria-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: .76rem;
+    font-weight: 700;
+    letter-spacing: .03em;
+  }
+
+  .auditoria-chip-soft {
+    color: #0f766e;
+    background: rgba(20, 184, 166, 0.12);
+  }
+
+  .auditoria-chip-neutral {
+    color: #334155;
+    background: rgba(148, 163, 184, 0.18);
+  }
+
+  .auditoria-status-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .auditoria-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 78px;
+    padding: 7px 12px;
+    border-radius: 999px;
+    color: #fff;
+    font-size: .75rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    box-shadow: inset 0 -1px 0 rgba(255,255,255,0.12);
+  }
+
+  .auditoria-badge-get { background: linear-gradient(135deg, #2563eb, #3b82f6); }
+  .auditoria-badge-post { background: linear-gradient(135deg, #059669, #10b981); }
+  .auditoria-badge-patch { background: linear-gradient(135deg, #d97706, #f59e0b); color: #1f2937; }
+  .auditoria-badge-delete { background: linear-gradient(135deg, #dc2626, #ef4444); }
+  .auditoria-badge-event { background: linear-gradient(135deg, #475569, #64748b); }
+  .auditoria-badge-ok { background: linear-gradient(135deg, #15803d, #22c55e); }
+  .auditoria-badge-redirect { background: linear-gradient(135deg, #ca8a04, #facc15); color: #1f2937; }
+  .auditoria-badge-error { background: linear-gradient(135deg, #b91c1c, #ef4444); }
+
+  .auditoria-path-card {
+    padding: 14px 16px;
+    border-radius: 18px;
+    border: 1px solid rgba(15, 118, 110, 0.10);
+    background: linear-gradient(180deg, rgba(247, 252, 252, 0.94), rgba(255,255,255,0.98));
+  }
+
+  .auditoria-path {
+    font-size: .96rem;
+    line-height: 1.35;
+    color: var(--audit-ink);
+    font-weight: 700;
+    word-break: break-word;
+  }
+
+  .auditoria-meta {
+    margin-top: 10px;
+    font-size: .86rem;
+    line-height: 1.45;
+    color: rgba(18, 49, 58, 0.70);
+  }
+
+  .auditoria-origin {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .auditoria-origin-card {
+    padding: 12px 14px;
+    border-radius: 18px;
+    background: linear-gradient(180deg, #fbfdff 0%, #f6f9fc 100%);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+  }
+
+  .auditoria-origin-label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: .76rem;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: rgba(18, 49, 58, 0.56);
+  }
+
+  .auditoria-origin-value {
+    color: var(--audit-ink);
+    font-size: .9rem;
+    word-break: break-word;
+  }
+
+  .auditoria-empty {
+    padding: 56px 24px;
+    text-align: center;
+    color: rgba(18, 49, 58, 0.64);
+    background: radial-gradient(circle at top, rgba(20, 184, 166, 0.08), transparent 36%);
+  }
+
+  .auditoria-empty i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 68px;
+    height: 68px;
+    margin-bottom: 14px;
+    border-radius: 22px;
+    font-size: 1.55rem;
+    color: var(--audit-accent);
+    background: rgba(20, 184, 166, 0.12);
+  }
+
+  .auditoria-pagination {
+    border-top: 1px solid rgba(148, 163, 184, 0.16);
+    background: linear-gradient(180deg, #fbfdff 0%, #f5f9fb 100%);
+  }
+
+  .auditoria-pagination .page-link {
+    border-radius: 999px !important;
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    color: var(--audit-ink);
+    background: #fff;
+    margin: 0 3px;
+    min-width: 40px;
+    text-align: center;
+  }
+
+  .auditoria-pagination .page-item.active .page-link {
+    border-color: rgba(20, 184, 166, 0.4);
+    background: linear-gradient(135deg, #0f766e, #14b8a6);
+    color: #fff;
+  }
+
+  @media (max-width: 1199.98px) {
+    .auditoria-summary {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 991.98px) {
+    .auditoria-page.container-fluid.py-4 {
+      padding-left: 12px !important;
+      padding-right: 12px !important;
+    }
+
+    .auditoria-hero {
+      padding: 20px;
+      border-radius: 22px;
+    }
+
+    .auditoria-hero-top {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .auditoria-toolbar-actions {
+      width: 100%;
+      justify-content: stretch;
+    }
+
+    .auditoria-toolbar-actions > a {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .auditoria-summary {
+      grid-template-columns: 1fr;
+    }
+
+    .auditoria-filter-actions {
+      flex-direction: column;
+    }
+
+    .auditoria-filter-actions > * {
+      width: 100%;
+    }
+
+    .auditoria-table-wrap .table-responsive {
+      overflow-x: visible !important;
+    }
+
+    .auditoria-table-wrap table.table thead {
+      display: none;
+    }
+
+    .auditoria-table-wrap table.table,
+    .auditoria-table-wrap table.table tbody,
+    .auditoria-table-wrap table.table tr,
+    .auditoria-table-wrap table.table td {
+      display: block;
+      width: 100%;
+    }
+
+    .auditoria-table-wrap table.table tbody {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      padding: 14px;
+    }
+
+    .auditoria-table-wrap table.table tbody tr {
+      border: 1px solid rgba(15, 118, 110, 0.12);
+      border-radius: 22px;
+      overflow: hidden;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fbfd 100%);
+      box-shadow: 0 16px 30px rgba(15, 23, 42, 0.08);
+    }
+
+    .auditoria-table-wrap table.table tbody td {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 16px;
+      border: 0 !important;
+      text-align: left !important;
+    }
+
+    .auditoria-table-wrap table.table tbody td + td {
+      border-top: 1px solid rgba(148, 163, 184, 0.15) !important;
+    }
+
+    .auditoria-table-wrap table.table tbody td::before {
+      flex: 0 0 98px;
+      max-width: 98px;
+      font-weight: 700;
+      font-size: .78rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: rgba(18, 49, 58, 0.56);
+      line-height: 1.1;
+      padding-top: 4px;
+    }
+
+    .auditoria-table-wrap table.table tbody td:nth-child(1)::before { content: "Data"; }
+    .auditoria-table-wrap table.table tbody td:nth-child(2)::before { content: "Usuario"; }
+    .auditoria-table-wrap table.table tbody td:nth-child(3)::before { content: "Evento"; }
+    .auditoria-table-wrap table.table tbody td:nth-child(4)::before { content: "Tela / Rota"; }
+    .auditoria-table-wrap table.table tbody td:nth-child(5)::before { content: "Origem"; }
+    .auditoria-table-wrap table.table tbody td > * {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+  }
+
+  @media (max-width: 420px) {
+    .auditoria-title-wrap h2 {
+      font-size: 1.35rem;
+      align-items: flex-start;
+    }
+
+    .auditoria-table-wrap table.table tbody td {
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .auditoria-table-wrap table.table tbody td::before {
+      flex-basis: auto;
+      max-width: none;
+      padding-top: 0;
+    }
+
+    .auditoria-time {
+      min-width: 0;
+      width: 100%;
+    }
+
+    .auditoria-status-group {
+      width: 100%;
+    }
+  }
+
+  html.dark-mode .auditoria-hero,
+  body.dark-mode .auditoria-hero {
+    border-color: rgba(45, 212, 191, 0.14);
+    background:
+      radial-gradient(circle at top right, rgba(20, 184, 166, 0.18), transparent 34%),
+      radial-gradient(circle at left bottom, rgba(37, 99, 235, 0.16), transparent 28%),
+      linear-gradient(180deg, #12212b 0%, #0d1721 100%);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.34);
+  }
+
+  html.dark-mode .auditoria-title-wrap h2,
+  body.dark-mode .auditoria-title-wrap h2,
+  html.dark-mode .auditoria-user-name,
+  body.dark-mode .auditoria-user-name,
+  html.dark-mode .auditoria-path,
+  body.dark-mode .auditoria-path,
+  html.dark-mode .auditoria-origin-value,
+  body.dark-mode .auditoria-origin-value,
+  html.dark-mode .auditoria-date,
+  body.dark-mode .auditoria-date,
+  html.dark-mode .auditoria-stat-value,
+  body.dark-mode .auditoria-stat-value,
+  html.dark-mode .auditoria-card-title,
+  body.dark-mode .auditoria-card-title {
+    color: rgba(255, 255, 255, 0.94) !important;
+  }
+
+  html.dark-mode .auditoria-title-wrap p,
+  body.dark-mode .auditoria-title-wrap p,
+  html.dark-mode .auditoria-stat-label,
+  body.dark-mode .auditoria-stat-label,
+  html.dark-mode .auditoria-stat-note,
+  body.dark-mode .auditoria-stat-note,
+  html.dark-mode .auditoria-user-login,
+  body.dark-mode .auditoria-user-login,
+  html.dark-mode .auditoria-hour,
+  body.dark-mode .auditoria-hour,
+  html.dark-mode .auditoria-meta,
+  body.dark-mode .auditoria-meta,
+  html.dark-mode .auditoria-origin-label,
+  body.dark-mode .auditoria-origin-label,
+  html.dark-mode .auditoria-empty,
+  body.dark-mode .auditoria-empty,
+  html.dark-mode .auditoria-table-wrap table.table tbody td::before,
+  body.dark-mode .auditoria-table-wrap table.table tbody td::before {
+    color: rgba(255, 255, 255, 0.70) !important;
+  }
+
+  html.dark-mode .auditoria-stat,
+  body.dark-mode .auditoria-stat,
+  html.dark-mode .auditoria-panel,
+  body.dark-mode .auditoria-panel,
+  html.dark-mode .auditoria-table-wrap,
+  body.dark-mode .auditoria-table-wrap,
+  html.dark-mode .auditoria-origin-card,
+  body.dark-mode .auditoria-origin-card,
+  html.dark-mode .auditoria-path-card,
+  body.dark-mode .auditoria-path-card,
+  html.dark-mode .auditoria-time,
+  body.dark-mode .auditoria-time {
+    background: linear-gradient(180deg, rgba(16, 28, 39, 0.96), rgba(12, 21, 31, 0.98)) !important;
+    border-color: rgba(51, 65, 85, 0.72) !important;
+    box-shadow: 0 18px 34px rgba(0, 0, 0, 0.28) !important;
+  }
+
+  html.dark-mode .auditoria-panel .card-header,
+  body.dark-mode .auditoria-panel .card-header,
+  html.dark-mode .auditoria-panel .card-body,
+  body.dark-mode .auditoria-panel .card-body,
+  html.dark-mode .auditoria-pagination,
+  body.dark-mode .auditoria-pagination,
+  html.dark-mode .auditoria-table-wrap thead th,
+  body.dark-mode .auditoria-table-wrap thead th {
+    background: linear-gradient(180deg, #132230 0%, #0f1a24 100%) !important;
+    color: rgba(255, 255, 255, 0.70) !important;
+  }
+
+  html.dark-mode .auditoria-table-wrap tbody td,
+  body.dark-mode .auditoria-table-wrap tbody td {
+    border-color: rgba(51, 65, 85, 0.6) !important;
+  }
+
+  html.dark-mode .auditoria-table-wrap code,
+  body.dark-mode .auditoria-table-wrap code {
+    color: #7dd3fc;
+    background: rgba(14, 165, 233, 0.12);
+  }
+
+  html.dark-mode .auditoria-filter-card .form-control,
+  body.dark-mode .auditoria-filter-card .form-control,
+  html.dark-mode .auditoria-filter-card .form-select,
+  body.dark-mode .auditoria-filter-card .form-select {
+    color: rgba(255, 255, 255, 0.92);
+    border-color: rgba(51, 65, 85, 0.75);
+    background: rgba(15, 23, 32, 0.92);
+  }
+
+  html.dark-mode .auditoria-pagination .page-link,
+  body.dark-mode .auditoria-pagination .page-link {
+    color: rgba(255, 255, 255, 0.90);
+    border-color: rgba(51, 65, 85, 0.82);
+    background: #0f1a24;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+{% set ns = namespace(total_page=logs|length, errors=0, creates=0, deletes=0, filtered=0) %}
+{% for log in logs %}
+  {% if log.status_code and log.status_code >= 400 %}
+    {% set ns.errors = ns.errors + 1 %}
+  {% endif %}
+  {% if log.metodo == 'POST' %}
+    {% set ns.creates = ns.creates + 1 %}
+  {% endif %}
+  {% if log.metodo == 'DELETE' %}
+    {% set ns.deletes = ns.deletes + 1 %}
+  {% endif %}
+{% endfor %}
+{% if filters.q or filters.metodo or filters.tipo_evento or filters.status or filters.data_inicio or filters.data_fim %}
+  {% set ns.filtered = 1 %}
+{% endif %}
+
+<div class="container-fluid py-4 auditoria-page" style="max-width: 1380px">
+  <section class="auditoria-hero">
+    <div class="auditoria-hero-top">
+      <div class="auditoria-title-wrap">
+        <h2>
+          <span class="auditoria-title-icon">
+            <i class="bi bi-clipboard-data-fill"></i>
+          </span>
+          <span>Logs de Usuario</span>
+        </h2>
+        <p>
+          Painel de auditoria para acompanhar a movimentacao administrativa nas rotas de cadastro,
+          edicao e exclusao com leitura rapida de usuario, rota, metodo e origem.
+        </p>
+      </div>
+
+      <div class="auditoria-toolbar-actions">
+        <a href="{{ url_for('main.admin_dashboard') }}"
+           class="btn btn-outline-secondary d-flex align-items-center gap-2 shadow-sm">
+          <i class="bi bi-arrow-left"></i> Voltar ao Painel
+        </a>
+      </div>
+    </div>
+
+    <div class="auditoria-summary">
+      <article class="auditoria-stat">
+        <div class="auditoria-stat-label">
+          <i class="bi bi-collection"></i>
+          <span>Total Encontrado</span>
+        </div>
+        <div class="auditoria-stat-value">{{ paginacao.total }}</div>
+        <div class="auditoria-stat-note">
+          {{ logs|length }} registro{{ '' if logs|length == 1 else 's' }} nesta pagina
+        </div>
+      </article>
+
+      <article class="auditoria-stat">
+        <div class="auditoria-stat-label">
+          <i class="bi bi-funnel"></i>
+          <span>Filtros Ativos</span>
+        </div>
+        <div class="auditoria-stat-value">{{ 'Sim' if ns.filtered else 'Nao' }}</div>
+        <div class="auditoria-stat-note">
+          {% if ns.filtered %}
+            A listagem esta refinada pelos criterios informados.
+          {% else %}
+            Exibindo o conjunto completo de logs disponiveis.
+          {% endif %}
+        </div>
+      </article>
+
+      <article class="auditoria-stat">
+        <div class="auditoria-stat-label">
+          <i class="bi bi-plus-circle"></i>
+          <span>Acoes POST</span>
+        </div>
+        <div class="auditoria-stat-value">{{ ns.creates }}</div>
+        <div class="auditoria-stat-note">
+          Cadastros ou envios registrados nesta pagina.
+        </div>
+      </article>
+
+      <article class="auditoria-stat">
+        <div class="auditoria-stat-label">
+          <i class="bi bi-exclamation-triangle"></i>
+          <span>Status 4xx/5xx</span>
+        </div>
+        <div class="auditoria-stat-value">{{ ns.errors }}</div>
+        <div class="auditoria-stat-note">
+          Respostas com erro para facilitar triagem rapida.
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <div class="card auditoria-panel auditoria-filter-card mb-4">
+    <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center"
+         data-bs-toggle="collapse"
+         data-bs-target="#collapseFiltrosAuditoria"
+         aria-expanded="{{ 'true' if ns.filtered else 'false' }}"
+         style="cursor: pointer;">
+      <div class="auditoria-card-title">
+        <i class="bi bi-sliders"></i>
+        <span>Filtros de Consulta</span>
+        {% if ns.filtered %}
+          <span class="auditoria-filter-dot"></span>
+        {% endif %}
+      </div>
+      <i class="bi bi-chevron-down text-muted"></i>
+    </div>
+
+    <div class="collapse {% if ns.filtered %}show{% endif %}" id="collapseFiltrosAuditoria">
+      <div class="card-body pt-0">
+        <form method="GET" action="{{ url_for('main.admin_logs_usuarios') }}">
+          <div class="row g-3 align-items-end">
+            <div class="col-lg-4">
+              <label class="small">Buscar</label>
+              <input type="text"
+                     name="q"
+                     class="form-control form-control-sm"
+                     value="{{ filters.q }}"
+                     placeholder="Usuario, login, rota, path ou IP" />
+            </div>
+
+            <div class="col-md-2">
+              <label class="small">Metodo</label>
+              <select name="metodo" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for metodo in ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] %}
+                <option value="{{ metodo }}" {% if filters.metodo == metodo %}selected{% endif %}>{{ metodo }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-2">
+              <label class="small">Tipo</label>
+              <select name="tipo_evento" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                <option value="ACESSO" {% if filters.tipo_evento == 'ACESSO' %}selected{% endif %}>Acesso</option>
+                <option value="ACAO" {% if filters.tipo_evento == 'ACAO' %}selected{% endif %}>Acao</option>
+              </select>
+            </div>
+
+            <div class="col-md-2">
+              <label class="small">Status HTTP</label>
+              <input type="number"
+                     name="status"
+                     class="form-control form-control-sm"
+                     min="100"
+                     max="599"
+                     value="{{ filters.status }}"
+                     placeholder="200" />
+            </div>
+
+            <div class="col-md-2">
+              <label class="small">Data inicial</label>
+              <input type="date" name="data_inicio" class="form-control form-control-sm" value="{{ filters.data_inicio }}">
+            </div>
+
+            <div class="col-md-2">
+              <label class="small">Data final</label>
+              <input type="date" name="data_fim" class="form-control form-control-sm" value="{{ filters.data_fim }}">
+            </div>
+
+            <div class="col-lg-4 auditoria-filter-actions">
+              <button type="submit" class="btn btn-success btn-sm w-100 d-flex align-items-center justify-content-center gap-2">
+                <i class="bi bi-search"></i> Filtrar
+              </button>
+
+              {% if ns.filtered %}
+              <a href="{{ url_for('main.admin_logs_usuarios') }}"
+                 class="btn btn-outline-secondary btn-sm w-100 d-flex align-items-center justify-content-center gap-2"
+                 title="Limpar filtros">
+                <i class="bi bi-x-lg"></i> Limpar
+              </a>
+              {% endif %}
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="auditoria-table-wrap">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th style="width: 180px">Data / Hora</th>
+            <th style="width: 250px">Usuario</th>
+            <th style="width: 180px">Evento</th>
+            <th>Tela / Rota</th>
+            <th style="width: 280px">Origem</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if logs and logs|length > 0 %}
+            {% for log in logs %}
+            {% set metodo_class = 'auditoria-badge-get' if log.metodo == 'GET' else 'auditoria-badge-post' if log.metodo == 'POST' else 'auditoria-badge-patch' if log.metodo in ['PUT', 'PATCH'] else 'auditoria-badge-delete' %}
+            {% set status_class = 'auditoria-badge-ok' if log.status_code < 300 else 'auditoria-badge-redirect' if log.status_code < 400 else 'auditoria-badge-error' %}
+            <tr>
+              <td>
+                <div class="auditoria-time">
+                  <span class="auditoria-date">{{ log.criado_em.strftime('%d/%m/%Y') if log.criado_em else '-' }}</span>
+                  <span class="auditoria-hour">{{ log.criado_em.strftime('%H:%M:%S') if log.criado_em else '-' }}</span>
+                </div>
+              </td>
+
+              <td>
+                <div class="auditoria-user-name">{{ log.usuario_nome or 'Usuario nao identificado' }}</div>
+                <div class="auditoria-user-login">{{ log.usuario_login or '-' }}</div>
+
+                <div class="auditoria-badges">
+                  {% if log.tipo_usuario %}
+                  <span class="auditoria-chip auditoria-chip-soft">{{ log.tipo_usuario|upper }}</span>
+                  {% endif %}
+                  {% if log.usuario_id %}
+                  <span class="auditoria-chip auditoria-chip-neutral">ID {{ log.usuario_id }}</span>
+                  {% endif %}
+                </div>
+              </td>
+
+              <td>
+                <div class="auditoria-status-group">
+                  <span class="auditoria-badge {{ metodo_class }}">{{ log.metodo }}</span>
+                  <span class="auditoria-badge auditoria-badge-event">{{ log.tipo_evento }}</span>
+                  <span class="auditoria-badge {{ status_class }}">HTTP {{ log.status_code }}</span>
+                </div>
+              </td>
+
+              <td>
+                <div class="auditoria-path-card">
+                  <div class="auditoria-path">{{ log.path }}</div>
+                  <div class="auditoria-meta">
+                    <strong>Endpoint:</strong>
+                    <code>{{ log.endpoint or 'rota_sem_endpoint' }}</code>
+                  </div>
+                  {% if log.query_string %}
+                  <div class="auditoria-meta">
+                    <strong>Query:</strong>
+                    <code>{{ log.query_string }}</code>
+                  </div>
+                  {% endif %}
+                </div>
+              </td>
+
+              <td>
+                <div class="auditoria-origin">
+                  <div class="auditoria-origin-card">
+                    <span class="auditoria-origin-label">IP</span>
+                    <div class="auditoria-origin-value">{{ log.ip or '-' }}</div>
+                  </div>
+
+                  <div class="auditoria-origin-card">
+                    <span class="auditoria-origin-label">Origem</span>
+                    <div class="auditoria-origin-value">{{ log.referrer or '-' }}</div>
+                  </div>
+
+                  <div class="auditoria-origin-card">
+                    <span class="auditoria-origin-label">User Agent</span>
+                    <div class="auditoria-origin-value">{{ log.user_agent or '-' }}</div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="5" class="auditoria-empty">
+                <i class="bi bi-inboxes"></i>
+                <div class="fw-semibold mb-1">Nenhum log encontrado</div>
+                <div>Altere os filtros ou aguarde novas acoes auditadas no sistema.</div>
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if paginacao.pages > 1 %}
+    <div class="card-footer auditoria-pagination bg-transparent">
+      <nav>
+        <ul class="pagination mb-0 flex-wrap justify-content-center py-3">
+          <li class="page-item {% if not paginacao.has_prev %}disabled{% endif %}">
+            <a class="page-link"
+               href="{{ url_for('main.admin_logs_usuarios', page=paginacao.prev_num, **pagination_args) }}">
+              Anterior
+            </a>
+          </li>
+
+          {% for p in range(1, paginacao.pages + 1) %}
+          <li class="page-item {% if p == paginacao.page %}active{% endif %}">
+            <a class="page-link"
+               href="{{ url_for('main.admin_logs_usuarios', page=p, **pagination_args) }}">
+              {{ p }}
+            </a>
+          </li>
+          {% endfor %}
+
+          <li class="page-item {% if not paginacao.has_next %}disabled{% endif %}">
+            <a class="page-link"
+               href="{{ url_for('main.admin_logs_usuarios', page=paginacao.next_num, **pagination_args) }}">
+              Proxima
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

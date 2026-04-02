@@ -88,6 +88,38 @@ class Usuario(UserMixin, db.Model):
 # - 1 linha por membro
 # - limite 5 via ordem 1..5 (CheckConstraint) + UniqueConstraint(uvis_usuario_id, ordem)
 # -------------------------------------------------------------
+# -------------------------------------------------------------
+# AUDITORIA DE USUARIOS
+# -------------------------------------------------------------
+class AuditoriaUsuario(db.Model):
+    __tablename__ = "auditoria_usuarios"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    usuario_id = db.Column(db.Integer, nullable=True, index=True)
+    usuario_nome = db.Column(db.String(100), nullable=False, index=True)
+    usuario_login = db.Column(db.String(50), nullable=True, index=True)
+    tipo_usuario = db.Column(db.String(20), nullable=True, index=True)
+
+    metodo = db.Column(db.String(10), nullable=False, index=True)
+    tipo_evento = db.Column(db.String(20), nullable=False, index=True)
+    endpoint = db.Column(db.String(120), nullable=True, index=True)
+    path = db.Column(db.String(255), nullable=False, index=True)
+    query_string = db.Column(db.Text)
+
+    status_code = db.Column(db.Integer, nullable=False, index=True)
+    ip = db.Column(db.String(64), nullable=True, index=True)
+    user_agent = db.Column(db.Text)
+    referrer = db.Column(db.String(255), nullable=True)
+
+    criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+
+
+# -------------------------------------------------------------
+# EQUIPE UVIS (atÃ© 5 pessoas por UVIS)
+# - 1 linha por membro
+# - limite 5 via ordem 1..5 (CheckConstraint) + UniqueConstraint(uvis_usuario_id, ordem)
+# -------------------------------------------------------------
 class EquipeUvis(db.Model):
     __tablename__ = "equipe_uvis"
 

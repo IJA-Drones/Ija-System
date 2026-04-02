@@ -7,6 +7,7 @@ from openpyxl.utils import get_column_letter
 
 from app.extensions import db
 from app.models import Equipe, EquipePiloto, Pilotos
+from app.shared.access import normalize_role
 
 
 REGIOES = ("CENTRO", "CENTRO-OESTE", "LESTE", "NORTE", "OESTE", "SUL", "SUDESTE")
@@ -52,6 +53,7 @@ def find_piloto_conflict(piloto_id: int, exclude_equipe_id=None):
 
 
 def build_equipes_query(tipo: str, regiao: str, ativa: str, piloto_id: str, auxiliar_id: str, q: str, sort: str, user_regiao: str):
+    tipo = normalize_role(tipo)
     regiao = (regiao or "").strip().upper()
     ativa = (ativa or "").strip().lower()
     user_regiao = (user_regiao or "").strip().upper()
@@ -71,7 +73,7 @@ def build_equipes_query(tipo: str, regiao: str, ativa: str, piloto_id: str, auxi
         else:
             query = query.filter(Equipe.regiao.ilike(regiao))
             query = query.filter(Equipe.ativa.is_(True))
-    elif tipo not in ["admin", "visualizar"]:
+    elif tipo not in ["admin", "visualizar", "operario", "operador"]:
         if user_regiao:
             query = query.filter(Equipe.regiao.ilike(user_regiao))
             regiao = user_regiao

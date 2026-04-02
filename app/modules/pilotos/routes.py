@@ -17,6 +17,7 @@ from app.modules.pilotos.service import (
     serialize_pilotos,
     validate_piloto_data,
 )
+from app.shared.access import normalize_role
 
 
 def _query_args_without_page():
@@ -25,12 +26,16 @@ def _query_args_without_page():
     return args
 
 
+def _require_admin_or_operario():
+    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"admin", "operario", "operador"}:
+        abort(403)
+
+
 def register_routes(bp):
     @bp.route("/pilotos/cadastrar", methods=["GET", "POST"], endpoint="cadastrar_pilotos")
     @login_required
     def cadastrar_pilotos():
-        if getattr(current_user, "tipo_usuario", None) != "admin":
-            abort(403)
+        _require_admin_or_operario()
 
         errors = {}
         form = {}
@@ -109,8 +114,8 @@ def register_routes(bp):
     @bp.route("/pilotos", methods=["GET"], endpoint="listar_pilotos")
     @login_required
     def listar_pilotos():
-        user_tipo = getattr(current_user, "tipo_usuario", None)
-        if user_tipo not in ("admin", "uvis", "visualizar", "regional"):
+        user_tipo = normalize_role(getattr(current_user, "tipo_usuario", None))
+        if user_tipo not in ("admin", "uvis", "visualizar", "regional", "operario", "operador"):
             abort(403)
 
         q = (request.args.get("q") or "").strip()
@@ -133,6 +138,7 @@ def register_routes(bp):
                 pilotos=[],
                 filters=filters,
                 is_admin=False,
+                is_editable=False,
                 pagination_args=_query_args_without_page(),
             )
 
@@ -160,7 +166,7 @@ def register_routes(bp):
             pilotos=pilotos,
             filters=filters,
             is_admin=(user_tipo == "admin"),
-            is_editable=user_tipo in ["admin", "operario"],
+            is_editable=user_tipo in ["admin", "operario", "operador"],
             tipo_usuario=user_tipo,
             uvis_regiao=(uvis_regiao if user_tipo in {"uvis", "regional"} else None),
             pagination_args=_query_args_without_page(),
@@ -169,8 +175,7 @@ def register_routes(bp):
     @bp.route("/pilotos/<int:piloto_id>/editar", methods=["GET", "POST"], endpoint="editar_piloto")
     @login_required
     def editar_piloto(piloto_id):
-        if getattr(current_user, "tipo_usuario", None) != "admin":
-            abort(403)
+        _require_admin_or_operario()
 
         piloto = Pilotos.query.get_or_404(piloto_id)
         usuario_piloto = Usuario.query.filter_by(piloto_id=piloto.id, tipo_usuario="piloto").first()
@@ -274,8 +279,7 @@ def register_routes(bp):
     @bp.route("/pilotos/<int:piloto_id>/deletar", methods=["POST"], endpoint="deletar_piloto")
     @login_required
     def deletar_piloto(piloto_id):
-        if getattr(current_user, "tipo_usuario", None) != "admin":
-            abort(403)
+        _require_admin_or_operario()
 
         piloto = Pilotos.query.get_or_404(piloto_id)
         vinculo = EquipePiloto.query.filter(EquipePiloto.piloto_id == piloto.id).first()

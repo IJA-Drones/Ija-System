@@ -249,7 +249,7 @@
       </a>
       {% endif %}
 
-      {% if is_admin %}
+      {% if is_editable %}
 <a href="{{ url_for('main.cadastrar_pilotos') }}" class="btn btn-success d-flex align-items-center gap-2">
   <i class="bi bi-plus-lg"></i> Novo Piloto
 </a>
@@ -394,7 +394,7 @@
 </td>
 
 
-                {% if is_admin %}
+                {% if is_editable %}
                 <td class="text-center pe-3">
                     <div class="d-flex gap-2 justify-content-center">
                         <a href="{{ url_for('main.editar_piloto', piloto_id=p.id) }}"

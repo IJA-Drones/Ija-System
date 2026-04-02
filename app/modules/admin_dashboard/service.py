@@ -61,7 +61,14 @@ def build_status_order():
     )
 
 
-def build_admin_dashboard_query(user, filtro_status: str, filtro_unidade: str, filtro_regiao: str, filtro_apoio_cet: str):
+def build_admin_dashboard_query(
+    user,
+    filtro_status: str,
+    filtro_unidade: str,
+    filtro_regiao: str,
+    filtro_apoio_cet: str,
+    filtro_protocolo: str,
+):
     query = (
         Solicitacao.query
         .options(
@@ -87,10 +94,19 @@ def build_admin_dashboard_query(user, filtro_status: str, filtro_unidade: str, f
     elif filtro_apoio_cet == "NAO":
         query = query.filter(Solicitacao.apoio_cet.is_(False))
 
+    if filtro_protocolo:
+        query = query.filter(Solicitacao.protocolo.ilike(f"%{filtro_protocolo}%"))
+
     return query
 
 
-def build_admin_canceladas_query(user, filtro_unidade: str, filtro_regiao: str, filtro_foco: str):
+def build_admin_canceladas_query(
+    user,
+    filtro_unidade: str,
+    filtro_regiao: str,
+    filtro_foco: str,
+    filtro_protocolo: str,
+):
     query = (
         Solicitacao.query
         .options(
@@ -110,6 +126,9 @@ def build_admin_canceladas_query(user, filtro_unidade: str, filtro_regiao: str, 
 
     if filtro_foco:
         query = query.filter(Solicitacao.foco == filtro_foco)
+
+    if filtro_protocolo:
+        query = query.filter(Solicitacao.protocolo.ilike(f"%{filtro_protocolo}%"))
 
     return query
 
@@ -135,7 +154,14 @@ def build_admin_historico_os_query(user, filtro_unidade: str, filtro_regiao: str
     return query
 
 
-def build_admin_export_query(user, filtro_status: str, filtro_unidade: str, filtro_regiao: str, filtro_apoio_cet: str):
+def build_admin_export_query(
+    user,
+    filtro_status: str,
+    filtro_unidade: str,
+    filtro_regiao: str,
+    filtro_apoio_cet: str,
+    filtro_protocolo: str,
+):
     query = (
         Solicitacao.query
         .join(Usuario)
@@ -160,16 +186,27 @@ def build_admin_export_query(user, filtro_status: str, filtro_unidade: str, filt
     elif filtro_apoio_cet == "NAO":
         query = query.filter(Solicitacao.apoio_cet.is_(False))
 
+    if filtro_protocolo:
+        query = query.filter(Solicitacao.protocolo.ilike(f"%{filtro_protocolo}%"))
+
     return query.order_by(Solicitacao.data_criacao.desc())
 
 
-def build_admin_dashboard_export(user, filtro_status: str, filtro_unidade: str, filtro_regiao: str, filtro_apoio_cet: str):
+def build_admin_dashboard_export(
+    user,
+    filtro_status: str,
+    filtro_unidade: str,
+    filtro_regiao: str,
+    filtro_apoio_cet: str,
+    filtro_protocolo: str,
+):
     pedidos = build_admin_export_query(
         user=user,
         filtro_status=filtro_status,
         filtro_unidade=filtro_unidade,
         filtro_regiao=filtro_regiao,
         filtro_apoio_cet=filtro_apoio_cet,
+        filtro_protocolo=filtro_protocolo,
     ).all()
 
     wb = Workbook()

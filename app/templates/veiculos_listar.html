@@ -118,7 +118,7 @@
                 <i class="bi bi-arrow-left"></i> Voltar
             </a>
             
-            {% if is_admin %}
+            {% if can_manage %}
                 <a href="{{ url_for('main.cadastrar_veiculo') }}" class="btn btn-success shadow-sm btn-pill">
                     <i class="bi bi-plus-lg"></i> Novo Veículo
                 </a>
@@ -127,9 +127,11 @@
                     <i class="bi bi-file-earmark-text-fill"></i> Ver Logs
                 </a>
 
+                {% if is_admin %}
                 <a href="{{ url_for('main.admin_checklists_semanais') }}" class="btn btn-outline-primary shadow-sm btn-pill">
                     <i class="bi bi-ui-checks-grid"></i> Checklist Semanal
                 </a>
+                {% endif %}
 
                 <a href="{{ url_for('main.listar_veiculos', export=1, **request.args) }}" class="btn btn-secondary shadow-sm btn-pill">
                     <i class="bi bi-file-earmark-excel-fill"></i> Exportar
@@ -305,14 +307,16 @@
                                         <i class="bi bi-three-dots-vertical"></i>
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
+                                        {% if can_manage %}
                                         <li><a class="dropdown-item py-2" href="{{ url_for('main.editar_veiculo', veiculo_id=v.id) }}"><i class="bi bi-pencil me-2"></i> Editar</a></li>
-                                        {% if is_admin %}
                                         <li><hr class="dropdown-divider"></li>
                                         <li>
                                             <form class="form-deletar m-0" method="POST" action="{{ url_for('main.deletar_veiculo', veiculo_id=v.id) }}">
                                                 <button type="submit" class="dropdown-item py-2 text-danger"><i class="bi bi-trash me-2"></i> Excluir</button>
                                             </form>
                                         </li>
+                                        {% else %}
+                                        <li><span class="dropdown-item-text text-muted">Somente leitura</span></li>
                                         {% endif %}
                                     </ul>
                                 </div>

@@ -162,6 +162,8 @@
                 <input type="hidden" name="status" value="{{ request.args.get('status', '') }}">
                 <input type="hidden" name="unidade" value="{{ request.args.get('unidade', '') }}">
                 <input type="hidden" name="regiao" value="{{ request.args.get('regiao', '') }}">
+                <input type="hidden" name="apoio_cet" value="{{ request.args.get('apoio_cet', '') }}">
+                <input type="hidden" name="protocolo" value="{{ request.args.get('protocolo', '') }}">
                 <button type="submit" class="btn btn-secondary shadow-sm w-100 d-flex align-items-center justify-content-center gap-2" style="height: 38px;">
                     <i class="bi bi-file-earmark-excel-fill"></i> 
                     <span>Exportar Excel</span>
@@ -189,14 +191,14 @@
             <div class="d-flex align-items-center gap-2">
                 <i class="bi bi-funnel-fill text-primary"></i>
                 <span class="text-dark">Filtros de Busca</span>
-                {% if request.args.get('status') or request.args.get('unidade') or request.args.get('regiao') %}
+                {% if request.args.get('status') or request.args.get('unidade') or request.args.get('regiao') or request.args.get('apoio_cet') or request.args.get('protocolo') %}
                     <span class="badge bg-danger rounded-circle p-1" style="width: 8px; height: 8px;"></span>
                 {% endif %}
             </div>
             <i class="bi bi-chevron-down text-muted"></i>
         </div>
 
-        <div class="collapse {% if request.args.get('status') or request.args.get('unidade') or request.args.get('regiao') %}show{% endif %}" id="collapseFiltros">
+        <div class="collapse {% if request.args.get('status') or request.args.get('unidade') or request.args.get('regiao') or request.args.get('apoio_cet') or request.args.get('protocolo') %}show{% endif %}" id="collapseFiltros">
             <div class="card-body pt-0 pb-4">
                 <form method="GET">
                     <div class="row g-2 align-items-end">
@@ -248,9 +250,19 @@
                             <option value="NAO" {{ 'selected' if request.args.get('apoio_cet')=='NAO' else '' }}>NÃO</option>
                         </select>
                         </div>
+                        <div class="col-md-3">
+                            <label class="small text-muted">Protocolo:</label>
+                            <input
+                                type="text"
+                                name="protocolo"
+                                class="form-control form-control-sm font-monospace"
+                                placeholder="Digite o protocolo"
+                                value="{{ request.args.get('protocolo', '') }}"
+                            >
+                        </div>
                         <div class="col-md-3 admin-filter-actions">
                             <button class="btn btn-success btn-sm w-100 align-items-center justify-content-center" type="submit"><i class="bi bi-search"></i> Filtrar</button>
-                            {% if request.args.get('status') or request.args.get('unidade') or request.args.get('regiao') or request.args.get('apoio_cet') %}
+                            {% if request.args.get('status') or request.args.get('unidade') or request.args.get('regiao') or request.args.get('apoio_cet') or request.args.get('protocolo') %}
                                 <a href="{{ url_for(request.endpoint) }}" class="btn btn-outline-secondary btn-sm w-100">
                                     <i class="bi bi-x-lg"></i> Limpar
                                 </a>
@@ -737,11 +749,11 @@
         <nav class="mt-4 pb-3">
             <ul class="pagination justify-content-center">
                 <li class="page-item {% if not paginacao.has_prev %}disabled{% endif %}">
-                    <a class="page-link" href="{{ url_for('main.admin_dashboard', page=paginacao.prev_num) }}">Anterior</a>
+                    <a class="page-link" href="{{ url_for('main.admin_dashboard', page=paginacao.prev_num, **pagination_args) }}">Anterior</a>
                 </li>
                 <li class="page-item disabled"><span class="page-link">{{ paginacao.page }} / {{ paginacao.pages }}</span></li>
                 <li class="page-item {% if not paginacao.has_next %}disabled{% endif %}">
-                    <a class="page-link" href="{{ url_for('main.admin_dashboard', page=paginacao.next_num) }}">Próxima</a>
+                    <a class="page-link" href="{{ url_for('main.admin_dashboard', page=paginacao.next_num, **pagination_args) }}">Próxima</a>
                 </li>
             </ul>
         </nav>
