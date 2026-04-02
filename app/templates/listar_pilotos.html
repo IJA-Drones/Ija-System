@@ -361,8 +361,15 @@
                 <td><span class="fw-bold">{{ p.nome_piloto }}</span></td>
 
                 <td>
-                  {% if p.regiao and p.regiao != '-' %}
-                    <span class="badge bg-white text-dark border">{{ p.regiao }}</span>
+                  {% if (p.regiao and p.regiao != '-') or (p.regiao_alternativa and p.regiao_alternativa != '-') %}
+                    <div class="d-flex flex-wrap gap-2">
+                      {% if p.regiao and p.regiao != '-' %}
+                        <span class="badge bg-white text-dark border">Principal: {{ p.regiao }}</span>
+                      {% endif %}
+                      {% if p.regiao_alternativa and p.regiao_alternativa != '-' %}
+                        <span class="badge bg-light text-dark border border-info">Alternativa: {{ p.regiao_alternativa }}</span>
+                      {% endif %}
+                    </div>
                   {% else %}
                     <span class="text-muted">-</span>
                   {% endif %}

@@ -166,6 +166,7 @@ class Pilotos(db.Model):
 
     nome_piloto = db.Column(db.String(100), nullable=False, index=True)
     regiao = db.Column(db.String(20))
+    regiao_alternativa = db.Column(db.String(20))
     telefone = db.Column(db.String(20))
 
     # Solicitações atribuídas ao piloto

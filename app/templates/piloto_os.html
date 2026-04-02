@@ -292,13 +292,27 @@
         {# Coluna Equipe #}
         <div class="col-lg-4 border-end">
           <h6 class="form-label-header mb-3"><i class="bi bi-people me-2"></i>Sua Equipe</h6>
-          {% if pilot_team_nome %}
+          {% if pilot_team_nome or pilot_regiao_principal or pilot_regiao_alternativa or pilot_team_papel or pilot_team_regiao %}
             <div class="d-flex flex-wrap gap-2">
-              <span class="badge bg-light text-dark border team-chip">
-                <i class="bi bi-people-fill me-1"></i> {{ pilot_team_nome }}
-              </span>
+              {% if pilot_team_nome %}
+                <span class="badge bg-light text-dark border team-chip">
+                  <i class="bi bi-people-fill me-1"></i> {{ pilot_team_nome }}
+                </span>
+              {% endif %}
+              {% if pilot_regiao_principal %}
+                <span class="badge bg-white text-dark border team-chip">
+                  <i class="bi bi-geo-alt-fill me-1 text-primary"></i> Principal: {{ pilot_regiao_principal }}
+                </span>
+              {% endif %}
+              {% if pilot_regiao_alternativa %}
+                <span class="badge bg-light text-dark border border-info team-chip">
+                  <i class="bi bi-compass me-1 text-info"></i> Alternativa: {{ pilot_regiao_alternativa }}
+                </span>
+              {% endif %}
               {% if pilot_team_regiao %}
-                <span class="badge bg-light text-dark border team-chip">{{ pilot_team_regiao }}</span>
+                <span class="badge bg-light text-dark border team-chip">
+                  <i class="bi bi-broadcast-pin me-1"></i> Equipe: {{ pilot_team_regiao }}
+                </span>
               {% endif %}
               {% if pilot_team_papel %}
                 <span class="badge {% if pilot_team_papel == 'auxiliar' %}bg-info text-dark{% else %}bg-primary{% endif %} team-chip">
