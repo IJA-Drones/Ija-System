@@ -205,6 +205,9 @@ def build_piloto_os_form_context(user, os_id):
 
     equipe = vinculo.equipe
     ordem = solicitacao.ordem_servico
+    calculo_dosagem_planejado = _parse_json_object(
+        getattr(ordem, "calculo_dosagem_planejado", None) if ordem else None
+    )
     drones_equipe = (
         Drones.query
         .filter(
@@ -247,6 +250,11 @@ def build_piloto_os_form_context(user, os_id):
         "respondido_em_value": (
             ordem.respondido_em.strftime("%Y-%m-%dT%H:%M")
             if ordem and ordem.respondido_em else datetime.now().strftime("%Y-%m-%dT%H:%M")
+        ),
+        "calculo_dosagem_planejado": calculo_dosagem_planejado,
+        "calculo_dosagem_planejado_json": (
+            json.dumps(calculo_dosagem_planejado, ensure_ascii=False)
+            if calculo_dosagem_planejado else ""
         ),
         "drones_equipe": drones_equipe,
         **_build_os_media_context(ordem),
@@ -343,6 +351,9 @@ def build_admin_os_form_context(user, os_id):
 
     equipe = solicitacao.equipe
     ordem = solicitacao.ordem_servico
+    calculo_dosagem_planejado = _parse_json_object(
+        getattr(ordem, "calculo_dosagem_planejado", None) if ordem else None
+    )
     drones_equipe = []
     if solicitacao.equipe_id:
         drones_equipe = (
@@ -378,6 +389,11 @@ def build_admin_os_form_context(user, os_id):
         "respondido_em_value": (
             ordem.respondido_em.strftime("%Y-%m-%dT%H:%M")
             if ordem and ordem.respondido_em else ""
+        ),
+        "calculo_dosagem_planejado": calculo_dosagem_planejado,
+        "calculo_dosagem_planejado_json": (
+            json.dumps(calculo_dosagem_planejado, ensure_ascii=False)
+            if calculo_dosagem_planejado else ""
         ),
         "drones_equipe": drones_equipe,
         **_build_os_media_context(ordem),
@@ -554,6 +570,16 @@ def _aplicar_campos_formulario(
     ordem.hora_termino_aplicacao = _to_time(form_data.get("hora_termino_aplicacao"))
     ordem.tratamento_adicional_realizado = _clean_str(form_data.get("tratamento_adicional_realizado"))
     ordem.quantos_quais = _clean_str(form_data.get("quantos_quais"))
+    calculo_dosagem_planejado = _sanitize_calculo_dosagem_planejado(
+        form_data.get("calculo_dosagem_planejado")
+    )
+    if calculo_dosagem_planejado:
+        if ordem.calculo_dosagem_planejado != calculo_dosagem_planejado:
+            ordem.calculo_dosagem_planejado_em = datetime.now()
+        ordem.calculo_dosagem_planejado = calculo_dosagem_planejado
+    else:
+        ordem.calculo_dosagem_planejado = None
+        ordem.calculo_dosagem_planejado_em = None
     ordem.descricao_produto = _clean_str(form_data.get("descricao_produto"))
     ordem.formulacao_produto = _clean_str(form_data.get("formulacao_produto"))
     ordem.dosagem_g_10l = _clean_str(form_data.get("dosagem_g_10l"))
@@ -701,6 +727,101 @@ def _parse_json_list(value):
     if not isinstance(data, list):
         return []
     return [str(item).replace("\\", "/") for item in data if item]
+
+
+def _parse_json_object(value):
+    if not value:
+        return None
+    if isinstance(value, dict):
+        return value
+    try:
+        data = json.loads(value)
+    except Exception:
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def _truncate_text(value, max_length):
+    value = _clean(value)
+    if value is None:
+        return ""
+    return str(value)[:max_length]
+
+
+def _round_float(value, digits=4):
+    parsed = _to_float(value)
+    if parsed is None:
+        return None
+    return round(parsed, digits)
+
+
+def _sanitize_calculo_dosagem_planejado(raw_value):
+    payload = _parse_json_object(raw_value)
+    if not payload:
+        return None
+
+    medicao = payload.get("medicao") or {}
+    resultado = payload.get("resultado") or {}
+    campos = medicao.get("campos") or {}
+    contexto = payload.get("contexto") or {}
+
+    cenario = _truncate_text(payload.get("cenario"), 40)
+    valor_base = _round_float(medicao.get("valor_base"))
+    carga_bti_g = _round_float(resultado.get("carga_bti_g"))
+    calda_total_ml = _round_float(resultado.get("calda_total_ml"))
+
+    if not cenario or valor_base is None or carga_bti_g is None or calda_total_ml is None:
+        return None
+
+    normalizado = {
+        "version": 1,
+        "cenario": cenario,
+        "cenario_label": _truncate_text(payload.get("cenario_label"), 80),
+        "contexto": {
+            "tipo_operacao": _truncate_text(contexto.get("tipo_operacao"), 60),
+            "tipo_visita": _truncate_text(contexto.get("tipo_visita"), 60),
+            "foco": _truncate_text(contexto.get("foco"), 120),
+        },
+        "medicao": {
+            "modo": _truncate_text(medicao.get("modo"), 40),
+            "modo_label": _truncate_text(medicao.get("modo_label"), 80),
+            "medida_label": _truncate_text(medicao.get("medida_label"), 120),
+            "valor_base": valor_base,
+            "unidade_base": _truncate_text(medicao.get("unidade_base"), 20),
+            "resumo": _truncate_text(medicao.get("resumo"), 220),
+            "formula_hint": _truncate_text(medicao.get("formula_hint"), 220),
+            "campos": {
+                "valor_direto": _round_float(campos.get("valor_direto")),
+                "comprimento_m": _round_float(campos.get("comprimento_m")),
+                "largura_m": _round_float(campos.get("largura_m")),
+                "altura_agua_m": _round_float(campos.get("altura_agua_m")),
+                "raio_m": _round_float(campos.get("raio_m")),
+                "largura_media_m": _round_float(campos.get("largura_media_m")),
+                "margens": _to_int(campos.get("margens")),
+            },
+        },
+        "resultado": {
+            "descricao_produto": _truncate_text(resultado.get("descricao_produto"), 120),
+            "formulacao_produto": _truncate_text(resultado.get("formulacao_produto"), 120),
+            "dosagem_g_10l": _truncate_text(resultado.get("dosagem_g_10l"), 40),
+            "tipo_aplicacao": _truncate_text(resultado.get("tipo_aplicacao"), 100),
+            "carga_bti_g": carga_bti_g,
+            "calda_total_ml": calda_total_ml,
+            "calda_total_label": _truncate_text(resultado.get("calda_total_label"), 80),
+            "tempo_aplicacao_segundos": _round_float(resultado.get("tempo_aplicacao_segundos")),
+            "tempo_aplicacao_label": _truncate_text(resultado.get("tempo_aplicacao_label"), 80),
+            "pulverizacao_area_l_ha": _round_float(resultado.get("pulverizacao_area_l_ha")),
+            "ponta_pulverizacao": _truncate_text(resultado.get("ponta_pulverizacao"), 80),
+            "numero_bicos": _to_int(resultado.get("numero_bicos")),
+            "vazao_bicos_ml_min": _round_float(resultado.get("vazao_bicos_ml_min")),
+            "dose_bti_g_min": _round_float(resultado.get("dose_bti_g_min")),
+            "pressao_bar": _round_float(resultado.get("pressao_bar")),
+            "faixa_aplicacao_m": _round_float(resultado.get("faixa_aplicacao_m")),
+            "tamanho_gotas_dmv": _truncate_text(resultado.get("tamanho_gotas_dmv"), 40),
+        },
+    }
+
+    return json.dumps(normalizado, ensure_ascii=False)
 
 
 def _validar_arquivo_imagem_os(arquivo):

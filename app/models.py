@@ -401,6 +401,8 @@ class OrdemServico(db.Model):
     descricao_produto = db.Column(db.String(200))
     formulacao_produto = db.Column(db.String(200))
     dosagem_g_10l = db.Column(db.String(50))
+    calculo_dosagem_planejado = db.Column(db.Text)
+    calculo_dosagem_planejado_em = db.Column(db.DateTime, index=True)
 
     tipo_aplicacao = db.Column(db.String(100), index=True)
     quantidade_produto_administrada_ml = db.Column(db.Float)

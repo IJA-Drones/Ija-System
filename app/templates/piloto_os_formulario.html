@@ -318,6 +318,65 @@
     font-size: 0.84rem;
     line-height: 1.55;
   }
+  .dosagem-panel {
+    border: 1px solid #dbe4f0;
+    border-radius: 1rem;
+    background: linear-gradient(180deg, #fcfdff 0%, #f5f9fd 100%);
+    box-shadow: var(--shadow-sm);
+  }
+  .dosagem-summary-card,
+  .dosagem-compare-card {
+    height: 100%;
+    border: 1px solid #dce6f1;
+    border-radius: 0.95rem;
+    background: #ffffff;
+    padding: 1rem 1.05rem;
+    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.04);
+  }
+  .dosagem-summary-label,
+  .dosagem-compare-label {
+    display: block;
+    margin-bottom: 0.35rem;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 700;
+    color: #728197;
+  }
+  .dosagem-summary-value,
+  .dosagem-compare-planned,
+  .dosagem-compare-actual,
+  .dosagem-compare-diff {
+    color: #173b62;
+    line-height: 1.45;
+  }
+  .dosagem-summary-value {
+    font-size: 1rem;
+    font-weight: 800;
+  }
+  .dosagem-summary-note {
+    margin-top: 0.45rem;
+    font-size: 0.82rem;
+    color: #6a7b91;
+  }
+  .dosagem-compare-planned,
+  .dosagem-compare-actual,
+  .dosagem-compare-diff {
+    font-size: 0.9rem;
+  }
+  .dosagem-compare-diff {
+    margin-top: 0.35rem;
+    font-weight: 700;
+  }
+  .dosagem-compare-diff.is-positive {
+    color: #0f766e;
+  }
+  .dosagem-compare-diff.is-negative {
+    color: #b45309;
+  }
+  .dosagem-compare-diff.is-neutral {
+    color: #475569;
+  }
 
   @media (max-width: 991.98px) {
     .piloto-os-form-page.container-fluid.py-4 {
@@ -362,6 +421,10 @@
     }
     .os-media-card-header {
       flex-direction: column;
+    }
+    .dosagem-panel .d-flex.justify-content-between {
+      flex-direction: column;
+      align-items: stretch !important;
     }
   }
 
@@ -677,9 +740,152 @@
 
         <hr class="opacity-25 my-4" />
 
+        {# ===================== CALCULO PLANEJADO ===================== #}
+        <div class="section-title">
+          <h5 class="m-0 text-primary fw-bold">Calculo Planejado de Dosagem</h5>
+        </div>
+
+        <input
+          type="hidden"
+          name="calculo_dosagem_planejado"
+          id="calculo_dosagem_planejado"
+          value="{{ calculo_dosagem_planejado_json if calculo_dosagem_planejado_json else '' }}"
+        />
+
+        <div class="alert alert-warning border-0 shadow-sm">
+          <i class="bi bi-exclamation-circle me-1"></i>
+          Este bloco registra o planejamento antes do servico. O bloco "Produto e Parametros Realizados" deve guardar apenas o que foi realmente usado na OS.
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-4">
+            <label class="form-label-header">Tipo operacao da solicitacao</label>
+            <input type="text" class="form-control bg-light" value="{{ solicitacao.tipo_operacao or '-' }}" readonly />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label-header">Tipo visita da solicitacao</label>
+            <input type="text" class="form-control bg-light" value="{{ solicitacao.tipo_visita or '-' }}" readonly />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label-header">Ultimo calculo salvo</label>
+            <input
+              type="text"
+              class="form-control bg-light"
+              value="{{ ordem.calculo_dosagem_planejado_em.strftime('%d/%m/%Y %H:%M') if ordem and ordem.calculo_dosagem_planejado_em else 'Nao salvo' }}"
+              readonly
+            />
+          </div>
+        </div>
+
+        <div class="dosagem-panel p-3 p-lg-4 mb-4">
+          <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+            <div>
+              <div class="form-label-header text-primary">Preparacao da mistura</div>
+              <h6 class="mb-1 text-primary fw-bold">Planejamento antes da aplicacao</h6>
+              <p class="text-muted small mb-0">
+                Base da planilha: 500 g de BTI WDG para 10 L de agua. O sistema calcula a carga, a calda e a configuracao sugerida para o drone.
+              </p>
+            </div>
+            {% if not modo_visualizacao %}
+            <button type="button" class="btn btn-outline-primary btn-sm" id="copiar-calculo-planejado" disabled>
+              <i class="bi bi-arrow-down-square me-1"></i>Copiar para os campos realizados
+            </button>
+            {% endif %}
+          </div>
+
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label-header">Cenario do calculo</label>
+              <select id="calc_cenario" class="form-select">
+                <option value="">Selecione...</option>
+                <option value="foco_aedes">Foco - Aedes</option>
+                <option value="area_aedes">Area - Aedes</option>
+                <option value="area_culex">Area - Culex</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label-header">Forma de medicao</label>
+              <select id="calc_modo_medicao" class="form-select">
+                <option value="">Selecione o cenario primeiro...</option>
+              </select>
+            </div>
+            <div class="col-md-4" id="calc_valor_direto_wrap">
+              <label class="form-label-header" id="calc_valor_direto_label">Valor base</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                id="calc_valor_direto"
+                class="form-control"
+                placeholder="Informe o valor..."
+              />
+            </div>
+            <div class="col-md-3 d-none" id="calc_comprimento_wrap">
+              <label class="form-label-header">Comprimento (m)</label>
+              <input type="number" step="0.01" min="0" id="calc_comprimento_m" class="form-control" />
+            </div>
+            <div class="col-md-3 d-none" id="calc_largura_wrap">
+              <label class="form-label-header">Largura (m)</label>
+              <input type="number" step="0.01" min="0" id="calc_largura_m" class="form-control" />
+            </div>
+            <div class="col-md-3 d-none" id="calc_altura_wrap">
+              <label class="form-label-header">Altura da agua (m)</label>
+              <input type="number" step="0.01" min="0" id="calc_altura_agua_m" class="form-control" />
+            </div>
+            <div class="col-md-3 d-none" id="calc_raio_wrap">
+              <label class="form-label-header">Raio (m)</label>
+              <input type="number" step="0.01" min="0" id="calc_raio_m" class="form-control" />
+            </div>
+            <div class="col-md-3 d-none" id="calc_largura_media_wrap">
+              <label class="form-label-header">Largura media (m)</label>
+              <input type="number" step="0.01" min="0" id="calc_largura_media_m" class="form-control" />
+            </div>
+            <div class="col-md-3 d-none" id="calc_margens_wrap">
+              <label class="form-label-header">Numero de margens</label>
+              <input type="number" step="1" min="1" max="2" id="calc_margens" class="form-control" />
+            </div>
+            <div class="col-12">
+              <div class="small text-muted" id="calc_formula_hint">
+                Selecione o cenario para calcular a dosagem planejada.
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-3 mt-1">
+            <div class="col-md-4">
+              <div class="dosagem-summary-card">
+                <span class="dosagem-summary-label">Carga BTI planejada</span>
+                <div class="dosagem-summary-value" id="calc_resumo_carga">-</div>
+                <div class="dosagem-summary-note" id="calc_resumo_medicao">Informe a area ou o volume para gerar o planejamento.</div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="dosagem-summary-card">
+                <span class="dosagem-summary-label">Calda total planejada</span>
+                <div class="dosagem-summary-value" id="calc_resumo_calda">-</div>
+                <div class="dosagem-summary-note" id="calc_resumo_tempo">Tempo planejado: -</div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="dosagem-summary-card">
+                <span class="dosagem-summary-label">Configuracao sugerida</span>
+                <div class="dosagem-summary-value" id="calc_resumo_ponta">-</div>
+                <div class="dosagem-summary-note" id="calc_resumo_hardware">Bicos, vazao e pressao aparecerao aqui.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <hr class="opacity-25 my-4" />
+
         {# ===================== PRODUTO / PARÂMETROS ===================== #}
         <div class="section-title">
-          <h5 class="m-0 text-primary fw-bold">Produto e Parametros</h5>
+          <h5 class="m-0 text-primary fw-bold">Produto e Parametros Realizados</h5>
+        </div>
+
+        <div class="alert alert-info border-0 shadow-sm">
+          <i class="bi bi-check2-square me-1"></i>
+          Estes campos devem refletir o que foi realmente usado na execucao. Se necessario, use o calculo planejado apenas como ponto de partida e ajuste o realizado depois.
         </div>
 
         <div class="row g-3 mb-4">
@@ -724,6 +930,62 @@
                   <option value="TXA8001">
                   <option value="TX11001">
               </datalist>
+          </div>
+        </div>
+
+        <div class="dosagem-panel p-3 p-lg-4 mb-4">
+          <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+            <div>
+              <div class="form-label-header text-primary">Comparativo</div>
+              <h6 class="mb-1 text-primary fw-bold">Planejado x Realizado</h6>
+              <p class="text-muted small mb-0">
+                O sistema compara o planejamento com os campos realizados para facilitar a conferencia depois da operacao.
+              </p>
+            </div>
+            <span class="badge bg-primary-subtle text-primary">Comparacao automatica</span>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-md-4">
+              <div class="dosagem-compare-card">
+                <span class="dosagem-compare-label">Carga BTI (g)</span>
+                <div class="dosagem-compare-planned" id="compare_carga_planejada">Planejado: -</div>
+                <div class="dosagem-compare-actual" id="compare_carga_real">Real estimado: -</div>
+                <div class="dosagem-compare-diff is-neutral" id="compare_carga_diff">Diferenca: -</div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="dosagem-compare-card">
+                <span class="dosagem-compare-label">Calda / produto administrado</span>
+                <div class="dosagem-compare-planned" id="compare_calda_planejada">Planejado: -</div>
+                <div class="dosagem-compare-actual" id="compare_calda_real">Real: -</div>
+                <div class="dosagem-compare-diff is-neutral" id="compare_calda_diff">Diferenca: -</div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="dosagem-compare-card">
+                <span class="dosagem-compare-label">Pulverizacao (l/ha)</span>
+                <div class="dosagem-compare-planned" id="compare_lha_planejada">Planejado: -</div>
+                <div class="dosagem-compare-actual" id="compare_lha_real">Real: -</div>
+                <div class="dosagem-compare-diff is-neutral" id="compare_lha_diff">Diferenca: -</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="dosagem-compare-card">
+                <span class="dosagem-compare-label">Tipo de aplicacao</span>
+                <div class="dosagem-compare-planned" id="compare_tipo_planejado">Planejado: -</div>
+                <div class="dosagem-compare-actual" id="compare_tipo_real">Real: -</div>
+                <div class="dosagem-compare-diff is-neutral" id="compare_tipo_diff">Status: -</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="dosagem-compare-card">
+                <span class="dosagem-compare-label">Ponta de pulverizacao</span>
+                <div class="dosagem-compare-planned" id="compare_ponta_planejada">Planejado: -</div>
+                <div class="dosagem-compare-actual" id="compare_ponta_real">Real: -</div>
+                <div class="dosagem-compare-diff is-neutral" id="compare_ponta_diff">Status: -</div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1496,6 +1758,702 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   updateBadges();
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  const storageInput = document.getElementById("calculo_dosagem_planejado");
+  const scenarioEl = document.getElementById("calc_cenario");
+  const modeEl = document.getElementById("calc_modo_medicao");
+  const directWrap = document.getElementById("calc_valor_direto_wrap");
+  const directLabel = document.getElementById("calc_valor_direto_label");
+  const directInput = document.getElementById("calc_valor_direto");
+  const formulaHint = document.getElementById("calc_formula_hint");
+  const copyButton = document.getElementById("copiar-calculo-planejado");
+  const initialCalcData = {{ calculo_dosagem_planejado | tojson | safe }};
+
+  if (!storageInput || !scenarioEl || !modeEl || !directWrap || !directLabel || !directInput || !formulaHint) {
+    return;
+  }
+
+  const extraInputs = {
+    comprimento_m: document.getElementById("calc_comprimento_m"),
+    largura_m: document.getElementById("calc_largura_m"),
+    altura_agua_m: document.getElementById("calc_altura_agua_m"),
+    raio_m: document.getElementById("calc_raio_m"),
+    largura_media_m: document.getElementById("calc_largura_media_m"),
+    margens: document.getElementById("calc_margens"),
+  };
+
+  const inputWraps = {
+    valor_direto: directWrap,
+    comprimento_m: document.getElementById("calc_comprimento_wrap"),
+    largura_m: document.getElementById("calc_largura_wrap"),
+    altura_agua_m: document.getElementById("calc_altura_wrap"),
+    raio_m: document.getElementById("calc_raio_wrap"),
+    largura_media_m: document.getElementById("calc_largura_media_wrap"),
+    margens: document.getElementById("calc_margens_wrap"),
+  };
+
+  const summaryEls = {
+    carga: document.getElementById("calc_resumo_carga"),
+    medicao: document.getElementById("calc_resumo_medicao"),
+    calda: document.getElementById("calc_resumo_calda"),
+    tempo: document.getElementById("calc_resumo_tempo"),
+    ponta: document.getElementById("calc_resumo_ponta"),
+    hardware: document.getElementById("calc_resumo_hardware"),
+  };
+
+  const actualEls = {
+    descricao_produto: document.querySelector('input[name="descricao_produto"]'),
+    formulacao_produto: document.querySelector('input[name="formulacao_produto"]'),
+    dosagem_g_10l: document.querySelector('input[name="dosagem_g_10l"]'),
+    tipo_aplicacao: document.querySelector('input[name="tipo_aplicacao"]'),
+    quantidade_produto_administrada_ml: document.querySelector('input[name="quantidade_produto_administrada_ml"]'),
+    pulverizacao_area_l_ha: document.querySelector('input[name="pulverizacao_area_l_ha"]'),
+    ponta_pulverizacao: document.querySelector('input[name="ponta_pulverizacao"]'),
+  };
+
+  const compareEls = {
+    cargaPlanejada: document.getElementById("compare_carga_planejada"),
+    cargaReal: document.getElementById("compare_carga_real"),
+    cargaDiff: document.getElementById("compare_carga_diff"),
+    caldaPlanejada: document.getElementById("compare_calda_planejada"),
+    caldaReal: document.getElementById("compare_calda_real"),
+    caldaDiff: document.getElementById("compare_calda_diff"),
+    lhaPlanejada: document.getElementById("compare_lha_planejada"),
+    lhaReal: document.getElementById("compare_lha_real"),
+    lhaDiff: document.getElementById("compare_lha_diff"),
+    tipoPlanejado: document.getElementById("compare_tipo_planejado"),
+    tipoReal: document.getElementById("compare_tipo_real"),
+    tipoDiff: document.getElementById("compare_tipo_diff"),
+    pontaPlanejada: document.getElementById("compare_ponta_planejada"),
+    pontaReal: document.getElementById("compare_ponta_real"),
+    pontaDiff: document.getElementById("compare_ponta_diff"),
+  };
+
+  const contextInfo = {
+    tipo_operacao: {{ (solicitacao.tipo_operacao or "") | tojson | safe }},
+    tipo_visita: {{ (solicitacao.tipo_visita or "") | tojson | safe }},
+    foco: {{ (solicitacao.foco or "") | tojson | safe }},
+  };
+
+  const scenarioConfigs = {
+    foco_aedes: {
+      label: "Foco - Aedes",
+      directLabel: "Volume util do foco (L)",
+      unit: "L",
+      tipoAplicacao: "Pulverizacao de foco (liq)",
+      lha: null,
+      modes: {
+        direto: {
+          label: "Volume informado diretamente",
+          fields: ["valor_direto"],
+          hint: "Use o volume util do foco em litros.",
+        },
+        retangular: {
+          label: "Retangular / quadrado",
+          fields: ["comprimento_m", "largura_m", "altura_agua_m"],
+          hint: "Volume = comprimento x largura x altura da agua x 1000.",
+        },
+        circular: {
+          label: "Circular",
+          fields: ["raio_m", "altura_agua_m"],
+          hint: "Volume = raio x raio x 3.14 x altura da agua x 1000.",
+        },
+      },
+      measure(values, mode) {
+        if (mode === "direto") {
+          return values.valor_direto;
+        }
+        if (mode === "retangular") {
+          return values.comprimento_m * values.largura_m * values.altura_agua_m * 1000;
+        }
+        if (mode === "circular") {
+          return values.raio_m * values.raio_m * 3.14 * values.altura_agua_m * 1000;
+        }
+        return null;
+      },
+      hardware(baseValue) {
+        if (baseValue <= 12000) {
+          return {
+            ponta: "TXA8001",
+            numero_bicos: 2,
+            vazao_ml_min: 800,
+            dose_bti_g_min: 40,
+            pressao_bar: 2,
+            faixa_aplicacao_m: 2,
+            tamanho_gotas_dmv: "120",
+          };
+        }
+        return {
+          ponta: "TXA8001",
+          numero_bicos: 4,
+          vazao_ml_min: 2000,
+          dose_bti_g_min: 100,
+          pressao_bar: 4,
+          faixa_aplicacao_m: 2,
+          tamanho_gotas_dmv: "120",
+        };
+      },
+      carga(baseValue) {
+        return Math.ceil(baseValue / 100);
+      },
+    },
+    area_aedes: {
+      label: "Area - Aedes",
+      directLabel: "Area tratada (m2)",
+      unit: "m2",
+      tipoAplicacao: "Pulverizacao de area (liq)",
+      lha: 10,
+      modes: {
+        direto: {
+          label: "Area informada diretamente",
+          fields: ["valor_direto"],
+          hint: "Use a area prevista em metros quadrados.",
+        },
+        retangular: {
+          label: "Retangular / quadrado",
+          fields: ["comprimento_m", "largura_m"],
+          hint: "Area = comprimento x largura.",
+        },
+        irregular: {
+          label: "Irregular com largura media",
+          fields: ["comprimento_m", "largura_media_m"],
+          hint: "Area = comprimento x largura media.",
+        },
+      },
+      measure(values, mode) {
+        if (mode === "direto") {
+          return values.valor_direto;
+        }
+        if (mode === "retangular") {
+          return values.comprimento_m * values.largura_m;
+        }
+        if (mode === "irregular") {
+          return values.comprimento_m * values.largura_media_m;
+        }
+        return null;
+      },
+      hardware(baseValue) {
+        if (baseValue <= 2000) {
+          return {
+            ponta: "TXA8001",
+            numero_bicos: 2,
+            vazao_ml_min: 800,
+            dose_bti_g_min: 40,
+            pressao_bar: 2,
+            faixa_aplicacao_m: 2,
+            tamanho_gotas_dmv: "120",
+          };
+        }
+        return {
+          ponta: "TXA8001",
+          numero_bicos: 4,
+          vazao_ml_min: 2000,
+          dose_bti_g_min: 100,
+          pressao_bar: 4,
+          faixa_aplicacao_m: 2,
+          tamanho_gotas_dmv: "120",
+        };
+      },
+      carga(baseValue) {
+        return Math.ceil(baseValue / 20);
+      },
+    },
+    area_culex: {
+      label: "Area - Culex",
+      directLabel: "Area tratada (m2)",
+      unit: "m2",
+      tipoAplicacao: "Pulverizacao de area (liq)",
+      lha: 20,
+      modes: {
+        direto: {
+          label: "Area informada diretamente",
+          fields: ["valor_direto"],
+          hint: "Use a area prevista em metros quadrados.",
+        },
+        retangular: {
+          label: "Retangular / quadrado",
+          fields: ["comprimento_m", "largura_m"],
+          hint: "Area = comprimento x largura.",
+        },
+        irregular: {
+          label: "Irregular com largura media",
+          fields: ["comprimento_m", "largura_media_m"],
+          hint: "Area = comprimento x largura media.",
+        },
+        faixa_marginal: {
+          label: "Faixa marginal de 10 m",
+          fields: ["comprimento_m", "margens"],
+          hint: "Area = comprimento x 10 x numero de margens.",
+        },
+      },
+      measure(values, mode) {
+        if (mode === "direto") {
+          return values.valor_direto;
+        }
+        if (mode === "retangular") {
+          return values.comprimento_m * values.largura_m;
+        }
+        if (mode === "irregular") {
+          return values.comprimento_m * values.largura_media_m;
+        }
+        if (mode === "faixa_marginal") {
+          return values.comprimento_m * 10 * values.margens;
+        }
+        return null;
+      },
+      hardware(baseValue) {
+        if (baseValue <= 2000) {
+          return {
+            ponta: "XR11003",
+            numero_bicos: 2,
+            vazao_ml_min: 2000,
+            dose_bti_g_min: 100,
+            pressao_bar: 2,
+            faixa_aplicacao_m: 6,
+            tamanho_gotas_dmv: "120",
+          };
+        }
+        return {
+          ponta: "XR11003",
+          numero_bicos: 4,
+          vazao_ml_min: 4400,
+          dose_bti_g_min: 220,
+          pressao_bar: 4,
+          faixa_aplicacao_m: 6,
+          tamanho_gotas_dmv: "120",
+        };
+      },
+      carga(baseValue) {
+        return Math.ceil(baseValue / 10);
+      },
+    },
+  };
+
+  let currentPayload = null;
+
+  function parseNumber(value) {
+    if (value === null || value === undefined) {
+      return null;
+    }
+    let text = String(value).trim();
+    if (!text) {
+      return null;
+    }
+    if (text.includes(",") && text.includes(".")) {
+      text = text.replace(/\./g, "").replace(",", ".");
+    } else {
+      text = text.replace(",", ".");
+    }
+    const parsed = Number(text);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  function extractNumber(value) {
+    if (value === null || value === undefined) {
+      return null;
+    }
+    const match = String(value).match(/-?\d+(?:[.,]\d+)?/);
+    return match ? parseNumber(match[0]) : null;
+  }
+
+  function formatNumber(value, maxDecimals = 2) {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) {
+      return "-";
+    }
+    return new Intl.NumberFormat("pt-BR", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: maxDecimals,
+    }).format(Number(value));
+  }
+
+  function formatMlLabel(value) {
+    if (value === null || value === undefined) {
+      return "-";
+    }
+    if (value >= 1000) {
+      return `${formatNumber(value / 1000, 2)} L (${formatNumber(value, 0)} mL)`;
+    }
+    return `${formatNumber(value, 0)} mL`;
+  }
+
+  function formatDuration(seconds) {
+    if (seconds === null || seconds === undefined) {
+      return "-";
+    }
+    if (seconds >= 60) {
+      return `${formatNumber(seconds / 60, 2)} min`;
+    }
+    return `${formatNumber(seconds, 1)} s`;
+  }
+
+  function normalizeText(value) {
+    return String(value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toLowerCase();
+  }
+
+  function setVisible(element, visible) {
+    if (!element) {
+      return;
+    }
+    element.classList.toggle("d-none", !visible);
+  }
+
+  function resetSummary(message) {
+    summaryEls.carga.textContent = "-";
+    summaryEls.medicao.textContent = message || "Informe a area ou o volume para gerar o planejamento.";
+    summaryEls.calda.textContent = "-";
+    summaryEls.tempo.textContent = "Tempo planejado: -";
+    summaryEls.ponta.textContent = "-";
+    summaryEls.hardware.textContent = "Bicos, vazao e pressao aparecerao aqui.";
+    if (copyButton) {
+      copyButton.disabled = true;
+    }
+  }
+
+  function setCompareDiff(element, text, tone) {
+    if (!element) {
+      return;
+    }
+    element.textContent = text;
+    element.classList.remove("is-positive", "is-negative", "is-neutral");
+    element.classList.add(`is-${tone || "neutral"}`);
+  }
+
+  function updateModeOptions() {
+    const config = scenarioConfigs[scenarioEl.value];
+    modeEl.innerHTML = "";
+
+    if (!config) {
+      modeEl.innerHTML = '<option value="">Selecione o cenario primeiro...</option>';
+      formulaHint.textContent = "Selecione o cenario para calcular a dosagem planejada.";
+      directLabel.textContent = "Valor base";
+      Object.values(inputWraps).forEach((wrap) => setVisible(wrap, false));
+      setVisible(directWrap, true);
+      directInput.value = "";
+      resetSummary("Selecione o cenario para continuar.");
+      storageInput.value = "";
+      currentPayload = null;
+      updateComparison();
+      return;
+    }
+
+    directLabel.textContent = config.directLabel;
+    Object.entries(config.modes).forEach(([value, modeConfig], index) => {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = modeConfig.label;
+      if (index === 0) {
+        option.selected = true;
+      }
+      modeEl.appendChild(option);
+    });
+
+    if (!config.modes[modeEl.value]) {
+      modeEl.value = Object.keys(config.modes)[0] || "";
+    }
+    updateMeasurementFields();
+  }
+
+  function updateMeasurementFields() {
+    const config = scenarioConfigs[scenarioEl.value];
+    const modeConfig = config ? config.modes[modeEl.value] : null;
+
+    Object.entries(inputWraps).forEach(([fieldName, wrap]) => {
+      const shouldShow = !!modeConfig && modeConfig.fields.includes(fieldName);
+      setVisible(wrap, shouldShow);
+      if (!shouldShow && fieldName !== "valor_direto") {
+        const input = extraInputs[fieldName];
+        if (input) {
+          input.value = "";
+        }
+      }
+    });
+
+    formulaHint.textContent = modeConfig ? modeConfig.hint : "Selecione o cenario para calcular a dosagem planejada.";
+  }
+
+  function collectValues() {
+    return {
+      valor_direto: parseNumber(directInput.value),
+      comprimento_m: parseNumber(extraInputs.comprimento_m?.value),
+      largura_m: parseNumber(extraInputs.largura_m?.value),
+      altura_agua_m: parseNumber(extraInputs.altura_agua_m?.value),
+      raio_m: parseNumber(extraInputs.raio_m?.value),
+      largura_media_m: parseNumber(extraInputs.largura_media_m?.value),
+      margens: parseNumber(extraInputs.margens?.value),
+    };
+  }
+
+  function hasRequiredValues(values, fields) {
+    return fields.every((fieldName) => {
+      const value = values[fieldName];
+      return value !== null && value > 0;
+    });
+  }
+
+  function buildPayload(config, modeConfig, values, baseValue, result) {
+    return {
+      version: 1,
+      cenario: scenarioEl.value,
+      cenario_label: config.label,
+      contexto: contextInfo,
+      medicao: {
+        modo: modeEl.value,
+        modo_label: modeConfig.label,
+        medida_label: config.directLabel,
+        valor_base: Number(baseValue.toFixed(4)),
+        unidade_base: config.unit,
+        resumo: `${config.directLabel}: ${formatNumber(baseValue, 2)} ${config.unit}`,
+        formula_hint: modeConfig.hint,
+        campos: {
+          valor_direto: values.valor_direto,
+          comprimento_m: values.comprimento_m,
+          largura_m: values.largura_m,
+          altura_agua_m: values.altura_agua_m,
+          raio_m: values.raio_m,
+          largura_media_m: values.largura_media_m,
+          margens: values.margens,
+        },
+      },
+      resultado: result,
+    };
+  }
+
+  function calculatePlan() {
+    const config = scenarioConfigs[scenarioEl.value];
+    const modeConfig = config ? config.modes[modeEl.value] : null;
+
+    if (!config || !modeConfig) {
+      resetSummary("Selecione o cenario para continuar.");
+      storageInput.value = "";
+      currentPayload = null;
+      updateComparison();
+      return;
+    }
+
+    const values = collectValues();
+    if (!hasRequiredValues(values, modeConfig.fields)) {
+      resetSummary("Informe todas as medidas necessarias para gerar o planejamento.");
+      storageInput.value = "";
+      currentPayload = null;
+      updateComparison();
+      return;
+    }
+
+    const baseValue = config.measure(values, modeEl.value);
+    if (!baseValue || baseValue <= 0) {
+      resetSummary("Nao foi possivel calcular com as medidas informadas.");
+      storageInput.value = "";
+      currentPayload = null;
+      updateComparison();
+      return;
+    }
+
+    const cargaBti = config.carga(baseValue);
+    const caldaTotalMl = cargaBti * 20;
+    const hardware = config.hardware(baseValue);
+    const tempoSegundos = (caldaTotalMl / hardware.vazao_ml_min) * 60;
+    const result = {
+      descricao_produto: "BTI",
+      formulacao_produto: "Granulo dispersivel",
+      dosagem_g_10l: "500",
+      tipo_aplicacao: config.tipoAplicacao,
+      carga_bti_g: Number(cargaBti.toFixed(2)),
+      calda_total_ml: Number(caldaTotalMl.toFixed(2)),
+      calda_total_label: formatMlLabel(caldaTotalMl),
+      tempo_aplicacao_segundos: Number(tempoSegundos.toFixed(2)),
+      tempo_aplicacao_label: formatDuration(tempoSegundos),
+      pulverizacao_area_l_ha: config.lha,
+      ponta_pulverizacao: hardware.ponta,
+      numero_bicos: hardware.numero_bicos,
+      vazao_bicos_ml_min: hardware.vazao_ml_min,
+      dose_bti_g_min: hardware.dose_bti_g_min,
+      pressao_bar: hardware.pressao_bar,
+      faixa_aplicacao_m: hardware.faixa_aplicacao_m,
+      tamanho_gotas_dmv: hardware.tamanho_gotas_dmv,
+    };
+
+    currentPayload = buildPayload(config, modeConfig, values, baseValue, result);
+    storageInput.value = JSON.stringify(currentPayload);
+
+    summaryEls.carga.textContent = `${formatNumber(result.carga_bti_g, 2)} g`;
+    summaryEls.medicao.textContent = currentPayload.medicao.resumo;
+    summaryEls.calda.textContent = result.calda_total_label;
+    summaryEls.tempo.textContent = `Tempo planejado: ${result.tempo_aplicacao_label}`;
+    summaryEls.ponta.textContent = result.ponta_pulverizacao;
+    summaryEls.hardware.textContent = `${result.numero_bicos} bicos | ${formatNumber(result.vazao_bicos_ml_min, 0)} mL/min | ${formatNumber(result.pressao_bar, 1)} bar`;
+    if (copyButton) {
+      copyButton.disabled = false;
+    }
+
+    updateComparison();
+  }
+
+  function copyPlanToActual() {
+    if (!currentPayload || !currentPayload.resultado) {
+      return;
+    }
+    if (!window.confirm("Copiar o calculo planejado para os campos realizados? Depois voce ainda pode ajustar os valores reais usados.")) {
+      return;
+    }
+
+    actualEls.descricao_produto.value = currentPayload.resultado.descricao_produto || "";
+    actualEls.formulacao_produto.value = currentPayload.resultado.formulacao_produto || "";
+    actualEls.dosagem_g_10l.value = currentPayload.resultado.dosagem_g_10l || "";
+    actualEls.tipo_aplicacao.value = currentPayload.resultado.tipo_aplicacao || "";
+    actualEls.quantidade_produto_administrada_ml.value = currentPayload.resultado.calda_total_ml ?? "";
+    actualEls.ponta_pulverizacao.value = currentPayload.resultado.ponta_pulverizacao || "";
+    if (currentPayload.resultado.pulverizacao_area_l_ha !== null && currentPayload.resultado.pulverizacao_area_l_ha !== undefined) {
+      actualEls.pulverizacao_area_l_ha.value = currentPayload.resultado.pulverizacao_area_l_ha;
+    } else {
+      actualEls.pulverizacao_area_l_ha.value = "";
+    }
+    updateComparison();
+  }
+
+  function updateComparison() {
+    const planned = currentPayload ? currentPayload.resultado || {} : {};
+    const actualDosagem = extractNumber(actualEls.dosagem_g_10l?.value);
+    const actualCaldaMl = parseNumber(actualEls.quantidade_produto_administrada_ml?.value);
+    const actualCarga = actualDosagem !== null && actualCaldaMl !== null
+      ? (actualDosagem * actualCaldaMl) / 10000
+      : null;
+    const actualLha = parseNumber(actualEls.pulverizacao_area_l_ha?.value);
+    const actualTipo = (actualEls.tipo_aplicacao?.value || "").trim();
+    const actualPonta = (actualEls.ponta_pulverizacao?.value || "").trim();
+
+    compareEls.cargaPlanejada.textContent = `Planejado: ${planned.carga_bti_g !== undefined ? `${formatNumber(planned.carga_bti_g, 2)} g` : "-"}`;
+    compareEls.cargaReal.textContent = `Real estimado: ${actualCarga !== null ? `${formatNumber(actualCarga, 2)} g` : "-"}`;
+    if (planned.carga_bti_g === undefined || actualCarga === null) {
+      setCompareDiff(compareEls.cargaDiff, "Diferenca: pendente", "neutral");
+    } else {
+      const diff = actualCarga - planned.carga_bti_g;
+      if (Math.abs(diff) < 0.05) {
+        setCompareDiff(compareEls.cargaDiff, "Diferenca: alinhado com o planejado", "positive");
+      } else {
+        const direction = diff > 0 ? "acima" : "abaixo";
+        setCompareDiff(compareEls.cargaDiff, `Diferenca: ${formatNumber(Math.abs(diff), 2)} g ${direction} do planejado`, "negative");
+      }
+    }
+
+    compareEls.caldaPlanejada.textContent = `Planejado: ${planned.calda_total_ml !== undefined ? formatMlLabel(planned.calda_total_ml) : "-"}`;
+    compareEls.caldaReal.textContent = `Real: ${actualCaldaMl !== null ? formatMlLabel(actualCaldaMl) : "-"}`;
+    if (planned.calda_total_ml === undefined || actualCaldaMl === null) {
+      setCompareDiff(compareEls.caldaDiff, "Diferenca: pendente", "neutral");
+    } else {
+      const diff = actualCaldaMl - planned.calda_total_ml;
+      if (Math.abs(diff) < 1) {
+        setCompareDiff(compareEls.caldaDiff, "Diferenca: alinhado com o planejado", "positive");
+      } else {
+        const direction = diff > 0 ? "acima" : "abaixo";
+        setCompareDiff(compareEls.caldaDiff, `Diferenca: ${formatNumber(Math.abs(diff), 0)} mL ${direction} do planejado`, "negative");
+      }
+    }
+
+    if (planned.pulverizacao_area_l_ha === null || planned.pulverizacao_area_l_ha === undefined) {
+      compareEls.lhaPlanejada.textContent = "Planejado: nao se aplica";
+      compareEls.lhaReal.textContent = `Real: ${actualLha !== null ? `${formatNumber(actualLha, 2)} l/ha` : "-"}`;
+      setCompareDiff(compareEls.lhaDiff, "Diferenca: nao se aplica ao cenario escolhido", "neutral");
+    } else {
+      compareEls.lhaPlanejada.textContent = `Planejado: ${formatNumber(planned.pulverizacao_area_l_ha, 2)} l/ha`;
+      compareEls.lhaReal.textContent = `Real: ${actualLha !== null ? `${formatNumber(actualLha, 2)} l/ha` : "-"}`;
+      if (actualLha === null) {
+        setCompareDiff(compareEls.lhaDiff, "Diferenca: pendente", "neutral");
+      } else {
+        const diff = actualLha - planned.pulverizacao_area_l_ha;
+        if (Math.abs(diff) < 0.05) {
+          setCompareDiff(compareEls.lhaDiff, "Diferenca: alinhado com o planejado", "positive");
+        } else {
+          const direction = diff > 0 ? "acima" : "abaixo";
+          setCompareDiff(compareEls.lhaDiff, `Diferenca: ${formatNumber(Math.abs(diff), 2)} l/ha ${direction} do planejado`, "negative");
+        }
+      }
+    }
+
+    compareEls.tipoPlanejado.textContent = `Planejado: ${planned.tipo_aplicacao || "-"}`;
+    compareEls.tipoReal.textContent = `Real: ${actualTipo || "-"}`;
+    if (!planned.tipo_aplicacao || !actualTipo) {
+      setCompareDiff(compareEls.tipoDiff, "Status: pendente", "neutral");
+    } else if (normalizeText(planned.tipo_aplicacao) === normalizeText(actualTipo)) {
+      setCompareDiff(compareEls.tipoDiff, "Status: alinhado com o planejado", "positive");
+    } else {
+      setCompareDiff(compareEls.tipoDiff, "Status: diferente do planejado", "negative");
+    }
+
+    compareEls.pontaPlanejada.textContent = `Planejado: ${planned.ponta_pulverizacao || "-"}`;
+    compareEls.pontaReal.textContent = `Real: ${actualPonta || "-"}`;
+    if (!planned.ponta_pulverizacao || !actualPonta) {
+      setCompareDiff(compareEls.pontaDiff, "Status: pendente", "neutral");
+    } else if (normalizeText(planned.ponta_pulverizacao) === normalizeText(actualPonta)) {
+      setCompareDiff(compareEls.pontaDiff, "Status: alinhado com o planejado", "positive");
+    } else {
+      setCompareDiff(compareEls.pontaDiff, "Status: diferente do planejado", "negative");
+    }
+  }
+
+  function restoreInitialPayload(payload) {
+    if (!payload || !payload.cenario || !scenarioConfigs[payload.cenario]) {
+      updateModeOptions();
+      updateComparison();
+      return;
+    }
+
+    scenarioEl.value = payload.cenario;
+    updateModeOptions();
+
+    const savedMode = payload.medicao?.modo;
+    if (savedMode && scenarioConfigs[payload.cenario].modes[savedMode]) {
+      modeEl.value = savedMode;
+    }
+    updateMeasurementFields();
+
+    const campos = payload.medicao?.campos || {};
+    directInput.value = campos.valor_direto ?? payload.medicao?.valor_base ?? "";
+    if (extraInputs.comprimento_m) extraInputs.comprimento_m.value = campos.comprimento_m ?? "";
+    if (extraInputs.largura_m) extraInputs.largura_m.value = campos.largura_m ?? "";
+    if (extraInputs.altura_agua_m) extraInputs.altura_agua_m.value = campos.altura_agua_m ?? "";
+    if (extraInputs.raio_m) extraInputs.raio_m.value = campos.raio_m ?? "";
+    if (extraInputs.largura_media_m) extraInputs.largura_media_m.value = campos.largura_media_m ?? "";
+    if (extraInputs.margens) extraInputs.margens.value = campos.margens ?? "";
+    calculatePlan();
+  }
+
+  scenarioEl.addEventListener("change", () => {
+    updateModeOptions();
+    calculatePlan();
+  });
+
+  modeEl.addEventListener("change", () => {
+    updateMeasurementFields();
+    calculatePlan();
+  });
+
+  [directInput, ...Object.values(extraInputs)].forEach((input) => {
+    if (!input) {
+      return;
+    }
+    input.addEventListener("input", calculatePlan);
+  });
+
+  Object.values(actualEls).forEach((input) => {
+    if (!input) {
+      return;
+    }
+    input.addEventListener("input", updateComparison);
+    input.addEventListener("change", updateComparison);
+  });
+
+  if (copyButton) {
+    copyButton.addEventListener("click", copyPlanToActual);
+  }
+
+  restoreInitialPayload(initialCalcData);
 });
 </script>
 {% endblock %}

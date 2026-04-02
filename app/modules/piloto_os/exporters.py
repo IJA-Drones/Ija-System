@@ -1,4 +1,5 @@
 import base64
+import json
 import os
 import re
 import tempfile
@@ -55,6 +56,58 @@ def _safe(value):
     if value is None:
         return ""
     return str(value)
+
+
+def _parse_json_object(value):
+    if not value:
+        return None
+    if isinstance(value, dict):
+        return value
+    try:
+        data = json.loads(value)
+    except Exception:
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def _build_planejado_dosagem_items(ordem):
+    data = _parse_json_object(getattr(ordem, "calculo_dosagem_planejado", None))
+    if not data:
+        return []
+
+    medicao = data.get("medicao") or {}
+    resultado = data.get("resultado") or {}
+    valor_base = medicao.get("valor_base")
+    unidade_base = medicao.get("unidade_base") or ""
+
+    items = []
+    if getattr(ordem, "calculo_dosagem_planejado_em", None):
+        items.append(("Calculado em", _fmt_dt(ordem.calculo_dosagem_planejado_em)))
+    items.extend([
+        ("Cenario planejado", data.get("cenario_label") or ""),
+        (
+            medicao.get("medida_label") or "Medida base",
+            f"{valor_base} {unidade_base}".strip() if valor_base not in (None, "") else "",
+        ),
+        ("Metodo de medicao", medicao.get("modo_label") or ""),
+        ("Resumo da medicao", medicao.get("resumo") or ""),
+        ("Carga BTI planejada (g)", resultado.get("carga_bti_g") or ""),
+        ("Calda planejada", resultado.get("calda_total_label") or resultado.get("calda_total_ml") or ""),
+        ("Tempo planejado", resultado.get("tempo_aplicacao_label") or ""),
+        ("Tipo aplicacao planejada", resultado.get("tipo_aplicacao") or ""),
+        ("Ponta planejada", resultado.get("ponta_pulverizacao") or ""),
+        ("Numero de bicos", resultado.get("numero_bicos") or ""),
+        ("Vazao bicos (ml/min)", resultado.get("vazao_bicos_ml_min") or ""),
+        ("Dose BTI (g/min)", resultado.get("dose_bti_g_min") or ""),
+        ("Pressao (bar)", resultado.get("pressao_bar") or ""),
+        ("Faixa aplicacao (m)", resultado.get("faixa_aplicacao_m") or ""),
+        ("Tamanho gotas DMV", resultado.get("tamanho_gotas_dmv") or ""),
+    ])
+
+    if resultado.get("pulverizacao_area_l_ha") not in (None, ""):
+        items.append(("Pulverizacao planejada (l/ha)", resultado.get("pulverizacao_area_l_ha")))
+
+    return [(label, value) for label, value in items if value not in (None, "")]
 
 
 def _normalize_coord(value):
@@ -457,6 +510,17 @@ def build_admin_os_pdf_v2_export(os_id, args):
                 ("Quantos / Quais", ordem.quantos_quais or ""),
             ], cell_style, section_style, doc.width, orient=orient)
 
+            planejado_items = _build_planejado_dosagem_items(ordem)
+            if planejado_items:
+                story += _pdf_kv_table_nice(
+                    "Calculo Planejado de Dosagem",
+                    planejado_items,
+                    cell_style,
+                    section_style,
+                    doc.width,
+                    orient=orient,
+                )
+
             story += _pdf_kv_table_nice("Produto e Parametros", [
                 ("Descricao produto", ordem.descricao_produto or ""),
                 ("Formulacao", ordem.formulacao_produto or ""),
@@ -844,6 +908,13 @@ def _build_admin_os_excel_form_sheet(ws_form, row, ordem):
     ])
 
     row += 1
+    planejado_items = _build_planejado_dosagem_items(ordem)
+    if planejado_items:
+        _excel_add_section(ws_form, row, "Calculo Planejado de Dosagem")
+        row += 1
+        row = _excel_write_kv(ws_form, row, planejado_items)
+        row += 1
+
     _excel_add_section(ws_form, row, "Produto e Parametros")
     row += 1
     row = _excel_write_kv(ws_form, row, [
