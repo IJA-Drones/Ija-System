@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from dotenv import load_dotenv
 from flask import Flask, g, render_template, request
@@ -8,6 +9,10 @@ from flask_talisman import Talisman
 from whitenoise import WhiteNoise
 
 from app.extensions import db, login_manager, migrate
+
+
+UTC_TZ = ZoneInfo("UTC")
+BRAZIL_TZ = ZoneInfo("America/Sao_Paulo")
 
 
 AUDIT_ACTION_KEYWORDS = (
@@ -36,6 +41,20 @@ def _resolve_request_ip():
         return real_ip
 
     return request.remote_addr or None
+
+
+def _utcnow_naive():
+    return datetime.now(UTC_TZ).replace(tzinfo=None)
+
+
+def _to_brazil_datetime(value):
+    if value is None:
+        return None
+
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=UTC_TZ)
+
+    return value.astimezone(BRAZIL_TZ)
 
 
 def _should_audit_request():
@@ -142,7 +161,7 @@ def create_app():
                         ip=_resolve_request_ip(),
                         user_agent=user_agent,
                         referrer=referrer[:255] if referrer else None,
-                        criado_em=datetime.now(),
+                        criado_em=_utcnow_naive(),
                     )
                 )
         except Exception:
@@ -164,7 +183,10 @@ def create_app():
     @app.context_processor
     def inject_global_vars():
         tema = request.cookies.get("theme", "light")
-        return dict(tema_escolhido=tema)
+        return dict(
+            tema_escolhido=tema,
+            brazil_datetime=_to_brazil_datetime,
+        )
 
     @app.errorhandler(404)
     def erro_404(e):

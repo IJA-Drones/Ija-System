@@ -870,13 +870,14 @@
         <tbody>
           {% if logs and logs|length > 0 %}
             {% for log in logs %}
+            {% set log_datetime = brazil_datetime(log.criado_em) %}
             {% set metodo_class = 'auditoria-badge-get' if log.metodo == 'GET' else 'auditoria-badge-post' if log.metodo == 'POST' else 'auditoria-badge-patch' if log.metodo in ['PUT', 'PATCH'] else 'auditoria-badge-delete' %}
             {% set status_class = 'auditoria-badge-ok' if log.status_code < 300 else 'auditoria-badge-redirect' if log.status_code < 400 else 'auditoria-badge-error' %}
             <tr>
               <td>
                 <div class="auditoria-time">
-                  <span class="auditoria-date">{{ log.criado_em.strftime('%d/%m/%Y') if log.criado_em else '-' }}</span>
-                  <span class="auditoria-hour">{{ log.criado_em.strftime('%H:%M:%S') if log.criado_em else '-' }}</span>
+                  <span class="auditoria-date">{{ log_datetime.strftime('%d/%m/%Y') if log_datetime else '-' }}</span>
+                  <span class="auditoria-hour">{{ log_datetime.strftime('%H:%M:%S') if log_datetime else '-' }}</span>
                 </div>
               </td>
 
