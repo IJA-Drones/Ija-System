@@ -14,7 +14,7 @@ from app.shared.formatters import format_phone_br, only_digits
 REGIOES = {"NORTE", "SUL", "LESTE", "OESTE", "CENTRO", "SULDESTE", "CENTRO-OESTE"}
 
 
-def validate_piloto_data(nome_piloto: str, regiao: str, telefone: str):
+def validate_piloto_data(nome_piloto: str, regiao: str, regiao_alternativa: str, telefone: str):
     errors = {}
     telefone_digits = only_digits(telefone)
 
@@ -23,6 +23,15 @@ def validate_piloto_data(nome_piloto: str, regiao: str, telefone: str):
 
     if regiao and regiao not in REGIOES:
         errors["regiao"] = "Selecione uma regiao valida."
+
+    if regiao_alternativa and regiao_alternativa not in REGIOES:
+        errors["regiao_alternativa"] = "Selecione uma regiao alternativa valida."
+
+    if regiao_alternativa and not regiao:
+        errors["regiao"] = "Informe a regiao principal antes da regiao alternativa."
+
+    if regiao and regiao_alternativa and regiao == regiao_alternativa:
+        errors["regiao_alternativa"] = "A regiao alternativa deve ser diferente da principal."
 
     if telefone and len(telefone_digits) not in (10, 11):
         errors["telefone"] = "Telefone deve ter 10 ou 11 digitos (com DDD)."
@@ -56,7 +65,12 @@ def build_pilotos_query(user_tipo: str, regiao: str, telefone: str, q: str, sort
     query = Pilotos.query
 
     if regiao:
-        query = query.filter(Pilotos.regiao == regiao)
+        query = query.filter(
+            db.or_(
+                Pilotos.regiao == regiao,
+                Pilotos.regiao_alternativa == regiao,
+            )
+        )
 
     if telefone:
         query = query.filter(Pilotos.telefone.ilike(f"%{only_digits(telefone)}%"))
@@ -68,6 +82,7 @@ def build_pilotos_query(user_tipo: str, regiao: str, telefone: str, q: str, sort
             db.or_(
                 Pilotos.nome_piloto.ilike(like),
                 Pilotos.regiao.ilike(like),
+                Pilotos.regiao_alternativa.ilike(like),
                 Pilotos.telefone.ilike(f"%{q_digits}%") if q_digits else db.false(),
             )
         )
@@ -103,6 +118,7 @@ def serialize_pilotos(rows):
             "id": piloto.id,
             "nome_piloto": piloto.nome_piloto,
             "regiao": piloto.regiao or "-",
+            "regiao_alternativa": piloto.regiao_alternativa or "-",
             "telefone_fmt": format_phone_br(piloto.telefone or "") or "-",
             "telefone_digits": only_digits(piloto.telefone or ""),
         }
@@ -135,7 +151,7 @@ def build_pilotos_export(rows, user_tipo: str, uvis_regiao: str):
         sheet["A3"].font = Font(color="6B7280")
 
     start_row = 5 if user_tipo in {"uvis", "regional"} else 4
-    headers = ["ID", "Nome", "Regiao", "Telefone"]
+    headers = ["ID", "Nome", "Regiao principal", "Regiao alternativa", "Telefone"]
 
     for col_idx, header in enumerate(headers, start=1):
         cell = sheet.cell(row=start_row, column=col_idx, value=header)
@@ -149,13 +165,14 @@ def build_pilotos_export(rows, user_tipo: str, uvis_regiao: str):
             piloto.id,
             piloto.nome_piloto,
             piloto.regiao or "",
+            piloto.regiao_alternativa or "",
             format_phone_br(piloto.telefone or "") or "",
         ]
         for col_idx, value in enumerate(values, start=1):
             cell = sheet.cell(row=row_idx, column=col_idx, value=value)
             cell.border = border
             cell.alignment = center_align if col_idx == 1 else text_align
-            if col_idx == 4:
+            if col_idx == 5:
                 cell.number_format = "@"
 
     last_row = start_row + len(rows)
@@ -163,7 +180,7 @@ def build_pilotos_export(rows, user_tipo: str, uvis_regiao: str):
     sheet.freeze_panes = sheet[f"A{start_row + 1}"]
     sheet.auto_filter.ref = f"A{start_row}:{get_column_letter(last_col)}{max(last_row, start_row)}"
 
-    max_widths = {1: 8, 2: 30, 3: 14, 4: 20}
+    max_widths = {1: 8, 2: 30, 3: 18, 4: 20, 5: 20}
     for col_idx in range(1, last_col + 1):
         max_len = len(headers[col_idx - 1])
         for row_idx in range(start_row + 1, last_row + 1):

@@ -26,7 +26,7 @@
         </div>
 
         <div class="row g-3 mb-4">
-          <div class="col-md-8">
+          <div class="col-lg-6">
             <label class="form-label fw-bold small text-muted">
               <i class="bi bi-person me-1 text-primary"></i> Nome do Piloto *
             </label>
@@ -43,9 +43,9 @@
             {% endif %}
           </div>
 
-          <div class="col-md-4">
+          <div class="col-lg-3 col-md-6">
             <label class="form-label fw-bold small text-muted">
-              <i class="bi bi-geo-alt me-1 text-primary"></i> Região
+              <i class="bi bi-geo-alt me-1 text-primary"></i> Região Principal
             </label>
 
             {% set reg = (form.get('regiao','') or '')|upper %}
@@ -59,6 +59,25 @@
 
             {% if errors.get('regiao') %}
               <div class="invalid-feedback">{{ errors.get('regiao') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-lg-3 col-md-6">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-compass me-1 text-primary"></i> Região Alternativa
+            </label>
+
+            {% set reg_alt = (form.get('regiao_alternativa','') or '')|upper %}
+            <select name="regiao_alternativa" class="form-select {% if errors.get('regiao_alternativa') %}is-invalid{% endif %}">
+              <option value="">Selecione...</option>
+              <option value="NORTE" {% if reg_alt == 'NORTE' %}selected{% endif %}>NORTE</option>
+              <option value="SUL" {% if reg_alt == 'SUL' %}selected{% endif %}>SUL</option>
+              <option value="LESTE" {% if reg_alt == 'LESTE' %}selected{% endif %}>LESTE</option>
+              <option value="OESTE" {% if reg_alt == 'OESTE' %}selected{% endif %}>OESTE</option>
+            </select>
+
+            {% if errors.get('regiao_alternativa') %}
+              <div class="invalid-feedback">{{ errors.get('regiao_alternativa') }}</div>
             {% endif %}
           </div>
         </div>

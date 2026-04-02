@@ -81,6 +81,8 @@ def register_routes(bp):
             pilot_team_nome=context["pilot_team_nome"],
             pilot_team_regiao=context["pilot_team_regiao"],
             pilot_team_papel=context["pilot_team_papel"],
+            pilot_regiao_principal=context["pilot_regiao_principal"],
+            pilot_regiao_alternativa=context["pilot_regiao_alternativa"],
             google_maps_key=context["google_maps_key"],
             drones_equipe=context["drones_equipe"],
             baterias_equipe=context["baterias_equipe"],
