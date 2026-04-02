@@ -60,6 +60,229 @@
     background: linear-gradient(180deg, #fcfdff 0%, #f5f9fd 100%);
     box-shadow: var(--shadow-sm);
   }
+  .dosagem-workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(320px, 0.9fr);
+    gap: 1.25rem;
+    align-items: start;
+  }
+  .dosagem-main-stack,
+  .dosagem-side-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .dosagem-side-stack {
+    position: sticky;
+    top: 86px;
+  }
+  .dosagem-step-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 0.85rem;
+  }
+  .dosagem-step-card {
+    border: 1px solid #dbe4f0;
+    border-radius: 1rem;
+    background: #fff;
+    padding: 1rem 1.05rem;
+    min-height: 100%;
+    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.04);
+  }
+  .dosagem-step-index {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    margin-bottom: 0.75rem;
+    background: rgba(21, 101, 192, 0.1);
+    color: #0f4f88;
+    font-weight: 800;
+  }
+  .dosagem-step-card h6 {
+    color: #173b62;
+    font-weight: 800;
+    margin-bottom: 0.4rem;
+  }
+  .dosagem-step-card p {
+    margin: 0;
+    color: #627287;
+    font-size: 0.92rem;
+    line-height: 1.55;
+  }
+  .dosagem-form-grid {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 0.9rem;
+  }
+  .dosagem-field-card {
+    grid-column: span 4;
+    border: 1px solid #dbe4f0;
+    border-radius: 1rem;
+    background: #fff;
+    padding: 0.95rem;
+    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.04);
+  }
+  .dosagem-field-card.is-hidden {
+    display: none !important;
+  }
+  .dosagem-field-card.is-wide {
+    grid-column: span 6;
+  }
+  .dosagem-field-card.is-full {
+    grid-column: 1 / -1;
+  }
+  .dosagem-field-card .form-label-header {
+    margin-bottom: 0.5rem;
+  }
+  .dosagem-help-banner {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    border: 1px solid #d6e8fb;
+    border-radius: 1rem;
+    background: linear-gradient(180deg, #f8fbff 0%, #eef6ff 100%);
+    padding: 0.95rem 1rem;
+  }
+  .dosagem-help-banner strong {
+    display: block;
+    color: #17456f;
+    margin-bottom: 0.25rem;
+  }
+  .dosagem-help-banner p {
+    margin: 0;
+    color: #53708d;
+    line-height: 1.55;
+    font-size: 0.92rem;
+  }
+  .dosagem-help-chip {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.45rem 0.75rem;
+    border-radius: 999px;
+    background: rgba(21, 101, 192, 0.1);
+    color: #11578f;
+    font-size: 0.78rem;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+  .dosagem-summary-panel {
+    border: 1px solid rgba(17, 78, 131, 0.12);
+    border-radius: 1.2rem;
+    overflow: hidden;
+    background: linear-gradient(180deg, #0d4f89 0%, #1567aa 58%, #237fc0 100%);
+    box-shadow: var(--shadow-sm);
+  }
+  .dosagem-summary-header {
+    padding: 1.1rem 1.15rem 0.9rem;
+    color: #fff;
+  }
+  .dosagem-summary-header h5 {
+    margin: 0 0 0.35rem;
+    font-weight: 800;
+  }
+  .dosagem-summary-header p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.88);
+    line-height: 1.55;
+    font-size: 0.92rem;
+  }
+  .dosagem-summary-body {
+    padding: 0 1rem 1rem;
+  }
+  .dosagem-summary-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.8rem;
+  }
+  .dosagem-summary-card {
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.12);
+    padding: 0.9rem 1rem;
+    backdrop-filter: blur(4px);
+  }
+  .dosagem-summary-card .dosagem-result-label {
+    color: rgba(255, 255, 255, 0.76);
+    margin-bottom: 0.35rem;
+  }
+  .dosagem-summary-card .dosagem-result-value {
+    color: #fff;
+    font-size: 1.05rem;
+  }
+  .dosagem-summary-card .dosagem-result-note {
+    color: rgba(255, 255, 255, 0.86);
+    margin-top: 0.35rem;
+  }
+  .dosagem-planned-card {
+    border: 1px solid #dbe4f0;
+    border-radius: 1.05rem;
+    background: #fff;
+    padding: 1rem 1.05rem;
+    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.04);
+  }
+  .dosagem-planned-card h6 {
+    margin-bottom: 0.35rem;
+    color: #173b62;
+    font-weight: 800;
+  }
+  .dosagem-planned-card p {
+    margin: 0;
+    color: #627287;
+    line-height: 1.55;
+    font-size: 0.92rem;
+  }
+  .dosagem-planned-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.55rem;
+    margin-top: 0.9rem;
+  }
+  .dosagem-planned-item {
+    border: 1px solid #dbe4f0;
+    border-radius: 0.9rem;
+    background: #f7fbff;
+    padding: 0.75rem 0.85rem;
+  }
+  .dosagem-planned-item strong {
+    display: block;
+    color: #20466d;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.25rem;
+  }
+  .dosagem-planned-item span {
+    color: #5c6f85;
+    line-height: 1.5;
+    font-size: 0.92rem;
+  }
+  .dosagem-reference-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .dosagem-reference-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+  .dosagem-reference-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border-radius: 999px;
+    padding: 0.42rem 0.78rem;
+    background: #eef6ff;
+    color: #24517d;
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
   .dosagem-kpi-card,
   .dosagem-result-card {
     height: 100%;
@@ -156,6 +379,29 @@
       padding-left: 12px !important;
       padding-right: 12px !important;
     }
+    .dosagem-workspace {
+      grid-template-columns: 1fr;
+    }
+    .dosagem-side-stack {
+      position: static;
+    }
+    .dosagem-field-card,
+    .dosagem-field-card.is-wide {
+      grid-column: span 6;
+    }
+  }
+  @media (max-width: 767.98px) {
+    .dosagem-form-grid {
+      grid-template-columns: 1fr;
+    }
+    .dosagem-field-card,
+    .dosagem-field-card.is-wide,
+    .dosagem-field-card.is-full {
+      grid-column: auto;
+    }
+    .dosagem-help-banner {
+      flex-direction: column;
+    }
   }
 </style>
 {% endblock %}
@@ -215,8 +461,8 @@
         <div class="dosagem-kpi-value">
           {% if os_context %}
           #{{ os_context.id }}
-          {% if os_context.data_agendada_label %} • {{ os_context.data_agendada_label }}{% endif %}
-          {% if os_context.hora_agendada_label %} • {{ os_context.hora_agendada_label }}{% endif %}
+          {% if os_context.data_agendada_label %} | {{ os_context.data_agendada_label }}{% endif %}
+          {% if os_context.hora_agendada_label %} | {{ os_context.hora_agendada_label }}{% endif %}
           {% else %}
           {{ piloto_nome or 'Piloto' }}
           {% endif %}
@@ -285,6 +531,16 @@
       value="{{ calculo_dosagem_planejado_json if calculo_dosagem_planejado_json else '' }}"
     />
     {% endif %}
+
+    <div class="dosagem-help-banner mb-3">
+      <div>
+        <strong>Leitura direta da planilha</strong>
+        <p>Concentracao fixa: 500 g de BTI em 10 L de agua. Para lotes menores, a mesma proporcao vale para 250 g em 5 L.</p>
+      </div>
+      <span class="dosagem-help-chip">
+        <i class="bi bi-droplet-half"></i> 50 g/L de calda
+      </span>
+    </div>
 
     <div class="row g-3">
       <div class="col-md-4">
@@ -388,82 +644,118 @@
     </div>
     {% endif %}
   </div>
-  {% if os_context and not modo_visualizacao %}
-  </form>
+  {% if os_context %}
+  <div class="dosagem-planned-card mb-4">
+    <div class="dosagem-kpi-label text-primary">OS vinculada</div>
+    <h6>#{{ os_context.id }}{% if os_context.data_agendada_label %} | {{ os_context.data_agendada_label }}{% endif %}{% if os_context.hora_agendada_label %} | {{ os_context.hora_agendada_label }}{% endif %}</h6>
+    <p>{{ os_context.endereco or 'Endereco nao informado' }}</p>
+    <div class="dosagem-planned-list">
+      <div class="dosagem-planned-item">
+        <strong>Contexto da visita</strong>
+        <span>{{ os_context.tipo_operacao or 'Sem tipo de operacao' }}{% if os_context.tipo_visita %} | {{ os_context.tipo_visita }}{% endif %}</span>
+      </div>
+      <div class="dosagem-planned-item">
+        <strong>Ultimo planejamento salvo</strong>
+        <span>{{ os_context.planejado_em_label }}</span>
+      </div>
+      {% if calculo_dosagem_planejado %}
+      <div class="dosagem-planned-item">
+        <strong>Cenario salvo</strong>
+        <span>{{ calculo_dosagem_planejado.cenario_label or '-' }} | {{ calculo_dosagem_planejado.medicao.resumo or '-' }}</span>
+      </div>
+      <div class="dosagem-planned-item">
+        <strong>Conjunto planejado</strong>
+        <span>{{ calculo_dosagem_planejado.resultado.carga_bti_g or '-' }} g | {{ calculo_dosagem_planejado.resultado.calda_total_label or '-' }} | {{ calculo_dosagem_planejado.resultado.ponta_pulverizacao or '-' }}</span>
+      </div>
+      {% else %}
+      <div class="dosagem-planned-item">
+        <strong>Status</strong>
+        <span>Nenhum planejamento salvo ainda para esta OS.</span>
+      </div>
+      {% endif %}
+    </div>
+  </div>
   {% endif %}
 
-  <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-3">
-    <div>
-      <div class="dosagem-kpi-label text-primary">Tabelas de referencia</div>
-      <h5 class="m-0 text-primary fw-bold">Consulta rapida por cenario</h5>
-    </div>
-    <span class="badge bg-primary-subtle text-primary">Fonte: planilha de dosagem enviada</span>
-  </div>
-
-  <div class="d-flex flex-column gap-3">
-    {% for item in referencias_dosagem %}
-    <div class="dosagem-reference-card">
-      <div class="dosagem-reference-header">
-        <button type="button" data-bs-toggle="collapse" data-bs-target="#ref-{{ item.key }}" aria-expanded="{{ 'true' if loop.first else 'false' }}">
-          <i class="bi bi-table me-2"></i>{{ item.label }}
-          <span class="text-muted fw-normal ms-2">{{ item.medida_label }}</span>
-        </button>
+  <div class="dosagem-shell-card p-3 p-lg-4">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-3">
+      <div>
+        <div class="dosagem-kpi-label text-primary">Tabelas de referencia</div>
+        <h5 class="m-0 text-primary fw-bold">Consulta rapida por cenario</h5>
       </div>
-      <div class="collapse {% if loop.first %}show{% endif %}" id="ref-{{ item.key }}">
-        <div class="p-3 p-lg-4">
-          <div class="dosagem-rule-list">
-            {% for regra in item.regras %}
-            <div class="dosagem-rule-item">
-              <i class="bi bi-arrow-right-circle me-2 text-primary"></i>{{ regra }}
+      <span class="badge bg-primary-subtle text-primary">Fonte: planilha de dosagem enviada</span>
+    </div>
+
+    <div class="dosagem-reference-shell">
+      {% for item in referencias_dosagem %}
+      <div class="dosagem-reference-card">
+        <div class="dosagem-reference-header">
+          <button type="button" data-bs-toggle="collapse" data-bs-target="#ref-{{ item.key }}" aria-expanded="{{ 'true' if loop.first else 'false' }}">
+            <i class="bi bi-table me-2"></i>{{ item.label }}
+            <span class="text-muted fw-normal ms-2">{{ item.medida_label }}</span>
+          </button>
+        </div>
+        <div class="collapse {% if loop.first %}show{% endif %}" id="ref-{{ item.key }}">
+          <div class="p-3 p-lg-4">
+            <div class="dosagem-reference-meta mb-3">
+              <span class="dosagem-reference-badge"><i class="bi bi-rulers"></i>{{ item.medida_label }}</span>
+              <span class="dosagem-reference-badge"><i class="bi bi-droplet"></i>{{ item.tipo_aplicacao }}</span>
+              <span class="dosagem-reference-badge"><i class="bi bi-journal-text"></i>Base: 500 g / 10 L</span>
             </div>
-            {% endfor %}
-          </div>
 
-          <div class="small text-muted mb-3">
-            Tipo de aplicacao de referencia: <strong>{{ item.tipo_aplicacao }}</strong>
-          </div>
+            <div class="dosagem-rule-list">
+              {% for regra in item.regras %}
+              <div class="dosagem-rule-item">
+                <i class="bi bi-arrow-right-circle me-2 text-primary"></i>{{ regra }}
+              </div>
+              {% endfor %}
+            </div>
 
-          <div class="dosagem-table-wrap">
-            <table class="table table-sm align-middle">
-              <thead>
-                <tr>
-                  <th>{{ item.medida_label }}</th>
-                  <th>Carga BTI (g)</th>
-                  <th>Calda</th>
-                  <th>Tempo</th>
-                  <th>Ponta</th>
-                  <th>Bicos</th>
-                  <th>Vazao (mL/min)</th>
-                  <th>Dose BTI (g/min)</th>
-                  <th>Pressao (bar)</th>
-                  <th>Faixa (m)</th>
-                  <th>DMV</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for row in item.rows %}
-                <tr>
-                  <td>{{ row.medida }}</td>
-                  <td>{{ row.carga_bti_g }}</td>
-                  <td>{{ row.calda_label }}</td>
-                  <td>{{ row.tempo_label }}</td>
-                  <td>{{ row.ponta }}</td>
-                  <td>{{ row.numero_bicos }}</td>
-                  <td>{{ row.vazao_bicos_ml_min }}</td>
-                  <td>{{ row.dose_bti_g_min }}</td>
-                  <td>{{ row.pressao_bar }}</td>
-                  <td>{{ row.faixa_aplicacao_m }}</td>
-                  <td>{{ row.tamanho_gotas_dmv }}</td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
+            <div class="dosagem-table-wrap">
+              <table class="table table-sm align-middle">
+                <thead>
+                  <tr>
+                    <th>{{ item.medida_label }}</th>
+                    <th>Carga BTI (g)</th>
+                    <th>Calda</th>
+                    <th>Tempo</th>
+                    <th>Ponta</th>
+                    <th>Bicos</th>
+                    <th>Vazao (mL/min)</th>
+                    <th>Dose BTI (g/min)</th>
+                    <th>Pressao (bar)</th>
+                    <th>Faixa (m)</th>
+                    <th>DMV</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for row in item.rows %}
+                  <tr>
+                    <td>{{ row.medida }}</td>
+                    <td>{{ row.carga_bti_g }}</td>
+                    <td>{{ row.calda_label }}</td>
+                    <td>{{ row.tempo_label }}</td>
+                    <td>{{ row.ponta }}</td>
+                    <td>{{ row.numero_bicos }}</td>
+                    <td>{{ row.vazao_bicos_ml_min }}</td>
+                    <td>{{ row.dose_bti_g_min }}</td>
+                    <td>{{ row.pressao_bar }}</td>
+                    <td>{{ row.faixa_aplicacao_m }}</td>
+                    <td>{{ row.tamanho_gotas_dmv }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
+      {% endfor %}
     </div>
-    {% endfor %}
   </div>
+  {% if os_context and not modo_visualizacao %}
+  </form>
+  {% endif %}
 </div>
 {% endblock %}
 
