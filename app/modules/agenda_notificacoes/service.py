@@ -4,6 +4,7 @@ from datetime import date, datetime
 from io import BytesIO
 from zoneinfo import ZoneInfo
 
+from sqlalchemy import false
 from flask import current_app, url_for
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
@@ -11,7 +12,7 @@ from openpyxl.utils import get_column_letter
 from sqlalchemy.orm import joinedload
 
 from app.extensions import db
-from app.models import Notificacao, Solicitacao, Usuario
+from app.models import Equipe, EquipePiloto, Notificacao, Solicitacao, Usuario
 from app.shared.access import apply_regiao_scope, apply_solicitacao_regiao_scope
 
 
@@ -54,6 +55,42 @@ def can_view_all_notifications(user):
     return getattr(user, "tipo_usuario", None) in NOTIFICATION_GLOBAL_VIEW_TYPES
 
 
+def is_piloto_agenda_user(user):
+    return getattr(user, "tipo_usuario", None) == "piloto"
+
+
+def _build_piloto_equipes_query(user):
+    piloto_id = getattr(user, "piloto_id", None)
+    if not piloto_id:
+        return None
+
+    return (
+        db.session.query(EquipePiloto.equipe_id)
+        .join(Equipe, Equipe.id == EquipePiloto.equipe_id)
+        .filter(
+            EquipePiloto.piloto_id == piloto_id,
+            EquipePiloto.equipe_id.isnot(None),
+            Equipe.ativa.is_(True),
+        )
+        .distinct()
+    )
+
+
+def apply_agenda_user_scope(query, user):
+    query = apply_solicitacao_regiao_scope(query, user)
+
+    if is_piloto_agenda_user(user):
+        equipes_query = _build_piloto_equipes_query(user)
+        if equipes_query is None:
+            return query.filter(false())
+        return query.filter(Solicitacao.equipe_id.in_(equipes_query))
+
+    if not can_view_all_agenda(user):
+        return query.filter(Solicitacao.usuario_id == user.id)
+
+    return query
+
+
 def get_agenda_google_maps_key():
     return current_app.config.get("Maps_KEY_FRONT") or os.getenv("KEY_API_GOOGLE_MAPS") or ""
 
@@ -64,10 +101,11 @@ def build_agenda_query(user, *, filtro_status=None, filtro_uvis_id=None, mes=Non
         .options(joinedload(Solicitacao.usuario))
         .filter(Solicitacao.status != "CANCELADO")
     )
-    query = apply_solicitacao_regiao_scope(query, user)
+    query = apply_agenda_user_scope(query, user)
 
-    if not can_view_all_agenda(user):
-        query = query.filter(Solicitacao.usuario_id == user.id)
+    if is_piloto_agenda_user(user):
+        filtro_uvis_id = None
+    elif not can_view_all_agenda(user):
         filtro_uvis_id = None
     elif filtro_uvis_id:
         query = query.filter(Solicitacao.usuario_id == filtro_uvis_id)
@@ -233,13 +271,11 @@ def build_agenda_rotas_payload(user, args):
 
     filtro_uvis_id = args.get("uvis_id", type=int)
 
-    query = apply_solicitacao_regiao_scope(
+    query = apply_agenda_user_scope(
         Solicitacao.query.options(joinedload(Solicitacao.usuario)),
         user,
     )
-    if not can_view_all_agenda(user):
-        query = query.filter(Solicitacao.usuario_id == user.id)
-    elif filtro_uvis_id:
+    if can_view_all_agenda(user) and filtro_uvis_id:
         query = query.filter(Solicitacao.usuario_id == filtro_uvis_id)
 
     query = query.filter(Solicitacao.status.in_(AGENDA_ROUTE_STATUSES))

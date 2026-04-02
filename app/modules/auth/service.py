@@ -12,6 +12,8 @@ def authenticate_user(login_value, password):
 def get_authenticated_redirect_endpoint(user):
     if user.tipo_usuario in ADMIN_PANEL_VIEW_TYPES:
         return "main.admin_dashboard"
+    if user.tipo_usuario == "piloto":
+        return "main.piloto_os"
     if user.tipo_usuario == "equipe_uvis":
         return "main.dashboard_equipe_uvis"
     return "main.dashboard"

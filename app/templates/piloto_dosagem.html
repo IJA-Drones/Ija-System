@@ -1,0 +1,648 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}" />
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}" />
+<style>
+  .piloto-dosagem-page {
+    width: 100%;
+  }
+  .piloto-dosagem-hero {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(17, 78, 131, 0.12);
+    border-radius: 1.35rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #0c4d88 0%, #1567aa 58%, #2b85c4 100%);
+    box-shadow: var(--shadow-sm);
+  }
+  .piloto-dosagem-hero::after {
+    content: "";
+    position: absolute;
+    right: -60px;
+    top: -50px;
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.12);
+  }
+  .piloto-dosagem-hero > * {
+    position: relative;
+    z-index: 1;
+  }
+  .piloto-dosagem-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 999px;
+    margin-bottom: 0.9rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #eff6ff;
+    background: rgba(255, 255, 255, 0.16);
+  }
+  .piloto-dosagem-hero h2 {
+    color: #fff;
+    font-weight: 800;
+  }
+  .piloto-dosagem-hero p {
+    color: rgba(255, 255, 255, 0.9);
+    max-width: 720px;
+    line-height: 1.6;
+    margin-bottom: 0;
+  }
+  .dosagem-shell-card {
+    border: 1px solid #dbe4f0;
+    border-radius: 1.2rem;
+    background: linear-gradient(180deg, #fcfdff 0%, #f5f9fd 100%);
+    box-shadow: var(--shadow-sm);
+  }
+  .dosagem-kpi-card,
+  .dosagem-result-card {
+    height: 100%;
+    border: 1px solid #dce6f1;
+    border-radius: 1rem;
+    background: #ffffff;
+    padding: 1rem 1.05rem;
+    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.04);
+  }
+  .dosagem-kpi-label,
+  .dosagem-result-label {
+    display: block;
+    margin-bottom: 0.35rem;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 700;
+    color: #728197;
+  }
+  .dosagem-kpi-value,
+  .dosagem-result-value {
+    color: #173b62;
+    line-height: 1.45;
+    font-size: 1rem;
+    font-weight: 800;
+  }
+  .dosagem-kpi-note,
+  .dosagem-result-note {
+    margin-top: 0.45rem;
+    font-size: 0.84rem;
+    color: #6a7b91;
+  }
+  .dosagem-reference-card {
+    border: 1px solid #dbe4f0;
+    border-radius: 1.1rem;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: var(--shadow-sm);
+  }
+  .dosagem-reference-header {
+    background: linear-gradient(90deg, rgba(21, 101, 192, 0.08), rgba(141, 192, 234, 0.08));
+  }
+  .dosagem-reference-header button {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    padding: 1rem 1.1rem;
+    font-weight: 700;
+    color: #173b62;
+  }
+  .dosagem-rule-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  .dosagem-rule-item {
+    border: 1px solid #dbe4f0;
+    border-radius: 0.9rem;
+    background: #f8fbff;
+    padding: 0.85rem 0.95rem;
+    color: #37516f;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+  .dosagem-table-wrap {
+    border: 1px solid #dbe4f0;
+    border-radius: 1rem;
+    overflow: auto;
+  }
+  .dosagem-table-wrap table {
+    min-width: 980px;
+    margin-bottom: 0;
+  }
+  .dosagem-table-wrap thead th {
+    position: sticky;
+    top: 0;
+    background: #eef5fc;
+    color: #27496b;
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .dosagem-alert-soft {
+    border: 1px solid #d6e8fb;
+    border-radius: 1rem;
+    background: #f7fbff;
+    color: #355373;
+  }
+
+  @media (max-width: 991.98px) {
+    .piloto-dosagem-page.container-fluid.py-4 {
+      padding-left: 12px !important;
+      padding-right: 12px !important;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 piloto-dosagem-page" style="max-width: 1280px;">
+  <div class="piloto-dosagem-hero mb-4">
+    <span class="piloto-dosagem-eyebrow">
+      <i class="bi bi-calculator-fill"></i>Consulta tecnica
+    </span>
+    <h2 class="m-0 mb-2">Consulta de Dosagem do Piloto</h2>
+    <p>
+      Use esta tela para consultar as tabelas de referencia e calcular a dosagem antes do servico.
+      No formulario da OS, mantenha registrado apenas o que foi realmente usado na execucao.
+    </p>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="dosagem-kpi-card">
+        <span class="dosagem-kpi-label">Mistura padrao</span>
+        <div class="dosagem-kpi-value">{{ mistura_padrao }}</div>
+        <div class="dosagem-kpi-note">Base considerada em todos os calculos desta consulta.</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="dosagem-kpi-card">
+        <span class="dosagem-kpi-label">Cenarios cobertos</span>
+        <div class="dosagem-kpi-value">Foco Aedes, Area Aedes e Area Culex</div>
+        <div class="dosagem-kpi-note">Com geometria direta, retangular, circular, irregular e faixa marginal.</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="dosagem-kpi-card">
+        <span class="dosagem-kpi-label">Consulta atual</span>
+        <div class="dosagem-kpi-value">{{ piloto_nome or 'Piloto' }}</div>
+        <div class="dosagem-kpi-note">Esta tela nao salva nada. Ela serve como apoio antes do preenchimento da OS.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="alert dosagem-alert-soft mb-4">
+    <i class="bi bi-info-circle-fill me-2"></i>
+    Se quiser, voce pode usar esta tela para planejar e depois preencher os dados reais dentro da OS.
+  </div>
+
+  <div class="dosagem-shell-card p-3 p-lg-4 mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+      <div>
+        <div class="dosagem-kpi-label text-primary">Calculadora rapida</div>
+        <h5 class="mb-1 text-primary fw-bold">Dosagem para consulta</h5>
+        <p class="text-muted small mb-0">Escolha o cenario, informe a medida e veja a recomendacao de carga, calda, tempo e configuracao do drone.</p>
+      </div>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label-header">Cenario</label>
+        <select id="calc_cenario" class="form-select">
+          <option value="">Selecione...</option>
+          <option value="foco_aedes">Foco - Aedes</option>
+          <option value="area_aedes">Area - Aedes</option>
+          <option value="area_culex">Area - Culex</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label-header">Forma de medicao</label>
+        <select id="calc_modo_medicao" class="form-select">
+          <option value="">Selecione o cenario primeiro...</option>
+        </select>
+      </div>
+      <div class="col-md-4" id="calc_valor_direto_wrap">
+        <label class="form-label-header" id="calc_valor_direto_label">Valor base</label>
+        <input type="number" step="0.01" min="0" id="calc_valor_direto" class="form-control" placeholder="Informe o valor..." />
+      </div>
+      <div class="col-md-3 d-none" id="calc_comprimento_wrap">
+        <label class="form-label-header">Comprimento (m)</label>
+        <input type="number" step="0.01" min="0" id="calc_comprimento_m" class="form-control" />
+      </div>
+      <div class="col-md-3 d-none" id="calc_largura_wrap">
+        <label class="form-label-header">Largura (m)</label>
+        <input type="number" step="0.01" min="0" id="calc_largura_m" class="form-control" />
+      </div>
+      <div class="col-md-3 d-none" id="calc_altura_wrap">
+        <label class="form-label-header">Altura da agua (m)</label>
+        <input type="number" step="0.01" min="0" id="calc_altura_agua_m" class="form-control" />
+      </div>
+      <div class="col-md-3 d-none" id="calc_raio_wrap">
+        <label class="form-label-header">Raio (m)</label>
+        <input type="number" step="0.01" min="0" id="calc_raio_m" class="form-control" />
+      </div>
+      <div class="col-md-3 d-none" id="calc_largura_media_wrap">
+        <label class="form-label-header">Largura media (m)</label>
+        <input type="number" step="0.01" min="0" id="calc_largura_media_m" class="form-control" />
+      </div>
+      <div class="col-md-3 d-none" id="calc_margens_wrap">
+        <label class="form-label-header">Numero de margens</label>
+        <input type="number" step="1" min="1" max="2" id="calc_margens" class="form-control" />
+      </div>
+      <div class="col-12">
+        <div class="small text-muted" id="calc_formula_hint">Selecione o cenario para iniciar a consulta.</div>
+      </div>
+    </div>
+
+    <div class="row g-3 mt-1">
+      <div class="col-md-4">
+        <div class="dosagem-result-card">
+          <span class="dosagem-result-label">Medida calculada</span>
+          <div class="dosagem-result-value" id="calc_resultado_medida">-</div>
+          <div class="dosagem-result-note" id="calc_resultado_resumo">Informe a area ou o volume para gerar a consulta.</div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="dosagem-result-card">
+          <span class="dosagem-result-label">Carga e calda</span>
+          <div class="dosagem-result-value" id="calc_resultado_carga">-</div>
+          <div class="dosagem-result-note" id="calc_resultado_calda">Calda recomendada: -</div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="dosagem-result-card">
+          <span class="dosagem-result-label">Tempo e tipo</span>
+          <div class="dosagem-result-value" id="calc_resultado_tempo">-</div>
+          <div class="dosagem-result-note" id="calc_resultado_tipo">Tipo de aplicacao: -</div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="dosagem-result-card">
+          <span class="dosagem-result-label">Configuracao sugerida</span>
+          <div class="dosagem-result-value" id="calc_resultado_ponta">-</div>
+          <div class="dosagem-result-note" id="calc_resultado_hardware">Bicos, vazao, pressao e faixa aparecem aqui.</div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="dosagem-result-card">
+          <span class="dosagem-result-label">Pulverizacao</span>
+          <div class="dosagem-result-value" id="calc_resultado_lha">-</div>
+          <div class="dosagem-result-note">Use esta informacao como referencia antes do servico.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-3">
+    <div>
+      <div class="dosagem-kpi-label text-primary">Tabelas de referencia</div>
+      <h5 class="m-0 text-primary fw-bold">Consulta rapida por cenario</h5>
+    </div>
+    <span class="badge bg-primary-subtle text-primary">Fonte: planilha de dosagem enviada</span>
+  </div>
+
+  <div class="d-flex flex-column gap-3">
+    {% for item in referencias_dosagem %}
+    <div class="dosagem-reference-card">
+      <div class="dosagem-reference-header">
+        <button type="button" data-bs-toggle="collapse" data-bs-target="#ref-{{ item.key }}" aria-expanded="{{ 'true' if loop.first else 'false' }}">
+          <i class="bi bi-table me-2"></i>{{ item.label }}
+          <span class="text-muted fw-normal ms-2">{{ item.medida_label }}</span>
+        </button>
+      </div>
+      <div class="collapse {% if loop.first %}show{% endif %}" id="ref-{{ item.key }}">
+        <div class="p-3 p-lg-4">
+          <div class="dosagem-rule-list">
+            {% for regra in item.regras %}
+            <div class="dosagem-rule-item">
+              <i class="bi bi-arrow-right-circle me-2 text-primary"></i>{{ regra }}
+            </div>
+            {% endfor %}
+          </div>
+
+          <div class="small text-muted mb-3">
+            Tipo de aplicacao de referencia: <strong>{{ item.tipo_aplicacao }}</strong>
+          </div>
+
+          <div class="dosagem-table-wrap">
+            <table class="table table-sm align-middle">
+              <thead>
+                <tr>
+                  <th>{{ item.medida_label }}</th>
+                  <th>Carga BTI (g)</th>
+                  <th>Calda</th>
+                  <th>Tempo</th>
+                  <th>Ponta</th>
+                  <th>Bicos</th>
+                  <th>Vazao (mL/min)</th>
+                  <th>Dose BTI (g/min)</th>
+                  <th>Pressao (bar)</th>
+                  <th>Faixa (m)</th>
+                  <th>DMV</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in item.rows %}
+                <tr>
+                  <td>{{ row.medida }}</td>
+                  <td>{{ row.carga_bti_g }}</td>
+                  <td>{{ row.calda_label }}</td>
+                  <td>{{ row.tempo_label }}</td>
+                  <td>{{ row.ponta }}</td>
+                  <td>{{ row.numero_bicos }}</td>
+                  <td>{{ row.vazao_bicos_ml_min }}</td>
+                  <td>{{ row.dose_bti_g_min }}</td>
+                  <td>{{ row.pressao_bar }}</td>
+                  <td>{{ row.faixa_aplicacao_m }}</td>
+                  <td>{{ row.tamanho_gotas_dmv }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const scenarioEl = document.getElementById("calc_cenario");
+  const modeEl = document.getElementById("calc_modo_medicao");
+  const directWrap = document.getElementById("calc_valor_direto_wrap");
+  const directLabel = document.getElementById("calc_valor_direto_label");
+  const directInput = document.getElementById("calc_valor_direto");
+  const formulaHint = document.getElementById("calc_formula_hint");
+
+  const extraInputs = {
+    comprimento_m: document.getElementById("calc_comprimento_m"),
+    largura_m: document.getElementById("calc_largura_m"),
+    altura_agua_m: document.getElementById("calc_altura_agua_m"),
+    raio_m: document.getElementById("calc_raio_m"),
+    largura_media_m: document.getElementById("calc_largura_media_m"),
+    margens: document.getElementById("calc_margens"),
+  };
+
+  const inputWraps = {
+    valor_direto: directWrap,
+    comprimento_m: document.getElementById("calc_comprimento_wrap"),
+    largura_m: document.getElementById("calc_largura_wrap"),
+    altura_agua_m: document.getElementById("calc_altura_wrap"),
+    raio_m: document.getElementById("calc_raio_wrap"),
+    largura_media_m: document.getElementById("calc_largura_media_wrap"),
+    margens: document.getElementById("calc_margens_wrap"),
+  };
+
+  const resultEls = {
+    medida: document.getElementById("calc_resultado_medida"),
+    resumo: document.getElementById("calc_resultado_resumo"),
+    carga: document.getElementById("calc_resultado_carga"),
+    calda: document.getElementById("calc_resultado_calda"),
+    tempo: document.getElementById("calc_resultado_tempo"),
+    tipo: document.getElementById("calc_resultado_tipo"),
+    ponta: document.getElementById("calc_resultado_ponta"),
+    hardware: document.getElementById("calc_resultado_hardware"),
+    lha: document.getElementById("calc_resultado_lha"),
+  };
+
+  const scenarioConfigs = {
+    foco_aedes: {
+      label: "Foco - Aedes",
+      directLabel: "Volume util do foco (L)",
+      unit: "L",
+      tipoAplicacao: "Pulverizacao de foco (liq)",
+      lha: null,
+      modes: {
+        direto: { label: "Volume informado diretamente", fields: ["valor_direto"], hint: "Use o volume util do foco em litros." },
+        retangular: { label: "Retangular / quadrado", fields: ["comprimento_m", "largura_m", "altura_agua_m"], hint: "Volume = comprimento x largura x altura da agua x 1000." },
+        circular: { label: "Circular", fields: ["raio_m", "altura_agua_m"], hint: "Volume = raio x raio x 3.14 x altura da agua x 1000." },
+      },
+      measure(values, mode) {
+        if (mode === "direto") return values.valor_direto;
+        if (mode === "retangular") return values.comprimento_m * values.largura_m * values.altura_agua_m * 1000;
+        if (mode === "circular") return values.raio_m * values.raio_m * 3.14 * values.altura_agua_m * 1000;
+        return null;
+      },
+      hardware(baseValue) {
+        return baseValue <= 12000
+          ? { ponta: "TXA8001", numero_bicos: 2, vazao_ml_min: 800, dose_bti_g_min: 40, pressao_bar: 2, faixa_aplicacao_m: 2, tamanho_gotas_dmv: "120" }
+          : { ponta: "TXA8001", numero_bicos: 4, vazao_ml_min: 2000, dose_bti_g_min: 100, pressao_bar: 4, faixa_aplicacao_m: 2, tamanho_gotas_dmv: "120" };
+      },
+      carga(baseValue) { return Math.ceil(baseValue / 100); },
+    },
+    area_aedes: {
+      label: "Area - Aedes",
+      directLabel: "Area tratada (m2)",
+      unit: "m2",
+      tipoAplicacao: "Pulverizacao de area (liq)",
+      lha: 10,
+      modes: {
+        direto: { label: "Area informada diretamente", fields: ["valor_direto"], hint: "Use a area prevista em metros quadrados." },
+        retangular: { label: "Retangular / quadrado", fields: ["comprimento_m", "largura_m"], hint: "Area = comprimento x largura." },
+        irregular: { label: "Irregular com largura media", fields: ["comprimento_m", "largura_media_m"], hint: "Area = comprimento x largura media." },
+      },
+      measure(values, mode) {
+        if (mode === "direto") return values.valor_direto;
+        if (mode === "retangular") return values.comprimento_m * values.largura_m;
+        if (mode === "irregular") return values.comprimento_m * values.largura_media_m;
+        return null;
+      },
+      hardware(baseValue) {
+        return baseValue <= 2000
+          ? { ponta: "TXA8001", numero_bicos: 2, vazao_ml_min: 800, dose_bti_g_min: 40, pressao_bar: 2, faixa_aplicacao_m: 2, tamanho_gotas_dmv: "120" }
+          : { ponta: "TXA8001", numero_bicos: 4, vazao_ml_min: 2000, dose_bti_g_min: 100, pressao_bar: 4, faixa_aplicacao_m: 2, tamanho_gotas_dmv: "120" };
+      },
+      carga(baseValue) { return Math.ceil(baseValue / 20); },
+    },
+    area_culex: {
+      label: "Area - Culex",
+      directLabel: "Area tratada (m2)",
+      unit: "m2",
+      tipoAplicacao: "Pulverizacao de area (liq)",
+      lha: 20,
+      modes: {
+        direto: { label: "Area informada diretamente", fields: ["valor_direto"], hint: "Use a area prevista em metros quadrados." },
+        retangular: { label: "Retangular / quadrado", fields: ["comprimento_m", "largura_m"], hint: "Area = comprimento x largura." },
+        irregular: { label: "Irregular com largura media", fields: ["comprimento_m", "largura_media_m"], hint: "Area = comprimento x largura media." },
+        faixa_marginal: { label: "Faixa marginal de 10 m", fields: ["comprimento_m", "margens"], hint: "Area = comprimento x 10 x numero de margens." },
+      },
+      measure(values, mode) {
+        if (mode === "direto") return values.valor_direto;
+        if (mode === "retangular") return values.comprimento_m * values.largura_m;
+        if (mode === "irregular") return values.comprimento_m * values.largura_media_m;
+        if (mode === "faixa_marginal") return values.comprimento_m * 10 * values.margens;
+        return null;
+      },
+      hardware(baseValue) {
+        return baseValue <= 2000
+          ? { ponta: "XR11003", numero_bicos: 2, vazao_ml_min: 2000, dose_bti_g_min: 100, pressao_bar: 2, faixa_aplicacao_m: 6, tamanho_gotas_dmv: "120" }
+          : { ponta: "XR11003", numero_bicos: 4, vazao_ml_min: 4400, dose_bti_g_min: 220, pressao_bar: 4, faixa_aplicacao_m: 6, tamanho_gotas_dmv: "120" };
+      },
+      carga(baseValue) { return Math.ceil(baseValue / 10); },
+    },
+  };
+
+  function parseNumber(value) {
+    if (value === null || value === undefined) return null;
+    let text = String(value).trim();
+    if (!text) return null;
+    if (text.includes(",") && text.includes(".")) {
+      text = text.replace(/\./g, "").replace(",", ".");
+    } else {
+      text = text.replace(",", ".");
+    }
+    const parsed = Number(text);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  function formatNumber(value, maxDecimals = 2) {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) return "-";
+    return new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: maxDecimals }).format(Number(value));
+  }
+
+  function formatMlLabel(value) {
+    if (value === null || value === undefined) return "-";
+    return value >= 1000
+      ? `${formatNumber(value / 1000, 2)} L (${formatNumber(value, 0)} mL)`
+      : `${formatNumber(value, 0)} mL`;
+  }
+
+  function formatDuration(seconds) {
+    if (seconds === null || seconds === undefined) return "-";
+    return seconds >= 60 ? `${formatNumber(seconds / 60, 2)} min` : `${formatNumber(seconds, 1)} s`;
+  }
+
+  function setVisible(element, visible) {
+    if (element) element.classList.toggle("d-none", !visible);
+  }
+
+  function resetResults(message) {
+    resultEls.medida.textContent = "-";
+    resultEls.resumo.textContent = message || "Informe a area ou o volume para gerar a consulta.";
+    resultEls.carga.textContent = "-";
+    resultEls.calda.textContent = "Calda recomendada: -";
+    resultEls.tempo.textContent = "-";
+    resultEls.tipo.textContent = "Tipo de aplicacao: -";
+    resultEls.ponta.textContent = "-";
+    resultEls.hardware.textContent = "Bicos, vazao, pressao e faixa aparecem aqui.";
+    resultEls.lha.textContent = "-";
+  }
+
+  function updateModeOptions() {
+    const config = scenarioConfigs[scenarioEl.value];
+    modeEl.innerHTML = "";
+
+    if (!config) {
+      modeEl.innerHTML = '<option value="">Selecione o cenario primeiro...</option>';
+      directLabel.textContent = "Valor base";
+      formulaHint.textContent = "Selecione o cenario para iniciar a consulta.";
+      Object.values(inputWraps).forEach((wrap) => setVisible(wrap, false));
+      setVisible(directWrap, true);
+      resetResults("Selecione o cenario para continuar.");
+      return;
+    }
+
+    directLabel.textContent = config.directLabel;
+    Object.entries(config.modes).forEach(([value, modeConfig], index) => {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = modeConfig.label;
+      if (index === 0) option.selected = true;
+      modeEl.appendChild(option);
+    });
+
+    if (!config.modes[modeEl.value]) {
+      modeEl.value = Object.keys(config.modes)[0] || "";
+    }
+    updateMeasurementFields();
+  }
+
+  function updateMeasurementFields() {
+    const config = scenarioConfigs[scenarioEl.value];
+    const modeConfig = config ? config.modes[modeEl.value] : null;
+    Object.entries(inputWraps).forEach(([fieldName, wrap]) => {
+      setVisible(wrap, !!modeConfig && modeConfig.fields.includes(fieldName));
+    });
+    formulaHint.textContent = modeConfig ? modeConfig.hint : "Selecione o cenario para iniciar a consulta.";
+  }
+
+  function collectValues() {
+    return {
+      valor_direto: parseNumber(directInput.value),
+      comprimento_m: parseNumber(extraInputs.comprimento_m?.value),
+      largura_m: parseNumber(extraInputs.largura_m?.value),
+      altura_agua_m: parseNumber(extraInputs.altura_agua_m?.value),
+      raio_m: parseNumber(extraInputs.raio_m?.value),
+      largura_media_m: parseNumber(extraInputs.largura_media_m?.value),
+      margens: parseNumber(extraInputs.margens?.value),
+    };
+  }
+
+  function hasRequiredValues(values, fields) {
+    return fields.every((fieldName) => values[fieldName] !== null && values[fieldName] > 0);
+  }
+
+  function calculate() {
+    const config = scenarioConfigs[scenarioEl.value];
+    const modeConfig = config ? config.modes[modeEl.value] : null;
+    if (!config || !modeConfig) {
+      resetResults("Selecione o cenario para continuar.");
+      return;
+    }
+
+    const values = collectValues();
+    if (!hasRequiredValues(values, modeConfig.fields)) {
+      resetResults("Informe todas as medidas necessarias para gerar a consulta.");
+      return;
+    }
+
+    const baseValue = config.measure(values, modeEl.value);
+    if (!baseValue || baseValue <= 0) {
+      resetResults("Nao foi possivel calcular com as medidas informadas.");
+      return;
+    }
+
+    const cargaBti = config.carga(baseValue);
+    const caldaTotalMl = cargaBti * 20;
+    const hardware = config.hardware(baseValue);
+    const tempoSegundos = (caldaTotalMl / hardware.vazao_ml_min) * 60;
+
+    resultEls.medida.textContent = `${formatNumber(baseValue, 2)} ${config.unit}`;
+    resultEls.resumo.textContent = `${config.directLabel}: ${formatNumber(baseValue, 2)} ${config.unit}`;
+    resultEls.carga.textContent = `${formatNumber(cargaBti, 2)} g de BTI`;
+    resultEls.calda.textContent = `Calda recomendada: ${formatMlLabel(caldaTotalMl)}`;
+    resultEls.tempo.textContent = formatDuration(tempoSegundos);
+    resultEls.tipo.textContent = `Tipo de aplicacao: ${config.tipoAplicacao}`;
+    resultEls.ponta.textContent = hardware.ponta;
+    resultEls.hardware.textContent = `${hardware.numero_bicos} bicos | ${formatNumber(hardware.vazao_ml_min, 0)} mL/min | ${formatNumber(hardware.pressao_bar, 1)} bar | faixa ${formatNumber(hardware.faixa_aplicacao_m, 1)} m`;
+    resultEls.lha.textContent = config.lha === null ? "Nao se aplica" : `${formatNumber(config.lha, 2)} l/ha`;
+  }
+
+  scenarioEl.addEventListener("change", () => {
+    updateModeOptions();
+    calculate();
+  });
+
+  modeEl.addEventListener("change", () => {
+    updateMeasurementFields();
+    calculate();
+  });
+
+  [directInput, ...Object.values(extraInputs)].forEach((input) => {
+    if (input) input.addEventListener("input", calculate);
+  });
+
+  updateModeOptions();
+});
+</script>
+{% endblock %}

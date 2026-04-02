@@ -5,6 +5,7 @@ from flask_login import current_user, login_required
 
 from app.extensions import db
 from app.models import Solicitacao
+from app.modules.piloto_os.dosagem import build_piloto_dosagem_context, salvar_piloto_dosagem_planejada
 from app.modules.piloto_os.exporters import build_admin_os_excel_v2_export, build_admin_os_pdf_v2_export
 from app.modules.piloto_os.service import (
     PilotoOsError,
@@ -53,6 +54,12 @@ def _query_args_without_page():
     return args
 
 
+def _redirect_from_piloto_os_error(exc, *, os_id=None):
+    if exc.redirect_endpoint in {"main.piloto_os_formulario_view", "main.piloto_os_dosagem"} and os_id is not None:
+        return redirect(url_for(exc.redirect_endpoint, os_id=os_id))
+    return redirect(url_for(exc.redirect_endpoint))
+
+
 def register_routes(bp):
     @bp.route("/piloto/os", methods=["GET"], endpoint="piloto_os")
     @login_required
@@ -88,6 +95,41 @@ def register_routes(bp):
             pagination_args={k: v for k, v in request.args.items() if k != "page"},
         )
 
+    @bp.route("/piloto/dosagem", methods=["GET"], endpoint="piloto_dosagem")
+    @login_required
+    def piloto_dosagem():
+        _require_piloto()
+        return render_template("piloto_dosagem.html", **build_piloto_dosagem_context(current_user))
+
+    @bp.route("/piloto/os/<int:os_id>/dosagem", methods=["GET", "POST"], endpoint="piloto_os_dosagem")
+    @login_required
+    def piloto_os_dosagem(os_id):
+        _require_piloto()
+
+        if request.method == "POST":
+            try:
+                flash(
+                    salvar_piloto_dosagem_planejada(
+                        current_user,
+                        os_id,
+                        request.form.get("calculo_dosagem_planejado"),
+                    ),
+                    "success",
+                )
+                return redirect(url_for("main.piloto_os_dosagem", os_id=os_id))
+            except PilotoOsError as exc:
+                flash(str(exc), exc.category)
+                return _redirect_from_piloto_os_error(exc, os_id=os_id)
+
+        try:
+            return render_template(
+                "piloto_dosagem.html",
+                **build_piloto_dosagem_context(current_user, os_id=os_id),
+            )
+        except PilotoOsError as exc:
+            flash(str(exc), exc.category)
+            return _redirect_from_piloto_os_error(exc, os_id=os_id)
+
     @bp.route("/piloto/os/historico", methods=["GET"], endpoint="piloto_os_historico")
     @login_required
     def piloto_os_historico():
@@ -97,7 +139,7 @@ def register_routes(bp):
             context = build_piloto_os_historico_context(current_user, request.args)
         except PilotoOsError as exc:
             flash(str(exc), exc.category)
-            return redirect(url_for(exc.redirect_endpoint))
+            return _redirect_from_piloto_os_error(exc)
 
         return render_template(
             "piloto_os_historico.html",
@@ -138,7 +180,7 @@ def register_routes(bp):
             context = build_piloto_os_form_context(current_user, os_id)
         except PilotoOsError as exc:
             flash(str(exc), exc.category)
-            return redirect(url_for(exc.redirect_endpoint))
+            return _redirect_from_piloto_os_error(exc, os_id=os_id)
 
         if request.method == "POST":
             if context["modo_visualizacao"]:
@@ -159,9 +201,7 @@ def register_routes(bp):
                 return redirect(url_for("main.piloto_os"))
             except PilotoOsError as exc:
                 flash(str(exc), exc.category)
-                if exc.redirect_endpoint == "main.piloto_os_formulario_view":
-                    return redirect(url_for(exc.redirect_endpoint, os_id=os_id))
-                return redirect(url_for(exc.redirect_endpoint))
+                return _redirect_from_piloto_os_error(exc, os_id=os_id)
             except Exception:
                 from app.extensions import db
 

@@ -276,6 +276,12 @@
       </h2>
     </div>
     <div class="piloto-os-header-actions">
+      <a href="{{ url_for('main.agenda') }}" class="btn btn-outline-primary">
+        <i class="bi bi-calendar-event me-1"></i> Agenda
+      </a>
+      <a href="{{ url_for('main.piloto_dosagem') }}" class="btn btn-outline-primary">
+        <i class="bi bi-calculator me-1"></i> Dosagem
+      </a>
       <a href="{{ url_for('main.piloto_checklist_semanal') }}" class="btn btn-outline-primary">
         <i class="bi bi-ui-checks-grid me-1"></i> Checklist Semanal
       </a>
@@ -447,6 +453,10 @@
                   <i class="bi bi-eye me-1"></i> Detalhes
                 </button>
 
+                <a href="{{ url_for('main.piloto_os_dosagem', os_id=s.id) }}" class="btn btn-sm btn-outline-secondary">
+                  <i class="bi bi-calculator me-1"></i> Dosagem
+                </a>
+
                 <a href="{{ url_for('main.piloto_os_formulario_view', os_id=s.id) }}" class="btn btn-sm btn-primary">
                   <i class="bi bi-clipboard2-check me-1"></i> Formulário
                 </a>
@@ -604,9 +614,14 @@
       </div>
 
       <div class="modal-footer border-0 d-flex justify-content-between">
-        <a href="{{ url_for('main.piloto_os_formulario_view', os_id=p.id) }}" class="btn btn-primary">
-          <i class="bi bi-clipboard2-check me-1"></i> Abrir formulario
-        </a>
+        <div class="d-flex gap-2 flex-wrap">
+          <a href="{{ url_for('main.piloto_os_dosagem', os_id=p.id) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-calculator me-1"></i> Planejar dosagem
+          </a>
+          <a href="{{ url_for('main.piloto_os_formulario_view', os_id=p.id) }}" class="btn btn-primary">
+            <i class="bi bi-clipboard2-check me-1"></i> Abrir formulario
+          </a>
+        </div>
         <button type="button" class="btn btn-light" data-bs-dismiss="modal">Fechar</button>
       </div>
     </div>

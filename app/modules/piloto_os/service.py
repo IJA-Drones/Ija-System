@@ -39,7 +39,7 @@ class PilotoOsError(Exception):
 
 def build_piloto_os_context(user, args, google_maps_key):
     if not getattr(user, "piloto_id", None):
-        raise PilotoOsError("Piloto sem vinculo cadastrado.", "danger", redirect_endpoint="main.dashboard")
+        raise PilotoOsError("Piloto sem vinculo cadastrado.", "danger", redirect_endpoint="main.piloto_os")
 
     vinculo = _buscar_vinculo_ativo_piloto(user.piloto_id)
     if not vinculo or not vinculo.equipe_id:
@@ -116,7 +116,7 @@ def build_piloto_os_context(user, args, google_maps_key):
 
 def build_piloto_os_historico_context(user, args):
     if not getattr(user, "piloto_id", None):
-        raise PilotoOsError("Piloto sem vinculo cadastrado.", "danger", redirect_endpoint="main.dashboard")
+        raise PilotoOsError("Piloto sem vinculo cadastrado.", "danger", redirect_endpoint="main.piloto_os")
 
     equipes_vinculadas = (
         db.session.query(EquipePiloto.equipe_id)
@@ -151,7 +151,7 @@ def build_piloto_os_historico_context(user, args):
 
 def concluir_os_piloto(user, os_id):
     if not getattr(user, "piloto_id", None):
-        raise PilotoOsError("Piloto sem vinculo cadastrado.", "danger", redirect_endpoint="main.dashboard")
+        raise PilotoOsError("Piloto sem vinculo cadastrado.", "danger", redirect_endpoint="main.piloto_os")
 
     solicitacao = Solicitacao.query.get_or_404(os_id)
 
@@ -180,7 +180,7 @@ def concluir_os_piloto(user, os_id):
 
 def build_piloto_os_form_context(user, os_id):
     if not getattr(user, "piloto_id", None):
-        raise PilotoOsError("Piloto sem vinculo cadastrado.", "danger", redirect_endpoint="main.dashboard")
+        raise PilotoOsError("Piloto sem vinculo cadastrado.", "danger", redirect_endpoint="main.piloto_os")
 
     solicitacao = (
         Solicitacao.query
@@ -570,16 +570,6 @@ def _aplicar_campos_formulario(
     ordem.hora_termino_aplicacao = _to_time(form_data.get("hora_termino_aplicacao"))
     ordem.tratamento_adicional_realizado = _clean_str(form_data.get("tratamento_adicional_realizado"))
     ordem.quantos_quais = _clean_str(form_data.get("quantos_quais"))
-    calculo_dosagem_planejado = _sanitize_calculo_dosagem_planejado(
-        form_data.get("calculo_dosagem_planejado")
-    )
-    if calculo_dosagem_planejado:
-        if ordem.calculo_dosagem_planejado != calculo_dosagem_planejado:
-            ordem.calculo_dosagem_planejado_em = datetime.now()
-        ordem.calculo_dosagem_planejado = calculo_dosagem_planejado
-    else:
-        ordem.calculo_dosagem_planejado = None
-        ordem.calculo_dosagem_planejado_em = None
     ordem.descricao_produto = _clean_str(form_data.get("descricao_produto"))
     ordem.formulacao_produto = _clean_str(form_data.get("formulacao_produto"))
     ordem.dosagem_g_10l = _clean_str(form_data.get("dosagem_g_10l"))

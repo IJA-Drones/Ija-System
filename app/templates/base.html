@@ -107,6 +107,16 @@
   </head>
 
   <body>
+    {% set navbar_home_endpoint = 'main.dashboard' %}
+    {% if current_user and current_user.is_authenticated %}
+      {% if current_user.tipo_usuario == 'piloto' %}
+        {% set navbar_home_endpoint = 'main.piloto_os' %}
+      {% elif current_user.tipo_usuario == 'equipe_uvis' %}
+        {% set navbar_home_endpoint = 'main.dashboard_equipe_uvis' %}
+      {% elif current_user.tipo_usuario in ['admin', 'operario', 'visualizar', 'regional'] %}
+        {% set navbar_home_endpoint = 'main.admin_dashboard' %}
+      {% endif %}
+    {% endif %}
     <div id="sidebarOverlay" class="sidebar-overlay"></div>
 
     <nav class="navbar navbar-expand-lg navbar-light fixed-top shadow-sm">
@@ -124,7 +134,7 @@
 
         <a
           class="navbar-brand d-flex align-items-center gap-2 me-auto"
-          href="{{ url_for('main.dashboard') }}"
+          href="{{ url_for(navbar_home_endpoint) }}"
         >
           <!-- <img src="{{ url_for('static', filename='img/logo_oceano_azul_' ~ (tema_escolhido if tema_escolhido else 'light') ~ '.png') }}" alt="Logo Oceano Azul"> -->
           <img
@@ -194,11 +204,23 @@
     {% if current_user.is_authenticated %}
     <div class="app-wrapper">
       <div class="app-sidebar d-flex flex-column" id="appSidebar">
+        {% set sidebar_dashboard_endpoint = 'main.dashboard' %}
+        {% set sidebar_dashboard_active = request.endpoint == 'main.dashboard' %}
+        {% if current_user.tipo_usuario == 'piloto' %}
+          {% set sidebar_dashboard_endpoint = 'main.piloto_os' %}
+          {% set sidebar_dashboard_active = request.endpoint == 'main.piloto_os' %}
+        {% elif current_user.tipo_usuario == 'equipe_uvis' %}
+          {% set sidebar_dashboard_endpoint = 'main.dashboard_equipe_uvis' %}
+          {% set sidebar_dashboard_active = request.endpoint == 'main.dashboard_equipe_uvis' %}
+        {% elif current_user.tipo_usuario in ['admin', 'operario', 'visualizar', 'regional'] %}
+          {% set sidebar_dashboard_endpoint = 'main.admin_dashboard' %}
+          {% set sidebar_dashboard_active = request.endpoint == 'main.admin_dashboard' %}
+        {% endif %}
         <ul class="nav flex-column flex-grow-1">
           <li class="nav-item">
             <a
-              class="nav-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}"
-              href="{{ url_for('main.dashboard') }}"
+              class="nav-link {% if sidebar_dashboard_active %}active{% endif %}"
+              href="{{ url_for(sidebar_dashboard_endpoint) }}"
             >
               <i class="bi bi-grid-fill me-2"></i><span>Dashboard</span>
             </a>
@@ -220,6 +242,22 @@
               href="{{ url_for('main.piloto_os_historico') }}"
             >
               <i class="bi bi-clock-history me-2"></i><span>Histórico OS</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint == 'main.agenda' %}active{% endif %}"
+              href="{{ url_for('main.agenda') }}"
+            >
+              <i class="bi bi-calendar-event-fill me-2"></i><span>Agenda</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint == 'main.piloto_dosagem' %}active{% endif %}"
+              href="{{ url_for('main.piloto_dosagem') }}"
+            >
+              <i class="bi bi-calculator-fill me-2"></i><span>Dosagem</span>
             </a>
           </li>
           {% elif current_user.tipo_usuario == 'uvis' %}
