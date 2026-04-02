@@ -164,52 +164,127 @@
 <div class="container-fluid py-4 piloto-dosagem-page" style="max-width: 1280px;">
   <div class="piloto-dosagem-hero mb-4">
     <span class="piloto-dosagem-eyebrow">
-      <i class="bi bi-calculator-fill"></i>Consulta tecnica
+      <i class="bi bi-calculator-fill"></i>{% if os_context %}Planejamento da OS{% else %}Consulta tecnica{% endif %}
     </span>
-    <h2 class="m-0 mb-2">Consulta de Dosagem do Piloto</h2>
+    <h2 class="m-0 mb-2">
+      {% if os_context %}
+      Planejamento de Dosagem da OS #{{ os_context.id }}
+      {% else %}
+      Consulta de Dosagem do Piloto
+      {% endif %}
+    </h2>
     <p>
+      {% if os_context %}
+      Faça aqui o calculo previo da dosagem para definir a quantidade planejada de produto antes do servico.
+      O formulario da OS deve registrar apenas o que foi realmente usado na execucao.
+      {% else %}
       Use esta tela para consultar as tabelas de referencia e calcular a dosagem antes do servico.
       No formulario da OS, mantenha registrado apenas o que foi realmente usado na execucao.
+      {% endif %}
     </p>
+    {% if os_context %}
+    <div class="d-flex gap-2 flex-wrap mt-3">
+      <a href="{{ url_for('main.piloto_os_formulario_view', os_id=os_context.id) }}" class="btn btn-light">
+        <i class="bi bi-clipboard2-check me-1"></i> Voltar para a OS
+      </a>
+      <a href="{{ url_for('main.piloto_os') }}" class="btn btn-outline-light">
+        <i class="bi bi-grid me-1"></i> Painel do piloto
+      </a>
+    </div>
+    {% endif %}
   </div>
 
   <div class="row g-3 mb-4">
-    <div class="col-md-4">
+    <div class="col-md-3">
       <div class="dosagem-kpi-card">
         <span class="dosagem-kpi-label">Mistura padrao</span>
         <div class="dosagem-kpi-value">{{ mistura_padrao }}</div>
         <div class="dosagem-kpi-note">Base considerada em todos os calculos desta consulta.</div>
       </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
       <div class="dosagem-kpi-card">
         <span class="dosagem-kpi-label">Cenarios cobertos</span>
         <div class="dosagem-kpi-value">Foco Aedes, Area Aedes e Area Culex</div>
         <div class="dosagem-kpi-note">Com geometria direta, retangular, circular, irregular e faixa marginal.</div>
       </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
       <div class="dosagem-kpi-card">
-        <span class="dosagem-kpi-label">Consulta atual</span>
-        <div class="dosagem-kpi-value">{{ piloto_nome or 'Piloto' }}</div>
-        <div class="dosagem-kpi-note">Esta tela nao salva nada. Ela serve como apoio antes do preenchimento da OS.</div>
+        <span class="dosagem-kpi-label">{% if os_context %}OS vinculada{% else %}Consulta atual{% endif %}</span>
+        <div class="dosagem-kpi-value">
+          {% if os_context %}
+          #{{ os_context.id }}
+          {% if os_context.data_agendada_label %} • {{ os_context.data_agendada_label }}{% endif %}
+          {% if os_context.hora_agendada_label %} • {{ os_context.hora_agendada_label }}{% endif %}
+          {% else %}
+          {{ piloto_nome or 'Piloto' }}
+          {% endif %}
+        </div>
+        <div class="dosagem-kpi-note">
+          {% if os_context %}
+          {{ os_context.tipo_operacao or 'Sem tipo de operacao' }}{% if os_context.tipo_visita %} | {{ os_context.tipo_visita }}{% endif %}
+          {% else %}
+          Esta tela pode ser usada como apoio geral antes do preenchimento da OS.
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="dosagem-kpi-card">
+        <span class="dosagem-kpi-label">Planejamento salvo</span>
+        <div class="dosagem-kpi-value">
+          {% if os_context %}
+          {{ os_context.planejado_em_label }}
+          {% else %}
+          Consulta livre
+          {% endif %}
+        </div>
+        <div class="dosagem-kpi-note">
+          {% if os_context %}
+          {% if calculo_dosagem_planejado %}Este planejamento alimenta o comparativo da OS.{% else %}Nenhum planejamento salvo ainda para esta OS.{% endif %}
+          {% else %}
+          Pela sidebar, a tela funciona apenas como consulta.
+          {% endif %}
+        </div>
       </div>
     </div>
   </div>
 
   <div class="alert dosagem-alert-soft mb-4">
     <i class="bi bi-info-circle-fill me-2"></i>
-    Se quiser, voce pode usar esta tela para planejar e depois preencher os dados reais dentro da OS.
+    {% if os_context %}
+    Salve aqui o planejamento antes do servico. Depois, no formulario da OS, preencha somente o realizado para manter o comparativo correto.
+    {% else %}
+    Esta consulta pela sidebar nao grava dados. Para salvar um planejamento, abra a dosagem a partir de uma OS especifica.
+    {% endif %}
   </div>
 
+  {% if os_context and not modo_visualizacao %}
+  <form method="post" novalidate>
+  {% endif %}
   <div class="dosagem-shell-card p-3 p-lg-4 mb-4">
     <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
       <div>
-        <div class="dosagem-kpi-label text-primary">Calculadora rapida</div>
-        <h5 class="mb-1 text-primary fw-bold">Dosagem para consulta</h5>
+        <div class="dosagem-kpi-label text-primary">{% if os_context %}Planejamento pre-servico{% else %}Calculadora rapida{% endif %}</div>
+        <h5 class="mb-1 text-primary fw-bold">{% if os_context %}Planejar dosagem da OS{% else %}Dosagem para consulta{% endif %}</h5>
         <p class="text-muted small mb-0">Escolha o cenario, informe a medida e veja a recomendacao de carga, calda, tempo e configuracao do drone.</p>
       </div>
+      {% if os_context %}
+      <span class="badge {% if modo_visualizacao %}bg-secondary-subtle text-secondary{% else %}bg-primary-subtle text-primary{% endif %}">
+        {% if modo_visualizacao %}OS concluida: consulta somente{% else %}OS #{{ os_context.id }}{% endif %}
+      </span>
+      {% endif %}
     </div>
+
+    {% if os_context and not modo_visualizacao %}
+    <input
+      type="hidden"
+      name="calculo_dosagem_planejado"
+      id="calculo_dosagem_planejado"
+      value="{{ calculo_dosagem_planejado_json if calculo_dosagem_planejado_json else '' }}"
+    />
+    {% endif %}
 
     <div class="row g-3">
       <div class="col-md-4">
@@ -297,7 +372,25 @@
         </div>
       </div>
     </div>
+
+    {% if os_context and not modo_visualizacao %}
+    <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap mt-4 pt-3 border-top">
+      <div class="small text-muted" id="dosagem_save_hint">
+        Calcule a dosagem para habilitar o salvamento do planejamento desta OS.
+      </div>
+      <button type="submit" class="btn btn-primary" id="btn_salvar_planejamento" disabled>
+        <i class="bi bi-save me-1"></i> Salvar planejamento da OS
+      </button>
+    </div>
+    {% elif os_context and modo_visualizacao %}
+    <div class="small text-muted mt-3">
+      Esta OS ja foi concluida. O planejamento salvo continua disponivel apenas para consulta.
+    </div>
+    {% endif %}
   </div>
+  {% if os_context and not modo_visualizacao %}
+  </form>
+  {% endif %}
 
   <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-3">
     <div>
@@ -377,12 +470,16 @@
 {% block scripts %}
 <script>
 document.addEventListener("DOMContentLoaded", () => {
+  const storageInput = document.getElementById("calculo_dosagem_planejado");
+  const saveButton = document.getElementById("btn_salvar_planejamento");
+  const saveHint = document.getElementById("dosagem_save_hint");
   const scenarioEl = document.getElementById("calc_cenario");
   const modeEl = document.getElementById("calc_modo_medicao");
   const directWrap = document.getElementById("calc_valor_direto_wrap");
   const directLabel = document.getElementById("calc_valor_direto_label");
   const directInput = document.getElementById("calc_valor_direto");
   const formulaHint = document.getElementById("calc_formula_hint");
+  const initialCalcData = {{ calculo_dosagem_planejado | tojson | safe }};
 
   const extraInputs = {
     comprimento_m: document.getElementById("calc_comprimento_m"),
@@ -413,6 +510,12 @@ document.addEventListener("DOMContentLoaded", () => {
     ponta: document.getElementById("calc_resultado_ponta"),
     hardware: document.getElementById("calc_resultado_hardware"),
     lha: document.getElementById("calc_resultado_lha"),
+  };
+
+  const contextInfo = {
+    tipo_operacao: {{ (os_context.tipo_operacao if os_context else "") | tojson | safe }},
+    tipo_visita: {{ (os_context.tipo_visita if os_context else "") | tojson | safe }},
+    foco: {{ (os_context.foco if os_context else "") | tojson | safe }},
   };
 
   const scenarioConfigs = {
@@ -492,6 +595,8 @@ document.addEventListener("DOMContentLoaded", () => {
     },
   };
 
+  let currentPayload = null;
+
   function parseNumber(value) {
     if (value === null || value === undefined) return null;
     let text = String(value).trim();
@@ -526,6 +631,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (element) element.classList.toggle("d-none", !visible);
   }
 
+  function setSaveState(enabled, message) {
+    if (saveButton) saveButton.disabled = !enabled;
+    if (saveHint && message) saveHint.textContent = message;
+  }
+
   function resetResults(message) {
     resultEls.medida.textContent = "-";
     resultEls.resumo.textContent = message || "Informe a area ou o volume para gerar a consulta.";
@@ -536,6 +646,9 @@ document.addEventListener("DOMContentLoaded", () => {
     resultEls.ponta.textContent = "-";
     resultEls.hardware.textContent = "Bicos, vazao, pressao e faixa aparecem aqui.";
     resultEls.lha.textContent = "-";
+    currentPayload = null;
+    if (storageInput) storageInput.value = "";
+    setSaveState(false, saveButton ? "Calcule a dosagem para habilitar o salvamento do planejamento desta OS." : "");
   }
 
   function updateModeOptions() {
@@ -592,6 +705,34 @@ document.addEventListener("DOMContentLoaded", () => {
     return fields.every((fieldName) => values[fieldName] !== null && values[fieldName] > 0);
   }
 
+  function buildPayload(config, modeConfig, values, baseValue, result) {
+    return {
+      version: 1,
+      cenario: scenarioEl.value,
+      cenario_label: config.label,
+      contexto: contextInfo,
+      medicao: {
+        modo: modeEl.value,
+        modo_label: modeConfig.label,
+        medida_label: config.directLabel,
+        valor_base: Number(baseValue.toFixed(4)),
+        unidade_base: config.unit,
+        resumo: `${config.directLabel}: ${formatNumber(baseValue, 2)} ${config.unit}`,
+        formula_hint: modeConfig.hint,
+        campos: {
+          valor_direto: values.valor_direto,
+          comprimento_m: values.comprimento_m,
+          largura_m: values.largura_m,
+          altura_agua_m: values.altura_agua_m,
+          raio_m: values.raio_m,
+          largura_media_m: values.largura_media_m,
+          margens: values.margens,
+        },
+      },
+      resultado: result,
+    };
+  }
+
   function calculate() {
     const config = scenarioConfigs[scenarioEl.value];
     const modeConfig = config ? config.modes[modeEl.value] : null;
@@ -616,16 +757,64 @@ document.addEventListener("DOMContentLoaded", () => {
     const caldaTotalMl = cargaBti * 20;
     const hardware = config.hardware(baseValue);
     const tempoSegundos = (caldaTotalMl / hardware.vazao_ml_min) * 60;
+    const result = {
+      descricao_produto: "BTI",
+      formulacao_produto: "Granulo dispersivel",
+      dosagem_g_10l: "500",
+      tipo_aplicacao: config.tipoAplicacao,
+      carga_bti_g: Number(cargaBti.toFixed(2)),
+      calda_total_ml: Number(caldaTotalMl.toFixed(2)),
+      calda_total_label: formatMlLabel(caldaTotalMl),
+      tempo_aplicacao_segundos: Number(tempoSegundos.toFixed(2)),
+      tempo_aplicacao_label: formatDuration(tempoSegundos),
+      pulverizacao_area_l_ha: config.lha,
+      ponta_pulverizacao: hardware.ponta,
+      numero_bicos: hardware.numero_bicos,
+      vazao_bicos_ml_min: hardware.vazao_ml_min,
+      dose_bti_g_min: hardware.dose_bti_g_min,
+      pressao_bar: hardware.pressao_bar,
+      faixa_aplicacao_m: hardware.faixa_aplicacao_m,
+      tamanho_gotas_dmv: hardware.tamanho_gotas_dmv,
+    };
+    currentPayload = buildPayload(config, modeConfig, values, baseValue, result);
+    if (storageInput) storageInput.value = JSON.stringify(currentPayload);
 
     resultEls.medida.textContent = `${formatNumber(baseValue, 2)} ${config.unit}`;
-    resultEls.resumo.textContent = `${config.directLabel}: ${formatNumber(baseValue, 2)} ${config.unit}`;
-    resultEls.carga.textContent = `${formatNumber(cargaBti, 2)} g de BTI`;
-    resultEls.calda.textContent = `Calda recomendada: ${formatMlLabel(caldaTotalMl)}`;
-    resultEls.tempo.textContent = formatDuration(tempoSegundos);
-    resultEls.tipo.textContent = `Tipo de aplicacao: ${config.tipoAplicacao}`;
+    resultEls.resumo.textContent = currentPayload.medicao.resumo;
+    resultEls.carga.textContent = `${formatNumber(result.carga_bti_g, 2)} g de BTI`;
+    resultEls.calda.textContent = `Calda recomendada: ${result.calda_total_label}`;
+    resultEls.tempo.textContent = result.tempo_aplicacao_label;
+    resultEls.tipo.textContent = `Tipo de aplicacao: ${result.tipo_aplicacao}`;
     resultEls.ponta.textContent = hardware.ponta;
     resultEls.hardware.textContent = `${hardware.numero_bicos} bicos | ${formatNumber(hardware.vazao_ml_min, 0)} mL/min | ${formatNumber(hardware.pressao_bar, 1)} bar | faixa ${formatNumber(hardware.faixa_aplicacao_m, 1)} m`;
     resultEls.lha.textContent = config.lha === null ? "Nao se aplica" : `${formatNumber(config.lha, 2)} l/ha`;
+    setSaveState(!!storageInput, saveButton ? "Planejamento pronto para ser salvo nesta OS." : "");
+  }
+
+  function restoreInitialPayload(payload) {
+    if (!payload || !payload.cenario || !scenarioConfigs[payload.cenario]) {
+      updateModeOptions();
+      return;
+    }
+
+    scenarioEl.value = payload.cenario;
+    updateModeOptions();
+
+    const savedMode = payload.medicao?.modo;
+    if (savedMode && scenarioConfigs[payload.cenario].modes[savedMode]) {
+      modeEl.value = savedMode;
+    }
+    updateMeasurementFields();
+
+    const campos = payload.medicao?.campos || {};
+    directInput.value = campos.valor_direto ?? payload.medicao?.valor_base ?? "";
+    if (extraInputs.comprimento_m) extraInputs.comprimento_m.value = campos.comprimento_m ?? "";
+    if (extraInputs.largura_m) extraInputs.largura_m.value = campos.largura_m ?? "";
+    if (extraInputs.altura_agua_m) extraInputs.altura_agua_m.value = campos.altura_agua_m ?? "";
+    if (extraInputs.raio_m) extraInputs.raio_m.value = campos.raio_m ?? "";
+    if (extraInputs.largura_media_m) extraInputs.largura_media_m.value = campos.largura_media_m ?? "";
+    if (extraInputs.margens) extraInputs.margens.value = campos.margens ?? "";
+    calculate();
   }
 
   scenarioEl.addEventListener("change", () => {
@@ -642,7 +831,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (input) input.addEventListener("input", calculate);
   });
 
-  updateModeOptions();
+  restoreInitialPayload(initialCalcData);
+  if (!initialCalcData) {
+    updateModeOptions();
+  }
 });
 </script>
 {% endblock %}
