@@ -324,6 +324,131 @@
     background: linear-gradient(180deg, #fcfdff 0%, #f5f9fd 100%);
     box-shadow: var(--shadow-sm);
   }
+  .dosagem-section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+  .dosagem-section-head p {
+    margin-bottom: 0;
+    max-width: 54rem;
+    color: #5f7086;
+    font-size: 0.93rem;
+    line-height: 1.55;
+  }
+  .dosagem-helper-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.9rem;
+    margin-bottom: 1.1rem;
+  }
+  .dosagem-helper-card {
+    border: 1px solid #dbe7f3;
+    border-radius: 0.95rem;
+    background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
+    padding: 0.95rem 1rem;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
+  }
+  .dosagem-helper-title {
+    display: block;
+    margin-bottom: 0.35rem;
+    color: #6a7b91;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .dosagem-helper-value {
+    color: #123861;
+    font-size: 1rem;
+    font-weight: 800;
+    line-height: 1.35;
+  }
+  .dosagem-helper-note {
+    margin-top: 0.35rem;
+    color: #61748a;
+    font-size: 0.84rem;
+    line-height: 1.45;
+  }
+  .dosagem-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
+    gap: 1rem;
+    align-items: start;
+  }
+  .dosagem-stack {
+    display: grid;
+    gap: 1rem;
+  }
+  .dosagem-planning-card {
+    border: 1px solid #dbe7f3;
+    border-radius: 1rem;
+    background: #ffffff;
+    padding: 1rem 1.05rem;
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.05);
+  }
+  .dosagem-planning-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 0.9rem;
+  }
+  .dosagem-planning-head h6 {
+    margin-bottom: 0.25rem;
+    color: #123861;
+    font-weight: 800;
+  }
+  .dosagem-planning-head p {
+    margin-bottom: 0;
+    color: #62758a;
+    font-size: 0.88rem;
+    line-height: 1.5;
+  }
+  .dosagem-planning-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.85rem;
+  }
+  .dosagem-field-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.9rem;
+  }
+  .dosagem-field-grid .field-span-2 {
+    grid-column: span 2;
+  }
+  .dosagem-field-card {
+    border: 1px solid #dce6f1;
+    border-radius: 0.95rem;
+    background: #ffffff;
+    padding: 0.95rem;
+    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.04);
+  }
+  .dosagem-field-card .form-control,
+  .dosagem-field-card .form-select {
+    min-height: 46px;
+  }
+  .dosagem-field-hint {
+    margin-top: 0.45rem;
+    color: #66788e;
+    font-size: 0.82rem;
+    line-height: 1.45;
+  }
+  .dosagem-compare-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin: 1.2rem 0 0.95rem;
+  }
+  .dosagem-compare-header p {
+    margin-bottom: 0;
+    color: #61748a;
+    font-size: 0.88rem;
+  }
   .dosagem-summary-card,
   .dosagem-compare-card {
     height: 100%;
@@ -422,6 +547,9 @@
     .os-media-card-header {
       flex-direction: column;
     }
+    .dosagem-layout {
+      grid-template-columns: 1fr;
+    }
     .dosagem-panel .d-flex.justify-content-between {
       flex-direction: column;
       align-items: stretch !important;
@@ -464,6 +592,18 @@
     }
     .os-media-summary-grid {
       grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+    }
+    .dosagem-field-grid {
+      grid-template-columns: 1fr;
+    }
+    .dosagem-field-grid .field-span-2 {
+      grid-column: auto;
+    }
+    .dosagem-section-head,
+    .dosagem-planning-head,
+    .dosagem-compare-header {
+      flex-direction: column;
+      align-items: stretch;
     }
   }
 
@@ -543,7 +683,7 @@
         </div>
 
         <div class="row g-3 mb-4">
-          <div class="col-md-4">
+          <div class="dosagem-field-card field-span-2">
             <label class="form-label-header">Uvis</label>
             <input type="text" class="form-control bg-light" value="{{ uvis_nome }}" readonly />
           </div>
@@ -551,7 +691,7 @@
             <label class="form-label-header">Endereço</label>
             <input type="text" class="form-control bg-light" value="{{ endereco_os }}" readonly />
           </div>
-          <div class="col-md-4">
+          <div class="dosagem-field-card field-span-2">
             <label class="form-label-header">Respondido por</label>
             <input type="text" name="respondido_por" class="form-control" value="{{ (ordem.respondido_por if ordem and ordem.respondido_por else respondido_por_padrao) }}" />
           </div>
@@ -740,23 +880,18 @@
 
         <hr class="opacity-25 my-4" />
 
-        {# ===================== PLANEJAMENTO DE DOSAGEM ===================== #}
+        {# ===================== DOSAGEM E PARAMETROS ===================== #}
         <div class="section-title">
-          <h5 class="m-0 text-primary fw-bold">Planejamento de Dosagem</h5>
-        </div>
-
-        <div class="alert alert-warning border-0 shadow-sm">
-          <i class="bi bi-exclamation-circle me-1"></i>
-          O calculo previo da dosagem fica fora do formulario. Use a tela de planejamento da OS para definir a quantidade prevista antes do servico e registre aqui apenas o que foi realmente usado.
+          <h5 class="m-0 text-primary fw-bold">Dosagem e Parametros de Aplicacao</h5>
         </div>
 
         <div class="dosagem-panel p-3 p-lg-4 mb-4">
-          <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+          <div class="dosagem-section-head">
             <div>
-              <div class="form-label-header text-primary">Preparacao da mistura</div>
-              <h6 class="mb-1 text-primary fw-bold">Planejamento antes da aplicacao</h6>
-              <p class="text-muted small mb-0">
-                Base da planilha: 500 g de BTI WDG para 10 L de agua. O planejamento fica em tela separada para nao misturar previsao com realizado.
+              <div class="form-label-header text-primary">Leitura rapida</div>
+              <h6 class="mb-1 text-primary fw-bold">Planejamento salvo e registro do que foi realmente aplicado</h6>
+              <p>
+                A base da planilha continua a mesma: <strong>500 g de BTI WDG para 10 L de agua</strong>, equivalente a <strong>50 g por litro de calda</strong>. Nesta area voce confere o planejamento, informa o realizado e usa a comparacao automatica como conferencia final.
               </p>
             </div>
             {% if current_user.tipo_usuario == 'piloto' %}
@@ -766,96 +901,111 @@
             {% endif %}
           </div>
 
-          <div class="row g-3 mb-3">
-            <div class="col-md-4">
-              <label class="form-label-header">Tipo operacao da solicitacao</label>
-              <input type="text" class="form-control bg-light" value="{{ solicitacao.tipo_operacao or '-' }}" readonly />
+          <div class="dosagem-helper-grid">
+            <div class="dosagem-helper-card">
+              <span class="dosagem-helper-title">Mistura base</span>
+              <div class="dosagem-helper-value">500 g em 10 L</div>
+              <div class="dosagem-helper-note">Concentracao de referencia trazida da planilha de calculo.</div>
             </div>
-            <div class="col-md-4">
-              <label class="form-label-header">Tipo visita da solicitacao</label>
-              <input type="text" class="form-control bg-light" value="{{ solicitacao.tipo_visita or '-' }}" readonly />
+            <div class="dosagem-helper-card">
+              <span class="dosagem-helper-title">Concentracao equivalente</span>
+              <div class="dosagem-helper-value">50 g por litro</div>
+              <div class="dosagem-helper-note">Ajuda a interpretar a dosagem informada no campo em g/10L.</div>
             </div>
-            <div class="col-md-4">
-              <label class="form-label-header">Ultimo calculo salvo</label>
-              <input
-                type="text"
-                class="form-control bg-light"
-                value="{{ ordem.calculo_dosagem_planejado_em.strftime('%d/%m/%Y %H:%M') if ordem and ordem.calculo_dosagem_planejado_em else 'Nao salvo' }}"
-                readonly
-              />
+            <div class="dosagem-helper-card">
+              <span class="dosagem-helper-title">Formula do comparativo</span>
+              <div class="dosagem-helper-value">dosagem x calda / 10.000</div>
+              <div class="dosagem-helper-note">Assim o sistema estima a carga real de BTI e compara com o planejamento salvo.</div>
             </div>
           </div>
 
-          {% if calculo_dosagem_planejado %}
-          <div class="row g-3">
-            <div class="col-md-6">
-              <div class="dosagem-compare-card">
-                <span class="dosagem-compare-label">Cenario e medicao planejados</span>
-                <div class="dosagem-compare-planned">{{ calculo_dosagem_planejado.cenario_label or '-' }}</div>
-                <div class="dosagem-compare-actual">{{ calculo_dosagem_planejado.medicao.resumo or '-' }}</div>
-                <div class="dosagem-compare-diff is-positive">{{ calculo_dosagem_planejado.medicao.formula_hint or '-' }}</div>
+          <div class="dosagem-planning-card">
+            <div class="dosagem-planning-head">
+              <div>
+                <div class="form-label-header text-primary">Planejamento salvo</div>
+                <h6>Resumo da referencia desta OS</h6>
+                <p>Essa leitura serve como guia para preencher os campos realizados e entender de onde veio cada numero.</p>
               </div>
+              <span class="badge bg-primary-subtle text-primary">
+                {{ ordem.calculo_dosagem_planejado_em.strftime('%d/%m/%Y %H:%M') if ordem and ordem.calculo_dosagem_planejado_em else 'Nao salvo' }}
+              </span>
             </div>
-            <div class="col-md-6">
-              <div class="dosagem-compare-card">
-                <span class="dosagem-compare-label">Carga e calda planejadas</span>
-                <div class="dosagem-compare-planned">{{ calculo_dosagem_planejado.resultado.carga_bti_g or '-' }} g de BTI</div>
-                <div class="dosagem-compare-actual">{{ calculo_dosagem_planejado.resultado.calda_total_label or '-' }}</div>
-                <div class="dosagem-compare-diff is-neutral">{{ calculo_dosagem_planejado.resultado.tempo_aplicacao_label or '-' }}</div>
+
+            <div class="dosagem-planning-grid">
+              <div class="dosagem-summary-card">
+                <span class="dosagem-summary-label">Contexto da OS</span>
+                <div class="dosagem-summary-value">{{ solicitacao.foco or '-' }}</div>
+                <div class="dosagem-summary-note">{{ endereco_os or '-' }}</div>
               </div>
-            </div>
-            <div class="col-md-6">
-              <div class="dosagem-compare-card">
-                <span class="dosagem-compare-label">Tipo e ponta planejados</span>
-                <div class="dosagem-compare-planned">{{ calculo_dosagem_planejado.resultado.tipo_aplicacao or '-' }}</div>
-                <div class="dosagem-compare-actual">{{ calculo_dosagem_planejado.resultado.ponta_pulverizacao or '-' }}</div>
-                <div class="dosagem-compare-diff is-neutral">
-                  {{ calculo_dosagem_planejado.resultado.numero_bicos or '-' }} bicos | {{ calculo_dosagem_planejado.resultado.vazao_bicos_ml_min or '-' }} mL/min
-                </div>
+              <div class="dosagem-summary-card">
+                <span class="dosagem-summary-label">Tipo visita</span>
+                <div class="dosagem-summary-value">{{ solicitacao.tipo_visita or '-' }}</div>
+                <div class="dosagem-summary-note">Operacao: {{ solicitacao.tipo_operacao or '-' }}</div>
               </div>
-            </div>
-            <div class="col-md-6">
-              <div class="dosagem-compare-card">
-                <span class="dosagem-compare-label">Endereco e foco da OS</span>
-                <div class="dosagem-compare-planned">{{ solicitacao.foco or '-' }}</div>
-                <div class="dosagem-compare-actual">{{ endereco_os or '-' }}</div>
-                <div class="dosagem-compare-diff is-neutral">Planejamento salvo antes da execucao.</div>
+
+              {% if calculo_dosagem_planejado %}
+              <div class="dosagem-summary-card">
+                <span class="dosagem-summary-label">Cenario e medicao</span>
+                <div class="dosagem-summary-value">{{ calculo_dosagem_planejado.cenario_label or '-' }}</div>
+                <div class="dosagem-summary-note">{{ calculo_dosagem_planejado.medicao.resumo or '-' }}</div>
               </div>
+              <div class="dosagem-summary-card">
+                <span class="dosagem-summary-label">Carga planejada</span>
+                <div class="dosagem-summary-value">{{ calculo_dosagem_planejado.resultado.carga_bti_g or '-' }} g</div>
+                <div class="dosagem-summary-note">{{ calculo_dosagem_planejado.resultado.calda_total_label or '-' }} | {{ calculo_dosagem_planejado.resultado.tempo_aplicacao_label or '-' }}</div>
+              </div>
+              <div class="dosagem-summary-card">
+                <span class="dosagem-summary-label">Dosagem prevista</span>
+                <div class="dosagem-summary-value">{{ calculo_dosagem_planejado.resultado.dosagem_g_10l or '-' }}</div>
+                <div class="dosagem-summary-note">Valor esperado para o campo de dosagem realizada.</div>
+              </div>
+              <div class="dosagem-summary-card">
+                <span class="dosagem-summary-label">Configuracao sugerida</span>
+                <div class="dosagem-summary-value">{{ calculo_dosagem_planejado.resultado.ponta_pulverizacao or '-' }}</div>
+                <div class="dosagem-summary-note">{{ calculo_dosagem_planejado.resultado.numero_bicos or '-' }} bicos | {{ calculo_dosagem_planejado.resultado.vazao_bicos_ml_min or '-' }} mL/min | {{ calculo_dosagem_planejado.resultado.pressao_bar or '-' }} bar</div>
+              </div>
+              <div class="dosagem-summary-card">
+                <span class="dosagem-summary-label">Leitura da formula</span>
+                <div class="dosagem-summary-value">{{ calculo_dosagem_planejado.medicao.formula_hint or '-' }}</div>
+                <div class="dosagem-summary-note">Use esta leitura para confirmar se a medida usada bate com o foco ou a area atendida.</div>
+              </div>
+              {% else %}
+              <div class="dosagem-summary-card">
+                <span class="dosagem-summary-label">Planejamento</span>
+                <div class="dosagem-summary-value">Nao salvo</div>
+                <div class="dosagem-summary-note">Abra a tela de dosagem da OS para gerar a referencia antes da conferencia automatica.</div>
+              </div>
+              {% endif %}
             </div>
           </div>
-          {% else %}
-          <div class="small text-muted">
-            Nenhum planejamento salvo ainda para esta OS.
-          </div>
-          {% endif %}
         </div>
 
         <hr class="opacity-25 my-4" />
 
         {# ===================== PRODUTO / PARÂMETROS ===================== #}
-        <div class="section-title">
-          <h5 class="m-0 text-primary fw-bold">Produto e Parametros Realizados</h5>
+        <div class="dosagem-compare-header">
+          <div>
+            <div class="form-label-header text-primary">Registro realizado</div>
+            <p>Preencha somente com o que foi usado no campo. O comparativo logo abaixo usa esses valores para estimar a carga real aplicada.</p>
+          </div>
+          <span class="badge bg-primary-subtle text-primary">Campos executados</span>
         </div>
 
-        <div class="alert alert-info border-0 shadow-sm">
-          <i class="bi bi-check2-square me-1"></i>
-          Estes campos devem refletir o que foi realmente usado na execucao. Use o planejamento salvo apenas como referencia para a conferencia posterior.
-        </div>
-
-        <div class="row g-3 mb-4">
-          <div class="col-md-4">
+        <div class="dosagem-field-grid mb-4">
+          <div class="dosagem-field-card">
             <label class="form-label-header">Descricao produto</label>
             <input type="text" name="descricao_produto" class="form-control" value="{{ ordem.descricao_produto if ordem else 'BTI' }}" />
           </div>
-          <div class="col-md-4">
+          <div class="dosagem-field-card">
             <label class="form-label-header">Formulacao</label>
             <input type="text" name="formulacao_produto" class="form-control" value="{{ ordem.formulacao_produto if ordem else 'Granulo dispersivel' }}" />
           </div>
-          <div class="col-md-4">
+          <div class="dosagem-field-card">
             <label class="form-label-header">Dosagem (g/10L)</label>
             <input type="text" name="dosagem_g_10l" class="form-control" value="{{ ordem.dosagem_g_10l if ordem else '' }}" />
+            <div class="dosagem-field-hint">Exemplo: 500 significa 500 g de BTI para cada 10 L de calda.</div>
           </div>
-          <div class="col-md-4">
+          <div class="dosagem-field-card">
               <label class="form-label-header">Tipo aplicacao</label>
               <input type="text" name="tipo_aplicacao" list="lista_tipos_aplicacao" class="form-control" 
                     value="{{ ordem.tipo_aplicacao if (ordem and ordem.tipo_aplicacao) else '' }}" 
@@ -866,16 +1016,18 @@
                   <option value="Pulverização de foco (liq)">
               </datalist>
           </div>
-          <div class="col-md-4">
+          <div class="dosagem-field-card">
             <label class="form-label-header">Qtd Administrada (ml)</label>
             <input type="number" step="0.01" name="quantidade_produto_administrada_ml" class="form-control" value="{{ ordem.quantidade_produto_administrada_ml if ordem else '' }}" />
+            <div class="dosagem-field-hint">Informe o volume real de calda ou produto aplicado na execucao.</div>
           </div>
-          <div class="col-md-4">
+          <div class="dosagem-field-card">
             <label class="form-label-header">Pulverizacao Area (l/ha)</label>
             <input type="number" step="0.01" name="pulverizacao_area_l_ha" class="form-control" value="{{ ordem.pulverizacao_area_l_ha if ordem else '10' }}" />
+            <div class="dosagem-field-hint">Quando o cenario for de foco, este campo nao entra no comparativo de area.</div>
           </div>
-          <div class="col-md-4">
-              <label class="form-label-header">Ponta de Pulverização</label>
+          <div class="dosagem-field-card field-span-2">
+              <label class="form-label-header">Ponta de Pulverizacao</label>
               <input type="text" name="ponta_pulverizacao" list="lista_pontas" class="form-control" 
                     value="{{ ordem.ponta_pulverizacao if (ordem and ordem.ponta_pulverizacao) else '' }}" 
                     placeholder="Selecione ou digite a ponta...">
@@ -884,17 +1036,15 @@
                   <option value="TXA8001">
                   <option value="TX11001">
               </datalist>
+              <div class="dosagem-field-hint">A conferencia automatica destaca se a ponta usada ficou alinhada com a configuracao planejada.</div>
           </div>
         </div>
 
         <div class="dosagem-panel p-3 p-lg-4 mb-4">
-          <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+          <div class="dosagem-compare-header">
             <div>
-              <div class="form-label-header text-primary">Comparativo</div>
-              <h6 class="mb-1 text-primary fw-bold">Planejado x Realizado</h6>
-              <p class="text-muted small mb-0">
-                O sistema compara o planejamento com os campos realizados para facilitar a conferencia depois da operacao.
-              </p>
+              <div class="form-label-header text-primary">Comparacao automatica</div>
+              <p>O sistema compara o planejamento com os campos realizados para facilitar a conferencia depois da operacao.</p>
             </div>
             <span class="badge bg-primary-subtle text-primary">Comparacao automatica</span>
           </div>
@@ -1840,8 +1990,50 @@ document.addEventListener("DOMContentLoaded", () => {
     element.classList.add(`is-${tone || "neutral"}`);
   }
 
+  function getPlannedDosagem(planned) {
+    const explicitDosagem = extractNumber(planned?.dosagem_g_10l);
+    if (explicitDosagem !== null) {
+      return explicitDosagem;
+    }
+
+    const cargaPlanejada = parseNumber(planned?.carga_bti_g);
+    const caldaPlanejadaMl = parseNumber(planned?.calda_total_ml);
+    if (cargaPlanejada === null || caldaPlanejadaMl === null || caldaPlanejadaMl <= 0) {
+      return null;
+    }
+
+    return (cargaPlanejada * 10000) / caldaPlanejadaMl;
+  }
+
+  let legacyDosagemNormalized = false;
+
+  function maybeNormalizeLegacyDosagemOnce(planned) {
+    if (legacyDosagemNormalized) {
+      return;
+    }
+    legacyDosagemNormalized = true;
+
+    if (!actualEls.dosagem_g_10l) {
+      return;
+    }
+
+    const plannedDosagem = getPlannedDosagem(planned);
+    const plannedCarga = parseNumber(planned?.carga_bti_g);
+    const actualDosagem = extractNumber(actualEls.dosagem_g_10l.value);
+
+    if (plannedDosagem === null || plannedCarga === null || actualDosagem === null) {
+      return;
+    }
+
+    // Corrige registros/copias antigas que preencheram g/10L com a carga total planejada.
+    if (Math.abs(actualDosagem - plannedCarga) < 0.05 && Math.abs(actualDosagem - plannedDosagem) > 0.05) {
+      actualEls.dosagem_g_10l.value = String(Number(plannedDosagem.toFixed(2))).replace(".", ",");
+    }
+  }
+
   function updateComparison() {
     const planned = plannedPayload ? plannedPayload.resultado || {} : {};
+    maybeNormalizeLegacyDosagemOnce(planned);
     const actualDosagem = extractNumber(actualEls.dosagem_g_10l?.value);
     const actualCaldaMl = parseNumber(actualEls.quantidade_produto_administrada_ml?.value);
     const actualCarga = actualDosagem !== null && actualCaldaMl !== null
