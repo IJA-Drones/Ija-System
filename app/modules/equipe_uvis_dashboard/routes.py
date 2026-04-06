@@ -26,4 +26,5 @@ def register_routes(bp):
             flash(exc.message, exc.category)
             return redirect(url_for(exc.redirect_endpoint))
 
+        context["pagination_args"] = {k: v for k, v in request.args.items() if k != "page"}
         return render_template("dashboard_equipe_uvis.html", **context)

@@ -26,6 +26,7 @@ def register_routes(bp):
             return redirect(url_for("main.admin_dashboard"))
 
         context = build_dashboard_context(current_user, request.args, google_maps_key)
+        context["pagination_args"] = {k: v for k, v in request.args.items() if k != "page"}
         return render_template("dashboard.html", **context)
 
     @bp.route("/uvis/historico-os", methods=["GET"], endpoint="uvis_historico_os")

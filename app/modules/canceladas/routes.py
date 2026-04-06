@@ -34,4 +34,5 @@ def register_routes(bp):
             "dashboard_canceladas.html",
             solicitacoes=paginacao.items,
             paginacao=paginacao,
+            pagination_args={k: v for k, v in request.args.items() if k != "page"},
         )
