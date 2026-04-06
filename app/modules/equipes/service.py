@@ -7,7 +7,7 @@ from openpyxl.utils import get_column_letter
 
 from app.extensions import db
 from app.models import Equipe, EquipePiloto, Pilotos
-from app.shared.access import normalize_role
+from app.shared.access import apply_prefeitura_scope, normalize_role
 
 
 REGIOES = ("CENTRO", "CENTRO-OESTE", "LESTE", "NORTE", "OESTE", "SUL", "SUDESTE")
@@ -35,11 +35,14 @@ def is_truthy(value: str) -> bool:
     return (value or "").strip().lower() in ATIVA_TRUE_VALUES
 
 
-def get_pilotos_ordered():
-    return Pilotos.query.order_by(Pilotos.nome_piloto.asc()).all()
+def get_pilotos_ordered(user=None):
+    query = Pilotos.query
+    if user is not None:
+        query = apply_prefeitura_scope(query, user, Pilotos.prefeitura_id)
+    return query.order_by(Pilotos.nome_piloto.asc()).all()
 
 
-def find_piloto_conflict(piloto_id: int, exclude_equipe_id=None):
+def find_piloto_conflict(piloto_id: int, exclude_equipe_id=None, user=None):
     query = EquipePiloto.query.filter(EquipePiloto.piloto_id == piloto_id)
     if exclude_equipe_id is not None:
         query = query.filter(EquipePiloto.equipe_id != exclude_equipe_id)
@@ -48,11 +51,24 @@ def find_piloto_conflict(piloto_id: int, exclude_equipe_id=None):
     if not vinculo:
         return None, None
 
-    equipe = Equipe.query.get(vinculo.equipe_id)
+    equipe_query = Equipe.query
+    if user is not None:
+        equipe_query = apply_prefeitura_scope(equipe_query, user, Equipe.prefeitura_id)
+    equipe = equipe_query.filter(Equipe.id == vinculo.equipe_id).first()
     return vinculo, equipe
 
 
-def build_equipes_query(tipo: str, regiao: str, ativa: str, piloto_id: str, auxiliar_id: str, q: str, sort: str, user_regiao: str):
+def build_equipes_query(
+    tipo: str,
+    regiao: str,
+    ativa: str,
+    piloto_id: str,
+    auxiliar_id: str,
+    q: str,
+    sort: str,
+    user_regiao: str,
+    user=None,
+):
     tipo = normalize_role(tipo)
     regiao = (regiao or "").strip().upper()
     ativa = (ativa or "").strip().lower()
@@ -66,6 +82,8 @@ def build_equipes_query(tipo: str, regiao: str, ativa: str, piloto_id: str, auxi
         db.selectinload(Equipe.membros).selectinload(EquipePiloto.piloto),
         db.selectinload(Equipe.equipamentos),
     )
+    if user is not None:
+        query = apply_prefeitura_scope(query, user, Equipe.prefeitura_id)
 
     if tipo == "uvis":
         if not regiao:
@@ -73,7 +91,7 @@ def build_equipes_query(tipo: str, regiao: str, ativa: str, piloto_id: str, auxi
         else:
             query = query.filter(Equipe.regiao.ilike(regiao))
             query = query.filter(Equipe.ativa.is_(True))
-    elif tipo not in ["admin", "visualizar", "operario", "operador"]:
+    elif tipo not in ["admin", "visualizar", "operario", "operador", "prefeitura_admin"]:
         if user_regiao:
             query = query.filter(Equipe.regiao.ilike(user_regiao))
             regiao = user_regiao

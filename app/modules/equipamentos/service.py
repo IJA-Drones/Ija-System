@@ -2,39 +2,58 @@ from datetime import date, datetime
 
 from app.extensions import db
 from app.models import Baterias, Drones, Equipamentos, Equipe
+from app.shared.access import apply_prefeitura_scope
 
 
 MANUTENCAO_STATUS = "Em Manuten\u00e7\u00e3o"
 
 
-def list_equipamentos_dashboard():
+def list_equipamentos_dashboard(user=None):
+    query = Equipamentos.query
+    if user is not None:
+        query = apply_prefeitura_scope(query, user, Equipamentos.prefeitura_id)
     return {
-        "equipamentos": Equipamentos.query.order_by(Equipamentos.criado_em.desc()).all(),
-        "total_drones": Equipamentos.query.filter_by(tipo_equipamento="drones").count(),
-        "total_baterias": Equipamentos.query.filter_by(tipo_equipamento="baterias").count(),
-        "em_manutencao": Equipamentos.query.filter_by(status=MANUTENCAO_STATUS).count(),
+        "equipamentos": query.order_by(Equipamentos.criado_em.desc()).all(),
+        "total_drones": query.filter_by(tipo_equipamento="drones").count(),
+        "total_baterias": query.filter_by(tipo_equipamento="baterias").count(),
+        "em_manutencao": query.filter_by(status=MANUTENCAO_STATUS).count(),
     }
 
 
-def list_drones():
-    return Drones.query.all()
+def list_drones(user=None):
+    query = Drones.query
+    if user is not None:
+        query = apply_prefeitura_scope(query, user, Drones.prefeitura_id)
+    return query.all()
 
 
-def list_baterias():
-    return Baterias.query.all()
+def list_baterias(user=None):
+    query = Baterias.query
+    if user is not None:
+        query = apply_prefeitura_scope(query, user, Baterias.prefeitura_id)
+    return query.all()
 
 
-def list_active_equipes():
-    return Equipe.query.filter_by(ativa=True).order_by(Equipe.nome_equipe.asc()).all()
+def list_active_equipes(user=None):
+    query = Equipe.query.filter_by(ativa=True)
+    if user is not None:
+        query = apply_prefeitura_scope(query, user, Equipe.prefeitura_id)
+    return query.order_by(Equipe.nome_equipe.asc()).all()
 
 
-def list_drones_for_baterias():
-    return Drones.query.order_by(Drones.renomacao.asc()).all()
+def list_drones_for_baterias(user=None):
+    query = Drones.query
+    if user is not None:
+        query = apply_prefeitura_scope(query, user, Drones.prefeitura_id)
+    return query.order_by(Drones.renomacao.asc()).all()
 
 
-def list_equipamentos_manutencao():
+def list_equipamentos_manutencao(user=None):
+    query = Equipamentos.query
+    if user is not None:
+        query = apply_prefeitura_scope(query, user, Equipamentos.prefeitura_id)
     return (
-        Equipamentos.query
+        query
         .filter(Equipamentos.status == MANUTENCAO_STATUS)
         .order_by(Equipamentos.criado_em.desc())
         .all()
@@ -75,7 +94,7 @@ def _parse_optional_date(raw_value, *, error_message):
         raise ValueError(error_message) from exc
 
 
-def _validate_equipe_id(equipe_id_raw):
+def _validate_equipe_id(equipe_id_raw, *, user=None):
     if not equipe_id_raw:
         return None
 
@@ -84,14 +103,17 @@ def _validate_equipe_id(equipe_id_raw):
     except ValueError as exc:
         raise ValueError("Equipe invalida.") from exc
 
-    equipe = Equipe.query.filter_by(id=equipe_id, ativa=True).first()
+    query = Equipe.query.filter_by(id=equipe_id, ativa=True)
+    if user is not None:
+        query = apply_prefeitura_scope(query, user, Equipe.prefeitura_id)
+    equipe = query.first()
     if not equipe:
         raise ValueError("Equipe invalida.")
 
     return equipe_id
 
 
-def _validate_drone_id(drone_id_raw):
+def _validate_drone_id(drone_id_raw, *, user=None):
     if not drone_id_raw:
         return None
 
@@ -100,13 +122,16 @@ def _validate_drone_id(drone_id_raw):
     except ValueError as exc:
         raise ValueError("Drone invalido.") from exc
 
-    if not db.session.get(Drones, drone_id):
+    query = Drones.query.filter(Drones.id == drone_id)
+    if user is not None:
+        query = apply_prefeitura_scope(query, user, Drones.prefeitura_id)
+    if not query.first():
         raise ValueError("Drone invalido.")
 
     return drone_id
 
 
-def validate_drone_form(form_data, *, existing_drone=None):
+def validate_drone_form(form_data, *, existing_drone=None, user=None):
     errors = {}
 
     modelo = (form_data.get("modelo") or "").strip()
@@ -168,7 +193,7 @@ def validate_drone_form(form_data, *, existing_drone=None):
     equipe_id = None
     if equipe_id_raw:
         try:
-            equipe_id = _validate_equipe_id(equipe_id_raw)
+            equipe_id = _validate_equipe_id(equipe_id_raw, user=user)
         except ValueError as exc:
             errors["equipe_id"] = str(exc)
 
@@ -221,7 +246,7 @@ def validate_drone_form(form_data, *, existing_drone=None):
     return form, cleaned, errors
 
 
-def create_drone(cleaned_data):
+def create_drone(cleaned_data, *, prefeitura_id=None):
     drone = Drones(
         tipo_equipamento="drones",
         status=cleaned_data["status"],
@@ -232,6 +257,7 @@ def create_drone(cleaned_data):
         numero_serie=cleaned_data["numero_serie"],
         ultima_manutencao=cleaned_data["ultima_manutencao"],
         equipe_id=cleaned_data["equipe_id"],
+        prefeitura_id=prefeitura_id,
         registro_anatel=cleaned_data["registro_anatel"],
         registro_anac=cleaned_data["registro_anac"],
         pmd_kg=cleaned_data["pmd_kg"],
@@ -292,7 +318,7 @@ def send_drone_to_manutencao(drone):
     return True
 
 
-def validate_bateria_form(form_data, *, existing_bateria=None):
+def validate_bateria_form(form_data, *, existing_bateria=None, user=None):
     errors = {}
 
     modelo = (form_data.get("modelo") or "").strip()
@@ -351,7 +377,7 @@ def validate_bateria_form(form_data, *, existing_bateria=None):
     drone_id = None
     if drone_id_raw:
         try:
-            drone_id = _validate_drone_id(drone_id_raw)
+            drone_id = _validate_drone_id(drone_id_raw, user=user)
         except ValueError as exc:
             errors["drone_id"] = str(exc)
 
@@ -381,7 +407,7 @@ def validate_bateria_form(form_data, *, existing_bateria=None):
     return form, cleaned, errors
 
 
-def create_bateria(cleaned_data):
+def create_bateria(cleaned_data, *, prefeitura_id=None):
     bateria = Baterias(
         tipo_equipamento="baterias",
         status=cleaned_data["status"],
@@ -391,6 +417,7 @@ def create_bateria(cleaned_data):
         ano_fabricacao=cleaned_data["ano_fabricacao"],
         numero_serie=cleaned_data["numero_serie"],
         ultima_manutencao=cleaned_data["ultima_manutencao"],
+        prefeitura_id=prefeitura_id,
         ciclo=cleaned_data["ciclo"],
         drone_id=cleaned_data["drone_id"],
     )

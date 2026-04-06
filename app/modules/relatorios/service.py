@@ -9,7 +9,9 @@ from app.extensions import db
 from app.models import OrdemServico, Solicitacao, Usuario
 from app.shared.access import (
     ADMIN_PANEL_VIEW_TYPES,
+    apply_prefeitura_scope,
     apply_regiao_scope,
+    apply_solicitacao_prefeitura_scope,
     apply_solicitacao_regiao_scope,
     is_regional_user,
     normalize_regiao,
@@ -67,6 +69,7 @@ def build_uvis_disponiveis(user, regiao: str | None = None):
         return []
 
     query = db.session.query(Usuario.id, Usuario.nome_uvis).filter(Usuario.tipo_usuario == "uvis")
+    query = apply_prefeitura_scope(query, user, Usuario.prefeitura_id)
     if user_type == "uvis":
         query = query.filter(Usuario.id == user.id)
     else:
@@ -92,6 +95,7 @@ def build_regioes_disponiveis(user):
             Usuario.regiao != "",
         )
     )
+    query = apply_prefeitura_scope(query, user, Usuario.prefeitura_id)
     query = apply_regiao_scope(query, user, Usuario.regiao)
     return [value for (value,) in query.distinct().order_by(Usuario.regiao.asc()).all() if value]
 
@@ -206,6 +210,7 @@ def _build_coleta_imagens_query(user, *, regiao="", uvis_id=None, mes=None, ano=
         .join(Usuario, Usuario.id == Solicitacao.usuario_id)
         .filter(func.length(func.trim(func.coalesce(OrdemServico.imagem_principal, ""))) > 0)
     )
+    query = apply_solicitacao_prefeitura_scope(query, user)
     query = apply_regiao_scope(query, user, Usuario.regiao)
 
     if regiao:
@@ -242,6 +247,7 @@ def build_relatorios_solicitacoes_context(user, args):
     filtro_data = f"{ano_atual}-{mes_atual:02d}"
 
     base_query = aplicar_filtros_base(db.session.query(Solicitacao), filtro_data, uvis_id)
+    base_query = apply_solicitacao_prefeitura_scope(base_query, user)
     base_query = apply_solicitacao_regiao_scope(base_query, user)
     print("SQL EXECUTADO:", str(base_query.statement.compile(dialect=db.engine.dialect)))
 
@@ -344,6 +350,7 @@ def build_relatorios_os_context(user, args):
         .join(Solicitacao, Solicitacao.id == OrdemServico.solicitacao_id)
         .join(Usuario, Usuario.id == Solicitacao.usuario_id)
     )
+    base_query = apply_solicitacao_prefeitura_scope(base_query, user)
     base_query = apply_regiao_scope(base_query, user, Usuario.regiao)
 
     base_query = base_query.filter(
@@ -393,6 +400,7 @@ def build_relatorios_os_context(user, args):
         .join(Solicitacao, Solicitacao.id == OrdemServico.solicitacao_id)
         .join(Usuario, Usuario.id == Solicitacao.usuario_id)
     )
+    mensal_query = apply_solicitacao_prefeitura_scope(mensal_query, user)
     mensal_query = apply_regiao_scope(mensal_query, user, Usuario.regiao)
 
     if uvis_id:
@@ -454,6 +462,7 @@ def build_relatorio_os_export_data(user, args):
         .join(Solicitacao, Solicitacao.id == OrdemServico.solicitacao_id)
         .join(Usuario, Usuario.id == Solicitacao.usuario_id)
     )
+    base_query = apply_solicitacao_prefeitura_scope(base_query, user)
     base_query = apply_regiao_scope(base_query, user, Usuario.regiao)
 
     base_query = base_query.filter(
@@ -528,6 +537,7 @@ def build_relatorio_os_export_data(user, args):
         .join(Solicitacao, Solicitacao.id == OrdemServico.solicitacao_id)
         .join(Usuario, Usuario.id == Solicitacao.usuario_id)
     )
+    mensal_query = apply_solicitacao_prefeitura_scope(mensal_query, user)
     mensal_query = apply_regiao_scope(mensal_query, user, Usuario.regiao)
 
     if uvis_id:
@@ -554,7 +564,11 @@ def build_relatorio_os_export_data(user, args):
     if uvis_id:
         nome_uvis = (
             apply_regiao_scope(
-                db.session.query(Usuario.nome_uvis).filter(Usuario.id == uvis_id),
+                apply_prefeitura_scope(
+                    db.session.query(Usuario.nome_uvis).filter(Usuario.id == uvis_id),
+                    user,
+                    Usuario.prefeitura_id,
+                ),
                 user,
                 Usuario.regiao,
             )

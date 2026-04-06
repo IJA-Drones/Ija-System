@@ -17,7 +17,7 @@ from app.modules.pilotos.service import (
     serialize_pilotos,
     validate_piloto_data,
 )
-from app.shared.access import normalize_role
+from app.shared.access import apply_prefeitura_scope, normalize_role
 
 
 def _query_args_without_page():
@@ -27,8 +27,13 @@ def _query_args_without_page():
 
 
 def _require_admin_or_operario():
-    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"admin", "operario", "operador"}:
+    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"admin", "operario", "operador", "prefeitura_admin"}:
         abort(403)
+
+
+def _get_scoped_piloto_or_404(piloto_id: int):
+    query = apply_prefeitura_scope(Pilotos.query, current_user, Pilotos.prefeitura_id)
+    return query.filter(Pilotos.id == piloto_id).first_or_404()
 
 
 def register_routes(bp):
@@ -85,6 +90,7 @@ def register_routes(bp):
                     nome_piloto=nome_piloto,
                     regiao=regiao or None,
                     telefone=tel_digits or None,
+                    prefeitura_id=getattr(current_user, "prefeitura_id", None),
                 )
                 db.session.add(novo_piloto)
                 db.session.flush()
@@ -92,6 +98,7 @@ def register_routes(bp):
                 user_piloto = Usuario(
                     nome_uvis=nome_piloto,
                     regiao=regiao or None,
+                    prefeitura_id=getattr(current_user, "prefeitura_id", None),
                     codigo_setor=None,
                     login=login,
                     tipo_usuario="piloto",
@@ -115,7 +122,7 @@ def register_routes(bp):
     @login_required
     def listar_pilotos():
         user_tipo = normalize_role(getattr(current_user, "tipo_usuario", None))
-        if user_tipo not in ("admin", "uvis", "visualizar", "regional", "operario", "operador"):
+        if user_tipo not in ("admin", "uvis", "visualizar", "regional", "operario", "operador", "prefeitura_admin"):
             abort(403)
 
         q = (request.args.get("q") or "").strip()
@@ -142,7 +149,7 @@ def register_routes(bp):
                 pagination_args=_query_args_without_page(),
             )
 
-        query = build_pilotos_query(user_tipo, regiao, telefone, q, sort)
+        query = build_pilotos_query(user_tipo, regiao, telefone, q, sort, user=current_user)
 
         if export == "xlsx":
             if user_tipo not in ["admin", "visualizar", "regional"]:
@@ -177,7 +184,7 @@ def register_routes(bp):
     def editar_piloto(piloto_id):
         _require_admin_or_operario()
 
-        piloto = Pilotos.query.get_or_404(piloto_id)
+        piloto = _get_scoped_piloto_or_404(piloto_id)
         usuario_piloto = Usuario.query.filter_by(piloto_id=piloto.id, tipo_usuario="piloto").first()
 
         errors = {}
@@ -227,11 +234,13 @@ def register_routes(bp):
             piloto.nome_piloto = nome_piloto
             piloto.regiao = regiao or None
             piloto.telefone = tel_digits or None
+            piloto.prefeitura_id = getattr(current_user, "prefeitura_id", None)
 
             if not usuario_piloto:
                 usuario_piloto = Usuario(
                     nome_uvis=nome_piloto,
                     regiao=regiao or None,
+                    prefeitura_id=getattr(current_user, "prefeitura_id", None),
                     codigo_setor=None,
                     login=login,
                     tipo_usuario="piloto",
@@ -252,6 +261,7 @@ def register_routes(bp):
             else:
                 usuario_piloto.nome_uvis = nome_piloto
                 usuario_piloto.regiao = regiao or None
+                usuario_piloto.prefeitura_id = getattr(current_user, "prefeitura_id", None)
                 usuario_piloto.login = login
                 if senha:
                     usuario_piloto.set_senha(senha)
@@ -281,7 +291,7 @@ def register_routes(bp):
     def deletar_piloto(piloto_id):
         _require_admin_or_operario()
 
-        piloto = Pilotos.query.get_or_404(piloto_id)
+        piloto = _get_scoped_piloto_or_404(piloto_id)
         vinculo = EquipePiloto.query.filter(EquipePiloto.piloto_id == piloto.id).first()
 
         if vinculo:

@@ -3,6 +3,23 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from flask_login import UserMixin
 
+
+class Prefeitura(db.Model):
+    __tablename__ = "prefeituras"
+
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(120), nullable=False, unique=True, index=True)
+    slug = db.Column(db.String(120), nullable=False, unique=True, index=True)
+    ativa = db.Column(db.Boolean, nullable=False, default=True, index=True)
+    criada_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+
+    usuarios = db.relationship("Usuario", back_populates="prefeitura", lazy="select")
+    solicitacoes = db.relationship("Solicitacao", back_populates="prefeitura", lazy="select")
+    clientes = db.relationship("Clientes", back_populates="prefeitura", lazy="select")
+    pilotos = db.relationship("Pilotos", back_populates="prefeitura", lazy="select")
+    equipes = db.relationship("Equipe", lazy="select")
+    equipamentos = db.relationship("Equipamentos", back_populates="prefeitura", lazy="select")
+
 # -------------------------------------------------------------
 # USUÁRIO (login do sistema)
 # - UVIS também é um Usuario (tipo_usuario="uvis")
@@ -12,6 +29,7 @@ class Usuario(UserMixin, db.Model):
     __tablename__ = "usuarios"
 
     id = db.Column(db.Integer, primary_key=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
 
     nome_uvis = db.Column(db.String(100), nullable=False, index=True)
     regiao = db.Column(db.String(50), index=True)
@@ -48,6 +66,7 @@ class Usuario(UserMixin, db.Model):
         foreign_keys=[equipe_uvis_uvis_usuario_id],
         lazy="joined"
     )
+    prefeitura = db.relationship("Prefeitura", back_populates="usuarios", lazy="joined")
 
     __table_args__ = (
         # evita duas contas de login para a mesma equipe da mesma uvis
@@ -163,10 +182,12 @@ class Pilotos(db.Model):
     __tablename__ = "pilotos"
 
     id = db.Column(db.Integer, primary_key=True, index=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
 
     nome_piloto = db.Column(db.String(100), nullable=False, index=True)
     regiao = db.Column(db.String(20))
     telefone = db.Column(db.String(20))
+    prefeitura = db.relationship("Prefeitura", back_populates="pilotos", lazy="joined")
 
     # Solicitações atribuídas ao piloto
     solicitacoes = db.relationship(
@@ -230,6 +251,7 @@ class Solicitacao(db.Model):
     __tablename__ = "solicitacoes"
 
     id = db.Column(db.Integer, primary_key=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
 
     # Dados Básicos e Data
     data_agendamento = db.Column(db.Date, nullable=False, index=True)
@@ -285,6 +307,7 @@ class Solicitacao(db.Model):
         index=True
     )
     usuario = db.relationship("Usuario", back_populates="solicitacoes")
+    prefeitura = db.relationship("Prefeitura", back_populates="solicitacoes", lazy="joined")
 
     # Piloto responsável
     piloto_id = db.Column(
@@ -518,6 +541,7 @@ class Clientes(db.Model):
     __tablename__ = "clientes"
 
     id = db.Column(db.Integer, primary_key=True, index=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
 
     nome_cliente = db.Column(db.String(100), nullable=False, index=True)
 
@@ -527,6 +551,7 @@ class Clientes(db.Model):
     telefone = db.Column(db.String(20))
     email = db.Column(db.String(100), index=True)
     endereco = db.Column(db.String(255))
+    prefeitura = db.relationship("Prefeitura", back_populates="clientes", lazy="joined")
 
 
 # -------------------------------------------------------------
@@ -536,6 +561,7 @@ class Equipe(db.Model):
     __tablename__ = "equipes"
 
     id = db.Column(db.Integer, primary_key=True, index=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
 
     nome_equipe = db.Column(db.String(100), nullable=False, index=True)
     descricao = db.Column(db.Text)
@@ -644,6 +670,8 @@ class Equipamentos(db.Model):
     # vínculo com a equipe
     equipe_id = db.Column(db.Integer, db.ForeignKey("equipes.id"), nullable=True, index=True)
     equipe = db.relationship("Equipe", back_populates="equipamentos")
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
+    prefeitura = db.relationship("Prefeitura", back_populates="equipamentos", lazy="joined")
 
     __mapper_args__ = {
         "polymorphic_identity": "equipamentos",

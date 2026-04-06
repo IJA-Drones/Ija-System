@@ -84,6 +84,7 @@
               <option value="admin" {% if tipo == 'admin' %}selected{% endif %}>Admin</option>
               <option value="regional" {% if tipo == 'regional' %}selected{% endif %}>Regional</option>
               <option value="operario" {% if tipo == 'operario' %}selected{% endif %}>Operário</option>
+              <option value="prefeitura_admin" {% if tipo == 'prefeitura_admin' %}selected{% endif %}>Prefeitura (Admin)</option>
             </select>
 
             {% if errors.get('tipo_usuario') %}
@@ -92,6 +93,25 @@
             <div class="form-text small">
               Admin: total. Operário: alterações no painel (sem gestão geral).
               Regional: consulta regional em modo leitura.
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-buildings me-1 text-primary"></i> Prefeitura
+            </label>
+            {% set prefeitura_sel = form.get('prefeitura_id','') %}
+            <select name="prefeitura_id" class="form-select {% if errors.get('prefeitura_id') %}is-invalid{% endif %}">
+              <option value="">Selecione...</option>
+              {% for prefeitura in prefeituras %}
+                <option value="{{ prefeitura.id }}" {% if prefeitura_sel|string == prefeitura.id|string %}selected{% endif %}>{{ prefeitura.nome }}</option>
+              {% endfor %}
+            </select>
+            {% if errors.get('prefeitura_id') %}
+              <div class="invalid-feedback">{{ errors.get('prefeitura_id') }}</div>
+            {% endif %}
+            <div class="form-text small">
+              Obrigatório para tipo Prefeitura (Admin).
             </div>
           </div>
 

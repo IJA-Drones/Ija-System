@@ -8,6 +8,7 @@ from openpyxl.utils import get_column_letter
 
 from app.extensions import db
 from app.models import Pilotos, Usuario
+from app.shared.access import apply_prefeitura_scope
 from app.shared.formatters import format_phone_br, only_digits
 
 
@@ -52,8 +53,10 @@ def login_em_uso(login: str, exclude_user_id=None):
     return query.first()
 
 
-def build_pilotos_query(user_tipo: str, regiao: str, telefone: str, q: str, sort: str):
+def build_pilotos_query(user_tipo: str, regiao: str, telefone: str, q: str, sort: str, user=None):
     query = Pilotos.query
+    if user is not None:
+        query = apply_prefeitura_scope(query, user, Pilotos.prefeitura_id)
 
     if regiao:
         query = query.filter(Pilotos.regiao == regiao)

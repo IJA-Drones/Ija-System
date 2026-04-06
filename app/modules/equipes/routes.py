@@ -14,11 +14,11 @@ from app.modules.equipes.service import (
     parse_optional_int,
     regiao_valida,
 )
-from app.shared.access import normalize_role
+from app.shared.access import apply_prefeitura_scope, normalize_role
 
 
 def _require_admin_or_operario():
-    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"admin", "operario", "operador"}:
+    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"admin", "operario", "operador", "prefeitura_admin"}:
         abort(403)
 
 
@@ -30,7 +30,7 @@ def register_routes(bp):
 
         errors = {}
         form = {}
-        pilotos = get_pilotos_ordered()
+        pilotos = get_pilotos_ordered(user=current_user)
         regioes = build_regioes_list()
 
         if request.method == "POST":
@@ -64,7 +64,11 @@ def register_routes(bp):
                 errors["auxiliar_id"] = "Auxiliar deve ser diferente do piloto titular."
 
             if nome_equipe:
-                existe = Equipe.query.filter(db.func.lower(Equipe.nome_equipe) == nome_equipe.lower()).first()
+                existe = apply_prefeitura_scope(
+                    Equipe.query.filter(db.func.lower(Equipe.nome_equipe) == nome_equipe.lower()),
+                    current_user,
+                    Equipe.prefeitura_id,
+                ).first()
                 if existe:
                     errors["nome_equipe"] = "Ja existe uma equipe com esse nome."
 
@@ -76,19 +80,27 @@ def register_routes(bp):
             if piloto_id and piloto_id_int is None:
                 errors["piloto_id"] = "Piloto titular invalido."
             elif piloto_id_int:
-                piloto_obj = Pilotos.query.get(piloto_id_int)
+                piloto_obj = apply_prefeitura_scope(
+                    Pilotos.query.filter(Pilotos.id == piloto_id_int),
+                    current_user,
+                    Pilotos.prefeitura_id,
+                ).first()
                 if not piloto_obj:
                     errors["piloto_id"] = "Piloto titular nao encontrado."
 
             if auxiliar_id and auxiliar_id_int is None:
                 errors["auxiliar_id"] = "Piloto auxiliar invalido."
             elif auxiliar_id_int:
-                auxiliar_obj = Pilotos.query.get(auxiliar_id_int)
+                auxiliar_obj = apply_prefeitura_scope(
+                    Pilotos.query.filter(Pilotos.id == auxiliar_id_int),
+                    current_user,
+                    Pilotos.prefeitura_id,
+                ).first()
                 if not auxiliar_obj:
                     errors["auxiliar_id"] = "Piloto auxiliar nao encontrado."
 
             if piloto_id_int and "piloto_id" not in errors:
-                vinculo, equipe = find_piloto_conflict(piloto_id_int)
+                vinculo, equipe = find_piloto_conflict(piloto_id_int, user=current_user)
                 if vinculo:
                     nome_eq = equipe.nome_equipe if equipe else f"ID {vinculo.equipe_id}"
                     papel = (vinculo.papel or "").lower()
@@ -96,7 +108,7 @@ def register_routes(bp):
                     flash(errors["piloto_id"], "warning")
 
             if auxiliar_id_int and "auxiliar_id" not in errors:
-                vinculo, equipe = find_piloto_conflict(auxiliar_id_int)
+                vinculo, equipe = find_piloto_conflict(auxiliar_id_int, user=current_user)
                 if vinculo:
                     nome_eq = equipe.nome_equipe if equipe else f"ID {vinculo.equipe_id}"
                     papel = (vinculo.papel or "").lower()
@@ -118,6 +130,7 @@ def register_routes(bp):
                 descricao=descricao or None,
                 regiao=regiao or None,
                 ativa=True,
+                prefeitura_id=getattr(current_user, "prefeitura_id", None),
             )
             db.session.add(equipe)
             db.session.flush()
@@ -181,10 +194,11 @@ def register_routes(bp):
             q=q,
             sort=sort,
             user_regiao=user_regiao,
+            user=current_user,
         )
 
         if export == "xlsx":
-            if tipo not in ["admin", "visualizar"]:
+            if tipo not in ["admin", "visualizar", "prefeitura_admin"]:
                 abort(403)
 
             output, filename = build_equipes_export(query.all())
@@ -197,7 +211,7 @@ def register_routes(bp):
 
         pagination = query.paginate(page=page, per_page=per_page, error_out=False)
         equipes = pagination.items
-        is_editable = tipo in ["admin", "operario", "operador"]
+        is_editable = tipo in ["admin", "operario", "operador", "prefeitura_admin"]
         filters = build_equipes_filters(
             q=q,
             regiao=regiao,
@@ -228,16 +242,21 @@ def register_routes(bp):
         _require_admin_or_operario()
 
         equipe = (
-            Equipe.query.options(
-                db.selectinload(Equipe.membros).selectinload(EquipePiloto.piloto),
+            apply_prefeitura_scope(
+                Equipe.query.options(
+                    db.selectinload(Equipe.membros).selectinload(EquipePiloto.piloto),
+                ),
+                current_user,
+                Equipe.prefeitura_id,
             )
-            .get_or_404(equipe_id)
+            .filter(Equipe.id == equipe_id)
+            .first_or_404()
         )
         piloto_atual = equipe.piloto_titular
         aux_atual = equipe.piloto_auxiliar
         errors = {}
         form = request.form.to_dict(flat=True) if request.method == "POST" else {}
-        pilotos = get_pilotos_ordered()
+        pilotos = get_pilotos_ordered(user=current_user)
 
         if request.method == "POST":
             nome_equipe = (request.form.get("nome_equipe") or "").strip()
@@ -268,16 +287,30 @@ def register_routes(bp):
             if piloto_id and auxiliar_id and piloto_id == auxiliar_id:
                 errors["auxiliar_id"] = "O auxiliar nao pode ser o mesmo piloto titular."
 
-            piloto_obj = Pilotos.query.get(piloto_id) if piloto_id else None
+            piloto_obj = (
+                apply_prefeitura_scope(
+                    Pilotos.query.filter(Pilotos.id == piloto_id),
+                    current_user,
+                    Pilotos.prefeitura_id,
+                ).first()
+                if piloto_id else None
+            )
             if piloto_id and not piloto_obj:
                 errors["piloto_id"] = "Piloto titular nao encontrado."
 
-            aux_obj = Pilotos.query.get(auxiliar_id) if auxiliar_id else None
+            aux_obj = (
+                apply_prefeitura_scope(
+                    Pilotos.query.filter(Pilotos.id == auxiliar_id),
+                    current_user,
+                    Pilotos.prefeitura_id,
+                ).first()
+                if auxiliar_id else None
+            )
             if auxiliar_id and not aux_obj:
                 errors["auxiliar_id"] = "Auxiliar nao encontrado."
 
             if piloto_id and "piloto_id" not in errors:
-                vinculo, equipe_conflito = find_piloto_conflict(piloto_id, exclude_equipe_id=equipe.id)
+                vinculo, equipe_conflito = find_piloto_conflict(piloto_id, exclude_equipe_id=equipe.id, user=current_user)
                 if vinculo:
                     nome_eq = equipe_conflito.nome_equipe if equipe_conflito and equipe_conflito.nome_equipe else f"ID {vinculo.equipe_id}"
                     papel = (vinculo.papel or "").lower()
@@ -286,7 +319,7 @@ def register_routes(bp):
                     flash(msg, "warning")
 
             if auxiliar_id and "auxiliar_id" not in errors:
-                vinculo, equipe_conflito = find_piloto_conflict(auxiliar_id, exclude_equipe_id=equipe.id)
+                vinculo, equipe_conflito = find_piloto_conflict(auxiliar_id, exclude_equipe_id=equipe.id, user=current_user)
                 if vinculo:
                     nome_eq = equipe_conflito.nome_equipe if equipe_conflito and equipe_conflito.nome_equipe else f"ID {vinculo.equipe_id}"
                     papel = (vinculo.papel or "").lower()
@@ -360,7 +393,7 @@ def register_routes(bp):
     def deletar_equipe(equipe_id):
         _require_admin_or_operario()
 
-        equipe = Equipe.query.get_or_404(equipe_id)
+        equipe = apply_prefeitura_scope(Equipe.query, current_user, Equipe.prefeitura_id).filter(Equipe.id == equipe_id).first_or_404()
 
         try:
             db.session.delete(equipe)

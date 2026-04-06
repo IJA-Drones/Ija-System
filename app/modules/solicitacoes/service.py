@@ -5,6 +5,7 @@ from sqlalchemy.orm import joinedload
 
 from app.extensions import db
 from app.models import Solicitacao, Usuario
+from app.shared.access import apply_prefeitura_scope, is_prefeitura_admin_user
 from app.shared.geofencing import detectar_area_restrita
 
 STATUS_OPCOES_EDICAO = [
@@ -39,12 +40,10 @@ class SolicitacaoAccessError(Exception):
 
 def build_novo_cadastro_context(user, google_maps_key):
     uvis_lista = []
-    if user.tipo_usuario in ["admin", "visualizar"]:
-        uvis_lista = (
-            Usuario.query.filter_by(tipo_usuario="uvis")
-            .order_by(Usuario.nome_uvis.asc())
-            .all()
-        )
+    if user.tipo_usuario in ["admin", "visualizar", "prefeitura_admin"]:
+        query = Usuario.query.filter_by(tipo_usuario="uvis")
+        query = apply_prefeitura_scope(query, user, Usuario.prefeitura_id)
+        uvis_lista = query.order_by(Usuario.nome_uvis.asc()).all()
 
     return {
         "hoje": date.today().isoformat(),
@@ -59,12 +58,19 @@ def create_nova_solicitacao(user, form_data):
     data_obj = datetime.strptime(data_str, "%Y-%m-%d").date() if data_str else None
     hora_obj = datetime.strptime(hora_str, "%H:%M").time() if hora_str else None
 
-    if user.tipo_usuario in ["admin", "visualizar"]:
+    if user.tipo_usuario in ["admin", "visualizar", "prefeitura_admin"]:
         uvis_id_final = form_data.get("uvis_responsavel_id")
         if not uvis_id_final:
             raise NovoCadastroValidationError("Por favor, selecione a UVIS responsavel.")
+        uvis = Usuario.query.filter_by(id=uvis_id_final, tipo_usuario="uvis").first()
+        if not uvis:
+            raise NovoCadastroValidationError("UVIS selecionada nao encontrada.")
+        if is_prefeitura_admin_user(user) and uvis.prefeitura_id != getattr(user, "prefeitura_id", None):
+            raise NovoCadastroValidationError("Essa UVIS nao pertence a sua prefeitura.", category="danger")
+        prefeitura_id_final = uvis.prefeitura_id or getattr(user, "prefeitura_id", None)
     else:
         uvis_id_final = user.id
+        prefeitura_id_final = getattr(user, "prefeitura_id", None)
 
     lat_raw = (form_data.get("latitude") or "").strip()
     lng_raw = (form_data.get("longitude") or "").strip()
@@ -93,6 +99,7 @@ def create_nova_solicitacao(user, form_data):
         area_restrita=area_restrita,
         perimetro_planejado=form_data.get("perimetro_planejado"),
         usuario_id=uvis_id_final,
+        prefeitura_id=prefeitura_id_final,
         status="PENDENTE",
     )
 

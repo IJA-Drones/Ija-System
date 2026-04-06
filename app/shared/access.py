@@ -4,8 +4,16 @@ from app.models import Solicitacao, Usuario
 
 
 REGIONAL_USER_TYPE = "regional"
-ADMIN_PANEL_VIEW_TYPES = {"admin", "operario", "visualizar", "visualizador", REGIONAL_USER_TYPE}
-ADMIN_PANEL_EDIT_TYPES = {"admin", "operario"}
+PREFEITURA_ADMIN_USER_TYPE = "prefeitura_admin"
+ADMIN_PANEL_VIEW_TYPES = {
+    "admin",
+    "operario",
+    "visualizar",
+    "visualizador",
+    REGIONAL_USER_TYPE,
+    PREFEITURA_ADMIN_USER_TYPE,
+}
+ADMIN_PANEL_EDIT_TYPES = {"admin", "operario", PREFEITURA_ADMIN_USER_TYPE}
 
 
 def normalize_role(value: str | None) -> str:
@@ -20,8 +28,37 @@ def is_regional_user(user) -> bool:
     return normalize_role(getattr(user, "tipo_usuario", None)) == REGIONAL_USER_TYPE
 
 
+def is_prefeitura_admin_user(user) -> bool:
+    return normalize_role(getattr(user, "tipo_usuario", None)) == PREFEITURA_ADMIN_USER_TYPE
+
+
+def is_admin_global_user(user) -> bool:
+    return normalize_role(getattr(user, "tipo_usuario", None)) == "admin"
+
+
 def get_user_regiao(user) -> str:
     return normalize_regiao(getattr(user, "regiao", None))
+
+
+def get_user_prefeitura_id(user):
+    return getattr(user, "prefeitura_id", None)
+
+
+def apply_prefeitura_scope(query, user, column):
+    if user is None or is_admin_global_user(user):
+        return query
+
+    prefeitura_id = get_user_prefeitura_id(user)
+    if prefeitura_id is None:
+        if is_prefeitura_admin_user(user):
+            return query.filter(false())
+        return query
+
+    return query.filter(column == prefeitura_id)
+
+
+def apply_solicitacao_prefeitura_scope(query, user):
+    return apply_prefeitura_scope(query, user, Solicitacao.prefeitura_id)
 
 
 def apply_regiao_scope(query, user, column):

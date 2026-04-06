@@ -9,6 +9,7 @@ from app.modules.admin_uvis.service import (
     build_uvis_query,
     can_access_admin_uvis,
     delete_uvis_user,
+    is_admin_or_prefeitura_admin,
     is_admin_user,
     is_uvis_user,
     validate_edit_uvis,
@@ -17,7 +18,7 @@ from app.modules.admin_uvis.service import (
 
 
 def _admin_only_redirect():
-    if not is_admin_user(current_user):
+    if not is_admin_or_prefeitura_admin(current_user):
         flash("Voce nao tem permissao para acessar esta funcao.", "danger")
         return redirect(request.referrer or url_for("main.admin_uvis_listar"))
     return None
@@ -27,7 +28,7 @@ def register_routes(bp):
     @bp.route("/admin/uvis/novo", methods=["GET", "POST"], endpoint="admin_uvis_novo")
     @login_required
     def admin_uvis_novo():
-        if not is_admin_user(current_user):
+        if not is_admin_or_prefeitura_admin(current_user):
             abort(403)
 
         if request.method == "POST":
@@ -49,6 +50,7 @@ def register_routes(bp):
                 codigo_setor=codigo_setor,
                 login=login,
                 tipo_usuario="uvis",
+                prefeitura_id=getattr(current_user, "prefeitura_id", None),
             )
             novo_user.set_senha(senha)
 
@@ -97,7 +99,7 @@ def register_routes(bp):
             q=q,
             regiao=regiao,
             codigo_setor=codigo_setor,
-            is_admin=is_admin_user(current_user),
+            is_admin=is_admin_or_prefeitura_admin(current_user),
         )
 
     @bp.route("/admin/uvis/<int:id>/editar", methods=["GET", "POST"], endpoint="admin_uvis_editar")
@@ -107,7 +109,7 @@ def register_routes(bp):
         if resp:
             return resp
 
-        uvis = Usuario.query.get_or_404(id)
+        uvis = build_uvis_query(current_user, "", "", "").filter(Usuario.id == id).first_or_404()
         if not is_uvis_user(uvis):
             flash("Registro invalido para edicao.", "danger")
             return redirect(url_for("main.admin_uvis_listar"))
@@ -162,7 +164,7 @@ def register_routes(bp):
         if resp:
             return resp
 
-        uvis = Usuario.query.get_or_404(id)
+        uvis = build_uvis_query(current_user, "", "", "").filter(Usuario.id == id).first_or_404()
         if not is_uvis_user(uvis):
             flash("Registro invalido para exclusao.", "danger")
             return redirect(url_for("main.admin_uvis_listar"))

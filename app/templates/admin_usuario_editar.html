@@ -64,6 +64,7 @@
               <option value="admin" {% if tipo_sel == 'admin' %}selected{% endif %}>Admin</option>
               <option value="operario" {% if tipo_sel == 'operario' %}selected{% endif %}>Operário</option>
               <option value="regional" {% if tipo_sel == 'regional' %}selected{% endif %}>Regional</option>
+              <option value="prefeitura_admin" {% if tipo_sel == 'prefeitura_admin' %}selected{% endif %}>Prefeitura (Admin)</option>
             </select>
 
             {% if usuario.id == current_user.id %}
@@ -117,6 +118,25 @@
               Obrigatoria quando o tipo de usuario for regional.
             </div>
           </div>         
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-buildings me-1 text-primary"></i> Prefeitura
+            </label>
+            {% set prefeitura_sel = form.get('prefeitura_id', usuario.prefeitura_id or '') %}
+            <select name="prefeitura_id" class="form-select {% if errors.get('prefeitura_id') %}is-invalid{% endif %}">
+              <option value="">Selecione...</option>
+              {% for prefeitura in prefeituras %}
+                <option value="{{ prefeitura.id }}" {% if prefeitura_sel|string == prefeitura.id|string %}selected{% endif %}>{{ prefeitura.nome }}</option>
+              {% endfor %}
+            </select>
+            {% if errors.get('prefeitura_id') %}
+              <div class="invalid-feedback">{{ errors.get('prefeitura_id') }}</div>
+            {% endif %}
+            <div class="form-text small">
+              Obrigatório para tipo Prefeitura (Admin).
+            </div>
+          </div>
+
           <div class="col-md-4">
             <label class="form-label fw-bold small text-muted">
               <i class="bi bi-person-lock me-1 text-primary"></i> Login *

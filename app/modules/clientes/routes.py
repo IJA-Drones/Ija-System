@@ -24,11 +24,20 @@ def _query_args_without_page():
     return args
 
 
+def _can_manage_clientes(user) -> bool:
+    return getattr(user, "tipo_usuario", None) in {"admin", "prefeitura_admin"}
+
+
+def _get_scoped_cliente_or_404(cliente_id: int):
+    query = build_clientes_query("", "", "", "", "id_asc", user=current_user)
+    return query.filter(Clientes.id == cliente_id).first_or_404()
+
+
 def register_routes(bp):
     @bp.route("/clientes/cadastrar", methods=["GET", "POST"], endpoint="cadastrar_clientes")
     @login_required
     def cadastrar_clientes():
-        if getattr(current_user, "tipo_usuario", None) != "admin":
+        if not _can_manage_clientes(current_user):
             abort(403)
 
         errors = {}
@@ -110,6 +119,7 @@ def register_routes(bp):
                 telefone=only_digits(telefone) or None,
                 email=email or None,
                 endereco=endereco_full or None,
+                prefeitura_id=getattr(current_user, "prefeitura_id", None),
             )
 
             db.session.add(novo)
@@ -123,7 +133,7 @@ def register_routes(bp):
     @bp.route("/clientes", methods=["GET"], endpoint="listar_clientes")
     @login_required
     def listar_clientes():
-        if getattr(current_user, "tipo_usuario", None) != "admin":
+        if not _can_manage_clientes(current_user):
             abort(403)
 
         q = (request.args.get("q") or "").strip()
@@ -144,7 +154,7 @@ def register_routes(bp):
             per_page = 20
         per_page = 10 if per_page < 10 else 50 if per_page > 50 else per_page
 
-        query = build_clientes_query(q, documento, email, telefone, sort)
+        query = build_clientes_query(q, documento, email, telefone, sort, user=current_user)
 
         if export == "xlsx":
             output, filename = build_clientes_export(query.all())
@@ -185,10 +195,10 @@ def register_routes(bp):
     @bp.route("/clientes/<int:cliente_id>/editar", methods=["GET", "POST"], endpoint="editar_cliente")
     @login_required
     def editar_cliente(cliente_id):
-        if getattr(current_user, "tipo_usuario", None) != "admin":
+        if not _can_manage_clientes(current_user):
             abort(403)
 
-        cliente = Clientes.query.get_or_404(cliente_id)
+        cliente = _get_scoped_cliente_or_404(cliente_id)
         errors = {}
         form = {}
 
@@ -265,10 +275,10 @@ def register_routes(bp):
     @bp.route("/clientes/<int:cliente_id>/deletar", methods=["POST"], endpoint="deletar_cliente")
     @login_required
     def deletar_cliente(cliente_id):
-        if getattr(current_user, "tipo_usuario", None) != "admin":
+        if not _can_manage_clientes(current_user):
             abort(403)
 
-        cliente = Clientes.query.get_or_404(cliente_id)
+        cliente = _get_scoped_cliente_or_404(cliente_id)
         db.session.delete(cliente)
         db.session.commit()
 

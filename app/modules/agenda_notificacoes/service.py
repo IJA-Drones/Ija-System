@@ -13,12 +13,17 @@ from sqlalchemy.orm import joinedload
 
 from app.extensions import db
 from app.models import Equipe, EquipePiloto, Notificacao, Solicitacao, Usuario
-from app.shared.access import apply_regiao_scope, apply_solicitacao_regiao_scope
+from app.shared.access import (
+    apply_prefeitura_scope,
+    apply_regiao_scope,
+    apply_solicitacao_prefeitura_scope,
+    apply_solicitacao_regiao_scope,
+)
 
 
-AGENDA_VIEW_TYPES = {"admin", "operario", "visualizar", "regional"}
-AGENDA_EXPORT_TYPES = {"admin", "operario", "visualizar", "regional"}
-NOTIFICATION_GLOBAL_VIEW_TYPES = {"admin", "operario", "visualizar"}
+AGENDA_VIEW_TYPES = {"admin", "operario", "visualizar", "regional", "prefeitura_admin"}
+AGENDA_EXPORT_TYPES = {"admin", "operario", "visualizar", "regional", "prefeitura_admin"}
+NOTIFICATION_GLOBAL_VIEW_TYPES = {"admin", "operario", "visualizar", "prefeitura_admin"}
 AGENDA_ROUTE_STATUSES = (
     "APROVADO",
     "APROVADO COM RECOMENDACOES",
@@ -77,6 +82,7 @@ def _build_piloto_equipes_query(user):
 
 
 def apply_agenda_user_scope(query, user):
+    query = apply_solicitacao_prefeitura_scope(query, user)
     query = apply_solicitacao_regiao_scope(query, user)
 
     if is_piloto_agenda_user(user):
@@ -195,7 +201,11 @@ def build_agenda_uvis_disponiveis(user):
 
     return (
         apply_regiao_scope(
-            db.session.query(Usuario.id, Usuario.nome_uvis).filter(Usuario.tipo_usuario == "uvis"),
+            apply_prefeitura_scope(
+                db.session.query(Usuario.id, Usuario.nome_uvis).filter(Usuario.tipo_usuario == "uvis"),
+                user,
+                Usuario.prefeitura_id,
+            ),
             user,
             Usuario.regiao,
         )
@@ -204,14 +214,17 @@ def build_agenda_uvis_disponiveis(user):
     )
 
 
-def build_agenda_anos_disponiveis():
+def build_agenda_anos_disponiveis(user):
     if db.engine.name == "postgresql":
         func_ano = db.func.to_char(Solicitacao.data_agendamento, "YYYY")
     else:
         func_ano = db.func.strftime("%Y", Solicitacao.data_agendamento)
 
     anos_raw = (
-        db.session.query(func_ano)
+        apply_solicitacao_prefeitura_scope(
+            db.session.query(func_ano),
+            user,
+        )
         .filter(Solicitacao.data_agendamento.isnot(None))
         .distinct()
         .order_by(func_ano.desc())
@@ -252,7 +265,7 @@ def build_agenda_context(user, args):
             "NEGADO",
         ],
         "uvis_disponiveis": build_agenda_uvis_disponiveis(user),
-        "anos_disponiveis": build_agenda_anos_disponiveis(),
+        "anos_disponiveis": build_agenda_anos_disponiveis(user),
         "initial_date": initial_date,
         "pode_filtrar_uvis": can_view_all_agenda(user),
         "google_maps_key": get_agenda_google_maps_key(),
@@ -338,7 +351,10 @@ def build_agenda_export(user, args):
     ano = None if export_all else args.get("ano", type=int)
 
     query = apply_solicitacao_regiao_scope(
-        Solicitacao.query.options(joinedload(Solicitacao.usuario)),
+        apply_solicitacao_prefeitura_scope(
+            Solicitacao.query.options(joinedload(Solicitacao.usuario)),
+            user,
+        ),
         user,
     )
 

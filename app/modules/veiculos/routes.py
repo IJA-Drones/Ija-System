@@ -20,17 +20,22 @@ from app.modules.veiculos.service import (
     update_veiculo,
     validate_veiculo_form,
 )
-from app.shared.access import normalize_role
+from app.shared.access import apply_prefeitura_scope, normalize_role
 
 
 def _require_admin_or_operario():
-    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"admin", "operario", "operador"}:
+    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"admin", "operario", "operador", "prefeitura_admin"}:
         abort(403)
 
 
 def _require_piloto():
     if getattr(current_user, "tipo_usuario", None) != "piloto":
         abort(403)
+
+
+def _get_scoped_veiculo_or_404(veiculo_id: int):
+    query = apply_prefeitura_scope(Veiculos.query, current_user, Veiculos.prefeitura_id)
+    return query.filter(Veiculos.id == veiculo_id).first_or_404()
 
 
 def register_routes(bp):
@@ -42,8 +47,8 @@ def register_routes(bp):
 
         try:
             if export in ("1", "true", "yes", "xlsx"):
-                return build_veiculos_export_response(tipo, request.args)
-            return render_template("veiculos_listar.html", **list_veiculos(tipo, request.args))
+                return build_veiculos_export_response(tipo, request.args, user=current_user)
+            return render_template("veiculos_listar.html", **list_veiculos(tipo, request.args, user=current_user))
         except PermissionError:
             abort(403)
 
@@ -52,7 +57,7 @@ def register_routes(bp):
     def veiculos_logs_view():
         tipo = getattr(current_user, "tipo_usuario", None)
         try:
-            return render_template("veiculos_logs.html", **list_veiculos_logs(tipo, request.args))
+            return render_template("veiculos_logs.html", **list_veiculos_logs(tipo, request.args, user=current_user))
         except PermissionError:
             abort(403)
 
@@ -61,7 +66,7 @@ def register_routes(bp):
     def exportar_logs_veiculos_xlsx():
         tipo = getattr(current_user, "tipo_usuario", None)
         try:
-            return build_veiculos_logs_export(tipo, request.args)
+            return build_veiculos_logs_export(tipo, request.args, user=current_user)
         except PermissionError:
             abort(403)
 
@@ -72,7 +77,7 @@ def register_routes(bp):
 
         errors = {}
         form = {}
-        responsaveis = list_responsaveis_choices()
+        responsaveis = list_responsaveis_choices(user=current_user)
 
         if request.method == "POST":
             form, cleaned, errors = validate_veiculo_form(request.form, responsaveis=responsaveis)
@@ -87,7 +92,7 @@ def register_routes(bp):
                 )
 
             try:
-                create_veiculo(cleaned)
+                create_veiculo(cleaned, prefeitura_id=getattr(current_user, "prefeitura_id", None))
                 flash("Veículo cadastrado com sucesso!", "success")
                 return redirect(url_for("main.listar_veiculos"))
             except Exception:
@@ -113,9 +118,9 @@ def register_routes(bp):
     def editar_veiculo(veiculo_id):
         _require_admin_or_operario()
 
-        veiculo = Veiculos.query.get_or_404(veiculo_id)
+        veiculo = _get_scoped_veiculo_or_404(veiculo_id)
         errors = {}
-        responsaveis = list_responsaveis_choices()
+        responsaveis = list_responsaveis_choices(user=current_user)
 
         if request.method == "POST":
             form, cleaned, errors = validate_veiculo_form(
@@ -163,7 +168,7 @@ def register_routes(bp):
     def deletar_veiculo_view(veiculo_id):
         _require_admin_or_operario()
 
-        veiculo = Veiculos.query.get_or_404(veiculo_id)
+        veiculo = _get_scoped_veiculo_or_404(veiculo_id)
         try:
             delete_veiculo(veiculo)
             flash("Veículo removido!", "success")

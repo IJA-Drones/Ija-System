@@ -12,11 +12,11 @@ from werkzeug.utils import secure_filename
 
 from app.extensions import db
 from app.models import Abastecimento, EquipePiloto, LogVeiculo, Pilotos, Veiculos
-from app.shared.access import normalize_role
+from app.shared.access import apply_prefeitura_scope, normalize_role
 
 
-VEICULOS_ALLOWED_TYPES = ("admin", "visualizar", "operario", "operador", "uvis", "piloto")
-VEICULOS_LOGS_ALLOWED_TYPES = ("admin", "visualizar", "operario", "operador")
+VEICULOS_ALLOWED_TYPES = ("admin", "visualizar", "operario", "operador", "uvis", "piloto", "prefeitura_admin")
+VEICULOS_LOGS_ALLOWED_TYPES = ("admin", "visualizar", "operario", "operador", "prefeitura_admin")
 
 
 class VeiculoTurnoError(Exception):
@@ -25,7 +25,7 @@ class VeiculoTurnoError(Exception):
         self.category = category
 
 
-def list_veiculos(tipo_usuario, args):
+def list_veiculos(tipo_usuario, args, user=None):
     tipo_usuario = normalize_role(tipo_usuario)
     if tipo_usuario not in VEICULOS_ALLOWED_TYPES:
         raise PermissionError
@@ -36,6 +36,8 @@ def list_veiculos(tipo_usuario, args):
     status = (args.get("status") or "").strip()
 
     query = Veiculos.query
+    if user is not None:
+        query = apply_prefeitura_scope(query, user, Veiculos.prefeitura_id)
 
     if q:
         like = f"%{q}%"
@@ -73,12 +75,15 @@ def list_veiculos(tipo_usuario, args):
     }
 
 
-def list_responsaveis_choices():
+def list_responsaveis_choices(user=None):
     papeis_por_piloto = {}
     for row in db.session.query(EquipePiloto.piloto_id, EquipePiloto.papel).all():
         papeis_por_piloto.setdefault(row.piloto_id, set()).add((row.papel or "").lower())
 
-    pilotos = Pilotos.query.order_by(Pilotos.nome_piloto.asc()).all()
+    pilotos_query = Pilotos.query
+    if user is not None:
+        pilotos_query = apply_prefeitura_scope(pilotos_query, user, Pilotos.prefeitura_id)
+    pilotos = pilotos_query.order_by(Pilotos.nome_piloto.asc()).all()
 
     options = []
     for piloto in pilotos:
@@ -210,7 +215,7 @@ def validate_veiculo_form(form_data, *, responsaveis, existing_veiculo=None):
     return form, cleaned, errors
 
 
-def create_veiculo(cleaned):
+def create_veiculo(cleaned, *, prefeitura_id=None):
     novo = Veiculos(
         tipo_equipamento="veiculos",
         status=cleaned["status"],
@@ -228,6 +233,7 @@ def create_veiculo(cleaned):
         km_prox_revisao=cleaned["km_prox_revisao"],
         revisao_marcada_em=cleaned["revisao_marcada_em"],
         revisao_obs=cleaned["revisao_obs"],
+        prefeitura_id=prefeitura_id,
     )
     db.session.add(novo)
     db.session.commit()
@@ -287,6 +293,7 @@ def build_piloto_veiculos_context(user):
 
     veiculos = (
         Veiculos.query
+        .filter(Veiculos.prefeitura_id == getattr(user, "prefeitura_id", None))
         .filter(db.func.lower(Veiculos.responsavel) == nome_piloto.lower())
         .order_by(Veiculos.operacao.asc(), Veiculos.modelo.asc())
         .all()
@@ -320,7 +327,7 @@ def build_piloto_veiculos_context(user):
 
 def iniciar_turno_piloto(user, veiculo_id, form_data, files_data, root_path):
     nome_piloto = _piloto_nome_logado(user, strict=True)
-    veiculo = _veiculo_do_piloto_logado(veiculo_id, nome_piloto)
+    veiculo = _veiculo_do_piloto_logado(veiculo_id, nome_piloto, user=user)
 
     try:
         km_inicial = _parse_decimal_form(form_data.get("km_inicial"))
@@ -387,7 +394,7 @@ def iniciar_turno_piloto(user, veiculo_id, form_data, files_data, root_path):
 
 def registrar_abastecimento_turno_piloto(user, veiculo_id, form_data, files_data, root_path):
     nome_piloto = _piloto_nome_logado(user, strict=True)
-    veiculo = _veiculo_do_piloto_logado(veiculo_id, nome_piloto)
+    veiculo = _veiculo_do_piloto_logado(veiculo_id, nome_piloto, user=user)
     log = _buscar_turno_aberto_piloto(veiculo.id, user.piloto_id, incluir_abastecimentos=True)
 
     if not log:
@@ -456,7 +463,7 @@ def registrar_abastecimento_turno_piloto(user, veiculo_id, form_data, files_data
 
 def encerrar_turno_piloto(user, veiculo_id, form_data):
     nome_piloto = _piloto_nome_logado(user, strict=True)
-    _veiculo_do_piloto_logado(veiculo_id, nome_piloto)
+    _veiculo_do_piloto_logado(veiculo_id, nome_piloto, user=user)
 
     try:
         km_final = _parse_decimal_form(form_data.get("km_final"))
@@ -523,8 +530,11 @@ def _parse_optional_int(raw_value):
         return None
 
 
-def _veiculo_do_piloto_logado(veiculo_id, nome_piloto):
-    veiculo = Veiculos.query.get_or_404(veiculo_id)
+def _veiculo_do_piloto_logado(veiculo_id, nome_piloto, *, user=None):
+    query = Veiculos.query.filter(Veiculos.id == veiculo_id)
+    if user is not None:
+        query = apply_prefeitura_scope(query, user, Veiculos.prefeitura_id)
+    veiculo = query.first_or_404()
     if (veiculo.responsavel or "").strip().lower() != nome_piloto.lower():
         raise PermissionError
     return veiculo
@@ -557,12 +567,12 @@ def _salvar_upload_veiculo(arquivo, root_path, subpasta, prefixo, placa):
     return f"uploads/veiculos/{subpasta}/{nome}"
 
 
-def build_veiculos_export_response(tipo_usuario, args):
+def build_veiculos_export_response(tipo_usuario, args, user=None):
     tipo_usuario = normalize_role(tipo_usuario)
     if tipo_usuario not in VEICULOS_ALLOWED_TYPES:
         raise PermissionError
 
-    veiculos = list_veiculos(tipo_usuario, args)["veiculos"]
+    veiculos = list_veiculos(tipo_usuario, args, user=user)["veiculos"]
 
     wb = Workbook()
     ws = wb.active
@@ -735,7 +745,7 @@ def _ultima_movimentacao_log_subquery():
     )
 
 
-def list_veiculos_logs(tipo_usuario, args):
+def list_veiculos_logs(tipo_usuario, args, user=None):
     tipo_usuario = normalize_role(tipo_usuario)
     if tipo_usuario not in VEICULOS_LOGS_ALLOWED_TYPES:
         raise PermissionError
@@ -745,7 +755,7 @@ def list_veiculos_logs(tipo_usuario, args):
     data_fim = (args.get("data_fim") or "").strip()
     page = args.get("page", 1, type=int)
 
-    query = _build_veiculos_logs_query(q=q, data_inicio=data_inicio, data_fim=data_fim)
+    query = _build_veiculos_logs_query(user=user, q=q, data_inicio=data_inicio, data_fim=data_fim)
     paginacao = query.paginate(page=page, per_page=20, error_out=False)
     logs = paginacao.items
 
@@ -758,7 +768,7 @@ def list_veiculos_logs(tipo_usuario, args):
     }
 
 
-def build_veiculos_logs_export(tipo_usuario, args):
+def build_veiculos_logs_export(tipo_usuario, args, user=None):
     tipo_usuario = normalize_role(tipo_usuario)
     if tipo_usuario not in VEICULOS_LOGS_ALLOWED_TYPES:
         raise PermissionError
@@ -767,7 +777,7 @@ def build_veiculos_logs_export(tipo_usuario, args):
     data_inicio = (args.get("data_inicio") or "").strip()
     data_fim = (args.get("data_fim") or "").strip()
 
-    logs = _build_veiculos_logs_query(q=q, data_inicio=data_inicio, data_fim=data_fim).all()
+    logs = _build_veiculos_logs_query(user=user, q=q, data_inicio=data_inicio, data_fim=data_fim).all()
 
     header_fill = PatternFill("solid", fgColor="1F4E79")
     header_font = Font(color="FFFFFF", bold=True)
@@ -1123,7 +1133,7 @@ def build_veiculos_logs_export(tipo_usuario, args):
     )
 
 
-def _build_veiculos_logs_query(*, q="", data_inicio="", data_fim=""):
+def _build_veiculos_logs_query(*, user=None, q="", data_inicio="", data_fim=""):
     ultima_movimentacao_subq = _ultima_movimentacao_log_subquery()
     ultima_movimentacao_expr = db.func.coalesce(
         ultima_movimentacao_subq.c.ultima_movimentacao_em,
@@ -1141,6 +1151,8 @@ def _build_veiculos_logs_query(*, q="", data_inicio="", data_fim=""):
         .join(Veiculos, LogVeiculo.veiculo_id == Veiculos.id)
         .join(Pilotos, LogVeiculo.piloto_id == Pilotos.id)
     )
+    if user is not None:
+        query = apply_prefeitura_scope(query, user, Veiculos.prefeitura_id)
 
     if q:
         like = f"%{q}%"

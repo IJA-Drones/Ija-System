@@ -16,7 +16,12 @@ from app.extensions import db
 from app.models import Solicitacao, Usuario
 from app.modules.piloto_os.exporters import _fmt_date, _try_make_local_rlimage, _try_make_logo
 from app.modules.relatorios.service import build_relatorio_coleta_imagens_export_data, build_relatorio_os_export_data
-from app.shared.access import apply_regiao_scope, apply_solicitacao_regiao_scope
+from app.shared.access import (
+    apply_prefeitura_scope,
+    apply_regiao_scope,
+    apply_solicitacao_prefeitura_scope,
+    apply_solicitacao_regiao_scope,
+)
 from app.shared.query_filters import aplicar_filtros_base
 
 try:
@@ -49,6 +54,7 @@ def _build_pdf_export_data(user, args):
         filtro_data,
         uvis_id,
     )
+    base_query = apply_solicitacao_prefeitura_scope(base_query, user)
     base_query = apply_solicitacao_regiao_scope(base_query, user)
 
     query_detalhe = aplicar_filtros_base(
@@ -56,6 +62,7 @@ def _build_pdf_export_data(user, args):
         filtro_data,
         uvis_id,
     )
+    query_detalhe = apply_solicitacao_prefeitura_scope(query_detalhe, user)
     query_detalhe = apply_regiao_scope(query_detalhe, user, Usuario.regiao)
 
     query_results = query_detalhe.order_by(Solicitacao.data_criacao.desc()).all()
@@ -73,10 +80,13 @@ def _build_pdf_export_data(user, args):
         (regiao or "Não informado", total)
         for regiao, total in (
             apply_regiao_scope(
-                aplicar_filtros_base(
-                    db.session.query(Usuario.regiao, db.func.count(Solicitacao.id)).join(Usuario),
-                    filtro_data,
-                    uvis_id,
+                apply_solicitacao_prefeitura_scope(
+                    aplicar_filtros_base(
+                        db.session.query(Usuario.regiao, db.func.count(Solicitacao.id)).join(Usuario),
+                        filtro_data,
+                        uvis_id,
+                    ),
+                    user,
                 ),
                 user,
                 Usuario.regiao,
@@ -140,12 +150,15 @@ def _build_pdf_export_data(user, args):
         (uvis_nome or "Não informado", total)
         for uvis_nome, total in (
             apply_regiao_scope(
-                aplicar_filtros_base(
-                    db.session.query(Usuario.nome_uvis, db.func.count(Solicitacao.id))
-                    .join(Usuario)
-                    .filter(Usuario.tipo_usuario == "uvis"),
-                    filtro_data,
-                    uvis_id,
+                apply_solicitacao_prefeitura_scope(
+                    aplicar_filtros_base(
+                        db.session.query(Usuario.nome_uvis, db.func.count(Solicitacao.id))
+                        .join(Usuario)
+                        .filter(Usuario.tipo_usuario == "uvis"),
+                        filtro_data,
+                        uvis_id,
+                    ),
+                    user,
                 ),
                 user,
                 Usuario.regiao,
@@ -164,8 +177,11 @@ def _build_pdf_export_data(user, args):
         tuple(row)
         for row in (
             apply_solicitacao_regiao_scope(
-                db.session.query(func_mes.label("mes"), db.func.count(Solicitacao.id)).filter(
-                    Solicitacao.data_agendamento.isnot(None)
+                apply_solicitacao_prefeitura_scope(
+                    db.session.query(func_mes.label("mes"), db.func.count(Solicitacao.id)).filter(
+                        Solicitacao.data_agendamento.isnot(None)
+                    ),
+                    user,
                 ),
                 user,
             )
@@ -594,6 +610,7 @@ def build_relatorio_excel_export(user, args):
         Usuario.nome_uvis,
         Usuario.regiao,
     ).join(Usuario, Usuario.id == Solicitacao.usuario_id)
+    query_dados = apply_solicitacao_prefeitura_scope(query_dados, user)
     query_dados = apply_regiao_scope(query_dados, user, Usuario.regiao)
 
     if db.engine.name == "postgresql":
@@ -619,7 +636,11 @@ def build_relatorio_excel_export(user, args):
     if uvis_id:
         nome_uvis_filtro = (
             apply_regiao_scope(
-                db.session.query(Usuario.nome_uvis).filter(Usuario.id == uvis_id),
+                apply_prefeitura_scope(
+                    db.session.query(Usuario.nome_uvis).filter(Usuario.id == uvis_id),
+                    user,
+                    Usuario.prefeitura_id,
+                ),
                 user,
                 Usuario.regiao,
             )

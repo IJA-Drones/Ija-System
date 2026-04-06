@@ -12,7 +12,13 @@ from werkzeug.utils import secure_filename
 
 from app.extensions import db
 from app.models import Equipe, Solicitacao, Usuario
-from app.shared.access import ADMIN_PANEL_EDIT_TYPES, ADMIN_PANEL_VIEW_TYPES, apply_regiao_scope
+from app.shared.access import (
+    ADMIN_PANEL_EDIT_TYPES,
+    ADMIN_PANEL_VIEW_TYPES,
+    apply_prefeitura_scope,
+    apply_regiao_scope,
+    apply_solicitacao_prefeitura_scope,
+)
 from app.shared.uploads import allowed_file, get_upload_folder
 APPROVAL_STATUSES = {"APROVADO", "APROVADO COM RECOMENDAÇÕES"}
 
@@ -32,6 +38,7 @@ def get_google_maps_key():
 def build_uvis_select(user=None):
     query = Usuario.query.filter_by(tipo_usuario="uvis")
     if user is not None:
+        query = apply_prefeitura_scope(query, user, Usuario.prefeitura_id)
         query = apply_regiao_scope(query, user, Usuario.regiao)
     return query.order_by(Usuario.nome_uvis.asc()).all()
 
@@ -39,6 +46,7 @@ def build_uvis_select(user=None):
 def build_active_teams(user=None):
     query = Equipe.query.filter(Equipe.ativa.is_(True))
     if user is not None:
+        query = apply_prefeitura_scope(query, user, Equipe.prefeitura_id)
         query = apply_regiao_scope(query, user, Equipe.regiao)
     return query.order_by(Equipe.regiao.asc(), Equipe.nome_equipe.asc()).all()
 
@@ -78,6 +86,7 @@ def build_admin_dashboard_query(
         .join(Usuario)
         .filter(Solicitacao.status != "CANCELADO")
     )
+    query = apply_solicitacao_prefeitura_scope(query, user)
     query = apply_regiao_scope(query, user, Usuario.regiao)
 
     if filtro_status:
@@ -116,6 +125,7 @@ def build_admin_canceladas_query(
         .join(Usuario)
         .filter(Solicitacao.status == "CANCELADO")
     )
+    query = apply_solicitacao_prefeitura_scope(query, user)
     query = apply_regiao_scope(query, user, Usuario.regiao)
 
     if filtro_unidade:
@@ -143,6 +153,7 @@ def build_admin_historico_os_query(user, filtro_unidade: str, filtro_regiao: str
         .join(Usuario)
         .filter(Solicitacao.status.in_(["CONCLUÍDO", "CONCLUIDO"]))
     )
+    query = apply_solicitacao_prefeitura_scope(query, user)
     query = apply_regiao_scope(query, user, Usuario.regiao)
 
     if filtro_unidade:
@@ -170,6 +181,7 @@ def build_admin_export_query(
             joinedload(Solicitacao.equipe),
         )
     )
+    query = apply_solicitacao_prefeitura_scope(query, user)
     query = apply_regiao_scope(query, user, Usuario.regiao)
 
     if filtro_status:
@@ -313,7 +325,7 @@ def build_admin_dashboard_export(
     return output
 
 
-def apply_admin_update_fields(pedido, form):
+def apply_admin_update_fields(pedido, form, *, user=None):
     pedido.protocolo = form.get("protocolo")
     pedido.status = form.get("status")
     pedido.justificativa = form.get("justificativa")
@@ -330,7 +342,11 @@ def apply_admin_update_fields(pedido, form):
         except (TypeError, ValueError) as exc:
             raise ValueError("Equipe invalida.") from exc
 
-        equipe = db.session.get(Equipe, equipe_id_int)
+        equipe_query = Equipe.query.filter(Equipe.id == equipe_id_int)
+        if user is not None:
+            equipe_query = apply_prefeitura_scope(equipe_query, user, Equipe.prefeitura_id)
+            equipe_query = apply_regiao_scope(equipe_query, user, Equipe.regiao)
+        equipe = equipe_query.first()
         if not equipe:
             raise ValueError("Equipe selecionada nao existe.")
 

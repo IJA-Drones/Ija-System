@@ -23,19 +23,29 @@ from app.modules.equipamentos.service import (
     validate_bateria_form,
     validate_drone_form,
 )
-from app.shared.access import normalize_role
+from app.shared.access import apply_prefeitura_scope, normalize_role
 
 
 def _require_admin_or_operario():
-    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"admin", "operario", "operador"}:
+    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"admin", "operario", "operador", "prefeitura_admin"}:
         abort(403)
+
+
+def _get_scoped_drone_or_404(drone_id: int):
+    query = apply_prefeitura_scope(Drones.query, current_user, Drones.prefeitura_id)
+    return query.filter(Drones.id == drone_id).first_or_404()
+
+
+def _get_scoped_bateria_or_404(bateria_id: int):
+    query = apply_prefeitura_scope(Baterias.query, current_user, Baterias.prefeitura_id)
+    return query.filter(Baterias.id == bateria_id).first_or_404()
 
 
 def register_routes(bp):
     @bp.route("/equipamentos", methods=["GET"], endpoint="listar_equipamentos")
     @login_required
     def listar_equipamentos():
-        return render_template("equipamentos_listar.html", **list_equipamentos_dashboard())
+        return render_template("equipamentos_listar.html", **list_equipamentos_dashboard(user=current_user))
 
     @bp.route("/equipamentos/drones", methods=["GET"], endpoint="listar_drones")
     @login_required
@@ -43,9 +53,9 @@ def register_routes(bp):
         tipo_usuario = normalize_role(getattr(current_user, "tipo_usuario", None))
         return render_template(
             "drones_listar.html",
-            drones=list_drones(),
+            drones=list_drones(user=current_user),
             is_admin=tipo_usuario == "admin",
-            can_manage=tipo_usuario in {"admin", "operario", "operador"},
+            can_manage=tipo_usuario in {"admin", "operario", "operador", "prefeitura_admin"},
         )
 
     @bp.route("/equipamentos/baterias", methods=["GET"], endpoint="listar_baterias")
@@ -54,9 +64,9 @@ def register_routes(bp):
         tipo_usuario = normalize_role(getattr(current_user, "tipo_usuario", None))
         return render_template(
             "baterias_listar.html",
-            baterias=list_baterias(),
+            baterias=list_baterias(user=current_user),
             is_admin=tipo_usuario == "admin",
-            can_manage=tipo_usuario in {"admin", "operario", "operador"},
+            can_manage=tipo_usuario in {"admin", "operario", "operador", "prefeitura_admin"},
         )
 
     @bp.route("/drones/cadastrar", methods=["GET", "POST"], endpoint="cadastrar_drone")
@@ -66,17 +76,17 @@ def register_routes(bp):
 
         errors = {}
         form = {}
-        equipes = list_active_equipes()
+        equipes = list_active_equipes(user=current_user)
 
         if request.method == "POST":
-            form, cleaned, errors = validate_drone_form(request.form)
+            form, cleaned, errors = validate_drone_form(request.form, user=current_user)
 
             if errors:
                 flash("Corrija os campos destacados.", "warning")
                 return render_template("cadastrar_drone.html", form=form, errors=errors, equipes=equipes)
 
             try:
-                create_drone(cleaned)
+                create_drone(cleaned, prefeitura_id=getattr(current_user, "prefeitura_id", None))
                 flash("Drone cadastrado com sucesso!", "success")
                 return redirect(url_for("main.cadastrar_drone"))
             except Exception:
@@ -92,12 +102,12 @@ def register_routes(bp):
     def editar_drone(drone_id):
         _require_admin_or_operario()
 
-        drone = Drones.query.get_or_404(drone_id)
+        drone = _get_scoped_drone_or_404(drone_id)
         errors = {}
-        equipes = list_active_equipes()
+        equipes = list_active_equipes(user=current_user)
 
         if request.method == "POST":
-            form, cleaned, errors = validate_drone_form(request.form, existing_drone=drone)
+            form, cleaned, errors = validate_drone_form(request.form, existing_drone=drone, user=current_user)
 
             if errors:
                 flash("Corrija os campos destacados.", "warning")
@@ -138,7 +148,7 @@ def register_routes(bp):
     def deletar_drone_view(drone_id):
         _require_admin_or_operario()
 
-        drone = Drones.query.get_or_404(drone_id)
+        drone = _get_scoped_drone_or_404(drone_id)
         try:
             delete_drone(drone)
             flash("Drone removido com sucesso.", "success")
@@ -156,18 +166,18 @@ def register_routes(bp):
 
         errors = {}
         form = {}
-        drones = list_drones_for_baterias()
+        drones = list_drones_for_baterias(user=current_user)
         drone_id_pre = request.args.get("drone_id", type=int)
 
         if request.method == "POST":
-            form, cleaned, errors = validate_bateria_form(request.form)
+            form, cleaned, errors = validate_bateria_form(request.form, user=current_user)
 
             if errors:
                 flash("Corrija os campos destacados.", "warning")
                 return render_template("cadastrar_bateria.html", form=form, errors=errors, drones=drones)
 
             try:
-                create_bateria(cleaned)
+                create_bateria(cleaned, prefeitura_id=getattr(current_user, "prefeitura_id", None))
                 flash("Bateria cadastrada com sucesso!", "success")
                 return redirect(url_for("main.listar_baterias"))
             except Exception:
@@ -176,7 +186,7 @@ def register_routes(bp):
                 flash("Erro interno ao cadastrar a bateria. Tente novamente.", "danger")
                 return render_template("cadastrar_bateria.html", form=form, errors=errors, drones=drones)
 
-        if drone_id_pre and db.session.get(Drones, drone_id_pre):
+        if drone_id_pre and apply_prefeitura_scope(Drones.query, current_user, Drones.prefeitura_id).filter(Drones.id == drone_id_pre).first():
             form["drone_id"] = str(drone_id_pre)
 
         return render_template("cadastrar_bateria.html", form=form, errors=errors, drones=drones)
@@ -186,12 +196,12 @@ def register_routes(bp):
     def editar_bateria(bateria_id):
         _require_admin_or_operario()
 
-        bateria = Baterias.query.get_or_404(bateria_id)
-        drones = list_drones_for_baterias()
+        bateria = _get_scoped_bateria_or_404(bateria_id)
+        drones = list_drones_for_baterias(user=current_user)
         errors = {}
 
         if request.method == "POST":
-            form, cleaned, errors = validate_bateria_form(request.form, existing_bateria=bateria)
+            form, cleaned, errors = validate_bateria_form(request.form, existing_bateria=bateria, user=current_user)
 
             if errors:
                 flash("Corrija os campos destacados.", "warning")
@@ -232,7 +242,7 @@ def register_routes(bp):
     def deletar_bateria_view(bateria_id):
         _require_admin_or_operario()
 
-        bateria = Baterias.query.get_or_404(bateria_id)
+        bateria = _get_scoped_bateria_or_404(bateria_id)
         try:
             delete_bateria(bateria)
             flash("Bateria removida com sucesso.", "success")
@@ -246,7 +256,7 @@ def register_routes(bp):
     @bp.route("/equipamentos/em-manutencao", methods=["GET"], endpoint="equipamentos_manutencao")
     @login_required
     def equipamentos_manutencao():
-        equipamentos = list_equipamentos_manutencao()
+        equipamentos = list_equipamentos_manutencao(user=current_user)
         return render_template(
             "equipamentos_manutencao.html",
             equipamentos=equipamentos,
@@ -257,7 +267,7 @@ def register_routes(bp):
     @login_required
     def update_ciclos(id):
         _require_admin_or_operario()
-        bateria = Baterias.query.get_or_404(id)
+        bateria = _get_scoped_bateria_or_404(id)
         return jsonify(update_bateria_ciclos(bateria, request.get_json() or {}))
 
     @bp.route("/drones/<int:drone_id>/manutencao", methods=["POST"], endpoint="enviar_manutencao_drone")
@@ -265,7 +275,7 @@ def register_routes(bp):
     def enviar_manutencao_drone(drone_id):
         _require_admin_or_operario()
 
-        drone = Drones.query.get_or_404(drone_id)
+        drone = _get_scoped_drone_or_404(drone_id)
         try:
             if not send_drone_to_manutencao(drone):
                 flash("Este drone ja esta em manutencao.", "warning")

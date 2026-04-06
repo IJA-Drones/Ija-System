@@ -19,6 +19,7 @@ from app.modules.admin_dashboard.service import (
     get_google_maps_key,
     save_admin_attachment,
 )
+from app.shared.access import apply_solicitacao_prefeitura_scope
 
 
 def _prefers_html_response():
@@ -33,6 +34,11 @@ def _query_args_without_page():
     args = request.args.to_dict(flat=True)
     args.pop("page", None)
     return args
+
+
+def _get_scoped_solicitacao_or_404(solicitacao_id: int):
+    query = apply_solicitacao_prefeitura_scope(Solicitacao.query, current_user)
+    return query.filter(Solicitacao.id == solicitacao_id).first_or_404()
 
 
 def _admin_update_error(message: str, status_code: int, category: str):
@@ -134,10 +140,10 @@ def register_routes(bp):
         if not can_edit_admin_panel(current_user):
             return _admin_update_error("Permissao negada.", 403, "danger")
 
-        pedido = Solicitacao.query.get_or_404(id)
+        pedido = _get_scoped_solicitacao_or_404(id)
 
         try:
-            equipe_nome = apply_admin_update_fields(pedido, request.form)
+            equipe_nome = apply_admin_update_fields(pedido, request.form, user=current_user)
         except ValueError as exc:
             return _admin_update_error(str(exc), 400, "warning")
 
@@ -176,7 +182,7 @@ def register_routes(bp):
     @bp.post("/admin/solicitacao/<int:id>/cancelar")
     @login_required
     def cancelar_solicitacao_admin(id):
-        solicitacao = Solicitacao.query.get_or_404(id)
+        solicitacao = _get_scoped_solicitacao_or_404(id)
 
         if not can_edit_admin_panel(current_user) and solicitacao.usuario_id != current_user.id:
             abort(403)

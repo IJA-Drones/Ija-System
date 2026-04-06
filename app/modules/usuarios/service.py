@@ -2,10 +2,10 @@ from sqlalchemy import or_
 
 from app.extensions import db
 from app.models import Notificacao, Usuario
-from app.shared.access import REGIONAL_USER_TYPE, normalize_regiao
+from app.shared.access import PREFEITURA_ADMIN_USER_TYPE, REGIONAL_USER_TYPE, normalize_regiao
 
 
-ADMIN_USER_TYPES = ("admin", "operario", REGIONAL_USER_TYPE)
+ADMIN_USER_TYPES = ("admin", "operario", REGIONAL_USER_TYPE, PREFEITURA_ADMIN_USER_TYPE)
 
 
 def admin_user_types():
@@ -44,7 +44,15 @@ def build_admin_users_query(q: str, tipo: str):
     return query.order_by(Usuario.tipo_usuario.asc(), Usuario.nome_uvis.asc())
 
 
-def validate_new_admin_user(nome: str, login: str, tipo_usuario: str, regiao: str, senha: str, senha2: str):
+def validate_new_admin_user(
+    nome: str,
+    login: str,
+    tipo_usuario: str,
+    regiao: str,
+    prefeitura_id,
+    senha: str,
+    senha2: str,
+):
     errors = {}
 
     if not nome:
@@ -52,9 +60,11 @@ def validate_new_admin_user(nome: str, login: str, tipo_usuario: str, regiao: st
     if not login:
         errors["login"] = "Informe o login."
     if tipo_usuario not in ADMIN_USER_TYPES:
-        errors["tipo_usuario"] = "Selecione um tipo valido (admin, operario ou regional)."
+        errors["tipo_usuario"] = "Selecione um tipo valido."
     if tipo_usuario == REGIONAL_USER_TYPE and not normalize_regiao(regiao):
         errors["regiao"] = "Informe a regiao do usuario regional."
+    if tipo_usuario == PREFEITURA_ADMIN_USER_TYPE and not prefeitura_id:
+        errors["prefeitura_id"] = "Selecione a prefeitura desse usuario."
     if not senha:
         errors["senha"] = "Informe uma senha."
     if not senha2:
@@ -72,6 +82,7 @@ def validate_edit_admin_user(
     login: str,
     tipo_usuario: str,
     regiao: str,
+    prefeitura_id,
     senha: str,
     senha2: str,
     usuario_id: int,
@@ -86,6 +97,8 @@ def validate_edit_admin_user(
         errors["tipo_usuario"] = "Tipo invalido."
     if tipo_usuario == REGIONAL_USER_TYPE and not normalize_regiao(regiao):
         errors["regiao"] = "Informe a regiao do usuario regional."
+    if tipo_usuario == PREFEITURA_ADMIN_USER_TYPE and not prefeitura_id:
+        errors["prefeitura_id"] = "Selecione a prefeitura desse usuario."
 
     if senha or senha2:
         if len(senha) < 4:
@@ -99,7 +112,7 @@ def validate_edit_admin_user(
     return errors
 
 
-def validate_password_reset(senha: str, senha2: str):
+def validate_password_reset(senha: str, senha2: str, **_kwargs):
     if not senha or not senha2:
         return "Informe e confirme a senha."
 

@@ -7,6 +7,7 @@ from openpyxl.utils import get_column_letter
 
 from app.extensions import db
 from app.models import Clientes
+from app.shared.access import apply_prefeitura_scope
 from app.shared.formatters import (
     format_cep,
     format_documento,
@@ -42,8 +43,10 @@ def build_endereco_full(cep, logradouro, numero, complemento, bairro, cidade, uf
     return " - ".join([item for item in [linha_1, linha_2, linha_3] if item]).strip()
 
 
-def build_clientes_query(q: str, documento: str, email: str, telefone: str, sort: str):
+def build_clientes_query(q: str, documento: str, email: str, telefone: str, sort: str, user=None):
     query = Clientes.query
+    if user is not None:
+        query = apply_prefeitura_scope(query, user, Clientes.prefeitura_id)
 
     if documento:
         query = query.filter(Clientes.documento.ilike(f"%{only_digits(documento)}%"))

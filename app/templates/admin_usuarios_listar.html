@@ -242,6 +242,7 @@
                 <option value="admin" {% if tipo == 'admin' %}selected{% endif %}>Admin</option>
                 <option value="operario" {% if tipo == 'operario' %}selected{% endif %}>Operário</option>
                 <option value="regional" {% if tipo == 'regional' %}selected{% endif %}>Regional</option>
+                <option value="prefeitura_admin" {% if tipo == 'prefeitura_admin' %}selected{% endif %}>Prefeitura (Admin)</option>
               </select>
             </div>
 
@@ -297,12 +298,19 @@
                     <span class="badge bg-primary">ADMIN</span>
                   {% elif u.tipo_usuario == 'regional' %}
                     <span class="badge bg-info text-dark">REGIONAL</span>
+                  {% elif u.tipo_usuario == 'prefeitura_admin' %}
+                    <span class="badge bg-dark">PREFEITURA</span>
                   {% else %}
                     <span class="badge bg-warning text-dark">OPERÁRIO</span>
                   {% endif %}
                 </td>
 
-                <td>{{ u.regiao or '-' }}</td>                
+                <td>
+                  {{ u.regiao or '-' }}
+                  {% if u.prefeitura %}
+                    <div class="small text-muted">{{ u.prefeitura.nome }}</div>
+                  {% endif %}
+                </td>
 
                 <td><code>{{ u.login }}</code></td>
 

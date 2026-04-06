@@ -3,7 +3,7 @@ from flask_login import current_user, login_required
 from sqlalchemy.exc import IntegrityError
 
 from app.extensions import db
-from app.models import Usuario
+from app.models import Prefeitura, Usuario
 from app.modules.usuarios.service import (
     build_admin_users_query,
     delete_admin_user,
@@ -29,6 +29,7 @@ def register_routes(bp):
             flash("Voce nao tem permissao para acessar esta pagina.", "danger")
             return redirect(url_for("main.dashboard"))
 
+        prefeituras = Prefeitura.query.filter(Prefeitura.ativa.is_(True)).order_by(Prefeitura.nome.asc()).all()
         errors = {}
         form = {}
 
@@ -37,6 +38,7 @@ def register_routes(bp):
             login = (request.form.get("login") or "").strip()
             tipo_usuario = (request.form.get("tipo_usuario") or "").strip().lower()
             regiao = (request.form.get("regiao") or "").strip() or None
+            prefeitura_id = request.form.get("prefeitura_id", type=int)
             codigo_setor = (request.form.get("codigo_setor") or "").strip() or None
             senha = (request.form.get("senha") or "").strip()
             senha2 = (request.form.get("senha2") or "").strip()
@@ -46,19 +48,34 @@ def register_routes(bp):
                 "login": login,
                 "tipo_usuario": tipo_usuario,
                 "regiao": regiao or "",
+                "prefeitura_id": prefeitura_id or "",
                 "codigo_setor": codigo_setor or "",
                 "senha": senha,
                 "senha2": senha2,
             }
 
-            errors = validate_new_admin_user(nome, login, tipo_usuario, regiao, senha, senha2)
+            errors = validate_new_admin_user(
+                nome,
+                login,
+                tipo_usuario,
+                regiao,
+                prefeitura_id,
+                senha,
+                senha2,
+            )
             if errors:
                 flash("Revise os campos destacados.", "warning")
-                return render_template("admin_usuario_novo.html", errors=errors, form=form)
+                return render_template(
+                    "admin_usuario_novo.html",
+                    errors=errors,
+                    form=form,
+                    prefeituras=prefeituras,
+                )
 
             novo = Usuario(
                 nome_uvis=nome,
                 regiao=regiao,
+                prefeitura_id=prefeitura_id,
                 codigo_setor=codigo_setor,
                 login=login,
                 tipo_usuario=tipo_usuario,
@@ -79,7 +96,12 @@ def register_routes(bp):
                 current_app.logger.exception("Erro ao criar usuario administrativo.")
                 flash("Erro interno ao criar o usuario. Tente novamente.", "danger")
 
-        return render_template("admin_usuario_novo.html", errors=errors, form=form)
+        return render_template(
+            "admin_usuario_novo.html",
+            errors=errors,
+            form=form,
+            prefeituras=prefeituras,
+        )
 
     @bp.route("/admin/usuarios", methods=["GET"], endpoint="admin_usuarios_listar")
     @login_required
@@ -108,6 +130,7 @@ def register_routes(bp):
             abort(403)
 
         usuario = Usuario.query.get_or_404(id)
+        prefeituras = Prefeitura.query.filter(Prefeitura.ativa.is_(True)).order_by(Prefeitura.nome.asc()).all()
         if not is_admin_managed_user(usuario):
             flash("Registro invalido para edicao.", "warning")
             return redirect(url_for("main.admin_usuarios_listar"))
@@ -119,6 +142,7 @@ def register_routes(bp):
             nome_uvis = (request.form.get("nome_uvis") or "").strip()
             login = (request.form.get("login") or "").strip()
             regiao = (request.form.get("regiao") or "").strip() or None
+            prefeitura_id = request.form.get("prefeitura_id", type=int)
             codigo_setor = (request.form.get("codigo_setor") or "").strip() or None
 
             if usuario.id == current_user.id:
@@ -133,6 +157,7 @@ def register_routes(bp):
                 "nome_uvis": nome_uvis,
                 "login": login,
                 "regiao": regiao or "",
+                "prefeitura_id": prefeitura_id or "",
                 "codigo_setor": codigo_setor or "",
                 "tipo_usuario": tipo_usuario,
             }
@@ -142,6 +167,7 @@ def register_routes(bp):
                 login=login,
                 tipo_usuario=tipo_usuario,
                 regiao=regiao,
+                prefeitura_id=prefeitura_id,
                 senha=senha,
                 senha2=senha2,
                 usuario_id=usuario.id,
@@ -152,11 +178,13 @@ def register_routes(bp):
                     usuario=usuario,
                     errors=errors,
                     form=form,
+                    prefeituras=prefeituras,
                 )
 
             usuario.nome_uvis = nome_uvis
             usuario.login = login
             usuario.regiao = regiao
+            usuario.prefeitura_id = prefeitura_id
             usuario.codigo_setor = codigo_setor
             usuario.tipo_usuario = tipo_usuario
 
@@ -180,12 +208,14 @@ def register_routes(bp):
                 usuario=usuario,
                 errors=errors,
                 form=form,
+                prefeituras=prefeituras,
             )
 
         form = {
             "nome_uvis": usuario.nome_uvis or "",
             "login": usuario.login or "",
             "regiao": usuario.regiao or "",
+            "prefeitura_id": usuario.prefeitura_id or "",
             "codigo_setor": usuario.codigo_setor or "",
             "tipo_usuario": usuario.tipo_usuario or "operario",
         }
@@ -195,6 +225,7 @@ def register_routes(bp):
             usuario=usuario,
             errors=errors,
             form=form,
+            prefeituras=prefeituras,
         )
 
     @bp.route("/admin/usuarios/<int:id>/reset_senha", methods=["POST"], endpoint="admin_usuario_reset_senha")
