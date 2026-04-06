@@ -2,52 +2,125 @@
 {% block extra_styles %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/login_insight.css') }}">
 {% endblock %}
 
 {% block auth_content %}
+<section class="login-insight-page">
+    <div class="login-shell">
+        <article class="login-card">
+            <div class="login-card-body">
+                <span class="login-eyebrow">
+                    <i class="bi bi-shield-lock-fill"></i>
+                    Acesso ao sistema
+                </span>
 
-<div class="container-fluid d-flex align-items-center justify-content-center" 
-     style="margin-top: 10px; height: calc(100vh - 200px);">
-    
-    <div class="col-md-5 col-lg-4">
-        
-        <div class="card p-4 shadow-lg border-0 rounded-4">
-            
-            <div class="text-center mb-4">
-                <h3 class="fw-bold text-primary">Bem-vindo</h3>
-                <p class="text-muted">Gestão de Solicitações de Voo</p>
+                <h1 class="login-title">Bem-vindo ao seu sistema.</h1>
+                <p class="login-subtitle">
+                    Entre com seu usuário para acessar a gestão de solicitações de voo e o painel operacional.
+                </p>
+
+                <form method="POST">
+                    <div class="form-floating mb-3">
+                        <input type="text" name="login" class="form-control rounded-3" id="floatingInput" placeholder="Usuário" required />
+                        <label for="floatingInput">Usuário</label>
+                    </div>
+
+                    <div class="form-floating mb-4">
+                        <input type="password" name="senha" class="form-control rounded-3" id="floatingPassword" placeholder="Senha" required />
+                        <label for="floatingPassword">Senha</label>
+                    </div>
+
+                    <button type="submit" class="btn btn-success w-100 py-2 fs-5 fw-bold rounded-pill shadow-sm justify-content-center login-submit">
+                        Entrar
+                    </button>
+                </form>
+
+                <p class="login-helper mb-0">
+                    Se tiver dúvidas sobre o sistema, use o assistente ao lado antes de abrir um chamado.
+                    <strong>Não envie sua senha no chat.</strong>
+                </p>
             </div>
-            
-            <form method="POST">
-                
-                <div class="form-floating mb-3">
-                    <input type="text" name="login" class="form-control rounded-3" id="floatingInput" placeholder="Usuário" required />
-                    <label for="floatingInput">Usuário</label>
+        </article>
+
+        <article class="login-card login-assistant">
+            <div class="login-assistant-head">
+                <span class="login-assistant-tag">
+                    <i class="bi bi-robot"></i>
+                    IJA Insight
+                </span>
+                <h2>Consulte o assistente já na tela inicial</h2>                
+            </div>
+
+            <div class="login-assistant-note">
+                Exemplos: "Como funciona a UVIS no sistema?", "Quais perfis existem?" ou "Onde vejo o status da solicitação?".
+            </div>
+
+            <div class="login-assistant-body">
+                <div class="login-chatkit-wrap">
+                    <div id="loginChatkitStatus" class="login-chatkit-status">
+                        Carregando assistente...
+                    </div>
+                    <openai-chatkit id="loginChatKit" class="login-chatkit"></openai-chatkit>
                 </div>
-
-                <div class="form-floating mb-4">
-                    <input type="password" name="senha" class="form-control rounded-3" id="floatingPassword" placeholder="Senha" required />
-                    <label for="floatingPassword">Senha</label>
-                </div>
-
-                <button type="submit" class="btn btn-success w-100 py-2 fs-5 fw-bold rounded-pill shadow-sm justify-content-center">
-                    Entrar
-                </button>
-
-            </form>
-        </div>
+            </div>
+        </article>
     </div>
-</div>
-<footer class="main-footer py-3 mt-2">
+</section>
+
+<footer class="main-footer py-3 mt-3">
     <div class="container-fluid text-center">
         <p class="mb-0 small text-muted">
-        &copy; 2026 <span class="fw-bold">Oceano Azul</span>. Todos os
-        direitos reservados.
+            &copy; 2026 <span class="fw-bold">Oceano Azul</span>. Todos os direitos reservados.
         </p>
     </div>
 </footer>
-
 {% endblock auth_content %}
 
+{% block scripts %}
+<script src="https://cdn.platform.openai.com/deployments/chatkit/chatkit.js" async></script>
+<script>
+  (function () {
+    const API_URL = "{{ url_for('main.login_chatkit_session') }}";
+    const statusEl = document.getElementById("loginChatkitStatus");
+    const chatkitEl = document.getElementById("loginChatKit");
 
+    if (!statusEl || !chatkitEl) return;
 
+    async function fetchClientSecret() {
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" }
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || "Não foi possível iniciar o ChatKit.");
+      }
+
+      return data.client_secret;
+    }
+
+    async function initChatKit() {
+      try {
+        await customElements.whenDefined("openai-chatkit");
+
+        chatkitEl.setOptions({
+          api: {
+            async getClientSecret() {
+              return await fetchClientSecret();
+            }
+          }
+        });
+
+        statusEl.style.display = "none";
+      } catch (error) {
+        statusEl.textContent = error.message || "Falha ao carregar o assistente.";
+        statusEl.classList.add("is-error");
+      }
+    }
+
+    initChatKit();
+  })();
+</script>
+{% endblock %}

@@ -770,19 +770,19 @@
   <i class="bi bi-robot"></i>
 </button>
 
-<div id="uvisChatWindow" class="chat-window">
+<div id="uvisChatWindow" class="chat-window chatkit-window">
   <div class="bot-header">
     <div class="bot-title">
       <i class="bi bi-robot fs-5"></i>
       <div>
         Ajuda UVIS
-        <span class="bot-badge ms-1">Assistente</span>
+        <span class="bot-badge ms-1">ChatKit</span>
       </div>
     </div>
 
     <div class="d-flex gap-2">
-      <button id="uvisBotClear" class="btn-close-chat" title="Limpar conversa" style="font-size: 1rem;">
-        <i class="bi bi-trash"></i>
+      <button id="uvisBotClear" class="btn-close-chat" title="Nova conversa" style="font-size: 1rem;">
+        <i class="bi bi-arrow-clockwise"></i>
       </button>
 
       <button id="uvisBotClose" type="button" class="btn-close-chat">
@@ -791,8 +791,13 @@
     </div>
   </div>
 
-  <div class="bot-body">
-    <div id="uvisChatMessages" class="d-flex flex-column gap-2 mb-3"></div>
+  <div class="bot-body p-0">
+    <div id="uvisChatkitShell" class="chatkit-shell">
+      <div id="uvisChatkitStatus" class="chatkit-status">
+        Carregando assistente UVIS...
+      </div>
+      <openai-chatkit id="uvisChatkit" class="chatkit-panel"></openai-chatkit>
+    </div>
 
     <div class="chips-container mt-auto">
       <button class="chip" data-q="O que significa Em Análise?">Status</button>
@@ -817,6 +822,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.platform.openai.com/deployments/chatkit/chatkit.js" async></script>
 <script>
   document.addEventListener("DOMContentLoaded", () => {
       document.querySelectorAll('.form-cancelar').forEach(form => {
@@ -849,6 +855,99 @@
   (function () {
     if (window.UVIS_CHAT_INIT) return;
     window.UVIS_CHAT_INIT = true;
+
+    {
+      const chatkitSessionUrl = "{{ url_for('main.uvis_chatkit_session') }}";
+      const chatkitClearBtn = document.getElementById("uvisBotClear");
+      const chatkitWindow = document.getElementById("uvisChatWindow");
+      const chatkitCloseBtns = document.querySelectorAll("#uvisBotClose");
+      const chatkitShell = document.getElementById("uvisChatkitShell");
+      let chatkitMountPromise = null;
+
+      if (!chatkitClearBtn || !chatkitWindow || !chatkitShell) return;
+
+      function renderChatkitFrame() {
+        chatkitShell.innerHTML = `
+          <div id="uvisChatkitStatus" class="chatkit-status">
+            Carregando assistente UVIS...
+          </div>
+          <openai-chatkit id="uvisChatkit" class="chatkit-panel"></openai-chatkit>
+        `;
+
+        return {
+          statusEl: document.getElementById("uvisChatkitStatus"),
+          chatkitEl: document.getElementById("uvisChatkit")
+        };
+      }
+
+      async function fetchClientSecret() {
+        const response = await fetch(chatkitSessionUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" }
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(data.error || "Nao foi possivel iniciar o assistente UVIS.");
+        }
+
+        return data.client_secret;
+      }
+
+      async function mountChatkit(forceReset = false) {
+        if (forceReset) {
+          chatkitMountPromise = null;
+        }
+
+        if (chatkitMountPromise) {
+          return chatkitMountPromise;
+        }
+
+        chatkitMountPromise = (async () => {
+          const { statusEl, chatkitEl } = forceReset ? renderChatkitFrame() : {
+            statusEl: document.getElementById("uvisChatkitStatus"),
+            chatkitEl: document.getElementById("uvisChatkit")
+          };
+
+          try {
+            await customElements.whenDefined("openai-chatkit");
+            chatkitEl.setOptions({
+              api: {
+                async getClientSecret() {
+                  return await fetchClientSecret();
+                }
+              }
+            });
+            statusEl.style.display = "none";
+          } catch (error) {
+            statusEl.textContent = error.message || "Falha ao carregar o assistente UVIS.";
+            statusEl.classList.add("is-error");
+            throw error;
+          }
+        })();
+
+        try {
+          await chatkitMountPromise;
+        } catch (error) {
+          chatkitMountPromise = null;
+        }
+      }
+
+      window.toggleUvisChat = function() {
+        chatkitWindow.classList.toggle('active');
+        if (chatkitWindow.classList.contains('active')) {
+          mountChatkit();
+        }
+      };
+
+      chatkitCloseBtns.forEach((btn) => btn.addEventListener("click", window.toggleUvisChat));
+      chatkitClearBtn.addEventListener("click", () => {
+        renderChatkitFrame();
+        mountChatkit(true);
+      });
+
+      return;
+    }
 
     const msgs = document.getElementById("uvisChatMessages");
     const input = document.getElementById("uvisChatInput");

@@ -766,18 +766,24 @@
     <i class="bi bi-robot"></i>
 </button>
 
-<div id="adminBotWindow" class="chat-window">
+<div id="adminBotWindow" class="chat-window chatkit-window">
     <div class="bot-header">
         <div class="bot-title">
             <i class="bi bi-robot fs-5"></i>
-            <div>Ajuda do Painel <span class="bot-badge ms-1">FAQ Admin</span></div>
+            <div>Ajuda do Painel <span class="bot-badge ms-1">ChatKit</span></div>
         </div>
         <div class="d-flex gap-2">
-            <button id="adminBotClear" class="btn-close-chat" title="Limpar"><i class="bi bi-trash"></i></button>
+            <button id="adminBotClear" class="btn-close-chat" title="Nova conversa"><i class="bi bi-arrow-clockwise"></i></button>
             <button id="adminBotClose" class="btn-close-chat"><i class="bi bi-x-lg"></i></button>
         </div>
     </div>
-    <div class="bot-body">
+    <div class="bot-body p-0">
+        <div id="adminChatkitShell" class="chatkit-shell">
+            <div id="adminChatkitStatus" class="chatkit-status">
+                Carregando assistente do painel...
+            </div>
+            <openai-chatkit id="adminChatkit" class="chatkit-panel"></openai-chatkit>
+        </div>
         <div id="adminBotMessages" class="d-flex flex-column gap-2 mb-3"></div>
         <div class="chips-container mt-auto">
             <button class="chip" data-q="Como filtrar por status/unidade?">Filtros</button>
@@ -822,6 +828,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.platform.openai.com/deployments/chatkit/chatkit.js" async></script>
 <script>
 // ---- Google Maps (lazy load) ----
 const GOOGLE_MAPS_KEY = "{{ google_maps_key or '' }}";
@@ -1085,6 +1092,99 @@ document.addEventListener("DOMContentLoaded", () => {
     (function () {
       if (window.ADMIN_CHAT_INIT) return;
       window.ADMIN_CHAT_INIT = true;
+
+      {
+        const chatkitSessionUrl = "{{ url_for('main.admin_chatkit_session') }}";
+        const chatkitWindow = document.getElementById("adminBotWindow");
+        const chatkitShell = document.getElementById("adminChatkitShell");
+        const chatkitClearBtn = document.getElementById("adminBotClear");
+        const chatkitCloseBtn = document.getElementById("adminBotClose");
+        let chatkitMountPromise = null;
+
+        if (!chatkitWindow || !chatkitShell || !chatkitClearBtn || !chatkitCloseBtn) return;
+
+        function renderChatkitFrame() {
+          chatkitShell.innerHTML = `
+            <div id="adminChatkitStatus" class="chatkit-status">
+              Carregando assistente do painel...
+            </div>
+            <openai-chatkit id="adminChatkit" class="chatkit-panel"></openai-chatkit>
+          `;
+
+          return {
+            statusEl: document.getElementById("adminChatkitStatus"),
+            chatkitEl: document.getElementById("adminChatkit")
+          };
+        }
+
+        async function fetchClientSecret() {
+          const response = await fetch(chatkitSessionUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" }
+          });
+
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            throw new Error(data.error || "Nao foi possivel iniciar o assistente do painel.");
+          }
+
+          return data.client_secret;
+        }
+
+        async function mountChatkit(forceReset = false) {
+          if (forceReset) {
+            chatkitMountPromise = null;
+          }
+
+          if (chatkitMountPromise) {
+            return chatkitMountPromise;
+          }
+
+          chatkitMountPromise = (async () => {
+            const { statusEl, chatkitEl } = forceReset ? renderChatkitFrame() : {
+              statusEl: document.getElementById("adminChatkitStatus"),
+              chatkitEl: document.getElementById("adminChatkit")
+            };
+
+            try {
+              await customElements.whenDefined("openai-chatkit");
+              chatkitEl.setOptions({
+                api: {
+                  async getClientSecret() {
+                    return await fetchClientSecret();
+                  }
+                }
+              });
+              statusEl.style.display = "none";
+            } catch (error) {
+              statusEl.textContent = error.message || "Falha ao carregar o assistente do painel.";
+              statusEl.classList.add("is-error");
+              throw error;
+            }
+          })();
+
+          try {
+            await chatkitMountPromise;
+          } catch (error) {
+            chatkitMountPromise = null;
+          }
+        }
+
+        window.toggleAdminChat = function() {
+          chatkitWindow.classList.toggle("active");
+          if (chatkitWindow.classList.contains("active")) {
+            mountChatkit();
+          }
+        };
+
+        chatkitCloseBtn.addEventListener("click", window.toggleAdminChat);
+        chatkitClearBtn.addEventListener("click", () => {
+          renderChatkitFrame();
+          mountChatkit(true);
+        });
+
+        return;
+      }
 
       const API_URL = "{{ url_for('main.admin_chatbot') }}";
       const fab = document.getElementById("adminBotFab");
