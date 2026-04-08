@@ -575,7 +575,7 @@
           <div class="col-6">
             <div class="detail-section h-100">
               <div class="detail-title">Tipo de operação</div>
-              <div class="fw-semibold text-capitalize">{{ p.tipo_operacao or '--' }}</div>
+              <div class="fw-semibold text-capitalize">{{ p.tipo_operacao if p.tipo_operacao and p.tipo_operacao != 'None' else '--' }}</div>
             </div>
           </div>
           <div class="col-6">

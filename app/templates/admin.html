@@ -418,7 +418,7 @@
                         {% endif %}
                         <div class="row gap-2 small mt-3">
                             <div class="col-6"><span>Tipo de visita:</span> <strong>{{ p.tipo_visita }}</strong></div>
-                            <div class="col-6"><span>Tipo de operação:</span> <strong>{{ p.tipo_operacao }}</strong></div>
+                            <div class="col-6"><span>Tipo de operação:</span> <strong>{{ p.tipo_operacao if p.tipo_operacao and p.tipo_operacao != 'None' else '--' }}</strong></div>
                             <div class="col-6"><span>Altura:</span> <strong>{{ p.altura_voo }}</strong></div>
                             <div class="col-12"><span>Foco:</span> <strong>{{ p.foco }}</strong></div>
                             <div class="col-6 mt-2">
@@ -607,7 +607,7 @@
                                     </div>
                                     {% endif %}
                                     <div class="row g-2 small text-muted">
-                                        <div class="col-6"><strong>Operação:</strong> {{ p.tipo_operacao }}</div>
+                                        <div class="col-6"><strong>Operação:</strong> {{ p.tipo_operacao if p.tipo_operacao and p.tipo_operacao != 'None' else '--' }}</div>
                                         <div class="col-6"><strong>Visita:</strong> {{ p.tipo_visita }}</div>
                                         <div class="col-6"><strong>Alt:</strong> {{ p.altura_voo }}</div>
                                         <div class="col-6"><strong>Foco:</strong> {{ p.foco }}</div>

@@ -586,7 +586,7 @@
           <div class="row g-2 mb-2">
             <div class="col-6">
               <small class="text-muted d-block">Tipo de Operação:</small>
-              <strong class="text-capitalize">{{ p.tipo_operacao or '--' }}</strong>
+              <strong class="text-capitalize">{{ p.tipo_operacao if p.tipo_operacao and p.tipo_operacao != 'None' else '--' }}</strong>
             </div>
             <div class="col-6">
               <small class="text-muted d-block">Tipo de Visita:</small>

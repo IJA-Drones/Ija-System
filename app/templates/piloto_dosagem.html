@@ -469,7 +469,7 @@
         </div>
         <div class="dosagem-kpi-note">
           {% if os_context %}
-          {{ os_context.tipo_operacao or 'Sem tipo de operacao' }}{% if os_context.tipo_visita %} | {{ os_context.tipo_visita }}{% endif %}
+          {{ os_context.tipo_operacao if os_context.tipo_operacao and os_context.tipo_operacao != 'None' else 'Sem tipo de operacao' }}{% if os_context.tipo_visita %} | {{ os_context.tipo_visita }}{% endif %}
           {% else %}
           Esta tela pode ser usada como apoio geral antes do preenchimento da OS.
           {% endif %}
@@ -652,7 +652,7 @@
     <div class="dosagem-planned-list">
       <div class="dosagem-planned-item">
         <strong>Contexto da visita</strong>
-        <span>{{ os_context.tipo_operacao or 'Sem tipo de operacao' }}{% if os_context.tipo_visita %} | {{ os_context.tipo_visita }}{% endif %}</span>
+        <span>{{ os_context.tipo_operacao if os_context.tipo_operacao and os_context.tipo_operacao != 'None' else 'Sem tipo de operacao' }}{% if os_context.tipo_visita %} | {{ os_context.tipo_visita }}{% endif %}</span>
       </div>
       <div class="dosagem-planned-item">
         <strong>Ultimo planejamento salvo</strong>
@@ -805,7 +805,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const contextInfo = {
-    tipo_operacao: {{ (os_context.tipo_operacao if os_context else "") | tojson | safe }},
+    tipo_operacao: {{ (os_context.tipo_operacao if os_context and os_context.tipo_operacao and os_context.tipo_operacao != 'None' else "") | tojson | safe }},
     tipo_visita: {{ (os_context.tipo_visita if os_context else "") | tojson | safe }},
     foco: {{ (os_context.foco if os_context else "") | tojson | safe }},
   };

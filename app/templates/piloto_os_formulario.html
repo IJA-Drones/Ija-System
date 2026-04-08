@@ -940,7 +940,7 @@
               <div class="dosagem-summary-card">
                 <span class="dosagem-summary-label">Tipo visita</span>
                 <div class="dosagem-summary-value">{{ solicitacao.tipo_visita or '-' }}</div>
-                <div class="dosagem-summary-note">Operacao: {{ solicitacao.tipo_operacao or '-' }}</div>
+                <div class="dosagem-summary-note">Operacao: {{ solicitacao.tipo_operacao if solicitacao.tipo_operacao and solicitacao.tipo_operacao != 'None' else '-' }}</div>
               </div>
 
               {% if calculo_dosagem_planejado %}
