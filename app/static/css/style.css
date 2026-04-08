@@ -259,40 +259,160 @@ body.agro-mode .navbar-logo {
 .admin-context-switch {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  background: #ffffff;
-  border: 1px solid rgba(31, 78, 120, 0.14);
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(30, 45, 70, 0.14);
   border-radius: 999px;
   padding: 4px;
-  box-shadow: 0 3px 12px rgba(18, 38, 63, 0.08);
+  box-shadow: 0 5px 20px rgba(10, 24, 44, 0.12);
+  backdrop-filter: blur(4px);
   width: fit-content;
 }
 
 .admin-context-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  min-width: 168px;
+  padding: 8px 14px;
   border: none;
   border-radius: 999px;
-  padding: 6px 14px;
-  font-size: 0.83rem;
+  font-size: 0.8rem;
   font-weight: 700;
-  color: var(--color-primary-dark);
+  color: #ffffff;
   background: transparent;
   transition: all 0.2s ease;
+  overflow: hidden;
+  isolation: isolate;
+  border: 1px solid transparent;
+}
+
+.admin-context-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  z-index: -2;
+}
+
+.admin-context-btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  z-index: -1;
+  opacity: 0.35;
+}
+
+.admin-context-btn[data-admin-context="uvis_prefeitura"]::before {
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0)),
+    linear-gradient(130deg, #2b5d8a, #0f84ad 65%, #0e6f9d);
+}
+
+.admin-context-btn[data-admin-context="uvis_prefeitura"]::after {
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255,255,255,0.18) 0px,
+      rgba(255,255,255,0.18) 2px,
+      transparent 2px,
+      transparent 8px
+    );
+}
+
+.admin-context-btn[data-admin-context="agro"]::before {
+  background:
+    linear-gradient(140deg, rgba(255,255,255,0.1), rgba(255,255,255,0)),
+    linear-gradient(135deg, #1f7b44, #2ea25d 62%, #298d52);
+}
+
+.admin-context-btn[data-admin-context="agro"]::after {
+  background:
+    repeating-linear-gradient(
+      -28deg,
+      rgba(255,255,255,0.16) 0px,
+      rgba(255,255,255,0.16) 2px,
+      transparent 2px,
+      transparent 9px
+    );
+}
+
+.admin-context-btn-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.2);
+  font-size: 0.82rem;
+  line-height: 1;
+}
+
+.admin-context-btn-icon .bi {
+  color: #ffffff;
+}
+
+.admin-context-btn:not(.is-active) {
+  opacity: 0.88;
 }
 
 .admin-context-btn.is-active {
-  background: linear-gradient(135deg, var(--color-primary-dark), var(--color-accent));
-  color: #ffffff;
-  box-shadow: 0 4px 10px rgba(31, 78, 120, 0.25);
+  transform: translateY(-1px);
+  opacity: 1;
+  border-color: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 8px 20px rgba(16, 34, 58, 0.28);
+}
+
+.admin-context-btn.is-active .admin-context-btn-icon {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.admin-context-btn:hover {
+  transform: translateY(-1px);
+  opacity: 1;
 }
 
 body.dark-mode .admin-context-switch {
-  background: #1a2c40;
-  border-color: #2f4a67;
+  background: rgba(18, 34, 52, 0.78);
+  border-color: #2d4663;
 }
 
 body.dark-mode.agro-mode .admin-context-switch {
-  background: #173325;
+  background: rgba(15, 36, 27, 0.82);
   border-color: #2a5a43;
+}
+
+.admin-context-badge {
+  margin-left: 6px;
+  padding: 4px 10px;
+  font-size: 0.72rem;
+  border-radius: 999px;
+  background: #e8f5fb;
+  color: #0e7aa6;
+  border: 1px solid rgba(14, 122, 166, 0.25);
+  font-weight: 700;
+}
+
+body.agro-mode .admin-context-badge {
+  background: rgba(47, 143, 79, 0.12);
+  color: #1f6f3f;
+  border-color: rgba(47, 143, 79, 0.32);
+}
+
+body.dark-mode .admin-context-badge {
+  background: rgba(76, 163, 255, 0.14);
+  color: #a8d8ff;
+  border-color: rgba(76, 163, 255, 0.28);
+}
+
+body.dark-mode.agro-mode .admin-context-badge {
+  background: rgba(87, 199, 139, 0.15);
+  color: #baf0d2;
+  border-color: rgba(87, 199, 139, 0.35);
 }
 
 .navbar-scrolled {
@@ -654,6 +774,7 @@ body.dark-mode.agro-mode .navbar-mode-pill {
   }
 
   .admin-context-btn {
+    min-width: 0;
     padding: 5px 10px;
     font-size: 0.75rem;
   }

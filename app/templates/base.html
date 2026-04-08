@@ -162,8 +162,14 @@
         {# BOTÕES EXPORTAR #}
         {% if current_user.tipo_usuario == 'admin' %}
         <div class="admin-context-switch me-auto" role="tablist" aria-label="Contexto de visualizacao do admin">
-            <button type="button" class="admin-context-btn" data-admin-context="uvis_prefeitura">UVIS e Prefeitura</button>
-            <button type="button" class="admin-context-btn" data-admin-context="agro">Agro</button>
+            <button type="button" class="admin-context-btn" data-admin-context="uvis_prefeitura">
+              <span class="admin-context-btn-icon"><i class="bi bi-buildings-fill"></i></span>
+              <span>UVIS e Prefeitura</span>
+            </button>
+            <button type="button" class="admin-context-btn" data-admin-context="agro">
+              <span class="admin-context-btn-icon"><i class="bi bi-tree-fill"></i></span>
+              <span>Agro</span>
+            </button>
         </div>
         {% endif %}
 
