@@ -1,110 +1,120 @@
-{% extends "base.html" %} 
+{% extends "base.html" %}
+
 {% block extra_styles %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}" />
 {% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4" style="max-width: 1200px;">
-  
-  {# --- Cabeçalho --- #}
   <div class="d-flex align-items-center mb-4">
-      <h2 class="text-dark m-0">
-          <i class="bi bi-pencil-square me-2 text-primary"></i> Editar UVIS
-      </h2>
+    <h2 class="text-dark m-0">
+      <i class="bi bi-pencil-square me-2 text-primary"></i> Editar UVIS
+    </h2>
   </div>
 
-  {# --- Card Principal --- #}
   <div class="card info status-primary shadow-sm rounded-4 border-0">
     <div class="card-body p-4">
-      
       <form method="POST">
-        
-        {# SEÇÃO 1: INFORMAÇÕES GERAIS #}
         <div class="d-flex align-items-center mb-3">
-            <i class="bi bi-building-gear text-primary me-2 fs-5"></i>
-            <h5 class="m-0 text-primary fw-bold">Informações da Unidade</h5>
-        </div>
-
-        <div class="row g-3 mb-3">
-          <div class="col-md-12">
-            <label class="form-label fw-bold small text-muted">
-                <i class="bi bi-hospital me-1 text-primary"></i> Nome da UVIS *
-            </label>
-            <input name="nome_uvis" class="form-control" required value="{{ uvis.nome_uvis }}">
-          </div>
+          <i class="bi bi-building-gear text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Informacoes da Unidade</h5>
         </div>
 
         <div class="row g-3 mb-4">
-        <div class="col-md-6">
-          <label class="form-label fw-bold small text-muted">
-            <i class="bi bi-map me-1 text-primary"></i> Região
-          </label>
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-hospital me-1 text-primary"></i> Nome da UVIS *
+            </label>
+            <input
+              name="nome_uvis"
+              class="form-control"
+              required
+              value="{{ form.get('nome_uvis', uvis.nome_uvis) }}"
+            >
+          </div>
 
-          <select name="regiao" class="form-control">
-            <option value="" disabled {% if not uvis.regiao %}selected{% endif %}>
-              Selecione a região
-            </option>
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-buildings me-1 text-primary"></i> Prefeitura *
+            </label>
+            {% if current_user.tipo_usuario == 'prefeitura_admin' %}
+            <input type="text" class="form-control" value="{{ current_user.prefeitura.nome if current_user.prefeitura else 'Nao vinculada' }}" disabled>
+            {% else %}
+            <select name="prefeitura_id" class="form-select" required>
+              <option value="">Selecione...</option>
+              {% for prefeitura in prefeituras %}
+              <option value="{{ prefeitura.id }}" {% if form.get('prefeitura_id', uvis.prefeitura_id or '')|string == prefeitura.id|string %}selected{% endif %}>
+                {{ prefeitura.nome }}
+              </option>
+              {% endfor %}
+            </select>
+            {% endif %}
+          </div>
 
-            <option value="CENTRO" {% if uvis.regiao == 'CENTRO' %}selected{% endif %}>Centro</option>
-            <option value="OESTE" {% if uvis.regiao == 'OESTE' %}selected{% endif %}>Oeste</option>
-            <option value="SUL" {% if uvis.regiao == 'SUL' %}selected{% endif %}>Sul</option>
-            <option value="SUDESTE" {% if uvis.regiao == 'SUDESTE' %}selected{% endif %}>Sudeste</option>
-            <option value="NORTE" {% if uvis.regiao == 'NORTE' %}selected{% endif %}>Norte</option>
-            <option value="LESTE" {% if uvis.regiao == 'LESTE' %}selected{% endif %}>Leste</option>
-            <option value="CENTRO-OESTE" {% if uvis.regiao == 'CENTRO-OESTE' %}selected{% endif %}>Centro-Oeste</option>
-          </select>
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-map me-1 text-primary"></i> Regiao
+            </label>
+            {% set reg_sel = form.get('regiao', uvis.regiao or '') %}
+            <select name="regiao" class="form-select">
+              <option value="">Selecione a regiao</option>
+              <option value="CENTRO" {% if reg_sel == 'CENTRO' %}selected{% endif %}>Centro</option>
+              <option value="OESTE" {% if reg_sel == 'OESTE' %}selected{% endif %}>Oeste</option>
+              <option value="SUL" {% if reg_sel == 'SUL' %}selected{% endif %}>Sul</option>
+              <option value="SUDESTE" {% if reg_sel == 'SUDESTE' %}selected{% endif %}>Sudeste</option>
+              <option value="NORTE" {% if reg_sel == 'NORTE' %}selected{% endif %}>Norte</option>
+              <option value="LESTE" {% if reg_sel == 'LESTE' %}selected{% endif %}>Leste</option>
+              <option value="CENTRO-OESTE" {% if reg_sel == 'CENTRO-OESTE' %}selected{% endif %}>Centro-Oeste</option>
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-person-badge me-1 text-primary"></i> Login *
+            </label>
+            <input
+              name="login"
+              class="form-control"
+              required
+              value="{{ form.get('login', uvis.login) }}"
+            >
+          </div>
         </div>
-      </div>
-
 
         <hr class="text-muted opacity-25 my-4">
 
-        {# SEÇÃO 2: DADOS DE ACESSO #}
         <div class="d-flex align-items-center mb-3">
-            <i class="bi bi-shield-lock text-primary me-2 fs-5"></i>
-            <h5 class="m-0 text-primary fw-bold">Dados de Acesso</h5>
-        </div>
-
-        <div class="row g-3 mb-3">
-          <div class="col-md-12">
-            <label class="form-label fw-bold small text-muted">
-                <i class="bi bi-person-badge me-1 text-primary"></i> Login *
-            </label>
-            <input name="login" class="form-control" required value="{{ uvis.login }}">
-          </div>
+          <i class="bi bi-shield-lock text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Senha (opcional)</h5>
         </div>
 
         <div class="row g-3 mb-2">
           <div class="col-md-6">
             <label class="form-label fw-bold small text-muted">
-                <i class="bi bi-key me-1 text-primary"></i> Nova Senha (opcional)
+              <i class="bi bi-key me-1 text-primary"></i> Nova senha
             </label>
             <input name="senha" type="password" class="form-control">
           </div>
-
           <div class="col-md-6">
             <label class="form-label fw-bold small text-muted">
-                <i class="bi bi-check-circle me-1 text-primary"></i> Confirmar Nova Senha
+              <i class="bi bi-check-circle me-1 text-primary"></i> Confirmar nova senha
             </label>
             <input name="confirmar" type="password" class="form-control">
           </div>
         </div>
-        
-        <div class="mb-4">
-           <small class="text-muted fst-italic">
-             <i class="bi bi-info-circle me-1"></i> Se deixar os campos de senha vazios, a senha atual permanece inalterada.
-           </small>
-        </div>
 
-        {# BOTÕES DE AÇÃO #}
+        <small class="text-muted d-block mt-2">
+          Se os campos de senha ficarem vazios, a senha atual sera mantida.
+        </small>
+
         <div class="d-flex justify-content-end gap-2 mt-5">
           <a href="{{ url_for('main.admin_uvis_listar') }}" class="btn btn-outline-danger px-4">
-              <i class="bi bi-x-lg me-1"></i> Cancelar
+            <i class="bi bi-x-lg me-1"></i> Cancelar
           </a>
           <button type="submit" class="btn btn-primary px-5 shadow-sm fw-bold">
-            <i class="bi bi-check-lg me-1"></i> Salvar Alterações
+            <i class="bi bi-check-lg me-1"></i> Salvar alteracoes
           </button>
         </div>
-
       </form>
     </div>
   </div>

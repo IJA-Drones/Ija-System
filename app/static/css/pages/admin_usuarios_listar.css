@@ -1,0 +1,45 @@
+.admin-usuarios-table .col-id {
+  width: 80px;
+}
+
+.admin-usuarios-table .col-tipo {
+  width: 130px;
+}
+
+.admin-usuarios-table .col-regiao {
+  width: 180px;
+}
+
+.admin-usuarios-table .col-acoes,
+.admin-usuarios-table td.listing-cell-actions {
+  width: 380px;
+  min-width: 380px;
+}
+
+.admin-usuarios-table td.listing-cell-actions .listing-actions-group {
+  flex-wrap: wrap;
+}
+
+.admin-usuarios-table td.listing-cell-actions .listing-actions-group > a,
+.admin-usuarios-table td.listing-cell-actions .listing-actions-group > form,
+.admin-usuarios-table td.listing-cell-actions .listing-actions-group > button {
+  flex: 1 1 calc(33.333% - 0.35rem);
+}
+
+.admin-usuarios-table td.listing-cell-actions .listing-actions-group > form .btn {
+  width: 100%;
+}
+
+@media (max-width: 991.98px) {
+  .admin-usuarios-table .col-acoes,
+  .admin-usuarios-table td.listing-cell-actions {
+    width: auto;
+    min-width: 0;
+  }
+
+  .admin-usuarios-table td.listing-cell-actions .listing-actions-group > a,
+  .admin-usuarios-table td.listing-cell-actions .listing-actions-group > form,
+  .admin-usuarios-table td.listing-cell-actions .listing-actions-group > button {
+    flex: 1 1 100%;
+  }
+}

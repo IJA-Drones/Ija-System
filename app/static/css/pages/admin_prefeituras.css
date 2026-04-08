@@ -1,0 +1,41 @@
+.prefeituras-table .col-id {
+  width: 80px;
+}
+
+.prefeituras-table .col-slug {
+  width: 180px;
+}
+
+.prefeituras-table .col-status {
+  width: 130px;
+}
+
+.prefeituras-table .col-usuarios {
+  width: 150px;
+}
+
+.prefeituras-table .col-editar,
+.prefeituras-table td.col-editar {
+  width: 380px;
+  min-width: 380px;
+}
+
+.prefeitura-inline-form .btn {
+  min-height: 31px;
+}
+
+@media (max-width: 991.98px) {
+  .prefeituras-table .col-editar,
+  .prefeituras-table td.col-editar {
+    width: auto;
+    min-width: 0;
+  }
+
+  .prefeitura-inline-form .row.g-2 > div {
+    width: 100%;
+  }
+
+  .prefeitura-inline-form .btn {
+    width: 100%;
+  }
+}

@@ -27,6 +27,35 @@
     display: flex;
     gap: 8px;
   }
+  .usuarios-table-wrap th.col-acoes,
+  .usuarios-table-wrap td.cell-acoes {
+    width: 240px;
+    min-width: 240px;
+    text-align: center;
+  }
+  .usuarios-table-wrap td.cell-acoes {
+    vertical-align: middle;
+  }
+  .usuarios-table-wrap .usuarios-actions-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+    max-width: 220px;
+    margin: 0 auto;
+    align-items: stretch;
+  }
+  .usuarios-table-wrap .usuarios-actions-row form {
+    margin: 0;
+  }
+  .usuarios-table-wrap .usuarios-actions-row .btn {
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    min-height: 32px;
+  }
 
   @media (max-width: 991.98px) {
     .usuarios-page.container-fluid.py-4 {
@@ -111,14 +140,11 @@
       flex: 1 1 auto;
       min-width: 0;
     }
-    .usuarios-table-wrap td:last-child .d-flex.flex-wrap.gap-2 {
+    .usuarios-table-wrap .usuarios-actions-row {
       flex-direction: column;
-      align-items: stretch;
-    }
-    .usuarios-table-wrap td:last-child .d-flex.flex-wrap.gap-2 > a,
-    .usuarios-table-wrap td:last-child .d-flex.flex-wrap.gap-2 > form,
-    .usuarios-table-wrap td:last-child .d-flex.flex-wrap.gap-2 .btn {
-      width: 100%;
+      display: flex;
+      max-width: none;
+      margin: 0;
     }
     .usuarios-table-wrap td:last-child .collapse .row.g-2.align-items-end > div {
       width: 100%;
@@ -276,7 +302,7 @@
             <th style="width: 130px">Tipo</th>
             <th style="width: 140px">Região</th>            
             <th>Login</th>
-            <th style="width: 320px">Ações</th>
+            <th class="col-acoes">Ações</th>
           </tr>
         </thead>
 
@@ -314,11 +340,11 @@
 
                 <td><code>{{ u.login }}</code></td>
 
-                <td>
-                  <div class="d-flex flex-wrap gap-2">
+                <td class="cell-acoes">
+                  <div class="usuarios-actions-row">
 
                     {# EDITAR #}
-                    <a class="btn btn-sm btn-success"
+                    <a class="btn btn-sm btn-success text-white shadow-sm"
                        href="{{ url_for('main.admin_usuario_editar', id=u.id) }}">
                       <i class="bi bi-pencil-square me-1"></i> Editar
                     </a>
@@ -328,7 +354,7 @@
                           method="POST"
                           action="{{ url_for('main.admin_usuario_excluir', id=u.id) }}">
                       <button type="submit"
-                              class="btn btn-sm btn-danger"
+                              class="btn btn-sm btn-danger shadow-sm"
                               {% if u.id == current_user.id %}disabled title="Você não pode excluir seu próprio usuário"{% endif %}>
                         <i class="bi bi-trash me-1"></i> Excluir
                       </button>

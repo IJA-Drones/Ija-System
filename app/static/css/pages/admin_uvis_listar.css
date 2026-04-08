@@ -1,0 +1,43 @@
+.admin-uvis-table .col-actions,
+.admin-uvis-table td.listing-cell-actions {
+  width: 240px;
+  min-width: 240px;
+}
+
+.admin-uvis-table th.col-actions,
+.admin-uvis-table td.listing-cell-actions {
+  text-align: center;
+}
+
+.admin-uvis-table td.listing-cell-actions {
+  vertical-align: middle;
+}
+
+.admin-uvis-table td.listing-cell-actions .listing-actions-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 220px;
+  margin: 0 auto;
+}
+
+.admin-uvis-table td.listing-cell-actions form {
+  margin: 0;
+}
+
+.admin-uvis-table td.listing-cell-actions .btn {
+  width: 100%;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+@media (max-width: 991.98px) {
+  .admin-uvis-table td.listing-cell-actions .listing-actions-group {
+    display: flex;
+    flex-direction: column;
+  }
+}

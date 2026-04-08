@@ -36,10 +36,13 @@ def login_em_uso(login: str, exclude_user_id=None):
     return query.first()
 
 
-def build_uvis_query(user, q: str, regiao: str, codigo_setor: str):
+def build_uvis_query(user, q: str, regiao: str, codigo_setor: str, prefeitura_id=None):
     query = Usuario.query.filter(Usuario.tipo_usuario == "uvis")
     query = apply_prefeitura_scope(query, user, Usuario.prefeitura_id)
     query = apply_regiao_scope(query, user, Usuario.regiao)
+
+    if prefeitura_id:
+        query = query.filter(Usuario.prefeitura_id == prefeitura_id)
 
     if q:
         like = f"%{q}%"

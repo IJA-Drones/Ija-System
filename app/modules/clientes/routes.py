@@ -16,6 +16,7 @@ from app.modules.clientes.service import (
     validate_documento,
     validate_email,
 )
+from app.modules.admin_uvis.service import build_uvis_query
 
 
 def _query_args_without_page():
@@ -34,6 +35,21 @@ def _get_scoped_cliente_or_404(cliente_id: int):
 
 
 def register_routes(bp):
+    @bp.route("/clientes", methods=["GET"], endpoint="clientes_menu")
+    @login_required
+    def clientes_menu():
+        if not _can_manage_clientes(current_user):
+            abort(403)
+
+        total_clientes = build_clientes_query("", "", "", "", "id_desc", user=current_user).count()
+        total_uvis = build_uvis_query(current_user, "", "", "").count()
+
+        return render_template(
+            "clientes_menu.html",
+            total_clientes=total_clientes,
+            total_uvis=total_uvis,
+        )
+
     @bp.route("/clientes/cadastrar", methods=["GET", "POST"], endpoint="cadastrar_clientes")
     @login_required
     def cadastrar_clientes():
@@ -130,7 +146,7 @@ def register_routes(bp):
 
         return render_template("cadastrar_clientes.html", form=form, errors=errors)
 
-    @bp.route("/clientes", methods=["GET"], endpoint="listar_clientes")
+    @bp.route("/clientes/listar", methods=["GET"], endpoint="listar_clientes")
     @login_required
     def listar_clientes():
         if not _can_manage_clientes(current_user):

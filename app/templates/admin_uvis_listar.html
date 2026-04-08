@@ -1,396 +1,146 @@
-{% extends "base.html" %} {% block content %} 
+{% extends "base.html" %}
+
 {% block extra_styles %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/listing_pattern.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/admin_uvis_listar.css') }}">
 {% endblock %}
-{# ========================= CSS
-(RESPONSIVO + CARDS NO MOBILE) - Mantém tabela no desktop - No mobile/tablet
-vira "cards" com espaçamento bom - Respeita dark-mode (html.dark-mode /
-body.dark-mode) ========================= #}
-<style>
-  /* Ajuste geral: o card pai pode “comer” borda quando tr vira card */
-  .uvis-table-wrap .card {
-    overflow: hidden;
-  }
 
-  /* ===== MOBILE/TABLET: TABELA -> CARDS ===== */
-  @media (max-width: 991.98px) {
-    /* Respira um pouco no container */
-    .container-fluid.py-4 {
-      padding-left: 12px !important;
-      padding-right: 12px !important;
-    }
-
-    /* Header (título + botões) quebra bonitinho */
-    .d-flex.justify-content-between.align-items-center.mb-4 {
-      flex-direction: column;
-      align-items: stretch !important;
-      gap: 12px;
-    }
-
-    .d-flex.justify-content-between.align-items-center.mb-4 > div:last-child {
-      width: 100%;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
-    .d-flex.justify-content-between.align-items-center.mb-4
-      > div:last-child
-      a.btn {
-      flex: 1 1 auto;
-      justify-content: center;
-      width: 100%;
-    }
-
-    /* Filtros: colunas viram linhas */
-    form.card.p-3.mb-4 .row.g-2.align-items-end > div {
-      width: 100%;
-    }
-
-    /* Remove o scroll lateral e deixa o CSS controlar */
-    .uvis-table-wrap .table-responsive {
-      overflow-x: visible !important;
-    }
-
-    /* Esconde cabeçalho no mobile */
-    .uvis-table-wrap table.table thead {
-      display: none;
-    }
-
-    /* Transformações para "cards" */
-    .uvis-table-wrap table.table,
-    .uvis-table-wrap table.table tbody,
-    .uvis-table-wrap table.table tr,
-    .uvis-table-wrap table.table td {
-      display: block;
-      width: 100%;
-    }
-
-    /* Card por linha */
-    .uvis-table-wrap table.table tbody tr {
-      margin: 0 0 16px 0 !important; /* espaçamento ENTRE cards */
-      border-radius: 16px;
-      background: var(--color-bg-white, #fff);
-      border: 1px solid rgba(0, 0, 0, 0.08);
-      box-shadow: var(--shadow-sm, 0 6px 18px rgba(0, 0, 0, 0.06));
-      overflow: hidden;
-    }
-
-    /* Células viram "linhas" do card */
-    .uvis-table-wrap table.table tbody tr td {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 14px;
-      padding: 14px 14px !important;
-      border: 0 !important;
-      text-align: left !important;
-      background: transparent;
-    }
-
-    /* Separadores internos */
-    .uvis-table-wrap table.table tbody tr td + td {
-      border-top: 1px solid rgba(0, 0, 0, 0.06) !important;
-    }
-
-    /* Labels (sem mexer no HTML) */
-    .uvis-table-wrap table.table tbody tr td:nth-child(1)::before {
-      content: "ID";
-    }
-    .uvis-table-wrap table.table tbody tr td:nth-child(2)::before {
-      content: "Nome";
-    }
-    .uvis-table-wrap table.table tbody tr td:nth-child(3)::before {
-      content: "Região";
-    }
-    .uvis-table-wrap table.table tbody tr td:nth-child(4)::before {
-      content: "Cód. Setor";
-    }
-    .uvis-table-wrap table.table tbody tr td:nth-child(5)::before {
-      content: "Login";
-    }
-    .uvis-table-wrap table.table tbody tr td:nth-child(6)::before {
-      content: "Ações";
-    }
-
-    .uvis-table-wrap table.table tbody tr td::before {
-      flex: 0 0 120px;
-      max-width: 120px;
-      font-weight: 700;
-      color: var(--color-text-muted, #6c757d);
-      font-size: 0.82rem;
-      line-height: 1.1;
-      padding-top: 2px;
-    }
-
-    /* Conteúdo do campo: deixa quebrar sem estourar */
-    .uvis-table-wrap table.table tbody tr td > * {
-      flex: 1 1 auto;
-      min-width: 0;
-    }
-
-    /* Código (login) não estourar */
-    .uvis-table-wrap code {
-      display: inline-block;
-      max-width: 100%;
-      white-space: normal;
-      word-break: break-word;
-    }
-
-    /* Ações: vira coluna e botões full-width */
-    .uvis-table-wrap table.table tbody tr td:last-child .d-flex.gap-2 {
-      flex-direction: column;
-      gap: 10px !important;
-      width: 100%;
-      margin: 0;
-    }
-    .uvis-table-wrap table.table tbody tr td:last-child .d-flex.gap-2 > * {
-      width: 100%;
-    }
-    .uvis-table-wrap table.table tbody tr td:last-child a.btn,
-    .uvis-table-wrap table.table tbody tr td:last-child button.btn {
-      width: 100%;
-    }
-
-    /* Paginação: quebra bem no mobile */
-    .pagination {
-      justify-content: center;
-      gap: 6px;
-    }
-    .pagination .page-link {
-      padding: 0.45rem 0.7rem;
-    }
-  }
-
-  /* ===== MOBILE MUITO PEQUENO ===== */
-  @media (max-width: 420px) {
-    .uvis-table-wrap table.table tbody tr td::before {
-      flex: 0 0 105px;
-      max-width: 105px;
-      font-size: 0.78rem;
-    }
-    .uvis-table-wrap table.table tbody tr td {
-      padding: 12px 12px !important;
-    }
-  }
-
-  /* ===== DARK MODE ===== */
-  @media (max-width: 991.98px) {
-    /* ===== DARK MODE: cards com contraste real ===== */
-    html.dark-mode .uvis-table-wrap table.table tbody tr,
-    body.dark-mode .uvis-table-wrap table.table tbody tr {
-      background: #0f1a24 !important;
-      border-color: #233549 !important;
-      box-shadow: 0 10px 26px rgba(0, 0, 0, 0.35) !important;
-      color: rgba(255, 255, 255, 0.92) !important; /* base do card */
-    }
-
-    /* separadores internos */
-    html.dark-mode .uvis-table-wrap table.table tbody tr td + td,
-    body.dark-mode .uvis-table-wrap table.table tbody tr td + td {
-      border-top-color: #233549 !important;
-    }
-
-    /* labels da esquerda (ID, Nome, Região...) */
-    html.dark-mode .uvis-table-wrap table.table tbody tr td::before,
-    body.dark-mode .uvis-table-wrap table.table tbody tr td::before {
-      color: rgba(255, 255, 255, 0.78) !important;
-    }
-
-    /* valores da direita (o conteúdo real) */
-    html.dark-mode .uvis-table-wrap table.table tbody tr td,
-    body.dark-mode .uvis-table-wrap table.table tbody tr td {
-      color: rgba(255, 255, 255, 0.92) !important;
-    }
-
-    /* “muted” não pode ficar cinza demais no escuro */
-    html.dark-mode .uvis-table-wrap .text-muted,
-    body.dark-mode .uvis-table-wrap .text-muted {
-      color: rgba(255, 255, 255, 0.7) !important;
-    }
-
-    /* nome (fw-semibold) e textos fortes */
-    html.dark-mode .uvis-table-wrap .fw-semibold,
-    body.dark-mode .uvis-table-wrap .fw-semibold {
-      color: rgba(255, 255, 255, 0.95) !important;
-    }
-
-    /* código/login */
-    html.dark-mode .uvis-table-wrap code,
-    body.dark-mode .uvis-table-wrap code {
-      background: rgba(255, 255, 255, 0.06) !important;
-      color: #7dd3fc !important; /* azul claro com contraste */
-      border: 1px solid #233549 !important;
-      padding: 0.15rem 0.35rem;
-      border-radius: 0.5rem;
-    }
-
-    /* se quiser, dá um “respiro” nos botões no dark */
-    html.dark-mode .uvis-table-wrap table.table tbody tr td:last-child,
-    body.dark-mode .uvis-table-wrap table.table tbody tr td:last-child {
-      background: rgba(255, 255, 255, 0.03) !important;
-    }
-  }
-</style>
-
-<div class="container-fluid py-4" style="max-width: 1200px">
-  <div class="d-flex justify-content-between align-items-center mb-4">
+{% block content %}
+<div class="container-fluid py-4 listing-page">
+  <div class="listing-header mb-4">
     <div>
-      <h2 class="text-dark">
+      <h2 class="text-dark mb-1">
         <i class="bi bi-buildings-fill me-2 text-primary"></i> UVIS Cadastradas
       </h2>
       <p class="text-muted small mb-0">
         Total de registros: <strong>{{ filters.total }}</strong>
-        {% if q or regiao or codigo_setor %}
+        {% if q or regiao or codigo_setor or prefeitura_id %}
           <span class="badge bg-filter-custom ms-2">Filtrado</span>
         {% endif %}
       </p>
     </div>
 
-    <div class="d-flex gap-2">
-      <a
-        href="{{ url_for('main.admin_dashboard') }}"
-        class="btn btn-outline-secondary d-flex align-items-center gap-2"
-      >
+    <div class="listing-actions">
+      <a href="{{ url_for('main.admin_dashboard') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
-      <a
-        href="{{ url_for('main.admin_uvis_exportar', q=q, regiao=regiao, codigo_setor=codigo_setor) }}"
-        class="btn btn-secondary d-flex align-items-center gap-2"
-      >
+      <a href="{{ url_for('main.admin_uvis_exportar', q=q, regiao=regiao, codigo_setor=codigo_setor, prefeitura_id=prefeitura_id) }}" class="btn btn-secondary d-flex align-items-center gap-2">
         <i class="bi bi-file-earmark-excel-fill"></i> Exportar Excel
       </a>
-
       {% if is_admin %}
-      <a
-        href="{{ url_for('main.admin_uvis_novo') }}"
-        class="btn btn-success text-white d-flex align-items-center gap-2 shadow-sm"
-      >
+      <a href="{{ url_for('main.admin_uvis_novo') }}" class="btn btn-success text-white d-flex align-items-center gap-2 shadow-sm">
         <i class="bi bi-plus-lg"></i> Cadastrar UVIS
       </a>
       {% endif %}
     </div>
   </div>
 
-{# --- FILTROS (PADRÃO SANFONA UX) --- #}
-<div class="card shadow-sm rounded-4 mb-4 border-0">
-
-  <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center"
-     data-bs-toggle="collapse"
-     data-bs-target="#collapseFiltrosNovoID"
-     aria-expanded="{{ 'true' if (q or regiao or codigo_setor) else 'false' }}"
-     style="cursor: pointer;">
-
-    <div class="d-flex align-items-center gap-2">
-      <i class="bi bi-funnel-fill text-primary"></i>
-      <span class="text-dark">Filtros de Busca</span>
-
-      {% if q or regiao or codigo_setor %}
-        <span class="badge bg-danger rounded-circle p-1"
-              style="width: 8px; height: 8px;"></span>
-      {% endif %}
+  <div class="card shadow-sm rounded-4 mb-4 border-0">
+    <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center listing-filter-header"
+         data-bs-toggle="collapse"
+         data-bs-target="#collapseFiltrosUvis"
+         aria-expanded="{{ 'true' if (q or regiao or codigo_setor or prefeitura_id) else 'false' }}">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-funnel-fill text-primary"></i>
+        <span class="text-dark">Filtros de busca</span>
+        {% if q or regiao or codigo_setor or prefeitura_id %}
+          <span class="badge bg-danger rounded-circle p-1 listing-filter-dot"></span>
+        {% endif %}
+      </div>
+      <i class="bi bi-chevron-down text-muted"></i>
     </div>
 
-    <i class="bi bi-chevron-down text-muted"></i>
-  </div>
+    <div class="collapse {% if q or regiao or codigo_setor or prefeitura_id %}show{% endif %}" id="collapseFiltrosUvis">
+      <div class="card-body pt-0 listing-filter-body">
+        <form method="GET" action="{{ url_for(request.endpoint) }}">
+          <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+              <label for="search_q" class="small text-muted">Buscar (nome ou login):</label>
+              <input type="text" class="form-control form-control-sm" name="q" id="search_q" value="{{ q }}" placeholder="Ex: UVIS Centro">
+            </div>
 
-  <div class="collapse {% if q or regiao or codigo_setor %}show{% endif %}" 
-     id="collapseFiltrosNovoID">
+            <div class="col-md-2">
+              <label for="search_regiao" class="small text-muted">Região:</label>
+              {% set reg = (regiao or '')|upper %}
+              <select class="form-select form-select-sm" name="regiao" id="search_regiao">
+                <option value="">Todas</option>
+                <option value="NORTE" {% if reg == 'NORTE' %}selected{% endif %}>NORTE</option>
+                <option value="SUL" {% if reg == 'SUL' %}selected{% endif %}>SUL</option>
+                <option value="LESTE" {% if reg == 'LESTE' %}selected{% endif %}>LESTE</option>
+                <option value="OESTE" {% if reg == 'OESTE' %}selected{% endif %}>OESTE</option>
+                <option value="CENTRO" {% if reg == 'CENTRO' %}selected{% endif %}>CENTRO</option>
+                <option value="SUDESTE" {% if reg == 'SUDESTE' %}selected{% endif %}>SUDESTE</option>
+                <option value="CENTRO-OESTE" {% if reg == 'CENTRO-OESTE' %}selected{% endif %}>CENTRO-OESTE</option>
+              </select>
+            </div>
 
-    <div class="card-body pt-0">
-      <form method="GET" action="{{ url_for(request.endpoint) }}">
-        <div class="row g-2 align-items-end">
-          <div class="col-md-3">
-            <label for="search_q" class="small text-muted">
-              Buscar (nome ou login):
-            </label>
-            <input
-              type="text"
-              class="form-control form-control-sm"
-              name="q"
-              id="search_q"
-              value="{{ q }}"
-              placeholder="Ex: UVIS Centro"
-            />
-          </div>
+            <div class="col-md-2">
+              <label for="search_codigo_setor" class="small text-muted">Código setor:</label>
+              <input type="text" class="form-control form-control-sm" name="codigo_setor" id="search_codigo_setor" value="{{ codigo_setor }}" placeholder="Ex: 1234">
+            </div>
 
-       <div class="col-md-3">
-        <label for="search_regiao" class="small text-muted">Região:</label>
+            {% if prefeituras %}
+            <div class="col-md-3">
+              <label for="search_prefeitura" class="small text-muted">Prefeitura:</label>
+              <select class="form-select form-select-sm" name="prefeitura_id" id="search_prefeitura">
+                <option value="">Todas</option>
+                {% for prefeitura in prefeituras %}
+                <option value="{{ prefeitura.id }}" {% if prefeitura_id == prefeitura.id %}selected{% endif %}>{{ prefeitura.nome }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            {% endif %}
 
-        {% set reg = (regiao or '')|upper %}
-
-        <select class="form-select form-select-sm" name="regiao" id="search_regiao">
-          <option value="">Todas</option>
-          <option value="NORTE" {% if reg == 'NORTE' %}selected{% endif %}>NORTE</option>
-          <option value="SUL" {% if reg == 'SUL' %}selected{% endif %}>SUL</option>
-          <option value="LESTE" {% if reg == 'LESTE' %}selected{% endif %}>LESTE</option>
-          <option value="OESTE" {% if reg == 'OESTE' %}selected{% endif %}>OESTE</option>
-          <option value="CENTRO" {% if reg == 'CENTRO' %}selected{% endif %}>CENTRO</option>
-          <option value="SUDESTE" {% if reg == 'SUDESTE' %}selected{% endif %}>SUDESTE</option>        
-          <option value="CENTRO-OESTE" {% if reg == 'CENTRO-OESTE' %}selected{% endif %}>CENTRO-OESTE</option>
-        </select>
-      </div>        
-          <div class="col-md-3 d-flex gap-2">
-            {# 1. Botão FILTRAR #}
-            <button type="submit" class="btn btn-success btn-sm flex-grow-1">
-              <i class="bi bi-funnel"></i> Filtrar
-            </button>
-
-            {# 2. Botão LIMPAR (só aparece com filtro aplicado) #}
-            {% if q or regiao or codigo_setor %}
-              <a
-                href="{{ url_for(request.endpoint) }}"
-                class="btn btn-outline-secondary btn-sm flex-grow-1"
-                title="Remover todos os filtros"
-              >
+            <div class="col-md-2 listing-filter-actions">
+              <button type="submit" class="btn btn-success btn-sm">
+                <i class="bi bi-funnel"></i> Filtrar
+              </button>
+              {% if q or regiao or codigo_setor or prefeitura_id %}
+              <a href="{{ url_for(request.endpoint) }}" class="btn btn-outline-secondary btn-sm" title="Remover todos os filtros">
                 <i class="bi bi-x-lg"></i> Limpar
               </a>
-            {% endif %}
+              {% endif %}
+            </div>
           </div>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   </div>
-</div>
 
-  <div class="uvis-table-wrap">
-    <div class="card shadow-sm">
-      <div class="card-body p-0">
-        <div class="table-responsive">
-          <table class="table table-hover align-middle mb-0">
-            <thead class="table-light">
+  <div class="card shadow-sm rounded-4 border-0 overflow-hidden listing-table-wrap">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 listing-table admin-uvis-table">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 80px;">ID</th>
+              <th>Nome</th>
+              <th>Prefeitura</th>
+              <th>Região</th>
+              <th>Login</th>
+              <th class="col-actions">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if uvis and uvis|length > 0 %}
+              {% for u in uvis %}
               <tr>
-                <th style="width: 80px">ID</th>
-                <th>Nome</th>
-                <th>Região</th>                
-                <th>Login</th>
-                <th style="width: 160px">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% if uvis and uvis|length > 0 %} {% for u in uvis %}
-              <tr>
-                <td class="text-muted">{{ u.id }}</td>
-                <td class="fw-semibold">{{ u.nome_uvis }}</td>
-                <td>{{ u.regiao or "-" }}</td>                
-                <td><code>{{ u.login }}</code></td>
-                <td>
+                <td data-label="ID" class="text-muted">{{ u.id }}</td>
+                <td data-label="Nome" class="fw-semibold">{{ u.nome_uvis }}</td>
+                <td data-label="Prefeitura">{{ u.prefeitura.nome if u.prefeitura else "-" }}</td>
+                <td data-label="Região">{{ u.regiao or "-" }}</td>
+                <td data-label="Login"><code>{{ u.login }}</code></td>
+                <td data-label="Ações" class="listing-cell-actions">
                   {% if is_admin %}
-                  <div class="d-flex gap-2">
-                    <a
-                      class="btn btn-sm btn-success"
-                      href="{{ url_for('main.admin_uvis_editar', id=u.id) }}"
-                    >
+                  <div class="listing-actions-group">
+                    <a class="btn btn-sm btn-success text-white shadow-sm" href="{{ url_for('main.admin_uvis_editar', id=u.id) }}">
                       <i class="bi bi-pencil-square me-1"></i>Editar
                     </a>
-
-                    <form
-                      class="form-deletar"
-                      method="POST"
-                      action="{{ url_for('main.admin_uvis_excluir', id=u.id) }}"
-                    >
-                      <button type="submit" class="btn btn-sm btn-danger">
+                    <form class="form-deletar m-0" method="POST" action="{{ url_for('main.admin_uvis_excluir', id=u.id) }}">
+                      <button type="submit" class="btn btn-sm btn-danger shadow-sm">
                         <i class="bi bi-trash me-1"></i>Excluir
                       </button>
                     </form>
@@ -400,60 +150,36 @@ body.dark-mode) ========================= #}
                   {% endif %}
                 </td>
               </tr>
-              {% endfor %} {% else %}
+              {% endfor %}
+            {% else %}
               <tr>
-                <td colspan="6" class="text-center py-4 text-muted">
-                  Nenhuma UVIS encontrada.
-                </td>
+                <td colspan="6" class="text-center py-4 text-muted">Nenhuma UVIS encontrada.</td>
               </tr>
-              {% endif %}
-            </tbody>
-          </table>
-        </div>
+            {% endif %}
+          </tbody>
+        </table>
       </div>
-
-      {% if paginacao.pages > 1 %}
-      <div class="card-footer bg-transparent">
-        <nav>
-          <ul class="pagination mb-0 flex-wrap">
-            <li
-              class="page-item {% if not paginacao.has_prev %}disabled{% endif %}"
-            >
-              <a
-                class="page-link"
-                href="{{ url_for('main.admin_uvis_listar', page=paginacao.prev_num, q=q, regiao=regiao, codigo_setor=codigo_setor) }}"
-              >
-                Anterior
-              </a>
-            </li>
-
-            {% for p in range(1, paginacao.pages + 1) %}
-            <li class="page-item {% if p == paginacao.page %}active{% endif %}">
-              <a
-                class="page-link"
-                href="{{ url_for('main.admin_uvis_listar', page=p, q=q, regiao=regiao, codigo_setor=codigo_setor) }}"
-              >
-                {{ p }}
-              </a>
-            </li>
-            {% endfor %}
-
-            <li
-              class="page-item {% if not paginacao.has_next %}disabled{% endif %}"
-            >
-              <a
-                class="page-link"
-                href="{{ url_for('main.admin_uvis_listar', page=paginacao.next_num, q=q, regiao=regiao, codigo_setor=codigo_setor) }}"
-              >
-                Próxima
-              </a>
-            </li>
-          </ul>
-        </nav>
-      </div>
-      {% endif %}
     </div>
+
+    {% if paginacao.pages > 1 %}
+    <div class="card-footer bg-transparent">
+      <nav>
+        <ul class="pagination mb-0 listing-pagination">
+          <li class="page-item {% if not paginacao.has_prev %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('main.admin_uvis_listar', page=paginacao.prev_num, q=q, regiao=regiao, codigo_setor=codigo_setor, prefeitura_id=prefeitura_id) }}">Anterior</a>
+          </li>
+          {% for p in range(1, paginacao.pages + 1) %}
+          <li class="page-item {% if p == paginacao.page %}active{% endif %}">
+            <a class="page-link" href="{{ url_for('main.admin_uvis_listar', page=p, q=q, regiao=regiao, codigo_setor=codigo_setor, prefeitura_id=prefeitura_id) }}">{{ p }}</a>
+          </li>
+          {% endfor %}
+          <li class="page-item {% if not paginacao.has_next %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('main.admin_uvis_listar', page=paginacao.next_num, q=q, regiao=regiao, codigo_setor=codigo_setor, prefeitura_id=prefeitura_id) }}">Próxima</a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+    {% endif %}
   </div>
 </div>
-
 {% endblock %}

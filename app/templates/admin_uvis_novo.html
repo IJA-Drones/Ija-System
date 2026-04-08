@@ -1,22 +1,20 @@
-{% extends "base.html" %} {% block extra_styles %}
-<link
-  rel="stylesheet"
-  href="{{ url_for('static', filename='css/components/buttons.css') }}"
-/>
-{% endblock %} {% block content %}
+{% extends "base.html" %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}" />
+{% endblock %}
+
+{% block content %}
 <div class="container-fluid py-4" style="max-width: 1200px">
-  {# --- Cabeçalho --- #}
   <div class="d-flex align-items-center mb-4">
     <h2 class="text-dark m-0">
       <i class="bi bi-person-plus-fill me-2 text-primary"></i> Cadastrar UVIS
     </h2>
   </div>
 
-  {# --- Card Principal --- #}
   <div class="card info status-primary shadow-sm rounded-4 border-0">
     <div class="card-body p-4">
       <form method="POST">
-        {# SEÇÃO 1: DADOS DA UNIDADE #}
         <div class="d-flex align-items-center mb-3">
           <i class="bi bi-geo-alt-fill text-primary me-2 fs-5"></i>
           <h5 class="m-0 text-primary fw-bold">Dados da Unidade</h5>
@@ -31,30 +29,49 @@
               name="nome_uvis"
               class="form-control"
               required
-              placeholder="Ex: UVIS Jaçanã/Tremembé"
+              value="{{ form.get('nome_uvis', '') }}"
+              placeholder="Ex: UVIS Centro"
             />
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-buildings me-1 text-primary"></i> Prefeitura *
+            </label>
+            {% if current_user.tipo_usuario == 'prefeitura_admin' %}
+            <input type="text" class="form-control" value="{{ current_user.prefeitura.nome if current_user.prefeitura else 'Nao vinculada' }}" disabled>
+            {% else %}
+            <select name="prefeitura_id" class="form-select" required>
+              <option value="">Selecione...</option>
+              {% for prefeitura in prefeituras %}
+              <option value="{{ prefeitura.id }}" {% if form.get('prefeitura_id','')|string == prefeitura.id|string %}selected{% endif %}>
+                {{ prefeitura.nome }}
+              </option>
+              {% endfor %}
+            </select>
+            {% endif %}
           </div>
 
           <div class="col-12">
             <label class="form-label fw-bold small text-muted">
-              <i class="bi bi-map me-1 text-primary"></i> Região
+              <i class="bi bi-map me-1 text-primary"></i> Regiao
             </label>
+            {% set reg_sel = form.get('regiao', '') %}
             <select name="regiao" class="form-select">
-              <option value="" selected disabled>Selecione a região</option>
-              <option value="CENTRO">Centro</option>
-              <option value="OESTE">Oeste</option>
-              <option value="SUL">Sul</option>
-              <option value="SUDESTE">Sudeste</option>
-              <option value="NORTE">Norte</option>
-              <option value="LESTE">Leste</option>
-              <option value="CENTRO-OESTE">Centro-Oeste</option>
+              <option value="">Selecione a regiao</option>
+              <option value="CENTRO" {% if reg_sel == 'CENTRO' %}selected{% endif %}>Centro</option>
+              <option value="OESTE" {% if reg_sel == 'OESTE' %}selected{% endif %}>Oeste</option>
+              <option value="SUL" {% if reg_sel == 'SUL' %}selected{% endif %}>Sul</option>
+              <option value="SUDESTE" {% if reg_sel == 'SUDESTE' %}selected{% endif %}>Sudeste</option>
+              <option value="NORTE" {% if reg_sel == 'NORTE' %}selected{% endif %}>Norte</option>
+              <option value="LESTE" {% if reg_sel == 'LESTE' %}selected{% endif %}>Leste</option>
+              <option value="CENTRO-OESTE" {% if reg_sel == 'CENTRO-OESTE' %}selected{% endif %}>Centro-Oeste</option>
             </select>
           </div>
         </div>
 
         <hr class="text-muted opacity-25 my-4" />
 
-        {# SEÇÃO 2: CREDENCIAIS #}
         <div class="d-flex align-items-center mb-3">
           <i class="bi bi-shield-lock-fill text-primary me-2 fs-5"></i>
           <h5 class="m-0 text-primary fw-bold">Credenciais de Acesso</h5>
@@ -63,55 +80,34 @@
         <div class="row g-3">
           <div class="col-12">
             <label class="form-label fw-bold small text-muted">
-              <i class="bi bi-person-badge me-1 text-primary"></i> Login de
-              Acesso *
+              <i class="bi bi-person-badge me-1 text-primary"></i> Login *
             </label>
             <input
               name="login"
               class="form-control"
               required
-              placeholder="Usuario.uvis"
+              value="{{ form.get('login', '') }}"
+              placeholder="usuario.uvis"
             />
-            <div class="form-text text-muted small mt-1">
-              <i class="bi bi-info-circle me-1"></i> O login deve ser único no
-              sistema.
-            </div>
           </div>
 
           <div class="col-md-6">
             <label class="form-label fw-bold small text-muted">
               <i class="bi bi-key me-1 text-primary"></i> Senha *
             </label>
-            <input
-              name="senha"
-              type="password"
-              class="form-control"
-              required
-              placeholder="••••••••"
-            />
+            <input name="senha" type="password" class="form-control" required />
           </div>
 
           <div class="col-md-6">
             <label class="form-label fw-bold small text-muted">
-              <i class="bi bi-check-circle me-1 text-primary"></i> Confirmar
-              Senha *
+              <i class="bi bi-check-circle me-1 text-primary"></i> Confirmar senha *
             </label>
-            <input
-              name="confirmar"
-              type="password"
-              class="form-control"
-              required
-              placeholder="••••••••"
-            />
+            <input name="confirmar" type="password" class="form-control" required />
           </div>
         </div>
 
-        {# BOTÕES #}
         <div class="d-flex justify-content-end gap-2 mt-5">
-          <a
-            class="btn btn-outline-danger px-4"
-            href="{{ url_for('main.admin_uvis_listar') }}"
-          >
+          <a class="btn btn-outline-danger px-4" href="{{ url_for('main.admin_uvis_listar') }}">
             <i class="bi bi-x-lg me-1"></i> Cancelar
           </a>
           <button class="btn btn-primary px-4 shadow-sm fw-bold" type="submit">

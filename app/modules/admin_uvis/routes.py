@@ -3,7 +3,7 @@ from flask_login import current_user, login_required
 from sqlalchemy.exc import IntegrityError
 
 from app.extensions import db
-from app.models import Solicitacao, Usuario
+from app.models import Prefeitura, Solicitacao, Usuario
 from app.modules.admin_uvis.service import (
     build_uvis_export,
     build_uvis_query,
@@ -24,12 +24,25 @@ def _admin_only_redirect():
     return None
 
 
+def _prefeituras_ativas():
+    return Prefeitura.query.filter(Prefeitura.ativa.is_(True)).order_by(Prefeitura.nome.asc()).all()
+
+
+def _resolve_prefeitura_uvis(prefeitura_id_form, atual_prefeitura_id=None):
+    if getattr(current_user, "tipo_usuario", None) == "prefeitura_admin":
+        return getattr(current_user, "prefeitura_id", None)
+    return prefeitura_id_form or atual_prefeitura_id
+
+
 def register_routes(bp):
     @bp.route("/admin/uvis/novo", methods=["GET", "POST"], endpoint="admin_uvis_novo")
     @login_required
     def admin_uvis_novo():
         if not is_admin_or_prefeitura_admin(current_user):
             abort(403)
+
+        prefeituras = _prefeituras_ativas() if is_admin_user(current_user) else []
+        form = {}
 
         if request.method == "POST":
             nome_uvis = (request.form.get("nome_uvis") or "").strip()
@@ -38,11 +51,32 @@ def register_routes(bp):
             login = (request.form.get("login") or "").strip()
             senha = request.form.get("senha") or ""
             confirmar = request.form.get("confirmar") or ""
+            prefeitura_id_form = request.form.get("prefeitura_id", type=int)
+            prefeitura_id = _resolve_prefeitura_uvis(prefeitura_id_form)
+
+            form = {
+                "nome_uvis": nome_uvis,
+                "regiao": regiao or "",
+                "codigo_setor": codigo_setor or "",
+                "login": login,
+                "prefeitura_id": prefeitura_id_form or "",
+            }
+
+            if is_admin_user(current_user) and not prefeitura_id:
+                flash("Selecione a prefeitura da UVIS.", "warning")
+                return render_template("admin_uvis_novo.html", prefeituras=prefeituras, form=form)
+            if not prefeitura_id:
+                flash("Nao foi possivel identificar a prefeitura para essa UVIS.", "warning")
+                return render_template("admin_uvis_novo.html", prefeituras=prefeituras, form=form)
+
+            if prefeitura_id and not Prefeitura.query.filter(Prefeitura.id == prefeitura_id).first():
+                flash("Prefeitura selecionada nao encontrada.", "warning")
+                return render_template("admin_uvis_novo.html", prefeituras=prefeituras, form=form)
 
             category, message = validate_new_uvis(nome_uvis, login, senha, confirmar)
             if message:
                 flash(message, category)
-                return render_template("admin_uvis_novo.html")
+                return render_template("admin_uvis_novo.html", prefeituras=prefeituras, form=form)
 
             novo_user = Usuario(
                 nome_uvis=nome_uvis,
@@ -50,7 +84,7 @@ def register_routes(bp):
                 codigo_setor=codigo_setor,
                 login=login,
                 tipo_usuario="uvis",
-                prefeitura_id=getattr(current_user, "prefeitura_id", None),
+                prefeitura_id=prefeitura_id,
             )
             novo_user.set_senha(senha)
 
@@ -67,7 +101,7 @@ def register_routes(bp):
                 current_app.logger.exception("Erro ao cadastrar UVIS.")
                 flash("Erro interno ao cadastrar a UVIS. Tente novamente.", "danger")
 
-        return render_template("admin_uvis_novo.html")
+        return render_template("admin_uvis_novo.html", prefeituras=prefeituras, form=form)
 
     @bp.route("/admin/uvis", methods=["GET"], endpoint="admin_uvis_listar")
     @login_required
@@ -78,9 +112,17 @@ def register_routes(bp):
         q = (request.args.get("q") or "").strip()
         regiao = (request.args.get("regiao") or "").strip()
         codigo_setor = (request.args.get("codigo_setor") or "").strip()
+        prefeitura_id = request.args.get("prefeitura_id", type=int)
         page = request.args.get("page", 1, type=int)
+        prefeituras = _prefeituras_ativas() if is_admin_user(current_user) else []
 
-        query = build_uvis_query(current_user, q, regiao, codigo_setor)
+        query = build_uvis_query(
+            current_user,
+            q,
+            regiao,
+            codigo_setor,
+            prefeitura_id=prefeitura_id,
+        )
         total = query.count()
         paginacao = query.paginate(page=page, per_page=10, error_out=False)
 
@@ -88,6 +130,7 @@ def register_routes(bp):
             "q": q,
             "regiao": regiao,
             "codigo_setor": codigo_setor,
+            "prefeitura_id": prefeitura_id or "",
             "total": total,
         }
 
@@ -99,6 +142,8 @@ def register_routes(bp):
             q=q,
             regiao=regiao,
             codigo_setor=codigo_setor,
+            prefeitura_id=prefeitura_id,
+            prefeituras=prefeituras,
             is_admin=is_admin_or_prefeitura_admin(current_user),
         )
 
@@ -113,6 +158,8 @@ def register_routes(bp):
         if not is_uvis_user(uvis):
             flash("Registro invalido para edicao.", "danger")
             return redirect(url_for("main.admin_uvis_listar"))
+        prefeituras = _prefeituras_ativas() if is_admin_user(current_user) else []
+        form = {}
 
         if request.method == "POST":
             nome_uvis = (request.form.get("nome_uvis") or "").strip()
@@ -122,6 +169,27 @@ def register_routes(bp):
             login = (request.form.get("login") or "").strip()
             senha = (request.form.get("senha") or "").strip()
             confirmar = (request.form.get("confirmar") or "").strip()
+            prefeitura_id_form = request.form.get("prefeitura_id", type=int)
+            prefeitura_id = _resolve_prefeitura_uvis(prefeitura_id_form, atual_prefeitura_id=uvis.prefeitura_id)
+
+            form = {
+                "nome_uvis": nome_uvis,
+                "regiao": regiao or "",
+                "codigo_setor": codigo_setor or "",
+                "login": login,
+                "prefeitura_id": prefeitura_id_form or "",
+            }
+
+            if is_admin_user(current_user) and not prefeitura_id:
+                flash("Selecione a prefeitura da UVIS.", "warning")
+                return render_template("admin_uvis_editar.html", uvis=uvis, prefeituras=prefeituras, form=form)
+            if not prefeitura_id:
+                flash("Nao foi possivel identificar a prefeitura para essa UVIS.", "warning")
+                return render_template("admin_uvis_editar.html", uvis=uvis, prefeituras=prefeituras, form=form)
+
+            if prefeitura_id and not Prefeitura.query.filter(Prefeitura.id == prefeitura_id).first():
+                flash("Prefeitura selecionada nao encontrada.", "warning")
+                return render_template("admin_uvis_editar.html", uvis=uvis, prefeituras=prefeituras, form=form)
 
             category, message = validate_edit_uvis(
                 nome_uvis=nome_uvis,
@@ -132,10 +200,11 @@ def register_routes(bp):
             )
             if message:
                 flash(message, category)
-                return render_template("admin_uvis_editar.html", uvis=uvis)
+                return render_template("admin_uvis_editar.html", uvis=uvis, prefeituras=prefeituras, form=form)
 
             uvis.nome_uvis = nome_uvis
             uvis.regiao = regiao
+            uvis.prefeitura_id = prefeitura_id
             if codigo_setor_field is not None:
                 uvis.codigo_setor = codigo_setor
             uvis.login = login
@@ -155,7 +224,16 @@ def register_routes(bp):
                 current_app.logger.exception("Erro ao editar UVIS %s.", uvis.id)
                 flash("Erro interno ao salvar a UVIS. Tente novamente.", "danger")
 
-        return render_template("admin_uvis_editar.html", uvis=uvis)
+        if not form:
+            form = {
+                "nome_uvis": uvis.nome_uvis or "",
+                "regiao": uvis.regiao or "",
+                "codigo_setor": uvis.codigo_setor or "",
+                "login": uvis.login or "",
+                "prefeitura_id": uvis.prefeitura_id or "",
+            }
+
+        return render_template("admin_uvis_editar.html", uvis=uvis, prefeituras=prefeituras, form=form)
 
     @bp.route("/admin/uvis/<int:id>/excluir", methods=["POST"], endpoint="admin_uvis_excluir")
     @login_required
@@ -199,7 +277,14 @@ def register_routes(bp):
         q = (request.args.get("q") or "").strip()
         regiao = (request.args.get("regiao") or "").strip()
         codigo_setor = (request.args.get("codigo_setor") or "").strip()
-        rows = build_uvis_query(current_user, q, regiao, codigo_setor).all()
+        prefeitura_id = request.args.get("prefeitura_id", type=int)
+        rows = build_uvis_query(
+            current_user,
+            q,
+            regiao,
+            codigo_setor,
+            prefeitura_id=prefeitura_id,
+        ).all()
         output, filename = build_uvis_export(rows)
 
         return send_file(
