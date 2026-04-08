@@ -48,6 +48,7 @@ def register_routes(bp):
         if request.method == "POST":
             nome_piloto = (request.form.get("nome_piloto") or "").strip()
             regiao = (request.form.get("regiao") or "").strip().upper()
+            regiao_alternativa = (request.form.get("regiao_alternativa") or "").strip().upper()
             telefone = (request.form.get("telefone") or "").strip()
 
             login = (request.form.get("login") or "").strip()
@@ -57,13 +58,14 @@ def register_routes(bp):
             form = {
                 "nome_piloto": nome_piloto,
                 "regiao": regiao,
+                "regiao_alternativa": regiao_alternativa,
                 "telefone": telefone,
                 "login": login,
                 "senha": senha,
                 "senha2": senha2,
             }
 
-            errors, tel_digits = validate_piloto_data(nome_piloto, regiao, telefone)
+            errors, tel_digits = validate_piloto_data(nome_piloto, regiao, regiao_alternativa, telefone)
 
             if piloto_duplicado(nome_piloto, tel_digits):
                 errors["nome_piloto"] = "Ja existe um piloto com esse nome (e telefone)."
@@ -89,6 +91,7 @@ def register_routes(bp):
                 novo_piloto = Pilotos(
                     nome_piloto=nome_piloto,
                     regiao=regiao or None,
+                    regiao_alternativa=regiao_alternativa or None,
                     telefone=tel_digits or None,
                     prefeitura_id=getattr(current_user, "prefeitura_id", None),
                 )
@@ -193,6 +196,7 @@ def register_routes(bp):
         if request.method == "POST":
             nome_piloto = (request.form.get("nome_piloto") or "").strip()
             regiao = (request.form.get("regiao") or "").strip().upper()
+            regiao_alternativa = (request.form.get("regiao_alternativa") or "").strip().upper()
             telefone = (request.form.get("telefone") or "").strip()
             login = (request.form.get("login") or "").strip()
             senha = (request.form.get("senha") or "").strip()
@@ -201,11 +205,12 @@ def register_routes(bp):
             form = {
                 "nome_piloto": nome_piloto,
                 "regiao": regiao,
+                "regiao_alternativa": regiao_alternativa,
                 "telefone": telefone,
                 "login": login,
             }
 
-            errors, tel_digits = validate_piloto_data(nome_piloto, regiao, telefone)
+            errors, tel_digits = validate_piloto_data(nome_piloto, regiao, regiao_alternativa, telefone)
 
             if piloto_duplicado(nome_piloto, tel_digits, exclude_id=piloto.id):
                 errors["nome_piloto"] = "Ja existe um piloto com esse nome (e telefone)."
@@ -233,6 +238,7 @@ def register_routes(bp):
 
             piloto.nome_piloto = nome_piloto
             piloto.regiao = regiao or None
+            piloto.regiao_alternativa = regiao_alternativa or None
             piloto.telefone = tel_digits or None
             piloto.prefeitura_id = getattr(current_user, "prefeitura_id", None)
 
@@ -274,6 +280,7 @@ def register_routes(bp):
         form = {
             "nome_piloto": piloto.nome_piloto,
             "regiao": piloto.regiao or "",
+            "regiao_alternativa": piloto.regiao_alternativa or "",
             "telefone": format_phone_br(piloto.telefone or ""),
             "login": usuario_piloto.login if usuario_piloto else "",
         }

@@ -1,0 +1,35 @@
+{% macro render_page_item(endpoint, page, label, args, disabled=False, active=False) -%}
+  <li class="page-item{% if disabled %} disabled{% endif %}{% if active %} active{% endif %}">
+    {% if disabled or active %}
+      <span class="page-link">{{ label }}</span>
+    {% else %}
+      <a class="page-link" href="{{ url_for(endpoint, page=page, **args) }}">{{ label }}</a>
+    {% endif %}
+  </li>
+{%- endmacro %}
+
+{% macro render_pagination(endpoint, paginacao, pagination_args=None, nav_class='mt-4', ul_class='pagination justify-content-center flex-wrap mb-0', size='sm') -%}
+  {% if paginacao and paginacao.pages > 1 %}
+    {% set args = pagination_args or {} %}
+    <nav aria-label="Navegacao de paginas" class="{{ nav_class }}">
+      <div class="d-flex flex-column flex-md-row align-items-center justify-content-center gap-2">
+        <span class="small text-muted">Pagina <strong>{{ paginacao.page }}</strong> de {{ paginacao.pages }}</span>
+        <ul class="{{ ul_class }}{% if size %} pagination-{{ size }}{% endif %}">
+          {{ render_page_item(endpoint, 1, 'Primeira', args, disabled=(paginacao.page <= 1)) }}
+          {{ render_page_item(endpoint, paginacao.prev_num, 'Anterior', args, disabled=(not paginacao.has_prev)) }}
+
+          {% for pg in paginacao.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=1) %}
+            {% if pg %}
+              {{ render_page_item(endpoint, pg, pg, args, active=(pg == paginacao.page)) }}
+            {% else %}
+              <li class="page-item disabled"><span class="page-link">...</span></li>
+            {% endif %}
+          {% endfor %}
+
+          {{ render_page_item(endpoint, paginacao.next_num, 'Proxima', args, disabled=(not paginacao.has_next)) }}
+          {{ render_page_item(endpoint, paginacao.pages, 'Ultima', args, disabled=(paginacao.page >= paginacao.pages)) }}
+        </ul>
+      </div>
+    </nav>
+  {% endif %}
+{%- endmacro %}

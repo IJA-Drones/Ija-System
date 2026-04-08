@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_pagination.html" import render_pagination %}
 
 {% block extra_styles %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
@@ -183,33 +184,7 @@
     </div>
   </div>
 
-  {% if paginacao and paginacao.pages > 1 %}
-  <nav aria-label="Navegação de páginas" class="mt-4 dashboard-canceladas-pagination">
-    <ul class="pagination justify-content-center">
-
-      <li class="page-item {% if not paginacao.has_prev %}disabled{% endif %}">
-        <a class="page-link" href="{{ url_for('main.solicitacoes_canceladas', page=paginacao.prev_num) }}">Anterior</a>
-      </li>
-
-      {% for pg in paginacao.iter_pages() %}
-        {% if pg %}
-          {% if pg == paginacao.page %}
-            <li class="page-item active"><a class="page-link">{{ pg }}</a></li>
-          {% else %}
-            <li class="page-item"><a class="page-link" href="{{ url_for('main.solicitacoes_canceladas', page=pg) }}">{{ pg }}</a></li>
-          {% endif %}
-        {% else %}
-          <li class="page-item disabled"><a class="page-link">...</a></li>
-        {% endif %}
-      {% endfor %}
-
-      <li class="page-item {% if not paginacao.has_next %}disabled{% endif %}">
-        <a class="page-link" href="{{ url_for('main.solicitacoes_canceladas', page=paginacao.next_num) }}">Próxima</a>
-      </li>
-
-    </ul>
-  </nav>
-  {% endif %}
+  {{ render_pagination('main.solicitacoes_canceladas', paginacao, pagination_args, nav_class='mt-4 dashboard-canceladas-pagination') }}
 
 </div>
 {% endblock %}

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_pagination.html" import render_pagination %}
 
 {% block extra_styles %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
@@ -281,19 +282,7 @@
       </table>
     </div>
 
-    {% if paginacao and paginacao.pages > 1 %}
-      <nav class="mt-4 pb-3">
-        <ul class="pagination pagination-sm justify-content-center">
-          <li class="page-item {% if not paginacao.has_prev %}disabled{% endif %}">
-            <a class="page-link" href="{{ url_for('main.admin_historico_os', page=paginacao.prev_num, **pagination_args) }}">Anterior</a>
-          </li>
-          <li class="page-item active"><span class="page-link">{{ paginacao.page }} / {{ paginacao.pages }}</span></li>
-          <li class="page-item {% if not paginacao.has_next %}disabled{% endif %}">
-            <a class="page-link" href="{{ url_for('main.admin_historico_os', page=paginacao.next_num, **pagination_args) }}">Próxima</a>
-          </li>
-        </ul>
-      </nav>
-    {% endif %}
+    {{ render_pagination('main.admin_historico_os', paginacao, pagination_args, nav_class='mt-4 pb-3') }}
   </div>
 </div>
 {% endblock %}

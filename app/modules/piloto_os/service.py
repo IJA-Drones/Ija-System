@@ -41,6 +41,7 @@ def build_piloto_os_context(user, args, google_maps_key):
     if not getattr(user, "piloto_id", None):
         raise PilotoOsError("Piloto sem vinculo cadastrado.", "danger", redirect_endpoint="main.piloto_os")
 
+    piloto = getattr(user, "piloto", None)
     vinculo = _buscar_vinculo_ativo_piloto(user.piloto_id)
     if not vinculo or not vinculo.equipe_id:
         return {
@@ -51,6 +52,8 @@ def build_piloto_os_context(user, args, google_maps_key):
             "pilot_team_nome": None,
             "pilot_team_regiao": None,
             "pilot_team_papel": None,
+            "pilot_regiao_principal": getattr(piloto, "regiao", None),
+            "pilot_regiao_alternativa": getattr(piloto, "regiao_alternativa", None),
             "google_maps_key": google_maps_key,
             "drones_equipe": [],
             "baterias_equipe": [],
@@ -90,6 +93,8 @@ def build_piloto_os_context(user, args, google_maps_key):
         "pilot_team_nome": vinculo.equipe.nome_equipe if vinculo.equipe else None,
         "pilot_team_regiao": vinculo.equipe.regiao if vinculo.equipe else None,
         "pilot_team_papel": (vinculo.papel or "").lower(),
+        "pilot_regiao_principal": getattr(piloto, "regiao", None),
+        "pilot_regiao_alternativa": getattr(piloto, "regiao_alternativa", None),
         "google_maps_key": google_maps_key,
         "drones_equipe": (
             Drones.query

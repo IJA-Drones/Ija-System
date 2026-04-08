@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_pagination.html" import render_pagination %}
 {% block extra_styles %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
@@ -449,57 +450,7 @@
     </div>
   </div>
 
-  {% if paginacao and paginacao.pages > 1 %}
-  <nav aria-label="Navegação de páginas" class="mt-4">
-    <ul class="pagination justify-content-center">
-      <li class="page-item {% if not paginacao.has_prev %}disabled{% endif %}">
-        <a class="page-link" href="{{ url_for('main.dashboard_equipe_uvis',
-          page=paginacao.prev_num,
-          status=request.args.get('status',''),
-          tipo_visita=request.args.get('tipo_visita',''),
-          tipo_operacao=filtro_tipo_operacao or '',
-          foco=request.args.get('foco',''),
-          data_ini=request.args.get('data_ini',''),
-          data_fim=request.args.get('data_fim','')
-        ) }}">Anterior</a>
-      </li>
-
-      {% for pg in paginacao.iter_pages() %}
-        {% if pg %}
-          {% if pg == paginacao.page %}
-            <li class="page-item active"><a class="page-link">{{ pg }}</a></li>
-          {% else %}
-            <li class="page-item">
-              <a class="page-link" href="{{ url_for('main.dashboard_equipe_uvis',
-                page=pg,
-                status=request.args.get('status',''),
-                tipo_visita=request.args.get('tipo_visita',''),
-                tipo_operacao=filtro_tipo_operacao or '',
-                foco=request.args.get('foco',''),
-                data_ini=request.args.get('data_ini',''),
-                data_fim=request.args.get('data_fim','')
-              ) }}">{{ pg }}</a>
-            </li>
-          {% endif %}
-        {% else %}
-          <li class="page-item disabled"><a class="page-link">...</a></li>
-        {% endif %}
-      {% endfor %}
-
-      <li class="page-item {% if not paginacao.has_next %}disabled{% endif %}">
-        <a class="page-link" href="{{ url_for('main.dashboard_equipe_uvis',
-          page=paginacao.next_num,
-          status=request.args.get('status',''),
-          tipo_visita=request.args.get('tipo_visita',''),
-          tipo_operacao=filtro_tipo_operacao or '',
-          foco=request.args.get('foco',''),
-          data_ini=request.args.get('data_ini',''),
-          data_fim=request.args.get('data_fim','')
-        ) }}">Próxima</a>
-      </li>
-    </ul>
-  </nav>
-  {% endif %}
+  {{ render_pagination('main.dashboard_equipe_uvis', paginacao, pagination_args) }}
 
   {# =========================
      MODAIS (1 por solicitação)

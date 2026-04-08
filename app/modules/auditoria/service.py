@@ -1,8 +1,13 @@
 from datetime import datetime, time, timedelta
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import func, or_
 
 from app.models import AuditoriaUsuario
+
+
+UTC_TZ = ZoneInfo("UTC")
+BRAZIL_TZ = ZoneInfo("America/Sao_Paulo")
 
 
 def parse_date_filter(value):
@@ -56,12 +61,22 @@ def build_auditoria_query(q="", metodo="", tipo_evento="", status="", data_inici
 
     inicio = parse_date_filter(data_inicio)
     if inicio:
-        query = query.filter(AuditoriaUsuario.criado_em >= datetime.combine(inicio, time.min))
+        inicio_utc = (
+            datetime.combine(inicio, time.min, tzinfo=BRAZIL_TZ)
+            .astimezone(UTC_TZ)
+            .replace(tzinfo=None)
+        )
+        query = query.filter(AuditoriaUsuario.criado_em >= inicio_utc)
 
     fim = parse_date_filter(data_fim)
     if fim:
+        fim_utc = (
+            datetime.combine(fim + timedelta(days=1), time.min, tzinfo=BRAZIL_TZ)
+            .astimezone(UTC_TZ)
+            .replace(tzinfo=None)
+        )
         query = query.filter(
-            AuditoriaUsuario.criado_em < datetime.combine(fim + timedelta(days=1), time.min)
+            AuditoriaUsuario.criado_em < fim_utc
         )
 
     return query.order_by(AuditoriaUsuario.criado_em.desc(), AuditoriaUsuario.id.desc())
