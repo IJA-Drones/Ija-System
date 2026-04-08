@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid agro-shell">
+  <div class="agro-page-header">
+    <div>
+      <span class="agro-eyebrow"><i class="bi bi-person-badge-fill"></i> Pilotos</span>
+      <h1 class="agro-page-title mt-3">Pilotos do Agro</h1>
+      <p class="agro-page-subtitle">Cadastre os profissionais da operação agro e vincule cada um à sua equipe quando fizer sentido.</p>
+    </div>
+    {% if is_editable %}
+      <div class="agro-actions-inline">
+        <a href="{{ url_for('main.agro_piloto_novo') }}" class="btn btn-success agro-primary-btn">
+          <i class="bi bi-person-plus-fill me-2"></i>Novo piloto
+        </a>
+      </div>
+    {% endif %}
+  </div>
+
+  <section class="agro-filter-card mb-4">
+    <div class="agro-card-body">
+      <form class="agro-filter-grid" method="get">
+        <div>
+          <label class="agro-input-label">Buscar</label>
+          <input type="text" class="form-control agro-form-control" name="q" value="{{ filters.q }}" placeholder="Nome do piloto ou telefone">
+        </div>
+        <div>
+          <label class="agro-input-label">Total encontrado</label>
+          <input type="text" class="form-control agro-form-control" value="{{ filters.total }}" disabled>
+        </div>
+        <div></div>
+        <div>
+          <button class="btn btn-success agro-search-btn w-100" type="submit">
+            <i class="bi bi-search me-2"></i>Filtrar
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <section class="agro-table-card">
+    <div class="agro-card-head">
+      <div>
+        <h2 class="agro-card-title">Base de pilotos</h2>
+        <p class="agro-page-footer-note mb-0">Mantenha o time organizado para uso futuro em escala, alocação por equipe e documentação operacional.</p>
+      </div>
+    </div>
+    <div class="agro-card-body pt-3">
+      <div class="table-responsive">
+        <table class="table agro-table">
+          <thead>
+            <tr>
+              <th>Piloto</th>
+              <th>Equipe</th>
+              <th>Status</th>
+              <th>Cadastrado em</th>
+              {% if is_editable %}<th class="text-end">Ações</th>{% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for piloto in pilotos %}
+              <tr>
+                <td data-label="Piloto">
+                  <p class="agro-row-title">{{ piloto.nome }}</p>
+                  <p class="agro-row-subtitle">{{ piloto.telefone|phonebr if piloto.telefone else "Telefone não informado." }}</p>
+                </td>
+                <td data-label="Equipe">{{ piloto.equipe.nome if piloto.equipe else "Sem equipe vinculada" }}</td>
+                <td data-label="Status">
+                  <span class="agro-badge {{ 'agro-badge-success' if piloto.ativo else 'agro-badge-muted' }}">
+                    {{ "Ativo" if piloto.ativo else "Inativo" }}
+                  </span>
+                </td>
+                <td data-label="Cadastrado em">{{ piloto.criado_em.strftime('%d/%m/%Y') }}</td>
+                {% if is_editable %}
+                  <td data-label="Ações" class="text-end">
+                    <div class="agro-action-group">
+                      <a href="{{ url_for('main.agro_piloto_editar', piloto_id=piloto.id) }}" class="btn agro-icon-btn agro-icon-btn-edit" title="Editar piloto">
+                        <i class="bi bi-pencil-square"></i>
+                      </a>
+                      <form method="post" action="{{ url_for('main.agro_piloto_deletar', piloto_id=piloto.id) }}" class="form-deletar">
+                        <button type="submit" class="btn agro-icon-btn agro-icon-btn-delete" title="Excluir piloto">
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </form>
+                    </div>
+                  </td>
+                {% endif %}
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="{{ 5 if is_editable else 4 }}">
+                  <div class="agro-empty-state">
+                    <i class="bi bi-person-x d-block mb-2 fs-2"></i>
+                    Nenhum piloto agro encontrado com os filtros atuais.
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}

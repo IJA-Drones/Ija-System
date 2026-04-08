@@ -1,4 +1,5 @@
 import re
+from decimal import Decimal, InvalidOperation
 
 
 def only_digits(value: str) -> str:
@@ -42,3 +43,31 @@ def format_cep(cep_digits: str) -> str:
     if len(digits) == 8:
         return f"{digits[:5]}-{digits[5:]}"
     return cep_digits
+
+
+def parse_currency_br(value) -> Decimal | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+
+    normalized = text.replace("R$", "").replace(" ", "")
+    normalized = normalized.replace(".", "").replace(",", ".")
+
+    try:
+        return Decimal(normalized)
+    except (InvalidOperation, ValueError):
+        return None
+
+
+def format_currency_br(value) -> str:
+    if value in (None, ""):
+        return ""
+
+    try:
+        amount = Decimal(str(value)).quantize(Decimal("0.01"))
+    except (InvalidOperation, ValueError):
+        return str(value)
+
+    text = f"{amount:,.2f}"
+    text = text.replace(",", "_").replace(".", ",").replace("_", ".")
+    return f"R$ {text}"

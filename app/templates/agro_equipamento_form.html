@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid agro-shell">
+  <div class="agro-page-header">
+    <div>
+      <span class="agro-eyebrow"><i class="bi bi-cpu-fill"></i> Equipamento</span>
+      <h1 class="agro-page-title mt-3">{{ 'Cadastrar equipamento do Agro' if modo == 'novo' else 'Editar equipamento do Agro' }}</h1>
+      <p class="agro-page-subtitle">Monte a base de equipamentos do Agro com identificação clara, status e equipe responsável.</p>
+    </div>
+    <div class="agro-actions-inline">
+      <a href="{{ url_for('main.agro_equipamentos_listar') }}" class="btn agro-outline-btn">
+        <i class="bi bi-arrow-left me-2"></i>Voltar
+      </a>
+    </div>
+  </div>
+
+  <form method="post" novalidate class="agro-form-layout">
+    <section class="agro-form-card agro-form-section">
+      <h2 class="agro-form-section-title">Dados do equipamento</h2>
+      <p class="agro-form-section-copy">Use uma identificação fácil de reconhecer e deixe o número de série salvo quando ele existir.</p>
+
+      <div class="agro-form-grid">
+        <div class="agro-col-4">
+          <label class="agro-input-label">Tipo *</label>
+          <input type="text" name="tipo" value="{{ form.get('tipo', '') }}" class="form-control agro-form-control {% if errors.get('tipo') %}is-invalid{% endif %}" placeholder="Ex.: drone, bateria, RTK" required>
+          {% if errors.get('tipo') %}<div class="invalid-feedback">{{ errors.get('tipo') }}</div>{% endif %}
+        </div>
+        <div class="agro-col-4">
+          <label class="agro-input-label">Modelo *</label>
+          <input type="text" name="modelo" value="{{ form.get('modelo', '') }}" class="form-control agro-form-control {% if errors.get('modelo') %}is-invalid{% endif %}" placeholder="Modelo comercial" required>
+          {% if errors.get('modelo') %}<div class="invalid-feedback">{{ errors.get('modelo') }}</div>{% endif %}
+        </div>
+        <div class="agro-col-4">
+          <label class="agro-input-label">Status *</label>
+          <select name="status" class="form-select agro-form-select {% if errors.get('status') %}is-invalid{% endif %}">
+            {% set current_status = form.get('status', 'Ativo') %}
+            {% for status_option in ['Ativo', 'Operacional', 'Manutenção', 'Reserva', 'Inativo'] %}
+              <option value="{{ status_option }}" {% if current_status == status_option %}selected{% endif %}>{{ status_option }}</option>
+            {% endfor %}
+          </select>
+          {% if errors.get('status') %}<div class="invalid-feedback">{{ errors.get('status') }}</div>{% endif %}
+        </div>
+        <div class="agro-col-6">
+          <label class="agro-input-label">Identificação *</label>
+          <input type="text" name="identificacao" value="{{ form.get('identificacao', '') }}" class="form-control agro-form-control {% if errors.get('identificacao') %}is-invalid{% endif %}" placeholder="Ex.: T40-01 / Drone principal" required>
+          {% if errors.get('identificacao') %}<div class="invalid-feedback">{{ errors.get('identificacao') }}</div>{% endif %}
+        </div>
+        <div class="agro-col-3">
+          <label class="agro-input-label">Número de série</label>
+          <input type="text" name="numero_serie" value="{{ form.get('numero_serie', '') }}" class="form-control agro-form-control {% if errors.get('numero_serie') %}is-invalid{% endif %}" placeholder="Opcional">
+          {% if errors.get('numero_serie') %}<div class="invalid-feedback">{{ errors.get('numero_serie') }}</div>{% endif %}
+        </div>
+        <div class="agro-col-3">
+          <label class="agro-input-label">Equipe</label>
+          <select name="equipe_agro_id" class="form-select agro-form-select {% if errors.get('equipe_agro_id') %}is-invalid{% endif %}">
+            <option value="">Sem equipe vinculada</option>
+            {% for equipe in equipes %}
+              <option value="{{ equipe.id }}" {% if form.get('equipe_agro_id')|string == equipe.id|string %}selected{% endif %}>{{ equipe.nome }}</option>
+            {% endfor %}
+          </select>
+          {% if errors.get('equipe_agro_id') %}<div class="invalid-feedback">{{ errors.get('equipe_agro_id') }}</div>{% endif %}
+        </div>
+      </div>
+    </section>
+
+    {% if equipamento %}
+      <section class="agro-form-card agro-form-section">
+        <h2 class="agro-form-section-title">Resumo rápido</h2>
+        <p class="agro-form-section-copy">Conferência visual do vínculo operacional atual deste equipamento.</p>
+        <div class="agro-inline-metrics">
+          <span class="agro-inline-chip"><i class="bi bi-diagram-3-fill"></i>{{ equipamento.equipe.nome if equipamento.equipe else "Sem equipe" }}</span>
+          <span class="agro-inline-chip"><i class="bi bi-calendar3"></i>Cadastrado em {{ equipamento.criado_em.strftime('%d/%m/%Y') }}</span>
+        </div>
+      </section>
+    {% endif %}
+
+    <div class="agro-actions-inline justify-content-end">
+      <a href="{{ url_for('main.agro_equipamentos_listar') }}" class="btn btn-outline-danger agro-outline-btn">Cancelar</a>
+      <button type="submit" class="btn btn-success agro-primary-btn">
+        <i class="bi bi-check-lg me-2"></i>{{ 'Salvar equipamento' if modo == 'novo' else 'Atualizar equipamento' }}
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

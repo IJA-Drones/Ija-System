@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid agro-shell">
+  <div class="agro-page-header">
+    <div>
+      <span class="agro-eyebrow"><i class="bi bi-file-earmark-richtext-fill"></i> Proposta</span>
+      <h1 class="agro-page-title mt-3">{{ 'Cadastrar orçamento agro' if modo == 'novo' else 'Editar orçamento agro' }}</h1>
+      <p class="agro-page-subtitle">Monte a proposta comercial com os dados do cliente, da fazenda e do valor-base para gerar o PDF de apresentação.</p>
+    </div>
+    <div class="agro-actions-inline">
+      <a href="{{ url_for('main.agro_orcamentos_listar') }}" class="btn agro-outline-btn">
+        <i class="bi bi-arrow-left me-2"></i>Voltar
+      </a>
+    </div>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" novalidate class="agro-form-layout">
+    <section class="agro-form-card agro-form-section">
+      <h2 class="agro-form-section-title">Informações principais</h2>
+      <p class="agro-form-section-copy">Defina quem é o cliente, qual fazenda será atendida e o valor-base inicial da proposta.</p>
+
+      <div class="agro-form-grid">
+        <div class="agro-col-6">
+          <label class="agro-input-label">Cliente *</label>
+          <select id="cliente_agro_id" name="cliente_agro_id" class="form-select agro-form-select {% if errors.get('cliente_agro_id') %}is-invalid{% endif %}" required>
+            <option value="">Selecione um cliente</option>
+            {% for cliente in clientes %}
+              <option
+                value="{{ cliente.id }}"
+                data-cep="{{ cliente.cep or '' }}"
+                data-logradouro="{{ cliente.logradouro or '' }}"
+                data-numero="{{ cliente.numero or '' }}"
+                data-complemento="{{ cliente.complemento or '' }}"
+                data-bairro="{{ cliente.bairro or '' }}"
+                data-cidade="{{ cliente.cidade or '' }}"
+                data-uf="{{ cliente.uf or '' }}"
+                {% if form.get('cliente_agro_id')|string == cliente.id|string %}selected{% endif %}
+              >
+                {{ cliente.nome }}
+              </option>
+            {% endfor %}
+          </select>
+          {% if errors.get('cliente_agro_id') %}<div class="invalid-feedback">{{ errors.get('cliente_agro_id') }}</div>{% endif %}
+        </div>
+
+        <div class="agro-col-6">
+          <label class="agro-input-label">Nome da fazenda *</label>
+          <input type="text" name="nome_fazenda" value="{{ form.get('nome_fazenda', '') }}" class="form-control agro-form-control {% if errors.get('nome_fazenda') %}is-invalid{% endif %}" placeholder="Ex.: Fazenda Santa Helena" required>
+          {% if errors.get('nome_fazenda') %}<div class="invalid-feedback">{{ errors.get('nome_fazenda') }}</div>{% endif %}
+        </div>
+
+        <div class="agro-col-3">
+          <label class="agro-input-label">Mapeamento</label>
+          <select name="mapeamento" class="form-select agro-form-select">
+            <option value="NAO" {% if form.get('mapeamento', 'NAO') == 'NAO' %}selected{% endif %}>Não</option>
+            <option value="SIM" {% if form.get('mapeamento') == 'SIM' %}selected{% endif %}>Sim</option>
+          </select>
+        </div>
+
+        <div class="agro-col-5">
+          <label class="agro-input-label">Cultura</label>
+          <input type="text" name="cultura" maxlength="100" value="{{ form.get('cultura', '') }}" class="form-control agro-form-control {% if errors.get('cultura') %}is-invalid{% endif %}" placeholder="Ex.: soja, milho, cana">
+          {% if errors.get('cultura') %}<div class="invalid-feedback">{{ errors.get('cultura') }}</div>{% endif %}
+        </div>
+
+        <div class="agro-col-4">
+          <label class="agro-input-label">Protocolo DECEA</label>
+          <input type="text" name="protocolo" value="{{ form.get('protocolo', '') }}" class="form-control agro-form-control" placeholder="Número do protocolo">
+        </div>
+
+        <div class="agro-col-4">
+          <label class="agro-input-label">Preço base *</label>
+          <input type="text" id="preco_base" name="preco_base" value="{{ form.get('preco_base', '') }}" class="form-control agro-form-control {% if errors.get('preco_base') %}is-invalid{% endif %}" placeholder="R$ 0,00" required>
+          {% if errors.get('preco_base') %}<div class="invalid-feedback">{{ errors.get('preco_base') }}</div>{% endif %}
+        </div>
+
+        <div class="agro-col-8">
+          <label class="agro-input-label">Risco operacional</label>
+          <textarea name="risco_operacional" rows="5" class="form-control agro-form-control agro-textarea">{{ form.get('risco_operacional', '') }}</textarea>
+        </div>
+      </div>
+    </section>
+
+    <section class="agro-form-card agro-form-section">
+      <h2 class="agro-form-section-title">Endereço da operação</h2>
+      <p class="agro-form-section-copy">Ao selecionar o cliente, o endereço é carregado automaticamente, mas ainda pode ser ajustado para a fazenda ou base operacional.</p>
+
+      <div class="agro-form-grid">
+        <div class="agro-col-3">
+          <label class="agro-input-label">CEP *</label>
+          <input type="text" id="cep" name="cep" value="{{ form.get('cep', '') }}" class="form-control agro-form-control {% if errors.get('cep') %}is-invalid{% endif %}" required>
+          {% if errors.get('cep') %}<div class="invalid-feedback">{{ errors.get('cep') }}</div>{% endif %}
+        </div>
+        <div class="agro-col-7">
+          <label class="agro-input-label">Logradouro *</label>
+          <input type="text" id="logradouro" name="logradouro" value="{{ form.get('logradouro', '') }}" class="form-control agro-form-control {% if errors.get('logradouro') %}is-invalid{% endif %}" required>
+          {% if errors.get('logradouro') %}<div class="invalid-feedback">{{ errors.get('logradouro') }}</div>{% endif %}
+        </div>
+        <div class="agro-col-2">
+          <label class="agro-input-label">Número *</label>
+          <input type="text" id="numero" name="numero" value="{{ form.get('numero', '') }}" class="form-control agro-form-control {% if errors.get('numero') %}is-invalid{% endif %}" required>
+          {% if errors.get('numero') %}<div class="invalid-feedback">{{ errors.get('numero') }}</div>{% endif %}
+        </div>
+
+        <div class="agro-col-4">
+          <label class="agro-input-label">Complemento</label>
+          <input type="text" id="complemento" name="complemento" value="{{ form.get('complemento', '') }}" class="form-control agro-form-control" placeholder="Galpão, sede, talhão, referência">
+        </div>
+        <div class="agro-col-4">
+          <label class="agro-input-label">Bairro *</label>
+          <input type="text" id="bairro" name="bairro" value="{{ form.get('bairro', '') }}" class="form-control agro-form-control {% if errors.get('bairro') %}is-invalid{% endif %}" required>
+          {% if errors.get('bairro') %}<div class="invalid-feedback">{{ errors.get('bairro') }}</div>{% endif %}
+        </div>
+        <div class="agro-col-3">
+          <label class="agro-input-label">Cidade *</label>
+          <input type="text" id="cidade" name="cidade" value="{{ form.get('cidade', '') }}" class="form-control agro-form-control {% if errors.get('cidade') %}is-invalid{% endif %}" required>
+          {% if errors.get('cidade') %}<div class="invalid-feedback">{{ errors.get('cidade') }}</div>{% endif %}
+        </div>
+        <div class="agro-col-1">
+          <label class="agro-input-label">UF *</label>
+          <input type="text" id="uf" name="uf" maxlength="2" value="{{ form.get('uf', '') }}" class="form-control agro-form-control text-uppercase {% if errors.get('uf') %}is-invalid{% endif %}" required>
+          {% if errors.get('uf') %}<div class="invalid-feedback">{{ errors.get('uf') }}</div>{% endif %}
+        </div>
+      </div>
+    </section>
+
+    <section class="agro-form-card agro-form-section">
+      <h2 class="agro-form-section-title">Arquivo de apoio</h2>
+      <p class="agro-form-section-copy">Anexe um PDF técnico ou comercial complementar, se necessário.</p>
+
+      <div class="agro-file-box">
+        <label class="agro-input-label">Anexo em PDF</label>
+        <input type="file" name="anexo" class="form-control agro-form-control {% if errors.get('anexo') %}is-invalid{% endif %}" accept="application/pdf">
+        {% if errors.get('anexo') %}<div class="invalid-feedback">{{ errors.get('anexo') }}</div>{% endif %}
+        {% if orcamento and orcamento.anexo_path %}
+          <div class="form-text mt-2">
+            Arquivo atual:
+            <a href="{{ url_for('main.agro_orcamento_anexo', orcamento_id=orcamento.id) }}" target="_blank">{{ orcamento.anexo_nome }}</a>
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="agro-page-footer-note">
+        {% if orcamento %}
+          Orçamento criado em {{ orcamento.data_criacao.strftime('%d/%m/%Y às %H:%M') }}.
+        {% else %}
+          A data de criação será definida automaticamente ao salvar.
+        {% endif %}
+      </div>
+    </section>
+
+    <div class="agro-actions-inline justify-content-end">
+      <a href="{{ url_for('main.agro_orcamentos_listar') }}" class="btn btn-outline-danger agro-outline-btn">Cancelar</a>
+      <button type="submit" class="btn btn-primary agro-secondary-btn">
+        <i class="bi bi-check-lg me-2"></i>{{ 'Salvar orçamento' if modo == 'novo' else 'Atualizar orçamento' }}
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function onlyDigits(value) {
+    return (value || "").replace(/\D/g, "");
+  }
+
+  function maskCep(value) {
+    const digits = onlyDigits(value).slice(0, 8);
+    if (digits.length <= 5) return digits;
+    return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+  }
+
+  function preencherEnderecoDoCliente() {
+    const select = document.getElementById("cliente_agro_id");
+    const option = select?.selectedOptions?.[0];
+    if (!option || !option.value) return;
+
+    document.getElementById("cep").value = maskCep(option.dataset.cep || "");
+    document.getElementById("logradouro").value = option.dataset.logradouro || "";
+    document.getElementById("numero").value = option.dataset.numero || "";
+    document.getElementById("complemento").value = option.dataset.complemento || "";
+    document.getElementById("bairro").value = option.dataset.bairro || "";
+    document.getElementById("cidade").value = option.dataset.cidade || "";
+    document.getElementById("uf").value = (option.dataset.uf || "").toUpperCase();
+  }
+
+  function maskCurrencyBr(value) {
+    const digits = onlyDigits(value);
+    if (!digits) return "";
+    const number = Number(digits) / 100;
+    return number.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  document.getElementById("cliente_agro_id")?.addEventListener("change", preencherEnderecoDoCliente);
+  document.getElementById("cep")?.addEventListener("input", (event) => {
+    event.target.value = maskCep(event.target.value);
+  });
+  document.getElementById("preco_base")?.addEventListener("input", (event) => {
+    event.target.value = maskCurrencyBr(event.target.value);
+  });
+
+  window.addEventListener("DOMContentLoaded", () => {
+    if (!document.getElementById("cep")?.value) {
+      preencherEnderecoDoCliente();
+    }
+    const precoBase = document.getElementById("preco_base");
+    if (precoBase && precoBase.value) {
+      precoBase.value = maskCurrencyBr(precoBase.value);
+    }
+  });
+</script>
+{% endblock %}

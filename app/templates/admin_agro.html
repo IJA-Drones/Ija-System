@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid agro-shell">
+  <section class="agro-hero-card mb-4">
+    <div class="agro-hero-body">
+      <div class="agro-page-header mb-0">
+        <div>
+          <span class="agro-eyebrow"><i class="bi bi-tree-fill"></i> Frente Agro</span>
+          <h1 class="agro-page-title mt-3">Painel de gestão do Agro</h1>
+          <p class="agro-page-subtitle">
+            Um ambiente separado para clientes, propostas e estrutura operacional do Agro, com base pronta para crescer sem misturar com o fluxo atual.
+          </p>
+        </div>
+        <div class="agro-actions-inline">
+          <a href="{{ url_for('main.agro_cliente_novo') }}" class="btn btn-success agro-primary-btn">
+            <i class="bi bi-person-plus-fill me-2"></i>Novo cliente
+          </a>
+          <a href="{{ url_for('main.agro_orcamento_novo') }}" class="btn btn-primary agro-secondary-btn">
+            <i class="bi bi-file-earmark-plus-fill me-2"></i>Novo orçamento
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="agro-stat-grid">
+    <article class="agro-panel-card agro-stat-card">
+      <span class="agro-stat-label">Clientes agro</span>
+      <span class="agro-stat-value">{{ total_clientes_agro }}</span>
+    </article>
+    <article class="agro-panel-card agro-stat-card">
+      <span class="agro-stat-label">Orçamentos</span>
+      <span class="agro-stat-value">{{ total_orcamentos_agro }}</span>
+    </article>
+    <article class="agro-panel-card agro-stat-card">
+      <span class="agro-stat-label">Pilotos agro</span>
+      <span class="agro-stat-value">{{ total_pilotos_agro }}</span>
+    </article>
+    <article class="agro-panel-card agro-stat-card">
+      <span class="agro-stat-label">Equipes agro</span>
+      <span class="agro-stat-value">{{ total_equipes_agro }}</span>
+    </article>
+    <article class="agro-panel-card agro-stat-card">
+      <span class="agro-stat-label">Equipamentos agro</span>
+      <span class="agro-stat-value">{{ total_equipamentos_agro }}</span>
+    </article>
+  </section>
+
+  <section class="agro-shortcut-grid">
+    <a href="{{ url_for('main.agro_clientes_listar') }}" class="agro-panel-card agro-shortcut-card">
+      <span class="agro-shortcut-icon"><i class="bi bi-people-fill"></i></span>
+      <h2 class="agro-shortcut-title">Clientes do Agro</h2>
+      <p class="agro-shortcut-copy">Base comercial com documento e endereço estruturado para propostas, contratos e faturamento.</p>
+    </a>
+    <a href="{{ url_for('main.agro_orcamentos_listar') }}" class="agro-panel-card agro-shortcut-card">
+      <span class="agro-shortcut-icon"><i class="bi bi-file-earmark-text-fill"></i></span>
+      <h2 class="agro-shortcut-title">Orçamentos do Agro</h2>
+      <p class="agro-shortcut-copy">Propostas com preço-base, fazenda, protocolo, anexo técnico e PDF comercial para envio ao cliente.</p>
+    </a>
+    <a href="{{ url_for('main.agro_equipes_listar') }}" class="agro-panel-card agro-shortcut-card">
+      <span class="agro-shortcut-icon"><i class="bi bi-diagram-3-fill"></i></span>
+      <h2 class="agro-shortcut-title">Equipes do Agro</h2>
+      <p class="agro-shortcut-copy">Núcleos operacionais para organizar a estrutura de campo e crescer sem misturar com o fluxo atual.</p>
+    </a>
+    <a href="{{ url_for('main.agro_pilotos_listar') }}" class="agro-panel-card agro-shortcut-card">
+      <span class="agro-shortcut-icon"><i class="bi bi-person-badge-fill"></i></span>
+      <h2 class="agro-shortcut-title">Pilotos do Agro</h2>
+      <p class="agro-shortcut-copy">Cadastro separado dos profissionais da frente Agro, com equipe, status e contato prontos para uso.</p>
+    </a>
+    <a href="{{ url_for('main.agro_equipamentos_listar') }}" class="agro-panel-card agro-shortcut-card">
+      <span class="agro-shortcut-icon"><i class="bi bi-cpu-fill"></i></span>
+      <h2 class="agro-shortcut-title">Equipamentos do Agro</h2>
+      <p class="agro-shortcut-copy">Inventário inicial com identificação, série, status operacional e vínculo com equipe.</p>
+    </a>
+  </section>
+
+  <section class="agro-section-grid">
+    <article class="agro-table-card">
+      <div class="agro-card-head">
+        <div>
+          <h2 class="agro-card-title">Últimos orçamentos</h2>
+          <p class="agro-page-footer-note mb-0">Acompanhe as propostas criadas recentemente e o valor-base registrado.</p>
+        </div>
+        <a href="{{ url_for('main.agro_orcamentos_listar') }}" class="btn agro-outline-btn">
+          Ver todos
+        </a>
+      </div>
+      <div class="agro-card-body">
+        <div class="table-responsive">
+          <table class="table agro-table">
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>Fazenda</th>
+                <th>Cultura</th>
+                <th>Mapeamento</th>
+                <th>Preço base</th>
+                <th>Data</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for orcamento in ultimos_orcamentos %}
+                <tr>
+                  <td data-label="Cliente">
+                    <p class="agro-row-title">{{ orcamento.cliente_nome }}</p>
+                    <p class="agro-row-subtitle">{{ orcamento|agro_endereco }}</p>
+                  </td>
+                  <td data-label="Fazenda">{{ orcamento.nome_fazenda }}</td>
+                  <td data-label="Cultura">{{ orcamento.cultura or "—" }}</td>
+                  <td data-label="Mapeamento">
+                    <span class="agro-badge {{ 'agro-badge-success' if orcamento.mapeamento else 'agro-badge-muted' }}">
+                      {{ "Sim" if orcamento.mapeamento else "Não" }}
+                    </span>
+                  </td>
+                  <td data-label="Preço base" class="fw-semibold">{{ orcamento.preco_base|currencybr or "—" }}</td>
+                  <td data-label="Data">{{ orcamento.data_criacao.strftime('%d/%m/%Y %H:%M') }}</td>
+                </tr>
+              {% else %}
+                <tr>
+                  <td colspan="6">
+                    <div class="agro-empty-state">
+                      <i class="bi bi-file-earmark-text d-block mb-2 fs-2"></i>
+                      Nenhum orçamento agro cadastrado ainda.
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </article>
+
+    <aside class="agro-side-stack">
+      <section class="agro-side-card agro-card-body">
+        <h2 class="agro-card-title mb-3">Base inicial</h2>
+        <div class="agro-side-item">
+          <strong>Clientes agro</strong>
+          <div>Cadastro com documento, CEP e endereço estruturado para proposta, contrato e faturamento.</div>
+        </div>
+        <div class="agro-side-item">
+          <strong>Orçamentos agro</strong>
+          <div>Cliente, fazenda, cultura, protocolo DECEA, risco operacional, preço-base e PDF comercial.</div>
+        </div>
+        <div class="agro-side-item">
+          <strong>Estrutura operacional</strong>
+          <div>Pilotos, equipes e equipamentos já possuem telas próprias dentro do menu do Agro para iniciar a operação separada.</div>
+        </div>
+      </section>
+    </aside>
+  </section>
+</div>
+{% endblock %}

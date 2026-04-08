@@ -16,9 +16,14 @@ class Prefeitura(db.Model):
     usuarios = db.relationship("Usuario", back_populates="prefeitura", lazy="select")
     solicitacoes = db.relationship("Solicitacao", back_populates="prefeitura", lazy="select")
     clientes = db.relationship("Clientes", back_populates="prefeitura", lazy="select")
+    clientes_agro = db.relationship("ClienteAgro", back_populates="prefeitura", lazy="select")
+    orcamentos_agro = db.relationship("OrcamentoAgro", back_populates="prefeitura", lazy="select")
     pilotos = db.relationship("Pilotos", back_populates="prefeitura", lazy="select")
+    pilotos_agro = db.relationship("PilotoAgro", back_populates="prefeitura", lazy="select")
     equipes = db.relationship("Equipe", lazy="select")
+    equipes_agro = db.relationship("EquipeAgro", back_populates="prefeitura", lazy="select")
     equipamentos = db.relationship("Equipamentos", back_populates="prefeitura", lazy="select")
+    equipamentos_agro = db.relationship("EquipamentoAgro", back_populates="prefeitura", lazy="select")
 
 # -------------------------------------------------------------
 # USUÁRIO (login do sistema)
@@ -553,6 +558,136 @@ class Clientes(db.Model):
     email = db.Column(db.String(100), index=True)
     endereco = db.Column(db.String(255))
     prefeitura = db.relationship("Prefeitura", back_populates="clientes", lazy="joined")
+
+
+# -------------------------------------------------------------
+# CLIENTES AGRO
+# -------------------------------------------------------------
+class ClienteAgro(db.Model):
+    __tablename__ = "clientes_agro"
+
+    id = db.Column(db.Integer, primary_key=True, index=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
+
+    documento = db.Column(db.String(50), unique=True, nullable=False, index=True)
+    nome = db.Column(db.String(150), nullable=False, index=True)
+
+    cep = db.Column(db.String(9), nullable=False)
+    logradouro = db.Column(db.String(150), nullable=False)
+    numero = db.Column(db.String(20), nullable=False)
+    complemento = db.Column(db.String(100))
+    bairro = db.Column(db.String(100), nullable=False, index=True)
+    cidade = db.Column(db.String(100), nullable=False, index=True)
+    uf = db.Column(db.String(2), nullable=False, index=True)
+
+    criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+
+    prefeitura = db.relationship("Prefeitura", back_populates="clientes_agro", lazy="joined")
+    orcamentos = db.relationship(
+        "OrcamentoAgro",
+        back_populates="cliente",
+        lazy="select",
+        cascade="all, delete-orphan",
+    )
+
+
+# -------------------------------------------------------------
+# ORCAMENTOS AGRO
+# -------------------------------------------------------------
+class OrcamentoAgro(db.Model):
+    __tablename__ = "orcamentos_agro"
+
+    id = db.Column(db.Integer, primary_key=True, index=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
+    cliente_agro_id = db.Column(db.Integer, db.ForeignKey("clientes_agro.id"), nullable=False, index=True)
+
+    cliente_nome = db.Column(db.String(150), nullable=False, index=True)
+    nome_fazenda = db.Column(db.String(150), nullable=False, index=True)
+    mapeamento = db.Column(db.Boolean, default=False, nullable=False, index=True)
+    risco_operacional = db.Column(db.Text)
+    cultura = db.Column(db.String(100), index=True)
+    preco_base = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+
+    cep = db.Column(db.String(9), nullable=False)
+    logradouro = db.Column(db.String(150), nullable=False)
+    numero = db.Column(db.String(20), nullable=False)
+    complemento = db.Column(db.String(100))
+    bairro = db.Column(db.String(100), nullable=False, index=True)
+    cidade = db.Column(db.String(100), nullable=False, index=True)
+    uf = db.Column(db.String(2), nullable=False, index=True)
+
+    anexo_path = db.Column(db.String(255))
+    anexo_nome = db.Column(db.String(255))
+    protocolo = db.Column(db.String(80), index=True)
+
+    data_criacao = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+
+    prefeitura = db.relationship("Prefeitura", back_populates="orcamentos_agro", lazy="joined")
+    cliente = db.relationship("ClienteAgro", back_populates="orcamentos", lazy="joined")
+
+    __table_args__ = (
+        db.Index("ix_orcamentos_agro_cliente_data", "cliente_agro_id", "data_criacao"),
+        db.Index("ix_orcamentos_agro_protocolo_data", "protocolo", "data_criacao"),
+    )
+
+
+# -------------------------------------------------------------
+# EQUIPES AGRO
+# -------------------------------------------------------------
+class EquipeAgro(db.Model):
+    __tablename__ = "equipes_agro"
+
+    id = db.Column(db.Integer, primary_key=True, index=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
+
+    nome = db.Column(db.String(120), nullable=False, index=True)
+    descricao = db.Column(db.Text)
+    ativa = db.Column(db.Boolean, default=True, nullable=False, index=True)
+    criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+
+    prefeitura = db.relationship("Prefeitura", back_populates="equipes_agro", lazy="joined")
+    pilotos = db.relationship("PilotoAgro", back_populates="equipe", lazy="select")
+    equipamentos = db.relationship("EquipamentoAgro", back_populates="equipe", lazy="select")
+
+
+# -------------------------------------------------------------
+# PILOTOS AGRO
+# -------------------------------------------------------------
+class PilotoAgro(db.Model):
+    __tablename__ = "pilotos_agro"
+
+    id = db.Column(db.Integer, primary_key=True, index=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
+    equipe_agro_id = db.Column(db.Integer, db.ForeignKey("equipes_agro.id"), nullable=True, index=True)
+
+    nome = db.Column(db.String(120), nullable=False, index=True)
+    telefone = db.Column(db.String(20))
+    ativo = db.Column(db.Boolean, default=True, nullable=False, index=True)
+    criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+
+    prefeitura = db.relationship("Prefeitura", back_populates="pilotos_agro", lazy="joined")
+    equipe = db.relationship("EquipeAgro", back_populates="pilotos", lazy="joined")
+
+
+# -------------------------------------------------------------
+# EQUIPAMENTOS AGRO
+# -------------------------------------------------------------
+class EquipamentoAgro(db.Model):
+    __tablename__ = "equipamentos_agro"
+
+    id = db.Column(db.Integer, primary_key=True, index=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
+    equipe_agro_id = db.Column(db.Integer, db.ForeignKey("equipes_agro.id"), nullable=True, index=True)
+
+    tipo = db.Column(db.String(50), nullable=False, index=True)
+    modelo = db.Column(db.String(100), nullable=False, index=True)
+    identificacao = db.Column(db.String(100), nullable=False, index=True)
+    numero_serie = db.Column(db.String(100), unique=True, index=True)
+    status = db.Column(db.String(30), default="Ativo", nullable=False, index=True)
+    criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+
+    prefeitura = db.relationship("Prefeitura", back_populates="equipamentos_agro", lazy="joined")
+    equipe = db.relationship("EquipeAgro", back_populates="equipamentos", lazy="joined")
 
 
 # -------------------------------------------------------------

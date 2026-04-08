@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid agro-shell">
+  <div class="agro-page-header">
+    <div>
+      <span class="agro-eyebrow"><i class="bi bi-diagram-3-fill"></i> Equipe</span>
+      <h1 class="agro-page-title mt-3">{{ 'Cadastrar equipe do Agro' if modo == 'novo' else 'Editar equipe do Agro' }}</h1>
+      <p class="agro-page-subtitle">Defina um núcleo operacional para concentrar pessoas, equipamentos e futuras rotinas de atendimento.</p>
+    </div>
+    <div class="agro-actions-inline">
+      <a href="{{ url_for('main.agro_equipes_listar') }}" class="btn agro-outline-btn">
+        <i class="bi bi-arrow-left me-2"></i>Voltar
+      </a>
+    </div>
+  </div>
+
+  <form method="post" novalidate class="agro-form-layout">
+    <section class="agro-form-card agro-form-section">
+      <h2 class="agro-form-section-title">Dados da equipe</h2>
+      <p class="agro-form-section-copy">Use um nome fácil de localizar no dia a dia e descreva a finalidade da equipe quando necessário.</p>
+
+      <div class="agro-form-grid">
+        <div class="agro-col-8">
+          <label class="agro-input-label">Nome da equipe *</label>
+          <input type="text" name="nome" value="{{ form.get('nome', '') }}" class="form-control agro-form-control {% if errors.get('nome') %}is-invalid{% endif %}" required>
+          {% if errors.get('nome') %}<div class="invalid-feedback">{{ errors.get('nome') }}</div>{% endif %}
+        </div>
+        <div class="agro-col-4">
+          <label class="agro-input-label">Status</label>
+          <select name="ativa" class="form-select agro-form-select">
+            <option value="SIM" {% if form.get('ativa', 'SIM') == 'SIM' %}selected{% endif %}>Ativa</option>
+            <option value="NAO" {% if form.get('ativa') == 'NAO' %}selected{% endif %}>Inativa</option>
+          </select>
+        </div>
+        <div class="agro-col-12">
+          <label class="agro-input-label">Descrição</label>
+          <textarea name="descricao" rows="5" class="form-control agro-form-control agro-textarea" placeholder="Ex.: equipe dedicada a mapeamento, pulverização ou atendimento em determinada região.">{{ form.get('descricao', '') }}</textarea>
+        </div>
+      </div>
+    </section>
+
+    {% if equipe %}
+      <section class="agro-form-card agro-form-section">
+        <h2 class="agro-form-section-title">Resumo rápido</h2>
+        <p class="agro-form-section-copy">Esses números ajudam a entender o tamanho atual da estrutura vinculada a esta equipe.</p>
+        <div class="agro-inline-metrics">
+          <span class="agro-inline-chip"><i class="bi bi-person-badge-fill"></i>{{ equipe.pilotos|length }} piloto(s)</span>
+          <span class="agro-inline-chip"><i class="bi bi-cpu-fill"></i>{{ equipe.equipamentos|length }} equipamento(s)</span>
+          <span class="agro-inline-chip"><i class="bi bi-calendar3"></i>Criada em {{ equipe.criado_em.strftime('%d/%m/%Y') }}</span>
+        </div>
+      </section>
+    {% endif %}
+
+    <div class="agro-actions-inline justify-content-end">
+      <a href="{{ url_for('main.agro_equipes_listar') }}" class="btn btn-outline-danger agro-outline-btn">Cancelar</a>
+      <button type="submit" class="btn btn-success agro-primary-btn">
+        <i class="bi bi-check-lg me-2"></i>{{ 'Salvar equipe' if modo == 'novo' else 'Atualizar equipe' }}
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

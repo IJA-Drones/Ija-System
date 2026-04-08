@@ -1,7 +1,8 @@
+{% set is_agro_context = request.endpoint and (request.endpoint == 'main.admin_agro' or request.endpoint.startswith('main.agro_')) %}
 <!doctype html>
 <html
   lang="pt-br"
-  class="{% if tema_escolhido == 'dark' %}dark-mode{% endif %}"
+  class="{% if tema_escolhido == 'dark' %}dark-mode {% endif %}{% if is_agro_context %}agro-mode{% endif %}"
 >
   <head>
     <meta charset="UTF-8" />
@@ -60,13 +61,8 @@
           document.documentElement.classList.add("dark-mode");
           document.documentElement.style.backgroundColor = "#101927";
         }
-        try {
-          const contextMode = window.localStorage.getItem("oa_admin_context_mode");
-          if (contextMode === "agro") {
-            document.documentElement.classList.add("agro-mode");
-          }
-        } catch (error) {
-          // localStorage can be unavailable in strict privacy contexts.
+        if ({{ 'true' if is_agro_context else 'false' }}) {
+          document.documentElement.classList.add("agro-mode");
         }
       })();
     </script>
@@ -114,7 +110,7 @@
     </style>
   </head>
 
-  <body>
+  <body class="{% if is_agro_context %}agro-mode{% endif %}">
     {% set navbar_home_endpoint = 'main.dashboard' %}
     {% if current_user and current_user.is_authenticated %}
       {% if current_user.tipo_usuario == 'piloto' %}
@@ -122,7 +118,7 @@
       {% elif current_user.tipo_usuario == 'equipe_uvis' %}
         {% set navbar_home_endpoint = 'main.dashboard_equipe_uvis' %}
       {% elif current_user.tipo_usuario in ['admin', 'operario', 'visualizar', 'regional', 'prefeitura_admin'] %}
-        {% set navbar_home_endpoint = 'main.admin_dashboard' %}
+        {% set navbar_home_endpoint = 'main.admin_agro' if is_agro_context else 'main.admin_dashboard' %}
       {% endif %}
     {% endif %}
     <div id="sidebarOverlay" class="sidebar-overlay"></div>
@@ -160,13 +156,23 @@
         </a>
 
         {# BOTÕES EXPORTAR #}
-        {% if current_user.tipo_usuario == 'admin' %}
+        {% if current_user.is_authenticated and current_user.tipo_usuario == 'admin' %}
         <div class="admin-context-switch me-auto" role="tablist" aria-label="Contexto de visualizacao do admin">
-            <button type="button" class="admin-context-btn" data-admin-context="uvis_prefeitura">
+            <button
+              type="button"
+              class="admin-context-btn {% if not is_agro_context %}is-active{% endif %}"
+              data-admin-context="uvis_prefeitura"
+              data-admin-context-url="{{ url_for('main.admin_dashboard') }}"
+            >
               <span class="admin-context-btn-icon"><i class="bi bi-buildings-fill"></i></span>
               <span>UVIS e Prefeitura</span>
             </button>
-            <button type="button" class="admin-context-btn" data-admin-context="agro">
+            <button
+              type="button"
+              class="admin-context-btn {% if is_agro_context %}is-active{% endif %}"
+              data-admin-context="agro"
+              data-admin-context-url="{{ url_for('main.admin_agro') }}"
+            >
               <span class="admin-context-btn-icon"><i class="bi bi-tree-fill"></i></span>
               <span>Agro</span>
             </button>
@@ -235,8 +241,8 @@
           {% set sidebar_dashboard_endpoint = 'main.dashboard_equipe_uvis' %}
           {% set sidebar_dashboard_active = request.endpoint == 'main.dashboard_equipe_uvis' %}
         {% elif current_user.tipo_usuario in ['admin', 'operario', 'visualizar', 'regional', 'prefeitura_admin'] %}
-          {% set sidebar_dashboard_endpoint = 'main.admin_dashboard' %}
-          {% set sidebar_dashboard_active = request.endpoint == 'main.admin_dashboard' %}
+          {% set sidebar_dashboard_endpoint = 'main.admin_agro' if is_agro_context else 'main.admin_dashboard' %}
+          {% set sidebar_dashboard_active = request.endpoint == ('main.admin_agro' if is_agro_context else 'main.admin_dashboard') %}
         {% endif %}
         <ul class="nav flex-column flex-grow-1">
           <li class="nav-item">
@@ -248,7 +254,7 @@
             </a>
           </li>
 
-          {% if current_user.tipo_usuario in ['admin', 'operario', 'visualizar', 'regional', 'prefeitura_admin'] %}
+          {% if current_user.tipo_usuario in ['admin', 'operario', 'visualizar', 'regional', 'prefeitura_admin'] and not is_agro_context %}
           <li class="nav-item">
             <a
               class="nav-link {% if request.endpoint == 'main.admin_historico_os' %}active{% endif %}"
@@ -307,6 +313,50 @@
             </a>
           </li>
 
+          {% if current_user.tipo_usuario in ['admin', 'operario', 'visualizar', 'regional', 'prefeitura_admin'] and is_agro_context %}
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint in ['main.agro_clientes_listar', 'main.agro_cliente_novo', 'main.agro_cliente_editar'] %}active{% endif %}"
+              href="{{ url_for('main.agro_clientes_listar') }}"
+            >
+              <i class="bi bi-people-fill me-2"></i><span>Clientes Agro</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint in ['main.agro_orcamentos_listar', 'main.agro_orcamento_novo', 'main.agro_orcamento_editar'] %}active{% endif %}"
+              href="{{ url_for('main.agro_orcamentos_listar') }}"
+            >
+              <i class="bi bi-file-earmark-text-fill me-2"></i><span>Orçamentos Agro</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint in ['main.agro_equipes_listar', 'main.agro_equipe_nova', 'main.agro_equipe_editar'] %}active{% endif %}"
+              href="{{ url_for('main.agro_equipes_listar') }}"
+            >
+              <i class="bi bi-diagram-3-fill me-2"></i><span>Equipes Agro</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint in ['main.agro_pilotos_listar', 'main.agro_piloto_novo', 'main.agro_piloto_editar'] %}active{% endif %}"
+              href="{{ url_for('main.agro_pilotos_listar') }}"
+            >
+              <i class="bi bi-person-badge-fill me-2"></i><span>Pilotos Agro</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint in ['main.agro_equipamentos_listar', 'main.agro_equipamento_novo', 'main.agro_equipamento_editar'] %}active{% endif %}"
+              href="{{ url_for('main.agro_equipamentos_listar') }}"
+            >
+              <i class="bi bi-cpu-fill me-2"></i><span>Equipamentos Agro</span>
+            </a>
+          </li>
+          {% endif %}
+
+          {% if not is_agro_context %}
           {% if current_user.tipo_usuario == 'uvis' %}
           <li class="nav-item">
             <a
@@ -585,6 +635,7 @@
               </a>
             </li>
           {% endif %}
+          {% endif %}
 
           <div class="sidebar-footer mt-auto p-3 text-center">
             <div id="install-container" style="display: none">
@@ -699,18 +750,14 @@
             const overlay = document.getElementById("sidebarOverlay");
             const contextButtons = document.querySelectorAll("[data-admin-context]");
             const contextStorageKey = "oa_admin_context_mode";
+            const serverContextMode = "{{ 'agro' if is_agro_context else 'uvis_prefeitura' }}";
             const contextLabels = {
                 uvis_prefeitura: "UVIS/PREFEITURA",
                 agro: "AGRO",
             };
 
             function readContextMode() {
-                try {
-                    const saved = localStorage.getItem(contextStorageKey);
-                    return saved === "agro" ? "agro" : "uvis_prefeitura";
-                } catch (error) {
-                    return "uvis_prefeitura";
-                }
+                return serverContextMode === "agro" ? "agro" : "uvis_prefeitura";
             }
 
             function writeContextMode(mode) {
@@ -772,9 +819,16 @@
             }
 
             applyContextMode(readContextMode(), false);
+            writeContextMode(serverContextMode);
             contextButtons.forEach((button) => {
                 button.addEventListener("click", () => {
-                    applyContextMode(button.dataset.adminContext || "uvis_prefeitura");
+                    const mode = button.dataset.adminContext || "uvis_prefeitura";
+                    applyContextMode(mode);
+
+                    const targetUrl = button.dataset.adminContextUrl;
+                    if (targetUrl) {
+                        window.location.href = targetUrl;
+                    }
                 });
             });
 

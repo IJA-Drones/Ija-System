@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid agro-shell">
+  <div class="agro-page-header">
+    <div>
+      <span class="agro-eyebrow"><i class="bi bi-person-vcard-fill"></i> Cadastro</span>
+      <h1 class="agro-page-title mt-3">{{ 'Cadastrar cliente agro' if modo == 'novo' else 'Editar cliente agro' }}</h1>
+      <p class="agro-page-subtitle">Preencha os dados com atenção para que os documentos comerciais saiam com nome e endereço corretos.</p>
+    </div>
+    <div class="agro-actions-inline">
+      <a href="{{ url_for('main.agro_clientes_listar') }}" class="btn agro-outline-btn">
+        <i class="bi bi-arrow-left me-2"></i>Voltar
+      </a>
+    </div>
+  </div>
+
+  <form method="post" novalidate class="agro-form-layout">
+    <section class="agro-form-card agro-form-section">
+      <h2 class="agro-form-section-title">Identificação do cliente</h2>
+      <p class="agro-form-section-copy">Essas informações serão reutilizadas nos orçamentos e contratos.</p>
+
+      <div class="agro-form-grid">
+        <div class="agro-col-7">
+          <label class="agro-input-label">Nome do cliente *</label>
+          <input type="text" name="nome" value="{{ form.get('nome', '') }}" class="form-control agro-form-control {% if errors.get('nome') %}is-invalid{% endif %}" required>
+          {% if errors.get('nome') %}<div class="invalid-feedback">{{ errors.get('nome') }}</div>{% endif %}
+        </div>
+        <div class="agro-col-5">
+          <label class="agro-input-label">Documento *</label>
+          <input type="text" id="documento" name="documento" value="{{ form.get('documento', '') }}" class="form-control agro-form-control {% if errors.get('documento') %}is-invalid{% endif %}" placeholder="CPF ou CNPJ" required>
+          {% if errors.get('documento') %}<div class="invalid-feedback">{{ errors.get('documento') }}</div>{% endif %}
+        </div>
+      </div>
+    </section>
+
+    <section class="agro-form-card agro-form-section">
+      <h2 class="agro-form-section-title">Endereço comercial</h2>
+      <p class="agro-form-section-copy">Use o CEP para preencher rapidamente o endereço e ajuste o número e o complemento.</p>
+
+      <div class="agro-form-grid">
+        <div class="agro-col-3">
+          <label class="agro-input-label">CEP *</label>
+          <div class="input-group">
+            <input type="text" id="cep" name="cep" value="{{ form.get('cep', '') }}" class="form-control agro-form-control {% if errors.get('cep') %}is-invalid{% endif %}" required>
+            <button type="button" class="btn agro-outline-btn" id="btnBuscarCep">Buscar</button>
+          </div>
+          {% if errors.get('cep') %}<div class="invalid-feedback d-block">{{ errors.get('cep') }}</div>{% endif %}
+          <div class="form-text" id="cepStatus"></div>
+        </div>
+        <div class="agro-col-7">
+          <label class="agro-input-label">Logradouro *</label>
+          <input type="text" id="logradouro" name="logradouro" value="{{ form.get('logradouro', '') }}" class="form-control agro-form-control {% if errors.get('logradouro') %}is-invalid{% endif %}" required>
+          {% if errors.get('logradouro') %}<div class="invalid-feedback">{{ errors.get('logradouro') }}</div>{% endif %}
+        </div>
+        <div class="agro-col-2">
+          <label class="agro-input-label">Número *</label>
+          <input type="text" id="numero" name="numero" value="{{ form.get('numero', '') }}" class="form-control agro-form-control {% if errors.get('numero') %}is-invalid{% endif %}" required>
+          {% if errors.get('numero') %}<div class="invalid-feedback">{{ errors.get('numero') }}</div>{% endif %}
+        </div>
+
+        <div class="agro-col-4">
+          <label class="agro-input-label">Complemento</label>
+          <input type="text" id="complemento" name="complemento" value="{{ form.get('complemento', '') }}" class="form-control agro-form-control" placeholder="Ex.: sala, bloco, casa">
+        </div>
+        <div class="agro-col-4">
+          <label class="agro-input-label">Bairro *</label>
+          <input type="text" id="bairro" name="bairro" value="{{ form.get('bairro', '') }}" class="form-control agro-form-control {% if errors.get('bairro') %}is-invalid{% endif %}" required>
+          {% if errors.get('bairro') %}<div class="invalid-feedback">{{ errors.get('bairro') }}</div>{% endif %}
+        </div>
+        <div class="agro-col-3">
+          <label class="agro-input-label">Cidade *</label>
+          <input type="text" id="cidade" name="cidade" value="{{ form.get('cidade', '') }}" class="form-control agro-form-control {% if errors.get('cidade') %}is-invalid{% endif %}" required>
+          {% if errors.get('cidade') %}<div class="invalid-feedback">{{ errors.get('cidade') }}</div>{% endif %}
+        </div>
+        <div class="agro-col-1">
+          <label class="agro-input-label">UF *</label>
+          <input type="text" id="uf" name="uf" value="{{ form.get('uf', '') }}" class="form-control agro-form-control text-uppercase {% if errors.get('uf') %}is-invalid{% endif %}" maxlength="2" required>
+          {% if errors.get('uf') %}<div class="invalid-feedback">{{ errors.get('uf') }}</div>{% endif %}
+        </div>
+      </div>
+    </section>
+
+    <div class="agro-actions-inline justify-content-end">
+      <a href="{{ url_for('main.agro_clientes_listar') }}" class="btn btn-outline-danger agro-outline-btn">Cancelar</a>
+      <button type="submit" class="btn btn-success agro-primary-btn">
+        <i class="bi bi-check-lg me-2"></i>{{ 'Salvar cliente' if modo == 'novo' else 'Atualizar cliente' }}
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function onlyDigits(value) {
+    return (value || "").replace(/\D/g, "");
+  }
+
+  function maskCep(value) {
+    const digits = onlyDigits(value).slice(0, 8);
+    if (digits.length <= 5) return digits;
+    return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+  }
+
+  function maskDocumento(value) {
+    const digits = onlyDigits(value);
+    if (digits.length <= 11) {
+      let formatted = digits.slice(0, 11);
+      formatted = formatted.replace(/(\d{3})(\d)/, "$1.$2");
+      formatted = formatted.replace(/(\d{3})(\d)/, "$1.$2");
+      formatted = formatted.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+      return formatted;
+    }
+
+    let formatted = digits.slice(0, 14);
+    formatted = formatted.replace(/(\d{2})(\d)/, "$1.$2");
+    formatted = formatted.replace(/(\d{3})(\d)/, "$1.$2");
+    formatted = formatted.replace(/(\d{3})(\d)/, "$1/$2");
+    formatted = formatted.replace(/(\d{4})(\d{1,2})$/, "$1-$2");
+    return formatted;
+  }
+
+  async function buscarCep() {
+    const cepInput = document.getElementById("cep");
+    const cepStatus = document.getElementById("cepStatus");
+    const cepDigits = onlyDigits(cepInput.value);
+
+    if (cepDigits.length !== 8) {
+      cepStatus.textContent = "Informe um CEP com 8 dígitos.";
+      return;
+    }
+
+    cepStatus.textContent = "Buscando CEP...";
+    const url = "{{ url_for('main.api_cep', cep='__CEP__') }}".replace("__CEP__", cepDigits);
+
+    try {
+      const response = await fetch(url, { headers: { Accept: "application/json" } });
+      const data = await response.json();
+
+      if (!response.ok || !data.ok) {
+        cepStatus.textContent = data.error || "Não foi possível consultar o CEP.";
+        return;
+      }
+
+      document.getElementById("logradouro").value = data.logradouro || "";
+      document.getElementById("bairro").value = data.bairro || "";
+      document.getElementById("cidade").value = data.cidade || "";
+      document.getElementById("uf").value = (data.uf || "").toUpperCase();
+      cepStatus.textContent = "CEP encontrado com sucesso.";
+      document.getElementById("numero").focus();
+    } catch (error) {
+      cepStatus.textContent = "Erro ao consultar o CEP.";
+    }
+  }
+
+  document.getElementById("documento")?.addEventListener("input", (event) => {
+    event.target.value = maskDocumento(event.target.value);
+  });
+
+  document.getElementById("cep")?.addEventListener("input", (event) => {
+    event.target.value = maskCep(event.target.value);
+  });
+
+  document.getElementById("cep")?.addEventListener("blur", buscarCep);
+  document.getElementById("btnBuscarCep")?.addEventListener("click", buscarCep);
+</script>
+{% endblock %}

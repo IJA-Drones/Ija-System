@@ -4,6 +4,7 @@ from flask_login import current_user
 
 from app import db
 from app.models import Notificacao
+from app.shared.formatters import format_currency_br, format_phone_br
 
 
 def register_template_helpers(bp):
@@ -37,3 +38,11 @@ def register_template_helpers(bp):
             return value.strftime(format)
         except Exception:
             return value
+
+    @bp.app_template_filter("currencybr")
+    def currencybr(value):
+        return format_currency_br(value)
+
+    @bp.app_template_filter("phonebr")
+    def phonebr(value):
+        return format_phone_br(value)

@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid agro-shell">
+  <div class="agro-page-header">
+    <div>
+      <span class="agro-eyebrow"><i class="bi bi-cpu-fill"></i> Equipamentos</span>
+      <h1 class="agro-page-title mt-3">Equipamentos do Agro</h1>
+      <p class="agro-page-subtitle">Mantenha drones, acessórios e demais ativos operacionais catalogados para a frente Agro.</p>
+    </div>
+    {% if is_editable %}
+      <div class="agro-actions-inline">
+        <a href="{{ url_for('main.agro_equipamento_novo') }}" class="btn btn-success agro-primary-btn">
+          <i class="bi bi-plus-circle-fill me-2"></i>Novo equipamento
+        </a>
+      </div>
+    {% endif %}
+  </div>
+
+  <section class="agro-filter-card mb-4">
+    <div class="agro-card-body">
+      <form class="agro-filter-grid" method="get">
+        <div>
+          <label class="agro-input-label">Buscar</label>
+          <input type="text" class="form-control agro-form-control" name="q" value="{{ filters.q }}" placeholder="Tipo, modelo, identificação ou número de série">
+        </div>
+        <div>
+          <label class="agro-input-label">Total encontrado</label>
+          <input type="text" class="form-control agro-form-control" value="{{ filters.total }}" disabled>
+        </div>
+        <div></div>
+        <div>
+          <button class="btn btn-success agro-search-btn w-100" type="submit">
+            <i class="bi bi-search me-2"></i>Filtrar
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <section class="agro-table-card">
+    <div class="agro-card-head">
+      <div>
+        <h2 class="agro-card-title">Inventário operacional</h2>
+        <p class="agro-page-footer-note mb-0">Cadastre identificação, série, status e vínculo com equipe para preparar a operação do Agro desde o início.</p>
+      </div>
+    </div>
+    <div class="agro-card-body pt-3">
+      <div class="table-responsive">
+        <table class="table agro-table">
+          <thead>
+            <tr>
+              <th>Equipamento</th>
+              <th>Equipe</th>
+              <th>Status</th>
+              <th>Cadastrado em</th>
+              {% if is_editable %}<th class="text-end">Ações</th>{% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for equipamento in equipamentos %}
+              <tr>
+                <td data-label="Equipamento">
+                  <p class="agro-row-title">{{ equipamento.identificacao }}</p>
+                  <p class="agro-row-subtitle">
+                    {{ equipamento.tipo }} • {{ equipamento.modelo }}
+                    {% if equipamento.numero_serie %}<br>Nº de série: {{ equipamento.numero_serie }}{% endif %}
+                  </p>
+                </td>
+                <td data-label="Equipe">{{ equipamento.equipe.nome if equipamento.equipe else "Sem equipe vinculada" }}</td>
+                <td data-label="Status">
+                  {% set status = (equipamento.status or 'Ativo')|lower %}
+                  <span class="agro-badge {% if status in ['ativo', 'operacional'] %}agro-badge-success{% elif status in ['manutenção', 'manutencao', 'revisão', 'revisao'] %}agro-badge-warning{% else %}agro-badge-info{% endif %}">
+                    {{ equipamento.status }}
+                  </span>
+                </td>
+                <td data-label="Cadastrado em">{{ equipamento.criado_em.strftime('%d/%m/%Y') }}</td>
+                {% if is_editable %}
+                  <td data-label="Ações" class="text-end">
+                    <div class="agro-action-group">
+                      <a href="{{ url_for('main.agro_equipamento_editar', equipamento_id=equipamento.id) }}" class="btn agro-icon-btn agro-icon-btn-edit" title="Editar equipamento">
+                        <i class="bi bi-pencil-square"></i>
+                      </a>
+                      <form method="post" action="{{ url_for('main.agro_equipamento_deletar', equipamento_id=equipamento.id) }}" class="form-deletar">
+                        <button type="submit" class="btn agro-icon-btn agro-icon-btn-delete" title="Excluir equipamento">
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </form>
+                    </div>
+                  </td>
+                {% endif %}
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="{{ 5 if is_editable else 4 }}">
+                  <div class="agro-empty-state">
+                    <i class="bi bi-box-seam d-block mb-2 fs-2"></i>
+                    Nenhum equipamento agro encontrado com os filtros atuais.
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}
