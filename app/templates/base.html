@@ -60,6 +60,14 @@
           document.documentElement.classList.add("dark-mode");
           document.documentElement.style.backgroundColor = "#101927";
         }
+        try {
+          const contextMode = window.localStorage.getItem("oa_admin_context_mode");
+          if (contextMode === "agro") {
+            document.documentElement.classList.add("agro-mode");
+          }
+        } catch (error) {
+          // localStorage can be unavailable in strict privacy contexts.
+        }
       })();
     </script>
 
@@ -133,7 +141,7 @@
         {% endif %}
 
         <a
-          class="navbar-brand d-flex align-items-center gap-2 me-auto"
+          class="navbar-brand d-flex align-items-center gap-2 me-3"
           href="{{ url_for(navbar_home_endpoint) }}"
         >
           <!-- <img src="{{ url_for('static', filename='img/logo_oceano_azul_' ~ (tema_escolhido if tema_escolhido else 'light') ~ '.png') }}" alt="Logo Oceano Azul"> -->
@@ -150,6 +158,14 @@
             style="max-height: 50px"
           />
         </a>
+
+        {# BOTÕES EXPORTAR #}
+        {% if current_user.tipo_usuario == 'admin' %}
+        <div class="admin-context-switch me-auto" role="tablist" aria-label="Contexto de visualizacao do admin">
+            <button type="button" class="admin-context-btn" data-admin-context="uvis_prefeitura">UVIS e Prefeitura</button>
+            <button type="button" class="admin-context-btn" data-admin-context="agro">Agro</button>
+        </div>
+        {% endif %}
 
         <div class="dropdown me-2">
           <button
@@ -675,6 +691,86 @@
             const toggle = document.getElementById("toggleDarkMode");
             const sidebarToggle = document.getElementById("sidebarToggle");
             const overlay = document.getElementById("sidebarOverlay");
+            const contextButtons = document.querySelectorAll("[data-admin-context]");
+            const contextStorageKey = "oa_admin_context_mode";
+            const contextLabels = {
+                uvis_prefeitura: "UVIS/PREFEITURA",
+                agro: "AGRO",
+            };
+
+            function readContextMode() {
+                try {
+                    const saved = localStorage.getItem(contextStorageKey);
+                    return saved === "agro" ? "agro" : "uvis_prefeitura";
+                } catch (error) {
+                    return "uvis_prefeitura";
+                }
+            }
+
+            function writeContextMode(mode) {
+                try {
+                    localStorage.setItem(contextStorageKey, mode);
+                } catch (error) {
+                    // ignore
+                }
+            }
+
+            function updateThemeColorByMode() {
+                const metaTheme = document.querySelector('meta[name="theme-color"]');
+                if (!metaTheme) return;
+
+                const isDark = body.classList.contains("dark-mode");
+                const isAgro = body.classList.contains("agro-mode");
+
+                if (isDark && isAgro) {
+                    metaTheme.setAttribute("content", "#0f2318");
+                    return;
+                }
+                if (isDark && !isAgro) {
+                    metaTheme.setAttribute("content", "#101927");
+                    return;
+                }
+                if (!isDark && isAgro) {
+                    metaTheme.setAttribute("content", "#2f8f4f");
+                    return;
+                }
+                metaTheme.setAttribute("content", "#101927");
+            }
+
+            function applyContextMode(mode, persist = true) {
+                const selectedMode = mode === "agro" ? "agro" : "uvis_prefeitura";
+                const isAgro = selectedMode === "agro";
+
+                body.classList.toggle("agro-mode", isAgro);
+                document.documentElement.classList.toggle("agro-mode", isAgro);
+
+                contextButtons.forEach((button) => {
+                    const active = button.dataset.adminContext === selectedMode;
+                    button.classList.toggle("is-active", active);
+                    button.setAttribute("aria-selected", active ? "true" : "false");
+                });
+
+                const contextFilterBadge = document.getElementById("adminContextFilterBadge");
+                if (contextFilterBadge) {
+                    contextFilterBadge.textContent = contextLabels[selectedMode];
+                }
+
+                if (persist) writeContextMode(selectedMode);
+                updateThemeColorByMode();
+
+                window.dispatchEvent(
+                    new CustomEvent("admin-context-mode-changed", {
+                        detail: { mode: selectedMode },
+                    })
+                );
+            }
+
+            applyContextMode(readContextMode(), false);
+            contextButtons.forEach((button) => {
+                button.addEventListener("click", () => {
+                    applyContextMode(button.dataset.adminContext || "uvis_prefeitura");
+                });
+            });
 
             // 1. CONFIRMAÇÃO DE EXCLUSÃO (Agora inclui anexo e qualquer outro delete)
             document.querySelectorAll('.form-deletar').forEach(form => {
@@ -746,12 +842,14 @@
                     body.classList.add("dark-mode");
                     toggle.innerHTML = '<span>Modo Claro</span><i class="bi bi-sun-fill"></i>';
                 }
+                updateThemeColorByMode();
                 toggle.addEventListener("click", (e) => {
                     e.stopPropagation();
                     body.classList.toggle("dark-mode");
                     const isDark = body.classList.contains("dark-mode");
                     setThemeCookie(isDark ? "dark" : "light");
                     toggle.innerHTML = isDark ? '<span>Modo Claro</span><i class="bi bi-sun-fill"></i>' : '<span>Modo Escuro</span><i class="bi bi-moon-stars"></i>';
+                    updateThemeColorByMode();
                 });
             }
 

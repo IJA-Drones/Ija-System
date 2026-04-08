@@ -34,6 +34,54 @@
         .admin-table-wrap {
             width: 100%;
         }
+        .admin-toolbar-head {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-width: 0;
+        }
+        .admin-context-switch {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #ffffff;
+            border: 1px solid rgba(31, 78, 120, 0.14);
+            border-radius: 999px;
+            padding: 4px;
+            box-shadow: 0 3px 12px rgba(18, 38, 63, 0.08);
+            width: fit-content;
+        }
+        .admin-context-btn {
+            border: none;
+            border-radius: 999px;
+            padding: 6px 14px;
+            font-size: 0.83rem;
+            font-weight: 700;
+            color: #1f4e78;
+            background: transparent;
+            transition: all 0.2s ease;
+        }
+        .admin-context-btn.is-active {
+            background: linear-gradient(135deg, #1f4e78, #0e7aa6);
+            color: #ffffff;
+            box-shadow: 0 4px 10px rgba(31, 78, 120, 0.25);
+        }
+        .admin-context-note {
+            margin: 0;
+            font-size: 0.82rem;
+            color: #5b6c8a;
+            font-weight: 500;
+        }
+        .admin-context-badge {
+            margin-left: 6px;
+            padding: 4px 10px;
+            font-size: 0.72rem;
+            border-radius: 999px;
+            background: #e8f5fb;
+            color: #0e7aa6;
+            border: 1px solid rgba(14, 122, 166, 0.25);
+            font-weight: 700;
+        }
 
         @media (max-width: 991.98px) {
             .admin-page.container-fluid.py-4 {
@@ -43,6 +91,9 @@
             .admin-toolbar {
                 flex-direction: column;
                 align-items: stretch;
+            }
+            .admin-toolbar-head {
+                width: 100%;
             }
             .admin-toolbar-actions {
                 width: 100%;
@@ -116,6 +167,15 @@
             .admin-map-modal #mapCanvas {
                 height: 260px !important;
             }
+            .admin-context-switch {
+                width: 100%;
+                justify-content: space-between;
+            }
+            .admin-context-btn {
+                flex: 1 1 0;
+                text-align: center;
+                padding: 8px 10px;
+            }
         }
 
         @media (max-width: 991.98px) {
@@ -144,7 +204,6 @@
     <div class="admin-toolbar mb-4">
         <h2 class="text-dark"><i class="bi bi-shield-lock-fill me-2 text-primary"></i> Painel de Gestão</h2>
 
-        {# BOTÕES EXPORTAR #}
         {% if current_user.tipo_usuario in ['admin', 'operario', 'visualizar', 'regional'] %}
         {# 'flex-wrap' aqui garante que os botões se organizem entre si se a tela for muito estreita #}
         <div class="admin-toolbar-actions">
@@ -192,6 +251,9 @@
             <div class="d-flex align-items-center gap-2">
                 <i class="bi bi-funnel-fill text-primary"></i>
                 <span class="text-dark">Filtros de Busca</span>
+                {% if current_user.tipo_usuario == 'admin' %}
+                    <span class="admin-context-badge" id="adminContextFilterBadge">UVIS/PREFEITURA</span>
+                {% endif %}
                 {% if request.args.get('status') or request.args.get('unidade') or request.args.get('regiao') or request.args.get('apoio_cet') or request.args.get('protocolo') %}
                     <span class="badge bg-danger rounded-circle p-1" style="width: 8px; height: 8px;"></span>
                 {% endif %}

@@ -123,6 +123,24 @@ html.dark-mode {
 }
 
 /* -----------------------------------------
+   1.1) AGRO MODE (LIGHT)
+   ----------------------------------------- */
+body.agro-mode {
+  --color-primary-dark: #1f6f3f;
+  --color-primary: #2f8f4f;
+  --color-accent: #3ab16b;
+  --color-accent-hover: #2d9458;
+  --color-success: #2c7a4a;
+  --color-success-hover: #25623d;
+  --color-accent-soft: rgba(58, 177, 107, 0.12);
+  --color-accent-soft-hover: rgba(58, 177, 107, 0.2);
+  --bs-primary: #2f8f4f;
+  --bs-primary-rgb: 47, 143, 79;
+  --bs-link-color: #2f8f4f;
+  --bs-link-hover-color: #1f6f3f;
+}
+
+/* -----------------------------------------
    2) RESET, TIPOGRAFIA E LINKS
    ----------------------------------------- */
 body {
@@ -212,6 +230,69 @@ a:hover {
   color: var(--color-primary);
   line-height: 1;
   transition: font-size 0.3s;
+}
+
+.navbar-mode-pill {
+  display: none;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: 0.35rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid rgba(47, 143, 79, 0.35);
+  background: rgba(47, 143, 79, 0.1);
+  color: #1f6f3f;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.2px;
+}
+
+body.agro-mode .navbar-mode-pill {
+  display: inline-flex;
+}
+
+body.agro-mode .navbar-logo {
+  filter: hue-rotate(-95deg) saturate(1.35) contrast(1.03);
+}
+
+.admin-context-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  border: 1px solid rgba(31, 78, 120, 0.14);
+  border-radius: 999px;
+  padding: 4px;
+  box-shadow: 0 3px 12px rgba(18, 38, 63, 0.08);
+  width: fit-content;
+}
+
+.admin-context-btn {
+  border: none;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 0.83rem;
+  font-weight: 700;
+  color: var(--color-primary-dark);
+  background: transparent;
+  transition: all 0.2s ease;
+}
+
+.admin-context-btn.is-active {
+  background: linear-gradient(135deg, var(--color-primary-dark), var(--color-accent));
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(31, 78, 120, 0.25);
+}
+
+body.dark-mode .admin-context-switch {
+  background: #1a2c40;
+  border-color: #2f4a67;
+}
+
+body.dark-mode.agro-mode .admin-context-switch {
+  background: #173325;
+  border-color: #2a5a43;
 }
 
 .navbar-scrolled {
@@ -516,12 +597,71 @@ body.dark-mode {
   --shadow-lg: 0 10px 18px -3px rgba(0, 0, 0, 0.75);
 }
 
+body.dark-mode.agro-mode {
+  --color-primary-dark: #7fd8a7;
+  --color-primary: #57c78b;
+  --color-accent: #34d17d;
+  --color-accent-hover: #27b56a;
+  --color-success: #2ba363;
+  --color-success-hover: #228450;
+  --bs-primary: #57c78b;
+  --bs-primary-rgb: 87, 199, 139;
+  --bs-link-color: #57c78b;
+  --bs-link-hover-color: #7fd8a7;
+}
+
 /* Navbar & Sidebar Dark */
 body.dark-mode .navbar { background: #152233; border-bottom: 1px solid #233549; backdrop-filter: blur(8px); }
 body.dark-mode .app-sidebar { background: #152233; border-right: 1px solid #233549; }
 body.dark-mode .app-sidebar .nav-link { color: var(--color-text-main); }
 body.dark-mode .app-sidebar .nav-link:hover { background: rgba(18, 227, 255, 0.13); color: var(--color-accent); }
 body.dark-mode .app-sidebar .nav-link.active { background: rgba(18, 227, 255, 0.15); color: var(--color-accent); border-left: 4px solid var(--color-accent); }
+
+body.dark-mode.agro-mode .navbar {
+  background: #0f2318;
+  border-bottom: 1px solid #214634;
+}
+body.dark-mode.agro-mode .app-sidebar {
+  background: #0f2318;
+  border-right: 1px solid #214634;
+}
+body.dark-mode.agro-mode .app-sidebar .nav-link:hover {
+  background: rgba(52, 209, 125, 0.14);
+  color: var(--color-accent);
+}
+body.dark-mode.agro-mode .app-sidebar .nav-link.active {
+  background: rgba(52, 209, 125, 0.18);
+  color: var(--color-accent);
+  border-left: 4px solid var(--color-accent);
+}
+body.dark-mode.agro-mode .navbar-mode-pill {
+  border-color: rgba(127, 216, 167, 0.38);
+  background: rgba(127, 216, 167, 0.16);
+  color: #baf0d2;
+}
+
+@media (max-width: 991.98px) {
+  .admin-context-switch {
+    margin-right: auto;
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 576px) {
+  .admin-context-switch {
+    gap: 4px;
+    padding: 3px;
+  }
+
+  .admin-context-btn {
+    padding: 5px 10px;
+    font-size: 0.75rem;
+  }
+
+  .navbar-mode-pill {
+    display: none !important;
+  }
+}
 
 /* Cards Dark */
 body.dark-mode .card { background: #152233; color: var(--color-text-main); box-shadow: var(--shadow-md); }
