@@ -4,7 +4,7 @@ from flask import abort, flash, redirect, render_template, request, send_file, s
 from flask_login import current_user, login_required
 
 from app.extensions import db
-from app.models import ClienteAgro, EquipamentoAgro, EquipeAgro, OrcamentoAgro, PilotoAgro
+from app.models import ClienteAgro, EquipamentoAgro, EquipeAgro, OrcamentoAgro, PilotoAgro, Usuario
 from app.modules.agro.exporters import build_orcamento_agro_pdf
 from app.modules.agro.service import (
     agro_bool_label,
@@ -45,6 +45,11 @@ def _require_agro_access():
 
 def _require_agro_edit():
     if not can_edit_agro_panel(current_user):
+        abort(403)
+
+
+def _require_piloto_agro():
+    if getattr(current_user, "tipo_usuario", None) != "piloto_agro":
         abort(403)
 
 
@@ -203,12 +208,14 @@ def _normalize_piloto_form(form_source):
         "nome": (form_source.get("nome") or "").strip(),
         "telefone": (form_source.get("telefone") or "").strip(),
         "equipe_agro_id": (form_source.get("equipe_agro_id") or "").strip(),
+        "login": (form_source.get("login") or "").strip(),
+        "senha": (form_source.get("senha") or "").strip(),
+        "confirmar_senha": (form_source.get("confirmar_senha") or "").strip(),
         "ativo": (form_source.get("ativo") or "SIM").strip().upper(),
     }
 
 
 def _validate_piloto_agro_form(form, equipes, *, piloto_atual=None):
-    del piloto_atual
     errors = {}
     equipe = None
     if not form["nome"]:
@@ -225,6 +232,26 @@ def _validate_piloto_agro_form(form, equipes, *, piloto_atual=None):
         equipe = next((item for item in equipes if item.id == equipe_id), None)
         if not equipe:
             errors["equipe_agro_id"] = "A equipe selecionada não foi encontrada."
+
+    if not form["login"]:
+        errors["login"] = "Informe o login de acesso do piloto agro."
+    elif len(form["login"]) < 4:
+        errors["login"] = "O login deve ter pelo menos 4 caracteres."
+    else:
+        query = Usuario.query.filter(db.func.lower(Usuario.login) == form["login"].lower())
+        if piloto_atual is not None and piloto_atual.usuario is not None:
+            query = query.filter(Usuario.id != piloto_atual.usuario.id)
+        if query.first():
+            errors["login"] = "Este login já está em uso por outro usuário."
+
+    if (piloto_atual is None or piloto_atual.usuario is None) and not form["senha"]:
+        errors["senha"] = "Informe uma senha inicial para o piloto agro."
+    elif form["senha"] and len(form["senha"]) < 6:
+        errors["senha"] = "A senha deve ter pelo menos 6 caracteres."
+
+    if form["senha"] or form["confirmar_senha"]:
+        if form["senha"] != form["confirmar_senha"]:
+            errors["confirmar_senha"] = "A confirmação de senha não confere."
 
     return errors, telefone_digits, equipe_id, equipe, _normalize_bool_form(form["ativo"], default=True)
 
@@ -349,8 +376,37 @@ def register_routes(bp):
     @bp.route("/agro", endpoint="agro_root")
     @login_required
     def agro_root():
+        if getattr(current_user, "tipo_usuario", None) == "piloto_agro":
+            return redirect(url_for("main.agro_piloto_dashboard"))
+
         _require_agro_access()
         return redirect(url_for("main.admin_agro"))
+
+    @bp.route("/agro/piloto", endpoint="agro_piloto_dashboard")
+    @login_required
+    def agro_piloto_dashboard():
+        _require_piloto_agro()
+
+        piloto = getattr(current_user, "piloto_agro", None)
+        if piloto is None:
+            flash("Seu usuario nao esta vinculado a um piloto agro.", "danger")
+            return redirect(url_for("auth.logout"))
+
+        equipe = piloto.equipe
+        equipamentos = []
+        if equipe is not None:
+            equipamentos = (
+                EquipamentoAgro.query.filter(EquipamentoAgro.equipe_agro_id == equipe.id)
+                .order_by(EquipamentoAgro.identificacao.asc(), EquipamentoAgro.id.asc())
+                .all()
+            )
+
+        return render_template(
+            "piloto_agro_dashboard.html",
+            piloto=piloto,
+            equipe=equipe,
+            equipamentos=equipamentos,
+        )
 
     @bp.route("/agro/admin", endpoint="admin_agro")
     @login_required
@@ -810,6 +866,7 @@ def register_routes(bp):
                 db.or_(
                     PilotoAgro.nome.ilike(f"%{q}%"),
                     PilotoAgro.telefone.ilike(f"%{only_digits(q)}%") if only_digits(q) else db.false(),
+                    PilotoAgro.usuario.has(Usuario.login.ilike(f"%{q}%")),
                 )
             )
         pilotos = query.order_by(PilotoAgro.nome.asc(), PilotoAgro.id.desc()).all()
@@ -841,6 +898,17 @@ def register_routes(bp):
                 ativo=ativo,
             )
             db.session.add(piloto)
+            db.session.flush()
+
+            usuario = Usuario(
+                prefeitura_id=piloto.prefeitura_id,
+                nome_uvis=piloto.nome,
+                login=form["login"],
+                tipo_usuario="piloto_agro",
+                piloto_agro_id=piloto.id,
+            )
+            usuario.set_senha(form["senha"])
+            db.session.add(usuario)
             db.session.commit()
             flash("Piloto agro cadastrado com sucesso.", "success")
             return redirect(url_for("main.agro_pilotos_listar"))
@@ -865,6 +933,24 @@ def register_routes(bp):
             piloto.telefone = telefone_digits or None
             piloto.equipe_agro_id = equipe_id
             piloto.ativo = ativo
+            usuario = piloto.usuario
+            if usuario is None:
+                usuario = Usuario(
+                    prefeitura_id=piloto.prefeitura_id,
+                    nome_uvis=piloto.nome,
+                    login=form["login"],
+                    tipo_usuario="piloto_agro",
+                    piloto_agro_id=piloto.id,
+                )
+                db.session.add(usuario)
+
+            usuario.prefeitura_id = piloto.prefeitura_id
+            usuario.nome_uvis = piloto.nome
+            usuario.login = form["login"]
+            usuario.tipo_usuario = "piloto_agro"
+            usuario.piloto_agro_id = piloto.id
+            if form["senha"]:
+                usuario.set_senha(form["senha"])
             db.session.commit()
             flash("Piloto agro atualizado com sucesso.", "success")
             return redirect(url_for("main.agro_pilotos_listar"))
@@ -873,6 +959,9 @@ def register_routes(bp):
             "nome": piloto.nome or "",
             "telefone": format_phone_br(piloto.telefone or ""),
             "equipe_agro_id": str(piloto.equipe_agro_id or ""),
+            "login": piloto.usuario.login if piloto.usuario else "",
+            "senha": "",
+            "confirmar_senha": "",
             "ativo": "SIM" if piloto.ativo else "NAO",
         }
         return render_template("agro_piloto_form.html", form=form, errors=errors, modo="editar", piloto=piloto, equipes=equipes)
@@ -882,6 +971,8 @@ def register_routes(bp):
     def agro_piloto_deletar(piloto_id):
         _require_agro_edit()
         piloto = _get_piloto_agro_or_404(piloto_id)
+        if piloto.usuario is not None:
+            db.session.delete(piloto.usuario)
         db.session.delete(piloto)
         db.session.commit()
         flash("Piloto agro removido com sucesso.", "success")

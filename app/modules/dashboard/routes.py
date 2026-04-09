@@ -19,6 +19,9 @@ def register_routes(bp):
         if current_user.tipo_usuario == "piloto":
             return redirect(url_for("main.piloto_os"))
 
+        if current_user.tipo_usuario == "piloto_agro":
+            return redirect(url_for("main.agro_piloto_dashboard"))
+
         if current_user.tipo_usuario == "equipe_uvis":
             return redirect(url_for("main.dashboard_equipe_uvis"))
 

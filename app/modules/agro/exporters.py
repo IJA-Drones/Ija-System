@@ -253,7 +253,7 @@ def build_orcamento_agro_pdf(orcamento):
     value_style = ParagraphStyle(
         "AgroPdfValue",
         parent=styles["BodyText"],
-        fontName="Helvetica",
+        fontName="Helvetica", 
         fontSize=9.3,
         leading=12.8,
         textColor=TEXT_MAIN,
@@ -263,7 +263,7 @@ def build_orcamento_agro_pdf(orcamento):
         parent=styles["BodyText"],
         fontName="Helvetica",
         fontSize=8.9,
-        leading=12,
+        leading=12,  
         textColor=TEXT_MUTED,
     )
     service_label_style = ParagraphStyle(
@@ -285,7 +285,7 @@ def build_orcamento_agro_pdf(orcamento):
     )
     total_label_style = ParagraphStyle(
         "AgroPdfTotalLabel",
-        parent=service_label_style,
+        parent=service_label_style, 
         fontSize=11,
         leading=13.5,
         textColor=IJA_GREEN_DARK,

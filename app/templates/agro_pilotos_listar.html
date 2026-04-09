@@ -30,7 +30,7 @@
 
       {% if is_editable %}
         <a href="{{ url_for('main.agro_piloto_novo') }}" class="btn btn-success d-flex align-items-center gap-2">
-          <i class="bi bi-plus-lg"></i> Novo Piloto
+          <i class="bi bi-plus-lg"></i> Novo piloto
         </a>
       {% endif %}
     </div>
@@ -62,7 +62,7 @@
                 class="form-control form-control-sm"
                 name="q"
                 value="{{ filters.q }}"
-                placeholder="Nome do piloto ou telefone..."
+                placeholder="Nome, telefone ou login do piloto..."
               >
             </div>
 
@@ -92,10 +92,11 @@
               <th class="col-id">ID</th>
               <th>Piloto</th>
               <th>Equipe</th>
+              <th>Acesso Agro</th>
               <th>Status</th>
               <th>Telefone</th>
               <th>Cadastrado em</th>
-              {% if is_editable %}<th class="col-actions">Ações</th>{% endif %}
+              {% if is_editable %}<th class="col-actions">Acoes</th>{% endif %}
             </tr>
           </thead>
           <tbody>
@@ -108,6 +109,14 @@
                 <td data-label="Equipe">
                   <span class="small">{{ piloto.equipe.nome if piloto.equipe else "Sem equipe vinculada" }}</span>
                 </td>
+                <td data-label="Acesso Agro">
+                  {% if piloto.usuario %}
+                    <div class="fw-semibold">{{ piloto.usuario.login }}</div>
+                    <span class="small text-muted">Tela: {{ url_for('auth.login_piloto_agro', _external=False) }}</span>
+                  {% else %}
+                    <span class="text-muted">Sem login configurado</span>
+                  {% endif %}
+                </td>
                 <td data-label="Status">
                   {% if piloto.ativo %}
                     <span class="badge bg-success-subtle text-success border border-success-subtle">Ativo</span>
@@ -119,7 +128,7 @@
                   {% if piloto.telefone %}
                     <span class="fw-semibold">{{ piloto.telefone|phonebr }}</span>
                   {% else %}
-                    <span class="text-muted">Telefone não informado</span>
+                    <span class="text-muted">Telefone nao informado</span>
                   {% endif %}
                 </td>
                 <td data-label="Cadastrado em">
@@ -127,7 +136,7 @@
                 </td>
 
                 {% if is_editable %}
-                  <td data-label="Ações" class="listing-cell-actions">
+                  <td data-label="Acoes" class="listing-cell-actions">
                     <div class="listing-actions-group">
                       <a href="{{ url_for('main.agro_piloto_editar', piloto_id=piloto.id) }}"
                          class="btn btn-sm btn-success text-white shadow-sm"
@@ -146,7 +155,7 @@
               </tr>
             {% else %}
               <tr>
-                <td colspan="{{ 7 if is_editable else 6 }}" class="text-center py-5">
+                <td colspan="{{ 8 if is_editable else 7 }}" class="text-center py-5">
                   <p class="text-muted mb-0">Nenhum piloto agro encontrado com os filtros aplicados.</p>
                 </td>
               </tr>

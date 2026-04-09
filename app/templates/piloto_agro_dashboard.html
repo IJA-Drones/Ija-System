@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/piloto_agro.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1280px">
+  <div class="agro-pilot-dashboard">
+    <section class="agro-pilot-hero">
+      <div class="row g-4 align-items-center">
+        <div class="col-lg-8">
+          <span class="badge text-bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-2 mb-3">
+            Painel do piloto Agro
+          </span>
+          <h2 class="fw-bold text-dark mb-2">Ola, {{ piloto.nome }}.</h2>
+          <p class="text-muted mb-0">
+            Este ambiente e exclusivo para a frente Agro. A proxima etapa sera conectar aqui os orcamentos e as equipes responsaveis por cada operacao.
+          </p>
+        </div>
+
+        <div class="col-lg-4">
+          <div class="d-flex justify-content-lg-end">
+            <img
+              src="{{ url_for('static', filename='img/logo ija.jpg') }}"
+              alt="IJA Drones"
+              class="agro-pilot-logo"
+            >
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="row g-3">
+      <div class="col-md-4">
+        <div class="agro-pilot-stat h-100">
+          <small class="text-muted d-block mb-2">Equipe atual</small>
+          <h4 class="fw-bold text-dark mb-1">{{ equipe.nome if equipe else "Sem equipe vinculada" }}</h4>
+          <span class="text-muted small">
+            {{ "Ajuste feito pelo admin do Agro." if equipe else "Vincule este piloto a uma equipe para organizar as futuras operacoes." }}
+          </span>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="agro-pilot-stat h-100">
+          <small class="text-muted d-block mb-2">Status do acesso</small>
+          <h4 class="fw-bold text-dark mb-1">{{ "Ativo" if piloto.ativo else "Inativo" }}</h4>
+          <span class="text-muted small">Login: {{ current_user.login }}</span>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="agro-pilot-stat h-100">
+          <small class="text-muted d-block mb-2">Equipamentos da equipe</small>
+          <h4 class="fw-bold text-dark mb-1">{{ equipamentos|length }}</h4>
+          <span class="text-muted small">Resumo rapido dos ativos hoje vinculados a sua equipe.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-lg-5">
+        <section class="agro-pilot-soft-card h-100">
+          <div class="d-flex align-items-center gap-2 mb-3">
+            <i class="bi bi-person-lines-fill text-success fs-5"></i>
+            <h5 class="fw-bold mb-0">Meu cadastro</h5>
+          </div>
+
+          <div class="d-grid gap-3">
+            <div>
+              <small class="text-muted d-block mb-1">Nome</small>
+              <strong>{{ piloto.nome }}</strong>
+            </div>
+            <div>
+              <small class="text-muted d-block mb-1">Telefone</small>
+              <strong>{{ piloto.telefone|phonebr if piloto.telefone else "Nao informado" }}</strong>
+            </div>
+            <div>
+              <small class="text-muted d-block mb-1">Equipe</small>
+              <strong>{{ equipe.nome if equipe else "Sem equipe vinculada" }}</strong>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="col-lg-7">
+        <section class="agro-pilot-soft-card h-100">
+          <div class="d-flex align-items-center gap-2 mb-3">
+            <i class="bi bi-cpu-fill text-success fs-5"></i>
+            <h5 class="fw-bold mb-0">Equipamentos da equipe</h5>
+          </div>
+
+          {% if equipamentos %}
+            <div class="table-responsive">
+              <table class="table align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Identificacao</th>
+                    <th>Tipo</th>
+                    <th>Modelo</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for equipamento in equipamentos %}
+                    <tr>
+                      <td class="fw-semibold">{{ equipamento.identificacao }}</td>
+                      <td>{{ equipamento.tipo }}</td>
+                      <td>{{ equipamento.modelo }}</td>
+                      <td>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle">
+                          {{ equipamento.status }}
+                        </span>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <p class="text-muted mb-0">
+              Ainda nao existem equipamentos cadastrados para a equipe deste piloto.
+            </p>
+          {% endif %}
+        </section>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

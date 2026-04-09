@@ -3,6 +3,7 @@
 {% block extra_styles %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -13,7 +14,9 @@
         <i class="bi bi-person-badge-fill me-2 text-primary"></i>
         {{ 'Cadastrar piloto do Agro' if modo == 'novo' else 'Editar piloto do Agro' }}
       </h2>
-      <p class="text-muted small mb-0">Registre o profissional e relacione o piloto à equipe operacional correta.</p>
+      <p class="text-muted small mb-0">
+        Configure os dados operacionais e o acesso exclusivo do piloto para a area Agro.
+      </p>
     </div>
 
     <a href="{{ url_for('main.agro_pilotos_listar') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
@@ -26,7 +29,7 @@
       <form method="post" novalidate>
         <div class="d-flex align-items-center mb-3">
           <i class="bi bi-card-heading text-primary me-2 fs-5"></i>
-          <h5 class="m-0 text-primary fw-bold">Identificação</h5>
+          <h5 class="m-0 text-primary fw-bold">Identificacao do piloto</h5>
         </div>
 
         <div class="row g-3 mb-4">
@@ -39,7 +42,7 @@
               name="nome"
               value="{{ form.get('nome', '') }}"
               class="form-control {% if errors.get('nome') %}is-invalid{% endif %}"
-              placeholder="Ex.: João Silva"
+              placeholder="Ex.: Joao Silva"
               required
             >
             {% if errors.get('nome') %}
@@ -79,7 +82,7 @@
 
         <div class="d-flex align-items-center mb-3">
           <i class="bi bi-diagram-3-fill text-primary me-2 fs-5"></i>
-          <h5 class="m-0 text-primary fw-bold">Vinculação operacional</h5>
+          <h5 class="m-0 text-primary fw-bold">Vinculacao operacional</h5>
         </div>
 
         <div class="row g-3 mb-4">
@@ -99,6 +102,75 @@
           </div>
         </div>
 
+        <hr class="text-muted opacity-25 my-4">
+
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-shield-lock-fill text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Acesso do piloto ao Agro</h5>
+        </div>
+
+        <div class="row g-3 mb-2">
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-person-vcard-fill me-1 text-primary"></i> Login *
+            </label>
+            <input
+              type="text"
+              name="login"
+              value="{{ form.get('login', '') }}"
+              class="form-control {% if errors.get('login') %}is-invalid{% endif %}"
+              placeholder="Ex.: piloto.agro01"
+              autocomplete="username"
+              required
+            >
+            {% if errors.get('login') %}
+              <div class="invalid-feedback">{{ errors.get('login') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-key-fill me-1 text-primary"></i> {{ 'Senha inicial *' if modo == 'novo' else 'Nova senha' }}
+            </label>
+            <input
+              type="password"
+              name="senha"
+              class="form-control {% if errors.get('senha') %}is-invalid{% endif %}"
+              placeholder="{{ 'Minimo de 6 caracteres' if modo == 'novo' else 'Preencha apenas para alterar' }}"
+              autocomplete="new-password"
+              {% if modo == 'novo' %}required{% endif %}
+            >
+            {% if errors.get('senha') %}
+              <div class="invalid-feedback">{{ errors.get('senha') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-check2-square me-1 text-primary"></i> Confirmar senha {{ '*' if modo == 'novo' else '' }}
+            </label>
+            <input
+              type="password"
+              name="confirmar_senha"
+              class="form-control {% if errors.get('confirmar_senha') %}is-invalid{% endif %}"
+              placeholder="Repita a senha"
+              autocomplete="new-password"
+              {% if modo == 'novo' %}required{% endif %}
+            >
+            {% if errors.get('confirmar_senha') %}
+              <div class="invalid-feedback">{{ errors.get('confirmar_senha') }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="alert alert-light border rounded-4 mt-3 mb-0 small">
+          {% if modo == 'novo' %}
+            Esse login sera usado pelo piloto na tela exclusiva do Agro.
+          {% else %}
+            Se a senha ficar em branco, o acesso atual sera mantido.
+          {% endif %}
+        </div>
+
         {% if piloto %}
           <hr class="text-muted opacity-25 my-4">
 
@@ -108,14 +180,21 @@
           </div>
 
           <div class="row g-3 mb-4">
-            <div class="col-md-6">
+            <div class="col-md-4">
               <div class="border rounded-4 p-3 h-100">
                 <small class="text-muted d-block mb-1">Equipe vinculada</small>
                 <strong>{{ piloto.equipe.nome if piloto.equipe else "Sem equipe vinculada" }}</strong>
               </div>
             </div>
 
-            <div class="col-md-6">
+            <div class="col-md-4">
+              <div class="border rounded-4 p-3 h-100">
+                <small class="text-muted d-block mb-1">Login atual</small>
+                <strong>{{ piloto.usuario.login if piloto.usuario else "Sem acesso criado" }}</strong>
+              </div>
+            </div>
+
+            <div class="col-md-4">
               <div class="border rounded-4 p-3 h-100">
                 <small class="text-muted d-block mb-1">Cadastrado em</small>
                 <strong>{{ piloto.criado_em.strftime('%d/%m/%Y') }}</strong>
@@ -125,7 +204,7 @@
         {% endif %}
 
         <small class="text-muted d-block mt-4">
-          Campos com <span class="text-danger">*</span> são de preenchimento obrigatório.
+          Campos com <span class="text-danger">*</span> sao obrigatorios.
         </small>
 
         <div class="d-flex justify-content-end gap-2 mt-5">

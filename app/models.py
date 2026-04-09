@@ -52,6 +52,8 @@ class Usuario(UserMixin, db.Model):
     # ----------------------------
     piloto_id = db.Column(db.Integer, db.ForeignKey("pilotos.id"), nullable=True, index=True)
     piloto = db.relationship("Pilotos", lazy="joined")
+    piloto_agro_id = db.Column(db.Integer, db.ForeignKey("pilotos_agro.id"), nullable=True, index=True)
+    piloto_agro = db.relationship("PilotoAgro", back_populates="usuario", lazy="joined", foreign_keys=[piloto_agro_id])
 
     # ----------------------------
     # Equipe UVIS (NOVO)
@@ -674,6 +676,7 @@ class PilotoAgro(db.Model):
 
     prefeitura = db.relationship("Prefeitura", back_populates="pilotos_agro", lazy="joined")
     equipe = db.relationship("EquipeAgro", back_populates="pilotos", lazy="joined")
+    usuario = db.relationship("Usuario", back_populates="piloto_agro", uselist=False, foreign_keys="Usuario.piloto_agro_id")
 
 
 # -------------------------------------------------------------

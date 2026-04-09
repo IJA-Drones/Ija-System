@@ -1,4 +1,4 @@
-{% set is_agro_context = request.endpoint and (request.endpoint == 'main.admin_agro' or request.endpoint.startswith('main.agro_')) %}
+{% set is_agro_context = request.endpoint and (request.endpoint == 'main.admin_agro' or request.endpoint.startswith('main.agro_') or request.endpoint == 'auth.login_piloto_agro') %}
 <!doctype html>
 <html
   lang="pt-br"
@@ -115,6 +115,8 @@
     {% if current_user and current_user.is_authenticated %}
       {% if current_user.tipo_usuario == 'piloto' %}
         {% set navbar_home_endpoint = 'main.piloto_os' %}
+      {% elif current_user.tipo_usuario == 'piloto_agro' %}
+        {% set navbar_home_endpoint = 'main.agro_piloto_dashboard' %}
       {% elif current_user.tipo_usuario == 'equipe_uvis' %}
         {% set navbar_home_endpoint = 'main.dashboard_equipe_uvis' %}
       {% elif current_user.tipo_usuario in ['admin', 'operario', 'visualizar', 'regional', 'prefeitura_admin'] %}
@@ -237,6 +239,9 @@
         {% if current_user.tipo_usuario == 'piloto' %}
           {% set sidebar_dashboard_endpoint = 'main.piloto_os' %}
           {% set sidebar_dashboard_active = request.endpoint == 'main.piloto_os' %}
+        {% elif current_user.tipo_usuario == 'piloto_agro' %}
+          {% set sidebar_dashboard_endpoint = 'main.agro_piloto_dashboard' %}
+          {% set sidebar_dashboard_active = request.endpoint == 'main.agro_piloto_dashboard' %}
         {% elif current_user.tipo_usuario == 'equipe_uvis' %}
           {% set sidebar_dashboard_endpoint = 'main.dashboard_equipe_uvis' %}
           {% set sidebar_dashboard_active = request.endpoint == 'main.dashboard_equipe_uvis' %}
@@ -286,6 +291,15 @@
               href="{{ url_for('main.piloto_dosagem') }}"
             >
               <i class="bi bi-calculator-fill me-2"></i><span>Dosagem</span>
+            </a>
+          </li>
+          {% elif current_user.tipo_usuario == 'piloto_agro' and is_agro_context %}
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint == 'main.agro_piloto_dashboard' %}active{% endif %}"
+              href="{{ url_for('main.agro_piloto_dashboard') }}"
+            >
+              <i class="bi bi-tree-fill me-2"></i><span>Painel Agro</span>
             </a>
           </li>
           {% elif current_user.tipo_usuario == 'uvis' %}
