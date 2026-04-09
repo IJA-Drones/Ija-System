@@ -552,6 +552,289 @@ def merge_orcamento_agro_with_attachment(orcamento_pdf, attachment_absolute_path
         return orcamento_pdf
 
 
+def _format_short_date(value):
+    if not value:
+        return "-"
+    if isinstance(value, datetime):
+        value = value.date()
+    if isinstance(value, date):
+        return value.strftime("%d/%m/%Y")
+    return str(value)
+
+
+def _format_short_datetime(value):
+    if not value:
+        return "-"
+    if isinstance(value, datetime):
+        return value.strftime("%d/%m/%Y %H:%M")
+    return str(value)
+
+
+def _format_decimal_report(value, unit=""):
+    if value in (None, ""):
+        return "-"
+    try:
+        amount = Decimal(str(value))
+        text = f"{amount:.2f}".replace(".", ",").rstrip("0").rstrip(",")
+        if "," not in text:
+            text = f"{text},0"
+    except Exception:
+        text = str(value)
+    return f"{text} {unit}".strip()
+
+
+def _format_range_report(min_value, max_value, unit=""):
+    if min_value in (None, "") and max_value in (None, ""):
+        return "-"
+    if min_value not in (None, "") and max_value not in (None, ""):
+        if str(min_value) == str(max_value):
+            return _format_decimal_report(min_value, unit)
+        return f"{_format_decimal_report(min_value)} a {_format_decimal_report(max_value)} {unit}".strip()
+    return _format_decimal_report(min_value if min_value not in (None, "") else max_value, unit)
+
+
+def build_ordem_servico_agro_pdf(ordem_servico):
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        leftMargin=18 * mm,
+        rightMargin=18 * mm,
+        topMargin=18 * mm,
+        bottomMargin=22 * mm,
+        title=f"Relatório de OS {ordem_servico.identificador_os or ordem_servico.id}",
+        author="IJA Drones",
+    )
+
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        "AgroOsPdfTitle",
+        parent=styles["Heading1"],
+        fontName="Helvetica-Bold",
+        fontSize=20,
+        leading=24,
+        textColor=TEXT_MAIN,
+        spaceAfter=3,
+    )
+    subtitle_style = ParagraphStyle(
+        "AgroOsPdfSubtitle",
+        parent=styles["BodyText"],
+        fontName="Helvetica",
+        fontSize=9.3,
+        leading=12.2,
+        textColor=TEXT_MUTED,
+    )
+    section_style = ParagraphStyle(
+        "AgroOsPdfSection",
+        parent=styles["Heading3"],
+        fontName="Helvetica-Bold",
+        fontSize=11.5,
+        leading=14,
+        textColor=IJA_GREEN_DARK,
+        spaceBefore=2,
+        spaceAfter=6,
+    )
+    label_style = ParagraphStyle(
+        "AgroOsPdfLabel",
+        parent=styles["BodyText"],
+        fontName="Helvetica-Bold",
+        fontSize=9.1,
+        leading=12,
+        textColor=TEXT_MAIN,
+    )
+    value_style = ParagraphStyle(
+        "AgroOsPdfValue",
+        parent=styles["BodyText"],
+        fontName="Helvetica",
+        fontSize=9.3,
+        leading=12.8,
+        textColor=TEXT_MAIN,
+    )
+    note_style = ParagraphStyle(
+        "AgroOsPdfNote",
+        parent=styles["BodyText"],
+        fontName="Helvetica",
+        fontSize=8.8,
+        leading=12,
+        textColor=TEXT_MUTED,
+    )
+
+    logo = _try_make_agro_logo()
+    cidade_uf = "/".join([part for part in [ordem_servico.cidade_operacao or "", ordem_servico.uf_operacao or ""] if part]) or "-"
+    pilotos_equipe = ", ".join(
+        piloto.nome
+        for piloto in getattr(getattr(ordem_servico, "equipe", None), "pilotos", [])
+        if getattr(piloto, "ativo", False)
+    ) or "-"
+
+    header_lines = [
+        Paragraph("Relatório de Aplicação", title_style),
+        Paragraph(ordem_servico.cliente_nome or "-", subtitle_style),
+        Paragraph(cidade_uf, subtitle_style),
+        Paragraph(
+            f"OS {ordem_servico.identificador_os or '-'} | Contrato #{getattr(ordem_servico, 'contrato_agro_id', '-')}",
+            subtitle_style,
+        ),
+        Paragraph(
+            f"Período de Aplicação: {ordem_servico.periodo_aplicacao or _format_short_date(ordem_servico.data_aplicacao)}",
+            subtitle_style,
+        ),
+    ]
+
+    if logo:
+        header = Table([[logo, header_lines]], colWidths=[46 * mm, 119 * mm])
+    else:
+        header = Table([[header_lines]], colWidths=[165 * mm])
+    header.setStyle(
+        TableStyle(
+            [
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                ("TOPPADDING", (0, 0), (-1, -1), 0),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+            ]
+        )
+    )
+
+    identificacao = _label_value_table(
+        [
+            ("Status", ordem_servico.status or "-"),
+            ("Equipe", getattr(getattr(ordem_servico, "equipe", None), "nome", None) or "-"),
+            ("Pilotos da equipe", pilotos_equipe),
+            ("Cliente", ordem_servico.cliente_nome or "-"),
+            ("Propriedade", ordem_servico.propriedade_nome or "-"),
+            ("Cultura", ordem_servico.cultura or "-"),
+            ("Serviço", ordem_servico.servico or "-"),
+            ("Protocolo", ordem_servico.protocolo or "-"),
+            ("Data da aplicação", _format_short_date(ordem_servico.data_aplicacao)),
+            ("Finalizado em", _format_short_datetime(ordem_servico.finalizado_em)),
+        ],
+        label_style,
+        value_style,
+    )
+
+    drone = _label_value_table(
+        [
+            ("Drone de pulverização", ordem_servico.drone_pulverizacao_identificacao or "-"),
+            ("Modelo", ordem_servico.drone_pulverizacao_modelo or "-"),
+            ("Tipo", ordem_servico.drone_pulverizacao_tipo or "-"),
+            ("Drone de mapeamento", ordem_servico.drone_mapeamento_identificacao or "-"),
+            ("Modelo de mapeamento", ordem_servico.drone_mapeamento_modelo or "-"),
+            ("Mapeamento", ordem_servico.mapeamento_descricao or "-"),
+            ("Altura de voo", _format_decimal_report(ordem_servico.altura_voo_m, "m")),
+            ("Largura das faixas", _format_decimal_report(ordem_servico.largura_faixa_m, "m")),
+            ("Ponta de pulverização", ordem_servico.ponta_pulverizacao or "-"),
+        ],
+        label_style,
+        value_style,
+    )
+
+    clima = _label_value_table(
+        [
+            ("Temperatura", _format_range_report(ordem_servico.temperatura_min_c, ordem_servico.temperatura_max_c, "C")),
+            ("Umidade relativa", _format_range_report(ordem_servico.umidade_min_pct, ordem_servico.umidade_max_pct, "%")),
+            ("Velocidade do vento", _format_range_report(ordem_servico.vento_min_kmh, ordem_servico.vento_max_kmh, "km/h")),
+            ("Cidade de operação", ordem_servico.cidade_operacao or "-"),
+            ("UF da operação", ordem_servico.uf_operacao or "-"),
+        ],
+        label_style,
+        value_style,
+    )
+
+    resultado = _label_value_table(
+        [
+            ("Área total de aplicação", _format_decimal_report(ordem_servico.area_total_ha, "ha")),
+            ("Total de calda aplicada", _format_decimal_report(ordem_servico.total_calda_l, "litros")),
+            ("Média aplicada por hectare", _format_decimal_report(ordem_servico.media_aplicada_l_ha, "l/ha")),
+            ("Taxa de aplicação", _format_decimal_report(ordem_servico.taxa_aplicacao_l_ha, "l/ha")),
+            ("Tipo de aplicação", ordem_servico.tipo_aplicacao or "-"),
+        ],
+        label_style,
+        value_style,
+    )
+
+    insumo = _label_value_table(
+        [
+            ("Produto aplicado", ordem_servico.produto_aplicado or "-"),
+            ("Formulação", ordem_servico.formulacao_produto or "-"),
+            ("Dosagem", ordem_servico.dosagem or "-"),
+            ("Classe tóxica", ordem_servico.classe_toxica or "-"),
+            ("Relatório anexado", ordem_servico.relatorio_pdf_nome or "Não"),
+        ],
+        label_style,
+        value_style,
+    )
+
+    observacoes = Table(
+        [[Paragraph(ordem_servico.observacoes or "Sem observações registradas.", value_style)]],
+        colWidths=[165 * mm],
+    )
+    observacoes.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, -1), colors.white),
+                ("BOX", (0, 0), (-1, -1), 0.85, BORDER),
+                ("LEFTPADDING", (0, 0), (-1, -1), 10),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+                ("TOPPADDING", (0, 0), (-1, -1), 10),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+            ]
+        )
+    )
+
+    note = Table(
+        [[
+            Paragraph(
+                "Documento gerado automaticamente a partir dos dados preenchidos na OS Agro concluída. "
+                "Os campos refletem o formulário operacional salvo no sistema.",
+                note_style,
+            )
+        ]],
+        colWidths=[165 * mm],
+    )
+    note.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#F8FAFC")),
+                ("BOX", (0, 0), (-1, -1), 0.75, BORDER),
+                ("LEFTPADDING", (0, 0), (-1, -1), 10),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+                ("TOPPADDING", (0, 0), (-1, -1), 10),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+            ]
+        )
+    )
+
+    story = [
+        header,
+        Spacer(1, 8 * mm),
+        Paragraph("Identificação da OS", section_style),
+        identificacao,
+        Spacer(1, 7 * mm),
+        Paragraph("Especificações do drone", section_style),
+        drone,
+        Spacer(1, 7 * mm),
+        Paragraph("Condições climáticas", section_style),
+        clima,
+        Spacer(1, 7 * mm),
+        Paragraph("Resultado da aplicação", section_style),
+        resultado,
+        Spacer(1, 7 * mm),
+        Paragraph("Especificações do insumo aplicado", section_style),
+        insumo,
+        Spacer(1, 7 * mm),
+        Paragraph("Observações", section_style),
+        observacoes,
+        Spacer(1, 7 * mm),
+        note,
+    ]
+
+    doc.build(story, onFirstPage=_build_page_frame, onLaterPages=_build_page_frame)
+    buffer.seek(0)
+    return buffer
+
+
 def _format_full_address(logradouro, numero, complemento, bairro, cidade, uf, cep):
     line_1 = ", ".join([part for part in [logradouro, numero] if part])
     if complemento:

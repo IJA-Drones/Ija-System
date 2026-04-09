@@ -15,9 +15,9 @@
           <span class="badge text-bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-2 mb-3">
             Painel do piloto Agro
           </span>
-          <h2 class="fw-bold text-dark mb-2">Ola, {{ piloto.nome }}.</h2>
+          <h2 class="fw-bold text-dark mb-2">Olá, {{ piloto.nome }}.</h2>
           <p class="text-muted mb-3">
-            Aqui voce enxerga primeiro o que precisa de acao: contratos aprovados aguardando OS e ordens de servico que ainda precisam ser preenchidas ou continuadas.
+            Aqui você enxerga primeiro o que precisa de ação: contratos aprovados aguardando OS e ordens de serviço que ainda precisam ser preenchidas ou continuadas.
           </p>
           <div class="agro-pilot-hero-chips">
             <span class="agro-pilot-chip">
@@ -37,14 +37,14 @@
             <div class="d-flex align-items-start justify-content-between gap-3">
               <div>
                 <small class="text-uppercase fw-semibold text-success-emphasis d-block mb-2">Seu foco agora</small>
-                <h4 class="fw-bold text-dark mb-2">{{ total_demandas_prioritarias }} item(ns) pedindo acao</h4>
+                <h4 class="fw-bold text-dark mb-2">{{ total_demandas_prioritarias }} item(ns) pedindo ação</h4>
                 <p class="text-muted small mb-0">
                   {% if contratos_sem_os %}
-                    Priorize os contratos que ainda nao viraram OS.
+                    Priorize os contratos que ainda não viraram OS.
                   {% elif ordens_ativas %}
-                    Continue as OS que ja estao abertas para a sua equipe.
+                    Continue as OS que já estão abertas para a sua equipe.
                   {% else %}
-                    Nenhuma pendencia critica no momento.
+                    Nenhuma pendência crítica no momento.
                   {% endif %}
                 </p>
               </div>
@@ -65,7 +65,7 @@
                 <strong>{{ ordens_ativas|length }}</strong>
               </div>
               <div class="agro-pilot-focus-metric">
-                <span>OS concluidas</span>
+                <span>OS concluídas</span>
                 <strong>{{ ordens_concluidas|length }}</strong>
               </div>
               <div class="agro-pilot-focus-metric">
@@ -81,7 +81,7 @@
     <div class="row g-3">
       <div class="col-md-3">
         <div class="agro-pilot-stat h-100">
-          <small class="text-muted d-block mb-2">Demandas prioritarias</small>
+          <small class="text-muted d-block mb-2">Demandas prioritárias</small>
           <h4 class="fw-bold text-dark mb-1">{{ total_demandas_prioritarias }}</h4>
           <span class="text-muted small">Soma de contratos sem OS e OS ativas ligadas ao seu fluxo.</span>
         </div>
@@ -89,7 +89,7 @@
 
       <div class="col-md-3">
         <div class="agro-pilot-stat h-100">
-          <small class="text-muted d-block mb-2">Aguardando criacao</small>
+          <small class="text-muted d-block mb-2">Aguardando criação</small>
           <h4 class="fw-bold text-dark mb-1">{{ contratos_sem_os|length }}</h4>
           <span class="text-muted small">Contratos aprovados que ainda precisam virar OS.</span>
         </div>
@@ -105,9 +105,9 @@
 
       <div class="col-md-3">
         <div class="agro-pilot-stat h-100">
-          <small class="text-muted d-block mb-2">OS concluidas</small>
+          <small class="text-muted d-block mb-2">OS concluídas</small>
           <h4 class="fw-bold text-dark mb-1">{{ ordens_concluidas|length }}</h4>
-          <span class="text-muted small">Historico concluido pelo seu fluxo atual.</span>
+          <span class="text-muted small">Histórico concluído pelo seu fluxo atual.</span>
         </div>
       </div>
     </div>
@@ -152,11 +152,11 @@
                   <h6 class="fw-bold text-dark mb-1">{{ os_agro.propriedade_nome }}</h6>
                   <p class="text-muted small mb-3">{{ os_agro.cliente_nome }} • {{ os_agro.servico or "-" }}</p>
                   <div class="agro-pilot-demand-meta">
-                    <span><i class="bi bi-calendar-event"></i> {{ os_agro.data_aplicacao.strftime('%d/%m/%Y') if os_agro.data_aplicacao else 'Data nao informada' }}</span>
+                    <span><i class="bi bi-calendar-event"></i> {{ os_agro.data_aplicacao.strftime('%d/%m/%Y') if os_agro.data_aplicacao else 'Data não informada' }}</span>
                     <span><i class="bi bi-geo"></i> {{ os_agro.cidade_operacao }}/{{ os_agro.uf_operacao }}</span>
                   </div>
                   <div class="d-flex justify-content-between align-items-center gap-2 mt-3">
-                    <span class="text-muted small">{{ os_agro.periodo_aplicacao or 'Periodo nao informado' }}</span>
+                    <span class="text-muted small">{{ os_agro.periodo_aplicacao or 'Período não informado' }}</span>
                     <a href="{{ url_for('main.agro_os_editar', os_id=os_agro.id) }}" class="btn btn-outline-primary btn-sm">
                       <i class="bi bi-pencil-square me-1"></i> Continuar
                     </a>
@@ -169,7 +169,7 @@
               <div class="agro-pilot-empty-icon">
                 <i class="bi bi-check2-circle"></i>
               </div>
-              <h6 class="fw-bold text-dark mb-1">Sem pendencias prioritarias</h6>
+              <h6 class="fw-bold text-dark mb-1">Sem pendências prioritárias</h6>
               <p class="text-muted mb-0">Quando um contrato aprovado precisar de OS ou uma OS ficar em aberto, ele vai aparecer aqui.</p>
             </div>
           {% endif %}
@@ -180,7 +180,7 @@
         <section class="agro-pilot-soft-card h-100">
           <div class="d-flex align-items-center gap-2 mb-3">
             <i class="bi bi-person-lines-fill text-success fs-5"></i>
-            <h5 class="fw-bold mb-0">Meu contexto</h5>
+            <h5 class="fw-bold mb-0">Meus dados</h5>
           </div>
 
           <div class="agro-pilot-profile-list">
@@ -190,7 +190,7 @@
             </div>
             <div class="agro-pilot-profile-item">
               <span>Telefone</span>
-              <strong>{{ piloto.telefone|phonebr if piloto.telefone else "Nao informado" }}</strong>
+              <strong>{{ piloto.telefone|phonebr if piloto.telefone else "Não informado" }}</strong>
             </div>
             <div class="agro-pilot-profile-item">
               <span>Login</span>
@@ -199,6 +199,16 @@
             <div class="agro-pilot-profile-item">
               <span>Equipe</span>
               <strong>{{ equipe.nome if equipe else "Sem equipe vinculada" }}</strong>
+            </div>
+            <div class="agro-pilot-profile-item">
+              <span>Pilotos da equipe</span>
+              <strong>
+                {% if equipe and equipe.pilotos %}
+                  {{ equipe.pilotos|selectattr('ativo')|map(attribute='nome')|join(', ') or "Sem pilotos ativos vinculados" }}
+                {% else %}
+                  Sem pilotos vinculados
+                {% endif %}
+              </strong>
             </div>
             <div class="agro-pilot-profile-item">
               <span>Equipamentos ativos</span>
@@ -211,146 +221,10 @@
           </div>
 
           <div class="agro-pilot-help-box mt-4">
-            <small class="text-uppercase fw-semibold d-block mb-2">Leitura rapida</small>
-            <p class="small mb-2">Use <strong>Criar OS</strong> quando o contrato aprovado ainda nao entrou em operacao.</p>
-            <p class="small mb-0">Use <strong>Continuar</strong> quando a OS ja existe e ainda precisa de preenchimento.</p>
+            <small class="text-uppercase fw-semibold d-block mb-2">Leitura rápida</small>
+            <p class="small mb-2">Use <strong>Criar OS</strong> quando o contrato aprovado ainda não entrou em operação.</p>
+            <p class="small mb-0">Use <strong>Continuar</strong> quando a OS da equipe já existe e ainda precisa de preenchimento.</p>
           </div>
-        </section>
-      </div>
-    </div>
-
-    <div class="row g-4">
-      <div class="col-lg-7">
-        <section class="agro-pilot-soft-card h-100">
-          <div class="d-flex align-items-center gap-2 mb-3">
-            <i class="bi bi-file-earmark-check-fill text-success fs-5"></i>
-            <h5 class="fw-bold mb-0">Contratos aprovados da equipe</h5>
-          </div>
-
-          {% if contratos %}
-            <div class="table-responsive">
-              <table class="table align-middle mb-0">
-                <thead>
-                  <tr>
-                    <th>Contrato</th>
-                    <th>Propriedade</th>
-                    <th>Servico</th>
-                    <th>Situacao</th>
-                    <th>Acao</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for contrato in contratos %}
-                    {% set os_principal = latest_os_por_contrato.get(contrato.id) %}
-                    <tr>
-                      <td>
-                        <div class="fw-semibold">#{{ contrato.id }} • {{ contrato.orcamento.cliente_nome }}</div>
-                        <div class="text-muted small">Atualizado em {{ contrato.atualizado_em.strftime('%d/%m/%Y %H:%M') }}</div>
-                      </td>
-                      <td>
-                        <div class="fw-semibold">{{ contrato.propriedade_nome or contrato.orcamento.nome_fazenda }}</div>
-                        <div class="text-muted small">{{ contrato.propriedade_cidade }}/{{ contrato.propriedade_uf }}</div>
-                      </td>
-                      <td>
-                        <div>{{ contrato.orcamento.servico or "-" }}</div>
-                        <div class="text-muted small">Cultura: {{ contrato.cultura or contrato.orcamento.cultura or "-" }}</div>
-                      </td>
-                      <td>
-                        {% if contrato.ordens_servico %}
-                          <span class="badge bg-success-subtle text-success border border-success-subtle">
-                            {{ contrato.ordens_servico|length }} OS cadastrada(s)
-                          </span>
-                        {% else %}
-                          <span class="badge bg-warning-subtle text-warning border border-warning-subtle">
-                            Aguardando criacao de OS
-                          </span>
-                        {% endif %}
-                      </td>
-                      <td>
-                        {% if os_principal %}
-                          {% if os_principal.piloto_agro_id and os_principal.piloto_agro_id != piloto.id %}
-                            <span class="text-muted small">OS em preenchimento por {{ os_principal.piloto.nome if os_principal.piloto else 'outro piloto' }}</span>
-                          {% else %}
-                            <a href="{{ url_for('main.agro_os_editar', os_id=os_principal.id) }}" class="btn btn-outline-primary btn-sm">
-                              <i class="bi bi-pencil-square me-1"></i> Editar OS
-                            </a>
-                          {% endif %}
-                        {% else %}
-                          <a href="{{ url_for('main.agro_os_nova', contrato_id=contrato.id) }}" class="btn btn-success btn-sm">
-                            <i class="bi bi-clipboard2-plus me-1"></i> Criar OS
-                          </a>
-                        {% endif %}
-                      </td>
-                    </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-          {% else %}
-            <p class="text-muted mb-0">
-              Ainda nao existem contratos aprovados e designados para a equipe deste piloto.
-            </p>
-          {% endif %}
-        </section>
-      </div>
-
-      <div class="col-lg-5">
-        <section class="agro-pilot-soft-card h-100">
-          <div class="d-flex align-items-center gap-2 mb-3 justify-content-between">
-            <div class="d-flex align-items-center gap-2">
-              <i class="bi bi-clipboard2-data-fill text-success fs-5"></i>
-              <h5 class="fw-bold mb-0">OS Agro da equipe</h5>
-            </div>
-            <span class="badge bg-light text-dark border">{{ ordens_servico|length }} registros</span>
-          </div>
-
-          {% if ordens_servico %}
-            <div class="table-responsive">
-              <table class="table align-middle mb-0">
-                <thead>
-                  <tr>
-                    <th>OS</th>
-                    <th>Data</th>
-                    <th>Propriedade</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for os_agro in ordens_servico %}
-                    <tr>
-                      <td>
-                        <div class="fw-semibold">{{ os_agro.identificador_os }}</div>
-                        <div class="text-muted small">{{ os_agro.cliente_nome }}</div>
-                      </td>
-                      <td>
-                        <div>{{ os_agro.data_aplicacao.strftime('%d/%m/%Y') if os_agro.data_aplicacao else '-' }}</div>
-                        <div class="text-muted small">{{ os_agro.periodo_aplicacao or 'Periodo nao informado' }}</div>
-                      </td>
-                      <td>
-                        <div class="fw-semibold">{{ os_agro.propriedade_nome }}</div>
-                        <div class="text-muted small">{{ os_agro.cidade_operacao }}/{{ os_agro.uf_operacao }}</div>
-                      </td>
-                      <td>
-                        {% if os_agro.status == 'CONCLUIDA' %}
-                          <span class="badge bg-success-subtle text-success border border-success-subtle">{{ os_agro.status }}</span>
-                        {% elif os_agro.status == 'EM EXECUCAO' %}
-                          <span class="badge bg-primary-subtle text-primary border border-primary-subtle">{{ os_agro.status }}</span>
-                        {% elif os_agro.status == 'CANCELADA' %}
-                          <span class="badge bg-danger-subtle text-danger border border-danger-subtle">{{ os_agro.status }}</span>
-                        {% else %}
-                          <span class="badge bg-warning-subtle text-warning border border-warning-subtle">{{ os_agro.status }}</span>
-                        {% endif %}
-                      </td>
-                    </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-          {% else %}
-            <p class="text-muted mb-0">
-              A equipe ainda nao possui OS Agro cadastradas.
-            </p>
-          {% endif %}
         </section>
       </div>
     </div>
@@ -368,8 +242,8 @@
               <table class="table align-middle mb-0">
                 <thead>
                   <tr>
-                    <th>Identificacao</th>
-                    <th>Funcao</th>
+                    <th>Identificação</th>
+                    <th>Função</th>
                     <th>Status</th>
                   </tr>
                 </thead>
@@ -393,7 +267,7 @@
             </div>
           {% else %}
             <p class="text-muted mb-0">
-              Ainda nao existem equipamentos cadastrados para a equipe deste piloto.
+              Ainda não existem equipamentos cadastrados para a equipe deste piloto.
             </p>
           {% endif %}
         </section>

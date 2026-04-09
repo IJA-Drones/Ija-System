@@ -2,7 +2,7 @@ from app.models import Usuario
 from app.shared.access import ADMIN_PANEL_VIEW_TYPES
 
 
-def authenticate_user(login_value, password):
+def _authenticate_any_user(login_value, password):
     user = Usuario.query.filter_by(login=login_value).first()
     if user and user.check_senha(password):
         if user.tipo_usuario == "piloto_agro":
@@ -13,8 +13,15 @@ def authenticate_user(login_value, password):
     return None
 
 
+def authenticate_user(login_value, password):
+    user = _authenticate_any_user(login_value, password)
+    if not user or user.tipo_usuario == "piloto_agro":
+        return None
+    return user
+
+
 def authenticate_piloto_agro(login_value, password):
-    user = authenticate_user(login_value, password)
+    user = _authenticate_any_user(login_value, password)
     if not user or user.tipo_usuario != "piloto_agro":
         return None, "invalid"
 

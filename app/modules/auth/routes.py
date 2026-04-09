@@ -1,6 +1,7 @@
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required, login_user, logout_user
 
+from app.models import Usuario
 from app.modules.auth.service import authenticate_piloto_agro, authenticate_user, get_authenticated_redirect_endpoint
 
 
@@ -21,6 +22,11 @@ def login():
             login_user(user)
             flash(f"Bem-vindo, {user.nome_uvis}! Login realizado com sucesso.", "success")
             return redirect(url_for(get_authenticated_redirect_endpoint(user)))
+
+        piloto_agro = Usuario.query.filter_by(login=login_form, tipo_usuario="piloto_agro").first()
+        if piloto_agro and piloto_agro.check_senha(senha_form):
+            flash("Piloto Agro deve acessar pelo login exclusivo do Agro.", "warning")
+            return redirect(url_for("auth.login_piloto_agro"))
 
         flash("Login ou senha incorretos. Tente novamente.", "danger")
 

@@ -100,7 +100,7 @@
               <th>OS</th>
               <th>Contrato</th>
               <th>Aplicacao</th>
-              <th>Equipe / Piloto</th>
+              <th>Equipe / Pilotos</th>
               <th>Relatorio</th>
               {% if is_editable %}<th class="col-actions">Acoes</th>{% endif %}
             </tr>
@@ -122,9 +122,15 @@
                   <div class="text-muted small">{{ os_agro.periodo_aplicacao or 'Periodo nao informado' }}</div>
                   <div class="text-muted small">Area: {{ os_agro.area_total_ha or '-' }} ha</div>
                 </td>
-                <td data-label="Equipe / Piloto">
+                <td data-label="Equipe / Pilotos">
                   <div class="fw-semibold">{{ os_agro.equipe.nome if os_agro.equipe else '-' }}</div>
-                  <div class="text-muted small">{{ os_agro.piloto.nome if os_agro.piloto else 'Piloto nao definido' }}</div>
+                  <div class="text-muted small">
+                    {% if os_agro.equipe and os_agro.equipe.pilotos %}
+                      {{ os_agro.equipe.pilotos|selectattr('ativo')|map(attribute='nome')|join(', ') or 'Sem pilotos ativos vinculados' }}
+                    {% else %}
+                      Sem pilotos vinculados
+                    {% endif %}
+                  </div>
                 </td>
                 <td data-label="Relatorio">
                   {% if os_agro.relatorio_pdf_nome %}
@@ -137,6 +143,11 @@
                 {% if is_editable %}
                   <td data-label="Acoes" class="listing-cell-actions">
                     <div class="listing-actions-group">
+                      {% if os_agro.status == 'CONCLUIDA' %}
+                        <a href="{{ url_for('main.agro_os_relatorio_pdf', os_id=os_agro.id) }}" class="btn btn-sm btn-outline-danger shadow-sm">
+                          <i class="bi bi-file-earmark-pdf"></i> Relatorio
+                        </a>
+                      {% endif %}
                       <a href="{{ url_for('main.agro_os_editar', os_id=os_agro.id) }}" class="btn btn-sm btn-success text-white shadow-sm">
                         <i class="bi bi-pencil-square"></i> Editar
                       </a>

@@ -138,10 +138,10 @@ def build_contratos_agro_aprovados_query(user, q: str = "", equipe_id: int | Non
     return query.order_by(ContratoAgro.atualizado_em.desc(), ContratoAgro.id.desc())
 
 
-def build_ordens_servico_agro_query(user, q: str = "", status: str = "", equipe_id: int | None = None, piloto_id: int | None = None):
+def build_ordens_servico_agro_query(user, q: str = "", status: str = "", equipe_id: int | None = None):
     query = OrdemServicoAgro.query.options(
         joinedload(OrdemServicoAgro.contrato).joinedload(ContratoAgro.orcamento),
-        joinedload(OrdemServicoAgro.equipe),
+        joinedload(OrdemServicoAgro.equipe).joinedload(EquipeAgro.pilotos),
         joinedload(OrdemServicoAgro.piloto),
         joinedload(OrdemServicoAgro.drone_pulverizacao),
         joinedload(OrdemServicoAgro.drone_mapeamento),
@@ -164,9 +164,6 @@ def build_ordens_servico_agro_query(user, q: str = "", status: str = "", equipe_
 
     if equipe_id:
         query = query.filter(OrdemServicoAgro.equipe_agro_id == equipe_id)
-
-    if piloto_id:
-        query = query.filter(OrdemServicoAgro.piloto_agro_id == piloto_id)
 
     return query.order_by(
         OrdemServicoAgro.data_aplicacao.desc().nullslast(),

@@ -9,7 +9,12 @@ from werkzeug.utils import secure_filename
 
 from app.extensions import db
 from app.models import ClienteAgro, ContratoAgro, EquipamentoAgro, EquipeAgro, OrcamentoAgro, OrdemServicoAgro, PilotoAgro, Usuario
-from app.modules.agro.exporters import build_contrato_agro_pdf, build_orcamento_agro_pdf, merge_orcamento_agro_with_attachment
+from app.modules.agro.exporters import (
+    build_contrato_agro_pdf,
+    build_orcamento_agro_pdf,
+    build_ordem_servico_agro_pdf,
+    merge_orcamento_agro_with_attachment,
+)
 from app.modules.agro.service import (
     agro_bool_label,
     build_contrato_agro_defaults,
@@ -818,7 +823,6 @@ def _build_os_agro_defaults(contrato):
         "data_aplicacao": "",
         "periodo_aplicacao": "",
         "equipe_agro_id": str(contrato.equipe_agro_id or ""),
-        "piloto_agro_id": "",
         "drone_pulverizacao_id": "",
         "drone_mapeamento_id": "",
         "cliente_nome": (orcamento.cliente_nome or contrato.contratante_nome or "").strip(),
@@ -858,7 +862,6 @@ def _serialize_os_agro_form(ordem_servico):
         "data_aplicacao": ordem_servico.data_aplicacao.isoformat() if ordem_servico.data_aplicacao else "",
         "periodo_aplicacao": ordem_servico.periodo_aplicacao or "",
         "equipe_agro_id": str(ordem_servico.equipe_agro_id or ""),
-        "piloto_agro_id": str(ordem_servico.piloto_agro_id or ""),
         "drone_pulverizacao_id": str(ordem_servico.drone_pulverizacao_id or ""),
         "drone_mapeamento_id": str(ordem_servico.drone_mapeamento_id or ""),
         "cliente_nome": ordem_servico.cliente_nome or "",
@@ -902,7 +905,6 @@ def _normalize_os_agro_form(form_source):
         "data_aplicacao": (form_source.get("data_aplicacao") or "").strip(),
         "periodo_aplicacao": (form_source.get("periodo_aplicacao") or "").strip(),
         "equipe_agro_id": (form_source.get("equipe_agro_id") or "").strip(),
-        "piloto_agro_id": (form_source.get("piloto_agro_id") or "").strip(),
         "drone_pulverizacao_id": (form_source.get("drone_pulverizacao_id") or "").strip(),
         "drone_mapeamento_id": (form_source.get("drone_mapeamento_id") or "").strip(),
         "cliente_nome": (form_source.get("cliente_nome") or "").strip(),
@@ -935,7 +937,7 @@ def _normalize_os_agro_form(form_source):
     }
 
 
-def _validate_os_agro_form(form, equipes, pilotos, equipamentos, *, ordem_atual=None):
+def _validate_os_agro_form(form, equipes, equipamentos, *, ordem_atual=None):
     errors = {}
 
     if form["status"] not in AGRO_OS_STATUS_OPTIONS:
@@ -973,15 +975,6 @@ def _validate_os_agro_form(form, equipes, pilotos, equipamentos, *, ordem_atual=
         equipe = next((item for item in equipes if item.id == equipe_id), None)
         if not equipe:
             errors["equipe_agro_id"] = "A equipe selecionada nao foi encontrada."
-
-    piloto_id = _normalize_optional_int(form["piloto_agro_id"])
-    piloto = None
-    if piloto_id:
-        piloto = next((item for item in pilotos if item.id == piloto_id), None)
-        if not piloto:
-            errors["piloto_agro_id"] = "O piloto selecionado nao foi encontrado."
-        elif equipe_id and piloto.equipe_agro_id != equipe_id:
-            errors["piloto_agro_id"] = "O piloto precisa pertencer a equipe selecionada."
 
     drone_pulverizacao_id = _normalize_optional_int(form["drone_pulverizacao_id"])
     drone_pulverizacao = None
@@ -1024,7 +1017,7 @@ def _validate_os_agro_form(form, equipes, pilotos, equipamentos, *, ordem_atual=
     if form["uf_operacao"] and len(form["uf_operacao"]) != 2:
         errors["uf_operacao"] = "UF deve ter 2 letras."
 
-    return errors, data_aplicacao, equipe_id, equipe, piloto_id, piloto, drone_pulverizacao_id, drone_pulverizacao, drone_mapeamento_id, drone_mapeamento, numeric_fields
+    return errors, data_aplicacao, equipe_id, equipe, drone_pulverizacao_id, drone_pulverizacao, drone_mapeamento_id, drone_mapeamento, numeric_fields
 
 
 def _save_os_agro_attachment(ordem_servico, uploaded_file):
@@ -1045,14 +1038,14 @@ def _save_os_agro_attachment(ordem_servico, uploaded_file):
     return original_filename
 
 
-def _apply_ordem_servico_agro_form(ordem_servico, contrato, form, *, data_aplicacao, equipe_id, piloto_id, drone_pulverizacao_id, drone_pulverizacao, drone_mapeamento_id, drone_mapeamento, numeric_fields):
+def _apply_ordem_servico_agro_form(ordem_servico, contrato, form, *, data_aplicacao, equipe_id, drone_pulverizacao_id, drone_pulverizacao, drone_mapeamento_id, drone_mapeamento, numeric_fields):
     orcamento = contrato.orcamento
 
     ordem_servico.prefeitura_id = contrato.prefeitura_id
     ordem_servico.contrato_agro_id = contrato.id
     ordem_servico.orcamento_agro_id = orcamento.id
     ordem_servico.equipe_agro_id = equipe_id
-    ordem_servico.piloto_agro_id = piloto_id
+    ordem_servico.piloto_agro_id = None
     ordem_servico.drone_pulverizacao_id = drone_pulverizacao_id
     ordem_servico.drone_mapeamento_id = drone_mapeamento_id
     ordem_servico.identificador_os = form["identificador_os"]
@@ -1136,12 +1129,11 @@ def register_routes(bp):
             item
             for item in ordens_servico
             if item.status in (OrdemServicoAgro.STATUS_PLANEJADA, OrdemServicoAgro.STATUS_EM_EXECUCAO)
-            and item.piloto_agro_id in (None, piloto.id)
         ]
         ordens_concluidas = [
             item
             for item in ordens_servico
-            if item.status == OrdemServicoAgro.STATUS_CONCLUIDA and item.piloto_agro_id in (None, piloto.id)
+            if item.status == OrdemServicoAgro.STATUS_CONCLUIDA
         ]
 
         return render_template(
@@ -1669,6 +1661,20 @@ def register_routes(bp):
         filename = f"contrato_agro_{orcamento.id}.pdf"
         return send_file(pdf, mimetype="application/pdf", as_attachment=False, download_name=filename)
 
+    @bp.route("/agro/os/<int:os_id>/relatorio/pdf", methods=["GET"], endpoint="agro_os_relatorio_pdf")
+    @login_required
+    def agro_os_relatorio_pdf(os_id):
+        _require_agro_edit()
+        ordem_servico = _get_os_agro_or_404(os_id)
+
+        if ordem_servico.status != OrdemServicoAgro.STATUS_CONCLUIDA:
+            flash("O relatorio da OS Agro so pode ser gerado quando a OS estiver concluida.", "warning")
+            return redirect(url_for("main.agro_os_listar"))
+
+        pdf = build_ordem_servico_agro_pdf(ordem_servico)
+        filename = f"os_agro_{ordem_servico.identificador_os or ordem_servico.id}_relatorio.pdf"
+        return send_file(pdf, mimetype="application/pdf", as_attachment=True, download_name=filename)
+
     @bp.route("/agro/os", methods=["GET"], endpoint="agro_os_listar")
     @login_required
     def agro_os_listar():
@@ -1731,9 +1737,6 @@ def register_routes(bp):
             .first()
         )
         if ordem_existente is not None:
-            if pilot_form_mode and ordem_existente.piloto_agro_id not in (None, piloto_logado.id):
-                flash("Este contrato ja possui uma OS vinculada a outro piloto.", "warning")
-                return redirect(url_for("main.agro_piloto_dashboard"))
             flash("Este contrato ja possui OS cadastrada. Voce pode atualiza-la no formulario.", "info")
             return redirect(url_for("main.agro_os_editar", os_id=ordem_existente.id))
 
@@ -1743,7 +1746,6 @@ def register_routes(bp):
         form = _normalize_os_agro_form(request.form if request.method == "POST" else _build_os_agro_defaults(contrato))
         if pilot_form_mode:
             form["equipe_agro_id"] = str(contrato.equipe_agro_id or "")
-            form["piloto_agro_id"] = str(piloto_logado.id)
 
         if request.method == "POST":
             (
@@ -1751,19 +1753,15 @@ def register_routes(bp):
                 data_aplicacao,
                 equipe_id,
                 _equipe,
-                piloto_id,
-                _piloto,
                 drone_pulverizacao_id,
                 drone_pulverizacao,
                 drone_mapeamento_id,
                 drone_mapeamento,
                 numeric_fields,
-            ) = _validate_os_agro_form(form, equipes, pilotos, equipamentos)
+            ) = _validate_os_agro_form(form, equipes, equipamentos)
 
             if equipe_id and contrato.equipe_agro_id and equipe_id != contrato.equipe_agro_id:
                 errors["equipe_agro_id"] = "A equipe da OS precisa seguir a equipe definida no contrato aprovado."
-            if pilot_form_mode and piloto_id != piloto_logado.id:
-                errors["piloto_agro_id"] = "A OS Agro precisa ser preenchida pelo piloto logado."
 
             if errors:
                 flash("Corrija os campos destacados da OS Agro.", "warning")
@@ -1789,7 +1787,6 @@ def register_routes(bp):
                 form,
                 data_aplicacao=data_aplicacao,
                 equipe_id=equipe_id,
-                piloto_id=piloto_id,
                 drone_pulverizacao_id=drone_pulverizacao_id,
                 drone_pulverizacao=drone_pulverizacao,
                 drone_mapeamento_id=drone_mapeamento_id,
@@ -1855,9 +1852,6 @@ def register_routes(bp):
             if piloto_logado.equipe_agro_id != ordem_servico.equipe_agro_id:
                 flash("Esta OS Agro pertence a outra equipe.", "warning")
                 return redirect(url_for("main.agro_piloto_dashboard"))
-            if ordem_servico.piloto_agro_id not in (None, piloto_logado.id):
-                flash("Esta OS Agro esta vinculada a outro piloto.", "warning")
-                return redirect(url_for("main.agro_piloto_dashboard"))
         else:
             _require_agro_edit()
 
@@ -1868,26 +1862,21 @@ def register_routes(bp):
             form = _normalize_os_agro_form(request.form)
             if pilot_form_mode:
                 form["equipe_agro_id"] = str(ordem_servico.equipe_agro_id or "")
-                form["piloto_agro_id"] = str(piloto_logado.id)
 
             (
                 errors,
                 data_aplicacao,
                 equipe_id,
                 _equipe,
-                piloto_id,
-                _piloto,
                 drone_pulverizacao_id,
                 drone_pulverizacao,
                 drone_mapeamento_id,
                 drone_mapeamento,
                 numeric_fields,
-            ) = _validate_os_agro_form(form, equipes, pilotos, equipamentos, ordem_atual=ordem_servico)
+            ) = _validate_os_agro_form(form, equipes, equipamentos, ordem_atual=ordem_servico)
 
             if equipe_id and contrato.equipe_agro_id and equipe_id != contrato.equipe_agro_id:
                 errors["equipe_agro_id"] = "A equipe da OS precisa seguir a equipe definida no contrato aprovado."
-            if pilot_form_mode and piloto_id != piloto_logado.id:
-                errors["piloto_agro_id"] = "A OS Agro precisa permanecer vinculada ao piloto logado."
 
             if errors:
                 flash("Corrija os campos destacados da OS Agro.", "warning")
@@ -1913,7 +1902,6 @@ def register_routes(bp):
                 form,
                 data_aplicacao=data_aplicacao,
                 equipe_id=equipe_id,
-                piloto_id=piloto_id,
                 drone_pulverizacao_id=drone_pulverizacao_id,
                 drone_pulverizacao=drone_pulverizacao,
                 drone_mapeamento_id=drone_mapeamento_id,
@@ -1951,7 +1939,6 @@ def register_routes(bp):
         form = _serialize_os_agro_form(ordem_servico)
         if pilot_form_mode:
             form["equipe_agro_id"] = str(ordem_servico.equipe_agro_id or "")
-            form["piloto_agro_id"] = str(piloto_logado.id)
         return render_template(
             "agro_os_form.html",
             **_build_os_agro_form_context(

@@ -68,26 +68,20 @@
 
         <div class="d-flex align-items-center mb-3">
           <i class="bi bi-diagram-3-fill text-primary me-2 fs-5"></i>
-          <h5 class="m-0 text-primary fw-bold">Equipe e responsavel</h5>
+          <h5 class="m-0 text-primary fw-bold">Equipe responsavel</h5>
         </div>
 
         <div class="row g-3 mb-4">
           {% if pilot_form_mode %}
-            <div class="col-md-4">
+            <div class="col-md-6">
               <label class="form-label fw-bold small text-muted">Equipe *</label>
               <input type="hidden" name="equipe_agro_id" id="equipe_agro_id" value="{{ form.get('equipe_agro_id', '') }}">
               <input type="text" value="{{ piloto_logado.equipe.nome if piloto_logado and piloto_logado.equipe else 'Sem equipe vinculada' }}" class="form-control {% if errors.get('equipe_agro_id') %}is-invalid{% endif %}" readonly>
               {% if errors.get('equipe_agro_id') %}<div class="invalid-feedback">{{ errors.get('equipe_agro_id') }}</div>{% endif %}
-            </div>
-
-            <div class="col-md-4">
-              <label class="form-label fw-bold small text-muted">Piloto responsavel</label>
-              <input type="hidden" name="piloto_agro_id" id="piloto_agro_id" value="{{ form.get('piloto_agro_id', '') }}">
-              <input type="text" value="{{ piloto_logado.nome if piloto_logado else '-' }}" class="form-control {% if errors.get('piloto_agro_id') %}is-invalid{% endif %}" readonly>
-              {% if errors.get('piloto_agro_id') %}<div class="invalid-feedback">{{ errors.get('piloto_agro_id') }}</div>{% endif %}
+              <div class="form-text">Esta OS fica compartilhada com todos os pilotos vinculados a esta equipe.</div>
             </div>
           {% else %}
-            <div class="col-md-4">
+            <div class="col-md-6">
               <label class="form-label fw-bold small text-muted">Equipe *</label>
               <select name="equipe_agro_id" id="equipe_agro_id" class="form-select {% if errors.get('equipe_agro_id') %}is-invalid{% endif %}">
                 <option value="">Selecione...</option>
@@ -96,21 +90,11 @@
                 {% endfor %}
               </select>
               {% if errors.get('equipe_agro_id') %}<div class="invalid-feedback">{{ errors.get('equipe_agro_id') }}</div>{% endif %}
-            </div>
-
-            <div class="col-md-4">
-              <label class="form-label fw-bold small text-muted">Piloto designado</label>
-              <select name="piloto_agro_id" id="piloto_agro_id" class="form-select {% if errors.get('piloto_agro_id') %}is-invalid{% endif %}">
-                <option value="">Selecione...</option>
-                {% for piloto in pilotos %}
-                  <option value="{{ piloto.id }}" data-equipe-id="{{ piloto.equipe_agro_id or '' }}" {% if form.get('piloto_agro_id')|string == piloto.id|string %}selected{% endif %}>{{ piloto.nome }}</option>
-                {% endfor %}
-              </select>
-              {% if errors.get('piloto_agro_id') %}<div class="invalid-feedback">{{ errors.get('piloto_agro_id') }}</div>{% endif %}
+              <div class="form-text">A OS sera exibida para todos os pilotos ativos da equipe selecionada.</div>
             </div>
           {% endif %}
 
-          <div class="col-md-4">
+          <div class="col-md-6">
             <label class="form-label fw-bold small text-muted">Protocolo</label>
             <input type="text" name="protocolo" value="{{ form.get('protocolo', '') }}" class="form-control">
           </div>
@@ -323,9 +307,9 @@
 
         <small class="text-muted d-block mt-4">
           {% if pilot_form_mode %}
-            A equipe e o piloto desta OS seguem o contrato aprovado e o login atual. O formulario usa a base do relatorio final da aplicacao do Agro.
+            A equipe desta OS segue o contrato aprovado e o formulario fica compartilhado com todos os pilotos da equipe. O formulario usa a base do relatorio final da aplicacao do Agro.
           {% else %}
-            A equipe da OS segue a equipe definida no contrato aprovado. O formulario usa a base do relatorio final da aplicacao do Agro.
+            A equipe da OS segue a equipe definida no contrato aprovado e a OS fica visivel para todos os pilotos vinculados a ela. O formulario usa a base do relatorio final da aplicacao do Agro.
           {% endif %}
         </small>
 
@@ -390,7 +374,6 @@
   const equipeSelect = document.getElementById("equipe_agro_id");
   const syncTeamFilters = () => {
     const teamId = equipeSelect?.value || "";
-    filterOptionsByTeam("piloto_agro_id", teamId);
     filterOptionsByTeam("drone_pulverizacao_id", teamId);
     filterOptionsByTeam("drone_mapeamento_id", teamId);
   };
