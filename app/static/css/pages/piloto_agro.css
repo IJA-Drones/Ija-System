@@ -1,0 +1,156 @@
+.agro-pilot-login {
+  min-height: calc(100vh - 150px);
+  display: grid;
+  grid-template-columns: minmax(320px, 1.1fr) minmax(320px, 0.9fr);
+  gap: 24px;
+  align-items: stretch;
+}
+
+.agro-pilot-panel,
+.agro-pilot-card {
+  border-radius: 28px;
+  border: 1px solid rgba(20, 83, 45, 0.08);
+  box-shadow: 0 24px 50px rgba(15, 23, 42, 0.08);
+}
+
+.agro-pilot-panel {
+  padding: 32px;
+  color: #f7fff8;
+  background:
+    radial-gradient(circle at top left, rgba(187, 247, 208, 0.24), transparent 32%),
+    linear-gradient(145deg, #0f5132 0%, #14532d 48%, #1f7a45 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.agro-pilot-panel::after {
+  content: "";
+  position: absolute;
+  inset: auto -20% -18% auto;
+  width: 240px;
+  height: 240px;
+  border-radius: 999px;
+  background: rgba(187, 247, 208, 0.12);
+  filter: blur(10px);
+}
+
+.agro-pilot-logo {
+  width: 112px;
+  height: 112px;
+  object-fit: cover;
+  border-radius: 24px;
+  border: 4px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.16);
+}
+
+.agro-pilot-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.agro-pilot-checklist {
+  display: grid;
+  gap: 12px;
+}
+
+.agro-pilot-checklist-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(6px);
+}
+
+.agro-pilot-checklist-item i {
+  font-size: 1.15rem;
+  color: #dcfce7;
+}
+
+.agro-pilot-card {
+  background: #ffffff;
+  padding: 32px;
+}
+
+.agro-pilot-card .form-control {
+  min-height: 56px;
+  border-radius: 18px;
+  border-color: rgba(20, 83, 45, 0.18);
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.agro-pilot-card .form-control:focus {
+  border-color: #198754;
+  box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.15);
+}
+
+.agro-pilot-submit {
+  min-height: 56px;
+  border-radius: 18px;
+  font-weight: 700;
+  box-shadow: 0 14px 30px rgba(25, 135, 84, 0.22);
+}
+
+.agro-pilot-link {
+  color: #0f5132;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.agro-pilot-link:hover {
+  color: #198754;
+}
+
+.agro-pilot-dashboard {
+  display: grid;
+  gap: 24px;
+}
+
+.agro-pilot-hero {
+  padding: 28px;
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at top right, rgba(110, 231, 183, 0.26), transparent 28%),
+    linear-gradient(130deg, #f4fbf5 0%, #ecfdf3 55%, #ffffff 100%);
+  border: 1px solid rgba(20, 83, 45, 0.08);
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.06);
+}
+
+.agro-pilot-stat {
+  padding: 20px;
+  border-radius: 22px;
+  background: #ffffff;
+  border: 1px solid rgba(20, 83, 45, 0.08);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.05);
+}
+
+.agro-pilot-soft-card {
+  padding: 24px;
+  border-radius: 24px;
+  background: #ffffff;
+  border: 1px solid rgba(20, 83, 45, 0.08);
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.05);
+}
+
+@media (max-width: 991.98px) {
+  .agro-pilot-login {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  .agro-pilot-panel,
+  .agro-pilot-card,
+  .agro-pilot-hero,
+  .agro-pilot-soft-card,
+  .agro-pilot-stat {
+    border-radius: 22px;
+  }
+}
