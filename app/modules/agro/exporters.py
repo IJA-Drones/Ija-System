@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date, datetime
 from decimal import Decimal
 from io import BytesIO
 import os
@@ -10,12 +11,14 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
+from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.pdfmetrics import stringWidth
+from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Image as RLImage
-from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from reportlab.platypus import PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from app.modules.agro.service import agro_bool_label
-from app.shared.formatters import format_currency_br
+from app.shared.formatters import format_cep, format_currency_br, format_documento
 
 
 IJA_GREEN = colors.HexColor("#6FD11A")
@@ -25,6 +28,14 @@ TEXT_MUTED = colors.HexColor("#5C6A80")
 BORDER = colors.HexColor("#DCE5EC")
 SURFACE = colors.HexColor("#F7FBF8")
 SURFACE_SOFT = colors.HexColor("#EFFAEC")
+CONTRACT_BLUE = colors.HexColor("#0F4761")
+
+CONTRATADA_NOME = "IJA Drones Brasil LTDA"
+CONTRATADA_DOCUMENTO = "59.826.603/0001-90"
+CONTRATADA_ENDERECO = "AV BPS, 1303, SALA 04 PREDIO PCE- PINHEIRINHO - ITAJUBA - MG - CEP: 37500-903"
+CONTRATADA_REPRESENTANTE = "Maria Fernanda Mota Gorgulho Chaves"
+CONTRATADA_RG = "55.620.345-8"
+CONTRATADA_CPF = "430.902.638-90"
 
 
 def _logo_path():
@@ -74,6 +85,54 @@ def _build_page_frame(canvas, doc):
     canvas.drawString(margin_left, 11 * mm, footer_text)
     page_width_text = stringWidth(page_text, "Helvetica", 8.5)
     canvas.drawString(page_width - margin_right - page_width_text, 11 * mm, page_text)
+    canvas.restoreState()
+
+
+def _ensure_contract_fonts():
+    fonts_dir = os.path.join(os.environ.get("WINDIR", "C:\\Windows"), "Fonts")
+    font_specs = {
+        "AgroArial": "arial.ttf",
+        "AgroArialBold": "arialbd.ttf",
+        "AgroArialItalic": "ariali.ttf",
+        "AgroArialBoldItalic": "arialbi.ttf",
+    }
+    for font_name, file_name in font_specs.items():
+        if font_name in pdfmetrics.getRegisteredFontNames():
+            continue
+        font_path = os.path.join(fonts_dir, file_name)
+        if os.path.exists(font_path):
+            pdfmetrics.registerFont(TTFont(font_name, font_path))
+    pdfmetrics.registerFontFamily(
+        "AgroArial",
+        normal="AgroArial",
+        bold="AgroArialBold",
+        italic="AgroArialItalic",
+        boldItalic="AgroArialBoldItalic",
+    )
+
+
+def _build_contract_page_frame(canvas, doc):
+    canvas.saveState()
+
+    page_width, page_height = A4
+    margin_left = doc.leftMargin
+
+    logo = _try_make_agro_logo(width_mm=26)
+    if logo:
+        logo.drawOn(canvas, margin_left, page_height - 40 * mm)
+
+    canvas.setFillColor(CONTRACT_BLUE)
+    canvas.setFont("AgroArialBoldItalic", 12)
+    canvas.drawString(
+        margin_left + 34 * mm,
+        page_height - 34.6 * mm,
+        "IJA DRONES Tecnologia a Serviço do Campo",
+    )
+
+    canvas.setFillColor(colors.black)
+    canvas.setFont("AgroArial", 9)
+    canvas.drawCentredString(page_width / 2, 9 * mm, str(canvas.getPageNumber()))
+
     canvas.restoreState()
 
 
@@ -454,5 +513,625 @@ def build_orcamento_agro_pdf(orcamento):
     ]
 
     doc.build(story, onFirstPage=_build_page_frame, onLaterPages=_build_page_frame)
+    buffer.seek(0)
+    return buffer
+
+
+def _format_full_address(logradouro, numero, complemento, bairro, cidade, uf, cep):
+    line_1 = ", ".join([part for part in [logradouro, numero] if part])
+    if complemento:
+        line_1 = f"{line_1} ({complemento})" if line_1 else complemento
+    city_region = f"{cidade}/{uf}" if cidade and uf else (cidade or uf or "")
+    line_2 = " - ".join([part for part in [bairro, city_region] if part])
+    line_3 = f"CEP {format_cep(cep or '')}" if cep else ""
+    return "<br/>".join([escape(part) for part in [line_1, line_2, line_3] if part])
+
+
+def _format_partes_address(logradouro, numero, complemento, bairro, cidade, uf):
+    partes = []
+
+    linha_1 = ", ".join([part for part in [logradouro, numero] if part])
+    if linha_1:
+        partes.append(linha_1)
+
+    if complemento:
+        partes.append(complemento)
+    if bairro:
+        partes.append(bairro)
+    if cidade:
+        partes.append(cidade)
+    if uf:
+        partes.append(uf)
+
+    return " - ".join([escape(part) for part in partes if part])
+
+
+def _format_date_extenso(value):
+    if not value:
+        return "-"
+
+    if isinstance(value, datetime):
+        value = value.date()
+    if not isinstance(value, date):
+        return str(value)
+
+    meses = [
+        "janeiro",
+        "fevereiro",
+        "março",
+        "abril",
+        "maio",
+        "junho",
+        "julho",
+        "agosto",
+        "setembro",
+        "outubro",
+        "novembro",
+        "dezembro",
+    ]
+    return f"{value.day:02d} de {meses[value.month - 1]} de {value.year}"
+
+
+_UNIDADES_PT = {
+    0: "zero",
+    1: "um",
+    2: "dois",
+    3: "três",
+    4: "quatro",
+    5: "cinco",
+    6: "seis",
+    7: "sete",
+    8: "oito",
+    9: "nove",
+    10: "dez",
+    11: "onze",
+    12: "doze",
+    13: "treze",
+    14: "quatorze",
+    15: "quinze",
+    16: "dezesseis",
+    17: "dezessete",
+    18: "dezoito",
+    19: "dezenove",
+}
+_DEZENAS_PT = {
+    20: "vinte",
+    30: "trinta",
+    40: "quarenta",
+    50: "cinquenta",
+    60: "sessenta",
+    70: "setenta",
+    80: "oitenta",
+    90: "noventa",
+}
+_CENTENAS_PT = {
+    100: "cem",
+    200: "duzentos",
+    300: "trezentos",
+    400: "quatrocentos",
+    500: "quinhentos",
+    600: "seiscentos",
+    700: "setecentos",
+    800: "oitocentos",
+    900: "novecentos",
+}
+
+
+def _int_to_pt_br(value):
+    value = int(value or 0)
+    if value < 20:
+        return _UNIDADES_PT[value]
+    if value < 100:
+        dezena = (value // 10) * 10
+        resto = value % 10
+        return _DEZENAS_PT[dezena] if resto == 0 else f"{_DEZENAS_PT[dezena]} e {_int_to_pt_br(resto)}"
+    if value < 1000:
+        if value in _CENTENAS_PT:
+            return _CENTENAS_PT[value]
+        centena = (value // 100) * 100
+        resto = value % 100
+        prefixo = "cento" if centena == 100 else _CENTENAS_PT[centena]
+        return prefixo if resto == 0 else f"{prefixo} e {_int_to_pt_br(resto)}"
+
+    grupos = (
+        (1_000_000_000, "bilhão", "bilhões"),
+        (1_000_000, "milhão", "milhões"),
+        (1_000, "mil", "mil"),
+    )
+    for divisor, singular, plural in grupos:
+        if value >= divisor:
+            quantidade = value // divisor
+            resto = value % divisor
+            if divisor == 1_000:
+                prefixo = "mil" if quantidade == 1 else f"{_int_to_pt_br(quantidade)} mil"
+            else:
+                nome = singular if quantidade == 1 else plural
+                prefixo = f"um {nome}" if quantidade == 1 else f"{_int_to_pt_br(quantidade)} {nome}"
+            if resto == 0:
+                return prefixo
+            conector = " e " if resto < 100 else ", "
+            return f"{prefixo}{conector}{_int_to_pt_br(resto)}"
+    return str(value)
+
+
+def _currency_extenso(value):
+    amount = _decimal(value).quantize(Decimal("0.01"))
+    inteiro = int(amount)
+    centavos = int((amount - Decimal(inteiro)) * 100)
+
+    if inteiro == 0:
+        reais = "zero real"
+    elif inteiro == 1:
+        reais = "um real"
+    else:
+        reais = f"{_int_to_pt_br(inteiro)} reais"
+
+    if centavos == 0:
+        return reais
+    if centavos == 1:
+        centavos_txt = "um centavo"
+    else:
+        centavos_txt = f"{_int_to_pt_br(centavos)} centavos"
+    return f"{reais} e {centavos_txt}"
+
+
+def _normalize_contract_service_label(contrato, orcamento):
+    origem = ((getattr(orcamento, "servico", "") or contrato.descricao_servico or "")).lower()
+    if "mapeamento" in origem and "pulver" in origem:
+        return "Mapeamento e Pulverização"
+    if "pulver" in origem:
+        return "Pulverização"
+    if "mapeamento" in origem:
+        return "Mapeamento"
+    return "Prestação de serviços"
+
+
+def _build_contract_service_item(contrato, orcamento):
+    label = _normalize_contract_service_label(contrato, orcamento)
+    cultura = (contrato.cultura or "").strip().lower()
+    area = (contrato.area_contratada or "").strip()
+    texto = f"Serviço 01 {label}"
+    if cultura:
+        texto += f" de {cultura}"
+    if area:
+        area_lower = area.lower()
+        if area_lower.endswith((" ha", " ha.", "ha", "ha.", " hectare", " hectares", "hectare", "hectares")):
+            texto += f": {area}"
+        else:
+            texto += f": {area} ha"
+    return f"{texto}."
+
+
+def _build_financial_items(contrato, orcamento):
+    servico_base = _normalize_contract_service_label(contrato, orcamento)
+    itens = []
+    if _decimal(contrato.valor_mapeamento_ha) > 0:
+        itens.append(("Serviço de Mapeamento", contrato.valor_mapeamento_ha))
+    if _decimal(contrato.valor_pulverizacao_ha) > 0:
+        itens.append(("Serviço de Pulverização", contrato.valor_pulverizacao_ha))
+    if not itens:
+        valor_referencia = contrato.valor_total
+        itens.append((f"Serviço de {servico_base}", valor_referencia))
+    return itens
+
+
+def _contract_party_qualificacao(contrato):
+    documento_digits = "".join(ch for ch in (contrato.contratante_documento or "") if ch.isdigit())
+    residencia = _format_partes_address(
+        contrato.contratante_logradouro,
+        contrato.contratante_numero,
+        contrato.contratante_complemento,
+        contrato.contratante_bairro,
+        contrato.contratante_cidade,
+        contrato.contratante_uf,
+    )
+    propriedade = _format_partes_address(
+        contrato.propriedade_logradouro,
+        contrato.propriedade_numero,
+        contrato.propriedade_complemento,
+        contrato.propriedade_bairro,
+        contrato.propriedade_cidade,
+        contrato.propriedade_uf,
+    )
+    nome = escape(contrato.contratante_nome or "")
+    rg = escape(contrato.contratante_rg or "Não informado")
+    documento = format_documento(contrato.contratante_documento or "")
+
+    if len(documento_digits) == 14:
+        return (
+            (f"<b>CONTRATANTE: {nome}</b>, jurídica de direito privado, inscrita no CNPJ "
+                      f"n°{documento} e RG nº {rg}, "
+                      f"com sede na {residencia} e Fazenda na {propriedade}, doravante denominado CONTRATANTE e neste ato "
+                      "representada na forma de seus atos constitutivos, pela mesma, acima designada")
+        )
+
+    return (
+        (f"<b>CONTRATANTE: {nome}</b>, física de direito privado, inscrita no CPF "
+                  f"n°{documento} e RG nº {rg}, "
+                  f"residente na {residencia} e Fazenda na {propriedade}, doravante denominado CONTRATANTE e neste ato "
+                  "representada na forma de seus atos constitutivos, pela mesma, acima designada")
+    )
+
+
+def _contract_spacer(height_mm):
+    return Spacer(1, height_mm * mm)
+
+
+def _signature_name_block(text, style, width=92 * mm):
+    table = Table([[Paragraph(text, style)]], colWidths=[width], hAlign="CENTER")
+    table.setStyle(
+        TableStyle(
+            [
+                ("LINEABOVE", (0, 0), (-1, 0), 0.6, colors.black),
+                ("TOPPADDING", (0, 0), (-1, 0), 9),
+                ("BOTTOMPADDING", (0, 0), (-1, 0), 0),
+                ("LEFTPADDING", (0, 0), (-1, 0), 0),
+                ("RIGHTPADDING", (0, 0), (-1, 0), 0),
+                ("ALIGN", (0, 0), (-1, 0), "CENTER"),
+            ]
+        )
+    )
+    return table
+
+
+def _build_clause_block(title, linhas, title_style, numbered_style, continuation_style, bullet_style):
+    blocos = [Paragraph(title, title_style), _contract_spacer(1.9)]
+    for linha in linhas:
+        texto = (linha or "").strip()
+        if not texto:
+            continue
+        style = continuation_style
+        if texto.startswith("•"):
+            style = bullet_style
+        elif texto.startswith("<b>"):
+            style = numbered_style
+        blocos.append(Paragraph(texto, style))
+        blocos.append(_contract_spacer(1.2))
+    if len(blocos) > 1:
+        blocos.pop()
+    return blocos
+
+
+def build_contrato_agro_pdf(contrato):
+    _ensure_contract_fonts()
+    orcamento = contrato.orcamento
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        leftMargin=20 * mm,
+        rightMargin=20 * mm,
+        topMargin=35 * mm,
+        bottomMargin=24 * mm,
+        title=f"Contrato Agro #{getattr(orcamento, 'id', contrato.id)}",
+        author="IJA Drones",
+    )
+
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        "AgroContractTitle",
+        parent=styles["BodyText"],
+        fontName="AgroArialBold",
+        fontSize=16,
+        leading=18.5,
+        textColor=CONTRACT_BLUE,
+        alignment=1,
+        spaceAfter=0,
+    )
+    section_style = ParagraphStyle(
+        "AgroContractSection",
+        parent=styles["BodyText"],
+        fontName="AgroArialBold",
+        fontSize=16,
+        leading=18,
+        textColor=CONTRACT_BLUE,
+        alignment=0,
+        spaceBefore=0,
+        spaceAfter=0,
+        keepWithNext=True,
+    )
+    body_style = ParagraphStyle(
+        "AgroContractBodyReal",
+        parent=styles["BodyText"],
+        fontName="AgroArial",
+        fontSize=11.04,
+        leading=15.2,
+        textColor=colors.black,
+        alignment=4,
+        spaceAfter=0,
+    )
+    body_no_indent_style = ParagraphStyle(
+        "AgroContractBodyNoIndent",
+        parent=body_style,
+        firstLineIndent=0,
+    )
+    parties_body_style = ParagraphStyle(
+        "AgroContractPartiesBody",
+        parent=body_style,
+        leftIndent=20 * mm,
+        firstLineIndent=0,
+    )
+    clause_body_style = ParagraphStyle(
+        "AgroContractClauseBody",
+        parent=body_style,
+        leftIndent=7.6 * mm,
+        firstLineIndent=-7.6 * mm,
+    )
+    clause_continuation_style = ParagraphStyle(
+        "AgroContractClauseContinuation",
+        parent=body_style,
+        leftIndent=7.6 * mm,
+        firstLineIndent=0,
+    )
+    bullet_style = ParagraphStyle(
+        "AgroContractBullet",
+        parent=body_style,
+        leftIndent=10.8 * mm,
+        firstLineIndent=0,
+    )
+    note_style = ParagraphStyle(
+        "AgroContractNoteReal",
+        parent=styles["BodyText"],
+        fontName="AgroArialItalic",
+        fontSize=10,
+        leading=13.2,
+        textColor=colors.black,
+        alignment=4,
+    )
+    signature_style = ParagraphStyle(
+        "AgroContractSignatureReal",
+        parent=styles["BodyText"],
+        fontName="AgroArial",
+        fontSize=11,
+        leading=13.4,
+        textColor=colors.black,
+        alignment=1,
+    )
+    signature_date_style = ParagraphStyle(
+        "AgroContractSignatureDate",
+        parent=body_no_indent_style,
+        alignment=0,
+        fontSize=11,
+        leading=14.2,
+    )
+    signature_name_style = ParagraphStyle(
+        "AgroContractSignatureName",
+        parent=signature_style,
+        spaceAfter=0,
+    )
+    intro_blocks = [
+        Paragraph("DAS PARTES:", section_style),
+        _contract_spacer(2.4),
+        Paragraph(
+            (
+                f"<b>CONTRATADA: {escape(CONTRATADA_NOME)}</b>, pessoa jurídica de direito privado, inscrita no CNPJ n° "
+                f"{escape(CONTRATADA_DOCUMENTO)}, com sede na {escape(CONTRATADA_ENDERECO)}, doravante denominado CONTRATADA e "
+                f"neste ato representada na forma de seus atos constitutivos, por sua representante legal "
+                f"<b>{escape(CONTRATADA_REPRESENTANTE)}</b>, portador do Documento de Identidade RG nº. {escape(CONTRATADA_RG)}, "
+                f"inscrito no CPF sob o nº {escape(CONTRATADA_CPF)}, e;"
+            ),
+            parties_body_style,
+        ),
+        _contract_spacer(1.2),
+        Paragraph(_contract_party_qualificacao(contrato), parties_body_style),
+        _contract_spacer(1.2),
+        Paragraph(
+            (
+                "Decidem as partes, na melhor forma de direito, celebrar o presente CONTRATO DE PRESTAÇÃO "
+                "DE SERVIÇOS, que reger-se-á mediante as cláusulas e condições adiante estipuladas."
+            ),
+            body_no_indent_style,
+        ),
+    ]
+
+    service_item = _build_contract_service_item(contrato, orcamento)
+    clausula_primeira = _build_clause_block(
+        "CLÁUSULA PRIMEIRA - DO OBJETO",
+        [
+            "<b>1.1</b> O presente contrato tem por objeto a prestação de serviços profissionais especializados em mapeamento e pulverização, via drones, por parte da CONTRATADA de acordo com os termos e condições detalhados neste contrato.",
+            service_item,
+        ],
+        section_style,
+        clause_body_style,
+        clause_continuation_style,
+        bullet_style,
+    )
+    clausula_segunda = _build_clause_block(
+        "CLÁUSULA SEGUNDA - OBRIGAÇÕES DA CONTRATANTE",
+        [
+            "<b>2.1</b> A CONTRATANTE deverá fornecer a CONTRATADA todas as informações necessárias à realização do serviço, devendo especificar os detalhes necessários à perfeita consecução do mesmo.",
+            "<b>2.2</b> A CONTRATANTE é obrigada ainda a disponibilizar: insumos a serem pulverizados.",
+            "<b>2.3</b> A CONTRATANTE deverá efetuar o pagamento na forma e condições estabelecidas na cláusula quinta.",
+        ],
+        section_style,
+        clause_body_style,
+        clause_continuation_style,
+        bullet_style,
+    )
+    clausula_terceira = _build_clause_block(
+        "CLÁUSULA TERCEIRA - OBRIGAÇÕES DA CONTRATADA",
+        [
+            "<b>3.1</b> A CONTRATADA deverá prestar os serviços de mapeamento e pulverização agrícola com drones, equipamentos e EPI 100% higienizados para evitar transmissão de eventuais doenças de outras lavouras, conforme mencionado neste contrato.",
+            "<b>3.2</b> A CONTRATADA se obriga a manter absoluto sigilo sobre as operações, dados, estratégias, materiais, informações e documentos da CONTRATANTE, mesmo após a conclusão dos serviços ou do término da relação contratual.",
+            "<b>3.3</b> Os contratos, informações, dados, materiais e documentos inerentes a CONTRATANTE ou a seus clientes deverão ser utilizados, pela CONTRATADA, por seus funcionários ou contratados, estritamente para cumprimento dos serviços solicitados pela CONTRATANTE, sendo vedado a comercialização ou utilização para outros fins.",
+            "<b>3.4</b> Será de responsabilidade da CONTRATADA todo o ônus trabalhista ou tributário referente aos funcionários utilizados para a prestação do serviço objeto deste instrumento, ficando a CONTRATANTE isenta de qualquer obrigação em relação a eles.",
+            "<b>3.5</b> A CONTRATADA deverá fornecer a respectiva Nota Fiscal, referente ao(s) pagamento(s) do presente instrumento e serviços efetuados.",
+        ],
+        section_style,
+        clause_body_style,
+        clause_continuation_style,
+        bullet_style,
+    )
+    clausula_quarta = _build_clause_block(
+        "CLÁUSULA QUARTA - DOS SERVIÇOS",
+        [
+            "<b>4.1</b> A CONTRATADA prestará os serviços contratados para fins de mapeamento e pulverização.",
+            f"<b>4.2</b> Os serviços terão início em até {contrato.prazo_inicio_dias or 10} dias corridos da assinatura do presente contrato.",
+            "<b>4.3</b> A agenda de realização dos serviços será combinada entre as partes para evitar prejuízos/cancelamentos por situações climáticas ou demais interferências.",
+        ],
+        section_style,
+        clause_body_style,
+        clause_continuation_style,
+        bullet_style,
+    )
+
+    itens_financeiros = _build_financial_items(contrato, orcamento)
+    clausula_quinta_linhas = []
+    if len(itens_financeiros) == 1:
+        descricao, valor = itens_financeiros[0]
+        clausula_quinta_linhas.append(
+            f"<b>5.1</b> {descricao} a ser executado por hectare no valor de {_money(valor)} ({_currency_extenso(valor)}), "
+            f"totalizando {_money(contrato.valor_total)} ({_currency_extenso(contrato.valor_total)})."
+        )
+    else:
+        for index, (descricao, valor) in enumerate(itens_financeiros, start=1):
+            clausula_quinta_linhas.append(
+                f"<b>5.{index}</b> {descricao} a ser executado por hectare no valor de {_money(valor)} ({_currency_extenso(valor)})."
+            )
+    clausula_quinta_linhas.extend(
+        [
+            f"TOTAL DO CONTRATO: {_money(contrato.valor_total)} ({_currency_extenso(contrato.valor_total)})",
+            "Condições de pagamento:",
+            f"• O pagamento deverá ser pago em até {contrato.prazo_pagamento_dias or 10} dias após a finalização dos serviços.",
+            "• O pagamento deverá ser efetuado na conta abaixo:",
+            "IJA DRONES BRASIL LTDA",
+            "ITAU UNIBANCO (341)",
+            "Ag: 4807",
+            "C/C: 96651-2",
+            "Chave pix: 59826603000190 (CNPJ)",
+            "<b>5.2</b> Em caso de atraso de pagamento, será cobrada multa moratória de 10% sobre o valor inadimplido mais correção monetária pelo índice IPCA.",
+            "<b>5.3</b> Considera-se o cumprimento integral do contrato o momento em que todos os serviços especificados na Cláusula 1 tenham sido concluídos, mediante aprovação da CONTRATANTE a CONTRATADA, via relatório de serviços.",
+        ]
+    )
+    clausula_quinta = _build_clause_block(
+        "CLÁUSULA QUINTA - DO PREÇO E DAS CONDIÇÕES DE PAGAMENTO",
+        clausula_quinta_linhas,
+        section_style,
+        clause_body_style,
+        clause_continuation_style,
+        bullet_style,
+    )
+    clausula_sexta = _build_clause_block(
+        "CLÁUSULA SEXTA - DO PRAZO E VALIDADE",
+        [
+            "<b>6.1</b> A CONTRATADA deverá realizar os serviços dentro dos prazos determinados no cronograma, sendo sua responsabilidade comunicar a impossibilidade de cumprimento, bem como os motivos para tal e o novo prazo previsto, estando em sua competência a capacidade para tal avaliação.",
+            "<b>6.2</b> Este instrumento é válido por prazo indeterminado, vigendo até a finalização do serviço, ora contratado, ou encerramento do contrato, não ficando as partes isentas de seus compromissos éticos após invalidação do mesmo.",
+        ],
+        section_style,
+        clause_body_style,
+        clause_continuation_style,
+        bullet_style,
+    )
+    clausula_setima = _build_clause_block(
+        "CLÁUSULA SÉTIMA - DA OBSERVÂNCIA À LGPD",
+        [
+            "<b>7.1</b> O CONTRATANTE declara expresso consentimento que a CONTRATADA irá coletar, tratar e compartilhar os dados necessários ao cumprimento do contrato, nos termos do Art. 7º, inc. V da LGPD, os dados necessários para cumprimento de obrigações legais, nos termos do Art. 7º, inc. II da LGPD, bem como os dados, se necessários para proteção ao crédito, conforme autorizado pelo Art. 7º, inc. V da LGPD.",
+            "<b>7.2</b> Outros dados poderão ser coletados, conforme termo de consentimento específico.",
+        ],
+        section_style,
+        clause_body_style,
+        clause_continuation_style,
+        bullet_style,
+    )
+    clausula_oitava = _build_clause_block(
+        "CLÁUSULA OITAVA - DAS DISPOSIÇÕES GERAIS",
+        [
+            "<b>8.1</b> Fica pactuada a total inexistência de vínculo trabalhista entre as partes, não havendo entre CONTRATADA e CONTRATANTE qualquer tipo de relação de subordinação.",
+            "<b>8.2</b> A tolerância, por qualquer das partes, com relação ao descumprimento de qualquer termo ou condição aqui ajustado, não será considerada como desistência em exigir o cumprimento de disposição nele contida, nem representará novação com relação à obrigação passada, presente ou futura, no tocante ao termo ou condição cujo descumprimento foi tolerado.",
+        ],
+        section_style,
+        clause_body_style,
+        clause_continuation_style,
+        bullet_style,
+    )
+    clausula_nona = _build_clause_block(
+        "CLÁUSULA NONA - DO FORO",
+        [
+            f"<b>9.1</b> Para dirimir quaisquer controvérsias oriundas do presente contrato, as partes elegem o foro da Comarca de {contrato.foro_cidade or 'São Paulo'}.",
+            "Por estarem assim justos e de acordo, firmam o presente instrumento, em duas vias de igual teor.",
+        ],
+        section_style,
+        clause_body_style,
+        clause_continuation_style,
+        bullet_style,
+    )
+
+    signature_date = "{cidade}, {data}".format(
+        cidade=contrato.cidade_assinatura or "São Paulo",
+        data=_format_date_extenso(contrato.data_assinatura),
+    )
+    assinatura_contratada = _signature_name_block("IJA DRONES BRASIL LTDA", signature_name_style)
+    assinatura_contratante = _signature_name_block(
+        escape(contrato.contratante_nome or "Contratante"),
+        signature_name_style,
+    )
+
+    story = [
+        _contract_spacer(22),
+        Paragraph("CONTRATO DE PRESTAÇÃO DE SERVIÇOS", title_style),
+        _contract_spacer(10),
+    ]
+    story.extend(intro_blocks)
+    story.append(_contract_spacer(10))
+    story.extend(clausula_primeira)
+    story.extend(
+        [
+            PageBreak(),
+            _contract_spacer(12),
+        ]
+    )
+    story.extend(clausula_segunda)
+    story.append(_contract_spacer(6))
+    story.extend(clausula_terceira)
+    story.extend(
+        [
+            PageBreak(),
+            _contract_spacer(12),
+        ]
+    )
+    story.extend(clausula_quarta)
+    story.append(_contract_spacer(6))
+    story.extend(clausula_quinta)
+    story.extend(
+        [
+            PageBreak(),
+            _contract_spacer(12),
+        ]
+    )
+    story.extend(clausula_sexta)
+    story.append(_contract_spacer(6))
+    story.extend(clausula_setima)
+    story.append(_contract_spacer(6))
+    story.extend(clausula_oitava)
+    story.extend(
+        [
+            PageBreak(),
+            _contract_spacer(12),
+        ]
+    )
+    story.extend(clausula_nona)
+
+    if contrato.observacoes_adicionais:
+        story.extend(
+            [
+                _contract_spacer(6),
+                Paragraph("OBSERVAÇÕES COMPLEMENTARES", section_style),
+                Paragraph(escape(contrato.observacoes_adicionais), note_style),
+                _contract_spacer(4),
+            ]
+        )
+
+    story.extend(
+        [
+            _contract_spacer(14),
+            Paragraph(signature_date, signature_date_style),
+            _contract_spacer(24),
+            assinatura_contratada,
+            _contract_spacer(28),
+            assinatura_contratante,
+        ]
+    )
+
+    doc.build(story, onFirstPage=_build_contract_page_frame, onLaterPages=_build_contract_page_frame)
     buffer.seek(0)
     return buffer

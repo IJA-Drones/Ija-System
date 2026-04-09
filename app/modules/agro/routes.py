@@ -1,13 +1,15 @@
 import math
+from datetime import datetime
 
 from flask import abort, flash, redirect, render_template, request, send_file, send_from_directory, url_for
 from flask_login import current_user, login_required
 
 from app.extensions import db
-from app.models import ClienteAgro, EquipamentoAgro, EquipeAgro, OrcamentoAgro, PilotoAgro
-from app.modules.agro.exporters import build_orcamento_agro_pdf
+from app.models import ClienteAgro, ContratoAgro, EquipamentoAgro, EquipeAgro, OrcamentoAgro, PilotoAgro
+from app.modules.agro.exporters import build_contrato_agro_pdf, build_orcamento_agro_pdf
 from app.modules.agro.service import (
     agro_bool_label,
+    build_contrato_agro_defaults,
     build_clientes_agro_query,
     build_endereco_agro,
     build_orcamentos_agro_query,
@@ -17,6 +19,7 @@ from app.modules.agro.service import (
     remove_orcamento_attachment,
     resolve_orcamento_attachment,
     save_orcamento_attachment,
+    serialize_contrato_agro_form,
     serialize_cliente_agro,
     update_orcamento_snapshot_from_cliente,
 )
@@ -343,6 +346,183 @@ def _validate_orcamento_form(form):
         errors["uf"] = "UF deve ter 2 letras."
 
     return errors, cliente, cep_digits, preco_base, preco_mapeamento, preco_pulverizacao
+
+
+def _normalize_contrato_form(form_source):
+    return {
+        "contratante_nome": (form_source.get("contratante_nome") or "").strip(),
+        "contratante_documento": (form_source.get("contratante_documento") or "").strip(),
+        "contratante_rg": (form_source.get("contratante_rg") or "").strip(),
+        "contratante_cep": format_cep(form_source.get("contratante_cep") or ""),
+        "contratante_logradouro": (form_source.get("contratante_logradouro") or "").strip(),
+        "contratante_numero": (form_source.get("contratante_numero") or "").strip(),
+        "contratante_complemento": (form_source.get("contratante_complemento") or "").strip(),
+        "contratante_bairro": (form_source.get("contratante_bairro") or "").strip(),
+        "contratante_cidade": (form_source.get("contratante_cidade") or "").strip(),
+        "contratante_uf": (form_source.get("contratante_uf") or "").strip().upper(),
+        "propriedade_nome": (form_source.get("propriedade_nome") or "").strip(),
+        "propriedade_cep": format_cep(form_source.get("propriedade_cep") or ""),
+        "propriedade_logradouro": (form_source.get("propriedade_logradouro") or "").strip(),
+        "propriedade_numero": (form_source.get("propriedade_numero") or "").strip(),
+        "propriedade_complemento": (form_source.get("propriedade_complemento") or "").strip(),
+        "propriedade_bairro": (form_source.get("propriedade_bairro") or "").strip(),
+        "propriedade_cidade": (form_source.get("propriedade_cidade") or "").strip(),
+        "propriedade_uf": (form_source.get("propriedade_uf") or "").strip().upper(),
+        "descricao_servico": (form_source.get("descricao_servico") or "").strip(),
+        "cultura": (form_source.get("cultura") or "").strip(),
+        "area_contratada": (form_source.get("area_contratada") or "").strip(),
+        "valor_total": (form_source.get("valor_total") or "").strip(),
+        "valor_mapeamento_ha": (form_source.get("valor_mapeamento_ha") or "").strip(),
+        "valor_pulverizacao_ha": (form_source.get("valor_pulverizacao_ha") or "").strip(),
+        "prazo_inicio_dias": (form_source.get("prazo_inicio_dias") or "").strip(),
+        "prazo_pagamento_dias": (form_source.get("prazo_pagamento_dias") or "").strip(),
+        "cidade_assinatura": (form_source.get("cidade_assinatura") or "").strip(),
+        "foro_cidade": (form_source.get("foro_cidade") or "").strip(),
+        "data_assinatura": (form_source.get("data_assinatura") or "").strip(),
+        "observacoes_adicionais": (form_source.get("observacoes_adicionais") or "").strip(),
+    }
+
+
+def _validate_contrato_form(form):
+    errors = {}
+
+    for field, label in (
+        ("contratante_nome", "o nome do contratante"),
+        ("contratante_documento", "o CPF/CNPJ do contratante"),
+        ("contratante_logradouro", "o logradouro do contratante"),
+        ("contratante_numero", "o numero do contratante"),
+        ("contratante_bairro", "o bairro do contratante"),
+        ("contratante_cidade", "a cidade do contratante"),
+        ("contratante_uf", "a UF do contratante"),
+        ("propriedade_nome", "o nome da propriedade"),
+        ("propriedade_logradouro", "o logradouro da propriedade"),
+        ("propriedade_numero", "o numero da propriedade"),
+        ("propriedade_bairro", "o bairro da propriedade"),
+        ("propriedade_cidade", "a cidade da propriedade"),
+        ("propriedade_uf", "a UF da propriedade"),
+        ("descricao_servico", "a descricao do servico"),
+        ("valor_total", "o valor total"),
+        ("prazo_inicio_dias", "o prazo de inicio"),
+        ("prazo_pagamento_dias", "o prazo de pagamento"),
+        ("cidade_assinatura", "a cidade da assinatura"),
+        ("foro_cidade", "a cidade do foro"),
+        ("data_assinatura", "a data da assinatura"),
+    ):
+        if not form[field]:
+            errors[field] = f"Informe {label}."
+
+    doc_digits = ""
+    if form["contratante_documento"]:
+        doc_ok, _doc_tipo, doc_digits, _doc_fmt, doc_error = validate_documento(form["contratante_documento"])
+        if not doc_ok:
+            errors["contratante_documento"] = doc_error
+
+    contratante_cep_digits = only_digits(form["contratante_cep"])
+    if len(contratante_cep_digits) != 8:
+        errors["contratante_cep"] = "Informe um CEP valido com 8 digitos para o contratante."
+
+    propriedade_cep_digits = only_digits(form["propriedade_cep"])
+    if len(propriedade_cep_digits) != 8:
+        errors["propriedade_cep"] = "Informe um CEP valido com 8 digitos para a propriedade."
+
+    if form["contratante_uf"] and len(form["contratante_uf"]) != 2:
+        errors["contratante_uf"] = "UF do contratante deve ter 2 letras."
+
+    if form["propriedade_uf"] and len(form["propriedade_uf"]) != 2:
+        errors["propriedade_uf"] = "UF da propriedade deve ter 2 letras."
+
+    valor_total = parse_currency_br(form["valor_total"])
+    valor_mapeamento_ha = parse_currency_br(form["valor_mapeamento_ha"]) if form["valor_mapeamento_ha"] else 0
+    valor_pulverizacao_ha = parse_currency_br(form["valor_pulverizacao_ha"]) if form["valor_pulverizacao_ha"] else 0
+
+    if form["valor_total"] and valor_total is None:
+        errors["valor_total"] = "Informe um valor monetario valido. Ex.: 1500,00"
+    elif valor_total is not None and valor_total < 0:
+        errors["valor_total"] = "O valor total nao pode ser negativo."
+
+    if form["valor_mapeamento_ha"] and valor_mapeamento_ha is None:
+        errors["valor_mapeamento_ha"] = "Informe um valor monetario valido. Ex.: 1500,00"
+    elif valor_mapeamento_ha is not None and valor_mapeamento_ha < 0:
+        errors["valor_mapeamento_ha"] = "O valor do mapeamento nao pode ser negativo."
+
+    if form["valor_pulverizacao_ha"] and valor_pulverizacao_ha is None:
+        errors["valor_pulverizacao_ha"] = "Informe um valor monetario valido. Ex.: 1500,00"
+    elif valor_pulverizacao_ha is not None and valor_pulverizacao_ha < 0:
+        errors["valor_pulverizacao_ha"] = "O valor da pulverizacao nao pode ser negativo."
+
+    try:
+        prazo_inicio_dias = int(form["prazo_inicio_dias"])
+        if prazo_inicio_dias <= 0:
+            raise ValueError
+    except (TypeError, ValueError):
+        prazo_inicio_dias = None
+        errors["prazo_inicio_dias"] = "Informe um prazo de inicio valido em dias."
+
+    try:
+        prazo_pagamento_dias = int(form["prazo_pagamento_dias"])
+        if prazo_pagamento_dias <= 0:
+            raise ValueError
+    except (TypeError, ValueError):
+        prazo_pagamento_dias = None
+        errors["prazo_pagamento_dias"] = "Informe um prazo de pagamento valido em dias."
+
+    data_assinatura = None
+    if form["data_assinatura"]:
+        try:
+            data_assinatura = datetime.strptime(form["data_assinatura"], "%Y-%m-%d").date()
+        except ValueError:
+            errors["data_assinatura"] = "Informe uma data de assinatura valida."
+
+    return (
+        errors,
+        doc_digits,
+        contratante_cep_digits,
+        propriedade_cep_digits,
+        valor_total,
+        valor_mapeamento_ha or 0,
+        valor_pulverizacao_ha or 0,
+        prazo_inicio_dias,
+        prazo_pagamento_dias,
+        data_assinatura,
+    )
+
+
+def _build_contrato_agro_draft(orcamento):
+    cliente = orcamento.cliente
+    return ContratoAgro(
+        prefeitura_id=orcamento.prefeitura_id,
+        orcamento=orcamento,
+        contratante_nome=(cliente.nome if cliente else orcamento.cliente_nome) or "",
+        contratante_documento=(cliente.documento if cliente else "") or "",
+        contratante_rg="",
+        contratante_cep=(cliente.cep if cliente else "") or "",
+        contratante_logradouro=(cliente.logradouro if cliente else "") or "",
+        contratante_numero=(cliente.numero if cliente else "") or "",
+        contratante_complemento=(cliente.complemento if cliente else "") or None,
+        contratante_bairro=(cliente.bairro if cliente else "") or "",
+        contratante_cidade=(cliente.cidade if cliente else "") or "",
+        contratante_uf=(cliente.uf if cliente else "") or "",
+        propriedade_nome=orcamento.nome_fazenda or "",
+        propriedade_cep=orcamento.cep or "",
+        propriedade_logradouro=orcamento.logradouro or "",
+        propriedade_numero=orcamento.numero or "",
+        propriedade_complemento=orcamento.complemento or None,
+        propriedade_bairro=orcamento.bairro or "",
+        propriedade_cidade=orcamento.cidade or "",
+        propriedade_uf=orcamento.uf or "",
+        descricao_servico=(f"{orcamento.servico} na cultura de {orcamento.cultura}" if orcamento.cultura else (orcamento.servico or "Prestacao de servicos agro")),
+        cultura=orcamento.cultura or None,
+        area_contratada=None,
+        valor_total=orcamento.preco_base or 0,
+        valor_mapeamento_ha=orcamento.preco_mapeamento or 0,
+        valor_pulverizacao_ha=orcamento.preco_pulverizacao or 0,
+        prazo_inicio_dias=10,
+        prazo_pagamento_dias=10,
+        cidade_assinatura="São Paulo",
+        foro_cidade="São Paulo",
+        data_assinatura=datetime.now().date(),
+        observacoes_adicionais=None,
+    )
 
 
 def register_routes(bp):
@@ -682,6 +862,90 @@ def register_routes(bp):
             servico_options=AGRO_SERVICO_OPTIONS,
         )
 
+    @bp.route("/agro/orcamentos/<int:orcamento_id>/contrato", methods=["GET", "POST"], endpoint="agro_contrato_editar")
+    @login_required
+    def agro_contrato_editar(orcamento_id):
+        _require_agro_edit()
+        orcamento = _get_orcamento_agro_or_404(orcamento_id)
+        contrato = orcamento.contrato
+        errors = {}
+
+        if request.method == "POST":
+            form = _normalize_contrato_form(request.form)
+            (
+                errors,
+                doc_digits,
+                contratante_cep_digits,
+                propriedade_cep_digits,
+                valor_total,
+                valor_mapeamento_ha,
+                valor_pulverizacao_ha,
+                prazo_inicio_dias,
+                prazo_pagamento_dias,
+                data_assinatura,
+            ) = _validate_contrato_form(form)
+
+            if errors:
+                flash("Corrija os campos destacados do contrato agro.", "warning")
+                return render_template(
+                    "agro_contrato_form.html",
+                    form=form,
+                    errors=errors,
+                    orcamento=orcamento,
+                    contrato=contrato,
+                )
+
+            if contrato is None:
+                contrato = ContratoAgro(
+                    prefeitura_id=getattr(current_user, "prefeitura_id", None),
+                    orcamento=orcamento,
+                )
+                db.session.add(contrato)
+
+            contrato.contratante_nome = form["contratante_nome"]
+            contrato.contratante_documento = doc_digits
+            contrato.contratante_rg = form["contratante_rg"] or None
+            contrato.contratante_cep = contratante_cep_digits
+            contrato.contratante_logradouro = form["contratante_logradouro"]
+            contrato.contratante_numero = form["contratante_numero"]
+            contrato.contratante_complemento = form["contratante_complemento"] or None
+            contrato.contratante_bairro = form["contratante_bairro"]
+            contrato.contratante_cidade = form["contratante_cidade"]
+            contrato.contratante_uf = form["contratante_uf"]
+            contrato.propriedade_nome = form["propriedade_nome"]
+            contrato.propriedade_cep = propriedade_cep_digits
+            contrato.propriedade_logradouro = form["propriedade_logradouro"]
+            contrato.propriedade_numero = form["propriedade_numero"]
+            contrato.propriedade_complemento = form["propriedade_complemento"] or None
+            contrato.propriedade_bairro = form["propriedade_bairro"]
+            contrato.propriedade_cidade = form["propriedade_cidade"]
+            contrato.propriedade_uf = form["propriedade_uf"]
+            contrato.descricao_servico = form["descricao_servico"]
+            contrato.cultura = form["cultura"] or None
+            contrato.area_contratada = form["area_contratada"] or None
+            contrato.valor_total = valor_total
+            contrato.valor_mapeamento_ha = valor_mapeamento_ha
+            contrato.valor_pulverizacao_ha = valor_pulverizacao_ha
+            contrato.prazo_inicio_dias = prazo_inicio_dias
+            contrato.prazo_pagamento_dias = prazo_pagamento_dias
+            contrato.cidade_assinatura = form["cidade_assinatura"]
+            contrato.foro_cidade = form["foro_cidade"]
+            contrato.data_assinatura = data_assinatura
+            contrato.observacoes_adicionais = form["observacoes_adicionais"] or None
+
+            db.session.commit()
+            flash("Contrato agro salvo com sucesso.", "success")
+            return redirect(url_for("main.agro_contrato_editar", orcamento_id=orcamento.id))
+
+        form = serialize_contrato_agro_form(contrato) if contrato else build_contrato_agro_defaults(orcamento)
+        return render_template(
+            "agro_contrato_form.html",
+            form=form,
+            errors=errors,
+            orcamento=orcamento,
+            contrato=contrato,
+        )
+
     @bp.route("/agro/orcamentos/<int:orcamento_id>/anexo", endpoint="agro_orcamento_anexo")
     @login_required
     def agro_orcamento_anexo(orcamento_id):
@@ -700,6 +964,16 @@ def register_routes(bp):
         orcamento = _get_orcamento_agro_or_404(orcamento_id)
         pdf = build_orcamento_agro_pdf(orcamento)
         filename = f"orcamento_agro_{orcamento.id}.pdf"
+        return send_file(pdf, mimetype="application/pdf", as_attachment=False, download_name=filename)
+
+    @bp.route("/agro/orcamentos/<int:orcamento_id>/contrato/pdf", endpoint="agro_contrato_pdf")
+    @login_required
+    def agro_contrato_pdf(orcamento_id):
+        _require_agro_access()
+        orcamento = _get_orcamento_agro_or_404(orcamento_id)
+        contrato = orcamento.contrato or _build_contrato_agro_draft(orcamento)
+        pdf = build_contrato_agro_pdf(contrato)
+        filename = f"contrato_agro_{orcamento.id}.pdf"
         return send_file(pdf, mimetype="application/pdf", as_attachment=False, download_name=filename)
 
     @bp.route("/agro/orcamentos/<int:orcamento_id>/deletar", methods=["POST"], endpoint="agro_orcamento_deletar")

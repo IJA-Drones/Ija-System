@@ -16,7 +16,7 @@
       </h2>
       <p class="text-muted small mb-0">
         Contrato vinculado ao orçamento <strong>#{{ orcamento.id }}</strong> de {{ orcamento.cliente_nome }}.
-        CPF/CNPJ e endereço do contratante vêm do cadastro do cliente; o RG é ajustado aqui no contrato.
+        CPF/CNPJ e endereço do contratante vêm do cadastro do cliente; fazenda e endereço da propriedade vêm do orçamento; o RG é ajustado aqui no contrato.
       </p>
     </div>
 
@@ -39,7 +39,7 @@
         </div>
 
         <p class="text-muted small mb-3">
-          Esses campos já vêm do cliente vinculado ao orçamento, mas continuam editáveis para ajustes finos antes de gerar o contrato.
+          Esses campos já vêm do cliente vinculado ao orçamento e alimentam o bloco <strong>"DAS PARTES"</strong> do contrato, mas continuam editáveis para ajustes finos antes de gerar o PDF final.
         </p>
 
         <div class="row g-3 mb-4">
@@ -111,7 +111,7 @@
         </div>
 
         <p class="text-muted small mb-3">
-          Esses dados já vêm do endereço operacional informado no orçamento e podem ser refinados aqui para o contrato.
+          Esses dados vêm do endereço operacional informado no orçamento e também entram no bloco <strong>"DAS PARTES"</strong>, identificando a fazenda/propriedade do contrato.
         </p>
 
         <div class="row g-3 mb-4">

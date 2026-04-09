@@ -18,6 +18,7 @@ class Prefeitura(db.Model):
     clientes = db.relationship("Clientes", back_populates="prefeitura", lazy="select")
     clientes_agro = db.relationship("ClienteAgro", back_populates="prefeitura", lazy="select")
     orcamentos_agro = db.relationship("OrcamentoAgro", back_populates="prefeitura", lazy="select")
+    contratos_agro = db.relationship("ContratoAgro", back_populates="prefeitura", lazy="select")
     pilotos = db.relationship("Pilotos", back_populates="prefeitura", lazy="select")
     pilotos_agro = db.relationship("PilotoAgro", back_populates="prefeitura", lazy="select")
     equipes = db.relationship("Equipe", lazy="select")
@@ -631,10 +632,74 @@ class OrcamentoAgro(db.Model):
 
     prefeitura = db.relationship("Prefeitura", back_populates="orcamentos_agro", lazy="joined")
     cliente = db.relationship("ClienteAgro", back_populates="orcamentos", lazy="joined")
+    contrato = db.relationship(
+        "ContratoAgro",
+        back_populates="orcamento",
+        uselist=False,
+        lazy="select",
+        cascade="all, delete-orphan",
+    )
 
     __table_args__ = (
         db.Index("ix_orcamentos_agro_cliente_data", "cliente_agro_id", "data_criacao"),
         db.Index("ix_orcamentos_agro_protocolo_data", "protocolo", "data_criacao"),
+    )
+
+
+# -------------------------------------------------------------
+# CONTRATOS AGRO
+# -------------------------------------------------------------
+class ContratoAgro(db.Model):
+    __tablename__ = "contratos_agro"
+
+    id = db.Column(db.Integer, primary_key=True, index=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
+    orcamento_agro_id = db.Column(db.Integer, db.ForeignKey("orcamentos_agro.id"), nullable=False, unique=True, index=True)
+
+    contratante_nome = db.Column(db.String(150), nullable=False, index=True)
+    contratante_documento = db.Column(db.String(50), nullable=False, index=True)
+    contratante_rg = db.Column(db.String(40), index=True)
+
+    contratante_cep = db.Column(db.String(9), nullable=False)
+    contratante_logradouro = db.Column(db.String(150), nullable=False)
+    contratante_numero = db.Column(db.String(20), nullable=False)
+    contratante_complemento = db.Column(db.String(100))
+    contratante_bairro = db.Column(db.String(100), nullable=False, index=True)
+    contratante_cidade = db.Column(db.String(100), nullable=False, index=True)
+    contratante_uf = db.Column(db.String(2), nullable=False, index=True)
+
+    propriedade_nome = db.Column(db.String(150), nullable=False, index=True)
+    propriedade_cep = db.Column(db.String(9), nullable=False)
+    propriedade_logradouro = db.Column(db.String(150), nullable=False)
+    propriedade_numero = db.Column(db.String(20), nullable=False)
+    propriedade_complemento = db.Column(db.String(100))
+    propriedade_bairro = db.Column(db.String(100), nullable=False, index=True)
+    propriedade_cidade = db.Column(db.String(100), nullable=False, index=True)
+    propriedade_uf = db.Column(db.String(2), nullable=False, index=True)
+
+    descricao_servico = db.Column(db.Text, nullable=False)
+    cultura = db.Column(db.String(100), index=True)
+    area_contratada = db.Column(db.String(50))
+
+    valor_total = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+    valor_mapeamento_ha = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+    valor_pulverizacao_ha = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+
+    prazo_inicio_dias = db.Column(db.Integer, nullable=False, default=10)
+    prazo_pagamento_dias = db.Column(db.Integer, nullable=False, default=10)
+    cidade_assinatura = db.Column(db.String(100), nullable=False, default="São Paulo")
+    foro_cidade = db.Column(db.String(100), nullable=False, default="São Paulo")
+    data_assinatura = db.Column(db.Date)
+    observacoes_adicionais = db.Column(db.Text)
+
+    criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+    atualizado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True, onupdate=datetime.now)
+
+    prefeitura = db.relationship("Prefeitura", back_populates="contratos_agro", lazy="joined")
+    orcamento = db.relationship("OrcamentoAgro", back_populates="contrato", lazy="joined")
+
+    __table_args__ = (
+        db.Index("ix_contratos_agro_orcamento_data", "orcamento_agro_id", "atualizado_em"),
     )
 
 

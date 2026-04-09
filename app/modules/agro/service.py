@@ -9,9 +9,9 @@ from sqlalchemy import false, or_
 from sqlalchemy.orm import joinedload
 from werkzeug.utils import secure_filename
 
-from app.models import ClienteAgro, EquipamentoAgro, EquipeAgro, OrcamentoAgro, PilotoAgro
+from app.models import ClienteAgro, ContratoAgro, EquipamentoAgro, EquipeAgro, OrcamentoAgro, PilotoAgro
 from app.shared.access import ADMIN_PANEL_EDIT_TYPES, ADMIN_PANEL_VIEW_TYPES, apply_prefeitura_scope, normalize_role
-from app.shared.formatters import format_cep, format_documento, only_digits
+from app.shared.formatters import format_cep, format_currency_br, format_documento, only_digits
 from app.shared.uploads import get_upload_folder
 
 
@@ -86,7 +86,7 @@ def build_clientes_agro_query(user, q: str = ""):
 
 
 def build_orcamentos_agro_query(user, q: str = "", cliente_id: int | None = None, mapeamento: str = ""):
-    query = OrcamentoAgro.query.options(joinedload(OrcamentoAgro.cliente))
+    query = OrcamentoAgro.query.options(joinedload(OrcamentoAgro.cliente), joinedload(OrcamentoAgro.contrato))
     query = apply_prefeitura_scope(query, user, OrcamentoAgro.prefeitura_id)
 
     if q:
@@ -139,6 +139,85 @@ def update_orcamento_snapshot_from_cliente(orcamento: OrcamentoAgro, cliente: Cl
     orcamento.bairro = cliente.bairro
     orcamento.cidade = cliente.cidade
     orcamento.uf = cliente.uf
+
+
+def build_descricao_servico_contrato(orcamento: OrcamentoAgro) -> str:
+    descricao = orcamento.servico or "Prestacao de servicos agro"
+    if orcamento.cultura:
+        return f"{descricao} na cultura de {orcamento.cultura}"
+    return descricao
+
+
+def build_contrato_agro_defaults(orcamento: OrcamentoAgro) -> dict:
+    cliente = orcamento.cliente
+
+    return {
+        "contratante_nome": (cliente.nome if cliente else orcamento.cliente_nome or "").strip(),
+        "contratante_documento": format_documento(cliente.documento if cliente else ""),
+        "contratante_rg": "",
+        "contratante_cep": format_cep(cliente.cep if cliente else ""),
+        "contratante_logradouro": (cliente.logradouro if cliente else "").strip(),
+        "contratante_numero": (cliente.numero if cliente else "").strip(),
+        "contratante_complemento": (cliente.complemento if cliente else "").strip(),
+        "contratante_bairro": (cliente.bairro if cliente else "").strip(),
+        "contratante_cidade": (cliente.cidade if cliente else "").strip(),
+        "contratante_uf": (cliente.uf if cliente else "").strip().upper(),
+        "propriedade_nome": (orcamento.nome_fazenda or "").strip(),
+        "propriedade_cep": format_cep(orcamento.cep or ""),
+        "propriedade_logradouro": (orcamento.logradouro or "").strip(),
+        "propriedade_numero": (orcamento.numero or "").strip(),
+        "propriedade_complemento": (orcamento.complemento or "").strip(),
+        "propriedade_bairro": (orcamento.bairro or "").strip(),
+        "propriedade_cidade": (orcamento.cidade or "").strip(),
+        "propriedade_uf": (orcamento.uf or "").strip().upper(),
+        "descricao_servico": build_descricao_servico_contrato(orcamento),
+        "cultura": (orcamento.cultura or "").strip(),
+        "area_contratada": "",
+        "valor_total": format_currency_br(orcamento.preco_base),
+        "valor_mapeamento_ha": format_currency_br(orcamento.preco_mapeamento),
+        "valor_pulverizacao_ha": format_currency_br(orcamento.preco_pulverizacao),
+        "prazo_inicio_dias": "10",
+        "prazo_pagamento_dias": "10",
+        "cidade_assinatura": "São Paulo",
+        "foro_cidade": "São Paulo",
+        "data_assinatura": datetime.now().date().isoformat(),
+        "observacoes_adicionais": "",
+    }
+
+
+def serialize_contrato_agro_form(contrato: ContratoAgro) -> dict:
+    return {
+        "contratante_nome": contrato.contratante_nome or "",
+        "contratante_documento": format_documento(contrato.contratante_documento or ""),
+        "contratante_rg": contrato.contratante_rg or "",
+        "contratante_cep": format_cep(contrato.contratante_cep or ""),
+        "contratante_logradouro": contrato.contratante_logradouro or "",
+        "contratante_numero": contrato.contratante_numero or "",
+        "contratante_complemento": contrato.contratante_complemento or "",
+        "contratante_bairro": contrato.contratante_bairro or "",
+        "contratante_cidade": contrato.contratante_cidade or "",
+        "contratante_uf": contrato.contratante_uf or "",
+        "propriedade_nome": contrato.propriedade_nome or "",
+        "propriedade_cep": format_cep(contrato.propriedade_cep or ""),
+        "propriedade_logradouro": contrato.propriedade_logradouro or "",
+        "propriedade_numero": contrato.propriedade_numero or "",
+        "propriedade_complemento": contrato.propriedade_complemento or "",
+        "propriedade_bairro": contrato.propriedade_bairro or "",
+        "propriedade_cidade": contrato.propriedade_cidade or "",
+        "propriedade_uf": contrato.propriedade_uf or "",
+        "descricao_servico": contrato.descricao_servico or "",
+        "cultura": contrato.cultura or "",
+        "area_contratada": contrato.area_contratada or "",
+        "valor_total": format_currency_br(contrato.valor_total),
+        "valor_mapeamento_ha": format_currency_br(contrato.valor_mapeamento_ha),
+        "valor_pulverizacao_ha": format_currency_br(contrato.valor_pulverizacao_ha),
+        "prazo_inicio_dias": str(contrato.prazo_inicio_dias or ""),
+        "prazo_pagamento_dias": str(contrato.prazo_pagamento_dias or ""),
+        "cidade_assinatura": contrato.cidade_assinatura or "",
+        "foro_cidade": contrato.foro_cidade or "",
+        "data_assinatura": contrato.data_assinatura.isoformat() if contrato.data_assinatura else "",
+        "observacoes_adicionais": contrato.observacoes_adicionais or "",
+    }
 
 
 def get_orcamento_attachment_folder() -> str:
