@@ -25,6 +25,13 @@ from app.shared.formatters import format_cep, format_currency_br, format_documen
 from app.shared.validators import validate_documento
 
 
+AGRO_SERVICO_OPTIONS = (
+    OrcamentoAgro.SERVICO_MAPEAMENTO,
+    OrcamentoAgro.SERVICO_MAPEAMENTO_PULVERIZACAO,
+    OrcamentoAgro.SERVICO_PULVERIZACAO,
+)
+
+
 def _query_args_without_page():
     args = request.args.to_dict(flat=True)
     args.pop("page", None)
@@ -129,11 +136,14 @@ def _normalize_orcamento_form(form_source):
     return {
         "cliente_agro_id": (form_source.get("cliente_agro_id") or "").strip(),
         "nome_fazenda": (form_source.get("nome_fazenda") or "").strip(),
+        "servico": (form_source.get("servico") or OrcamentoAgro.SERVICO_MAPEAMENTO).strip(),
         "mapeamento": (form_source.get("mapeamento") or "NAO").strip().upper(),
         "risco_operacional": (form_source.get("risco_operacional") or "").strip(),
         "cultura": (form_source.get("cultura") or "").strip(),
         "protocolo": (form_source.get("protocolo") or "").strip(),
         "preco_base": (form_source.get("preco_base") or "").strip(),
+        "preco_mapeamento": (form_source.get("preco_mapeamento") or "").strip(),
+        "preco_pulverizacao": (form_source.get("preco_pulverizacao") or "").strip(),
         "cep": format_cep(form_source.get("cep") or ""),
         "logradouro": (form_source.get("logradouro") or "").strip(),
         "numero": (form_source.get("numero") or "").strip(),
@@ -267,6 +277,8 @@ def _validate_orcamento_form(form):
     errors = {}
     cliente = None
     preco_base = parse_currency_br(form.get("preco_base"))
+    preco_mapeamento = parse_currency_br(form.get("preco_mapeamento"))
+    preco_pulverizacao = parse_currency_br(form.get("preco_pulverizacao"))
 
     try:
         cliente_id = int(form["cliente_agro_id"])
@@ -281,12 +293,34 @@ def _validate_orcamento_form(form):
     if not form["nome_fazenda"]:
         errors["nome_fazenda"] = "Informe o nome da fazenda."
 
+    if form["servico"] not in AGRO_SERVICO_OPTIONS:
+        errors["servico"] = "Selecione um serviço válido."
+
     if not form["preco_base"]:
         errors["preco_base"] = "Informe o preço base do orçamento."
     elif preco_base is None:
         errors["preco_base"] = "Informe um valor monetário válido. Ex.: 1500,00"
     elif preco_base < 0:
         errors["preco_base"] = "O preço base não pode ser negativo."
+
+    mapeamento_ativo = form["mapeamento"] == "SIM"
+
+    if mapeamento_ativo:
+        if not form["preco_mapeamento"]:
+            errors["preco_mapeamento"] = "Informe o preço do mapeamento."
+        elif preco_mapeamento is None:
+            errors["preco_mapeamento"] = "Informe um valor monetário válido. Ex.: 1500,00"
+        elif preco_mapeamento < 0:
+            errors["preco_mapeamento"] = "O preço do mapeamento não pode ser negativo."
+    elif preco_mapeamento is None:
+        preco_mapeamento = 0
+
+    if not form["preco_pulverizacao"]:
+        errors["preco_pulverizacao"] = "Informe o preço da pulverização."
+    elif preco_pulverizacao is None:
+        errors["preco_pulverizacao"] = "Informe um valor monetário válido. Ex.: 1500,00"
+    elif preco_pulverizacao < 0:
+        errors["preco_pulverizacao"] = "O preço da pulverização não pode ser negativo."
 
     if len(form["cultura"]) > 100:
         errors["cultura"] = "Cultura deve ter no máximo 100 caracteres."
@@ -308,7 +342,7 @@ def _validate_orcamento_form(form):
     if form["uf"] and len(form["uf"]) != 2:
         errors["uf"] = "UF deve ter 2 letras."
 
-    return errors, cliente, cep_digits, preco_base
+    return errors, cliente, cep_digits, preco_base, preco_mapeamento, preco_pulverizacao
 
 
 def register_routes(bp):
@@ -490,7 +524,7 @@ def register_routes(bp):
         form = _normalize_orcamento_form(request.form if request.method == "POST" else {})
 
         if request.method == "POST":
-            errors, cliente, cep_digits, preco_base = _validate_orcamento_form(form)
+            errors, cliente, cep_digits, preco_base, preco_mapeamento, preco_pulverizacao = _validate_orcamento_form(form)
             if errors:
                 flash("Corrija os campos destacados do orçamento agro.", "warning")
                 return render_template(
@@ -499,16 +533,20 @@ def register_routes(bp):
                     errors=errors,
                     modo="novo",
                     clientes=clientes,
+                    servico_options=AGRO_SERVICO_OPTIONS,
                 )
 
             orcamento = OrcamentoAgro(
                 prefeitura_id=getattr(current_user, "prefeitura_id", None),
                 nome_fazenda=form["nome_fazenda"],
+                servico=form["servico"],
                 mapeamento=form["mapeamento"] == "SIM",
                 risco_operacional=form["risco_operacional"] or None,
                 cultura=form["cultura"] or None,
                 protocolo=form["protocolo"] or None,
                 preco_base=preco_base,
+                preco_mapeamento=preco_mapeamento,
+                preco_pulverizacao=preco_pulverizacao,
             )
             update_orcamento_snapshot_from_cliente(orcamento, cliente)
             orcamento.cep = cep_digits
@@ -536,13 +574,21 @@ def register_routes(bp):
                         errors=errors,
                         modo="novo",
                         clientes=clientes,
+                        servico_options=AGRO_SERVICO_OPTIONS,
                     )
 
             db.session.commit()
             flash("Orçamento agro cadastrado com sucesso.", "success")
             return redirect(url_for("main.agro_orcamentos_listar"))
 
-        return render_template("agro_orcamento_form.html", form=form, errors=errors, modo="novo", clientes=clientes)
+        return render_template(
+            "agro_orcamento_form.html",
+            form=form,
+            errors=errors,
+            modo="novo",
+            clientes=clientes,
+            servico_options=AGRO_SERVICO_OPTIONS,
+        )
 
     @bp.route("/agro/orcamentos/<int:orcamento_id>/editar", methods=["GET", "POST"], endpoint="agro_orcamento_editar")
     @login_required
@@ -554,7 +600,7 @@ def register_routes(bp):
 
         if request.method == "POST":
             form = _normalize_orcamento_form(request.form)
-            errors, cliente, cep_digits, preco_base = _validate_orcamento_form(form)
+            errors, cliente, cep_digits, preco_base, preco_mapeamento, preco_pulverizacao = _validate_orcamento_form(form)
             if errors:
                 flash("Corrija os campos destacados do orçamento agro.", "warning")
                 return render_template(
@@ -564,15 +610,19 @@ def register_routes(bp):
                     modo="editar",
                     clientes=clientes,
                     orcamento=orcamento,
+                    servico_options=AGRO_SERVICO_OPTIONS,
                 )
 
             update_orcamento_snapshot_from_cliente(orcamento, cliente)
             orcamento.nome_fazenda = form["nome_fazenda"]
+            orcamento.servico = form["servico"]
             orcamento.mapeamento = form["mapeamento"] == "SIM"
             orcamento.risco_operacional = form["risco_operacional"] or None
             orcamento.cultura = form["cultura"] or None
             orcamento.protocolo = form["protocolo"] or None
             orcamento.preco_base = preco_base
+            orcamento.preco_mapeamento = preco_mapeamento
+            orcamento.preco_pulverizacao = preco_pulverizacao
             orcamento.cep = cep_digits
             orcamento.logradouro = form["logradouro"]
             orcamento.numero = form["numero"]
@@ -596,6 +646,7 @@ def register_routes(bp):
                         modo="editar",
                         clientes=clientes,
                         orcamento=orcamento,
+                        servico_options=AGRO_SERVICO_OPTIONS,
                     )
 
             db.session.commit()
@@ -605,11 +656,14 @@ def register_routes(bp):
         form = {
             "cliente_agro_id": str(orcamento.cliente_agro_id or ""),
             "nome_fazenda": orcamento.nome_fazenda or "",
+            "servico": orcamento.servico or OrcamentoAgro.SERVICO_MAPEAMENTO,
             "mapeamento": "SIM" if orcamento.mapeamento else "NAO",
             "risco_operacional": orcamento.risco_operacional or "",
             "cultura": orcamento.cultura or "",
             "protocolo": orcamento.protocolo or "",
             "preco_base": format_currency_br(orcamento.preco_base),
+            "preco_mapeamento": format_currency_br(orcamento.preco_mapeamento),
+            "preco_pulverizacao": format_currency_br(orcamento.preco_pulverizacao),
             "cep": format_cep(orcamento.cep or ""),
             "logradouro": orcamento.logradouro or "",
             "numero": orcamento.numero or "",
@@ -625,6 +679,7 @@ def register_routes(bp):
             modo="editar",
             clientes=clientes,
             orcamento=orcamento,
+            servico_options=AGRO_SERVICO_OPTIONS,
         )
 
     @bp.route("/agro/orcamentos/<int:orcamento_id>/anexo", endpoint="agro_orcamento_anexo")

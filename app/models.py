@@ -597,6 +597,10 @@ class ClienteAgro(db.Model):
 class OrcamentoAgro(db.Model):
     __tablename__ = "orcamentos_agro"
 
+    SERVICO_MAPEAMENTO = "Mapeamento"
+    SERVICO_MAPEAMENTO_PULVERIZACAO = "Mapeamento e pulverização"
+    SERVICO_PULVERIZACAO = "Pulverização"
+
     id = db.Column(db.Integer, primary_key=True, index=True)
     prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
     cliente_agro_id = db.Column(db.Integer, db.ForeignKey("clientes_agro.id"), nullable=False, index=True)
@@ -606,7 +610,10 @@ class OrcamentoAgro(db.Model):
     mapeamento = db.Column(db.Boolean, default=False, nullable=False, index=True)
     risco_operacional = db.Column(db.Text)
     cultura = db.Column(db.String(100), index=True)
+    servico = db.Column(db.String(50), nullable=False, default=SERVICO_MAPEAMENTO, index=True)
     preco_base = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+    preco_mapeamento = db.Column("preco_monitoramento", db.Numeric(12, 2), nullable=False, default=0)
+    preco_pulverizacao = db.Column(db.Numeric(12, 2), nullable=False, default=0)
 
     cep = db.Column(db.String(9), nullable=False)
     logradouro = db.Column(db.String(150), nullable=False)

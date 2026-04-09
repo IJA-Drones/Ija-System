@@ -10,7 +10,7 @@
     <div>
       <span class="agro-eyebrow"><i class="bi bi-file-earmark-richtext-fill"></i> Proposta</span>
       <h1 class="agro-page-title mt-3">{{ 'Cadastrar orçamento agro' if modo == 'novo' else 'Editar orçamento agro' }}</h1>
-      <p class="agro-page-subtitle">Monte a proposta comercial com os dados do cliente, da fazenda e do valor-base para gerar o PDF de apresentação.</p>
+      <p class="agro-page-subtitle">Monte a proposta comercial com serviço, dados da fazenda e valores separados para gerar o PDF de apresentação.</p>
     </div>
     <div class="agro-actions-inline">
       <a href="{{ url_for('main.agro_orcamentos_listar') }}" class="btn agro-outline-btn">
@@ -22,7 +22,7 @@
   <form method="post" enctype="multipart/form-data" novalidate class="agro-form-layout">
     <section class="agro-form-card agro-form-section">
       <h2 class="agro-form-section-title">Informações principais</h2>
-      <p class="agro-form-section-copy">Defina quem é o cliente, qual fazenda será atendida e o valor-base inicial da proposta.</p>
+      <p class="agro-form-section-copy">Defina quem é o cliente, qual fazenda será atendida, o tipo de serviço e o detalhamento financeiro da proposta.</p>
 
       <div class="agro-form-grid">
         <div class="agro-col-6">
@@ -54,21 +54,31 @@
           {% if errors.get('nome_fazenda') %}<div class="invalid-feedback">{{ errors.get('nome_fazenda') }}</div>{% endif %}
         </div>
 
-        <div class="agro-col-3">
+        <div class="agro-col-4">
+          <label class="agro-input-label">Serviço *</label>
+          <select name="servico" class="form-select agro-form-select {% if errors.get('servico') %}is-invalid{% endif %}" required>
+            {% for servico in servico_options %}
+              <option value="{{ servico }}" {% if form.get('servico', servico_options[0]) == servico %}selected{% endif %}>{{ servico }}</option>
+            {% endfor %}
+          </select>
+          {% if errors.get('servico') %}<div class="invalid-feedback">{{ errors.get('servico') }}</div>{% endif %}
+        </div>
+
+        <div class="agro-col-2">
           <label class="agro-input-label">Mapeamento</label>
-          <select name="mapeamento" class="form-select agro-form-select">
+          <select id="mapeamento" name="mapeamento" class="form-select agro-form-select">
             <option value="NAO" {% if form.get('mapeamento', 'NAO') == 'NAO' %}selected{% endif %}>Não</option>
             <option value="SIM" {% if form.get('mapeamento') == 'SIM' %}selected{% endif %}>Sim</option>
           </select>
         </div>
 
-        <div class="agro-col-5">
+        <div class="agro-col-6">
           <label class="agro-input-label">Cultura</label>
           <input type="text" name="cultura" maxlength="100" value="{{ form.get('cultura', '') }}" class="form-control agro-form-control {% if errors.get('cultura') %}is-invalid{% endif %}" placeholder="Ex.: soja, milho, cana">
           {% if errors.get('cultura') %}<div class="invalid-feedback">{{ errors.get('cultura') }}</div>{% endif %}
         </div>
 
-        <div class="agro-col-4">
+        <div class="agro-col-6">
           <label class="agro-input-label">Protocolo DECEA</label>
           <input type="text" name="protocolo" value="{{ form.get('protocolo', '') }}" class="form-control agro-form-control" placeholder="Número do protocolo">
         </div>
@@ -77,6 +87,18 @@
           <label class="agro-input-label">Preço base *</label>
           <input type="text" id="preco_base" name="preco_base" value="{{ form.get('preco_base', '') }}" class="form-control agro-form-control {% if errors.get('preco_base') %}is-invalid{% endif %}" placeholder="R$ 0,00" required>
           {% if errors.get('preco_base') %}<div class="invalid-feedback">{{ errors.get('preco_base') }}</div>{% endif %}
+        </div>
+
+        <div id="precoMapeamentoWrap" class="agro-col-4">
+          <label class="agro-input-label">Preço do mapeamento *</label>
+          <input type="text" id="preco_mapeamento" name="preco_mapeamento" value="{{ form.get('preco_mapeamento', '') }}" class="form-control agro-form-control {% if errors.get('preco_mapeamento') %}is-invalid{% endif %}" placeholder="R$ 0,00">
+          {% if errors.get('preco_mapeamento') %}<div class="invalid-feedback">{{ errors.get('preco_mapeamento') }}</div>{% endif %}
+        </div>
+
+        <div class="agro-col-4">
+          <label class="agro-input-label">Preço da pulverização *</label>
+          <input type="text" id="preco_pulverizacao" name="preco_pulverizacao" value="{{ form.get('preco_pulverizacao', '') }}" class="form-control agro-form-control {% if errors.get('preco_pulverizacao') %}is-invalid{% endif %}" placeholder="R$ 0,00" required>
+          {% if errors.get('preco_pulverizacao') %}<div class="invalid-feedback">{{ errors.get('preco_pulverizacao') }}</div>{% endif %}
         </div>
 
         <div class="agro-col-8">
@@ -197,22 +219,47 @@
     return number.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
+  function syncMapeamentoPriceVisibility() {
+    const mapeamento = document.getElementById("mapeamento");
+    const wrapper = document.getElementById("precoMapeamentoWrap");
+    const field = document.getElementById("preco_mapeamento");
+    const isVisible = mapeamento?.value === "SIM";
+
+    if (!wrapper || !field) return;
+
+    wrapper.style.display = isVisible ? "" : "none";
+    field.required = isVisible;
+
+    if (!isVisible) {
+      field.value = "";
+    }
+  }
+
   document.getElementById("cliente_agro_id")?.addEventListener("change", preencherEnderecoDoCliente);
   document.getElementById("cep")?.addEventListener("input", (event) => {
     event.target.value = maskCep(event.target.value);
   });
-  document.getElementById("preco_base")?.addEventListener("input", (event) => {
-    event.target.value = maskCurrencyBr(event.target.value);
+  document.getElementById("mapeamento")?.addEventListener("change", syncMapeamentoPriceVisibility);
+
+  ["preco_base", "preco_mapeamento", "preco_pulverizacao"].forEach((fieldId) => {
+    document.getElementById(fieldId)?.addEventListener("input", (event) => {
+      event.target.value = maskCurrencyBr(event.target.value);
+    });
   });
 
   window.addEventListener("DOMContentLoaded", () => {
     if (!document.getElementById("cep")?.value) {
       preencherEnderecoDoCliente();
     }
-    const precoBase = document.getElementById("preco_base");
-    if (precoBase && precoBase.value) {
-      precoBase.value = maskCurrencyBr(precoBase.value);
-    }
+
+    ["preco_base", "preco_mapeamento", "preco_pulverizacao"].forEach((fieldId) => {
+      const field = document.getElementById(fieldId);
+      if (field && field.value) {
+        field.value = maskCurrencyBr(field.value);
+      }
+    });
+
+    syncMapeamentoPriceVisibility();
   });
 </script>
 {% endblock %}

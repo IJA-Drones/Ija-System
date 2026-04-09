@@ -96,6 +96,7 @@ def build_orcamentos_agro_query(user, q: str = "", cliente_id: int | None = None
                 OrcamentoAgro.cliente_nome.ilike(like),
                 OrcamentoAgro.nome_fazenda.ilike(like),
                 OrcamentoAgro.cultura.ilike(like),
+                OrcamentoAgro.servico.ilike(like),
                 OrcamentoAgro.protocolo.ilike(like),
             )
         )
