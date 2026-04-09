@@ -9,7 +9,7 @@ from sqlalchemy import false, or_
 from sqlalchemy.orm import joinedload
 from werkzeug.utils import secure_filename
 
-from app.models import ClienteAgro, ContratoAgro, EquipamentoAgro, EquipeAgro, OrcamentoAgro, PilotoAgro
+from app.models import ClienteAgro, ContratoAgro, EquipamentoAgro, EquipeAgro, OrcamentoAgro, OrdemServicoAgro, PilotoAgro
 from app.shared.access import ADMIN_PANEL_EDIT_TYPES, ADMIN_PANEL_VIEW_TYPES, apply_prefeitura_scope, normalize_role
 from app.shared.formatters import format_cep, format_currency_br, format_documento, only_digits
 from app.shared.uploads import get_upload_folder
@@ -112,16 +112,86 @@ def build_orcamentos_agro_query(user, q: str = "", cliente_id: int | None = None
     return query.order_by(OrcamentoAgro.data_criacao.desc(), OrcamentoAgro.id.desc())
 
 
+def build_contratos_agro_aprovados_query(user, q: str = "", equipe_id: int | None = None):
+    query = ContratoAgro.query.options(
+        joinedload(ContratoAgro.orcamento).joinedload(OrcamentoAgro.cliente),
+        joinedload(ContratoAgro.equipe),
+    )
+    query = apply_prefeitura_scope(query, user, ContratoAgro.prefeitura_id)
+    query = query.filter(ContratoAgro.status == ContratoAgro.STATUS_APROVADO)
+
+    if q:
+        like = f"%{q}%"
+        query = query.join(ContratoAgro.orcamento).filter(
+            or_(
+                ContratoAgro.contratante_nome.ilike(like),
+                ContratoAgro.propriedade_nome.ilike(like),
+                OrcamentoAgro.cliente_nome.ilike(like),
+                OrcamentoAgro.nome_fazenda.ilike(like),
+                OrcamentoAgro.protocolo.ilike(like),
+            )
+        )
+
+    if equipe_id:
+        query = query.filter(ContratoAgro.equipe_agro_id == equipe_id)
+
+    return query.order_by(ContratoAgro.atualizado_em.desc(), ContratoAgro.id.desc())
+
+
+def build_ordens_servico_agro_query(user, q: str = "", status: str = "", equipe_id: int | None = None, piloto_id: int | None = None):
+    query = OrdemServicoAgro.query.options(
+        joinedload(OrdemServicoAgro.contrato).joinedload(ContratoAgro.orcamento),
+        joinedload(OrdemServicoAgro.equipe),
+        joinedload(OrdemServicoAgro.piloto),
+        joinedload(OrdemServicoAgro.drone_pulverizacao),
+        joinedload(OrdemServicoAgro.drone_mapeamento),
+    )
+    query = apply_prefeitura_scope(query, user, OrdemServicoAgro.prefeitura_id)
+
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            or_(
+                OrdemServicoAgro.identificador_os.ilike(like),
+                OrdemServicoAgro.cliente_nome.ilike(like),
+                OrdemServicoAgro.propriedade_nome.ilike(like),
+                OrdemServicoAgro.protocolo.ilike(like),
+            )
+        )
+
+    if status:
+        query = query.filter(OrdemServicoAgro.status == status)
+
+    if equipe_id:
+        query = query.filter(OrdemServicoAgro.equipe_agro_id == equipe_id)
+
+    if piloto_id:
+        query = query.filter(OrdemServicoAgro.piloto_agro_id == piloto_id)
+
+    return query.order_by(
+        OrdemServicoAgro.data_aplicacao.desc().nullslast(),
+        OrdemServicoAgro.atualizado_em.desc(),
+        OrdemServicoAgro.id.desc(),
+    )
+
+
 def get_agro_dashboard_context(user) -> dict:
     clientes_query = apply_prefeitura_scope(ClienteAgro.query, user, ClienteAgro.prefeitura_id)
     orcamentos_query = apply_prefeitura_scope(OrcamentoAgro.query, user, OrcamentoAgro.prefeitura_id)
+    contratos_query = apply_prefeitura_scope(ContratoAgro.query, user, ContratoAgro.prefeitura_id)
     pilotos_query = apply_prefeitura_scope(PilotoAgro.query, user, PilotoAgro.prefeitura_id)
     equipes_query = apply_prefeitura_scope(EquipeAgro.query, user, EquipeAgro.prefeitura_id)
     equipamentos_query = apply_prefeitura_scope(EquipamentoAgro.query, user, EquipamentoAgro.prefeitura_id)
+    ordens_servico_query = apply_prefeitura_scope(OrdemServicoAgro.query, user, OrdemServicoAgro.prefeitura_id)
 
     return {
         "total_clientes_agro": clientes_query.count(),
         "total_orcamentos_agro": orcamentos_query.count(),
+        "total_contratos_agro": contratos_query.count(),
+        "total_contratos_agro_aprovados": contratos_query.filter(
+            ContratoAgro.status == ContratoAgro.STATUS_APROVADO
+        ).count(),
+        "total_ordens_servico_agro": ordens_servico_query.count(),
         "total_pilotos_agro": pilotos_query.count(),
         "total_equipes_agro": equipes_query.count(),
         "total_equipamentos_agro": equipamentos_query.count(),
@@ -182,6 +252,7 @@ def build_contrato_agro_defaults(orcamento: OrcamentoAgro) -> dict:
         "foro_cidade": "São Paulo",
         "data_assinatura": datetime.now().date().isoformat(),
         "observacoes_adicionais": "",
+        "status": ContratoAgro.STATUS_EM_ELABORACAO,
     }
 
 
@@ -217,11 +288,18 @@ def serialize_contrato_agro_form(contrato: ContratoAgro) -> dict:
         "foro_cidade": contrato.foro_cidade or "",
         "data_assinatura": contrato.data_assinatura.isoformat() if contrato.data_assinatura else "",
         "observacoes_adicionais": contrato.observacoes_adicionais or "",
+        "status": contrato.status or ContratoAgro.STATUS_EM_ELABORACAO,
     }
 
 
 def get_orcamento_attachment_folder() -> str:
     folder = os.path.join(get_upload_folder(), "agro", "orcamentos")
+    os.makedirs(folder, exist_ok=True)
+    return folder
+
+
+def get_os_agro_attachment_folder() -> str:
+    folder = os.path.join(get_upload_folder(), "agro", "os")
     os.makedirs(folder, exist_ok=True)
     return folder
 

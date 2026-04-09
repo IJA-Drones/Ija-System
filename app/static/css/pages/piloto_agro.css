@@ -124,6 +124,62 @@
   box-shadow: 0 18px 42px rgba(15, 23, 42, 0.06);
 }
 
+.agro-pilot-hero-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.agro-pilot-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(22, 101, 52, 0.08);
+  color: #166534;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.agro-pilot-chip-alert {
+  background: rgba(245, 158, 11, 0.14);
+  color: #b45309;
+}
+
+.agro-pilot-focus-card {
+  padding: 24px;
+  border-radius: 24px;
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.96) 0%, rgba(236, 253, 243, 0.98) 100%);
+  border: 1px solid rgba(20, 83, 45, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.agro-pilot-focus-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.agro-pilot-focus-metric {
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: #ffffff;
+  border: 1px solid rgba(20, 83, 45, 0.08);
+}
+
+.agro-pilot-focus-metric span {
+  display: block;
+  color: #64748b;
+  font-size: 0.8rem;
+  margin-bottom: 4px;
+}
+
+.agro-pilot-focus-metric strong {
+  font-size: 1.4rem;
+  color: #0f172a;
+}
+
 .agro-pilot-stat {
   padding: 20px;
   border-radius: 22px;
@@ -140,6 +196,128 @@
   box-shadow: 0 14px 28px rgba(15, 23, 42, 0.05);
 }
 
+.agro-pilot-demand-board {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.agro-pilot-demand-card {
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px solid rgba(20, 83, 45, 0.1);
+  background:
+    radial-gradient(circle at top right, rgba(187, 247, 208, 0.18), transparent 26%),
+    #f8fffa;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.04);
+}
+
+.agro-pilot-demand-card.is-os {
+  background:
+    radial-gradient(circle at top right, rgba(191, 219, 254, 0.22), transparent 28%),
+    #f8fbff;
+}
+
+.agro-pilot-demand-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.agro-pilot-demand-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.14);
+  color: #b45309;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.agro-pilot-demand-tag.is-blue {
+  background: rgba(59, 130, 246, 0.12);
+  color: #1d4ed8;
+}
+
+.agro-pilot-demand-meta {
+  display: grid;
+  gap: 8px;
+  color: #64748b;
+  font-size: 0.84rem;
+}
+
+.agro-pilot-demand-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.agro-pilot-empty-state {
+  display: grid;
+  place-items: center;
+  text-align: center;
+  min-height: 240px;
+  padding: 24px;
+  border-radius: 22px;
+  background: linear-gradient(180deg, #f8fffa 0%, #ffffff 100%);
+  border: 1px dashed rgba(20, 83, 45, 0.18);
+}
+
+.agro-pilot-empty-icon {
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  border-radius: 20px;
+  font-size: 1.8rem;
+  color: #15803d;
+  background: rgba(34, 197, 94, 0.12);
+  margin-bottom: 14px;
+}
+
+.agro-pilot-profile-list {
+  display: grid;
+  gap: 12px;
+}
+
+.agro-pilot-profile-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: #f8fafc;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.agro-pilot-profile-item span {
+  color: #64748b;
+  font-size: 0.84rem;
+}
+
+.agro-pilot-profile-item strong {
+  color: #0f172a;
+  text-align: right;
+}
+
+.agro-pilot-help-box {
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: linear-gradient(145deg, #14532d 0%, #166534 100%);
+  color: #f8fafc;
+}
+
+.agro-pilot-help-box small,
+.agro-pilot-help-box p {
+  color: inherit;
+}
+
 @media (max-width: 991.98px) {
   .agro-pilot-login {
     grid-template-columns: 1fr;
@@ -152,5 +330,21 @@
   .agro-pilot-soft-card,
   .agro-pilot-stat {
     border-radius: 22px;
+  }
+
+  .agro-pilot-demand-board,
+  .agro-pilot-focus-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .agro-pilot-profile-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .agro-pilot-profile-item strong {
+    text-align: left;
   }
 }

@@ -357,6 +357,24 @@
               <i class="bi bi-file-earmark-text-fill me-2"></i><span>Orçamentos Agro</span>
             </a>
           </li>
+          {% if current_user.tipo_usuario == 'admin' %}
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint == 'main.agro_contratos_template' %}active{% endif %}"
+              href="{{ url_for('main.agro_contratos_template') }}"
+            >
+              <i class="bi bi-diagram-3-fill me-2"></i><span>Contratos Aprovados</span>
+            </a>
+          </li>
+          {% endif %}
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint in ['main.agro_os_listar', 'main.agro_os_nova', 'main.agro_os_editar'] %}active{% endif %}"
+              href="{{ url_for('main.agro_os_listar') }}"
+            >
+              <i class="bi bi-clipboard2-data-fill me-2"></i><span>OS Agro</span>
+            </a>
+          </li>
           <li class="nav-item">
             <a
               class="nav-link {% if request.endpoint in ['main.agro_equipes_listar', 'main.agro_equipe_nova', 'main.agro_equipe_editar'] %}active{% endif %}"

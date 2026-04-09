@@ -1,20 +1,26 @@
+import os
 import math
 from datetime import datetime
+from decimal import Decimal, InvalidOperation
 
 from flask import abort, flash, redirect, render_template, request, send_file, send_from_directory, url_for
 from flask_login import current_user, login_required
+from werkzeug.utils import secure_filename
 
 from app.extensions import db
-from app.models import ClienteAgro, ContratoAgro, EquipamentoAgro, EquipeAgro, OrcamentoAgro, PilotoAgro, Usuario
-from app.modules.agro.exporters import build_contrato_agro_pdf, build_orcamento_agro_pdf
+from app.models import ClienteAgro, ContratoAgro, EquipamentoAgro, EquipeAgro, OrcamentoAgro, OrdemServicoAgro, PilotoAgro, Usuario
+from app.modules.agro.exporters import build_contrato_agro_pdf, build_orcamento_agro_pdf, merge_orcamento_agro_with_attachment
 from app.modules.agro.service import (
     agro_bool_label,
     build_contrato_agro_defaults,
+    build_contratos_agro_aprovados_query,
     build_clientes_agro_query,
     build_endereco_agro,
+    build_ordens_servico_agro_query,
     build_orcamentos_agro_query,
     can_access_agro_panel,
     can_edit_agro_panel,
+    get_os_agro_attachment_folder,
     get_agro_dashboard_context,
     remove_orcamento_attachment,
     resolve_orcamento_attachment,
@@ -34,6 +40,9 @@ AGRO_SERVICO_OPTIONS = (
     OrcamentoAgro.SERVICO_PULVERIZACAO,
 )
 
+AGRO_CONTRATO_STATUS_OPTIONS = ContratoAgro.STATUS_OPTIONS
+AGRO_OS_STATUS_OPTIONS = OrdemServicoAgro.STATUS_OPTIONS
+
 
 def _query_args_without_page():
     args = request.args.to_dict(flat=True)
@@ -48,6 +57,11 @@ def _require_agro_access():
 
 def _require_agro_edit():
     if not can_edit_agro_panel(current_user):
+        abort(403)
+
+
+def _require_agro_admin():
+    if getattr(current_user, "tipo_usuario", None) != "admin":
         abort(403)
 
 
@@ -66,9 +80,23 @@ def _get_orcamento_agro_or_404(orcamento_id: int):
     return query.filter(OrcamentoAgro.id == orcamento_id).first_or_404()
 
 
+def _get_contrato_agro_or_404(contrato_id: int):
+    query = apply_prefeitura_scope(ContratoAgro.query, current_user, ContratoAgro.prefeitura_id)
+    return query.filter(ContratoAgro.id == contrato_id).first_or_404()
+
+
 def _get_equipe_agro_or_404(equipe_id: int):
     query = apply_prefeitura_scope(EquipeAgro.query, current_user, EquipeAgro.prefeitura_id)
     return query.filter(EquipeAgro.id == equipe_id).first_or_404()
+
+
+def _build_agro_equipes_ativas():
+    return (
+        apply_prefeitura_scope(EquipeAgro.query, current_user, EquipeAgro.prefeitura_id)
+        .filter(EquipeAgro.ativa.is_(True))
+        .order_by(EquipeAgro.nome.asc(), EquipeAgro.id.asc())
+        .all()
+    )
 
 
 def _get_piloto_agro_or_404(piloto_id: int):
@@ -79,6 +107,86 @@ def _get_piloto_agro_or_404(piloto_id: int):
 def _get_equipamento_agro_or_404(equipamento_id: int):
     query = apply_prefeitura_scope(EquipamentoAgro.query, current_user, EquipamentoAgro.prefeitura_id)
     return query.filter(EquipamentoAgro.id == equipamento_id).first_or_404()
+
+
+def _get_os_agro_or_404(os_id: int):
+    query = apply_prefeitura_scope(OrdemServicoAgro.query, current_user, OrdemServicoAgro.prefeitura_id)
+    return query.filter(OrdemServicoAgro.id == os_id).first_or_404()
+
+
+def _get_logged_piloto_agro():
+    return getattr(current_user, "piloto_agro", None)
+
+
+def _build_latest_os_by_contrato(contratos):
+    latest_os = {}
+    for contrato in contratos:
+        if contrato.ordens_servico:
+            latest_os[contrato.id] = max(
+                contrato.ordens_servico,
+                key=lambda item: (item.criado_em or datetime.min, item.id),
+            )
+    return latest_os
+
+
+def _build_os_agro_form_options(*, piloto_logado=None):
+    if piloto_logado is not None:
+        equipe = piloto_logado.equipe
+        equipes = [equipe] if equipe is not None else []
+        pilotos = [piloto_logado]
+        if equipe is None:
+            return equipes, pilotos, []
+
+        equipamentos = (
+            apply_prefeitura_scope(EquipamentoAgro.query, current_user, EquipamentoAgro.prefeitura_id)
+            .filter(EquipamentoAgro.equipe_agro_id == equipe.id)
+            .order_by(EquipamentoAgro.identificacao.asc(), EquipamentoAgro.id.asc())
+            .all()
+        )
+        return equipes, pilotos, equipamentos
+
+    equipes = _build_agro_equipes_ativas()
+    pilotos = (
+        apply_prefeitura_scope(PilotoAgro.query, current_user, PilotoAgro.prefeitura_id)
+        .filter(PilotoAgro.ativo.is_(True))
+        .order_by(PilotoAgro.nome.asc())
+        .all()
+    )
+    equipamentos = (
+        apply_prefeitura_scope(EquipamentoAgro.query, current_user, EquipamentoAgro.prefeitura_id)
+        .order_by(EquipamentoAgro.identificacao.asc(), EquipamentoAgro.id.asc())
+        .all()
+    )
+    return equipes, pilotos, equipamentos
+
+
+def _build_os_agro_form_context(
+    *,
+    modo,
+    contrato,
+    form,
+    errors,
+    equipes,
+    pilotos,
+    equipamentos,
+    ordem_servico=None,
+    pilot_form_mode=False,
+    piloto_logado=None,
+):
+    return {
+        "modo": modo,
+        "contrato": contrato,
+        "ordem_servico": ordem_servico,
+        "form": form,
+        "errors": errors,
+        "equipes": equipes,
+        "pilotos": pilotos,
+        "equipamentos": equipamentos,
+        "equipamentos_meta": {item.id: _build_equipamento_agro_meta(item) for item in equipamentos},
+        "status_options": AGRO_OS_STATUS_OPTIONS,
+        "pilot_form_mode": pilot_form_mode,
+        "piloto_logado": piloto_logado,
+    }
 
 
 def _normalize_cliente_form(form_source):
@@ -179,6 +287,53 @@ def _normalize_optional_int(value):
         return None
 
 
+def _parse_area_contratada_decimal(value):
+    text = str(value or "").strip().lower()
+    if not text:
+        return None
+
+    normalized = text.replace("ha", "").replace("hectares", "").replace("hectare", "").strip()
+    normalized = "".join(ch for ch in normalized if ch.isdigit() or ch in ",.")
+    if not normalized:
+        return None
+
+    if "," in normalized and "." in normalized:
+        normalized = normalized.replace(".", "").replace(",", ".")
+    elif "," in normalized:
+        normalized = normalized.replace(",", ".")
+
+    try:
+        return Decimal(normalized)
+    except (InvalidOperation, ValueError):
+        return None
+
+
+def _parse_decimal_input(value):
+    text = str(value or "").strip().lower()
+    if not text:
+        return None
+
+    normalized = "".join(ch for ch in text if ch.isdigit() or ch in ",.")
+    if not normalized:
+        return None
+
+    if "," in normalized and "." in normalized:
+        normalized = normalized.replace(".", "").replace(",", ".")
+    elif "," in normalized:
+        normalized = normalized.replace(",", ".")
+
+    try:
+        return Decimal(normalized)
+    except (InvalidOperation, ValueError):
+        return None
+
+
+def _format_decimal_br_value(value):
+    if value is None:
+        return ""
+    return f"{Decimal(value):.2f}".replace(".", ",")
+
+
 def _normalize_equipe_form(form_source):
     return {
         "nome": (form_source.get("nome") or "").strip(),
@@ -266,6 +421,13 @@ def _normalize_equipamento_form(form_source):
         "identificacao": (form_source.get("identificacao") or "").strip(),
         "numero_serie": (form_source.get("numero_serie") or "").strip(),
         "status": (form_source.get("status") or "Ativo").strip(),
+        "funcao_operacional": (form_source.get("funcao_operacional") or "").strip(),
+        "registro_anatel": (form_source.get("registro_anatel") or "").strip(),
+        "registro_anac": (form_source.get("registro_anac") or "").strip(),
+        "capacidade_tanque_l": (form_source.get("capacidade_tanque_l") or "").strip(),
+        "largura_faixa_m": (form_source.get("largura_faixa_m") or "").strip(),
+        "altura_voo_padrao_m": (form_source.get("altura_voo_padrao_m") or "").strip(),
+        "ponta_pulverizacao": (form_source.get("ponta_pulverizacao") or "").strip(),
         "equipe_agro_id": (form_source.get("equipe_agro_id") or "").strip(),
     }
 
@@ -300,7 +462,26 @@ def _validate_equipamento_agro_form(form, equipes, *, equipamento_atual=None):
         if query.first():
             errors["numero_serie"] = "Já existe um equipamento agro com esse número de série."
 
-    return errors, numero_serie, equipe_id, equipe
+    capacidade_tanque_l = _parse_decimal_input(form["capacidade_tanque_l"])
+    largura_faixa_m = _parse_decimal_input(form["largura_faixa_m"])
+    altura_voo_padrao_m = _parse_decimal_input(form["altura_voo_padrao_m"])
+
+    if form["capacidade_tanque_l"] and capacidade_tanque_l is None:
+        errors["capacidade_tanque_l"] = "Informe uma capacidade valida em litros."
+    elif capacidade_tanque_l is not None and capacidade_tanque_l < 0:
+        errors["capacidade_tanque_l"] = "A capacidade nao pode ser negativa."
+
+    if form["largura_faixa_m"] and largura_faixa_m is None:
+        errors["largura_faixa_m"] = "Informe uma largura de faixa valida."
+    elif largura_faixa_m is not None and largura_faixa_m < 0:
+        errors["largura_faixa_m"] = "A largura de faixa nao pode ser negativa."
+
+    if form["altura_voo_padrao_m"] and altura_voo_padrao_m is None:
+        errors["altura_voo_padrao_m"] = "Informe uma altura de voo valida."
+    elif altura_voo_padrao_m is not None and altura_voo_padrao_m < 0:
+        errors["altura_voo_padrao_m"] = "A altura de voo nao pode ser negativa."
+
+    return errors, numero_serie, equipe_id, equipe, capacidade_tanque_l, largura_faixa_m, altura_voo_padrao_m
 
 
 def _validate_orcamento_form(form):
@@ -376,6 +557,10 @@ def _validate_orcamento_form(form):
 
 
 def _normalize_contrato_form(form_source):
+    status = (form_source.get("status") or ContratoAgro.STATUS_EM_ELABORACAO).strip().upper()
+    if status not in AGRO_CONTRATO_STATUS_OPTIONS:
+        status = ContratoAgro.STATUS_EM_ELABORACAO
+
     return {
         "contratante_nome": (form_source.get("contratante_nome") or "").strip(),
         "contratante_documento": (form_source.get("contratante_documento") or "").strip(),
@@ -407,6 +592,7 @@ def _normalize_contrato_form(form_source):
         "foro_cidade": (form_source.get("foro_cidade") or "").strip(),
         "data_assinatura": (form_source.get("data_assinatura") or "").strip(),
         "observacoes_adicionais": (form_source.get("observacoes_adicionais") or "").strip(),
+        "status": status,
     }
 
 
@@ -428,7 +614,6 @@ def _validate_contrato_form(form):
         ("propriedade_cidade", "a cidade da propriedade"),
         ("propriedade_uf", "a UF da propriedade"),
         ("descricao_servico", "a descricao do servico"),
-        ("valor_total", "o valor total"),
         ("prazo_inicio_dias", "o prazo de inicio"),
         ("prazo_pagamento_dias", "o prazo de pagamento"),
         ("cidade_assinatura", "a cidade da assinatura"),
@@ -458,12 +643,25 @@ def _validate_contrato_form(form):
     if form["propriedade_uf"] and len(form["propriedade_uf"]) != 2:
         errors["propriedade_uf"] = "UF da propriedade deve ter 2 letras."
 
+    if form["status"] not in AGRO_CONTRATO_STATUS_OPTIONS:
+        errors["status"] = "Selecione um status valido para o contrato."
+
+    area_contratada_decimal = _parse_area_contratada_decimal(form["area_contratada"])
     valor_total = parse_currency_br(form["valor_total"])
     valor_mapeamento_ha = parse_currency_br(form["valor_mapeamento_ha"]) if form["valor_mapeamento_ha"] else 0
     valor_pulverizacao_ha = parse_currency_br(form["valor_pulverizacao_ha"]) if form["valor_pulverizacao_ha"] else 0
 
+    if form["area_contratada"] and area_contratada_decimal is None:
+        errors["area_contratada"] = "Informe uma area contratada valida. Ex.: 59,27 ha"
+
+    valores_por_ha = (valor_mapeamento_ha or 0) + (valor_pulverizacao_ha or 0)
+    if valor_total is None and area_contratada_decimal is not None and valores_por_ha > 0:
+        valor_total = area_contratada_decimal * valores_por_ha
+
     if form["valor_total"] and valor_total is None:
         errors["valor_total"] = "Informe um valor monetario valido. Ex.: 1500,00"
+    elif not form["valor_total"] and valor_total is None:
+        errors["valor_total"] = "Informe o valor total ou preencha area contratada e os valores por ha para calcular automaticamente."
     elif valor_total is not None and valor_total < 0:
         errors["valor_total"] = "O valor total nao pode ser negativo."
 
@@ -514,6 +712,35 @@ def _validate_contrato_form(form):
     )
 
 
+def _normalize_contrato_template_form(form_source):
+    status = (form_source.get("status") or ContratoAgro.STATUS_APROVADO).strip().upper()
+    return {
+        "status": status if status in AGRO_CONTRATO_STATUS_OPTIONS else ContratoAgro.STATUS_APROVADO,
+        "equipe_agro_id": (form_source.get("equipe_agro_id") or "").strip(),
+    }
+
+
+def _validate_contrato_template_form(form, equipes):
+    errors = {}
+    equipe = None
+
+    if form["status"] not in AGRO_CONTRATO_STATUS_OPTIONS:
+        errors["status"] = "Selecione um status valido."
+
+    equipe_id = _normalize_optional_int(form["equipe_agro_id"])
+    if form["equipe_agro_id"] and equipe_id is None:
+        errors["equipe_agro_id"] = "Selecione uma equipe valida."
+    elif equipe_id:
+        equipe = next((item for item in equipes if item.id == equipe_id), None)
+        if not equipe:
+            errors["equipe_agro_id"] = "A equipe selecionada nao foi encontrada."
+
+    if form["status"] == ContratoAgro.STATUS_APROVADO and equipe_id is None:
+        errors["equipe_agro_id"] = "Para manter o contrato aprovado, selecione a equipe responsavel."
+
+    return errors, equipe_id, equipe
+
+
 def _build_contrato_agro_draft(orcamento):
     cliente = orcamento.cliente
     return ContratoAgro(
@@ -549,7 +776,320 @@ def _build_contrato_agro_draft(orcamento):
         foro_cidade="São Paulo",
         data_assinatura=datetime.now().date(),
         observacoes_adicionais=None,
+        status=ContratoAgro.STATUS_EM_ELABORACAO,
     )
+
+
+def _build_os_agro_identificador():
+    return f"AGRO-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+
+
+def _build_equipamento_agro_meta(equipamento):
+    if equipamento is None:
+        return {}
+
+    return {
+        "id": equipamento.id,
+        "identificacao": equipamento.identificacao or "",
+        "modelo": equipamento.modelo or "",
+        "tipo": equipamento.tipo or "",
+        "registro_anatel": equipamento.registro_anatel or "",
+        "registro_anac": equipamento.registro_anac or "",
+        "largura_faixa_m": str(equipamento.largura_faixa_m or ""),
+        "altura_voo_padrao_m": str(equipamento.altura_voo_padrao_m or ""),
+        "ponta_pulverizacao": equipamento.ponta_pulverizacao or "",
+        "funcao_operacional": equipamento.funcao_operacional or "",
+    }
+
+
+def _apply_os_agro_drone_snapshot(ordem_servico, equipamento, *, prefix):
+    setattr(ordem_servico, f"{prefix}_identificacao", getattr(equipamento, "identificacao", None) if equipamento else None)
+    setattr(ordem_servico, f"{prefix}_modelo", getattr(equipamento, "modelo", None) if equipamento else None)
+    setattr(ordem_servico, f"{prefix}_tipo", getattr(equipamento, "tipo", None) if equipamento else None)
+    setattr(ordem_servico, f"{prefix}_registro_anatel", getattr(equipamento, "registro_anatel", None) if equipamento else None)
+    setattr(ordem_servico, f"{prefix}_registro_anac", getattr(equipamento, "registro_anac", None) if equipamento else None)
+
+
+def _build_os_agro_defaults(contrato):
+    orcamento = contrato.orcamento
+    return {
+        "identificador_os": _build_os_agro_identificador(),
+        "status": OrdemServicoAgro.STATUS_PLANEJADA,
+        "data_aplicacao": "",
+        "periodo_aplicacao": "",
+        "equipe_agro_id": str(contrato.equipe_agro_id or ""),
+        "piloto_agro_id": "",
+        "drone_pulverizacao_id": "",
+        "drone_mapeamento_id": "",
+        "cliente_nome": (orcamento.cliente_nome or contrato.contratante_nome or "").strip(),
+        "propriedade_nome": (contrato.propriedade_nome or orcamento.nome_fazenda or "").strip(),
+        "cultura": (contrato.cultura or orcamento.cultura or "").strip(),
+        "servico": (orcamento.servico or "").strip(),
+        "protocolo": (orcamento.protocolo or "").strip(),
+        "cidade_operacao": (contrato.propriedade_cidade or orcamento.cidade or "").strip(),
+        "uf_operacao": (contrato.propriedade_uf or orcamento.uf or "").strip(),
+        "altura_voo_m": "",
+        "largura_faixa_m": "",
+        "ponta_pulverizacao": "",
+        "mapeamento_descricao": "",
+        "temperatura_min_c": "",
+        "temperatura_max_c": "",
+        "umidade_min_pct": "",
+        "umidade_max_pct": "",
+        "vento_min_kmh": "",
+        "vento_max_kmh": "",
+        "area_total_ha": "",
+        "total_calda_l": "",
+        "media_aplicada_l_ha": "",
+        "taxa_aplicacao_l_ha": "",
+        "tipo_aplicacao": "Area Total",
+        "produto_aplicado": "",
+        "formulacao_produto": "",
+        "dosagem": "",
+        "classe_toxica": "",
+        "observacoes": "",
+    }
+
+
+def _serialize_os_agro_form(ordem_servico):
+    return {
+        "identificador_os": ordem_servico.identificador_os or "",
+        "status": ordem_servico.status or OrdemServicoAgro.STATUS_PLANEJADA,
+        "data_aplicacao": ordem_servico.data_aplicacao.isoformat() if ordem_servico.data_aplicacao else "",
+        "periodo_aplicacao": ordem_servico.periodo_aplicacao or "",
+        "equipe_agro_id": str(ordem_servico.equipe_agro_id or ""),
+        "piloto_agro_id": str(ordem_servico.piloto_agro_id or ""),
+        "drone_pulverizacao_id": str(ordem_servico.drone_pulverizacao_id or ""),
+        "drone_mapeamento_id": str(ordem_servico.drone_mapeamento_id or ""),
+        "cliente_nome": ordem_servico.cliente_nome or "",
+        "propriedade_nome": ordem_servico.propriedade_nome or "",
+        "cultura": ordem_servico.cultura or "",
+        "servico": ordem_servico.servico or "",
+        "protocolo": ordem_servico.protocolo or "",
+        "cidade_operacao": ordem_servico.cidade_operacao or "",
+        "uf_operacao": ordem_servico.uf_operacao or "",
+        "altura_voo_m": _format_decimal_br_value(ordem_servico.altura_voo_m),
+        "largura_faixa_m": _format_decimal_br_value(ordem_servico.largura_faixa_m),
+        "ponta_pulverizacao": ordem_servico.ponta_pulverizacao or "",
+        "mapeamento_descricao": ordem_servico.mapeamento_descricao or "",
+        "temperatura_min_c": _format_decimal_br_value(ordem_servico.temperatura_min_c),
+        "temperatura_max_c": _format_decimal_br_value(ordem_servico.temperatura_max_c),
+        "umidade_min_pct": _format_decimal_br_value(ordem_servico.umidade_min_pct),
+        "umidade_max_pct": _format_decimal_br_value(ordem_servico.umidade_max_pct),
+        "vento_min_kmh": _format_decimal_br_value(ordem_servico.vento_min_kmh),
+        "vento_max_kmh": _format_decimal_br_value(ordem_servico.vento_max_kmh),
+        "area_total_ha": _format_decimal_br_value(ordem_servico.area_total_ha),
+        "total_calda_l": _format_decimal_br_value(ordem_servico.total_calda_l),
+        "media_aplicada_l_ha": _format_decimal_br_value(ordem_servico.media_aplicada_l_ha),
+        "taxa_aplicacao_l_ha": _format_decimal_br_value(ordem_servico.taxa_aplicacao_l_ha),
+        "tipo_aplicacao": ordem_servico.tipo_aplicacao or "",
+        "produto_aplicado": ordem_servico.produto_aplicado or "",
+        "formulacao_produto": ordem_servico.formulacao_produto or "",
+        "dosagem": ordem_servico.dosagem or "",
+        "classe_toxica": ordem_servico.classe_toxica or "",
+        "observacoes": ordem_servico.observacoes or "",
+    }
+
+
+def _normalize_os_agro_form(form_source):
+    status = (form_source.get("status") or OrdemServicoAgro.STATUS_PLANEJADA).strip().upper()
+    if status not in AGRO_OS_STATUS_OPTIONS:
+        status = OrdemServicoAgro.STATUS_PLANEJADA
+
+    return {
+        "identificador_os": (form_source.get("identificador_os") or "").strip(),
+        "status": status,
+        "data_aplicacao": (form_source.get("data_aplicacao") or "").strip(),
+        "periodo_aplicacao": (form_source.get("periodo_aplicacao") or "").strip(),
+        "equipe_agro_id": (form_source.get("equipe_agro_id") or "").strip(),
+        "piloto_agro_id": (form_source.get("piloto_agro_id") or "").strip(),
+        "drone_pulverizacao_id": (form_source.get("drone_pulverizacao_id") or "").strip(),
+        "drone_mapeamento_id": (form_source.get("drone_mapeamento_id") or "").strip(),
+        "cliente_nome": (form_source.get("cliente_nome") or "").strip(),
+        "propriedade_nome": (form_source.get("propriedade_nome") or "").strip(),
+        "cultura": (form_source.get("cultura") or "").strip(),
+        "servico": (form_source.get("servico") or "").strip(),
+        "protocolo": (form_source.get("protocolo") or "").strip(),
+        "cidade_operacao": (form_source.get("cidade_operacao") or "").strip(),
+        "uf_operacao": (form_source.get("uf_operacao") or "").strip().upper(),
+        "altura_voo_m": (form_source.get("altura_voo_m") or "").strip(),
+        "largura_faixa_m": (form_source.get("largura_faixa_m") or "").strip(),
+        "ponta_pulverizacao": (form_source.get("ponta_pulverizacao") or "").strip(),
+        "mapeamento_descricao": (form_source.get("mapeamento_descricao") or "").strip(),
+        "temperatura_min_c": (form_source.get("temperatura_min_c") or "").strip(),
+        "temperatura_max_c": (form_source.get("temperatura_max_c") or "").strip(),
+        "umidade_min_pct": (form_source.get("umidade_min_pct") or "").strip(),
+        "umidade_max_pct": (form_source.get("umidade_max_pct") or "").strip(),
+        "vento_min_kmh": (form_source.get("vento_min_kmh") or "").strip(),
+        "vento_max_kmh": (form_source.get("vento_max_kmh") or "").strip(),
+        "area_total_ha": (form_source.get("area_total_ha") or "").strip(),
+        "total_calda_l": (form_source.get("total_calda_l") or "").strip(),
+        "media_aplicada_l_ha": (form_source.get("media_aplicada_l_ha") or "").strip(),
+        "taxa_aplicacao_l_ha": (form_source.get("taxa_aplicacao_l_ha") or "").strip(),
+        "tipo_aplicacao": (form_source.get("tipo_aplicacao") or "").strip(),
+        "produto_aplicado": (form_source.get("produto_aplicado") or "").strip(),
+        "formulacao_produto": (form_source.get("formulacao_produto") or "").strip(),
+        "dosagem": (form_source.get("dosagem") or "").strip(),
+        "classe_toxica": (form_source.get("classe_toxica") or "").strip(),
+        "observacoes": (form_source.get("observacoes") or "").strip(),
+    }
+
+
+def _validate_os_agro_form(form, equipes, pilotos, equipamentos, *, ordem_atual=None):
+    errors = {}
+
+    if form["status"] not in AGRO_OS_STATUS_OPTIONS:
+        errors["status"] = "Selecione um status valido."
+
+    if not form["identificador_os"]:
+        errors["identificador_os"] = "Informe o identificador da OS Agro."
+    else:
+        query = OrdemServicoAgro.query.filter(db.func.lower(OrdemServicoAgro.identificador_os) == form["identificador_os"].lower())
+        query = apply_prefeitura_scope(query, current_user, OrdemServicoAgro.prefeitura_id)
+        if ordem_atual is not None:
+            query = query.filter(OrdemServicoAgro.id != ordem_atual.id)
+        if query.first():
+            errors["identificador_os"] = "Ja existe uma OS Agro com esse identificador."
+
+    if not form["cliente_nome"]:
+        errors["cliente_nome"] = "Informe o nome do cliente."
+    if not form["propriedade_nome"]:
+        errors["propriedade_nome"] = "Informe o nome da propriedade."
+    if not form["data_aplicacao"]:
+        errors["data_aplicacao"] = "Informe a data da aplicacao."
+
+    data_aplicacao = None
+    if form["data_aplicacao"]:
+        try:
+            data_aplicacao = datetime.strptime(form["data_aplicacao"], "%Y-%m-%d").date()
+        except ValueError:
+            errors["data_aplicacao"] = "Informe uma data valida."
+
+    equipe_id = _normalize_optional_int(form["equipe_agro_id"])
+    equipe = None
+    if equipe_id is None:
+        errors["equipe_agro_id"] = "Selecione a equipe responsavel."
+    else:
+        equipe = next((item for item in equipes if item.id == equipe_id), None)
+        if not equipe:
+            errors["equipe_agro_id"] = "A equipe selecionada nao foi encontrada."
+
+    piloto_id = _normalize_optional_int(form["piloto_agro_id"])
+    piloto = None
+    if piloto_id:
+        piloto = next((item for item in pilotos if item.id == piloto_id), None)
+        if not piloto:
+            errors["piloto_agro_id"] = "O piloto selecionado nao foi encontrado."
+        elif equipe_id and piloto.equipe_agro_id != equipe_id:
+            errors["piloto_agro_id"] = "O piloto precisa pertencer a equipe selecionada."
+
+    drone_pulverizacao_id = _normalize_optional_int(form["drone_pulverizacao_id"])
+    drone_pulverizacao = None
+    if drone_pulverizacao_id:
+        drone_pulverizacao = next((item for item in equipamentos if item.id == drone_pulverizacao_id), None)
+        if not drone_pulverizacao:
+            errors["drone_pulverizacao_id"] = "Selecione um drone de pulverizacao valido."
+        elif equipe_id and drone_pulverizacao.equipe_agro_id not in (None, equipe_id):
+            errors["drone_pulverizacao_id"] = "O drone de pulverizacao precisa pertencer a equipe selecionada."
+
+    drone_mapeamento_id = _normalize_optional_int(form["drone_mapeamento_id"])
+    drone_mapeamento = None
+    if drone_mapeamento_id:
+        drone_mapeamento = next((item for item in equipamentos if item.id == drone_mapeamento_id), None)
+        if not drone_mapeamento:
+            errors["drone_mapeamento_id"] = "Selecione um drone de mapeamento valido."
+        elif equipe_id and drone_mapeamento.equipe_agro_id not in (None, equipe_id):
+            errors["drone_mapeamento_id"] = "O drone de mapeamento precisa pertencer a equipe selecionada."
+
+    numeric_fields = {}
+    for field_name in (
+        "altura_voo_m",
+        "largura_faixa_m",
+        "temperatura_min_c",
+        "temperatura_max_c",
+        "umidade_min_pct",
+        "umidade_max_pct",
+        "vento_min_kmh",
+        "vento_max_kmh",
+        "area_total_ha",
+        "total_calda_l",
+        "media_aplicada_l_ha",
+        "taxa_aplicacao_l_ha",
+    ):
+        value = _parse_decimal_input(form[field_name])
+        if form[field_name] and value is None:
+            errors[field_name] = "Informe um valor numerico valido."
+        numeric_fields[field_name] = value
+
+    if form["uf_operacao"] and len(form["uf_operacao"]) != 2:
+        errors["uf_operacao"] = "UF deve ter 2 letras."
+
+    return errors, data_aplicacao, equipe_id, equipe, piloto_id, piloto, drone_pulverizacao_id, drone_pulverizacao, drone_mapeamento_id, drone_mapeamento, numeric_fields
+
+
+def _save_os_agro_attachment(ordem_servico, uploaded_file):
+    if not uploaded_file or not uploaded_file.filename:
+        return None
+
+    original_filename = secure_filename(uploaded_file.filename)
+    if "." not in original_filename or original_filename.rsplit(".", 1)[1].lower() != "pdf":
+        raise ValueError("O relatorio final da OS Agro deve ser um arquivo PDF.")
+
+    folder = get_os_agro_attachment_folder()
+    stored_filename = f"os_agro_{ordem_servico.id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
+    absolute_path = os.path.join(folder, stored_filename)
+    uploaded_file.save(absolute_path)
+
+    ordem_servico.relatorio_pdf_path = os.path.join("agro", "os", stored_filename).replace("\\", "/")
+    ordem_servico.relatorio_pdf_nome = original_filename
+    return original_filename
+
+
+def _apply_ordem_servico_agro_form(ordem_servico, contrato, form, *, data_aplicacao, equipe_id, piloto_id, drone_pulverizacao_id, drone_pulverizacao, drone_mapeamento_id, drone_mapeamento, numeric_fields):
+    orcamento = contrato.orcamento
+
+    ordem_servico.prefeitura_id = contrato.prefeitura_id
+    ordem_servico.contrato_agro_id = contrato.id
+    ordem_servico.orcamento_agro_id = orcamento.id
+    ordem_servico.equipe_agro_id = equipe_id
+    ordem_servico.piloto_agro_id = piloto_id
+    ordem_servico.drone_pulverizacao_id = drone_pulverizacao_id
+    ordem_servico.drone_mapeamento_id = drone_mapeamento_id
+    ordem_servico.identificador_os = form["identificador_os"]
+    ordem_servico.status = form["status"]
+    ordem_servico.data_aplicacao = data_aplicacao
+    ordem_servico.periodo_aplicacao = form["periodo_aplicacao"] or None
+    ordem_servico.cliente_nome = form["cliente_nome"]
+    ordem_servico.propriedade_nome = form["propriedade_nome"]
+    ordem_servico.cultura = form["cultura"] or None
+    ordem_servico.servico = form["servico"] or None
+    ordem_servico.protocolo = form["protocolo"] or None
+    ordem_servico.cidade_operacao = form["cidade_operacao"] or None
+    ordem_servico.uf_operacao = form["uf_operacao"] or None
+    ordem_servico.altura_voo_m = numeric_fields["altura_voo_m"]
+    ordem_servico.largura_faixa_m = numeric_fields["largura_faixa_m"]
+    ordem_servico.ponta_pulverizacao = form["ponta_pulverizacao"] or None
+    ordem_servico.mapeamento_descricao = form["mapeamento_descricao"] or None
+    ordem_servico.temperatura_min_c = numeric_fields["temperatura_min_c"]
+    ordem_servico.temperatura_max_c = numeric_fields["temperatura_max_c"]
+    ordem_servico.umidade_min_pct = numeric_fields["umidade_min_pct"]
+    ordem_servico.umidade_max_pct = numeric_fields["umidade_max_pct"]
+    ordem_servico.vento_min_kmh = numeric_fields["vento_min_kmh"]
+    ordem_servico.vento_max_kmh = numeric_fields["vento_max_kmh"]
+    ordem_servico.area_total_ha = numeric_fields["area_total_ha"]
+    ordem_servico.total_calda_l = numeric_fields["total_calda_l"]
+    ordem_servico.media_aplicada_l_ha = numeric_fields["media_aplicada_l_ha"]
+    ordem_servico.taxa_aplicacao_l_ha = numeric_fields["taxa_aplicacao_l_ha"]
+    ordem_servico.tipo_aplicacao = form["tipo_aplicacao"] or None
+    ordem_servico.produto_aplicado = form["produto_aplicado"] or None
+    ordem_servico.formulacao_produto = form["formulacao_produto"] or None
+    ordem_servico.dosagem = form["dosagem"] or None
+    ordem_servico.classe_toxica = form["classe_toxica"] or None
+    ordem_servico.observacoes = form["observacoes"] or None
+    ordem_servico.finalizado_em = datetime.now() if form["status"] == OrdemServicoAgro.STATUS_CONCLUIDA else None
+
+    _apply_os_agro_drone_snapshot(ordem_servico, drone_pulverizacao, prefix="drone_pulverizacao")
+    _apply_os_agro_drone_snapshot(ordem_servico, drone_mapeamento, prefix="drone_mapeamento")
 
 
 def register_routes(bp):
@@ -567,25 +1107,55 @@ def register_routes(bp):
     def agro_piloto_dashboard():
         _require_piloto_agro()
 
-        piloto = getattr(current_user, "piloto_agro", None)
+        piloto = _get_logged_piloto_agro()
         if piloto is None:
             flash("Seu usuario nao esta vinculado a um piloto agro.", "danger")
             return redirect(url_for("auth.logout"))
 
         equipe = piloto.equipe
         equipamentos = []
+        contratos = []
+        ordens_servico = []
         if equipe is not None:
             equipamentos = (
-                EquipamentoAgro.query.filter(EquipamentoAgro.equipe_agro_id == equipe.id)
+                apply_prefeitura_scope(EquipamentoAgro.query, current_user, EquipamentoAgro.prefeitura_id)
+                .filter(EquipamentoAgro.equipe_agro_id == equipe.id)
                 .order_by(EquipamentoAgro.identificacao.asc(), EquipamentoAgro.id.asc())
                 .all()
             )
+            contratos = build_contratos_agro_aprovados_query(current_user, equipe_id=equipe.id).all()
+            ordens_servico = (
+                apply_prefeitura_scope(OrdemServicoAgro.query, current_user, OrdemServicoAgro.prefeitura_id)
+                .filter(OrdemServicoAgro.equipe_agro_id == equipe.id)
+                .order_by(OrdemServicoAgro.data_aplicacao.desc().nullslast(), OrdemServicoAgro.id.desc())
+                .all()
+            )
+
+        contratos_sem_os = [contrato for contrato in contratos if not contrato.ordens_servico]
+        ordens_ativas = [
+            item
+            for item in ordens_servico
+            if item.status in (OrdemServicoAgro.STATUS_PLANEJADA, OrdemServicoAgro.STATUS_EM_EXECUCAO)
+            and item.piloto_agro_id in (None, piloto.id)
+        ]
+        ordens_concluidas = [
+            item
+            for item in ordens_servico
+            if item.status == OrdemServicoAgro.STATUS_CONCLUIDA and item.piloto_agro_id in (None, piloto.id)
+        ]
 
         return render_template(
             "piloto_agro_dashboard.html",
             piloto=piloto,
             equipe=equipe,
             equipamentos=equipamentos,
+            contratos=contratos,
+            contratos_sem_os=contratos_sem_os,
+            latest_os_por_contrato=_build_latest_os_by_contrato(contratos),
+            ordens_servico=ordens_servico,
+            ordens_ativas=ordens_ativas,
+            ordens_concluidas=ordens_concluidas,
+            total_demandas_prioritarias=len(contratos_sem_os) + len(ordens_ativas),
         )
 
     @bp.route("/agro/admin", endpoint="admin_agro")
@@ -924,6 +1494,7 @@ def register_routes(bp):
         _require_agro_edit()
         orcamento = _get_orcamento_agro_or_404(orcamento_id)
         contrato = orcamento.contrato
+        equipes_ativas = _build_agro_equipes_ativas()
         errors = {}
 
         if request.method == "POST":
@@ -949,6 +1520,8 @@ def register_routes(bp):
                     errors=errors,
                     orcamento=orcamento,
                     contrato=contrato,
+                    equipes_ativas=equipes_ativas,
+                    status_options=AGRO_CONTRATO_STATUS_OPTIONS,
                 )
 
             if contrato is None:
@@ -988,8 +1561,23 @@ def register_routes(bp):
             contrato.foro_cidade = form["foro_cidade"]
             contrato.data_assinatura = data_assinatura
             contrato.observacoes_adicionais = form["observacoes_adicionais"] or None
+            contrato.status = form["status"]
 
             db.session.commit()
+            if contrato.status == ContratoAgro.STATUS_APROVADO:
+                if getattr(current_user, "tipo_usuario", None) == "admin":
+                    flash(
+                        "Contrato agro aprovado e enviado para o template operacional. Agora defina a equipe responsavel.",
+                        "success",
+                    )
+                    return redirect(url_for("main.agro_contratos_template"))
+
+                flash(
+                    "Contrato agro aprovado com sucesso. A definicao do template operacional fica disponivel apenas para o admin Agro.",
+                    "success",
+                )
+                return redirect(url_for("main.admin_agro"))
+
             flash("Contrato agro salvo com sucesso.", "success")
             return redirect(url_for("main.agro_contrato_editar", orcamento_id=orcamento.id))
 
@@ -1000,7 +1588,49 @@ def register_routes(bp):
             errors=errors,
             orcamento=orcamento,
             contrato=contrato,
+            equipes_ativas=equipes_ativas,
+            status_options=AGRO_CONTRATO_STATUS_OPTIONS,
         )
+
+    @bp.route("/agro/contratos/template", methods=["GET"], endpoint="agro_contratos_template")
+    @login_required
+    def agro_contratos_template():
+        _require_agro_admin()
+
+        q = (request.args.get("q") or "").strip()
+        equipe_id = request.args.get("equipe_id", type=int)
+        contratos = build_contratos_agro_aprovados_query(current_user, q=q, equipe_id=equipe_id).all()
+        equipes_ativas = _build_agro_equipes_ativas()
+
+        return render_template(
+            "agro_contratos_template.html",
+            contratos=contratos,
+            equipes_ativas=equipes_ativas,
+            filters={"q": q, "equipe_id": equipe_id, "total": len(contratos)},
+            status_options=AGRO_CONTRATO_STATUS_OPTIONS,
+        )
+
+    @bp.route("/agro/contratos/<int:contrato_id>/template", methods=["POST"], endpoint="agro_contrato_template_salvar")
+    @login_required
+    def agro_contrato_template_salvar(contrato_id):
+        _require_agro_admin()
+
+        contrato = _get_contrato_agro_or_404(contrato_id)
+        equipes_ativas = _build_agro_equipes_ativas()
+        form = _normalize_contrato_template_form(request.form)
+        errors, equipe_id, _equipe = _validate_contrato_template_form(form, equipes_ativas)
+
+        if errors:
+            for message in errors.values():
+                flash(message, "warning")
+            return redirect(url_for("main.agro_contratos_template"))
+
+        contrato.status = form["status"]
+        contrato.equipe_agro_id = equipe_id
+        db.session.commit()
+
+        flash("Template operacional do contrato atualizado com sucesso.", "success")
+        return redirect(url_for("main.agro_contratos_template"))
 
     @bp.route("/agro/orcamentos/<int:orcamento_id>/anexo", endpoint="agro_orcamento_anexo")
     @login_required
@@ -1019,6 +1649,13 @@ def register_routes(bp):
         _require_agro_access()
         orcamento = _get_orcamento_agro_or_404(orcamento_id)
         pdf = build_orcamento_agro_pdf(orcamento)
+        if orcamento.anexo_path:
+            try:
+                upload_folder, rel, _download_name = resolve_orcamento_attachment(orcamento)
+                attachment_absolute_path = os.path.join(upload_folder, rel.replace("/", os.sep))
+                pdf = merge_orcamento_agro_with_attachment(pdf, attachment_absolute_path)
+            except FileNotFoundError:
+                pass
         filename = f"orcamento_agro_{orcamento.id}.pdf"
         return send_file(pdf, mimetype="application/pdf", as_attachment=False, download_name=filename)
 
@@ -1031,6 +1668,305 @@ def register_routes(bp):
         pdf = build_contrato_agro_pdf(contrato)
         filename = f"contrato_agro_{orcamento.id}.pdf"
         return send_file(pdf, mimetype="application/pdf", as_attachment=False, download_name=filename)
+
+    @bp.route("/agro/os", methods=["GET"], endpoint="agro_os_listar")
+    @login_required
+    def agro_os_listar():
+        _require_agro_access()
+
+        q = (request.args.get("q") or "").strip()
+        status = (request.args.get("status") or "").strip().upper()
+        equipe_id = request.args.get("equipe_id", type=int)
+
+        ordens_servico = build_ordens_servico_agro_query(
+            current_user,
+            q=q,
+            status=status if status in AGRO_OS_STATUS_OPTIONS else "",
+            equipe_id=equipe_id,
+        ).all()
+
+        return render_template(
+            "agro_os_listar.html",
+            ordens_servico=ordens_servico,
+            equipes_ativas=_build_agro_equipes_ativas(),
+            status_options=AGRO_OS_STATUS_OPTIONS,
+            filters={"q": q, "status": status, "equipe_id": equipe_id, "total": len(ordens_servico)},
+            is_editable=can_edit_agro_panel(current_user),
+        )
+
+    @bp.route("/agro/contratos/<int:contrato_id>/os/cadastrar", methods=["GET", "POST"], endpoint="agro_os_nova")
+    @login_required
+    def agro_os_nova(contrato_id):
+        pilot_form_mode = getattr(current_user, "tipo_usuario", None) == "piloto_agro"
+        piloto_logado = None
+        if pilot_form_mode:
+            piloto_logado = _get_logged_piloto_agro()
+            if piloto_logado is None:
+                flash("Seu usuario nao esta vinculado a um piloto agro.", "danger")
+                return redirect(url_for("auth.logout"))
+        else:
+            _require_agro_access()
+            flash("A criacao da OS Agro agora deve ser feita pelo piloto no painel Agro.", "info")
+            return redirect(url_for("main.agro_contratos_template"))
+
+        contrato = _get_contrato_agro_or_404(contrato_id)
+        if contrato.status != ContratoAgro.STATUS_APROVADO:
+            flash("A OS Agro so pode ser criada a partir de um contrato aprovado.", "warning")
+            if pilot_form_mode:
+                return redirect(url_for("main.agro_piloto_dashboard"))
+            return redirect(url_for("main.agro_contrato_editar", orcamento_id=contrato.orcamento.id))
+
+        if not contrato.equipe_agro_id:
+            flash("Defina a equipe responsavel no template operacional antes de criar a OS Agro.", "warning")
+            return redirect(url_for("main.agro_piloto_dashboard" if pilot_form_mode else "main.agro_contratos_template"))
+
+        if pilot_form_mode and piloto_logado.equipe_agro_id != contrato.equipe_agro_id:
+            flash("Este contrato aprovado esta vinculado a outra equipe.", "warning")
+            return redirect(url_for("main.agro_piloto_dashboard"))
+
+        ordem_existente = (
+            apply_prefeitura_scope(OrdemServicoAgro.query, current_user, OrdemServicoAgro.prefeitura_id)
+            .filter(OrdemServicoAgro.contrato_agro_id == contrato.id)
+            .order_by(OrdemServicoAgro.criado_em.desc(), OrdemServicoAgro.id.desc())
+            .first()
+        )
+        if ordem_existente is not None:
+            if pilot_form_mode and ordem_existente.piloto_agro_id not in (None, piloto_logado.id):
+                flash("Este contrato ja possui uma OS vinculada a outro piloto.", "warning")
+                return redirect(url_for("main.agro_piloto_dashboard"))
+            flash("Este contrato ja possui OS cadastrada. Voce pode atualiza-la no formulario.", "info")
+            return redirect(url_for("main.agro_os_editar", os_id=ordem_existente.id))
+
+        equipes, pilotos, equipamentos = _build_os_agro_form_options(piloto_logado=piloto_logado if pilot_form_mode else None)
+
+        errors = {}
+        form = _normalize_os_agro_form(request.form if request.method == "POST" else _build_os_agro_defaults(contrato))
+        if pilot_form_mode:
+            form["equipe_agro_id"] = str(contrato.equipe_agro_id or "")
+            form["piloto_agro_id"] = str(piloto_logado.id)
+
+        if request.method == "POST":
+            (
+                errors,
+                data_aplicacao,
+                equipe_id,
+                _equipe,
+                piloto_id,
+                _piloto,
+                drone_pulverizacao_id,
+                drone_pulverizacao,
+                drone_mapeamento_id,
+                drone_mapeamento,
+                numeric_fields,
+            ) = _validate_os_agro_form(form, equipes, pilotos, equipamentos)
+
+            if equipe_id and contrato.equipe_agro_id and equipe_id != contrato.equipe_agro_id:
+                errors["equipe_agro_id"] = "A equipe da OS precisa seguir a equipe definida no contrato aprovado."
+            if pilot_form_mode and piloto_id != piloto_logado.id:
+                errors["piloto_agro_id"] = "A OS Agro precisa ser preenchida pelo piloto logado."
+
+            if errors:
+                flash("Corrija os campos destacados da OS Agro.", "warning")
+                return render_template(
+                    "agro_os_form.html",
+                    **_build_os_agro_form_context(
+                        modo="novo",
+                        contrato=contrato,
+                        form=form,
+                        errors=errors,
+                        equipes=equipes,
+                        pilotos=pilotos,
+                        equipamentos=equipamentos,
+                        pilot_form_mode=pilot_form_mode,
+                        piloto_logado=piloto_logado,
+                    ),
+                )
+
+            ordem_servico = OrdemServicoAgro()
+            _apply_ordem_servico_agro_form(
+                ordem_servico,
+                contrato,
+                form,
+                data_aplicacao=data_aplicacao,
+                equipe_id=equipe_id,
+                piloto_id=piloto_id,
+                drone_pulverizacao_id=drone_pulverizacao_id,
+                drone_pulverizacao=drone_pulverizacao,
+                drone_mapeamento_id=drone_mapeamento_id,
+                drone_mapeamento=drone_mapeamento,
+                numeric_fields=numeric_fields,
+            )
+            db.session.add(ordem_servico)
+            db.session.flush()
+
+            uploaded_report = request.files.get("relatorio_pdf")
+            if uploaded_report and uploaded_report.filename:
+                try:
+                    _save_os_agro_attachment(ordem_servico, uploaded_report)
+                except ValueError as exc:
+                    db.session.rollback()
+                    flash(str(exc), "warning")
+                    return render_template(
+                        "agro_os_form.html",
+                        **_build_os_agro_form_context(
+                            modo="novo",
+                            contrato=contrato,
+                            form=form,
+                            errors=errors,
+                            equipes=equipes,
+                            pilotos=pilotos,
+                            equipamentos=equipamentos,
+                            pilot_form_mode=pilot_form_mode,
+                            piloto_logado=piloto_logado,
+                        ),
+                    )
+
+            db.session.commit()
+            flash("OS Agro criada com sucesso.", "success")
+            return redirect(url_for("main.agro_piloto_dashboard" if pilot_form_mode else "main.agro_os_listar"))
+
+        return render_template(
+            "agro_os_form.html",
+            **_build_os_agro_form_context(
+                modo="novo",
+                contrato=contrato,
+                form=form,
+                errors=errors,
+                equipes=equipes,
+                pilotos=pilotos,
+                equipamentos=equipamentos,
+                pilot_form_mode=pilot_form_mode,
+                piloto_logado=piloto_logado,
+            ),
+        )
+
+    @bp.route("/agro/os/<int:os_id>/editar", methods=["GET", "POST"], endpoint="agro_os_editar")
+    @login_required
+    def agro_os_editar(os_id):
+        ordem_servico = _get_os_agro_or_404(os_id)
+        contrato = ordem_servico.contrato
+        pilot_form_mode = getattr(current_user, "tipo_usuario", None) == "piloto_agro"
+        piloto_logado = None
+        if pilot_form_mode:
+            piloto_logado = _get_logged_piloto_agro()
+            if piloto_logado is None:
+                flash("Seu usuario nao esta vinculado a um piloto agro.", "danger")
+                return redirect(url_for("auth.logout"))
+            if piloto_logado.equipe_agro_id != ordem_servico.equipe_agro_id:
+                flash("Esta OS Agro pertence a outra equipe.", "warning")
+                return redirect(url_for("main.agro_piloto_dashboard"))
+            if ordem_servico.piloto_agro_id not in (None, piloto_logado.id):
+                flash("Esta OS Agro esta vinculada a outro piloto.", "warning")
+                return redirect(url_for("main.agro_piloto_dashboard"))
+        else:
+            _require_agro_edit()
+
+        equipes, pilotos, equipamentos = _build_os_agro_form_options(piloto_logado=piloto_logado if pilot_form_mode else None)
+
+        errors = {}
+        if request.method == "POST":
+            form = _normalize_os_agro_form(request.form)
+            if pilot_form_mode:
+                form["equipe_agro_id"] = str(ordem_servico.equipe_agro_id or "")
+                form["piloto_agro_id"] = str(piloto_logado.id)
+
+            (
+                errors,
+                data_aplicacao,
+                equipe_id,
+                _equipe,
+                piloto_id,
+                _piloto,
+                drone_pulverizacao_id,
+                drone_pulverizacao,
+                drone_mapeamento_id,
+                drone_mapeamento,
+                numeric_fields,
+            ) = _validate_os_agro_form(form, equipes, pilotos, equipamentos, ordem_atual=ordem_servico)
+
+            if equipe_id and contrato.equipe_agro_id and equipe_id != contrato.equipe_agro_id:
+                errors["equipe_agro_id"] = "A equipe da OS precisa seguir a equipe definida no contrato aprovado."
+            if pilot_form_mode and piloto_id != piloto_logado.id:
+                errors["piloto_agro_id"] = "A OS Agro precisa permanecer vinculada ao piloto logado."
+
+            if errors:
+                flash("Corrija os campos destacados da OS Agro.", "warning")
+                return render_template(
+                    "agro_os_form.html",
+                    **_build_os_agro_form_context(
+                        modo="editar",
+                        contrato=contrato,
+                        ordem_servico=ordem_servico,
+                        form=form,
+                        errors=errors,
+                        equipes=equipes,
+                        pilotos=pilotos,
+                        equipamentos=equipamentos,
+                        pilot_form_mode=pilot_form_mode,
+                        piloto_logado=piloto_logado,
+                    ),
+                )
+
+            _apply_ordem_servico_agro_form(
+                ordem_servico,
+                contrato,
+                form,
+                data_aplicacao=data_aplicacao,
+                equipe_id=equipe_id,
+                piloto_id=piloto_id,
+                drone_pulverizacao_id=drone_pulverizacao_id,
+                drone_pulverizacao=drone_pulverizacao,
+                drone_mapeamento_id=drone_mapeamento_id,
+                drone_mapeamento=drone_mapeamento,
+                numeric_fields=numeric_fields,
+            )
+
+            uploaded_report = request.files.get("relatorio_pdf")
+            if uploaded_report and uploaded_report.filename:
+                try:
+                    _save_os_agro_attachment(ordem_servico, uploaded_report)
+                except ValueError as exc:
+                    db.session.rollback()
+                    flash(str(exc), "warning")
+                    return render_template(
+                        "agro_os_form.html",
+                        **_build_os_agro_form_context(
+                            modo="editar",
+                            contrato=contrato,
+                            ordem_servico=ordem_servico,
+                            form=form,
+                            errors=errors,
+                            equipes=equipes,
+                            pilotos=pilotos,
+                            equipamentos=equipamentos,
+                            pilot_form_mode=pilot_form_mode,
+                            piloto_logado=piloto_logado,
+                        ),
+                    )
+
+            db.session.commit()
+            flash("OS Agro atualizada com sucesso.", "success")
+            return redirect(url_for("main.agro_piloto_dashboard" if pilot_form_mode else "main.agro_os_listar"))
+
+        form = _serialize_os_agro_form(ordem_servico)
+        if pilot_form_mode:
+            form["equipe_agro_id"] = str(ordem_servico.equipe_agro_id or "")
+            form["piloto_agro_id"] = str(piloto_logado.id)
+        return render_template(
+            "agro_os_form.html",
+            **_build_os_agro_form_context(
+                modo="editar",
+                contrato=contrato,
+                ordem_servico=ordem_servico,
+                form=form,
+                errors=errors,
+                equipes=equipes,
+                pilotos=pilotos,
+                equipamentos=equipamentos,
+                pilot_form_mode=pilot_form_mode,
+                piloto_logado=piloto_logado,
+            ),
+        )
 
     @bp.route("/agro/orcamentos/<int:orcamento_id>/deletar", methods=["POST"], endpoint="agro_orcamento_deletar")
     @login_required
@@ -1262,9 +2198,12 @@ def register_routes(bp):
             query = query.filter(
                 db.or_(
                     EquipamentoAgro.tipo.ilike(f"%{q}%"),
+                    EquipamentoAgro.funcao_operacional.ilike(f"%{q}%"),
                     EquipamentoAgro.modelo.ilike(f"%{q}%"),
                     EquipamentoAgro.identificacao.ilike(f"%{q}%"),
                     EquipamentoAgro.numero_serie.ilike(f"%{q}%"),
+                    EquipamentoAgro.registro_anatel.ilike(f"%{q}%"),
+                    EquipamentoAgro.registro_anac.ilike(f"%{q}%"),
                 )
             )
         equipamentos = query.order_by(EquipamentoAgro.identificacao.asc(), EquipamentoAgro.id.desc()).all()
@@ -1283,7 +2222,7 @@ def register_routes(bp):
         errors = {}
         form = _normalize_equipamento_form(request.form if request.method == "POST" else {})
         if request.method == "POST":
-            errors, numero_serie, equipe_id, _equipe = _validate_equipamento_agro_form(form, equipes)
+            errors, numero_serie, equipe_id, _equipe, capacidade_tanque_l, largura_faixa_m, altura_voo_padrao_m = _validate_equipamento_agro_form(form, equipes)
             if errors:
                 flash("Corrija os campos destacados do equipamento agro.", "warning")
                 return render_template("agro_equipamento_form.html", form=form, errors=errors, modo="novo", equipes=equipes)
@@ -1296,6 +2235,13 @@ def register_routes(bp):
                 identificacao=form["identificacao"],
                 numero_serie=numero_serie,
                 status=form["status"],
+                funcao_operacional=form["funcao_operacional"] or None,
+                registro_anatel=form["registro_anatel"] or None,
+                registro_anac=form["registro_anac"] or None,
+                capacidade_tanque_l=capacidade_tanque_l,
+                largura_faixa_m=largura_faixa_m,
+                altura_voo_padrao_m=altura_voo_padrao_m,
+                ponta_pulverizacao=form["ponta_pulverizacao"] or None,
             )
             db.session.add(equipamento)
             db.session.commit()
@@ -1313,7 +2259,7 @@ def register_routes(bp):
         errors = {}
         if request.method == "POST":
             form = _normalize_equipamento_form(request.form)
-            errors, numero_serie, equipe_id, _equipe = _validate_equipamento_agro_form(form, equipes, equipamento_atual=equipamento)
+            errors, numero_serie, equipe_id, _equipe, capacidade_tanque_l, largura_faixa_m, altura_voo_padrao_m = _validate_equipamento_agro_form(form, equipes, equipamento_atual=equipamento)
             if errors:
                 flash("Corrija os campos destacados do equipamento agro.", "warning")
                 return render_template(
@@ -1330,6 +2276,13 @@ def register_routes(bp):
             equipamento.identificacao = form["identificacao"]
             equipamento.numero_serie = numero_serie
             equipamento.status = form["status"]
+            equipamento.funcao_operacional = form["funcao_operacional"] or None
+            equipamento.registro_anatel = form["registro_anatel"] or None
+            equipamento.registro_anac = form["registro_anac"] or None
+            equipamento.capacidade_tanque_l = capacidade_tanque_l
+            equipamento.largura_faixa_m = largura_faixa_m
+            equipamento.altura_voo_padrao_m = altura_voo_padrao_m
+            equipamento.ponta_pulverizacao = form["ponta_pulverizacao"] or None
             equipamento.equipe_agro_id = equipe_id
             db.session.commit()
             flash("Equipamento agro atualizado com sucesso.", "success")
@@ -1341,6 +2294,13 @@ def register_routes(bp):
             "identificacao": equipamento.identificacao or "",
             "numero_serie": equipamento.numero_serie or "",
             "status": equipamento.status or "Ativo",
+            "funcao_operacional": equipamento.funcao_operacional or "",
+            "registro_anatel": equipamento.registro_anatel or "",
+            "registro_anac": equipamento.registro_anac or "",
+            "capacidade_tanque_l": _format_decimal_br_value(equipamento.capacidade_tanque_l),
+            "largura_faixa_m": _format_decimal_br_value(equipamento.largura_faixa_m),
+            "altura_voo_padrao_m": _format_decimal_br_value(equipamento.altura_voo_padrao_m),
+            "ponta_pulverizacao": equipamento.ponta_pulverizacao or "",
             "equipe_agro_id": str(equipamento.equipe_agro_id or ""),
         }
         return render_template(

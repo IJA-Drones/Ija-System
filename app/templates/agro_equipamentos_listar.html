@@ -30,7 +30,7 @@
 
       {% if is_editable %}
         <a href="{{ url_for('main.agro_equipamento_novo') }}" class="btn btn-success d-flex align-items-center gap-2">
-          <i class="bi bi-plus-lg"></i> Novo Equipamento
+          <i class="bi bi-plus-lg"></i> Novo equipamento
         </a>
       {% endif %}
     </div>
@@ -62,7 +62,7 @@
                 class="form-control form-control-sm"
                 name="q"
                 value="{{ filters.q }}"
-                placeholder="Tipo, modelo, identificação ou número de série..."
+                placeholder="Tipo, modelo, funcao, identificacao, ANAC ou serie..."
               >
             </div>
 
@@ -91,11 +91,11 @@
             <tr>
               <th class="col-id">ID</th>
               <th>Equipamento</th>
+              <th>Funcao</th>
               <th>Equipe</th>
               <th>Status</th>
-              <th>Número de série</th>
-              <th>Cadastrado em</th>
-              {% if is_editable %}<th class="col-actions">Ações</th>{% endif %}
+              <th>Registros</th>
+              {% if is_editable %}<th class="col-actions">Acoes</th>{% endif %}
             </tr>
           </thead>
           <tbody>
@@ -106,6 +106,11 @@
                 <td data-label="Equipamento">
                   <div class="fw-bold">{{ equipamento.identificacao }}</div>
                   <div class="text-muted small">{{ equipamento.tipo }} • {{ equipamento.modelo }}</div>
+                  <div class="text-muted small">Serie: {{ equipamento.numero_serie or '-' }}</div>
+                </td>
+                <td data-label="Funcao">
+                  <div class="fw-semibold">{{ equipamento.funcao_operacional or '-' }}</div>
+                  <div class="text-muted small">Faixa: {{ equipamento.largura_faixa_m or '-' }} m</div>
                 </td>
                 <td data-label="Equipe">
                   <span class="small">{{ equipamento.equipe.nome if equipamento.equipe else "Sem equipe vinculada" }}</span>
@@ -113,21 +118,19 @@
                 <td data-label="Status">
                   {% if status in ['ativo', 'operacional'] %}
                     <span class="badge bg-success-subtle text-success border border-success-subtle">{{ equipamento.status }}</span>
-                  {% elif status in ['manutenção', 'manutencao', 'revisão', 'revisao'] %}
+                  {% elif status in ['manutencao', 'manutenção', 'revisao', 'revisão'] %}
                     <span class="badge bg-warning-subtle text-warning border border-warning-subtle">{{ equipamento.status }}</span>
                   {% else %}
                     <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">{{ equipamento.status }}</span>
                   {% endif %}
                 </td>
-                <td data-label="Número de série">
-                  <span class="small">{{ equipamento.numero_serie or "-" }}</span>
-                </td>
-                <td data-label="Cadastrado em">
-                  <span class="text-muted">{{ equipamento.criado_em.strftime('%d/%m/%Y') }}</span>
+                <td data-label="Registros">
+                  <div class="small">ANATEL: {{ equipamento.registro_anatel or '-' }}</div>
+                  <div class="small">ANAC: {{ equipamento.registro_anac or '-' }}</div>
                 </td>
 
                 {% if is_editable %}
-                  <td data-label="Ações" class="listing-cell-actions">
+                  <td data-label="Acoes" class="listing-cell-actions">
                     <div class="listing-actions-group">
                       <a href="{{ url_for('main.agro_equipamento_editar', equipamento_id=equipamento.id) }}"
                          class="btn btn-sm btn-success text-white shadow-sm"

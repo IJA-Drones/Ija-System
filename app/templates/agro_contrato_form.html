@@ -24,6 +24,9 @@
       <a href="{{ url_for('main.agro_orcamentos_listar') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
+      <a href="{{ url_for('main.agro_contratos_template') }}" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2">
+        <i class="bi bi-diagram-3-fill"></i> Template operacional
+      </a>
       <a href="{{ url_for('main.agro_contrato_pdf', orcamento_id=orcamento.id) }}" target="_blank" class="btn btn-success btn-sm d-flex align-items-center gap-2">
         <i class="bi bi-filetype-pdf"></i> Visualizar PDF
       </a>
@@ -32,6 +35,17 @@
 
   <div class="card info status-primary shadow-sm rounded-4 border-0">
     <div class="card-body p-4">
+      {% if contrato %}
+        <div class="d-flex flex-wrap gap-2 mb-4">
+          <span class="badge {% if (contrato.status or form.get('status')) == 'APROVADO' %}bg-success{% else %}bg-secondary{% endif %}">
+            Status: {% if (contrato.status or form.get('status')) == 'APROVADO' %}Aprovado{% else %}Em elaboração{% endif %}
+          </span>
+          <span class="badge bg-light text-dark border">
+            Equipe: {{ contrato.equipe.nome if contrato.equipe else 'Ainda não definida' }}
+          </span>
+        </div>
+      {% endif %}
+
       <form method="post" novalidate>
         <div class="d-flex align-items-center mb-3">
           <i class="bi bi-person-vcard-fill text-primary me-2 fs-5"></i>
@@ -171,6 +185,21 @@
         </div>
 
         <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Status do contrato *</label>
+            <select name="status" class="form-select {% if errors.get('status') %}is-invalid{% endif %}">
+              {% for status_value in status_options %}
+                <option value="{{ status_value }}" {% if form.get('status') == status_value %}selected{% endif %}>
+                  {% if status_value == 'APROVADO' %}Aprovado{% else %}Em elaboração{% endif %}
+                </option>
+              {% endfor %}
+            </select>
+            {% if errors.get('status') %}<div class="invalid-feedback">{{ errors.get('status') }}</div>{% endif %}
+            <div class="form-text">
+              Quando marcar como aprovado, o contrato irá para o template operacional para definir a equipe responsável.
+            </div>
+          </div>
+
           <div class="col-12">
             <label class="form-label fw-bold small text-muted">Descrição do serviço *</label>
             <textarea name="descricao_servico" rows="3" class="form-control {% if errors.get('descricao_servico') %}is-invalid{% endif %}" required>{{ form.get('descricao_servico', '') }}</textarea>
@@ -184,7 +213,9 @@
 
           <div class="col-md-3">
             <label class="form-label fw-bold small text-muted">Área contratada</label>
-            <input type="text" name="area_contratada" value="{{ form.get('area_contratada', '') }}" class="form-control" placeholder="Ex.: 59,27 ha">
+            <input type="text" name="area_contratada" value="{{ form.get('area_contratada', '') }}" class="form-control {% if errors.get('area_contratada') %}is-invalid{% endif %}" placeholder="Ex.: 59,27 ha">
+            {% if errors.get('area_contratada') %}<div class="invalid-feedback">{{ errors.get('area_contratada') }}</div>{% endif %}
+            <div class="form-text">Use a área em hectares para calcular o valor total automaticamente.</div>
           </div>
 
           <div class="col-md-2">
@@ -203,6 +234,7 @@
             <label class="form-label fw-bold small text-muted">Valor total *</label>
             <input type="text" name="valor_total" value="{{ form.get('valor_total', '') }}" class="form-control {% if errors.get('valor_total') %}is-invalid{% endif %}" placeholder="R$ 0,00" required>
             {% if errors.get('valor_total') %}<div class="invalid-feedback">{{ errors.get('valor_total') }}</div>{% endif %}
+            <div class="form-text">Preenchido automaticamente por área x valores por ha.</div>
           </div>
         </div>
 
@@ -276,6 +308,27 @@
     return (value || "").replace(/\D/g, "");
   }
 
+  function parseDecimalBr(value) {
+    const text = String(value || "").trim().toLowerCase();
+    if (!text) return null;
+
+    let normalized = text
+      .replace(/hectares?/g, "")
+      .replace(/ha/g, "")
+      .replace(/[^\d.,]/g, "");
+
+    if (!normalized) return null;
+
+    if (normalized.includes(",") && normalized.includes(".")) {
+      normalized = normalized.replace(/\./g, "").replace(",", ".");
+    } else if (normalized.includes(",")) {
+      normalized = normalized.replace(",", ".");
+    }
+
+    const number = Number(normalized);
+    return Number.isFinite(number) ? number : null;
+  }
+
   function maskCep(value) {
     const digits = onlyDigits(value).slice(0, 8);
     if (digits.length <= 5) return digits;
@@ -289,6 +342,29 @@
     return number.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
+  function calculateValorTotal() {
+    const areaInput = document.querySelector('input[name="area_contratada"]');
+    const mapeamentoInput = document.querySelector('input[name="valor_mapeamento_ha"]');
+    const pulverizacaoInput = document.querySelector('input[name="valor_pulverizacao_ha"]');
+    const totalInput = document.querySelector('input[name="valor_total"]');
+
+    if (!areaInput || !mapeamentoInput || !pulverizacaoInput || !totalInput) return;
+
+    const area = parseDecimalBr(areaInput.value);
+    const valorMap = parseDecimalBr(mapeamentoInput.value) || 0;
+    const valorPulv = parseDecimalBr(pulverizacaoInput.value) || 0;
+
+    if (area === null || area <= 0 || (valorMap <= 0 && valorPulv <= 0)) {
+      return;
+    }
+
+    const total = area * (valorMap + valorPulv);
+    totalInput.value = total.toLocaleString("pt-BR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
+
   document.querySelectorAll('input[name="contratante_cep"], input[name="propriedade_cep"]').forEach((input) => {
     input.addEventListener("input", (event) => {
       event.target.value = maskCep(event.target.value);
@@ -298,7 +374,19 @@
   document.querySelectorAll('input[name="valor_total"], input[name="valor_mapeamento_ha"], input[name="valor_pulverizacao_ha"]').forEach((input) => {
     input.addEventListener("input", (event) => {
       event.target.value = maskCurrencyBr(event.target.value);
+      if (event.target.name !== "valor_total") {
+        calculateValorTotal();
+      }
     });
   });
+
+  const areaInput = document.querySelector('input[name="area_contratada"]');
+  if (areaInput) {
+    areaInput.addEventListener("input", () => {
+      calculateValorTotal();
+    });
+  }
+
+  calculateValorTotal();
 </script>
 {% endblock %}

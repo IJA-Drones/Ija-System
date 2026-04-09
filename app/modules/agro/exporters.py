@@ -77,7 +77,7 @@ def _build_page_frame(canvas, doc):
     canvas.setLineWidth(0.7)
     canvas.line(margin_left, 18 * mm, page_width - margin_right, 18 * mm)
 
-    footer_text = "IJA Drones | Tecnologia e Inovacao"
+    footer_text = "IJA Drones | Tecnologia e Inovação"
     page_text = f"Pagina {canvas.getPageNumber()}"
 
     canvas.setFillColor(TEXT_MUTED)
@@ -222,13 +222,13 @@ def _build_service_line_items(orcamento):
     include_spraying = bool("pulver" in service_name or _decimal(orcamento.preco_pulverizacao) > 0)
 
     if include_mapping:
-        line_items.append(("Servico de mapeamento", f"{_money(orcamento.preco_mapeamento)} por Ha"))
+        line_items.append(("Serviço de mapeamento", f"{_money(orcamento.preco_mapeamento)} por ha"))
 
     if include_spraying:
-        line_items.append(("Servico de pulverizacao", f"{_money(orcamento.preco_pulverizacao)} por Ha"))
+        line_items.append(("Serviço de pulverização", f"{_money(orcamento.preco_pulverizacao)} por ha"))
 
     if not line_items:
-        line_items.append(("Servico contratado", orcamento.servico or "Nao informado"))
+        line_items.append(("Serviço contratado", orcamento.servico or "Não informado"))
 
     return line_items
 
@@ -269,7 +269,7 @@ def build_orcamento_agro_pdf(orcamento):
         rightMargin=18 * mm,
         topMargin=18 * mm,
         bottomMargin=22 * mm,
-        title=f"Orcamento Agro #{orcamento.id}",
+        title=f"Orçamento Agro #{orcamento.id}",
         author="IJA Drones",
     )
 
@@ -377,8 +377,8 @@ def build_orcamento_agro_pdf(orcamento):
     logo = _try_make_agro_logo()
     company_lines = [
         Paragraph("Proposta Comercial Agro", title_style),
-        Paragraph("IJA Drones | Tecnologia e Inovacao", subtitle_style),
-        Paragraph(f"Documento gerado para apresentacao ao cliente | Orcamento #{orcamento.id}", subtitle_style),
+        Paragraph("IJA Drones | Tecnologia e Inovação", subtitle_style),
+        Paragraph(f"Documento gerado para apresentação ao cliente. Orçamento #{orcamento.id}.", subtitle_style),
     ]
 
     if logo:
@@ -410,8 +410,8 @@ def build_orcamento_agro_pdf(orcamento):
         [
             ["Cliente", orcamento.cliente_nome],
             ["Fazenda", orcamento.nome_fazenda],
-            ["Servico", orcamento.servico or "Nao informado"],
-            ["Cultura", orcamento.cultura or "Nao informada"],
+            ["Serviço", orcamento.servico or "Não informado"],
+            ["Cultura", orcamento.cultura or "Não informada"],
         ],
         label_style,
         value_style,
@@ -421,9 +421,9 @@ def build_orcamento_agro_pdf(orcamento):
     proposal_right = _label_value_table(
         [
             ["Mapeamento", agro_bool_label(orcamento.mapeamento)],
-            ["Protocolo DECEA", orcamento.protocolo or "Nao informado"],
-            ["Emissao", orcamento.data_criacao.strftime("%d/%m/%Y as %H:%M") if orcamento.data_criacao else "-"],
-            ["Orcamento", f"#{orcamento.id}"],
+            ["Protocolo DECEA", orcamento.protocolo or "Não informado"],
+            ["Emissão", orcamento.data_criacao.strftime("%d/%m/%Y às %H:%M") if orcamento.data_criacao else "-"],
+            ["Orçamento", f"#{orcamento.id}"],
         ],
         label_style,
         value_style,
@@ -443,12 +443,12 @@ def build_orcamento_agro_pdf(orcamento):
         )
     )
 
-    address_html = _format_operation_address(orcamento) or "Endereco nao informado"
+    address_html = _format_operation_address(orcamento) or "Endereço não informado"
     if orcamento.nome_fazenda:
         address_html = f"<b>{escape(orcamento.nome_fazenda)}</b><br/>{address_html}"
 
     address_box = _info_box(
-        "Endereco da operacao",
+        "Endereço da operação",
         Paragraph(address_html, card_body_style),
         card_title_style,
         card_body_style,
@@ -456,7 +456,7 @@ def build_orcamento_agro_pdf(orcamento):
     )
     risk_box = _info_box(
         "Risco operacional",
-        orcamento.risco_operacional or "Nao informado",
+        orcamento.risco_operacional or "Não informado",
         card_title_style,
         card_body_style,
         58 * mm,
@@ -477,7 +477,7 @@ def build_orcamento_agro_pdf(orcamento):
     commercial_note = Table(
         [[
             Paragraph(
-                "Este PDF apresenta os principais dados da proposta e a composicao financeira inicial para validacao comercial com o cliente. Caso a proposta avance, ele pode ser complementado com escopo tecnico, prazo, condicoes de pagamento e observacoes contratuais.",
+                "Este PDF apresenta os principais dados da proposta e a composição financeira inicial para validação comercial com o cliente. Caso a proposta avance, poderá ser complementado com escopo técnico, prazo, condições de pagamento e observações contratuais.",
                 note_style,
             )
         ]],
@@ -499,7 +499,7 @@ def build_orcamento_agro_pdf(orcamento):
     story = [
         header,
         Spacer(1, 8 * mm),
-        Paragraph("Composicao financeira", section_style),
+        Paragraph("Composição financeira", section_style),
         service_breakdown,
         Spacer(1, 7 * mm),
         Paragraph("Dados da proposta", section_style),
@@ -508,13 +508,48 @@ def build_orcamento_agro_pdf(orcamento):
         Paragraph("Detalhes operacionais", section_style),
         operational_grid,
         Spacer(1, 7 * mm),
-        Paragraph("Observacao comercial", section_style),
+        Paragraph("Observação comercial", section_style),
         commercial_note,
     ]
 
     doc.build(story, onFirstPage=_build_page_frame, onLaterPages=_build_page_frame)
     buffer.seek(0)
     return buffer
+
+
+def merge_orcamento_agro_with_attachment(orcamento_pdf, attachment_absolute_path):
+    if not attachment_absolute_path or not os.path.exists(attachment_absolute_path):
+        return orcamento_pdf
+
+    try:
+        from pypdf import PdfReader, PdfWriter
+    except ModuleNotFoundError:
+        current_app.logger.warning(
+            "pypdf não está instalado; retornando apenas o PDF base do orçamento agro."
+        )
+        return orcamento_pdf
+
+    try:
+        writer = PdfWriter()
+        orcamento_pdf.seek(0)
+
+        for page in PdfReader(orcamento_pdf).pages:
+            writer.add_page(page)
+
+        with open(attachment_absolute_path, "rb") as attachment_stream:
+            for page in PdfReader(attachment_stream).pages:
+                writer.add_page(page)
+
+        merged = BytesIO()
+        writer.write(merged)
+        merged.seek(0)
+        return merged
+    except Exception:
+        current_app.logger.exception(
+            "Falha ao anexar relatório técnico ao PDF do orçamento agro."
+        )
+        orcamento_pdf.seek(0)
+        return orcamento_pdf
 
 
 def _format_full_address(logradouro, numero, complemento, bairro, cidade, uf, cep):
@@ -739,17 +774,15 @@ def _contract_party_qualificacao(contrato):
 
     if len(documento_digits) == 14:
         return (
-            (f"<b>CONTRATANTE: {nome}</b>, jurídica de direito privado, inscrita no CNPJ "
-                      f"n°{documento} e RG nº {rg}, "
-                      f"com sede na {residencia} e Fazenda na {propriedade}, doravante denominado CONTRATANTE e neste ato "
-                      "representada na forma de seus atos constitutivos, pela mesma, acima designada")
+            f"<b>CONTRATANTE: {nome}</b>, pessoa jurídica de direito privado, inscrita no CNPJ nº {documento}, "
+            f"com sede em {residencia} e fazenda localizada em {propriedade}, doravante denominada CONTRATANTE, "
+            "neste ato representada na forma de seus atos constitutivos."
         )
 
     return (
-        (f"<b>CONTRATANTE: {nome}</b>, física de direito privado, inscrita no CPF "
-                  f"n°{documento} e RG nº {rg}, "
-                  f"residente na {residencia} e Fazenda na {propriedade}, doravante denominado CONTRATANTE e neste ato "
-                  "representada na forma de seus atos constitutivos, pela mesma, acima designada")
+        f"<b>CONTRATANTE: {nome}</b>, pessoa física, inscrita no CPF nº {documento} e no RG nº {rg}, "
+        f"residente em {residencia} e proprietária da fazenda localizada em {propriedade}, "
+        "doravante denominada CONTRATANTE."
     )
 
 
@@ -905,10 +938,10 @@ def build_contrato_agro_pdf(contrato):
         Paragraph(
             (
                 f"<b>CONTRATADA: {escape(CONTRATADA_NOME)}</b>, pessoa jurídica de direito privado, inscrita no CNPJ n° "
-                f"{escape(CONTRATADA_DOCUMENTO)}, com sede na {escape(CONTRATADA_ENDERECO)}, doravante denominado CONTRATADA e "
-                f"neste ato representada na forma de seus atos constitutivos, por sua representante legal "
-                f"<b>{escape(CONTRATADA_REPRESENTANTE)}</b>, portador do Documento de Identidade RG nº. {escape(CONTRATADA_RG)}, "
-                f"inscrito no CPF sob o nº {escape(CONTRATADA_CPF)}, e;"
+                f"{escape(CONTRATADA_DOCUMENTO)}, com sede em {escape(CONTRATADA_ENDERECO)}, doravante denominada CONTRATADA, "
+                f"neste ato representada, na forma de seus atos constitutivos, por sua representante legal "
+                f"<b>{escape(CONTRATADA_REPRESENTANTE)}</b>, portadora do Documento de Identidade RG nº {escape(CONTRATADA_RG)} "
+                f"e inscrita no CPF sob o nº {escape(CONTRATADA_CPF)};"
             ),
             parties_body_style,
         ),
@@ -918,7 +951,7 @@ def build_contrato_agro_pdf(contrato):
         Paragraph(
             (
                 "Decidem as partes, na melhor forma de direito, celebrar o presente CONTRATO DE PRESTAÇÃO "
-                "DE SERVIÇOS, que reger-se-á mediante as cláusulas e condições adiante estipuladas."
+                "DE SERVIÇOS, que se regerá pelas cláusulas e condições a seguir estipuladas."
             ),
             body_no_indent_style,
         ),
@@ -928,7 +961,7 @@ def build_contrato_agro_pdf(contrato):
     clausula_primeira = _build_clause_block(
         "CLÁUSULA PRIMEIRA - DO OBJETO",
         [
-            "<b>1.1</b> O presente contrato tem por objeto a prestação de serviços profissionais especializados em mapeamento e pulverização, via drones, por parte da CONTRATADA de acordo com os termos e condições detalhados neste contrato.",
+            "<b>1.1</b> O presente contrato tem por objeto a prestação de serviços profissionais especializados em mapeamento e pulverização via drones, por parte da CONTRATADA, de acordo com os termos e condições aqui estabelecidos.",
             service_item,
         ],
         section_style,
@@ -939,9 +972,9 @@ def build_contrato_agro_pdf(contrato):
     clausula_segunda = _build_clause_block(
         "CLÁUSULA SEGUNDA - OBRIGAÇÕES DA CONTRATANTE",
         [
-            "<b>2.1</b> A CONTRATANTE deverá fornecer a CONTRATADA todas as informações necessárias à realização do serviço, devendo especificar os detalhes necessários à perfeita consecução do mesmo.",
+            "<b>2.1</b> A CONTRATANTE deverá fornecer à CONTRATADA todas as informações necessárias à realização do serviço, especificando os detalhes indispensáveis à sua perfeita execução.",
             "<b>2.2</b> A CONTRATANTE é obrigada ainda a disponibilizar: insumos a serem pulverizados.",
-            "<b>2.3</b> A CONTRATANTE deverá efetuar o pagamento na forma e condições estabelecidas na cláusula quinta.",
+            "<b>2.3</b> A CONTRATANTE deverá efetuar o pagamento na forma e nas condições estabelecidas na Cláusula Quinta.",
         ],
         section_style,
         clause_body_style,
@@ -955,7 +988,7 @@ def build_contrato_agro_pdf(contrato):
             "<b>3.2</b> A CONTRATADA se obriga a manter absoluto sigilo sobre as operações, dados, estratégias, materiais, informações e documentos da CONTRATANTE, mesmo após a conclusão dos serviços ou do término da relação contratual.",
             "<b>3.3</b> Os contratos, informações, dados, materiais e documentos inerentes a CONTRATANTE ou a seus clientes deverão ser utilizados, pela CONTRATADA, por seus funcionários ou contratados, estritamente para cumprimento dos serviços solicitados pela CONTRATANTE, sendo vedado a comercialização ou utilização para outros fins.",
             "<b>3.4</b> Será de responsabilidade da CONTRATADA todo o ônus trabalhista ou tributário referente aos funcionários utilizados para a prestação do serviço objeto deste instrumento, ficando a CONTRATANTE isenta de qualquer obrigação em relação a eles.",
-            "<b>3.5</b> A CONTRATADA deverá fornecer a respectiva Nota Fiscal, referente ao(s) pagamento(s) do presente instrumento e serviços efetuados.",
+            "<b>3.5</b> A CONTRATADA deverá fornecer a respectiva Nota Fiscal referente ao(s) pagamento(s) do presente instrumento e aos serviços efetuados.",
         ],
         section_style,
         clause_body_style,
@@ -992,7 +1025,7 @@ def build_contrato_agro_pdf(contrato):
         [
             f"TOTAL DO CONTRATO: {_money(contrato.valor_total)} ({_currency_extenso(contrato.valor_total)})",
             "Condições de pagamento:",
-            f"• O pagamento deverá ser pago em até {contrato.prazo_pagamento_dias or 10} dias após a finalização dos serviços.",
+            f"• O pagamento deverá ser efetuado em até {contrato.prazo_pagamento_dias or 10} dias após a finalização dos serviços.",
             "• O pagamento deverá ser efetuado na conta abaixo:",
             "IJA DRONES BRASIL LTDA",
             "ITAU UNIBANCO (341)",
@@ -1000,7 +1033,7 @@ def build_contrato_agro_pdf(contrato):
             "C/C: 96651-2",
             "Chave pix: 59826603000190 (CNPJ)",
             "<b>5.2</b> Em caso de atraso de pagamento, será cobrada multa moratória de 10% sobre o valor inadimplido mais correção monetária pelo índice IPCA.",
-            "<b>5.3</b> Considera-se o cumprimento integral do contrato o momento em que todos os serviços especificados na Cláusula 1 tenham sido concluídos, mediante aprovação da CONTRATANTE a CONTRATADA, via relatório de serviços.",
+            "<b>5.3</b> Considera-se o cumprimento integral do contrato o momento em que todos os serviços especificados na Cláusula Primeira tenham sido concluídos, mediante aprovação da CONTRATANTE, via relatório de serviços.",
         ]
     )
     clausula_quinta = _build_clause_block(
@@ -1014,8 +1047,8 @@ def build_contrato_agro_pdf(contrato):
     clausula_sexta = _build_clause_block(
         "CLÁUSULA SEXTA - DO PRAZO E VALIDADE",
         [
-            "<b>6.1</b> A CONTRATADA deverá realizar os serviços dentro dos prazos determinados no cronograma, sendo sua responsabilidade comunicar a impossibilidade de cumprimento, bem como os motivos para tal e o novo prazo previsto, estando em sua competência a capacidade para tal avaliação.",
-            "<b>6.2</b> Este instrumento é válido por prazo indeterminado, vigendo até a finalização do serviço, ora contratado, ou encerramento do contrato, não ficando as partes isentas de seus compromissos éticos após invalidação do mesmo.",
+            "<b>6.1</b> A CONTRATADA deverá realizar os serviços dentro dos prazos determinados no cronograma, comunicando eventual impossibilidade de cumprimento, seus motivos e o novo prazo previsto.",
+            "<b>6.2</b> Este instrumento é válido por prazo indeterminado, vigorando até a finalização do serviço ora contratado ou até o encerramento do contrato, não ficando as partes isentas de seus compromissos éticos após sua invalidação.",
         ],
         section_style,
         clause_body_style,
@@ -1048,7 +1081,7 @@ def build_contrato_agro_pdf(contrato):
         "CLÁUSULA NONA - DO FORO",
         [
             f"<b>9.1</b> Para dirimir quaisquer controvérsias oriundas do presente contrato, as partes elegem o foro da Comarca de {contrato.foro_cidade or 'São Paulo'}.",
-            "Por estarem assim justos e de acordo, firmam o presente instrumento, em duas vias de igual teor.",
+            "Por estarem justas e acordadas, as partes firmam o presente instrumento em duas vias de igual teor.",
         ],
         section_style,
         clause_body_style,

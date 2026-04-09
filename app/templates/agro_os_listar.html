@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/listing_pattern.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 listing-page">
+  <div class="listing-header mb-4">
+    <div>
+      <h2 class="text-dark m-0">
+        <i class="bi bi-clipboard2-data-fill me-2 text-primary"></i> OS Agro
+      </h2>
+      <p class="text-muted small mb-0">
+        Base operacional das aplicacoes do Agro.
+        Total: <strong>{{ filters.total }}</strong>
+      </p>
+    </div>
+
+    <div class="listing-actions">
+      <a href="{{ url_for('main.admin_agro') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+      <a href="{{ url_for('main.agro_contratos_template') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
+        <i class="bi bi-diagram-3-fill"></i> Contratos aprovados
+      </a>
+    </div>
+  </div>
+
+  <div class="card shadow-sm rounded-4 mb-4 border-0">
+    <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center listing-filter-header"
+         data-bs-toggle="collapse"
+         data-bs-target="#collapseFiltrosOsAgro"
+         aria-expanded="{{ 'true' if (filters.q or filters.status or filters.equipe_id) else 'false' }}">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-funnel-fill text-primary"></i>
+        <span class="text-dark">Filtros</span>
+        {% if filters.q or filters.status or filters.equipe_id %}
+          <span class="badge bg-danger rounded-circle p-1 listing-filter-dot"></span>
+        {% endif %}
+      </div>
+      <i class="bi bi-chevron-down text-muted"></i>
+    </div>
+
+    <div class="collapse {% if filters.q or filters.status or filters.equipe_id %}show{% endif %}" id="collapseFiltrosOsAgro">
+      <div class="card-body pt-0 listing-filter-body">
+        <form method="GET" action="{{ url_for('main.agro_os_listar') }}">
+          <div class="row g-2 align-items-end">
+            <div class="col-md-5">
+              <label class="small text-muted mb-1">Busca geral:</label>
+              <input type="text" class="form-control form-control-sm" name="q" value="{{ filters.q }}" placeholder="OS, cliente, propriedade ou protocolo...">
+            </div>
+
+            <div class="col-md-3">
+              <label class="small text-muted mb-1">Status:</label>
+              <select name="status" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for status_value in status_options %}
+                  <option value="{{ status_value }}" {% if filters.status == status_value %}selected{% endif %}>{{ status_value }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-2">
+              <label class="small text-muted mb-1">Equipe:</label>
+              <select name="equipe_id" class="form-select form-select-sm">
+                <option value="">Todas</option>
+                {% for equipe in equipes_ativas %}
+                  <option value="{{ equipe.id }}" {% if filters.equipe_id == equipe.id %}selected{% endif %}>{{ equipe.nome }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-2 listing-filter-actions">
+              <button type="submit" class="btn btn-success btn-sm">
+                <i class="bi bi-funnel"></i> Filtrar
+              </button>
+              {% if filters.q or filters.status or filters.equipe_id %}
+                <a href="{{ url_for('main.agro_os_listar') }}" class="btn btn-outline-secondary btn-sm">
+                  <i class="bi bi-x-lg"></i> Limpar
+                </a>
+              {% endif %}
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm rounded-4 border-0 overflow-hidden listing-table-wrap">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 listing-table">
+          <thead class="table-light">
+            <tr>
+              <th>OS</th>
+              <th>Contrato</th>
+              <th>Aplicacao</th>
+              <th>Equipe / Piloto</th>
+              <th>Relatorio</th>
+              {% if is_editable %}<th class="col-actions">Acoes</th>{% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for os_agro in ordens_servico %}
+              <tr>
+                <td data-label="OS">
+                  <div class="fw-bold">{{ os_agro.identificador_os }}</div>
+                  <div class="text-muted small">{{ os_agro.status }}</div>
+                </td>
+                <td data-label="Contrato">
+                  <div class="fw-semibold">#{{ os_agro.contrato.id }} • {{ os_agro.cliente_nome }}</div>
+                  <div class="text-muted small">{{ os_agro.propriedade_nome }}</div>
+                  <div class="text-muted small">Protocolo: {{ os_agro.protocolo or "-" }}</div>
+                </td>
+                <td data-label="Aplicacao">
+                  <div>{{ os_agro.data_aplicacao.strftime('%d/%m/%Y') if os_agro.data_aplicacao else '-' }}</div>
+                  <div class="text-muted small">{{ os_agro.periodo_aplicacao or 'Periodo nao informado' }}</div>
+                  <div class="text-muted small">Area: {{ os_agro.area_total_ha or '-' }} ha</div>
+                </td>
+                <td data-label="Equipe / Piloto">
+                  <div class="fw-semibold">{{ os_agro.equipe.nome if os_agro.equipe else '-' }}</div>
+                  <div class="text-muted small">{{ os_agro.piloto.nome if os_agro.piloto else 'Piloto nao definido' }}</div>
+                </td>
+                <td data-label="Relatorio">
+                  {% if os_agro.relatorio_pdf_nome %}
+                    <span class="badge bg-success-subtle text-success border border-success-subtle">PDF anexado</span>
+                    <div class="text-muted small mt-1">{{ os_agro.relatorio_pdf_nome }}</div>
+                  {% else %}
+                    <span class="text-muted">Sem relatorio final</span>
+                  {% endif %}
+                </td>
+                {% if is_editable %}
+                  <td data-label="Acoes" class="listing-cell-actions">
+                    <div class="listing-actions-group">
+                      <a href="{{ url_for('main.agro_os_editar', os_id=os_agro.id) }}" class="btn btn-sm btn-success text-white shadow-sm">
+                        <i class="bi bi-pencil-square"></i> Editar
+                      </a>
+                    </div>
+                  </td>
+                {% endif %}
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="{{ 6 if is_editable else 5 }}" class="text-center py-5">
+                  <p class="text-muted mb-0">Nenhuma OS Agro encontrada com os filtros aplicados.</p>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

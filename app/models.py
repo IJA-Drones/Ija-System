@@ -19,6 +19,7 @@ class Prefeitura(db.Model):
     clientes_agro = db.relationship("ClienteAgro", back_populates="prefeitura", lazy="select")
     orcamentos_agro = db.relationship("OrcamentoAgro", back_populates="prefeitura", lazy="select")
     contratos_agro = db.relationship("ContratoAgro", back_populates="prefeitura", lazy="select")
+    ordens_servico_agro = db.relationship("OrdemServicoAgro", back_populates="prefeitura", lazy="select")
     pilotos = db.relationship("Pilotos", back_populates="prefeitura", lazy="select")
     pilotos_agro = db.relationship("PilotoAgro", back_populates="prefeitura", lazy="select")
     equipes = db.relationship("Equipe", lazy="select")
@@ -641,6 +642,7 @@ class OrcamentoAgro(db.Model):
         lazy="select",
         cascade="all, delete-orphan",
     )
+    ordens_servico = db.relationship("OrdemServicoAgro", back_populates="orcamento", lazy="select")
 
     __table_args__ = (
         db.Index("ix_orcamentos_agro_cliente_data", "cliente_agro_id", "data_criacao"),
@@ -654,9 +656,19 @@ class OrcamentoAgro(db.Model):
 class ContratoAgro(db.Model):
     __tablename__ = "contratos_agro"
 
+    STATUS_EM_ELABORACAO = "EM ELABORACAO"
+    STATUS_APROVADO = "APROVADO"
+    STATUS_OPTIONS = (
+        STATUS_EM_ELABORACAO,
+        STATUS_APROVADO,
+    )
+
     id = db.Column(db.Integer, primary_key=True, index=True)
     prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
     orcamento_agro_id = db.Column(db.Integer, db.ForeignKey("orcamentos_agro.id"), nullable=False, unique=True, index=True)
+    equipe_agro_id = db.Column(db.Integer, db.ForeignKey("equipes_agro.id"), nullable=True, index=True)
+
+    status = db.Column(db.String(30), nullable=False, default=STATUS_EM_ELABORACAO, index=True)
 
     contratante_nome = db.Column(db.String(150), nullable=False, index=True)
     contratante_documento = db.Column(db.String(50), nullable=False, index=True)
@@ -699,9 +711,110 @@ class ContratoAgro(db.Model):
 
     prefeitura = db.relationship("Prefeitura", back_populates="contratos_agro", lazy="joined")
     orcamento = db.relationship("OrcamentoAgro", back_populates="contrato", lazy="joined")
+    equipe = db.relationship("EquipeAgro", back_populates="contratos", lazy="joined")
+    ordens_servico = db.relationship("OrdemServicoAgro", back_populates="contrato", lazy="select")
 
     __table_args__ = (
         db.Index("ix_contratos_agro_orcamento_data", "orcamento_agro_id", "atualizado_em"),
+        db.Index("ix_contratos_agro_status_equipe", "status", "equipe_agro_id"),
+    )
+
+
+# -------------------------------------------------------------
+# ORDENS DE SERVICO AGRO
+# -------------------------------------------------------------
+class OrdemServicoAgro(db.Model):
+    __tablename__ = "ordens_servico_agro"
+
+    STATUS_PLANEJADA = "PLANEJADA"
+    STATUS_EM_EXECUCAO = "EM EXECUCAO"
+    STATUS_CONCLUIDA = "CONCLUIDA"
+    STATUS_CANCELADA = "CANCELADA"
+    STATUS_OPTIONS = (
+        STATUS_PLANEJADA,
+        STATUS_EM_EXECUCAO,
+        STATUS_CONCLUIDA,
+        STATUS_CANCELADA,
+    )
+
+    id = db.Column(db.Integer, primary_key=True, index=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
+    contrato_agro_id = db.Column(db.Integer, db.ForeignKey("contratos_agro.id"), nullable=False, index=True)
+    orcamento_agro_id = db.Column(db.Integer, db.ForeignKey("orcamentos_agro.id"), nullable=False, index=True)
+    equipe_agro_id = db.Column(db.Integer, db.ForeignKey("equipes_agro.id"), nullable=False, index=True)
+    piloto_agro_id = db.Column(db.Integer, db.ForeignKey("pilotos_agro.id"), nullable=True, index=True)
+
+    drone_pulverizacao_id = db.Column(db.Integer, db.ForeignKey("equipamentos_agro.id"), nullable=True, index=True)
+    drone_mapeamento_id = db.Column(db.Integer, db.ForeignKey("equipamentos_agro.id"), nullable=True, index=True)
+
+    identificador_os = db.Column(db.String(50), nullable=False, unique=True, index=True)
+    status = db.Column(db.String(30), nullable=False, default=STATUS_PLANEJADA, index=True)
+    data_aplicacao = db.Column(db.Date, index=True)
+    periodo_aplicacao = db.Column(db.String(120))
+
+    cliente_nome = db.Column(db.String(150), nullable=False, index=True)
+    propriedade_nome = db.Column(db.String(150), nullable=False, index=True)
+    cultura = db.Column(db.String(100), index=True)
+    servico = db.Column(db.String(50), index=True)
+    protocolo = db.Column(db.String(80), index=True)
+    cidade_operacao = db.Column(db.String(100), index=True)
+    uf_operacao = db.Column(db.String(2), index=True)
+
+    drone_pulverizacao_identificacao = db.Column(db.String(100))
+    drone_pulverizacao_modelo = db.Column(db.String(100))
+    drone_pulverizacao_tipo = db.Column(db.String(50))
+    drone_pulverizacao_registro_anatel = db.Column(db.String(50))
+    drone_pulverizacao_registro_anac = db.Column(db.String(50))
+
+    drone_mapeamento_identificacao = db.Column(db.String(100))
+    drone_mapeamento_modelo = db.Column(db.String(100))
+    drone_mapeamento_tipo = db.Column(db.String(50))
+    drone_mapeamento_registro_anatel = db.Column(db.String(50))
+    drone_mapeamento_registro_anac = db.Column(db.String(50))
+
+    altura_voo_m = db.Column(db.Numeric(10, 2))
+    largura_faixa_m = db.Column(db.Numeric(10, 2))
+    ponta_pulverizacao = db.Column(db.String(100))
+    mapeamento_descricao = db.Column(db.String(120))
+
+    temperatura_min_c = db.Column(db.Numeric(10, 2))
+    temperatura_max_c = db.Column(db.Numeric(10, 2))
+    umidade_min_pct = db.Column(db.Numeric(10, 2))
+    umidade_max_pct = db.Column(db.Numeric(10, 2))
+    vento_min_kmh = db.Column(db.Numeric(10, 2))
+    vento_max_kmh = db.Column(db.Numeric(10, 2))
+
+    area_total_ha = db.Column(db.Numeric(12, 2))
+    total_calda_l = db.Column(db.Numeric(12, 2))
+    media_aplicada_l_ha = db.Column(db.Numeric(12, 2))
+    taxa_aplicacao_l_ha = db.Column(db.Numeric(12, 2))
+    tipo_aplicacao = db.Column(db.String(100))
+
+    produto_aplicado = db.Column(db.String(200))
+    formulacao_produto = db.Column(db.String(200))
+    dosagem = db.Column(db.String(100))
+    classe_toxica = db.Column(db.String(100))
+
+    relatorio_pdf_path = db.Column(db.String(255))
+    relatorio_pdf_nome = db.Column(db.String(255))
+    observacoes = db.Column(db.Text)
+
+    criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+    atualizado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True, onupdate=datetime.now)
+    finalizado_em = db.Column(db.DateTime, index=True)
+
+    prefeitura = db.relationship("Prefeitura", back_populates="ordens_servico_agro", lazy="joined")
+    contrato = db.relationship("ContratoAgro", back_populates="ordens_servico", lazy="joined")
+    orcamento = db.relationship("OrcamentoAgro", back_populates="ordens_servico", lazy="joined")
+    equipe = db.relationship("EquipeAgro", back_populates="ordens_servico", lazy="joined")
+    piloto = db.relationship("PilotoAgro", back_populates="ordens_servico", lazy="joined")
+    drone_pulverizacao = db.relationship("EquipamentoAgro", foreign_keys=[drone_pulverizacao_id], back_populates="ordens_servico_pulverizacao", lazy="joined")
+    drone_mapeamento = db.relationship("EquipamentoAgro", foreign_keys=[drone_mapeamento_id], back_populates="ordens_servico_mapeamento", lazy="joined")
+
+    __table_args__ = (
+        db.Index("ix_os_agro_status_equipe", "status", "equipe_agro_id"),
+        db.Index("ix_os_agro_contrato_data", "contrato_agro_id", "data_aplicacao"),
+        db.Index("ix_os_agro_piloto_status", "piloto_agro_id", "status"),
     )
 
 
@@ -720,6 +833,8 @@ class EquipeAgro(db.Model):
     criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
 
     prefeitura = db.relationship("Prefeitura", back_populates="equipes_agro", lazy="joined")
+    contratos = db.relationship("ContratoAgro", back_populates="equipe", lazy="select")
+    ordens_servico = db.relationship("OrdemServicoAgro", back_populates="equipe", lazy="select")
     pilotos = db.relationship("PilotoAgro", back_populates="equipe", lazy="select")
     equipamentos = db.relationship("EquipamentoAgro", back_populates="equipe", lazy="select")
 
@@ -741,6 +856,7 @@ class PilotoAgro(db.Model):
 
     prefeitura = db.relationship("Prefeitura", back_populates="pilotos_agro", lazy="joined")
     equipe = db.relationship("EquipeAgro", back_populates="pilotos", lazy="joined")
+    ordens_servico = db.relationship("OrdemServicoAgro", back_populates="piloto", lazy="select")
     usuario = db.relationship("Usuario", back_populates="piloto_agro", uselist=False, foreign_keys="Usuario.piloto_agro_id")
 
 
@@ -759,10 +875,19 @@ class EquipamentoAgro(db.Model):
     identificacao = db.Column(db.String(100), nullable=False, index=True)
     numero_serie = db.Column(db.String(100), unique=True, index=True)
     status = db.Column(db.String(30), default="Ativo", nullable=False, index=True)
+    funcao_operacional = db.Column(db.String(30), index=True)
+    registro_anatel = db.Column(db.String(50), index=True)
+    registro_anac = db.Column(db.String(50), index=True)
+    capacidade_tanque_l = db.Column(db.Numeric(10, 2))
+    largura_faixa_m = db.Column(db.Numeric(10, 2))
+    altura_voo_padrao_m = db.Column(db.Numeric(10, 2))
+    ponta_pulverizacao = db.Column(db.String(100))
     criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
 
     prefeitura = db.relationship("Prefeitura", back_populates="equipamentos_agro", lazy="joined")
     equipe = db.relationship("EquipeAgro", back_populates="equipamentos", lazy="joined")
+    ordens_servico_pulverizacao = db.relationship("OrdemServicoAgro", foreign_keys="[OrdemServicoAgro.drone_pulverizacao_id]", back_populates="drone_pulverizacao", lazy="select")
+    ordens_servico_mapeamento = db.relationship("OrdemServicoAgro", foreign_keys="[OrdemServicoAgro.drone_mapeamento_id]", back_populates="drone_mapeamento", lazy="select")
 
 
 # -------------------------------------------------------------
