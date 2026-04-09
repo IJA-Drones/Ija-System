@@ -209,11 +209,21 @@ a:hover {
   padding-top: calc(0.75rem + var(--safe-top));
 }
 
+.navbar-shell {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.75rem;
+  padding-left: clamp(1.1rem, 2vw, 2.25rem);
+  padding-right: clamp(1.1rem, 2vw, 2.25rem);
+}
 
 .navbar-brand {
   display: flex;
   align-items: center;
   gap: 10px;
+  margin-right: 0 !important;
+  flex-shrink: 0;
   transition: all 0.3s;
 }
 
@@ -222,6 +232,15 @@ a:hover {
   width: auto;
   transition: max-height 0.3s;
   backface-visibility: hidden;
+}
+
+.navbar-user-menu {
+  margin-left: auto !important;
+  flex-shrink: 0;
+}
+
+.navbar-account-dropdown {
+  min-width: 272px !important;
 }
 
 .navbar-brand span {
@@ -257,133 +276,150 @@ body.agro-mode .navbar-logo {
 }
 
 .admin-context-switch {
+  --admin-context-thumb-left: 4px;
+  --admin-context-thumb-width: calc(50% - 4px);
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(30, 45, 70, 0.14);
+  gap: 3px;
+  background: rgba(255, 255, 255, 0.68);
+  border: 1px solid rgba(30, 45, 70, 0.12);
   border-radius: 999px;
-  padding: 4px;
-  box-shadow: 0 5px 20px rgba(10, 24, 44, 0.12);
-  backdrop-filter: blur(4px);
+  padding: 2px;
+  box-shadow: 0 2px 8px rgba(10, 24, 44, 0.07);
+  backdrop-filter: blur(6px);
   width: fit-content;
+  isolation: isolate;
+}
+
+.admin-context-switch-dropdown {
+  width: 100%;
+}
+
+.admin-context-switch-thumb {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: var(--admin-context-thumb-left);
+  width: var(--admin-context-thumb-width);
+  border-radius: 999px;
+  z-index: 0;
+  pointer-events: none;
+  transition: left 0.28s ease, width 0.28s ease, background 0.28s ease, box-shadow 0.28s ease;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.16), rgba(255,255,255,0)),
+    linear-gradient(130deg, #3a739f, #1687af 70%, #15769b);
+  box-shadow: 0 4px 12px rgba(16, 34, 58, 0.18);
+}
+
+.admin-context-switch.is-agro .admin-context-switch-thumb {
+  background:
+    linear-gradient(140deg, rgba(255,255,255,0.14), rgba(255,255,255,0)),
+    linear-gradient(135deg, #2a8650, #37a362 68%, #2d9056);
+  box-shadow: 0 4px 12px rgba(20, 66, 37, 0.18);
 }
 
 .admin-context-btn {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  min-width: 168px;
-  padding: 8px 14px;
+  justify-content: center;
+  gap: 5px;
+  min-height: 30px;
+  min-width: 116px;
+  padding: 4px 9px;
   border: none;
   border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #49627d;
   background: transparent;
-  transition: all 0.2s ease;
-  overflow: hidden;
-  isolation: isolate;
+  transition: color 0.22s ease, opacity 0.22s ease, background-color 0.22s ease;
   border: 1px solid transparent;
+  z-index: 1;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
 }
 
-.admin-context-btn::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  z-index: -2;
+.admin-context-switch-dropdown .admin-context-btn {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
-.admin-context-btn::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  z-index: -1;
-  opacity: 0.35;
-}
-
-.admin-context-btn[data-admin-context="uvis_prefeitura"]::before {
-  background:
-    linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0)),
-    linear-gradient(130deg, #2b5d8a, #0f84ad 65%, #0e6f9d);
-}
-
-.admin-context-btn[data-admin-context="uvis_prefeitura"]::after {
-  background:
-    repeating-linear-gradient(
-      90deg,
-      rgba(255,255,255,0.18) 0px,
-      rgba(255,255,255,0.18) 2px,
-      transparent 2px,
-      transparent 8px
-    );
-}
-
-.admin-context-btn[data-admin-context="agro"]::before {
-  background:
-    linear-gradient(140deg, rgba(255,255,255,0.1), rgba(255,255,255,0)),
-    linear-gradient(135deg, #1f7b44, #2ea25d 62%, #298d52);
-}
-
-.admin-context-btn[data-admin-context="agro"]::after {
-  background:
-    repeating-linear-gradient(
-      -28deg,
-      rgba(255,255,255,0.16) 0px,
-      rgba(255,255,255,0.16) 2px,
-      transparent 2px,
-      transparent 9px
-    );
+.admin-context-btn[data-admin-context="agro"] {
+  color: #2a7c49;
 }
 
 .admin-context-btn-icon {
-  width: 24px;
-  height: 24px;
+  width: 15px;
+  height: 15px;
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.2);
-  font-size: 0.82rem;
+  background: rgba(35, 86, 122, 0.1);
+  font-size: 0.54rem;
   line-height: 1;
+  color: currentColor;
+  transition: background-color 0.22s ease, color 0.22s ease;
+}
+
+.admin-context-btn[data-admin-context="agro"] .admin-context-btn-icon {
+  background: rgba(33, 111, 61, 0.1);
 }
 
 .admin-context-btn-icon .bi {
-  color: #ffffff;
+  color: currentColor;
 }
 
 .admin-context-btn:not(.is-active) {
-  opacity: 0.88;
+  opacity: 0.92;
+}
+
+.admin-context-btn:not(.is-active):hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .admin-context-btn.is-active {
-  transform: translateY(-1px);
   opacity: 1;
-  border-color: rgba(255, 255, 255, 0.45);
-  box-shadow: 0 8px 20px rgba(16, 34, 58, 0.28);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
 .admin-context-btn.is-active .admin-context-btn-icon {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-.admin-context-btn:hover {
-  transform: translateY(-1px);
-  opacity: 1;
+  background: rgba(255, 255, 255, 0.24);
+  color: #ffffff;
 }
 
 body.dark-mode .admin-context-switch {
-  background: rgba(18, 34, 52, 0.78);
-  border-color: #2d4663;
+  background: rgba(18, 34, 52, 0.74);
+  border-color: rgba(90, 123, 156, 0.22);
 }
 
 body.dark-mode.agro-mode .admin-context-switch {
-  background: rgba(15, 36, 27, 0.82);
-  border-color: #2a5a43;
+  background: rgba(15, 36, 27, 0.78);
+  border-color: rgba(80, 131, 103, 0.22);
+}
+
+body.dark-mode .admin-context-btn {
+  color: #b7dcff;
+}
+
+body.dark-mode .admin-context-btn[data-admin-context="agro"] {
+  color: #c4f0d7;
+}
+
+body.dark-mode .admin-context-btn-icon {
+  background: rgba(76, 163, 255, 0.14);
+}
+
+body.dark-mode .admin-context-btn[data-admin-context="agro"] .admin-context-btn-icon {
+  background: rgba(87, 199, 139, 0.14);
+}
+
+body.dark-mode .admin-context-btn:not(.is-active):hover {
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .admin-context-badge {
@@ -768,15 +804,37 @@ body.dark-mode.agro-mode .navbar-mode-pill {
 }
 
 @media (max-width: 576px) {
+  .navbar-shell {
+    padding-left: 0.85rem;
+    padding-right: 0.85rem;
+  }
+
+  .navbar-account-dropdown {
+    min-width: 250px !important;
+  }
+
   .admin-context-switch {
-    gap: 4px;
-    padding: 3px;
+    gap: 3px;
+    padding: 2px;
+  }
+
+  .admin-context-switch-thumb {
+    top: 2px;
+    bottom: 2px;
   }
 
   .admin-context-btn {
     min-width: 0;
-    padding: 5px 10px;
-    font-size: 0.75rem;
+    min-height: 28px;
+    padding: 4px 7px;
+    font-size: 0.62rem;
+    gap: 4px;
+  }
+
+  .admin-context-btn-icon {
+    width: 14px;
+    height: 14px;
+    font-size: 0.5rem;
   }
 
   .navbar-mode-pill {

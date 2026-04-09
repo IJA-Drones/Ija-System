@@ -1,4 +1,6 @@
 {% set is_agro_context = request.endpoint and (request.endpoint == 'main.admin_agro' or request.endpoint.startswith('main.agro_')) %}
+{% set logo_light_url = url_for('static', filename='img/logo_oceano_azul_light.png') %}
+{% set logo_dark_url = url_for('static', filename='img/logo_oceano_azul_dark.png') %}
 <!doctype html>
 <html
   lang="pt-br"
@@ -52,6 +54,8 @@
       rel="stylesheet"
       href="{{ url_for('static', filename='css/style.css') }}"
     />
+    <link rel="preload" as="image" href="{{ logo_light_url }}" />
+    <link rel="preload" as="image" href="{{ logo_dark_url }}" />
     {% block extra_styles %}{% endblock %}
 
     <script>
@@ -124,7 +128,7 @@
     <div id="sidebarOverlay" class="sidebar-overlay"></div>
 
     <nav class="navbar navbar-expand-lg navbar-light fixed-top shadow-sm">
-      <div class="container-fluid">
+      <div class="container-fluid navbar-shell">
         {% if current_user and current_user.is_authenticated %}
         <button
           class="btn btn-outline-primary me-2"
@@ -142,44 +146,26 @@
         >
           <!-- <img src="{{ url_for('static', filename='img/logo_oceano_azul_' ~ (tema_escolhido if tema_escolhido else 'light') ~ '.png') }}" alt="Logo Oceano Azul"> -->
           <img
-            src="{{ url_for('static', filename='img/logo_oceano_azul_light.png') }}"
-            class="navbar-logo logo-light ms-5"
+            src="{{ logo_light_url }}"
+            class="navbar-logo logo-light"
             alt="Oceano Azul"
+            loading="eager"
+            decoding="async"
+            fetchpriority="{{ 'low' if tema_escolhido == 'dark' else 'high' }}"
             style="max-height: 50px"
           />
           <img
-            src="{{ url_for('static', filename='img/logo_oceano_azul_dark.png') }}"
-            class="navbar-logo logo-dark ms-5"
+            src="{{ logo_dark_url }}"
+            class="navbar-logo logo-dark"
             alt="Oceano Azul"
+            loading="eager"
+            decoding="async"
+            fetchpriority="{{ 'high' if tema_escolhido == 'dark' else 'low' }}"
             style="max-height: 50px"
           />
         </a>
 
-        {# BOTÕES EXPORTAR #}
-        {% if current_user.is_authenticated and current_user.tipo_usuario == 'admin' %}
-        <div class="admin-context-switch me-auto" role="tablist" aria-label="Contexto de visualizacao do admin">
-            <button
-              type="button"
-              class="admin-context-btn {% if not is_agro_context %}is-active{% endif %}"
-              data-admin-context="uvis_prefeitura"
-              data-admin-context-url="{{ url_for('main.admin_dashboard') }}"
-            >
-              <span class="admin-context-btn-icon"><i class="bi bi-buildings-fill"></i></span>
-              <span>UVIS e Prefeitura</span>
-            </button>
-            <button
-              type="button"
-              class="admin-context-btn {% if is_agro_context %}is-active{% endif %}"
-              data-admin-context="agro"
-              data-admin-context-url="{{ url_for('main.admin_agro') }}"
-            >
-              <span class="admin-context-btn-icon"><i class="bi bi-tree-fill"></i></span>
-              <span>Agro</span>
-            </button>
-        </div>
-        {% endif %}
-
-        <div class="dropdown me-2">
+        <div class="dropdown navbar-user-menu ms-auto me-2">
           <button
             class="btn btn-outline-primary rounded-pill d-flex align-items-center gap-2"
             type="button"
@@ -190,7 +176,7 @@
             <i class="bi bi-chevron-down small"></i>
           </button>
           <ul
-            class="dropdown-menu dropdown-menu-end shadow border-0 mt-2 p-2"
+            class="dropdown-menu dropdown-menu-end shadow border-0 mt-2 p-2 navbar-account-dropdown"
             style="border-radius: 15px; min-width: 220px"
           >
             {% if current_user.is_authenticated %}
@@ -201,6 +187,33 @@
                 style="max-width: 180px"
                 >{{ current_user.nome_uvis or current_user.name }}</span
               >
+            </li>
+            {% endif %}
+            {% if current_user.is_authenticated and current_user.tipo_usuario == 'admin' %}
+            <li class="px-2 pb-2 mb-2 border-bottom">
+              <div class="admin-context-switch admin-context-switch-dropdown {% if is_agro_context %}is-agro{% else %}is-uvis{% endif %}" role="group" aria-label="Alternar contexto entre UVIS e Agro">
+                <span class="admin-context-switch-thumb" aria-hidden="true"></span>
+                <button
+                  type="button"
+                  class="admin-context-btn {% if not is_agro_context %}is-active{% endif %}"
+                  data-admin-context="uvis_prefeitura"
+                  data-admin-context-url="{{ url_for('main.admin_dashboard') }}"
+                  aria-pressed="{{ 'true' if not is_agro_context else 'false' }}"
+                >
+                  <span class="admin-context-btn-icon"><i class="bi bi-buildings-fill"></i></span>
+                  <span>UVIS e Prefeitura</span>
+                </button>
+                <button
+                  type="button"
+                  class="admin-context-btn {% if is_agro_context %}is-active{% endif %}"
+                  data-admin-context="agro"
+                  data-admin-context-url="{{ url_for('main.admin_agro') }}"
+                  aria-pressed="{{ 'true' if is_agro_context else 'false' }}"
+                >
+                  <span class="admin-context-btn-icon"><i class="bi bi-tree-fill"></i></span>
+                  <span>Agro</span>
+                </button>
+              </div>
             </li>
             {% endif %}
             <li>
@@ -748,6 +761,7 @@
             const toggle = document.getElementById("toggleDarkMode");
             const sidebarToggle = document.getElementById("sidebarToggle");
             const overlay = document.getElementById("sidebarOverlay");
+            const contextSwitches = document.querySelectorAll(".admin-context-switch");
             const contextButtons = document.querySelectorAll("[data-admin-context]");
             const contextStorageKey = "oa_admin_context_mode";
             const serverContextMode = "{{ 'agro' if is_agro_context else 'uvis_prefeitura' }}";
@@ -790,6 +804,27 @@
                 metaTheme.setAttribute("content", "#101927");
             }
 
+            function syncContextSwitchElement(contextSwitch, mode) {
+                if (!contextSwitch) return;
+                const selectedMode = mode === "agro" ? "agro" : "uvis_prefeitura";
+                const activeButton = contextSwitch.querySelector(`[data-admin-context="${selectedMode}"]`);
+                if (!activeButton) return;
+
+                const switchRect = contextSwitch.getBoundingClientRect();
+                const activeRect = activeButton.getBoundingClientRect();
+
+                contextSwitch.classList.toggle("is-agro", selectedMode === "agro");
+                contextSwitch.classList.toggle("is-uvis", selectedMode !== "agro");
+                contextSwitch.style.setProperty("--admin-context-thumb-left", `${activeRect.left - switchRect.left}px`);
+                contextSwitch.style.setProperty("--admin-context-thumb-width", `${activeRect.width}px`);
+            }
+
+            function syncContextSwitch(mode) {
+                contextSwitches.forEach((contextSwitch) => {
+                    syncContextSwitchElement(contextSwitch, mode);
+                });
+            }
+
             function applyContextMode(mode, persist = true) {
                 const selectedMode = mode === "agro" ? "agro" : "uvis_prefeitura";
                 const isAgro = selectedMode === "agro";
@@ -800,8 +835,10 @@
                 contextButtons.forEach((button) => {
                     const active = button.dataset.adminContext === selectedMode;
                     button.classList.toggle("is-active", active);
-                    button.setAttribute("aria-selected", active ? "true" : "false");
+                    button.setAttribute("aria-pressed", active ? "true" : "false");
                 });
+
+                syncContextSwitch(selectedMode);
 
                 const contextFilterBadge = document.getElementById("adminContextFilterBadge");
                 if (contextFilterBadge) {
@@ -828,6 +865,29 @@
                     const targetUrl = button.dataset.adminContextUrl;
                     if (targetUrl) {
                         window.location.href = targetUrl;
+                    }
+                });
+            });
+
+            window.addEventListener("resize", () => {
+                const activeButton = document.querySelector("[data-admin-context].is-active");
+                if (activeButton) {
+                    syncContextSwitch(activeButton.dataset.adminContext);
+                }
+            });
+
+            window.addEventListener("load", () => {
+                const activeButton = document.querySelector("[data-admin-context].is-active");
+                if (activeButton) {
+                    syncContextSwitch(activeButton.dataset.adminContext);
+                }
+            });
+
+            document.querySelectorAll('.navbar-user-menu [data-bs-toggle="dropdown"]').forEach((trigger) => {
+                trigger.addEventListener("shown.bs.dropdown", () => {
+                    const activeButton = document.querySelector("[data-admin-context].is-active");
+                    if (activeButton) {
+                        syncContextSwitch(activeButton.dataset.adminContext);
                     }
                 });
             });

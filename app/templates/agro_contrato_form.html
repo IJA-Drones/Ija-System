@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1200px">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div>
+      <h2 class="text-dark m-0">
+        <i class="bi bi-file-earmark-text-fill me-2 text-primary"></i>
+        Contrato do Agro
+      </h2>
+      <p class="text-muted small mb-0">
+        Contrato vinculado ao orçamento <strong>#{{ orcamento.id }}</strong> de {{ orcamento.cliente_nome }}.
+        CPF/CNPJ e endereço do contratante vêm do cadastro do cliente; o RG é ajustado aqui no contrato.
+      </p>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{{ url_for('main.agro_orcamentos_listar') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+      <a href="{{ url_for('main.agro_contrato_pdf', orcamento_id=orcamento.id) }}" target="_blank" class="btn btn-success btn-sm d-flex align-items-center gap-2">
+        <i class="bi bi-filetype-pdf"></i> Visualizar PDF
+      </a>
+    </div>
+  </div>
+
+  <div class="card info status-primary shadow-sm rounded-4 border-0">
+    <div class="card-body p-4">
+      <form method="post" novalidate>
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-person-vcard-fill text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Dados do contratante</h5>
+        </div>
+
+        <p class="text-muted small mb-3">
+          Esses campos já vêm do cliente vinculado ao orçamento, mas continuam editáveis para ajustes finos antes de gerar o contrato.
+        </p>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">Nome do contratante *</label>
+            <input type="text" name="contratante_nome" value="{{ form.get('contratante_nome', '') }}" class="form-control {% if errors.get('contratante_nome') %}is-invalid{% endif %}" required>
+            {% if errors.get('contratante_nome') %}<div class="invalid-feedback">{{ errors.get('contratante_nome') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">CPF/CNPJ *</label>
+            <input type="text" name="contratante_documento" value="{{ form.get('contratante_documento', '') }}" class="form-control {% if errors.get('contratante_documento') %}is-invalid{% endif %}" required>
+            {% if errors.get('contratante_documento') %}<div class="invalid-feedback">{{ errors.get('contratante_documento') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">RG</label>
+            <input type="text" name="contratante_rg" value="{{ form.get('contratante_rg', '') }}" class="form-control {% if errors.get('contratante_rg') %}is-invalid{% endif %}">
+            {% if errors.get('contratante_rg') %}<div class="invalid-feedback">{{ errors.get('contratante_rg') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">CEP *</label>
+            <input type="text" name="contratante_cep" value="{{ form.get('contratante_cep', '') }}" class="form-control {% if errors.get('contratante_cep') %}is-invalid{% endif %}" required>
+            {% if errors.get('contratante_cep') %}<div class="invalid-feedback">{{ errors.get('contratante_cep') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">Logradouro *</label>
+            <input type="text" name="contratante_logradouro" value="{{ form.get('contratante_logradouro', '') }}" class="form-control {% if errors.get('contratante_logradouro') %}is-invalid{% endif %}" required>
+            {% if errors.get('contratante_logradouro') %}<div class="invalid-feedback">{{ errors.get('contratante_logradouro') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Número *</label>
+            <input type="text" name="contratante_numero" value="{{ form.get('contratante_numero', '') }}" class="form-control {% if errors.get('contratante_numero') %}is-invalid{% endif %}" required>
+            {% if errors.get('contratante_numero') %}<div class="invalid-feedback">{{ errors.get('contratante_numero') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Complemento</label>
+            <input type="text" name="contratante_complemento" value="{{ form.get('contratante_complemento', '') }}" class="form-control">
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Bairro *</label>
+            <input type="text" name="contratante_bairro" value="{{ form.get('contratante_bairro', '') }}" class="form-control {% if errors.get('contratante_bairro') %}is-invalid{% endif %}" required>
+            {% if errors.get('contratante_bairro') %}<div class="invalid-feedback">{{ errors.get('contratante_bairro') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Cidade *</label>
+            <input type="text" name="contratante_cidade" value="{{ form.get('contratante_cidade', '') }}" class="form-control {% if errors.get('contratante_cidade') %}is-invalid{% endif %}" required>
+            {% if errors.get('contratante_cidade') %}<div class="invalid-feedback">{{ errors.get('contratante_cidade') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-1">
+            <label class="form-label fw-bold small text-muted">UF *</label>
+            <input type="text" name="contratante_uf" maxlength="2" value="{{ form.get('contratante_uf', '') }}" class="form-control text-uppercase {% if errors.get('contratante_uf') %}is-invalid{% endif %}" required>
+            {% if errors.get('contratante_uf') %}<div class="invalid-feedback">{{ errors.get('contratante_uf') }}</div>{% endif %}
+          </div>
+        </div>
+
+        <hr class="text-muted opacity-25 my-4">
+
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-geo-alt-fill text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Dados da propriedade</h5>
+        </div>
+
+        <p class="text-muted small mb-3">
+          Esses dados já vêm do endereço operacional informado no orçamento e podem ser refinados aqui para o contrato.
+        </p>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">Nome da propriedade *</label>
+            <input type="text" name="propriedade_nome" value="{{ form.get('propriedade_nome', '') }}" class="form-control {% if errors.get('propriedade_nome') %}is-invalid{% endif %}" required>
+            {% if errors.get('propriedade_nome') %}<div class="invalid-feedback">{{ errors.get('propriedade_nome') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">CEP *</label>
+            <input type="text" name="propriedade_cep" value="{{ form.get('propriedade_cep', '') }}" class="form-control {% if errors.get('propriedade_cep') %}is-invalid{% endif %}" required>
+            {% if errors.get('propriedade_cep') %}<div class="invalid-feedback">{{ errors.get('propriedade_cep') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">Logradouro *</label>
+            <input type="text" name="propriedade_logradouro" value="{{ form.get('propriedade_logradouro', '') }}" class="form-control {% if errors.get('propriedade_logradouro') %}is-invalid{% endif %}" required>
+            {% if errors.get('propriedade_logradouro') %}<div class="invalid-feedback">{{ errors.get('propriedade_logradouro') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Número *</label>
+            <input type="text" name="propriedade_numero" value="{{ form.get('propriedade_numero', '') }}" class="form-control {% if errors.get('propriedade_numero') %}is-invalid{% endif %}" required>
+            {% if errors.get('propriedade_numero') %}<div class="invalid-feedback">{{ errors.get('propriedade_numero') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Complemento</label>
+            <input type="text" name="propriedade_complemento" value="{{ form.get('propriedade_complemento', '') }}" class="form-control">
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Bairro *</label>
+            <input type="text" name="propriedade_bairro" value="{{ form.get('propriedade_bairro', '') }}" class="form-control {% if errors.get('propriedade_bairro') %}is-invalid{% endif %}" required>
+            {% if errors.get('propriedade_bairro') %}<div class="invalid-feedback">{{ errors.get('propriedade_bairro') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Cidade *</label>
+            <input type="text" name="propriedade_cidade" value="{{ form.get('propriedade_cidade', '') }}" class="form-control {% if errors.get('propriedade_cidade') %}is-invalid{% endif %}" required>
+            {% if errors.get('propriedade_cidade') %}<div class="invalid-feedback">{{ errors.get('propriedade_cidade') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-1">
+            <label class="form-label fw-bold small text-muted">UF *</label>
+            <input type="text" name="propriedade_uf" maxlength="2" value="{{ form.get('propriedade_uf', '') }}" class="form-control text-uppercase {% if errors.get('propriedade_uf') %}is-invalid{% endif %}" required>
+            {% if errors.get('propriedade_uf') %}<div class="invalid-feedback">{{ errors.get('propriedade_uf') }}</div>{% endif %}
+          </div>
+        </div>
+
+        <hr class="text-muted opacity-25 my-4">
+
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-briefcase-fill text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Objeto e valores</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-12">
+            <label class="form-label fw-bold small text-muted">Descrição do serviço *</label>
+            <textarea name="descricao_servico" rows="3" class="form-control {% if errors.get('descricao_servico') %}is-invalid{% endif %}" required>{{ form.get('descricao_servico', '') }}</textarea>
+            {% if errors.get('descricao_servico') %}<div class="invalid-feedback">{{ errors.get('descricao_servico') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Cultura</label>
+            <input type="text" name="cultura" value="{{ form.get('cultura', '') }}" class="form-control">
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Área contratada</label>
+            <input type="text" name="area_contratada" value="{{ form.get('area_contratada', '') }}" class="form-control" placeholder="Ex.: 59,27 ha">
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label fw-bold small text-muted">Valor mapeamento / ha</label>
+            <input type="text" name="valor_mapeamento_ha" value="{{ form.get('valor_mapeamento_ha', '') }}" class="form-control {% if errors.get('valor_mapeamento_ha') %}is-invalid{% endif %}" placeholder="R$ 0,00">
+            {% if errors.get('valor_mapeamento_ha') %}<div class="invalid-feedback">{{ errors.get('valor_mapeamento_ha') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label fw-bold small text-muted">Valor pulverização / ha</label>
+            <input type="text" name="valor_pulverizacao_ha" value="{{ form.get('valor_pulverizacao_ha', '') }}" class="form-control {% if errors.get('valor_pulverizacao_ha') %}is-invalid{% endif %}" placeholder="R$ 0,00">
+            {% if errors.get('valor_pulverizacao_ha') %}<div class="invalid-feedback">{{ errors.get('valor_pulverizacao_ha') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label fw-bold small text-muted">Valor total *</label>
+            <input type="text" name="valor_total" value="{{ form.get('valor_total', '') }}" class="form-control {% if errors.get('valor_total') %}is-invalid{% endif %}" placeholder="R$ 0,00" required>
+            {% if errors.get('valor_total') %}<div class="invalid-feedback">{{ errors.get('valor_total') }}</div>{% endif %}
+          </div>
+        </div>
+
+        <hr class="text-muted opacity-25 my-4">
+
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-journal-check text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Condições do contrato</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-2">
+            <label class="form-label fw-bold small text-muted">Prazo para início *</label>
+            <input type="number" min="1" name="prazo_inicio_dias" value="{{ form.get('prazo_inicio_dias', '') }}" class="form-control {% if errors.get('prazo_inicio_dias') %}is-invalid{% endif %}" required>
+            {% if errors.get('prazo_inicio_dias') %}<div class="invalid-feedback">{{ errors.get('prazo_inicio_dias') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label fw-bold small text-muted">Prazo de pagamento *</label>
+            <input type="number" min="1" name="prazo_pagamento_dias" value="{{ form.get('prazo_pagamento_dias', '') }}" class="form-control {% if errors.get('prazo_pagamento_dias') %}is-invalid{% endif %}" required>
+            {% if errors.get('prazo_pagamento_dias') %}<div class="invalid-feedback">{{ errors.get('prazo_pagamento_dias') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Cidade da assinatura *</label>
+            <input type="text" name="cidade_assinatura" value="{{ form.get('cidade_assinatura', '') }}" class="form-control {% if errors.get('cidade_assinatura') %}is-invalid{% endif %}" required>
+            {% if errors.get('cidade_assinatura') %}<div class="invalid-feedback">{{ errors.get('cidade_assinatura') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Foro *</label>
+            <input type="text" name="foro_cidade" value="{{ form.get('foro_cidade', '') }}" class="form-control {% if errors.get('foro_cidade') %}is-invalid{% endif %}" required>
+            {% if errors.get('foro_cidade') %}<div class="invalid-feedback">{{ errors.get('foro_cidade') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label fw-bold small text-muted">Data da assinatura *</label>
+            <input type="date" name="data_assinatura" value="{{ form.get('data_assinatura', '') }}" class="form-control {% if errors.get('data_assinatura') %}is-invalid{% endif %}" required>
+            {% if errors.get('data_assinatura') %}<div class="invalid-feedback">{{ errors.get('data_assinatura') }}</div>{% endif %}
+          </div>
+
+          <div class="col-12">
+            <label class="form-label fw-bold small text-muted">Observações adicionais</label>
+            <textarea name="observacoes_adicionais" rows="4" class="form-control">{{ form.get('observacoes_adicionais', '') }}</textarea>
+            <div class="form-text">Use este campo para observações comerciais ou condições específicas que devam aparecer no contrato.</div>
+          </div>
+        </div>
+
+        <small class="text-muted d-block mt-4">
+          Campos com <span class="text-danger">*</span> são obrigatórios. O PDF do contrato segue o modelo comercial do Agro, mas já nasce preenchido com dados do cliente e do orçamento.
+        </small>
+
+        <div class="d-flex justify-content-end gap-2 mt-5">
+          <a href="{{ url_for('main.agro_orcamentos_listar') }}" class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-x-lg me-1"></i> Cancelar
+          </a>
+
+          <button type="submit" class="btn btn-primary btn-sm">
+            <i class="bi bi-check-lg me-1"></i> Salvar contrato
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function onlyDigits(value) {
+    return (value || "").replace(/\D/g, "");
+  }
+
+  function maskCep(value) {
+    const digits = onlyDigits(value).slice(0, 8);
+    if (digits.length <= 5) return digits;
+    return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+  }
+
+  function maskCurrencyBr(value) {
+    const digits = onlyDigits(value);
+    if (!digits) return "";
+    const number = Number(digits) / 100;
+    return number.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  document.querySelectorAll('input[name="contratante_cep"], input[name="propriedade_cep"]').forEach((input) => {
+    input.addEventListener("input", (event) => {
+      event.target.value = maskCep(event.target.value);
+    });
+  });
+
+  document.querySelectorAll('input[name="valor_total"], input[name="valor_mapeamento_ha"], input[name="valor_pulverizacao_ha"]').forEach((input) => {
+    input.addEventListener("input", (event) => {
+      event.target.value = maskCurrencyBr(event.target.value);
+    });
+  });
+</script>
+{% endblock %}

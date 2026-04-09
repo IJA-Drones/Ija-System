@@ -188,6 +188,20 @@
 
                       {% if is_editable %}
                         <li>
+                          <a href="{{ url_for('main.agro_contrato_editar', orcamento_id=orcamento.id) }}" class="dropdown-item py-2">
+                            <i class="bi bi-file-earmark-text text-primary me-2"></i>
+                            {{ 'Editar contrato' if orcamento.contrato else 'Montar contrato' }}
+                          </a>
+                        </li>
+                      {% endif %}
+                      <li>
+                        <a href="{{ url_for('main.agro_contrato_pdf', orcamento_id=orcamento.id) }}" target="_blank" class="dropdown-item py-2">
+                          <i class="bi bi-filetype-pdf text-danger me-2"></i> PDF do contrato
+                        </a>
+                      </li>
+
+                      {% if is_editable %}
+                        <li>
                           <a href="{{ url_for('main.agro_orcamento_editar', orcamento_id=orcamento.id) }}" class="dropdown-item py-2">
                             <i class="bi bi-pencil-square text-success me-2"></i> Editar orçamento
                           </a>
@@ -351,6 +365,10 @@
               <div class="d-flex flex-wrap gap-2">
                 <a href="{{ url_for('main.agro_orcamento_pdf', orcamento_id=orcamento.id) }}" target="_blank" class="btn btn-outline-secondary btn-sm">
                   <i class="bi bi-filetype-pdf"></i> PDF comercial
+                </a>
+
+                <a href="{{ url_for('main.agro_contrato_pdf', orcamento_id=orcamento.id) }}" target="_blank" class="btn btn-outline-secondary btn-sm">
+                  <i class="bi bi-file-earmark-text"></i> PDF do contrato
                 </a>
 
                 {% if orcamento.anexo_path %}
