@@ -3,158 +3,258 @@
 {% block extra_styles %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+  <style>
+    .agro-dashboard-link {
+      transition: all 0.2s ease;
+    }
+
+    .agro-dashboard-link:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-lg) !important;
+    }
+  </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid agro-shell">
-  <section class="agro-hero-card mb-4">
-    <div class="agro-hero-body">
-      <div class="agro-page-header mb-0">
-        <div>
-          <span class="agro-eyebrow"><i class="bi bi-tree-fill"></i> Frente Agro</span>
-          <h1 class="agro-page-title mt-3">Painel de gestão do Agro</h1>
-          <p class="agro-page-subtitle">
-            Um ambiente separado para clientes, propostas e estrutura operacional do Agro, com base pronta para crescer sem misturar com o fluxo atual.
-          </p>
-        </div>
-        <div class="agro-actions-inline">
-          <a href="{{ url_for('main.agro_cliente_novo') }}" class="btn btn-success agro-primary-btn">
-            <i class="bi bi-person-plus-fill me-2"></i>Novo cliente
-          </a>
-          <a href="{{ url_for('main.agro_orcamento_novo') }}" class="btn btn-primary agro-secondary-btn">
-            <i class="bi bi-file-earmark-plus-fill me-2"></i>Novo orçamento
-          </a>
+<div class="container-fluid py-4" style="max-width: 1200px">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+      <h2 class="text-dark m-0">
+        <i class="bi bi-tree-fill me-2 text-primary"></i> Painel de Gestão do Agro
+      </h2>
+      <p class="text-muted small mb-0">Centralize clientes, orçamentos e estrutura operacional da frente Agro em um único lugar.</p>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{{ url_for('main.agro_cliente_novo') }}" class="btn btn-success d-flex align-items-center gap-2">
+        <i class="bi bi-person-plus-fill"></i> Novo Cliente
+      </a>
+      <a href="{{ url_for('main.agro_orcamento_novo') }}" class="btn btn-secondary d-flex align-items-center gap-2">
+        <i class="bi bi-file-earmark-plus-fill"></i> Novo Orçamento
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-sm-6 col-xl">
+      <div class="card info status-primary shadow-sm rounded-4 border-0 h-100">
+        <div class="card-body">
+          <span class="text-muted small d-block">Clientes agro</span>
+          <h3 class="text-dark mb-0 mt-2">{{ total_clientes_agro }}</h3>
         </div>
       </div>
     </div>
-  </section>
 
-  <section class="agro-stat-grid">
-    <article class="agro-panel-card agro-stat-card">
-      <span class="agro-stat-label">Clientes agro</span>
-      <span class="agro-stat-value">{{ total_clientes_agro }}</span>
-    </article>
-    <article class="agro-panel-card agro-stat-card">
-      <span class="agro-stat-label">Orçamentos</span>
-      <span class="agro-stat-value">{{ total_orcamentos_agro }}</span>
-    </article>
-    <article class="agro-panel-card agro-stat-card">
-      <span class="agro-stat-label">Pilotos agro</span>
-      <span class="agro-stat-value">{{ total_pilotos_agro }}</span>
-    </article>
-    <article class="agro-panel-card agro-stat-card">
-      <span class="agro-stat-label">Equipes agro</span>
-      <span class="agro-stat-value">{{ total_equipes_agro }}</span>
-    </article>
-    <article class="agro-panel-card agro-stat-card">
-      <span class="agro-stat-label">Equipamentos agro</span>
-      <span class="agro-stat-value">{{ total_equipamentos_agro }}</span>
-    </article>
-  </section>
-
-  <section class="agro-shortcut-grid">
-    <a href="{{ url_for('main.agro_clientes_listar') }}" class="agro-panel-card agro-shortcut-card">
-      <span class="agro-shortcut-icon"><i class="bi bi-people-fill"></i></span>
-      <h2 class="agro-shortcut-title">Clientes do Agro</h2>
-      <p class="agro-shortcut-copy">Base comercial com documento e endereço estruturado para propostas, contratos e faturamento.</p>
-    </a>
-    <a href="{{ url_for('main.agro_orcamentos_listar') }}" class="agro-panel-card agro-shortcut-card">
-      <span class="agro-shortcut-icon"><i class="bi bi-file-earmark-text-fill"></i></span>
-      <h2 class="agro-shortcut-title">Orçamentos do Agro</h2>
-      <p class="agro-shortcut-copy">Propostas com preço-base, fazenda, protocolo, anexo técnico e PDF comercial para envio ao cliente.</p>
-    </a>
-    <a href="{{ url_for('main.agro_equipes_listar') }}" class="agro-panel-card agro-shortcut-card">
-      <span class="agro-shortcut-icon"><i class="bi bi-diagram-3-fill"></i></span>
-      <h2 class="agro-shortcut-title">Equipes do Agro</h2>
-      <p class="agro-shortcut-copy">Núcleos operacionais para organizar a estrutura de campo e crescer sem misturar com o fluxo atual.</p>
-    </a>
-    <a href="{{ url_for('main.agro_pilotos_listar') }}" class="agro-panel-card agro-shortcut-card">
-      <span class="agro-shortcut-icon"><i class="bi bi-person-badge-fill"></i></span>
-      <h2 class="agro-shortcut-title">Pilotos do Agro</h2>
-      <p class="agro-shortcut-copy">Cadastro separado dos profissionais da frente Agro, com equipe, status e contato prontos para uso.</p>
-    </a>
-    <a href="{{ url_for('main.agro_equipamentos_listar') }}" class="agro-panel-card agro-shortcut-card">
-      <span class="agro-shortcut-icon"><i class="bi bi-cpu-fill"></i></span>
-      <h2 class="agro-shortcut-title">Equipamentos do Agro</h2>
-      <p class="agro-shortcut-copy">Inventário inicial com identificação, série, status operacional e vínculo com equipe.</p>
-    </a>
-  </section>
-
-  <section class="agro-section-grid">
-    <article class="agro-table-card">
-      <div class="agro-card-head">
-        <div>
-          <h2 class="agro-card-title">Últimos orçamentos</h2>
-          <p class="agro-page-footer-note mb-0">Acompanhe as propostas criadas recentemente e o valor-base registrado.</p>
+    <div class="col-12 col-sm-6 col-xl">
+      <div class="card info status-success shadow-sm rounded-4 border-0 h-100">
+        <div class="card-body">
+          <span class="text-muted small d-block">Orçamentos</span>
+          <h3 class="text-dark mb-0 mt-2">{{ total_orcamentos_agro }}</h3>
         </div>
-        <a href="{{ url_for('main.agro_orcamentos_listar') }}" class="btn agro-outline-btn">
-          Ver todos
-        </a>
       </div>
-      <div class="agro-card-body">
-        <div class="table-responsive">
-          <table class="table agro-table">
-            <thead>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl">
+      <div class="card info status-info shadow-sm rounded-4 border-0 h-100">
+        <div class="card-body">
+          <span class="text-muted small d-block">Pilotos agro</span>
+          <h3 class="text-dark mb-0 mt-2">{{ total_pilotos_agro }}</h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl">
+      <div class="card info status-primary shadow-sm rounded-4 border-0 h-100">
+        <div class="card-body">
+          <span class="text-muted small d-block">Equipes agro</span>
+          <h3 class="text-dark mb-0 mt-2">{{ total_equipes_agro }}</h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl">
+      <div class="card info status-success shadow-sm rounded-4 border-0 h-100">
+        <div class="card-body">
+          <span class="text-muted small d-block">Equipamentos agro</span>
+          <h3 class="text-dark mb-0 mt-2">{{ total_equipamentos_agro }}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-6 col-xl-4">
+      <a href="{{ url_for('main.agro_clientes_listar') }}" class="text-decoration-none">
+        <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-primary border-4 agro-dashboard-link">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Base comercial</h6>
+              <h3 class="mb-0 text-dark fw-bold">Clientes</h3>
+            </div>
+            <div class="text-end">
+              <div class="fs-1 text-primary opacity-75">
+                <i class="bi bi-people-fill"></i>
+              </div>
+              <span class="badge bg-success-subtle text-success">{{ total_clientes_agro }}</span>
+            </div>
+          </div>
+          <div class="mt-3 d-flex align-items-center text-primary small fw-bold">
+            <span>Abrir cadastro de clientes</span>
+            <i class="bi bi-arrow-right ms-2"></i>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md-6 col-xl-4">
+      <a href="{{ url_for('main.agro_orcamentos_listar') }}" class="text-decoration-none">
+        <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-success border-4 agro-dashboard-link">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Propostas</h6>
+              <h3 class="mb-0 text-dark fw-bold">Orçamentos</h3>
+            </div>
+            <div class="text-end">
+              <div class="fs-1 text-success opacity-75">
+                <i class="bi bi-file-earmark-text-fill"></i>
+              </div>
+              <span class="badge bg-success-subtle text-success">{{ total_orcamentos_agro }}</span>
+            </div>
+          </div>
+          <div class="mt-3 d-flex align-items-center text-success small fw-bold">
+            <span>Abrir lista de orçamentos</span>
+            <i class="bi bi-arrow-right ms-2"></i>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md-6 col-xl-4">
+      <a href="{{ url_for('main.agro_equipes_listar') }}" class="text-decoration-none">
+        <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-primary border-4 agro-dashboard-link">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Operação</h6>
+              <h3 class="mb-0 text-dark fw-bold">Equipes</h3>
+            </div>
+            <div class="text-end">
+              <div class="fs-1 text-primary opacity-75">
+                <i class="bi bi-diagram-3-fill"></i>
+              </div>
+              <span class="badge bg-success-subtle text-success">{{ total_equipes_agro }}</span>
+            </div>
+          </div>
+          <div class="mt-3 d-flex align-items-center text-primary small fw-bold">
+            <span>Abrir estrutura de equipes</span>
+            <i class="bi bi-arrow-right ms-2"></i>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md-6 col-xl-6">
+      <a href="{{ url_for('main.agro_pilotos_listar') }}" class="text-decoration-none">
+        <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-primary border-4 agro-dashboard-link">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Equipe de campo</h6>
+              <h3 class="mb-0 text-dark fw-bold">Pilotos</h3>
+            </div>
+            <div class="text-end">
+              <div class="fs-1 text-primary opacity-75">
+                <i class="bi bi-person-badge-fill"></i>
+              </div>
+              <span class="badge bg-success-subtle text-success">{{ total_pilotos_agro }}</span>
+            </div>
+          </div>
+          <div class="mt-3 d-flex align-items-center text-primary small fw-bold">
+            <span>Abrir cadastro de pilotos</span>
+            <i class="bi bi-arrow-right ms-2"></i>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md-6 col-xl-6">
+      <a href="{{ url_for('main.agro_equipamentos_listar') }}" class="text-decoration-none">
+        <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-success border-4 agro-dashboard-link">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Ativos</h6>
+              <h3 class="mb-0 text-dark fw-bold">Equipamentos</h3>
+            </div>
+            <div class="text-end">
+              <div class="fs-1 text-success opacity-75">
+                <i class="bi bi-cpu-fill"></i>
+              </div>
+              <span class="badge bg-success-subtle text-success">{{ total_equipamentos_agro }}</span>
+            </div>
+          </div>
+          <div class="mt-3 d-flex align-items-center text-success small fw-bold">
+            <span>Abrir inventário operacional</span>
+            <i class="bi bi-arrow-right ms-2"></i>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <div class="card shadow-sm rounded-4 border-0 overflow-hidden">
+    <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center">
+      <div>
+        <h5 class="m-0 text-dark">Últimos orçamentos</h5>
+        <p class="text-muted small mb-0">Acompanhe rapidamente as propostas mais recentes cadastradas no Agro.</p>
+      </div>
+      <a href="{{ url_for('main.agro_orcamentos_listar') }}" class="btn btn-outline-secondary btn-sm">
+        Ver todos
+      </a>
+    </div>
+
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Cliente</th>
+              <th>Fazenda</th>
+              <th>Cultura</th>
+              <th>Mapeamento</th>
+              <th>Preço base</th>
+              <th>Data</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for orcamento in ultimos_orcamentos %}
               <tr>
-                <th>Cliente</th>
-                <th>Fazenda</th>
-                <th>Cultura</th>
-                <th>Mapeamento</th>
-                <th>Preço base</th>
-                <th>Data</th>
+                <td>
+                  <div class="fw-bold">{{ orcamento.cliente_nome }}</div>
+                  <div class="text-muted small">{{ orcamento|agro_endereco }}</div>
+                </td>
+                <td>{{ orcamento.nome_fazenda or "-" }}</td>
+                <td>{{ orcamento.cultura or "-" }}</td>
+                <td>
+                  {% if orcamento.mapeamento %}
+                    <span class="badge bg-success-subtle text-success border border-success-subtle">Sim</span>
+                  {% else %}
+                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Não</span>
+                  {% endif %}
+                </td>
+                <td class="fw-semibold">{{ orcamento.preco_base|currencybr or "-" }}</td>
+                <td>{{ orcamento.data_criacao.strftime('%d/%m/%Y %H:%M') }}</td>
               </tr>
-            </thead>
-            <tbody>
-              {% for orcamento in ultimos_orcamentos %}
-                <tr>
-                  <td data-label="Cliente">
-                    <p class="agro-row-title">{{ orcamento.cliente_nome }}</p>
-                    <p class="agro-row-subtitle">{{ orcamento|agro_endereco }}</p>
-                  </td>
-                  <td data-label="Fazenda">{{ orcamento.nome_fazenda }}</td>
-                  <td data-label="Cultura">{{ orcamento.cultura or "—" }}</td>
-                  <td data-label="Mapeamento">
-                    <span class="agro-badge {{ 'agro-badge-success' if orcamento.mapeamento else 'agro-badge-muted' }}">
-                      {{ "Sim" if orcamento.mapeamento else "Não" }}
-                    </span>
-                  </td>
-                  <td data-label="Preço base" class="fw-semibold">{{ orcamento.preco_base|currencybr or "—" }}</td>
-                  <td data-label="Data">{{ orcamento.data_criacao.strftime('%d/%m/%Y %H:%M') }}</td>
-                </tr>
-              {% else %}
-                <tr>
-                  <td colspan="6">
-                    <div class="agro-empty-state">
-                      <i class="bi bi-file-earmark-text d-block mb-2 fs-2"></i>
-                      Nenhum orçamento agro cadastrado ainda.
-                    </div>
-                  </td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
+            {% else %}
+              <tr>
+                <td colspan="6" class="text-center py-5">
+                  <p class="text-muted mb-0">Nenhum orçamento agro cadastrado ainda.</p>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
-    </article>
-
-    <aside class="agro-side-stack">
-      <section class="agro-side-card agro-card-body">
-        <h2 class="agro-card-title mb-3">Base inicial</h2>
-        <div class="agro-side-item">
-          <strong>Clientes agro</strong>
-          <div>Cadastro com documento, CEP e endereço estruturado para proposta, contrato e faturamento.</div>
-        </div>
-        <div class="agro-side-item">
-          <strong>Orçamentos agro</strong>
-          <div>Cliente, fazenda, cultura, protocolo DECEA, risco operacional, preço-base e PDF comercial.</div>
-        </div>
-        <div class="agro-side-item">
-          <strong>Estrutura operacional</strong>
-          <div>Pilotos, equipes e equipamentos já possuem telas próprias dentro do menu do Agro para iniciar a operação separada.</div>
-        </div>
-      </section>
-    </aside>
-  </section>
+    </div>
+  </div>
 </div>
 {% endblock %}

@@ -1,97 +1,217 @@
 {% extends "base.html" %}
 
 {% block extra_styles %}
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid agro-shell">
-  <div class="agro-page-header">
+<div class="container-fluid py-4" style="max-width: 1200px">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
     <div>
-      <span class="agro-eyebrow"><i class="bi bi-person-vcard-fill"></i> Cadastro</span>
-      <h1 class="agro-page-title mt-3">{{ 'Cadastrar cliente agro' if modo == 'novo' else 'Editar cliente agro' }}</h1>
-      <p class="agro-page-subtitle">Preencha os dados com atenção para que os documentos comerciais saiam com nome e endereço corretos.</p>
+      <h2 class="text-dark m-0">
+        <i class="bi bi-person-vcard-fill me-2 text-primary"></i>
+        {{ 'Cadastrar cliente do Agro' if modo == 'novo' else 'Editar cliente do Agro' }}
+      </h2>
+      <p class="text-muted small mb-0">Preencha os dados do cliente para propostas, contratos e documentos comerciais.</p>
     </div>
-    <div class="agro-actions-inline">
-      <a href="{{ url_for('main.agro_clientes_listar') }}" class="btn agro-outline-btn">
-        <i class="bi bi-arrow-left me-2"></i>Voltar
-      </a>
-    </div>
+
+    <a href="{{ url_for('main.agro_clientes_listar') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
   </div>
 
-  <form method="post" novalidate class="agro-form-layout">
-    <section class="agro-form-card agro-form-section">
-      <h2 class="agro-form-section-title">Identificação do cliente</h2>
-      <p class="agro-form-section-copy">Essas informações serão reutilizadas nos orçamentos e contratos.</p>
-
-      <div class="agro-form-grid">
-        <div class="agro-col-7">
-          <label class="agro-input-label">Nome do cliente *</label>
-          <input type="text" name="nome" value="{{ form.get('nome', '') }}" class="form-control agro-form-control {% if errors.get('nome') %}is-invalid{% endif %}" required>
-          {% if errors.get('nome') %}<div class="invalid-feedback">{{ errors.get('nome') }}</div>{% endif %}
+  <div class="card info status-primary shadow-sm rounded-4 border-0">
+    <div class="card-body p-4">
+      <form method="post" novalidate>
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-card-heading text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Identificação do cliente</h5>
         </div>
-        <div class="agro-col-5">
-          <label class="agro-input-label">Documento *</label>
-          <input type="text" id="documento" name="documento" value="{{ form.get('documento', '') }}" class="form-control agro-form-control {% if errors.get('documento') %}is-invalid{% endif %}" placeholder="CPF ou CNPJ" required>
-          {% if errors.get('documento') %}<div class="invalid-feedback">{{ errors.get('documento') }}</div>{% endif %}
-        </div>
-      </div>
-    </section>
 
-    <section class="agro-form-card agro-form-section">
-      <h2 class="agro-form-section-title">Endereço comercial</h2>
-      <p class="agro-form-section-copy">Use o CEP para preencher rapidamente o endereço e ajuste o número e o complemento.</p>
-
-      <div class="agro-form-grid">
-        <div class="agro-col-3">
-          <label class="agro-input-label">CEP *</label>
-          <div class="input-group">
-            <input type="text" id="cep" name="cep" value="{{ form.get('cep', '') }}" class="form-control agro-form-control {% if errors.get('cep') %}is-invalid{% endif %}" required>
-            <button type="button" class="btn agro-outline-btn" id="btnBuscarCep">Buscar</button>
+        <div class="row g-3 mb-4">
+          <div class="col-md-7">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-person-fill me-1 text-primary"></i> Nome do cliente *
+            </label>
+            <input
+              type="text"
+              name="nome"
+              value="{{ form.get('nome', '') }}"
+              class="form-control {% if errors.get('nome') %}is-invalid{% endif %}"
+              required
+            >
+            {% if errors.get('nome') %}
+              <div class="invalid-feedback">{{ errors.get('nome') }}</div>
+            {% endif %}
           </div>
-          {% if errors.get('cep') %}<div class="invalid-feedback d-block">{{ errors.get('cep') }}</div>{% endif %}
-          <div class="form-text" id="cepStatus"></div>
-        </div>
-        <div class="agro-col-7">
-          <label class="agro-input-label">Logradouro *</label>
-          <input type="text" id="logradouro" name="logradouro" value="{{ form.get('logradouro', '') }}" class="form-control agro-form-control {% if errors.get('logradouro') %}is-invalid{% endif %}" required>
-          {% if errors.get('logradouro') %}<div class="invalid-feedback">{{ errors.get('logradouro') }}</div>{% endif %}
-        </div>
-        <div class="agro-col-2">
-          <label class="agro-input-label">Número *</label>
-          <input type="text" id="numero" name="numero" value="{{ form.get('numero', '') }}" class="form-control agro-form-control {% if errors.get('numero') %}is-invalid{% endif %}" required>
-          {% if errors.get('numero') %}<div class="invalid-feedback">{{ errors.get('numero') }}</div>{% endif %}
+
+          <div class="col-md-5">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-file-earmark-person-fill me-1 text-primary"></i> Documento *
+            </label>
+            <input
+              type="text"
+              id="documento"
+              name="documento"
+              value="{{ form.get('documento', '') }}"
+              class="form-control {% if errors.get('documento') %}is-invalid{% endif %}"
+              placeholder="CPF ou CNPJ"
+              required
+            >
+            {% if errors.get('documento') %}
+              <div class="invalid-feedback">{{ errors.get('documento') }}</div>
+            {% endif %}
+          </div>
         </div>
 
-        <div class="agro-col-4">
-          <label class="agro-input-label">Complemento</label>
-          <input type="text" id="complemento" name="complemento" value="{{ form.get('complemento', '') }}" class="form-control agro-form-control" placeholder="Ex.: sala, bloco, casa">
-        </div>
-        <div class="agro-col-4">
-          <label class="agro-input-label">Bairro *</label>
-          <input type="text" id="bairro" name="bairro" value="{{ form.get('bairro', '') }}" class="form-control agro-form-control {% if errors.get('bairro') %}is-invalid{% endif %}" required>
-          {% if errors.get('bairro') %}<div class="invalid-feedback">{{ errors.get('bairro') }}</div>{% endif %}
-        </div>
-        <div class="agro-col-3">
-          <label class="agro-input-label">Cidade *</label>
-          <input type="text" id="cidade" name="cidade" value="{{ form.get('cidade', '') }}" class="form-control agro-form-control {% if errors.get('cidade') %}is-invalid{% endif %}" required>
-          {% if errors.get('cidade') %}<div class="invalid-feedback">{{ errors.get('cidade') }}</div>{% endif %}
-        </div>
-        <div class="agro-col-1">
-          <label class="agro-input-label">UF *</label>
-          <input type="text" id="uf" name="uf" value="{{ form.get('uf', '') }}" class="form-control agro-form-control text-uppercase {% if errors.get('uf') %}is-invalid{% endif %}" maxlength="2" required>
-          {% if errors.get('uf') %}<div class="invalid-feedback">{{ errors.get('uf') }}</div>{% endif %}
-        </div>
-      </div>
-    </section>
+        <hr class="text-muted opacity-25 my-4">
 
-    <div class="agro-actions-inline justify-content-end">
-      <a href="{{ url_for('main.agro_clientes_listar') }}" class="btn btn-outline-danger agro-outline-btn">Cancelar</a>
-      <button type="submit" class="btn btn-success agro-primary-btn">
-        <i class="bi bi-check-lg me-2"></i>{{ 'Salvar cliente' if modo == 'novo' else 'Atualizar cliente' }}
-      </button>
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-geo-alt-fill text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Endereço comercial</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-mailbox2-flag me-1 text-primary"></i> CEP *
+            </label>
+            <div class="input-group">
+              <input
+                type="text"
+                id="cep"
+                name="cep"
+                value="{{ form.get('cep', '') }}"
+                class="form-control {% if errors.get('cep') %}is-invalid{% endif %}"
+                required
+              >
+              <button type="button" class="btn btn-outline-primary" id="btnBuscarCep">Buscar</button>
+            </div>
+            {% if errors.get('cep') %}
+              <div class="invalid-feedback d-block">{{ errors.get('cep') }}</div>
+            {% endif %}
+            <div class="form-text" id="cepStatus"></div>
+          </div>
+
+          <div class="col-md-7">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-signpost-2-fill me-1 text-primary"></i> Logradouro *
+            </label>
+            <input
+              type="text"
+              id="logradouro"
+              name="logradouro"
+              value="{{ form.get('logradouro', '') }}"
+              class="form-control {% if errors.get('logradouro') %}is-invalid{% endif %}"
+              required
+            >
+            {% if errors.get('logradouro') %}
+              <div class="invalid-feedback">{{ errors.get('logradouro') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-hash me-1 text-primary"></i> Número *
+            </label>
+            <input
+              type="text"
+              id="numero"
+              name="numero"
+              value="{{ form.get('numero', '') }}"
+              class="form-control {% if errors.get('numero') %}is-invalid{% endif %}"
+              required
+            >
+            {% if errors.get('numero') %}
+              <div class="invalid-feedback">{{ errors.get('numero') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-building me-1 text-primary"></i> Complemento
+            </label>
+            <input
+              type="text"
+              id="complemento"
+              name="complemento"
+              value="{{ form.get('complemento', '') }}"
+              class="form-control"
+              placeholder="Ex.: sala, bloco, casa"
+            >
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-geo me-1 text-primary"></i> Bairro *
+            </label>
+            <input
+              type="text"
+              id="bairro"
+              name="bairro"
+              value="{{ form.get('bairro', '') }}"
+              class="form-control {% if errors.get('bairro') %}is-invalid{% endif %}"
+              required
+            >
+            {% if errors.get('bairro') %}
+              <div class="invalid-feedback">{{ errors.get('bairro') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-pin-map-fill me-1 text-primary"></i> Cidade *
+            </label>
+            <input
+              type="text"
+              id="cidade"
+              name="cidade"
+              value="{{ form.get('cidade', '') }}"
+              class="form-control {% if errors.get('cidade') %}is-invalid{% endif %}"
+              required
+            >
+            {% if errors.get('cidade') %}
+              <div class="invalid-feedback">{{ errors.get('cidade') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-1">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-compass-fill me-1 text-primary"></i> UF *
+            </label>
+            <input
+              type="text"
+              id="uf"
+              name="uf"
+              value="{{ form.get('uf', '') }}"
+              class="form-control text-uppercase {% if errors.get('uf') %}is-invalid{% endif %}"
+              maxlength="2"
+              required
+            >
+            {% if errors.get('uf') %}
+              <div class="invalid-feedback">{{ errors.get('uf') }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <small class="text-muted d-block mt-4">
+          Campos com <span class="text-danger">*</span> são de preenchimento obrigatório.
+        </small>
+
+        <div class="d-flex justify-content-end gap-2 mt-5">
+          <a href="{{ url_for('main.agro_clientes_listar') }}" class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-x-lg me-1"></i> Cancelar
+          </a>
+
+          <button type="submit" class="btn btn-primary btn-sm">
+            <i class="bi bi-check-lg me-1"></i>
+            {{ 'Salvar cliente' if modo == 'novo' else 'Atualizar cliente' }}
+          </button>
+        </div>
+      </form>
     </div>
-  </form>
+  </div>
 </div>
 {% endblock %}
 

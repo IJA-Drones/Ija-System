@@ -3,246 +3,213 @@
 {% block extra_styles %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/listing_pattern.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro_orcamentos_listar.css') }}">
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid agro-shell">
-  <section class="agro-hero-card mb-4">
-    <div class="agro-hero-body">
-      <div class="agro-page-header mb-0">
-        <div>
-          <span class="agro-eyebrow"><i class="bi bi-file-earmark-text-fill"></i> Or&ccedil;amentos</span>
-          <h1 class="agro-page-title mt-3">Or&ccedil;amentos do Agro</h1>
-          <p class="agro-page-subtitle">
-            Acompanhe propostas, servi&ccedil;os, valores separados, anexos t&eacute;cnicos e o PDF comercial pronto para envio ao cliente.
-          </p>
-
-          <div class="agro-inline-metrics">
-            <span class="agro-inline-chip">
-              <i class="bi bi-collection"></i>{{ filters.total }} cadastrados
-            </span>
-            <span class="agro-inline-chip">
-              <i class="bi bi-layout-text-window-reverse"></i>P&aacute;gina {{ filters.page }} de {{ filters.total_pages }}
-            </span>
-            {% if filters.q or filters.cliente_id or filters.mapeamento %}
-              <span class="agro-inline-chip">
-                <i class="bi bi-funnel-fill"></i>Filtros ativos
-              </span>
-            {% endif %}
-          </div>
-        </div>
-
-        {% if is_editable %}
-          <div class="agro-actions-inline">
-            <a href="{{ url_for('main.agro_orcamento_novo') }}" class="btn btn-primary agro-secondary-btn">
-              <i class="bi bi-file-earmark-plus-fill me-2"></i>Novo or&ccedil;amento
-            </a>
-          </div>
+<div class="container-fluid py-4 listing-page">
+  <div class="listing-header mb-4">
+    <div>
+      <h2 class="text-dark m-0">
+        <i class="bi bi-file-earmark-text-fill me-2 text-primary"></i> Orçamentos do Agro
+      </h2>
+      <p class="text-muted small mb-0">
+        Total de registros: <strong>{{ filters.total }}</strong>
+        {% if filters.q or filters.cliente_id or filters.mapeamento %}
+          <span class="badge bg-filter-custom ms-2">Filtrado</span>
         {% endif %}
-      </div>
+      </p>
     </div>
-  </section>
 
-  <section class="agro-filter-card mb-4">
-    <div class="agro-card-head">
-      <div>
-        <h2 class="agro-card-title">Filtros da listagem</h2>
-        <p class="agro-page-footer-note mb-0">
-          Refine por texto, cliente ou necessidade de mapeamento para localizar a proposta com mais rapidez.
-        </p>
-      </div>
+    <div class="listing-actions">
+      <a href="{{ url_for('main.admin_agro') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
 
-      {% if filters.q or filters.cliente_id or filters.mapeamento %}
-        <a href="{{ url_for('main.agro_orcamentos_listar') }}" class="btn btn-outline-primary agro-outline-btn">
-          <i class="bi bi-arrow-counterclockwise"></i>Limpar filtros
+      {% if is_editable %}
+        <a href="{{ url_for('main.agro_orcamento_novo') }}" class="btn btn-success d-flex align-items-center gap-2">
+          <i class="bi bi-plus-lg"></i> Novo Orçamento
         </a>
       {% endif %}
     </div>
+  </div>
 
-    <div class="agro-card-body pt-3">
-      <form method="get" class="row g-3 align-items-end">
-        <div class="col-12 col-xl-5">
-          <label class="agro-input-label" for="q">Buscar</label>
-          <input
-            id="q"
-            type="text"
-            name="q"
-            value="{{ filters.q }}"
-            class="form-control agro-form-control"
-            placeholder="Cliente, fazenda, cultura, servi&ccedil;o ou protocolo"
-          >
-        </div>
+  <div class="card shadow-sm rounded-4 mb-4 border-0">
+    <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center listing-filter-header"
+         data-bs-toggle="collapse"
+         data-bs-target="#collapseFiltrosOrcamentosAgro"
+         aria-expanded="{{ 'true' if (filters.q or filters.cliente_id or filters.mapeamento) else 'false' }}">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-funnel-fill text-primary"></i>
+        <span class="text-dark">Filtros de busca</span>
+        {% if filters.q or filters.cliente_id or filters.mapeamento %}
+          <span class="badge bg-danger rounded-circle p-1 listing-filter-dot"></span>
+        {% endif %}
+      </div>
+      <i class="bi bi-chevron-down text-muted"></i>
+    </div>
 
-        <div class="col-12 col-md-6 col-xl-3">
-          <label class="agro-input-label" for="cliente_id">Cliente</label>
-          <select id="cliente_id" name="cliente_id" class="form-select agro-form-select">
-            <option value="">Todos</option>
-            {% for cliente in clientes %}
-              <option value="{{ cliente.id }}" {% if filters.cliente_id == cliente.id %}selected{% endif %}>{{ cliente.nome }}</option>
-            {% endfor %}
-          </select>
-        </div>
+    <div class="collapse {% if filters.q or filters.cliente_id or filters.mapeamento %}show{% endif %}" id="collapseFiltrosOrcamentosAgro">
+      <div class="card-body pt-0 listing-filter-body">
+        <form method="GET" action="{{ url_for('main.agro_orcamentos_listar') }}">
+          <div class="row g-2 align-items-end">
+            <div class="col-md-5">
+              <label class="small text-muted mb-1">Busca geral:</label>
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                name="q"
+                value="{{ filters.q }}"
+                placeholder="Cliente, fazenda, cultura, serviço ou protocolo..."
+              >
+            </div>
 
-        <div class="col-12 col-md-6 col-xl-2">
-          <label class="agro-input-label" for="mapeamento">Mapeamento</label>
-          <select id="mapeamento" name="mapeamento" class="form-select agro-form-select">
-            <option value="">Todos</option>
-            <option value="SIM" {% if filters.mapeamento == 'SIM' %}selected{% endif %}>Sim</option>
-            <option value="NAO" {% if filters.mapeamento == 'NAO' %}selected{% endif %}>N&atilde;o</option>
-          </select>
-        </div>
+            <div class="col-md-3">
+              <label class="small text-muted mb-1">Cliente:</label>
+              <select name="cliente_id" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for cliente in clientes %}
+                  <option value="{{ cliente.id }}" {% if filters.cliente_id == cliente.id %}selected{% endif %}>{{ cliente.nome }}</option>
+                {% endfor %}
+              </select>
+            </div>
 
-        <div class="col-12 col-xl-2">
-          <div class="d-grid">
-            <button class="btn btn-success agro-search-btn" type="submit">
-              <i class="bi bi-search me-2"></i>Filtrar
-            </button>
+            <div class="col-md-2">
+              <label class="small text-muted mb-1">Mapeamento:</label>
+              <select name="mapeamento" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                <option value="SIM" {% if filters.mapeamento == 'SIM' %}selected{% endif %}>Sim</option>
+                <option value="NAO" {% if filters.mapeamento == 'NAO' %}selected{% endif %}>Não</option>
+              </select>
+            </div>
+
+            <div class="col-md-2 listing-filter-actions">
+              <button type="submit" class="btn btn-success btn-sm">
+                <i class="bi bi-funnel"></i> Filtrar
+              </button>
+
+              {% if filters.q or filters.cliente_id or filters.mapeamento %}
+                <a href="{{ url_for('main.agro_orcamentos_listar') }}" class="btn btn-outline-secondary btn-sm">
+                  <i class="bi bi-x-lg"></i> Limpar
+                </a>
+              {% endif %}
+            </div>
           </div>
-        </div>
-      </form>
-    </div>
-  </section>
-
-  <section class="agro-table-card">
-    <div class="agro-card-head">
-      <div>
-        <h2 class="agro-card-title">Propostas cadastradas</h2>
-        <p class="agro-page-footer-note mb-0">
-          Use os arquivos para abrir o anexo original ou gerar o PDF comercial com a identidade da IJA.
-        </p>
-      </div>
-
-      <div class="agro-inline-metrics">
-        <span class="agro-inline-chip">
-          <i class="bi bi-list-check"></i>{{ filters.total }} registro{{ '' if filters.total == 1 else 's' }}
-        </span>
+        </form>
       </div>
     </div>
+  </div>
 
-    <div class="agro-card-body pt-3">
+  <div class="card shadow-sm rounded-4 border-0 overflow-hidden listing-table-wrap">
+    <div class="card-body p-0">
       <div class="table-responsive">
-        <table class="table agro-table align-middle">
-          <thead>
+        <table class="table table-hover align-middle mb-0 listing-table agro-orcamentos-table">
+          <thead class="table-light">
             <tr>
-              <th>Cliente</th>
-              <th>Fazenda</th>
-              <th>Servi&ccedil;o</th>
-              <th>Cultura</th>
-              <th>Mapeamento</th>
-              <th>Valores</th>
-              <th>Protocolo</th>
-              <th>Data</th>
-              <th>Arquivos</th>
-              {% if is_editable %}<th class="text-end">A&ccedil;&otilde;es</th>{% endif %}
+              <th class="agro-col-client">Cliente</th>
+              <th class="agro-col-operation">Operação</th>
+              <th class="agro-col-values">Valor base</th>
+              <th class="agro-col-created">Criado em</th>
+              <th class="agro-col-files">Arquivos</th>
+              <th class="col-actions">Ações</th>
             </tr>
           </thead>
           <tbody>
             {% for orcamento in orcamentos %}
               <tr>
                 <td data-label="Cliente">
-                  <p class="agro-row-title">{{ orcamento.cliente_nome }}</p>
-                  <p class="agro-row-subtitle">{{ orcamento|agro_endereco }}</p>
-                </td>
-
-                <td data-label="Fazenda">
-                  <span class="fw-semibold d-block">{{ orcamento.nome_fazenda or "-" }}</span>
-                </td>
-
-                <td data-label="Servi&ccedil;o">
-                  <span class="agro-kicker">{{ orcamento.servico or "Nao informado" }}</span>
-                </td>
-
-                <td data-label="Cultura">
-                  <span class="fw-semibold">{{ orcamento.cultura or "-" }}</span>
-                </td>
-
-                <td data-label="Mapeamento">
-                  <span class="agro-badge {{ 'agro-badge-success' if orcamento.mapeamento else 'agro-badge-muted' }}">
-                    {{ agro_bool_label(orcamento.mapeamento) }}
-                  </span>
-                </td>
-
-                <td data-label="Valores">
-                  <div class="agro-value-stack">
-                    <div class="agro-value-line">
-                      <span class="agro-value-label">Base</span>
-                      <strong>{{ orcamento.preco_base|currencybr or "-" }}</strong>
-                    </div>
-                    <div class="agro-value-line">
-                      <span class="agro-value-label">Map.</span>
-                      <strong>{{ orcamento.preco_mapeamento|currencybr if orcamento.mapeamento else "-" }}</strong>
-                    </div>
-                    <div class="agro-value-line">
-                      <span class="agro-value-label">Pulv.</span>
-                      <strong>{{ orcamento.preco_pulverizacao|currencybr or "-" }}</strong>
-                    </div>
+                  <div class="fw-bold agro-orcamentos-main">{{ orcamento.cliente_nome }}</div>
+                  <div class="text-muted small agro-orcamentos-subline">
+                    {{ orcamento.cidade }}/{{ orcamento.uf }}
+                    {% if orcamento.cliente and orcamento.cliente.documento %}
+                      <span class="agro-orcamentos-dot">•</span> Doc. {{ orcamento.cliente.documento }}
+                    {% endif %}
                   </div>
                 </td>
 
-                <td data-label="Protocolo">
-                  <span class="font-monospace agro-protocol-chip">{{ orcamento.protocolo or "-" }}</span>
+                <td data-label="Operação">
+                  <div class="fw-semibold agro-orcamentos-main">{{ orcamento.nome_fazenda or "-" }}</div>
+                  <div class="text-muted small agro-orcamentos-subline">
+                    {{ orcamento.servico or "Serviço não informado" }}
+                    {% if orcamento.cultura %}
+                      <span class="agro-orcamentos-dot">•</span> {{ orcamento.cultura }}
+                    {% endif %}
+                  </div>
                 </td>
 
-                <td data-label="Data" class="text-nowrap">
-                  {{ orcamento.data_criacao.strftime('%d/%m/%Y %H:%M') }}
+                <td data-label="Valores">
+                  <div class="fw-bold agro-orcamentos-value">{{ orcamento.preco_base|currencybr or "-" }}</div>
+                  <div class="text-muted small agro-orcamentos-subline">Demais valores no detalhe</div>
+                </td>
+
+                <td data-label="Criado em">
+                  <div class="fw-semibold agro-orcamentos-main">{{ orcamento.data_criacao.strftime('%d/%m/%Y') }}</div>
+                  <div class="text-muted small agro-orcamentos-subline">{{ orcamento.data_criacao.strftime('%H:%M') }}</div>
                 </td>
 
                 <td data-label="Arquivos">
-                  <div class="agro-action-group">
+                  <div class="agro-orcamentos-file-actions">
                     <a
                       href="{{ url_for('main.agro_orcamento_pdf', orcamento_id=orcamento.id) }}"
                       target="_blank"
                       class="btn agro-icon-btn agro-icon-btn-pdf"
-                      title="Gerar PDF do or&ccedil;amento"
+                      title="Gerar PDF"
                     >
                       <i class="bi bi-filetype-pdf"></i>
                     </a>
+
                     {% if orcamento.anexo_path %}
                       <a
                         href="{{ url_for('main.agro_orcamento_anexo', orcamento_id=orcamento.id) }}"
                         target="_blank"
                         class="btn agro-icon-btn agro-icon-btn-attachment"
-                        title="Abrir anexo enviado"
+                        title="Abrir anexo"
                       >
                         <i class="bi bi-paperclip"></i>
                       </a>
                     {% endif %}
                   </div>
-
-                  {% if orcamento.anexo_nome %}
-                    <div class="agro-file-meta text-truncate" title="{{ orcamento.anexo_nome }}">
-                      <i class="bi bi-paperclip"></i>{{ orcamento.anexo_nome }}
-                    </div>
-                  {% endif %}
                 </td>
 
-                {% if is_editable %}
-                  <td data-label="A&ccedil;&otilde;es" class="text-end">
-                    <div class="agro-action-group justify-content-end">
-                      <a
-                        href="{{ url_for('main.agro_orcamento_editar', orcamento_id=orcamento.id) }}"
-                        class="btn agro-icon-btn agro-icon-btn-edit"
-                        title="Editar or&ccedil;amento"
-                      >
-                        <i class="bi bi-pencil-square"></i>
-                      </a>
-                      <form method="post" action="{{ url_for('main.agro_orcamento_deletar', orcamento_id=orcamento.id) }}" class="form-deletar">
-                        <button type="submit" class="btn agro-icon-btn agro-icon-btn-delete" title="Excluir or&ccedil;amento">
-                          <i class="bi bi-trash"></i>
+                <td data-label="Ações" class="listing-cell-actions">
+                  <div class="dropdown agro-actions-dropdown">
+                    <button class="btn btn-outline-secondary agro-actions-trigger" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Mais ações">
+                      <i class="bi bi-three-dots-vertical"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
+                      <li>
+                        <button class="dropdown-item py-2" type="button" data-bs-toggle="modal" data-bs-target="#modalDetalhesOrcamento{{ orcamento.id }}">
+                          <i class="bi bi-eye text-primary me-2"></i> Ver detalhes
                         </button>
-                      </form>
-                    </div>
-                  </td>
-                {% endif %}
+                      </li>
+
+                      {% if is_editable %}
+                        <li>
+                          <a href="{{ url_for('main.agro_orcamento_editar', orcamento_id=orcamento.id) }}" class="dropdown-item py-2">
+                            <i class="bi bi-pencil-square text-success me-2"></i> Editar orçamento
+                          </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+
+                        <li>
+                          <form class="form-deletar m-0" method="POST" action="{{ url_for('main.agro_orcamento_deletar', orcamento_id=orcamento.id) }}">
+                            <button type="submit" class="dropdown-item py-2 text-danger">
+                              <i class="bi bi-trash me-2"></i> Excluir orçamento
+                            </button>
+                          </form>
+                        </li>
+                      {% endif %}
+                    </ul>
+                  </div>
+                </td>
               </tr>
             {% else %}
               <tr>
-                <td colspan="{{ 10 if is_editable else 9 }}">
-                  <div class="agro-empty-state">
-                    <i class="bi bi-folder2-open d-block mb-2 fs-2"></i>
-                    Nenhum or&ccedil;amento agro encontrado com os filtros atuais.
-                  </div>
+                <td colspan="6" class="text-center py-5">
+                  <p class="text-muted mb-0">Nenhum orçamento agro encontrado com os filtros aplicados.</p>
                 </td>
               </tr>
             {% endfor %}
@@ -250,22 +217,167 @@
         </table>
       </div>
     </div>
-  </section>
 
-  {% if filters.total_pages > 1 %}
-    <nav class="mt-4" aria-label="Paginacao de orcamentos agro">
-      <ul class="pagination pagination-sm justify-content-center flex-wrap">
-        {% for pg in range(1, filters.total_pages + 1) %}
-          <li class="page-item {% if pg == filters.page %}active{% endif %}">
-            {% if pg == filters.page %}
-              <span class="page-link">{{ pg }}</span>
-            {% else %}
-              <a class="page-link" href="{{ url_for('main.agro_orcamentos_listar', page=pg, **pagination_args) }}">{{ pg }}</a>
-            {% endif %}
-          </li>
-        {% endfor %}
-      </ul>
-    </nav>
-  {% endif %}
+    {% if filters.total_pages > 1 %}
+      <div class="card-footer bg-transparent py-3 border-top">
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="small text-muted">Página <strong>{{ filters.page }}</strong> de {{ filters.total_pages }}</span>
+          <nav>
+            <ul class="pagination pagination-sm mb-0 listing-pagination">
+              <li class="page-item {% if filters.page <= 1 %}disabled{% endif %}">
+                <a class="page-link shadow-none" href="{{ url_for('main.agro_orcamentos_listar', page=filters.page-1, **pagination_args) }}">Anterior</a>
+              </li>
+              <li class="page-item active"><span class="page-link shadow-none">{{ filters.page }}</span></li>
+              <li class="page-item {% if filters.page >= filters.total_pages %}disabled{% endif %}">
+                <a class="page-link shadow-none" href="{{ url_for('main.agro_orcamentos_listar', page=filters.page+1, **pagination_args) }}">Próxima</a>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+    {% endif %}
+  </div>
 </div>
+
+{% for orcamento in orcamentos %}
+  <div class="modal fade" id="modalDetalhesOrcamento{{ orcamento.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl agro-orcamento-modal-dialog">
+      <div class="modal-content agro-orcamento-modal">
+        <div class="modal-header">
+          <div>
+            <h5 class="modal-title">Detalhes do orçamento #{{ orcamento.id }}</h5>
+            <div class="small text-muted">{{ orcamento.cliente_nome }} • {{ orcamento.nome_fazenda or "-" }}</div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="agro-detail-grid">
+            <section class="agro-detail-card agro-detail-card-summary">
+              <h6 class="agro-detail-title">
+                <i class="bi bi-briefcase-fill"></i> Resumo do orçamento
+              </h6>
+
+              <dl class="agro-detail-list agro-detail-list-summary">
+                <div>
+                  <dt>Cliente</dt>
+                  <dd>{{ orcamento.cliente_nome }}</dd>
+                </div>
+                <div>
+                  <dt>Documento</dt>
+                  <dd>{{ orcamento.cliente.documento if orcamento.cliente else "-" }}</dd>
+                </div>
+                <div>
+                  <dt>Fazenda</dt>
+                  <dd>{{ orcamento.nome_fazenda or "-" }}</dd>
+                </div>
+                <div>
+                  <dt>Serviço</dt>
+                  <dd>{{ orcamento.servico or "-" }}</dd>
+                </div>
+                <div>
+                  <dt>Cultura</dt>
+                  <dd>{{ orcamento.cultura or "Não informada" }}</dd>
+                </div>
+                <div>
+                  <dt>Mapeamento</dt>
+                  <dd>{{ agro_bool_label(orcamento.mapeamento) }}</dd>
+                </div>
+                <div>
+                  <dt>Protocolo</dt>
+                  <dd>{{ orcamento.protocolo or "Não informado" }}</dd>
+                </div>
+                <div>
+                  <dt>Criado em</dt>
+                  <dd>{{ orcamento.data_criacao.strftime('%d/%m/%Y às %H:%M') }}</dd>
+                </div>
+              </dl>
+            </section>
+
+            <section class="agro-detail-card agro-detail-card-values">
+              <h6 class="agro-detail-title">
+                <i class="bi bi-cash-coin"></i> Valores comerciais
+              </h6>
+
+              <dl class="agro-detail-list agro-detail-list-inline">
+                <div>
+                  <dt>Preço base</dt>
+                  <dd>{{ orcamento.preco_base|currencybr or "-" }}</dd>
+                </div>
+                <div>
+                  <dt>Preço do mapeamento</dt>
+                  <dd>{{ orcamento.preco_mapeamento|currencybr if orcamento.mapeamento else "-" }}</dd>
+                </div>
+                <div>
+                  <dt>Pulverização / ha</dt>
+                  <dd>{{ orcamento.preco_pulverizacao|currencybr or "-" }}</dd>
+                </div>
+              </dl>
+            </section>
+
+            <section class="agro-detail-card agro-detail-card-wide">
+              <h6 class="agro-detail-title">
+                <i class="bi bi-geo-alt-fill"></i> Endereço da operação
+              </h6>
+
+              <dl class="agro-detail-list agro-detail-list-wide">
+                <div>
+                  <dt>Endereço</dt>
+                  <dd>
+                    {{ orcamento.logradouro }}, {{ orcamento.numero }}
+                    {% if orcamento.complemento %} ({{ orcamento.complemento }}){% endif %}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Bairro</dt>
+                  <dd>{{ orcamento.bairro }}</dd>
+                </div>
+                <div>
+                  <dt>Cidade / UF</dt>
+                  <dd>{{ orcamento.cidade }}/{{ orcamento.uf }}</dd>
+                </div>
+                <div>
+                  <dt>CEP</dt>
+                  <dd>{{ orcamento.cep }}</dd>
+                </div>
+              </dl>
+            </section>
+
+            <section class="agro-detail-card">
+              <h6 class="agro-detail-title">
+                <i class="bi bi-paperclip"></i> Arquivos
+              </h6>
+
+              <div class="d-flex flex-wrap gap-2">
+                <a href="{{ url_for('main.agro_orcamento_pdf', orcamento_id=orcamento.id) }}" target="_blank" class="btn btn-outline-secondary btn-sm">
+                  <i class="bi bi-filetype-pdf"></i> PDF comercial
+                </a>
+
+                {% if orcamento.anexo_path %}
+                  <a href="{{ url_for('main.agro_orcamento_anexo', orcamento_id=orcamento.id) }}" target="_blank" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-paperclip"></i> Anexo enviado
+                  </a>
+                {% endif %}
+              </div>
+
+              {% if orcamento.anexo_nome %}
+                <div class="small text-muted mt-2 text-break">{{ orcamento.anexo_nome }}</div>
+              {% else %}
+                <div class="small text-muted mt-2">Nenhum anexo enviado para este orçamento.</div>
+              {% endif %}
+            </section>
+
+            <section class="agro-detail-card">
+              <h6 class="agro-detail-title">
+                <i class="bi bi-exclamation-triangle-fill"></i> Risco operacional
+              </h6>
+
+              <p class="mb-0 small">{{ orcamento.risco_operacional or "Nenhum risco operacional informado." }}</p>
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endfor %}
 {% endblock %}
