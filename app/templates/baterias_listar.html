@@ -108,10 +108,17 @@
             width: 130px !important;
         }
 
-        .dropdown {
+        .dropdown,
+        .dropup {
             display: flex;
             justify-content: flex-end;
         }
+    }
+
+    .menu-actions-table-wrap,
+    .menu-actions-table-wrap .card-body,
+    .menu-actions-table-wrap .table-responsive {
+        overflow: visible !important;
     }
 
     html.dark-mode .btn-voltar, body.dark-mode .btn-voltar {
@@ -147,7 +154,7 @@
     </div>
 
     {# --- LISTAGEM --- #}
-    <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+    <div class="card shadow-sm border-0 rounded-4 menu-actions-table-wrap">
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0 text-center">
@@ -211,8 +218,8 @@
                             </td>
 
                             <td>
-                                <div class="dropdown">
-                                    <button class="btn btn-outline-secondary ms-auto" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <div class="dropup">
+                                    <button class="btn btn-outline-secondary ms-auto" type="button" data-bs-toggle="dropdown" data-bs-offset="0,8" aria-expanded="false">
                                         <i class="bi bi-three-dots-vertical"></i>
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">

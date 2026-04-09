@@ -85,7 +85,10 @@
         color: var(--color-text-main) !important;
       }
 
-      .table-responsive { overflow: visible !important; padding-bottom: 96px !important; }
+      .menu-actions-table-wrap,
+      .menu-actions-table-wrap .card-body,
+      .menu-actions-table-wrap .table-responsive { overflow: visible !important; }
+      .menu-actions-table-wrap .table-responsive { padding-bottom: 96px !important; }
       table.table { margin: 0 !important; border-collapse: separate !important; border-spacing: 0 !important; }
       thead.table-light { display: none !important; }
 
@@ -327,7 +330,7 @@
       </div>
   </div>
 
-  <div class="card shadow-sm rounded-4 border-0 overflow-hidden">
+  <div class="card shadow-sm rounded-4 border-0 menu-actions-table-wrap">
     <div class="card-body p-0">
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0" style="min-height: 200px;">
@@ -415,8 +418,8 @@
               </td>
 
               <td class="text-end pe-4">
-                <div class="dropdown">
-                  <button class="btn btn-outline-secondary ms-auto" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <div class="dropup">
+                  <button class="btn btn-outline-secondary ms-auto" type="button" data-bs-toggle="dropdown" data-bs-offset="0,8" aria-expanded="false">
                     <i class="bi bi-three-dots-vertical"></i>
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end shadow border-0">
