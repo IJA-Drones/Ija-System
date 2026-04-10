@@ -133,11 +133,16 @@
                   </div>
                 </td>
                 <td data-label="Relatorio">
+                  {% if os_agro.mapa_aplicacao_nome %}
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Mapa anexado</span>
+                    <div class="text-muted small mt-1">{{ os_agro.mapa_aplicacao_nome }}</div>
+                  {% endif %}
                   {% if os_agro.relatorio_pdf_nome %}
-                    <span class="badge bg-success-subtle text-success border border-success-subtle">PDF anexado</span>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle {% if os_agro.mapa_aplicacao_nome %}mt-2 d-inline-block{% endif %}">PDF complementar</span>
                     <div class="text-muted small mt-1">{{ os_agro.relatorio_pdf_nome }}</div>
-                  {% else %}
-                    <span class="text-muted">Sem relatorio final</span>
+                  {% endif %}
+                  {% if not os_agro.mapa_aplicacao_nome and not os_agro.relatorio_pdf_nome %}
+                    <span class="text-muted">Sem anexos do relatorio</span>
                   {% endif %}
                 </td>
                 {% if is_editable %}
@@ -151,6 +156,13 @@
                       <a href="{{ url_for('main.agro_os_editar', os_id=os_agro.id) }}" class="btn btn-sm btn-success text-white shadow-sm">
                         <i class="bi bi-pencil-square"></i> Editar
                       </a>
+                      {% if is_admin_agro %}
+                        <form method="POST" action="{{ url_for('main.agro_os_deletar', os_id=os_agro.id) }}" onsubmit="return confirm('Tem certeza que deseja excluir esta OS Agro? Esta ação não poderá ser desfeita.');">
+                          <button type="submit" class="btn btn-sm btn-outline-danger shadow-sm">
+                            <i class="bi bi-trash"></i> Excluir
+                          </button>
+                        </form>
+                      {% endif %}
                     </div>
                   </td>
                 {% endif %}

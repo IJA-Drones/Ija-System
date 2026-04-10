@@ -241,9 +241,10 @@
 
         <div class="row g-3 mb-4">
           <div class="col-md-3">
-            <label class="form-label fw-bold small text-muted">Area total (ha)</label>
-            <input type="text" name="area_total_ha" value="{{ form.get('area_total_ha', '') }}" class="form-control {% if errors.get('area_total_ha') %}is-invalid{% endif %}">
+            <label class="form-label fw-bold small text-muted">Area total de aplicacao (ha)</label>
+            <input type="text" name="area_total_ha" value="{{ form.get('area_total_ha', '') }}" class="form-control {% if errors.get('area_total_ha') %}is-invalid{% endif %}" placeholder="Ex.: 4,12">
             {% if errors.get('area_total_ha') %}<div class="invalid-feedback">{{ errors.get('area_total_ha') }}</div>{% endif %}
+            <div class="form-text">Esse valor sai no PDF como "Area total de aplicacao: 4,12 hectares".</div>
           </div>
           <div class="col-md-3">
             <label class="form-label fw-bold small text-muted">Total de calda (l)</label>
@@ -285,21 +286,33 @@
 
         <div class="d-flex align-items-center mb-3">
           <i class="bi bi-filetype-pdf text-primary me-2 fs-5"></i>
-          <h5 class="m-0 text-primary fw-bold">Relatorio final e observacoes</h5>
+          <h5 class="m-0 text-primary fw-bold">Relatorio final, mapa e observacoes</h5>
         </div>
 
         <div class="row g-3 mb-4">
-          <div class="col-md-5">
-            <label class="form-label fw-bold small text-muted">Relatorio final PDF</label>
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Anexo complementar PDF</label>
             <input type="file" name="relatorio_pdf" class="form-control" accept="application/pdf">
             {% if ordem_servico and ordem_servico.relatorio_pdf_nome %}
               <div class="form-text">Arquivo atual: {{ ordem_servico.relatorio_pdf_nome }}</div>
             {% else %}
-              <div class="form-text">Use aqui o PDF final do relatorio de aplicacao.</div>
+              <div class="form-text">Opcional para guardar um PDF complementar junto da OS.</div>
             {% endif %}
           </div>
 
-          <div class="col-md-7">
+          {% if not pilot_form_mode %}
+            <div class="col-md-4">
+              <label class="form-label fw-bold small text-muted">Mapa de aplicacao (PNG/JPG)</label>
+              <input type="file" name="mapa_aplicacao" class="form-control" accept="image/png,image/jpeg">
+              {% if ordem_servico and ordem_servico.mapa_aplicacao_nome %}
+                <div class="form-text">Imagem atual: {{ ordem_servico.mapa_aplicacao_nome }}</div>
+              {% else %}
+                <div class="form-text">Essa imagem entra na pagina "Mapas de Aplicacao" do PDF final.</div>
+              {% endif %}
+            </div>
+          {% endif %}
+
+          <div class="{{ 'col-md-4' if not pilot_form_mode else 'col-md-8' }}">
             <label class="form-label fw-bold small text-muted">Observacoes</label>
             <textarea name="observacoes" rows="4" class="form-control">{{ form.get('observacoes', '') }}</textarea>
           </div>
@@ -307,9 +320,9 @@
 
         <small class="text-muted d-block mt-4">
           {% if pilot_form_mode %}
-            A equipe desta OS segue o contrato aprovado e o formulario fica compartilhado com todos os pilotos da equipe. O formulario usa a base do relatorio final da aplicacao do Agro.
+            A equipe desta OS segue o contrato aprovado e o formulario fica compartilhado com todos os pilotos da equipe. Depois que a OS for concluida, o admin pode complementar o relatorio final com a imagem do mapa.
           {% else %}
-            A equipe da OS segue a equipe definida no contrato aprovado e a OS fica visivel para todos os pilotos vinculados a ela. O formulario usa a base do relatorio final da aplicacao do Agro.
+            A equipe da OS segue a equipe definida no contrato aprovado e a OS fica visivel para todos os pilotos vinculados a ela. Quando a OS estiver concluida, a imagem do mapa anexada aqui passa a sair na pagina final do PDF.
           {% endif %}
         </small>
 

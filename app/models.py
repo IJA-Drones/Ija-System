@@ -797,6 +797,8 @@ class OrdemServicoAgro(db.Model):
 
     relatorio_pdf_path = db.Column(db.String(255))
     relatorio_pdf_nome = db.Column(db.String(255))
+    mapa_aplicacao_path = db.Column(db.String(255))
+    mapa_aplicacao_nome = db.Column(db.String(255))
     observacoes = db.Column(db.Text)
 
     criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)

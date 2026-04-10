@@ -19,6 +19,7 @@ from reportlab.platypus import PageBreak, Paragraph, SimpleDocTemplate, Spacer, 
 
 from app.modules.agro.service import agro_bool_label
 from app.shared.formatters import format_cep, format_currency_br, format_documento
+from app.shared.uploads import get_upload_folder
 
 
 IJA_GREEN = colors.HexColor("#6FD11A")
@@ -59,6 +60,37 @@ def _try_make_agro_logo(width_mm=42):
         return None
 
 
+def _resolve_agro_os_upload_absolute_path(relative_path):
+    relative_path = (relative_path or "").strip().replace("\\", "/")
+    if not relative_path:
+        return None
+
+    absolute_path = os.path.join(get_upload_folder(), relative_path.replace("/", os.sep))
+    if not os.path.exists(absolute_path):
+        return None
+    return absolute_path
+
+
+def _try_make_agro_os_map_image(relative_path, *, max_width_mm=165, max_height_mm=205):
+    absolute_path = _resolve_agro_os_upload_absolute_path(relative_path)
+    if not absolute_path:
+        return None
+
+    try:
+        image = RLImage(absolute_path)
+        img_width = float(getattr(image, "imageWidth", 0) or 1)
+        img_height = float(getattr(image, "imageHeight", 0) or 1)
+        max_width = max_width_mm * mm
+        max_height = max_height_mm * mm
+        scale = min(max_width / img_width, max_height / img_height)
+        image.drawWidth = img_width * scale
+        image.drawHeight = img_height * scale
+        image.hAlign = "CENTER"
+        return image
+    except Exception:
+        return None
+
+
 def _build_page_frame(canvas, doc):
     canvas.saveState()
 
@@ -78,13 +110,54 @@ def _build_page_frame(canvas, doc):
     canvas.line(margin_left, 18 * mm, page_width - margin_right, 18 * mm)
 
     footer_text = "IJA Drones | Tecnologia e Inovação"
-    page_text = f"Pagina {canvas.getPageNumber()}"
+    page_text = f"Página {canvas.getPageNumber()}"
 
     canvas.setFillColor(TEXT_MUTED)
     canvas.setFont("Helvetica", 8.5)
     canvas.drawString(margin_left, 11 * mm, footer_text)
     page_width_text = stringWidth(page_text, "Helvetica", 8.5)
     canvas.drawString(page_width - margin_right - page_width_text, 11 * mm, page_text)
+    canvas.restoreState()
+
+
+def _build_os_report_page_frame(canvas, doc):
+    canvas.saveState()
+
+    page_width, page_height = A4
+    margin_left = doc.leftMargin
+    margin_right = doc.rightMargin
+    usable_width = page_width - margin_left - margin_right
+
+    canvas.setFillColor(colors.white)
+    canvas.rect(0, 0, page_width, page_height, fill=1, stroke=0)
+
+    canvas.setFillColor(SURFACE)
+    canvas.roundRect(margin_left, page_height - 44 * mm, usable_width, 24 * mm, 10, fill=1, stroke=0)
+
+    footer_y = 7.5 * mm
+    footer_h = 9 * mm
+
+    canvas.setFillColor(colors.white)
+    canvas.roundRect(margin_left, footer_y, usable_width, footer_h, 6, fill=1, stroke=0)
+
+    canvas.setFillColor(IJA_GREEN)
+    canvas.roundRect(margin_left, footer_y, usable_width, 1.6 * mm, 6, fill=1, stroke=0)
+
+    canvas.setStrokeColor(BORDER)
+    canvas.setLineWidth(0.7)
+    canvas.roundRect(margin_left, footer_y, usable_width, footer_h, 6, fill=0, stroke=1)
+
+    footer_text = "+55 35 99239-4222 | Av. Bps 1303, Prédio J3 Sala 28 | Itajubá-MG | CEP 37500-903"
+    page_text = f"Página {canvas.getPageNumber()}"
+
+    canvas.setFont("Helvetica-Bold", 8.1)
+    canvas.setFillColor(CONTRACT_BLUE)
+    canvas.drawCentredString(page_width / 2, footer_y + 2.65 * mm, footer_text)
+
+    page_width_text = stringWidth(page_text, "Helvetica-Bold", 8.1)
+    canvas.setFillColor(IJA_GREEN_DARK)
+    canvas.drawString(page_width - margin_right - page_width_text - 2, footer_y + footer_h + 1.8 * mm, page_text)
+
     canvas.restoreState()
 
 
@@ -559,6 +632,17 @@ def _format_short_date(value):
         value = value.date()
     if isinstance(value, date):
         return value.strftime("%d/%m/%Y")
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return "-"
+        for fmt in ("%Y-%m-%d", "%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S"):
+            try:
+                parsed = datetime.strptime(text, fmt)
+                return parsed.strftime("%d/%m/%Y")
+            except ValueError:
+                continue
+        return text
     return str(value)
 
 
@@ -567,6 +651,20 @@ def _format_short_datetime(value):
         return "-"
     if isinstance(value, datetime):
         return value.strftime("%d/%m/%Y %H:%M")
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return "-"
+        for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M", "%Y-%m-%dT%H:%M"):
+            try:
+                parsed = datetime.strptime(text, fmt)
+                return parsed.strftime("%d/%m/%Y %H:%M")
+            except ValueError:
+                continue
+        short_date = _format_short_date(text)
+        if short_date != text:
+            return short_date
+        return text
     return str(value)
 
 
@@ -628,11 +726,11 @@ def build_ordem_servico_agro_pdf(ordem_servico):
         "AgroOsPdfSection",
         parent=styles["Heading3"],
         fontName="Helvetica-Bold",
-        fontSize=11.5,
-        leading=14,
+        fontSize=10.5,
+        leading=12,
         textColor=IJA_GREEN_DARK,
-        spaceBefore=2,
-        spaceAfter=6,
+        spaceBefore=1,
+        spaceAfter=3,
     )
     label_style = ParagraphStyle(
         "AgroOsPdfLabel",
@@ -647,7 +745,7 @@ def build_ordem_servico_agro_pdf(ordem_servico):
         parent=styles["BodyText"],
         fontName="Helvetica",
         fontSize=9.3,
-        leading=12.8,
+        leading=11.2,
         textColor=TEXT_MAIN,
     )
     note_style = ParagraphStyle(
@@ -658,15 +756,27 @@ def build_ordem_servico_agro_pdf(ordem_servico):
         leading=12,
         textColor=TEXT_MUTED,
     )
+    table_head_style = ParagraphStyle(
+        "AgroOsPdfTableHead",
+        parent=styles["BodyText"],
+        fontName="Helvetica-Bold",
+        fontSize=8.3,
+        leading=9.4,
+        textColor=TEXT_MAIN,
+        alignment=1,
+    )
+    table_cell_style = ParagraphStyle(
+        "AgroOsPdfTableCell",
+        parent=styles["BodyText"],
+        fontName="Helvetica",
+        fontSize=8.4,
+        leading=9.5,
+        textColor=TEXT_MAIN,
+        alignment=1,
+    )
 
     logo = _try_make_agro_logo()
     cidade_uf = "/".join([part for part in [ordem_servico.cidade_operacao or "", ordem_servico.uf_operacao or ""] if part]) or "-"
-    pilotos_equipe = ", ".join(
-        piloto.nome
-        for piloto in getattr(getattr(ordem_servico, "equipe", None), "pilotos", [])
-        if getattr(piloto, "ativo", False)
-    ) or "-"
-
     header_lines = [
         Paragraph("Relatório de Aplicação", title_style),
         Paragraph(ordem_servico.cliente_nome or "-", subtitle_style),
@@ -676,7 +786,7 @@ def build_ordem_servico_agro_pdf(ordem_servico):
             subtitle_style,
         ),
         Paragraph(
-            f"Período de Aplicação: {ordem_servico.periodo_aplicacao or _format_short_date(ordem_servico.data_aplicacao)}",
+            f"Período de Aplicação: {_format_short_date(ordem_servico.periodo_aplicacao) if ordem_servico.periodo_aplicacao else _format_short_date(ordem_servico.data_aplicacao)}",
             subtitle_style,
         ),
     ]
@@ -697,49 +807,57 @@ def build_ordem_servico_agro_pdf(ordem_servico):
         )
     )
 
-    identificacao = _label_value_table(
-        [
-            ("Status", ordem_servico.status or "-"),
-            ("Equipe", getattr(getattr(ordem_servico, "equipe", None), "nome", None) or "-"),
-            ("Pilotos da equipe", pilotos_equipe),
-            ("Cliente", ordem_servico.cliente_nome or "-"),
-            ("Propriedade", ordem_servico.propriedade_nome or "-"),
-            ("Cultura", ordem_servico.cultura or "-"),
-            ("Serviço", ordem_servico.servico or "-"),
-            ("Protocolo", ordem_servico.protocolo or "-"),
-            ("Data da aplicação", _format_short_date(ordem_servico.data_aplicacao)),
-            ("Finalizado em", _format_short_datetime(ordem_servico.finalizado_em)),
-        ],
-        label_style,
-        value_style,
-    )
-
     drone = _label_value_table(
         [
             ("Drone de pulverização", ordem_servico.drone_pulverizacao_identificacao or "-"),
-            ("Modelo", ordem_servico.drone_pulverizacao_modelo or "-"),
-            ("Tipo", ordem_servico.drone_pulverizacao_tipo or "-"),
+            ("Modelo", ordem_servico.drone_pulverizacao_modelo or ordem_servico.drone_mapeamento_modelo or "-"),
+            ("Tipo", ordem_servico.drone_pulverizacao_tipo or ordem_servico.drone_mapeamento_tipo or "-"),
             ("Drone de mapeamento", ordem_servico.drone_mapeamento_identificacao or "-"),
-            ("Modelo de mapeamento", ordem_servico.drone_mapeamento_modelo or "-"),
             ("Mapeamento", ordem_servico.mapeamento_descricao or "-"),
-            ("Altura de voo", _format_decimal_report(ordem_servico.altura_voo_m, "m")),
-            ("Largura das faixas", _format_decimal_report(ordem_servico.largura_faixa_m, "m")),
-            ("Ponta de pulverização", ordem_servico.ponta_pulverizacao or "-"),
+            ("Altura de voo", _format_decimal_report(ordem_servico.altura_voo_m, "metros")),
+            ("Largura das faixas", _format_decimal_report(ordem_servico.largura_faixa_m, "metros")),
+            ("Ponta de pulv.", ordem_servico.ponta_pulverizacao or "-"),
         ],
         label_style,
         value_style,
     )
 
-    clima = _label_value_table(
+    climate_table = Table(
         [
-            ("Temperatura", _format_range_report(ordem_servico.temperatura_min_c, ordem_servico.temperatura_max_c, "C")),
-            ("Umidade relativa", _format_range_report(ordem_servico.umidade_min_pct, ordem_servico.umidade_max_pct, "%")),
-            ("Velocidade do vento", _format_range_report(ordem_servico.vento_min_kmh, ordem_servico.vento_max_kmh, "km/h")),
-            ("Cidade de operação", ordem_servico.cidade_operacao or "-"),
-            ("UF da operação", ordem_servico.uf_operacao or "-"),
+            [
+                _paragraph("Data", table_head_style),
+                _paragraph("Temp. Min", table_head_style),
+                _paragraph("Temp. Max", table_head_style),
+                _paragraph("Umid. Min", table_head_style),
+                _paragraph("Umid. Max", table_head_style),
+                _paragraph("Vento Min", table_head_style),
+                _paragraph("Vento Max", table_head_style),
+            ],
+            [
+                _paragraph(_format_short_date(ordem_servico.data_aplicacao), table_cell_style),
+                _paragraph(_format_decimal_report(ordem_servico.temperatura_min_c, "C"), table_cell_style),
+                _paragraph(_format_decimal_report(ordem_servico.temperatura_max_c, "C"), table_cell_style),
+                _paragraph(_format_decimal_report(ordem_servico.umidade_min_pct, "%"), table_cell_style),
+                _paragraph(_format_decimal_report(ordem_servico.umidade_max_pct, "%"), table_cell_style),
+                _paragraph(_format_decimal_report(ordem_servico.vento_min_kmh, "km/h"), table_cell_style),
+                _paragraph(_format_decimal_report(ordem_servico.vento_max_kmh, "km/h"), table_cell_style),
+            ],
         ],
-        label_style,
-        value_style,
+        colWidths=[24 * mm, 23.5 * mm, 23.5 * mm, 23.5 * mm, 23.5 * mm, 23.5 * mm, 23.5 * mm],
+    )
+    climate_table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#EAF8E2")),
+                ("BACKGROUND", (0, 1), (-1, -1), colors.white),
+                ("GRID", (0, 0), (-1, -1), 0.65, BORDER),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+                ("TOPPADDING", (0, 0), (-1, -1), 4),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+            ]
+        )
     )
 
     resultado = _label_value_table(
@@ -754,16 +872,36 @@ def build_ordem_servico_agro_pdf(ordem_servico):
         value_style,
     )
 
-    insumo = _label_value_table(
+    insumo_table = Table(
         [
-            ("Produto aplicado", ordem_servico.produto_aplicado or "-"),
-            ("Formulação", ordem_servico.formulacao_produto or "-"),
-            ("Dosagem", ordem_servico.dosagem or "-"),
-            ("Classe tóxica", ordem_servico.classe_toxica or "-"),
-            ("Relatório anexado", ordem_servico.relatorio_pdf_nome or "Não"),
+            [
+                _paragraph("Produto aplicado", table_head_style),
+                _paragraph("Formulação", table_head_style),
+                _paragraph("Dosagem", table_head_style),
+                _paragraph("Classe tóxica", table_head_style),
+            ],
+            [
+                _paragraph(ordem_servico.produto_aplicado or "-", table_cell_style),
+                _paragraph(ordem_servico.formulacao_produto or "-", table_cell_style),
+                _paragraph(ordem_servico.dosagem or "-", table_cell_style),
+                _paragraph(ordem_servico.classe_toxica or "-", table_cell_style),
+            ],
         ],
-        label_style,
-        value_style,
+        colWidths=[41.25 * mm, 41.25 * mm, 41.25 * mm, 41.25 * mm],
+    )
+    insumo_table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#EAF8E2")),
+                ("BACKGROUND", (0, 1), (-1, -1), colors.white),
+                ("GRID", (0, 0), (-1, -1), 0.65, BORDER),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+                ("TOPPADDING", (0, 0), (-1, -1), 4),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+            ]
+        )
     )
 
     observacoes = Table(
@@ -787,7 +925,7 @@ def build_ordem_servico_agro_pdf(ordem_servico):
         [[
             Paragraph(
                 "Documento gerado automaticamente a partir dos dados preenchidos na OS Agro concluída. "
-                "Os campos refletem o formulário operacional salvo no sistema.",
+                "A imagem do mapa, quando anexada pelo admin, é incluída na página final do relatório.",
                 note_style,
             )
         ]],
@@ -806,31 +944,83 @@ def build_ordem_servico_agro_pdf(ordem_servico):
         )
     )
 
+    mapa_aplicacao = _try_make_agro_os_map_image(getattr(ordem_servico, "mapa_aplicacao_path", None))
+    has_map_page = bool(mapa_aplicacao or getattr(ordem_servico, "mapa_aplicacao_nome", None))
+
     story = [
         header,
-        Spacer(1, 8 * mm),
-        Paragraph("Identificação da OS", section_style),
-        identificacao,
-        Spacer(1, 7 * mm),
+        Spacer(1, 3 * mm),
         Paragraph("Especificações do drone", section_style),
         drone,
-        Spacer(1, 7 * mm),
+        Spacer(1, 2.5 * mm),
         Paragraph("Condições climáticas", section_style),
-        clima,
-        Spacer(1, 7 * mm),
-        Paragraph("Resultado da aplicação", section_style),
+        climate_table,
+        Spacer(1, 2.5 * mm),
+        Paragraph("Resultado da Aplicação", section_style),
         resultado,
-        Spacer(1, 7 * mm),
+        Spacer(1, 2.5 * mm),
         Paragraph("Especificações do insumo aplicado", section_style),
-        insumo,
-        Spacer(1, 7 * mm),
+        insumo_table,
+        Spacer(1, 2.5 * mm),
         Paragraph("Observações", section_style),
         observacoes,
-        Spacer(1, 7 * mm),
-        note,
     ]
+    if not has_map_page:
+        story.extend(
+            [
+                Spacer(1, 2.5 * mm),
+                note,
+            ]
+        )
 
-    doc.build(story, onFirstPage=_build_page_frame, onLaterPages=_build_page_frame)
+    if has_map_page:
+        story.extend(
+            [
+                PageBreak(),
+                Paragraph("Mapas de Aplicação", title_style),
+                Spacer(1, 3 * mm),
+            ]
+        )
+
+        if getattr(ordem_servico, "mapa_aplicacao_nome", None):
+            story.append(Paragraph(ordem_servico.mapa_aplicacao_nome, subtitle_style))
+            story.append(Spacer(1, 5 * mm))
+
+        if mapa_aplicacao:
+            mapa_wrapper = Table([[mapa_aplicacao]], colWidths=[165 * mm])
+            mapa_wrapper.setStyle(
+                TableStyle(
+                    [
+                        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                        ("BACKGROUND", (0, 0), (-1, -1), colors.white),
+                        ("BOX", (0, 0), (-1, -1), 0.85, BORDER),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 10),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+                        ("TOPPADDING", (0, 0), (-1, -1), 10),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+                    ]
+                )
+            )
+            story.append(mapa_wrapper)
+        else:
+            story.append(
+                _info_box(
+                    "Mapa não encontrado",
+                    "A imagem cadastrada para esta OS não foi localizada no armazenamento do sistema.",
+                    label_style,
+                    value_style,
+                    165 * mm,
+                )
+            )
+        story.extend(
+            [
+                Spacer(1, 3 * mm),
+                note,
+            ]
+        )
+
+    doc.build(story, onFirstPage=_build_os_report_page_frame, onLaterPages=_build_os_report_page_frame)
     buffer.seek(0)
     return buffer
 

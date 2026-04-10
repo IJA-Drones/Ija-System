@@ -47,6 +47,7 @@ AGRO_SERVICO_OPTIONS = (
 
 AGRO_CONTRATO_STATUS_OPTIONS = ContratoAgro.STATUS_OPTIONS
 AGRO_OS_STATUS_OPTIONS = OrdemServicoAgro.STATUS_OPTIONS
+AGRO_OS_MAP_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg"}
 
 
 def _query_args_without_page():
@@ -789,6 +790,11 @@ def _build_os_agro_identificador():
     return f"AGRO-{datetime.now().strftime('%Y%m%d%H%M%S')}"
 
 
+def _build_os_agro_area_total_from_contrato(contrato):
+    area_contratada = _parse_area_contratada_decimal(getattr(contrato, "area_contratada", None))
+    return _format_decimal_br_value(area_contratada) if area_contratada is not None else ""
+
+
 def _build_equipamento_agro_meta(equipamento):
     if equipamento is None:
         return {}
@@ -842,7 +848,7 @@ def _build_os_agro_defaults(contrato):
         "umidade_max_pct": "",
         "vento_min_kmh": "",
         "vento_max_kmh": "",
-        "area_total_ha": "",
+        "area_total_ha": _build_os_agro_area_total_from_contrato(contrato),
         "total_calda_l": "",
         "media_aplicada_l_ha": "",
         "taxa_aplicacao_l_ha": "",
@@ -1031,10 +1037,61 @@ def _save_os_agro_attachment(ordem_servico, uploaded_file):
     folder = get_os_agro_attachment_folder()
     stored_filename = f"os_agro_{ordem_servico.id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
     absolute_path = os.path.join(folder, stored_filename)
+
+    previous_relative_path = (ordem_servico.relatorio_pdf_path or "").strip()
     uploaded_file.save(absolute_path)
 
     ordem_servico.relatorio_pdf_path = os.path.join("agro", "os", stored_filename).replace("\\", "/")
     ordem_servico.relatorio_pdf_nome = original_filename
+    _remove_os_agro_uploaded_file(previous_relative_path, keep_relative_path=ordem_servico.relatorio_pdf_path)
+    return original_filename
+
+
+def _remove_os_agro_uploaded_file(relative_path, *, keep_relative_path=None):
+    relative_path = (relative_path or "").strip().replace("\\", "/")
+    keep_relative_path = (keep_relative_path or "").strip().replace("\\", "/")
+    if not relative_path or relative_path == keep_relative_path:
+        return
+
+    absolute_path = os.path.join(get_os_agro_attachment_folder(), os.path.basename(relative_path))
+    if os.path.exists(absolute_path):
+        try:
+            os.remove(absolute_path)
+        except OSError:
+            pass
+
+
+def _remove_os_agro_attachments(ordem_servico):
+    _remove_os_agro_uploaded_file(getattr(ordem_servico, "relatorio_pdf_path", None))
+    _remove_os_agro_uploaded_file(getattr(ordem_servico, "mapa_aplicacao_path", None))
+    ordem_servico.relatorio_pdf_path = None
+    ordem_servico.relatorio_pdf_nome = None
+    ordem_servico.mapa_aplicacao_path = None
+    ordem_servico.mapa_aplicacao_nome = None
+
+
+def _save_os_agro_map_image(ordem_servico, uploaded_file):
+    if not uploaded_file or not uploaded_file.filename:
+        return None
+
+    original_filename = secure_filename(uploaded_file.filename)
+    if "." not in original_filename:
+        raise ValueError("A imagem do mapa da OS Agro precisa ser PNG ou JPG.")
+
+    extension = original_filename.rsplit(".", 1)[1].lower()
+    if extension not in AGRO_OS_MAP_IMAGE_EXTENSIONS:
+        raise ValueError("A imagem do mapa da OS Agro precisa ser PNG ou JPG.")
+
+    folder = get_os_agro_attachment_folder()
+    stored_filename = f"os_agro_mapa_{ordem_servico.id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.{extension}"
+    absolute_path = os.path.join(folder, stored_filename)
+
+    previous_relative_path = (ordem_servico.mapa_aplicacao_path or "").strip()
+    uploaded_file.save(absolute_path)
+
+    ordem_servico.mapa_aplicacao_path = os.path.join("agro", "os", stored_filename).replace("\\", "/")
+    ordem_servico.mapa_aplicacao_nome = original_filename
+    _remove_os_agro_uploaded_file(previous_relative_path, keep_relative_path=ordem_servico.mapa_aplicacao_path)
     return original_filename
 
 
@@ -1624,6 +1681,20 @@ def register_routes(bp):
         flash("Template operacional do contrato atualizado com sucesso.", "success")
         return redirect(url_for("main.agro_contratos_template"))
 
+    @bp.route("/agro/contratos/<int:contrato_id>/deletar", methods=["POST"], endpoint="agro_contrato_deletar")
+    @login_required
+    def agro_contrato_deletar(contrato_id):
+        _require_agro_admin()
+        contrato = _get_contrato_agro_or_404(contrato_id)
+        if contrato.ordens_servico:
+            flash("Este contrato possui OS Agro vinculada(s). Exclua primeiro as OS para remover o contrato.", "warning")
+            return redirect(url_for("main.agro_contratos_template"))
+
+        db.session.delete(contrato)
+        db.session.commit()
+        flash("Contrato agro removido com sucesso.", "success")
+        return redirect(url_for("main.agro_contratos_template"))
+
     @bp.route("/agro/orcamentos/<int:orcamento_id>/anexo", endpoint="agro_orcamento_anexo")
     @login_required
     def agro_orcamento_anexo(orcamento_id):
@@ -1675,6 +1746,17 @@ def register_routes(bp):
         filename = f"os_agro_{ordem_servico.identificador_os or ordem_servico.id}_relatorio.pdf"
         return send_file(pdf, mimetype="application/pdf", as_attachment=True, download_name=filename)
 
+    @bp.route("/agro/os/<int:os_id>/deletar", methods=["POST"], endpoint="agro_os_deletar")
+    @login_required
+    def agro_os_deletar(os_id):
+        _require_agro_admin()
+        ordem_servico = _get_os_agro_or_404(os_id)
+        _remove_os_agro_attachments(ordem_servico)
+        db.session.delete(ordem_servico)
+        db.session.commit()
+        flash("OS Agro removida com sucesso.", "success")
+        return redirect(url_for("main.agro_os_listar"))
+
     @bp.route("/agro/os", methods=["GET"], endpoint="agro_os_listar")
     @login_required
     def agro_os_listar():
@@ -1698,6 +1780,7 @@ def register_routes(bp):
             status_options=AGRO_OS_STATUS_OPTIONS,
             filters={"q": q, "status": status, "equipe_id": equipe_id, "total": len(ordens_servico)},
             is_editable=can_edit_agro_panel(current_user),
+            is_admin_agro=getattr(current_user, "tipo_usuario", None) == "admin",
         )
 
     @bp.route("/agro/contratos/<int:contrato_id>/os/cadastrar", methods=["GET", "POST"], endpoint="agro_os_nova")
@@ -1746,6 +1829,8 @@ def register_routes(bp):
         form = _normalize_os_agro_form(request.form if request.method == "POST" else _build_os_agro_defaults(contrato))
         if pilot_form_mode:
             form["equipe_agro_id"] = str(contrato.equipe_agro_id or "")
+        if not form.get("area_total_ha"):
+            form["area_total_ha"] = _build_os_agro_area_total_from_contrato(contrato)
 
         if request.method == "POST":
             (
@@ -1818,6 +1903,29 @@ def register_routes(bp):
                         ),
                     )
 
+            if not pilot_form_mode:
+                uploaded_map = request.files.get("mapa_aplicacao")
+                if uploaded_map and uploaded_map.filename:
+                    try:
+                        _save_os_agro_map_image(ordem_servico, uploaded_map)
+                    except ValueError as exc:
+                        db.session.rollback()
+                        flash(str(exc), "warning")
+                        return render_template(
+                            "agro_os_form.html",
+                            **_build_os_agro_form_context(
+                                modo="novo",
+                                contrato=contrato,
+                                form=form,
+                                errors=errors,
+                                equipes=equipes,
+                                pilotos=pilotos,
+                                equipamentos=equipamentos,
+                                pilot_form_mode=pilot_form_mode,
+                                piloto_logado=piloto_logado,
+                            ),
+                        )
+
             db.session.commit()
             flash("OS Agro criada com sucesso.", "success")
             return redirect(url_for("main.agro_piloto_dashboard" if pilot_form_mode else "main.agro_os_listar"))
@@ -1862,6 +1970,8 @@ def register_routes(bp):
             form = _normalize_os_agro_form(request.form)
             if pilot_form_mode:
                 form["equipe_agro_id"] = str(ordem_servico.equipe_agro_id or "")
+            if not form.get("area_total_ha"):
+                form["area_total_ha"] = _build_os_agro_area_total_from_contrato(contrato)
 
             (
                 errors,
@@ -1932,11 +2042,37 @@ def register_routes(bp):
                         ),
                     )
 
+            if not pilot_form_mode:
+                uploaded_map = request.files.get("mapa_aplicacao")
+                if uploaded_map and uploaded_map.filename:
+                    try:
+                        _save_os_agro_map_image(ordem_servico, uploaded_map)
+                    except ValueError as exc:
+                        db.session.rollback()
+                        flash(str(exc), "warning")
+                        return render_template(
+                            "agro_os_form.html",
+                            **_build_os_agro_form_context(
+                                modo="editar",
+                                contrato=contrato,
+                                ordem_servico=ordem_servico,
+                                form=form,
+                                errors=errors,
+                                equipes=equipes,
+                                pilotos=pilotos,
+                                equipamentos=equipamentos,
+                                pilot_form_mode=pilot_form_mode,
+                                piloto_logado=piloto_logado,
+                            ),
+                        )
+
             db.session.commit()
             flash("OS Agro atualizada com sucesso.", "success")
             return redirect(url_for("main.agro_piloto_dashboard" if pilot_form_mode else "main.agro_os_listar"))
 
         form = _serialize_os_agro_form(ordem_servico)
+        if not form.get("area_total_ha"):
+            form["area_total_ha"] = _build_os_agro_area_total_from_contrato(contrato)
         if pilot_form_mode:
             form["equipe_agro_id"] = str(ordem_servico.equipe_agro_id or "")
         return render_template(
@@ -1960,6 +2096,12 @@ def register_routes(bp):
     def agro_orcamento_deletar(orcamento_id):
         _require_agro_edit()
         orcamento = _get_orcamento_agro_or_404(orcamento_id)
+        if orcamento.ordens_servico:
+            flash("Este orçamento possui OS Agro vinculada(s). Exclua primeiro as OS para remover o orçamento.", "warning")
+            return redirect(url_for("main.agro_orcamentos_listar"))
+        if orcamento.contrato is not None:
+            flash("Este orçamento possui contrato vinculado. Exclua primeiro o contrato para remover o orçamento.", "warning")
+            return redirect(url_for("main.agro_orcamentos_listar"))
         remove_orcamento_attachment(orcamento)
         db.session.delete(orcamento)
         db.session.commit()
