@@ -37,6 +37,47 @@
   border-right: 3px solid var(--color-accent);
 }
 
+/* Listagens com menu de acoes precisam deixar o dropdown escapar
+   sem perder o recorte arredondado da tabela. */
+.menu-actions-table-wrap {
+  overflow: visible !important;
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-white);
+}
+
+.menu-actions-table-wrap > .card-body {
+  overflow: visible !important;
+  border-radius: inherit;
+  background: transparent;
+}
+
+.menu-actions-table-wrap .table-responsive {
+  overflow: visible !important;
+  border-radius: inherit;
+  background: transparent;
+}
+
+.menu-actions-table-wrap .table thead th:first-child {
+  border-top-left-radius: var(--radius-lg);
+}
+
+.menu-actions-table-wrap .table thead th:last-child {
+  border-top-right-radius: var(--radius-lg);
+}
+
+.menu-actions-table-wrap .table tbody tr:last-child td:first-child {
+  border-bottom-left-radius: var(--radius-lg);
+}
+
+.menu-actions-table-wrap .table tbody tr:last-child td:last-child {
+  border-bottom-right-radius: var(--radius-lg);
+}
+
+.menu-actions-table-wrap .table tbody tr:last-child td[colspan] {
+  border-bottom-left-radius: var(--radius-lg);
+  border-bottom-right-radius: var(--radius-lg);
+}
+
 /* Espaçamento entre letras para labels */
 .ls-1 {
   letter-spacing: 0.5px;

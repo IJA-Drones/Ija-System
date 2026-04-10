@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+  <style>
+    .agro-dashboard-link {
+      transition: all 0.2s ease;
+    }
+
+    .agro-dashboard-link:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-lg) !important;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1200px">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+      <h2 class="text-dark m-0">
+        <i class="bi bi-tree-fill me-2 text-primary"></i> Painel de Gestão do Agro
+      </h2>
+      <p class="text-muted small mb-0">Centralize clientes, orçamentos e estrutura operacional da frente Agro em um único lugar.</p>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{{ url_for('main.agro_cliente_novo') }}" class="btn btn-success d-flex align-items-center gap-2">
+        <i class="bi bi-person-plus-fill"></i> Novo Cliente
+      </a>
+      <a href="{{ url_for('main.agro_orcamento_novo') }}" class="btn btn-secondary d-flex align-items-center gap-2">
+        <i class="bi bi-file-earmark-plus-fill"></i> Novo Orçamento
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-sm-6 col-xl">
+      <div class="card info status-primary shadow-sm rounded-4 border-0 h-100">
+        <div class="card-body">
+          <span class="text-muted small d-block">Clientes agro</span>
+          <h3 class="text-dark mb-0 mt-2">{{ total_clientes_agro }}</h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl">
+      <div class="card info status-success shadow-sm rounded-4 border-0 h-100">
+        <div class="card-body">
+          <span class="text-muted small d-block">Orçamentos</span>
+          <h3 class="text-dark mb-0 mt-2">{{ total_orcamentos_agro }}</h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl">
+      <div class="card info status-warning shadow-sm rounded-4 border-0 h-100">
+        <div class="card-body">
+          <span class="text-muted small d-block">Contratos</span>
+          <h3 class="text-dark mb-0 mt-2">{{ total_contratos_agro }}</h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl">
+      <div class="card info status-info shadow-sm rounded-4 border-0 h-100">
+        <div class="card-body">
+          <span class="text-muted small d-block">OS Agro</span>
+          <h3 class="text-dark mb-0 mt-2">{{ total_ordens_servico_agro }}</h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl">
+      <div class="card info status-info shadow-sm rounded-4 border-0 h-100">
+        <div class="card-body">
+          <span class="text-muted small d-block">Pilotos agro</span>
+          <h3 class="text-dark mb-0 mt-2">{{ total_pilotos_agro }}</h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl">
+      <div class="card info status-primary shadow-sm rounded-4 border-0 h-100">
+        <div class="card-body">
+          <span class="text-muted small d-block">Equipes agro</span>
+          <h3 class="text-dark mb-0 mt-2">{{ total_equipes_agro }}</h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl">
+      <div class="card info status-success shadow-sm rounded-4 border-0 h-100">
+        <div class="card-body">
+          <span class="text-muted small d-block">Equipamentos agro</span>
+          <h3 class="text-dark mb-0 mt-2">{{ total_equipamentos_agro }}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="card shadow-sm rounded-4 border-0 overflow-hidden">
+    <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center">
+      <div>
+        <h5 class="m-0 text-dark">Últimos orçamentos</h5>
+        <p class="text-muted small mb-0">Acompanhe rapidamente as propostas mais recentes cadastradas no Agro.</p>
+      </div>
+      <a href="{{ url_for('main.agro_orcamentos_listar') }}" class="btn btn-outline-secondary btn-sm">
+        Ver todos
+      </a>
+    </div>
+
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Cliente</th>
+              <th>Fazenda</th>
+              <th>Cultura</th>
+              <th>Mapeamento</th>
+              <th>Preço base</th>
+              <th>Data</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for orcamento in ultimos_orcamentos %}
+              <tr>
+                <td>
+                  <div class="fw-bold">{{ orcamento.cliente_nome }}</div>
+                  <div class="text-muted small">{{ orcamento|agro_endereco }}</div>
+                </td>
+                <td>{{ orcamento.nome_fazenda or "-" }}</td>
+                <td>{{ orcamento.cultura or "-" }}</td>
+                <td>
+                  {% if orcamento.mapeamento %}
+                    <span class="badge bg-success-subtle text-success border border-success-subtle">Sim</span>
+                  {% else %}
+                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Não</span>
+                  {% endif %}
+                </td>
+                <td class="fw-semibold">{{ orcamento.valor_total_calculado|currencybr or "-" }}</td>
+                <td>{{ orcamento.data_criacao.strftime('%d/%m/%Y %H:%M') }}</td>
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="6" class="text-center py-5">
+                  <p class="text-muted mb-0">Nenhum orçamento agro cadastrado ainda.</p>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

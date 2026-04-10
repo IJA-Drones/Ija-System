@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1200px">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div>
+      <h2 class="text-dark m-0">
+        <i class="bi bi-cpu-fill me-2 text-primary"></i>
+        {{ 'Cadastrar equipamento do Agro' if modo == 'novo' else 'Editar equipamento do Agro' }}
+      </h2>
+      <p class="text-muted small mb-0">Agora o cadastro ja guarda os dados tecnicos que a OS Agro precisa puxar para o relatorio final.</p>
+    </div>
+
+    <a href="{{ url_for('main.agro_equipamentos_listar') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+  </div>
+
+  <div class="card info status-primary shadow-sm rounded-4 border-0">
+    <div class="card-body p-4">
+      <form method="post" novalidate>
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-card-heading text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Identificacao do equipamento</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Tipo *</label>
+            <input type="text" name="tipo" value="{{ form.get('tipo', '') }}" class="form-control {% if errors.get('tipo') %}is-invalid{% endif %}" placeholder="Ex.: Drone Pulverizador" required>
+            {% if errors.get('tipo') %}<div class="invalid-feedback">{{ errors.get('tipo') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Funcao operacional</label>
+            <select name="funcao_operacional" class="form-select">
+              <option value="">Selecione...</option>
+              {% for opcao in ['Pulverizacao', 'Mapeamento', 'Apoio'] %}
+                <option value="{{ opcao }}" {% if form.get('funcao_operacional') == opcao %}selected{% endif %}>{{ opcao }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Modelo *</label>
+            <input type="text" name="modelo" value="{{ form.get('modelo', '') }}" class="form-control {% if errors.get('modelo') %}is-invalid{% endif %}" placeholder="Ex.: DJI Agras T25P" required>
+            {% if errors.get('modelo') %}<div class="invalid-feedback">{{ errors.get('modelo') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Status *</label>
+            <select name="status" class="form-select {% if errors.get('status') %}is-invalid{% endif %}">
+              {% set current_status = form.get('status', 'Ativo') %}
+              {% for status_option in ['Ativo', 'Operacional', 'Manutencao', 'Reserva', 'Inativo'] %}
+                <option value="{{ status_option }}" {% if current_status == status_option %}selected{% endif %}>{{ status_option }}</option>
+              {% endfor %}
+            </select>
+            {% if errors.get('status') %}<div class="invalid-feedback">{{ errors.get('status') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">Identificacao *</label>
+            <input type="text" name="identificacao" value="{{ form.get('identificacao', '') }}" class="form-control {% if errors.get('identificacao') %}is-invalid{% endif %}" placeholder="Ex.: T25P-01 / Drone principal" required>
+            {% if errors.get('identificacao') %}<div class="invalid-feedback">{{ errors.get('identificacao') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">Numero de serie</label>
+            <input type="text" name="numero_serie" value="{{ form.get('numero_serie', '') }}" class="form-control {% if errors.get('numero_serie') %}is-invalid{% endif %}" placeholder="Opcional">
+            {% if errors.get('numero_serie') %}<div class="invalid-feedback">{{ errors.get('numero_serie') }}</div>{% endif %}
+          </div>
+        </div>
+
+        <hr class="text-muted opacity-25 my-4">
+
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-drone text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Dados tecnicos do drone</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Registro ANATEL</label>
+            <input type="text" name="registro_anatel" value="{{ form.get('registro_anatel', '') }}" class="form-control">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Registro ANAC</label>
+            <input type="text" name="registro_anac" value="{{ form.get('registro_anac', '') }}" class="form-control">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-bold small text-muted">Capacidade tanque (l)</label>
+            <input type="text" name="capacidade_tanque_l" value="{{ form.get('capacidade_tanque_l', '') }}" class="form-control {% if errors.get('capacidade_tanque_l') %}is-invalid{% endif %}">
+            {% if errors.get('capacidade_tanque_l') %}<div class="invalid-feedback">{{ errors.get('capacidade_tanque_l') }}</div>{% endif %}
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-bold small text-muted">Largura de faixa (m)</label>
+            <input type="text" name="largura_faixa_m" value="{{ form.get('largura_faixa_m', '') }}" class="form-control {% if errors.get('largura_faixa_m') %}is-invalid{% endif %}">
+            {% if errors.get('largura_faixa_m') %}<div class="invalid-feedback">{{ errors.get('largura_faixa_m') }}</div>{% endif %}
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-bold small text-muted">Altura de voo padrao (m)</label>
+            <input type="text" name="altura_voo_padrao_m" value="{{ form.get('altura_voo_padrao_m', '') }}" class="form-control {% if errors.get('altura_voo_padrao_m') %}is-invalid{% endif %}">
+            {% if errors.get('altura_voo_padrao_m') %}<div class="invalid-feedback">{{ errors.get('altura_voo_padrao_m') }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Ponta de pulverizacao</label>
+            <input type="text" name="ponta_pulverizacao" value="{{ form.get('ponta_pulverizacao', '') }}" class="form-control" placeholder="Ex.: Bico Rotativo">
+          </div>
+        </div>
+
+        <hr class="text-muted opacity-25 my-4">
+
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-diagram-3-fill text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Vinculacao operacional</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">Equipe</label>
+            <select name="equipe_agro_id" class="form-select {% if errors.get('equipe_agro_id') %}is-invalid{% endif %}">
+              <option value="">Sem equipe vinculada</option>
+              {% for equipe in equipes %}
+                <option value="{{ equipe.id }}" {% if form.get('equipe_agro_id')|string == equipe.id|string %}selected{% endif %}>{{ equipe.nome }}</option>
+              {% endfor %}
+            </select>
+            {% if errors.get('equipe_agro_id') %}<div class="invalid-feedback">{{ errors.get('equipe_agro_id') }}</div>{% endif %}
+          </div>
+        </div>
+
+        {% if equipamento %}
+          <hr class="text-muted opacity-25 my-4">
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <div class="border rounded-4 p-3 h-100">
+                <small class="text-muted d-block mb-1">Equipe vinculada</small>
+                <strong>{{ equipamento.equipe.nome if equipamento.equipe else "Sem equipe vinculada" }}</strong>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="border rounded-4 p-3 h-100">
+                <small class="text-muted d-block mb-1">Cadastrado em</small>
+                <strong>{{ equipamento.criado_em.strftime('%d/%m/%Y') }}</strong>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+
+        <small class="text-muted d-block mt-4">
+          Os campos tecnicos acima ja abastecem a OS Agro com modelo, registros, altura, faixa e ponta de pulverizacao.
+        </small>
+
+        <div class="d-flex justify-content-end gap-2 mt-5">
+          <a href="{{ url_for('main.agro_equipamentos_listar') }}" class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-x-lg me-1"></i> Cancelar
+          </a>
+          <button type="submit" class="btn btn-primary btn-sm">
+            <i class="bi bi-check-lg me-1"></i> {{ 'Salvar equipamento' if modo == 'novo' else 'Atualizar equipamento' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,414 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1320px">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div>
+      <h2 class="text-dark m-0">
+        <i class="bi bi-clipboard2-data-fill me-2 text-primary"></i>
+        {{ 'Nova OS Agro' if modo == 'novo' else 'Editar OS Agro' }}
+      </h2>
+      <p class="text-muted small mb-0">
+        Estrutura baseada no relatorio final da aplicacao agro e vinculada ao contrato <strong>#{{ contrato.id }}</strong>.
+        {% if pilot_form_mode %}Este preenchimento e feito diretamente pelo piloto no painel Agro.{% endif %}
+      </p>
+    </div>
+
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('main.agro_piloto_dashboard' if pilot_form_mode else 'main.agro_os_listar') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+      {% if not pilot_form_mode %}
+        <a href="{{ url_for('main.agro_contrato_editar', orcamento_id=contrato.orcamento.id) }}" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2">
+          <i class="bi bi-file-earmark-text"></i> Contrato
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card info status-primary shadow-sm rounded-4 border-0">
+    <div class="card-body p-4">
+      <form method="post" enctype="multipart/form-data" novalidate>
+        <div class="row g-3 mb-4">
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Identificador da OS *</label>
+            <input type="text" name="identificador_os" value="{{ form.get('identificador_os', '') }}" class="form-control {% if errors.get('identificador_os') %}is-invalid{% endif %}" required>
+            {% if errors.get('identificador_os') %}<div class="invalid-feedback">{{ errors.get('identificador_os') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Status *</label>
+            <select name="status" class="form-select {% if errors.get('status') %}is-invalid{% endif %}">
+              {% for status_value in status_options %}
+                <option value="{{ status_value }}" {% if form.get('status') == status_value %}selected{% endif %}>{{ status_value }}</option>
+              {% endfor %}
+            </select>
+            {% if errors.get('status') %}<div class="invalid-feedback">{{ errors.get('status') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Data da aplicacao *</label>
+            <input type="date" name="data_aplicacao" value="{{ form.get('data_aplicacao', '') }}" class="form-control {% if errors.get('data_aplicacao') %}is-invalid{% endif %}" required>
+            {% if errors.get('data_aplicacao') %}<div class="invalid-feedback">{{ errors.get('data_aplicacao') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Periodo de aplicacao</label>
+            <input type="date" name="periodo_aplicacao" value="{{ form.get('periodo_aplicacao', '') }}" class="form-control" placeholder="Ex.: 20/12/2025">
+          </div>
+        </div>
+
+        <hr class="text-muted opacity-25 my-4">
+
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-diagram-3-fill text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Equipe responsavel</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          {% if pilot_form_mode %}
+            <div class="col-md-6">
+              <label class="form-label fw-bold small text-muted">Equipe *</label>
+              <input type="hidden" name="equipe_agro_id" id="equipe_agro_id" value="{{ form.get('equipe_agro_id', '') }}">
+              <input type="text" value="{{ piloto_logado.equipe.nome if piloto_logado and piloto_logado.equipe else 'Sem equipe vinculada' }}" class="form-control {% if errors.get('equipe_agro_id') %}is-invalid{% endif %}" readonly>
+              {% if errors.get('equipe_agro_id') %}<div class="invalid-feedback">{{ errors.get('equipe_agro_id') }}</div>{% endif %}
+              <div class="form-text">Esta OS fica compartilhada com todos os pilotos vinculados a esta equipe.</div>
+            </div>
+          {% else %}
+            <div class="col-md-6">
+              <label class="form-label fw-bold small text-muted">Equipe *</label>
+              <select name="equipe_agro_id" id="equipe_agro_id" class="form-select {% if errors.get('equipe_agro_id') %}is-invalid{% endif %}">
+                <option value="">Selecione...</option>
+                {% for equipe in equipes %}
+                  <option value="{{ equipe.id }}" {% if form.get('equipe_agro_id')|string == equipe.id|string %}selected{% endif %}>{{ equipe.nome }}</option>
+                {% endfor %}
+              </select>
+              {% if errors.get('equipe_agro_id') %}<div class="invalid-feedback">{{ errors.get('equipe_agro_id') }}</div>{% endif %}
+              <div class="form-text">A OS sera exibida para todos os pilotos ativos da equipe selecionada.</div>
+            </div>
+          {% endif %}
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">Protocolo</label>
+            <input type="text" name="protocolo" value="{{ form.get('protocolo', '') }}" class="form-control">
+          </div>
+        </div>
+
+        <hr class="text-muted opacity-25 my-4">
+
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-geo-alt-fill text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Dados da operacao</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Cliente *</label>
+            <input type="text" name="cliente_nome" value="{{ form.get('cliente_nome', '') }}" class="form-control {% if errors.get('cliente_nome') %}is-invalid{% endif %}" required>
+            {% if errors.get('cliente_nome') %}<div class="invalid-feedback">{{ errors.get('cliente_nome') }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Propriedade *</label>
+            <input type="text" name="propriedade_nome" value="{{ form.get('propriedade_nome', '') }}" class="form-control {% if errors.get('propriedade_nome') %}is-invalid{% endif %}" required>
+            {% if errors.get('propriedade_nome') %}<div class="invalid-feedback">{{ errors.get('propriedade_nome') }}</div>{% endif %}
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-bold small text-muted">Cidade</label>
+            <input type="text" name="cidade_operacao" value="{{ form.get('cidade_operacao', '') }}" class="form-control">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-bold small text-muted">UF</label>
+            <input type="text" name="uf_operacao" maxlength="2" value="{{ form.get('uf_operacao', '') }}" class="form-control {% if errors.get('uf_operacao') %}is-invalid{% endif %}">
+            {% if errors.get('uf_operacao') %}<div class="invalid-feedback">{{ errors.get('uf_operacao') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Servico</label>
+            <input type="text" name="servico" value="{{ form.get('servico', '') }}" class="form-control">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Cultura</label>
+            <input type="text" name="cultura" value="{{ form.get('cultura', '') }}" class="form-control">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Tipo de aplicacao</label>
+            <input type="text" name="tipo_aplicacao" value="{{ form.get('tipo_aplicacao', '') }}" class="form-control" placeholder="Ex.: Area Total">
+          </div>
+        </div>
+
+        <hr class="text-muted opacity-25 my-4">
+
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-cpu-fill text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Drone e parametros de voo</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">Drone de pulverizacao</label>
+            <select name="drone_pulverizacao_id" id="drone_pulverizacao_id" class="form-select {% if errors.get('drone_pulverizacao_id') %}is-invalid{% endif %}">
+              <option value="">Selecione...</option>
+              {% for equipamento in equipamentos %}
+                <option value="{{ equipamento.id }}" data-equipe-id="{{ equipamento.equipe_agro_id or '' }}" {% if form.get('drone_pulverizacao_id')|string == equipamento.id|string %}selected{% endif %}>{{ equipamento.identificacao }} - {{ equipamento.modelo }}</option>
+              {% endfor %}
+            </select>
+            {% if errors.get('drone_pulverizacao_id') %}<div class="invalid-feedback">{{ errors.get('drone_pulverizacao_id') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">Drone de mapeamento</label>
+            <select name="drone_mapeamento_id" id="drone_mapeamento_id" class="form-select {% if errors.get('drone_mapeamento_id') %}is-invalid{% endif %}">
+              <option value="">Selecione...</option>
+              {% for equipamento in equipamentos %}
+                <option value="{{ equipamento.id }}" data-equipe-id="{{ equipamento.equipe_agro_id or '' }}" {% if form.get('drone_mapeamento_id')|string == equipamento.id|string %}selected{% endif %}>{{ equipamento.identificacao }} - {{ equipamento.modelo }}</option>
+              {% endfor %}
+            </select>
+            {% if errors.get('drone_mapeamento_id') %}<div class="invalid-feedback">{{ errors.get('drone_mapeamento_id') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Altura de voo (m)</label>
+            <input type="text" name="altura_voo_m" id="altura_voo_m" value="{{ form.get('altura_voo_m', '') }}" class="form-control {% if errors.get('altura_voo_m') %}is-invalid{% endif %}">
+            {% if errors.get('altura_voo_m') %}<div class="invalid-feedback">{{ errors.get('altura_voo_m') }}</div>{% endif %}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Largura das faixas (m)</label>
+            <input type="text" name="largura_faixa_m" id="largura_faixa_m" value="{{ form.get('largura_faixa_m', '') }}" class="form-control {% if errors.get('largura_faixa_m') %}is-invalid{% endif %}">
+            {% if errors.get('largura_faixa_m') %}<div class="invalid-feedback">{{ errors.get('largura_faixa_m') }}</div>{% endif %}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Ponta de pulverizacao</label>
+            <input type="text" name="ponta_pulverizacao" id="ponta_pulverizacao" value="{{ form.get('ponta_pulverizacao', '') }}" class="form-control">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Mapeamento</label>
+            <input type="text" name="mapeamento_descricao" value="{{ form.get('mapeamento_descricao', '') }}" class="form-control" placeholder="Ex.: Drone RTK (P4R)">
+          </div>
+        </div>
+
+        <hr class="text-muted opacity-25 my-4">
+
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-thermometer-half text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Condicoes climaticas</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-2">
+            <label class="form-label fw-bold small text-muted">Temp. min</label>
+            <input type="text" name="temperatura_min_c" value="{{ form.get('temperatura_min_c', '') }}" class="form-control {% if errors.get('temperatura_min_c') %}is-invalid{% endif %}">
+            {% if errors.get('temperatura_min_c') %}<div class="invalid-feedback">{{ errors.get('temperatura_min_c') }}</div>{% endif %}
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-bold small text-muted">Temp. max</label>
+            <input type="text" name="temperatura_max_c" value="{{ form.get('temperatura_max_c', '') }}" class="form-control {% if errors.get('temperatura_max_c') %}is-invalid{% endif %}">
+            {% if errors.get('temperatura_max_c') %}<div class="invalid-feedback">{{ errors.get('temperatura_max_c') }}</div>{% endif %}
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-bold small text-muted">Umidade min %</label>
+            <input type="text" name="umidade_min_pct" value="{{ form.get('umidade_min_pct', '') }}" class="form-control {% if errors.get('umidade_min_pct') %}is-invalid{% endif %}">
+            {% if errors.get('umidade_min_pct') %}<div class="invalid-feedback">{{ errors.get('umidade_min_pct') }}</div>{% endif %}
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-bold small text-muted">Umidade max %</label>
+            <input type="text" name="umidade_max_pct" value="{{ form.get('umidade_max_pct', '') }}" class="form-control {% if errors.get('umidade_max_pct') %}is-invalid{% endif %}">
+            {% if errors.get('umidade_max_pct') %}<div class="invalid-feedback">{{ errors.get('umidade_max_pct') }}</div>{% endif %}
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-bold small text-muted">Vento min km/h</label>
+            <input type="text" name="vento_min_kmh" value="{{ form.get('vento_min_kmh', '') }}" class="form-control {% if errors.get('vento_min_kmh') %}is-invalid{% endif %}">
+            {% if errors.get('vento_min_kmh') %}<div class="invalid-feedback">{{ errors.get('vento_min_kmh') }}</div>{% endif %}
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-bold small text-muted">Vento max km/h</label>
+            <input type="text" name="vento_max_kmh" value="{{ form.get('vento_max_kmh', '') }}" class="form-control {% if errors.get('vento_max_kmh') %}is-invalid{% endif %}">
+            {% if errors.get('vento_max_kmh') %}<div class="invalid-feedback">{{ errors.get('vento_max_kmh') }}</div>{% endif %}
+          </div>
+        </div>
+
+        <hr class="text-muted opacity-25 my-4">
+
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-droplet-half text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Resultado da aplicacao</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Area total de aplicacao (ha)</label>
+            <input type="text" name="area_total_ha" value="{{ form.get('area_total_ha', '') }}" class="form-control {% if errors.get('area_total_ha') %}is-invalid{% endif %}" placeholder="Ex.: 4,12">
+            {% if errors.get('area_total_ha') %}<div class="invalid-feedback">{{ errors.get('area_total_ha') }}</div>{% endif %}
+            <div class="form-text">Esse valor sai no PDF como "Area total de aplicacao: 4,12 hectares".</div>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Total de calda (l)</label>
+            <input type="text" name="total_calda_l" value="{{ form.get('total_calda_l', '') }}" class="form-control {% if errors.get('total_calda_l') %}is-invalid{% endif %}">
+            {% if errors.get('total_calda_l') %}<div class="invalid-feedback">{{ errors.get('total_calda_l') }}</div>{% endif %}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Media aplicada (l/ha)</label>
+            <input type="text" name="media_aplicada_l_ha" value="{{ form.get('media_aplicada_l_ha', '') }}" class="form-control {% if errors.get('media_aplicada_l_ha') %}is-invalid{% endif %}">
+            {% if errors.get('media_aplicada_l_ha') %}<div class="invalid-feedback">{{ errors.get('media_aplicada_l_ha') }}</div>{% endif %}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Taxa de aplicacao (l/ha)</label>
+            <input type="text" name="taxa_aplicacao_l_ha" value="{{ form.get('taxa_aplicacao_l_ha', '') }}" class="form-control {% if errors.get('taxa_aplicacao_l_ha') %}is-invalid{% endif %}">
+            {% if errors.get('taxa_aplicacao_l_ha') %}<div class="invalid-feedback">{{ errors.get('taxa_aplicacao_l_ha') }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Produto aplicado</label>
+            <input type="text" name="produto_aplicado" value="{{ form.get('produto_aplicado', '') }}" class="form-control">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Formulacao</label>
+            <input type="text" name="formulacao_produto" value="{{ form.get('formulacao_produto', '') }}" class="form-control">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Dosagem</label>
+            <input type="text" name="dosagem" value="{{ form.get('dosagem', '') }}" class="form-control" placeholder="Ex.: 3,5 l/ha">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Classe toxica</label>
+            <input type="text" name="classe_toxica" value="{{ form.get('classe_toxica', '') }}" class="form-control">
+          </div>
+        </div>
+
+        <hr class="text-muted opacity-25 my-4">
+
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-filetype-pdf text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Relatorio final, mapa e observacoes</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Anexo complementar PDF</label>
+            <input type="file" name="relatorio_pdf" class="form-control" accept="application/pdf">
+            {% if ordem_servico and ordem_servico.relatorio_pdf_nome %}
+              <div class="form-text">Arquivo atual: {{ ordem_servico.relatorio_pdf_nome }}</div>
+            {% else %}
+              <div class="form-text">Opcional para guardar um PDF complementar junto da OS.</div>
+            {% endif %}
+          </div>
+
+          {% if not pilot_form_mode %}
+            <div class="col-md-4">
+              <label class="form-label fw-bold small text-muted">Mapa de aplicacao (PNG/JPG)</label>
+              <input type="file" name="mapa_aplicacao" class="form-control" accept="image/png,image/jpeg">
+              {% if ordem_servico and ordem_servico.mapa_aplicacao_nome %}
+                <div class="form-text">Imagem atual: {{ ordem_servico.mapa_aplicacao_nome }}</div>
+              {% else %}
+                <div class="form-text">Essa imagem entra na pagina "Mapas de Aplicacao" do PDF final.</div>
+              {% endif %}
+            </div>
+          {% endif %}
+
+          <div class="{{ 'col-md-4' if not pilot_form_mode else 'col-md-8' }}">
+            <label class="form-label fw-bold small text-muted">Observacoes</label>
+            <textarea name="observacoes" rows="4" class="form-control">{{ form.get('observacoes', '') }}</textarea>
+          </div>
+        </div>
+
+        <small class="text-muted d-block mt-4">
+          {% if pilot_form_mode %}
+            A equipe desta OS segue o contrato aprovado e o formulario fica compartilhado com todos os pilotos da equipe. Depois que a OS for concluida, o admin pode complementar o relatorio final com a imagem do mapa.
+          {% else %}
+            A equipe da OS segue a equipe definida no contrato aprovado e a OS fica visivel para todos os pilotos vinculados a ela. Quando a OS estiver concluida, a imagem do mapa anexada aqui passa a sair na pagina final do PDF.
+          {% endif %}
+        </small>
+
+        <div class="d-flex justify-content-end gap-2 mt-5">
+          <a href="{{ url_for('main.agro_piloto_dashboard' if pilot_form_mode else 'main.agro_os_listar') }}" class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-x-lg me-1"></i> Cancelar
+          </a>
+
+          <button type="submit" class="btn btn-primary btn-sm">
+            <i class="bi bi-check-lg me-1"></i> {{ 'Salvar OS Agro' if modo == 'novo' else 'Atualizar OS Agro' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const equipamentosMeta = {{ equipamentos_meta|tojson }};
+
+  function filterOptionsByTeam(selectId, teamId) {
+    const select = document.getElementById(selectId);
+    if (!select || select.tagName !== "SELECT") return;
+
+    for (const option of select.options) {
+      if (!option.value) {
+        option.hidden = false;
+        continue;
+      }
+
+      const optionTeamId = option.dataset.equipeId || "";
+      option.hidden = !!teamId && optionTeamId && optionTeamId !== teamId;
+    }
+  }
+
+  function fillDroneData(selectId, { alturaInputId, larguraInputId, pontaInputId, allowPonta }) {
+    const select = document.getElementById(selectId);
+    if (!select || select.tagName !== "SELECT") return;
+
+    const meta = equipamentosMeta[select.value] || null;
+    if (!meta) return;
+
+    const alturaInput = document.getElementById(alturaInputId);
+    const larguraInput = document.getElementById(larguraInputId);
+    const pontaInput = document.getElementById(pontaInputId);
+
+    if (alturaInput && !alturaInput.value && meta.altura_voo_padrao_m) {
+      alturaInput.value = String(meta.altura_voo_padrao_m).replace(".", ",");
+    }
+
+    if (larguraInput && !larguraInput.value && meta.largura_faixa_m) {
+      larguraInput.value = String(meta.largura_faixa_m).replace(".", ",");
+    }
+
+    if (allowPonta && pontaInput && !pontaInput.value && meta.ponta_pulverizacao) {
+      pontaInput.value = meta.ponta_pulverizacao;
+    }
+  }
+
+  const equipeSelect = document.getElementById("equipe_agro_id");
+  const syncTeamFilters = () => {
+    const teamId = equipeSelect?.value || "";
+    filterOptionsByTeam("drone_pulverizacao_id", teamId);
+    filterOptionsByTeam("drone_mapeamento_id", teamId);
+  };
+
+  equipeSelect?.addEventListener("change", syncTeamFilters);
+  document.getElementById("drone_pulverizacao_id")?.addEventListener("change", () => {
+    fillDroneData("drone_pulverizacao_id", {
+      alturaInputId: "altura_voo_m",
+      larguraInputId: "largura_faixa_m",
+      pontaInputId: "ponta_pulverizacao",
+      allowPonta: true,
+    });
+  });
+  document.getElementById("drone_mapeamento_id")?.addEventListener("change", () => {
+    fillDroneData("drone_mapeamento_id", {
+      alturaInputId: "altura_voo_m",
+      larguraInputId: "largura_faixa_m",
+      pontaInputId: "ponta_pulverizacao",
+      allowPonta: false,
+    });
+  });
+
+  syncTeamFilters();
+</script>
+{% endblock %}

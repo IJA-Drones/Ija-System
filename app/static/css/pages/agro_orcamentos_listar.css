@@ -1,0 +1,356 @@
+.agro-orcamentos-table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.agro-orcamentos-table-wrap,
+.agro-orcamentos-table-wrap .card-body,
+.agro-orcamentos-table-wrap .table-responsive {
+  overflow: visible !important;
+}
+
+.agro-orcamentos-table-wrap {
+  border-radius: 1rem;
+  background: var(--color-bg-white);
+}
+
+.agro-orcamentos-table-wrap .card-body {
+  border-radius: inherit;
+  background: transparent;
+}
+
+.agro-orcamentos-table-wrap .table-responsive {
+  border-radius: inherit;
+  background: transparent;
+}
+
+.agro-orcamentos-table th,
+.agro-orcamentos-table td {
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.agro-orcamentos-table thead th:first-child {
+  border-top-left-radius: 1rem;
+}
+
+.agro-orcamentos-table thead th:last-child {
+  border-top-right-radius: 1rem;
+}
+
+.agro-orcamentos-table tbody tr:last-child td:first-child {
+  border-bottom-left-radius: 1rem;
+}
+
+.agro-orcamentos-table tbody tr:last-child td:last-child {
+  border-bottom-right-radius: 1rem;
+}
+
+.agro-orcamentos-table tbody tr:last-child td[colspan] {
+  border-bottom-left-radius: 1rem;
+  border-bottom-right-radius: 1rem;
+}
+
+.agro-orcamentos-table .agro-col-client {
+  width: 24%;
+}
+
+.agro-orcamentos-table .agro-col-operation {
+  width: 27%;
+}
+
+.agro-orcamentos-table .agro-col-values {
+  width: 16%;
+}
+
+.agro-orcamentos-table .agro-col-created {
+  width: 14%;
+}
+
+.agro-orcamentos-table .agro-col-files {
+  width: 11%;
+}
+
+.agro-orcamentos-table .col-actions,
+.agro-orcamentos-table td.listing-cell-actions {
+  width: 72px;
+  text-align: center;
+}
+
+.agro-orcamentos-table td[data-label="Cliente"],
+.agro-orcamentos-table td[data-label="Operação"],
+.agro-orcamentos-table td[data-label="Arquivos"] {
+  vertical-align: top;
+}
+
+.agro-orcamentos-table .agro-orcamentos-main {
+  margin-bottom: 0.25rem;
+}
+
+.agro-orcamentos-table .agro-orcamentos-dot {
+  display: inline-block;
+  margin: 0 0.25rem;
+}
+
+.agro-orcamentos-table .agro-orcamentos-subline {
+  margin-bottom: 0.2rem;
+  line-height: 1.4;
+}
+
+.agro-orcamentos-table .agro-orcamentos-value {
+  line-height: 1.2;
+}
+
+.agro-orcamentos-table .agro-orcamentos-meta,
+.agro-orcamentos-table .agro-orcamentos-files {
+  display: grid;
+  align-content: start;
+  gap: 0.5rem;
+}
+
+.agro-orcamentos-table .agro-protocol-chip {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.agro-orcamentos-table .agro-file-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 100%;
+  min-width: 0;
+  font-size: 0.82rem;
+}
+
+.agro-orcamentos-table .agro-orcamentos-file-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+}
+
+.agro-orcamentos-table td.listing-cell-actions {
+  vertical-align: middle;
+}
+
+.agro-orcamentos-table .agro-actions-dropdown {
+  display: flex;
+  justify-content: center;
+}
+
+.agro-orcamentos-table .agro-actions-trigger {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.agro-orcamentos-table .agro-actions-trigger::after {
+  display: none;
+}
+
+.agro-orcamentos-table .agro-actions-trigger .bi {
+  font-size: 1rem;
+}
+
+.agro-orcamentos-table .agro-actions-dropdown .dropdown-menu {
+  min-width: 220px;
+  margin-bottom: 0.45rem;
+}
+
+.agro-orcamento-modal {
+  border: 0;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.agro-orcamento-modal-dialog {
+  max-width: min(1160px, calc(100vw - 1.5rem));
+}
+
+.agro-orcamento-modal .modal-header {
+  padding: 0.85rem 1.1rem 0.75rem;
+}
+
+.agro-orcamento-modal .modal-body {
+  padding: 0.85rem 1.1rem 1rem;
+}
+
+.agro-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+  align-items: start;
+}
+
+.agro-detail-card {
+  padding: 0.8rem 0.9rem;
+  border: 1px solid #edf2f7;
+  border-radius: 18px;
+  background: #f8fafc;
+}
+
+.agro-detail-card-wide {
+  grid-column: 1 / -1;
+}
+
+.agro-detail-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.6rem;
+  color: var(--color-primary-dark);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.agro-detail-title .bi {
+  color: var(--color-primary);
+}
+
+.agro-detail-list {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.agro-detail-list-summary {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: 0.85rem;
+}
+
+.agro-detail-list.agro-detail-list-wide {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 0.85rem;
+}
+
+.agro-detail-list-inline {
+  gap: 0.15rem;
+}
+
+.agro-detail-list-inline > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+  padding: 0.45rem 0;
+}
+
+.agro-detail-list-inline > div + div {
+  border-top: 1px solid #edf2f7;
+}
+
+.agro-detail-list dt {
+  margin: 0 0 0.15rem;
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.agro-detail-list dd {
+  margin: 0;
+  color: var(--color-text-main);
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
+.agro-detail-list-inline dt,
+.agro-detail-list-inline dd {
+  margin: 0;
+}
+
+.agro-detail-list-inline dd {
+  text-align: right;
+  font-weight: 600;
+}
+
+body.dark-mode .agro-orcamento-modal {
+  background: #152233;
+  color: var(--color-text-main);
+}
+
+body.dark-mode .agro-detail-card {
+  background: #1c2b3f;
+  border-color: #233549;
+}
+
+body.dark-mode .agro-detail-title {
+  color: var(--color-primary-dark);
+}
+
+body.dark-mode .agro-detail-list dt {
+  color: var(--color-text-muted);
+}
+
+body.dark-mode .agro-detail-list dd {
+  color: var(--color-text-main);
+}
+
+body.dark-mode .agro-detail-list-inline > div + div {
+  border-top-color: #233549;
+}
+
+@media (max-width: 1199.98px) {
+  .agro-orcamentos-table .agro-col-client {
+    width: 23%;
+  }
+
+  .agro-orcamentos-table .agro-col-operation {
+    width: 26%;
+  }
+
+  .agro-orcamentos-table .agro-col-values {
+    width: 15%;
+  }
+
+  .agro-orcamentos-table .agro-col-created {
+    width: 14%;
+  }
+
+  .agro-orcamentos-table .agro-col-files {
+    width: 11%;
+  }
+
+  .agro-orcamentos-table .col-actions,
+  .agro-orcamentos-table td.listing-cell-actions {
+    width: 72px;
+  }
+}
+
+@media (max-width: 991.98px) {
+  .agro-orcamentos-table {
+    table-layout: auto;
+  }
+
+  .agro-orcamentos-table-wrap .table-responsive {
+    overflow-x: visible !important;
+    overflow-y: visible !important;
+  }
+
+  .agro-orcamentos-table .agro-actions-dropdown {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .agro-orcamentos-table .agro-actions-dropdown .dropdown-menu {
+    min-width: min(220px, 100%);
+  }
+
+  .agro-detail-grid,
+  .agro-detail-list-summary,
+  .agro-detail-list.agro-detail-list-wide {
+    grid-template-columns: 1fr;
+  }
+
+  .agro-orcamento-modal .modal-header,
+  .agro-orcamento-modal .modal-body {
+    padding-left: 0.95rem;
+    padding-right: 0.95rem;
+  }
+}

@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from flask import Flask, g, render_template, request
 from flask_login import current_user
 from flask_talisman import Talisman
+from sqlalchemy.exc import SQLAlchemyError
 from whitenoise import WhiteNoise
 
 from app.extensions import db, login_manager, migrate
@@ -98,7 +99,11 @@ def create_app():
 
     @login_manager.user_loader
     def load_user(user_id):
-        return Usuario.query.get(int(user_id))
+        try:
+            return Usuario.query.get(int(user_id))
+        except SQLAlchemyError:
+            app.logger.exception("Falha ao carregar usuario autenticado (banco indisponivel).")
+            return None
 
     @app.before_request
     def capture_audit_user():

@@ -1,0 +1,631 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1200px">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div>
+      <h2 class="text-dark m-0">
+        <i class="bi bi-file-earmark-richtext-fill me-2 text-primary"></i>
+        {{ 'Cadastrar orçamento do Agro' if modo == 'novo' else 'Editar orçamento do Agro' }}
+      </h2>
+      <p class="text-muted small mb-0">Monte a proposta comercial com serviço, dados da fazenda e valores separados para apresentação.</p>
+    </div>
+
+    <a href="{{ url_for('main.agro_orcamentos_listar') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+  </div>
+
+  <div class="card info status-primary shadow-sm rounded-4 border-0">
+    <div class="card-body p-4">
+      <form method="post" enctype="multipart/form-data" novalidate>
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-card-heading text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Informações principais</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-people-fill me-1 text-primary"></i> Cliente cadastrado
+            </label>
+            <select id="cliente_agro_id" name="cliente_agro_id" class="form-select {% if errors.get('cliente_agro_id') %}is-invalid{% endif %}">
+              <option value="">Digitar manualmente</option>
+              {% for cliente in clientes %}
+                <option
+                  value="{{ cliente.id }}"
+                  data-nome="{{ cliente.nome or '' }}"
+                  data-documento="{{ cliente.documento or '' }}"
+                  data-cep="{{ cliente.cep or '' }}"
+                  data-logradouro="{{ cliente.logradouro or '' }}"
+                  data-numero="{{ cliente.numero or '' }}"
+                  data-complemento="{{ cliente.complemento or '' }}"
+                  data-bairro="{{ cliente.bairro or '' }}"
+                  data-cidade="{{ cliente.cidade or '' }}"
+                  data-uf="{{ cliente.uf or '' }}"
+                  {% if form.get('cliente_agro_id')|string == cliente.id|string %}selected{% endif %}
+                >
+                  {{ cliente.nome }}
+                </option>
+              {% endfor %}
+            </select>
+            {% if errors.get('cliente_agro_id') %}
+              <div class="invalid-feedback">{{ errors.get('cliente_agro_id') }}</div>
+            {% endif %}
+            <div class="form-text">Se selecionar um cliente, os campos abaixo podem ser preenchidos automaticamente e continuam editáveis.</div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-person-badge-fill me-1 text-primary"></i> Nome do cliente *
+            </label>
+            <input
+              type="text"
+              id="cliente_nome"
+              name="cliente_nome"
+              value="{{ form.get('cliente_nome', '') }}"
+              class="form-control {% if errors.get('cliente_nome') %}is-invalid{% endif %}"
+              placeholder="Ex.: Joao da Silva / Fazenda XYZ"
+              required
+            >
+            {% if errors.get('cliente_nome') %}
+              <div class="invalid-feedback">{{ errors.get('cliente_nome') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-card-text me-1 text-primary"></i> Documento do cliente
+            </label>
+            <input
+              type="text"
+              id="cliente_documento"
+              name="cliente_documento"
+              value="{{ form.get('cliente_documento', '') }}"
+              class="form-control {% if errors.get('cliente_documento') %}is-invalid{% endif %}"
+              placeholder="CPF ou CNPJ"
+            >
+            {% if errors.get('cliente_documento') %}
+              <div class="invalid-feedback">{{ errors.get('cliente_documento') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-8">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-house-door-fill me-1 text-primary"></i> Nome da fazenda *
+            </label>
+            <input
+              type="text"
+              name="nome_fazenda"
+              value="{{ form.get('nome_fazenda', '') }}"
+              class="form-control {% if errors.get('nome_fazenda') %}is-invalid{% endif %}"
+              placeholder="Ex.: Fazenda Santa Helena"
+              required
+            >
+            {% if errors.get('nome_fazenda') %}
+              <div class="invalid-feedback">{{ errors.get('nome_fazenda') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-briefcase-fill me-1 text-primary"></i> Serviço *
+            </label>
+            <select name="servico" class="form-select {% if errors.get('servico') %}is-invalid{% endif %}" required>
+              {% for servico in servico_options %}
+                <option value="{{ servico }}" {% if form.get('servico', servico_options[0]) == servico %}selected{% endif %}>{{ servico }}</option>
+              {% endfor %}
+            </select>
+            {% if errors.get('servico') %}
+              <div class="invalid-feedback">{{ errors.get('servico') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-map-fill me-1 text-primary"></i> Mapeamento
+            </label>
+            <select id="mapeamento" name="mapeamento" class="form-select">
+              <option value="NAO" {% if form.get('mapeamento', 'NAO') == 'NAO' %}selected{% endif %}>Não</option>
+              <option value="SIM" {% if form.get('mapeamento') == 'SIM' %}selected{% endif %}>Sim</option>
+            </select>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-flower1 me-1 text-primary"></i> Cultura
+            </label>
+            <input
+              type="text"
+              name="cultura"
+              maxlength="100"
+              value="{{ form.get('cultura', '') }}"
+              class="form-control {% if errors.get('cultura') %}is-invalid{% endif %}"
+              placeholder="Ex.: soja, milho, cana"
+            >
+            {% if errors.get('cultura') %}
+              <div class="invalid-feedback">{{ errors.get('cultura') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-upc-scan me-1 text-primary"></i> Protocolo DECEA
+            </label>
+            <input
+              type="text"
+              name="protocolo"
+              value="{{ form.get('protocolo', '') }}"
+              class="form-control"
+              placeholder="Número do protocolo"
+            >
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-cash-coin me-1 text-primary"></i> Preço base *
+            </label>
+            <input
+              type="text"
+              id="area_ha"
+              name="area_ha"
+              value="{{ form.get('area_ha', '') }}"
+              class="form-control {% if errors.get('area_ha') %}is-invalid{% endif %}"
+              placeholder="Ex.: 59,27"
+              inputmode="decimal"
+              required
+            >
+            {% if errors.get('area_ha') %}
+              <div class="invalid-feedback">{{ errors.get('area_ha') }}</div>
+            {% endif %}
+          </div>
+
+          <div id="precoMapeamentoWrap" class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-map me-1 text-primary"></i> Preço do mapeamento *
+            </label>
+            <input
+              type="text"
+              id="preco_mapeamento"
+              name="preco_mapeamento"
+              value="{{ form.get('preco_mapeamento', '') }}"
+              class="form-control {% if errors.get('preco_mapeamento') %}is-invalid{% endif %}"
+              placeholder="R$ 0,00"
+            >
+            {% if errors.get('preco_mapeamento') %}
+              <div class="invalid-feedback">{{ errors.get('preco_mapeamento') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-droplet-fill me-1 text-primary"></i> Preço da pulverização /ha *
+            </label>
+            <input
+              type="text"
+              id="preco_pulverizacao"
+              name="preco_pulverizacao"
+              value="{{ form.get('preco_pulverizacao', '') }}"
+              class="form-control {% if errors.get('preco_pulverizacao') %}is-invalid{% endif %}"
+              placeholder="R$ 0,00"
+              required
+            >
+            {% if errors.get('preco_pulverizacao') %}
+              <div class="invalid-feedback">{{ errors.get('preco_pulverizacao') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-calculator-fill me-1 text-primary"></i> Total calculado
+            </label>
+            <input
+              type="text"
+              id="valor_total_calculado"
+              name="valor_total_calculado"
+              value="{{ form.get('valor_total_calculado', '') }}"
+              class="form-control {% if errors.get('valor_total_calculado') %}is-invalid{% endif %}"
+              placeholder="R$ 0,00"
+              readonly
+            >
+            {% if errors.get('valor_total_calculado') %}
+              <div class="invalid-feedback">{{ errors.get('valor_total_calculado') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-8">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-pen-fill me-1 text-primary"></i> Elaborado por
+            </label>
+            <input
+              type="text"
+              value="{{ form.get('elaborado_por_nome', '') or 'Sera definido ao salvar' }}"
+              class="form-control"
+              readonly
+            >
+            <div class="form-text">Esse nome sai no PDF do orcamento como assinatura de quem elaborou a proposta.</div>
+          </div>
+
+          <div class="col-12">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-exclamation-triangle-fill me-1 text-primary"></i> Risco operacional
+            </label>
+            <textarea name="risco_operacional" rows="4" class="form-control">{{ form.get('risco_operacional', '') }}</textarea>
+          </div>
+        </div>
+
+        <hr class="text-muted opacity-25 my-4">
+
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-geo-alt-fill text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Endereço da operação</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-mailbox2-flag me-1 text-primary"></i> CEP *
+            </label>
+            <input
+              type="text"
+              id="cep"
+              name="cep"
+              value="{{ form.get('cep', '') }}"
+              class="form-control {% if errors.get('cep') %}is-invalid{% endif %}"
+              required
+            >
+            {% if errors.get('cep') %}
+              <div class="invalid-feedback">{{ errors.get('cep') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-7">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-signpost-2-fill me-1 text-primary"></i> Logradouro *
+            </label>
+            <input
+              type="text"
+              id="logradouro"
+              name="logradouro"
+              value="{{ form.get('logradouro', '') }}"
+              class="form-control {% if errors.get('logradouro') %}is-invalid{% endif %}"
+              required
+            >
+            {% if errors.get('logradouro') %}
+              <div class="invalid-feedback">{{ errors.get('logradouro') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-hash me-1 text-primary"></i> Número *
+            </label>
+            <input
+              type="text"
+              id="numero"
+              name="numero"
+              value="{{ form.get('numero', '') }}"
+              class="form-control {% if errors.get('numero') %}is-invalid{% endif %}"
+              required
+            >
+            {% if errors.get('numero') %}
+              <div class="invalid-feedback">{{ errors.get('numero') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-building me-1 text-primary"></i> Complemento
+            </label>
+            <input
+              type="text"
+              id="complemento"
+              name="complemento"
+              value="{{ form.get('complemento', '') }}"
+              class="form-control"
+              placeholder="Galpão, sede, talhão, referência"
+            >
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-geo me-1 text-primary"></i> Bairro *
+            </label>
+            <input
+              type="text"
+              id="bairro"
+              name="bairro"
+              value="{{ form.get('bairro', '') }}"
+              class="form-control {% if errors.get('bairro') %}is-invalid{% endif %}"
+              required
+            >
+            {% if errors.get('bairro') %}
+              <div class="invalid-feedback">{{ errors.get('bairro') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-pin-map-fill me-1 text-primary"></i> Cidade *
+            </label>
+            <input
+              type="text"
+              id="cidade"
+              name="cidade"
+              value="{{ form.get('cidade', '') }}"
+              class="form-control {% if errors.get('cidade') %}is-invalid{% endif %}"
+              required
+            >
+            {% if errors.get('cidade') %}
+              <div class="invalid-feedback">{{ errors.get('cidade') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-1">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-compass-fill me-1 text-primary"></i> UF *
+            </label>
+            <input
+              type="text"
+              id="uf"
+              name="uf"
+              maxlength="2"
+              value="{{ form.get('uf', '') }}"
+              class="form-control text-uppercase {% if errors.get('uf') %}is-invalid{% endif %}"
+              required
+            >
+            {% if errors.get('uf') %}
+              <div class="invalid-feedback">{{ errors.get('uf') }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <hr class="text-muted opacity-25 my-4">
+
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-paperclip text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Arquivo de apoio</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-12">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-file-earmark-pdf-fill me-1 text-primary"></i> Anexo em PDF
+            </label>
+            <input type="file" name="anexo" class="form-control {% if errors.get('anexo') %}is-invalid{% endif %}" accept="application/pdf">
+            {% if errors.get('anexo') %}
+              <div class="invalid-feedback">{{ errors.get('anexo') }}</div>
+            {% endif %}
+
+            {% if orcamento and orcamento.anexo_path %}
+              <div class="form-text mt-2">
+                Arquivo atual:
+                <a href="{{ url_for('main.agro_orcamento_anexo', orcamento_id=orcamento.id) }}" target="_blank">{{ orcamento.anexo_nome }}</a>
+              </div>
+            {% endif %}
+
+            <div class="form-text mt-2">
+              {% if orcamento %}
+                Orçamento criado em {{ orcamento.data_criacao.strftime('%d/%m/%Y às %H:%M') }}.
+              {% else %}
+                A data de criação será definida automaticamente ao salvar.
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <small class="text-muted d-block mt-4">
+          Campos com <span class="text-danger">*</span> são de preenchimento obrigatório.
+        </small>
+
+        <div class="d-flex justify-content-end gap-2 mt-5">
+          <a href="{{ url_for('main.agro_orcamentos_listar') }}" class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-x-lg me-1"></i> Cancelar
+          </a>
+
+          <button type="submit" class="btn btn-primary btn-sm">
+            <i class="bi bi-check-lg me-1"></i>
+            {{ 'Salvar orçamento' if modo == 'novo' else 'Atualizar orçamento' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function onlyDigits(value) {
+    return (value || "").replace(/\D/g, "");
+  }
+
+  function maskCep(value) {
+    const digits = onlyDigits(value).slice(0, 8);
+    if (digits.length <= 5) return digits;
+    return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+  }
+
+  function preencherEnderecoDoCliente() {
+    const select = document.getElementById("cliente_agro_id");
+    const option = select?.selectedOptions?.[0];
+    if (!option || !option.value) return;
+
+    document.getElementById("cliente_nome").value = option.dataset.nome || "";
+    document.getElementById("cliente_documento").value = option.dataset.documento || "";
+    document.getElementById("cliente_documento").dispatchEvent(new Event("input", { bubbles: true }));
+    document.getElementById("cep").value = maskCep(option.dataset.cep || "");
+    document.getElementById("logradouro").value = option.dataset.logradouro || "";
+    document.getElementById("numero").value = option.dataset.numero || "";
+    document.getElementById("complemento").value = option.dataset.complemento || "";
+    document.getElementById("bairro").value = option.dataset.bairro || "";
+    document.getElementById("cidade").value = option.dataset.cidade || "";
+    document.getElementById("uf").value = (option.dataset.uf || "").toUpperCase();
+  }
+
+  function maskCurrencyBr(value) {
+    const digits = onlyDigits(value);
+    if (!digits) return "";
+    const number = Number(digits) / 100;
+    return number.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function parseDecimalBr(value) {
+    const text = String(value || "").trim().toLowerCase();
+    if (!text) return null;
+
+    let normalized = text
+      .replace(/hectares?/g, "")
+      .replace(/ha/g, "")
+      .replace(/[^\d.,]/g, "");
+
+    if (!normalized) return null;
+
+    if (normalized.includes(",") && normalized.includes(".")) {
+      normalized = normalized.replace(/\./g, "").replace(",", ".");
+    } else if (normalized.includes(",")) {
+      normalized = normalized.replace(",", ".");
+    }
+
+    const number = Number(normalized);
+    return Number.isFinite(number) ? number : null;
+  }
+
+  function orcamentoServicoIncluiMapeamento() {
+    const servico = document.getElementById("servico")?.value || "";
+    return servico === "Mapeamento" || servico === "Mapeamento e pulverização";
+  }
+
+  function orcamentoServicoIncluiPulverizacao() {
+    return true;
+  }
+
+  function syncOrcamentoLabels() {
+    const areaLabel = document.getElementById("area_ha")?.closest(".col-md-4")?.querySelector("label");
+    const mapLabel = document.getElementById("preco_mapeamento")?.closest(".col-md-4")?.querySelector("label");
+    const pulvLabel = document.getElementById("preco_pulverizacao")?.closest(".col-md-4")?.querySelector("label");
+
+    if (areaLabel) {
+      areaLabel.innerHTML = '<i class="bi bi-arrows-angle-expand me-1 text-primary"></i> Area / ha *';
+    }
+    if (mapLabel) {
+      mapLabel.innerHTML = '<i class="bi bi-map me-1 text-primary"></i> Preco do mapeamento /ha *';
+    }
+    if (pulvLabel) {
+      pulvLabel.innerHTML = '<i class="bi bi-droplet-fill me-1 text-primary"></i> Preco da pulverizacao /ha *';
+    }
+  }
+
+  function calculateValorTotal() {
+    const areaInput = document.getElementById("area_ha");
+    const totalInput = document.getElementById("valor_total_calculado");
+    const mapeamentoInput = document.getElementById("preco_mapeamento");
+    const pulverizacaoInput = document.getElementById("preco_pulverizacao");
+
+    if (!areaInput || !totalInput || !mapeamentoInput || !pulverizacaoInput) return;
+
+    const area = parseDecimalBr(areaInput.value);
+    const valorMapDigitado = parseDecimalBr(mapeamentoInput.value) || 0;
+    const valorMap = (orcamentoServicoIncluiMapeamento() || document.getElementById("mapeamento")?.value === "SIM" || valorMapDigitado > 0)
+      ? valorMapDigitado
+      : 0;
+    const valorPulv = parseDecimalBr(pulverizacaoInput.value) || 0;
+
+    if (area === null || area <= 0 || (valorMap <= 0 && valorPulv <= 0)) {
+      totalInput.value = "";
+      return;
+    }
+
+    const total = area * (valorMap + valorPulv);
+    totalInput.value = total.toLocaleString("pt-BR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
+
+  function syncMapeamentoPriceVisibility() {
+    const mapeamento = document.getElementById("mapeamento");
+    const servico = document.getElementById("servico");
+    const wrapper = document.getElementById("precoMapeamentoWrap");
+    const field = document.getElementById("preco_mapeamento");
+    const isVisible = mapeamento?.value === "SIM" || orcamentoServicoIncluiMapeamento();
+
+    if (!wrapper || !field || !servico) return;
+
+    wrapper.style.display = isVisible ? "" : "none";
+    field.required = isVisible;
+
+    if (!isVisible) {
+      field.value = "";
+    }
+
+    calculateValorTotal();
+  }
+
+  document.getElementById("cliente_agro_id")?.addEventListener("change", preencherEnderecoDoCliente);
+  document.getElementById("cliente_documento")?.addEventListener("input", (event) => {
+    const digits = onlyDigits(event.target.value);
+    if (digits.length <= 11) {
+      if (digits.length <= 3) {
+        event.target.value = digits;
+      } else if (digits.length <= 6) {
+        event.target.value = `${digits.slice(0, 3)}.${digits.slice(3)}`;
+      } else if (digits.length <= 9) {
+        event.target.value = `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
+      } else {
+        event.target.value = `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9, 11)}`;
+      }
+      return;
+    }
+
+    const cnpj = digits.slice(0, 14);
+    if (cnpj.length <= 2) {
+      event.target.value = cnpj;
+    } else if (cnpj.length <= 5) {
+      event.target.value = `${cnpj.slice(0, 2)}.${cnpj.slice(2)}`;
+    } else if (cnpj.length <= 8) {
+      event.target.value = `${cnpj.slice(0, 2)}.${cnpj.slice(2, 5)}.${cnpj.slice(5)}`;
+    } else if (cnpj.length <= 12) {
+      event.target.value = `${cnpj.slice(0, 2)}.${cnpj.slice(2, 5)}.${cnpj.slice(5, 8)}/${cnpj.slice(8)}`;
+    } else {
+      event.target.value = `${cnpj.slice(0, 2)}.${cnpj.slice(2, 5)}.${cnpj.slice(5, 8)}/${cnpj.slice(8, 12)}-${cnpj.slice(12, 14)}`;
+    }
+  });
+  document.getElementById("cep")?.addEventListener("input", (event) => {
+    event.target.value = maskCep(event.target.value);
+  });
+  document.getElementById("mapeamento")?.addEventListener("change", syncMapeamentoPriceVisibility);
+  document.getElementById("servico")?.addEventListener("change", syncMapeamentoPriceVisibility);
+  document.getElementById("area_ha")?.addEventListener("input", calculateValorTotal);
+
+  ["preco_mapeamento", "preco_pulverizacao"].forEach((fieldId) => {
+    document.getElementById(fieldId)?.addEventListener("input", (event) => {
+      event.target.value = maskCurrencyBr(event.target.value);
+      calculateValorTotal();
+    });
+  });
+
+  window.addEventListener("DOMContentLoaded", () => {
+    if (!document.getElementById("cep")?.value) {
+      preencherEnderecoDoCliente();
+    }
+
+    syncOrcamentoLabels();
+
+    ["preco_mapeamento", "preco_pulverizacao"].forEach((fieldId) => {
+      const field = document.getElementById(fieldId);
+      if (field && field.value) {
+        field.value = maskCurrencyBr(field.value);
+      }
+    });
+
+    syncMapeamentoPriceVisibility();
+    calculateValorTotal();
+  });
+</script>
+{% endblock %}

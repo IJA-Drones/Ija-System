@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/listing_pattern.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 listing-page">
+  <div class="listing-header mb-4">
+    <div>
+      <h2 class="text-dark m-0">
+        <i class="bi bi-diagram-3-fill me-2 text-primary"></i>Contratos Aprovados
+      </h2>
+      <p class="text-muted small mb-0">
+        Contratos aprovados aguardando definição ou ajuste da equipe responsável.
+        Depois disso, a OS Agro passa a ser criada pelo piloto no painel dele.
+        Total: <strong>{{ filters.total }}</strong>
+      </p>
+    </div>
+
+    <div class="listing-actions">
+      <a href="{{ url_for('main.admin_agro') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+      <a href="{{ url_for('main.agro_orcamentos_listar') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
+        <i class="bi bi-file-earmark-text"></i> Orçamentos
+      </a>
+    </div>
+  </div>
+
+  <div class="card shadow-sm rounded-4 mb-4 border-0">
+    <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center listing-filter-header"
+         data-bs-toggle="collapse"
+         data-bs-target="#collapseFiltrosContratosTemplate"
+         aria-expanded="{{ 'true' if (filters.q or filters.equipe_id) else 'false' }}">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-funnel-fill text-primary"></i>
+        <span class="text-dark">Filtros</span>
+        {% if filters.q or filters.equipe_id %}
+          <span class="badge bg-danger rounded-circle p-1 listing-filter-dot"></span>
+        {% endif %}
+      </div>
+      <i class="bi bi-chevron-down text-muted"></i>
+    </div>
+
+    <div class="collapse {% if filters.q or filters.equipe_id %}show{% endif %}" id="collapseFiltrosContratosTemplate">
+      <div class="card-body pt-0 listing-filter-body">
+        <form method="GET" action="{{ url_for('main.agro_contratos_template') }}">
+          <div class="row g-2 align-items-end">
+            <div class="col-md-7">
+              <label class="small text-muted mb-1">Busca geral:</label>
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                name="q"
+                value="{{ filters.q }}"
+                placeholder="Cliente, fazenda, contratante ou protocolo..."
+              >
+            </div>
+
+            <div class="col-md-3">
+              <label class="small text-muted mb-1">Equipe:</label>
+              <select name="equipe_id" class="form-select form-select-sm">
+                <option value="">Todas</option>
+                {% for equipe in equipes_ativas %}
+                  <option value="{{ equipe.id }}" {% if filters.equipe_id == equipe.id %}selected{% endif %}>{{ equipe.nome }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-2 listing-filter-actions">
+              <button type="submit" class="btn btn-success btn-sm">
+                <i class="bi bi-funnel"></i> Filtrar
+              </button>
+
+              {% if filters.q or filters.equipe_id %}
+                <a href="{{ url_for('main.agro_contratos_template') }}" class="btn btn-outline-secondary btn-sm">
+                  <i class="bi bi-x-lg"></i> Limpar
+                </a>
+              {% endif %}
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm rounded-4 border-0 overflow-hidden listing-table-wrap">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 listing-table">
+          <thead class="table-light">
+            <tr>
+              <th>Contrato</th>
+              <th>Operação</th>
+              <th>Comercial</th>
+              <th style="min-width: 320px;">Template operacional</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for contrato in contratos %}
+              <tr>
+                <td data-label="Contrato">
+                  <div class="fw-bold">#{{ contrato.id }} • {{ contrato.orcamento.cliente_nome }}</div>
+                  <div class="text-muted small">{{ contrato.contratante_nome }}</div>
+                  <div class="text-muted small">Atualizado em {{ contrato.atualizado_em.strftime('%d/%m/%Y %H:%M') }}</div>
+                </td>
+
+                <td data-label="Operação">
+                  <div class="fw-semibold">{{ contrato.propriedade_nome or contrato.orcamento.nome_fazenda or '-' }}</div>
+                  <div class="text-muted small">{{ contrato.descricao_servico or '-' }}</div>
+                  <div class="text-muted small">
+                    Protocolo: {{ contrato.orcamento.protocolo or 'Não informado' }}
+                  </div>
+                </td>
+
+                <td data-label="Comercial">
+                  <div class="fw-bold">{{ contrato.valor_total|currencybr or '-' }}</div>
+                  <div class="text-muted small">Assinatura: {{ contrato.data_assinatura.strftime('%d/%m/%Y') if contrato.data_assinatura else '-' }}</div>
+                  <div class="text-muted small">Cultura: {{ contrato.cultura or 'Não informada' }}</div>
+                </td>
+
+                <td data-label="Template operacional">
+                  <form method="POST" action="{{ url_for('main.agro_contrato_template_salvar', contrato_id=contrato.id) }}" class="row g-2 align-items-end m-0">
+                    <div class="col-md-5">
+                      <label class="small text-muted mb-1">Equipe responsável</label>
+                      <select class="form-select form-select-sm" name="equipe_agro_id">
+                        <option value="">Selecione...</option>
+                        {% for equipe in equipes_ativas %}
+                          <option value="{{ equipe.id }}" {% if contrato.equipe_agro_id == equipe.id %}selected{% endif %}>{{ equipe.nome }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+
+                    <div class="col-md-4">
+                      <label class="small text-muted mb-1">Status</label>
+                      <select class="form-select form-select-sm" name="status">
+                        {% for status_value in status_options %}
+                          <option value="{{ status_value }}" {% if contrato.status == status_value %}selected{% endif %}>
+                            {% if status_value == 'APROVADO' %}Aprovado{% else %}Em elaboração{% endif %}
+                          </option>
+                        {% endfor %}
+                      </select>
+                    </div>
+
+                    <div class="col-md-3 d-grid">
+                      <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="bi bi-check-lg me-1"></i> Salvar
+                      </button>
+                    </div>
+
+                    <div class="col-12">
+                      <span class="badge {% if contrato.equipe %}bg-success-subtle text-success border border-success-subtle{% else %}bg-warning-subtle text-warning border border-warning-subtle{% endif %}">
+                        {{ contrato.equipe.nome if contrato.equipe else 'Sem equipe definida' }}
+                      </span>
+                    </div>
+                  </form>
+                </td>
+
+                <td data-label="Ações">
+                  <div class="d-flex flex-column gap-2">
+                    <a href="{{ url_for('main.agro_contrato_editar', orcamento_id=contrato.orcamento.id) }}" class="btn btn-outline-secondary btn-sm">
+                      <i class="bi bi-pencil-square me-1"></i> Editar
+                    </a>
+                    {% if contrato.ordens_servico %}
+                      <span class="badge bg-success-subtle text-success border border-success-subtle text-center">
+                        {{ contrato.ordens_servico|length }} OS criada(s)
+                      </span>
+                    {% elif contrato.equipe_agro_id %}
+                      <span class="badge bg-warning-subtle text-warning border border-warning-subtle text-center">
+                        Aguardando preenchimento do piloto
+                      </span>
+                    {% endif %}
+                    <a href="{{ url_for('main.agro_contrato_pdf', orcamento_id=contrato.orcamento.id) }}" target="_blank" class="btn btn-outline-danger btn-sm">
+                      <i class="bi bi-filetype-pdf me-1"></i> PDF
+                    </a>
+                    <form method="POST" action="{{ url_for('main.agro_contrato_deletar', contrato_id=contrato.id) }}" onsubmit="return confirm('Tem certeza que deseja excluir este contrato agro? Exclua antes as OS vinculadas, se houver.');">
+                      <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                        <i class="bi bi-trash me-1"></i> Excluir
+                      </button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="5" class="text-center py-5">
+                  <p class="text-muted mb-0">Nenhum contrato aprovado encontrado com os filtros aplicados.</p>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

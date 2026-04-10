@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/listing_pattern.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 listing-page">
+  <div class="listing-header mb-4">
+    <div>
+      <h2 class="text-dark m-0">
+        <i class="bi bi-people-fill me-2 text-primary"></i> Clientes do Agro
+      </h2>
+      <p class="text-muted small mb-0">
+        Total de registros: <strong>{{ filters.total }}</strong>
+        {% if filters.q %}
+          <span class="badge bg-filter-custom ms-2">Filtrado</span>
+        {% endif %}
+      </p>
+    </div>
+
+    <div class="listing-actions">
+      <a href="{{ url_for('main.admin_agro') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+
+      {% if is_editable %}
+        <a href="{{ url_for('main.agro_cliente_novo') }}" class="btn btn-success d-flex align-items-center gap-2">
+          <i class="bi bi-plus-lg"></i> Novo Cliente
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card shadow-sm rounded-4 mb-4 border-0">
+    <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center listing-filter-header"
+         data-bs-toggle="collapse"
+         data-bs-target="#collapseFiltrosClientesAgro"
+         aria-expanded="{{ 'true' if filters.q else 'false' }}">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-funnel-fill text-primary"></i>
+        <span class="text-dark">Filtros de busca</span>
+        {% if filters.q %}
+          <span class="badge bg-danger rounded-circle p-1 listing-filter-dot"></span>
+        {% endif %}
+      </div>
+      <i class="bi bi-chevron-down text-muted"></i>
+    </div>
+
+    <div class="collapse {% if filters.q %}show{% endif %}" id="collapseFiltrosClientesAgro">
+      <div class="card-body pt-0 listing-filter-body">
+        <form method="GET" action="{{ url_for('main.agro_clientes_listar') }}">
+          <div class="row g-2 align-items-end">
+            <div class="col-md-8">
+              <label class="small text-muted mb-1">Busca geral:</label>
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                name="q"
+                value="{{ filters.q }}"
+                placeholder="Nome, documento, rua, bairro ou cidade..."
+              >
+            </div>
+
+            <div class="col-md-4 listing-filter-actions">
+              <button type="submit" class="btn btn-success btn-sm">
+                <i class="bi bi-funnel"></i> Filtrar
+              </button>
+
+              {% if filters.q %}
+                <a href="{{ url_for('main.agro_clientes_listar') }}" class="btn btn-outline-secondary btn-sm">
+                  <i class="bi bi-x-lg"></i> Limpar
+                </a>
+              {% endif %}
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm rounded-4 border-0 overflow-hidden listing-table-wrap">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 listing-table">
+          <thead class="table-light">
+            <tr>
+              <th class="col-id">ID</th>
+              <th>Cliente</th>
+              <th>Documento</th>
+              <th>Endereço</th>
+              {% if is_editable %}<th class="col-actions">Ações</th>{% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for cliente in clientes_serializados %}
+              <tr>
+                <td data-label="ID" class="text-muted">#{{ cliente.id }}</td>
+                <td data-label="Cliente">
+                  <div class="fw-bold">{{ cliente.nome }}</div>
+                  <div class="text-muted small">Cadastro comercial ativo</div>
+                </td>
+                <td data-label="Documento">
+                  <span class="badge bg-white text-dark border font-monospace">{{ cliente.documento_fmt }}</span>
+                </td>
+                <td data-label="Endereço">
+                  <span class="small d-block">{{ cliente.endereco_completo }}</span>
+                </td>
+
+                {% if is_editable %}
+                  <td data-label="Ações" class="listing-cell-actions">
+                    <div class="listing-actions-group">
+                      <a href="{{ url_for('main.agro_cliente_editar', cliente_id=cliente.id) }}"
+                         class="btn btn-sm btn-success text-white shadow-sm"
+                         title="Editar">
+                        <i class="bi bi-pencil-square"></i> Editar
+                      </a>
+
+                      <form class="form-deletar m-0" method="POST" action="{{ url_for('main.agro_cliente_deletar', cliente_id=cliente.id) }}">
+                        <button type="submit" class="btn btn-sm btn-danger shadow-sm" title="Excluir">
+                          <i class="bi bi-trash"></i> Excluir
+                        </button>
+                      </form>
+                    </div>
+                  </td>
+                {% endif %}
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="{{ 5 if is_editable else 4 }}" class="text-center py-5">
+                  <p class="text-muted mb-0">Nenhum cliente agro encontrado com os filtros aplicados.</p>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {% if filters.total_pages > 1 %}
+      <div class="card-footer bg-transparent py-3 border-top">
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="small text-muted">Página <strong>{{ filters.page }}</strong> de {{ filters.total_pages }}</span>
+          <nav>
+            <ul class="pagination pagination-sm mb-0 listing-pagination">
+              <li class="page-item {% if filters.page <= 1 %}disabled{% endif %}">
+                <a class="page-link shadow-none" href="{{ url_for('main.agro_clientes_listar', page=filters.page-1, **pagination_args) }}">Anterior</a>
+              </li>
+              <li class="page-item active"><span class="page-link shadow-none">{{ filters.page }}</span></li>
+              <li class="page-item {% if filters.page >= filters.total_pages %}disabled{% endif %}">
+                <a class="page-link shadow-none" href="{{ url_for('main.agro_clientes_listar', page=filters.page+1, **pagination_args) }}">Próxima</a>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

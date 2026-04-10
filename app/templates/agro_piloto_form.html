@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1200px">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div>
+      <h2 class="text-dark m-0">
+        <i class="bi bi-person-badge-fill me-2 text-primary"></i>
+        {{ 'Cadastrar piloto do Agro' if modo == 'novo' else 'Editar piloto do Agro' }}
+      </h2>
+      <p class="text-muted small mb-0">
+        Configure os dados operacionais e o acesso exclusivo do piloto para a area Agro.
+      </p>
+    </div>
+
+    <a href="{{ url_for('main.agro_pilotos_listar') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+  </div>
+
+  <div class="card info status-primary shadow-sm rounded-4 border-0">
+    <div class="card-body p-4">
+      <form method="post" novalidate>
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-card-heading text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Identificacao do piloto</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-person-fill me-1 text-primary"></i> Nome completo *
+            </label>
+            <input
+              type="text"
+              name="nome"
+              value="{{ form.get('nome', '') }}"
+              class="form-control {% if errors.get('nome') %}is-invalid{% endif %}"
+              placeholder="Ex.: Joao Silva"
+              required
+            >
+            {% if errors.get('nome') %}
+              <div class="invalid-feedback">{{ errors.get('nome') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-check-circle-fill me-1 text-primary"></i> Status
+            </label>
+            <select name="ativo" class="form-select">
+              <option value="SIM" {% if form.get('ativo', 'SIM') == 'SIM' %}selected{% endif %}>Ativo</option>
+              <option value="NAO" {% if form.get('ativo') == 'NAO' %}selected{% endif %}>Inativo</option>
+            </select>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-whatsapp me-1 text-primary"></i> Telefone
+            </label>
+            <input
+              type="text"
+              id="telefone"
+              name="telefone"
+              value="{{ form.get('telefone', '') }}"
+              class="form-control {% if errors.get('telefone') %}is-invalid{% endif %}"
+              placeholder="(00) 00000-0000"
+            >
+            {% if errors.get('telefone') %}
+              <div class="invalid-feedback">{{ errors.get('telefone') }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <hr class="text-muted opacity-25 my-4">
+
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-diagram-3-fill text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Vinculacao operacional</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-people-fill me-1 text-primary"></i> Equipe
+            </label>
+            <select name="equipe_agro_id" class="form-select {% if errors.get('equipe_agro_id') %}is-invalid{% endif %}">
+              <option value="">Sem equipe vinculada</option>
+              {% for equipe in equipes %}
+                <option value="{{ equipe.id }}" {% if form.get('equipe_agro_id')|string == equipe.id|string %}selected{% endif %}>{{ equipe.nome }}</option>
+              {% endfor %}
+            </select>
+            {% if errors.get('equipe_agro_id') %}
+              <div class="invalid-feedback">{{ errors.get('equipe_agro_id') }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <hr class="text-muted opacity-25 my-4">
+
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-shield-lock-fill text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Acesso do piloto ao Agro</h5>
+        </div>
+
+        <div class="row g-3 mb-2">
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-person-vcard-fill me-1 text-primary"></i> Login *
+            </label>
+            <input
+              type="text"
+              name="login"
+              value="{{ form.get('login', '') }}"
+              class="form-control {% if errors.get('login') %}is-invalid{% endif %}"
+              placeholder="Ex.: piloto.agro01"
+              autocomplete="username"
+              required
+            >
+            {% if errors.get('login') %}
+              <div class="invalid-feedback">{{ errors.get('login') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-key-fill me-1 text-primary"></i> {{ 'Senha inicial *' if modo == 'novo' else 'Nova senha' }}
+            </label>
+            <input
+              type="password"
+              name="senha"
+              class="form-control {% if errors.get('senha') %}is-invalid{% endif %}"
+              placeholder="{{ 'Minimo de 6 caracteres' if modo == 'novo' else 'Preencha apenas para alterar' }}"
+              autocomplete="new-password"
+              {% if modo == 'novo' %}required{% endif %}
+            >
+            {% if errors.get('senha') %}
+              <div class="invalid-feedback">{{ errors.get('senha') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-check2-square me-1 text-primary"></i> Confirmar senha {{ '*' if modo == 'novo' else '' }}
+            </label>
+            <input
+              type="password"
+              name="confirmar_senha"
+              class="form-control {% if errors.get('confirmar_senha') %}is-invalid{% endif %}"
+              placeholder="Repita a senha"
+              autocomplete="new-password"
+              {% if modo == 'novo' %}required{% endif %}
+            >
+            {% if errors.get('confirmar_senha') %}
+              <div class="invalid-feedback">{{ errors.get('confirmar_senha') }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="alert alert-light border rounded-4 mt-3 mb-0 small">
+          {% if modo == 'novo' %}
+            Esse login sera usado pelo piloto na tela exclusiva do Agro.
+          {% else %}
+            Se a senha ficar em branco, o acesso atual sera mantido.
+          {% endif %}
+        </div>
+
+        {% if piloto %}
+          <hr class="text-muted opacity-25 my-4">
+
+          <div class="d-flex align-items-center mb-3">
+            <i class="bi bi-bar-chart-fill text-primary me-2 fs-5"></i>
+            <h5 class="m-0 text-primary fw-bold">Resumo atual</h5>
+          </div>
+
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <div class="border rounded-4 p-3 h-100">
+                <small class="text-muted d-block mb-1">Equipe vinculada</small>
+                <strong>{{ piloto.equipe.nome if piloto.equipe else "Sem equipe vinculada" }}</strong>
+              </div>
+            </div>
+
+            <div class="col-md-4">
+              <div class="border rounded-4 p-3 h-100">
+                <small class="text-muted d-block mb-1">Login atual</small>
+                <strong>{{ piloto.usuario.login if piloto.usuario else "Sem acesso criado" }}</strong>
+              </div>
+            </div>
+
+            <div class="col-md-4">
+              <div class="border rounded-4 p-3 h-100">
+                <small class="text-muted d-block mb-1">Cadastrado em</small>
+                <strong>{{ piloto.criado_em.strftime('%d/%m/%Y') }}</strong>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+
+        <small class="text-muted d-block mt-4">
+          Campos com <span class="text-danger">*</span> sao obrigatorios.
+        </small>
+
+        <div class="d-flex justify-content-end gap-2 mt-5">
+          <a href="{{ url_for('main.agro_pilotos_listar') }}" class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-x-lg me-1"></i> Cancelar
+          </a>
+
+          <button type="submit" class="btn btn-primary btn-sm">
+            <i class="bi bi-check-lg me-1"></i>
+            {{ 'Salvar piloto' if modo == 'novo' else 'Atualizar piloto' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function onlyDigits(value) {
+    return (value || "").replace(/\D/g, "");
+  }
+
+  function maskPhoneBr(value) {
+    const digits = onlyDigits(value).slice(0, 11);
+    if (digits.length <= 2) return digits;
+    if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+    if (digits.length <= 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+  }
+
+  document.getElementById("telefone")?.addEventListener("input", (event) => {
+    event.target.value = maskPhoneBr(event.target.value);
+  });
+</script>
+{% endblock %}

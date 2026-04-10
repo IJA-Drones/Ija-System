@@ -144,7 +144,6 @@
     <div class="admin-toolbar mb-4">
         <h2 class="text-dark"><i class="bi bi-shield-lock-fill me-2 text-primary"></i> Painel de Gestão</h2>
 
-        {# BOTÕES EXPORTAR #}
         {% if current_user.tipo_usuario in ['admin', 'operario', 'visualizar', 'regional'] %}
         {# 'flex-wrap' aqui garante que os botões se organizem entre si se a tela for muito estreita #}
         <div class="admin-toolbar-actions">
@@ -192,6 +191,9 @@
             <div class="d-flex align-items-center gap-2">
                 <i class="bi bi-funnel-fill text-primary"></i>
                 <span class="text-dark">Filtros de Busca</span>
+                {% if current_user.tipo_usuario == 'admin' %}
+                    <span class="admin-context-badge" id="adminContextFilterBadge">UVIS/PREFEITURA</span>
+                {% endif %}
                 {% if request.args.get('status') or request.args.get('unidade') or request.args.get('regiao') or request.args.get('apoio_cet') or request.args.get('protocolo') %}
                     <span class="badge bg-danger rounded-circle p-1" style="width: 8px; height: 8px;"></span>
                 {% endif %}
