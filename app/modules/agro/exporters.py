@@ -162,26 +162,73 @@ def _build_os_report_page_frame(canvas, doc):
 
 
 def _ensure_contract_fonts():
-    fonts_dir = os.path.join(os.environ.get("WINDIR", "C:\\Windows"), "Fonts")
-    font_specs = {
-        "AgroArial": "arial.ttf",
-        "AgroArialBold": "arialbd.ttf",
-        "AgroArialItalic": "ariali.ttf",
-        "AgroArialBoldItalic": "arialbi.ttf",
+    font_candidates = {
+        "AgroArial": ["arial.ttf", "Arial.ttf", "LiberationSans-Regular.ttf", "DejaVuSans.ttf"],
+        "AgroArialBold": ["arialbd.ttf", "Arial Bold.ttf", "LiberationSans-Bold.ttf", "DejaVuSans-Bold.ttf"],
+        "AgroArialItalic": ["ariali.ttf", "Arial Italic.ttf", "LiberationSans-Italic.ttf", "DejaVuSans-Oblique.ttf"],
+        "AgroArialBoldItalic": ["arialbi.ttf", "Arial Bold Italic.ttf", "LiberationSans-BoldItalic.ttf", "DejaVuSans-BoldOblique.ttf"],
     }
-    for font_name, file_name in font_specs.items():
-        if font_name in pdfmetrics.getRegisteredFontNames():
+    search_dirs = [
+        os.path.join(os.environ.get("WINDIR", "C:\\Windows"), "Fonts"),
+        os.path.join(current_app.root_path, "static", "fonts"),
+        "/usr/share/fonts",
+        "/usr/local/share/fonts",
+    ]
+
+    registered_variants = {}
+    for font_name, file_names in font_candidates.items():
+        if _font_is_available(font_name):
+            registered_variants[font_name] = True
             continue
-        font_path = os.path.join(fonts_dir, file_name)
-        if os.path.exists(font_path):
-            pdfmetrics.registerFont(TTFont(font_name, font_path))
-    pdfmetrics.registerFontFamily(
-        "AgroArial",
-        normal="AgroArial",
-        bold="AgroArialBold",
-        italic="AgroArialItalic",
-        boldItalic="AgroArialBoldItalic",
-    )
+
+        registered = False
+        for base_dir in search_dirs:
+            if not base_dir or not os.path.exists(base_dir):
+                continue
+            for root, _dirs, files in os.walk(base_dir):
+                lower_files = {file_name.lower(): file_name for file_name in files}
+                match_name = next((lower_files.get(candidate.lower()) for candidate in file_names), None)
+                if not match_name:
+                    continue
+                try:
+                    pdfmetrics.registerFont(TTFont(font_name, os.path.join(root, match_name)))
+                    registered = True
+                    break
+                except Exception:
+                    continue
+            if registered:
+                break
+        registered_variants[font_name] = registered
+
+    if all(registered_variants.get(font_name) for font_name in font_candidates):
+        pdfmetrics.registerFontFamily(
+            "AgroArial",
+            normal="AgroArial",
+            bold="AgroArialBold",
+            italic="AgroArialItalic",
+            boldItalic="AgroArialBoldItalic",
+        )
+
+
+def _font_is_available(font_name):
+    try:
+        pdfmetrics.getFont(font_name)
+        return True
+    except Exception:
+        return False
+
+
+def _contract_font(style_name):
+    fallback_map = {
+        "regular": ("AgroArial", "Helvetica"),
+        "bold": ("AgroArialBold", "Helvetica-Bold"),
+        "italic": ("AgroArialItalic", "Helvetica-Oblique"),
+        "bold_italic": ("AgroArialBoldItalic", "Helvetica-BoldOblique"),
+    }
+    for font_name in fallback_map[style_name]:
+        if _font_is_available(font_name):
+            return font_name
+    return fallback_map[style_name][-1]
 
 
 def _build_contract_page_frame(canvas, doc):
@@ -195,7 +242,7 @@ def _build_contract_page_frame(canvas, doc):
         logo.drawOn(canvas, margin_left, page_height - 40 * mm)
 
     canvas.setFillColor(CONTRACT_BLUE)
-    canvas.setFont("AgroArialBoldItalic", 12)
+    canvas.setFont(_contract_font("bold_italic"), 12)
     canvas.drawString(
         margin_left + 34 * mm,
         page_height - 34.6 * mm,
@@ -203,7 +250,7 @@ def _build_contract_page_frame(canvas, doc):
     )
 
     canvas.setFillColor(colors.black)
-    canvas.setFont("AgroArial", 9)
+    canvas.setFont(_contract_font("regular"), 9)
     canvas.drawCentredString(page_width / 2, 9 * mm, str(canvas.getPageNumber()))
 
     canvas.restoreState()
@@ -1387,7 +1434,7 @@ def build_contrato_agro_pdf(contrato):
     title_style = ParagraphStyle(
         "AgroContractTitle",
         parent=styles["BodyText"],
-        fontName="AgroArialBold",
+        fontName=_contract_font("bold"),
         fontSize=16,
         leading=18.5,
         textColor=CONTRACT_BLUE,
@@ -1397,7 +1444,7 @@ def build_contrato_agro_pdf(contrato):
     section_style = ParagraphStyle(
         "AgroContractSection",
         parent=styles["BodyText"],
-        fontName="AgroArialBold",
+        fontName=_contract_font("bold"),
         fontSize=16,
         leading=18,
         textColor=CONTRACT_BLUE,
@@ -1409,7 +1456,7 @@ def build_contrato_agro_pdf(contrato):
     body_style = ParagraphStyle(
         "AgroContractBodyReal",
         parent=styles["BodyText"],
-        fontName="AgroArial",
+        fontName=_contract_font("regular"),
         fontSize=11.04,
         leading=15.2,
         textColor=colors.black,
@@ -1448,7 +1495,7 @@ def build_contrato_agro_pdf(contrato):
     note_style = ParagraphStyle(
         "AgroContractNoteReal",
         parent=styles["BodyText"],
-        fontName="AgroArialItalic",
+        fontName=_contract_font("italic"),
         fontSize=10,
         leading=13.2,
         textColor=colors.black,
@@ -1457,7 +1504,7 @@ def build_contrato_agro_pdf(contrato):
     signature_style = ParagraphStyle(
         "AgroContractSignatureReal",
         parent=styles["BodyText"],
-        fontName="AgroArial",
+        fontName=_contract_font("regular"),
         fontSize=11,
         leading=13.4,
         textColor=colors.black,
