@@ -1633,7 +1633,7 @@ def build_contrato_agro_pdf(contrato):
     )
 
     signature_date = "{cidade}, {data}".format(
-        cidade=contrato.cidade_assinatura or "São Paulo",
+        cidade= "Itajubá-MG",
         data=_format_date_extenso(contrato.data_assinatura),
     )
     assinatura_contratada = _signature_name_block("IJA DRONES BRASIL LTDA", signature_name_style)
