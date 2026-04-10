@@ -94,6 +94,7 @@ def build_orcamentos_agro_query(user, q: str = "", cliente_id: int | None = None
         query = query.filter(
             or_(
                 OrcamentoAgro.cliente_nome.ilike(like),
+                OrcamentoAgro.cliente_documento.ilike(like),
                 OrcamentoAgro.nome_fazenda.ilike(like),
                 OrcamentoAgro.cultura.ilike(like),
                 OrcamentoAgro.servico.ilike(like),
@@ -199,6 +200,7 @@ def get_agro_dashboard_context(user) -> dict:
 def update_orcamento_snapshot_from_cliente(orcamento: OrcamentoAgro, cliente: ClienteAgro):
     orcamento.cliente_agro_id = cliente.id
     orcamento.cliente_nome = cliente.nome
+    orcamento.cliente_documento = cliente.documento
     orcamento.cep = cliente.cep
     orcamento.logradouro = cliente.logradouro
     orcamento.numero = cliente.numero
@@ -220,7 +222,7 @@ def build_contrato_agro_defaults(orcamento: OrcamentoAgro) -> dict:
 
     return {
         "contratante_nome": (cliente.nome if cliente else orcamento.cliente_nome or "").strip(),
-        "contratante_documento": format_documento(cliente.documento if cliente else ""),
+        "contratante_documento": format_documento((cliente.documento if cliente else orcamento.cliente_documento) or ""),
         "contratante_rg": "",
         "contratante_cep": format_cep(cliente.cep if cliente else ""),
         "contratante_logradouro": (cliente.logradouro if cliente else "").strip(),
@@ -239,8 +241,8 @@ def build_contrato_agro_defaults(orcamento: OrcamentoAgro) -> dict:
         "propriedade_uf": (orcamento.uf or "").strip().upper(),
         "descricao_servico": build_descricao_servico_contrato(orcamento),
         "cultura": (orcamento.cultura or "").strip(),
-        "area_contratada": "",
-        "valor_total": format_currency_br(orcamento.preco_base),
+        "area_contratada": orcamento.area_ha_formatada,
+        "valor_total": format_currency_br(orcamento.valor_total_calculado),
         "valor_mapeamento_ha": format_currency_br(orcamento.preco_mapeamento),
         "valor_pulverizacao_ha": format_currency_br(orcamento.preco_pulverizacao),
         "prazo_inicio_dias": "10",

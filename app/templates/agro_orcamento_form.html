@@ -32,13 +32,15 @@
         <div class="row g-3 mb-4">
           <div class="col-md-6">
             <label class="form-label fw-bold small text-muted">
-              <i class="bi bi-people-fill me-1 text-primary"></i> Cliente *
+              <i class="bi bi-people-fill me-1 text-primary"></i> Cliente cadastrado
             </label>
-            <select id="cliente_agro_id" name="cliente_agro_id" class="form-select {% if errors.get('cliente_agro_id') %}is-invalid{% endif %}" required>
-              <option value="">Selecione um cliente</option>
+            <select id="cliente_agro_id" name="cliente_agro_id" class="form-select {% if errors.get('cliente_agro_id') %}is-invalid{% endif %}">
+              <option value="">Digitar manualmente</option>
               {% for cliente in clientes %}
                 <option
                   value="{{ cliente.id }}"
+                  data-nome="{{ cliente.nome or '' }}"
+                  data-documento="{{ cliente.documento or '' }}"
                   data-cep="{{ cliente.cep or '' }}"
                   data-logradouro="{{ cliente.logradouro or '' }}"
                   data-numero="{{ cliente.numero or '' }}"
@@ -55,9 +57,45 @@
             {% if errors.get('cliente_agro_id') %}
               <div class="invalid-feedback">{{ errors.get('cliente_agro_id') }}</div>
             {% endif %}
+            <div class="form-text">Se selecionar um cliente, os campos abaixo podem ser preenchidos automaticamente e continuam editáveis.</div>
           </div>
 
           <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-person-badge-fill me-1 text-primary"></i> Nome do cliente *
+            </label>
+            <input
+              type="text"
+              id="cliente_nome"
+              name="cliente_nome"
+              value="{{ form.get('cliente_nome', '') }}"
+              class="form-control {% if errors.get('cliente_nome') %}is-invalid{% endif %}"
+              placeholder="Ex.: Joao da Silva / Fazenda XYZ"
+              required
+            >
+            {% if errors.get('cliente_nome') %}
+              <div class="invalid-feedback">{{ errors.get('cliente_nome') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-card-text me-1 text-primary"></i> Documento do cliente
+            </label>
+            <input
+              type="text"
+              id="cliente_documento"
+              name="cliente_documento"
+              value="{{ form.get('cliente_documento', '') }}"
+              class="form-control {% if errors.get('cliente_documento') %}is-invalid{% endif %}"
+              placeholder="CPF ou CNPJ"
+            >
+            {% if errors.get('cliente_documento') %}
+              <div class="invalid-feedback">{{ errors.get('cliente_documento') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-8">
             <label class="form-label fw-bold small text-muted">
               <i class="bi bi-house-door-fill me-1 text-primary"></i> Nome da fazenda *
             </label>
@@ -134,15 +172,16 @@
             </label>
             <input
               type="text"
-              id="preco_base"
-              name="preco_base"
-              value="{{ form.get('preco_base', '') }}"
-              class="form-control {% if errors.get('preco_base') %}is-invalid{% endif %}"
-              placeholder="R$ 0,00"
+              id="area_ha"
+              name="area_ha"
+              value="{{ form.get('area_ha', '') }}"
+              class="form-control {% if errors.get('area_ha') %}is-invalid{% endif %}"
+              placeholder="Ex.: 59,27"
+              inputmode="decimal"
               required
             >
-            {% if errors.get('preco_base') %}
-              <div class="invalid-feedback">{{ errors.get('preco_base') }}</div>
+            {% if errors.get('area_ha') %}
+              <div class="invalid-feedback">{{ errors.get('area_ha') }}</div>
             {% endif %}
           </div>
 
@@ -179,6 +218,37 @@
             {% if errors.get('preco_pulverizacao') %}
               <div class="invalid-feedback">{{ errors.get('preco_pulverizacao') }}</div>
             {% endif %}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-calculator-fill me-1 text-primary"></i> Total calculado
+            </label>
+            <input
+              type="text"
+              id="valor_total_calculado"
+              name="valor_total_calculado"
+              value="{{ form.get('valor_total_calculado', '') }}"
+              class="form-control {% if errors.get('valor_total_calculado') %}is-invalid{% endif %}"
+              placeholder="R$ 0,00"
+              readonly
+            >
+            {% if errors.get('valor_total_calculado') %}
+              <div class="invalid-feedback">{{ errors.get('valor_total_calculado') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-8">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-pen-fill me-1 text-primary"></i> Elaborado por
+            </label>
+            <input
+              type="text"
+              value="{{ form.get('elaborado_por_nome', '') or 'Sera definido ao salvar' }}"
+              class="form-control"
+              readonly
+            >
+            <div class="form-text">Esse nome sai no PDF do orcamento como assinatura de quem elaborou a proposta.</div>
           </div>
 
           <div class="col-12">
@@ -386,6 +456,9 @@
     const option = select?.selectedOptions?.[0];
     if (!option || !option.value) return;
 
+    document.getElementById("cliente_nome").value = option.dataset.nome || "";
+    document.getElementById("cliente_documento").value = option.dataset.documento || "";
+    document.getElementById("cliente_documento").dispatchEvent(new Event("input", { bubbles: true }));
     document.getElementById("cep").value = maskCep(option.dataset.cep || "");
     document.getElementById("logradouro").value = option.dataset.logradouro || "";
     document.getElementById("numero").value = option.dataset.numero || "";
@@ -402,13 +475,87 @@
     return number.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
+  function parseDecimalBr(value) {
+    const text = String(value || "").trim().toLowerCase();
+    if (!text) return null;
+
+    let normalized = text
+      .replace(/hectares?/g, "")
+      .replace(/ha/g, "")
+      .replace(/[^\d.,]/g, "");
+
+    if (!normalized) return null;
+
+    if (normalized.includes(",") && normalized.includes(".")) {
+      normalized = normalized.replace(/\./g, "").replace(",", ".");
+    } else if (normalized.includes(",")) {
+      normalized = normalized.replace(",", ".");
+    }
+
+    const number = Number(normalized);
+    return Number.isFinite(number) ? number : null;
+  }
+
+  function orcamentoServicoIncluiMapeamento() {
+    const servico = document.getElementById("servico")?.value || "";
+    return servico === "Mapeamento" || servico === "Mapeamento e pulverização";
+  }
+
+  function orcamentoServicoIncluiPulverizacao() {
+    return true;
+  }
+
+  function syncOrcamentoLabels() {
+    const areaLabel = document.getElementById("area_ha")?.closest(".col-md-4")?.querySelector("label");
+    const mapLabel = document.getElementById("preco_mapeamento")?.closest(".col-md-4")?.querySelector("label");
+    const pulvLabel = document.getElementById("preco_pulverizacao")?.closest(".col-md-4")?.querySelector("label");
+
+    if (areaLabel) {
+      areaLabel.innerHTML = '<i class="bi bi-arrows-angle-expand me-1 text-primary"></i> Area / ha *';
+    }
+    if (mapLabel) {
+      mapLabel.innerHTML = '<i class="bi bi-map me-1 text-primary"></i> Preco do mapeamento /ha *';
+    }
+    if (pulvLabel) {
+      pulvLabel.innerHTML = '<i class="bi bi-droplet-fill me-1 text-primary"></i> Preco da pulverizacao /ha *';
+    }
+  }
+
+  function calculateValorTotal() {
+    const areaInput = document.getElementById("area_ha");
+    const totalInput = document.getElementById("valor_total_calculado");
+    const mapeamentoInput = document.getElementById("preco_mapeamento");
+    const pulverizacaoInput = document.getElementById("preco_pulverizacao");
+
+    if (!areaInput || !totalInput || !mapeamentoInput || !pulverizacaoInput) return;
+
+    const area = parseDecimalBr(areaInput.value);
+    const valorMapDigitado = parseDecimalBr(mapeamentoInput.value) || 0;
+    const valorMap = (orcamentoServicoIncluiMapeamento() || document.getElementById("mapeamento")?.value === "SIM" || valorMapDigitado > 0)
+      ? valorMapDigitado
+      : 0;
+    const valorPulv = parseDecimalBr(pulverizacaoInput.value) || 0;
+
+    if (area === null || area <= 0 || (valorMap <= 0 && valorPulv <= 0)) {
+      totalInput.value = "";
+      return;
+    }
+
+    const total = area * (valorMap + valorPulv);
+    totalInput.value = total.toLocaleString("pt-BR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
+
   function syncMapeamentoPriceVisibility() {
     const mapeamento = document.getElementById("mapeamento");
+    const servico = document.getElementById("servico");
     const wrapper = document.getElementById("precoMapeamentoWrap");
     const field = document.getElementById("preco_mapeamento");
-    const isVisible = mapeamento?.value === "SIM";
+    const isVisible = mapeamento?.value === "SIM" || orcamentoServicoIncluiMapeamento();
 
-    if (!wrapper || !field) return;
+    if (!wrapper || !field || !servico) return;
 
     wrapper.style.display = isVisible ? "" : "none";
     field.required = isVisible;
@@ -416,17 +563,50 @@
     if (!isVisible) {
       field.value = "";
     }
+
+    calculateValorTotal();
   }
 
   document.getElementById("cliente_agro_id")?.addEventListener("change", preencherEnderecoDoCliente);
+  document.getElementById("cliente_documento")?.addEventListener("input", (event) => {
+    const digits = onlyDigits(event.target.value);
+    if (digits.length <= 11) {
+      if (digits.length <= 3) {
+        event.target.value = digits;
+      } else if (digits.length <= 6) {
+        event.target.value = `${digits.slice(0, 3)}.${digits.slice(3)}`;
+      } else if (digits.length <= 9) {
+        event.target.value = `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
+      } else {
+        event.target.value = `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9, 11)}`;
+      }
+      return;
+    }
+
+    const cnpj = digits.slice(0, 14);
+    if (cnpj.length <= 2) {
+      event.target.value = cnpj;
+    } else if (cnpj.length <= 5) {
+      event.target.value = `${cnpj.slice(0, 2)}.${cnpj.slice(2)}`;
+    } else if (cnpj.length <= 8) {
+      event.target.value = `${cnpj.slice(0, 2)}.${cnpj.slice(2, 5)}.${cnpj.slice(5)}`;
+    } else if (cnpj.length <= 12) {
+      event.target.value = `${cnpj.slice(0, 2)}.${cnpj.slice(2, 5)}.${cnpj.slice(5, 8)}/${cnpj.slice(8)}`;
+    } else {
+      event.target.value = `${cnpj.slice(0, 2)}.${cnpj.slice(2, 5)}.${cnpj.slice(5, 8)}/${cnpj.slice(8, 12)}-${cnpj.slice(12, 14)}`;
+    }
+  });
   document.getElementById("cep")?.addEventListener("input", (event) => {
     event.target.value = maskCep(event.target.value);
   });
   document.getElementById("mapeamento")?.addEventListener("change", syncMapeamentoPriceVisibility);
+  document.getElementById("servico")?.addEventListener("change", syncMapeamentoPriceVisibility);
+  document.getElementById("area_ha")?.addEventListener("input", calculateValorTotal);
 
-  ["preco_base", "preco_mapeamento", "preco_pulverizacao"].forEach((fieldId) => {
+  ["preco_mapeamento", "preco_pulverizacao"].forEach((fieldId) => {
     document.getElementById(fieldId)?.addEventListener("input", (event) => {
       event.target.value = maskCurrencyBr(event.target.value);
+      calculateValorTotal();
     });
   });
 
@@ -435,7 +615,9 @@
       preencherEnderecoDoCliente();
     }
 
-    ["preco_base", "preco_mapeamento", "preco_pulverizacao"].forEach((fieldId) => {
+    syncOrcamentoLabels();
+
+    ["preco_mapeamento", "preco_pulverizacao"].forEach((fieldId) => {
       const field = document.getElementById(fieldId);
       if (field && field.value) {
         field.value = maskCurrencyBr(field.value);
@@ -443,6 +625,7 @@
     });
 
     syncMapeamentoPriceVisibility();
+    calculateValorTotal();
   });
 </script>
 {% endblock %}

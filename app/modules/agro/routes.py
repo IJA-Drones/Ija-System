@@ -81,6 +81,13 @@ def _get_cliente_agro_or_404(cliente_id: int):
     return query.filter(ClienteAgro.id == cliente_id).first_or_404()
 
 
+def _get_cliente_agro(cliente_id: int | None):
+    if not cliente_id:
+        return None
+    query = apply_prefeitura_scope(ClienteAgro.query, current_user, ClienteAgro.prefeitura_id)
+    return query.filter(ClienteAgro.id == cliente_id).first()
+
+
 def _get_orcamento_agro_or_404(orcamento_id: int):
     query = apply_prefeitura_scope(OrcamentoAgro.query, current_user, OrcamentoAgro.prefeitura_id)
     return query.filter(OrcamentoAgro.id == orcamento_id).first_or_404()
@@ -118,6 +125,18 @@ def _get_equipamento_agro_or_404(equipamento_id: int):
 def _get_os_agro_or_404(os_id: int):
     query = apply_prefeitura_scope(OrdemServicoAgro.query, current_user, OrdemServicoAgro.prefeitura_id)
     return query.filter(OrdemServicoAgro.id == os_id).first_or_404()
+
+
+def _current_user_display_name():
+    for value in (
+        getattr(current_user, "nome_uvis", None),
+        getattr(current_user, "equipe_uvis_nome", None),
+        getattr(current_user, "login", None),
+    ):
+        text = (value or "").strip()
+        if text:
+            return text
+    return "Nao informado"
 
 
 def _get_logged_piloto_agro():
@@ -257,15 +276,19 @@ def _validate_cliente_agro_form(form, *, cliente_atual=None):
 def _normalize_orcamento_form(form_source):
     return {
         "cliente_agro_id": (form_source.get("cliente_agro_id") or "").strip(),
+        "cliente_nome": (form_source.get("cliente_nome") or "").strip(),
+        "cliente_documento": (form_source.get("cliente_documento") or "").strip(),
+        "elaborado_por_nome": (form_source.get("elaborado_por_nome") or "").strip(),
         "nome_fazenda": (form_source.get("nome_fazenda") or "").strip(),
         "servico": (form_source.get("servico") or OrcamentoAgro.SERVICO_MAPEAMENTO).strip(),
         "mapeamento": (form_source.get("mapeamento") or "NAO").strip().upper(),
         "risco_operacional": (form_source.get("risco_operacional") or "").strip(),
         "cultura": (form_source.get("cultura") or "").strip(),
         "protocolo": (form_source.get("protocolo") or "").strip(),
-        "preco_base": (form_source.get("preco_base") or "").strip(),
+        "area_ha": (form_source.get("area_ha") or "").strip(),
         "preco_mapeamento": (form_source.get("preco_mapeamento") or "").strip(),
         "preco_pulverizacao": (form_source.get("preco_pulverizacao") or "").strip(),
+        "valor_total_calculado": (form_source.get("valor_total_calculado") or "").strip(),
         "cep": format_cep(form_source.get("cep") or ""),
         "logradouro": (form_source.get("logradouro") or "").strip(),
         "numero": (form_source.get("numero") or "").strip(),
@@ -338,6 +361,26 @@ def _format_decimal_br_value(value):
     if value is None:
         return ""
     return f"{Decimal(value):.2f}".replace(".", ",")
+
+
+def _orcamento_servico_inclui_mapeamento(servico):
+    return servico in (
+        OrcamentoAgro.SERVICO_MAPEAMENTO,
+        OrcamentoAgro.SERVICO_MAPEAMENTO_PULVERIZACAO,
+    )
+
+
+def _orcamento_servico_inclui_pulverizacao(servico):
+    return True
+
+
+def _orcamento_mapeamento_ativo(form):
+    preco_mapeamento = parse_currency_br(form.get("preco_mapeamento"))
+    return (
+        (form.get("mapeamento") or "").strip().upper() == "SIM"
+        or _orcamento_servico_inclui_mapeamento(form.get("servico"))
+        or (preco_mapeamento is not None and preco_mapeamento > 0)
+    )
 
 
 def _normalize_equipe_form(form_source):
@@ -490,12 +533,14 @@ def _validate_equipamento_agro_form(form, equipes, *, equipamento_atual=None):
     return errors, numero_serie, equipe_id, equipe, capacidade_tanque_l, largura_faixa_m, altura_voo_padrao_m
 
 
-def _validate_orcamento_form(form):
+def _validate_orcamento_form_legacy(form):
     errors = {}
     cliente = None
-    preco_base = parse_currency_br(form.get("preco_base"))
+    area_ha = _parse_decimal_input(form.get("area_ha"))
     preco_mapeamento = parse_currency_br(form.get("preco_mapeamento"))
     preco_pulverizacao = parse_currency_br(form.get("preco_pulverizacao"))
+    mapeamento_ativo = _orcamento_mapeamento_ativo(form)
+    pulverizacao_ativa = _orcamento_servico_inclui_pulverizacao(form.get("servico"))
 
     try:
         cliente_id = int(form["cliente_agro_id"])
@@ -513,7 +558,7 @@ def _validate_orcamento_form(form):
     if form["servico"] not in AGRO_SERVICO_OPTIONS:
         errors["servico"] = "Selecione um serviço válido."
 
-    if not form["preco_base"]:
+    if not form["area_ha"]:
         errors["preco_base"] = "Informe o preço base do orçamento."
     elif preco_base is None:
         errors["preco_base"] = "Informe um valor monetário válido. Ex.: 1500,00"
@@ -560,6 +605,124 @@ def _validate_orcamento_form(form):
         errors["uf"] = "UF deve ter 2 letras."
 
     return errors, cliente, cep_digits, preco_base, preco_mapeamento, preco_pulverizacao
+
+
+def _validate_orcamento_form(form):
+    errors = {}
+    cliente = None
+    area_ha = _parse_decimal_input(form.get("area_ha"))
+    preco_mapeamento = parse_currency_br(form.get("preco_mapeamento"))
+    preco_pulverizacao = parse_currency_br(form.get("preco_pulverizacao"))
+    mapeamento_ativo = _orcamento_mapeamento_ativo(form)
+    pulverizacao_ativa = _orcamento_servico_inclui_pulverizacao(form.get("servico"))
+    cliente_documento_digits = ""
+
+    try:
+        cliente_id = int(form["cliente_agro_id"])
+    except (TypeError, ValueError):
+        cliente_id = None
+
+    if cliente_id:
+        cliente = _get_cliente_agro(cliente_id)
+        if cliente is None:
+            errors["cliente_agro_id"] = "Selecione um cliente valido."
+
+    if not form["cliente_nome"]:
+        errors["cliente_nome"] = "Informe o nome do cliente."
+
+    if form["cliente_documento"]:
+        doc_ok, _doc_tipo, cliente_documento_digits, _doc_fmt, doc_error = validate_documento(form["cliente_documento"])
+        if not doc_ok:
+            errors["cliente_documento"] = doc_error
+    elif cliente is not None:
+        cliente_documento_digits = cliente.documento or ""
+
+    if not form["nome_fazenda"]:
+        errors["nome_fazenda"] = "Informe o nome da fazenda."
+
+    if form["servico"] not in AGRO_SERVICO_OPTIONS:
+        errors["servico"] = "Selecione um servico valido."
+
+    if not form["area_ha"]:
+        errors["area_ha"] = "Informe a area em hectares."
+    elif area_ha is None:
+        errors["area_ha"] = "Informe uma area valida. Ex.: 59,27"
+    elif area_ha <= 0:
+        errors["area_ha"] = "A area em hectares deve ser maior que zero."
+
+    if mapeamento_ativo:
+        if not form["preco_mapeamento"]:
+            errors["preco_mapeamento"] = "Informe o preco do mapeamento por ha."
+        elif preco_mapeamento is None:
+            errors["preco_mapeamento"] = "Informe um valor monetario valido. Ex.: 1500,00"
+        elif preco_mapeamento < 0:
+            errors["preco_mapeamento"] = "O preco do mapeamento nao pode ser negativo."
+    elif form["preco_mapeamento"] and preco_mapeamento is None:
+        errors["preco_mapeamento"] = "Informe um valor monetario valido. Ex.: 1500,00"
+
+    if preco_mapeamento is None or not mapeamento_ativo:
+        preco_mapeamento = Decimal("0")
+
+    if pulverizacao_ativa:
+        if not form["preco_pulverizacao"]:
+            errors["preco_pulverizacao"] = "Informe o preco da pulverizacao por ha."
+        elif preco_pulverizacao is None:
+            errors["preco_pulverizacao"] = "Informe um valor monetario valido. Ex.: 1500,00"
+        elif preco_pulverizacao < 0:
+            errors["preco_pulverizacao"] = "O preco da pulverizacao nao pode ser negativo."
+    elif form["preco_pulverizacao"] and preco_pulverizacao is None:
+        errors["preco_pulverizacao"] = "Informe um valor monetario valido. Ex.: 1500,00"
+
+    if preco_pulverizacao is None or not pulverizacao_ativa:
+        preco_pulverizacao = Decimal("0")
+
+    valor_total_calculado = OrcamentoAgro.calcular_valor_total(
+        area_ha,
+        preco_pulverizacao,
+        preco_mapeamento,
+        mapeamento_ativo=mapeamento_ativo,
+    )
+
+    if (
+        area_ha is not None
+        and area_ha > 0
+        and "preco_mapeamento" not in errors
+        and "preco_pulverizacao" not in errors
+        and valor_total_calculado <= 0
+    ):
+        errors["valor_total_calculado"] = "Informe valores por hectare maiores que zero para calcular o orcamento."
+
+    if len(form["cultura"]) > 100:
+        errors["cultura"] = "Cultura deve ter no maximo 100 caracteres."
+
+    cep_digits = only_digits(form["cep"])
+    if len(cep_digits) != 8:
+        errors["cep"] = "Informe um CEP valido com 8 digitos."
+
+    for field, label in (
+        ("logradouro", "logradouro"),
+        ("numero", "numero"),
+        ("bairro", "bairro"),
+        ("cidade", "cidade"),
+        ("uf", "UF"),
+    ):
+        if not form[field]:
+            errors[field] = f"Informe {label}."
+
+    if form["uf"] and len(form["uf"]) != 2:
+        errors["uf"] = "UF deve ter 2 letras."
+
+    return (
+        errors,
+        cliente,
+        cliente_documento_digits,
+        cep_digits,
+        area_ha,
+        valor_total_calculado,
+        preco_mapeamento,
+        preco_pulverizacao,
+        mapeamento_ativo,
+    )
 
 
 def _normalize_contrato_form(form_source):
@@ -753,7 +916,7 @@ def _build_contrato_agro_draft(orcamento):
         prefeitura_id=orcamento.prefeitura_id,
         orcamento=orcamento,
         contratante_nome=(cliente.nome if cliente else orcamento.cliente_nome) or "",
-        contratante_documento=(cliente.documento if cliente else "") or "",
+        contratante_documento=(cliente.documento if cliente else orcamento.cliente_documento) or "",
         contratante_rg="",
         contratante_cep=(cliente.cep if cliente else "") or "",
         contratante_logradouro=(cliente.logradouro if cliente else "") or "",
@@ -772,8 +935,8 @@ def _build_contrato_agro_draft(orcamento):
         propriedade_uf=orcamento.uf or "",
         descricao_servico=(f"{orcamento.servico} na cultura de {orcamento.cultura}" if orcamento.cultura else (orcamento.servico or "Prestacao de servicos agro")),
         cultura=orcamento.cultura or None,
-        area_contratada=None,
-        valor_total=orcamento.preco_base or 0,
+        area_contratada=orcamento.area_ha_formatada or None,
+        valor_total=orcamento.valor_total_calculado or 0,
         valor_mapeamento_ha=orcamento.preco_mapeamento or 0,
         valor_pulverizacao_ha=orcamento.preco_pulverizacao or 0,
         prazo_inicio_dias=10,
@@ -1379,7 +1542,19 @@ def register_routes(bp):
         form = _normalize_orcamento_form(request.form if request.method == "POST" else {})
 
         if request.method == "POST":
-            errors, cliente, cep_digits, preco_base, preco_mapeamento, preco_pulverizacao = _validate_orcamento_form(form)
+            (
+                errors,
+                cliente,
+                cliente_documento_digits,
+                cep_digits,
+                area_ha,
+                valor_total_calculado,
+                preco_mapeamento,
+                preco_pulverizacao,
+                mapeamento_ativo,
+            ) = _validate_orcamento_form(form)
+            form["elaborado_por_nome"] = form.get("elaborado_por_nome") or _current_user_display_name()
+            form["valor_total_calculado"] = format_currency_br(valor_total_calculado)
             if errors:
                 flash("Corrija os campos destacados do orçamento agro.", "warning")
                 return render_template(
@@ -1393,17 +1568,21 @@ def register_routes(bp):
 
             orcamento = OrcamentoAgro(
                 prefeitura_id=getattr(current_user, "prefeitura_id", None),
+                cliente_agro_id=cliente.id if cliente else None,
+                cliente_nome=form["cliente_nome"],
+                cliente_documento=cliente_documento_digits or None,
+                elaborado_por_nome=_current_user_display_name(),
                 nome_fazenda=form["nome_fazenda"],
                 servico=form["servico"],
-                mapeamento=form["mapeamento"] == "SIM",
+                mapeamento=mapeamento_ativo,
                 risco_operacional=form["risco_operacional"] or None,
                 cultura=form["cultura"] or None,
                 protocolo=form["protocolo"] or None,
-                preco_base=preco_base,
+                area_ha=area_ha,
+                preco_base=valor_total_calculado,
                 preco_mapeamento=preco_mapeamento,
                 preco_pulverizacao=preco_pulverizacao,
             )
-            update_orcamento_snapshot_from_cliente(orcamento, cliente)
             orcamento.cep = cep_digits
             orcamento.logradouro = form["logradouro"]
             orcamento.numero = form["numero"]
@@ -1436,6 +1615,7 @@ def register_routes(bp):
             flash("Orçamento agro cadastrado com sucesso.", "success")
             return redirect(url_for("main.agro_orcamentos_listar"))
 
+        form["elaborado_por_nome"] = form.get("elaborado_por_nome") or _current_user_display_name()
         return render_template(
             "agro_orcamento_form.html",
             form=form,
@@ -1455,7 +1635,21 @@ def register_routes(bp):
 
         if request.method == "POST":
             form = _normalize_orcamento_form(request.form)
-            errors, cliente, cep_digits, preco_base, preco_mapeamento, preco_pulverizacao = _validate_orcamento_form(form)
+            (
+                errors,
+                cliente,
+                cliente_documento_digits,
+                cep_digits,
+                area_ha,
+                valor_total_calculado,
+                preco_mapeamento,
+                preco_pulverizacao,
+                mapeamento_ativo,
+            ) = _validate_orcamento_form(form)
+            form["elaborado_por_nome"] = (
+                (orcamento.elaborado_por_nome or "").strip() or _current_user_display_name()
+            )
+            form["valor_total_calculado"] = format_currency_br(valor_total_calculado)
             if errors:
                 flash("Corrija os campos destacados do orçamento agro.", "warning")
                 return render_template(
@@ -1468,14 +1662,19 @@ def register_routes(bp):
                     servico_options=AGRO_SERVICO_OPTIONS,
                 )
 
-            update_orcamento_snapshot_from_cliente(orcamento, cliente)
+            orcamento.cliente_agro_id = cliente.id if cliente else None
+            orcamento.cliente_nome = form["cliente_nome"]
+            orcamento.cliente_documento = cliente_documento_digits or None
+            if not (orcamento.elaborado_por_nome or "").strip():
+                orcamento.elaborado_por_nome = _current_user_display_name()
             orcamento.nome_fazenda = form["nome_fazenda"]
             orcamento.servico = form["servico"]
-            orcamento.mapeamento = form["mapeamento"] == "SIM"
+            orcamento.mapeamento = mapeamento_ativo
             orcamento.risco_operacional = form["risco_operacional"] or None
             orcamento.cultura = form["cultura"] or None
             orcamento.protocolo = form["protocolo"] or None
-            orcamento.preco_base = preco_base
+            orcamento.area_ha = area_ha
+            orcamento.preco_base = valor_total_calculado
             orcamento.preco_mapeamento = preco_mapeamento
             orcamento.preco_pulverizacao = preco_pulverizacao
             orcamento.cep = cep_digits
@@ -1510,15 +1709,19 @@ def register_routes(bp):
 
         form = {
             "cliente_agro_id": str(orcamento.cliente_agro_id or ""),
+            "cliente_nome": orcamento.cliente_nome or "",
+            "cliente_documento": format_documento(orcamento.cliente_documento or ""),
+            "elaborado_por_nome": orcamento.elaborado_por_nome or _current_user_display_name(),
             "nome_fazenda": orcamento.nome_fazenda or "",
             "servico": orcamento.servico or OrcamentoAgro.SERVICO_MAPEAMENTO,
-            "mapeamento": "SIM" if orcamento.mapeamento else "NAO",
+            "mapeamento": "SIM" if orcamento.inclui_mapeamento else "NAO",
             "risco_operacional": orcamento.risco_operacional or "",
             "cultura": orcamento.cultura or "",
             "protocolo": orcamento.protocolo or "",
-            "preco_base": format_currency_br(orcamento.preco_base),
+            "area_ha": orcamento.area_ha_formatada,
             "preco_mapeamento": format_currency_br(orcamento.preco_mapeamento),
             "preco_pulverizacao": format_currency_br(orcamento.preco_pulverizacao),
+            "valor_total_calculado": format_currency_br(orcamento.valor_total_calculado),
             "cep": format_cep(orcamento.cep or ""),
             "logradouro": orcamento.logradouro or "",
             "numero": orcamento.numero or "",
@@ -1527,6 +1730,7 @@ def register_routes(bp):
             "cidade": orcamento.cidade or "",
             "uf": orcamento.uf or "",
         }
+        form["elaborado_por_nome"] = form.get("elaborado_por_nome") or _current_user_display_name()
         return render_template(
             "agro_orcamento_form.html",
             form=form,

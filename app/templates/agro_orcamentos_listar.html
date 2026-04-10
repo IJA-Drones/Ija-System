@@ -111,7 +111,7 @@
             <tr>
               <th class="agro-col-client">Cliente</th>
               <th class="agro-col-operation">Operação</th>
-              <th class="agro-col-values">Valor base</th>
+              <th class="agro-col-values">Total calculado</th>
               <th class="agro-col-created">Criado em</th>
               <th class="agro-col-files">Arquivos</th>
               <th class="col-actions">Ações</th>
@@ -124,8 +124,8 @@
                   <div class="fw-bold agro-orcamentos-main">{{ orcamento.cliente_nome }}</div>
                   <div class="text-muted small agro-orcamentos-subline">
                     {{ orcamento.cidade }}/{{ orcamento.uf }}
-                    {% if orcamento.cliente and orcamento.cliente.documento %}
-                      <span class="agro-orcamentos-dot">•</span> Doc. {{ orcamento.cliente.documento }}
+                    {% if orcamento.cliente_documento %}
+                      <span class="agro-orcamentos-dot">•</span> Doc. {{ orcamento.cliente_documento }}
                     {% endif %}
                   </div>
                 </td>
@@ -141,8 +141,10 @@
                 </td>
 
                 <td data-label="Valores">
-                  <div class="fw-bold agro-orcamentos-value">{{ orcamento.preco_base|currencybr or "-" }}</div>
-                  <div class="text-muted small agro-orcamentos-subline">Demais valores no detalhe</div>
+                  <div class="fw-bold agro-orcamentos-value">{{ orcamento.valor_total_calculado|currencybr or "-" }}</div>
+                  <div class="text-muted small agro-orcamentos-subline">
+                    {{ orcamento.area_ha_formatada ~ ' ha' if orcamento.area_ha_formatada else 'Area nao informada' }}
+                  </div>
                 </td>
 
                 <td data-label="Criado em">
@@ -286,7 +288,7 @@
                 </div>
                 <div>
                   <dt>Documento</dt>
-                  <dd>{{ orcamento.cliente.documento if orcamento.cliente else "-" }}</dd>
+                  <dd>{{ orcamento.cliente_documento or "-" }}</dd>
                 </div>
                 <div>
                   <dt>Fazenda</dt>
@@ -298,11 +300,16 @@
                 </div>
                 <div>
                   <dt>Cultura</dt>
+                  <dd>{{ orcamento.cultura or "NÃ£o informada" }}</dd>
+                </div>
+                <div>
+                  <dt>Area total</dt>
+                  <dd>{{ orcamento.area_ha_formatada ~ ' ha' if orcamento.area_ha_formatada else "-" }}</dd>
                   <dd>{{ orcamento.cultura or "Não informada" }}</dd>
                 </div>
                 <div>
                   <dt>Mapeamento</dt>
-                  <dd>{{ agro_bool_label(orcamento.mapeamento) }}</dd>
+                  <dd>{{ agro_bool_label(orcamento.inclui_mapeamento) }}</dd>
                 </div>
                 <div>
                   <dt>Protocolo</dt>
@@ -323,15 +330,15 @@
               <dl class="agro-detail-list agro-detail-list-inline">
                 <div>
                   <dt>Preço base</dt>
-                  <dd>{{ orcamento.preco_base|currencybr or "-" }}</dd>
+                  <dd>{{ orcamento.valor_total_calculado|currencybr or "-" }}</dd>
                 </div>
                 <div>
                   <dt>Preço do mapeamento</dt>
-                  <dd>{{ orcamento.preco_mapeamento|currencybr if orcamento.mapeamento else "-" }}</dd>
+                  <dd>{{ orcamento.preco_mapeamento|currencybr if orcamento.inclui_mapeamento else "-" }}</dd>
                 </div>
                 <div>
                   <dt>Pulverização / ha</dt>
-                  <dd>{{ orcamento.preco_pulverizacao|currencybr or "-" }}</dd>
+                  <dd>{{ orcamento.preco_pulverizacao|currencybr if orcamento.inclui_pulverizacao else "-" }}</dd>
                 </div>
               </dl>
             </section>
@@ -405,4 +412,39 @@
     </div>
   </div>
 {% endfor %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll(".agro-detail-list-inline > div").forEach((group) => {
+      const title = group.querySelector("dt");
+      if (!title) return;
+
+      if (title.textContent.toLowerCase().includes("base")) {
+        title.textContent = "Total calculado";
+      }
+    });
+
+    document.querySelectorAll(".agro-detail-list-summary > div").forEach((group) => {
+      const title = group.querySelector("dt");
+      if (!title) return;
+
+      if (title.textContent.toLowerCase().includes("area")) {
+        const values = group.querySelectorAll("dd");
+        values.forEach((value, index) => {
+          if (index > 0) {
+            value.remove();
+          }
+        });
+      }
+    });
+
+    document.querySelectorAll(".agro-detail-list-summary dd").forEach((value) => {
+      if (value.textContent.includes("NÃ")) {
+        value.textContent = "Nao informada";
+      }
+    });
+  });
+</script>
 {% endblock %}

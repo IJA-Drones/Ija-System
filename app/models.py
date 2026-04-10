@@ -1,6 +1,7 @@
 from app import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from flask_login import UserMixin
 
 
@@ -573,16 +574,16 @@ class ClienteAgro(db.Model):
     id = db.Column(db.Integer, primary_key=True, index=True)
     prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
 
-    documento = db.Column(db.String(50), unique=True, nullable=False, index=True)
+    documento = db.Column(db.String(50), unique=True, nullable=True, index=True)
     nome = db.Column(db.String(150), nullable=False, index=True)
 
-    cep = db.Column(db.String(9), nullable=False)
-    logradouro = db.Column(db.String(150), nullable=False)
-    numero = db.Column(db.String(20), nullable=False)
+    cep = db.Column(db.String(9), nullable=True)
+    logradouro = db.Column(db.String(150), nullable=True)
+    numero = db.Column(db.String(20), nullable=True)
     complemento = db.Column(db.String(100))
-    bairro = db.Column(db.String(100), nullable=False, index=True)
-    cidade = db.Column(db.String(100), nullable=False, index=True)
-    uf = db.Column(db.String(2), nullable=False, index=True)
+    bairro = db.Column(db.String(100), nullable=True, index=True)
+    cidade = db.Column(db.String(100), nullable=True, index=True)
+    uf = db.Column(db.String(2), nullable=True, index=True)
 
     criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
 
@@ -607,14 +608,17 @@ class OrcamentoAgro(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, index=True)
     prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
-    cliente_agro_id = db.Column(db.Integer, db.ForeignKey("clientes_agro.id"), nullable=False, index=True)
+    cliente_agro_id = db.Column(db.Integer, db.ForeignKey("clientes_agro.id"), nullable=True, index=True)
 
     cliente_nome = db.Column(db.String(150), nullable=False, index=True)
+    cliente_documento = db.Column(db.String(50), nullable=True, index=True)
     nome_fazenda = db.Column(db.String(150), nullable=False, index=True)
     mapeamento = db.Column(db.Boolean, default=False, nullable=False, index=True)
     risco_operacional = db.Column(db.Text)
     cultura = db.Column(db.String(100), index=True)
     servico = db.Column(db.String(50), nullable=False, default=SERVICO_MAPEAMENTO, index=True)
+    area_ha = db.Column(db.Numeric(12, 2), nullable=True, default=0)
+    elaborado_por_nome = db.Column(db.String(150), index=True)
     preco_base = db.Column(db.Numeric(12, 2), nullable=False, default=0)
     preco_mapeamento = db.Column("preco_monitoramento", db.Numeric(12, 2), nullable=False, default=0)
     preco_pulverizacao = db.Column(db.Numeric(12, 2), nullable=False, default=0)
@@ -648,6 +652,77 @@ class OrcamentoAgro(db.Model):
         db.Index("ix_orcamentos_agro_cliente_data", "cliente_agro_id", "data_criacao"),
         db.Index("ix_orcamentos_agro_protocolo_data", "protocolo", "data_criacao"),
     )
+
+    @staticmethod
+    def _decimal_or_zero(value):
+        if value in (None, ""):
+            return Decimal("0")
+        if isinstance(value, Decimal):
+            return value
+        try:
+            return Decimal(str(value))
+        except (InvalidOperation, ValueError, TypeError):
+            return Decimal("0")
+
+    @staticmethod
+    def _format_decimal_br(value):
+        amount = OrcamentoAgro._decimal_or_zero(value).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        return f"{amount:.2f}".replace(".", ",")
+
+    @classmethod
+    def calcular_valor_item(cls, area_ha, valor_por_ha):
+        area = cls._decimal_or_zero(area_ha)
+        valor = cls._decimal_or_zero(valor_por_ha)
+        return (area * valor).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+    @classmethod
+    def calcular_valor_total(cls, area_ha, preco_pulverizacao, preco_mapeamento=0, *, mapeamento_ativo=False):
+        total = cls.calcular_valor_item(area_ha, preco_pulverizacao)
+        if mapeamento_ativo:
+            total += cls.calcular_valor_item(area_ha, preco_mapeamento)
+        return total.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+    @property
+    def inclui_mapeamento(self):
+        return bool(
+            self.mapeamento
+            or self._decimal_or_zero(self.preco_mapeamento) > 0
+            or self.servico in (self.SERVICO_MAPEAMENTO, self.SERVICO_MAPEAMENTO_PULVERIZACAO)
+        )
+
+    @property
+    def inclui_pulverizacao(self):
+        return self._decimal_or_zero(self.preco_pulverizacao) > 0 or self.servico in (
+            self.SERVICO_MAPEAMENTO_PULVERIZACAO,
+            self.SERVICO_PULVERIZACAO,
+        )
+
+    @property
+    def area_ha_formatada(self):
+        if self.area_ha in (None, ""):
+            return ""
+        return self._format_decimal_br(self.area_ha)
+
+    @property
+    def valor_mapeamento_total(self):
+        if not self.inclui_mapeamento:
+            return Decimal("0.00")
+        return self.calcular_valor_item(self.area_ha, self.preco_mapeamento)
+
+    @property
+    def valor_pulverizacao_total(self):
+        if not self.inclui_pulverizacao:
+            return Decimal("0.00")
+        return self.calcular_valor_item(self.area_ha, self.preco_pulverizacao)
+
+    @property
+    def valor_total_calculado(self):
+        return self.calcular_valor_total(
+            self.area_ha,
+            self.preco_pulverizacao,
+            self.preco_mapeamento if self.inclui_mapeamento else 0,
+            mapeamento_ativo=self.inclui_mapeamento,
+        )
 
 
 # -------------------------------------------------------------

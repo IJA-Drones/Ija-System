@@ -306,6 +306,32 @@ def _build_service_line_items(orcamento):
     return line_items
 
 
+def _build_service_line_items(orcamento):
+    line_items = []
+    area_label = f"{orcamento.area_ha_formatada} ha" if getattr(orcamento, "area_ha_formatada", "") else "area nao informada"
+
+    if orcamento.inclui_mapeamento:
+        line_items.append(
+            (
+                "Servico de mapeamento",
+                f"{_money(orcamento.preco_mapeamento)} por ha x {area_label} = {_money(orcamento.valor_mapeamento_total)}",
+            )
+        )
+
+    if orcamento.inclui_pulverizacao:
+        line_items.append(
+            (
+                "Servico de pulverizacao",
+                f"{_money(orcamento.preco_pulverizacao)} por ha x {area_label} = {_money(orcamento.valor_pulverizacao_total)}",
+            )
+        )
+
+    if not line_items:
+        line_items.append(("Servico contratado", orcamento.servico or "Nao informado"))
+
+    return line_items
+
+
 def _service_breakdown_table(line_items, total_value, item_label_style, item_value_style, total_label_style, total_value_style):
     rows = [[_paragraph(label, item_label_style), _paragraph(value, item_value_style)] for label, value in line_items]
     rows.append([_paragraph("Total da proposta", total_label_style), _paragraph(_money(total_value), total_value_style)])
@@ -446,6 +472,24 @@ def build_orcamento_agro_pdf(orcamento):
         leading=13,
         textColor=TEXT_MAIN,
     )
+    signature_date_style = ParagraphStyle(
+        "AgroPdfSignatureDate",
+        parent=styles["BodyText"],
+        fontName="Helvetica",
+        fontSize=9.2,
+        leading=12,
+        textColor=TEXT_MUTED,
+        alignment=1,
+    )
+    signature_name_style = ParagraphStyle(
+        "AgroPdfSignatureName",
+        parent=styles["BodyText"],
+        fontName="Helvetica-Bold",
+        fontSize=9.4,
+        leading=11.5,
+        textColor=TEXT_MAIN,
+        alignment=1,
+    )
 
     logo = _try_make_agro_logo()
     company_lines = [
@@ -472,7 +516,7 @@ def build_orcamento_agro_pdf(orcamento):
 
     service_breakdown = _service_breakdown_table(
         _build_service_line_items(orcamento),
-        orcamento.preco_base,
+        orcamento.valor_total_calculado,
         service_label_style,
         service_value_style,
         total_label_style,
@@ -493,7 +537,8 @@ def build_orcamento_agro_pdf(orcamento):
     )
     proposal_right = _label_value_table(
         [
-            ["Mapeamento", agro_bool_label(orcamento.mapeamento)],
+            ["Mapeamento", agro_bool_label(orcamento.inclui_mapeamento)],
+            ["Area total", f"{orcamento.area_ha_formatada} ha" if orcamento.area_ha_formatada else "Nao informada"],
             ["Protocolo DECEA", orcamento.protocolo or "Não informado"],
             ["Emissão", orcamento.data_criacao.strftime("%d/%m/%Y às %H:%M") if orcamento.data_criacao else "-"],
             ["Orçamento", f"#{orcamento.id}"],
@@ -569,6 +614,27 @@ def build_orcamento_agro_pdf(orcamento):
         )
     )
 
+    assinatura_elaborador = _signature_name_block(
+        "Elaborado por: {nome}".format(
+            nome=escape(orcamento.elaborado_por_nome or "Responsavel comercial")
+        ),
+        signature_name_style,
+        width=78 * mm,
+    )
+    assinatura_wrapper = Table([[assinatura_elaborador]], colWidths=[165 * mm])
+    assinatura_wrapper.setStyle(
+        TableStyle(
+            [
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                ("TOPPADDING", (0, 0), (-1, -1), 0),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+            ]
+        )
+    )
+    emissao_orcamento = orcamento.data_criacao.strftime("%d/%m/%Y Ã s %H:%M") if orcamento.data_criacao else "-"
+
     story = [
         header,
         Spacer(1, 8 * mm),
@@ -583,6 +649,10 @@ def build_orcamento_agro_pdf(orcamento):
         Spacer(1, 7 * mm),
         Paragraph("Observação comercial", section_style),
         commercial_note,
+        Spacer(1, 10 * mm),
+        Paragraph(f"Emitido em {emissao_orcamento}", signature_date_style),
+        Spacer(1, 8 * mm),
+        assinatura_wrapper,
     ]
 
     doc.build(story, onFirstPage=_build_page_frame, onLaterPages=_build_page_frame)
