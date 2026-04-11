@@ -18,6 +18,7 @@ from app.modules.agro.exporters import (
 from app.modules.agro.service import (
     agro_bool_label,
     build_contrato_agro_defaults,
+    build_contratos_agro_query,
     build_contratos_agro_aprovados_query,
     build_clientes_agro_query,
     build_endereco_agro,
@@ -54,6 +55,10 @@ def _query_args_without_page():
     args = request.args.to_dict(flat=True)
     args.pop("page", None)
     return args
+
+
+def _redirect_back_to_agro(default_endpoint: str, **values):
+    return redirect(request.referrer or url_for(default_endpoint, **values))
 
 
 def _require_agro_access():
@@ -1845,6 +1850,47 @@ def register_routes(bp):
             status_options=AGRO_CONTRATO_STATUS_OPTIONS,
         )
 
+    @bp.route("/agro/contratos", methods=["GET"], endpoint="agro_contratos_listar")
+    @login_required
+    def agro_contratos_listar():
+        _require_agro_access()
+
+        q = (request.args.get("q") or "").strip()
+        status = (request.args.get("status") or "").strip().upper()
+        if status and status not in AGRO_CONTRATO_STATUS_OPTIONS:
+            status = ""
+
+        equipe_id = request.args.get("equipe_id", type=int)
+        page = request.args.get("page", 1, type=int)
+        per_page = 12
+
+        query = build_contratos_agro_query(current_user, q=q, status=status, equipe_id=equipe_id)
+        total = query.count()
+        total_pages = max(1, math.ceil(total / per_page))
+        page = min(max(1, page), total_pages)
+        contratos = query.offset((page - 1) * per_page).limit(per_page).all()
+        equipes_ativas = _build_agro_equipes_ativas()
+
+        return render_template(
+            "agro_contratos_listar.html",
+            contratos=contratos,
+            equipes_ativas=equipes_ativas,
+            latest_os_by_contrato=_build_latest_os_by_contrato(contratos),
+            filters={
+                "q": q,
+                "status": status,
+                "equipe_id": equipe_id,
+                "page": page,
+                "total": total,
+                "total_pages": total_pages,
+            },
+            pagination_args=_query_args_without_page(),
+            status_options=AGRO_CONTRATO_STATUS_OPTIONS,
+            is_editable=can_edit_agro_panel(current_user),
+            is_admin_agro=getattr(current_user, "tipo_usuario", None) == "admin",
+            build_endereco_agro=build_endereco_agro,
+        )
+
     @bp.route("/agro/contratos/template", methods=["GET"], endpoint="agro_contratos_template")
     @login_required
     def agro_contratos_template():
@@ -1876,14 +1922,14 @@ def register_routes(bp):
         if errors:
             for message in errors.values():
                 flash(message, "warning")
-            return redirect(url_for("main.agro_contratos_template"))
+            return _redirect_back_to_agro("main.agro_contratos_template")
 
         contrato.status = form["status"]
         contrato.equipe_agro_id = equipe_id
         db.session.commit()
 
         flash("Template operacional do contrato atualizado com sucesso.", "success")
-        return redirect(url_for("main.agro_contratos_template"))
+        return _redirect_back_to_agro("main.agro_contratos_template")
 
     @bp.route("/agro/contratos/<int:contrato_id>/deletar", methods=["POST"], endpoint="agro_contrato_deletar")
     @login_required
@@ -1892,12 +1938,12 @@ def register_routes(bp):
         contrato = _get_contrato_agro_or_404(contrato_id)
         if contrato.ordens_servico:
             flash("Este contrato possui OS Agro vinculada(s). Exclua primeiro as OS para remover o contrato.", "warning")
-            return redirect(url_for("main.agro_contratos_template"))
+            return _redirect_back_to_agro("main.agro_contratos_template")
 
         db.session.delete(contrato)
         db.session.commit()
         flash("Contrato agro removido com sucesso.", "success")
-        return redirect(url_for("main.agro_contratos_template"))
+        return _redirect_back_to_agro("main.agro_contratos_template")
 
     @bp.route("/agro/orcamentos/<int:orcamento_id>/anexo", endpoint="agro_orcamento_anexo")
     @login_required
