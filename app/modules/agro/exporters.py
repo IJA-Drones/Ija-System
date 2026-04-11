@@ -680,7 +680,7 @@ def build_orcamento_agro_pdf(orcamento):
             ]
         )
     )
-    emissao_orcamento = orcamento.data_criacao.strftime("%d/%m/%Y Ã s %H:%M") if orcamento.data_criacao else "-"
+    emissao_orcamento = orcamento.data_criacao.strftime("%d/%m/%Y as %H:%M. Válido somente dentro do prazo de 10 dias a partir da emissão.") if orcamento.data_criacao else "-"
 
     story = [
         header,

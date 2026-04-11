@@ -6,7 +6,7 @@ import uuid
 
 from flask import current_app
 from sqlalchemy import false, or_
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 from werkzeug.utils import secure_filename
 
 from app.models import ClienteAgro, ContratoAgro, EquipamentoAgro, EquipeAgro, OrcamentoAgro, OrdemServicoAgro, PilotoAgro
@@ -113,13 +113,16 @@ def build_orcamentos_agro_query(user, q: str = "", cliente_id: int | None = None
     return query.order_by(OrcamentoAgro.data_criacao.desc(), OrcamentoAgro.id.desc())
 
 
-def build_contratos_agro_aprovados_query(user, q: str = "", equipe_id: int | None = None):
+def build_contratos_agro_query(user, q: str = "", status: str = "", equipe_id: int | None = None):
     query = ContratoAgro.query.options(
         joinedload(ContratoAgro.orcamento).joinedload(OrcamentoAgro.cliente),
         joinedload(ContratoAgro.equipe),
+        selectinload(ContratoAgro.ordens_servico),
     )
     query = apply_prefeitura_scope(query, user, ContratoAgro.prefeitura_id)
-    query = query.filter(ContratoAgro.status == ContratoAgro.STATUS_APROVADO)
+
+    if status:
+        query = query.filter(ContratoAgro.status == status)
 
     if q:
         like = f"%{q}%"
@@ -137,6 +140,15 @@ def build_contratos_agro_aprovados_query(user, q: str = "", equipe_id: int | Non
         query = query.filter(ContratoAgro.equipe_agro_id == equipe_id)
 
     return query.order_by(ContratoAgro.atualizado_em.desc(), ContratoAgro.id.desc())
+
+
+def build_contratos_agro_aprovados_query(user, q: str = "", equipe_id: int | None = None):
+    return build_contratos_agro_query(
+        user,
+        q=q,
+        status=ContratoAgro.STATUS_APROVADO,
+        equipe_id=equipe_id,
+    )
 
 
 def build_ordens_servico_agro_query(user, q: str = "", status: str = "", equipe_id: int | None = None):

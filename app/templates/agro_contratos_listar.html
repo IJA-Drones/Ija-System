@@ -1,0 +1,472 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/listing_pattern.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro_contratos_listar.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 listing-page">
+  <div class="listing-header mb-4">
+    <div>
+      <h2 class="text-dark m-0">
+        <i class="bi bi-file-earmark-text-fill me-2 text-primary"></i> Contratos Agro
+      </h2>
+      <p class="text-muted small mb-0">
+        Total de registros: <strong>{{ filters.total }}</strong>
+        {% if filters.q or filters.status or filters.equipe_id %}
+          <span class="badge bg-filter-custom ms-2">Filtrado</span>
+        {% endif %}
+      </p>
+    </div>
+
+    <div class="listing-actions">
+      <a href="{{ url_for('main.admin_agro') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+      <a href="{{ url_for('main.agro_orcamentos_listar') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
+        <i class="bi bi-file-earmark-text"></i> Orcamentos
+      </a>
+      {% if is_admin_agro %}
+        <a href="{{ url_for('main.agro_contratos_template') }}" class="btn btn-outline-warning d-flex align-items-center gap-2">
+          <i class="bi bi-diagram-3-fill"></i> Template operacional
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card shadow-sm rounded-4 mb-4 border-0">
+    <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center listing-filter-header"
+         data-bs-toggle="collapse"
+         data-bs-target="#collapseFiltrosContratosAgro"
+         aria-expanded="{{ 'true' if (filters.q or filters.status or filters.equipe_id) else 'false' }}">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-funnel-fill text-primary"></i>
+        <span class="text-dark">Filtros</span>
+        {% if filters.q or filters.status or filters.equipe_id %}
+          <span class="badge bg-danger rounded-circle p-1 listing-filter-dot"></span>
+        {% endif %}
+      </div>
+      <i class="bi bi-chevron-down text-muted"></i>
+    </div>
+
+    <div class="collapse {% if filters.q or filters.status or filters.equipe_id %}show{% endif %}" id="collapseFiltrosContratosAgro">
+      <div class="card-body pt-0 listing-filter-body">
+        <form method="GET" action="{{ url_for('main.agro_contratos_listar') }}">
+          <div class="row g-2 align-items-end">
+            <div class="col-md-5">
+              <label class="small text-muted mb-1">Busca geral:</label>
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                name="q"
+                value="{{ filters.q }}"
+                placeholder="Cliente, contratante, propriedade ou protocolo..."
+              >
+            </div>
+
+            <div class="col-md-3">
+              <label class="small text-muted mb-1">Status:</label>
+              <select name="status" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for status_value in status_options %}
+                  <option value="{{ status_value }}" {% if filters.status == status_value %}selected{% endif %}>
+                    {% if status_value == 'APROVADO' %}Aprovado{% else %}Em elaboracao{% endif %}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-2">
+              <label class="small text-muted mb-1">Equipe:</label>
+              <select name="equipe_id" class="form-select form-select-sm">
+                <option value="">Todas</option>
+                {% for equipe in equipes_ativas %}
+                  <option value="{{ equipe.id }}" {% if filters.equipe_id == equipe.id %}selected{% endif %}>{{ equipe.nome }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-2 listing-filter-actions">
+              <button type="submit" class="btn btn-success btn-sm">
+                <i class="bi bi-funnel"></i> Filtrar
+              </button>
+
+              {% if filters.q or filters.status or filters.equipe_id %}
+                <a href="{{ url_for('main.agro_contratos_listar') }}" class="btn btn-outline-secondary btn-sm">
+                  <i class="bi bi-x-lg"></i> Limpar
+                </a>
+              {% endif %}
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm rounded-4 border-0 overflow-hidden listing-table-wrap agro-contratos-table-wrap">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 listing-table agro-contratos-table">
+          <thead class="table-light">
+            <tr>
+              <th class="agro-col-contract">Contrato</th>
+              <th class="agro-col-operation">Operacao</th>
+              <th class="agro-col-commercial">Comercial</th>
+              <th class="agro-col-flow">Fluxo</th>
+              <th class="col-actions">Acoes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for contrato in contratos %}
+              {% set latest_os = latest_os_by_contrato.get(contrato.id) %}
+              <tr>
+                <td data-label="Contrato">
+                  <div class="fw-bold agro-contratos-main">#{{ contrato.id }} • {{ contrato.orcamento.cliente_nome }}</div>
+                  <div class="text-muted small agro-contratos-subline">{{ contrato.contratante_nome }}</div>
+                  <div class="text-muted small agro-contratos-subline">Atualizado em {{ contrato.atualizado_em.strftime('%d/%m/%Y %H:%M') }}</div>
+                  <div class="d-flex flex-wrap gap-1 mt-2">
+                    <span class="badge {% if contrato.status == 'APROVADO' %}bg-success-subtle text-success border border-success-subtle{% else %}bg-secondary-subtle text-secondary border border-secondary-subtle{% endif %}">
+                      {% if contrato.status == 'APROVADO' %}Aprovado{% else %}Em elaboracao{% endif %}
+                    </span>
+                    <span class="badge {% if contrato.equipe %}bg-primary-subtle text-primary border border-primary-subtle{% else %}bg-light text-dark border{% endif %}">
+                      {{ contrato.equipe.nome if contrato.equipe else 'Sem equipe' }}
+                    </span>
+                  </div>
+                </td>
+
+                <td data-label="Operacao">
+                  <div class="fw-semibold agro-contratos-main">{{ contrato.propriedade_nome or contrato.orcamento.nome_fazenda or '-' }}</div>
+                  <div class="text-muted small agro-contratos-subline">{{ contrato.descricao_servico or '-' }}</div>
+                  <div class="text-muted small agro-contratos-subline">
+                    {{ contrato.propriedade_cidade }}/{{ contrato.propriedade_uf }}
+                    {% if contrato.orcamento.protocolo %}
+                      <span class="agro-contratos-dot">•</span> Protocolo {{ contrato.orcamento.protocolo }}
+                    {% endif %}
+                  </div>
+                </td>
+
+                <td data-label="Comercial">
+                  <div class="fw-bold agro-contratos-value">{{ contrato.valor_total|currencybr or '-' }}</div>
+                  <div class="text-muted small agro-contratos-subline">Assinatura: {{ contrato.data_assinatura.strftime('%d/%m/%Y') if contrato.data_assinatura else '-' }}</div>
+                  <div class="text-muted small agro-contratos-subline">Area: {{ contrato.area_contratada or '-' }}</div>
+                  <div class="text-muted small agro-contratos-subline">Cultura: {{ contrato.cultura or 'Nao informada' }}</div>
+                </td>
+
+                <td data-label="Fluxo">
+                  {% if contrato.ordens_servico %}
+                    <span class="badge bg-success-subtle text-success border border-success-subtle">
+                      {{ contrato.ordens_servico|length }} OS vinculada(s)
+                    </span>
+                    {% if latest_os %}
+                      <div class="text-muted small mt-2">{{ latest_os.identificador_os }} • {{ latest_os.status }}</div>
+                      <div class="text-muted small">
+                        {{ latest_os.data_aplicacao.strftime('%d/%m/%Y') if latest_os.data_aplicacao else 'Sem data definida' }}
+                      </div>
+                    {% endif %}
+                  {% elif contrato.status == 'APROVADO' and contrato.equipe_agro_id %}
+                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Aguardando criacao de OS</span>
+                    <div class="text-muted small mt-2">Equipe pronta para iniciar o fluxo operacional.</div>
+                  {% elif contrato.status == 'APROVADO' %}
+                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Aprovado sem equipe</span>
+                    <div class="text-muted small mt-2">Defina a equipe no template operacional.</div>
+                  {% else %}
+                    <span class="badge bg-light text-dark border">Contrato em elaboracao</span>
+                    <div class="text-muted small mt-2">Ainda nao entrou no fluxo operacional.</div>
+                  {% endif %}
+                </td>
+
+                <td data-label="Acoes" class="listing-cell-actions">
+                  <div class="dropup agro-actions-dropdown">
+                    <button class="btn btn-outline-secondary agro-actions-trigger" type="button" data-bs-toggle="dropdown" data-bs-offset="0,8" aria-expanded="false" title="Mais acoes">
+                      <i class="bi bi-three-dots-vertical"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
+                      <li>
+                        <button class="dropdown-item py-2" type="button" data-bs-toggle="modal" data-bs-target="#modalDetalhesContrato{{ contrato.id }}">
+                          <i class="bi bi-eye text-primary me-2"></i> Ver detalhes
+                        </button>
+                      </li>
+                      <li>
+                        <a href="{{ url_for('main.agro_contrato_pdf', orcamento_id=contrato.orcamento.id) }}" target="_blank" class="dropdown-item py-2">
+                          <i class="bi bi-filetype-pdf text-danger me-2"></i> PDF do contrato
+                        </a>
+                      </li>
+                      {% if is_editable %}
+                        <li>
+                          <a href="{{ url_for('main.agro_contrato_editar', orcamento_id=contrato.orcamento.id) }}" class="dropdown-item py-2">
+                            <i class="bi bi-pencil-square text-success me-2"></i> Editar contrato
+                          </a>
+                        </li>
+                        <li>
+                          <a href="{{ url_for('main.agro_orcamento_editar', orcamento_id=contrato.orcamento.id) }}" class="dropdown-item py-2">
+                            <i class="bi bi-file-earmark-text text-primary me-2"></i> Editar orcamento
+                          </a>
+                        </li>
+                      {% endif %}
+                      {% if is_admin_agro and contrato.status == 'APROVADO' %}
+                        <li>
+                          <a href="{{ url_for('main.agro_contratos_template') }}" class="dropdown-item py-2">
+                            <i class="bi bi-diagram-3 text-warning me-2"></i> Abrir template operacional
+                          </a>
+                        </li>
+                      {% endif %}
+                      {% if is_admin_agro %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                          <form class="m-0" method="POST" action="{{ url_for('main.agro_contrato_deletar', contrato_id=contrato.id) }}" onsubmit="return confirm('Tem certeza que deseja excluir este contrato agro? Exclua antes as OS vinculadas, se houver.');">
+                            <button type="submit" class="dropdown-item py-2 text-danger">
+                              <i class="bi bi-trash me-2"></i> Excluir contrato
+                            </button>
+                          </form>
+                        </li>
+                      {% endif %}
+                    </ul>
+                  </div>
+                </td>
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="5" class="text-center py-5">
+                  <p class="text-muted mb-0">Nenhum contrato agro encontrado com os filtros aplicados.</p>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {% if filters.total_pages > 1 %}
+      <div class="card-footer bg-transparent py-3 border-top">
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="small text-muted">Pagina <strong>{{ filters.page }}</strong> de {{ filters.total_pages }}</span>
+          <nav>
+            <ul class="pagination pagination-sm mb-0 listing-pagination">
+              <li class="page-item {% if filters.page <= 1 %}disabled{% endif %}">
+                <a class="page-link shadow-none" href="{{ url_for('main.agro_contratos_listar', page=filters.page-1, **pagination_args) }}">Anterior</a>
+              </li>
+              <li class="page-item active"><span class="page-link shadow-none">{{ filters.page }}</span></li>
+              <li class="page-item {% if filters.page >= filters.total_pages %}disabled{% endif %}">
+                <a class="page-link shadow-none" href="{{ url_for('main.agro_contratos_listar', page=filters.page+1, **pagination_args) }}">Proxima</a>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{% for contrato in contratos %}
+  {% set latest_os = latest_os_by_contrato.get(contrato.id) %}
+  <div class="modal fade" id="modalDetalhesContrato{{ contrato.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl agro-contrato-modal-dialog">
+      <div class="modal-content agro-contrato-modal">
+        <div class="modal-header">
+          <div>
+            <h5 class="modal-title">Contrato #{{ contrato.id }}</h5>
+            <div class="small text-muted">{{ contrato.orcamento.cliente_nome }} • {{ contrato.propriedade_nome or contrato.orcamento.nome_fazenda or '-' }}</div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="agro-detail-grid">
+            <section class="agro-detail-card agro-detail-card-summary">
+              <h6 class="agro-detail-title">
+                <i class="bi bi-card-checklist"></i> Resumo do contrato
+              </h6>
+
+              <dl class="agro-detail-list agro-detail-list-summary">
+                <div>
+                  <dt>Status</dt>
+                  <dd>{% if contrato.status == 'APROVADO' %}Aprovado{% else %}Em elaboracao{% endif %}</dd>
+                </div>
+                <div>
+                  <dt>Cliente</dt>
+                  <dd>{{ contrato.orcamento.cliente_nome }}</dd>
+                </div>
+                <div>
+                  <dt>Contratante</dt>
+                  <dd>{{ contrato.contratante_nome }}</dd>
+                </div>
+                <div>
+                  <dt>Documento</dt>
+                  <dd>{{ contrato.contratante_documento or '-' }}</dd>
+                </div>
+                <div>
+                  <dt>Equipe</dt>
+                  <dd>{{ contrato.equipe.nome if contrato.equipe else 'Nao definida' }}</dd>
+                </div>
+                <div>
+                  <dt>Protocolo</dt>
+                  <dd>{{ contrato.orcamento.protocolo or 'Nao informado' }}</dd>
+                </div>
+                <div>
+                  <dt>Criado em</dt>
+                  <dd>{{ contrato.criado_em.strftime('%d/%m/%Y %H:%M') }}</dd>
+                </div>
+                <div>
+                  <dt>Atualizado em</dt>
+                  <dd>{{ contrato.atualizado_em.strftime('%d/%m/%Y %H:%M') }}</dd>
+                </div>
+                <div>
+                  <dt>Assinatura</dt>
+                  <dd>{{ contrato.data_assinatura.strftime('%d/%m/%Y') if contrato.data_assinatura else '-' }}</dd>
+                </div>
+              </dl>
+            </section>
+
+            <section class="agro-detail-card">
+              <h6 class="agro-detail-title">
+                <i class="bi bi-person-vcard-fill"></i> Contratante
+              </h6>
+
+              <dl class="agro-detail-list">
+                <div>
+                  <dt>Nome</dt>
+                  <dd>{{ contrato.contratante_nome }}</dd>
+                </div>
+                <div>
+                  <dt>CPF/CNPJ</dt>
+                  <dd>{{ contrato.contratante_documento }}</dd>
+                </div>
+                <div>
+                  <dt>RG</dt>
+                  <dd>{{ contrato.contratante_rg or '-' }}</dd>
+                </div>
+                <div>
+                  <dt>Endereco</dt>
+                  <dd>{{ build_endereco_agro(contrato.contratante_cep, contrato.contratante_logradouro, contrato.contratante_numero, contrato.contratante_complemento, contrato.contratante_bairro, contrato.contratante_cidade, contrato.contratante_uf) }}</dd>
+                </div>
+              </dl>
+            </section>
+
+            <section class="agro-detail-card">
+              <h6 class="agro-detail-title">
+                <i class="bi bi-geo-alt-fill"></i> Propriedade
+              </h6>
+
+              <dl class="agro-detail-list">
+                <div>
+                  <dt>Nome</dt>
+                  <dd>{{ contrato.propriedade_nome }}</dd>
+                </div>
+                <div>
+                  <dt>Cidade / UF</dt>
+                  <dd>{{ contrato.propriedade_cidade }}/{{ contrato.propriedade_uf }}</dd>
+                </div>
+                <div>
+                  <dt>Endereco</dt>
+                  <dd>{{ build_endereco_agro(contrato.propriedade_cep, contrato.propriedade_logradouro, contrato.propriedade_numero, contrato.propriedade_complemento, contrato.propriedade_bairro, contrato.propriedade_cidade, contrato.propriedade_uf) }}</dd>
+                </div>
+              </dl>
+            </section>
+
+            <section class="agro-detail-card">
+              <h6 class="agro-detail-title">
+                <i class="bi bi-cash-coin"></i> Valores e condicoes
+              </h6>
+
+              <dl class="agro-detail-list agro-detail-list-inline">
+                <div>
+                  <dt>Servico</dt>
+                  <dd>{{ contrato.descricao_servico }}</dd>
+                </div>
+                <div>
+                  <dt>Cultura</dt>
+                  <dd>{{ contrato.cultura or 'Nao informada' }}</dd>
+                </div>
+                <div>
+                  <dt>Area contratada</dt>
+                  <dd>{{ contrato.area_contratada or '-' }}</dd>
+                </div>
+                <div>
+                  <dt>Valor total</dt>
+                  <dd>{{ contrato.valor_total|currencybr or '-' }}</dd>
+                </div>
+                <div>
+                  <dt>Mapeamento / ha</dt>
+                  <dd>{{ contrato.valor_mapeamento_ha|currencybr or '-' }}</dd>
+                </div>
+                <div>
+                  <dt>Pulverizacao / ha</dt>
+                  <dd>{{ contrato.valor_pulverizacao_ha|currencybr or '-' }}</dd>
+                </div>
+                <div>
+                  <dt>Prazo para inicio</dt>
+                  <dd>{{ contrato.prazo_inicio_dias }} dia(s)</dd>
+                </div>
+                <div>
+                  <dt>Prazo de pagamento</dt>
+                  <dd>{{ contrato.prazo_pagamento_dias }} dia(s)</dd>
+                </div>
+                <div>
+                  <dt>Foro</dt>
+                  <dd>{{ contrato.foro_cidade }}</dd>
+                </div>
+              </dl>
+            </section>
+
+            <section class="agro-detail-card">
+              <h6 class="agro-detail-title">
+                <i class="bi bi-diagram-3-fill"></i> Fluxo operacional
+              </h6>
+
+              <dl class="agro-detail-list">
+                <div>
+                  <dt>OS vinculadas</dt>
+                  <dd>{{ contrato.ordens_servico|length }}</dd>
+                </div>
+                <div>
+                  <dt>Ultima OS</dt>
+                  <dd>
+                    {% if latest_os %}
+                      {{ latest_os.identificador_os }} • {{ latest_os.status }}
+                    {% else %}
+                      Nenhuma OS criada
+                    {% endif %}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Equipe responsavel</dt>
+                  <dd>{{ contrato.equipe.nome if contrato.equipe else 'Nao definida' }}</dd>
+                </div>
+              </dl>
+
+              <div class="d-flex flex-wrap gap-2 mt-3">
+                <a href="{{ url_for('main.agro_contrato_pdf', orcamento_id=contrato.orcamento.id) }}" target="_blank" class="btn btn-outline-secondary btn-sm">
+                  <i class="bi bi-filetype-pdf"></i> PDF do contrato
+                </a>
+                {% if is_editable %}
+                  <a href="{{ url_for('main.agro_contrato_editar', orcamento_id=contrato.orcamento.id) }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-pencil-square"></i> Editar contrato
+                  </a>
+                {% endif %}
+                {% if is_admin_agro and contrato.status == 'APROVADO' %}
+                  <a href="{{ url_for('main.agro_contratos_template') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-diagram-3"></i> Template operacional
+                  </a>
+                {% endif %}
+              </div>
+            </section>
+
+            <section class="agro-detail-card agro-detail-card-wide">
+              <h6 class="agro-detail-title">
+                <i class="bi bi-journal-text"></i> Observacoes
+              </h6>
+
+              <p class="mb-0 small">{{ contrato.observacoes_adicionais or 'Nenhuma observacao adicional registrada para este contrato.' }}</p>
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endfor %}
+{% endblock %}

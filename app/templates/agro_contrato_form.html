@@ -24,9 +24,14 @@
       <a href="{{ url_for('main.agro_orcamentos_listar') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
-      <a href="{{ url_for('main.agro_contratos_template') }}" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2">
-        <i class="bi bi-diagram-3-fill"></i> Template operacional
+      <a href="{{ url_for('main.agro_contratos_listar') }}" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2">
+        <i class="bi bi-file-earmark-text-fill"></i> Contratos Agro
       </a>
+      {% if current_user.tipo_usuario == 'admin' %}
+        <a href="{{ url_for('main.agro_contratos_template') }}" class="btn btn-outline-warning btn-sm d-flex align-items-center gap-2">
+          <i class="bi bi-diagram-3-fill"></i> Template operacional
+        </a>
+      {% endif %}
       <a href="{{ url_for('main.agro_contrato_pdf', orcamento_id=orcamento.id) }}" target="_blank" class="btn btn-success btn-sm d-flex align-items-center gap-2">
         <i class="bi bi-filetype-pdf"></i> Visualizar PDF
       </a>
