@@ -542,6 +542,14 @@ def build_orcamento_agro_pdf(orcamento):
         textColor=TEXT_MUTED,
         alignment=1,
     )
+    signature_date_bold_style = ParagraphStyle(
+        "AgroPdfSignatureDateBold",
+        parent=signature_date_style,
+        fontName="Helvetica-Bold",
+        fontSize=9.5,
+        leading=12.5,
+        textColor=TEXT_MAIN,
+    )
     signature_name_style = ParagraphStyle(
         "AgroPdfSignatureName",
         parent=styles["BodyText"],
@@ -695,6 +703,27 @@ def build_orcamento_agro_pdf(orcamento):
         )
     )
     emissao_orcamento = orcamento.data_criacao.strftime("%d/%m/%Y as %H:%M. Válido somente dentro do prazo de 10 dias a partir da emissão.") if orcamento.data_criacao else "-"
+    assinatura_footer = Table(
+        [
+            [Paragraph(f"<b>Emitido em {escape(emissao_orcamento)}</b>", signature_date_bold_style)],
+            [assinatura_wrapper],
+        ],
+        colWidths=[165 * mm],
+        rowHeights=[10 * mm, 42 * mm],
+    )
+    assinatura_footer.setStyle(
+        TableStyle(
+            [
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("VALIGN", (0, 0), (-1, 0), "TOP"),
+                ("VALIGN", (0, 1), (-1, 1), "BOTTOM"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                ("TOPPADDING", (0, 0), (-1, -1), 0),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+            ]
+        )
+    )
 
     story = [
         header,
@@ -710,10 +739,8 @@ def build_orcamento_agro_pdf(orcamento):
         Spacer(1, 7 * mm),
         Paragraph("Observação comercial", section_style),
         commercial_note,
-        Spacer(1, 10 * mm),
-        Paragraph(f"Emitido em {emissao_orcamento}", signature_date_style),
         Spacer(1, 8 * mm),
-        assinatura_wrapper,
+        assinatura_footer,
     ]
 
     doc.build(story, onFirstPage=_build_page_frame, onLaterPages=_build_page_frame)
