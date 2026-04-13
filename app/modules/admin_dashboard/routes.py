@@ -61,6 +61,9 @@ def register_routes(bp):
         filtro_regiao = (request.args.get("regiao") or "").strip()
         filtro_apoio_cet = (request.args.get("apoio_cet") or "").strip().upper()
         filtro_protocolo = (request.args.get("protocolo") or "").strip()
+        filtro_tipo_visita = (request.args.get("tipo_visita") or "").strip()
+        filtro_tipo_imovel = (request.args.get("tipo_imovel") or "").strip()
+        filtro_foco = (request.args.get("foco") or "").strip()
 
         if filtro_status == "CANCELADO":
             return redirect(
@@ -68,6 +71,9 @@ def register_routes(bp):
                     "main.admin_canceladas",
                     unidade=filtro_unidade,
                     regiao=filtro_regiao,
+                    tipo_visita=filtro_tipo_visita,
+                    tipo_imovel=filtro_tipo_imovel,
+                    foco=filtro_foco,
                     protocolo=filtro_protocolo,
                 )
             )
@@ -80,6 +86,9 @@ def register_routes(bp):
             filtro_regiao=filtro_regiao,
             filtro_apoio_cet=filtro_apoio_cet,
             filtro_protocolo=filtro_protocolo,
+            filtro_tipo_visita=filtro_tipo_visita,
+            filtro_tipo_imovel=filtro_tipo_imovel,
+            filtro_foco=filtro_foco,
         )
         paginacao = query.order_by(build_status_order(), Solicitacao.data_criacao.desc()).paginate(
             page=page,
@@ -112,6 +121,9 @@ def register_routes(bp):
             filtro_regiao = (request.args.get("regiao") or "").strip()
             filtro_apoio_cet = (request.args.get("apoio_cet") or "").strip().upper()
             filtro_protocolo = (request.args.get("protocolo") or "").strip()
+            filtro_tipo_visita = (request.args.get("tipo_visita") or "").strip()
+            filtro_tipo_imovel = (request.args.get("tipo_imovel") or "").strip()
+            filtro_foco = (request.args.get("foco") or "").strip()
 
             output = build_admin_dashboard_export(
                 user=current_user,
@@ -120,6 +132,9 @@ def register_routes(bp):
                 filtro_regiao=filtro_regiao,
                 filtro_apoio_cet=filtro_apoio_cet,
                 filtro_protocolo=filtro_protocolo,
+                filtro_tipo_visita=filtro_tipo_visita,
+                filtro_tipo_imovel=filtro_tipo_imovel,
+                filtro_foco=filtro_foco,
             )
 
             return send_file(
@@ -207,6 +222,8 @@ def register_routes(bp):
         filtro_unidade = (request.args.get("unidade") or "").strip()
         filtro_regiao = (request.args.get("regiao") or "").strip()
         filtro_foco = (request.args.get("foco") or "").strip()
+        filtro_tipo_visita = (request.args.get("tipo_visita") or "").strip()
+        filtro_tipo_imovel = (request.args.get("tipo_imovel") or "").strip()
         filtro_protocolo = (request.args.get("protocolo") or "").strip()
         page = request.args.get("page", 1, type=int)
 
@@ -216,6 +233,8 @@ def register_routes(bp):
             filtro_regiao=filtro_regiao,
             filtro_foco=filtro_foco,
             filtro_protocolo=filtro_protocolo,
+            filtro_tipo_visita=filtro_tipo_visita,
+            filtro_tipo_imovel=filtro_tipo_imovel,
         )
         paginacao = query.order_by(Solicitacao.data_criacao.desc()).paginate(
             page=page,
