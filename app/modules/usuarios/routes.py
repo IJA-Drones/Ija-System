@@ -31,35 +31,57 @@ def _slugify_prefeitura(value: str) -> str:
     return text
 
 
+def _render_admin_prefeitura_nova(form=None):
+    return render_template(
+        "admin_prefeitura_nova.html",
+        form=form or {
+            "nome": "",
+            "slug": "",
+            "ativa": "1",
+        },
+    )
+
+
 def register_routes(bp):
-    @bp.route("/admin/prefeituras", methods=["GET", "POST"], endpoint="admin_prefeituras")
+    @bp.route("/admin/prefeituras/nova", methods=["GET", "POST"], endpoint="admin_prefeitura_nova")
     @login_required
-    def admin_prefeituras():
+    def admin_prefeitura_nova():
         if not _admin_only():
             return redirect(url_for("main.dashboard"))
+
+        form = {
+            "nome": "",
+            "slug": "",
+            "ativa": "1",
+        }
 
         if request.method == "POST":
             nome = (request.form.get("nome") or "").strip()
             slug_raw = (request.form.get("slug") or "").strip()
             slug = _slugify_prefeitura(slug_raw or nome)
             ativa = (request.form.get("ativa") or "1") == "1"
+            form = {
+                "nome": nome,
+                "slug": slug_raw,
+                "ativa": "1" if ativa else "0",
+            }
 
             if not nome:
                 flash("Informe o nome da prefeitura.", "warning")
-                return redirect(url_for("main.admin_prefeituras"))
+                return _render_admin_prefeitura_nova(form)
             if not slug:
                 flash("Informe um slug valido.", "warning")
-                return redirect(url_for("main.admin_prefeituras"))
+                return _render_admin_prefeitura_nova(form)
 
             existente_slug = Prefeitura.query.filter(Prefeitura.slug == slug).first()
             if existente_slug:
                 flash("Ja existe uma prefeitura com esse slug.", "danger")
-                return redirect(url_for("main.admin_prefeituras"))
+                return _render_admin_prefeitura_nova(form)
 
             existente_nome = Prefeitura.query.filter(Prefeitura.nome == nome).first()
             if existente_nome:
                 flash("Ja existe uma prefeitura com esse nome.", "danger")
-                return redirect(url_for("main.admin_prefeituras"))
+                return _render_admin_prefeitura_nova(form)
 
             nova = Prefeitura(nome=nome, slug=slug, ativa=ativa)
             try:
@@ -69,12 +91,22 @@ def register_routes(bp):
             except IntegrityError:
                 db.session.rollback()
                 flash("Nao foi possivel cadastrar: nome ou slug ja utilizado.", "danger")
+                return _render_admin_prefeitura_nova(form)
             except Exception:
                 db.session.rollback()
                 current_app.logger.exception("Erro ao cadastrar prefeitura.")
                 flash("Erro interno ao cadastrar prefeitura. Tente novamente.", "danger")
+                return _render_admin_prefeitura_nova(form)
 
             return redirect(url_for("main.admin_prefeituras"))
+
+        return _render_admin_prefeitura_nova(form)
+
+    @bp.route("/admin/prefeituras", methods=["GET"], endpoint="admin_prefeituras")
+    @login_required
+    def admin_prefeituras():
+        if not _admin_only():
+            return redirect(url_for("main.dashboard"))
 
         prefeituras = (
             Prefeitura.query.options(selectinload(Prefeitura.usuarios))
