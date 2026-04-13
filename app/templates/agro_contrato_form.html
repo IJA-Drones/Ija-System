@@ -217,6 +217,12 @@
           </div>
 
           <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Cultura adicional</label>
+            <input type="text" id="cultura_alternativa" name="cultura_alternativa" value="{{ form.get('cultura_alternativa', '') }}" class="form-control {% if errors.get('cultura_alternativa') %}is-invalid{% endif %}">
+            {% if errors.get('cultura_alternativa') %}<div class="invalid-feedback">{{ errors.get('cultura_alternativa') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-3">
             <label class="form-label fw-bold small text-muted">Área contratada</label>
             <input type="text" name="area_contratada" value="{{ form.get('area_contratada', '') }}" class="form-control {% if errors.get('area_contratada') %}is-invalid{% endif %}" placeholder="Ex.: 59,27 ha">
             {% if errors.get('area_contratada') %}<div class="invalid-feedback">{{ errors.get('area_contratada') }}</div>{% endif %}
@@ -233,6 +239,12 @@
             <label class="form-label fw-bold small text-muted">Valor pulverização / ha</label>
             <input type="text" name="valor_pulverizacao_ha" value="{{ form.get('valor_pulverizacao_ha', '') }}" class="form-control {% if errors.get('valor_pulverizacao_ha') %}is-invalid{% endif %}" placeholder="R$ 0,00">
             {% if errors.get('valor_pulverizacao_ha') %}<div class="invalid-feedback">{{ errors.get('valor_pulverizacao_ha') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label fw-bold small text-muted">Valor pulverização adicional / ha</label>
+            <input type="text" id="valor_pulverizacao_adicional_ha" name="valor_pulverizacao_adicional_ha" value="{{ form.get('valor_pulverizacao_adicional_ha', '') }}" class="form-control {% if errors.get('valor_pulverizacao_adicional_ha') %}is-invalid{% endif %}" placeholder="R$ 0,00">
+            {% if errors.get('valor_pulverizacao_adicional_ha') %}<div class="invalid-feedback">{{ errors.get('valor_pulverizacao_adicional_ha') }}</div>{% endif %}
           </div>
 
           <div class="col-md-2">
@@ -351,23 +363,43 @@
     const areaInput = document.querySelector('input[name="area_contratada"]');
     const mapeamentoInput = document.querySelector('input[name="valor_mapeamento_ha"]');
     const pulverizacaoInput = document.querySelector('input[name="valor_pulverizacao_ha"]');
+    const pulverizacaoAdicionalInput = document.querySelector('input[name="valor_pulverizacao_adicional_ha"]');
     const totalInput = document.querySelector('input[name="valor_total"]');
 
-    if (!areaInput || !mapeamentoInput || !pulverizacaoInput || !totalInput) return;
+    if (!areaInput || !mapeamentoInput || !pulverizacaoInput || !pulverizacaoAdicionalInput || !totalInput) return;
 
     const area = parseDecimalBr(areaInput.value);
     const valorMap = parseDecimalBr(mapeamentoInput.value) || 0;
     const valorPulv = parseDecimalBr(pulverizacaoInput.value) || 0;
+    const valorPulvAdicional = parseDecimalBr(pulverizacaoAdicionalInput.value) || 0;
 
-    if (area === null || area <= 0 || (valorMap <= 0 && valorPulv <= 0)) {
+    if (area === null || area <= 0 || (valorMap <= 0 && valorPulv <= 0 && valorPulvAdicional <= 0)) {
       return;
     }
 
-    const total = area * (valorMap + valorPulv);
+    const total = area * (valorMap + valorPulv + valorPulvAdicional);
     totalInput.value = total.toLocaleString("pt-BR", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
+  }
+
+  function syncPulverizacaoAdicionalVisibility() {
+    const culturaAlternativaInput = document.getElementById("cultura_alternativa");
+    const valorAdicionalInput = document.getElementById("valor_pulverizacao_adicional_ha");
+    const wrapper = valorAdicionalInput?.closest(".col-md-2");
+    const isVisible = !!(culturaAlternativaInput?.value || "").trim();
+
+    if (!wrapper || !valorAdicionalInput) return;
+
+    wrapper.style.display = isVisible ? "" : "none";
+    valorAdicionalInput.required = isVisible;
+
+    if (!isVisible) {
+      valorAdicionalInput.value = "";
+    }
+
+    calculateValorTotal();
   }
 
   document.querySelectorAll('input[name="contratante_cep"], input[name="propriedade_cep"]').forEach((input) => {
@@ -376,7 +408,9 @@
     });
   });
 
-  document.querySelectorAll('input[name="valor_total"], input[name="valor_mapeamento_ha"], input[name="valor_pulverizacao_ha"]').forEach((input) => {
+  document.getElementById("cultura_alternativa")?.addEventListener("input", syncPulverizacaoAdicionalVisibility);
+
+  document.querySelectorAll('input[name="valor_total"], input[name="valor_mapeamento_ha"], input[name="valor_pulverizacao_ha"], input[name="valor_pulverizacao_adicional_ha"]').forEach((input) => {
     input.addEventListener("input", (event) => {
       event.target.value = maskCurrencyBr(event.target.value);
       if (event.target.name !== "valor_total") {
@@ -392,6 +426,7 @@
     });
   }
 
+  syncPulverizacaoAdicionalVisibility();
   calculateValorTotal();
 </script>
 {% endblock %}

@@ -616,12 +616,14 @@ class OrcamentoAgro(db.Model):
     mapeamento = db.Column(db.Boolean, default=False, nullable=False, index=True)
     risco_operacional = db.Column(db.Text)
     cultura = db.Column(db.String(100), index=True)
+    cultura_alternativa = db.Column(db.String(100), index=True)
     servico = db.Column(db.String(50), nullable=False, default=SERVICO_MAPEAMENTO, index=True)
     area_ha = db.Column(db.Numeric(12, 2), nullable=True, default=0)
     elaborado_por_nome = db.Column(db.String(150), index=True)
     preco_base = db.Column(db.Numeric(12, 2), nullable=False, default=0)
     preco_mapeamento = db.Column("preco_monitoramento", db.Numeric(12, 2), nullable=False, default=0)
     preco_pulverizacao = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+    preco_pulverizacao_adicional = db.Column(db.Numeric(12, 2), nullable=False, default=0)
 
     cep = db.Column(db.String(9), nullable=False)
     logradouro = db.Column(db.String(150), nullable=False)
@@ -676,11 +678,31 @@ class OrcamentoAgro(db.Model):
         return (area * valor).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
     @classmethod
-    def calcular_valor_total(cls, area_ha, preco_pulverizacao, preco_mapeamento=0, *, mapeamento_ativo=False):
+    def calcular_valor_total(
+        cls,
+        area_ha,
+        preco_pulverizacao,
+        preco_mapeamento=0,
+        *,
+        mapeamento_ativo=False,
+        preco_pulverizacao_adicional=0,
+        pulverizacao_adicional_ativa=False,
+    ):
         total = cls.calcular_valor_item(area_ha, preco_pulverizacao)
         if mapeamento_ativo:
             total += cls.calcular_valor_item(area_ha, preco_mapeamento)
+        if pulverizacao_adicional_ativa:
+            total += cls.calcular_valor_item(area_ha, preco_pulverizacao_adicional)
         return total.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+    @property
+    def culturas_formatadas(self):
+        culturas = []
+        for cultura in (self.cultura, self.cultura_alternativa):
+            valor = (cultura or "").strip()
+            if valor and valor not in culturas:
+                culturas.append(valor)
+        return " / ".join(culturas)
 
     @property
     def inclui_mapeamento(self):
@@ -695,6 +717,13 @@ class OrcamentoAgro(db.Model):
         return self._decimal_or_zero(self.preco_pulverizacao) > 0 or self.servico in (
             self.SERVICO_MAPEAMENTO_PULVERIZACAO,
             self.SERVICO_PULVERIZACAO,
+        )
+
+    @property
+    def inclui_pulverizacao_adicional(self):
+        return (
+            self._decimal_or_zero(self.preco_pulverizacao_adicional) > 0
+            or bool((self.cultura_alternativa or "").strip())
         )
 
     @property
@@ -716,12 +745,22 @@ class OrcamentoAgro(db.Model):
         return self.calcular_valor_item(self.area_ha, self.preco_pulverizacao)
 
     @property
+    def valor_pulverizacao_adicional_total(self):
+        if not self.inclui_pulverizacao_adicional:
+            return Decimal("0.00")
+        return self.calcular_valor_item(self.area_ha, self.preco_pulverizacao_adicional)
+
+    @property
     def valor_total_calculado(self):
         return self.calcular_valor_total(
             self.area_ha,
             self.preco_pulverizacao,
             self.preco_mapeamento if self.inclui_mapeamento else 0,
             mapeamento_ativo=self.inclui_mapeamento,
+            preco_pulverizacao_adicional=(
+                self.preco_pulverizacao_adicional if self.inclui_pulverizacao_adicional else 0
+            ),
+            pulverizacao_adicional_ativa=self.inclui_pulverizacao_adicional,
         )
 
 
@@ -768,11 +807,13 @@ class ContratoAgro(db.Model):
 
     descricao_servico = db.Column(db.Text, nullable=False)
     cultura = db.Column(db.String(100), index=True)
+    cultura_alternativa = db.Column(db.String(100), index=True)
     area_contratada = db.Column(db.String(50))
 
     valor_total = db.Column(db.Numeric(12, 2), nullable=False, default=0)
     valor_mapeamento_ha = db.Column(db.Numeric(12, 2), nullable=False, default=0)
     valor_pulverizacao_ha = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+    valor_pulverizacao_adicional_ha = db.Column(db.Numeric(12, 2), nullable=False, default=0)
 
     prazo_inicio_dias = db.Column(db.Integer, nullable=False, default=10)
     prazo_pagamento_dias = db.Column(db.Integer, nullable=False, default=10)
@@ -788,6 +829,15 @@ class ContratoAgro(db.Model):
     orcamento = db.relationship("OrcamentoAgro", back_populates="contrato", lazy="joined")
     equipe = db.relationship("EquipeAgro", back_populates="contratos", lazy="joined")
     ordens_servico = db.relationship("OrdemServicoAgro", back_populates="contrato", lazy="select")
+
+    @property
+    def culturas_formatadas(self):
+        culturas = []
+        for cultura in (self.cultura, self.cultura_alternativa):
+            valor = (cultura or "").strip()
+            if valor and valor not in culturas:
+                culturas.append(valor)
+        return " / ".join(culturas)
 
     __table_args__ = (
         db.Index("ix_contratos_agro_orcamento_data", "orcamento_agro_id", "atualizado_em"),

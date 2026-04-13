@@ -154,7 +154,7 @@
                   <div class="fw-bold agro-contratos-value">{{ contrato.valor_total|currencybr or '-' }}</div>
                   <div class="text-muted small agro-contratos-subline">Assinatura: {{ contrato.data_assinatura.strftime('%d/%m/%Y') if contrato.data_assinatura else '-' }}</div>
                   <div class="text-muted small agro-contratos-subline">Area: {{ contrato.area_contratada or '-' }}</div>
-                  <div class="text-muted small agro-contratos-subline">Cultura: {{ contrato.cultura or 'Nao informada' }}</div>
+                  <div class="text-muted small agro-contratos-subline">Culturas: {{ contrato.culturas_formatadas or 'Nao informadas' }}</div>
                 </td>
 
                 <td data-label="Fluxo">
@@ -380,7 +380,7 @@
                 </div>
                 <div>
                   <dt>Cultura</dt>
-                  <dd>{{ contrato.cultura or 'Nao informada' }}</dd>
+                  <dd>{{ contrato.culturas_formatadas or 'Nao informadas' }}</dd>
                 </div>
                 <div>
                   <dt>Area contratada</dt>
@@ -397,6 +397,10 @@
                 <div>
                   <dt>Pulverizacao / ha</dt>
                   <dd>{{ contrato.valor_pulverizacao_ha|currencybr or '-' }}</dd>
+                </div>
+                <div>
+                  <dt>Pulverizacao adicional / ha</dt>
+                  <dd>{{ contrato.valor_pulverizacao_adicional_ha|currencybr or '-' }}</dd>
                 </div>
                 <div>
                   <dt>Prazo para inicio</dt>

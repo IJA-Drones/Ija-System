@@ -134,8 +134,8 @@
                   <div class="fw-semibold agro-orcamentos-main">{{ orcamento.nome_fazenda or "-" }}</div>
                   <div class="text-muted small agro-orcamentos-subline">
                     {{ orcamento.servico or "Serviço não informado" }}
-                    {% if orcamento.cultura %}
-                      <span class="agro-orcamentos-dot">•</span> {{ orcamento.cultura }}
+                    {% if orcamento.culturas_formatadas %}
+                      <span class="agro-orcamentos-dot">•</span> {{ orcamento.culturas_formatadas }}
                     {% endif %}
                   </div>
                 </td>
@@ -299,13 +299,12 @@
                   <dd>{{ orcamento.servico or "-" }}</dd>
                 </div>
                 <div>
-                  <dt>Cultura</dt>
-                  <dd>{{ orcamento.cultura or "NÃ£o informada" }}</dd>
+                  <dt>Culturas</dt>
+                  <dd>{{ orcamento.culturas_formatadas or "Nao informadas" }}</dd>
                 </div>
                 <div>
                   <dt>Area total</dt>
                   <dd>{{ orcamento.area_ha_formatada ~ ' ha' if orcamento.area_ha_formatada else "-" }}</dd>
-                  <dd>{{ orcamento.cultura or "Não informada" }}</dd>
                 </div>
                 <div>
                   <dt>Mapeamento</dt>
@@ -339,6 +338,10 @@
                 <div>
                   <dt>Pulverização / ha</dt>
                   <dd>{{ orcamento.preco_pulverizacao|currencybr if orcamento.inclui_pulverizacao else "-" }}</dd>
+                </div>
+                <div>
+                  <dt>Pulverização adicional / ha</dt>
+                  <dd>{{ orcamento.preco_pulverizacao_adicional|currencybr if orcamento.inclui_pulverizacao_adicional else "-" }}</dd>
                 </div>
               </dl>
             </section>

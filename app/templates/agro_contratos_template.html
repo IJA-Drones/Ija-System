@@ -125,7 +125,7 @@
                 <td data-label="Comercial">
                   <div class="fw-bold">{{ contrato.valor_total|currencybr or '-' }}</div>
                   <div class="text-muted small">Assinatura: {{ contrato.data_assinatura.strftime('%d/%m/%Y') if contrato.data_assinatura else '-' }}</div>
-                  <div class="text-muted small">Cultura: {{ contrato.cultura or 'Não informada' }}</div>
+                  <div class="text-muted small">Culturas: {{ contrato.culturas_formatadas or 'Não informadas' }}</div>
                 </td>
 
                 <td data-label="Template operacional">

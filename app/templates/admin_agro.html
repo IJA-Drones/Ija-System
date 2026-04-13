@@ -138,7 +138,7 @@
                   <div class="text-muted small">{{ orcamento|agro_endereco }}</div>
                 </td>
                 <td>{{ orcamento.nome_fazenda or "-" }}</td>
-                <td>{{ orcamento.cultura or "-" }}</td>
+                <td>{{ orcamento.culturas_formatadas or "-" }}</td>
                 <td>
                   {% if orcamento.mapeamento %}
                     <span class="badge bg-success-subtle text-success border border-success-subtle">Sim</span>
