@@ -624,6 +624,24 @@ class OrcamentoAgro(db.Model):
     preco_mapeamento = db.Column("preco_monitoramento", db.Numeric(12, 2), nullable=False, default=0)
     preco_pulverizacao = db.Column(db.Numeric(12, 2), nullable=False, default=0)
     preco_pulverizacao_adicional = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+    drone_agro_id = db.Column(db.Integer, db.ForeignKey("equipamentos_agro.id"), nullable=True, index=True)
+    drone_mapeamento_agro_id = db.Column(db.Integer, db.ForeignKey("equipamentos_agro.id"), nullable=True, index=True)
+    drone_tipo = db.Column(db.String(50))
+    drone_identificacao = db.Column(db.String(100))
+    drone_modelo = db.Column(db.String(100))
+    drone_funcao_operacional = db.Column(db.String(30))
+    drone_registro_anatel = db.Column(db.String(50))
+    drone_registro_anac = db.Column(db.String(50))
+    drone_capacidade_tanque_l = db.Column(db.Numeric(10, 2))
+    drone_mapeamento_identificacao = db.Column(db.String(100))
+    drone_mapeamento_modelo = db.Column(db.String(100))
+    drone_mapeamento_funcao_operacional = db.Column(db.String(30))
+    drone_mapeamento_registro_anatel = db.Column(db.String(50))
+    drone_mapeamento_registro_anac = db.Column(db.String(50))
+    possui_produto_aplicado = db.Column(db.Boolean, default=False, nullable=False, index=True)
+    produto_aplicado_receituario = db.Column(db.Text)
+    inicio_aplicacao_prevista = db.Column(db.Date, index=True)
+    fim_aplicacao_prevista = db.Column(db.Date, index=True)
 
     cep = db.Column(db.String(9), nullable=False)
     logradouro = db.Column(db.String(150), nullable=False)
@@ -641,6 +659,8 @@ class OrcamentoAgro(db.Model):
 
     prefeitura = db.relationship("Prefeitura", back_populates="orcamentos_agro", lazy="joined")
     cliente = db.relationship("ClienteAgro", back_populates="orcamentos", lazy="joined")
+    drone_agro = db.relationship("EquipamentoAgro", foreign_keys=[drone_agro_id], lazy="joined")
+    drone_mapeamento_agro = db.relationship("EquipamentoAgro", foreign_keys=[drone_mapeamento_agro_id], lazy="joined")
     contrato = db.relationship(
         "ContratoAgro",
         back_populates="orcamento",
@@ -731,6 +751,14 @@ class OrcamentoAgro(db.Model):
         if self.area_ha in (None, ""):
             return ""
         return self._format_decimal_br(self.area_ha)
+
+    @property
+    def estimativa_aplicacao_dias(self):
+        if not self.inicio_aplicacao_prevista or not self.fim_aplicacao_prevista:
+            return None
+        if self.fim_aplicacao_prevista < self.inicio_aplicacao_prevista:
+            return None
+        return (self.fim_aplicacao_prevista - self.inicio_aplicacao_prevista).days + 1
 
     @property
     def valor_mapeamento_total(self):

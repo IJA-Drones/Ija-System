@@ -238,6 +238,7 @@ def _build_contract_page_frame(canvas, doc):
     margin_left = doc.leftMargin
 
     logo = _try_make_agro_logo(width_mm=26)
+
     if logo:
         logo.drawOn(canvas, margin_left, page_height - 40 * mm)
 
@@ -360,7 +361,7 @@ def _build_service_line_items(orcamento):
     if orcamento.inclui_mapeamento:
         line_items.append(
             (
-                "Servico de mapeamento",
+                "Serviço de mapeamento",
                 f"{_money(orcamento.preco_mapeamento)} por ha x {area_label} = {_money(orcamento.valor_mapeamento_total)}",
             )
         )
@@ -368,13 +369,13 @@ def _build_service_line_items(orcamento):
     if orcamento.inclui_pulverizacao:
         line_items.append(
             (
-                "Servico de pulverizacao",
+                "Serviço de pulverização",
                 f"{_money(orcamento.preco_pulverizacao)} por ha x {area_label} = {_money(orcamento.valor_pulverizacao_total)}",
             )
         )
 
     if orcamento.inclui_pulverizacao_adicional:
-        label = "Servico de pulverizacao adicional"
+        label = "Serviço de pulverização adicional"
         if (orcamento.cultura_alternativa or "").strip():
             label += f" ({orcamento.cultura_alternativa.strip()})"
         line_items.append(
@@ -388,7 +389,7 @@ def _build_service_line_items(orcamento):
         )
 
     if not line_items:
-        line_items.append(("Servico contratado", orcamento.servico or "Nao informado"))
+        line_items.append(("Serviço contratado", orcamento.servico or "Não informado"))
 
     return line_items
 
@@ -418,6 +419,40 @@ def _service_breakdown_table(line_items, total_value, item_label_style, item_val
         )
     )
     return table
+
+
+def _orcamento_drone_value(orcamento, snapshot_attr, relation_attr):
+    snapshot_value = getattr(orcamento, snapshot_attr, None)
+    if snapshot_value not in (None, ""):
+        return snapshot_value
+
+    drone = getattr(orcamento, "drone_agro", None)
+    if drone is None:
+        return None
+    return getattr(drone, relation_attr, None)
+
+
+def _orcamento_drone_mapeamento_value(orcamento, snapshot_attr, relation_attr):
+    snapshot_value = getattr(orcamento, snapshot_attr, None)
+    if snapshot_value not in (None, ""):
+        return snapshot_value
+
+    drone = getattr(orcamento, "drone_mapeamento_agro", None)
+    if drone is None:
+        return None
+    return getattr(drone, relation_attr, None)
+
+
+def _format_application_estimate(orcamento):
+    dias = getattr(orcamento, "estimativa_aplicacao_dias", None)
+    inicio = _format_short_date(getattr(orcamento, "inicio_aplicacao_prevista", None))
+    fim = _format_short_date(getattr(orcamento, "fim_aplicacao_prevista", None))
+
+    if dias:
+        return f"{dias} dia(s) - início {inicio} - fim {fim}"
+    if inicio != "-" or fim != "-":
+        return f"Início {inicio} - fim {fim}"
+    return "Não informado"
 
 
 def build_orcamento_agro_pdf(orcamento):
@@ -561,16 +596,16 @@ def build_orcamento_agro_pdf(orcamento):
     )
 
     logo = _try_make_agro_logo()
+    company_document_line = "CNPJ: CNPJ 59.826.603/0001-90 | Av. Bps 1303, Pr\u00e9dio J3 Sala 28 | Itajub\u00e1-MG | CEP 37500-903"
     company_lines = [
         Paragraph("Proposta Comercial Agro", title_style),
         Paragraph("IJA Drones | Tecnologia e Inovação", subtitle_style),
-        Paragraph(f"Documento gerado para apresentação ao cliente. Orçamento #{orcamento.id}.", subtitle_style),
     ]
 
     if logo:
-        header = Table([[logo, company_lines]], colWidths=[46 * mm, 119 * mm])
+        header = Table([[logo, company_lines + [Paragraph(company_document_line, subtitle_style)]]], colWidths=[46 * mm, 119 * mm])
     else:
-        header = Table([[company_lines]], colWidths=[165 * mm])
+        header = Table([[company_lines + [Paragraph(company_document_line, subtitle_style)]]], colWidths=[165 * mm])
     header.setStyle(
         TableStyle(
             [
@@ -607,7 +642,7 @@ def build_orcamento_agro_pdf(orcamento):
     proposal_right = _label_value_table(
         [
             ["Mapeamento", agro_bool_label(orcamento.inclui_mapeamento)],
-            ["Area total", f"{orcamento.area_ha_formatada} ha" if orcamento.area_ha_formatada else "Nao informada"],
+            ["Área total", f"{orcamento.area_ha_formatada} ha" if orcamento.area_ha_formatada else "Não informada"],
             ["Protocolo DECEA", orcamento.protocolo or "Não informado"],
             ["Emissão", orcamento.data_criacao.strftime("%d/%m/%Y às %H:%M") if orcamento.data_criacao else "-"],
             ["Orçamento", f"#{orcamento.id}"],
@@ -661,10 +696,86 @@ def build_orcamento_agro_pdf(orcamento):
         )
     )
 
+    drone_identificacao = _orcamento_drone_value(orcamento, "drone_identificacao", "identificacao")
+    drone_modelo = _orcamento_drone_value(orcamento, "drone_modelo", "modelo")
+    drone_funcao = _orcamento_drone_value(orcamento, "drone_funcao_operacional", "funcao_operacional")
+    drone_registro_anatel = _orcamento_drone_value(orcamento, "drone_registro_anatel", "registro_anatel")
+    drone_registro_anac = _orcamento_drone_value(orcamento, "drone_registro_anac", "registro_anac")
+    drone_mapeamento_identificacao = _orcamento_drone_mapeamento_value(
+        orcamento,
+        "drone_mapeamento_identificacao",
+        "identificacao",
+    )
+    drone_mapeamento_modelo = _orcamento_drone_mapeamento_value(
+        orcamento,
+        "drone_mapeamento_modelo",
+        "modelo",
+    )
+    drone_mapeamento_funcao = _orcamento_drone_mapeamento_value(
+        orcamento,
+        "drone_mapeamento_funcao_operacional",
+        "funcao_operacional",
+    )
+    drone_mapeamento_registro_anatel = _orcamento_drone_mapeamento_value(
+        orcamento,
+        "drone_mapeamento_registro_anatel",
+        "registro_anatel",
+    )
+    drone_mapeamento_registro_anac = _orcamento_drone_mapeamento_value(
+        orcamento,
+        "drone_mapeamento_registro_anac",
+        "registro_anac",
+    )
+
+    produto_aplicado_label = (
+        orcamento.produto_aplicado_receituario
+        if getattr(orcamento, "possui_produto_aplicado", False) and (orcamento.produto_aplicado_receituario or "").strip()
+        else "Não informado"
+    )
+
+    planejamento_rows = [
+        ["Drone previsto", drone_identificacao or "Não informado"],
+        ["Modelo do drone", drone_modelo or "Não informado"],
+        ["Função operacional", drone_funcao or "Não informado"],
+        ["Registro ANATEL", drone_registro_anatel or "Não informado"],
+        ["Registro ANAC", drone_registro_anac or "Não informado"],
+    ]
+    if orcamento.inclui_mapeamento:
+        planejamento_rows.extend(
+            [
+                ["Drone de mapeamento", drone_mapeamento_identificacao or "Não informado"],
+                ["Modelo do drone de mapeamento", drone_mapeamento_modelo or "Não informado"],
+                ["Função operacional do drone de mapeamento", drone_mapeamento_funcao or "Não informado"],
+                ["Registro ANATEL do drone de mapeamento", drone_mapeamento_registro_anatel or "Não informado"],
+                ["Registro ANAC do drone de mapeamento", drone_mapeamento_registro_anac or "Não informado"],
+            ]
+        )
+    planejamento_rows.extend(
+        [
+            ["Produto a ser aplicado / Receituário agronômico", produto_aplicado_label],
+            ["Estimativa de tempo de aplicação (Dias)", _format_application_estimate(orcamento)],
+            ["Início de aplicação", _format_short_date(orcamento.inicio_aplicacao_prevista)],
+            ["Fim de aplicação", _format_short_date(orcamento.fim_aplicacao_prevista)],
+        ]
+    )
+
+    planejamento_table = _label_value_table(
+        planejamento_rows,
+        label_style,
+        value_style,
+        label_width=56 * mm,
+        value_width=109 * mm,
+    )
+
     commercial_note = Table(
         [[
             Paragraph(
-                "Este PDF apresenta os principais dados da proposta e a composição financeira inicial para validação comercial com o cliente. Caso a proposta avance, poderá ser complementado com escopo técnico, prazo, condições de pagamento e observações contratuais.",
+                (
+                    "- Agendamento Mapeamento;<br/>"
+                    "- Envio de mapa (Até 4 dias úteis);<br/>"
+                    "- Agendamento Pulverização;<br/>"
+                    "- Envio do relatório de pulverização (Até 30 dias úteis);"
+                ),
                 note_style,
             )
         ]],
@@ -736,6 +847,9 @@ def build_orcamento_agro_pdf(orcamento):
         Spacer(1, 7 * mm),
         Paragraph("Detalhes operacionais", section_style),
         operational_grid,
+        Spacer(1, 7 * mm),
+        Paragraph("Planejamento da aplicação", section_style),
+        planejamento_table,
         Spacer(1, 7 * mm),
         Paragraph("Observação comercial", section_style),
         commercial_note,
