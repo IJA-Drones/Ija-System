@@ -101,7 +101,17 @@ def get_agenda_google_maps_key():
     return current_app.config.get("Maps_KEY_FRONT") or os.getenv("KEY_API_GOOGLE_MAPS") or ""
 
 
-def build_agenda_query(user, *, filtro_status=None, filtro_uvis_id=None, mes=None, ano=None):
+def build_agenda_query(
+    user,
+    *,
+    filtro_status=None,
+    filtro_uvis_id=None,
+    filtro_tipo_visita=None,
+    filtro_tipo_imovel=None,
+    filtro_foco=None,
+    mes=None,
+    ano=None,
+):
     query = (
         Solicitacao.query
         .options(joinedload(Solicitacao.usuario))
@@ -118,6 +128,15 @@ def build_agenda_query(user, *, filtro_status=None, filtro_uvis_id=None, mes=Non
 
     if filtro_status:
         query = query.filter(Solicitacao.status == filtro_status)
+
+    if filtro_tipo_visita:
+        query = query.filter(Solicitacao.tipo_visita == filtro_tipo_visita)
+
+    if filtro_tipo_imovel:
+        query = query.filter(Solicitacao.tipo_imovel == filtro_tipo_imovel)
+
+    if filtro_foco:
+        query = query.filter(Solicitacao.foco == filtro_foco)
 
     if mes and ano:
         filtro_mesano = f"{ano}-{mes:02d}"
@@ -182,6 +201,13 @@ def build_agenda_eventos(solicitacoes):
                 "color": agenda_status_color(solicitacao.status),
                 "extendedProps": {
                     "foco": solicitacao.foco,
+                    "tipo_visita": solicitacao.tipo_visita,
+                    "tipo_imovel": solicitacao.tipo_imovel,
+                    "tipo_operacao": solicitacao.tipo_operacao,
+                    "altura_voo": solicitacao.altura_voo,
+                    "apoio_cet": "Sim" if solicitacao.apoio_cet else "Não",
+                    "observacao": (solicitacao.observacao or "").strip(),
+                    "protocolo": solicitacao.protocolo,
                     "uvis": uvis_nome,
                     "hora": hora,
                     "status": solicitacao.status,
@@ -236,6 +262,9 @@ def build_agenda_anos_disponiveis(user):
 def build_agenda_context(user, args):
     filtro_status = (args.get("status") or "").strip() or None
     filtro_uvis_id = args.get("uvis_id", type=int)
+    filtro_tipo_visita = (args.get("tipo_visita") or "").strip() or None
+    filtro_tipo_imovel = (args.get("tipo_imovel") or "").strip() or None
+    filtro_foco = (args.get("foco") or "").strip() or None
     mes = args.get("mes", datetime.now().month, type=int)
     ano = args.get("ano", datetime.now().year, type=int)
     d = (args.get("d") or "").strip()
@@ -245,6 +274,9 @@ def build_agenda_context(user, args):
         user,
         filtro_status=filtro_status,
         filtro_uvis_id=filtro_uvis_id,
+        filtro_tipo_visita=filtro_tipo_visita,
+        filtro_tipo_imovel=filtro_tipo_imovel,
+        filtro_foco=filtro_foco,
         mes=mes,
         ano=ano,
     ).all()
@@ -254,6 +286,9 @@ def build_agenda_context(user, args):
         "filtros": {
             "uvis_id": filtro_uvis_id if can_view_all_agenda(user) else None,
             "status": filtro_status,
+            "tipo_visita": filtro_tipo_visita,
+            "tipo_imovel": filtro_tipo_imovel,
+            "foco": filtro_foco,
             "mes": mes,
             "ano": ano,
         },
@@ -347,6 +382,9 @@ def build_agenda_export(user, args):
 
     filtro_status = None if export_all else (args.get("status") or None)
     filtro_uvis_id = None if export_all else args.get("uvis_id", type=int)
+    filtro_tipo_visita = None if export_all else (args.get("tipo_visita") or None)
+    filtro_tipo_imovel = None if export_all else (args.get("tipo_imovel") or None)
+    filtro_foco = None if export_all else (args.get("foco") or None)
     mes = None if export_all else args.get("mes", type=int)
     ano = None if export_all else args.get("ano", type=int)
 
@@ -362,6 +400,12 @@ def build_agenda_export(user, args):
         query = query.filter(Solicitacao.usuario_id == filtro_uvis_id)
     if filtro_status:
         query = query.filter(Solicitacao.status == filtro_status)
+    if filtro_tipo_visita:
+        query = query.filter(Solicitacao.tipo_visita == filtro_tipo_visita)
+    if filtro_tipo_imovel:
+        query = query.filter(Solicitacao.tipo_imovel == filtro_tipo_imovel)
+    if filtro_foco:
+        query = query.filter(Solicitacao.foco == filtro_foco)
     if mes and ano:
         filtro_mesano = f"{ano}-{mes:02d}"
         if db.engine.name == "postgresql":
@@ -386,6 +430,8 @@ def build_agenda_export(user, args):
         "CET",
         "ENDEREÇO DA AÇÃO",
         "CEP",
+        "TIPO DE VISITA",
+        "TIPO DE IMOVEL",
         "FOCO DA AÇÃO",
         "COORDENADA GEOGRÁFICA",
         "Altura dos Voos",
@@ -423,6 +469,8 @@ def build_agenda_export(user, args):
                 cet_txt,
                 endereco_completo,
                 getattr(evento, "cep", "") or "",
+                getattr(evento, "tipo_visita", "") or "",
+                getattr(evento, "tipo_imovel", "") or "",
                 getattr(evento, "foco", "") or "",
                 coordenada,
                 getattr(evento, "altura_voo", "") or "",

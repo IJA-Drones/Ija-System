@@ -34,6 +34,43 @@
         .admin-table-wrap {
             width: 100%;
         }
+        .admin-op-table-wrap {
+            margin-top: 14px;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            border-radius: 14px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.78);
+        }
+        .admin-op-table {
+            width: 100%;
+            margin: 0;
+            border-collapse: collapse;
+        }
+        .admin-op-table th,
+        .admin-op-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+            vertical-align: top;
+            line-height: 1.35;
+        }
+        .admin-op-table tr:last-child th,
+        .admin-op-table tr:last-child td {
+            border-bottom: 0;
+        }
+        .admin-op-table th {
+            width: 148px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--color-text-muted);
+            background: rgba(44, 82, 130, 0.05);
+            white-space: nowrap;
+        }
+        .admin-op-table td {
+            font-size: 0.84rem;
+            font-weight: 700;
+            color: var(--color-text-main);
+            word-break: break-word;
+        }
 
         @media (max-width: 991.98px) {
             .admin-page.container-fluid.py-4 {
@@ -163,6 +200,9 @@
                 <input type="hidden" name="unidade" value="{{ request.args.get('unidade', '') }}">
                 <input type="hidden" name="regiao" value="{{ request.args.get('regiao', '') }}">
                 <input type="hidden" name="apoio_cet" value="{{ request.args.get('apoio_cet', '') }}">
+                <input type="hidden" name="tipo_visita" value="{{ request.args.get('tipo_visita', '') }}">
+                <input type="hidden" name="tipo_imovel" value="{{ request.args.get('tipo_imovel', '') }}">
+                <input type="hidden" name="foco" value="{{ request.args.get('foco', '') }}">
                 <input type="hidden" name="protocolo" value="{{ request.args.get('protocolo', '') }}">
                 <button type="submit" class="btn btn-secondary shadow-sm w-100 d-flex align-items-center justify-content-center gap-2" style="height: 38px;">
                     <i class="bi bi-file-earmark-excel-fill"></i> 
@@ -194,14 +234,14 @@
                 {% if current_user.tipo_usuario == 'admin' %}
                     <span class="admin-context-badge" id="adminContextFilterBadge">UVIS/PREFEITURA</span>
                 {% endif %}
-                {% if request.args.get('status') or request.args.get('unidade') or request.args.get('regiao') or request.args.get('apoio_cet') or request.args.get('protocolo') %}
+                {% if request.args.get('status') or request.args.get('unidade') or request.args.get('regiao') or request.args.get('apoio_cet') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or request.args.get('foco') or request.args.get('protocolo') %}
                     <span class="badge bg-danger rounded-circle p-1" style="width: 8px; height: 8px;"></span>
                 {% endif %}
             </div>
             <i class="bi bi-chevron-down text-muted"></i>
         </div>
 
-        <div class="collapse {% if request.args.get('status') or request.args.get('unidade') or request.args.get('regiao') or request.args.get('apoio_cet') or request.args.get('protocolo') %}show{% endif %}" id="collapseFiltros">
+        <div class="collapse {% if request.args.get('status') or request.args.get('unidade') or request.args.get('regiao') or request.args.get('apoio_cet') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or request.args.get('foco') or request.args.get('protocolo') %}show{% endif %}" id="collapseFiltros">
             <div class="card-body pt-0 pb-4">
                 <form method="GET">
                     <div class="row g-2 align-items-end">
@@ -254,6 +294,33 @@
                         </select>
                         </div>
                         <div class="col-md-3">
+                            <label class="small text-muted">Tipo de Visita:</label>
+                            <select name="tipo_visita" class="form-select form-select-sm">
+                                <option value="">Todos</option>
+                                {% for opcao in solicitacao_tipo_visita_opcoes %}
+                                    <option value="{{ opcao }}" {% if request.args.get('tipo_visita') == opcao %}selected{% endif %}>{{ opcao }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="small text-muted">Tipo de Imovel:</label>
+                            <select name="tipo_imovel" class="form-select form-select-sm">
+                                <option value="">Todos</option>
+                                {% for opcao in solicitacao_tipo_imovel_opcoes %}
+                                    <option value="{{ opcao }}" {% if request.args.get('tipo_imovel') == opcao %}selected{% endif %}>{{ opcao }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="small text-muted">Foco:</label>
+                            <select name="foco" class="form-select form-select-sm">
+                                <option value="">Todos</option>
+                                {% for opcao in solicitacao_filter_foco_opcoes %}
+                                    <option value="{{ opcao }}" {% if request.args.get('foco') == opcao %}selected{% endif %}>{{ opcao }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
                             <label class="small text-muted">Protocolo:</label>
                             <input
                                 type="text"
@@ -265,7 +332,7 @@
                         </div>
                         <div class="col-md-3 admin-filter-actions">
                             <button class="btn btn-success btn-sm w-100 align-items-center justify-content-center" type="submit"><i class="bi bi-search"></i> Filtrar</button>
-                            {% if request.args.get('status') or request.args.get('unidade') or request.args.get('regiao') or request.args.get('apoio_cet') or request.args.get('protocolo') %}
+                            {% if request.args.get('status') or request.args.get('unidade') or request.args.get('regiao') or request.args.get('apoio_cet') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or request.args.get('foco') or request.args.get('protocolo') %}
                                 <a href="{{ url_for(request.endpoint) }}" class="btn btn-outline-secondary btn-sm w-100">
                                     <i class="bi bi-x-lg"></i> Limpar
                                 </a>
@@ -418,23 +485,41 @@
                             </button>
                         </div>
                         {% endif %}
-                        <div class="row gap-2 small mt-3">
-                            <div class="col-6"><span>Tipo de visita:</span> <strong>{{ p.tipo_visita }}</strong></div>
-                            <div class="col-6"><span>Tipo de operação:</span> <strong>{{ p.tipo_operacao if p.tipo_operacao and p.tipo_operacao != 'None' else '--' }}</strong></div>
-                            <div class="col-6"><span>Altura:</span> <strong>{{ p.altura_voo }}</strong></div>
-                            <div class="col-12"><span>Foco:</span> <strong>{{ p.foco }}</strong></div>
-                            <div class="col-6 mt-2">
-                                <span>Apoio CET?</span>
-                                {% if p.apoio_cet %}
-                                    <div class="mt-1">
-                                        <span class="badge bg-success text-light">Sim</span>
-                                    </div>
-                                {% else %}
-                                    <div class="mt-1">
-                                        <span class="badge bg-danger text-light">Não</span>
-                                    </div>
-                                {% endif %}
-                            </div>
+                        <div class="admin-op-table-wrap">
+                            <table class="admin-op-table">
+                                <tbody>
+                                    <tr>
+                                        <th>Tipo de visita</th>
+                                        <td>{{ p.tipo_visita or '--' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Tipo de operação</th>
+                                        <td>{{ p.tipo_operacao if p.tipo_operacao and p.tipo_operacao != 'None' else '--' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Tipo de imovel</th>
+                                        <td>{{ p.tipo_imovel or '--' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Altura</th>
+                                        <td>{{ p.altura_voo or '--' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Foco</th>
+                                        <td>{{ p.foco or '--' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Apoio CET?</th>
+                                        <td>
+                                            {% if p.apoio_cet %}
+                                                <span class="badge bg-success text-light">Sim</span>
+                                            {% else %}
+                                                <span class="badge bg-danger text-light">Não</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                         {% if p.gerada_automaticamente %}
                         <div class="alert alert-info small p-2 mt-3 mb-0">
@@ -443,12 +528,14 @@
                             {% if p.origem_retorno_id %}<div>Solicitação de origem: #{{ p.origem_retorno_id }}</div>{% endif %}
                         </div>
                         {% endif %}
+                        {% if p.observacao %}
                         <div class="mt-3">
-                            <span>Observação</span>
-                            {% if p.observacao %}
-                            <div class=" p-1 border rounded fst-italic small">
+                            <span class="d-block mb-1">Observação</span>
+                            <div class="p-1 border rounded fst-italic small">
                                 {{ p.observacao }}
-                            </div>{% endif %}</div>
+                            </div>
+                        </div>
+                        {% endif %}
                     </td>
 
                     {# COLUNA 3: FORMULÁRIO (SÓ DESKTOP) #}
@@ -611,6 +698,7 @@
                                     <div class="row g-2 small text-muted">
                                         <div class="col-6"><strong>Operação:</strong> {{ p.tipo_operacao if p.tipo_operacao and p.tipo_operacao != 'None' else '--' }}</div>
                                         <div class="col-6"><strong>Visita:</strong> {{ p.tipo_visita }}</div>
+                                        <div class="col-6"><strong>Imovel:</strong> {{ p.tipo_imovel or '--' }}</div>
                                         <div class="col-6"><strong>Alt:</strong> {{ p.altura_voo }}</div>
                                         <div class="col-6"><strong>Foco:</strong> {{ p.foco }}</div>
                                         <div class="col-6">

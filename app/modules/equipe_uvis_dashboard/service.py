@@ -50,6 +50,10 @@ def build_dashboard_equipe_uvis_context(user, args, google_maps_key):
     if filtro_tipo_visita:
         query = query.filter(Solicitacao.tipo_visita == filtro_tipo_visita)
 
+    filtro_tipo_imovel = (args.get("tipo_imovel") or "").strip()
+    if filtro_tipo_imovel:
+        query = query.filter(Solicitacao.tipo_imovel == filtro_tipo_imovel)
+
     filtro_tipo_operacao = (args.get("tipo_operacao") or args.get("operacao") or "").strip()
     if filtro_tipo_operacao:
         query = query.filter(Solicitacao.tipo_operacao == filtro_tipo_operacao)

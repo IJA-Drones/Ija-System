@@ -6,6 +6,22 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/chatbot.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
   <style>
+    .dashboard-list-card {
+      border: 1px solid rgba(44, 82, 130, 0.10) !important;
+      box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+      overflow: hidden;
+      background: rgba(255,255,255,0.97);
+    }
+    .dashboard-list-card .table-light {
+      background: linear-gradient(180deg, #f8fbff 0%, #eff5fc 100%);
+    }
+    .dashboard-list-card tbody tr {
+      transition: transform 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease;
+    }
+    .dashboard-list-card tbody tr:hover {
+      transform: translateY(-1px);
+      box-shadow: inset 0 0 0 999px rgba(44, 82, 130, 0.02);
+    }
     .btn-tracar-rota {
       background-color: #f44336;
       color: white;
@@ -215,7 +231,6 @@
     <i class="bi bi-list-task me-2 text-primary"></i>
     Solicitações da Equipe: <span class="fw-bold">{{ nome_equipe }}</span>
   </h2>
-
   <div class="header-actions">
     <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-dark shadow-sm btn-canceladas">
       <i class="bi bi-arrow-left"></i> Voltar
@@ -233,7 +248,7 @@
           <div class="d-flex align-items-center gap-2">
               <i class="bi bi-funnel-fill text-primary"></i>
               <span class="text-dark">Filtros de Busca</span>
-              {% if request.args.get('status') or request.args.get('tipo_visita') or filtro_tipo_operacao or request.args.get('foco')
+              {% if request.args.get('status') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or filtro_tipo_operacao or request.args.get('foco')
                  or request.args.get('data_ini') or request.args.get('data_fim') %}
                   <span class="badge bg-danger rounded-circle p-1" style="width: 8px; height: 8px;"></span>
               {% endif %}
@@ -241,7 +256,7 @@
           <i class="bi bi-chevron-down text-muted"></i>
       </div>
 
-      <div class="collapse {% if request.args.get('status') or request.args.get('tipo_visita') or filtro_tipo_operacao or request.args.get('foco')
+      <div class="collapse {% if request.args.get('status') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or filtro_tipo_operacao or request.args.get('foco')
          or request.args.get('data_ini') or request.args.get('data_fim') %}show{% endif %}" id="collapseFiltros">
           <div class="card-body pt-0">
               <form method="GET">
@@ -264,9 +279,19 @@
                           <label class="small text-muted mb-1">Filtrar por Tipo de Visita</label>
                           <select name="tipo_visita" class="form-select form-select-sm">
                               <option value="">Todos os tipos</option>
-                              <option value="Aedes" {{ 'selected' if request.args.get('tipo_visita')=='Aedes' else '' }}>Aedes</option>
-                              <option value="Culex" {{ 'selected' if request.args.get('tipo_visita')=='Culex' else '' }}>Culex</option>
-                              <option value="Outro" {{ 'selected' if request.args.get('tipo_visita')=='Outro' else '' }}>Outro</option>
+                              {% for opcao in solicitacao_tipo_visita_opcoes %}
+                                  <option value="{{ opcao }}" {{ 'selected' if request.args.get('tipo_visita') == opcao else '' }}>{{ opcao }}</option>
+                              {% endfor %}
+                          </select>
+                      </div>
+
+                      <div class="col-md-3">
+                          <label class="small text-muted mb-1">Filtrar por Tipo de Imovel</label>
+                          <select name="tipo_imovel" class="form-select form-select-sm">
+                              <option value="">Todos os imoveis</option>
+                              {% for opcao in solicitacao_tipo_imovel_opcoes %}
+                                  <option value="{{ opcao }}" {{ 'selected' if request.args.get('tipo_imovel') == opcao else '' }}>{{ opcao }}</option>
+                              {% endfor %}
                           </select>
                       </div>
 
@@ -283,16 +308,7 @@
                         <label class="small text-muted mb-1">Filtrar por Foco da Ação</label>
                         <select name="foco" class="form-select form-select-sm">
                             <option value="">Todos os Focos</option>
-
-                            {% set opcoes_foco = [
-                                "Acumulador", "CAIXA D'AGUA", "Casa abandonada com inserviveis",
-                                "Corrego", "Ferro velho", "Galpão com inserviveis",
-                                "Imovel com Inserviveis", "Laje/telhado com Acumulo de agua",
-                                "P.E Cadastrado", "Patio com Veiculos", "Piscina",
-                                "Piscinão", "Reciclagem", "Terreno com inserviveis"
-                            ] %}
-
-                            {% for opcao in opcoes_foco %}
+                            {% for opcao in solicitacao_filter_foco_opcoes %}
                                 <option value="{{ opcao }}"
                                     {{ 'selected' if request.args.get('foco') == opcao else '' }}>
                                     {{ opcao }}
@@ -318,7 +334,7 @@
                             <i class="bi bi-funnel me-2"></i> Filtrar
                           </button>
 
-                          {% if request.args.get('status') or request.args.get('tipo_visita') or filtro_tipo_operacao or request.args.get('foco')
+                          {% if request.args.get('status') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or filtro_tipo_operacao or request.args.get('foco')
                              or request.args.get('data_ini') or request.args.get('data_fim') %}
                               <a href="{{ url_for('main.dashboard_equipe_uvis') }}" class="btn btn-outline-secondary btn-sm w-100">
                                   <i class="bi bi-x-lg"></i> Limpar
@@ -332,7 +348,7 @@
       </div>
   </div>
 
-  <div class="card shadow-sm rounded-4 border-0 menu-actions-table-wrap">
+  <div class="card dashboard-list-card shadow-sm rounded-4 border-0 menu-actions-table-wrap">
     <div class="card-body p-0">
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0" style="min-height: 200px;">
@@ -569,12 +585,20 @@
 
           <div class="row g-2 mb-2">
             <div class="col-6">
+              <small class="text-muted d-block">Foco da Ação:</small>
+              <strong>{{ p.foco or '--' }}</strong>
+            </div>
+            <div class="col-6">
               <small class="text-muted d-block">Tipo de Operação:</small>
               <strong class="text-capitalize">{{ p.tipo_operacao if p.tipo_operacao and p.tipo_operacao != 'None' else '--' }}</strong>
             </div>
             <div class="col-6">
               <small class="text-muted d-block">Tipo de Visita:</small>
               <strong class="text-capitalize">{{ p.tipo_visita or '--' }}</strong>
+            </div>
+            <div class="col-6">
+              <small class="text-muted d-block">Tipo de Imovel:</small>
+              <strong>{{ p.tipo_imovel or '--' }}</strong>
             </div>
             <div class="col-6">
               <small class="text-muted d-block">Altura:</small>
