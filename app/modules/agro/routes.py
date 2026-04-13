@@ -8,7 +8,17 @@ from flask_login import current_user, login_required
 from werkzeug.utils import secure_filename
 
 from app.extensions import db
-from app.models import ClienteAgro, ContratoAgro, EquipamentoAgro, EquipeAgro, OrcamentoAgro, OrdemServicoAgro, PilotoAgro, Usuario
+from app.models import (
+    ClienteAgro,
+    ContratoAgro,
+    EquipamentoAgro,
+    EquipeAgro,
+    FinanceiroAgro,
+    OrcamentoAgro,
+    OrdemServicoAgro,
+    PilotoAgro,
+    Usuario,
+)
 from app.modules.agro.exporters import (
     build_contrato_agro_pdf,
     build_orcamento_agro_pdf,
@@ -22,6 +32,8 @@ from app.modules.agro.service import (
     build_contratos_agro_aprovados_query,
     build_clientes_agro_query,
     build_endereco_agro,
+    build_financeiro_agro_defaults,
+    build_financeiro_agro_query,
     build_ordens_servico_agro_query,
     build_orcamentos_agro_query,
     can_access_agro_panel,
@@ -33,6 +45,7 @@ from app.modules.agro.service import (
     save_orcamento_attachment,
     serialize_contrato_agro_form,
     serialize_cliente_agro,
+    serialize_financeiro_agro_form,
     update_orcamento_snapshot_from_cliente,
 )
 from app.shared.access import apply_prefeitura_scope
@@ -48,6 +61,7 @@ AGRO_SERVICO_OPTIONS = (
 
 AGRO_CONTRATO_STATUS_OPTIONS = ContratoAgro.STATUS_OPTIONS
 AGRO_OS_STATUS_OPTIONS = OrdemServicoAgro.STATUS_OPTIONS
+AGRO_FINANCEIRO_STATUS_OPTIONS = FinanceiroAgro.STATUS_OPTIONS
 AGRO_OS_MAP_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg"}
 
 
@@ -130,6 +144,11 @@ def _get_equipamento_agro_or_404(equipamento_id: int):
 def _get_os_agro_or_404(os_id: int):
     query = apply_prefeitura_scope(OrdemServicoAgro.query, current_user, OrdemServicoAgro.prefeitura_id)
     return query.filter(OrdemServicoAgro.id == os_id).first_or_404()
+
+
+def _get_financeiro_agro_or_404(lancamento_id: int):
+    query = apply_prefeitura_scope(FinanceiroAgro.query, current_user, FinanceiroAgro.prefeitura_id)
+    return query.filter(FinanceiroAgro.id == lancamento_id).first_or_404()
 
 
 def _current_user_display_name():
@@ -268,6 +287,19 @@ def _build_os_agro_form_context(
     }
 
 
+def _build_financeiro_agro_form_context(*, modo, form, errors, contratos, lancamento=None):
+    contratos_defaults = {str(contrato.id): build_financeiro_agro_defaults(contrato) for contrato in contratos}
+    return {
+        "modo": modo,
+        "form": form,
+        "errors": errors,
+        "contratos": contratos,
+        "contratos_defaults": contratos_defaults,
+        "status_options": AGRO_FINANCEIRO_STATUS_OPTIONS,
+        "lancamento": lancamento,
+    }
+
+
 def _normalize_cliente_form(form_source):
     return {
         "nome": (form_source.get("nome") or "").strip(),
@@ -279,6 +311,33 @@ def _normalize_cliente_form(form_source):
         "bairro": (form_source.get("bairro") or "").strip(),
         "cidade": (form_source.get("cidade") or "").strip(),
         "uf": (form_source.get("uf") or "").strip().upper(),
+    }
+
+
+def _normalize_financeiro_agro_form(form_source):
+    return {
+        "contrato_agro_id": (form_source.get("contrato_agro_id") or "").strip(),
+        "cliente_nome": (form_source.get("cliente_nome") or "").strip(),
+        "cultura": (form_source.get("cultura") or "").strip(),
+        "data_elaboracao_contrato": (form_source.get("data_elaboracao_contrato") or "").strip(),
+        "data_servico_executado": (form_source.get("data_servico_executado") or "").strip(),
+        "data_vencimento": (form_source.get("data_vencimento") or "").strip(),
+        "data_recebimento": (form_source.get("data_recebimento") or "").strip(),
+        "area_mapeamento_ha": (form_source.get("area_mapeamento_ha") or "").strip(),
+        "valor_mapeamento_ha": (form_source.get("valor_mapeamento_ha") or "").strip(),
+        "total_mapeamento": (form_source.get("total_mapeamento") or "").strip(),
+        "area_pulverizacao_ha": (form_source.get("area_pulverizacao_ha") or "").strip(),
+        "area_pulverizada_real_ha": (form_source.get("area_pulverizada_real_ha") or "").strip(),
+        "valor_pulverizacao_ha": (form_source.get("valor_pulverizacao_ha") or "").strip(),
+        "total_pulverizacao": (form_source.get("total_pulverizacao") or "").strip(),
+        "valor_total_contrato": (form_source.get("valor_total_contrato") or "").strip(),
+        "comissao_por_ha": (form_source.get("comissao_por_ha") or "").strip(),
+        "valor_comissao": (form_source.get("valor_comissao") or "").strip(),
+        "comissao_cooperativa_por_ha": (form_source.get("comissao_cooperativa_por_ha") or "").strip(),
+        "valor_comissao_cooperativa": (form_source.get("valor_comissao_cooperativa") or "").strip(),
+        "forma_recebimento": (form_source.get("forma_recebimento") or "").strip(),
+        "status": (form_source.get("status") or FinanceiroAgro.STATUS_PENDENTE).strip().upper(),
+        "observacoes": (form_source.get("observacoes") or "").strip(),
     }
 
 
@@ -440,6 +499,169 @@ def _calculate_application_days(start_date, end_date):
     if not start_date or not end_date or end_date < start_date:
         return None
     return (end_date - start_date).days + 1
+
+
+def _resolve_financeiro_agro_status(status, data_vencimento, data_recebimento):
+    if status == FinanceiroAgro.STATUS_CANCELADO:
+        return FinanceiroAgro.STATUS_CANCELADO
+    if data_recebimento:
+        return FinanceiroAgro.STATUS_RECEBIDO
+    if data_vencimento and data_vencimento < datetime.now().date():
+        return FinanceiroAgro.STATUS_VENCIDO
+    return FinanceiroAgro.STATUS_PENDENTE
+
+
+def _build_financeiro_agro_summary(lancamentos):
+    total_receber = Decimal("0")
+    total_comissoes = Decimal("0")
+    total_liquido = Decimal("0")
+    total_recebido = Decimal("0")
+
+    for item in lancamentos:
+        total_receber += FinanceiroAgro._decimal_or_zero(item.valor_total_contrato)
+        total_comissoes += FinanceiroAgro._decimal_or_zero(item.total_comissoes)
+        total_liquido += FinanceiroAgro._decimal_or_zero(item.valor_liquido_previsto)
+        if item.status == FinanceiroAgro.STATUS_RECEBIDO:
+            total_recebido += FinanceiroAgro._decimal_or_zero(item.valor_total_contrato)
+
+    return {
+        "total_receber": total_receber,
+        "total_comissoes": total_comissoes,
+        "total_liquido": total_liquido,
+        "total_recebido": total_recebido,
+    }
+
+
+def _validate_financeiro_agro_form(form, contratos):
+    errors = {}
+    contrato = None
+    ordem_servico = None
+
+    contrato_id = _normalize_optional_int(form["contrato_agro_id"])
+    if contrato_id is None:
+        errors["contrato_agro_id"] = "Selecione um contrato agro."
+    else:
+        contrato = next((item for item in contratos if item.id == contrato_id), None)
+        if contrato is None:
+            errors["contrato_agro_id"] = "O contrato selecionado nao foi encontrado."
+
+    if not form["cliente_nome"]:
+        errors["cliente_nome"] = "Informe o nome do cliente."
+
+    data_elaboracao_contrato = _parse_iso_date(form["data_elaboracao_contrato"])
+    if form["data_elaboracao_contrato"] and data_elaboracao_contrato is None:
+        errors["data_elaboracao_contrato"] = "Informe uma data valida."
+
+    data_servico_executado = _parse_iso_date(form["data_servico_executado"])
+    if form["data_servico_executado"] and data_servico_executado is None:
+        errors["data_servico_executado"] = "Informe uma data valida."
+
+    data_vencimento = _parse_iso_date(form["data_vencimento"])
+    if not form["data_vencimento"]:
+        errors["data_vencimento"] = "Informe a data de vencimento."
+    elif data_vencimento is None:
+        errors["data_vencimento"] = "Informe uma data de vencimento valida."
+
+    data_recebimento = _parse_iso_date(form["data_recebimento"])
+    if form["data_recebimento"] and data_recebimento is None:
+        errors["data_recebimento"] = "Informe uma data valida."
+
+    area_mapeamento_ha = _parse_decimal_input(form["area_mapeamento_ha"]) or Decimal("0")
+    valor_mapeamento_ha = parse_currency_br(form["valor_mapeamento_ha"]) or Decimal("0")
+    total_mapeamento = parse_currency_br(form["total_mapeamento"])
+    if form["total_mapeamento"] and total_mapeamento is None:
+        errors["total_mapeamento"] = "Informe um valor monetario valido."
+    if total_mapeamento is None:
+        total_mapeamento = FinanceiroAgro.calcular_total_item(area_mapeamento_ha, valor_mapeamento_ha)
+
+    area_pulverizacao_ha = _parse_decimal_input(form["area_pulverizacao_ha"]) or Decimal("0")
+    area_pulverizada_real_ha = _parse_decimal_input(form["area_pulverizada_real_ha"]) or area_pulverizacao_ha
+    valor_pulverizacao_ha = parse_currency_br(form["valor_pulverizacao_ha"]) or Decimal("0")
+    total_pulverizacao = parse_currency_br(form["total_pulverizacao"])
+    if form["total_pulverizacao"] and total_pulverizacao is None:
+        errors["total_pulverizacao"] = "Informe um valor monetario valido."
+    if total_pulverizacao is None:
+        total_pulverizacao = FinanceiroAgro.calcular_total_item(area_pulverizada_real_ha, valor_pulverizacao_ha)
+
+    valor_total_contrato = parse_currency_br(form["valor_total_contrato"])
+    if form["valor_total_contrato"] and valor_total_contrato is None:
+        errors["valor_total_contrato"] = "Informe um valor monetario valido."
+    if valor_total_contrato is None:
+        valor_total_contrato = (total_mapeamento or Decimal("0")) + (total_pulverizacao or Decimal("0"))
+
+    comissao_por_ha = parse_currency_br(form["comissao_por_ha"]) or Decimal("0")
+    valor_comissao = parse_currency_br(form["valor_comissao"])
+    if form["valor_comissao"] and valor_comissao is None:
+        errors["valor_comissao"] = "Informe um valor monetario valido."
+    if valor_comissao is None:
+        valor_comissao = FinanceiroAgro.calcular_total_comissao(
+            area_pulverizada_real_ha,
+            comissao_por_ha,
+        )
+
+    comissao_cooperativa_por_ha = parse_currency_br(form["comissao_cooperativa_por_ha"]) or Decimal("0")
+    valor_comissao_cooperativa = parse_currency_br(form["valor_comissao_cooperativa"])
+    if form["valor_comissao_cooperativa"] and valor_comissao_cooperativa is None:
+        errors["valor_comissao_cooperativa"] = "Informe um valor monetario valido."
+    if valor_comissao_cooperativa is None:
+        valor_comissao_cooperativa = FinanceiroAgro.calcular_total_comissao(
+            area_pulverizada_real_ha,
+            comissao_cooperativa_por_ha,
+        )
+
+    if form["status"] not in AGRO_FINANCEIRO_STATUS_OPTIONS:
+        errors["status"] = "Selecione um status valido."
+
+    numeric_fields = {
+        "area_mapeamento_ha": area_mapeamento_ha,
+        "valor_mapeamento_ha": valor_mapeamento_ha,
+        "total_mapeamento": total_mapeamento,
+        "area_pulverizacao_ha": area_pulverizacao_ha,
+        "area_pulverizada_real_ha": area_pulverizada_real_ha,
+        "valor_pulverizacao_ha": valor_pulverizacao_ha,
+        "total_pulverizacao": total_pulverizacao,
+        "valor_total_contrato": valor_total_contrato,
+        "comissao_por_ha": comissao_por_ha,
+        "valor_comissao": valor_comissao,
+        "comissao_cooperativa_por_ha": comissao_cooperativa_por_ha,
+        "valor_comissao_cooperativa": valor_comissao_cooperativa,
+    }
+
+    if contrato and contrato.ordens_servico:
+        ordem_servico = max(
+            contrato.ordens_servico,
+            key=lambda item: (item.data_aplicacao or datetime.min.date(), item.id),
+        )
+
+    resolved_status = _resolve_financeiro_agro_status(form["status"], data_vencimento, data_recebimento)
+
+    return (
+        errors,
+        contrato,
+        ordem_servico,
+        data_elaboracao_contrato,
+        data_servico_executado,
+        data_vencimento,
+        data_recebimento,
+        numeric_fields,
+        resolved_status,
+    )
+
+
+def _sync_financeiro_agro_form_numbers(form, numeric_fields, status):
+    form["area_mapeamento_ha"] = _format_decimal_br_value(numeric_fields["area_mapeamento_ha"])
+    form["valor_mapeamento_ha"] = format_currency_br(numeric_fields["valor_mapeamento_ha"])
+    form["total_mapeamento"] = format_currency_br(numeric_fields["total_mapeamento"])
+    form["area_pulverizacao_ha"] = _format_decimal_br_value(numeric_fields["area_pulverizacao_ha"])
+    form["area_pulverizada_real_ha"] = _format_decimal_br_value(numeric_fields["area_pulverizada_real_ha"])
+    form["valor_pulverizacao_ha"] = format_currency_br(numeric_fields["valor_pulverizacao_ha"])
+    form["total_pulverizacao"] = format_currency_br(numeric_fields["total_pulverizacao"])
+    form["valor_total_contrato"] = format_currency_br(numeric_fields["valor_total_contrato"])
+    form["comissao_por_ha"] = format_currency_br(numeric_fields["comissao_por_ha"])
+    form["valor_comissao"] = format_currency_br(numeric_fields["valor_comissao"])
+    form["comissao_cooperativa_por_ha"] = format_currency_br(numeric_fields["comissao_cooperativa_por_ha"])
+    form["valor_comissao_cooperativa"] = format_currency_br(numeric_fields["valor_comissao_cooperativa"])
+    form["status"] = status
 
 
 def _orcamento_servico_inclui_mapeamento(servico):
@@ -2187,6 +2409,236 @@ def register_routes(bp):
             is_admin_agro=getattr(current_user, "tipo_usuario", None) == "admin",
             build_endereco_agro=build_endereco_agro,
         )
+
+    @bp.route("/agro/financeiro", methods=["GET"], endpoint="agro_financeiro_listar")
+    @login_required
+    def agro_financeiro_listar():
+        _require_agro_access()
+
+        q = (request.args.get("q") or "").strip()
+        status = (request.args.get("status") or "").strip().upper()
+        mes = request.args.get("mes", type=int)
+        ano = request.args.get("ano", type=int)
+        contrato_id = request.args.get("contrato_id", type=int)
+
+        if status and status not in AGRO_FINANCEIRO_STATUS_OPTIONS:
+            status = ""
+
+        lancamentos = build_financeiro_agro_query(
+            current_user,
+            q=q,
+            status=status,
+            mes=mes,
+            ano=ano,
+            contrato_id=contrato_id,
+        ).all()
+        contratos = build_contratos_agro_query(current_user).all()
+        resumo = _build_financeiro_agro_summary(lancamentos)
+
+        return render_template(
+            "agro_financeiro_listar.html",
+            lancamentos=lancamentos,
+            contratos=contratos,
+            resumo=resumo,
+            filters={
+                "q": q,
+                "status": status,
+                "mes": mes,
+                "ano": ano,
+                "contrato_id": contrato_id,
+                "total": len(lancamentos),
+            },
+            status_options=AGRO_FINANCEIRO_STATUS_OPTIONS,
+            is_editable=can_edit_agro_panel(current_user),
+        )
+
+    @bp.route("/agro/financeiro/cadastrar", methods=["GET", "POST"], endpoint="agro_financeiro_novo")
+    @login_required
+    def agro_financeiro_novo():
+        _require_agro_edit()
+
+        contratos = build_contratos_agro_query(current_user).all()
+        errors = {}
+
+        if request.method == "POST":
+            form = _normalize_financeiro_agro_form(request.form)
+            (
+                errors,
+                contrato,
+                ordem_servico,
+                data_elaboracao_contrato,
+                data_servico_executado,
+                data_vencimento,
+                data_recebimento,
+                numeric_fields,
+                resolved_status,
+            ) = _validate_financeiro_agro_form(form, contratos)
+            _sync_financeiro_agro_form_numbers(form, numeric_fields, resolved_status)
+
+            if errors:
+                flash("Corrija os campos destacados do financeiro agro.", "warning")
+                return render_template(
+                    "agro_financeiro_form.html",
+                    **_build_financeiro_agro_form_context(
+                        modo="novo",
+                        form=form,
+                        errors=errors,
+                        contratos=contratos,
+                    ),
+                )
+
+            orcamento = contrato.orcamento if contrato else None
+            competencia = data_servico_executado or data_vencimento
+            lancamento = FinanceiroAgro(
+                prefeitura_id=getattr(current_user, "prefeitura_id", None),
+                cliente_agro_id=getattr(orcamento, "cliente_agro_id", None),
+                orcamento_agro_id=getattr(orcamento, "id", None),
+                contrato_agro_id=contrato.id,
+                ordem_servico_agro_id=getattr(ordem_servico, "id", None),
+                cliente_nome=form["cliente_nome"],
+                cultura=form["cultura"] or None,
+                forma_recebimento=form["forma_recebimento"] or None,
+                status=resolved_status,
+                observacoes=form["observacoes"] or None,
+                competencia_mes=getattr(competencia, "month", None),
+                competencia_ano=getattr(competencia, "year", None),
+                data_elaboracao_contrato=data_elaboracao_contrato,
+                data_servico_executado=data_servico_executado,
+                data_vencimento=data_vencimento,
+                data_recebimento=data_recebimento,
+                area_mapeamento_ha=numeric_fields["area_mapeamento_ha"],
+                valor_mapeamento_ha=numeric_fields["valor_mapeamento_ha"],
+                total_mapeamento=numeric_fields["total_mapeamento"],
+                area_pulverizacao_ha=numeric_fields["area_pulverizacao_ha"],
+                area_pulverizada_real_ha=numeric_fields["area_pulverizada_real_ha"],
+                valor_pulverizacao_ha=numeric_fields["valor_pulverizacao_ha"],
+                total_pulverizacao=numeric_fields["total_pulverizacao"],
+                valor_total_contrato=numeric_fields["valor_total_contrato"],
+                comissao_por_ha=numeric_fields["comissao_por_ha"],
+                valor_comissao=numeric_fields["valor_comissao"],
+                comissao_cooperativa_por_ha=numeric_fields["comissao_cooperativa_por_ha"],
+                valor_comissao_cooperativa=numeric_fields["valor_comissao_cooperativa"],
+            )
+            db.session.add(lancamento)
+            db.session.commit()
+
+            flash("Lancamento financeiro agro cadastrado com sucesso.", "success")
+            return redirect(url_for("main.agro_financeiro_listar"))
+
+        contrato_id = request.args.get("contrato_id", type=int)
+        contrato = next((item for item in contratos if item.id == contrato_id), None) if contrato_id else None
+        if contrato is not None:
+            form = build_financeiro_agro_defaults(contrato)
+        else:
+            form = _normalize_financeiro_agro_form({})
+            form["comissao_por_ha"] = format_currency_br(8)
+            form["comissao_cooperativa_por_ha"] = format_currency_br(10)
+            form["status"] = FinanceiroAgro.STATUS_PENDENTE
+
+        return render_template(
+            "agro_financeiro_form.html",
+            **_build_financeiro_agro_form_context(
+                modo="novo",
+                form=form,
+                errors=errors,
+                contratos=contratos,
+            ),
+        )
+
+    @bp.route("/agro/financeiro/<int:lancamento_id>/editar", methods=["GET", "POST"], endpoint="agro_financeiro_editar")
+    @login_required
+    def agro_financeiro_editar(lancamento_id):
+        _require_agro_edit()
+
+        lancamento = _get_financeiro_agro_or_404(lancamento_id)
+        contratos = build_contratos_agro_query(current_user).all()
+        errors = {}
+
+        if request.method == "POST":
+            form = _normalize_financeiro_agro_form(request.form)
+            (
+                errors,
+                contrato,
+                ordem_servico,
+                data_elaboracao_contrato,
+                data_servico_executado,
+                data_vencimento,
+                data_recebimento,
+                numeric_fields,
+                resolved_status,
+            ) = _validate_financeiro_agro_form(form, contratos)
+            _sync_financeiro_agro_form_numbers(form, numeric_fields, resolved_status)
+
+            if errors:
+                flash("Corrija os campos destacados do financeiro agro.", "warning")
+                return render_template(
+                    "agro_financeiro_form.html",
+                    **_build_financeiro_agro_form_context(
+                        modo="editar",
+                        form=form,
+                        errors=errors,
+                        contratos=contratos,
+                        lancamento=lancamento,
+                    ),
+                )
+
+            orcamento = contrato.orcamento if contrato else None
+            competencia = data_servico_executado or data_vencimento
+            lancamento.cliente_agro_id = getattr(orcamento, "cliente_agro_id", None)
+            lancamento.orcamento_agro_id = getattr(orcamento, "id", None)
+            lancamento.contrato_agro_id = contrato.id
+            lancamento.ordem_servico_agro_id = getattr(ordem_servico, "id", None)
+            lancamento.cliente_nome = form["cliente_nome"]
+            lancamento.cultura = form["cultura"] or None
+            lancamento.forma_recebimento = form["forma_recebimento"] or None
+            lancamento.status = resolved_status
+            lancamento.observacoes = form["observacoes"] or None
+            lancamento.competencia_mes = getattr(competencia, "month", None)
+            lancamento.competencia_ano = getattr(competencia, "year", None)
+            lancamento.data_elaboracao_contrato = data_elaboracao_contrato
+            lancamento.data_servico_executado = data_servico_executado
+            lancamento.data_vencimento = data_vencimento
+            lancamento.data_recebimento = data_recebimento
+            lancamento.area_mapeamento_ha = numeric_fields["area_mapeamento_ha"]
+            lancamento.valor_mapeamento_ha = numeric_fields["valor_mapeamento_ha"]
+            lancamento.total_mapeamento = numeric_fields["total_mapeamento"]
+            lancamento.area_pulverizacao_ha = numeric_fields["area_pulverizacao_ha"]
+            lancamento.area_pulverizada_real_ha = numeric_fields["area_pulverizada_real_ha"]
+            lancamento.valor_pulverizacao_ha = numeric_fields["valor_pulverizacao_ha"]
+            lancamento.total_pulverizacao = numeric_fields["total_pulverizacao"]
+            lancamento.valor_total_contrato = numeric_fields["valor_total_contrato"]
+            lancamento.comissao_por_ha = numeric_fields["comissao_por_ha"]
+            lancamento.valor_comissao = numeric_fields["valor_comissao"]
+            lancamento.comissao_cooperativa_por_ha = numeric_fields["comissao_cooperativa_por_ha"]
+            lancamento.valor_comissao_cooperativa = numeric_fields["valor_comissao_cooperativa"]
+            db.session.commit()
+
+            flash("Lancamento financeiro agro atualizado com sucesso.", "success")
+            return redirect(url_for("main.agro_financeiro_listar"))
+
+        form = serialize_financeiro_agro_form(lancamento)
+        return render_template(
+            "agro_financeiro_form.html",
+            **_build_financeiro_agro_form_context(
+                modo="editar",
+                form=form,
+                errors=errors,
+                contratos=contratos,
+                lancamento=lancamento,
+            ),
+        )
+
+    @bp.route("/agro/financeiro/<int:lancamento_id>/deletar", methods=["POST"], endpoint="agro_financeiro_deletar")
+    @login_required
+    def agro_financeiro_deletar(lancamento_id):
+        _require_agro_edit()
+
+        lancamento = _get_financeiro_agro_or_404(lancamento_id)
+        db.session.delete(lancamento)
+        db.session.commit()
+
+        flash("Lancamento financeiro agro excluido com sucesso.", "success")
+        return _redirect_back_to_agro("main.agro_financeiro_listar")
 
     @bp.route("/agro/contratos/template", methods=["GET"], endpoint="agro_contratos_template")
     @login_required

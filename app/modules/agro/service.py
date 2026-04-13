@@ -9,7 +9,16 @@ from sqlalchemy import false, or_
 from sqlalchemy.orm import joinedload, selectinload
 from werkzeug.utils import secure_filename
 
-from app.models import ClienteAgro, ContratoAgro, EquipamentoAgro, EquipeAgro, OrcamentoAgro, OrdemServicoAgro, PilotoAgro
+from app.models import (
+    ClienteAgro,
+    ContratoAgro,
+    EquipamentoAgro,
+    EquipeAgro,
+    FinanceiroAgro,
+    OrcamentoAgro,
+    OrdemServicoAgro,
+    PilotoAgro,
+)
 from app.shared.access import ADMIN_PANEL_EDIT_TYPES, ADMIN_PANEL_VIEW_TYPES, apply_prefeitura_scope, normalize_role
 from app.shared.formatters import format_cep, format_currency_br, format_documento, only_digits
 from app.shared.uploads import get_upload_folder
@@ -191,6 +200,51 @@ def build_ordens_servico_agro_query(user, q: str = "", status: str = "", equipe_
     )
 
 
+def build_financeiro_agro_query(
+    user,
+    q: str = "",
+    status: str = "",
+    mes: int | None = None,
+    ano: int | None = None,
+    contrato_id: int | None = None,
+):
+    query = FinanceiroAgro.query.options(
+        joinedload(FinanceiroAgro.contrato).joinedload(ContratoAgro.orcamento),
+        joinedload(FinanceiroAgro.ordem_servico),
+        joinedload(FinanceiroAgro.cliente),
+    )
+    query = apply_prefeitura_scope(query, user, FinanceiroAgro.prefeitura_id)
+
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            or_(
+                FinanceiroAgro.cliente_nome.ilike(like),
+                FinanceiroAgro.cultura.ilike(like),
+                FinanceiroAgro.forma_recebimento.ilike(like),
+                FinanceiroAgro.observacoes.ilike(like),
+            )
+        )
+
+    if status:
+        query = query.filter(FinanceiroAgro.status == status)
+
+    if mes:
+        query = query.filter(FinanceiroAgro.competencia_mes == mes)
+
+    if ano:
+        query = query.filter(FinanceiroAgro.competencia_ano == ano)
+
+    if contrato_id:
+        query = query.filter(FinanceiroAgro.contrato_agro_id == contrato_id)
+
+    return query.order_by(
+        FinanceiroAgro.data_vencimento.asc(),
+        FinanceiroAgro.criado_em.desc(),
+        FinanceiroAgro.id.desc(),
+    )
+
+
 def get_agro_dashboard_context(user) -> dict:
     clientes_query = apply_prefeitura_scope(ClienteAgro.query, user, ClienteAgro.prefeitura_id)
     orcamentos_query = apply_prefeitura_scope(OrcamentoAgro.query, user, OrcamentoAgro.prefeitura_id)
@@ -199,6 +253,7 @@ def get_agro_dashboard_context(user) -> dict:
     equipes_query = apply_prefeitura_scope(EquipeAgro.query, user, EquipeAgro.prefeitura_id)
     equipamentos_query = apply_prefeitura_scope(EquipamentoAgro.query, user, EquipamentoAgro.prefeitura_id)
     ordens_servico_query = apply_prefeitura_scope(OrdemServicoAgro.query, user, OrdemServicoAgro.prefeitura_id)
+    financeiro_query = apply_prefeitura_scope(FinanceiroAgro.query, user, FinanceiroAgro.prefeitura_id)
 
     return {
         "total_clientes_agro": clientes_query.count(),
@@ -208,6 +263,15 @@ def get_agro_dashboard_context(user) -> dict:
             ContratoAgro.status == ContratoAgro.STATUS_APROVADO
         ).count(),
         "total_ordens_servico_agro": ordens_servico_query.count(),
+        "total_financeiros_agro": financeiro_query.count(),
+        "total_financeiros_agro_pendentes": financeiro_query.filter(
+            FinanceiroAgro.status.in_(
+                (
+                    FinanceiroAgro.STATUS_PENDENTE,
+                    FinanceiroAgro.STATUS_VENCIDO,
+                )
+            )
+        ).count(),
         "total_pilotos_agro": pilotos_query.count(),
         "total_equipes_agro": equipes_query.count(),
         "total_equipamentos_agro": equipamentos_query.count(),
@@ -310,6 +374,111 @@ def serialize_contrato_agro_form(contrato: ContratoAgro) -> dict:
         "data_assinatura": contrato.data_assinatura.isoformat() if contrato.data_assinatura else "",
         "observacoes_adicionais": contrato.observacoes_adicionais or "",
         "status": contrato.status or ContratoAgro.STATUS_EM_ELABORACAO,
+    }
+
+
+def build_financeiro_agro_defaults(contrato: ContratoAgro) -> dict:
+    orcamento = contrato.orcamento
+    latest_os = None
+    if contrato.ordens_servico:
+        latest_os = max(
+            contrato.ordens_servico,
+            key=lambda item: (item.data_aplicacao or datetime.min.date(), item.id),
+        )
+
+    data_referencia = (
+        getattr(latest_os, "data_aplicacao", None)
+        or contrato.data_assinatura
+        or datetime.now().date()
+    )
+    prazo_pagamento = contrato.prazo_pagamento_dias or 0
+    data_vencimento = data_referencia
+    if prazo_pagamento:
+        from datetime import timedelta
+
+        data_vencimento = data_referencia + timedelta(days=prazo_pagamento)
+
+    area_referencia = orcamento.area_ha if orcamento else None
+    area_formatada = format_currency_br(area_referencia).replace("R$ ", "") if area_referencia is not None else ""
+    area_mapeamento = area_formatada if orcamento and orcamento.inclui_mapeamento else ""
+    area_pulverizacao = area_formatada if orcamento and orcamento.inclui_pulverizacao else ""
+    area_real = area_pulverizacao
+
+    total_mapeamento = (
+        format_currency_br(orcamento.valor_mapeamento_total)
+        if orcamento and orcamento.inclui_mapeamento
+        else ""
+    )
+    total_pulverizacao = (
+        format_currency_br(orcamento.valor_pulverizacao_total + orcamento.valor_pulverizacao_adicional_total)
+        if orcamento and orcamento.inclui_pulverizacao
+        else ""
+    )
+
+    area_real_decimal = orcamento.area_ha if orcamento and orcamento.inclui_pulverizacao else 0
+    valor_comissao = format_currency_br(
+        FinanceiroAgro.calcular_total_comissao(area_real_decimal, 8)
+    )
+    valor_comissao_cooperativa = format_currency_br(
+        FinanceiroAgro.calcular_total_comissao(area_real_decimal, 10)
+    )
+
+    return {
+        "contrato_agro_id": str(contrato.id),
+        "cliente_nome": (orcamento.cliente_nome or contrato.contratante_nome or "").strip(),
+        "cultura": ((contrato.culturas_formatadas or getattr(orcamento, "culturas_formatadas", "")) or "").strip(),
+        "data_elaboracao_contrato": contrato.data_assinatura.isoformat() if contrato.data_assinatura else "",
+        "data_servico_executado": latest_os.data_aplicacao.isoformat() if latest_os and latest_os.data_aplicacao else "",
+        "data_vencimento": data_vencimento.isoformat() if data_vencimento else "",
+        "data_recebimento": "",
+        "area_mapeamento_ha": area_mapeamento,
+        "valor_mapeamento_ha": format_currency_br(contrato.valor_mapeamento_ha),
+        "total_mapeamento": total_mapeamento,
+        "area_pulverizacao_ha": area_pulverizacao,
+        "area_pulverizada_real_ha": area_real,
+        "valor_pulverizacao_ha": format_currency_br(
+            (contrato.valor_pulverizacao_ha or 0) + (contrato.valor_pulverizacao_adicional_ha or 0)
+        ),
+        "total_pulverizacao": total_pulverizacao,
+        "valor_total_contrato": format_currency_br(contrato.valor_total),
+        "comissao_por_ha": format_currency_br(8),
+        "valor_comissao": valor_comissao,
+        "comissao_cooperativa_por_ha": format_currency_br(10),
+        "valor_comissao_cooperativa": valor_comissao_cooperativa,
+        "forma_recebimento": "",
+        "status": FinanceiroAgro.STATUS_PENDENTE,
+        "observacoes": "",
+    }
+
+
+def serialize_financeiro_agro_form(lancamento: FinanceiroAgro) -> dict:
+    return {
+        "contrato_agro_id": str(lancamento.contrato_agro_id or ""),
+        "cliente_nome": lancamento.cliente_nome or "",
+        "cultura": lancamento.cultura or "",
+        "data_elaboracao_contrato": (
+            lancamento.data_elaboracao_contrato.isoformat() if lancamento.data_elaboracao_contrato else ""
+        ),
+        "data_servico_executado": (
+            lancamento.data_servico_executado.isoformat() if lancamento.data_servico_executado else ""
+        ),
+        "data_vencimento": lancamento.data_vencimento.isoformat() if lancamento.data_vencimento else "",
+        "data_recebimento": lancamento.data_recebimento.isoformat() if lancamento.data_recebimento else "",
+        "area_mapeamento_ha": format_currency_br(lancamento.area_mapeamento_ha).replace("R$ ", ""),
+        "valor_mapeamento_ha": format_currency_br(lancamento.valor_mapeamento_ha),
+        "total_mapeamento": format_currency_br(lancamento.total_mapeamento),
+        "area_pulverizacao_ha": format_currency_br(lancamento.area_pulverizacao_ha).replace("R$ ", ""),
+        "area_pulverizada_real_ha": format_currency_br(lancamento.area_pulverizada_real_ha).replace("R$ ", ""),
+        "valor_pulverizacao_ha": format_currency_br(lancamento.valor_pulverizacao_ha),
+        "total_pulverizacao": format_currency_br(lancamento.total_pulverizacao),
+        "valor_total_contrato": format_currency_br(lancamento.valor_total_contrato),
+        "comissao_por_ha": format_currency_br(lancamento.comissao_por_ha),
+        "valor_comissao": format_currency_br(lancamento.valor_comissao),
+        "comissao_cooperativa_por_ha": format_currency_br(lancamento.comissao_cooperativa_por_ha),
+        "valor_comissao_cooperativa": format_currency_br(lancamento.valor_comissao_cooperativa),
+        "forma_recebimento": lancamento.forma_recebimento or "",
+        "status": lancamento.status or FinanceiroAgro.STATUS_PENDENTE,
+        "observacoes": lancamento.observacoes or "",
     }
 
 

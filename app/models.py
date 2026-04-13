@@ -21,6 +21,7 @@ class Prefeitura(db.Model):
     orcamentos_agro = db.relationship("OrcamentoAgro", back_populates="prefeitura", lazy="select")
     contratos_agro = db.relationship("ContratoAgro", back_populates="prefeitura", lazy="select")
     ordens_servico_agro = db.relationship("OrdemServicoAgro", back_populates="prefeitura", lazy="select")
+    financeiros_agro = db.relationship("FinanceiroAgro", back_populates="prefeitura", lazy="select")
     pilotos = db.relationship("Pilotos", back_populates="prefeitura", lazy="select")
     pilotos_agro = db.relationship("PilotoAgro", back_populates="prefeitura", lazy="select")
     equipes = db.relationship("Equipe", lazy="select")
@@ -595,6 +596,7 @@ class ClienteAgro(db.Model):
         lazy="select",
         cascade="all, delete-orphan",
     )
+    financeiros = db.relationship("FinanceiroAgro", back_populates="cliente", lazy="select")
 
 
 # -------------------------------------------------------------
@@ -670,6 +672,7 @@ class OrcamentoAgro(db.Model):
         cascade="all, delete-orphan",
     )
     ordens_servico = db.relationship("OrdemServicoAgro", back_populates="orcamento", lazy="select")
+    financeiros = db.relationship("FinanceiroAgro", back_populates="orcamento", lazy="select")
 
     __table_args__ = (
         db.Index("ix_orcamentos_agro_cliente_data", "cliente_agro_id", "data_criacao"),
@@ -858,6 +861,7 @@ class ContratoAgro(db.Model):
     orcamento = db.relationship("OrcamentoAgro", back_populates="contrato", lazy="joined")
     equipe = db.relationship("EquipeAgro", back_populates="contratos", lazy="joined")
     ordens_servico = db.relationship("OrdemServicoAgro", back_populates="contrato", lazy="select")
+    financeiros = db.relationship("FinanceiroAgro", back_populates="contrato", lazy="select")
 
     @property
     def culturas_formatadas(self):
@@ -966,12 +970,118 @@ class OrdemServicoAgro(db.Model):
     piloto = db.relationship("PilotoAgro", back_populates="ordens_servico", lazy="joined")
     drone_pulverizacao = db.relationship("EquipamentoAgro", foreign_keys=[drone_pulverizacao_id], back_populates="ordens_servico_pulverizacao", lazy="joined")
     drone_mapeamento = db.relationship("EquipamentoAgro", foreign_keys=[drone_mapeamento_id], back_populates="ordens_servico_mapeamento", lazy="joined")
+    financeiros = db.relationship("FinanceiroAgro", back_populates="ordem_servico", lazy="select")
 
     __table_args__ = (
         db.Index("ix_os_agro_status_equipe", "status", "equipe_agro_id"),
         db.Index("ix_os_agro_contrato_data", "contrato_agro_id", "data_aplicacao"),
         db.Index("ix_os_agro_piloto_status", "piloto_agro_id", "status"),
     )
+
+
+# -------------------------------------------------------------
+# FINANCEIRO AGRO
+# -------------------------------------------------------------
+class FinanceiroAgro(db.Model):
+    __tablename__ = "financeiro_agro"
+
+    STATUS_PENDENTE = "PENDENTE"
+    STATUS_RECEBIDO = "RECEBIDO"
+    STATUS_VENCIDO = "VENCIDO"
+    STATUS_CANCELADO = "CANCELADO"
+    STATUS_OPTIONS = (
+        STATUS_PENDENTE,
+        STATUS_RECEBIDO,
+        STATUS_VENCIDO,
+        STATUS_CANCELADO,
+    )
+
+    id = db.Column(db.Integer, primary_key=True, index=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
+    cliente_agro_id = db.Column(db.Integer, db.ForeignKey("clientes_agro.id"), nullable=True, index=True)
+    orcamento_agro_id = db.Column(db.Integer, db.ForeignKey("orcamentos_agro.id"), nullable=True, index=True)
+    contrato_agro_id = db.Column(db.Integer, db.ForeignKey("contratos_agro.id"), nullable=False, index=True)
+    ordem_servico_agro_id = db.Column(db.Integer, db.ForeignKey("ordens_servico_agro.id"), nullable=True, index=True)
+
+    cliente_nome = db.Column(db.String(150), nullable=False, index=True)
+    cultura = db.Column(db.String(100), index=True)
+    forma_recebimento = db.Column(db.String(50))
+    status = db.Column(db.String(30), nullable=False, default=STATUS_PENDENTE, index=True)
+    observacoes = db.Column(db.Text)
+
+    competencia_mes = db.Column(db.Integer, index=True)
+    competencia_ano = db.Column(db.Integer, index=True)
+
+    data_elaboracao_contrato = db.Column(db.Date, index=True)
+    data_servico_executado = db.Column(db.Date, index=True)
+    data_vencimento = db.Column(db.Date, nullable=False, index=True)
+    data_recebimento = db.Column(db.Date, index=True)
+
+    area_mapeamento_ha = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+    valor_mapeamento_ha = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+    total_mapeamento = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+
+    area_pulverizacao_ha = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+    area_pulverizada_real_ha = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+    valor_pulverizacao_ha = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+    total_pulverizacao = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+
+    valor_total_contrato = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+
+    comissao_por_ha = db.Column(db.Numeric(12, 2), nullable=False, default=8)
+    valor_comissao = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+
+    comissao_cooperativa_por_ha = db.Column(db.Numeric(12, 2), nullable=False, default=10)
+    valor_comissao_cooperativa = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+
+    criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+    atualizado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True, onupdate=datetime.now)
+
+    prefeitura = db.relationship("Prefeitura", back_populates="financeiros_agro", lazy="joined")
+    cliente = db.relationship("ClienteAgro", back_populates="financeiros", lazy="joined")
+    orcamento = db.relationship("OrcamentoAgro", back_populates="financeiros", lazy="joined")
+    contrato = db.relationship("ContratoAgro", back_populates="financeiros", lazy="joined")
+    ordem_servico = db.relationship("OrdemServicoAgro", back_populates="financeiros", lazy="joined")
+
+    __table_args__ = (
+        db.Index("ix_financeiro_agro_status_vencimento", "status", "data_vencimento"),
+        db.Index("ix_financeiro_agro_competencia", "competencia_ano", "competencia_mes"),
+        db.Index("ix_financeiro_agro_contrato_vencimento", "contrato_agro_id", "data_vencimento"),
+    )
+
+    @staticmethod
+    def _decimal_or_zero(value):
+        if value in (None, ""):
+            return Decimal("0")
+        if isinstance(value, Decimal):
+            return value
+        try:
+            return Decimal(str(value))
+        except (InvalidOperation, ValueError, TypeError):
+            return Decimal("0")
+
+    @classmethod
+    def calcular_total_item(cls, area_ha, valor_por_ha):
+        area = cls._decimal_or_zero(area_ha)
+        valor = cls._decimal_or_zero(valor_por_ha)
+        return (area * valor).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+    @classmethod
+    def calcular_total_comissao(cls, area_ha, valor_por_ha):
+        return cls.calcular_total_item(area_ha, valor_por_ha)
+
+    @property
+    def total_comissoes(self):
+        return (
+            self._decimal_or_zero(self.valor_comissao)
+            + self._decimal_or_zero(self.valor_comissao_cooperativa)
+        ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+    @property
+    def valor_liquido_previsto(self):
+        return (
+            self._decimal_or_zero(self.valor_total_contrato) - self.total_comissoes
+        ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
 # -------------------------------------------------------------

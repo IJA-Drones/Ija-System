@@ -28,6 +28,9 @@
       <a href="{{ url_for('main.admin_agro') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
+      <a href="{{ url_for('main.agro_financeiro_listar') }}" class="btn btn-outline-success d-flex align-items-center gap-2">
+        <i class="bi bi-cash-coin"></i> Financeiro
+      </a>
       <a href="{{ url_for('main.agro_orcamentos_listar') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
         <i class="bi bi-file-earmark-text"></i> Orcamentos
       </a>
@@ -197,6 +200,11 @@
                         </a>
                       </li>
                       {% if is_editable %}
+                        <li>
+                          <a href="{{ url_for('main.agro_financeiro_novo', contrato_id=contrato.id) }}" class="dropdown-item py-2">
+                            <i class="bi bi-cash-stack text-warning me-2"></i> Gerar lancamento financeiro
+                          </a>
+                        </li>
                         <li>
                           <a href="{{ url_for('main.agro_contrato_editar', orcamento_id=contrato.orcamento.id) }}" class="dropdown-item py-2">
                             <i class="bi bi-pencil-square text-success me-2"></i> Editar contrato
