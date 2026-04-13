@@ -771,6 +771,13 @@ def build_orcamento_agro_pdf(orcamento):
         [[
             Paragraph(
                 (
+                    "Serviços inclusos:<br/>"
+                    "<br/>"
+                    "- Mapeamento;<br/>"
+                    "- Geoprocessamento + Relatório de processamento;<br/>"
+                    "- Aplicação;<br/>"
+                    "- Relatório final de pulverização"
+                    "<br/><br/>"
                     "- Agendamento Mapeamento;<br/>"
                     "- Envio de mapa (Até 4 dias úteis);<br/>"
                     "- Agendamento Pulverização;<br/>"
