@@ -28,6 +28,9 @@
     </div>
 
     <div class="d-flex flex-wrap gap-2">
+      <a href="{{ url_for('main.agro_contratos_listar') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
+        <i class="bi bi-file-earmark-text-fill"></i> Contratos Agro
+      </a>
       <a href="{{ url_for('main.agro_cliente_novo') }}" class="btn btn-success d-flex align-items-center gap-2">
         <i class="bi bi-person-plus-fill"></i> Novo Cliente
       </a>
@@ -135,7 +138,7 @@
                   <div class="text-muted small">{{ orcamento|agro_endereco }}</div>
                 </td>
                 <td>{{ orcamento.nome_fazenda or "-" }}</td>
-                <td>{{ orcamento.cultura or "-" }}</td>
+                <td>{{ orcamento.culturas_formatadas or "-" }}</td>
                 <td>
                   {% if orcamento.mapeamento %}
                     <span class="badge bg-success-subtle text-success border border-success-subtle">Sim</span>

@@ -18,6 +18,7 @@ from app.modules.agro.exporters import (
 from app.modules.agro.service import (
     agro_bool_label,
     build_contrato_agro_defaults,
+    build_contratos_agro_query,
     build_contratos_agro_aprovados_query,
     build_clientes_agro_query,
     build_endereco_agro,
@@ -54,6 +55,10 @@ def _query_args_without_page():
     args = request.args.to_dict(flat=True)
     args.pop("page", None)
     return args
+
+
+def _redirect_back_to_agro(default_endpoint: str, **values):
+    return redirect(request.referrer or url_for(default_endpoint, **values))
 
 
 def _require_agro_access():
@@ -284,10 +289,12 @@ def _normalize_orcamento_form(form_source):
         "mapeamento": (form_source.get("mapeamento") or "NAO").strip().upper(),
         "risco_operacional": (form_source.get("risco_operacional") or "").strip(),
         "cultura": (form_source.get("cultura") or "").strip(),
+        "cultura_alternativa": (form_source.get("cultura_alternativa") or "").strip(),
         "protocolo": (form_source.get("protocolo") or "").strip(),
         "area_ha": (form_source.get("area_ha") or "").strip(),
         "preco_mapeamento": (form_source.get("preco_mapeamento") or "").strip(),
         "preco_pulverizacao": (form_source.get("preco_pulverizacao") or "").strip(),
+        "preco_pulverizacao_adicional": (form_source.get("preco_pulverizacao_adicional") or "").strip(),
         "valor_total_calculado": (form_source.get("valor_total_calculado") or "").strip(),
         "cep": format_cep(form_source.get("cep") or ""),
         "logradouro": (form_source.get("logradouro") or "").strip(),
@@ -380,6 +387,13 @@ def _orcamento_mapeamento_ativo(form):
         (form.get("mapeamento") or "").strip().upper() == "SIM"
         or _orcamento_servico_inclui_mapeamento(form.get("servico"))
         or (preco_mapeamento is not None and preco_mapeamento > 0)
+    )
+
+
+def _orcamento_pulverizacao_adicional_ativa(form):
+    preco_pulverizacao_adicional = parse_currency_br(form.get("preco_pulverizacao_adicional"))
+    return bool((form.get("cultura_alternativa") or "").strip()) or (
+        preco_pulverizacao_adicional is not None and preco_pulverizacao_adicional > 0
     )
 
 
@@ -613,8 +627,10 @@ def _validate_orcamento_form(form):
     area_ha = _parse_decimal_input(form.get("area_ha"))
     preco_mapeamento = parse_currency_br(form.get("preco_mapeamento"))
     preco_pulverizacao = parse_currency_br(form.get("preco_pulverizacao"))
+    preco_pulverizacao_adicional = parse_currency_br(form.get("preco_pulverizacao_adicional"))
     mapeamento_ativo = _orcamento_mapeamento_ativo(form)
     pulverizacao_ativa = _orcamento_servico_inclui_pulverizacao(form.get("servico"))
+    pulverizacao_adicional_ativa = _orcamento_pulverizacao_adicional_ativa(form)
     cliente_documento_digits = ""
 
     try:
@@ -676,11 +692,34 @@ def _validate_orcamento_form(form):
     if preco_pulverizacao is None or not pulverizacao_ativa:
         preco_pulverizacao = Decimal("0")
 
+    if len(form["cultura_alternativa"]) > 100:
+        errors["cultura_alternativa"] = "Cultura adicional deve ter no maximo 100 caracteres."
+
+    if form["cultura_alternativa"]:
+        if not form["preco_pulverizacao_adicional"]:
+            errors["preco_pulverizacao_adicional"] = "Informe o preco da pulverizacao adicional por ha."
+        elif preco_pulverizacao_adicional is None:
+            errors["preco_pulverizacao_adicional"] = "Informe um valor monetario valido. Ex.: 1500,00"
+        elif preco_pulverizacao_adicional < 0:
+            errors["preco_pulverizacao_adicional"] = "O preco da pulverizacao adicional nao pode ser negativo."
+    elif form["preco_pulverizacao_adicional"]:
+        if preco_pulverizacao_adicional is None:
+            errors["preco_pulverizacao_adicional"] = "Informe um valor monetario valido. Ex.: 1500,00"
+        elif preco_pulverizacao_adicional < 0:
+            errors["preco_pulverizacao_adicional"] = "O preco da pulverizacao adicional nao pode ser negativo."
+        else:
+            errors["cultura_alternativa"] = "Informe a cultura adicional para usar a pulverizacao adicional."
+
+    if preco_pulverizacao_adicional is None or not pulverizacao_adicional_ativa:
+        preco_pulverizacao_adicional = Decimal("0")
+
     valor_total_calculado = OrcamentoAgro.calcular_valor_total(
         area_ha,
         preco_pulverizacao,
         preco_mapeamento,
         mapeamento_ativo=mapeamento_ativo,
+        preco_pulverizacao_adicional=preco_pulverizacao_adicional,
+        pulverizacao_adicional_ativa=pulverizacao_adicional_ativa,
     )
 
     if (
@@ -721,6 +760,7 @@ def _validate_orcamento_form(form):
         valor_total_calculado,
         preco_mapeamento,
         preco_pulverizacao,
+        preco_pulverizacao_adicional,
         mapeamento_ativo,
     )
 
@@ -751,10 +791,12 @@ def _normalize_contrato_form(form_source):
         "propriedade_uf": (form_source.get("propriedade_uf") or "").strip().upper(),
         "descricao_servico": (form_source.get("descricao_servico") or "").strip(),
         "cultura": (form_source.get("cultura") or "").strip(),
+        "cultura_alternativa": (form_source.get("cultura_alternativa") or "").strip(),
         "area_contratada": (form_source.get("area_contratada") or "").strip(),
         "valor_total": (form_source.get("valor_total") or "").strip(),
         "valor_mapeamento_ha": (form_source.get("valor_mapeamento_ha") or "").strip(),
         "valor_pulverizacao_ha": (form_source.get("valor_pulverizacao_ha") or "").strip(),
+        "valor_pulverizacao_adicional_ha": (form_source.get("valor_pulverizacao_adicional_ha") or "").strip(),
         "prazo_inicio_dias": (form_source.get("prazo_inicio_dias") or "").strip(),
         "prazo_pagamento_dias": (form_source.get("prazo_pagamento_dias") or "").strip(),
         "cidade_assinatura": (form_source.get("cidade_assinatura") or "").strip(),
@@ -819,11 +861,18 @@ def _validate_contrato_form(form):
     valor_total = parse_currency_br(form["valor_total"])
     valor_mapeamento_ha = parse_currency_br(form["valor_mapeamento_ha"]) if form["valor_mapeamento_ha"] else 0
     valor_pulverizacao_ha = parse_currency_br(form["valor_pulverizacao_ha"]) if form["valor_pulverizacao_ha"] else 0
+    valor_pulverizacao_adicional_ha = (
+        parse_currency_br(form["valor_pulverizacao_adicional_ha"]) if form["valor_pulverizacao_adicional_ha"] else 0
+    )
 
     if form["area_contratada"] and area_contratada_decimal is None:
         errors["area_contratada"] = "Informe uma area contratada valida. Ex.: 59,27 ha"
 
-    valores_por_ha = (valor_mapeamento_ha or 0) + (valor_pulverizacao_ha or 0)
+    valores_por_ha = (
+        (valor_mapeamento_ha or 0)
+        + (valor_pulverizacao_ha or 0)
+        + (valor_pulverizacao_adicional_ha or 0)
+    )
     if valor_total is None and area_contratada_decimal is not None and valores_por_ha > 0:
         valor_total = area_contratada_decimal * valores_por_ha
 
@@ -843,6 +892,27 @@ def _validate_contrato_form(form):
         errors["valor_pulverizacao_ha"] = "Informe um valor monetario valido. Ex.: 1500,00"
     elif valor_pulverizacao_ha is not None and valor_pulverizacao_ha < 0:
         errors["valor_pulverizacao_ha"] = "O valor da pulverizacao nao pode ser negativo."
+
+    if len(form["cultura"]) > 100:
+        errors["cultura"] = "Cultura deve ter no maximo 100 caracteres."
+
+    if len(form["cultura_alternativa"]) > 100:
+        errors["cultura_alternativa"] = "Cultura adicional deve ter no maximo 100 caracteres."
+
+    if form["cultura_alternativa"]:
+        if not form["valor_pulverizacao_adicional_ha"]:
+            errors["valor_pulverizacao_adicional_ha"] = "Informe o valor da pulverizacao adicional por ha."
+        elif valor_pulverizacao_adicional_ha is None:
+            errors["valor_pulverizacao_adicional_ha"] = "Informe um valor monetario valido. Ex.: 1500,00"
+        elif valor_pulverizacao_adicional_ha < 0:
+            errors["valor_pulverizacao_adicional_ha"] = "O valor da pulverizacao adicional nao pode ser negativo."
+    elif form["valor_pulverizacao_adicional_ha"]:
+        if valor_pulverizacao_adicional_ha is None:
+            errors["valor_pulverizacao_adicional_ha"] = "Informe um valor monetario valido. Ex.: 1500,00"
+        elif valor_pulverizacao_adicional_ha < 0:
+            errors["valor_pulverizacao_adicional_ha"] = "O valor da pulverizacao adicional nao pode ser negativo."
+        else:
+            errors["cultura_alternativa"] = "Informe a cultura adicional para usar a pulverizacao adicional."
 
     try:
         prazo_inicio_dias = int(form["prazo_inicio_dias"])
@@ -875,6 +945,7 @@ def _validate_contrato_form(form):
         valor_total,
         valor_mapeamento_ha or 0,
         valor_pulverizacao_ha or 0,
+        valor_pulverizacao_adicional_ha or 0,
         prazo_inicio_dias,
         prazo_pagamento_dias,
         data_assinatura,
@@ -933,12 +1004,18 @@ def _build_contrato_agro_draft(orcamento):
         propriedade_bairro=orcamento.bairro or "",
         propriedade_cidade=orcamento.cidade or "",
         propriedade_uf=orcamento.uf or "",
-        descricao_servico=(f"{orcamento.servico} na cultura de {orcamento.cultura}" if orcamento.cultura else (orcamento.servico or "Prestacao de servicos agro")),
+        descricao_servico=(
+            f"{orcamento.servico} na cultura de {orcamento.culturas_formatadas}"
+            if orcamento.culturas_formatadas
+            else (orcamento.servico or "Prestacao de servicos agro")
+        ),
         cultura=orcamento.cultura or None,
+        cultura_alternativa=orcamento.cultura_alternativa or None,
         area_contratada=orcamento.area_ha_formatada or None,
         valor_total=orcamento.valor_total_calculado or 0,
         valor_mapeamento_ha=orcamento.preco_mapeamento or 0,
         valor_pulverizacao_ha=orcamento.preco_pulverizacao or 0,
+        valor_pulverizacao_adicional_ha=orcamento.preco_pulverizacao_adicional or 0,
         prazo_inicio_dias=10,
         prazo_pagamento_dias=10,
         cidade_assinatura="São Paulo",
@@ -996,7 +1073,7 @@ def _build_os_agro_defaults(contrato):
         "drone_mapeamento_id": "",
         "cliente_nome": (orcamento.cliente_nome or contrato.contratante_nome or "").strip(),
         "propriedade_nome": (contrato.propriedade_nome or orcamento.nome_fazenda or "").strip(),
-        "cultura": (contrato.cultura or orcamento.cultura or "").strip(),
+        "cultura": (contrato.culturas_formatadas or orcamento.culturas_formatadas or "").strip(),
         "servico": (orcamento.servico or "").strip(),
         "protocolo": (orcamento.protocolo or "").strip(),
         "cidade_operacao": (contrato.propriedade_cidade or orcamento.cidade or "").strip(),
@@ -1551,6 +1628,7 @@ def register_routes(bp):
                 valor_total_calculado,
                 preco_mapeamento,
                 preco_pulverizacao,
+                preco_pulverizacao_adicional,
                 mapeamento_ativo,
             ) = _validate_orcamento_form(form)
             form["elaborado_por_nome"] = form.get("elaborado_por_nome") or _current_user_display_name()
@@ -1577,11 +1655,13 @@ def register_routes(bp):
                 mapeamento=mapeamento_ativo,
                 risco_operacional=form["risco_operacional"] or None,
                 cultura=form["cultura"] or None,
+                cultura_alternativa=form["cultura_alternativa"] or None,
                 protocolo=form["protocolo"] or None,
                 area_ha=area_ha,
                 preco_base=valor_total_calculado,
                 preco_mapeamento=preco_mapeamento,
                 preco_pulverizacao=preco_pulverizacao,
+                preco_pulverizacao_adicional=preco_pulverizacao_adicional,
             )
             orcamento.cep = cep_digits
             orcamento.logradouro = form["logradouro"]
@@ -1644,6 +1724,7 @@ def register_routes(bp):
                 valor_total_calculado,
                 preco_mapeamento,
                 preco_pulverizacao,
+                preco_pulverizacao_adicional,
                 mapeamento_ativo,
             ) = _validate_orcamento_form(form)
             form["elaborado_por_nome"] = (
@@ -1672,11 +1753,13 @@ def register_routes(bp):
             orcamento.mapeamento = mapeamento_ativo
             orcamento.risco_operacional = form["risco_operacional"] or None
             orcamento.cultura = form["cultura"] or None
+            orcamento.cultura_alternativa = form["cultura_alternativa"] or None
             orcamento.protocolo = form["protocolo"] or None
             orcamento.area_ha = area_ha
             orcamento.preco_base = valor_total_calculado
             orcamento.preco_mapeamento = preco_mapeamento
             orcamento.preco_pulverizacao = preco_pulverizacao
+            orcamento.preco_pulverizacao_adicional = preco_pulverizacao_adicional
             orcamento.cep = cep_digits
             orcamento.logradouro = form["logradouro"]
             orcamento.numero = form["numero"]
@@ -1717,10 +1800,12 @@ def register_routes(bp):
             "mapeamento": "SIM" if orcamento.inclui_mapeamento else "NAO",
             "risco_operacional": orcamento.risco_operacional or "",
             "cultura": orcamento.cultura or "",
+            "cultura_alternativa": orcamento.cultura_alternativa or "",
             "protocolo": orcamento.protocolo or "",
             "area_ha": orcamento.area_ha_formatada,
             "preco_mapeamento": format_currency_br(orcamento.preco_mapeamento),
             "preco_pulverizacao": format_currency_br(orcamento.preco_pulverizacao),
+            "preco_pulverizacao_adicional": format_currency_br(orcamento.preco_pulverizacao_adicional),
             "valor_total_calculado": format_currency_br(orcamento.valor_total_calculado),
             "cep": format_cep(orcamento.cep or ""),
             "logradouro": orcamento.logradouro or "",
@@ -1760,6 +1845,7 @@ def register_routes(bp):
                 valor_total,
                 valor_mapeamento_ha,
                 valor_pulverizacao_ha,
+                valor_pulverizacao_adicional_ha,
                 prazo_inicio_dias,
                 prazo_pagamento_dias,
                 data_assinatura,
@@ -1804,10 +1890,12 @@ def register_routes(bp):
             contrato.propriedade_uf = form["propriedade_uf"]
             contrato.descricao_servico = form["descricao_servico"]
             contrato.cultura = form["cultura"] or None
+            contrato.cultura_alternativa = form["cultura_alternativa"] or None
             contrato.area_contratada = form["area_contratada"] or None
             contrato.valor_total = valor_total
             contrato.valor_mapeamento_ha = valor_mapeamento_ha
             contrato.valor_pulverizacao_ha = valor_pulverizacao_ha
+            contrato.valor_pulverizacao_adicional_ha = valor_pulverizacao_adicional_ha
             contrato.prazo_inicio_dias = prazo_inicio_dias
             contrato.prazo_pagamento_dias = prazo_pagamento_dias
             contrato.cidade_assinatura = form["cidade_assinatura"]
@@ -1845,6 +1933,47 @@ def register_routes(bp):
             status_options=AGRO_CONTRATO_STATUS_OPTIONS,
         )
 
+    @bp.route("/agro/contratos", methods=["GET"], endpoint="agro_contratos_listar")
+    @login_required
+    def agro_contratos_listar():
+        _require_agro_access()
+
+        q = (request.args.get("q") or "").strip()
+        status = (request.args.get("status") or "").strip().upper()
+        if status and status not in AGRO_CONTRATO_STATUS_OPTIONS:
+            status = ""
+
+        equipe_id = request.args.get("equipe_id", type=int)
+        page = request.args.get("page", 1, type=int)
+        per_page = 12
+
+        query = build_contratos_agro_query(current_user, q=q, status=status, equipe_id=equipe_id)
+        total = query.count()
+        total_pages = max(1, math.ceil(total / per_page))
+        page = min(max(1, page), total_pages)
+        contratos = query.offset((page - 1) * per_page).limit(per_page).all()
+        equipes_ativas = _build_agro_equipes_ativas()
+
+        return render_template(
+            "agro_contratos_listar.html",
+            contratos=contratos,
+            equipes_ativas=equipes_ativas,
+            latest_os_by_contrato=_build_latest_os_by_contrato(contratos),
+            filters={
+                "q": q,
+                "status": status,
+                "equipe_id": equipe_id,
+                "page": page,
+                "total": total,
+                "total_pages": total_pages,
+            },
+            pagination_args=_query_args_without_page(),
+            status_options=AGRO_CONTRATO_STATUS_OPTIONS,
+            is_editable=can_edit_agro_panel(current_user),
+            is_admin_agro=getattr(current_user, "tipo_usuario", None) == "admin",
+            build_endereco_agro=build_endereco_agro,
+        )
+
     @bp.route("/agro/contratos/template", methods=["GET"], endpoint="agro_contratos_template")
     @login_required
     def agro_contratos_template():
@@ -1876,14 +2005,14 @@ def register_routes(bp):
         if errors:
             for message in errors.values():
                 flash(message, "warning")
-            return redirect(url_for("main.agro_contratos_template"))
+            return _redirect_back_to_agro("main.agro_contratos_template")
 
         contrato.status = form["status"]
         contrato.equipe_agro_id = equipe_id
         db.session.commit()
 
         flash("Template operacional do contrato atualizado com sucesso.", "success")
-        return redirect(url_for("main.agro_contratos_template"))
+        return _redirect_back_to_agro("main.agro_contratos_template")
 
     @bp.route("/agro/contratos/<int:contrato_id>/deletar", methods=["POST"], endpoint="agro_contrato_deletar")
     @login_required
@@ -1892,12 +2021,12 @@ def register_routes(bp):
         contrato = _get_contrato_agro_or_404(contrato_id)
         if contrato.ordens_servico:
             flash("Este contrato possui OS Agro vinculada(s). Exclua primeiro as OS para remover o contrato.", "warning")
-            return redirect(url_for("main.agro_contratos_template"))
+            return _redirect_back_to_agro("main.agro_contratos_template")
 
         db.session.delete(contrato)
         db.session.commit()
         flash("Contrato agro removido com sucesso.", "success")
-        return redirect(url_for("main.agro_contratos_template"))
+        return _redirect_back_to_agro("main.agro_contratos_template")
 
     @bp.route("/agro/orcamentos/<int:orcamento_id>/anexo", endpoint="agro_orcamento_anexo")
     @login_required

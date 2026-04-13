@@ -162,26 +162,73 @@ def _build_os_report_page_frame(canvas, doc):
 
 
 def _ensure_contract_fonts():
-    fonts_dir = os.path.join(os.environ.get("WINDIR", "C:\\Windows"), "Fonts")
-    font_specs = {
-        "AgroArial": "arial.ttf",
-        "AgroArialBold": "arialbd.ttf",
-        "AgroArialItalic": "ariali.ttf",
-        "AgroArialBoldItalic": "arialbi.ttf",
+    font_candidates = {
+        "AgroArial": ["arial.ttf", "Arial.ttf", "LiberationSans-Regular.ttf", "DejaVuSans.ttf"],
+        "AgroArialBold": ["arialbd.ttf", "Arial Bold.ttf", "LiberationSans-Bold.ttf", "DejaVuSans-Bold.ttf"],
+        "AgroArialItalic": ["ariali.ttf", "Arial Italic.ttf", "LiberationSans-Italic.ttf", "DejaVuSans-Oblique.ttf"],
+        "AgroArialBoldItalic": ["arialbi.ttf", "Arial Bold Italic.ttf", "LiberationSans-BoldItalic.ttf", "DejaVuSans-BoldOblique.ttf"],
     }
-    for font_name, file_name in font_specs.items():
-        if font_name in pdfmetrics.getRegisteredFontNames():
+    search_dirs = [
+        os.path.join(os.environ.get("WINDIR", "C:\\Windows"), "Fonts"),
+        os.path.join(current_app.root_path, "static", "fonts"),
+        "/usr/share/fonts",
+        "/usr/local/share/fonts",
+    ]
+
+    registered_variants = {}
+    for font_name, file_names in font_candidates.items():
+        if _font_is_available(font_name):
+            registered_variants[font_name] = True
             continue
-        font_path = os.path.join(fonts_dir, file_name)
-        if os.path.exists(font_path):
-            pdfmetrics.registerFont(TTFont(font_name, font_path))
-    pdfmetrics.registerFontFamily(
-        "AgroArial",
-        normal="AgroArial",
-        bold="AgroArialBold",
-        italic="AgroArialItalic",
-        boldItalic="AgroArialBoldItalic",
-    )
+
+        registered = False
+        for base_dir in search_dirs:
+            if not base_dir or not os.path.exists(base_dir):
+                continue
+            for root, _dirs, files in os.walk(base_dir):
+                lower_files = {file_name.lower(): file_name for file_name in files}
+                match_name = next((lower_files.get(candidate.lower()) for candidate in file_names), None)
+                if not match_name:
+                    continue
+                try:
+                    pdfmetrics.registerFont(TTFont(font_name, os.path.join(root, match_name)))
+                    registered = True
+                    break
+                except Exception:
+                    continue
+            if registered:
+                break
+        registered_variants[font_name] = registered
+
+    if all(registered_variants.get(font_name) for font_name in font_candidates):
+        pdfmetrics.registerFontFamily(
+            "AgroArial",
+            normal="AgroArial",
+            bold="AgroArialBold",
+            italic="AgroArialItalic",
+            boldItalic="AgroArialBoldItalic",
+        )
+
+
+def _font_is_available(font_name):
+    try:
+        pdfmetrics.getFont(font_name)
+        return True
+    except Exception:
+        return False
+
+
+def _contract_font(style_name):
+    fallback_map = {
+        "regular": ("AgroArial", "Helvetica"),
+        "bold": ("AgroArialBold", "Helvetica-Bold"),
+        "italic": ("AgroArialItalic", "Helvetica-Oblique"),
+        "bold_italic": ("AgroArialBoldItalic", "Helvetica-BoldOblique"),
+    }
+    for font_name in fallback_map[style_name]:
+        if _font_is_available(font_name):
+            return font_name
+    return fallback_map[style_name][-1]
 
 
 def _build_contract_page_frame(canvas, doc):
@@ -195,7 +242,7 @@ def _build_contract_page_frame(canvas, doc):
         logo.drawOn(canvas, margin_left, page_height - 40 * mm)
 
     canvas.setFillColor(CONTRACT_BLUE)
-    canvas.setFont("AgroArialBoldItalic", 12)
+    canvas.setFont(_contract_font("bold_italic"), 12)
     canvas.drawString(
         margin_left + 34 * mm,
         page_height - 34.6 * mm,
@@ -203,7 +250,7 @@ def _build_contract_page_frame(canvas, doc):
     )
 
     canvas.setFillColor(colors.black)
-    canvas.setFont("AgroArial", 9)
+    canvas.setFont(_contract_font("regular"), 9)
     canvas.drawCentredString(page_width / 2, 9 * mm, str(canvas.getPageNumber()))
 
     canvas.restoreState()
@@ -323,6 +370,20 @@ def _build_service_line_items(orcamento):
             (
                 "Servico de pulverizacao",
                 f"{_money(orcamento.preco_pulverizacao)} por ha x {area_label} = {_money(orcamento.valor_pulverizacao_total)}",
+            )
+        )
+
+    if orcamento.inclui_pulverizacao_adicional:
+        label = "Servico de pulverizacao adicional"
+        if (orcamento.cultura_alternativa or "").strip():
+            label += f" ({orcamento.cultura_alternativa.strip()})"
+        line_items.append(
+            (
+                label,
+                (
+                    f"{_money(orcamento.preco_pulverizacao_adicional)} por ha x "
+                    f"{area_label} = {_money(orcamento.valor_pulverizacao_adicional_total)}"
+                ),
             )
         )
 
@@ -481,6 +542,14 @@ def build_orcamento_agro_pdf(orcamento):
         textColor=TEXT_MUTED,
         alignment=1,
     )
+    signature_date_bold_style = ParagraphStyle(
+        "AgroPdfSignatureDateBold",
+        parent=signature_date_style,
+        fontName="Helvetica-Bold",
+        fontSize=9.5,
+        leading=12.5,
+        textColor=TEXT_MAIN,
+    )
     signature_name_style = ParagraphStyle(
         "AgroPdfSignatureName",
         parent=styles["BodyText"],
@@ -528,7 +597,7 @@ def build_orcamento_agro_pdf(orcamento):
             ["Cliente", orcamento.cliente_nome],
             ["Fazenda", orcamento.nome_fazenda],
             ["Serviço", orcamento.servico or "Não informado"],
-            ["Cultura", orcamento.cultura or "Não informada"],
+            ["Culturas", orcamento.culturas_formatadas or "Não informadas"],
         ],
         label_style,
         value_style,
@@ -633,7 +702,28 @@ def build_orcamento_agro_pdf(orcamento):
             ]
         )
     )
-    emissao_orcamento = orcamento.data_criacao.strftime("%d/%m/%Y Ã s %H:%M") if orcamento.data_criacao else "-"
+    emissao_orcamento = orcamento.data_criacao.strftime("%d/%m/%Y as %H:%M. Válido somente dentro do prazo de 10 dias a partir da emissão.") if orcamento.data_criacao else "-"
+    assinatura_footer = Table(
+        [
+            [Paragraph(f"<b>Emitido em {escape(emissao_orcamento)}</b>", signature_date_bold_style)],
+            [assinatura_wrapper],
+        ],
+        colWidths=[165 * mm],
+        rowHeights=[10 * mm, 42 * mm],
+    )
+    assinatura_footer.setStyle(
+        TableStyle(
+            [
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("VALIGN", (0, 0), (-1, 0), "TOP"),
+                ("VALIGN", (0, 1), (-1, 1), "BOTTOM"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                ("TOPPADDING", (0, 0), (-1, -1), 0),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+            ]
+        )
+    )
 
     story = [
         header,
@@ -649,10 +739,8 @@ def build_orcamento_agro_pdf(orcamento):
         Spacer(1, 7 * mm),
         Paragraph("Observação comercial", section_style),
         commercial_note,
-        Spacer(1, 10 * mm),
-        Paragraph(f"Emitido em {emissao_orcamento}", signature_date_style),
         Spacer(1, 8 * mm),
-        assinatura_wrapper,
+        assinatura_footer,
     ]
 
     doc.build(story, onFirstPage=_build_page_frame, onLaterPages=_build_page_frame)
@@ -1266,11 +1354,11 @@ def _normalize_contract_service_label(contrato, orcamento):
 
 def _build_contract_service_item(contrato, orcamento):
     label = _normalize_contract_service_label(contrato, orcamento)
-    cultura = (contrato.cultura or "").strip().lower()
+    culturas = (getattr(contrato, "culturas_formatadas", "") or "").strip().lower()
     area = (contrato.area_contratada or "").strip()
     texto = f"Serviço 01 {label}"
-    if cultura:
-        texto += f" de {cultura}"
+    if culturas:
+        texto += f" de {culturas}"
     if area:
         area_lower = area.lower()
         if area_lower.endswith((" ha", " ha.", "ha", "ha.", " hectare", " hectares", "hectare", "hectares")):
@@ -1287,6 +1375,11 @@ def _build_financial_items(contrato, orcamento):
         itens.append(("Serviço de Mapeamento", contrato.valor_mapeamento_ha))
     if _decimal(contrato.valor_pulverizacao_ha) > 0:
         itens.append(("Serviço de Pulverização", contrato.valor_pulverizacao_ha))
+    if _decimal(contrato.valor_pulverizacao_adicional_ha) > 0:
+        label = "Serviço de Pulverização Adicional"
+        if (contrato.cultura_alternativa or "").strip():
+            label += f" ({contrato.cultura_alternativa.strip()})"
+        itens.append((label, contrato.valor_pulverizacao_adicional_ha))
     if not itens:
         valor_referencia = contrato.valor_total
         itens.append((f"Serviço de {servico_base}", valor_referencia))
@@ -1387,7 +1480,7 @@ def build_contrato_agro_pdf(contrato):
     title_style = ParagraphStyle(
         "AgroContractTitle",
         parent=styles["BodyText"],
-        fontName="AgroArialBold",
+        fontName=_contract_font("bold"),
         fontSize=16,
         leading=18.5,
         textColor=CONTRACT_BLUE,
@@ -1397,7 +1490,7 @@ def build_contrato_agro_pdf(contrato):
     section_style = ParagraphStyle(
         "AgroContractSection",
         parent=styles["BodyText"],
-        fontName="AgroArialBold",
+        fontName=_contract_font("bold"),
         fontSize=16,
         leading=18,
         textColor=CONTRACT_BLUE,
@@ -1409,7 +1502,7 @@ def build_contrato_agro_pdf(contrato):
     body_style = ParagraphStyle(
         "AgroContractBodyReal",
         parent=styles["BodyText"],
-        fontName="AgroArial",
+        fontName=_contract_font("regular"),
         fontSize=11.04,
         leading=15.2,
         textColor=colors.black,
@@ -1448,7 +1541,7 @@ def build_contrato_agro_pdf(contrato):
     note_style = ParagraphStyle(
         "AgroContractNoteReal",
         parent=styles["BodyText"],
-        fontName="AgroArialItalic",
+        fontName=_contract_font("italic"),
         fontSize=10,
         leading=13.2,
         textColor=colors.black,
@@ -1457,7 +1550,7 @@ def build_contrato_agro_pdf(contrato):
     signature_style = ParagraphStyle(
         "AgroContractSignatureReal",
         parent=styles["BodyText"],
-        fontName="AgroArial",
+        fontName=_contract_font("regular"),
         fontSize=11,
         leading=13.4,
         textColor=colors.black,

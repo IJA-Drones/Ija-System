@@ -116,7 +116,7 @@
             <label class="form-label fw-bold small text-muted">
               <i class="bi bi-briefcase-fill me-1 text-primary"></i> Serviço *
             </label>
-            <select name="servico" class="form-select {% if errors.get('servico') %}is-invalid{% endif %}" required>
+            <select id="servico" name="servico" class="form-select {% if errors.get('servico') %}is-invalid{% endif %}" required>
               {% for servico in servico_options %}
                 <option value="{{ servico }}" {% if form.get('servico', servico_options[0]) == servico %}selected{% endif %}>{{ servico }}</option>
               {% endfor %}
@@ -138,7 +138,7 @@
 
           <div class="col-md-3">
             <label class="form-label fw-bold small text-muted">
-              <i class="bi bi-flower1 me-1 text-primary"></i> Cultura
+              <i class="bi bi-flower1 me-1 text-primary"></i> Cultura principal
             </label>
             <input
               type="text"
@@ -151,6 +151,25 @@
             {% if errors.get('cultura') %}
               <div class="invalid-feedback">{{ errors.get('cultura') }}</div>
             {% endif %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-flower2 me-1 text-primary"></i> Cultura adicional
+            </label>
+            <input
+              type="text"
+              id="cultura_alternativa"
+              name="cultura_alternativa"
+              maxlength="100"
+              value="{{ form.get('cultura_alternativa', '') }}"
+              class="form-control {% if errors.get('cultura_alternativa') %}is-invalid{% endif %}"
+              placeholder="Ex.: soja"
+            >
+            {% if errors.get('cultura_alternativa') %}
+              <div class="invalid-feedback">{{ errors.get('cultura_alternativa') }}</div>
+            {% endif %}
+            <div class="form-text">Preencha quando houver uma segunda cultura neste orçamento.</div>
           </div>
 
           <div class="col-md-3">
@@ -168,7 +187,7 @@
 
           <div class="col-md-4">
             <label class="form-label fw-bold small text-muted">
-              <i class="bi bi-cash-coin me-1 text-primary"></i> Preço base *
+              <i class="bi bi-arrows-angle-expand me-1 text-primary"></i> Area / ha *
             </label>
             <input
               type="text"
@@ -217,6 +236,23 @@
             >
             {% if errors.get('preco_pulverizacao') %}
               <div class="invalid-feedback">{{ errors.get('preco_pulverizacao') }}</div>
+            {% endif %}
+          </div>
+
+          <div id="precoPulverizacaoAdicionalWrap" class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-droplet-half me-1 text-primary"></i> Valor pulverizacao adicional /ha
+            </label>
+            <input
+              type="text"
+              id="preco_pulverizacao_adicional"
+              name="preco_pulverizacao_adicional"
+              value="{{ form.get('preco_pulverizacao_adicional', '') }}"
+              class="form-control {% if errors.get('preco_pulverizacao_adicional') %}is-invalid{% endif %}"
+              placeholder="R$ 0,00"
+            >
+            {% if errors.get('preco_pulverizacao_adicional') %}
+              <div class="invalid-feedback">{{ errors.get('preco_pulverizacao_adicional') }}</div>
             {% endif %}
           </div>
 
@@ -505,10 +541,17 @@
     return true;
   }
 
+  function orcamentoPulverizacaoAdicionalAtiva() {
+    const culturaAlternativa = document.getElementById("cultura_alternativa")?.value?.trim() || "";
+    const precoAdicional = parseDecimalBr(document.getElementById("preco_pulverizacao_adicional")?.value) || 0;
+    return !!culturaAlternativa || precoAdicional > 0;
+  }
+
   function syncOrcamentoLabels() {
     const areaLabel = document.getElementById("area_ha")?.closest(".col-md-4")?.querySelector("label");
     const mapLabel = document.getElementById("preco_mapeamento")?.closest(".col-md-4")?.querySelector("label");
     const pulvLabel = document.getElementById("preco_pulverizacao")?.closest(".col-md-4")?.querySelector("label");
+    const pulvAdicionalLabel = document.getElementById("preco_pulverizacao_adicional")?.closest(".col-md-4")?.querySelector("label");
 
     if (areaLabel) {
       areaLabel.innerHTML = '<i class="bi bi-arrows-angle-expand me-1 text-primary"></i> Area / ha *';
@@ -519,6 +562,9 @@
     if (pulvLabel) {
       pulvLabel.innerHTML = '<i class="bi bi-droplet-fill me-1 text-primary"></i> Preco da pulverizacao /ha *';
     }
+    if (pulvAdicionalLabel) {
+      pulvAdicionalLabel.innerHTML = '<i class="bi bi-droplet-half me-1 text-primary"></i> Valor pulverizacao adicional /ha';
+    }
   }
 
   function calculateValorTotal() {
@@ -526,8 +572,9 @@
     const totalInput = document.getElementById("valor_total_calculado");
     const mapeamentoInput = document.getElementById("preco_mapeamento");
     const pulverizacaoInput = document.getElementById("preco_pulverizacao");
+    const pulverizacaoAdicionalInput = document.getElementById("preco_pulverizacao_adicional");
 
-    if (!areaInput || !totalInput || !mapeamentoInput || !pulverizacaoInput) return;
+    if (!areaInput || !totalInput || !mapeamentoInput || !pulverizacaoInput || !pulverizacaoAdicionalInput) return;
 
     const area = parseDecimalBr(areaInput.value);
     const valorMapDigitado = parseDecimalBr(mapeamentoInput.value) || 0;
@@ -535,13 +582,16 @@
       ? valorMapDigitado
       : 0;
     const valorPulv = parseDecimalBr(pulverizacaoInput.value) || 0;
+    const valorPulvAdicional = orcamentoPulverizacaoAdicionalAtiva()
+      ? (parseDecimalBr(pulverizacaoAdicionalInput.value) || 0)
+      : 0;
 
-    if (area === null || area <= 0 || (valorMap <= 0 && valorPulv <= 0)) {
+    if (area === null || area <= 0 || (valorMap <= 0 && valorPulv <= 0 && valorPulvAdicional <= 0)) {
       totalInput.value = "";
       return;
     }
 
-    const total = area * (valorMap + valorPulv);
+    const total = area * (valorMap + valorPulv + valorPulvAdicional);
     totalInput.value = total.toLocaleString("pt-BR", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
@@ -556,6 +606,24 @@
     const isVisible = mapeamento?.value === "SIM" || orcamentoServicoIncluiMapeamento();
 
     if (!wrapper || !field || !servico) return;
+
+    wrapper.style.display = isVisible ? "" : "none";
+    field.required = isVisible;
+
+    if (!isVisible) {
+      field.value = "";
+    }
+
+    calculateValorTotal();
+  }
+
+  function syncPulverizacaoAdicionalVisibility() {
+    const culturaAlternativaInput = document.getElementById("cultura_alternativa");
+    const wrapper = document.getElementById("precoPulverizacaoAdicionalWrap");
+    const field = document.getElementById("preco_pulverizacao_adicional");
+    const isVisible = !!(culturaAlternativaInput?.value || "").trim();
+
+    if (!wrapper || !field) return;
 
     wrapper.style.display = isVisible ? "" : "none";
     field.required = isVisible;
@@ -601,9 +669,10 @@
   });
   document.getElementById("mapeamento")?.addEventListener("change", syncMapeamentoPriceVisibility);
   document.getElementById("servico")?.addEventListener("change", syncMapeamentoPriceVisibility);
+  document.getElementById("cultura_alternativa")?.addEventListener("input", syncPulverizacaoAdicionalVisibility);
   document.getElementById("area_ha")?.addEventListener("input", calculateValorTotal);
 
-  ["preco_mapeamento", "preco_pulverizacao"].forEach((fieldId) => {
+  ["preco_mapeamento", "preco_pulverizacao", "preco_pulverizacao_adicional"].forEach((fieldId) => {
     document.getElementById(fieldId)?.addEventListener("input", (event) => {
       event.target.value = maskCurrencyBr(event.target.value);
       calculateValorTotal();
@@ -617,7 +686,7 @@
 
     syncOrcamentoLabels();
 
-    ["preco_mapeamento", "preco_pulverizacao"].forEach((fieldId) => {
+    ["preco_mapeamento", "preco_pulverizacao", "preco_pulverizacao_adicional"].forEach((fieldId) => {
       const field = document.getElementById(fieldId);
       if (field && field.value) {
         field.value = maskCurrencyBr(field.value);
@@ -625,6 +694,7 @@
     });
 
     syncMapeamentoPriceVisibility();
+    syncPulverizacaoAdicionalVisibility();
     calculateValorTotal();
   });
 </script>
