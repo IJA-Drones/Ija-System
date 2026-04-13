@@ -28,7 +28,7 @@
       <a href="{{ url_for('main.admin_dashboard') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
-      <a href="{{ url_for('main.admin_prefeitura_nova') }}" class="btn btn-success text-white d-flex align-items-center gap-2 shadow-sm">
+      <a href="{{ safe_url_for('main.admin_prefeitura_nova', '/admin/prefeituras/nova') }}" class="btn btn-success text-white d-flex align-items-center gap-2 shadow-sm">
         <i class="bi bi-plus-lg"></i> Nova Prefeitura
       </a>
     </div>

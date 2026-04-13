@@ -14,7 +14,7 @@
 
   <div class="card info status-primary shadow-sm rounded-4 border-0">
     <div class="card-body p-4">
-      <form method="POST" action="{{ url_for('main.admin_prefeitura_nova') }}">
+      <form method="POST" action="{{ safe_url_for('main.admin_prefeitura_nova', '/admin/prefeituras/nova') }}">
         <div class="d-flex align-items-center mb-3">
           <i class="bi bi-building-add text-primary me-2 fs-5"></i>
           <h5 class="m-0 text-primary fw-bold">Dados da Prefeitura</h5>

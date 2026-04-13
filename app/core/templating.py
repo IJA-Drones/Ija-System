@@ -1,6 +1,8 @@
 from datetime import datetime
 
+from flask import url_for
 from flask_login import current_user
+from werkzeug.routing import BuildError
 
 from app import db
 from app.models import Notificacao
@@ -11,6 +13,14 @@ from app.shared.solicitacao_focos import build_focus_catalog
 def register_template_helpers(bp):
     @bp.context_processor
     def inject_globals():
+        def safe_url_for(endpoint, fallback=None, **values):
+            try:
+                return url_for(endpoint, **values)
+            except BuildError:
+                if fallback is not None:
+                    return fallback
+                raise
+
         focus_catalog = build_focus_catalog()
         if current_user.is_authenticated:
             try:
@@ -24,6 +34,7 @@ def register_template_helpers(bp):
 
                 return {
                     "notif_count": query.scalar() or 0,
+                    "safe_url_for": safe_url_for,
                     "solicitacao_focus_catalog": focus_catalog,
                     "solicitacao_filter_foco_opcoes": focus_catalog["filtro_foco_opcoes"],
                     "solicitacao_tipo_visita_opcoes": focus_catalog["tipo_visita_opcoes"],
@@ -33,6 +44,7 @@ def register_template_helpers(bp):
                 db.session.rollback()
                 return {
                     "notif_count": 0,
+                    "safe_url_for": safe_url_for,
                     "solicitacao_focus_catalog": focus_catalog,
                     "solicitacao_filter_foco_opcoes": focus_catalog["filtro_foco_opcoes"],
                     "solicitacao_tipo_visita_opcoes": focus_catalog["tipo_visita_opcoes"],
@@ -41,6 +53,7 @@ def register_template_helpers(bp):
 
         return {
             "notif_count": 0,
+            "safe_url_for": safe_url_for,
             "solicitacao_focus_catalog": focus_catalog,
             "solicitacao_filter_foco_opcoes": focus_catalog["filtro_foco_opcoes"],
             "solicitacao_tipo_visita_opcoes": focus_catalog["tipo_visita_opcoes"],
