@@ -61,64 +61,75 @@
                                value="{{ pedido.data_agendamento.isoformat() if pedido.data_agendamento else '' }}" required>
                     </div>
 
-                    <div class="col-md-3">
+                    <div class="col-md-8">
                         <label class="form-label fw-bold small text-muted">Horário</label>
                         <input type="time" class="form-control" name="hora_agendamento" 
                                value="{{ pedido.hora_agendamento.strftime('%H:%M') if pedido.hora_agendamento else '' }}" required>
                     </div>
-
-                    <div class="col-md-5">
-                    <label class="form-label fw-bold small text-muted">Foco Principal</label>
-                    <select name="foco" class="form-select" required>
-                        
-                        <option value="" disabled {% if not pedido or not pedido.foco %}selected{% endif %}>
-                            Selecione o tipo de foco...
-                        </option>
-
-                        {% set opcoes_foco = [
-                            "Acumulador", "CAIXA D'AGUA", "Casa abandonada com inserviveis", 
-                            "Corrego", "Ferro velho", "Galpão com inserviveis", 
-                            "Imovel com Inserviveis", "Laje/telhado com Acumulo de agua", 
-                            "P.E Cadastrado", "Patio com Veiculos", "Piscina", 
-                            "Piscinão", "Reciclagem", "Terreno com inserviveis"
-                        ] %}
-
-                        {% for opcao in opcoes_foco %}
-                            <option value="{{ opcao }}" {% if pedido and pedido.foco == opcao %}selected{% endif %}>
-                                {{ opcao }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
                 </div>
 
                 <hr class="text-muted opacity-25 my-4">
 
                 {# --- SEÇÃO 2: DETALHES OPERACIONAIS --- #}
                 <div class="row g-3 mb-3">
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label class="form-label fw-bold small text-muted">Tipo de Visita</label>
                         <select name="tipo_visita" class="form-select">
-                            <option value="Aedes" {% if pedido.tipo_visita == 'Aedes' %}selected{% endif %}>Aedes</option>
-                            <option value="Culex" {% if pedido.tipo_visita == 'Culex' %}selected{% endif %}>Culex</option>
-                            <option value="Outro" {% if pedido.tipo_visita == 'Outro' %}selected{% endif %}>Outro</option>
+                            {% for opcao in solicitacao_tipo_visita_opcoes %}
+                            <option value="{{ opcao }}" {% if pedido.tipo_visita == opcao %}selected{% endif %}>{{ opcao }}</option>
+                            {% endfor %}
                         </select>
+                        <small class="text-muted d-block mt-2">Ao selecionar Aedes, o campo Tipo de Imovel sera exibido.</small>
                     </div>
 
-                    <div class="col-md-4">
-                        <label class="form-label fw-bold small text-muted">Tipo de Operação</label>
-                        <select name="tipo_operacao" class="form-select">
-                            <option value="Monitoramento" {% if pedido.tipo_operacao == 'Monitoramento' %}selected{% endif %}>Monitoramento</option>
-                            <option value="Tratamento" {% if pedido.tipo_operacao == 'Tratamento' %}selected{% endif %}>Tratamento</option>
-                        </select>
-                    </div>
-
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label class="form-label fw-bold small text-muted">Altura Máxima</label>
                         <select name="altura_voo" class="form-select">
                             {% for h in ['10m', '20m', '30m', '40m'] %}
                                 <option value="{{ h }}" {% if pedido.altura_voo == h %}selected{% endif %}>{{ h }}</option>
                             {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-12{% if pedido.tipo_visita != 'Aedes' %} d-none{% endif %}" data-tipo-imovel-wrapper>
+                        <div class="p-3 border rounded bg-white shadow-sm">
+                            <label class="form-label fw-bold small text-muted mb-2">Tipo de Imovel</label>
+                            <div class="d-flex flex-wrap gap-4">
+                                {% for opcao in solicitacao_tipo_imovel_opcoes %}
+                                {% set radio_id = 'editar_tipo_imovel_' ~ loop.index %}
+                                <div class="form-check">
+                                    <input
+                                        class="form-check-input"
+                                        type="radio"
+                                        name="tipo_imovel"
+                                        id="{{ radio_id }}"
+                                        value="{{ opcao }}"
+                                        {% if pedido.tipo_imovel == opcao %}checked{% endif %}
+                                    >
+                                    <label class="form-check-label small fw-medium" for="{{ radio_id }}">{{ opcao }}</label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-muted">Foco da Ação</label>
+                        <select name="foco" class="form-select" required>
+                            <option value="" disabled {% if not pedido.foco %}selected{% endif %}>Selecione o foco da acao...</option>
+                            {% if pedido.foco %}
+                            <option value="{{ pedido.foco }}" selected>{{ pedido.foco }}</option>
+                            {% endif %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-muted">Tipo de Operação</label>
+                        <select name="tipo_operacao" class="form-select">
+                            <option value="Monitoramento" {% if pedido.tipo_operacao == 'Monitoramento' %}selected{% endif %}>Monitoramento</option>
+                            <option value="Tratamento" {% if pedido.tipo_operacao == 'Tratamento' %}selected{% endif %}>Tratamento</option>
                         </select>
                     </div>
                 </div>
@@ -222,8 +233,16 @@
 {# O seu Script de CEP permanece o mesmo, ele já é funcional para ambos #}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/solicitacao-focos.js') }}"></script>
 <script>
   document.addEventListener("DOMContentLoaded", function() {
+      initSolicitacaoFocusForm({
+          root: "form",
+          catalog: {{ solicitacao_focus_catalog | tojson | safe }},
+          initialTipoImovel: {{ (pedido.tipo_imovel or '') | tojson | safe }},
+          focoPlaceholder: "Selecione o foco da acao..."
+      });
+
       const cepInput = document.getElementById("cep");
 
       if (cepInput) {

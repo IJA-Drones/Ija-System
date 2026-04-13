@@ -1,34 +1,97 @@
+.prefeitura-create-card,
+.prefeitura-table-card {
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.07);
+}
+
+.prefeitura-create-card .form-control,
+.prefeitura-create-card .form-select,
+.prefeitura-inline-form .form-control,
+.prefeitura-inline-form .form-select {
+  border-color: rgba(44, 82, 130, 0.12);
+}
+
+.prefeitura-create-submit .btn {
+  min-height: 38px;
+  white-space: nowrap;
+}
+
 .prefeituras-table .col-id {
   width: 80px;
 }
 
-.prefeituras-table .col-slug {
-  width: 180px;
-}
-
 .prefeituras-table .col-status {
-  width: 130px;
+  width: 170px;
 }
 
 .prefeituras-table .col-usuarios {
-  width: 150px;
+  width: 120px;
+  text-align: center;
 }
 
 .prefeituras-table .col-editar,
 .prefeituras-table td.col-editar {
-  width: 380px;
-  min-width: 380px;
+  width: 480px;
+  min-width: 480px;
+}
+
+.prefeitura-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.prefeitura-meta code {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.28rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(44, 82, 130, 0.08);
+  color: #244b78;
+  font-size: 0.78rem;
+}
+
+.prefeitura-count-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 42px;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(44, 82, 130, 0.1);
+  color: #244b78;
+  font-weight: 700;
+}
+
+.prefeitura-inline-form {
+  padding: 0.85rem;
+  border: 1px solid rgba(44, 82, 130, 0.1);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(248, 251, 255, 0.96), rgba(255, 255, 255, 0.96));
 }
 
 .prefeitura-inline-form .btn {
   min-height: 31px;
+  white-space: nowrap;
 }
 
 @media (max-width: 991.98px) {
+  .prefeitura-create-submit .btn {
+    width: 100%;
+  }
+
   .prefeituras-table .col-editar,
   .prefeituras-table td.col-editar {
     width: auto;
     min-width: 0;
+  }
+
+  .prefeitura-inline-form {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
   }
 
   .prefeitura-inline-form .row.g-2 > div {

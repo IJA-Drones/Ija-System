@@ -4,6 +4,72 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <style>
+    .rel-chart-card,
+    .rel-table-card {
+      border: 0;
+      box-shadow: 0 10px 28px rgba(15, 23, 42, 0.07);
+    }
+
+    .rel-chart-card .chart-wrap {
+      height: 320px;
+    }
+
+    .rel-chart-card .chart-wrap.chart-wrap-sm {
+      height: 280px;
+    }
+
+    .rel-section-title {
+      min-height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 0.75rem;
+    }
+
+    .rel-section-title h4,
+    .rel-section-title h5 {
+      margin: 0;
+      line-height: 1.25;
+    }
+
+    .rel-table-card .table {
+      margin-bottom: 0;
+      table-layout: fixed;
+    }
+
+    .rel-table-card th,
+    .rel-table-card td {
+      vertical-align: middle;
+    }
+
+    .rel-table-card th:first-child,
+    .rel-table-card td:first-child {
+      width: 72%;
+      word-break: break-word;
+    }
+
+    .rel-table-card th:last-child,
+    .rel-table-card td:last-child {
+      width: 28%;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 991.98px) {
+      .rel-section-title {
+        min-height: 0;
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .rel-chart-card .chart-wrap,
+      .rel-chart-card .chart-wrap.chart-wrap-sm {
+        height: 280px;
+      }
+    }
+  </style>
 {% endblock %}
 
 
@@ -252,24 +318,24 @@
         ========================= #}
     <div class="row g-4 mb-4">
     <div class="col-lg-4">
-        <div class="card shadow-sm rounded-4 p-4 h-100">
-        <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="card rel-chart-card shadow-sm rounded-4 p-4 h-100">
+        <div class="rel-section-title">
             <h5 class="mb-0 text-dark"><i class="bi bi-pie-chart-fill me-2"></i>Status</h5>
             <span class="badge bg-light text-dark ">Período filtrado</span>
         </div>
-        <div style="height:280px;">
+        <div class="chart-wrap chart-wrap-sm">
             <canvas id="chartStatus"></canvas>
         </div>
         </div>
     </div>
 
     <div class="col-lg-8">
-        <div class="card shadow-sm rounded-4 p-4 h-100">
-        <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="card rel-chart-card shadow-sm rounded-4 p-4 h-100">
+        <div class="rel-section-title">
             <h5 class="mb-0 text-dark"><i class="bi bi-geo-alt-fill me-2"></i>Solicitações por Região</h5>
             <span class="badge bg-light text-dark">Período filtrado</span>
         </div>
-        <div style="height:280px;">
+        <div class="chart-wrap chart-wrap-sm">
             <canvas id="chartRegiao"></canvas>
         </div>
         </div>
@@ -278,36 +344,36 @@
 
     <div class="row g-4 mb-4">
     <div class="col-lg-4">
-        <div class="card shadow-sm rounded-4 p-4 h-100">
-        <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="card rel-chart-card shadow-sm rounded-4 p-4 h-100">
+        <div class="rel-section-title">
             <h5 class="mb-0 text-dark"><i class="bi bi-sliders me-2"></i>Tipo de Operação</h5>
             <span class="badge bg-light text-dark ">Período filtrado</span>
         </div>
-        <div style="height:320px;">
+        <div class="chart-wrap">
             <canvas id="chartTipoOperacao"></canvas>
         </div>
         </div>
     </div>
 
     <div class="col-lg-4">
-        <div class="card shadow-sm rounded-4 p-4 h-100">
-        <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="card rel-chart-card shadow-sm rounded-4 p-4 h-100">
+        <div class="rel-section-title">
             <h5 class="mb-0 text-dark"><i class="bi bi-building-check me-2"></i>Unidades (UVIS)</h5>
             <span class="badge bg-light text-dark ">Top 10</span>
         </div>
-        <div style="height:320px;">
+        <div class="chart-wrap">
             <canvas id="chartUnidade"></canvas>
         </div>
         </div>
     </div>
 
     <div class="col-lg-4">
-        <div class="card shadow-sm rounded-4 p-4 h-100">
-        <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="card rel-chart-card shadow-sm rounded-4 p-4 h-100">
+        <div class="rel-section-title">
             <h5 class="mb-0 text-dark"><i class="bi bi-bullseye me-2"></i>Foco</h5>
             <span class="badge bg-light text-dark ">Período filtrado</span>
         </div>
-        <div style="height:320px;">
+        <div class="chart-wrap">
             <canvas id="chartFoco"></canvas>
         </div>
         </div>
@@ -315,25 +381,37 @@
     </div>
 
     <div class="row g-4 mb-4">
-    <div class="col-lg-6">
-        <div class="card shadow-sm rounded-4 p-4 h-100">
-        <div class="d-flex justify-content-between align-items-center mb-2">
+    <div class="col-lg-5">
+        <div class="card rel-chart-card shadow-sm rounded-4 p-4 h-100">
+        <div class="rel-section-title">
             <h5 class="mb-0 text-dark"><i class="bi bi-journal-text me-2"></i>Tipo de Visita</h5>
             <span class="badge bg-light text-dark ">Período filtrado</span>
         </div>
-        <div style="height:320px;">
+        <div class="chart-wrap">
             <canvas id="chartTipoVisita"></canvas>
         </div>
         </div>
     </div>
 
-    <div class="col-lg-6">
-        <div class="card shadow-sm rounded-4 p-4 h-100">
-        <div class="d-flex justify-content-between align-items-center mb-2">
+    <div class="col-lg-4">
+        <div class="card rel-chart-card shadow-sm rounded-4 p-4 h-100">
+        <div class="rel-section-title">
+            <h5 class="mb-0 text-dark"><i class="bi bi-house-door me-2"></i>Tipo de Imóvel</h5>
+            <span class="badge bg-light text-dark ">Período filtrado</span>
+        </div>
+        <div class="chart-wrap">
+            <canvas id="chartTipoImovel"></canvas>
+        </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3">
+        <div class="card rel-chart-card shadow-sm rounded-4 p-4 h-100">
+        <div class="rel-section-title">
             <h5 class="mb-0 text-dark"><i class="bi bi-ruler me-2"></i>Altura de Voo</h5>
             <span class="badge bg-light text-dark ">Período filtrado</span>
         </div>
-        <div style="height:320px;">
+        <div class="chart-wrap">
             <canvas id="chartAltura"></canvas>
         </div>
         </div>
@@ -341,7 +419,7 @@
     </div>
 
     {# --- Tabelas detalhadas: Região, Unidade, Status, Foco, Tipo, Altura --- #}
-    <div class="card shadow-sm rounded-4 p-4 mb-4">
+    <div class="card rel-table-card shadow-sm rounded-4 p-4 mb-4">
         <h4 class="mb-3 text-dark"><i class="bi bi-geo-alt-fill me-2"></i>Solicitações por Região</h4>
         <div class="table-responsive">
             <table class="table table-hover align-middle">
@@ -367,7 +445,7 @@
         </div>
     </div>
 
-    <div class="card shadow-sm rounded-4 p-4 mb-4">
+    <div class="card rel-table-card shadow-sm rounded-4 p-4 mb-4">
         <h4 class="mb-3 text-dark"><i class="bi bi-building-check me-2"></i>Solicitações por Unidade (UVIS)</h4>
         <div class="table-responsive">
             <table class="table table-hover align-middle">
@@ -395,7 +473,7 @@
 
     <div class="row g-4 mb-4">
         <div class="col-lg-4 col-md-6">
-            <div class="card shadow-sm rounded-4 p-4 h-100">
+            <div class="card rel-table-card shadow-sm rounded-4 p-4 h-100">
                 <h4 class="mb-3 text-dark"><i class="bi bi-sliders me-2"></i>Solicitações por Tipo de Operação</h4>
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
@@ -423,7 +501,7 @@
         </div>
 
         <div class="col-lg-4 col-md-6">
-            <div class="card shadow-sm rounded-4 p-4 h-100">
+            <div class="card rel-table-card shadow-sm rounded-4 p-4 h-100">
                 <h4 class="mb-3 text-dark"><i class="bi bi-list-task me-2"></i>Status Detalhado</h4>
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
@@ -450,8 +528,8 @@
             </div>
         </div>
 
-        <div class="col-lg-4 col-md-6">
-            <div class="card shadow-sm rounded-4 p-4 h-100">
+        <div class="col-lg-4 col-12">
+            <div class="card rel-table-card shadow-sm rounded-4 p-4 h-100">
                 <h4 class="mb-3 text-dark"><i class="bi bi-bullseye me-2"></i>Solicitações por Foco</h4>
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
@@ -480,8 +558,8 @@
     </div>
 
     <div class="row g-4 mb-4">
-        <div class="col-md-6">
-            <div class="card shadow-sm rounded-4 p-4 h-100">
+        <div class="col-lg-4">
+            <div class="card rel-table-card shadow-sm rounded-4 p-4 h-100">
                 <h4 class="mb-3 text-dark"><i class="bi bi-journal-text me-2"></i>Solicitações por Tipo de Visita</h4>
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
@@ -508,8 +586,36 @@
             </div>
         </div>
 
-        <div class="col-md-6">
-            <div class="card shadow-sm rounded-4 p-4 h-100">
+        <div class="col-lg-5">
+            <div class="card rel-table-card shadow-sm rounded-4 p-4 h-100">
+                <h4 class="mb-3 text-dark"><i class="bi bi-house-door me-2"></i>Solicitações por Tipo de Imóvel</h4>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Tipo de Imóvel</th>
+                                <th class="text-center">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for tipo, count in dados_tipo_imovel %}
+                            <tr>
+                                <td>{{ tipo or 'Não informado' }}</td>
+                                <td class="text-center">{{ count }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="2" class="text-center text-muted">Nenhuma solicitação encontrada por tipo de imóvel.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3">
+            <div class="card rel-table-card shadow-sm rounded-4 p-4 h-100">
                 <h4 class="mb-3 text-dark"><i class="bi bi-ruler me-2"></i>Solicitações por Altura de Voo</h4>
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
@@ -558,6 +664,7 @@
 <script id="dados-foco-json" type="application/json">{{ dados_foco | tojson | safe }}</script>
 <script id="dados-tipo-operacao-json" type="application/json">{{ dados_tipo_operacao | tojson | safe }}</script>
 <script id="dados-tipo-visita-json" type="application/json">{{ dados_tipo_visita | tojson | safe }}</script>
+<script id="dados-tipo-imovel-json" type="application/json">{{ dados_tipo_imovel | tojson | safe }}</script>
 <script id="dados-altura-json" type="application/json">{{ dados_altura_voo | tojson | safe }}</script>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -763,6 +870,29 @@
                 datasets: [{
                     data: dadosTipo.map(x => x[1]),
                     backgroundColor: dadosTipo.map((_, i) => palette[i % palette.length]),
+                    borderWidth: 0,
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                cutout: "65%",
+                plugins: { legend: { position: "bottom" } }
+            }
+        });
+    }
+
+    // =========================
+    // Tipo de imóvel (doughnut)
+    // =========================
+    const dadosTipoImovel = readJson("dados-tipo-imovel-json").map(([t, c]) => [cleanLabel(t), c]);
+    if (document.getElementById("chartTipoImovel")) {
+        new Chart(document.getElementById("chartTipoImovel"), {
+            type: "doughnut",
+            data: {
+                labels: dadosTipoImovel.map(x => x[0]),
+                datasets: [{
+                    data: dadosTipoImovel.map(x => x[1]),
+                    backgroundColor: dadosTipoImovel.map((_, i) => palette[i % palette.length]),
                     borderWidth: 0,
                     hoverOffset: 6
                 }]

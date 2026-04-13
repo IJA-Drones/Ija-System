@@ -126,6 +126,16 @@ def _build_pdf_export_data(user, args):
         )
     ]
 
+    dados_tipo_imovel = [
+        (tipo or "Não informado", total)
+        for tipo, total in (
+            base_query
+            .with_entities(Solicitacao.tipo_imovel, db.func.count(Solicitacao.id))
+            .group_by(Solicitacao.tipo_imovel)
+            .all()
+        )
+    ]
+
     dados_tipo_operacao = [
         (tipo or "Não informado", total)
         for tipo, total in (
@@ -209,6 +219,7 @@ def _build_pdf_export_data(user, args):
         "dados_foco": dados_foco,
         "dados_tipo_operacao": dados_tipo_operacao,
         "dados_tipo_visita": dados_tipo_visita,
+        "dados_tipo_imovel": dados_tipo_imovel,
         "dados_altura_voo": dados_altura_voo,
         "dados_unidade": dados_unidade,
         "dados_mensais": dados_mensais,
@@ -385,6 +396,7 @@ def build_relatorio_pdf_export(user, args):
     add_count_table("Agrupamento — Foco", data["dados_foco"])
     add_count_table("Agrupamento — Tipo de Operação", data["dados_tipo_operacao"])
     add_count_table("Agrupamento — Tipo de Visita", data["dados_tipo_visita"])
+    add_count_table("Agrupamento — Tipo de Imovel", data["dados_tipo_imovel"])
     add_count_table("Agrupamento — Altura do Voo", data["dados_altura_voo"])
     add_count_table("Agrupamento — Unidade (UVIS)", data["dados_unidade"])
     add_count_table("Histórico Mensal (tabela)", data["dados_mensais"], col1="Mês")
@@ -473,6 +485,7 @@ def build_relatorio_pdf_export(user, args):
         "Foco",
         "Tipo Operação",
         "Tipo Visita",
+        "Tipo Imovel",
         "Altura Voo",
         "Observação",
     ]
@@ -499,6 +512,7 @@ def build_relatorio_pdf_export(user, args):
         foco = getattr(solicitacao, "foco", "") or ""
         tipo_operacao = getattr(solicitacao, "tipo_operacao", "") or ""
         tipo_visita = getattr(solicitacao, "tipo_visita", "") or ""
+        tipo_imovel = getattr(solicitacao, "tipo_imovel", "") or ""
         altura_voo = getattr(solicitacao, "altura_voo", "") or ""
         observacao = getattr(solicitacao, "observacao", "") or ""
 
@@ -512,11 +526,12 @@ def build_relatorio_pdf_export(user, args):
             Paragraph(str(foco), cell_style_small),
             Paragraph(str(tipo_operacao), cell_style_small),
             Paragraph(str(tipo_visita), cell_style_small),
+            Paragraph(str(tipo_imovel), cell_style_small),
             Paragraph(str(altura_voo), cell_style_small),
             Paragraph(str(observacao), cell_style_small),
         ])
 
-    base_col_widths = [18 * mm, 14 * mm, 26 * mm, 20 * mm, 20 * mm, 22 * mm, 18 * mm, 22 * mm, 22 * mm, 18 * mm, 48 * mm]
+    base_col_widths = [18 * mm, 14 * mm, 22 * mm, 18 * mm, 18 * mm, 20 * mm, 18 * mm, 20 * mm, 18 * mm, 18 * mm, 16 * mm, 34 * mm]
     total_w = sum(base_col_widths)
     max_w = doc.width
     col_widths = [w * (max_w / total_w) for w in base_col_widths] if total_w > max_w else base_col_widths
@@ -596,6 +611,7 @@ def build_relatorio_excel_export(user, args):
         Solicitacao.foco,
         Solicitacao.tipo_operacao,
         Solicitacao.tipo_visita,
+        Solicitacao.tipo_imovel,
         Solicitacao.altura_voo,
         Solicitacao.data_agendamento,
         Solicitacao.hora_agendamento,
@@ -659,6 +675,7 @@ def build_relatorio_excel_export(user, args):
         "Foco",
         "Tipo Operacao",
         "Tipo Visita",
+        "Tipo Imovel",
         "Altura Voo",
         "Data Agendamento",
         "Hora Agendamento",
@@ -697,6 +714,7 @@ def build_relatorio_excel_export(user, args):
             row.foco,
             row.tipo_operacao,
             row.tipo_visita,
+            row.tipo_imovel,
             row.altura_voo,
             data_agendamento_fmt,
             hora_agendamento_fmt,
@@ -710,7 +728,7 @@ def build_relatorio_excel_export(user, args):
             cell = ws.cell(row=row_num, column=col_index, value=value)
             cell.border = thin_border
             cell.fill = zebra1 if row_num % 2 == 0 else zebra2
-            cell.alignment = center if col_index in (3, 8, 9, 10, 11, 12, 13) else left_center
+            cell.alignment = center if col_index in (3, 9, 10, 11, 13, 14) else left_center
 
     ws.freeze_panes = "A2"
     ws.auto_filter.ref = f"A1:{get_column_letter(len(colunas))}1"
@@ -723,12 +741,13 @@ def build_relatorio_excel_export(user, args):
         "E": 22,
         "F": 16,
         "G": 16,
-        "H": 10,
-        "I": 14,
+        "H": 18,
+        "I": 10,
         "J": 14,
-        "K": 90,
-        "L": 14,
+        "K": 14,
+        "L": 90,
         "M": 14,
+        "N": 14,
     }
     for col, width in larguras.items():
         ws.column_dimensions[col].width = width

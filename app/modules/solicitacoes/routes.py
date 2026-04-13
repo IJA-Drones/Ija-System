@@ -6,6 +6,7 @@ from flask_login import current_user, login_required
 from app.modules.solicitacoes.service import (
     NovoCadastroValidationError,
     build_novo_cadastro_context,
+    build_novo_cadastro_context_with_form,
     build_editar_solicitacao_context,
     create_nova_solicitacao,
     deletar_solicitacao_admin,
@@ -32,10 +33,12 @@ def register_routes(bp):
                 return redirect(url_for("main.dashboard"))
             except NovoCadastroValidationError as exc:
                 flash(exc.message, exc.category)
+                context = build_novo_cadastro_context_with_form(current_user, google_maps_key, request.form)
                 return render_template("cadastro.html", **context)
             except Exception:
                 current_app.logger.exception("Erro ao criar nova solicitacao.")
                 flash("Erro ao salvar o pedido.", "danger")
+                context = build_novo_cadastro_context_with_form(current_user, google_maps_key, request.form)
 
         return render_template("cadastro.html", **context)
 
@@ -53,6 +56,8 @@ def register_routes(bp):
                 redirect_endpoint = atualizar_solicitacao(current_user, id, request.form)
                 flash("Solicitacao atualizada com sucesso!", "success")
                 return redirect(url_for(redirect_endpoint))
+            except NovoCadastroValidationError as exc:
+                flash(exc.message, exc.category)
             except SolicitacaoAccessError as exc:
                 flash(exc.message, exc.category)
                 return redirect(url_for(exc.redirect_endpoint))

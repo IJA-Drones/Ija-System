@@ -184,27 +184,37 @@
             </select>
           </div>
 
-            <div class="col-md-4">
-                        <label class="small text-muted mb-1">Filtrar por Foco da Ação</label>
-                        <select name="foco" class="form-select form-select-sm">
-                            <option value="">Todos os Focos</option>
+          <div class="col-md-4">
+            <label class="small text-muted mb-1">Tipo de Visita</label>
+            <select name="tipo_visita" class="form-select form-select-sm">
+              <option value="">Todos os tipos</option>
+              {% for opcao in solicitacao_tipo_visita_opcoes %}
+                <option value="{{ opcao }}" {% if request.args.get('tipo_visita') == opcao %}selected{% endif %}>{{ opcao }}</option>
+              {% endfor %}
+            </select>
+          </div>
 
-                            {% set opcoes_foco = [
-                                "Acumulador", "CAIXA D'AGUA", "Casa abandonada com inserviveis",
-                                "Corrego", "Ferro velho", "Galpão com inserviveis",
-                                "Imovel com Inserviveis", "Laje/telhado com Acumulo de agua",
-                                "P.E Cadastrado", "Patio com Veiculos", "Piscina",
-                                "Piscinão", "Reciclagem", "Terreno com inserviveis"
-                            ] %}
+          <div class="col-md-4">
+            <label class="small text-muted mb-1">Tipo de Imovel</label>
+            <select name="tipo_imovel" class="form-select form-select-sm">
+              <option value="">Todos os imoveis</option>
+              {% for opcao in solicitacao_tipo_imovel_opcoes %}
+                <option value="{{ opcao }}" {% if request.args.get('tipo_imovel') == opcao %}selected{% endif %}>{{ opcao }}</option>
+              {% endfor %}
+            </select>
+          </div>
 
-                            {% for opcao in opcoes_foco %}
-                                <option value="{{ opcao }}"
-                                    {{ 'selected' if request.args.get('foco') == opcao else '' }}>
-                                    {{ opcao }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                      </div>
+          <div class="col-md-4">
+            <label class="small text-muted mb-1">Filtrar por Foco da Ação</label>
+            <select name="foco" class="form-select form-select-sm">
+              <option value="">Todos os Focos</option>
+              {% for opcao in solicitacao_filter_foco_opcoes %}
+                <option value="{{ opcao }}" {{ 'selected' if request.args.get('foco') == opcao else '' }}>
+                  {{ opcao }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
 
           <div class="col-md-4">
             <label class="small text-muted">Protocolo:</label>
@@ -222,7 +232,7 @@
             <button class="btn btn-success btn-sm w-100" type="submit">
               <i class="bi bi-search"></i> Filtrar
             </button>
-            {% if request.args.get('unidade') or request.args.get('regiao') or request.args.get('foco') or request.args.get('protocolo') %}
+            {% if request.args.get('unidade') or request.args.get('regiao') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or request.args.get('foco') or request.args.get('protocolo') %}
               <a href="{{ url_for('main.admin_canceladas') }}" class="btn btn-outline-secondary btn-sm w-100">
                 <i class="bi bi-x-lg"></i> Limpar
               </a>
@@ -258,7 +268,10 @@
                 <span class="text-muted">{{ p.data_agendamento.strftime('%d/%m/%Y') }} às {{ p.hora_agendamento.strftime('%H:%M') }}</span>
               </div>
             </td>
-            <td>{{ p.foco }}</td>
+            <td>
+              <div>{{ p.foco }}</div>
+              <small class="text-muted d-block">{{ p.tipo_visita or '--' }}{% if p.tipo_imovel %} · {{ p.tipo_imovel }}{% endif %}</small>
+            </td>
             <td>
               <span class="badge bg-dark">CANCELADO</span>
             </td>

@@ -273,6 +273,7 @@ class Solicitacao(db.Model):
     # Detalhes Operacionais
     tipo_operacao = db.Column(db.String(50), index=True) #monitoramento ou tratamento
     tipo_visita = db.Column(db.String(50), index=True)
+    tipo_imovel = db.Column(db.String(30), index=True)
     altura_voo = db.Column(db.String(20), index=True)
 
     criadouro = db.Column(db.Boolean, default=False)

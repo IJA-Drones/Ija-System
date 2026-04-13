@@ -1,4 +1,4 @@
-{% extends "base.html" %} {% block extra_styles %}
+{% extends "base.html" %} {% set form = form_values or {} %} {% block extra_styles %}
 <link
   rel="stylesheet"
   href="{{ url_for('static', filename='css/components/buttons.css') }}"
@@ -41,6 +41,7 @@
   <div class="card info status-primary shadow-sm rounded-4 border-0">
     <div class="card-body p-4">
       <form method="POST" id="formNovoPedido">
+        {% set form = form_values or {} %}
         <input type="hidden" name="risco_aereo" id="risco_aereo" value="0" />
         {# SEÇÃO 1: AGENDAMENTO #}
         <div class="d-flex align-items-center mb-3">
@@ -60,6 +61,7 @@
               class="form-control"
               required
               min="{{ hoje }}"
+              value="{{ form.data or '' }}"
             />
           </div>
 
@@ -67,7 +69,7 @@
             <label class="form-label fw-bold small text-muted">
               <i class="bi bi-clock me-1 text-primary"></i> Horário Previsto *
             </label>
-            <input type="time" name="hora" class="form-control" required />
+            <input type="time" name="hora" class="form-control" required value="{{ form.hora or '' }}" />
           </div>
         </div>
 
@@ -75,9 +77,9 @@
           <div class="mb-4">
               <label class="form-label fw-bold small text-muted"><i class="bi bi-geo-alt me-2"></i>Unidade (UVIS) Responsável</label>
               <select class="form-select border-primary" name="uvis_responsavel_id" required>
-                  <option value="" selected disabled>Escolha a UVIS que executará este serviço...</option>
+                  <option value="" disabled {% if not form.uvis_responsavel_id %}selected{% endif %}>Escolha a UVIS que executará este serviço...</option>
                   {% for uvis in uvis_lista %}
-                      <option value="{{ uvis.id }}">{{ uvis.nome_uvis }} ({{ uvis.regiao }})</option>
+                      <option value="{{ uvis.id }}" {% if form.uvis_responsavel_id == (uvis.id|string) %}selected{% endif %}>{{ uvis.nome_uvis }} ({{ uvis.regiao }})</option>
                   {% endfor %}
               </select>
               <div class="form-text text-muted">Esta solicitação aparecerá diretamente no dashboard da UVIS selecionada.</div>
@@ -86,7 +88,123 @@
 
         <hr class="text-muted opacity-25 my-4" />
 
-        {# SEÇÃO 2: LOCALIZAÇÃO #}
+        {# SEÇÃO 2: DETALHES DA OPERAÇÃO #}
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-sliders text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Detalhes da Operação</h5>
+        </div>
+
+        <div class="row g-4 mb-4">
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted mb-2">
+              <i class="bi bi-list-task me-1 text-primary"></i> TIPO DE VISITA *
+            </label>
+            <select class="form-select shadow-sm" name="tipo_visita" required>
+              <option value="" disabled {% if not form.tipo_visita %}selected{% endif %}>Selecione...</option>
+              {% for opcao in solicitacao_tipo_visita_opcoes %}
+              <option value="{{ opcao }}" {% if form.tipo_visita == opcao %}selected{% endif %}>{{ opcao }}</option>
+              {% endfor %}
+            </select>
+            <small class="text-muted d-block mt-2">Ao selecionar Aedes, o campo Tipo de Imovel sera exibido.</small>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted mb-2">
+              <i class="bi bi-arrow-up me-1 text-primary"></i> ALTURA DO VOO *
+            </label>
+            <select class="form-select shadow-sm" name="altura_voo" required>
+              <option value="" disabled {% if not form.altura_voo %}selected{% endif %}>Selecione...</option>
+              <option value="10m" {% if form.altura_voo == '10m' %}selected{% endif %}>10 Metros</option>
+              <option value="20m" {% if form.altura_voo == '20m' %}selected{% endif %}>20 Metros</option>
+              <option value="30m" {% if form.altura_voo == '30m' %}selected{% endif %}>30 Metros</option>
+              <option value="40m" {% if form.altura_voo == '40m' %}selected{% endif %}>40 Metros</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+          <div class="col-12{% if form.tipo_visita != 'Aedes' %} d-none{% endif %}" data-tipo-imovel-wrapper>
+            <div class="p-3 border rounded bg-white shadow-sm">
+              <label class="form-label fw-bold small text-muted mb-2">
+                <i class="bi bi-building me-1 text-primary"></i> TIPO DE IMOVEL *
+              </label>
+              <div class="d-flex flex-wrap gap-4">
+                {% for opcao in solicitacao_tipo_imovel_opcoes %}
+                {% set radio_id = 'tipo_imovel_' ~ loop.index %}
+                <div class="form-check">
+                  <input
+                    class="form-check-input"
+                    type="radio"
+                    name="tipo_imovel"
+                    id="{{ radio_id }}"
+                    value="{{ opcao }}"
+                    {% if form.tipo_imovel == opcao %}checked{% endif %}
+                  />
+                  <label class="form-check-label small fw-medium" for="{{ radio_id }}">{{ opcao }}</label>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted mb-2">
+              <i class="bi bi-crosshair me-1 text-primary"></i> FOCO DA ACAO *
+            </label>
+            <select class="form-select shadow-sm" name="foco" required>
+              <option value="" {% if not form.foco %}selected{% endif %} disabled>Selecione o foco da acao...</option>
+              {% if form.foco %}
+              <option value="{{ form.foco }}" selected>{{ form.foco }}</option>
+              {% endif %}
+            </select>
+          </div>
+
+          <div class="col-12">
+            <div class="p-3 border rounded bg-white shadow-sm">
+              <label class="form-label fw-bold small text-muted mb-2">
+                <i class="bi bi-check2-square me-1 text-primary"></i> TIPO DE OPERAÇÃO *
+              </label>
+              <div class="d-flex gap-4">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="tipo_operacao" id="monitoramento" value="Monitoramento" {% if form.tipo_operacao == 'Monitoramento' %}checked{% endif %} />
+                  <label class="form-check-label small fw-medium" for="monitoramento">Monitoramento</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="tipo_operacao" id="tratamento" value="Tratamento" {% if not form.tipo_operacao or form.tipo_operacao == 'Tratamento' %}checked{% endif %} />
+                  <label class="form-check-label small fw-medium" for="tratamento">Tratamento</label>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="p-3 border rounded bg-white shadow-sm">
+              <label class="fw-bold small text-muted d-block mb-3">
+                <i class="bi bi-cone-striped me-1 text-primary"></i> NECESSÁRIO APOIO CET?
+              </label>
+              <div class="d-flex gap-4">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="apoio_cet" id="cetSim" value="sim" {% if form.apoio_cet == 'sim' %}checked{% endif %} />
+                  <label class="form-check-label small fw-medium" for="cetSim">Sim</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="apoio_cet" id="cetNao" value="nao" {% if not form.apoio_cet or form.apoio_cet == 'nao' %}checked{% endif %} />
+                  <label class="form-check-label small fw-medium" for="cetNao">Não</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label fw-bold small text-muted mb-2">
+            <i class="bi bi-card-text me-1 text-primary"></i> OBSERVAÇÕES
+          </label>
+          <textarea class="form-control shadow-sm" name="observacao" rows="3" placeholder="Informações adicionais relevantes...">{{ form.observacao or '' }}</textarea>
+        </div>
+
+        <hr class="text-muted opacity-25 my-4" />
+
+        {# SEÇÃO 3: LOCALIZAÇÃO #}
         <div class="d-flex align-items-center mb-3">
           <i class="bi bi-geo-alt-fill text-primary me-2 fs-5"></i>
           <h5 class="m-0 text-primary fw-bold">Localização</h5>
@@ -106,6 +224,7 @@
                 class="form-control"
                 placeholder="00000-000"
                 required
+                value="{{ form.cep or '' }}"
               />
               <button
                 type="button"
@@ -133,13 +252,14 @@
               name="logradouro"
               class="form-control"
               required
+              value="{{ form.logradouro or '' }}"
             />
           </div>
           <div class="col-md-4">
             <label class="form-label fw-bold small text-muted">
               <i class="bi bi-hash me-1 text-primary"></i> Número *
             </label>
-            <input type="text" name="numero" class="form-control" required />
+            <input type="text" name="numero" class="form-control" required value="{{ form.numero or '' }}" />
           </div>
         </div>
 
@@ -153,6 +273,7 @@
               name="complemento"
               class="form-control"
               placeholder="Ex: Apto 102"
+              value="{{ form.complemento or '' }}"
             />
           </div>
           <div class="col-md-6">
@@ -165,6 +286,7 @@
               name="bairro"
               class="form-control"
               required
+              value="{{ form.bairro or '' }}"
             />
           </div>
         </div>
@@ -180,6 +302,7 @@
               name="cidade"
               class="form-control"
               required
+              value="{{ form.cidade or '' }}"
             />
           </div>
           <div class="col-md-3">
@@ -192,6 +315,7 @@
               name="uf"
               class="form-control"
               required
+              value="{{ form.uf or '' }}"
             />
           </div>
         </div>
@@ -208,6 +332,7 @@
               class="form-control form-control-sm font-monospace"
               placeholder="-23.XXXXXX"
               readonly
+              value="{{ form.latitude or '' }}"
             />
           </div>
           <div class="col-md-6">
@@ -221,6 +346,7 @@
               class="form-control form-control-sm font-monospace"
               placeholder="-46.XXXXXX"
               readonly
+              value="{{ form.longitude or '' }}"
             />
           </div>
         </div>
@@ -298,114 +424,6 @@
           </div>
         </div> -->
 
-        <hr class="text-muted opacity-25 my-4" />
-
-        {# SEÇÃO 3: DETALHES DA OPERAÇÃO #}
-        <div class="d-flex align-items-center mb-3">
-          <i class="bi bi-sliders text-primary me-2 fs-5"></i>
-          <h5 class="m-0 text-primary fw-bold">Detalhes da Operação</h5>
-        </div>
-
-        <div class="row g-4 mb-4">
-          <div class="col-md-6">
-            <label class="form-label fw-bold small text-muted mb-2">
-              <i class="bi bi-list-task me-1 text-primary"></i> TIPO DE VISITA *
-            </label>
-            <select class="form-select shadow-sm" name="tipo_visita" required>
-              <option value="" selected disabled>Selecione...</option>
-              <option value="Aedes">Aedes</option>
-              <option value="Culex">Culex</option>
-              <option value="Outros">Outros</option>
-            </select>
-          </div>
-
-          <div class="col-md-6">
-            <label class="form-label fw-bold small text-muted mb-2">
-              <i class="bi bi-arrow-up me-1 text-primary"></i> ALTURA DO VOO *
-            </label>
-            <select class="form-select shadow-sm" name="altura_voo" required>
-              <option value="" selected disabled>Selecione...</option>
-              <option value="10m">10 Metros</option>
-              <option value="20m">20 Metros</option>
-              <option value="30m">30 Metros</option>
-              <option value="40m">40 Metros</option>
-            </select>
-          </div>
-
-          <div class="col-12">
-            <div class="p-3 border rounded bg-white shadow-sm">
-              <label class="form-label fw-bold small text-muted mb-2">
-                <i class="bi bi-check2-square me-1 text-primary"></i> TIPO DE OPERAÇÃO *
-              </label>
-              <div class="d-flex gap-4">
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="tipo_operacao" id="monitoramento" value="Monitoramento" />
-                  <label class="form-check-label small fw-medium" for="monitoramento">Monitoramento</label>
-                </div>
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="tipo_operacao" id="tratamento" value="Tratamento" checked />
-                  <label class="form-check-label small fw-medium" for="tratamento">Tratamento</label>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="col-12">
-            <div class="p-3 border rounded bg-white shadow-sm">
-              <label class="fw-bold small text-muted d-block mb-3">
-                <i class="bi bi-cone-striped me-1 text-primary"></i> NECESSÁRIO APOIO CET?
-              </label>
-              <div class="d-flex gap-4">
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="apoio_cet" id="cetSim" value="sim" />
-                  <label class="form-check-label small fw-medium" for="cetSim">Sim</label>
-                </div>
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="apoio_cet" id="cetNao" value="nao" checked />
-                  <label class="form-check-label small fw-medium" for="cetNao">Não</label>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="mb-4">
-          <label class="form-label fw-bold small text-muted mb-2">
-            <i class="bi bi-card-text me-1 text-primary"></i> OBSERVAÇÕES
-          </label>
-          <textarea class="form-control shadow-sm" name="observacao" rows="3" placeholder="Informações adicionais relevantes..."></textarea>
-        </div>
-
-        {# SEÇÃO 4: CLASSIFICAÇÃO #}
-        <div class="d-flex align-items-center mb-3">
-          <i class="bi bi-bullseye text-primary me-2 fs-5"></i>
-          <h5 class="m-0 text-primary fw-bold">Classificação</h5>
-        </div>
-
-        <div class="col-md-4">
-         <label class="form-label fw-bold small text-muted">
-            <i class="bi bi-crosshair me-1 text-primary"></i> Foco da Ação *
-          </label>
-          <select name="foco" class="form-select" required>
-            <option value="" disabled {{ 'selected' if not solicitacao or not solicitacao.foco }}>
-                Selecione o tipo de foco...
-            </option>
-            
-            {% set opcoes_foco = [
-                "Acumulador", "CAIXA D'AGUA", "Casa abandonada com inserviveis", 
-                "Corrego", "Ferro velho", "Galpão com inserviveis", 
-                "Imovel com Inserviveis", "Laje/telhado com Acumulo de agua", 
-                "P.E Cadastrado", "Patio com Veiculos", "Piscina", 
-                "Piscinão", "Reciclagem", "Terreno com inserviveis"
-            ] %}
-
-            {% for opcao in opcoes_foco %}
-                <option value="{{ opcao }}" {{ 'selected' if solicitacao and solicitacao.foco == opcao }}>
-                    {{ opcao }}
-                </option>
-            {% endfor %}
-        </select>
-      </div>
-
         {# BOTÕES #}
         <div class="d-flex justify-content-end gap-2 mt-5">
           <a
@@ -423,6 +441,7 @@
   </div>
 </div>
 {% endblock %} {% block scripts %}
+<script src="{{ url_for('static', filename='js/solicitacao-focos.js') }}"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 
@@ -539,6 +558,13 @@
   // });
 
   document.addEventListener("DOMContentLoaded", function () {
+    initSolicitacaoFocusForm({
+      root: "#formNovoPedido",
+      catalog: {{ solicitacao_focus_catalog | tojson | safe }},
+      initialTipoImovel: {{ (form.tipo_imovel or '') | tojson | safe }},
+      focoPlaceholder: "Selecione o foco da acao..."
+    });
+
     const cepInput = document.getElementById("cep");
     const btnBuscarCepEndereco = document.getElementById("btnBuscarCepEndereco");
     const enderecoInput = document.getElementById("endereco");

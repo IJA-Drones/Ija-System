@@ -76,6 +76,9 @@ def build_admin_dashboard_query(
     filtro_regiao: str,
     filtro_apoio_cet: str,
     filtro_protocolo: str,
+    filtro_tipo_visita: str = "",
+    filtro_tipo_imovel: str = "",
+    filtro_foco: str = "",
 ):
     query = (
         Solicitacao.query
@@ -106,6 +109,15 @@ def build_admin_dashboard_query(
     if filtro_protocolo:
         query = query.filter(Solicitacao.protocolo.ilike(f"%{filtro_protocolo}%"))
 
+    if filtro_tipo_visita:
+        query = query.filter(Solicitacao.tipo_visita == filtro_tipo_visita)
+
+    if filtro_tipo_imovel:
+        query = query.filter(Solicitacao.tipo_imovel == filtro_tipo_imovel)
+
+    if filtro_foco:
+        query = query.filter(Solicitacao.foco == filtro_foco)
+
     return query
 
 
@@ -115,6 +127,8 @@ def build_admin_canceladas_query(
     filtro_regiao: str,
     filtro_foco: str,
     filtro_protocolo: str,
+    filtro_tipo_visita: str = "",
+    filtro_tipo_imovel: str = "",
 ):
     query = (
         Solicitacao.query
@@ -136,6 +150,12 @@ def build_admin_canceladas_query(
 
     if filtro_foco:
         query = query.filter(Solicitacao.foco == filtro_foco)
+
+    if filtro_tipo_visita:
+        query = query.filter(Solicitacao.tipo_visita == filtro_tipo_visita)
+
+    if filtro_tipo_imovel:
+        query = query.filter(Solicitacao.tipo_imovel == filtro_tipo_imovel)
 
     if filtro_protocolo:
         query = query.filter(Solicitacao.protocolo.ilike(f"%{filtro_protocolo}%"))
@@ -172,6 +192,9 @@ def build_admin_export_query(
     filtro_regiao: str,
     filtro_apoio_cet: str,
     filtro_protocolo: str,
+    filtro_tipo_visita: str = "",
+    filtro_tipo_imovel: str = "",
+    filtro_foco: str = "",
 ):
     query = (
         Solicitacao.query
@@ -201,6 +224,15 @@ def build_admin_export_query(
     if filtro_protocolo:
         query = query.filter(Solicitacao.protocolo.ilike(f"%{filtro_protocolo}%"))
 
+    if filtro_tipo_visita:
+        query = query.filter(Solicitacao.tipo_visita == filtro_tipo_visita)
+
+    if filtro_tipo_imovel:
+        query = query.filter(Solicitacao.tipo_imovel == filtro_tipo_imovel)
+
+    if filtro_foco:
+        query = query.filter(Solicitacao.foco == filtro_foco)
+
     return query.order_by(Solicitacao.data_criacao.desc())
 
 
@@ -211,6 +243,9 @@ def build_admin_dashboard_export(
     filtro_regiao: str,
     filtro_apoio_cet: str,
     filtro_protocolo: str,
+    filtro_tipo_visita: str = "",
+    filtro_tipo_imovel: str = "",
+    filtro_foco: str = "",
 ):
     pedidos = build_admin_export_query(
         user=user,
@@ -219,6 +254,9 @@ def build_admin_dashboard_export(
         filtro_regiao=filtro_regiao,
         filtro_apoio_cet=filtro_apoio_cet,
         filtro_protocolo=filtro_protocolo,
+        filtro_tipo_visita=filtro_tipo_visita,
+        filtro_tipo_imovel=filtro_tipo_imovel,
+        filtro_foco=filtro_foco,
     ).all()
 
     wb = Workbook()
@@ -238,6 +276,7 @@ def build_admin_dashboard_export(
         "Foco",
         "Tipo Operacao",
         "Tipo Visita",
+        "Tipo Imovel",
         "Altura",
         "Apoio CET?",
         "Observacao",
@@ -300,6 +339,7 @@ def build_admin_dashboard_export(
             pedido.foco,
             pedido.tipo_operacao or "",
             pedido.tipo_visita or "",
+            pedido.tipo_imovel or "",
             pedido.altura_voo or "",
             "SIM" if pedido.apoio_cet else "NAO",
             pedido.observacao or "",

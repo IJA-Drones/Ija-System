@@ -15,6 +15,86 @@
   rel="stylesheet"
   href="{{ url_for('static', filename='css/components/buttons.css') }}"
 />
+<style>
+  .agenda-modal-stat {
+    padding: 1rem 1.1rem;
+    border-radius: 1.25rem;
+    background: #fff;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+    height: 100%;
+  }
+
+  .agenda-modal-soft {
+    background: #f8fbff;
+  }
+
+  .agenda-modal-kicker {
+    display: block;
+    margin-bottom: 0.65rem;
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: #7a889f;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+
+  .agenda-modal-stat-value {
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: #244f86;
+    line-height: 1.45;
+    word-break: break-word;
+  }
+
+  .agenda-modal-panel {
+    padding: 1rem 1.1rem;
+    border: 1px solid rgba(44, 82, 130, 0.12);
+    border-radius: 1.25rem;
+    background: #fff;
+  }
+
+  .agenda-modal-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.1rem 1.4rem;
+  }
+
+  .agenda-modal-meta-item {
+    min-width: 0;
+  }
+
+  .agenda-modal-meta-label {
+    display: block;
+    margin-bottom: 0.45rem;
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: #7a889f;
+    text-transform: uppercase;
+  }
+
+  .agenda-modal-meta-value {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #244f86;
+    line-height: 1.45;
+    word-break: break-word;
+  }
+
+  .agenda-modal-textbox {
+    padding: 0.7rem 0.85rem;
+    border-radius: 0.9rem;
+    background: #f8fbff;
+    color: #244f86;
+    line-height: 1.5;
+  }
+
+  @media (max-width: 991.98px) {
+    .agenda-modal-meta-grid {
+      grid-template-columns: 1fr;
+      gap: 0.9rem;
+    }
+  }
+</style>
 {% endblock %} {% block content %}
 
 <div class="container-fluid py-4" style="max-width: 1200px">
@@ -65,14 +145,14 @@
       class="card-header border-0 p-3 d-flex justify-content-between align-items-center"
       data-bs-toggle="collapse"
       data-bs-target="#collapseFiltrosAgenda"
-      aria-expanded="{{ 'true' if (filtros.uvis_id or filtros.status) else 'false' }}"
+      aria-expanded="{{ 'true' if (filtros.uvis_id or filtros.status or filtros.tipo_visita or filtros.tipo_imovel or filtros.foco) else 'false' }}"
       style="cursor: pointer"
     >
       <div class="d-flex align-items-center gap-2">
         <i class="bi bi-funnel-fill text-primary"></i>
         <span class="text-dark">Filtros de busca</span>
 
-        {% if filtros.uvis_id or filtros.status %}
+        {% if filtros.uvis_id or filtros.status or filtros.tipo_visita or filtros.tipo_imovel or filtros.foco %}
         <span
           class="badge bg-danger rounded-circle p-1"
           style="width: 8px; height: 8px"
@@ -84,7 +164,7 @@
     </div>
 
     <div
-      class="collapse {% if filtros.uvis_id or filtros.status %}show{% endif %}"
+      class="collapse {% if filtros.uvis_id or filtros.status or filtros.tipo_visita or filtros.tipo_imovel or filtros.foco %}show{% endif %}"
       id="collapseFiltrosAgenda"
     >
       <div class="card-body pt-0">
@@ -117,6 +197,51 @@
                   {% if filtros.status == s %}selected{% endif %}
                 >
                   {{ s }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-3">
+              <label class="small text-muted">Tipo de visita:</label>
+              <select class="form-select form-select-sm" name="tipo_visita">
+                <option value="">Todos</option>
+                {% for opcao in solicitacao_tipo_visita_opcoes %}
+                <option
+                  value="{{ opcao }}"
+                  {% if filtros.tipo_visita == opcao %}selected{% endif %}
+                >
+                  {{ opcao }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-3">
+              <label class="small text-muted">Tipo de imóvel:</label>
+              <select class="form-select form-select-sm" name="tipo_imovel">
+                <option value="">Todos</option>
+                {% for opcao in solicitacao_tipo_imovel_opcoes %}
+                <option
+                  value="{{ opcao }}"
+                  {% if filtros.tipo_imovel == opcao %}selected{% endif %}
+                >
+                  {{ opcao }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-3">
+              <label class="small text-muted">Foco da ação:</label>
+              <select class="form-select form-select-sm" name="foco">
+                <option value="">Todos</option>
+                {% for opcao in solicitacao_filter_foco_opcoes %}
+                <option
+                  value="{{ opcao }}"
+                  {% if filtros.foco == opcao %}selected{% endif %}
+                >
+                  {{ opcao }}
                 </option>
                 {% endfor %}
               </select>
@@ -158,7 +283,7 @@
                 <i class="bi bi-funnel"></i> Filtrar
               </button>
 
-              {% if filtros.uvis_id or filtros.status %}
+              {% if filtros.uvis_id or filtros.status or filtros.tipo_visita or filtros.tipo_imovel or filtros.foco %}
               <a
                 href="{{ url_for('main.agenda') }}"
                 class="btn btn-outline-secondary btn-sm w-100"
@@ -218,12 +343,8 @@
 
             <div class="row g-3">
               <div class="col-6">
-                <div class="p-3 rounded-4 border-0 shadow-sm h-100">
-                  <label
-                    class="small text-muted fw-bold text-uppercase d-block mb-2"
-                    style="font-size: 0.65rem"
-                    >Horário Agendado</label
-                  >
+                <div class="agenda-modal-stat h-100">
+                  <span class="agenda-modal-kicker">Horário Agendado</span>
                   <div class="d-flex align-items-center text-primary">
                     <i class="bi bi-clock-fill fs-5 me-2"></i>
                     <span id="m-hora" class="fw-bold fs-5">—</span>
@@ -231,27 +352,19 @@
                 </div>
               </div>
               <div class="col-6">
-                <div class="p-3 rounded-4 bg-light border-0 shadow-sm h-100">
-                  <label
-                    class="small text-muted fw-bold text-uppercase d-block mb-2"
-                    style="font-size: 0.65rem"
-                    >Foco da Ação</label
-                  >
-                  <div class="d-flex align-items-center text-dark">
+                <div class="agenda-modal-stat agenda-modal-soft h-100">
+                  <span class="agenda-modal-kicker">Foco da Ação</span>
+                  <div class="d-flex align-items-start text-dark">
                     <i class="bi bi-crosshair me-2 text-danger"></i>
-                    <span id="m-foco" class="fw-semibold">—</span>
+                    <span id="m-foco" class="agenda-modal-stat-value">—</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div class="p-3 rounded-4 border">
+            <div class="agenda-modal-panel">
               <div class="mb-3">
-                <label
-                  class="small text-muted fw-bold text-uppercase d-block mb-2"
-                  style="font-size: 0.65rem"
-                  >Situação do Pedido</label
-                >
+                <span class="agenda-modal-kicker mb-2">Situação do Pedido</span>
                 <span
                   id="m-status"
                   class="badge rounded-pill shadow-sm px-2"
@@ -260,18 +373,46 @@
                 >
               </div>
 
+              <div class="agenda-modal-meta-grid mb-3">
+                <div class="agenda-modal-meta-item">
+                  <span class="agenda-modal-meta-label">Tipo de Visita</span>
+                  <div id="m-tipo-visita" class="agenda-modal-meta-value">—</div>
+                </div>
+                <div class="agenda-modal-meta-item">
+                  <span class="agenda-modal-meta-label">Tipo de Imóvel</span>
+                  <div id="m-tipo-imovel" class="agenda-modal-meta-value">—</div>
+                </div>
+                <div class="agenda-modal-meta-item">
+                  <span class="agenda-modal-meta-label">Tipo de Operação</span>
+                  <div id="m-tipo-operacao" class="agenda-modal-meta-value">—</div>
+                </div>
+                <div class="agenda-modal-meta-item">
+                  <span class="agenda-modal-meta-label">Altura do Voo</span>
+                  <div id="m-altura" class="agenda-modal-meta-value">—</div>
+                </div>
+                <div class="agenda-modal-meta-item">
+                  <span class="agenda-modal-meta-label">Apoio CET?</span>
+                  <div id="m-apoio-cet" class="agenda-modal-meta-value">—</div>
+                </div>
+                <div class="agenda-modal-meta-item">
+                  <span class="agenda-modal-meta-label">Protocolo</span>
+                  <div id="m-protocolo" class="agenda-modal-meta-value">—</div>
+                </div>
+              </div>
+
+              <div id="boxObservacao" class="mb-3 d-none">
+                <span class="agenda-modal-meta-label">Observação</span>
+                <div id="m-observacao" class="agenda-modal-textbox small fst-italic">—</div>
+              </div>
+
               <div id="boxCoords" style="display: none">
-                <label
-                  class="small text-muted fw-bold text-uppercase d-block mb-2"
-                  style="font-size: 0.65rem"
-                  >Endereço de Operação</label
-                >
+                <span class="agenda-modal-meta-label">Endereço de Operação</span>
                 <div class="d-flex gap-2">
                   <i class="bi bi-geo-alt text-primary fs-5"></i>
                   <div>
                     <div
                       id="m-endereco"
-                      class="fw-semibold text-dark small mb-1"
+                      class="agenda-modal-meta-value small mb-1"
                     >
                       —
                     </div>
@@ -456,6 +597,13 @@
     // ---- preencher textos ----
     const uvis = props.uvis || "—";
     const foco = props.foco || "—";
+    const tipoVisita = props.tipo_visita || "—";
+    const tipoImovel = props.tipo_imovel || "—";
+    const tipoOperacao = props.tipo_operacao || "—";
+    const altura = props.altura_voo || "—";
+    const apoioCet = props.apoio_cet || "—";
+    const protocolo = props.protocolo || "—";
+    const observacao = props.observacao || "";
     const hora = props.hora || "—";
     const status = props.status || "—";
     const endereco = props.endereco || "";
@@ -465,14 +613,37 @@
 
     const elUvis = document.getElementById("m-uvis");
     const elFoco = document.getElementById("m-foco");
+    const elTipoVisita = document.getElementById("m-tipo-visita");
+    const elTipoImovel = document.getElementById("m-tipo-imovel");
+    const elTipoOperacao = document.getElementById("m-tipo-operacao");
+    const elAltura = document.getElementById("m-altura");
+    const elApoioCet = document.getElementById("m-apoio-cet");
+    const elProtocolo = document.getElementById("m-protocolo");
+    const boxObservacao = document.getElementById("boxObservacao");
+    const elObservacao = document.getElementById("m-observacao");
     const elHora = document.getElementById("m-hora");
     const elStatus = document.getElementById("m-status");
     const elSub = document.getElementById("m-title-sub");
 
     if (elUvis) elUvis.textContent = uvis;
     if (elFoco) elFoco.textContent = foco;
+    if (elTipoVisita) elTipoVisita.textContent = tipoVisita;
+    if (elTipoImovel) elTipoImovel.textContent = tipoImovel;
+    if (elTipoOperacao) elTipoOperacao.textContent = tipoOperacao;
+    if (elAltura) elAltura.textContent = altura;
+    if (elApoioCet) elApoioCet.textContent = apoioCet;
+    if (elProtocolo) elProtocolo.textContent = protocolo;
     if (elHora) elHora.textContent = hora;
     if (elStatus) setStatusBadge(elStatus, status);
+    if (boxObservacao) {
+      if (observacao) {
+        boxObservacao.classList.remove("d-none");
+        if (elObservacao) elObservacao.textContent = observacao;
+      } else {
+        boxObservacao.classList.add("d-none");
+        if (elObservacao) elObservacao.textContent = "—";
+      }
+    }
 
     // Subtítulo (foco + data)
     try {

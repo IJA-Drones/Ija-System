@@ -7,6 +7,12 @@ from app.extensions import db
 from app.models import Solicitacao, Usuario
 from app.shared.access import apply_prefeitura_scope, is_prefeitura_admin_user
 from app.shared.geofencing import detectar_area_restrita
+from app.shared.solicitacao_focos import (
+    FILTER_FOCO_OPCOES,
+    TIPO_VISITA_OPCOES,
+    same_normalized,
+    validate_foco_selection,
+)
 
 STATUS_OPCOES_EDICAO = [
     "PENDENTE",
@@ -15,8 +21,8 @@ STATUS_OPCOES_EDICAO = [
     "APROVADO COM RECOMENDAÇÕES",
     "NEGADO",
 ]
-FOCO_OPCOES_EDICAO = ["Foco 1", "Foco 2", "Foco 3"]
-TIPO_VISITA_OPCOES_EDICAO = ["Tipo 1", "Tipo 2", "Tipo 3"]
+FOCO_OPCOES_EDICAO = FILTER_FOCO_OPCOES
+TIPO_VISITA_OPCOES_EDICAO = TIPO_VISITA_OPCOES
 UF_OPCOES = [
     "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG",
     "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO",
@@ -49,7 +55,34 @@ def build_novo_cadastro_context(user, google_maps_key):
         "hoje": date.today().isoformat(),
         "google_maps_key": google_maps_key,
         "uvis_lista": uvis_lista,
+        "form_values": {},
     }
+
+
+def build_novo_cadastro_context_with_form(user, google_maps_key, form_source):
+    context = build_novo_cadastro_context(user, google_maps_key)
+    context["form_values"] = {
+        "data": (form_source.get("data") or "").strip(),
+        "hora": (form_source.get("hora") or "").strip(),
+        "uvis_responsavel_id": (form_source.get("uvis_responsavel_id") or "").strip(),
+        "cep": (form_source.get("cep") or "").strip(),
+        "logradouro": (form_source.get("logradouro") or "").strip(),
+        "numero": (form_source.get("numero") or "").strip(),
+        "complemento": (form_source.get("complemento") or "").strip(),
+        "bairro": (form_source.get("bairro") or "").strip(),
+        "cidade": (form_source.get("cidade") or "").strip(),
+        "uf": (form_source.get("uf") or "").strip(),
+        "latitude": (form_source.get("latitude") or "").strip(),
+        "longitude": (form_source.get("longitude") or "").strip(),
+        "tipo_visita": (form_source.get("tipo_visita") or "").strip(),
+        "tipo_imovel": (form_source.get("tipo_imovel") or "").strip(),
+        "foco": (form_source.get("foco") or "").strip(),
+        "tipo_operacao": (form_source.get("tipo_operacao") or "").strip(),
+        "altura_voo": (form_source.get("altura_voo") or "").strip(),
+        "apoio_cet": (form_source.get("apoio_cet") or "").strip(),
+        "observacao": (form_source.get("observacao") or "").strip(),
+    }
+    return context
 
 
 def create_nova_solicitacao(user, form_data):
@@ -77,6 +110,14 @@ def create_nova_solicitacao(user, form_data):
     latitude = float(lat_raw.replace(",", ".")) if lat_raw else None
     longitude = float(lng_raw.replace(",", ".")) if lng_raw else None
     area_restrita = detectar_area_restrita(latitude, longitude) or form_data.get("risco_aereo") == "1"
+    try:
+        tipo_visita, tipo_imovel, foco = validate_foco_selection(
+            form_data.get("tipo_visita"),
+            form_data.get("tipo_imovel"),
+            form_data.get("foco"),
+        )
+    except ValueError as exc:
+        raise NovoCadastroValidationError(str(exc))
 
     nova_solicitacao = Solicitacao(
         data_agendamento=data_obj,
@@ -88,8 +129,9 @@ def create_nova_solicitacao(user, form_data):
         numero=form_data.get("numero"),
         uf=form_data.get("uf"),
         complemento=form_data.get("complemento"),
-        foco=form_data.get("foco"),
-        tipo_visita=form_data.get("tipo_visita"),
+        foco=foco,
+        tipo_visita=tipo_visita,
+        tipo_imovel=tipo_imovel,
         tipo_operacao=form_data.get("tipo_operacao"),
         altura_voo=form_data.get("altura_voo"),
         apoio_cet=form_data.get("apoio_cet") == "sim",
@@ -158,8 +200,27 @@ def atualizar_solicitacao(user, solicitacao_id, form_data):
         else None
     )
 
-    pedido.foco = form_data.get("foco") or pedido.foco
-    pedido.tipo_visita = form_data.get("tipo_visita") or pedido.tipo_visita
+    try:
+        tipo_visita, tipo_imovel, foco = validate_foco_selection(
+            form_data.get("tipo_visita"),
+            form_data.get("tipo_imovel"),
+            form_data.get("foco"),
+        )
+    except ValueError as exc:
+        if (
+            same_normalized(form_data.get("foco"), pedido.foco)
+            and same_normalized(form_data.get("tipo_visita"), pedido.tipo_visita)
+            and same_normalized(form_data.get("tipo_imovel"), pedido.tipo_imovel)
+        ):
+            tipo_visita = pedido.tipo_visita
+            tipo_imovel = pedido.tipo_imovel
+            foco = pedido.foco
+        else:
+            raise NovoCadastroValidationError(str(exc))
+
+    pedido.foco = foco
+    pedido.tipo_visita = tipo_visita
+    pedido.tipo_imovel = tipo_imovel
     pedido.tipo_operacao = form_data.get("tipo_operacao") or pedido.tipo_operacao
     pedido.altura_voo = form_data.get("altura_voo") or pedido.altura_voo
     pedido.apoio_cet = (form_data.get("apoio_cet", "n\u00e3o") or "").lower() == "sim"

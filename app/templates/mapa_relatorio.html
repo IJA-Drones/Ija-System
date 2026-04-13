@@ -189,16 +189,7 @@
             <label class="small text-muted mb-1 fw-bold">Tipo de Foco</label>
             <select id="focoFilter" class="form-select form-select-sm" onchange="atualizarMapas()">
               <option value="todos">Todos os Focos</option>
-
-              {% set opcoes_foco = [
-                "Acumulador", "CAIXA D'AGUA", "Casa abandonada com inserviveis",
-                "Corrego", "Ferro velho", "Galpão com inserviveis",
-                "Imovel com Inserviveis", "Laje/telhado com Acumulo de agua",
-                "P.E Cadastrado", "Patio com Veiculos", "Piscina",
-                "Piscinão", "Reciclagem", "Terreno com inserviveis"
-              ] %}
-
-              {% for opcao in opcoes_foco %}
+              {% for opcao in solicitacao_filter_foco_opcoes %}
               <option value="{{ opcao }}">{{ opcao }}</option>
               {% endfor %}
             </select>
@@ -403,7 +394,12 @@
   }
 
   function normalizarFoco(str) {
-    return (str || "").toString().trim().toLowerCase();
+    return (str || "")
+      .toString()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim()
+      .toLowerCase();
   }
 
   function getCategoriaPorFoco(foco) {
@@ -412,27 +408,27 @@
     // Água / piscina / caixa / acúmulo
     if (
       f.includes("piscina") ||
-      f.includes("piscinão") ||
+      f.includes("piscinao") ||
       f.includes("caixa") ||
       f.includes("caixa d'agua") ||
-      f.includes("caixa dágua") ||
-      f.includes("Acumulador") ||
-      f.includes("agua") || f.includes("água") ||
-      f.includes("acumulo de agua") || f.includes("acúmulo de agua") ||
-      f.includes("acúmulo de água") || f.includes("acumulo de água") ||
+      f.includes("caixa dagua") ||
+      f.includes("acumulador") ||
+      f.includes("agua") ||
+      f.includes("acumulo de agua") ||
       f.includes("laje/telhado")
     ) return "piscina";
 
     // Abandonado
-    if (f.includes("abandonad")) return "abandonado";
+    if (f.includes("abandonad") || f.includes("obra")) return "abandonado";
 
-    // Terreno / inservíveis / ferro velho / reciclagem / pátio
+    // Terreno / inserviveis / ferro velho / reciclagem / patio
     if (
       f.includes("terreno") ||
-      f.includes("inserviveis") || f.includes("inservíveis") ||
+      f.includes("inserviveis") ||
       f.includes("ferro velho") ||
       f.includes("reciclagem") ||
-      f.includes("pátio") || f.includes("patio")
+      f.includes("patio") ||
+      f.includes("borracharia")
     ) return "terreno";
 
     return "outros";
