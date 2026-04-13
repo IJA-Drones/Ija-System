@@ -373,6 +373,20 @@ def _build_service_line_items(orcamento):
             )
         )
 
+    if orcamento.inclui_pulverizacao_adicional:
+        label = "Servico de pulverizacao adicional"
+        if (orcamento.cultura_alternativa or "").strip():
+            label += f" ({orcamento.cultura_alternativa.strip()})"
+        line_items.append(
+            (
+                label,
+                (
+                    f"{_money(orcamento.preco_pulverizacao_adicional)} por ha x "
+                    f"{area_label} = {_money(orcamento.valor_pulverizacao_adicional_total)}"
+                ),
+            )
+        )
+
     if not line_items:
         line_items.append(("Servico contratado", orcamento.servico or "Nao informado"))
 
@@ -575,7 +589,7 @@ def build_orcamento_agro_pdf(orcamento):
             ["Cliente", orcamento.cliente_nome],
             ["Fazenda", orcamento.nome_fazenda],
             ["Serviço", orcamento.servico or "Não informado"],
-            ["Cultura", orcamento.cultura or "Não informada"],
+            ["Culturas", orcamento.culturas_formatadas or "Não informadas"],
         ],
         label_style,
         value_style,
@@ -1313,11 +1327,11 @@ def _normalize_contract_service_label(contrato, orcamento):
 
 def _build_contract_service_item(contrato, orcamento):
     label = _normalize_contract_service_label(contrato, orcamento)
-    cultura = (contrato.cultura or "").strip().lower()
+    culturas = (getattr(contrato, "culturas_formatadas", "") or "").strip().lower()
     area = (contrato.area_contratada or "").strip()
     texto = f"Serviço 01 {label}"
-    if cultura:
-        texto += f" de {cultura}"
+    if culturas:
+        texto += f" de {culturas}"
     if area:
         area_lower = area.lower()
         if area_lower.endswith((" ha", " ha.", "ha", "ha.", " hectare", " hectares", "hectare", "hectares")):
@@ -1334,6 +1348,11 @@ def _build_financial_items(contrato, orcamento):
         itens.append(("Serviço de Mapeamento", contrato.valor_mapeamento_ha))
     if _decimal(contrato.valor_pulverizacao_ha) > 0:
         itens.append(("Serviço de Pulverização", contrato.valor_pulverizacao_ha))
+    if _decimal(contrato.valor_pulverizacao_adicional_ha) > 0:
+        label = "Serviço de Pulverização Adicional"
+        if (contrato.cultura_alternativa or "").strip():
+            label += f" ({contrato.cultura_alternativa.strip()})"
+        itens.append((label, contrato.valor_pulverizacao_adicional_ha))
     if not itens:
         valor_referencia = contrato.valor_total
         itens.append((f"Serviço de {servico_base}", valor_referencia))

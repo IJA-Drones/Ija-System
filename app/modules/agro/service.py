@@ -97,6 +97,7 @@ def build_orcamentos_agro_query(user, q: str = "", cliente_id: int | None = None
                 OrcamentoAgro.cliente_documento.ilike(like),
                 OrcamentoAgro.nome_fazenda.ilike(like),
                 OrcamentoAgro.cultura.ilike(like),
+                OrcamentoAgro.cultura_alternativa.ilike(like),
                 OrcamentoAgro.servico.ilike(like),
                 OrcamentoAgro.protocolo.ilike(like),
             )
@@ -224,8 +225,8 @@ def update_orcamento_snapshot_from_cliente(orcamento: OrcamentoAgro, cliente: Cl
 
 def build_descricao_servico_contrato(orcamento: OrcamentoAgro) -> str:
     descricao = orcamento.servico or "Prestacao de servicos agro"
-    if orcamento.cultura:
-        return f"{descricao} na cultura de {orcamento.cultura}"
+    if orcamento.culturas_formatadas:
+        return f"{descricao} na cultura de {orcamento.culturas_formatadas}"
     return descricao
 
 
@@ -253,10 +254,12 @@ def build_contrato_agro_defaults(orcamento: OrcamentoAgro) -> dict:
         "propriedade_uf": (orcamento.uf or "").strip().upper(),
         "descricao_servico": build_descricao_servico_contrato(orcamento),
         "cultura": (orcamento.cultura or "").strip(),
+        "cultura_alternativa": (orcamento.cultura_alternativa or "").strip(),
         "area_contratada": orcamento.area_ha_formatada,
         "valor_total": format_currency_br(orcamento.valor_total_calculado),
         "valor_mapeamento_ha": format_currency_br(orcamento.preco_mapeamento),
         "valor_pulverizacao_ha": format_currency_br(orcamento.preco_pulverizacao),
+        "valor_pulverizacao_adicional_ha": format_currency_br(orcamento.preco_pulverizacao_adicional),
         "prazo_inicio_dias": "10",
         "prazo_pagamento_dias": "10",
         "cidade_assinatura": "São Paulo",
@@ -289,10 +292,12 @@ def serialize_contrato_agro_form(contrato: ContratoAgro) -> dict:
         "propriedade_uf": contrato.propriedade_uf or "",
         "descricao_servico": contrato.descricao_servico or "",
         "cultura": contrato.cultura or "",
+        "cultura_alternativa": contrato.cultura_alternativa or "",
         "area_contratada": contrato.area_contratada or "",
         "valor_total": format_currency_br(contrato.valor_total),
         "valor_mapeamento_ha": format_currency_br(contrato.valor_mapeamento_ha),
         "valor_pulverizacao_ha": format_currency_br(contrato.valor_pulverizacao_ha),
+        "valor_pulverizacao_adicional_ha": format_currency_br(contrato.valor_pulverizacao_adicional_ha),
         "prazo_inicio_dias": str(contrato.prazo_inicio_dias or ""),
         "prazo_pagamento_dias": str(contrato.prazo_pagamento_dias or ""),
         "cidade_assinatura": contrato.cidade_assinatura or "",
