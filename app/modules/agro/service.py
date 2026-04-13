@@ -86,7 +86,12 @@ def build_clientes_agro_query(user, q: str = ""):
 
 
 def build_orcamentos_agro_query(user, q: str = "", cliente_id: int | None = None, mapeamento: str = ""):
-    query = OrcamentoAgro.query.options(joinedload(OrcamentoAgro.cliente), joinedload(OrcamentoAgro.contrato))
+    query = OrcamentoAgro.query.options(
+        joinedload(OrcamentoAgro.cliente),
+        joinedload(OrcamentoAgro.contrato),
+        joinedload(OrcamentoAgro.drone_agro),
+        joinedload(OrcamentoAgro.drone_mapeamento_agro),
+    )
     query = apply_prefeitura_scope(query, user, OrcamentoAgro.prefeitura_id)
 
     if q:
