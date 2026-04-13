@@ -190,6 +190,55 @@ def _build_os_agro_form_options(*, piloto_logado=None):
     return equipes, pilotos, equipamentos
 
 
+def _equipamento_agro_pode_ser_drone(equipamento):
+    if equipamento is None:
+        return False
+
+    tipo = (equipamento.tipo or "").strip().lower()
+    funcao = (equipamento.funcao_operacional or "").strip().lower()
+    return "drone" in tipo or funcao in {"pulverizacao", "mapeamento", "apoio"}
+
+
+def _build_orcamento_agro_drone_options(*, funcao_operacional=None):
+    equipamentos = (
+        apply_prefeitura_scope(EquipamentoAgro.query, current_user, EquipamentoAgro.prefeitura_id)
+        .order_by(EquipamentoAgro.identificacao.asc(), EquipamentoAgro.id.asc())
+        .all()
+    )
+    drones = [item for item in equipamentos if _equipamento_agro_pode_ser_drone(item)]
+    if funcao_operacional:
+        filtro = funcao_operacional.strip().lower()
+        drones = [
+            item for item in drones
+            if (item.funcao_operacional or "").strip().lower() == filtro
+        ]
+    return drones
+
+
+def _build_orcamento_agro_form_context(
+    *,
+    modo,
+    form,
+    errors,
+    clientes,
+    drones_agro,
+    drones_mapeamento_agro,
+    orcamento=None,
+):
+    return {
+        "modo": modo,
+        "form": form,
+        "errors": errors,
+        "clientes": clientes,
+        "servico_options": AGRO_SERVICO_OPTIONS,
+        "drones_agro": drones_agro,
+        "drones_mapeamento_agro": drones_mapeamento_agro,
+        "drones_agro_meta": {item.id: _build_equipamento_agro_meta(item) for item in drones_agro},
+        "drones_mapeamento_agro_meta": {item.id: _build_equipamento_agro_meta(item) for item in drones_mapeamento_agro},
+        "orcamento": orcamento,
+    }
+
+
 def _build_os_agro_form_context(
     *,
     modo,
@@ -287,6 +336,13 @@ def _normalize_orcamento_form(form_source):
         "nome_fazenda": (form_source.get("nome_fazenda") or "").strip(),
         "servico": (form_source.get("servico") or OrcamentoAgro.SERVICO_MAPEAMENTO).strip(),
         "mapeamento": (form_source.get("mapeamento") or "NAO").strip().upper(),
+        "drone_agro_id": (form_source.get("drone_agro_id") or "").strip(),
+        "drone_mapeamento_agro_id": (form_source.get("drone_mapeamento_agro_id") or "").strip(),
+        "possui_produto_aplicado": (form_source.get("possui_produto_aplicado") or "NAO").strip().upper(),
+        "produto_aplicado_receituario": (form_source.get("produto_aplicado_receituario") or "").strip(),
+        "inicio_aplicacao_prevista": (form_source.get("inicio_aplicacao_prevista") or "").strip(),
+        "fim_aplicacao_prevista": (form_source.get("fim_aplicacao_prevista") or "").strip(),
+        "estimativa_aplicacao_dias": (form_source.get("estimativa_aplicacao_dias") or "").strip(),
         "risco_operacional": (form_source.get("risco_operacional") or "").strip(),
         "cultura": (form_source.get("cultura") or "").strip(),
         "cultura_alternativa": (form_source.get("cultura_alternativa") or "").strip(),
@@ -370,6 +426,22 @@ def _format_decimal_br_value(value):
     return f"{Decimal(value):.2f}".replace(".", ",")
 
 
+def _parse_iso_date(value):
+    text = (value or "").strip()
+    if not text:
+        return None
+    try:
+        return datetime.strptime(text, "%Y-%m-%d").date()
+    except ValueError:
+        return None
+
+
+def _calculate_application_days(start_date, end_date):
+    if not start_date or not end_date or end_date < start_date:
+        return None
+    return (end_date - start_date).days + 1
+
+
 def _orcamento_servico_inclui_mapeamento(servico):
     return servico in (
         OrcamentoAgro.SERVICO_MAPEAMENTO,
@@ -395,6 +467,26 @@ def _orcamento_pulverizacao_adicional_ativa(form):
     return bool((form.get("cultura_alternativa") or "").strip()) or (
         preco_pulverizacao_adicional is not None and preco_pulverizacao_adicional > 0
     )
+
+
+def _apply_orcamento_agro_drone_snapshot(orcamento, equipamento):
+    orcamento.drone_agro_id = getattr(equipamento, "id", None) if equipamento else None
+    orcamento.drone_tipo = getattr(equipamento, "tipo", None) if equipamento else None
+    orcamento.drone_identificacao = getattr(equipamento, "identificacao", None) if equipamento else None
+    orcamento.drone_modelo = getattr(equipamento, "modelo", None) if equipamento else None
+    orcamento.drone_funcao_operacional = getattr(equipamento, "funcao_operacional", None) if equipamento else None
+    orcamento.drone_registro_anatel = getattr(equipamento, "registro_anatel", None) if equipamento else None
+    orcamento.drone_registro_anac = getattr(equipamento, "registro_anac", None) if equipamento else None
+    orcamento.drone_capacidade_tanque_l = getattr(equipamento, "capacidade_tanque_l", None) if equipamento else None
+
+
+def _apply_orcamento_agro_drone_mapeamento_snapshot(orcamento, equipamento):
+    orcamento.drone_mapeamento_agro_id = getattr(equipamento, "id", None) if equipamento else None
+    orcamento.drone_mapeamento_identificacao = getattr(equipamento, "identificacao", None) if equipamento else None
+    orcamento.drone_mapeamento_modelo = getattr(equipamento, "modelo", None) if equipamento else None
+    orcamento.drone_mapeamento_funcao_operacional = getattr(equipamento, "funcao_operacional", None) if equipamento else None
+    orcamento.drone_mapeamento_registro_anatel = getattr(equipamento, "registro_anatel", None) if equipamento else None
+    orcamento.drone_mapeamento_registro_anac = getattr(equipamento, "registro_anac", None) if equipamento else None
 
 
 def _normalize_equipe_form(form_source):
@@ -624,6 +716,8 @@ def _validate_orcamento_form_legacy(form):
 def _validate_orcamento_form(form):
     errors = {}
     cliente = None
+    drone_agro = None
+    drone_mapeamento_agro = None
     area_ha = _parse_decimal_input(form.get("area_ha"))
     preco_mapeamento = parse_currency_br(form.get("preco_mapeamento"))
     preco_pulverizacao = parse_currency_br(form.get("preco_pulverizacao"))
@@ -632,6 +726,9 @@ def _validate_orcamento_form(form):
     pulverizacao_ativa = _orcamento_servico_inclui_pulverizacao(form.get("servico"))
     pulverizacao_adicional_ativa = _orcamento_pulverizacao_adicional_ativa(form)
     cliente_documento_digits = ""
+    possui_produto_aplicado = (form.get("possui_produto_aplicado") or "NAO") == "SIM"
+    inicio_aplicacao_prevista = _parse_iso_date(form.get("inicio_aplicacao_prevista"))
+    fim_aplicacao_prevista = _parse_iso_date(form.get("fim_aplicacao_prevista"))
 
     try:
         cliente_id = int(form["cliente_agro_id"])
@@ -642,6 +739,35 @@ def _validate_orcamento_form(form):
         cliente = _get_cliente_agro(cliente_id)
         if cliente is None:
             errors["cliente_agro_id"] = "Selecione um cliente valido."
+
+    drone_agro_id = _normalize_optional_int(form.get("drone_agro_id"))
+    if form.get("drone_agro_id") and drone_agro_id is None:
+        errors["drone_agro_id"] = "Selecione um drone valido."
+    elif drone_agro_id:
+        drone_query = apply_prefeitura_scope(
+            EquipamentoAgro.query,
+            current_user,
+            EquipamentoAgro.prefeitura_id,
+        )
+        drone_agro = drone_query.filter(EquipamentoAgro.id == drone_agro_id).first()
+        if drone_agro is None or not _equipamento_agro_pode_ser_drone(drone_agro):
+            errors["drone_agro_id"] = "O drone selecionado nao foi encontrado no cadastro do Agro."
+            drone_agro = None
+
+    drone_mapeamento_agro_id = _normalize_optional_int(form.get("drone_mapeamento_agro_id"))
+    if form.get("drone_mapeamento_agro_id") and drone_mapeamento_agro_id is None:
+        errors["drone_mapeamento_agro_id"] = "Selecione um drone de mapeamento valido."
+    elif drone_mapeamento_agro_id:
+        drone_map_query = apply_prefeitura_scope(
+            EquipamentoAgro.query,
+            current_user,
+            EquipamentoAgro.prefeitura_id,
+        )
+        drone_mapeamento_agro = drone_map_query.filter(EquipamentoAgro.id == drone_mapeamento_agro_id).first()
+        funcao_mapeamento = (getattr(drone_mapeamento_agro, "funcao_operacional", None) or "").strip().lower()
+        if drone_mapeamento_agro is None or funcao_mapeamento != "mapeamento":
+            errors["drone_mapeamento_agro_id"] = "Selecione um drone com funcao operacional de mapeamento."
+            drone_mapeamento_agro = None
 
     if not form["cliente_nome"]:
         errors["cliente_nome"] = "Informe o nome do cliente."
@@ -658,6 +784,9 @@ def _validate_orcamento_form(form):
 
     if form["servico"] not in AGRO_SERVICO_OPTIONS:
         errors["servico"] = "Selecione um servico valido."
+
+    if mapeamento_ativo and not form.get("drone_mapeamento_agro_id"):
+        errors["drone_mapeamento_agro_id"] = "Selecione o drone de mapeamento."
 
     if not form["area_ha"]:
         errors["area_ha"] = "Informe a area em hectares."
@@ -694,6 +823,29 @@ def _validate_orcamento_form(form):
 
     if len(form["cultura_alternativa"]) > 100:
         errors["cultura_alternativa"] = "Cultura adicional deve ter no maximo 100 caracteres."
+
+    if possui_produto_aplicado:
+        if not form["produto_aplicado_receituario"]:
+            errors["produto_aplicado_receituario"] = "Informe o produto aplicado ou o receituario agronomico."
+    elif form["produto_aplicado_receituario"]:
+        form["produto_aplicado_receituario"] = ""
+
+    if not form["inicio_aplicacao_prevista"]:
+        errors["inicio_aplicacao_prevista"] = "Informe o inicio da aplicacao."
+    elif inicio_aplicacao_prevista is None:
+        errors["inicio_aplicacao_prevista"] = "Informe uma data valida para o inicio da aplicacao."
+
+    if not form["fim_aplicacao_prevista"]:
+        errors["fim_aplicacao_prevista"] = "Informe o fim da aplicacao."
+    elif fim_aplicacao_prevista is None:
+        errors["fim_aplicacao_prevista"] = "Informe uma data valida para o fim da aplicacao."
+
+    if (
+        inicio_aplicacao_prevista is not None
+        and fim_aplicacao_prevista is not None
+        and fim_aplicacao_prevista < inicio_aplicacao_prevista
+    ):
+        errors["fim_aplicacao_prevista"] = "O fim da aplicacao nao pode ser anterior ao inicio."
 
     if form["cultura_alternativa"]:
         if not form["preco_pulverizacao_adicional"]:
@@ -754,6 +906,8 @@ def _validate_orcamento_form(form):
     return (
         errors,
         cliente,
+        drone_agro,
+        drone_mapeamento_agro,
         cliente_documento_digits,
         cep_digits,
         area_ha,
@@ -762,6 +916,9 @@ def _validate_orcamento_form(form):
         preco_pulverizacao,
         preco_pulverizacao_adicional,
         mapeamento_ativo,
+        possui_produto_aplicado,
+        inicio_aplicacao_prevista,
+        fim_aplicacao_prevista,
     )
 
 
@@ -1046,6 +1203,7 @@ def _build_equipamento_agro_meta(equipamento):
         "tipo": equipamento.tipo or "",
         "registro_anatel": equipamento.registro_anatel or "",
         "registro_anac": equipamento.registro_anac or "",
+        "capacidade_tanque_l": str(equipamento.capacidade_tanque_l or ""),
         "largura_faixa_m": str(equipamento.largura_faixa_m or ""),
         "altura_voo_padrao_m": str(equipamento.altura_voo_padrao_m or ""),
         "ponta_pulverizacao": equipamento.ponta_pulverizacao or "",
@@ -1615,6 +1773,8 @@ def register_routes(bp):
     def agro_orcamento_novo():
         _require_agro_edit()
         clientes = build_clientes_agro_query(current_user).all()
+        drones_agro = _build_orcamento_agro_drone_options()
+        drones_mapeamento_agro = _build_orcamento_agro_drone_options(funcao_operacional="Mapeamento")
         errors = {}
         form = _normalize_orcamento_form(request.form if request.method == "POST" else {})
 
@@ -1622,6 +1782,8 @@ def register_routes(bp):
             (
                 errors,
                 cliente,
+                drone_agro,
+                drone_mapeamento_agro,
                 cliente_documento_digits,
                 cep_digits,
                 area_ha,
@@ -1630,18 +1792,26 @@ def register_routes(bp):
                 preco_pulverizacao,
                 preco_pulverizacao_adicional,
                 mapeamento_ativo,
+                possui_produto_aplicado,
+                inicio_aplicacao_prevista,
+                fim_aplicacao_prevista,
             ) = _validate_orcamento_form(form)
             form["elaborado_por_nome"] = form.get("elaborado_por_nome") or _current_user_display_name()
             form["valor_total_calculado"] = format_currency_br(valor_total_calculado)
+            estimativa_dias = _calculate_application_days(inicio_aplicacao_prevista, fim_aplicacao_prevista)
+            form["estimativa_aplicacao_dias"] = str(estimativa_dias or "")
             if errors:
                 flash("Corrija os campos destacados do orçamento agro.", "warning")
                 return render_template(
                     "agro_orcamento_form.html",
-                    form=form,
-                    errors=errors,
-                    modo="novo",
-                    clientes=clientes,
-                    servico_options=AGRO_SERVICO_OPTIONS,
+                    **_build_orcamento_agro_form_context(
+                        modo="novo",
+                        form=form,
+                        errors=errors,
+                        clientes=clientes,
+                        drones_agro=drones_agro,
+                        drones_mapeamento_agro=drones_mapeamento_agro,
+                    ),
                 )
 
             orcamento = OrcamentoAgro(
@@ -1662,6 +1832,10 @@ def register_routes(bp):
                 preco_mapeamento=preco_mapeamento,
                 preco_pulverizacao=preco_pulverizacao,
                 preco_pulverizacao_adicional=preco_pulverizacao_adicional,
+                possui_produto_aplicado=possui_produto_aplicado,
+                produto_aplicado_receituario=form["produto_aplicado_receituario"] or None,
+                inicio_aplicacao_prevista=inicio_aplicacao_prevista,
+                fim_aplicacao_prevista=fim_aplicacao_prevista,
             )
             orcamento.cep = cep_digits
             orcamento.logradouro = form["logradouro"]
@@ -1670,6 +1844,8 @@ def register_routes(bp):
             orcamento.bairro = form["bairro"]
             orcamento.cidade = form["cidade"]
             orcamento.uf = form["uf"]
+            _apply_orcamento_agro_drone_snapshot(orcamento, drone_agro)
+            _apply_orcamento_agro_drone_mapeamento_snapshot(orcamento, drone_mapeamento_agro)
 
             db.session.add(orcamento)
             db.session.flush()
@@ -1684,11 +1860,14 @@ def register_routes(bp):
                     flash(str(exc), "warning")
                     return render_template(
                         "agro_orcamento_form.html",
-                        form=form,
-                        errors=errors,
-                        modo="novo",
-                        clientes=clientes,
-                        servico_options=AGRO_SERVICO_OPTIONS,
+                        **_build_orcamento_agro_form_context(
+                            modo="novo",
+                            form=form,
+                            errors=errors,
+                            clientes=clientes,
+                            drones_agro=drones_agro,
+                            drones_mapeamento_agro=drones_mapeamento_agro,
+                        ),
                     )
 
             db.session.commit()
@@ -1696,13 +1875,17 @@ def register_routes(bp):
             return redirect(url_for("main.agro_orcamentos_listar"))
 
         form["elaborado_por_nome"] = form.get("elaborado_por_nome") or _current_user_display_name()
+        form["estimativa_aplicacao_dias"] = form.get("estimativa_aplicacao_dias") or ""
         return render_template(
             "agro_orcamento_form.html",
-            form=form,
-            errors=errors,
-            modo="novo",
-            clientes=clientes,
-            servico_options=AGRO_SERVICO_OPTIONS,
+            **_build_orcamento_agro_form_context(
+                modo="novo",
+                form=form,
+                errors=errors,
+                clientes=clientes,
+                drones_agro=drones_agro,
+                drones_mapeamento_agro=drones_mapeamento_agro,
+            ),
         )
 
     @bp.route("/agro/orcamentos/<int:orcamento_id>/editar", methods=["GET", "POST"], endpoint="agro_orcamento_editar")
@@ -1711,6 +1894,8 @@ def register_routes(bp):
         _require_agro_edit()
         orcamento = _get_orcamento_agro_or_404(orcamento_id)
         clientes = build_clientes_agro_query(current_user).all()
+        drones_agro = _build_orcamento_agro_drone_options()
+        drones_mapeamento_agro = _build_orcamento_agro_drone_options(funcao_operacional="Mapeamento")
         errors = {}
 
         if request.method == "POST":
@@ -1718,6 +1903,8 @@ def register_routes(bp):
             (
                 errors,
                 cliente,
+                drone_agro,
+                drone_mapeamento_agro,
                 cliente_documento_digits,
                 cep_digits,
                 area_ha,
@@ -1726,21 +1913,29 @@ def register_routes(bp):
                 preco_pulverizacao,
                 preco_pulverizacao_adicional,
                 mapeamento_ativo,
+                possui_produto_aplicado,
+                inicio_aplicacao_prevista,
+                fim_aplicacao_prevista,
             ) = _validate_orcamento_form(form)
             form["elaborado_por_nome"] = (
                 (orcamento.elaborado_por_nome or "").strip() or _current_user_display_name()
             )
             form["valor_total_calculado"] = format_currency_br(valor_total_calculado)
+            estimativa_dias = _calculate_application_days(inicio_aplicacao_prevista, fim_aplicacao_prevista)
+            form["estimativa_aplicacao_dias"] = str(estimativa_dias or "")
             if errors:
                 flash("Corrija os campos destacados do orçamento agro.", "warning")
                 return render_template(
                     "agro_orcamento_form.html",
-                    form=form,
-                    errors=errors,
-                    modo="editar",
-                    clientes=clientes,
-                    orcamento=orcamento,
-                    servico_options=AGRO_SERVICO_OPTIONS,
+                    **_build_orcamento_agro_form_context(
+                        modo="editar",
+                        form=form,
+                        errors=errors,
+                        clientes=clientes,
+                        drones_agro=drones_agro,
+                        drones_mapeamento_agro=drones_mapeamento_agro,
+                        orcamento=orcamento,
+                    ),
                 )
 
             orcamento.cliente_agro_id = cliente.id if cliente else None
@@ -1760,6 +1955,10 @@ def register_routes(bp):
             orcamento.preco_mapeamento = preco_mapeamento
             orcamento.preco_pulverizacao = preco_pulverizacao
             orcamento.preco_pulverizacao_adicional = preco_pulverizacao_adicional
+            orcamento.possui_produto_aplicado = possui_produto_aplicado
+            orcamento.produto_aplicado_receituario = form["produto_aplicado_receituario"] or None
+            orcamento.inicio_aplicacao_prevista = inicio_aplicacao_prevista
+            orcamento.fim_aplicacao_prevista = fim_aplicacao_prevista
             orcamento.cep = cep_digits
             orcamento.logradouro = form["logradouro"]
             orcamento.numero = form["numero"]
@@ -1767,6 +1966,8 @@ def register_routes(bp):
             orcamento.bairro = form["bairro"]
             orcamento.cidade = form["cidade"]
             orcamento.uf = form["uf"]
+            _apply_orcamento_agro_drone_snapshot(orcamento, drone_agro)
+            _apply_orcamento_agro_drone_mapeamento_snapshot(orcamento, drone_mapeamento_agro)
 
             uploaded_file = request.files.get("anexo")
             if uploaded_file and uploaded_file.filename:
@@ -1778,12 +1979,15 @@ def register_routes(bp):
                     flash(str(exc), "warning")
                     return render_template(
                         "agro_orcamento_form.html",
-                        form=form,
-                        errors=errors,
-                        modo="editar",
-                        clientes=clientes,
-                        orcamento=orcamento,
-                        servico_options=AGRO_SERVICO_OPTIONS,
+                        **_build_orcamento_agro_form_context(
+                            modo="editar",
+                            form=form,
+                            errors=errors,
+                            clientes=clientes,
+                            drones_agro=drones_agro,
+                            drones_mapeamento_agro=drones_mapeamento_agro,
+                            orcamento=orcamento,
+                        ),
                     )
 
             db.session.commit()
@@ -1798,6 +2002,13 @@ def register_routes(bp):
             "nome_fazenda": orcamento.nome_fazenda or "",
             "servico": orcamento.servico or OrcamentoAgro.SERVICO_MAPEAMENTO,
             "mapeamento": "SIM" if orcamento.inclui_mapeamento else "NAO",
+            "drone_agro_id": str(orcamento.drone_agro_id or ""),
+            "drone_mapeamento_agro_id": str(orcamento.drone_mapeamento_agro_id or ""),
+            "possui_produto_aplicado": "SIM" if orcamento.possui_produto_aplicado else "NAO",
+            "produto_aplicado_receituario": orcamento.produto_aplicado_receituario or "",
+            "inicio_aplicacao_prevista": orcamento.inicio_aplicacao_prevista.isoformat() if orcamento.inicio_aplicacao_prevista else "",
+            "fim_aplicacao_prevista": orcamento.fim_aplicacao_prevista.isoformat() if orcamento.fim_aplicacao_prevista else "",
+            "estimativa_aplicacao_dias": str(orcamento.estimativa_aplicacao_dias or ""),
             "risco_operacional": orcamento.risco_operacional or "",
             "cultura": orcamento.cultura or "",
             "cultura_alternativa": orcamento.cultura_alternativa or "",
@@ -1818,12 +2029,15 @@ def register_routes(bp):
         form["elaborado_por_nome"] = form.get("elaborado_por_nome") or _current_user_display_name()
         return render_template(
             "agro_orcamento_form.html",
-            form=form,
-            errors=errors,
-            modo="editar",
-            clientes=clientes,
-            orcamento=orcamento,
-            servico_options=AGRO_SERVICO_OPTIONS,
+            **_build_orcamento_agro_form_context(
+                modo="editar",
+                form=form,
+                errors=errors,
+                clientes=clientes,
+                drones_agro=drones_agro,
+                drones_mapeamento_agro=drones_mapeamento_agro,
+                orcamento=orcamento,
+            ),
         )
 
     @bp.route("/agro/orcamentos/<int:orcamento_id>/contrato", methods=["GET", "POST"], endpoint="agro_contrato_editar")

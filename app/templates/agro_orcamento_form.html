@@ -287,6 +287,160 @@
             <div class="form-text">Esse nome sai no PDF do orcamento como assinatura de quem elaborou a proposta.</div>
           </div>
 
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-drone me-1 text-primary"></i> Drone principal previsto para a operacao
+            </label>
+            <select
+              id="drone_agro_id"
+              name="drone_agro_id"
+              class="form-select {% if errors.get('drone_agro_id') %}is-invalid{% endif %}"
+            >
+              <option value="">Selecione o drone...</option>
+              {% for drone in drones_agro %}
+                <option value="{{ drone.id }}" {% if form.get('drone_agro_id')|string == drone.id|string %}selected{% endif %}>
+                  {{ drone.identificacao }}{% if drone.modelo %} - {{ drone.modelo }}{% endif %}
+                </option>
+              {% endfor %}
+            </select>
+            {% if errors.get('drone_agro_id') %}
+              <div class="invalid-feedback">{{ errors.get('drone_agro_id') }}</div>
+            {% endif %}
+            <div class="form-text">Esse drone sera exibido no PDF do orcamento apenas como informativo ao cliente.</div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="border rounded-4 p-3 h-100 bg-light-subtle">
+              <div class="fw-bold text-primary small mb-2">Resumo do drone principal no PDF</div>
+              <div class="small text-muted" id="dronePreviewEmpty">Selecione um drone para visualizar os dados que serao levados ao orcamento.</div>
+              <div id="dronePreviewContent" class="small d-none">
+                <div><strong>Identificacao:</strong> <span id="dronePreviewIdentificacao">-</span></div>
+                <div><strong>Modelo:</strong> <span id="dronePreviewModelo">-</span></div>
+                <div><strong>Funcao:</strong> <span id="dronePreviewFuncao">-</span></div>
+                <div><strong>ANATEL:</strong> <span id="dronePreviewAnatel">-</span></div>
+                <div><strong>ANAC:</strong> <span id="dronePreviewAnac">-</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div id="droneMapeamentoWrap" class="col-md-6">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-binoculars-fill me-1 text-primary"></i> Drone de mapeamento
+            </label>
+            <select
+              id="drone_mapeamento_agro_id"
+              name="drone_mapeamento_agro_id"
+              class="form-select {% if errors.get('drone_mapeamento_agro_id') %}is-invalid{% endif %}"
+            >
+              <option value="">Selecione o drone de mapeamento...</option>
+              {% for drone in drones_mapeamento_agro %}
+                <option value="{{ drone.id }}" {% if form.get('drone_mapeamento_agro_id')|string == drone.id|string %}selected{% endif %}>
+                  {{ drone.identificacao }}{% if drone.modelo %} - {{ drone.modelo }}{% endif %}
+                </option>
+              {% endfor %}
+            </select>
+            {% if errors.get('drone_mapeamento_agro_id') %}
+              <div class="invalid-feedback">{{ errors.get('drone_mapeamento_agro_id') }}</div>
+            {% endif %}
+            <div class="form-text">Esse campo aparece quando o orçamento inclui mapeamento e busca somente drones com funcao operacional de mapeamento.</div>
+          </div>
+
+          <div id="droneMapeamentoPreviewWrap" class="col-md-6">
+            <div class="border rounded-4 p-3 h-100 bg-light-subtle">
+              <div class="fw-bold text-primary small mb-2">Resumo do drone de mapeamento no PDF</div>
+              <div class="small text-muted" id="droneMapeamentoPreviewEmpty">Selecione um drone de mapeamento para visualizar os dados que serao levados ao orcamento.</div>
+              <div id="droneMapeamentoPreviewContent" class="small d-none">
+                <div><strong>Identificacao:</strong> <span id="droneMapeamentoPreviewIdentificacao">-</span></div>
+                <div><strong>Modelo:</strong> <span id="droneMapeamentoPreviewModelo">-</span></div>
+                <div><strong>Funcao:</strong> <span id="droneMapeamentoPreviewFuncao">-</span></div>
+                <div><strong>ANATEL:</strong> <span id="droneMapeamentoPreviewAnatel">-</span></div>
+                <div><strong>ANAC:</strong> <span id="droneMapeamentoPreviewAnac">-</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-capsule-pill me-1 text-primary"></i> Produto?
+            </label>
+            <select
+              id="possui_produto_aplicado"
+              name="possui_produto_aplicado"
+              class="form-select {% if errors.get('possui_produto_aplicado') %}is-invalid{% endif %}"
+            >
+              <option value="NAO" {% if form.get('possui_produto_aplicado', 'NAO') == 'NAO' %}selected{% endif %}>Nao</option>
+              <option value="SIM" {% if form.get('possui_produto_aplicado') == 'SIM' %}selected{% endif %}>Sim</option>
+            </select>
+            {% if errors.get('possui_produto_aplicado') %}
+              <div class="invalid-feedback">{{ errors.get('possui_produto_aplicado') }}</div>
+            {% endif %}
+          </div>
+
+          <div id="produtoAplicadoWrap" class="col-md-10">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-journal-medical me-1 text-primary"></i> Produto a ser aplicado / Receituario agronomico
+            </label>
+            <textarea
+              id="produto_aplicado_receituario"
+              name="produto_aplicado_receituario"
+              rows="2"
+              class="form-control {% if errors.get('produto_aplicado_receituario') %}is-invalid{% endif %}"
+              placeholder="Descreva o produto e/ou o receituario agronomico quando houver."
+            >{{ form.get('produto_aplicado_receituario', '') }}</textarea>
+            {% if errors.get('produto_aplicado_receituario') %}
+              <div class="invalid-feedback">{{ errors.get('produto_aplicado_receituario') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-calendar-event me-1 text-primary"></i> Inicio de aplicacao *
+            </label>
+            <input
+              type="date"
+              id="inicio_aplicacao_prevista"
+              name="inicio_aplicacao_prevista"
+              value="{{ form.get('inicio_aplicacao_prevista', '') }}"
+              class="form-control {% if errors.get('inicio_aplicacao_prevista') %}is-invalid{% endif %}"
+              required
+            >
+            {% if errors.get('inicio_aplicacao_prevista') %}
+              <div class="invalid-feedback">{{ errors.get('inicio_aplicacao_prevista') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-calendar2-check me-1 text-primary"></i> Fim de aplicacao *
+            </label>
+            <input
+              type="date"
+              id="fim_aplicacao_prevista"
+              name="fim_aplicacao_prevista"
+              value="{{ form.get('fim_aplicacao_prevista', '') }}"
+              class="form-control {% if errors.get('fim_aplicacao_prevista') %}is-invalid{% endif %}"
+              required
+            >
+            {% if errors.get('fim_aplicacao_prevista') %}
+              <div class="invalid-feedback">{{ errors.get('fim_aplicacao_prevista') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-hourglass-split me-1 text-primary"></i> Estimativa de tempo de aplicacao (Dias)
+            </label>
+            <input
+              type="text"
+              id="estimativa_aplicacao_dias"
+              name="estimativa_aplicacao_dias"
+              value="{{ form.get('estimativa_aplicacao_dias', '') }}"
+              class="form-control"
+              placeholder="Calculado automaticamente"
+              readonly
+            >
+          </div>
+
           <div class="col-12">
             <label class="form-label fw-bold small text-muted">
               <i class="bi bi-exclamation-triangle-fill me-1 text-primary"></i> Risco operacional
@@ -477,6 +631,9 @@
 
 {% block scripts %}
 <script>
+  const dronesAgroMeta = {{ drones_agro_meta|tojson }};
+  const dronesMapeamentoAgroMeta = {{ drones_mapeamento_agro_meta|tojson }};
+
   function onlyDigits(value) {
     return (value || "").replace(/\D/g, "");
   }
@@ -598,6 +755,112 @@
     });
   }
 
+  function syncDronePreview() {
+    const droneId = document.getElementById("drone_agro_id")?.value || "";
+    const meta = droneId ? (dronesAgroMeta[droneId] || dronesAgroMeta[Number(droneId)] || null) : null;
+    const emptyState = document.getElementById("dronePreviewEmpty");
+    const content = document.getElementById("dronePreviewContent");
+
+    if (!emptyState || !content) return;
+
+    if (!meta) {
+      emptyState.classList.remove("d-none");
+      content.classList.add("d-none");
+      return;
+    }
+
+    emptyState.classList.add("d-none");
+    content.classList.remove("d-none");
+    document.getElementById("dronePreviewIdentificacao").textContent = meta.identificacao || "-";
+    document.getElementById("dronePreviewModelo").textContent = meta.modelo || "-";
+    document.getElementById("dronePreviewFuncao").textContent = meta.funcao_operacional || "-";
+    document.getElementById("dronePreviewAnatel").textContent = meta.registro_anatel || "-";
+    document.getElementById("dronePreviewAnac").textContent = meta.registro_anac || "-";
+  }
+
+  function syncDroneMapeamentoPreview() {
+    const droneId = document.getElementById("drone_mapeamento_agro_id")?.value || "";
+    const meta = droneId ? (dronesMapeamentoAgroMeta[droneId] || dronesMapeamentoAgroMeta[Number(droneId)] || null) : null;
+    const emptyState = document.getElementById("droneMapeamentoPreviewEmpty");
+    const content = document.getElementById("droneMapeamentoPreviewContent");
+
+    if (!emptyState || !content) return;
+
+    if (!meta) {
+      emptyState.classList.remove("d-none");
+      content.classList.add("d-none");
+      return;
+    }
+
+    emptyState.classList.add("d-none");
+    content.classList.remove("d-none");
+    document.getElementById("droneMapeamentoPreviewIdentificacao").textContent = meta.identificacao || "-";
+    document.getElementById("droneMapeamentoPreviewModelo").textContent = meta.modelo || "-";
+    document.getElementById("droneMapeamentoPreviewFuncao").textContent = meta.funcao_operacional || "-";
+    document.getElementById("droneMapeamentoPreviewAnatel").textContent = meta.registro_anatel || "-";
+    document.getElementById("droneMapeamentoPreviewAnac").textContent = meta.registro_anac || "-";
+  }
+
+  function syncDroneMapeamentoVisibility() {
+    const wrap = document.getElementById("droneMapeamentoWrap");
+    const previewWrap = document.getElementById("droneMapeamentoPreviewWrap");
+    const field = document.getElementById("drone_mapeamento_agro_id");
+    const isVisible = document.getElementById("mapeamento")?.value === "SIM" || orcamentoServicoIncluiMapeamento();
+
+    if (!wrap || !previewWrap || !field) return;
+
+    wrap.style.display = isVisible ? "" : "none";
+    previewWrap.style.display = isVisible ? "" : "none";
+    field.required = isVisible;
+
+    if (!isVisible) {
+      field.value = "";
+    }
+
+    syncDroneMapeamentoPreview();
+  }
+
+  function syncProdutoAplicadoVisibility() {
+    const select = document.getElementById("possui_produto_aplicado");
+    const wrap = document.getElementById("produtoAplicadoWrap");
+    const field = document.getElementById("produto_aplicado_receituario");
+    const isVisible = select?.value === "SIM";
+
+    if (!wrap || !field) return;
+
+    wrap.style.display = isVisible ? "" : "none";
+    field.required = isVisible;
+
+    if (!isVisible) {
+      field.value = "";
+    }
+  }
+
+  function calculateApplicationDays() {
+    const startInput = document.getElementById("inicio_aplicacao_prevista");
+    const endInput = document.getElementById("fim_aplicacao_prevista");
+    const daysInput = document.getElementById("estimativa_aplicacao_dias");
+
+    if (!startInput || !endInput || !daysInput) return;
+
+    if (!startInput.value || !endInput.value) {
+      daysInput.value = "";
+      return;
+    }
+
+    const start = new Date(`${startInput.value}T00:00:00`);
+    const end = new Date(`${endInput.value}T00:00:00`);
+
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) {
+      daysInput.value = "";
+      return;
+    }
+
+    const diffMs = end.getTime() - start.getTime();
+    const diffDays = Math.floor(diffMs / 86400000) + 1;
+    daysInput.value = String(diffDays);
+  }
+
   function syncMapeamentoPriceVisibility() {
     const mapeamento = document.getElementById("mapeamento");
     const servico = document.getElementById("servico");
@@ -668,8 +931,15 @@
     event.target.value = maskCep(event.target.value);
   });
   document.getElementById("mapeamento")?.addEventListener("change", syncMapeamentoPriceVisibility);
+  document.getElementById("mapeamento")?.addEventListener("change", syncDroneMapeamentoVisibility);
   document.getElementById("servico")?.addEventListener("change", syncMapeamentoPriceVisibility);
+  document.getElementById("servico")?.addEventListener("change", syncDroneMapeamentoVisibility);
   document.getElementById("cultura_alternativa")?.addEventListener("input", syncPulverizacaoAdicionalVisibility);
+  document.getElementById("drone_agro_id")?.addEventListener("change", syncDronePreview);
+  document.getElementById("drone_mapeamento_agro_id")?.addEventListener("change", syncDroneMapeamentoPreview);
+  document.getElementById("possui_produto_aplicado")?.addEventListener("change", syncProdutoAplicadoVisibility);
+  document.getElementById("inicio_aplicacao_prevista")?.addEventListener("change", calculateApplicationDays);
+  document.getElementById("fim_aplicacao_prevista")?.addEventListener("change", calculateApplicationDays);
   document.getElementById("area_ha")?.addEventListener("input", calculateValorTotal);
 
   ["preco_mapeamento", "preco_pulverizacao", "preco_pulverizacao_adicional"].forEach((fieldId) => {
@@ -695,6 +965,10 @@
 
     syncMapeamentoPriceVisibility();
     syncPulverizacaoAdicionalVisibility();
+    syncDronePreview();
+    syncDroneMapeamentoVisibility();
+    syncProdutoAplicadoVisibility();
+    calculateApplicationDays();
     calculateValorTotal();
   });
 </script>
