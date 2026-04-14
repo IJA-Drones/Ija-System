@@ -5,6 +5,7 @@ import unicodedata
 
 TIPO_VISITA_OPCOES = ["Aedes", "Culex", "Outro"]
 TIPO_IMOVEL_OPCOES = ["Imovel Geral", "PE Cadastrado"]
+TIPO_VISITA_OUTRO_LABEL = "Outro"
 
 Aedes_FOCOS_POR_IMOVEL = {
     "Imovel Geral": [
@@ -143,10 +144,35 @@ def get_foco_opcoes(tipo_visita: str | None, tipo_imovel: str | None = None) -> 
     return list(FORM_FOCOS_OUTRO)
 
 
-def validate_foco_selection(tipo_visita: str | None, tipo_imovel: str | None, foco: str | None):
+def get_tipo_visita_opcoes(allow_other: bool = True) -> list[str]:
+    if allow_other:
+        return list(TIPO_VISITA_OPCOES)
+    return [opcao for opcao in TIPO_VISITA_OPCOES if not same_normalized(opcao, TIPO_VISITA_OUTRO_LABEL)]
+
+
+def validate_foco_selection(
+    tipo_visita: str | None,
+    tipo_imovel: str | None,
+    foco: str | None,
+    *,
+    allow_custom_tipo_visita: bool = False,
+    tipo_visita_outro: str | None = None,
+):
     visit = canonical_tipo_visita(tipo_visita)
     if not visit:
         raise ValueError("Selecione um tipo de visita valido.")
+
+    tipo_visita_final = visit
+
+    if same_normalized(visit, TIPO_VISITA_OUTRO_LABEL):
+        if not allow_custom_tipo_visita:
+            raise ValueError("Selecione um tipo de visita valido.")
+
+        tipo_visita_customizado = (tipo_visita_outro or "").strip()
+        if not tipo_visita_customizado:
+            raise ValueError("Informe qual e o tipo de visita ao selecionar Outro.")
+
+        tipo_visita_final = tipo_visita_customizado
 
     if visit == "Aedes":
         imovel = canonical_tipo_imovel(tipo_imovel)
@@ -160,7 +186,7 @@ def validate_foco_selection(tipo_visita: str | None, tipo_imovel: str | None, fo
     if not foco_canonico:
         raise ValueError("Selecione um foco da acao valido para o tipo de visita informado.")
 
-    return visit, imovel, foco_canonico
+    return tipo_visita_final, imovel, foco_canonico
 
 
 def build_focus_catalog():
@@ -170,5 +196,6 @@ def build_focus_catalog():
         "aedes": {key: list(values) for key, values in Aedes_FOCOS_POR_IMOVEL.items()},
         "culex": list(CULEX_FOCOS),
         "outro": list(FORM_FOCOS_OUTRO),
+        "tipo_visita_outro_label": TIPO_VISITA_OUTRO_LABEL,
         "filtro_foco_opcoes": list(FILTER_FOCO_OPCOES),
     }

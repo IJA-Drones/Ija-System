@@ -94,6 +94,33 @@
     });
   }
 
+  function syncCustomVisitField(config, root, selectedValue, fallbackValue) {
+    var wrapper =
+      root.querySelector("[data-tipo-visita-outros-wrapper]") ||
+      document.getElementById((config && config.customVisitWrapperId) || "");
+    var input = root.querySelector('[name="tipo_visita_outros"]');
+    var allowCustom = !!(config && config.allowCustomOtherVisit);
+    var customLabel =
+      (config && config.customOtherVisitLabel) ||
+      ((config && config.catalog && config.catalog.tipo_visita_outro_label) || "Outro");
+    var showField = allowCustom && normalize(selectedValue) === normalize(customLabel);
+
+    if (wrapper) {
+      wrapper.classList.toggle("d-none", !showField);
+    }
+
+    if (!input) {
+      return;
+    }
+
+    input.disabled = !showField;
+    input.required = showField;
+
+    if (showField && typeof fallbackValue === "string" && fallbackValue) {
+      input.value = fallbackValue;
+    }
+  }
+
   window.initSolicitacaoFocusForm = function initSolicitacaoFocusForm(config) {
     var catalog = (config && config.catalog) || {};
     var root =
@@ -124,6 +151,14 @@
 
       setTipoImovelRequired(root, showTipoImovel);
 
+      syncCustomVisitField(
+        config,
+        root,
+        visitValue,
+        (root.querySelector('[name="tipo_visita_outros"]') || {}).value ||
+          ((config && config.initialCustomVisit) || "")
+      );
+
       var options = resolveOptions(catalog, visitValue, getTipoImovelValue(root));
       var currentFocus = focoSelect.value;
       var normalizedCurrentFocus = normalize(currentFocus);
@@ -145,6 +180,7 @@
     }
 
     tipoVisitaSelect.addEventListener("change", syncFields);
+    focoSelect.addEventListener("change", syncFields);
     tipoImovelInputs.forEach(function (input) {
       input.addEventListener("change", syncFields);
     });

@@ -76,10 +76,22 @@
                         <label class="form-label fw-bold small text-muted">Tipo de Visita</label>
                         <select name="tipo_visita" class="form-select">
                             {% for opcao in solicitacao_tipo_visita_opcoes %}
-                            <option value="{{ opcao }}" {% if pedido.tipo_visita == opcao %}selected{% endif %}>{{ opcao }}</option>
+                            <option value="{{ opcao }}" {% if pedido_tipo_visita_select == opcao %}selected{% endif %}>{{ opcao }}</option>
                             {% endfor %}
                         </select>
                         <small class="text-muted d-block mt-2">Ao selecionar Aedes, o campo Tipo de Imovel sera exibido.</small>
+                    </div>
+
+                    <div class="col-md-6{% if not pedido_tipo_visita_outros %} d-none{% endif %}" data-tipo-visita-outros-wrapper>
+                        <label class="form-label fw-bold small text-muted">Qual tipo de visita?</label>
+                        <input
+                            type="text"
+                            name="tipo_visita_outros"
+                            class="form-control"
+                            value="{{ pedido_tipo_visita_outros or '' }}"
+                            placeholder="Descreva o tipo de visita"
+                            {% if not pedido_tipo_visita_outros %}disabled{% endif %}
+                        >
                     </div>
 
                     <div class="col-md-6">
@@ -240,6 +252,8 @@
           root: "form",
           catalog: {{ solicitacao_focus_catalog | tojson | safe }},
           initialTipoImovel: {{ (pedido.tipo_imovel or '') | tojson | safe }},
+          initialCustomVisit: {{ (pedido_tipo_visita_outros or '') | tojson | safe }},
+          allowCustomOtherVisit: {{ allow_custom_visit_other | tojson | safe }},
           focoPlaceholder: "Selecione o foco da acao..."
       });
 

@@ -9,7 +9,9 @@ from app.shared.access import apply_prefeitura_scope, is_prefeitura_admin_user
 from app.shared.geofencing import detectar_area_restrita
 from app.shared.solicitacao_focos import (
     FILTER_FOCO_OPCOES,
-    TIPO_VISITA_OPCOES,
+    TIPO_VISITA_OUTRO_LABEL,
+    canonical_tipo_visita,
+    get_tipo_visita_opcoes,
     same_normalized,
     validate_foco_selection,
 )
@@ -22,7 +24,6 @@ STATUS_OPCOES_EDICAO = [
     "NEGADO",
 ]
 FOCO_OPCOES_EDICAO = FILTER_FOCO_OPCOES
-TIPO_VISITA_OPCOES_EDICAO = TIPO_VISITA_OPCOES
 UF_OPCOES = [
     "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG",
     "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO",
@@ -44,6 +45,12 @@ class SolicitacaoAccessError(Exception):
         self.redirect_endpoint = redirect_endpoint
 
 
+def can_use_custom_visit_other(user) -> bool:
+    tipo_usuario = (getattr(user, "tipo_usuario", None) or "").strip().lower()
+    regiao = (getattr(user, "regiao", None) or "").strip().upper()
+    return tipo_usuario == "admin" or (tipo_usuario != "uvis" and regiao == "COVISA")
+
+
 def build_novo_cadastro_context(user, google_maps_key):
     uvis_lista = []
     if user.tipo_usuario in ["admin", "visualizar", "prefeitura_admin"]:
@@ -55,6 +62,8 @@ def build_novo_cadastro_context(user, google_maps_key):
         "hoje": date.today().isoformat(),
         "google_maps_key": google_maps_key,
         "uvis_lista": uvis_lista,
+        "allow_custom_visit_other": can_use_custom_visit_other(user),
+        "solicitacao_tipo_visita_opcoes": get_tipo_visita_opcoes(can_use_custom_visit_other(user)),
         "form_values": {},
     }
 
@@ -75,6 +84,7 @@ def build_novo_cadastro_context_with_form(user, google_maps_key, form_source):
         "latitude": (form_source.get("latitude") or "").strip(),
         "longitude": (form_source.get("longitude") or "").strip(),
         "tipo_visita": (form_source.get("tipo_visita") or "").strip(),
+        "tipo_visita_outros": (form_source.get("tipo_visita_outros") or "").strip(),
         "tipo_imovel": (form_source.get("tipo_imovel") or "").strip(),
         "foco": (form_source.get("foco") or "").strip(),
         "tipo_operacao": (form_source.get("tipo_operacao") or "").strip(),
@@ -115,6 +125,8 @@ def create_nova_solicitacao(user, form_data):
             form_data.get("tipo_visita"),
             form_data.get("tipo_imovel"),
             form_data.get("foco"),
+            allow_custom_tipo_visita=can_use_custom_visit_other(user),
+            tipo_visita_outro=form_data.get("tipo_visita_outros"),
         )
     except ValueError as exc:
         raise NovoCadastroValidationError(str(exc))
@@ -161,6 +173,14 @@ def build_editar_solicitacao_context(user, solicitacao_id):
         .get_or_404(solicitacao_id)
     )
     is_admin = user.tipo_usuario == "admin"
+    allow_custom_visit_other = can_use_custom_visit_other(user)
+    pedido_tipo_visita_padrao = canonical_tipo_visita(pedido.tipo_visita)
+    pedido_tipo_visita_outros = ""
+    pedido_tipo_visita_select = pedido.tipo_visita or ""
+
+    if allow_custom_visit_other and pedido.tipo_visita and not pedido_tipo_visita_padrao:
+        pedido_tipo_visita_select = TIPO_VISITA_OUTRO_LABEL
+        pedido_tipo_visita_outros = pedido.tipo_visita
 
     if not is_admin:
         if pedido.usuario_id != user.id:
@@ -179,8 +199,12 @@ def build_editar_solicitacao_context(user, solicitacao_id):
         "is_admin": is_admin,
         "status_opcoes": STATUS_OPCOES_EDICAO,
         "foco_opcoes": FOCO_OPCOES_EDICAO,
-        "tipo_visita_opcoes": TIPO_VISITA_OPCOES_EDICAO,
+        "tipo_visita_opcoes": get_tipo_visita_opcoes(allow_custom_visit_other),
+        "solicitacao_tipo_visita_opcoes": get_tipo_visita_opcoes(allow_custom_visit_other),
         "uf_opcoes": UF_OPCOES,
+        "allow_custom_visit_other": allow_custom_visit_other,
+        "pedido_tipo_visita_select": pedido_tipo_visita_select,
+        "pedido_tipo_visita_outros": pedido_tipo_visita_outros,
     }
 
 
@@ -205,11 +229,19 @@ def atualizar_solicitacao(user, solicitacao_id, form_data):
             form_data.get("tipo_visita"),
             form_data.get("tipo_imovel"),
             form_data.get("foco"),
+            allow_custom_tipo_visita=can_use_custom_visit_other(user),
+            tipo_visita_outro=form_data.get("tipo_visita_outros"),
         )
     except ValueError as exc:
         if (
             same_normalized(form_data.get("foco"), pedido.foco)
-            and same_normalized(form_data.get("tipo_visita"), pedido.tipo_visita)
+            and (
+                same_normalized(form_data.get("tipo_visita"), pedido.tipo_visita)
+                or (
+                    same_normalized(form_data.get("tipo_visita"), TIPO_VISITA_OUTRO_LABEL)
+                    and same_normalized(form_data.get("tipo_visita_outros"), pedido.tipo_visita)
+                )
+            )
             and same_normalized(form_data.get("tipo_imovel"), pedido.tipo_imovel)
         ):
             tipo_visita = pedido.tipo_visita

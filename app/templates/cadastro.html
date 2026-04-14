@@ -108,6 +108,23 @@
             <small class="text-muted d-block mt-2">Ao selecionar Aedes, o campo Tipo de Imovel sera exibido.</small>
           </div>
 
+          <div
+            class="col-md-6{% if not form.tipo_visita_outros %} d-none{% endif %}"
+            data-tipo-visita-outros-wrapper
+          >
+            <label class="form-label fw-bold small text-muted mb-2">
+              <i class="bi bi-pencil-square me-1 text-primary"></i> QUAL TIPO DE VISITA?
+            </label>
+            <input
+              type="text"
+              class="form-control shadow-sm"
+              name="tipo_visita_outros"
+              value="{{ form.tipo_visita_outros or '' }}"
+              placeholder="Descreva o tipo de visita"
+              {% if not form.tipo_visita_outros %}disabled{% endif %}
+            />
+          </div>
+
           <div class="col-md-6">
             <label class="form-label fw-bold small text-muted mb-2">
               <i class="bi bi-arrow-up me-1 text-primary"></i> ALTURA DO VOO *
@@ -562,6 +579,8 @@
       root: "#formNovoPedido",
       catalog: {{ solicitacao_focus_catalog | tojson | safe }},
       initialTipoImovel: {{ (form.tipo_imovel or '') | tojson | safe }},
+      initialCustomVisit: {{ (form.tipo_visita_outros or '') | tojson | safe }},
+      allowCustomOtherVisit: {{ allow_custom_visit_other | tojson | safe }},
       focoPlaceholder: "Selecione o foco da acao..."
     });
 
