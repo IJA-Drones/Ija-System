@@ -81,8 +81,11 @@
       <p class="text-muted small mb-0">Centralize clientes, orçamentos e estrutura operacional da frente Agro em um único lugar.</p>
     </div>
 
-    <div class="header-actions">
-      <a href="{{ url_for('main.agro_contratos_listar') }}" class="btn btn-outline-secondary shadow-sm btn-canceladas">
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{{ url_for('main.agro_financeiro_listar') }}" class="btn btn-outline-success d-flex align-items-center gap-2">
+        <i class="bi bi-cash-coin"></i> Financeiro Agro
+      </a>
+      <a href="{{ url_for('main.agro_contratos_listar') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
         <i class="bi bi-file-earmark-text-fill"></i> Contratos Agro
       </a>
       <a href="{{ url_for('main.agro_cliente_novo') }}" class="btn btn-success shadow-sm btn-pill">
@@ -127,6 +130,16 @@
         <div class="card-body">
           <span class="text-muted small d-block">OS Agro</span>
           <h3 class="text-dark mb-0 mt-2">{{ total_ordens_servico_agro }}</h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl">
+      <div class="card info status-warning shadow-sm rounded-4 border-0 h-100">
+        <div class="card-body">
+          <span class="text-muted small d-block">Financeiro agro</span>
+          <h3 class="text-dark mb-0 mt-2">{{ total_financeiros_agro }}</h3>
+          <div class="small text-muted mt-1">{{ total_financeiros_agro_pendentes }} pendente(s)</div>
         </div>
       </div>
     </div>
