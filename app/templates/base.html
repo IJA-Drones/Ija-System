@@ -326,6 +326,7 @@
           </li>
           {% endif %}
 
+          {% if current_user.tipo_usuario in ['admin', 'operario', 'visualizar', 'regional', 'prefeitura_admin'] and not is_agro_context %}
           <li class="nav-item">
             <a
               class="nav-link {% if request.endpoint == 'main.notificacoes' %}active{% endif %}"
@@ -339,6 +340,7 @@
               {% endif %}
             </a>
           </li>
+          {% endif %}
 
           {% if current_user.tipo_usuario in ['admin', 'operario', 'visualizar', 'regional', 'prefeitura_admin'] and is_agro_context %}
           <li class="nav-item">

@@ -6,6 +6,39 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
   <style>
+    .dashboard-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .dashboard-header h2 {
+      margin: 0;
+      white-space: nowrap;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn-pill {
+      border-radius: 999px !important;
+      padding: 8px 16px !important;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+    }
+
+    .btn-canceladas {
+      border-radius: 999px !important;
+      padding: 8px 14px !important;
+    }
+
     .agro-dashboard-link {
       transition: all 0.2s ease;
     }
@@ -14,27 +47,48 @@
       transform: translateY(-3px);
       box-shadow: var(--shadow-lg) !important;
     }
+
+    @media (max-width: 768px) {
+      .dashboard-header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+      }
+
+      .dashboard-header h2 {
+        margin-right: 0 !important;
+        white-space: normal;
+      }
+
+      .header-actions {
+        width: 100%;
+      }
+
+      .header-actions a.btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
   </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4" style="max-width: 1200px">
-  <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
-    <div>
+  <div class="dashboard-header mb-4">
+    <div style="margin-right: auto !important;">
       <h2 class="text-dark m-0">
         <i class="bi bi-tree-fill me-2 text-primary"></i> Painel de Gestão do Agro
       </h2>
       <p class="text-muted small mb-0">Centralize clientes, orçamentos e estrutura operacional da frente Agro em um único lugar.</p>
     </div>
 
-    <div class="d-flex flex-wrap gap-2">
-      <a href="{{ url_for('main.agro_contratos_listar') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
+    <div class="header-actions">
+      <a href="{{ url_for('main.agro_contratos_listar') }}" class="btn btn-outline-secondary shadow-sm btn-canceladas">
         <i class="bi bi-file-earmark-text-fill"></i> Contratos Agro
       </a>
-      <a href="{{ url_for('main.agro_cliente_novo') }}" class="btn btn-success d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.agro_cliente_novo') }}" class="btn btn-success shadow-sm btn-pill">
         <i class="bi bi-person-plus-fill"></i> Novo Cliente
       </a>
-      <a href="{{ url_for('main.agro_orcamento_novo') }}" class="btn btn-secondary d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.agro_orcamento_novo') }}" class="btn btn-primary shadow-sm btn-pill">
         <i class="bi bi-file-earmark-plus-fill"></i> Novo Orçamento
       </a>
     </div>
@@ -42,7 +96,7 @@
 
   <div class="row g-3 mb-4">
     <div class="col-12 col-sm-6 col-xl">
-      <div class="card info status-primary shadow-sm rounded-4 border-0 h-100">
+      <div class="card info status-success shadow-sm rounded-4 border-0 h-100">
         <div class="card-body">
           <span class="text-muted small d-block">Clientes agro</span>
           <h3 class="text-dark mb-0 mt-2">{{ total_clientes_agro }}</h3>
@@ -60,7 +114,7 @@
     </div>
 
     <div class="col-12 col-sm-6 col-xl">
-      <div class="card info status-warning shadow-sm rounded-4 border-0 h-100">
+      <div class="card info status-success shadow-sm rounded-4 border-0 h-100">
         <div class="card-body">
           <span class="text-muted small d-block">Contratos</span>
           <h3 class="text-dark mb-0 mt-2">{{ total_contratos_agro }}</h3>
@@ -69,7 +123,7 @@
     </div>
 
     <div class="col-12 col-sm-6 col-xl">
-      <div class="card info status-info shadow-sm rounded-4 border-0 h-100">
+      <div class="card info status-success shadow-sm rounded-4 border-0 h-100">
         <div class="card-body">
           <span class="text-muted small d-block">OS Agro</span>
           <h3 class="text-dark mb-0 mt-2">{{ total_ordens_servico_agro }}</h3>
@@ -78,7 +132,7 @@
     </div>
 
     <div class="col-12 col-sm-6 col-xl">
-      <div class="card info status-info shadow-sm rounded-4 border-0 h-100">
+      <div class="card info status-success shadow-sm rounded-4 border-0 h-100">
         <div class="card-body">
           <span class="text-muted small d-block">Pilotos agro</span>
           <h3 class="text-dark mb-0 mt-2">{{ total_pilotos_agro }}</h3>
@@ -87,7 +141,7 @@
     </div>
 
     <div class="col-12 col-sm-6 col-xl">
-      <div class="card info status-primary shadow-sm rounded-4 border-0 h-100">
+      <div class="card info status-success shadow-sm rounded-4 border-0 h-100">
         <div class="card-body">
           <span class="text-muted small d-block">Equipes agro</span>
           <h3 class="text-dark mb-0 mt-2">{{ total_equipes_agro }}</h3>

@@ -114,6 +114,31 @@
   gap: 24px;
 }
 
+.agro-pilot-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.agro-pilot-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.agro-pilot-header-actions .btn-canceladas {
+  border-radius: 999px;
+  padding: 8px 14px;
+}
+
+.agro-pilot-header-actions .btn-nova {
+  border-radius: 999px;
+  padding: 8px 16px;
+}
+
 .agro-pilot-hero {
   padding: 28px;
   border-radius: 28px;
@@ -196,6 +221,14 @@
   box-shadow: 0 14px 28px rgba(15, 23, 42, 0.05);
 }
 
+.agro-pilot-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .agro-pilot-demand-board {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -255,6 +288,17 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
+}
+
+.agro-pilot-card-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.agro-pilot-card-actions .btn {
+  white-space: nowrap;
 }
 
 .agro-pilot-empty-state {
@@ -318,6 +362,91 @@
   color: inherit;
 }
 
+body.dark-mode.agro-mode .agro-pilot-page-header .text-dark,
+body.dark-mode.agro-mode .agro-pilot-page-header .text-muted,
+body.dark-mode.agro-mode .agro-pilot-hero .text-dark,
+body.dark-mode.agro-mode .agro-pilot-hero .text-muted,
+body.dark-mode.agro-mode .agro-pilot-focus-card .text-dark,
+body.dark-mode.agro-mode .agro-pilot-focus-card .text-muted,
+body.dark-mode.agro-mode .agro-pilot-stat .text-dark,
+body.dark-mode.agro-mode .agro-pilot-stat .text-muted,
+body.dark-mode.agro-mode .agro-pilot-soft-card .text-dark,
+body.dark-mode.agro-mode .agro-pilot-soft-card .text-muted {
+  color: inherit !important;
+}
+
+body.dark-mode.agro-mode .agro-pilot-hero {
+  background:
+    radial-gradient(circle at top right, rgba(103, 212, 141, 0.16), transparent 30%),
+    linear-gradient(145deg, #152233 0%, #132031 55%, #18283c 100%);
+  border-color: #233549;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.26);
+}
+
+body.dark-mode.agro-mode .agro-pilot-focus-card,
+body.dark-mode.agro-mode .agro-pilot-stat,
+body.dark-mode.agro-mode .agro-pilot-soft-card,
+body.dark-mode.agro-mode .agro-pilot-demand-card,
+body.dark-mode.agro-mode .agro-pilot-profile-item {
+  background: #152233;
+  border-color: #233549;
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.24);
+}
+
+body.dark-mode.agro-mode .agro-pilot-demand-card.is-os {
+  background:
+    radial-gradient(circle at top right, rgba(84, 167, 255, 0.12), transparent 28%),
+    #182638;
+}
+
+body.dark-mode.agro-mode .agro-pilot-focus-metric,
+body.dark-mode.agro-mode .agro-pilot-profile-item,
+body.dark-mode.agro-mode .agro-pilot-help-box {
+  border-color: #233549;
+}
+
+body.dark-mode.agro-mode .agro-pilot-focus-metric,
+body.dark-mode.agro-mode .agro-pilot-profile-item {
+  background: #1c2b3f;
+}
+
+body.dark-mode.agro-mode .agro-pilot-chip {
+  background: rgba(99, 208, 138, 0.12);
+  color: #bfeecf;
+}
+
+body.dark-mode.agro-mode .agro-pilot-chip-alert {
+  background: rgba(241, 211, 122, 0.14);
+  color: #f3d98f;
+}
+
+body.dark-mode.agro-mode .agro-pilot-focus-metric span,
+body.dark-mode.agro-mode .agro-pilot-demand-meta,
+body.dark-mode.agro-mode .agro-pilot-profile-item span {
+  color: var(--color-text-muted);
+}
+
+body.dark-mode.agro-mode .agro-pilot-focus-metric strong,
+body.dark-mode.agro-mode .agro-pilot-profile-item strong,
+body.dark-mode.agro-mode .agro-pilot-demand-card h6,
+body.dark-mode.agro-mode .agro-pilot-empty-state h6 {
+  color: var(--color-text-main);
+}
+
+body.dark-mode.agro-mode .agro-pilot-empty-state {
+  background: linear-gradient(180deg, #152233 0%, #182638 100%);
+  border-color: #29415f;
+}
+
+body.dark-mode.agro-mode .agro-pilot-empty-icon {
+  background: rgba(99, 208, 138, 0.14);
+  color: #9fe7bb;
+}
+
+body.dark-mode.agro-mode .agro-pilot-help-box {
+  background: linear-gradient(145deg, #1d5735 0%, #236a41 100%);
+}
+
 @media (max-width: 991.98px) {
   .agro-pilot-login {
     grid-template-columns: 1fr;
@@ -336,9 +465,30 @@
   .agro-pilot-focus-grid {
     grid-template-columns: 1fr;
   }
+
+  .agro-pilot-page-header,
+  .agro-pilot-section-head,
+  .agro-pilot-card-actions {
+    align-items: stretch;
+  }
 }
 
 @media (max-width: 767.98px) {
+  .agro-pilot-page-header,
+  .agro-pilot-header-actions,
+  .agro-pilot-section-head,
+  .agro-pilot-card-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .agro-pilot-header-actions .btn,
+  .agro-pilot-section-head .btn,
+  .agro-pilot-card-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
   .agro-pilot-profile-item {
     flex-direction: column;
     align-items: flex-start;

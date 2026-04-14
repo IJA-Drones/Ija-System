@@ -9,6 +9,23 @@
 {% block content %}
 <div class="container-fluid py-4" style="max-width: 1360px">
   <div class="agro-pilot-dashboard">
+    <div class="dashboard-header agro-pilot-page-header">
+      <div>
+        <h2 class="text-dark m-0">
+          <i class="bi bi-tree-fill me-2 text-primary"></i> Dashboard Agro
+        </h2>
+        <p class="text-muted small mb-0">Acesse rapidamente as prioridades do dia e os blocos principais do seu fluxo Agro.</p>
+      </div>
+      <div class="header-actions agro-pilot-header-actions">
+        <a href="#agroDemandas" class="btn btn-outline-dark shadow-sm btn-canceladas">
+          <i class="bi bi-lightning-charge me-1"></i> Demandas
+        </a>
+        <a href="#agroEquipamentos" class="btn btn-success shadow-sm btn-nova">
+          <i class="bi bi-cpu me-1"></i> Equipamentos
+        </a>
+      </div>
+    </div>
+
     <section class="agro-pilot-hero">
       <div class="row g-4 align-items-center">
         <div class="col-lg-7">
@@ -114,10 +131,15 @@
 
     <div class="row g-4">
       <div class="col-lg-8">
-        <section class="agro-pilot-soft-card h-100">
-          <div class="d-flex align-items-center gap-2 mb-3">
-            <i class="bi bi-lightning-charge-fill text-success fs-5"></i>
-            <h5 class="fw-bold mb-0">Fila de demandas</h5>
+        <section class="agro-pilot-soft-card h-100" id="agroDemandas">
+          <div class="agro-pilot-section-head mb-3">
+            <div class="d-flex align-items-center gap-2">
+              <i class="bi bi-lightning-charge-fill text-success fs-5"></i>
+              <h5 class="fw-bold mb-0">Fila de demandas</h5>
+            </div>
+            <a href="#agroEquipamentos" class="btn btn-outline-secondary btn-sm">
+              <i class="bi bi-cpu me-1"></i> Ver equipamentos
+            </a>
           </div>
 
           {% if contratos_sem_os or ordens_ativas %}
@@ -134,7 +156,7 @@
                     <span><i class="bi bi-geo-alt"></i> {{ contrato.propriedade_cidade }}/{{ contrato.propriedade_uf }}</span>
                     <span><i class="bi bi-clock-history"></i> Atualizado em {{ contrato.atualizado_em.strftime('%d/%m/%Y %H:%M') }}</span>
                   </div>
-                  <div class="d-flex justify-content-between align-items-center gap-2 mt-3">
+                  <div class="agro-pilot-card-actions mt-3">
                     <span class="text-muted small">Culturas: {{ contrato.culturas_formatadas or contrato.orcamento.culturas_formatadas or "-" }}</span>
                     <a href="{{ url_for('main.agro_os_nova', contrato_id=contrato.id) }}" class="btn btn-success btn-sm">
                       <i class="bi bi-clipboard2-plus me-1"></i> Criar OS
@@ -155,7 +177,7 @@
                     <span><i class="bi bi-calendar-event"></i> {{ os_agro.data_aplicacao.strftime('%d/%m/%Y') if os_agro.data_aplicacao else 'Data não informada' }}</span>
                     <span><i class="bi bi-geo"></i> {{ os_agro.cidade_operacao }}/{{ os_agro.uf_operacao }}</span>
                   </div>
-                  <div class="d-flex justify-content-between align-items-center gap-2 mt-3">
+                  <div class="agro-pilot-card-actions mt-3">
                     <span class="text-muted small">{{ os_agro.periodo_aplicacao or 'Período não informado' }}</span>
                     <a href="{{ url_for('main.agro_os_editar', os_id=os_agro.id) }}" class="btn btn-outline-primary btn-sm">
                       <i class="bi bi-pencil-square me-1"></i> Continuar
@@ -231,10 +253,15 @@
 
     <div class="row g-4">
       <div class="col-12">
-        <section class="agro-pilot-soft-card">
-          <div class="d-flex align-items-center gap-2 mb-3">
-            <i class="bi bi-cpu-fill text-success fs-5"></i>
-            <h5 class="fw-bold mb-0">Equipamentos da equipe</h5>
+        <section class="agro-pilot-soft-card" id="agroEquipamentos">
+          <div class="agro-pilot-section-head mb-3">
+            <div class="d-flex align-items-center gap-2">
+              <i class="bi bi-cpu-fill text-success fs-5"></i>
+              <h5 class="fw-bold mb-0">Equipamentos da equipe</h5>
+            </div>
+            <a href="#top" onclick="window.scrollTo({ top: 0, behavior: 'smooth' }); return false;" class="btn btn-outline-secondary btn-sm">
+              <i class="bi bi-arrow-up me-1"></i> Voltar ao topo
+            </a>
           </div>
 
           {% if equipamentos %}
