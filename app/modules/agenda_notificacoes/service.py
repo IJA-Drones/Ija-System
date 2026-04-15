@@ -22,7 +22,7 @@ from app.shared.access import (
 
 
 AGENDA_VIEW_TYPES = {"admin", "operario", "visualizar", "regional", "prefeitura_admin"}
-AGENDA_EXPORT_TYPES = {"admin", "operario", "visualizar", "regional", "prefeitura_admin"}
+AGENDA_EXPORT_TYPES = {"admin", "operario", "visualizar", "regional", "prefeitura_admin", "uvis"}
 NOTIFICATION_GLOBAL_VIEW_TYPES = {"admin", "operario", "visualizar", "prefeitura_admin"}
 AGENDA_ROUTE_STATUSES = (
     "APROVADO",
@@ -388,15 +388,13 @@ def build_agenda_export(user, args):
     mes = None if export_all else args.get("mes", type=int)
     ano = None if export_all else args.get("ano", type=int)
 
-    query = apply_solicitacao_regiao_scope(
-        apply_solicitacao_prefeitura_scope(
-            Solicitacao.query.options(joinedload(Solicitacao.usuario)),
-            user,
-        ),
+    # A exportação precisa seguir o mesmo escopo da tela da agenda.
+    query = apply_agenda_user_scope(
+        Solicitacao.query.options(joinedload(Solicitacao.usuario)),
         user,
     )
 
-    if filtro_uvis_id:
+    if filtro_uvis_id and can_view_all_agenda(user):
         query = query.filter(Solicitacao.usuario_id == filtro_uvis_id)
     if filtro_status:
         query = query.filter(Solicitacao.status == filtro_status)

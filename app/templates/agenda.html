@@ -115,7 +115,7 @@
       {% endif %}
 
       {# ✅ Exportar Tudo #}
-      {% if current_user.is_authenticated and current_user.tipo_usuario in ["admin", "operario", "visualizar", "regional"] %}
+      {% if current_user.is_authenticated and current_user.tipo_usuario in ["admin", "operario", "visualizar", "regional", "uvis"] %}
         {# ✅ Exportar Atual #}
         <div style="width: 180px; min-width: 150px;" class="flex-grow-1 flex-md-grow-0">
           <a href="{{ url_for('main.agenda_exportar_excel', **request.args.to_dict()) }}"
@@ -130,9 +130,9 @@
           <a href="{{ url_for('main.agenda_exportar_excel', all=1) }}" 
             class="btn btn-secondary w-100 d-flex align-items-center justify-content-center gap-2" 
             style="height: 38px;"
-            title="Baixar base completa sem filtros">
+            title="{% if current_user.tipo_usuario == 'uvis' %}Baixar sua agenda completa sem filtros{% else %}Baixar base completa sem filtros{% endif %}">
             <i class="bi bi-download"></i>
-            <span>Exportar Tudo</span>
+            <span>{% if current_user.tipo_usuario == 'uvis' %}Exportar Minha Agenda{% else %}Exportar Tudo{% endif %}</span>
           </a>
         </div>
       {% endif %}
