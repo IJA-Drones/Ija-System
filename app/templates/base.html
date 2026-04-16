@@ -343,6 +343,21 @@
           {% endif %}
 
           {% if current_user.tipo_usuario in ['admin', 'operario', 'visualizar', 'regional', 'prefeitura_admin'] and is_agro_context %}
+          {% set agro_financeiro_menu_active = request.endpoint in [
+            'main.agro_caixa_diario',
+            'main.agro_financeiro_listar',
+            'main.agro_financeiro_novo',
+            'main.agro_financeiro_editar',
+            'main.agro_bancos_listar',
+            'main.agro_banco_novo',
+            'main.agro_banco_editar',
+            'main.agro_financeiro_entrada_listar',
+            'main.agro_financeiro_entrada_novo',
+            'main.agro_financeiro_entrada_editar',
+            'main.agro_financeiro_saida_listar',
+            'main.agro_financeiro_saida_novo',
+            'main.agro_financeiro_saida_editar'
+          ] %}
           <li class="nav-item">
             <a
               class="nav-link {% if request.endpoint in ['main.agro_clientes_listar', 'main.agro_cliente_novo', 'main.agro_cliente_editar'] %}active{% endif %}"
@@ -368,44 +383,64 @@
             </a>
           </li>
           <li class="nav-item">
-            <a
-              class="nav-link {% if request.endpoint in ['main.agro_caixa_diario'] %}active{% endif %}"
-              href="{{ url_for('main.agro_caixa_diario') }}"
+            <button
+              type="button"
+              class="nav-link nav-link-toggle {% if agro_financeiro_menu_active %}active{% endif %}"
+              data-bs-toggle="collapse"
+              data-bs-target="#menuFinanceiroAgro"
+              aria-expanded="{{ 'true' if agro_financeiro_menu_active else 'false' }}"
             >
-              <i class="bi bi-cash-coin me-2"></i><span>Caixa Diario</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a
-              class="nav-link {% if request.endpoint in ['main.agro_financeiro_listar', 'main.agro_financeiro_novo', 'main.agro_financeiro_editar'] %}active{% endif %}"
-              href="{{ url_for('main.agro_financeiro_listar') }}"
-            >
-              <i class="bi bi-receipt-cutoff me-2"></i><span>Recebiveis</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a
-              class="nav-link {% if request.endpoint in ['main.agro_bancos_listar', 'main.agro_banco_novo', 'main.agro_banco_editar'] %}active{% endif %}"
-              href="{{ url_for('main.agro_bancos_listar') }}"
-            >
-              <i class="bi bi-bank me-2"></i><span>Bancos Agro</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a
-              class="nav-link {% if request.endpoint in ['main.agro_financeiro_entrada_listar', 'main.agro_financeiro_entrada_novo', 'main.agro_financeiro_entrada_editar'] %}active{% endif %}"
-              href="{{ url_for('main.agro_financeiro_entrada_listar') }}"
-            >
-              <i class="bi bi-box-arrow-in-down-right me-2"></i><span>Entradas Manuais</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a
-              class="nav-link {% if request.endpoint in ['main.agro_financeiro_saida_listar', 'main.agro_financeiro_saida_novo', 'main.agro_financeiro_saida_editar'] %}active{% endif %}"
-              href="{{ url_for('main.agro_financeiro_saida_listar') }}"
-            >
-              <i class="bi bi-box-arrow-up-right me-2"></i><span>Saidas Manuais</span>
-            </a>
+              <span>
+                <i class="bi bi-cash-coin me-2"></i>
+                <span>Financeiro</span>
+              </span>
+              <i class="bi bi-chevron-down chevron"></i>
+            </button>
+
+            <div class="collapse {% if agro_financeiro_menu_active %}show{% endif %}" id="menuFinanceiroAgro">
+              <ul class="nav flex-column sub-nav">
+                <li class="nav-item">
+                  <a
+                    class="nav-link sub-link {% if request.endpoint in ['main.agro_caixa_diario'] %}active{% endif %}"
+                    href="{{ url_for('main.agro_caixa_diario') }}"
+                  >
+                    <i class="bi bi-journal-text me-2"></i><span>Caixa Diario</span>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a
+                    class="nav-link sub-link {% if request.endpoint in ['main.agro_financeiro_listar', 'main.agro_financeiro_novo', 'main.agro_financeiro_editar'] %}active{% endif %}"
+                    href="{{ url_for('main.agro_financeiro_listar') }}"
+                  >
+                    <i class="bi bi-receipt-cutoff me-2"></i><span>Recebiveis</span>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a
+                    class="nav-link sub-link {% if request.endpoint in ['main.agro_bancos_listar', 'main.agro_banco_novo', 'main.agro_banco_editar'] %}active{% endif %}"
+                    href="{{ url_for('main.agro_bancos_listar') }}"
+                  >
+                    <i class="bi bi-bank me-2"></i><span>Bancos Agro</span>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a
+                    class="nav-link sub-link {% if request.endpoint in ['main.agro_financeiro_entrada_listar', 'main.agro_financeiro_entrada_novo', 'main.agro_financeiro_entrada_editar'] %}active{% endif %}"
+                    href="{{ url_for('main.agro_financeiro_entrada_listar') }}"
+                  >
+                    <i class="bi bi-box-arrow-in-down-right me-2"></i><span>Entradas Manuais</span>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a
+                    class="nav-link sub-link {% if request.endpoint in ['main.agro_financeiro_saida_listar', 'main.agro_financeiro_saida_novo', 'main.agro_financeiro_saida_editar'] %}active{% endif %}"
+                    href="{{ url_for('main.agro_financeiro_saida_listar') }}"
+                  >
+                    <i class="bi bi-box-arrow-up-right me-2"></i><span>Saidas Manuais</span>
+                  </a>
+                </li>
+              </ul>
+            </div>
           </li>
           {% if current_user.tipo_usuario == 'admin' %}
           <li class="nav-item">

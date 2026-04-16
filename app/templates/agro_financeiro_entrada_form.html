@@ -14,7 +14,7 @@
         <i class="bi bi-plus-square-fill me-2 text-success"></i>
         {{ 'Nova entrada manual' if modo == 'novo' else 'Editar entrada manual' }}
       </h2>
-      <p class="text-muted small mb-0">Use categoria e subcategoria para alimentar o caixa e o DRE do Agro certinho.</p>
+      <p class="text-muted small mb-0">Use categoria e subcategoria para alimentar o caixa e o DRE do Agro corretamente.</p>
     </div>
     <a href="{{ url_for('main.agro_financeiro_entrada_listar') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
       <i class="bi bi-arrow-left"></i> Voltar
@@ -23,19 +23,20 @@
 
   <div class="card shadow-sm rounded-4 border-0">
     <div class="card-body p-4">
-      <form method="post" novalidate>
+      <form method="post" novalidate id="agroEntradaManualForm">
+        <input type="hidden" name="confirmar_lancamento_retroativo" id="confirmar_lancamento_retroativo" value="{{ form.get('confirmar_lancamento_retroativo', '') }}">
         <div class="row g-3">
           <div class="col-md-4">
             <label class="form-label fw-bold small text-muted">Cliente cadastrado</label>
             <select id="cliente_agro_id" name="cliente_agro_id" class="form-select">
-              <option value="">Sem vinculo</option>
+              <option value="">Sem vínculo</option>
               {% for cliente in clientes %}
                 <option value="{{ cliente.id }}" {% if form.get('cliente_agro_id')|string == cliente.id|string %}selected{% endif %}>{{ cliente.nome }}</option>
               {% endfor %}
             </select>
           </div>
           <div class="col-md-4">
-            <label class="form-label fw-bold small text-muted">Cliente / referencia *</label>
+            <label class="form-label fw-bold small text-muted">Cliente / referência *</label>
             <input id="cliente_nome" type="text" name="cliente_nome" value="{{ form.get('cliente_nome', '') }}" class="form-control {% if errors.get('cliente_nome') %}is-invalid{% endif %}" placeholder="Ex.: Cliente Agro / aporte / banco">
             {% if errors.get('cliente_nome') %}<div class="invalid-feedback">{{ errors.get('cliente_nome') }}</div>{% endif %}
           </div>
@@ -82,7 +83,7 @@
           </div>
 
           <div class="col-md-6">
-            <label class="form-label fw-bold small text-muted">Descricao *</label>
+            <label class="form-label fw-bold small text-muted">Descrição *</label>
             <input type="text" name="descricao" value="{{ form.get('descricao', '') }}" class="form-control {% if errors.get('descricao') %}is-invalid{% endif %}" placeholder="Explique claramente a origem da entrada">
             {% if errors.get('descricao') %}<div class="invalid-feedback">{{ errors.get('descricao') }}</div>{% endif %}
           </div>
@@ -97,12 +98,12 @@
           </div>
 
           <div class="col-md-3">
-            <label class="form-label fw-bold small text-muted">Data do lancamento</label>
+            <label class="form-label fw-bold small text-muted">Data do lançamento</label>
             <input type="date" name="data_lancamento" value="{{ form.get('data_lancamento', '') }}" class="form-control {% if errors.get('data_lancamento') %}is-invalid{% endif %}">
             {% if errors.get('data_lancamento') %}<div class="invalid-feedback">{{ errors.get('data_lancamento') }}</div>{% endif %}
           </div>
           <div class="col-md-3">
-            <label class="form-label fw-bold small text-muted">Data de emissao</label>
+            <label class="form-label fw-bold small text-muted">Data de emissão</label>
             <input type="date" name="data_emissao" value="{{ form.get('data_emissao', '') }}" class="form-control {% if errors.get('data_emissao') %}is-invalid{% endif %}">
             {% if errors.get('data_emissao') %}<div class="invalid-feedback">{{ errors.get('data_emissao') }}</div>{% endif %}
           </div>
@@ -190,6 +191,82 @@
           clientNameEl.value = selected.nome || "";
         }
       });
+
+      const formEl = document.getElementById("agroEntradaManualForm");
+      const dateFields = formEl ? Array.from(formEl.querySelectorAll('input[type="date"]')) : [];
+      const confirmationEl = document.getElementById("confirmar_lancamento_retroativo");
+      const isCreateMode = {{ (modo == 'novo')|tojson }};
+
+      function isoToday() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, "0");
+        const day = String(now.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      }
+
+      if (formEl && dateFields.length && isCreateMode) {
+        dateFields.forEach((field) => {
+          field.addEventListener("input", () => {
+            if (confirmationEl) {
+              confirmationEl.value = "";
+            }
+          });
+        });
+
+        formEl.addEventListener("submit", async (event) => {
+          if (confirmationEl && confirmationEl.value === "1") {
+            return;
+          }
+
+          const retroactiveFields = dateFields.filter((field) => {
+            const selectedDate = (field.value || "").trim();
+            return selectedDate && selectedDate < isoToday();
+          });
+
+          if (!retroactiveFields.length) {
+            if (confirmationEl) {
+              confirmationEl.value = "";
+            }
+            return;
+          }
+
+          event.preventDefault();
+          const retroHtml = retroactiveFields
+            .map((field) => {
+              const labelEl = field.closest(".col-md-3, .col-md-4, .col-md-6, .col-12")?.querySelector("label");
+              const fieldLabel = labelEl ? labelEl.textContent.replace("*", "").trim() : "Data";
+              const selectedDate = field.value.trim().split("-").reverse().join("/");
+              return `<li><b>${fieldLabel}</b>: ${selectedDate}</li>`;
+            })
+            .join("");
+
+          const result = await Swal.fire({
+            icon: "warning",
+            title: "Lançamento retroativo detectado",
+            html:
+              "As datas abaixo estão em período passado:<br><br>" +
+              `<ul class="text-start mb-3">${retroHtml}</ul>` +
+              "<strong>Deseja confirmar o cadastro por sua conta e risco?</strong>",
+            showCancelButton: true,
+            confirmButtonColor: "#198754",
+            cancelButtonColor: "#6c757d",
+            confirmButtonText: "Sim, desejo continuar",
+            cancelButtonText: "Não, vou revisar",
+            reverseButtons: true,
+          });
+
+          if (result.isConfirmed) {
+            if (confirmationEl) {
+              confirmationEl.value = "1";
+            }
+            formEl.submit();
+            return;
+          }
+
+          retroactiveFields[0].focus();
+        });
+      }
     })();
   </script>
 {% endblock %}

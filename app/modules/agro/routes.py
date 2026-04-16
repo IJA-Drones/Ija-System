@@ -562,6 +562,7 @@ def _normalize_financeiro_agro_entrada_form(form_source):
         "valor": (form_source.get("valor") or "").strip(),
         "status": (form_source.get("status") or FinanceiroAgroEntrada.STATUS_PENDENTE).strip().upper(),
         "observacoes": (form_source.get("observacoes") or "").strip(),
+        "confirmar_lancamento_retroativo": (form_source.get("confirmar_lancamento_retroativo") or "").strip(),
     }
 
 
@@ -584,6 +585,7 @@ def _normalize_financeiro_agro_saida_form(form_source):
         "valor": (form_source.get("valor") or "").strip(),
         "status": (form_source.get("status") or FinanceiroAgroSaida.STATUS_PENDENTE).strip().upper(),
         "observacoes": (form_source.get("observacoes") or "").strip(),
+        "confirmar_lancamento_retroativo": (form_source.get("confirmar_lancamento_retroativo") or "").strip(),
     }
 
 
@@ -1034,6 +1036,15 @@ def _validate_financeiro_agro_saida_form(form):
         "status": resolved_status,
         "competencia": competencia,
     }
+
+
+def _collect_agro_retroactive_dates(date_values):
+    today = datetime.now().date()
+    retroactive = {}
+    for field_name, field_value in (date_values or {}).items():
+        if field_value and field_value < today:
+            retroactive[field_name] = field_value
+    return retroactive
 
 
 def _validate_financeiro_agro_form(form, contratos):
@@ -3354,6 +3365,17 @@ def register_routes(bp):
             form = _normalize_financeiro_agro_entrada_form(request.form)
             payload = _validate_financeiro_agro_entrada_form(form)
             errors = payload["errors"]
+            retroactive_dates = _collect_agro_retroactive_dates(
+                {
+                    "data_lancamento": payload["data_lancamento"],
+                    "data_emissao": payload["data_emissao"],
+                    "data_vencimento": payload["data_vencimento"],
+                    "data_recebimento": payload["data_recebimento"],
+                }
+            )
+            if retroactive_dates and form.get("confirmar_lancamento_retroativo") != "1":
+                first_field = next(iter(retroactive_dates))
+                errors[first_field] = "Confirme o alerta de lancamento retroativo para continuar."
 
             if errors:
                 flash("Corrija os campos destacados da entrada manual.", "warning")
@@ -3522,6 +3544,7 @@ def register_routes(bp):
         _require_agro_edit()
 
         clientes = build_clientes_agro_query(current_user).all()
+        bancos = build_bancos_agro_query(current_user).all()
         errors = {}
         hoje = datetime.now().date()
 
@@ -3529,6 +3552,17 @@ def register_routes(bp):
             form = _normalize_financeiro_agro_saida_form(request.form)
             payload = _validate_financeiro_agro_saida_form(form)
             errors = payload["errors"]
+            retroactive_dates = _collect_agro_retroactive_dates(
+                {
+                    "data_lancamento": payload["data_lancamento"],
+                    "data_emissao": payload["data_emissao"],
+                    "data_vencimento": payload["data_vencimento"],
+                    "data_pagamento": payload["data_pagamento"],
+                }
+            )
+            if retroactive_dates and form.get("confirmar_lancamento_retroativo") != "1":
+                first_field = next(iter(retroactive_dates))
+                errors[first_field] = "Confirme o alerta de lancamento retroativo para continuar."
 
             if errors:
                 flash("Corrija os campos destacados da saida manual.", "warning")

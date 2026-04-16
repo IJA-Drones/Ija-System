@@ -23,7 +23,8 @@
 
   <div class="card shadow-sm rounded-4 border-0">
     <div class="card-body p-4">
-      <form method="post" novalidate>
+      <form method="post" novalidate id="agroSaidaManualForm">
+        <input type="hidden" name="confirmar_lancamento_retroativo" id="confirmar_lancamento_retroativo" value="{{ form.get('confirmar_lancamento_retroativo', '') }}">
         <div class="row g-3">
           <div class="col-md-3">
             <label class="form-label fw-bold small text-muted">Tipo de saida *</label>
@@ -203,6 +204,82 @@
       tipoEl.addEventListener("change", syncTaxHint);
       syncSubcategories(initialSubcategory);
       syncTaxHint();
+
+      const formEl = document.getElementById("agroSaidaManualForm");
+      const dateFields = formEl ? Array.from(formEl.querySelectorAll('input[type="date"]')) : [];
+      const confirmationEl = document.getElementById("confirmar_lancamento_retroativo");
+      const isCreateMode = {{ (modo == 'novo')|tojson }};
+
+      function isoToday() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, "0");
+        const day = String(now.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      }
+
+      if (formEl && dateFields.length && isCreateMode) {
+        dateFields.forEach((field) => {
+          field.addEventListener("input", () => {
+            if (confirmationEl) {
+              confirmationEl.value = "";
+            }
+          });
+        });
+
+        formEl.addEventListener("submit", async (event) => {
+          if (confirmationEl && confirmationEl.value === "1") {
+            return;
+          }
+
+          const retroactiveFields = dateFields.filter((field) => {
+            const selectedDate = (field.value || "").trim();
+            return selectedDate && selectedDate < isoToday();
+          });
+
+          if (!retroactiveFields.length) {
+            if (confirmationEl) {
+              confirmationEl.value = "";
+            }
+            return;
+          }
+
+          event.preventDefault();
+          const retroHtml = retroactiveFields
+            .map((field) => {
+              const labelEl = field.closest(".col-md-3, .col-md-4, .col-md-6, .col-12")?.querySelector("label");
+              const fieldLabel = labelEl ? labelEl.textContent.replace("*", "").trim() : "Data";
+              const selectedDate = field.value.trim().split("-").reverse().join("/");
+              return `<li><b>${fieldLabel}</b>: ${selectedDate}</li>`;
+            })
+            .join("");
+
+          const result = await Swal.fire({
+            icon: "warning",
+            title: "Lancamento retroativo detectado",
+            html:
+              "As datas abaixo estao em periodo passado:<br><br>" +
+              `<ul class="text-start mb-3">${retroHtml}</ul>` +
+              "<strong>Deseja confirmar o cadastro por sua conta e risco?</strong>",
+            showCancelButton: true,
+            confirmButtonColor: "#dc3545",
+            cancelButtonColor: "#6c757d",
+            confirmButtonText: "Sim, desejo continuar",
+            cancelButtonText: "Nao, vou revisar",
+            reverseButtons: true,
+          });
+
+          if (result.isConfirmed) {
+            if (confirmationEl) {
+              confirmationEl.value = "1";
+            }
+            formEl.submit();
+            return;
+          }
+
+          retroactiveFields[0].focus();
+        });
+      }
     })();
   </script>
 {% endblock %}
