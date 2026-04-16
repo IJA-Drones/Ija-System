@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/listing_pattern.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 listing-page">
+  <div class="listing-header mb-4">
+    <div>
+      <h2 class="text-dark m-0"><i class="bi bi-arrow-down-circle-fill me-2 text-success"></i> Entradas Manuais</h2>
+      <p class="text-muted small mb-0">Controle das entradas manuais que alimentam o caixa e o DRE.</p>
+    </div>
+    <div class="listing-actions">
+      <a href="{{ url_for('main.agro_financeiro_listar') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2"><i class="bi bi-cash-coin"></i> Recebiveis</a>
+      <a href="{{ url_for('main.agro_financeiro_saida_listar') }}" class="btn btn-outline-danger d-flex align-items-center gap-2"><i class="bi bi-arrow-up-circle"></i> Saidas</a>
+      {% if is_editable %}
+        <a href="{{ url_for('main.agro_financeiro_entrada_novo') }}" class="btn btn-success d-flex align-items-center gap-2"><i class="bi bi-plus-circle-fill"></i> Nova entrada</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-6">
+      <div class="card info status-primary shadow-sm rounded-4 border-0 h-100"><div class="card-body"><span class="text-muted small d-block">Previsto</span><h4 class="text-dark mt-2 mb-0">{{ resumo.total_previsto|currencybr }}</h4></div></div>
+    </div>
+    <div class="col-md-6">
+      <div class="card info status-success shadow-sm rounded-4 border-0 h-100"><div class="card-body"><span class="text-muted small d-block">Recebido</span><h4 class="text-dark mt-2 mb-0">{{ resumo.total_recebido|currencybr }}</h4></div></div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm rounded-4 mb-4 border-0">
+    <div class="card-body">
+      <form method="GET" action="{{ url_for('main.agro_financeiro_entrada_listar') }}">
+        <div class="row g-2 align-items-end">
+          <div class="col-md-5">
+            <label class="small text-muted mb-1">Busca geral</label>
+            <input type="text" class="form-control form-control-sm" name="q" value="{{ filters.q }}" placeholder="Cliente, categoria, doc...">
+          </div>
+          <div class="col-md-3">
+            <label class="small text-muted mb-1">Status</label>
+            <select name="status" class="form-select form-select-sm">
+              <option value="">Todos</option>
+              {% for status_value in status_options %}
+                <option value="{{ status_value }}" {% if filters.status == status_value %}selected{% endif %}>{{ status_value }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="small text-muted mb-1">Mes</label>
+            <input type="number" min="1" max="12" class="form-control form-control-sm" name="mes" value="{{ filters.mes or '' }}">
+          </div>
+          <div class="col-md-2">
+            <label class="small text-muted mb-1">Ano</label>
+            <input type="number" min="2024" max="2100" class="form-control form-control-sm" name="ano" value="{{ filters.ano or '' }}">
+          </div>
+        </div>
+        <div class="d-flex gap-2 pt-3">
+          <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-funnel"></i> Filtrar</button>
+          <a href="{{ url_for('main.agro_financeiro_entrada_listar') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x-lg"></i> Limpar</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card shadow-sm rounded-4 border-0 overflow-hidden">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Cliente / referencia</th>
+              <th>Classificacao</th>
+              <th>Datas</th>
+              <th>Valor</th>
+              <th>Status</th>
+              <th>Acoes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in lancamentos %}
+              <tr>
+                <td>
+                  <div class="fw-bold">{{ item.cliente_nome }}</div>
+                  <div class="text-muted small">{{ item.descricao }}</div>
+                  <div class="text-muted small">NF / Doc: {{ item.documento_referencia or '-' }}</div>
+                </td>
+                <td>
+                  <div class="fw-semibold">{{ item.categoria }}</div>
+                  <div class="text-muted small">{{ item.subcategoria or '-' }}</div>
+                  <div class="text-muted small">Forma: {{ item.forma_recebimento or '-' }}</div>
+                </td>
+                <td>
+                  <div class="text-muted small">Lancamento: {{ item.data_lancamento.strftime('%d/%m/%Y') if item.data_lancamento else '-' }}</div>
+                  <div class="text-muted small">Emissao: {{ item.data_emissao.strftime('%d/%m/%Y') if item.data_emissao else '-' }}</div>
+                  <div class="text-muted small">Prevista: {{ item.data_vencimento.strftime('%d/%m/%Y') if item.data_vencimento else '-' }}</div>
+                  <div class="text-muted small">Recebimento: {{ item.data_recebimento.strftime('%d/%m/%Y') if item.data_recebimento else '-' }}</div>
+                </td>
+                <td class="fw-semibold text-success">{{ item.valor|currencybr }}</td>
+                <td><span class="badge bg-success-subtle text-success border border-success-subtle">{{ item.status }}</span></td>
+                <td>
+                  <div class="d-flex gap-2">
+                    {% if is_editable %}
+                      <a href="{{ url_for('main.agro_financeiro_entrada_editar', lancamento_id=item.id) }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-pencil-square"></i></a>
+                      <form method="POST" action="{{ url_for('main.agro_financeiro_entrada_deletar', lancamento_id=item.id) }}" onsubmit="return confirm('Deseja excluir esta entrada manual?');">
+                        <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i></button>
+                      </form>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+            {% else %}
+              <tr><td colspan="6" class="text-center py-5 text-muted">Nenhuma entrada manual encontrada.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

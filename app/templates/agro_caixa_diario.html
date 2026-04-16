@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+  <style>
+    .agro-cash-hero {
+      background: linear-gradient(135deg, #f6fff8 0%, #eef7ff 100%);
+      border: 1px solid rgba(31, 111, 67, 0.08);
+    }
+
+    .agro-cash-kpi {
+      border-left: 4px solid rgba(31, 111, 67, 0.16);
+    }
+
+    .agro-cash-kpi.negative {
+      border-left-color: rgba(166, 27, 27, 0.2);
+    }
+
+    .agro-cash-book tbody tr td {
+      vertical-align: top;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1400px">
+  <div class="card agro-cash-hero shadow-sm rounded-4 border-0 mb-4">
+    <div class="card-body p-4">
+      <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+        <div>
+          <h2 class="text-dark m-0">
+            <i class="bi bi-journal-text me-2 text-primary"></i> Caixa Diario Agro
+          </h2>
+          <p class="text-muted small mb-0">
+            Abra o caixa no inicio do dia, acompanhe todas as movimentacoes e feche com o saldo batendo com o dia anterior.
+          </p>
+        </div>
+
+        <form method="get" action="{{ url_for('main.agro_caixa_diario') }}" class="d-flex flex-wrap gap-2 align-items-end">
+          <div>
+            <label class="small text-muted mb-1 d-block">Data do caixa</label>
+            <input type="date" name="data_caixa" value="{{ data_caixa_iso }}" class="form-control">
+          </div>
+          <button type="submit" class="btn btn-outline-primary d-flex align-items-center gap-2">
+            <i class="bi bi-search"></i> Carregar dia
+          </button>
+          <a href="{{ url_for('main.admin_agro') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+            <i class="bi bi-arrow-left"></i> Voltar
+          </a>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card agro-cash-kpi shadow-sm rounded-4 border-0 h-100">
+        <div class="card-body">
+          <div class="small text-muted">Saldo anterior</div>
+          <div class="fs-4 fw-semibold">{{ report.saldo_anterior|currencybr }}</div>
+          <div class="small text-muted mt-2">
+            {% if report.caixa_anterior %}
+              Fechamento de {{ report.caixa_anterior.data_caixa.strftime('%d/%m/%Y') }}
+            {% else %}
+              Primeiro dia de caixa
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card agro-cash-kpi shadow-sm rounded-4 border-0 h-100">
+        <div class="card-body">
+          <div class="small text-muted">Saldo de abertura</div>
+          <div class="fs-4 fw-semibold">{{ report.saldo_abertura|currencybr }}</div>
+          <div class="small text-muted mt-2">
+            {% if report.caixa %}
+              Aberto por {{ report.caixa.aberto_por_nome or 'Nao informado' }}
+            {% else %}
+              Sugestao baseada no dia anterior
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="card agro-cash-kpi shadow-sm rounded-4 border-0 h-100">
+        <div class="card-body">
+          <div class="small text-muted">Entradas do dia</div>
+          <div class="fs-4 fw-semibold text-success">{{ report.total_entradas|currencybr }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="card agro-cash-kpi negative shadow-sm rounded-4 border-0 h-100">
+        <div class="card-body">
+          <div class="small text-muted">Saidas do dia</div>
+          <div class="fs-4 fw-semibold text-danger">{{ report.total_saidas|currencybr }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="card agro-cash-kpi shadow-sm rounded-4 border-0 h-100">
+        <div class="card-body">
+          <div class="small text-muted">Fechamento calculado</div>
+          <div class="fs-4 fw-semibold {% if report.saldo_fechamento_calculado < 0 %}text-danger{% else %}text-primary{% endif %}">
+            {{ report.saldo_fechamento_calculado|currencybr }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if report.dia_anterior_pendente %}
+    <div class="alert alert-warning border-0 shadow-sm rounded-4 mb-4">
+      O dia anterior ainda nao foi fechado. Para manter o caixa batendo certinho, feche primeiro
+      <a href="{{ url_for('main.agro_caixa_diario', data_caixa=report.caixa_anterior.data_caixa.isoformat()) }}" class="alert-link">
+        o caixa de {{ report.caixa_anterior.data_caixa.strftime('%d/%m/%Y') }}
+      </a>.
+    </div>
+  {% endif %}
+
+  <div class="row g-3 mb-4">
+    <div class="col-lg-6">
+      <div class="card shadow-sm rounded-4 border-0 h-100">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+          <h5 class="m-0 text-dark">Abertura e fechamento</h5>
+        </div>
+        <div class="card-body px-4 pb-4">
+          <div class="mb-3">
+            {% if report.caixa_fechado %}
+              <span class="badge bg-success-subtle text-success border border-success-subtle">Caixa fechado</span>
+            {% elif report.caixa_aberto %}
+              <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Caixa aberto</span>
+            {% else %}
+              <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Caixa nao aberto</span>
+            {% endif %}
+          </div>
+
+          {% if is_editable and not report.caixa_aberto and not report.caixa_fechado %}
+            <form method="post" action="{{ url_for('main.agro_caixa_abrir') }}" class="row g-3">
+              <input type="hidden" name="data_caixa" value="{{ data_caixa_iso }}">
+              <div class="col-md-6">
+                <label class="form-label small text-muted">Saldo de abertura</label>
+                <input
+                  type="text"
+                  name="saldo_abertura"
+                  value="{{ report.saldo_sugerido_abertura|currencybr }}"
+                  class="form-control"
+                  {% if report.possui_fechamento_anterior %}readonly{% endif %}
+                >
+                <div class="form-text">
+                  {% if report.possui_fechamento_anterior %}
+                    Este valor segue automaticamente o fechamento do dia anterior.
+                  {% else %}
+                    Como nao ha dia anterior fechado, voce pode informar o saldo inicial.
+                  {% endif %}
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small text-muted">Observacoes de abertura</label>
+                <input type="text" name="observacoes_abertura" class="form-control" placeholder="Ex.: caixa aberto com conferencia do banco">
+              </div>
+              <div class="col-12">
+                <button type="submit" class="btn btn-success d-flex align-items-center gap-2">
+                  <i class="bi bi-unlock-fill"></i> Abrir caixa do dia
+                </button>
+              </div>
+            </form>
+          {% elif is_editable and report.caixa_aberto %}
+            <form method="post" action="{{ url_for('main.agro_caixa_fechar') }}" class="row g-3">
+              <input type="hidden" name="data_caixa" value="{{ data_caixa_iso }}">
+              <div class="col-md-6">
+                <label class="form-label small text-muted">Saldo de fechamento</label>
+                <input type="text" class="form-control" value="{{ report.saldo_fechamento_calculado|currencybr }}" readonly>
+                <div class="form-text">Calculado automaticamente: abertura + entradas - saidas.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small text-muted">Observacoes de fechamento</label>
+                <input type="text" name="observacoes_fechamento" class="form-control" placeholder="Ex.: caixa conferido e encerrado">
+              </div>
+              <div class="col-12">
+                <button type="submit" class="btn btn-primary d-flex align-items-center gap-2">
+                  <i class="bi bi-lock-fill"></i> Fechar caixa do dia
+                </button>
+              </div>
+            </form>
+          {% elif report.caixa_fechado %}
+            <div class="small text-muted">
+              Caixa encerrado por <strong>{{ report.caixa.fechado_por_nome or 'Nao informado' }}</strong>
+              em {{ report.caixa.fechado_em.strftime('%d/%m/%Y %H:%M') if report.caixa.fechado_em else '-' }}.
+            </div>
+            {% if report.caixa.observacoes_fechamento %}
+              <div class="alert alert-light border rounded-4 mt-3 mb-0">
+                {{ report.caixa.observacoes_fechamento }}
+              </div>
+            {% endif %}
+          {% else %}
+            <div class="small text-muted">
+              O dia ainda nao teve abertura de caixa registrada.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card shadow-sm rounded-4 border-0 h-100">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+          <h5 class="m-0 text-dark">Historico recente</h5>
+        </div>
+        <div class="card-body px-4 pb-4">
+          <div class="list-group list-group-flush">
+            {% for caixa in report.historico %}
+              <div class="list-group-item px-0 d-flex justify-content-between align-items-start">
+                <div>
+                  <div class="fw-semibold">{{ caixa.data_caixa.strftime('%d/%m/%Y') }}</div>
+                  <div class="small text-muted">
+                    {{ caixa.status }} | abertura {{ caixa.saldo_abertura|currencybr }} | fechamento {{ caixa.saldo_fechamento|currencybr }}
+                  </div>
+                </div>
+                <a href="{{ url_for('main.agro_caixa_diario', data_caixa=caixa.data_caixa.isoformat()) }}" class="btn btn-outline-secondary btn-sm">
+                  Ver dia
+                </a>
+              </div>
+            {% else %}
+              <div class="small text-muted">Nenhum caixa diario registrado ainda.</div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm rounded-4 border-0 overflow-hidden">
+    <div class="card-header bg-transparent border-0 pt-4 px-4">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <h5 class="m-0 text-dark">Livro-caixa do dia</h5>
+          <p class="text-muted small mb-0">Tudo que foi lancado para este dia entra aqui em ordem cronologica.</p>
+        </div>
+        <div class="small text-muted">Movimentos: {{ report.movimentos|length }}</div>
+      </div>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 agro-cash-book">
+          <thead class="table-light">
+            <tr>
+              <th>Origem</th>
+              <th>NF / Doc</th>
+              <th>Descricao</th>
+              <th>Categoria</th>
+              <th>Subcategoria</th>
+              <th>Status</th>
+              <th class="text-end">Entrada</th>
+              <th class="text-end">Saida</th>
+              <th class="text-end">Saldo</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td colspan="8" class="fw-semibold">Saldo de abertura</td>
+              <td class="text-end fw-semibold">{{ report.saldo_abertura|currencybr }}</td>
+            </tr>
+            {% for item in report.movimentos %}
+              <tr>
+                <td>
+                  {% if item.origem == 'CONTRATO' %}
+                    <span class="badge bg-success-subtle text-success border border-success-subtle">Contrato</span>
+                  {% elif item.origem == 'ENTRADA_MANUAL' %}
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Entrada manual</span>
+                  {% else %}
+                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Saida manual</span>
+                  {% endif %}
+                </td>
+                <td>{{ item.documento_referencia or '-' }}</td>
+                <td>
+                  <div class="fw-semibold">{{ item.descricao }}</div>
+                  {% if item.observacoes %}
+                    <div class="small text-muted">{{ item.observacoes }}</div>
+                  {% endif %}
+                </td>
+                <td>{{ item.categoria_grupo or item.categoria or '-' }}</td>
+                <td>{{ item.subcategoria or '-' }}</td>
+                <td>{{ item.status }}</td>
+                <td class="text-end text-success">{{ item.entrada|currencybr }}</td>
+                <td class="text-end text-danger">{{ item.saida|currencybr }}</td>
+                <td class="text-end fw-semibold">{{ item.saldo|currencybr }}</td>
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="9" class="text-center py-5 text-muted">Nenhuma movimentacao encontrada para este dia.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

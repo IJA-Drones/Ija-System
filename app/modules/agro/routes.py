@@ -9,11 +9,15 @@ from werkzeug.utils import secure_filename
 
 from app.extensions import db
 from app.models import (
+    BancoAgro,
     ClienteAgro,
     ContratoAgro,
     EquipamentoAgro,
     EquipeAgro,
     FinanceiroAgro,
+    FinanceiroAgroCaixaDiario,
+    FinanceiroAgroEntrada,
+    FinanceiroAgroSaida,
     OrcamentoAgro,
     OrdemServicoAgro,
     PilotoAgro,
@@ -25,26 +29,37 @@ from app.modules.agro.exporters import (
     build_ordem_servico_agro_pdf,
     merge_orcamento_agro_with_attachment,
 )
+from app.modules.agro.excel_exporters import (
+    build_agro_dre_gerencial_excel_export,
+    build_agro_fluxo_caixa_excel_export,
+)
 from app.modules.agro.service import (
     agro_bool_label,
+    build_agro_caixa_diario_report,
+    build_bancos_agro_query,
     build_contrato_agro_defaults,
     build_contratos_agro_query,
     build_contratos_agro_aprovados_query,
     build_clientes_agro_query,
     build_endereco_agro,
     build_financeiro_agro_defaults,
+    build_financeiro_agro_caixa_diario_query,
+    build_financeiro_agro_entrada_query,
     build_financeiro_agro_query,
+    build_financeiro_agro_saida_query,
     build_ordens_servico_agro_query,
     build_orcamentos_agro_query,
     can_access_agro_panel,
     can_edit_agro_panel,
     get_os_agro_attachment_folder,
     get_agro_dashboard_context,
+    recalculate_bancos_agro,
     remove_orcamento_attachment,
     resolve_orcamento_attachment,
     save_orcamento_attachment,
     serialize_contrato_agro_form,
     serialize_cliente_agro,
+    serialize_banco_agro_form,
     serialize_financeiro_agro_form,
     update_orcamento_snapshot_from_cliente,
 )
@@ -62,7 +77,132 @@ AGRO_SERVICO_OPTIONS = (
 AGRO_CONTRATO_STATUS_OPTIONS = ContratoAgro.STATUS_OPTIONS
 AGRO_OS_STATUS_OPTIONS = OrdemServicoAgro.STATUS_OPTIONS
 AGRO_FINANCEIRO_STATUS_OPTIONS = FinanceiroAgro.STATUS_OPTIONS
+AGRO_FINANCEIRO_ENTRADA_STATUS_OPTIONS = FinanceiroAgroEntrada.STATUS_OPTIONS
+AGRO_FINANCEIRO_SAIDA_STATUS_OPTIONS = FinanceiroAgroSaida.STATUS_OPTIONS
+AGRO_FINANCEIRO_SAIDA_TIPO_OPTIONS = FinanceiroAgroSaida.TIPO_OPTIONS
+AGRO_BANCO_TIPO_OPTIONS = BancoAgro.TIPO_OPTIONS
 AGRO_OS_MAP_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg"}
+
+AGRO_FINANCEIRO_ENTRADA_ESTRUTURA = {
+    "Entradas - Caixa": (
+        "Desconto de Duplicata (+)",
+        "Servicos",
+        "Venda - Produtos",
+        "Venda de Manutencao",
+        "Consorcio - Fundo Reserva",
+        "Estorno de Tarifa",
+        "Socios - Aporte",
+        "Vendas de Bens do Imobilizado",
+        "Outras Entradas de Caixa",
+    ),
+    "Emprestimos e Financiamentos": (
+        "Emprestimo (Capital de Giro) (+)",
+        "Fomento (+)",
+        "Outras Entradas Financeiras",
+    ),
+}
+
+AGRO_FINANCEIRO_SAIDA_ESTRUTURA = {
+    "Fornecedores": (
+        "Fornecedores",
+        "Materias para Revenda",
+    ),
+    "Despesas Administrativas": (
+        "Energia Eletrica",
+        "Agua",
+        "Alimentacao",
+        "Aluguel de Imovel",
+        "Seguro de Imovel",
+        "Pesquisa de Restritivos",
+        "Material de Escritorio",
+        "Sindicatos / Associacoes",
+        "Seguranca e Vigilancia",
+        "Cartorio",
+        "Condominio",
+        "Brindes e Premiacao",
+        "Estacionamentos",
+        "Doacoes",
+        "Marcas e Patentes",
+        "Material de Limpeza",
+        "Motoboy",
+        "Frete Nacional",
+        "Frete Internacional",
+        "Copa e Consumo",
+        "Farmacia",
+        "Mobilizacao - Obra",
+        "Viagens e Representacao",
+        "Passagens Aereas",
+        "Hospedagem",
+        "Marketing",
+        "Informatica",
+        "Internet",
+        "Eqpto. de Informatica",
+        "Telefone",
+        "Mensalidade Sistema",
+    ),
+    "Folha de Pagamento": (
+        "Salarios",
+        "Hora Extra",
+        "13 Salario",
+        "Ferias",
+        "Rescisao",
+        "Seguro de Vida",
+        "Assistencia Medica",
+        "Assistencia Odontologica",
+        "Bonus/Gratificacao",
+        "Pensao Alimenticia",
+        "Refeicao Funcionarios",
+        "Reembolso",
+        "Medicina do Trabalho",
+        "IRRF Salarios",
+        "INSS Folha",
+        "FGTS",
+        "Formacao Profissional",
+        "Material de Seguranca (EPI)",
+        "Recrutamento e Selecao",
+        "Treinamento - Drones",
+        "Transporte de Funcionarios",
+        "Lavanderia",
+        "Acordo Trabalhista",
+        "Uniformes",
+        "Dissidio",
+    ),
+    "Comissoes": (
+        "Comissao de Captacao de Negocios",
+        "Comissao de Vendas",
+        "Comissao de Recuperacao de Credito",
+        "Comissao de Consorcio (Fundo Reserva)",
+        "Outras Comissoes",
+    ),
+    "Servicos de Terceiros": (
+        "CREA",
+        "Limpeza",
+        "Servicos de Terceiros",
+        "Mapeamento",
+        "Honorarios Contabil / Consultoria",
+        "Patrimonial",
+        "Honorarios Juridicos",
+        "Consultoria",
+    ),
+    "Locacao e Equipamentos": (
+        "Locacao de Geradores",
+        "Locacao de Impressora",
+        "Locacao de Equipamentos",
+        "Locacao de Computadores",
+        "Manutencao de Equipamentos",
+        "Combustiveis e Lubrificantes Eq",
+    ),
+    "Impostos / Retencao": (
+        "INSS",
+        "IRRF",
+        "CSLL",
+        "COFINS",
+        "PIS/PASEP",
+        "ISS",
+        "ICMS",
+        "Retencao Contrato",
+    ),
+}
 
 
 def _query_args_without_page():
@@ -107,6 +247,18 @@ def _get_cliente_agro(cliente_id: int | None):
     return query.filter(ClienteAgro.id == cliente_id).first()
 
 
+def _get_banco_agro_or_404(banco_id: int):
+    query = apply_prefeitura_scope(BancoAgro.query, current_user, BancoAgro.prefeitura_id)
+    return query.filter(BancoAgro.id == banco_id).first_or_404()
+
+
+def _get_banco_agro(banco_id: int | None):
+    if not banco_id:
+        return None
+    query = apply_prefeitura_scope(BancoAgro.query, current_user, BancoAgro.prefeitura_id)
+    return query.filter(BancoAgro.id == banco_id).first()
+
+
 def _get_orcamento_agro_or_404(orcamento_id: int):
     query = apply_prefeitura_scope(OrcamentoAgro.query, current_user, OrcamentoAgro.prefeitura_id)
     return query.filter(OrcamentoAgro.id == orcamento_id).first_or_404()
@@ -149,6 +301,11 @@ def _get_os_agro_or_404(os_id: int):
 def _get_financeiro_agro_or_404(lancamento_id: int):
     query = apply_prefeitura_scope(FinanceiroAgro.query, current_user, FinanceiroAgro.prefeitura_id)
     return query.filter(FinanceiroAgro.id == lancamento_id).first_or_404()
+
+
+def _get_financeiro_agro_caixa_diario_or_404(caixa_id: int):
+    query = apply_prefeitura_scope(FinanceiroAgroCaixaDiario.query, current_user, FinanceiroAgroCaixaDiario.prefeitura_id)
+    return query.filter(FinanceiroAgroCaixaDiario.id == caixa_id).first_or_404()
 
 
 def _current_user_display_name():
@@ -287,16 +444,62 @@ def _build_os_agro_form_context(
     }
 
 
-def _build_financeiro_agro_form_context(*, modo, form, errors, contratos, lancamento=None):
+def _build_financeiro_agro_form_context(*, modo, form, errors, contratos, bancos, lancamento=None):
     contratos_defaults = {str(contrato.id): build_financeiro_agro_defaults(contrato) for contrato in contratos}
     return {
         "modo": modo,
         "form": form,
         "errors": errors,
         "contratos": contratos,
+        "bancos": bancos,
         "contratos_defaults": contratos_defaults,
         "status_options": AGRO_FINANCEIRO_STATUS_OPTIONS,
         "lancamento": lancamento,
+    }
+
+
+def _mapping_to_choice_list(mapping):
+    return [{"categoria": categoria, "subcategorias": list(subcategorias)} for categoria, subcategorias in mapping.items()]
+
+
+def _build_financeiro_agro_entrada_form_context(*, modo, form, errors, clientes, bancos, lancamento=None):
+    return {
+        "modo": modo,
+        "form": form,
+        "errors": errors,
+        "clientes": clientes,
+        "bancos": bancos,
+        "clientes_json": [serialize_cliente_agro(cliente) for cliente in clientes],
+        "categoria_options": list(AGRO_FINANCEIRO_ENTRADA_ESTRUTURA.keys()),
+        "categoria_map": _mapping_to_choice_list(AGRO_FINANCEIRO_ENTRADA_ESTRUTURA),
+        "status_options": AGRO_FINANCEIRO_ENTRADA_STATUS_OPTIONS,
+        "lancamento": lancamento,
+    }
+
+
+def _build_financeiro_agro_saida_form_context(*, modo, form, errors, clientes, bancos, lancamento=None):
+    return {
+        "modo": modo,
+        "form": form,
+        "errors": errors,
+        "clientes": clientes,
+        "bancos": bancos,
+        "clientes_json": [serialize_cliente_agro(cliente) for cliente in clientes],
+        "categoria_options": list(AGRO_FINANCEIRO_SAIDA_ESTRUTURA.keys()),
+        "categoria_map": _mapping_to_choice_list(AGRO_FINANCEIRO_SAIDA_ESTRUTURA),
+        "status_options": AGRO_FINANCEIRO_SAIDA_STATUS_OPTIONS,
+        "tipo_options": AGRO_FINANCEIRO_SAIDA_TIPO_OPTIONS,
+        "lancamento": lancamento,
+    }
+
+
+def _build_banco_agro_form_context(*, modo, form, errors, banco=None):
+    return {
+        "modo": modo,
+        "form": form,
+        "errors": errors,
+        "tipo_options": AGRO_BANCO_TIPO_OPTIONS,
+        "banco": banco,
     }
 
 
@@ -317,6 +520,7 @@ def _normalize_cliente_form(form_source):
 def _normalize_financeiro_agro_form(form_source):
     return {
         "contrato_agro_id": (form_source.get("contrato_agro_id") or "").strip(),
+        "banco_agro_id": (form_source.get("banco_agro_id") or "").strip(),
         "cliente_nome": (form_source.get("cliente_nome") or "").strip(),
         "cultura": (form_source.get("cultura") or "").strip(),
         "data_elaboracao_contrato": (form_source.get("data_elaboracao_contrato") or "").strip(),
@@ -337,6 +541,61 @@ def _normalize_financeiro_agro_form(form_source):
         "valor_comissao_cooperativa": (form_source.get("valor_comissao_cooperativa") or "").strip(),
         "forma_recebimento": (form_source.get("forma_recebimento") or "").strip(),
         "status": (form_source.get("status") or FinanceiroAgro.STATUS_PENDENTE).strip().upper(),
+        "observacoes": (form_source.get("observacoes") or "").strip(),
+    }
+
+
+def _normalize_financeiro_agro_entrada_form(form_source):
+    return {
+        "cliente_agro_id": (form_source.get("cliente_agro_id") or "").strip(),
+        "banco_agro_id": (form_source.get("banco_agro_id") or "").strip(),
+        "cliente_nome": (form_source.get("cliente_nome") or "").strip(),
+        "categoria": (form_source.get("categoria") or "").strip(),
+        "subcategoria": (form_source.get("subcategoria") or "").strip(),
+        "descricao": (form_source.get("descricao") or "").strip(),
+        "documento_referencia": (form_source.get("documento_referencia") or "").strip(),
+        "forma_recebimento": (form_source.get("forma_recebimento") or "").strip(),
+        "data_lancamento": (form_source.get("data_lancamento") or "").strip(),
+        "data_emissao": (form_source.get("data_emissao") or "").strip(),
+        "data_vencimento": (form_source.get("data_vencimento") or "").strip(),
+        "data_recebimento": (form_source.get("data_recebimento") or "").strip(),
+        "valor": (form_source.get("valor") or "").strip(),
+        "status": (form_source.get("status") or FinanceiroAgroEntrada.STATUS_PENDENTE).strip().upper(),
+        "observacoes": (form_source.get("observacoes") or "").strip(),
+    }
+
+
+def _normalize_financeiro_agro_saida_form(form_source):
+    return {
+        "cliente_agro_id": (form_source.get("cliente_agro_id") or "").strip(),
+        "banco_agro_id": (form_source.get("banco_agro_id") or "").strip(),
+        "favorecido": (form_source.get("favorecido") or "").strip(),
+        "tipo_saida": (form_source.get("tipo_saida") or FinanceiroAgroSaida.TIPO_DESPESA).strip().upper(),
+        "categoria": (form_source.get("categoria") or "").strip(),
+        "subcategoria": (form_source.get("subcategoria") or "").strip(),
+        "descricao": (form_source.get("descricao") or "").strip(),
+        "documento_referencia": (form_source.get("documento_referencia") or "").strip(),
+        "detalhamento_imposto": (form_source.get("detalhamento_imposto") or "").strip(),
+        "forma_pagamento": (form_source.get("forma_pagamento") or "").strip(),
+        "data_lancamento": (form_source.get("data_lancamento") or "").strip(),
+        "data_emissao": (form_source.get("data_emissao") or "").strip(),
+        "data_vencimento": (form_source.get("data_vencimento") or "").strip(),
+        "data_pagamento": (form_source.get("data_pagamento") or "").strip(),
+        "valor": (form_source.get("valor") or "").strip(),
+        "status": (form_source.get("status") or FinanceiroAgroSaida.STATUS_PENDENTE).strip().upper(),
+        "observacoes": (form_source.get("observacoes") or "").strip(),
+    }
+
+
+def _normalize_banco_agro_form(form_source):
+    return {
+        "nome": (form_source.get("nome") or "").strip(),
+        "banco_nome": (form_source.get("banco_nome") or "").strip(),
+        "agencia": (form_source.get("agencia") or "").strip(),
+        "conta": (form_source.get("conta") or "").strip(),
+        "tipo_conta": (form_source.get("tipo_conta") or BancoAgro.TIPO_CORRENTE).strip().upper(),
+        "saldo_inicial": (form_source.get("saldo_inicial") or "").strip(),
+        "ativo": (form_source.get("ativo") or "SIM").strip().upper(),
         "observacoes": (form_source.get("observacoes") or "").strip(),
     }
 
@@ -384,6 +643,40 @@ def _validate_cliente_agro_form(form, *, cliente_atual=None):
             errors["documento"] = "Já existe um cliente agro com esse documento."
 
     return errors, doc_digits, doc_fmt, cep_digits
+
+
+def _validate_banco_agro_form(form, *, banco_atual=None):
+    errors = {}
+    saldo_inicial = parse_currency_br(form["saldo_inicial"])
+
+    if not form["nome"]:
+        errors["nome"] = "Informe o nome interno do banco agro."
+
+    if not form["banco_nome"]:
+        errors["banco_nome"] = "Informe o nome do banco."
+
+    if form["tipo_conta"] not in AGRO_BANCO_TIPO_OPTIONS:
+        errors["tipo_conta"] = "Selecione um tipo de conta valido."
+
+    if form["saldo_inicial"] and saldo_inicial is None:
+        errors["saldo_inicial"] = "Informe um saldo inicial valido."
+
+    if form["nome"]:
+        query = apply_prefeitura_scope(
+            BancoAgro.query.filter(db.func.lower(BancoAgro.nome) == form["nome"].lower()),
+            current_user,
+            BancoAgro.prefeitura_id,
+        )
+        if banco_atual is not None:
+            query = query.filter(BancoAgro.id != banco_atual.id)
+        if query.first():
+            errors["nome"] = "Ja existe um banco agro com esse nome."
+
+    return {
+        "errors": errors,
+        "saldo_inicial": saldo_inicial or Decimal("0"),
+        "ativo": _normalize_bool_form(form["ativo"], default=True),
+    }
 
 
 def _normalize_orcamento_form(form_source):
@@ -495,6 +788,11 @@ def _parse_iso_date(value):
         return None
 
 
+def _resolve_agro_caixa_date_from_request():
+    data_caixa = _parse_iso_date(request.values.get("data_caixa"))
+    return data_caixa or datetime.now().date()
+
+
 def _calculate_application_days(start_date, end_date):
     if not start_date or not end_date or end_date < start_date:
         return None
@@ -509,6 +807,26 @@ def _resolve_financeiro_agro_status(status, data_vencimento, data_recebimento):
     if data_vencimento and data_vencimento < datetime.now().date():
         return FinanceiroAgro.STATUS_VENCIDO
     return FinanceiroAgro.STATUS_PENDENTE
+
+
+def _resolve_financeiro_agro_entrada_status(status, data_vencimento, data_recebimento):
+    if status == FinanceiroAgroEntrada.STATUS_CANCELADO:
+        return FinanceiroAgroEntrada.STATUS_CANCELADO
+    if data_recebimento:
+        return FinanceiroAgroEntrada.STATUS_RECEBIDO
+    if data_vencimento and data_vencimento < datetime.now().date():
+        return FinanceiroAgroEntrada.STATUS_VENCIDO
+    return FinanceiroAgroEntrada.STATUS_PENDENTE
+
+
+def _resolve_financeiro_agro_saida_status(status, data_vencimento, data_pagamento):
+    if status == FinanceiroAgroSaida.STATUS_CANCELADO:
+        return FinanceiroAgroSaida.STATUS_CANCELADO
+    if data_pagamento:
+        return FinanceiroAgroSaida.STATUS_PAGO
+    if data_vencimento and data_vencimento < datetime.now().date():
+        return FinanceiroAgroSaida.STATUS_VENCIDO
+    return FinanceiroAgroSaida.STATUS_PENDENTE
 
 
 def _build_financeiro_agro_summary(lancamentos):
@@ -532,10 +850,197 @@ def _build_financeiro_agro_summary(lancamentos):
     }
 
 
+def _build_financeiro_agro_entrada_summary(lancamentos):
+    total_previsto = Decimal("0")
+    total_recebido = Decimal("0")
+
+    for item in lancamentos:
+        valor = FinanceiroAgro._decimal_or_zero(item.valor)
+        if item.status != FinanceiroAgroEntrada.STATUS_CANCELADO:
+            total_previsto += valor
+        if item.status == FinanceiroAgroEntrada.STATUS_RECEBIDO:
+            total_recebido += valor
+
+    return {
+        "total_previsto": total_previsto,
+        "total_recebido": total_recebido,
+    }
+
+
+def _build_financeiro_agro_saida_summary(lancamentos):
+    total_previsto = Decimal("0")
+    total_pago = Decimal("0")
+    total_impostos = Decimal("0")
+    total_retencoes = Decimal("0")
+
+    for item in lancamentos:
+        valor = FinanceiroAgro._decimal_or_zero(item.valor)
+        if item.status != FinanceiroAgroSaida.STATUS_CANCELADO:
+            total_previsto += valor
+        if item.status == FinanceiroAgroSaida.STATUS_PAGO:
+            total_pago += valor
+        if item.tipo_saida == FinanceiroAgroSaida.TIPO_IMPOSTO:
+            total_impostos += valor
+        if item.tipo_saida == FinanceiroAgroSaida.TIPO_RETENCAO:
+            total_retencoes += valor
+
+    return {
+        "total_previsto": total_previsto,
+        "total_pago": total_pago,
+        "total_impostos": total_impostos,
+        "total_retencoes": total_retencoes,
+    }
+
+
+def _validate_categoria_subcategoria(form, mapping, errors):
+    categoria = (form.get("categoria") or "").strip()
+    subcategoria = (form.get("subcategoria") or "").strip()
+
+    if not categoria:
+        errors["categoria"] = "Selecione a categoria."
+        return
+
+    if categoria not in mapping:
+        errors["categoria"] = "Selecione uma categoria valida."
+        return
+
+    if not subcategoria:
+        errors["subcategoria"] = "Selecione a subcategoria."
+        return
+
+    if subcategoria not in mapping[categoria]:
+        errors["subcategoria"] = "Selecione uma subcategoria valida para a categoria escolhida."
+
+
+def _validate_financeiro_agro_entrada_form(form):
+    errors = {}
+    cliente = _get_cliente_agro(_normalize_optional_int(form["cliente_agro_id"]))
+    banco = _get_banco_agro(_normalize_optional_int(form["banco_agro_id"]))
+    cliente_nome = (form["cliente_nome"] or getattr(cliente, "nome", "") or "").strip()
+    data_lancamento = _parse_iso_date(form["data_lancamento"])
+    data_emissao = _parse_iso_date(form["data_emissao"])
+    data_vencimento = _parse_iso_date(form["data_vencimento"])
+    data_recebimento = _parse_iso_date(form["data_recebimento"])
+    valor = parse_currency_br(form["valor"])
+
+    if not cliente_nome:
+        errors["cliente_nome"] = "Informe o cliente / referencia da entrada."
+
+    if banco is None:
+        errors["banco_agro_id"] = "Selecione o banco agro que vai receber essa entrada."
+
+    _validate_categoria_subcategoria(form, AGRO_FINANCEIRO_ENTRADA_ESTRUTURA, errors)
+
+    if not form["descricao"]:
+        errors["descricao"] = "Informe a descricao do lancamento."
+
+    if form["data_lancamento"] and data_lancamento is None:
+        errors["data_lancamento"] = "Informe uma data valida."
+
+    if form["data_emissao"] and data_emissao is None:
+        errors["data_emissao"] = "Informe uma data valida."
+
+    if not form["data_vencimento"]:
+        errors["data_vencimento"] = "Informe a data prevista da entrada."
+    elif data_vencimento is None:
+        errors["data_vencimento"] = "Informe uma data valida."
+
+    if form["data_recebimento"] and data_recebimento is None:
+        errors["data_recebimento"] = "Informe uma data valida."
+
+    if valor is None or valor <= 0:
+        errors["valor"] = "Informe um valor monetario valido maior que zero."
+
+    if form["status"] not in AGRO_FINANCEIRO_ENTRADA_STATUS_OPTIONS:
+        errors["status"] = "Selecione um status valido."
+
+    resolved_status = _resolve_financeiro_agro_entrada_status(form["status"], data_vencimento, data_recebimento)
+    competencia = data_recebimento or data_vencimento or data_lancamento or datetime.now().date()
+
+    return {
+        "errors": errors,
+        "cliente": cliente,
+        "banco": banco,
+        "cliente_nome": cliente_nome,
+        "data_lancamento": data_lancamento,
+        "data_emissao": data_emissao,
+        "data_vencimento": data_vencimento,
+        "data_recebimento": data_recebimento,
+        "valor": valor or Decimal("0"),
+        "status": resolved_status,
+        "competencia": competencia,
+    }
+
+
+def _validate_financeiro_agro_saida_form(form):
+    errors = {}
+    cliente = _get_cliente_agro(_normalize_optional_int(form["cliente_agro_id"]))
+    banco = _get_banco_agro(_normalize_optional_int(form["banco_agro_id"]))
+    data_lancamento = _parse_iso_date(form["data_lancamento"])
+    data_emissao = _parse_iso_date(form["data_emissao"])
+    data_vencimento = _parse_iso_date(form["data_vencimento"])
+    data_pagamento = _parse_iso_date(form["data_pagamento"])
+    valor = parse_currency_br(form["valor"])
+
+    if not form["favorecido"]:
+        errors["favorecido"] = "Informe o favorecido."
+
+    if banco is None:
+        errors["banco_agro_id"] = "Selecione o banco agro que vai pagar essa saida."
+
+    if form["tipo_saida"] not in AGRO_FINANCEIRO_SAIDA_TIPO_OPTIONS:
+        errors["tipo_saida"] = "Selecione um tipo de saida valido."
+
+    _validate_categoria_subcategoria(form, AGRO_FINANCEIRO_SAIDA_ESTRUTURA, errors)
+
+    if not form["descricao"]:
+        errors["descricao"] = "Informe a descricao do lancamento."
+
+    if form["data_lancamento"] and data_lancamento is None:
+        errors["data_lancamento"] = "Informe uma data valida."
+
+    if form["data_emissao"] and data_emissao is None:
+        errors["data_emissao"] = "Informe uma data valida."
+
+    if not form["data_vencimento"]:
+        errors["data_vencimento"] = "Informe a data prevista da saida."
+    elif data_vencimento is None:
+        errors["data_vencimento"] = "Informe uma data valida."
+
+    if form["data_pagamento"] and data_pagamento is None:
+        errors["data_pagamento"] = "Informe uma data valida."
+
+    if valor is None or valor <= 0:
+        errors["valor"] = "Informe um valor monetario valido maior que zero."
+
+    if form["status"] not in AGRO_FINANCEIRO_SAIDA_STATUS_OPTIONS:
+        errors["status"] = "Selecione um status valido."
+
+    if form["tipo_saida"] in {FinanceiroAgroSaida.TIPO_IMPOSTO, FinanceiroAgroSaida.TIPO_RETENCAO} and not form["detalhamento_imposto"]:
+        errors["detalhamento_imposto"] = "Explique do que e esse imposto / retencao."
+
+    resolved_status = _resolve_financeiro_agro_saida_status(form["status"], data_vencimento, data_pagamento)
+    competencia = data_pagamento or data_vencimento or data_lancamento or datetime.now().date()
+
+    return {
+        "errors": errors,
+        "cliente": cliente,
+        "banco": banco,
+        "data_lancamento": data_lancamento,
+        "data_emissao": data_emissao,
+        "data_vencimento": data_vencimento,
+        "data_pagamento": data_pagamento,
+        "valor": valor or Decimal("0"),
+        "status": resolved_status,
+        "competencia": competencia,
+    }
+
+
 def _validate_financeiro_agro_form(form, contratos):
     errors = {}
     contrato = None
     ordem_servico = None
+    banco = _get_banco_agro(_normalize_optional_int(form["banco_agro_id"]))
 
     contrato_id = _normalize_optional_int(form["contrato_agro_id"])
     if contrato_id is None:
@@ -547,6 +1052,9 @@ def _validate_financeiro_agro_form(form, contratos):
 
     if not form["cliente_nome"]:
         errors["cliente_nome"] = "Informe o nome do cliente."
+
+    if banco is None:
+        errors["banco_agro_id"] = "Selecione o banco agro que vai receber esse contrato."
 
     data_elaboracao_contrato = _parse_iso_date(form["data_elaboracao_contrato"])
     if form["data_elaboracao_contrato"] and data_elaboracao_contrato is None:
@@ -638,6 +1146,7 @@ def _validate_financeiro_agro_form(form, contratos):
     return (
         errors,
         contrato,
+        banco,
         ordem_servico,
         data_elaboracao_contrato,
         data_servico_executado,
@@ -1834,6 +2343,153 @@ def register_routes(bp):
         context = get_agro_dashboard_context(current_user)
         return render_template("admin_agro.html", **context)
 
+    @bp.route("/agro/bancos", methods=["GET"], endpoint="agro_bancos_listar")
+    @login_required
+    def agro_bancos_listar():
+        _require_agro_access()
+
+        q = (request.args.get("q") or "").strip()
+        ativo = (request.args.get("ativo") or "").strip().upper()
+        if ativo not in {"", "ATIVO", "INATIVO"}:
+            ativo = ""
+
+        bancos = build_bancos_agro_query(current_user, q=q, ativo=ativo).all()
+        return render_template(
+            "agro_bancos_listar.html",
+            bancos=bancos,
+            filters={"q": q, "ativo": ativo, "total": len(bancos)},
+            is_editable=can_edit_agro_panel(current_user),
+        )
+
+    @bp.route("/agro/bancos/cadastrar", methods=["GET", "POST"], endpoint="agro_banco_novo")
+    @login_required
+    def agro_banco_novo():
+        _require_agro_edit()
+
+        errors = {}
+        if request.method == "POST":
+            form = _normalize_banco_agro_form(request.form)
+            payload = _validate_banco_agro_form(form)
+            errors = payload["errors"]
+
+            if errors:
+                flash("Corrija os campos destacados do banco agro.", "warning")
+                return render_template(
+                    "agro_banco_agro_form.html",
+                    **_build_banco_agro_form_context(modo="novo", form=form, errors=errors),
+                )
+
+            banco = BancoAgro(
+                prefeitura_id=getattr(current_user, "prefeitura_id", None),
+                nome=form["nome"],
+                banco_nome=form["banco_nome"],
+                agencia=form["agencia"] or None,
+                conta=form["conta"] or None,
+                tipo_conta=form["tipo_conta"],
+                saldo_inicial=payload["saldo_inicial"],
+                saldo_previsto=payload["saldo_inicial"],
+                saldo_atual=payload["saldo_inicial"],
+                ativo=payload["ativo"],
+                observacoes=form["observacoes"] or None,
+            )
+            db.session.add(banco)
+            db.session.flush()
+            recalculate_bancos_agro([banco.id])
+            db.session.commit()
+
+            flash("Banco agro cadastrado com sucesso.", "success")
+            return redirect(url_for("main.agro_bancos_listar"))
+
+        form = _normalize_banco_agro_form({})
+        form["ativo"] = "SIM"
+        form["tipo_conta"] = BancoAgro.TIPO_CORRENTE
+        return render_template(
+            "agro_banco_agro_form.html",
+            **_build_banco_agro_form_context(modo="novo", form=form, errors=errors),
+        )
+
+    @bp.route("/agro/bancos/<int:banco_id>/editar", methods=["GET", "POST"], endpoint="agro_banco_editar")
+    @login_required
+    def agro_banco_editar(banco_id):
+        _require_agro_edit()
+
+        banco = _get_banco_agro_or_404(banco_id)
+        errors = {}
+
+        if request.method == "POST":
+            form = _normalize_banco_agro_form(request.form)
+            payload = _validate_banco_agro_form(form, banco_atual=banco)
+            errors = payload["errors"]
+
+            if errors:
+                flash("Corrija os campos destacados do banco agro.", "warning")
+                return render_template(
+                    "agro_banco_agro_form.html",
+                    **_build_banco_agro_form_context(modo="editar", form=form, errors=errors, banco=banco),
+                )
+
+            banco.nome = form["nome"]
+            banco.banco_nome = form["banco_nome"]
+            banco.agencia = form["agencia"] or None
+            banco.conta = form["conta"] or None
+            banco.tipo_conta = form["tipo_conta"]
+            banco.saldo_inicial = payload["saldo_inicial"]
+            banco.ativo = payload["ativo"]
+            banco.observacoes = form["observacoes"] or None
+            db.session.flush()
+            recalculate_bancos_agro([banco.id])
+            db.session.commit()
+
+            flash("Banco agro atualizado com sucesso.", "success")
+            return redirect(url_for("main.agro_bancos_listar"))
+
+        form = serialize_banco_agro_form(banco)
+        return render_template(
+            "agro_banco_agro_form.html",
+            **_build_banco_agro_form_context(modo="editar", form=form, errors=errors, banco=banco),
+        )
+
+    @bp.route("/agro/bancos/<int:banco_id>/deletar", methods=["POST"], endpoint="agro_banco_deletar")
+    @login_required
+    def agro_banco_deletar(banco_id):
+        _require_agro_edit()
+
+        banco = _get_banco_agro_or_404(banco_id)
+        if banco.financeiros_agro or banco.financeiros_agro_entradas or banco.financeiros_agro_saidas:
+            flash("Esse banco agro possui lancamentos vinculados e nao pode ser excluido.", "warning")
+            return _redirect_back_to_agro("main.agro_bancos_listar")
+
+        db.session.delete(banco)
+        db.session.commit()
+        flash("Banco agro removido com sucesso.", "success")
+        return _redirect_back_to_agro("main.agro_bancos_listar")
+
+    @bp.route("/agro/relatorios/fluxo-caixa/excel", methods=["GET"], endpoint="agro_fluxo_caixa_exportar_excel")
+    @login_required
+    def agro_fluxo_caixa_exportar_excel():
+        _require_agro_access()
+        ano = request.args.get("ano", type=int)
+        output, filename = build_agro_fluxo_caixa_excel_export(current_user, ano=ano)
+        return send_file(
+            output,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            as_attachment=True,
+            download_name=filename,
+        )
+
+    @bp.route("/agro/relatorios/dre-gerencial/excel", methods=["GET"], endpoint="agro_dre_gerencial_exportar_excel")
+    @login_required
+    def agro_dre_gerencial_exportar_excel():
+        _require_agro_access()
+        ano = request.args.get("ano", type=int)
+        output, filename = build_agro_dre_gerencial_excel_export(current_user, ano=ano)
+        return send_file(
+            output,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            as_attachment=True,
+            download_name=filename,
+        )
+
     @bp.route("/agro/clientes", methods=["GET"], endpoint="agro_clientes_listar")
     @login_required
     def agro_clientes_listar():
@@ -2458,6 +3114,7 @@ def register_routes(bp):
         _require_agro_edit()
 
         contratos = build_contratos_agro_query(current_user).all()
+        bancos = build_bancos_agro_query(current_user).all()
         errors = {}
 
         if request.method == "POST":
@@ -2465,6 +3122,7 @@ def register_routes(bp):
             (
                 errors,
                 contrato,
+                banco,
                 ordem_servico,
                 data_elaboracao_contrato,
                 data_servico_executado,
@@ -2484,6 +3142,7 @@ def register_routes(bp):
                         form=form,
                         errors=errors,
                         contratos=contratos,
+                        bancos=bancos,
                     ),
                 )
 
@@ -2495,6 +3154,7 @@ def register_routes(bp):
                 orcamento_agro_id=getattr(orcamento, "id", None),
                 contrato_agro_id=contrato.id,
                 ordem_servico_agro_id=getattr(ordem_servico, "id", None),
+                banco_agro_id=banco.id,
                 cliente_nome=form["cliente_nome"],
                 cultura=form["cultura"] or None,
                 forma_recebimento=form["forma_recebimento"] or None,
@@ -2520,6 +3180,8 @@ def register_routes(bp):
                 valor_comissao_cooperativa=numeric_fields["valor_comissao_cooperativa"],
             )
             db.session.add(lancamento)
+            db.session.flush()
+            recalculate_bancos_agro([banco.id])
             db.session.commit()
 
             flash("Lancamento financeiro agro cadastrado com sucesso.", "success")
@@ -2531,6 +3193,8 @@ def register_routes(bp):
             form = build_financeiro_agro_defaults(contrato)
         else:
             form = _normalize_financeiro_agro_form({})
+            if bancos:
+                form["banco_agro_id"] = str(bancos[0].id)
             form["comissao_por_ha"] = format_currency_br(8)
             form["comissao_cooperativa_por_ha"] = format_currency_br(10)
             form["status"] = FinanceiroAgro.STATUS_PENDENTE
@@ -2542,6 +3206,7 @@ def register_routes(bp):
                 form=form,
                 errors=errors,
                 contratos=contratos,
+                bancos=bancos,
             ),
         )
 
@@ -2552,6 +3217,7 @@ def register_routes(bp):
 
         lancamento = _get_financeiro_agro_or_404(lancamento_id)
         contratos = build_contratos_agro_query(current_user).all()
+        bancos = build_bancos_agro_query(current_user).all()
         errors = {}
 
         if request.method == "POST":
@@ -2559,6 +3225,7 @@ def register_routes(bp):
             (
                 errors,
                 contrato,
+                banco,
                 ordem_servico,
                 data_elaboracao_contrato,
                 data_servico_executado,
@@ -2578,6 +3245,7 @@ def register_routes(bp):
                         form=form,
                         errors=errors,
                         contratos=contratos,
+                        bancos=bancos,
                         lancamento=lancamento,
                     ),
                 )
@@ -2588,6 +3256,8 @@ def register_routes(bp):
             lancamento.orcamento_agro_id = getattr(orcamento, "id", None)
             lancamento.contrato_agro_id = contrato.id
             lancamento.ordem_servico_agro_id = getattr(ordem_servico, "id", None)
+            banco_ids = {lancamento.banco_agro_id, banco.id}
+            lancamento.banco_agro_id = banco.id
             lancamento.cliente_nome = form["cliente_nome"]
             lancamento.cultura = form["cultura"] or None
             lancamento.forma_recebimento = form["forma_recebimento"] or None
@@ -2611,6 +3281,8 @@ def register_routes(bp):
             lancamento.valor_comissao = numeric_fields["valor_comissao"]
             lancamento.comissao_cooperativa_por_ha = numeric_fields["comissao_cooperativa_por_ha"]
             lancamento.valor_comissao_cooperativa = numeric_fields["valor_comissao_cooperativa"]
+            db.session.flush()
+            recalculate_bancos_agro(banco_ids)
             db.session.commit()
 
             flash("Lancamento financeiro agro atualizado com sucesso.", "success")
@@ -2624,6 +3296,7 @@ def register_routes(bp):
                 form=form,
                 errors=errors,
                 contratos=contratos,
+                bancos=bancos,
                 lancamento=lancamento,
             ),
         )
@@ -2634,11 +3307,462 @@ def register_routes(bp):
         _require_agro_edit()
 
         lancamento = _get_financeiro_agro_or_404(lancamento_id)
+        banco_id = lancamento.banco_agro_id
         db.session.delete(lancamento)
+        db.session.flush()
+        recalculate_bancos_agro([banco_id])
         db.session.commit()
 
         flash("Lancamento financeiro agro excluido com sucesso.", "success")
         return _redirect_back_to_agro("main.agro_financeiro_listar")
+
+    @bp.route("/agro/financeiro/entradas", methods=["GET"], endpoint="agro_financeiro_entrada_listar")
+    @login_required
+    def agro_financeiro_entrada_listar():
+        _require_agro_access()
+
+        q = (request.args.get("q") or "").strip()
+        status = (request.args.get("status") or "").strip().upper()
+        mes = request.args.get("mes", type=int)
+        ano = request.args.get("ano", type=int)
+        if status and status not in AGRO_FINANCEIRO_ENTRADA_STATUS_OPTIONS:
+            status = ""
+
+        lancamentos = build_financeiro_agro_entrada_query(current_user, q=q, status=status, mes=mes, ano=ano).all()
+        resumo = _build_financeiro_agro_entrada_summary(lancamentos)
+
+        return render_template(
+            "agro_financeiro_entrada_listar.html",
+            lancamentos=lancamentos,
+            resumo=resumo,
+            filters={"q": q, "status": status, "mes": mes, "ano": ano, "total": len(lancamentos)},
+            status_options=AGRO_FINANCEIRO_ENTRADA_STATUS_OPTIONS,
+            is_editable=can_edit_agro_panel(current_user),
+        )
+
+    @bp.route("/agro/financeiro/entradas/cadastrar", methods=["GET", "POST"], endpoint="agro_financeiro_entrada_novo")
+    @login_required
+    def agro_financeiro_entrada_novo():
+        _require_agro_edit()
+
+        clientes = build_clientes_agro_query(current_user).all()
+        bancos = build_bancos_agro_query(current_user).all()
+        errors = {}
+        hoje = datetime.now().date()
+
+        if request.method == "POST":
+            form = _normalize_financeiro_agro_entrada_form(request.form)
+            payload = _validate_financeiro_agro_entrada_form(form)
+            errors = payload["errors"]
+
+            if errors:
+                flash("Corrija os campos destacados da entrada manual.", "warning")
+                return render_template(
+                    "agro_financeiro_entrada_form.html",
+                    **_build_financeiro_agro_entrada_form_context(modo="novo", form=form, errors=errors, clientes=clientes, bancos=bancos),
+                )
+
+            lancamento = FinanceiroAgroEntrada(
+                prefeitura_id=getattr(current_user, "prefeitura_id", None),
+                cliente_agro_id=getattr(payload["cliente"], "id", None),
+                banco_agro_id=getattr(payload["banco"], "id", None),
+                cliente_nome=payload["cliente_nome"],
+                categoria=form["categoria"],
+                subcategoria=form["subcategoria"],
+                descricao=form["descricao"],
+                documento_referencia=form["documento_referencia"] or None,
+                forma_recebimento=form["forma_recebimento"] or None,
+                status=payload["status"],
+                observacoes=form["observacoes"] or None,
+                competencia_mes=payload["competencia"].month,
+                competencia_ano=payload["competencia"].year,
+                data_lancamento=payload["data_lancamento"],
+                data_emissao=payload["data_emissao"],
+                data_vencimento=payload["data_vencimento"],
+                data_recebimento=payload["data_recebimento"],
+                valor=payload["valor"],
+            )
+            db.session.add(lancamento)
+            db.session.flush()
+            recalculate_bancos_agro([getattr(payload["banco"], "id", None)])
+            db.session.commit()
+
+            flash("Entrada manual cadastrada com sucesso.", "success")
+            return redirect(url_for("main.agro_financeiro_entrada_listar"))
+
+        form = _normalize_financeiro_agro_entrada_form({})
+        if bancos:
+            form["banco_agro_id"] = str(bancos[0].id)
+        form["data_lancamento"] = hoje.isoformat()
+        form["data_emissao"] = hoje.isoformat()
+        form["data_vencimento"] = hoje.isoformat()
+        return render_template(
+            "agro_financeiro_entrada_form.html",
+            **_build_financeiro_agro_entrada_form_context(modo="novo", form=form, errors=errors, clientes=clientes, bancos=bancos),
+        )
+
+    @bp.route("/agro/financeiro/entradas/<int:lancamento_id>/editar", methods=["GET", "POST"], endpoint="agro_financeiro_entrada_editar")
+    @login_required
+    def agro_financeiro_entrada_editar(lancamento_id):
+        _require_agro_edit()
+
+        lancamento = apply_prefeitura_scope(FinanceiroAgroEntrada.query, current_user, FinanceiroAgroEntrada.prefeitura_id).filter(
+            FinanceiroAgroEntrada.id == lancamento_id
+        ).first_or_404()
+        clientes = build_clientes_agro_query(current_user).all()
+        bancos = build_bancos_agro_query(current_user).all()
+        errors = {}
+
+        if request.method == "POST":
+            form = _normalize_financeiro_agro_entrada_form(request.form)
+            payload = _validate_financeiro_agro_entrada_form(form)
+            errors = payload["errors"]
+
+            if errors:
+                flash("Corrija os campos destacados da entrada manual.", "warning")
+                return render_template(
+                    "agro_financeiro_entrada_form.html",
+                    **_build_financeiro_agro_entrada_form_context(modo="editar", form=form, errors=errors, clientes=clientes, bancos=bancos, lancamento=lancamento),
+                )
+
+            banco_ids = {lancamento.banco_agro_id, getattr(payload["banco"], "id", None)}
+            lancamento.cliente_agro_id = getattr(payload["cliente"], "id", None)
+            lancamento.banco_agro_id = getattr(payload["banco"], "id", None)
+            lancamento.cliente_nome = payload["cliente_nome"]
+            lancamento.categoria = form["categoria"]
+            lancamento.subcategoria = form["subcategoria"]
+            lancamento.descricao = form["descricao"]
+            lancamento.documento_referencia = form["documento_referencia"] or None
+            lancamento.forma_recebimento = form["forma_recebimento"] or None
+            lancamento.status = payload["status"]
+            lancamento.observacoes = form["observacoes"] or None
+            lancamento.competencia_mes = payload["competencia"].month
+            lancamento.competencia_ano = payload["competencia"].year
+            lancamento.data_lancamento = payload["data_lancamento"]
+            lancamento.data_emissao = payload["data_emissao"]
+            lancamento.data_vencimento = payload["data_vencimento"]
+            lancamento.data_recebimento = payload["data_recebimento"]
+            lancamento.valor = payload["valor"]
+            db.session.flush()
+            recalculate_bancos_agro(banco_ids)
+            db.session.commit()
+
+            flash("Entrada manual atualizada com sucesso.", "success")
+            return redirect(url_for("main.agro_financeiro_entrada_listar"))
+
+        form = {
+            "cliente_agro_id": str(lancamento.cliente_agro_id or ""),
+            "banco_agro_id": str(lancamento.banco_agro_id or ""),
+            "cliente_nome": lancamento.cliente_nome or "",
+            "categoria": lancamento.categoria or "",
+            "subcategoria": lancamento.subcategoria or "",
+            "descricao": lancamento.descricao or "",
+            "documento_referencia": lancamento.documento_referencia or "",
+            "forma_recebimento": lancamento.forma_recebimento or "",
+            "data_lancamento": lancamento.data_lancamento.isoformat() if lancamento.data_lancamento else "",
+            "data_emissao": lancamento.data_emissao.isoformat() if lancamento.data_emissao else "",
+            "data_vencimento": lancamento.data_vencimento.isoformat() if lancamento.data_vencimento else "",
+            "data_recebimento": lancamento.data_recebimento.isoformat() if lancamento.data_recebimento else "",
+            "valor": format_currency_br(lancamento.valor),
+            "status": lancamento.status or FinanceiroAgroEntrada.STATUS_PENDENTE,
+            "observacoes": lancamento.observacoes or "",
+        }
+        return render_template(
+            "agro_financeiro_entrada_form.html",
+            **_build_financeiro_agro_entrada_form_context(modo="editar", form=form, errors=errors, clientes=clientes, bancos=bancos, lancamento=lancamento),
+        )
+
+    @bp.route("/agro/financeiro/entradas/<int:lancamento_id>/deletar", methods=["POST"], endpoint="agro_financeiro_entrada_deletar")
+    @login_required
+    def agro_financeiro_entrada_deletar(lancamento_id):
+        _require_agro_edit()
+
+        lancamento = apply_prefeitura_scope(FinanceiroAgroEntrada.query, current_user, FinanceiroAgroEntrada.prefeitura_id).filter(
+            FinanceiroAgroEntrada.id == lancamento_id
+        ).first_or_404()
+        banco_id = lancamento.banco_agro_id
+        db.session.delete(lancamento)
+        db.session.flush()
+        recalculate_bancos_agro([banco_id])
+        db.session.commit()
+        flash("Entrada manual removida com sucesso.", "success")
+        return _redirect_back_to_agro("main.agro_financeiro_entrada_listar")
+
+    @bp.route("/agro/financeiro/saidas", methods=["GET"], endpoint="agro_financeiro_saida_listar")
+    @login_required
+    def agro_financeiro_saida_listar():
+        _require_agro_access()
+
+        q = (request.args.get("q") or "").strip()
+        status = (request.args.get("status") or "").strip().upper()
+        tipo_saida = (request.args.get("tipo_saida") or "").strip().upper()
+        mes = request.args.get("mes", type=int)
+        ano = request.args.get("ano", type=int)
+        if status and status not in AGRO_FINANCEIRO_SAIDA_STATUS_OPTIONS:
+            status = ""
+        if tipo_saida and tipo_saida not in AGRO_FINANCEIRO_SAIDA_TIPO_OPTIONS:
+            tipo_saida = ""
+
+        lancamentos = build_financeiro_agro_saida_query(current_user, q=q, status=status, tipo_saida=tipo_saida, mes=mes, ano=ano).all()
+        resumo = _build_financeiro_agro_saida_summary(lancamentos)
+
+        return render_template(
+            "agro_financeiro_saida_listar.html",
+            lancamentos=lancamentos,
+            resumo=resumo,
+            filters={"q": q, "status": status, "tipo_saida": tipo_saida, "mes": mes, "ano": ano, "total": len(lancamentos)},
+            status_options=AGRO_FINANCEIRO_SAIDA_STATUS_OPTIONS,
+            tipo_options=AGRO_FINANCEIRO_SAIDA_TIPO_OPTIONS,
+            is_editable=can_edit_agro_panel(current_user),
+        )
+
+    @bp.route("/agro/financeiro/saidas/cadastrar", methods=["GET", "POST"], endpoint="agro_financeiro_saida_novo")
+    @login_required
+    def agro_financeiro_saida_novo():
+        _require_agro_edit()
+
+        clientes = build_clientes_agro_query(current_user).all()
+        errors = {}
+        hoje = datetime.now().date()
+
+        if request.method == "POST":
+            form = _normalize_financeiro_agro_saida_form(request.form)
+            payload = _validate_financeiro_agro_saida_form(form)
+            errors = payload["errors"]
+
+            if errors:
+                flash("Corrija os campos destacados da saida manual.", "warning")
+                return render_template(
+                    "agro_financeiro_saida_form.html",
+                    **_build_financeiro_agro_saida_form_context(modo="novo", form=form, errors=errors, clientes=clientes, bancos=bancos),
+                )
+
+            lancamento = FinanceiroAgroSaida(
+                prefeitura_id=getattr(current_user, "prefeitura_id", None),
+                cliente_agro_id=getattr(payload["cliente"], "id", None),
+                banco_agro_id=getattr(payload["banco"], "id", None),
+                favorecido=form["favorecido"],
+                tipo_saida=form["tipo_saida"],
+                categoria=form["categoria"],
+                subcategoria=form["subcategoria"],
+                descricao=form["descricao"],
+                documento_referencia=form["documento_referencia"] or None,
+                detalhamento_imposto=form["detalhamento_imposto"] or None,
+                forma_pagamento=form["forma_pagamento"] or None,
+                status=payload["status"],
+                observacoes=form["observacoes"] or None,
+                competencia_mes=payload["competencia"].month,
+                competencia_ano=payload["competencia"].year,
+                data_lancamento=payload["data_lancamento"],
+                data_emissao=payload["data_emissao"],
+                data_vencimento=payload["data_vencimento"],
+                data_pagamento=payload["data_pagamento"],
+                valor=payload["valor"],
+            )
+            db.session.add(lancamento)
+            db.session.flush()
+            recalculate_bancos_agro([getattr(payload["banco"], "id", None)])
+            db.session.commit()
+
+            flash("Saida manual cadastrada com sucesso.", "success")
+            return redirect(url_for("main.agro_financeiro_saida_listar"))
+
+        form = _normalize_financeiro_agro_saida_form({})
+        if bancos:
+            form["banco_agro_id"] = str(bancos[0].id)
+        form["data_lancamento"] = hoje.isoformat()
+        form["data_emissao"] = hoje.isoformat()
+        form["data_vencimento"] = hoje.isoformat()
+        return render_template(
+            "agro_financeiro_saida_form.html",
+            **_build_financeiro_agro_saida_form_context(modo="novo", form=form, errors=errors, clientes=clientes, bancos=bancos),
+        )
+
+    @bp.route("/agro/financeiro/saidas/<int:lancamento_id>/editar", methods=["GET", "POST"], endpoint="agro_financeiro_saida_editar")
+    @login_required
+    def agro_financeiro_saida_editar(lancamento_id):
+        _require_agro_edit()
+
+        lancamento = apply_prefeitura_scope(FinanceiroAgroSaida.query, current_user, FinanceiroAgroSaida.prefeitura_id).filter(
+            FinanceiroAgroSaida.id == lancamento_id
+        ).first_or_404()
+        clientes = build_clientes_agro_query(current_user).all()
+        bancos = build_bancos_agro_query(current_user).all()
+        errors = {}
+
+        if request.method == "POST":
+            form = _normalize_financeiro_agro_saida_form(request.form)
+            payload = _validate_financeiro_agro_saida_form(form)
+            errors = payload["errors"]
+
+            if errors:
+                flash("Corrija os campos destacados da saida manual.", "warning")
+                return render_template(
+                    "agro_financeiro_saida_form.html",
+                    **_build_financeiro_agro_saida_form_context(modo="editar", form=form, errors=errors, clientes=clientes, bancos=bancos, lancamento=lancamento),
+                )
+
+            banco_ids = {lancamento.banco_agro_id, getattr(payload["banco"], "id", None)}
+            lancamento.cliente_agro_id = getattr(payload["cliente"], "id", None)
+            lancamento.banco_agro_id = getattr(payload["banco"], "id", None)
+            lancamento.favorecido = form["favorecido"]
+            lancamento.tipo_saida = form["tipo_saida"]
+            lancamento.categoria = form["categoria"]
+            lancamento.subcategoria = form["subcategoria"]
+            lancamento.descricao = form["descricao"]
+            lancamento.documento_referencia = form["documento_referencia"] or None
+            lancamento.detalhamento_imposto = form["detalhamento_imposto"] or None
+            lancamento.forma_pagamento = form["forma_pagamento"] or None
+            lancamento.status = payload["status"]
+            lancamento.observacoes = form["observacoes"] or None
+            lancamento.competencia_mes = payload["competencia"].month
+            lancamento.competencia_ano = payload["competencia"].year
+            lancamento.data_lancamento = payload["data_lancamento"]
+            lancamento.data_emissao = payload["data_emissao"]
+            lancamento.data_vencimento = payload["data_vencimento"]
+            lancamento.data_pagamento = payload["data_pagamento"]
+            lancamento.valor = payload["valor"]
+            db.session.flush()
+            recalculate_bancos_agro(banco_ids)
+            db.session.commit()
+
+            flash("Saida manual atualizada com sucesso.", "success")
+            return redirect(url_for("main.agro_financeiro_saida_listar"))
+
+        form = {
+            "cliente_agro_id": str(lancamento.cliente_agro_id or ""),
+            "banco_agro_id": str(lancamento.banco_agro_id or ""),
+            "favorecido": lancamento.favorecido or "",
+            "tipo_saida": lancamento.tipo_saida or FinanceiroAgroSaida.TIPO_DESPESA,
+            "categoria": lancamento.categoria or "",
+            "subcategoria": lancamento.subcategoria or "",
+            "descricao": lancamento.descricao or "",
+            "documento_referencia": lancamento.documento_referencia or "",
+            "detalhamento_imposto": lancamento.detalhamento_imposto or "",
+            "forma_pagamento": lancamento.forma_pagamento or "",
+            "data_lancamento": lancamento.data_lancamento.isoformat() if lancamento.data_lancamento else "",
+            "data_emissao": lancamento.data_emissao.isoformat() if lancamento.data_emissao else "",
+            "data_vencimento": lancamento.data_vencimento.isoformat() if lancamento.data_vencimento else "",
+            "data_pagamento": lancamento.data_pagamento.isoformat() if lancamento.data_pagamento else "",
+            "valor": format_currency_br(lancamento.valor),
+            "status": lancamento.status or FinanceiroAgroSaida.STATUS_PENDENTE,
+            "observacoes": lancamento.observacoes or "",
+        }
+        return render_template(
+            "agro_financeiro_saida_form.html",
+            **_build_financeiro_agro_saida_form_context(modo="editar", form=form, errors=errors, clientes=clientes, bancos=bancos, lancamento=lancamento),
+        )
+
+    @bp.route("/agro/financeiro/saidas/<int:lancamento_id>/deletar", methods=["POST"], endpoint="agro_financeiro_saida_deletar")
+    @login_required
+    def agro_financeiro_saida_deletar(lancamento_id):
+        _require_agro_edit()
+
+        lancamento = apply_prefeitura_scope(FinanceiroAgroSaida.query, current_user, FinanceiroAgroSaida.prefeitura_id).filter(
+            FinanceiroAgroSaida.id == lancamento_id
+        ).first_or_404()
+        banco_id = lancamento.banco_agro_id
+        db.session.delete(lancamento)
+        db.session.flush()
+        recalculate_bancos_agro([banco_id])
+        db.session.commit()
+        flash("Saida manual removida com sucesso.", "success")
+        return _redirect_back_to_agro("main.agro_financeiro_saida_listar")
+
+    @bp.route("/agro/caixa", methods=["GET"], endpoint="agro_caixa_diario")
+    @login_required
+    def agro_caixa_diario():
+        _require_agro_access()
+
+        data_caixa = _resolve_agro_caixa_date_from_request()
+        report = build_agro_caixa_diario_report(current_user, data_caixa=data_caixa)
+
+        return render_template(
+            "agro_caixa_diario.html",
+            report=report,
+            data_caixa_iso=data_caixa.isoformat(),
+            is_editable=can_edit_agro_panel(current_user),
+        )
+
+    @bp.route("/agro/caixa/abrir", methods=["POST"], endpoint="agro_caixa_abrir")
+    @login_required
+    def agro_caixa_abrir():
+        _require_agro_edit()
+
+        data_caixa = _resolve_agro_caixa_date_from_request()
+        report = build_agro_caixa_diario_report(current_user, data_caixa=data_caixa)
+        caixa = report["caixa"]
+
+        if caixa is not None and caixa.status == FinanceiroAgroCaixaDiario.STATUS_FECHADO:
+            flash("Este caixa diario ja foi fechado e nao pode ser aberto novamente.", "warning")
+            return redirect(url_for("main.agro_caixa_diario", data_caixa=data_caixa.isoformat()))
+
+        if report["dia_anterior_pendente"]:
+            flash("Feche primeiro o caixa do dia anterior antes de abrir um novo dia.", "warning")
+            return redirect(url_for("main.agro_caixa_diario", data_caixa=report["caixa_anterior"].data_caixa.isoformat()))
+
+        saldo_digitado = parse_currency_br(request.form.get("saldo_abertura"))
+        saldo_sugerido = report["saldo_sugerido_abertura"]
+        if report["possui_fechamento_anterior"]:
+            saldo_abertura = saldo_sugerido
+            if saldo_digitado is not None and saldo_digitado != saldo_sugerido:
+                flash("O saldo de abertura seguiu o fechamento do dia anterior para manter o caixa batendo.", "info")
+        else:
+            saldo_abertura = saldo_digitado if saldo_digitado is not None else saldo_sugerido
+
+        if caixa is None:
+            caixa = FinanceiroAgroCaixaDiario(
+                prefeitura_id=getattr(current_user, "prefeitura_id", None),
+                data_caixa=data_caixa,
+            )
+            db.session.add(caixa)
+
+        caixa.status = FinanceiroAgroCaixaDiario.STATUS_ABERTO
+        caixa.saldo_anterior = report["saldo_anterior"]
+        caixa.saldo_abertura = saldo_abertura
+        caixa.total_entradas = report["total_entradas"]
+        caixa.total_saidas = report["total_saidas"]
+        caixa.saldo_fechamento = saldo_abertura + report["total_entradas"] - report["total_saidas"]
+        caixa.aberto_por_nome = _current_user_display_name()
+        caixa.observacoes_abertura = (request.form.get("observacoes_abertura") or "").strip() or None
+        caixa.aberto_em = caixa.aberto_em or datetime.now()
+        caixa.fechado_em = None
+        caixa.fechado_por_nome = None
+        caixa.observacoes_fechamento = None
+
+        db.session.commit()
+        flash("Caixa diario aberto com sucesso.", "success")
+        return redirect(url_for("main.agro_caixa_diario", data_caixa=data_caixa.isoformat()))
+
+    @bp.route("/agro/caixa/fechar", methods=["POST"], endpoint="agro_caixa_fechar")
+    @login_required
+    def agro_caixa_fechar():
+        _require_agro_edit()
+
+        data_caixa = _resolve_agro_caixa_date_from_request()
+        report = build_agro_caixa_diario_report(current_user, data_caixa=data_caixa)
+        caixa = report["caixa"]
+
+        if caixa is None:
+            flash("Abra o caixa do dia antes de realizar o fechamento.", "warning")
+            return redirect(url_for("main.agro_caixa_diario", data_caixa=data_caixa.isoformat()))
+
+        if caixa.status == FinanceiroAgroCaixaDiario.STATUS_FECHADO:
+            flash("Este caixa diario ja esta fechado.", "info")
+            return redirect(url_for("main.agro_caixa_diario", data_caixa=data_caixa.isoformat()))
+
+        caixa.saldo_anterior = report["saldo_anterior"]
+        caixa.total_entradas = report["total_entradas"]
+        caixa.total_saidas = report["total_saidas"]
+        caixa.saldo_fechamento = report["saldo_fechamento_calculado"]
+        caixa.status = FinanceiroAgroCaixaDiario.STATUS_FECHADO
+        caixa.fechado_por_nome = _current_user_display_name()
+        caixa.observacoes_fechamento = (request.form.get("observacoes_fechamento") or "").strip() or None
+        caixa.fechado_em = datetime.now()
+
+        db.session.commit()
+        flash("Caixa diario fechado com sucesso.", "success")
+        return redirect(url_for("main.agro_caixa_diario", data_caixa=data_caixa.isoformat()))
 
     @bp.route("/agro/contratos/template", methods=["GET"], endpoint="agro_contratos_template")
     @login_required

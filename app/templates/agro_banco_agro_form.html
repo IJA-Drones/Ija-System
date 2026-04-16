@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1000px">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div>
+      <h2 class="text-dark m-0">
+        <i class="bi bi-bank me-2 text-primary"></i>
+        {{ 'Novo Banco Agro' if modo == 'novo' else 'Editar Banco Agro' }}
+      </h2>
+      <p class="text-muted small mb-0">Esse banco sera usado nos lancamentos de contrato, entrada e saida do Agro.</p>
+    </div>
+    <a href="{{ url_for('main.agro_bancos_listar') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+  </div>
+
+  <div class="card shadow-sm rounded-4 border-0">
+    <div class="card-body p-4">
+      <form method="post" novalidate>
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Nome interno *</label>
+            <input type="text" name="nome" value="{{ form.get('nome', '') }}" class="form-control {% if errors.get('nome') %}is-invalid{% endif %}" placeholder="Ex.: Banco Operacional Agro">
+            {% if errors.get('nome') %}<div class="invalid-feedback">{{ errors.get('nome') }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Banco *</label>
+            <input type="text" name="banco_nome" value="{{ form.get('banco_nome', '') }}" class="form-control {% if errors.get('banco_nome') %}is-invalid{% endif %}" placeholder="Ex.: BMP, Sicoob, Caixa">
+            {% if errors.get('banco_nome') %}<div class="invalid-feedback">{{ errors.get('banco_nome') }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Tipo de conta *</label>
+            <select name="tipo_conta" class="form-select {% if errors.get('tipo_conta') %}is-invalid{% endif %}">
+              {% for tipo in tipo_options %}
+                <option value="{{ tipo }}" {% if form.get('tipo_conta') == tipo %}selected{% endif %}>{{ tipo }}</option>
+              {% endfor %}
+            </select>
+            {% if errors.get('tipo_conta') %}<div class="invalid-feedback">{{ errors.get('tipo_conta') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Agencia</label>
+            <input type="text" name="agencia" value="{{ form.get('agencia', '') }}" class="form-control">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Conta</label>
+            <input type="text" name="conta" value="{{ form.get('conta', '') }}" class="form-control">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Saldo inicial</label>
+            <input type="text" name="saldo_inicial" value="{{ form.get('saldo_inicial', '') }}" class="form-control {% if errors.get('saldo_inicial') %}is-invalid{% endif %}" placeholder="R$ 0,00">
+            {% if errors.get('saldo_inicial') %}<div class="invalid-feedback">{{ errors.get('saldo_inicial') }}</div>{% endif %}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Ativo</label>
+            <select name="ativo" class="form-select">
+              <option value="SIM" {% if form.get('ativo', 'SIM') == 'SIM' %}selected{% endif %}>SIM</option>
+              <option value="NAO" {% if form.get('ativo') == 'NAO' %}selected{% endif %}>NAO</option>
+            </select>
+          </div>
+
+          <div class="col-12">
+            <label class="form-label fw-bold small text-muted">Observacoes</label>
+            <textarea name="observacoes" rows="3" class="form-control">{{ form.get('observacoes', '') }}</textarea>
+          </div>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 mt-4">
+          <button type="submit" class="btn btn-success d-flex align-items-center gap-2">
+            <i class="bi bi-check-circle-fill"></i> Salvar banco
+          </button>
+          {% if modo == 'editar' and banco %}
+            <button
+              type="submit"
+              class="btn btn-outline-danger d-flex align-items-center gap-2"
+              formaction="{{ url_for('main.agro_banco_deletar', banco_id=banco.id) }}"
+              formmethod="POST"
+              formnovalidate
+              onclick="return confirm('Deseja excluir este banco agro?');"
+            >
+              <i class="bi bi-trash"></i> Excluir
+            </button>
+          {% endif %}
+          <a href="{{ url_for('main.agro_bancos_listar') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+            <i class="bi bi-x-circle"></i> Cancelar
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

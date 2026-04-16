@@ -22,6 +22,9 @@ class Prefeitura(db.Model):
     contratos_agro = db.relationship("ContratoAgro", back_populates="prefeitura", lazy="select")
     ordens_servico_agro = db.relationship("OrdemServicoAgro", back_populates="prefeitura", lazy="select")
     financeiros_agro = db.relationship("FinanceiroAgro", back_populates="prefeitura", lazy="select")
+    financeiros_agro_entradas = db.relationship("FinanceiroAgroEntrada", back_populates="prefeitura", lazy="select")
+    financeiros_agro_saidas = db.relationship("FinanceiroAgroSaida", back_populates="prefeitura", lazy="select")
+    financeiros_agro_caixa_diarios = db.relationship("FinanceiroAgroCaixaDiario", back_populates="prefeitura", lazy="select")
     pilotos = db.relationship("Pilotos", back_populates="prefeitura", lazy="select")
     pilotos_agro = db.relationship("PilotoAgro", back_populates="prefeitura", lazy="select")
     equipes = db.relationship("Equipe", lazy="select")
@@ -597,6 +600,8 @@ class ClienteAgro(db.Model):
         cascade="all, delete-orphan",
     )
     financeiros = db.relationship("FinanceiroAgro", back_populates="cliente", lazy="select")
+    financeiros_entradas = db.relationship("FinanceiroAgroEntrada", back_populates="cliente", lazy="select")
+    financeiros_saidas = db.relationship("FinanceiroAgroSaida", back_populates="cliente", lazy="select")
 
 
 # -------------------------------------------------------------
@@ -1002,6 +1007,7 @@ class FinanceiroAgro(db.Model):
     orcamento_agro_id = db.Column(db.Integer, db.ForeignKey("orcamentos_agro.id"), nullable=True, index=True)
     contrato_agro_id = db.Column(db.Integer, db.ForeignKey("contratos_agro.id"), nullable=False, index=True)
     ordem_servico_agro_id = db.Column(db.Integer, db.ForeignKey("ordens_servico_agro.id"), nullable=True, index=True)
+    banco_agro_id = db.Column(db.Integer, db.ForeignKey("banco_agro.id"), nullable=True, index=True)
 
     cliente_nome = db.Column(db.String(150), nullable=False, index=True)
     cultura = db.Column(db.String(100), index=True)
@@ -1042,6 +1048,7 @@ class FinanceiroAgro(db.Model):
     orcamento = db.relationship("OrcamentoAgro", back_populates="financeiros", lazy="joined")
     contrato = db.relationship("ContratoAgro", back_populates="financeiros", lazy="joined")
     ordem_servico = db.relationship("OrdemServicoAgro", back_populates="financeiros", lazy="joined")
+    banco_agro = db.relationship("BancoAgro", back_populates="financeiros_agro", lazy="joined")
 
     __table_args__ = (
         db.Index("ix_financeiro_agro_status_vencimento", "status", "data_vencimento"),
@@ -1082,6 +1089,263 @@ class FinanceiroAgro(db.Model):
         return (
             self._decimal_or_zero(self.valor_total_contrato) - self.total_comissoes
         ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+
+class BancoAgro(db.Model):
+    __tablename__ = "banco_agro"
+
+    TIPO_CORRENTE = "CORRENTE"
+    TIPO_POUPANCA = "POUPANCA"
+    TIPO_CAIXA = "CAIXA"
+    TIPO_OPTIONS = (
+        TIPO_CORRENTE,
+        TIPO_POUPANCA,
+        TIPO_CAIXA,
+    )
+
+    id = db.Column(db.Integer, primary_key=True, index=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
+
+    nome = db.Column(db.String(120), nullable=False, index=True)
+    banco_nome = db.Column(db.String(120), nullable=False, index=True)
+    agencia = db.Column(db.String(20))
+    conta = db.Column(db.String(40))
+    tipo_conta = db.Column(db.String(20), nullable=False, default=TIPO_CORRENTE, index=True)
+    saldo_inicial = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+    saldo_previsto = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+    saldo_atual = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+    ativo = db.Column(db.Boolean, nullable=False, default=True, index=True)
+    observacoes = db.Column(db.Text)
+
+    criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+    atualizado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True, onupdate=datetime.now)
+
+    prefeitura = db.relationship("Prefeitura", lazy="joined")
+    financeiros_agro = db.relationship("FinanceiroAgro", back_populates="banco_agro", lazy="select")
+    financeiros_agro_entradas = db.relationship("FinanceiroAgroEntrada", back_populates="banco_agro", lazy="select")
+    financeiros_agro_saidas = db.relationship("FinanceiroAgroSaida", back_populates="banco_agro", lazy="select")
+
+    __table_args__ = (
+        db.Index("ix_banco_agro_nome_ativo", "nome", "ativo"),
+    )
+
+    @property
+    def saldo_inicial_decimal(self):
+        return FinanceiroAgro._decimal_or_zero(self.saldo_inicial)
+
+    @property
+    def saldo_previsto_decimal(self):
+        return FinanceiroAgro._decimal_or_zero(self.saldo_previsto)
+
+    @property
+    def saldo_atual_decimal(self):
+        return FinanceiroAgro._decimal_or_zero(self.saldo_atual)
+
+
+class FinanceiroAgroSaida(db.Model):
+    __tablename__ = "financeiro_agro_saidas"
+
+    TIPO_DESPESA = "DESPESA"
+    TIPO_IMPOSTO = "IMPOSTO"
+    TIPO_RETENCAO = "RETENCAO"
+    TIPO_OUTRA_SAIDA = "OUTRA_SAIDA"
+    TIPO_OPTIONS = (
+        TIPO_DESPESA,
+        TIPO_IMPOSTO,
+        TIPO_RETENCAO,
+        TIPO_OUTRA_SAIDA,
+    )
+
+    STATUS_PENDENTE = "PENDENTE"
+    STATUS_PAGO = "PAGO"
+    STATUS_VENCIDO = "VENCIDO"
+    STATUS_CANCELADO = "CANCELADO"
+    STATUS_OPTIONS = (
+        STATUS_PENDENTE,
+        STATUS_PAGO,
+        STATUS_VENCIDO,
+        STATUS_CANCELADO,
+    )
+
+    id = db.Column(db.Integer, primary_key=True, index=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
+    cliente_agro_id = db.Column(db.Integer, db.ForeignKey("clientes_agro.id"), nullable=True, index=True)
+    banco_agro_id = db.Column(db.Integer, db.ForeignKey("banco_agro.id"), nullable=True, index=True)
+
+    tipo_saida = db.Column(db.String(30), nullable=False, default=TIPO_DESPESA, index=True)
+    categoria = db.Column(db.String(120), nullable=False, index=True)
+    subcategoria = db.Column(db.String(120), index=True)
+    descricao = db.Column(db.String(180), nullable=False)
+    documento_referencia = db.Column(db.String(80), index=True)
+    detalhamento_imposto = db.Column(db.String(180))
+    favorecido = db.Column(db.String(150), index=True)
+    cep = db.Column(db.String(9), nullable=True)
+    logradouro = db.Column(db.String(150), nullable=True)
+    numero = db.Column(db.String(20), nullable=True)
+    complemento = db.Column(db.String(100))
+    bairro = db.Column(db.String(100), nullable=True, index=True)
+    cidade = db.Column(db.String(100), nullable=True, index=True)
+    uf = db.Column(db.String(2), nullable=True, index=True)
+    forma_pagamento = db.Column(db.String(50))
+    status = db.Column(db.String(30), nullable=False, default=STATUS_PENDENTE, index=True)
+    observacoes = db.Column(db.Text)
+
+    competencia_mes = db.Column(db.Integer, index=True)
+    competencia_ano = db.Column(db.Integer, index=True)
+
+    data_lancamento = db.Column(db.Date, index=True)
+    data_emissao = db.Column(db.Date, index=True)
+    data_vencimento = db.Column(db.Date, nullable=False, index=True)
+    data_pagamento = db.Column(db.Date, index=True)
+
+    valor = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+
+    criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+    atualizado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True, onupdate=datetime.now)
+
+    prefeitura = db.relationship("Prefeitura", back_populates="financeiros_agro_saidas", lazy="joined")
+    cliente = db.relationship("ClienteAgro", back_populates="financeiros_saidas", lazy="joined")
+    banco_agro = db.relationship("BancoAgro", back_populates="financeiros_agro_saidas", lazy="joined")
+
+    __table_args__ = (
+        db.Index("ix_financeiro_agro_saidas_competencia", "competencia_ano", "competencia_mes"),
+        db.Index("ix_financeiro_agro_saidas_status_vencimento", "status", "data_vencimento"),
+        db.Index("ix_financeiro_agro_saidas_tipo_status", "tipo_saida", "status"),
+    )
+
+    @property
+    def valor_decimal(self):
+        return FinanceiroAgro._decimal_or_zero(self.valor)
+
+
+class FinanceiroAgroEntrada(db.Model):
+    __tablename__ = "financeiro_agro_entradas"
+
+    CATEGORIA_CONTRATO_SOFTWARE = "Contrato de software"
+    CATEGORIA_OUTRA_ENTRADA = "Outra entrada"
+    CATEGORIA_OPTIONS = (
+        CATEGORIA_CONTRATO_SOFTWARE,
+        CATEGORIA_OUTRA_ENTRADA,
+    )
+
+    STATUS_PENDENTE = "PENDENTE"
+    STATUS_RECEBIDO = "RECEBIDO"
+    STATUS_VENCIDO = "VENCIDO"
+    STATUS_CANCELADO = "CANCELADO"
+    STATUS_OPTIONS = (
+        STATUS_PENDENTE,
+        STATUS_RECEBIDO,
+        STATUS_VENCIDO,
+        STATUS_CANCELADO,
+    )
+
+    id = db.Column(db.Integer, primary_key=True, index=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
+    cliente_agro_id = db.Column(db.Integer, db.ForeignKey("clientes_agro.id"), nullable=True, index=True)
+    banco_agro_id = db.Column(db.Integer, db.ForeignKey("banco_agro.id"), nullable=True, index=True)
+
+    categoria = db.Column(db.String(120), nullable=False, index=True)
+    subcategoria = db.Column(db.String(120), index=True)
+    descricao = db.Column(db.String(180), nullable=False)
+    documento_referencia = db.Column(db.String(80), index=True)
+    cliente_nome = db.Column(db.String(150), nullable=False, index=True)
+    cep = db.Column(db.String(9), nullable=True)
+    logradouro = db.Column(db.String(150), nullable=True)
+    numero = db.Column(db.String(20), nullable=True)
+    complemento = db.Column(db.String(100))
+    bairro = db.Column(db.String(100), nullable=True, index=True)
+    cidade = db.Column(db.String(100), nullable=True, index=True)
+    uf = db.Column(db.String(2), nullable=True, index=True)
+    forma_recebimento = db.Column(db.String(50))
+    status = db.Column(db.String(30), nullable=False, default=STATUS_PENDENTE, index=True)
+    observacoes = db.Column(db.Text)
+
+    competencia_mes = db.Column(db.Integer, index=True)
+    competencia_ano = db.Column(db.Integer, index=True)
+
+    data_lancamento = db.Column(db.Date, index=True)
+    data_emissao = db.Column(db.Date, index=True)
+    data_vencimento = db.Column(db.Date, nullable=False, index=True)
+    data_recebimento = db.Column(db.Date, index=True)
+
+    valor = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+
+    criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+    atualizado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True, onupdate=datetime.now)
+
+    prefeitura = db.relationship("Prefeitura", back_populates="financeiros_agro_entradas", lazy="joined")
+    cliente = db.relationship("ClienteAgro", back_populates="financeiros_entradas", lazy="joined")
+    banco_agro = db.relationship("BancoAgro", back_populates="financeiros_agro_entradas", lazy="joined")
+
+    __table_args__ = (
+        db.Index("ix_financeiro_agro_entradas_competencia", "competencia_ano", "competencia_mes"),
+        db.Index("ix_financeiro_agro_entradas_status_vencimento", "status", "data_vencimento"),
+        db.Index("ix_financeiro_agro_entradas_categoria_status", "categoria", "status"),
+    )
+
+    @property
+    def valor_decimal(self):
+        return FinanceiroAgro._decimal_or_zero(self.valor)
+
+
+class FinanceiroAgroCaixaDiario(db.Model):
+    __tablename__ = "financeiro_agro_caixa_diario"
+
+    STATUS_ABERTO = "ABERTO"
+    STATUS_FECHADO = "FECHADO"
+    STATUS_OPTIONS = (
+        STATUS_ABERTO,
+        STATUS_FECHADO,
+    )
+
+    id = db.Column(db.Integer, primary_key=True, index=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
+
+    data_caixa = db.Column(db.Date, nullable=False, index=True)
+    status = db.Column(db.String(20), nullable=False, default=STATUS_ABERTO, index=True)
+
+    saldo_anterior = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+    saldo_abertura = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+    total_entradas = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+    total_saidas = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+    saldo_fechamento = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+
+    aberto_por_nome = db.Column(db.String(120))
+    fechado_por_nome = db.Column(db.String(120))
+    observacoes_abertura = db.Column(db.Text)
+    observacoes_fechamento = db.Column(db.Text)
+
+    aberto_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+    fechado_em = db.Column(db.DateTime, index=True)
+    criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+    atualizado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True, onupdate=datetime.now)
+
+    prefeitura = db.relationship("Prefeitura", back_populates="financeiros_agro_caixa_diarios", lazy="joined")
+
+    __table_args__ = (
+        db.UniqueConstraint("prefeitura_id", "data_caixa", name="uq_financeiro_agro_caixa_diario_prefeitura_data"),
+        db.Index("ix_financeiro_agro_caixa_diario_status_data", "status", "data_caixa"),
+    )
+
+    @property
+    def saldo_anterior_decimal(self):
+        return FinanceiroAgro._decimal_or_zero(self.saldo_anterior)
+
+    @property
+    def saldo_abertura_decimal(self):
+        return FinanceiroAgro._decimal_or_zero(self.saldo_abertura)
+
+    @property
+    def total_entradas_decimal(self):
+        return FinanceiroAgro._decimal_or_zero(self.total_entradas)
+
+    @property
+    def total_saidas_decimal(self):
+        return FinanceiroAgro._decimal_or_zero(self.total_saidas)
+
+    @property
+    def saldo_fechamento_decimal(self):
+        return FinanceiroAgro._decimal_or_zero(self.saldo_fechamento)
 
 
 # -------------------------------------------------------------

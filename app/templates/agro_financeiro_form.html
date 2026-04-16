@@ -31,7 +31,7 @@
         </div>
 
         <div class="row g-3 mb-4">
-          <div class="col-md-6">
+          <div class="col-md-5">
             <label class="form-label fw-bold small text-muted">Contrato agro *</label>
             <select id="contrato_agro_id" name="contrato_agro_id" class="form-select {% if errors.get('contrato_agro_id') %}is-invalid{% endif %}">
               <option value="">Selecione</option>
@@ -45,7 +45,18 @@
             <div class="form-text">Ao selecionar um contrato, o sistema usa o cliente, as culturas e os valores do contrato/orçamento como base inicial. Depois, você pode ajustar tudo manualmente.</div>
           </div>
 
-          <div class="col-md-4">
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Banco Agro *</label>
+            <select name="banco_agro_id" class="form-select {% if errors.get('banco_agro_id') %}is-invalid{% endif %}">
+              <option value="">Selecione</option>
+              {% for banco in bancos %}
+                <option value="{{ banco.id }}" {% if form.get('banco_agro_id')|string == banco.id|string %}selected{% endif %}>{{ banco.nome }} - {{ banco.banco_nome }}</option>
+              {% endfor %}
+            </select>
+            {% if errors.get('banco_agro_id') %}<div class="invalid-feedback">{{ errors.get('banco_agro_id') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-2">
             <label class="form-label fw-bold small text-muted">Status *</label>
             <select name="status" class="form-select {% if errors.get('status') %}is-invalid{% endif %}">
               {% for status_value in status_options %}

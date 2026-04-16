@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1100px">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div>
+      <h2 class="text-dark m-0">
+        <i class="bi bi-plus-square-fill me-2 text-success"></i>
+        {{ 'Nova entrada manual' if modo == 'novo' else 'Editar entrada manual' }}
+      </h2>
+      <p class="text-muted small mb-0">Use categoria e subcategoria para alimentar o caixa e o DRE do Agro certinho.</p>
+    </div>
+    <a href="{{ url_for('main.agro_financeiro_entrada_listar') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+  </div>
+
+  <div class="card shadow-sm rounded-4 border-0">
+    <div class="card-body p-4">
+      <form method="post" novalidate>
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Cliente cadastrado</label>
+            <select id="cliente_agro_id" name="cliente_agro_id" class="form-select">
+              <option value="">Sem vinculo</option>
+              {% for cliente in clientes %}
+                <option value="{{ cliente.id }}" {% if form.get('cliente_agro_id')|string == cliente.id|string %}selected{% endif %}>{{ cliente.nome }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Cliente / referencia *</label>
+            <input id="cliente_nome" type="text" name="cliente_nome" value="{{ form.get('cliente_nome', '') }}" class="form-control {% if errors.get('cliente_nome') %}is-invalid{% endif %}" placeholder="Ex.: Cliente Agro / aporte / banco">
+            {% if errors.get('cliente_nome') %}<div class="invalid-feedback">{{ errors.get('cliente_nome') }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Forma de recebimento</label>
+            <input type="text" name="forma_recebimento" value="{{ form.get('forma_recebimento', '') }}" class="form-control" placeholder="PIX, TED, boleto...">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Banco Agro *</label>
+            <select name="banco_agro_id" class="form-select {% if errors.get('banco_agro_id') %}is-invalid{% endif %}">
+              <option value="">Selecione</option>
+              {% for banco in bancos %}
+                <option value="{{ banco.id }}" {% if form.get('banco_agro_id')|string == banco.id|string %}selected{% endif %}>{{ banco.nome }} - {{ banco.banco_nome }}</option>
+              {% endfor %}
+            </select>
+            {% if errors.get('banco_agro_id') %}<div class="invalid-feedback">{{ errors.get('banco_agro_id') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Categoria *</label>
+            <select id="categoria" name="categoria" class="form-select {% if errors.get('categoria') %}is-invalid{% endif %}">
+              <option value="">Selecione</option>
+              {% for categoria in categoria_options %}
+                <option value="{{ categoria }}" {% if form.get('categoria') == categoria %}selected{% endif %}>{{ categoria }}</option>
+              {% endfor %}
+            </select>
+            {% if errors.get('categoria') %}<div class="invalid-feedback">{{ errors.get('categoria') }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Subcategoria *</label>
+            <select id="subcategoria" name="subcategoria" class="form-select {% if errors.get('subcategoria') %}is-invalid{% endif %}">
+              <option value="{{ form.get('subcategoria', '') }}">{{ form.get('subcategoria', 'Selecione a categoria antes') }}</option>
+            </select>
+            {% if errors.get('subcategoria') %}<div class="invalid-feedback">{{ errors.get('subcategoria') }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Status *</label>
+            <select name="status" class="form-select {% if errors.get('status') %}is-invalid{% endif %}">
+              {% for status_value in status_options %}
+                <option value="{{ status_value }}" {% if form.get('status') == status_value %}selected{% endif %}>{{ status_value }}</option>
+              {% endfor %}
+            </select>
+            {% if errors.get('status') %}<div class="invalid-feedback">{{ errors.get('status') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">Descricao *</label>
+            <input type="text" name="descricao" value="{{ form.get('descricao', '') }}" class="form-control {% if errors.get('descricao') %}is-invalid{% endif %}" placeholder="Explique claramente a origem da entrada">
+            {% if errors.get('descricao') %}<div class="invalid-feedback">{{ errors.get('descricao') }}</div>{% endif %}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">NF / Doc</label>
+            <input type="text" name="documento_referencia" value="{{ form.get('documento_referencia', '') }}" class="form-control" placeholder="NF, recibo, contrato...">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Valor *</label>
+            <input type="text" name="valor" value="{{ form.get('valor', '') }}" class="form-control {% if errors.get('valor') %}is-invalid{% endif %}" placeholder="R$ 0,00">
+            {% if errors.get('valor') %}<div class="invalid-feedback">{{ errors.get('valor') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Data do lancamento</label>
+            <input type="date" name="data_lancamento" value="{{ form.get('data_lancamento', '') }}" class="form-control {% if errors.get('data_lancamento') %}is-invalid{% endif %}">
+            {% if errors.get('data_lancamento') %}<div class="invalid-feedback">{{ errors.get('data_lancamento') }}</div>{% endif %}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Data de emissao</label>
+            <input type="date" name="data_emissao" value="{{ form.get('data_emissao', '') }}" class="form-control {% if errors.get('data_emissao') %}is-invalid{% endif %}">
+            {% if errors.get('data_emissao') %}<div class="invalid-feedback">{{ errors.get('data_emissao') }}</div>{% endif %}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Data prevista *</label>
+            <input type="date" name="data_vencimento" value="{{ form.get('data_vencimento', '') }}" class="form-control {% if errors.get('data_vencimento') %}is-invalid{% endif %}">
+            {% if errors.get('data_vencimento') %}<div class="invalid-feedback">{{ errors.get('data_vencimento') }}</div>{% endif %}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Data do recebimento</label>
+            <input type="date" name="data_recebimento" value="{{ form.get('data_recebimento', '') }}" class="form-control {% if errors.get('data_recebimento') %}is-invalid{% endif %}">
+            {% if errors.get('data_recebimento') %}<div class="invalid-feedback">{{ errors.get('data_recebimento') }}</div>{% endif %}
+          </div>
+
+          <div class="col-12">
+            <label class="form-label fw-bold small text-muted">Observacoes</label>
+            <textarea name="observacoes" rows="3" class="form-control">{{ form.get('observacoes', '') }}</textarea>
+          </div>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 mt-4">
+          <button type="submit" class="btn btn-success d-flex align-items-center gap-2">
+            <i class="bi bi-check-circle-fill"></i> Salvar entrada
+          </button>
+          {% if modo == 'editar' and lancamento %}
+            <button
+              type="submit"
+              class="btn btn-outline-danger d-flex align-items-center gap-2"
+              formaction="{{ url_for('main.agro_financeiro_entrada_deletar', lancamento_id=lancamento.id) }}"
+              formmethod="POST"
+              formnovalidate
+              onclick="return confirm('Deseja excluir esta entrada manual?');"
+            >
+              <i class="bi bi-trash"></i> Excluir
+            </button>
+          {% endif %}
+          <a href="{{ url_for('main.agro_financeiro_entrada_listar') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+            <i class="bi bi-x-circle"></i> Cancelar
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script id="agro-categoria-map" type="application/json">{{ categoria_map|tojson }}</script>
+  <script id="agro-clientes-json" type="application/json">{{ clientes_json|tojson }}</script>
+  <script>
+    (function () {
+      const categoryEl = document.getElementById("categoria");
+      const subcategoryEl = document.getElementById("subcategoria");
+      const categoryMap = JSON.parse(document.getElementById("agro-categoria-map").textContent || "[]");
+      const currentSubcategory = {{ form.get('subcategoria', '')|tojson }};
+
+      function syncSubcategories(selectedSubcategory) {
+        const selected = categoryEl.value;
+        const match = categoryMap.find((item) => item.categoria === selected);
+        const options = match ? match.subcategorias : [];
+        subcategoryEl.innerHTML = "";
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = options.length ? "Selecione" : "Selecione a categoria antes";
+        subcategoryEl.appendChild(placeholder);
+        options.forEach((value) => {
+          const option = document.createElement("option");
+          option.value = value;
+          option.textContent = value;
+          if (value === selectedSubcategory) option.selected = true;
+          subcategoryEl.appendChild(option);
+        });
+      }
+
+      categoryEl.addEventListener("change", () => syncSubcategories(""));
+      syncSubcategories(currentSubcategory);
+
+      const clientEl = document.getElementById("cliente_agro_id");
+      const clientNameEl = document.getElementById("cliente_nome");
+      const clients = JSON.parse(document.getElementById("agro-clientes-json").textContent || "[]");
+      clientEl.addEventListener("change", () => {
+        const selected = clients.find((item) => String(item.id) === String(clientEl.value));
+        if (selected && !clientNameEl.value.trim()) {
+          clientNameEl.value = selected.nome || "";
+        }
+      });
+    })();
+  </script>
+{% endblock %}

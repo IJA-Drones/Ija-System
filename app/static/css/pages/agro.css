@@ -844,6 +844,554 @@ body.dark-mode .agro-icon-btn-delete {
   background: rgba(229, 62, 62, 0.18);
 }
 
+.agro-report-page {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.agro-report-hero {
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.26), transparent 32%),
+    linear-gradient(135deg, var(--color-primary-dark), var(--color-primary));
+  color: #fff;
+}
+
+.agro-report-hero::before {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.agro-report-hero .agro-hero-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(300px, 0.95fr);
+  gap: 1.5rem;
+}
+
+.agro-report-hero .agro-page-title,
+.agro-report-hero .agro-page-subtitle,
+.agro-report-hero .agro-stat-value,
+.agro-report-hero .agro-stat-label,
+.agro-report-hero .agro-card-title {
+  color: #fff;
+}
+
+.agro-report-hero .agro-eyebrow {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.agro-report-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.agro-report-meta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  padding: 0.48rem 0.82rem;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.agro-report-meta-chip .bi {
+  font-size: 0.9rem;
+}
+
+.agro-report-hero-card {
+  display: grid;
+  gap: 0.85rem;
+  align-content: start;
+  padding: 1.25rem;
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(8px);
+}
+
+.agro-report-hero-card h3 {
+  margin: 0;
+  font-size: 1.08rem;
+  color: #fff;
+}
+
+.agro-report-hero-card p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.84);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.agro-report-hero-list {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.agro-report-hero-item {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.agro-report-hero-item strong {
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.agro-report-hero-item span {
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 0.85rem;
+}
+
+.agro-report-filter-card .agro-card-body {
+  padding-top: 1.2rem;
+}
+
+.agro-report-filter-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 220px) auto;
+  gap: 1rem;
+  align-items: end;
+}
+
+.agro-report-filter-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.agro-report-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.agro-report-stat-card {
+  padding: 1.15rem 1.2rem;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
+  border: 1px solid #e6edf2;
+  box-shadow: var(--shadow-sm);
+}
+
+.agro-report-stat-card.is-income {
+  border-top: 4px solid var(--color-primary);
+}
+
+.agro-report-stat-card.is-cost {
+  border-top: 4px solid #d69e2e;
+}
+
+.agro-report-stat-card.is-neutral {
+  border-top: 4px solid var(--color-accent);
+}
+
+.agro-report-stat-caption {
+  display: block;
+  margin-top: 0.55rem;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.agro-report-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(310px, 0.95fr);
+  gap: 1.25rem;
+}
+
+.agro-report-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.35rem 1.35rem 0;
+}
+
+.agro-report-panel-copy {
+  margin: 0.35rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.agro-report-panel-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.8rem;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent-soft);
+  color: var(--color-primary);
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.agro-report-side {
+  display: grid;
+  gap: 1rem;
+}
+
+.agro-report-side-card {
+  padding: 1.2rem;
+}
+
+.agro-report-side-card h4 {
+  margin: 0 0 0.8rem;
+  color: var(--color-primary-dark);
+  font-size: 1rem;
+}
+
+.agro-report-side-list {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.agro-report-side-item {
+  padding: 0.95rem 1rem;
+  border-radius: var(--radius-md);
+  background: #f8fafc;
+  border: 1px solid #ecf2f7;
+}
+
+.agro-report-side-item strong {
+  display: block;
+  margin-bottom: 0.22rem;
+  color: var(--color-primary-dark);
+  font-size: 0.92rem;
+}
+
+.agro-report-side-item span {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.agro-report-table-wrap {
+  padding: 1.1rem 1.1rem 1.2rem;
+}
+
+.agro-report-table {
+  min-width: 1320px;
+  table-layout: fixed;
+}
+
+.agro-report-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  white-space: nowrap;
+}
+
+.agro-report-table .agro-report-sticky {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: inherit;
+  box-shadow: 16px 0 20px -20px rgba(15, 38, 61, 0.35);
+}
+
+.agro-report-table tbody tr {
+  background: #fff;
+}
+
+.agro-report-table tbody tr:nth-child(even) {
+  background: #fbfdff;
+}
+
+.agro-report-table tbody tr.is-highlight {
+  background: linear-gradient(90deg, rgba(47, 143, 79, 0.08), rgba(47, 143, 79, 0.02));
+}
+
+.agro-report-table tbody tr.is-cost-row {
+  background: linear-gradient(90deg, rgba(214, 158, 46, 0.10), rgba(214, 158, 46, 0.03));
+}
+
+.agro-report-table tbody td.agro-report-sticky {
+  background: inherit;
+}
+
+.agro-report-key {
+  width: 320px;
+  min-width: 320px;
+  max-width: 320px;
+  white-space: normal !important;
+}
+
+.agro-report-key-title {
+  margin: 0 0 0.22rem;
+  color: var(--color-primary-dark);
+  font-size: 0.96rem;
+  font-weight: 700;
+}
+
+.agro-report-key-copy {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.agro-report-total-col {
+  min-width: 130px;
+  background: rgba(12, 30, 56, 0.04);
+}
+
+.agro-report-amount {
+  display: inline-block;
+  min-width: 94px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.agro-report-table tbody td:not(.agro-report-key) {
+  min-width: 108px;
+  white-space: nowrap;
+}
+
+.agro-report-table thead th:not(.agro-report-sticky) {
+  min-width: 108px;
+}
+
+.agro-report-row-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.55rem;
+}
+
+.agro-report-row-tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0.26rem 0.62rem;
+  border-radius: var(--radius-pill);
+  background: #eef5f8;
+  color: var(--color-primary);
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.agro-report-row-tag.is-cost {
+  background: rgba(214, 158, 46, 0.16);
+  color: #9c6b00;
+}
+
+.agro-report-row-tag.is-result {
+  background: rgba(47, 143, 79, 0.14);
+  color: var(--color-success);
+}
+
+.agro-report-amount.is-positive {
+  color: var(--color-primary-dark);
+}
+
+.agro-report-amount.is-negative {
+  color: #a15c00;
+}
+
+.agro-report-ledger-note {
+  margin-top: 0.75rem;
+  color: var(--color-text-muted);
+  font-size: 0.83rem;
+}
+
+body.dark-mode .agro-report-hero {
+  background:
+    radial-gradient(circle at top right, rgba(127, 216, 167, 0.16), transparent 32%),
+    linear-gradient(135deg, #173927, #215737);
+}
+
+body.dark-mode .agro-report-hero-card,
+body.dark-mode .agro-report-stat-card,
+body.dark-mode .agro-report-side-item {
+  border-color: rgba(255, 255, 255, 0.10);
+}
+
+body.dark-mode .agro-report-stat-card {
+  background: linear-gradient(180deg, rgba(16, 26, 36, 0.96) 0%, rgba(20, 35, 49, 0.96) 100%);
+}
+
+body.dark-mode .agro-report-panel-copy,
+body.dark-mode .agro-report-side-item span,
+body.dark-mode .agro-report-key-copy,
+body.dark-mode .agro-report-stat-caption,
+body.dark-mode .agro-report-ledger-note {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+body.dark-mode .agro-report-side-item {
+  background: #122030;
+}
+
+body.dark-mode .agro-report-table tbody tr {
+  background: #0f1a24;
+}
+
+body.dark-mode .agro-report-table tbody tr:nth-child(even) {
+  background: #132131;
+}
+
+.agro-report-basic {
+  max-width: 1440px;
+}
+
+.agro-report-basic-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.agro-report-basic-head h2 {
+  color: var(--color-primary-dark);
+}
+
+.agro-report-basic-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.agro-report-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.agro-report-summary-label {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: 0.83rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.agro-report-summary-value {
+  display: block;
+  margin-top: 0.55rem;
+  font-size: clamp(1.2rem, 2vw, 1.7rem);
+  line-height: 1.15;
+}
+
+.agro-report-note-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.agro-report-note-grid > div {
+  padding: 1rem 1.05rem;
+  border-radius: 16px;
+  background: #f7faf8;
+  border: 1px solid #e5eee8;
+}
+
+.agro-report-note-grid strong {
+  display: block;
+  margin-bottom: 0.3rem;
+  color: var(--color-primary-dark);
+}
+
+.agro-report-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1.25rem 1.25rem 0;
+}
+
+.agro-report-clean-table {
+  min-width: 1100px;
+}
+
+.agro-report-clean-table thead th {
+  white-space: nowrap;
+  background: #f8fbf9;
+  color: var(--color-primary-dark);
+  font-size: 0.79rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid #e2ebe5;
+}
+
+.agro-report-clean-table td {
+  vertical-align: middle;
+}
+
+body.dark-mode .agro-report-note-grid > div {
+  background: #122030;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+body.dark-mode .agro-report-clean-table thead th {
+  background: #132131;
+  color: rgba(255, 255, 255, 0.84);
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+@media (max-width: 1100px) {
+  .agro-report-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .agro-report-note-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .agro-report-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+body.dark-mode .agro-report-table tbody tr.is-highlight {
+  background: linear-gradient(90deg, rgba(99, 208, 138, 0.18), rgba(99, 208, 138, 0.05));
+}
+
+body.dark-mode .agro-report-table tbody tr.is-cost-row {
+  background: linear-gradient(90deg, rgba(214, 158, 46, 0.18), rgba(214, 158, 46, 0.05));
+}
+
+body.dark-mode .agro-report-total-col {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+body.dark-mode .agro-report-row-tag {
+  background: rgba(99, 208, 138, 0.12);
+  color: #d9f7e4;
+}
+
+body.dark-mode .agro-report-row-tag.is-cost {
+  background: rgba(214, 158, 46, 0.18);
+  color: #ffd188;
+}
+
+body.dark-mode .agro-report-row-tag.is-result {
+  background: rgba(99, 208, 138, 0.18);
+  color: #d9f7e4;
+}
+
+body.dark-mode .agro-report-amount.is-positive {
+  color: #d9f7e4;
+}
+
+body.dark-mode .agro-report-amount.is-negative {
+  color: #ffd188;
+}
+
 @media (max-width: 1199.98px) {
   .agro-stat-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -851,6 +1399,10 @@ body.dark-mode .agro-icon-btn-delete {
 
   .agro-shortcut-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .agro-report-stat-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -879,6 +1431,16 @@ body.dark-mode .agro-icon-btn-delete {
   .agro-col-1 {
     grid-column: span 6;
   }
+
+  .agro-report-hero .agro-hero-body,
+  .agro-report-layout,
+  .agro-report-filter-row {
+    grid-template-columns: 1fr;
+  }
+
+  .agro-report-filter-actions {
+    justify-content: flex-start;
+  }
 }
 
 @media (max-width: 767.98px) {
@@ -898,7 +1460,8 @@ body.dark-mode .agro-icon-btn-delete {
   .agro-stat-grid,
   .agro-shortcut-grid,
   .agro-filter-grid,
-  .agro-form-grid {
+  .agro-form-grid,
+  .agro-report-stat-grid {
     grid-template-columns: 1fr;
   }
 
@@ -984,6 +1547,15 @@ body.dark-mode .agro-icon-btn-delete {
 
   body.dark-mode .agro-table tbody td::before {
     color: rgba(255, 255, 255, 0.72);
+  }
+
+  .agro-report-table {
+    min-width: 100%;
+  }
+
+  .agro-report-table .agro-report-sticky,
+  .agro-report-table .agro-report-total-col {
+    position: static;
   }
 
   .agro-action-group {

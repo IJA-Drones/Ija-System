@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/listing_pattern.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 listing-page">
+  <div class="listing-header mb-4">
+    <div>
+      <h2 class="text-dark m-0"><i class="bi bi-arrow-up-circle-fill me-2 text-danger"></i> Saidas Manuais</h2>
+      <p class="text-muted small mb-0">Despesas, impostos e retencoes classificados por subcategoria do DRE.</p>
+    </div>
+    <div class="listing-actions">
+      <a href="{{ url_for('main.agro_financeiro_listar') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2"><i class="bi bi-cash-coin"></i> Recebiveis</a>
+      <a href="{{ url_for('main.agro_financeiro_entrada_listar') }}" class="btn btn-outline-success d-flex align-items-center gap-2"><i class="bi bi-arrow-down-circle"></i> Entradas</a>
+      {% if is_editable %}
+        <a href="{{ url_for('main.agro_financeiro_saida_novo') }}" class="btn btn-danger d-flex align-items-center gap-2"><i class="bi bi-plus-circle-fill"></i> Nova saida</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-3"><div class="card info status-warning shadow-sm rounded-4 border-0 h-100"><div class="card-body"><span class="text-muted small d-block">Previsto</span><h4 class="text-dark mt-2 mb-0">{{ resumo.total_previsto|currencybr }}</h4></div></div></div>
+    <div class="col-md-3"><div class="card info status-danger shadow-sm rounded-4 border-0 h-100"><div class="card-body"><span class="text-muted small d-block">Pago</span><h4 class="text-dark mt-2 mb-0">{{ resumo.total_pago|currencybr }}</h4></div></div></div>
+    <div class="col-md-3"><div class="card info status-danger shadow-sm rounded-4 border-0 h-100"><div class="card-body"><span class="text-muted small d-block">Impostos</span><h4 class="text-dark mt-2 mb-0">{{ resumo.total_impostos|currencybr }}</h4></div></div></div>
+    <div class="col-md-3"><div class="card info status-danger shadow-sm rounded-4 border-0 h-100"><div class="card-body"><span class="text-muted small d-block">Retencoes</span><h4 class="text-dark mt-2 mb-0">{{ resumo.total_retencoes|currencybr }}</h4></div></div></div>
+  </div>
+
+  <div class="card shadow-sm rounded-4 mb-4 border-0">
+    <div class="card-body">
+      <form method="GET" action="{{ url_for('main.agro_financeiro_saida_listar') }}">
+        <div class="row g-2 align-items-end">
+          <div class="col-md-4">
+            <label class="small text-muted mb-1">Busca geral</label>
+            <input type="text" class="form-control form-control-sm" name="q" value="{{ filters.q }}" placeholder="Favorecido, categoria, doc...">
+          </div>
+          <div class="col-md-3">
+            <label class="small text-muted mb-1">Tipo</label>
+            <select name="tipo_saida" class="form-select form-select-sm">
+              <option value="">Todos</option>
+              {% for tipo in tipo_options %}
+                <option value="{{ tipo }}" {% if filters.tipo_saida == tipo %}selected{% endif %}>{{ tipo }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="small text-muted mb-1">Status</label>
+            <select name="status" class="form-select form-select-sm">
+              <option value="">Todos</option>
+              {% for status_value in status_options %}
+                <option value="{{ status_value }}" {% if filters.status == status_value %}selected{% endif %}>{{ status_value }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-1">
+            <label class="small text-muted mb-1">Mes</label>
+            <input type="number" min="1" max="12" class="form-control form-control-sm" name="mes" value="{{ filters.mes or '' }}">
+          </div>
+          <div class="col-md-1">
+            <label class="small text-muted mb-1">Ano</label>
+            <input type="number" min="2024" max="2100" class="form-control form-control-sm" name="ano" value="{{ filters.ano or '' }}">
+          </div>
+        </div>
+        <div class="d-flex gap-2 pt-3">
+          <button type="submit" class="btn btn-danger btn-sm"><i class="bi bi-funnel"></i> Filtrar</button>
+          <a href="{{ url_for('main.agro_financeiro_saida_listar') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x-lg"></i> Limpar</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card shadow-sm rounded-4 border-0 overflow-hidden">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Favorecido</th>
+              <th>Classificacao</th>
+              <th>Datas</th>
+              <th>Valor</th>
+              <th>Status</th>
+              <th>Acoes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in lancamentos %}
+              <tr>
+                <td>
+                  <div class="fw-bold">{{ item.favorecido }}</div>
+                  <div class="text-muted small">{{ item.descricao }}</div>
+                  <div class="text-muted small">NF / Doc: {{ item.documento_referencia or '-' }}</div>
+                  {% if item.detalhamento_imposto %}<div class="text-muted small">Fiscal: {{ item.detalhamento_imposto }}</div>{% endif %}
+                </td>
+                <td>
+                  <div class="fw-semibold">{{ item.tipo_saida }}</div>
+                  <div class="text-muted small">{{ item.categoria }}</div>
+                  <div class="text-muted small">{{ item.subcategoria or '-' }}</div>
+                </td>
+                <td>
+                  <div class="text-muted small">Lancamento: {{ item.data_lancamento.strftime('%d/%m/%Y') if item.data_lancamento else '-' }}</div>
+                  <div class="text-muted small">Emissao: {{ item.data_emissao.strftime('%d/%m/%Y') if item.data_emissao else '-' }}</div>
+                  <div class="text-muted small">Prevista: {{ item.data_vencimento.strftime('%d/%m/%Y') if item.data_vencimento else '-' }}</div>
+                  <div class="text-muted small">Pagamento: {{ item.data_pagamento.strftime('%d/%m/%Y') if item.data_pagamento else '-' }}</div>
+                </td>
+                <td class="fw-semibold text-danger">{{ item.valor|currencybr }}</td>
+                <td><span class="badge bg-danger-subtle text-danger border border-danger-subtle">{{ item.status }}</span></td>
+                <td>
+                  <div class="d-flex gap-2">
+                    {% if is_editable %}
+                      <a href="{{ url_for('main.agro_financeiro_saida_editar', lancamento_id=item.id) }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-pencil-square"></i></a>
+                      <form method="POST" action="{{ url_for('main.agro_financeiro_saida_deletar', lancamento_id=item.id) }}" onsubmit="return confirm('Deseja excluir esta saida manual?');">
+                        <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i></button>
+                      </form>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+            {% else %}
+              <tr><td colspan="6" class="text-center py-5 text-muted">Nenhuma saida manual encontrada.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
