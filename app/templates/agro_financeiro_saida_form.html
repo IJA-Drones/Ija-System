@@ -209,6 +209,8 @@
       const dateFields = formEl ? Array.from(formEl.querySelectorAll('input[type="date"]')) : [];
       const confirmationEl = document.getElementById("confirmar_lancamento_retroativo");
       const isCreateMode = {{ (modo == 'novo')|tojson }};
+      const retroactiveAlertContext = {{ retroactive_alert_context|tojson }};
+      const initialDateValues = new Map(dateFields.map((field) => [field.name, (field.value || "").trim()]));
 
       function isoToday() {
         const now = new Date();
@@ -218,7 +220,35 @@
         return `${year}-${month}-${day}`;
       }
 
-      if (formEl && dateFields.length && isCreateMode) {
+      function getFieldLabel(field) {
+        const labelEl = field.closest(".col-md-3, .col-md-4, .col-md-6, .col-12")?.querySelector("label");
+        return labelEl ? labelEl.textContent.replace("*", "").trim() : "Data";
+      }
+
+      function getCompetenciaKey(dateValue) {
+        const [year, month] = (dateValue || "").split("-");
+        if (!year || !month) return "";
+        return `${year}-${month}`;
+      }
+
+      function getCompetenciaLabel(dateValue) {
+        const [year, month] = (dateValue || "").split("-");
+        if (!year || !month) return "";
+        return `${month}/${year}`;
+      }
+
+      function isPastDate(dateValue) {
+        return Boolean(dateValue) && dateValue < isoToday();
+      }
+
+      function isCompetenciaLiberada(dateValue) {
+        if (retroactiveAlertContext.allow_all_past_competencias) {
+          return true;
+        }
+        return retroactiveAlertContext.liberated_competencias.includes(getCompetenciaKey(dateValue));
+      }
+
+      if (formEl && dateFields.length) {
         dateFields.forEach((field) => {
           field.addEventListener("input", () => {
             if (confirmationEl) {
@@ -234,7 +264,8 @@
 
           const retroactiveFields = dateFields.filter((field) => {
             const selectedDate = (field.value || "").trim();
-            return selectedDate && selectedDate < isoToday();
+            const initialValue = initialDateValues.get(field.name) || "";
+            return isPastDate(selectedDate) && (isCreateMode || selectedDate !== initialValue);
           });
 
           if (!retroactiveFields.length) {
@@ -245,12 +276,34 @@
           }
 
           event.preventDefault();
+
+          const blockedFields = retroactiveFields.filter((field) => !isCompetenciaLiberada((field.value || "").trim()));
+          if (blockedFields.length) {
+            const blockedHtml = blockedFields
+              .map((field) => {
+                const selectedDate = field.value.trim().split("-").reverse().join("/");
+                return `<li><b>${getFieldLabel(field)}</b>: ${selectedDate} <span class="text-muted">(competencia ${getCompetenciaLabel(field.value.trim())})</span></li>`;
+              })
+              .join("");
+
+            await Swal.fire({
+              icon: "error",
+              title: "Data bloqueada",
+              html:
+                "As datas abaixo estao em competencia passada e ainda nao foram liberadas para o seu perfil:<br><br>" +
+                `<ul class="text-start mb-3">${blockedHtml}</ul>` +
+                "<strong>Peca a liberacao ao admin financeiro ou revise as datas.</strong>",
+              confirmButtonColor: "#dc3545",
+              confirmButtonText: "Entendi",
+            });
+
+            blockedFields[0].focus();
+            return;
+          }
           const retroHtml = retroactiveFields
             .map((field) => {
-              const labelEl = field.closest(".col-md-3, .col-md-4, .col-md-6, .col-12")?.querySelector("label");
-              const fieldLabel = labelEl ? labelEl.textContent.replace("*", "").trim() : "Data";
               const selectedDate = field.value.trim().split("-").reverse().join("/");
-              return `<li><b>${fieldLabel}</b>: ${selectedDate}</li>`;
+              return `<li><b>${getFieldLabel(field)}</b>: ${selectedDate}</li>`;
             })
             .join("");
 
