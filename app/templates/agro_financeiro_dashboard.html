@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1200px">
+  <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+    <div>
+      <h2 class="text-dark m-0">
+        <i class="bi bi-cash-coin me-2 text-primary"></i> Painel Financeiro Agro
+      </h2>
+      <p class="text-muted small mb-0">Acesso focado no caixa, recebiveis e lancamentos manuais do Agro.</p>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{{ url_for('main.agro_caixa_diario') }}" class="btn btn-outline-success d-flex align-items-center gap-2">
+        <i class="bi bi-journal-text"></i> Caixa Diario
+      </a>
+      <a href="{{ url_for('main.agro_financeiro_listar') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
+        <i class="bi bi-receipt-cutoff"></i> Recebiveis
+      </a>
+      {% if can_manage_competencias %}
+        <a href="{{ url_for('main.agro_financeiro_configuracoes') }}" class="btn btn-primary d-flex align-items-center gap-2">
+          <i class="bi bi-sliders"></i> Configuracoes
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card info status-primary shadow-sm rounded-4 border-0 h-100">
+        <div class="card-body">
+          <span class="text-muted small d-block">Recebiveis</span>
+          <h3 class="text-dark mb-0 mt-2">{{ total_recebiveis }}</h3>
+          <div class="small text-muted mt-1">{{ total_recebiveis_pendentes }} pendente(s)</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card info status-success shadow-sm rounded-4 border-0 h-100">
+        <div class="card-body">
+          <span class="text-muted small d-block">Entradas manuais</span>
+          <h3 class="text-dark mb-0 mt-2">{{ total_entradas_manuais }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card info status-danger shadow-sm rounded-4 border-0 h-100">
+        <div class="card-body">
+          <span class="text-muted small d-block">Saidas manuais</span>
+          <h3 class="text-dark mb-0 mt-2">{{ total_saidas_manuais }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card info status-warning shadow-sm rounded-4 border-0 h-100">
+        <div class="card-body">
+          <span class="text-muted small d-block">Bancos Agro</span>
+          <h3 class="text-dark mb-0 mt-2">{{ total_bancos_agro }}</h3>
+          {% if can_manage_competencias %}
+            <div class="small text-muted mt-1">{{ competencias_configuradas }} competencia(s) liberada(s)</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-lg-7">
+      <div class="card shadow-sm rounded-4 border-0 h-100">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+          <h5 class="m-0 text-dark">Atalhos financeiros</h5>
+        </div>
+        <div class="card-body px-4 pb-4">
+          <div class="d-flex flex-wrap gap-2">
+            <a href="{{ url_for('main.agro_financeiro_listar') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
+              <i class="bi bi-receipt-cutoff"></i> Recebiveis
+            </a>
+            <a href="{{ url_for('main.agro_financeiro_entrada_listar') }}" class="btn btn-outline-success d-flex align-items-center gap-2">
+              <i class="bi bi-box-arrow-in-down-right"></i> Entradas manuais
+            </a>
+            <a href="{{ url_for('main.agro_financeiro_saida_listar') }}" class="btn btn-outline-danger d-flex align-items-center gap-2">
+              <i class="bi bi-box-arrow-up-right"></i> Saidas manuais
+            </a>
+            <a href="{{ url_for('main.agro_bancos_listar') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+              <i class="bi bi-bank"></i> Bancos Agro
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="card shadow-sm rounded-4 border-0 h-100">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+          <h5 class="m-0 text-dark">Caixa de hoje</h5>
+        </div>
+        <div class="card-body px-4 pb-4">
+          {% if caixa_hoje %}
+            <div class="small text-muted">Status atual</div>
+            <div class="fs-4 fw-semibold mt-1">{{ caixa_hoje.status }}</div>
+            <div class="small text-muted mt-3">Saldo de fechamento calculado</div>
+            <div class="fs-5 fw-semibold">{{ caixa_hoje.saldo_fechamento_decimal|currencybr }}</div>
+          {% else %}
+            <div class="small text-muted">Ainda nao existe caixa aberto para hoje.</div>
+          {% endif %}
+
+          <a href="{{ url_for('main.agro_caixa_diario') }}" class="btn btn-outline-primary mt-4 d-inline-flex align-items-center gap-2">
+            <i class="bi bi-arrow-right-circle"></i> Ir para o caixa
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+  <style>
+    .competencia-config-card {
+      border: 1px solid rgba(0, 0, 0, 0.06);
+    }
+
+    .competencia-status-pill {
+      border-radius: 999px;
+      padding: 0.35rem 0.75rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1200px">
+  <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+    <div>
+      <h2 class="text-dark m-0">
+        <i class="bi bi-sliders me-2 text-primary"></i> Configuracoes do Financeiro
+      </h2>
+      <p class="text-muted small mb-0">
+        Escolha uma competencia passada no seletor para liberar ou bloquear rapidamente. As competencias configuradas manualmente ficam listadas logo abaixo.
+      </p>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{{ url_for('main.admin_agro') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+      <a href="{{ url_for('main.agro_financeiro_listar') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
+        <i class="bi bi-cash-coin"></i> Recebiveis
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-lg-6">
+      <div class="card info status-warning shadow-sm rounded-4 border-0 h-100">
+        <div class="card-body">
+          <span class="text-muted small d-block">Regra padrao</span>
+          <h5 class="text-dark mt-2 mb-1">Meses passados bloqueados</h5>
+          <div class="small text-muted">O perfil financeiro trabalha no mes atual normalmente. Para mexer em uma competencia passada, ela precisa ser liberada aqui.</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card info status-success shadow-sm rounded-4 border-0 h-100">
+        <div class="card-body">
+          <span class="text-muted small d-block">Fluxo rapido</span>
+          <h5 class="text-dark mt-2 mb-1">Seleciona, aplica e acompanha</h5>
+          <div class="small text-muted">Use o seletor para escolher a competencia. Se ela for liberada ou bloqueada manualmente, aparece na lista abaixo para voce ajustar de novo com um clique.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm rounded-4 border-0 mb-4">
+    <div class="card-body p-4">
+      <div class="d-flex align-items-center mb-3">
+        <i class="bi bi-calendar2-check text-primary me-2 fs-5"></i>
+        <h5 class="m-0 text-primary fw-bold">Selecionar Competencia</h5>
+      </div>
+
+      <form method="post" action="{{ url_for('main.agro_financeiro_configuracoes_salvar') }}" id="competenciaSelectorForm" class="row g-3 align-items-end">
+        <div class="col-lg-8">
+          <label class="form-label fw-bold small text-muted">Competencia passada</label>
+          <select name="competencia_select" id="competencia_select" class="form-select">
+            <option value="">Selecione...</option>
+            {% for item in competencias_passadas %}
+              <option
+                value="{{ item.ano }}-{{ '%02d'|format(item.mes) }}"
+                data-ano="{{ item.ano }}"
+                data-mes="{{ item.mes }}"
+                data-acao="{{ 'bloquear' if item.explicitamente_liberado else 'liberar' }}"
+                data-status="{{ 'liberada' if item.explicitamente_liberado else 'bloqueada' }}"
+              >
+                {{ item.nome_mes }}/{{ item.ano }} - {{ 'Liberada manualmente' if item.explicitamente_liberado else 'Bloqueada' }}
+              </option>
+            {% endfor %}
+          </select>
+          <div class="form-text">A competencia selecionada define automaticamente a acao do botao.</div>
+        </div>
+
+        <input type="hidden" name="ano" id="competencia_ano">
+        <input type="hidden" name="mes" id="competencia_mes">
+        <input type="hidden" name="acao" id="competencia_acao">
+
+        <div class="col-lg-4">
+          <button type="submit" class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2" id="competenciaSubmit" disabled>
+            <i class="bi bi-sliders"></i>
+            <span id="competenciaSubmitText">Selecione uma competencia</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card shadow-sm rounded-4 border-0">
+    <div class="card-header bg-transparent border-0 pt-4 px-4">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <h5 class="m-0 text-dark">Competencias Configuradas Manualmente</h5>
+          <p class="text-muted small mb-0">Somente as competencias que ja receberam uma acao manual aparecem aqui.</p>
+        </div>
+        <span class="badge bg-light text-dark border">{{ competencias_configuradas|length }} item(ns)</span>
+      </div>
+    </div>
+    <div class="card-body px-4 pb-4">
+      {% if competencias_configuradas %}
+        <div class="row g-3">
+          {% for item in competencias_configuradas %}
+            <div class="col-md-6 col-xl-4">
+              <div class="card competencia-config-card shadow-sm rounded-4 border-0 h-100">
+                <div class="card-body">
+                  <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+                    <div>
+                      <div class="text-muted small">Competencia</div>
+                      <div class="fw-semibold fs-5">{{ item.nome_mes }}/{{ item.ano }}</div>
+                    </div>
+                    {% if item.explicitamente_liberado %}
+                      <span class="competencia-status-pill bg-success-subtle text-success border border-success-subtle">
+                        <i class="bi bi-unlock-fill"></i> Liberada
+                      </span>
+                    {% else %}
+                      <span class="competencia-status-pill bg-danger-subtle text-danger border border-danger-subtle">
+                        <i class="bi bi-lock-fill"></i> Bloqueada
+                      </span>
+                    {% endif %}
+                  </div>
+
+                  {% if item.controle and item.controle.atualizado_por_nome %}
+                    <div class="small text-muted mb-3">Ultima acao por {{ item.controle.atualizado_por_nome }}</div>
+                  {% endif %}
+
+                  <form method="post" action="{{ url_for('main.agro_financeiro_configuracoes_salvar') }}">
+                    <input type="hidden" name="ano" value="{{ item.ano }}">
+                    <input type="hidden" name="mes" value="{{ item.mes }}">
+                    <input type="hidden" name="acao" value="{{ 'bloquear' if item.explicitamente_liberado else 'liberar' }}">
+                    <button type="submit" class="btn btn-sm {{ 'btn-outline-danger' if item.explicitamente_liberado else 'btn-success' }} w-100 d-flex align-items-center justify-content-center gap-2">
+                      <i class="bi {{ 'bi-lock-fill' if item.explicitamente_liberado else 'bi-unlock-fill' }}"></i>
+                      {{ 'Bloquear novamente' if item.explicitamente_liberado else 'Liberar competencia' }}
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="text-muted small">
+          Nenhuma competencia recebeu configuracao manual ainda.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script>
+    (function () {
+      const selectEl = document.getElementById("competencia_select");
+      const anoEl = document.getElementById("competencia_ano");
+      const mesEl = document.getElementById("competencia_mes");
+      const acaoEl = document.getElementById("competencia_acao");
+      const submitEl = document.getElementById("competenciaSubmit");
+      const submitTextEl = document.getElementById("competenciaSubmitText");
+
+      if (!selectEl) return;
+
+      function syncSelection() {
+        const option = selectEl.options[selectEl.selectedIndex];
+        const ano = option?.dataset?.ano || "";
+        const mes = option?.dataset?.mes || "";
+        const acao = option?.dataset?.acao || "";
+        const status = option?.dataset?.status || "";
+
+        anoEl.value = ano;
+        mesEl.value = mes;
+        acaoEl.value = acao;
+
+        const hasSelection = Boolean(ano && mes && acao);
+        submitEl.disabled = !hasSelection;
+
+        if (!hasSelection) {
+          submitTextEl.textContent = "Selecione uma competencia";
+          submitEl.classList.remove("btn-success", "btn-outline-danger");
+          submitEl.classList.add("btn-primary");
+          return;
+        }
+
+        if (status === "liberada") {
+          submitTextEl.textContent = `Bloquear ${mes}/${ano}`;
+          submitEl.classList.remove("btn-primary", "btn-success");
+          submitEl.classList.add("btn-outline-danger");
+          return;
+        }
+
+        submitTextEl.textContent = `Liberar ${mes}/${ano}`;
+        submitEl.classList.remove("btn-primary", "btn-outline-danger");
+        submitEl.classList.add("btn-success");
+      }
+
+      selectEl.addEventListener("change", syncSelection);
+      syncSelection();
+    })();
+  </script>
+{% endblock %}

@@ -195,7 +195,8 @@
       const formEl = document.getElementById("agroEntradaManualForm");
       const dateFields = formEl ? Array.from(formEl.querySelectorAll('input[type="date"]')) : [];
       const confirmationEl = document.getElementById("confirmar_lancamento_retroativo");
-      const isCreateMode = {{ (modo == 'novo')|tojson }};
+      const retroactiveAlertContext = {{ retroactive_alert_context|tojson }};
+      const initialDateValues = new Map(dateFields.map((field) => [field.name, (field.value || "").trim()]));
 
       function isoToday() {
         const now = new Date();
