@@ -1,11 +1,47 @@
-from sqlalchemy import or_
+from sqlalchemy import and_, func, or_
 
 from app.extensions import db
 from app.models import Notificacao, Usuario
-from app.shared.access import PREFEITURA_ADMIN_USER_TYPE, REGIONAL_USER_TYPE, normalize_regiao
+from app.shared.access import (
+    FINANCEIRO_ADMIN_USER_TYPE,
+    FINANCEIRO_USER_TYPE,
+    PREFEITURA_ADMIN_USER_TYPE,
+    REGIONAL_USER_TYPE,
+    normalize_regiao,
+)
 
 
-ADMIN_USER_TYPES = ("admin", "operario", REGIONAL_USER_TYPE, PREFEITURA_ADMIN_USER_TYPE)
+ADMIN_USER_TYPES = (
+    "admin",
+    "operario",
+    REGIONAL_USER_TYPE,
+    PREFEITURA_ADMIN_USER_TYPE,
+    FINANCEIRO_ADMIN_USER_TYPE,
+    FINANCEIRO_USER_TYPE,
+    "covisa",
+)
+LEGACY_COVISA_USER_TYPE = "visualizar"
+LEGACY_COVISA_REGIAO = "COVISA"
+
+
+def normalize_admin_user_type(tipo_usuario: str | None) -> str:
+    tipo_normalizado = (tipo_usuario or "").strip().lower()
+    if tipo_normalizado == "covisa":
+        return LEGACY_COVISA_USER_TYPE
+    return tipo_normalizado
+
+
+def is_legacy_covisa_user(usuario) -> bool:
+    return (
+        getattr(usuario, "tipo_usuario", None) == LEGACY_COVISA_USER_TYPE
+        and normalize_regiao(getattr(usuario, "regiao", None)) == LEGACY_COVISA_REGIAO
+    )
+
+
+def normalize_admin_user_regiao(tipo_usuario: str, regiao: str | None):
+    if (tipo_usuario or "").strip().lower() == "covisa":
+        return LEGACY_COVISA_REGIAO
+    return normalize_regiao(regiao) or None
 
 
 def admin_user_types():
@@ -13,7 +49,13 @@ def admin_user_types():
 
 
 def is_admin_managed_user(usuario) -> bool:
-    return getattr(usuario, "tipo_usuario", None) in ADMIN_USER_TYPES
+    return getattr(usuario, "tipo_usuario", None) in ADMIN_USER_TYPES or is_legacy_covisa_user(usuario)
+
+
+def get_admin_user_type_form_value(usuario) -> str:
+    if is_legacy_covisa_user(usuario):
+        return "covisa"
+    return (getattr(usuario, "tipo_usuario", None) or "").strip().lower()
 
 
 def login_em_uso(login: str, exclude_user_id=None):
@@ -27,10 +69,33 @@ def login_em_uso(login: str, exclude_user_id=None):
 
 
 def build_admin_users_query(q: str, tipo: str):
-    query = Usuario.query.filter(Usuario.tipo_usuario.in_(ADMIN_USER_TYPES))
+    query = Usuario.query.filter(
+        or_(
+            Usuario.tipo_usuario.in_(
+                (
+                    "admin",
+                    "operario",
+                    REGIONAL_USER_TYPE,
+                    PREFEITURA_ADMIN_USER_TYPE,
+                    FINANCEIRO_ADMIN_USER_TYPE,
+                    FINANCEIRO_USER_TYPE,
+                )
+            ),
+            and_(
+                Usuario.tipo_usuario == LEGACY_COVISA_USER_TYPE,
+                func.upper(func.coalesce(Usuario.regiao, "")) == LEGACY_COVISA_REGIAO,
+            ),
+        )
+    )
 
     if tipo in ADMIN_USER_TYPES:
-        query = query.filter(Usuario.tipo_usuario == tipo)
+        if tipo == "covisa":
+            query = query.filter(
+                Usuario.tipo_usuario == LEGACY_COVISA_USER_TYPE,
+                func.upper(func.coalesce(Usuario.regiao, "")) == LEGACY_COVISA_REGIAO,
+            )
+        else:
+            query = query.filter(Usuario.tipo_usuario == tipo)
 
     if q:
         like = f"%{q}%"

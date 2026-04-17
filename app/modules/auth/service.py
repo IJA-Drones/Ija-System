@@ -1,5 +1,5 @@
 from app.models import Usuario
-from app.shared.access import ADMIN_PANEL_VIEW_TYPES
+from app.shared.access import ADMIN_PANEL_VIEW_TYPES, is_agro_finance_user
 
 
 def _authenticate_any_user(login_value, password):
@@ -36,6 +36,8 @@ def authenticate_piloto_agro(login_value, password):
 
 
 def get_authenticated_redirect_endpoint(user):
+    if is_agro_finance_user(user):
+        return "main.admin_agro"
     if user.tipo_usuario in ADMIN_PANEL_VIEW_TYPES:
         return "main.admin_dashboard"
     if user.tipo_usuario == "piloto":

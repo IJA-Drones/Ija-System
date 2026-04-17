@@ -11,7 +11,10 @@ from app.models import Prefeitura, Usuario
 from app.modules.usuarios.service import (
     build_admin_users_query,
     delete_admin_user,
+    get_admin_user_type_form_value,
     is_admin_managed_user,
+    normalize_admin_user_type,
+    normalize_admin_user_regiao,
     validate_edit_admin_user,
     validate_new_admin_user,
     validate_password_reset,
@@ -175,8 +178,12 @@ def register_routes(bp):
         if request.method == "POST":
             nome = (request.form.get("nome") or "").strip()
             login = (request.form.get("login") or "").strip()
-            tipo_usuario = (request.form.get("tipo_usuario") or "").strip().lower()
-            regiao = (request.form.get("regiao") or "").strip() or None
+            tipo_usuario_form = (request.form.get("tipo_usuario") or "").strip().lower()
+            tipo_usuario = normalize_admin_user_type(tipo_usuario_form)
+            regiao = normalize_admin_user_regiao(
+                tipo_usuario_form,
+                (request.form.get("regiao") or "").strip() or None,
+            )
             prefeitura_id = request.form.get("prefeitura_id", type=int)
             codigo_setor = (request.form.get("codigo_setor") or "").strip() or None
             senha = (request.form.get("senha") or "").strip()
@@ -185,7 +192,7 @@ def register_routes(bp):
             form = {
                 "nome": nome,
                 "login": login,
-                "tipo_usuario": tipo_usuario,
+                "tipo_usuario": tipo_usuario_form,
                 "regiao": regiao or "",
                 "prefeitura_id": prefeitura_id or "",
                 "codigo_setor": codigo_setor or "",
@@ -196,7 +203,7 @@ def register_routes(bp):
             errors = validate_new_admin_user(
                 nome,
                 login,
-                tipo_usuario,
+                tipo_usuario_form,
                 regiao,
                 prefeitura_id,
                 senha,
@@ -280,14 +287,19 @@ def register_routes(bp):
         if request.method == "POST":
             nome_uvis = (request.form.get("nome_uvis") or "").strip()
             login = (request.form.get("login") or "").strip()
-            regiao = (request.form.get("regiao") or "").strip() or None
             prefeitura_id = request.form.get("prefeitura_id", type=int)
             codigo_setor = (request.form.get("codigo_setor") or "").strip() or None
 
             if usuario.id == current_user.id:
                 tipo_usuario = usuario.tipo_usuario
+                tipo_usuario_form = get_admin_user_type_form_value(usuario)
             else:
-                tipo_usuario = (request.form.get("tipo_usuario") or "").strip().lower()
+                tipo_usuario_form = (request.form.get("tipo_usuario") or "").strip().lower()
+                tipo_usuario = normalize_admin_user_type(tipo_usuario_form)
+            regiao = normalize_admin_user_regiao(
+                tipo_usuario_form,
+                (request.form.get("regiao") or "").strip() or None,
+            )
 
             senha = (request.form.get("senha") or "").strip()
             senha2 = (request.form.get("senha2") or "").strip()
@@ -298,13 +310,13 @@ def register_routes(bp):
                 "regiao": regiao or "",
                 "prefeitura_id": prefeitura_id or "",
                 "codigo_setor": codigo_setor or "",
-                "tipo_usuario": tipo_usuario,
+                "tipo_usuario": tipo_usuario_form,
             }
 
             errors = validate_edit_admin_user(
                 nome_uvis=nome_uvis,
                 login=login,
-                tipo_usuario=tipo_usuario,
+                tipo_usuario=tipo_usuario_form,
                 regiao=regiao,
                 prefeitura_id=prefeitura_id,
                 senha=senha,
@@ -356,7 +368,7 @@ def register_routes(bp):
             "regiao": usuario.regiao or "",
             "prefeitura_id": usuario.prefeitura_id or "",
             "codigo_setor": usuario.codigo_setor or "",
-            "tipo_usuario": usuario.tipo_usuario or "operario",
+            "tipo_usuario": get_admin_user_type_form_value(usuario) or "operario",
         }
 
         return render_template(

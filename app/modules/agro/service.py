@@ -18,13 +18,23 @@ from app.models import (
     EquipeAgro,
     FinanceiroAgro,
     FinanceiroAgroCaixaDiario,
+    FinanceiroAgroCompetenciaControle,
     FinanceiroAgroEntrada,
     FinanceiroAgroSaida,
     OrcamentoAgro,
     OrdemServicoAgro,
     PilotoAgro,
 )
-from app.shared.access import ADMIN_PANEL_EDIT_TYPES, ADMIN_PANEL_VIEW_TYPES, apply_prefeitura_scope, normalize_role
+from app.shared.access import (
+    ADMIN_PANEL_EDIT_TYPES,
+    ADMIN_PANEL_VIEW_TYPES,
+    AGRO_FINANCE_EDIT_TYPES,
+    AGRO_FINANCE_VIEW_TYPES,
+    FINANCEIRO_ADMIN_USER_TYPE,
+    FINANCEIRO_USER_TYPE,
+    apply_prefeitura_scope,
+    normalize_role,
+)
 from app.shared.formatters import format_cep, format_currency_br, format_documento, only_digits
 from app.shared.uploads import get_upload_folder
 
@@ -66,11 +76,112 @@ def build_agro_categoria_composta(categoria, subcategoria) -> str:
 
 
 def can_access_agro_panel(user) -> bool:
-    return normalize_role(getattr(user, "tipo_usuario", None)) in ADMIN_PANEL_VIEW_TYPES
+    return normalize_role(getattr(user, "tipo_usuario", None)) in (ADMIN_PANEL_VIEW_TYPES | AGRO_FINANCE_VIEW_TYPES)
 
 
 def can_edit_agro_panel(user) -> bool:
     return normalize_role(getattr(user, "tipo_usuario", None)) in ADMIN_PANEL_EDIT_TYPES
+
+
+def can_edit_agro_finance_panel(user) -> bool:
+    return normalize_role(getattr(user, "tipo_usuario", None)) in (ADMIN_PANEL_EDIT_TYPES | AGRO_FINANCE_EDIT_TYPES)
+
+
+def is_financeiro_agro_admin(user) -> bool:
+    return normalize_role(getattr(user, "tipo_usuario", None)) in {"admin", FINANCEIRO_ADMIN_USER_TYPE}
+
+
+def is_financeiro_agro_user(user) -> bool:
+    return normalize_role(getattr(user, "tipo_usuario", None)) == FINANCEIRO_USER_TYPE
+
+
+def is_financeiro_agro_only_user(user) -> bool:
+    return normalize_role(getattr(user, "tipo_usuario", None)) in AGRO_FINANCE_VIEW_TYPES
+
+
+def can_manage_agro_finance_settings(user) -> bool:
+    return is_financeiro_agro_admin(user)
+
+
+def is_past_agro_competencia(ano: int | None, mes: int | None, *, today: date | None = None) -> bool:
+    if not ano or not mes:
+        return False
+
+    reference = date(ano, mes, 1)
+    current = (today or date.today()).replace(day=1)
+    return reference < current
+
+
+def get_agro_finance_competencia_controle(ano: int | None, mes: int | None):
+    if not ano or not mes:
+        return None
+
+    return (
+        FinanceiroAgroCompetenciaControle.query
+        .filter(
+            FinanceiroAgroCompetenciaControle.competencia_ano == int(ano),
+            FinanceiroAgroCompetenciaControle.competencia_mes == int(mes),
+        )
+        .first()
+    )
+
+
+def is_agro_finance_competencia_liberada(ano: int | None, mes: int | None) -> bool:
+    controle = get_agro_finance_competencia_controle(ano, mes)
+    return bool(controle and controle.liberado)
+
+
+def can_user_write_agro_finance_competencia(user, ano: int | None, mes: int | None) -> bool:
+    if not ano or not mes:
+        return True
+
+    if is_financeiro_agro_admin(user):
+        return True
+
+    if not is_financeiro_agro_user(user):
+        return True
+
+    if not is_past_agro_competencia(ano, mes):
+        return True
+
+    return is_agro_finance_competencia_liberada(ano, mes)
+
+
+def build_agro_finance_competencia_settings(months_back: int = 18) -> list[dict]:
+    current_month = date.today().replace(day=1)
+    controles = {
+        (item.competencia_ano, item.competencia_mes): item
+        for item in FinanceiroAgroCompetenciaControle.query.all()
+    }
+    items = []
+
+    for offset in range(months_back, -1, -1):
+        year = current_month.year
+        month = current_month.month - offset
+        while month <= 0:
+            month += 12
+            year -= 1
+
+        controle = controles.get((year, month))
+        is_current = year == current_month.year and month == current_month.month
+        is_past = date(year, month, 1) < current_month
+        liberado = bool(controle and controle.liberado)
+
+        items.append(
+            {
+                "ano": year,
+                "mes": month,
+                "label": date(year, month, 1).strftime("%m/%Y"),
+                "nome_mes": AGRO_REPORT_MONTHS[month - 1][1],
+                "is_current": is_current,
+                "is_past": is_past,
+                "liberado": liberado or not is_past,
+                "explicitamente_liberado": liberado,
+                "controle": controle,
+            }
+        )
+
+    return items
 
 
 def build_endereco_agro(cep, logradouro, numero, complemento, bairro, cidade, uf) -> str:
@@ -1087,6 +1198,34 @@ def get_agro_dashboard_context(user) -> dict:
         "total_equipes_agro": equipes_query.count(),
         "total_equipamentos_agro": equipamentos_query.count(),
         "ultimos_orcamentos": orcamentos_query.order_by(OrcamentoAgro.data_criacao.desc()).limit(8).all(),
+    }
+
+
+def get_agro_finance_dashboard_context(user) -> dict:
+    financeiro_query = apply_prefeitura_scope(FinanceiroAgro.query, user, FinanceiroAgro.prefeitura_id)
+    entradas_query = apply_prefeitura_scope(FinanceiroAgroEntrada.query, user, FinanceiroAgroEntrada.prefeitura_id)
+    saidas_query = apply_prefeitura_scope(FinanceiroAgroSaida.query, user, FinanceiroAgroSaida.prefeitura_id)
+    bancos_query = apply_prefeitura_scope(BancoAgro.query, user, BancoAgro.prefeitura_id)
+    hoje = date.today()
+    caixa_hoje = (
+        apply_prefeitura_scope(FinanceiroAgroCaixaDiario.query, user, FinanceiroAgroCaixaDiario.prefeitura_id)
+        .filter(FinanceiroAgroCaixaDiario.data_caixa == hoje)
+        .first()
+    )
+
+    return {
+        "total_recebiveis": financeiro_query.count(),
+        "total_recebiveis_pendentes": financeiro_query.filter(
+            FinanceiroAgro.status.in_((FinanceiroAgro.STATUS_PENDENTE, FinanceiroAgro.STATUS_VENCIDO))
+        ).count(),
+        "total_entradas_manuais": entradas_query.count(),
+        "total_saidas_manuais": saidas_query.count(),
+        "total_bancos_agro": bancos_query.count(),
+        "caixa_hoje": caixa_hoje,
+        "competencias_configuradas": sum(
+            1 for item in build_agro_finance_competencia_settings() if item["explicitamente_liberado"]
+        ),
+        "can_manage_competencias": can_manage_agro_finance_settings(user),
     }
 
 

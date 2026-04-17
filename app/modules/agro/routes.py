@@ -16,6 +16,7 @@ from app.models import (
     EquipeAgro,
     FinanceiroAgro,
     FinanceiroAgroCaixaDiario,
+    FinanceiroAgroCompetenciaControle,
     FinanceiroAgroEntrada,
     FinanceiroAgroSaida,
     OrcamentoAgro,
@@ -36,6 +37,7 @@ from app.modules.agro.excel_exporters import (
 from app.modules.agro.service import (
     agro_bool_label,
     build_agro_caixa_diario_report,
+    build_agro_finance_competencia_settings,
     build_bancos_agro_query,
     build_contrato_agro_defaults,
     build_contratos_agro_query,
@@ -47,12 +49,19 @@ from app.modules.agro.service import (
     build_financeiro_agro_entrada_query,
     build_financeiro_agro_query,
     build_financeiro_agro_saida_query,
+    can_manage_agro_finance_settings,
     build_ordens_servico_agro_query,
     build_orcamentos_agro_query,
     can_access_agro_panel,
     can_edit_agro_panel,
+    can_edit_agro_finance_panel,
+    can_user_write_agro_finance_competencia,
     get_os_agro_attachment_folder,
     get_agro_dashboard_context,
+    get_agro_finance_dashboard_context,
+    get_agro_finance_competencia_controle,
+    is_financeiro_agro_admin,
+    is_financeiro_agro_only_user,
     recalculate_bancos_agro,
     remove_orcamento_attachment,
     resolve_orcamento_attachment,
@@ -204,7 +213,6 @@ AGRO_FINANCEIRO_SAIDA_ESTRUTURA = {
     ),
 }
 
-
 def _query_args_without_page():
     args = request.args.to_dict(flat=True)
     args.pop("page", None)
@@ -225,9 +233,33 @@ def _require_agro_edit():
         abort(403)
 
 
+def _require_agro_finance_edit():
+    if not can_edit_agro_finance_panel(current_user):
+        abort(403)
+
+
 def _require_agro_admin():
     if getattr(current_user, "tipo_usuario", None) != "admin":
         abort(403)
+
+
+def _agro_finance_lock_message(ano: int | None, mes: int | None) -> str:
+    if ano and mes:
+        return f"A competencia {mes:02d}/{ano} esta bloqueada para lancamentos retroativos neste perfil."
+    return "Esta competencia esta bloqueada para lancamentos retroativos neste perfil."
+
+
+def _add_agro_finance_lock_error(errors: dict, field_name: str, ano: int | None, mes: int | None):
+    if field_name not in errors:
+        errors[field_name] = _agro_finance_lock_message(ano, mes)
+
+
+def _enforce_agro_finance_lock_or_redirect(ano: int | None, mes: int | None, fallback_endpoint: str, **values):
+    if can_user_write_agro_finance_competencia(current_user, ano, mes):
+        return None
+
+    flash(_agro_finance_lock_message(ano, mes), "warning")
+    return redirect(url_for(fallback_endpoint, **values))
 
 
 def _require_piloto_agro():
@@ -462,6 +494,27 @@ def _mapping_to_choice_list(mapping):
     return [{"categoria": categoria, "subcategorias": list(subcategorias)} for categoria, subcategorias in mapping.items()]
 
 
+def _build_agro_retroactive_alert_context():
+    allow_all = is_financeiro_agro_admin(current_user)
+    liberated_competencias = []
+
+    if not allow_all:
+        liberated_competencias = [
+            f"{item.competencia_ano:04d}-{item.competencia_mes:02d}"
+            for item in (
+                FinanceiroAgroCompetenciaControle.query
+                .filter(FinanceiroAgroCompetenciaControle.liberado.is_(True))
+                .all()
+            )
+            if item.competencia_ano and item.competencia_mes
+        ]
+
+    return {
+        "allow_all_past_competencias": allow_all,
+        "liberated_competencias": liberated_competencias,
+    }
+
+
 def _build_financeiro_agro_entrada_form_context(*, modo, form, errors, clientes, bancos, lancamento=None):
     return {
         "modo": modo,
@@ -473,6 +526,7 @@ def _build_financeiro_agro_entrada_form_context(*, modo, form, errors, clientes,
         "categoria_options": list(AGRO_FINANCEIRO_ENTRADA_ESTRUTURA.keys()),
         "categoria_map": _mapping_to_choice_list(AGRO_FINANCEIRO_ENTRADA_ESTRUTURA),
         "status_options": AGRO_FINANCEIRO_ENTRADA_STATUS_OPTIONS,
+        "retroactive_alert_context": _build_agro_retroactive_alert_context(),
         "lancamento": lancamento,
     }
 
@@ -489,6 +543,7 @@ def _build_financeiro_agro_saida_form_context(*, modo, form, errors, clientes, b
         "categoria_map": _mapping_to_choice_list(AGRO_FINANCEIRO_SAIDA_ESTRUTURA),
         "status_options": AGRO_FINANCEIRO_SAIDA_STATUS_OPTIONS,
         "tipo_options": AGRO_FINANCEIRO_SAIDA_TIPO_OPTIONS,
+        "retroactive_alert_context": _build_agro_retroactive_alert_context(),
         "lancamento": lancamento,
     }
 
@@ -1045,6 +1100,24 @@ def _collect_agro_retroactive_dates(date_values):
         if field_value and field_value < today:
             retroactive[field_name] = field_value
     return retroactive
+
+
+def _split_agro_retroactive_dates_by_permission(user, date_values):
+    allowed = {}
+    blocked = {}
+
+    for field_name, field_value in _collect_agro_retroactive_dates(date_values).items():
+        if can_user_write_agro_finance_competencia(user, field_value.year, field_value.month):
+            allowed[field_name] = field_value
+        else:
+            blocked[field_name] = field_value
+
+    return allowed, blocked
+
+
+def _add_agro_retroactive_blocked_errors(errors: dict, blocked_dates: dict):
+    for field_name, field_value in (blocked_dates or {}).items():
+        _add_agro_finance_lock_error(errors, field_name, field_value.year, field_value.month)
 
 
 def _validate_financeiro_agro_form(form, contratos):
@@ -2351,6 +2424,9 @@ def register_routes(bp):
     @login_required
     def admin_agro():
         _require_agro_access()
+        if is_financeiro_agro_only_user(current_user):
+            context = get_agro_finance_dashboard_context(current_user)
+            return render_template("agro_financeiro_dashboard.html", **context)
         context = get_agro_dashboard_context(current_user)
         return render_template("admin_agro.html", **context)
 
@@ -2369,13 +2445,13 @@ def register_routes(bp):
             "agro_bancos_listar.html",
             bancos=bancos,
             filters={"q": q, "ativo": ativo, "total": len(bancos)},
-            is_editable=can_edit_agro_panel(current_user),
+            is_editable=can_edit_agro_finance_panel(current_user),
         )
 
     @bp.route("/agro/bancos/cadastrar", methods=["GET", "POST"], endpoint="agro_banco_novo")
     @login_required
     def agro_banco_novo():
-        _require_agro_edit()
+        _require_agro_finance_edit()
 
         errors = {}
         if request.method == "POST":
@@ -2422,7 +2498,7 @@ def register_routes(bp):
     @bp.route("/agro/bancos/<int:banco_id>/editar", methods=["GET", "POST"], endpoint="agro_banco_editar")
     @login_required
     def agro_banco_editar(banco_id):
-        _require_agro_edit()
+        _require_agro_finance_edit()
 
         banco = _get_banco_agro_or_404(banco_id)
         errors = {}
@@ -2463,7 +2539,7 @@ def register_routes(bp):
     @bp.route("/agro/bancos/<int:banco_id>/deletar", methods=["POST"], endpoint="agro_banco_deletar")
     @login_required
     def agro_banco_deletar(banco_id):
-        _require_agro_edit()
+        _require_agro_finance_edit()
 
         banco = _get_banco_agro_or_404(banco_id)
         if banco.financeiros_agro or banco.financeiros_agro_entradas or banco.financeiros_agro_saidas:
@@ -3116,13 +3192,68 @@ def register_routes(bp):
                 "total": len(lancamentos),
             },
             status_options=AGRO_FINANCEIRO_STATUS_OPTIONS,
-            is_editable=can_edit_agro_panel(current_user),
+            is_editable=can_edit_agro_finance_panel(current_user),
+            can_manage_competencias=can_manage_agro_finance_settings(current_user),
         )
+
+    @bp.route("/agro/financeiro/configuracoes", methods=["GET"], endpoint="agro_financeiro_configuracoes")
+    @login_required
+    def agro_financeiro_configuracoes():
+        _require_agro_access()
+        if not can_manage_agro_finance_settings(current_user):
+            abort(403)
+
+        competencias = build_agro_finance_competencia_settings(24)
+        return render_template(
+            "agro_financeiro_configuracoes.html",
+            competencias=competencias,
+            competencias_passadas=[item for item in competencias if item["is_past"]],
+            competencias_configuradas=[item for item in competencias if item["controle"] is not None],
+        )
+
+    @bp.route("/agro/financeiro/configuracoes", methods=["POST"], endpoint="agro_financeiro_configuracoes_salvar")
+    @login_required
+    def agro_financeiro_configuracoes_salvar():
+        _require_agro_access()
+        if not can_manage_agro_finance_settings(current_user):
+            abort(403)
+
+        ano = request.form.get("ano", type=int)
+        mes = request.form.get("mes", type=int)
+        acao = (request.form.get("acao") or "").strip().lower()
+        if not ano or not mes or mes < 1 or mes > 12:
+            flash("Competencia invalida para configuracao.", "warning")
+            return redirect(url_for("main.agro_financeiro_configuracoes"))
+
+        referencia = datetime.now().date().replace(day=1)
+        competencia = datetime(year=ano, month=mes, day=1).date()
+        if competencia >= referencia:
+            flash("A configuracao de trava so se aplica a meses passados.", "warning")
+            return redirect(url_for("main.agro_financeiro_configuracoes"))
+
+        controle = get_agro_finance_competencia_controle(ano, mes)
+        if controle is None:
+            controle = FinanceiroAgroCompetenciaControle(
+                competencia_ano=ano,
+                competencia_mes=mes,
+            )
+            db.session.add(controle)
+
+        controle.liberado = acao == "liberar"
+        controle.atualizado_por_nome = _current_user_display_name()
+        db.session.commit()
+
+        if controle.liberado:
+            flash(f"Competencia {mes:02d}/{ano} liberada para lancamentos retroativos.", "success")
+        else:
+            flash(f"Competencia {mes:02d}/{ano} bloqueada novamente para o perfil financeiro.", "success")
+
+        return redirect(url_for("main.agro_financeiro_configuracoes"))
 
     @bp.route("/agro/financeiro/cadastrar", methods=["GET", "POST"], endpoint="agro_financeiro_novo")
     @login_required
     def agro_financeiro_novo():
-        _require_agro_edit()
+        _require_agro_finance_edit()
 
         contratos = build_contratos_agro_query(current_user).all()
         bancos = build_bancos_agro_query(current_user).all()
@@ -3143,6 +3274,11 @@ def register_routes(bp):
                 resolved_status,
             ) = _validate_financeiro_agro_form(form, contratos)
             _sync_financeiro_agro_form_numbers(form, numeric_fields, resolved_status)
+            competencia = data_servico_executado or data_vencimento
+            competencia_ano = getattr(competencia, "year", None)
+            competencia_mes = getattr(competencia, "month", None)
+            if not can_user_write_agro_finance_competencia(current_user, competencia_ano, competencia_mes):
+                _add_agro_finance_lock_error(errors, "data_vencimento", competencia_ano, competencia_mes)
 
             if errors:
                 flash("Corrija os campos destacados do financeiro agro.", "warning")
@@ -3158,7 +3294,6 @@ def register_routes(bp):
                 )
 
             orcamento = contrato.orcamento if contrato else None
-            competencia = data_servico_executado or data_vencimento
             lancamento = FinanceiroAgro(
                 prefeitura_id=getattr(current_user, "prefeitura_id", None),
                 cliente_agro_id=getattr(orcamento, "cliente_agro_id", None),
@@ -3224,9 +3359,16 @@ def register_routes(bp):
     @bp.route("/agro/financeiro/<int:lancamento_id>/editar", methods=["GET", "POST"], endpoint="agro_financeiro_editar")
     @login_required
     def agro_financeiro_editar(lancamento_id):
-        _require_agro_edit()
+        _require_agro_finance_edit()
 
         lancamento = _get_financeiro_agro_or_404(lancamento_id)
+        redirect_response = _enforce_agro_finance_lock_or_redirect(
+            lancamento.competencia_ano,
+            lancamento.competencia_mes,
+            "main.agro_financeiro_listar",
+        )
+        if redirect_response is not None:
+            return redirect_response
         contratos = build_contratos_agro_query(current_user).all()
         bancos = build_bancos_agro_query(current_user).all()
         errors = {}
@@ -3246,6 +3388,11 @@ def register_routes(bp):
                 resolved_status,
             ) = _validate_financeiro_agro_form(form, contratos)
             _sync_financeiro_agro_form_numbers(form, numeric_fields, resolved_status)
+            competencia = data_servico_executado or data_vencimento
+            competencia_ano = getattr(competencia, "year", None)
+            competencia_mes = getattr(competencia, "month", None)
+            if not can_user_write_agro_finance_competencia(current_user, competencia_ano, competencia_mes):
+                _add_agro_finance_lock_error(errors, "data_vencimento", competencia_ano, competencia_mes)
 
             if errors:
                 flash("Corrija os campos destacados do financeiro agro.", "warning")
@@ -3262,7 +3409,6 @@ def register_routes(bp):
                 )
 
             orcamento = contrato.orcamento if contrato else None
-            competencia = data_servico_executado or data_vencimento
             lancamento.cliente_agro_id = getattr(orcamento, "cliente_agro_id", None)
             lancamento.orcamento_agro_id = getattr(orcamento, "id", None)
             lancamento.contrato_agro_id = contrato.id
@@ -3315,9 +3461,16 @@ def register_routes(bp):
     @bp.route("/agro/financeiro/<int:lancamento_id>/deletar", methods=["POST"], endpoint="agro_financeiro_deletar")
     @login_required
     def agro_financeiro_deletar(lancamento_id):
-        _require_agro_edit()
+        _require_agro_finance_edit()
 
         lancamento = _get_financeiro_agro_or_404(lancamento_id)
+        redirect_response = _enforce_agro_finance_lock_or_redirect(
+            lancamento.competencia_ano,
+            lancamento.competencia_mes,
+            "main.agro_financeiro_listar",
+        )
+        if redirect_response is not None:
+            return redirect_response
         banco_id = lancamento.banco_agro_id
         db.session.delete(lancamento)
         db.session.flush()
@@ -3348,13 +3501,14 @@ def register_routes(bp):
             resumo=resumo,
             filters={"q": q, "status": status, "mes": mes, "ano": ano, "total": len(lancamentos)},
             status_options=AGRO_FINANCEIRO_ENTRADA_STATUS_OPTIONS,
-            is_editable=can_edit_agro_panel(current_user),
+            is_editable=can_edit_agro_finance_panel(current_user),
+            can_manage_competencias=can_manage_agro_finance_settings(current_user),
         )
 
     @bp.route("/agro/financeiro/entradas/cadastrar", methods=["GET", "POST"], endpoint="agro_financeiro_entrada_novo")
     @login_required
     def agro_financeiro_entrada_novo():
-        _require_agro_edit()
+        _require_agro_finance_edit()
 
         clientes = build_clientes_agro_query(current_user).all()
         bancos = build_bancos_agro_query(current_user).all()
@@ -3365,7 +3519,15 @@ def register_routes(bp):
             form = _normalize_financeiro_agro_entrada_form(request.form)
             payload = _validate_financeiro_agro_entrada_form(form)
             errors = payload["errors"]
-            retroactive_dates = _collect_agro_retroactive_dates(
+            if not can_user_write_agro_finance_competencia(current_user, payload["competencia"].year, payload["competencia"].month):
+                _add_agro_finance_lock_error(
+                    errors,
+                    "data_vencimento",
+                    payload["competencia"].year,
+                    payload["competencia"].month,
+                )
+            allowed_retroactive_dates, blocked_retroactive_dates = _split_agro_retroactive_dates_by_permission(
+                current_user,
                 {
                     "data_lancamento": payload["data_lancamento"],
                     "data_emissao": payload["data_emissao"],
@@ -3373,9 +3535,10 @@ def register_routes(bp):
                     "data_recebimento": payload["data_recebimento"],
                 }
             )
-            if retroactive_dates and form.get("confirmar_lancamento_retroativo") != "1":
-                first_field = next(iter(retroactive_dates))
-                errors[first_field] = "Confirme o alerta de lancamento retroativo para continuar."
+            _add_agro_retroactive_blocked_errors(errors, blocked_retroactive_dates)
+            if allowed_retroactive_dates and form.get("confirmar_lancamento_retroativo") != "1":
+                first_field = next(iter(allowed_retroactive_dates))
+                errors.setdefault(first_field, "Confirme o alerta de lancamento retroativo para continuar.")
 
             if errors:
                 flash("Corrija os campos destacados da entrada manual.", "warning")
@@ -3426,11 +3589,18 @@ def register_routes(bp):
     @bp.route("/agro/financeiro/entradas/<int:lancamento_id>/editar", methods=["GET", "POST"], endpoint="agro_financeiro_entrada_editar")
     @login_required
     def agro_financeiro_entrada_editar(lancamento_id):
-        _require_agro_edit()
+        _require_agro_finance_edit()
 
         lancamento = apply_prefeitura_scope(FinanceiroAgroEntrada.query, current_user, FinanceiroAgroEntrada.prefeitura_id).filter(
             FinanceiroAgroEntrada.id == lancamento_id
         ).first_or_404()
+        redirect_response = _enforce_agro_finance_lock_or_redirect(
+            lancamento.competencia_ano,
+            lancamento.competencia_mes,
+            "main.agro_financeiro_entrada_listar",
+        )
+        if redirect_response is not None:
+            return redirect_response
         clientes = build_clientes_agro_query(current_user).all()
         bancos = build_bancos_agro_query(current_user).all()
         errors = {}
@@ -3439,6 +3609,25 @@ def register_routes(bp):
             form = _normalize_financeiro_agro_entrada_form(request.form)
             payload = _validate_financeiro_agro_entrada_form(form)
             errors = payload["errors"]
+            if not can_user_write_agro_finance_competencia(current_user, payload["competencia"].year, payload["competencia"].month):
+                _add_agro_finance_lock_error(
+                    errors,
+                    "data_vencimento",
+                    payload["competencia"].year,
+                    payload["competencia"].month,
+                )
+            _add_agro_retroactive_blocked_errors(
+                errors,
+                _split_agro_retroactive_dates_by_permission(
+                    current_user,
+                    {
+                        "data_lancamento": payload["data_lancamento"],
+                        "data_emissao": payload["data_emissao"],
+                        "data_vencimento": payload["data_vencimento"],
+                        "data_recebimento": payload["data_recebimento"],
+                    }
+                )[1],
+            )
 
             if errors:
                 flash("Corrija os campos destacados da entrada manual.", "warning")
@@ -3497,11 +3686,18 @@ def register_routes(bp):
     @bp.route("/agro/financeiro/entradas/<int:lancamento_id>/deletar", methods=["POST"], endpoint="agro_financeiro_entrada_deletar")
     @login_required
     def agro_financeiro_entrada_deletar(lancamento_id):
-        _require_agro_edit()
+        _require_agro_finance_edit()
 
         lancamento = apply_prefeitura_scope(FinanceiroAgroEntrada.query, current_user, FinanceiroAgroEntrada.prefeitura_id).filter(
             FinanceiroAgroEntrada.id == lancamento_id
         ).first_or_404()
+        redirect_response = _enforce_agro_finance_lock_or_redirect(
+            lancamento.competencia_ano,
+            lancamento.competencia_mes,
+            "main.agro_financeiro_entrada_listar",
+        )
+        if redirect_response is not None:
+            return redirect_response
         banco_id = lancamento.banco_agro_id
         db.session.delete(lancamento)
         db.session.flush()
@@ -3535,13 +3731,14 @@ def register_routes(bp):
             filters={"q": q, "status": status, "tipo_saida": tipo_saida, "mes": mes, "ano": ano, "total": len(lancamentos)},
             status_options=AGRO_FINANCEIRO_SAIDA_STATUS_OPTIONS,
             tipo_options=AGRO_FINANCEIRO_SAIDA_TIPO_OPTIONS,
-            is_editable=can_edit_agro_panel(current_user),
+            is_editable=can_edit_agro_finance_panel(current_user),
+            can_manage_competencias=can_manage_agro_finance_settings(current_user),
         )
 
     @bp.route("/agro/financeiro/saidas/cadastrar", methods=["GET", "POST"], endpoint="agro_financeiro_saida_novo")
     @login_required
     def agro_financeiro_saida_novo():
-        _require_agro_edit()
+        _require_agro_finance_edit()
 
         clientes = build_clientes_agro_query(current_user).all()
         bancos = build_bancos_agro_query(current_user).all()
@@ -3552,7 +3749,15 @@ def register_routes(bp):
             form = _normalize_financeiro_agro_saida_form(request.form)
             payload = _validate_financeiro_agro_saida_form(form)
             errors = payload["errors"]
-            retroactive_dates = _collect_agro_retroactive_dates(
+            if not can_user_write_agro_finance_competencia(current_user, payload["competencia"].year, payload["competencia"].month):
+                _add_agro_finance_lock_error(
+                    errors,
+                    "data_vencimento",
+                    payload["competencia"].year,
+                    payload["competencia"].month,
+                )
+            allowed_retroactive_dates, blocked_retroactive_dates = _split_agro_retroactive_dates_by_permission(
+                current_user,
                 {
                     "data_lancamento": payload["data_lancamento"],
                     "data_emissao": payload["data_emissao"],
@@ -3560,9 +3765,10 @@ def register_routes(bp):
                     "data_pagamento": payload["data_pagamento"],
                 }
             )
-            if retroactive_dates and form.get("confirmar_lancamento_retroativo") != "1":
-                first_field = next(iter(retroactive_dates))
-                errors[first_field] = "Confirme o alerta de lancamento retroativo para continuar."
+            _add_agro_retroactive_blocked_errors(errors, blocked_retroactive_dates)
+            if allowed_retroactive_dates and form.get("confirmar_lancamento_retroativo") != "1":
+                first_field = next(iter(allowed_retroactive_dates))
+                errors.setdefault(first_field, "Confirme o alerta de lancamento retroativo para continuar.")
 
             if errors:
                 flash("Corrija os campos destacados da saida manual.", "warning")
@@ -3615,11 +3821,18 @@ def register_routes(bp):
     @bp.route("/agro/financeiro/saidas/<int:lancamento_id>/editar", methods=["GET", "POST"], endpoint="agro_financeiro_saida_editar")
     @login_required
     def agro_financeiro_saida_editar(lancamento_id):
-        _require_agro_edit()
+        _require_agro_finance_edit()
 
         lancamento = apply_prefeitura_scope(FinanceiroAgroSaida.query, current_user, FinanceiroAgroSaida.prefeitura_id).filter(
             FinanceiroAgroSaida.id == lancamento_id
         ).first_or_404()
+        redirect_response = _enforce_agro_finance_lock_or_redirect(
+            lancamento.competencia_ano,
+            lancamento.competencia_mes,
+            "main.agro_financeiro_saida_listar",
+        )
+        if redirect_response is not None:
+            return redirect_response
         clientes = build_clientes_agro_query(current_user).all()
         bancos = build_bancos_agro_query(current_user).all()
         errors = {}
@@ -3628,6 +3841,25 @@ def register_routes(bp):
             form = _normalize_financeiro_agro_saida_form(request.form)
             payload = _validate_financeiro_agro_saida_form(form)
             errors = payload["errors"]
+            if not can_user_write_agro_finance_competencia(current_user, payload["competencia"].year, payload["competencia"].month):
+                _add_agro_finance_lock_error(
+                    errors,
+                    "data_vencimento",
+                    payload["competencia"].year,
+                    payload["competencia"].month,
+                )
+            _add_agro_retroactive_blocked_errors(
+                errors,
+                _split_agro_retroactive_dates_by_permission(
+                    current_user,
+                    {
+                        "data_lancamento": payload["data_lancamento"],
+                        "data_emissao": payload["data_emissao"],
+                        "data_vencimento": payload["data_vencimento"],
+                        "data_pagamento": payload["data_pagamento"],
+                    }
+                )[1],
+            )
 
             if errors:
                 flash("Corrija os campos destacados da saida manual.", "warning")
@@ -3690,11 +3922,18 @@ def register_routes(bp):
     @bp.route("/agro/financeiro/saidas/<int:lancamento_id>/deletar", methods=["POST"], endpoint="agro_financeiro_saida_deletar")
     @login_required
     def agro_financeiro_saida_deletar(lancamento_id):
-        _require_agro_edit()
+        _require_agro_finance_edit()
 
         lancamento = apply_prefeitura_scope(FinanceiroAgroSaida.query, current_user, FinanceiroAgroSaida.prefeitura_id).filter(
             FinanceiroAgroSaida.id == lancamento_id
         ).first_or_404()
+        redirect_response = _enforce_agro_finance_lock_or_redirect(
+            lancamento.competencia_ano,
+            lancamento.competencia_mes,
+            "main.agro_financeiro_saida_listar",
+        )
+        if redirect_response is not None:
+            return redirect_response
         banco_id = lancamento.banco_agro_id
         db.session.delete(lancamento)
         db.session.flush()
@@ -3715,13 +3954,13 @@ def register_routes(bp):
             "agro_caixa_diario.html",
             report=report,
             data_caixa_iso=data_caixa.isoformat(),
-            is_editable=can_edit_agro_panel(current_user),
+            is_editable=can_edit_agro_finance_panel(current_user),
         )
 
     @bp.route("/agro/caixa/abrir", methods=["POST"], endpoint="agro_caixa_abrir")
     @login_required
     def agro_caixa_abrir():
-        _require_agro_edit()
+        _require_agro_finance_edit()
 
         data_caixa = _resolve_agro_caixa_date_from_request()
         report = build_agro_caixa_diario_report(current_user, data_caixa=data_caixa)
@@ -3771,7 +4010,7 @@ def register_routes(bp):
     @bp.route("/agro/caixa/fechar", methods=["POST"], endpoint="agro_caixa_fechar")
     @login_required
     def agro_caixa_fechar():
-        _require_agro_edit()
+        _require_agro_finance_edit()
 
         data_caixa = _resolve_agro_caixa_date_from_request()
         report = build_agro_caixa_diario_report(current_user, data_caixa=data_caixa)
