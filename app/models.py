@@ -1348,6 +1348,23 @@ class FinanceiroAgroCaixaDiario(db.Model):
         return FinanceiroAgro._decimal_or_zero(self.saldo_fechamento)
 
 
+class FinanceiroAgroCompetenciaControle(db.Model):
+    __tablename__ = "financeiro_agro_competencia_controle"
+
+    id = db.Column(db.Integer, primary_key=True, index=True)
+    competencia_ano = db.Column(db.Integer, nullable=False, index=True)
+    competencia_mes = db.Column(db.Integer, nullable=False, index=True)
+    liberado = db.Column(db.Boolean, nullable=False, default=False, index=True)
+    atualizado_por_nome = db.Column(db.String(120))
+    criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+    atualizado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True, onupdate=datetime.now)
+
+    __table_args__ = (
+        db.UniqueConstraint("competencia_ano", "competencia_mes", name="uq_financeiro_agro_competencia_controle"),
+        db.Index("ix_financeiro_agro_competencia_controle_ano_mes", "competencia_ano", "competencia_mes"),
+    )
+
+
 # -------------------------------------------------------------
 # EQUIPES AGRO
 # -------------------------------------------------------------
