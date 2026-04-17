@@ -1,4 +1,7 @@
 {% set is_agro_context = request.endpoint and (request.endpoint == 'main.admin_agro' or request.endpoint.startswith('main.agro_') or request.endpoint == 'auth.login_piloto_agro') %}
+{% set is_financeiro_agro_user = current_user.is_authenticated and current_user.tipo_usuario in ['financeiro_admin', 'financeiro'] %}
+{% set is_financeiro_agro_admin = current_user.is_authenticated and current_user.tipo_usuario in ['admin', 'financeiro_admin'] %}
+{% set is_admin_panel_user = current_user.is_authenticated and current_user.tipo_usuario in ['admin', 'operario', 'visualizar', 'regional', 'prefeitura_admin'] %}
 {% set logo_light_url = url_for('static', filename='img/logo_oceano_azul_light.png') %}
 {% set logo_dark_url = url_for('static', filename='img/logo_oceano_azul_dark.png') %}
 <!doctype html>
@@ -123,7 +126,9 @@
         {% set navbar_home_endpoint = 'main.agro_piloto_dashboard' %}
       {% elif current_user.tipo_usuario == 'equipe_uvis' %}
         {% set navbar_home_endpoint = 'main.dashboard_equipe_uvis' %}
-      {% elif current_user.tipo_usuario in ['admin', 'operario', 'visualizar', 'regional', 'prefeitura_admin'] %}
+      {% elif is_financeiro_agro_user %}
+        {% set navbar_home_endpoint = 'main.admin_agro' %}
+      {% elif is_admin_panel_user %}
         {% set navbar_home_endpoint = 'main.admin_agro' if is_agro_context else 'main.admin_dashboard' %}
       {% endif %}
     {% endif %}
@@ -258,7 +263,10 @@
         {% elif current_user.tipo_usuario == 'equipe_uvis' %}
           {% set sidebar_dashboard_endpoint = 'main.dashboard_equipe_uvis' %}
           {% set sidebar_dashboard_active = request.endpoint == 'main.dashboard_equipe_uvis' %}
-        {% elif current_user.tipo_usuario in ['admin', 'operario', 'visualizar', 'regional', 'prefeitura_admin'] %}
+        {% elif is_financeiro_agro_user %}
+          {% set sidebar_dashboard_endpoint = 'main.admin_agro' %}
+          {% set sidebar_dashboard_active = request.endpoint == 'main.admin_agro' %}
+        {% elif is_admin_panel_user %}
           {% set sidebar_dashboard_endpoint = 'main.admin_agro' if is_agro_context else 'main.admin_dashboard' %}
           {% set sidebar_dashboard_active = request.endpoint == ('main.admin_agro' if is_agro_context else 'main.admin_dashboard') %}
         {% endif %}
@@ -272,7 +280,7 @@
             </a>
           </li>
 
-          {% if current_user.tipo_usuario in ['admin', 'operario', 'visualizar', 'regional', 'prefeitura_admin'] and not is_agro_context %}
+          {% if is_admin_panel_user and not is_agro_context %}
           <li class="nav-item">
             <a
               class="nav-link {% if request.endpoint == 'main.admin_historico_os' %}active{% endif %}"
@@ -326,7 +334,7 @@
           </li>
           {% endif %}
 
-          {% if current_user.tipo_usuario in ['admin', 'operario', 'visualizar', 'regional', 'prefeitura_admin'] and not is_agro_context %}
+          {% if is_admin_panel_user and not is_agro_context %}
           <li class="nav-item">
             <a
               class="nav-link {% if request.endpoint == 'main.notificacoes' %}active{% endif %}"
@@ -342,7 +350,7 @@
           </li>
           {% endif %}
 
-          {% if current_user.tipo_usuario in ['admin', 'operario', 'visualizar', 'regional', 'prefeitura_admin'] and is_agro_context %}
+          {% if (is_admin_panel_user or is_financeiro_agro_user) and is_agro_context %}
           {% set agro_financeiro_menu_active = request.endpoint in [
             'main.agro_caixa_diario',
             'main.agro_financeiro_listar',
@@ -351,6 +359,7 @@
             'main.agro_bancos_listar',
             'main.agro_banco_novo',
             'main.agro_banco_editar',
+            'main.agro_financeiro_configuracoes',
             'main.agro_financeiro_entrada_listar',
             'main.agro_financeiro_entrada_novo',
             'main.agro_financeiro_entrada_editar',
@@ -439,6 +448,16 @@
                     <i class="bi bi-box-arrow-up-right me-2"></i><span>Saidas Manuais</span>
                   </a>
                 </li>
+                {% if is_financeiro_agro_admin %}
+                <li class="nav-item">
+                  <a
+                    class="nav-link sub-link {% if request.endpoint in ['main.agro_financeiro_configuracoes'] %}active{% endif %}"
+                    href="{{ url_for('main.agro_financeiro_configuracoes') }}"
+                  >
+                    <i class="bi bi-sliders me-2"></i><span>Configuracoes</span>
+                  </a>
+                </li>
+                {% endif %}
               </ul>
             </div>
           </li>

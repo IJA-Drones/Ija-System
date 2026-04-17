@@ -133,9 +133,9 @@
     .usuarios-table-wrap table.table tbody td:nth-child(1)::before { content: "ID"; }
     .usuarios-table-wrap table.table tbody td:nth-child(2)::before { content: "Nome"; }
     .usuarios-table-wrap table.table tbody td:nth-child(3)::before { content: "Tipo"; }
-    .usuarios-table-wrap table.table tbody td:nth-child(4)::before { content: "Região"; }
+    .usuarios-table-wrap table.table tbody td:nth-child(4)::before { content: "Regiao"; }
     .usuarios-table-wrap table.table tbody td:nth-child(5)::before { content: "Login"; }
-    .usuarios-table-wrap table.table tbody td:nth-child(6)::before { content: "Ações"; }
+    .usuarios-table-wrap table.table tbody td:nth-child(6)::before { content: "Acoes"; }
     .usuarios-table-wrap table.table tbody td > * {
       flex: 1 1 auto;
       min-width: 0;
@@ -220,7 +220,6 @@
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
 
-      {# botão "novo" (rota que você vai criar) #}
       <a href="{{ url_for('main.admin_usuario_novo') }}"
          class="btn btn-success text-white d-flex align-items-center gap-2 shadow-sm">
         <i class="bi bi-person-plus-fill"></i> Novo Usuário
@@ -228,7 +227,6 @@
     </div>
   </div>
 
-  {# --- FILTROS (SANFONA) --- #}
   <div class="card shadow-sm rounded-4 mb-4 border-0">
     <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center"
          data-bs-toggle="collapse"
@@ -266,8 +264,11 @@
               <select name="tipo" class="form-select form-select-sm">
                 <option value="">Todos</option>
                 <option value="admin" {% if tipo == 'admin' %}selected{% endif %}>Admin</option>
+                <option value="covisa" {% if tipo == 'covisa' %}selected{% endif %}>COVISA</option>
                 <option value="operario" {% if tipo == 'operario' %}selected{% endif %}>Operário</option>
                 <option value="regional" {% if tipo == 'regional' %}selected{% endif %}>Regional</option>
+                <option value="financeiro_admin" {% if tipo == 'financeiro_admin' %}selected{% endif %}>Financeiro Admin</option>
+                <option value="financeiro" {% if tipo == 'financeiro' %}selected{% endif %}>Financeiro</option>
                 <option value="prefeitura_admin" {% if tipo == 'prefeitura_admin' %}selected{% endif %}>Prefeitura (Admin)</option>
               </select>
             </div>
@@ -291,7 +292,6 @@
     </div>
   </div>
 
-  {# --- TABELA --- #}
   <div class="card shadow-sm rounded-4 border-0 overflow-hidden usuarios-table-wrap">
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0">
@@ -299,8 +299,8 @@
           <tr>
             <th style="width: 80px">ID</th>
             <th>Nome</th>
-            <th style="width: 130px">Tipo</th>
-            <th style="width: 140px">Região</th>            
+            <th style="width: 180px">Tipo</th>
+            <th style="width: 140px">Região</th>
             <th>Login</th>
             <th class="col-acoes">Ações</th>
           </tr>
@@ -320,10 +320,16 @@
                 </td>
 
                 <td>
-                  {% if u.tipo_usuario == 'admin' %}
+                  {% if u.tipo_usuario == 'visualizar' and (u.regiao or '')|upper == 'COVISA' %}
+                    <span class="badge bg-info">COVISA</span>
+                  {% elif u.tipo_usuario == 'admin' %}
                     <span class="badge bg-primary">ADMIN</span>
                   {% elif u.tipo_usuario == 'regional' %}
                     <span class="badge bg-info text-dark">REGIONAL</span>
+                  {% elif u.tipo_usuario == 'financeiro_admin' %}
+                    <span class="badge bg-success">FINANCEIRO ADMIN</span>
+                  {% elif u.tipo_usuario == 'financeiro' %}
+                    <span class="badge bg-success-subtle text-success border border-success-subtle">FINANCEIRO</span>
                   {% elif u.tipo_usuario == 'prefeitura_admin' %}
                     <span class="badge bg-dark">PREFEITURA</span>
                   {% else %}
@@ -342,14 +348,11 @@
 
                 <td class="cell-acoes">
                   <div class="usuarios-actions-row">
-
-                    {# EDITAR #}
                     <a class="btn btn-sm btn-success text-white shadow-sm"
                        href="{{ url_for('main.admin_usuario_editar', id=u.id) }}">
                       <i class="bi bi-pencil-square me-1"></i> Editar
                     </a>
 
-                    {# EXCLUIR #}
                     <form class="form-deletar m-0"
                           method="POST"
                           action="{{ url_for('main.admin_usuario_excluir', id=u.id) }}">
@@ -360,7 +363,6 @@
                       </button>
                     </form>
 
-                    {# bloco collapse para resetar senha #}
                     <div class="collapse w-100 mt-2" id="resetSenha{{ u.id }}">
                       <div class="p-3 border rounded-3 bg-light">
                         <form method="POST"
@@ -402,7 +404,6 @@
       </table>
     </div>
 
-    {# --- PAGINAÇÃO --- #}
     {% if paginacao.pages > 1 %}
     <div class="card-footer bg-transparent">
       <nav>

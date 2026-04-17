@@ -6,22 +6,18 @@
 
 {% block content %}
 <div class="container-fluid py-4" style="max-width: 1200px">
-
   <div class="d-flex align-items-center mb-4">
     <h2 class="text-dark m-0">
-      <i class="bi bi-person-plus-fill me-2 text-primary"></i> Criar Usuário (Admin / Operário)
+      <i class="bi bi-person-plus-fill me-2 text-primary"></i> Criar Usuario
     </h2>
   </div>
 
   <div class="card info status-primary shadow-sm rounded-4 border-0">
     <div class="card-body p-4">
-
       <form method="post" action="{{ url_for('main.admin_usuario_novo') }}" novalidate>
-
-        {# SEÇÃO 1: IDENTIFICAÇÃO #}
         <div class="d-flex align-items-center mb-3">
           <i class="bi bi-card-heading text-primary me-2 fs-5"></i>
-          <h5 class="m-0 text-primary fw-bold">Identificação</h5>
+          <h5 class="m-0 text-primary fw-bold">Identificacao</h5>
         </div>
 
         <div class="row g-3 mb-4">
@@ -33,8 +29,8 @@
               type="text"
               class="form-control {% if errors.get('nome') %}is-invalid{% endif %}"
               name="nome"
-              value="{{ form.get('nome','') }}"
-              placeholder="Ex: Admin João / Operário Maria"
+              value="{{ form.get('nome', '') }}"
+              placeholder="Ex: Financeiro Admin"
               required
             />
             {% if errors.get('nome') %}
@@ -44,10 +40,10 @@
 
           <div class="col-md-4">
             <label class="form-label fw-bold small text-muted">
-              <i class="bi bi-geo-alt me-1 text-primary"></i> Região (opcional)
+              <i class="bi bi-geo-alt me-1 text-primary"></i> Regiao
             </label>
 
-            {% set reg = (form.get('regiao','') or '')|upper %}
+            {% set reg = (form.get('regiao', '') or '')|upper %}
             <select name="regiao" class="form-select {% if errors.get('regiao') %}is-invalid{% endif %}">
               <option value="">Selecione...</option>
               <option value="NORTE" {% if reg == 'NORTE' %}selected{% endif %}>NORTE</option>
@@ -66,41 +62,38 @@
             {% if errors.get('regiao') %}
               <div class="invalid-feedback">{{ errors.get('regiao') }}</div>
             {% endif %}
-            <div class="form-text small">
-              Obrigatoria quando o tipo de usuario for regional.
-            </div>
+            <div class="form-text small">Obrigatoria apenas para usuario regional.</div>
           </div>
         </div>
 
-        <div class="row g-3 mb-4">        
+        <div class="row g-3 mb-4">
           <div class="col-md-4">
             <label class="form-label fw-bold small text-muted">
-              <i class="bi bi-shield-fill-check me-1 text-primary"></i> Tipo de Usuário *
+              <i class="bi bi-shield-fill-check me-1 text-primary"></i> Tipo de Usuario *
             </label>
 
-            {% set tipo = (form.get('tipo_usuario','') or '') %}
+            {% set tipo = (form.get('tipo_usuario', '') or '') %}
             <select name="tipo_usuario" class="form-select {% if errors.get('tipo_usuario') %}is-invalid{% endif %}" required>
               <option value="">Selecione...</option>
               <option value="admin" {% if tipo == 'admin' %}selected{% endif %}>Admin</option>
+              <option value="covisa" {% if tipo == 'covisa' %}selected{% endif %}>COVISA</option>
               <option value="regional" {% if tipo == 'regional' %}selected{% endif %}>Regional</option>
-              <option value="operario" {% if tipo == 'operario' %}selected{% endif %}>Operário</option>
+              <option value="operario" {% if tipo == 'operario' %}selected{% endif %}>Operario</option>
+              <option value="financeiro_admin" {% if tipo == 'financeiro_admin' %}selected{% endif %}>Financeiro Admin</option>
+              <option value="financeiro" {% if tipo == 'financeiro' %}selected{% endif %}>Financeiro</option>
               <option value="prefeitura_admin" {% if tipo == 'prefeitura_admin' %}selected{% endif %}>Prefeitura (Admin)</option>
             </select>
 
             {% if errors.get('tipo_usuario') %}
               <div class="invalid-feedback">{{ errors.get('tipo_usuario') }}</div>
             {% endif %}
-            <div class="form-text small">
-              Admin: total. Operário: alterações no painel (sem gestão geral).
-              Regional: consulta regional em modo leitura.
-            </div>
           </div>
 
           <div class="col-md-4">
             <label class="form-label fw-bold small text-muted">
               <i class="bi bi-buildings me-1 text-primary"></i> Prefeitura
             </label>
-            {% set prefeitura_sel = form.get('prefeitura_id','') %}
+            {% set prefeitura_sel = form.get('prefeitura_id', '') %}
             <select name="prefeitura_id" class="form-select {% if errors.get('prefeitura_id') %}is-invalid{% endif %}">
               <option value="">Selecione...</option>
               {% for prefeitura in prefeituras %}
@@ -110,9 +103,7 @@
             {% if errors.get('prefeitura_id') %}
               <div class="invalid-feedback">{{ errors.get('prefeitura_id') }}</div>
             {% endif %}
-            <div class="form-text small">
-              Obrigatório para tipo Prefeitura (Admin).
-            </div>
+            <div class="form-text small">Obrigatorio apenas para tipo Prefeitura (Admin).</div>
           </div>
 
           <div class="col-md-4">
@@ -123,8 +114,8 @@
               type="text"
               class="form-control {% if errors.get('login') %}is-invalid{% endif %}"
               name="login"
-              value="{{ form.get('login','') }}"
-              placeholder="ex: admin.joao"
+              value="{{ form.get('login', '') }}"
+              placeholder="ex: financeiro.admin"
               required
             />
             {% if errors.get('login') %}
@@ -135,7 +126,6 @@
 
         <hr class="text-muted opacity-25 my-4" />
 
-        {# SEÇÃO 2: SENHA #}
         <div class="d-flex align-items-center mb-3">
           <i class="bi bi-key-fill text-primary me-2 fs-5"></i>
           <h5 class="m-0 text-primary fw-bold">Senha</h5>
@@ -150,7 +140,7 @@
               type="password"
               class="form-control {% if errors.get('senha') %}is-invalid{% endif %}"
               name="senha"
-              value="{{ form.get('senha','') }}"
+              value="{{ form.get('senha', '') }}"
               placeholder="Crie uma senha"
               required
             />
@@ -167,7 +157,7 @@
               type="password"
               class="form-control {% if errors.get('senha2') %}is-invalid{% endif %}"
               name="senha2"
-              value="{{ form.get('senha2','') }}"
+              value="{{ form.get('senha2', '') }}"
               placeholder="Repita a senha"
               required
             />
@@ -178,7 +168,7 @@
         </div>
 
         <small class="text-muted d-block mt-4">
-          Campos com <span class="text-danger">*</span> são obrigatórios.
+          Campos com <span class="text-danger">*</span> sao obrigatorios.
         </small>
 
         <div class="d-flex justify-content-end gap-2 mt-5">
@@ -187,12 +177,30 @@
           </a>
 
           <button type="submit" class="btn btn-primary btn-sm">
-            <i class="bi bi-check-lg me-1"></i> Criar Usuário
+            <i class="bi bi-check-lg me-1"></i> Criar Usuario
           </button>
         </div>
-
       </form>
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const tipoSelect = document.querySelector('select[name="tipo_usuario"]');
+    const regiaoSelect = document.querySelector('select[name="regiao"]');
+
+    const syncCovisaRegiao = () => {
+      if (!tipoSelect || !regiaoSelect) return;
+      if (tipoSelect.value === "covisa") {
+        regiaoSelect.value = "COVISA";
+      }
+    };
+
+    syncCovisaRegiao();
+    tipoSelect?.addEventListener("change", syncCovisaRegiao);
+  });
+</script>
 {% endblock %}

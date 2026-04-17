@@ -7,51 +7,41 @@
 
 {% block content %}
 <div class="container-fluid py-4" style="max-width: 1200px">
-
   <div class="d-flex align-items-center mb-4">
     <h2 class="text-dark m-0">
-      <i class="bi bi-pencil-square me-2 text-primary"></i> Editar Usuário
+      <i class="bi bi-pencil-square me-2 text-primary"></i> Editar Usuario
     </h2>
   </div>
 
   <div class="card info status-primary shadow-sm rounded-4 border-0">
     <div class="card-body p-4">
-
       <form method="POST" action="{{ url_for('main.admin_usuario_editar', id=usuario.id) }}" novalidate>
-
-        {# SEÇÃO 1: IDENTIFICAÇÃO #}
         <div class="d-flex align-items-center mb-3">
           <i class="bi bi-card-heading text-primary me-2 fs-5"></i>
-          <h5 class="m-0 text-primary fw-bold">Identificação</h5>
+          <h5 class="m-0 text-primary fw-bold">Identificacao</h5>
         </div>
 
         <div class="row g-3 mb-4">
           <div class="col-md-8">
             <label class="form-label fw-bold small text-muted">
-              <i class="bi bi-person me-1 text-primary"></i> Nome (exibição) *
+              <i class="bi bi-person me-1 text-primary"></i> Nome *
             </label>
-
             <input
               type="text"
               class="form-control {% if errors.get('nome_uvis') %}is-invalid{% endif %}"
               name="nome_uvis"
               value="{{ form.get('nome_uvis', usuario.nome_uvis or '') }}"
-              placeholder="Ex: Administrador João"
+              placeholder="Ex: Financeiro Admin"
               required
             />
-
             {% if errors.get('nome_uvis') %}
               <div class="invalid-feedback">{{ errors.get('nome_uvis') }}</div>
             {% endif %}
-
-            <div class="form-text small">
-              Esse nome aparece no topo e em telas de listagem.
-            </div>
           </div>
 
           <div class="col-md-4">
             <label class="form-label fw-bold small text-muted">
-              <i class="bi bi-shield-lock-fill me-1 text-primary"></i> Tipo de Usuário *
+              <i class="bi bi-shield-lock-fill me-1 text-primary"></i> Tipo de Usuario *
             </label>
 
             {% set tipo_sel = (form.get('tipo_usuario', usuario.tipo_usuario or '') or '')|lower %}
@@ -62,8 +52,11 @@
               {% if usuario.id == current_user.id %}disabled{% endif %}
             >
               <option value="admin" {% if tipo_sel == 'admin' %}selected{% endif %}>Admin</option>
-              <option value="operario" {% if tipo_sel == 'operario' %}selected{% endif %}>Operário</option>
+              <option value="covisa" {% if tipo_sel == 'covisa' %}selected{% endif %}>COVISA</option>
+              <option value="operario" {% if tipo_sel == 'operario' %}selected{% endif %}>Operario</option>
               <option value="regional" {% if tipo_sel == 'regional' %}selected{% endif %}>Regional</option>
+              <option value="financeiro_admin" {% if tipo_sel == 'financeiro_admin' %}selected{% endif %}>Financeiro Admin</option>
+              <option value="financeiro" {% if tipo_sel == 'financeiro' %}selected{% endif %}>Financeiro</option>
               <option value="prefeitura_admin" {% if tipo_sel == 'prefeitura_admin' %}selected{% endif %}>Prefeitura (Admin)</option>
             </select>
 
@@ -71,7 +64,7 @@
               <input type="hidden" name="tipo_usuario" value="{{ usuario.tipo_usuario }}">
               <div class="form-text small text-warning">
                 <i class="bi bi-exclamation-triangle me-1"></i>
-                Você não pode alterar seu próprio tipo de usuário.
+                Voce nao pode alterar seu proprio tipo de usuario.
               </div>
             {% endif %}
 
@@ -83,7 +76,6 @@
 
         <hr class="text-muted opacity-25 my-4" />
 
-        {# SEÇÃO 2: LOCAL / DADOS INTERNOS #}
         <div class="d-flex align-items-center mb-3">
           <i class="bi bi-geo-alt-fill text-primary me-2 fs-5"></i>
           <h5 class="m-0 text-primary fw-bold">Dados Internos</h5>
@@ -92,7 +84,7 @@
         <div class="row g-3 mb-4">
           <div class="col-md-4">
             <label class="form-label fw-bold small text-muted">
-              <i class="bi bi-map me-1 text-primary"></i> Região
+              <i class="bi bi-map me-1 text-primary"></i> Regiao
             </label>
 
             {% set reg = (form.get('regiao', usuario.regiao or '') or '')|upper %}
@@ -114,10 +106,9 @@
             {% if errors.get('regiao') %}
               <div class="invalid-feedback">{{ errors.get('regiao') }}</div>
             {% endif %}
-            <div class="form-text small">
-              Obrigatoria quando o tipo de usuario for regional.
-            </div>
-          </div>         
+            <div class="form-text small">Obrigatoria apenas para usuario regional.</div>
+          </div>
+
           <div class="col-md-4">
             <label class="form-label fw-bold small text-muted">
               <i class="bi bi-buildings me-1 text-primary"></i> Prefeitura
@@ -132,39 +123,30 @@
             {% if errors.get('prefeitura_id') %}
               <div class="invalid-feedback">{{ errors.get('prefeitura_id') }}</div>
             {% endif %}
-            <div class="form-text small">
-              Obrigatório para tipo Prefeitura (Admin).
-            </div>
+            <div class="form-text small">Obrigatorio apenas para tipo Prefeitura (Admin).</div>
           </div>
 
           <div class="col-md-4">
             <label class="form-label fw-bold small text-muted">
               <i class="bi bi-person-lock me-1 text-primary"></i> Login *
             </label>
-
             <input
               type="text"
               class="form-control {% if errors.get('login') %}is-invalid{% endif %}"
               name="login"
               value="{{ form.get('login', usuario.login or '') }}"
-              placeholder="Ex: operario01"
+              placeholder="Ex: financeiro"
               required
               autocomplete="off"
             />
-
             {% if errors.get('login') %}
               <div class="invalid-feedback">{{ errors.get('login') }}</div>
             {% endif %}
-
-            <div class="form-text small">
-              Usado para entrar no sistema. Deve ser único.
-            </div>
           </div>
         </div>
 
         <hr class="text-muted opacity-25 my-4" />
 
-        {# SEÇÃO 3: SENHA (OPCIONAL) #}
         <div class="d-flex align-items-center mb-3">
           <i class="bi bi-key-fill text-primary me-2 fs-5"></i>
           <h5 class="m-0 text-primary fw-bold">Senha (opcional)</h5>
@@ -180,7 +162,7 @@
               class="form-control {% if errors.get('senha') %}is-invalid{% endif %}"
               name="senha"
               value=""
-              placeholder="Deixe em branco para não alterar"
+              placeholder="Deixe em branco para nao alterar"
               autocomplete="new-password"
             />
             {% if errors.get('senha') %}
@@ -208,41 +190,50 @@
 
         <div class="small text-muted mt-2">
           <i class="bi bi-info-circle me-1"></i>
-          Se você preencher a senha, precisa confirmar. Se deixar em branco, mantém a senha atual.
+          Se voce preencher a senha, precisa confirmar. Se deixar em branco, mantem a senha atual.
         </div>
 
         <small class="text-muted d-block mt-4">
-          Campos com <span class="text-danger">*</span> são de preenchimento obrigatório.
+          Campos com <span class="text-danger">*</span> sao obrigatorios.
         </small>
 
-        {# BOTÕES #}
         <div class="d-flex justify-content-end gap-2 mt-5">
           <a href="{{ url_for('main.admin_usuarios_listar') }}" class="btn btn-outline-danger btn-sm">
             <i class="bi bi-x-lg me-1"></i> Cancelar
           </a>
 
           <button type="submit" class="btn btn-primary btn-sm">
-            <i class="bi bi-check-lg me-1"></i> Salvar Alterações
+            <i class="bi bi-check-lg me-1"></i> Salvar Alteracoes
           </button>
         </div>
-
       </form>
     </div>
   </div>
-
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-  // opcional: impedir espaço no login
   document.addEventListener("DOMContentLoaded", () => {
     const login = document.querySelector('input[name="login"]');
+    const tipoSelect = document.querySelector('select[name="tipo_usuario"]');
+    const regiaoSelect = document.querySelector('select[name="regiao"]');
+
     if (login) {
       login.addEventListener("input", (e) => {
         e.target.value = e.target.value.replace(/\s+/g, "");
       });
     }
+
+    const syncCovisaRegiao = () => {
+      if (!tipoSelect || !regiaoSelect) return;
+      if (tipoSelect.value === "covisa") {
+        regiaoSelect.value = "COVISA";
+      }
+    };
+
+    syncCovisaRegiao();
+    tipoSelect?.addEventListener("change", syncCovisaRegiao);
   });
 </script>
 {% endblock %}

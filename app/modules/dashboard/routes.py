@@ -7,7 +7,7 @@ from app.modules.dashboard.service import (
     build_uvis_historico_os_context,
     build_uvis_os_form_context,
 )
-from app.shared.access import ADMIN_PANEL_VIEW_TYPES
+from app.shared.access import ADMIN_PANEL_VIEW_TYPES, is_agro_finance_user
 
 
 def register_routes(bp):
@@ -24,6 +24,9 @@ def register_routes(bp):
 
         if current_user.tipo_usuario == "equipe_uvis":
             return redirect(url_for("main.dashboard_equipe_uvis"))
+
+        if is_agro_finance_user(current_user):
+            return redirect(url_for("main.admin_agro"))
 
         if current_user.tipo_usuario in ADMIN_PANEL_VIEW_TYPES:
             return redirect(url_for("main.admin_dashboard"))
