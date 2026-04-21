@@ -26,10 +26,10 @@
   <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
     <div>
       <h2 class="text-dark m-0">
-        <i class="bi bi-sliders me-2 text-primary"></i> Configuracoes do Financeiro
+        <i class="bi bi-sliders me-2 text-primary"></i> Configurações do Financeiro
       </h2>
       <p class="text-muted small mb-0">
-        Escolha uma competencia passada no seletor para liberar ou bloquear rapidamente. As competencias configuradas manualmente ficam listadas logo abaixo.
+        Escolha uma competência passada no seletor para liberar ou bloquear rapidamente. As competências configuradas manualmente ficam listadas logo abaixo.
       </p>
     </div>
 
@@ -38,7 +38,7 @@
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
       <a href="{{ url_for('main.agro_financeiro_listar') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
-        <i class="bi bi-cash-coin"></i> Recebiveis
+        <i class="bi bi-cash-coin"></i> Recebíveis
       </a>
     </div>
   </div>
@@ -47,18 +47,18 @@
     <div class="col-lg-6">
       <div class="card info status-warning shadow-sm rounded-4 border-0 h-100">
         <div class="card-body">
-          <span class="text-muted small d-block">Regra padrao</span>
+          <span class="text-muted small d-block">Regra padrão</span>
           <h5 class="text-dark mt-2 mb-1">Meses passados bloqueados</h5>
-          <div class="small text-muted">O perfil financeiro trabalha no mes atual normalmente. Para mexer em uma competencia passada, ela precisa ser liberada aqui.</div>
+          <div class="small text-muted">O perfil financeiro trabalha no mês atual normalmente. Para mexer em uma competência passada, ela precisa ser liberada aqui.</div>
         </div>
       </div>
     </div>
     <div class="col-lg-6">
       <div class="card info status-success shadow-sm rounded-4 border-0 h-100">
         <div class="card-body">
-          <span class="text-muted small d-block">Fluxo rapido</span>
+          <span class="text-muted small d-block">Fluxo rápido</span>
           <h5 class="text-dark mt-2 mb-1">Seleciona, aplica e acompanha</h5>
-          <div class="small text-muted">Use o seletor para escolher a competencia. Se ela for liberada ou bloqueada manualmente, aparece na lista abaixo para voce ajustar de novo com um clique.</div>
+          <div class="small text-muted">Use o seletor para escolher a competência. Se ela for liberada ou bloqueada manualmente, aparece na lista abaixo para você ajustar de novo com um clique.</div>
         </div>
       </div>
     </div>
@@ -68,12 +68,12 @@
     <div class="card-body p-4">
       <div class="d-flex align-items-center mb-3">
         <i class="bi bi-calendar2-check text-primary me-2 fs-5"></i>
-        <h5 class="m-0 text-primary fw-bold">Selecionar Competencia</h5>
+        <h5 class="m-0 text-primary fw-bold">Selecionar Competência</h5>
       </div>
 
       <form method="post" action="{{ url_for('main.agro_financeiro_configuracoes_salvar') }}" id="competenciaSelectorForm" class="row g-3 align-items-end">
         <div class="col-lg-8">
-          <label class="form-label fw-bold small text-muted">Competencia passada</label>
+          <label class="form-label fw-bold small text-muted">Competência passada</label>
           <select name="competencia_select" id="competencia_select" class="form-select">
             <option value="">Selecione...</option>
             {% for item in competencias_passadas %}
@@ -88,7 +88,7 @@
               </option>
             {% endfor %}
           </select>
-          <div class="form-text">A competencia selecionada define automaticamente a acao do botao.</div>
+          <div class="form-text">A competência selecionada define automaticamente a ação do botão.</div>
         </div>
 
         <input type="hidden" name="ano" id="competencia_ano">
@@ -98,7 +98,7 @@
         <div class="col-lg-4">
           <button type="submit" class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2" id="competenciaSubmit" disabled>
             <i class="bi bi-sliders"></i>
-            <span id="competenciaSubmitText">Selecione uma competencia</span>
+            <span id="competenciaSubmitText">Selecione uma competência</span>
           </button>
         </div>
       </form>
@@ -109,8 +109,8 @@
     <div class="card-header bg-transparent border-0 pt-4 px-4">
       <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div>
-          <h5 class="m-0 text-dark">Competencias Configuradas Manualmente</h5>
-          <p class="text-muted small mb-0">Somente as competencias que ja receberam uma acao manual aparecem aqui.</p>
+          <h5 class="m-0 text-dark">Competências Configuradas Manualmente</h5>
+          <p class="text-muted small mb-0">Somente as competências que já receberam uma ação manual aparecem aqui.</p>
         </div>
         <span class="badge bg-light text-dark border">{{ competencias_configuradas|length }} item(ns)</span>
       </div>
@@ -124,7 +124,7 @@
                 <div class="card-body">
                   <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
                     <div>
-                      <div class="text-muted small">Competencia</div>
+                      <div class="text-muted small">Competência</div>
                       <div class="fw-semibold fs-5">{{ item.nome_mes }}/{{ item.ano }}</div>
                     </div>
                     {% if item.explicitamente_liberado %}
@@ -139,7 +139,7 @@
                   </div>
 
                   {% if item.controle and item.controle.atualizado_por_nome %}
-                    <div class="small text-muted mb-3">Ultima acao por {{ item.controle.atualizado_por_nome }}</div>
+                    <div class="small text-muted mb-3">Última ação por {{ item.controle.atualizado_por_nome }}</div>
                   {% endif %}
 
                   <form method="post" action="{{ url_for('main.agro_financeiro_configuracoes_salvar') }}">
@@ -148,7 +148,7 @@
                     <input type="hidden" name="acao" value="{{ 'bloquear' if item.explicitamente_liberado else 'liberar' }}">
                     <button type="submit" class="btn btn-sm {{ 'btn-outline-danger' if item.explicitamente_liberado else 'btn-success' }} w-100 d-flex align-items-center justify-content-center gap-2">
                       <i class="bi {{ 'bi-lock-fill' if item.explicitamente_liberado else 'bi-unlock-fill' }}"></i>
-                      {{ 'Bloquear novamente' if item.explicitamente_liberado else 'Liberar competencia' }}
+                      {{ 'Bloquear novamente' if item.explicitamente_liberado else 'Liberar competência' }}
                     </button>
                   </form>
                 </div>
@@ -158,7 +158,7 @@
         </div>
       {% else %}
         <div class="text-muted small">
-          Nenhuma competencia recebeu configuracao manual ainda.
+          Nenhuma competência recebeu configuração manual ainda.
         </div>
       {% endif %}
     </div>
@@ -194,7 +194,7 @@
         submitEl.disabled = !hasSelection;
 
         if (!hasSelection) {
-          submitTextEl.textContent = "Selecione uma competencia";
+          submitTextEl.textContent = "Selecione uma competência";
           submitEl.classList.remove("btn-success", "btn-outline-danger");
           submitEl.classList.add("btn-primary");
           return;

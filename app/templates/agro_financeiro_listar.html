@@ -26,14 +26,14 @@
       </a>
       {% if can_manage_competencias %}
         <a href="{{ url_for('main.agro_financeiro_configuracoes') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
-          <i class="bi bi-sliders"></i> Configuracoes
+          <i class="bi bi-sliders"></i> Configurações
         </a>
       {% endif %}
       <a href="{{ url_for('main.agro_financeiro_entrada_listar') }}" class="btn btn-outline-success d-flex align-items-center gap-2">
         <i class="bi bi-box-arrow-in-down-right"></i> Entradas manuais
       </a>
       <a href="{{ url_for('main.agro_financeiro_saida_listar') }}" class="btn btn-outline-danger d-flex align-items-center gap-2">
-        <i class="bi bi-box-arrow-up-right"></i> Saidas manuais
+        <i class="bi bi-box-arrow-up-right"></i> Saídas manuais
       </a>
       {% if is_editable %}
         <a href="{{ url_for('main.agro_financeiro_novo') }}" class="btn btn-success d-flex align-items-center gap-2">

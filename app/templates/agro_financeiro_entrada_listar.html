@@ -16,10 +16,10 @@
       <p class="text-muted small mb-0">Controle das entradas manuais que alimentam o caixa e o DRE.</p>
     </div>
     <div class="listing-actions">
-      <a href="{{ url_for('main.agro_financeiro_listar') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2"><i class="bi bi-cash-coin"></i> Recebiveis</a>
-      <a href="{{ url_for('main.agro_financeiro_saida_listar') }}" class="btn btn-outline-danger d-flex align-items-center gap-2"><i class="bi bi-arrow-up-circle"></i> Saidas</a>
+      <a href="{{ url_for('main.agro_financeiro_listar') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2"><i class="bi bi-cash-coin"></i> Recebíveis</a>
+      <a href="{{ url_for('main.agro_financeiro_saida_listar') }}" class="btn btn-outline-danger d-flex align-items-center gap-2"><i class="bi bi-arrow-up-circle"></i> Saídas</a>
       {% if can_manage_competencias %}
-        <a href="{{ url_for('main.agro_financeiro_configuracoes') }}" class="btn btn-outline-primary d-flex align-items-center gap-2"><i class="bi bi-sliders"></i> Configuracoes</a>
+        <a href="{{ url_for('main.agro_financeiro_configuracoes') }}" class="btn btn-outline-primary d-flex align-items-center gap-2"><i class="bi bi-sliders"></i> Configurações</a>
       {% endif %}
       {% if is_editable %}
         <a href="{{ url_for('main.agro_financeiro_entrada_novo') }}" class="btn btn-success d-flex align-items-center gap-2"><i class="bi bi-plus-circle-fill"></i> Nova entrada</a>
@@ -54,7 +54,7 @@
             </select>
           </div>
           <div class="col-md-2">
-            <label class="small text-muted mb-1">Mes</label>
+            <label class="small text-muted mb-1">Mês</label>
             <input type="number" min="1" max="12" class="form-control form-control-sm" name="mes" value="{{ filters.mes or '' }}">
           </div>
           <div class="col-md-2">
@@ -76,12 +76,12 @@
         <table class="table table-hover align-middle mb-0">
           <thead class="table-light">
             <tr>
-              <th>Cliente / referencia</th>
-              <th>Classificacao</th>
+              <th>Cliente / referência</th>
+              <th>Classificação</th>
               <th>Datas</th>
               <th>Valor</th>
               <th>Status</th>
-              <th>Acoes</th>
+              <th>Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -98,8 +98,8 @@
                   <div class="text-muted small">Forma: {{ item.forma_recebimento or '-' }}</div>
                 </td>
                 <td>
-                  <div class="text-muted small">Lancamento: {{ item.data_lancamento.strftime('%d/%m/%Y') if item.data_lancamento else '-' }}</div>
-                  <div class="text-muted small">Emissao: {{ item.data_emissao.strftime('%d/%m/%Y') if item.data_emissao else '-' }}</div>
+                  <div class="text-muted small">Lançamento: {{ item.data_lancamento.strftime('%d/%m/%Y') if item.data_lancamento else '-' }}</div>
+                  <div class="text-muted small">Emissão: {{ item.data_emissao.strftime('%d/%m/%Y') if item.data_emissao else '-' }}</div>
                   <div class="text-muted small">Prevista: {{ item.data_vencimento.strftime('%d/%m/%Y') if item.data_vencimento else '-' }}</div>
                   <div class="text-muted small">Recebimento: {{ item.data_recebimento.strftime('%d/%m/%Y') if item.data_recebimento else '-' }}</div>
                 </td>

@@ -12,17 +12,17 @@
 <div class="container-fluid py-4 listing-page">
   <div class="listing-header mb-4">
     <div>
-      <h2 class="text-dark m-0"><i class="bi bi-arrow-up-circle-fill me-2 text-danger"></i> Saidas Manuais</h2>
-      <p class="text-muted small mb-0">Despesas, impostos e retencoes classificados por subcategoria do DRE.</p>
+      <h2 class="text-dark m-0"><i class="bi bi-arrow-up-circle-fill me-2 text-danger"></i> Saídas Manuais</h2>
+      <p class="text-muted small mb-0">Despesas, impostos e retenções classificados por subcategoria do DRE.</p>
     </div>
     <div class="listing-actions">
-      <a href="{{ url_for('main.agro_financeiro_listar') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2"><i class="bi bi-cash-coin"></i> Recebiveis</a>
+      <a href="{{ url_for('main.agro_financeiro_listar') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2"><i class="bi bi-cash-coin"></i> Recebíveis</a>
       <a href="{{ url_for('main.agro_financeiro_entrada_listar') }}" class="btn btn-outline-success d-flex align-items-center gap-2"><i class="bi bi-arrow-down-circle"></i> Entradas</a>
       {% if can_manage_competencias %}
-        <a href="{{ url_for('main.agro_financeiro_configuracoes') }}" class="btn btn-outline-primary d-flex align-items-center gap-2"><i class="bi bi-sliders"></i> Configuracoes</a>
+        <a href="{{ url_for('main.agro_financeiro_configuracoes') }}" class="btn btn-outline-primary d-flex align-items-center gap-2"><i class="bi bi-sliders"></i> Configurações</a>
       {% endif %}
       {% if is_editable %}
-        <a href="{{ url_for('main.agro_financeiro_saida_novo') }}" class="btn btn-danger d-flex align-items-center gap-2"><i class="bi bi-plus-circle-fill"></i> Nova saida</a>
+        <a href="{{ url_for('main.agro_financeiro_saida_novo') }}" class="btn btn-danger d-flex align-items-center gap-2"><i class="bi bi-plus-circle-fill"></i> Nova saída</a>
       {% endif %}
     </div>
   </div>
@@ -31,7 +31,7 @@
     <div class="col-md-3"><div class="card info status-warning shadow-sm rounded-4 border-0 h-100"><div class="card-body"><span class="text-muted small d-block">Previsto</span><h4 class="text-dark mt-2 mb-0">{{ resumo.total_previsto|currencybr }}</h4></div></div></div>
     <div class="col-md-3"><div class="card info status-danger shadow-sm rounded-4 border-0 h-100"><div class="card-body"><span class="text-muted small d-block">Pago</span><h4 class="text-dark mt-2 mb-0">{{ resumo.total_pago|currencybr }}</h4></div></div></div>
     <div class="col-md-3"><div class="card info status-danger shadow-sm rounded-4 border-0 h-100"><div class="card-body"><span class="text-muted small d-block">Impostos</span><h4 class="text-dark mt-2 mb-0">{{ resumo.total_impostos|currencybr }}</h4></div></div></div>
-    <div class="col-md-3"><div class="card info status-danger shadow-sm rounded-4 border-0 h-100"><div class="card-body"><span class="text-muted small d-block">Retencoes</span><h4 class="text-dark mt-2 mb-0">{{ resumo.total_retencoes|currencybr }}</h4></div></div></div>
+    <div class="col-md-3"><div class="card info status-danger shadow-sm rounded-4 border-0 h-100"><div class="card-body"><span class="text-muted small d-block">Retenções</span><h4 class="text-dark mt-2 mb-0">{{ resumo.total_retencoes|currencybr }}</h4></div></div></div>
   </div>
 
   <div class="card shadow-sm rounded-4 mb-4 border-0">
@@ -61,7 +61,7 @@
             </select>
           </div>
           <div class="col-md-1">
-            <label class="small text-muted mb-1">Mes</label>
+            <label class="small text-muted mb-1">Mês</label>
             <input type="number" min="1" max="12" class="form-control form-control-sm" name="mes" value="{{ filters.mes or '' }}">
           </div>
           <div class="col-md-1">
@@ -84,11 +84,11 @@
           <thead class="table-light">
             <tr>
               <th>Favorecido</th>
-              <th>Classificacao</th>
+              <th>Classificação</th>
               <th>Datas</th>
               <th>Valor</th>
               <th>Status</th>
-              <th>Acoes</th>
+              <th>Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -106,8 +106,8 @@
                   <div class="text-muted small">{{ item.subcategoria or '-' }}</div>
                 </td>
                 <td>
-                  <div class="text-muted small">Lancamento: {{ item.data_lancamento.strftime('%d/%m/%Y') if item.data_lancamento else '-' }}</div>
-                  <div class="text-muted small">Emissao: {{ item.data_emissao.strftime('%d/%m/%Y') if item.data_emissao else '-' }}</div>
+                  <div class="text-muted small">Lançamento: {{ item.data_lancamento.strftime('%d/%m/%Y') if item.data_lancamento else '-' }}</div>
+                  <div class="text-muted small">Emissão: {{ item.data_emissao.strftime('%d/%m/%Y') if item.data_emissao else '-' }}</div>
                   <div class="text-muted small">Prevista: {{ item.data_vencimento.strftime('%d/%m/%Y') if item.data_vencimento else '-' }}</div>
                   <div class="text-muted small">Pagamento: {{ item.data_pagamento.strftime('%d/%m/%Y') if item.data_pagamento else '-' }}</div>
                 </td>
@@ -117,7 +117,7 @@
                   <div class="d-flex gap-2">
                     {% if is_editable %}
                       <a href="{{ url_for('main.agro_financeiro_saida_editar', lancamento_id=item.id) }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-pencil-square"></i></a>
-                      <form method="POST" action="{{ url_for('main.agro_financeiro_saida_deletar', lancamento_id=item.id) }}" onsubmit="return confirm('Deseja excluir esta saida manual?');">
+                      <form method="POST" action="{{ url_for('main.agro_financeiro_saida_deletar', lancamento_id=item.id) }}" onsubmit="return confirm('Deseja excluir esta saída manual?');">
                         <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i></button>
                       </form>
                     {% endif %}
@@ -125,7 +125,7 @@
                 </td>
               </tr>
             {% else %}
-              <tr><td colspan="6" class="text-center py-5 text-muted">Nenhuma saida manual encontrada.</td></tr>
+              <tr><td colspan="6" class="text-center py-5 text-muted">Nenhuma saída manual encontrada.</td></tr>
             {% endfor %}
           </tbody>
         </table>

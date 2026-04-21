@@ -60,7 +60,6 @@ from app.modules.agro.service import (
     get_agro_dashboard_context,
     get_agro_finance_dashboard_context,
     get_agro_finance_competencia_controle,
-    is_financeiro_agro_admin,
     is_financeiro_agro_only_user,
     recalculate_bancos_agro,
     remove_orcamento_attachment,
@@ -495,22 +494,18 @@ def _mapping_to_choice_list(mapping):
 
 
 def _build_agro_retroactive_alert_context():
-    allow_all = is_financeiro_agro_admin(current_user)
-    liberated_competencias = []
-
-    if not allow_all:
-        liberated_competencias = [
-            f"{item.competencia_ano:04d}-{item.competencia_mes:02d}"
-            for item in (
-                FinanceiroAgroCompetenciaControle.query
-                .filter(FinanceiroAgroCompetenciaControle.liberado.is_(True))
-                .all()
-            )
-            if item.competencia_ano and item.competencia_mes
-        ]
+    liberated_competencias = [
+        f"{item.competencia_ano:04d}-{item.competencia_mes:02d}"
+        for item in (
+            FinanceiroAgroCompetenciaControle.query
+            .filter(FinanceiroAgroCompetenciaControle.liberado.is_(True))
+            .all()
+        )
+        if item.competencia_ano and item.competencia_mes
+    ]
 
     return {
-        "allow_all_past_competencias": allow_all,
+        "allow_all_past_competencias": False,
         "liberated_competencias": liberated_competencias,
     }
 
@@ -1118,6 +1113,18 @@ def _split_agro_retroactive_dates_by_permission(user, date_values):
 def _add_agro_retroactive_blocked_errors(errors: dict, blocked_dates: dict):
     for field_name, field_value in (blocked_dates or {}).items():
         _add_agro_finance_lock_error(errors, field_name, field_value.year, field_value.month)
+
+
+def _resolve_financeiro_agro_competencia(data_servico_executado, data_vencimento, data_recebimento):
+    for field_name, field_value in (
+        ("data_recebimento", data_recebimento),
+        ("data_servico_executado", data_servico_executado),
+        ("data_vencimento", data_vencimento),
+    ):
+        if field_value is not None:
+            return field_name, field_value
+
+    return "data_vencimento", datetime.now().date()
 
 
 def _validate_financeiro_agro_form(form, contratos):
@@ -3274,11 +3281,15 @@ def register_routes(bp):
                 resolved_status,
             ) = _validate_financeiro_agro_form(form, contratos)
             _sync_financeiro_agro_form_numbers(form, numeric_fields, resolved_status)
-            competencia = data_servico_executado or data_vencimento
+            competencia_field, competencia = _resolve_financeiro_agro_competencia(
+                data_servico_executado,
+                data_vencimento,
+                data_recebimento,
+            )
             competencia_ano = getattr(competencia, "year", None)
             competencia_mes = getattr(competencia, "month", None)
             if not can_user_write_agro_finance_competencia(current_user, competencia_ano, competencia_mes):
-                _add_agro_finance_lock_error(errors, "data_vencimento", competencia_ano, competencia_mes)
+                _add_agro_finance_lock_error(errors, competencia_field, competencia_ano, competencia_mes)
 
             if errors:
                 flash("Corrija os campos destacados do financeiro agro.", "warning")
@@ -3306,8 +3317,8 @@ def register_routes(bp):
                 forma_recebimento=form["forma_recebimento"] or None,
                 status=resolved_status,
                 observacoes=form["observacoes"] or None,
-                competencia_mes=getattr(competencia, "month", None),
-                competencia_ano=getattr(competencia, "year", None),
+                competencia_mes=competencia_mes,
+                competencia_ano=competencia_ano,
                 data_elaboracao_contrato=data_elaboracao_contrato,
                 data_servico_executado=data_servico_executado,
                 data_vencimento=data_vencimento,
@@ -3388,11 +3399,15 @@ def register_routes(bp):
                 resolved_status,
             ) = _validate_financeiro_agro_form(form, contratos)
             _sync_financeiro_agro_form_numbers(form, numeric_fields, resolved_status)
-            competencia = data_servico_executado or data_vencimento
+            competencia_field, competencia = _resolve_financeiro_agro_competencia(
+                data_servico_executado,
+                data_vencimento,
+                data_recebimento,
+            )
             competencia_ano = getattr(competencia, "year", None)
             competencia_mes = getattr(competencia, "month", None)
             if not can_user_write_agro_finance_competencia(current_user, competencia_ano, competencia_mes):
-                _add_agro_finance_lock_error(errors, "data_vencimento", competencia_ano, competencia_mes)
+                _add_agro_finance_lock_error(errors, competencia_field, competencia_ano, competencia_mes)
 
             if errors:
                 flash("Corrija os campos destacados do financeiro agro.", "warning")
@@ -3420,8 +3435,8 @@ def register_routes(bp):
             lancamento.forma_recebimento = form["forma_recebimento"] or None
             lancamento.status = resolved_status
             lancamento.observacoes = form["observacoes"] or None
-            lancamento.competencia_mes = getattr(competencia, "month", None)
-            lancamento.competencia_ano = getattr(competencia, "year", None)
+            lancamento.competencia_mes = competencia_mes
+            lancamento.competencia_ano = competencia_ano
             lancamento.data_elaboracao_contrato = data_elaboracao_contrato
             lancamento.data_servico_executado = data_servico_executado
             lancamento.data_vencimento = data_vencimento

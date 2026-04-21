@@ -119,7 +119,7 @@
           </div>
 
           <div class="col-12">
-            <label class="form-label fw-bold small text-muted">Observacoes</label>
+            <label class="form-label fw-bold small text-muted">Observações</label>
             <textarea name="observacoes" rows="3" class="form-control">{{ form.get('observacoes', '') }}</textarea>
           </div>
         </div>
@@ -269,7 +269,7 @@
             const blockedHtml = blockedFields
               .map((field) => {
                 const selectedDate = field.value.trim().split("-").reverse().join("/");
-                return `<li><b>${getFieldLabel(field)}</b>: ${selectedDate} <span class="text-muted">(competencia ${getCompetenciaLabel(field.value.trim())})</span></li>`;
+                return `<li><b>${getFieldLabel(field)}</b>: ${selectedDate} <span class="text-muted">(competência ${getCompetenciaLabel(field.value.trim())})</span></li>`;
               })
               .join("");
 
@@ -277,9 +277,9 @@
               icon: "error",
               title: "Data bloqueada",
               html:
-                "As datas abaixo estao em competencia passada e ainda nao foram liberadas para o seu perfil:<br><br>" +
+                "As datas abaixo estão em competência passada e ainda não foram liberadas para lançamento:<br><br>" +
                 `<ul class="text-start mb-3">${blockedHtml}</ul>` +
-                "<strong>Peca a liberacao ao admin financeiro ou revise as datas.</strong>",
+                "<strong>Libere a competência nas configurações do financeiro ou revise as datas.</strong>",
               confirmButtonColor: "#dc3545",
               confirmButtonText: "Entendi",
             });

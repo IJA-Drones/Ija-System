@@ -31,7 +31,6 @@ from app.shared.access import (
     AGRO_FINANCE_EDIT_TYPES,
     AGRO_FINANCE_VIEW_TYPES,
     FINANCEIRO_ADMIN_USER_TYPE,
-    FINANCEIRO_USER_TYPE,
     apply_prefeitura_scope,
     normalize_role,
 )
@@ -91,10 +90,6 @@ def is_financeiro_agro_admin(user) -> bool:
     return normalize_role(getattr(user, "tipo_usuario", None)) in {"admin", FINANCEIRO_ADMIN_USER_TYPE}
 
 
-def is_financeiro_agro_user(user) -> bool:
-    return normalize_role(getattr(user, "tipo_usuario", None)) == FINANCEIRO_USER_TYPE
-
-
 def is_financeiro_agro_only_user(user) -> bool:
     return normalize_role(getattr(user, "tipo_usuario", None)) in AGRO_FINANCE_VIEW_TYPES
 
@@ -135,10 +130,7 @@ def can_user_write_agro_finance_competencia(user, ano: int | None, mes: int | No
     if not ano or not mes:
         return True
 
-    if is_financeiro_agro_admin(user):
-        return True
-
-    if not is_financeiro_agro_user(user):
+    if not can_edit_agro_finance_panel(user):
         return True
 
     if not is_past_agro_competencia(ano, mes):

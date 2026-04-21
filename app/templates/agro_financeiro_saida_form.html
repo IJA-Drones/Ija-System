@@ -12,9 +12,9 @@
     <div>
       <h2 class="text-dark m-0">
         <i class="bi bi-dash-square-fill me-2 text-danger"></i>
-        {{ 'Nova saida manual' if modo == 'novo' else 'Editar saida manual' }}
+        {{ 'Nova saída manual' if modo == 'novo' else 'Editar saída manual' }}
       </h2>
-      <p class="text-muted small mb-0">Classifique a saida por categoria e subcategoria para refletir no DRE certinho.</p>
+      <p class="text-muted small mb-0">Classifique a saída por categoria e subcategoria para refletir no DRE corretamente.</p>
     </div>
     <a href="{{ url_for('main.agro_financeiro_saida_listar') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
       <i class="bi bi-arrow-left"></i> Voltar
@@ -27,7 +27,7 @@
         <input type="hidden" name="confirmar_lancamento_retroativo" id="confirmar_lancamento_retroativo" value="{{ form.get('confirmar_lancamento_retroativo', '') }}">
         <div class="row g-3">
           <div class="col-md-3">
-            <label class="form-label fw-bold small text-muted">Tipo de saida *</label>
+            <label class="form-label fw-bold small text-muted">Tipo de saída *</label>
             <select id="tipo_saida" name="tipo_saida" class="form-select {% if errors.get('tipo_saida') %}is-invalid{% endif %}">
               {% for tipo in tipo_options %}
                 <option value="{{ tipo }}" {% if form.get('tipo_saida') == tipo %}selected{% endif %}>{{ tipo }}</option>
@@ -38,7 +38,7 @@
           <div class="col-md-3">
             <label class="form-label fw-bold small text-muted">Cliente vinculado</label>
             <select name="cliente_agro_id" class="form-select">
-              <option value="">Sem vinculo</option>
+              <option value="">Sem vínculo</option>
               {% for cliente in clientes %}
                 <option value="{{ cliente.id }}" {% if form.get('cliente_agro_id')|string == cliente.id|string %}selected{% endif %}>{{ cliente.nome }}</option>
               {% endfor %}
@@ -92,8 +92,8 @@
           </div>
 
           <div class="col-md-6">
-            <label class="form-label fw-bold small text-muted">Descricao *</label>
-            <input type="text" name="descricao" value="{{ form.get('descricao', '') }}" class="form-control {% if errors.get('descricao') %}is-invalid{% endif %}" placeholder="Ex.: pagamento de internet do escritorio agro">
+            <label class="form-label fw-bold small text-muted">Descrição *</label>
+            <input type="text" name="descricao" value="{{ form.get('descricao', '') }}" class="form-control {% if errors.get('descricao') %}is-invalid{% endif %}" placeholder="Ex.: pagamento de internet do escritório agro">
             {% if errors.get('descricao') %}<div class="invalid-feedback">{{ errors.get('descricao') }}</div>{% endif %}
           </div>
           <div class="col-md-3">
@@ -107,19 +107,19 @@
           </div>
 
           <div class="col-12">
-            <label class="form-label fw-bold small text-muted">Imposto e do que?</label>
-            <input id="detalhamento_imposto" type="text" name="detalhamento_imposto" value="{{ form.get('detalhamento_imposto', '') }}" class="form-control {% if errors.get('detalhamento_imposto') %}is-invalid{% endif %}" placeholder="Ex.: ISS sobre NF 123 / ICMS da venda / retencao de contrato XYZ">
+            <label class="form-label fw-bold small text-muted">Imposto: do que se trata?</label>
+            <input id="detalhamento_imposto" type="text" name="detalhamento_imposto" value="{{ form.get('detalhamento_imposto', '') }}" class="form-control {% if errors.get('detalhamento_imposto') %}is-invalid{% endif %}" placeholder="Ex.: ISS sobre NF 123 / ICMS da venda / retenção de contrato XYZ">
             {% if errors.get('detalhamento_imposto') %}<div class="invalid-feedback">{{ errors.get('detalhamento_imposto') }}</div>{% endif %}
-            <div class="form-text">Obrigatorio quando o tipo for imposto ou retencao.</div>
+            <div class="form-text">Obrigatório quando o tipo for imposto ou retenção.</div>
           </div>
 
           <div class="col-md-3">
-            <label class="form-label fw-bold small text-muted">Data do lancamento</label>
+            <label class="form-label fw-bold small text-muted">Data do lançamento</label>
             <input type="date" name="data_lancamento" value="{{ form.get('data_lancamento', '') }}" class="form-control {% if errors.get('data_lancamento') %}is-invalid{% endif %}">
             {% if errors.get('data_lancamento') %}<div class="invalid-feedback">{{ errors.get('data_lancamento') }}</div>{% endif %}
           </div>
           <div class="col-md-3">
-            <label class="form-label fw-bold small text-muted">Data de emissao</label>
+            <label class="form-label fw-bold small text-muted">Data de emissão</label>
             <input type="date" name="data_emissao" value="{{ form.get('data_emissao', '') }}" class="form-control {% if errors.get('data_emissao') %}is-invalid{% endif %}">
             {% if errors.get('data_emissao') %}<div class="invalid-feedback">{{ errors.get('data_emissao') }}</div>{% endif %}
           </div>
@@ -135,14 +135,14 @@
           </div>
 
           <div class="col-12">
-            <label class="form-label fw-bold small text-muted">Observacoes</label>
+            <label class="form-label fw-bold small text-muted">Observações</label>
             <textarea name="observacoes" rows="3" class="form-control">{{ form.get('observacoes', '') }}</textarea>
           </div>
         </div>
 
         <div class="d-flex flex-wrap gap-2 mt-4">
           <button type="submit" class="btn btn-danger d-flex align-items-center gap-2">
-            <i class="bi bi-check-circle-fill"></i> Salvar saida
+            <i class="bi bi-check-circle-fill"></i> Salvar saída
           </button>
           {% if modo == 'editar' and lancamento %}
             <button
@@ -151,7 +151,7 @@
               formaction="{{ url_for('main.agro_financeiro_saida_deletar', lancamento_id=lancamento.id) }}"
               formmethod="POST"
               formnovalidate
-              onclick="return confirm('Deseja excluir esta saida manual?');"
+              onclick="return confirm('Deseja excluir esta saída manual?');"
             >
               <i class="bi bi-trash"></i> Excluir
             </button>
@@ -282,7 +282,7 @@
             const blockedHtml = blockedFields
               .map((field) => {
                 const selectedDate = field.value.trim().split("-").reverse().join("/");
-                return `<li><b>${getFieldLabel(field)}</b>: ${selectedDate} <span class="text-muted">(competencia ${getCompetenciaLabel(field.value.trim())})</span></li>`;
+                return `<li><b>${getFieldLabel(field)}</b>: ${selectedDate} <span class="text-muted">(competência ${getCompetenciaLabel(field.value.trim())})</span></li>`;
               })
               .join("");
 
@@ -290,9 +290,9 @@
               icon: "error",
               title: "Data bloqueada",
               html:
-                "As datas abaixo estao em competencia passada e ainda nao foram liberadas para o seu perfil:<br><br>" +
+                "As datas abaixo estão em competência passada e ainda não foram liberadas para lançamento:<br><br>" +
                 `<ul class="text-start mb-3">${blockedHtml}</ul>` +
-                "<strong>Peca a liberacao ao admin financeiro ou revise as datas.</strong>",
+                "<strong>Libere a competência nas configurações do financeiro ou revise as datas.</strong>",
               confirmButtonColor: "#dc3545",
               confirmButtonText: "Entendi",
             });
@@ -309,16 +309,16 @@
 
           const result = await Swal.fire({
             icon: "warning",
-            title: "Lancamento retroativo detectado",
+            title: "Lançamento retroativo detectado",
             html:
-              "As datas abaixo estao em periodo passado:<br><br>" +
+              "As datas abaixo estão em período passado:<br><br>" +
               `<ul class="text-start mb-3">${retroHtml}</ul>` +
               "<strong>Deseja confirmar o cadastro por sua conta e risco?</strong>",
             showCancelButton: true,
             confirmButtonColor: "#dc3545",
             cancelButtonColor: "#6c757d",
             confirmButtonText: "Sim, desejo continuar",
-            cancelButtonText: "Nao, vou revisar",
+            cancelButtonText: "Não, vou revisar",
             reverseButtons: true,
           });
 
