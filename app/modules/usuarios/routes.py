@@ -3,6 +3,7 @@ import unicodedata
 
 from flask import abort, current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
+from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
@@ -43,6 +44,46 @@ def _render_admin_prefeitura_nova(form=None):
             "ativa": "1",
         },
     )
+
+
+def _render_admin_prefeitura_editar(prefeitura, form=None):
+    return render_template(
+        "admin_prefeitura_editar.html",
+        prefeitura=prefeitura,
+        form=form or {
+            "nome": prefeitura.nome or "",
+            "slug": prefeitura.slug or "",
+            "ativa": "1" if prefeitura.ativa else "0",
+        },
+    )
+
+
+def _prefeitura_dependency_labels(prefeitura):
+    relations = [
+        ("usuarios", "usuarios"),
+        ("solicitacoes", "solicitacoes"),
+        ("clientes", "clientes"),
+        ("clientes_agro", "clientes agro"),
+        ("orcamentos_agro", "orcamentos agro"),
+        ("contratos_agro", "contratos agro"),
+        ("ordens_servico_agro", "ordens de servico agro"),
+        ("financeiros_agro", "financeiro agro"),
+        ("financeiros_agro_entradas", "entradas financeiras agro"),
+        ("financeiros_agro_saidas", "saidas financeiras agro"),
+        ("financeiros_agro_caixa_diarios", "caixas diarios agro"),
+        ("pilotos", "pilotos"),
+        ("pilotos_agro", "pilotos agro"),
+        ("equipes", "equipes"),
+        ("equipes_agro", "equipes agro"),
+        ("equipamentos", "equipamentos"),
+        ("equipamentos_agro", "equipamentos agro"),
+    ]
+
+    linked = []
+    for attr_name, label in relations:
+        if getattr(prefeitura, attr_name, None):
+            linked.append(label)
+    return linked
 
 
 def register_routes(bp):
@@ -111,56 +152,126 @@ def register_routes(bp):
         if not _admin_only():
             return redirect(url_for("main.dashboard"))
 
-        prefeituras = (
-            Prefeitura.query.options(selectinload(Prefeitura.usuarios))
-            .order_by(Prefeitura.nome.asc())
-            .all()
-        )
-        return render_template("admin_prefeituras.html", prefeituras=prefeituras)
+        q = (request.args.get("q") or "").strip()
+        ativa = (request.args.get("ativa") or "").strip()
 
-    @bp.route("/admin/prefeituras/<int:id>/editar", methods=["POST"], endpoint="admin_prefeitura_editar")
+        query = Prefeitura.query.options(selectinload(Prefeitura.usuarios))
+
+        if q:
+            term = f"%{q}%"
+            query = query.filter(
+                or_(
+                    Prefeitura.nome.ilike(term),
+                    Prefeitura.slug.ilike(term),
+                )
+            )
+
+        if ativa == "1":
+            query = query.filter(Prefeitura.ativa.is_(True))
+        elif ativa == "0":
+            query = query.filter(Prefeitura.ativa.is_(False))
+
+        prefeituras = query.order_by(Prefeitura.nome.asc()).all()
+        return render_template(
+            "admin_prefeituras.html",
+            prefeituras=prefeituras,
+            q=q,
+            ativa=ativa,
+        )
+
+    @bp.route("/admin/prefeituras/<int:id>/editar", methods=["GET", "POST"], endpoint="admin_prefeitura_editar")
     @login_required
     def admin_prefeitura_editar(id):
         if not _admin_only():
             return redirect(url_for("main.dashboard"))
 
         prefeitura = Prefeitura.query.get_or_404(id)
-        nome = (request.form.get("nome") or "").strip()
-        slug_raw = (request.form.get("slug") or "").strip()
-        slug = _slugify_prefeitura(slug_raw or nome)
-        ativa = (request.form.get("ativa") or "0") == "1"
+        form = {
+            "nome": prefeitura.nome or "",
+            "slug": prefeitura.slug or "",
+            "ativa": "1" if prefeitura.ativa else "0",
+        }
 
-        if not nome:
-            flash("Informe o nome da prefeitura.", "warning")
-            return redirect(url_for("main.admin_prefeituras"))
-        if not slug:
-            flash("Informe um slug valido.", "warning")
-            return redirect(url_for("main.admin_prefeituras"))
+        if request.method == "POST":
+            nome = (request.form.get("nome") or "").strip()
+            slug_raw = (request.form.get("slug") or "").strip()
+            slug = _slugify_prefeitura(slug_raw or nome)
+            ativa = (request.form.get("ativa") or "0") == "1"
+            form = {
+                "nome": nome,
+                "slug": slug_raw,
+                "ativa": "1" if ativa else "0",
+            }
 
-        existe_slug = Prefeitura.query.filter(Prefeitura.slug == slug, Prefeitura.id != prefeitura.id).first()
-        if existe_slug:
-            flash("Ja existe outra prefeitura com esse slug.", "danger")
-            return redirect(url_for("main.admin_prefeituras"))
+            if not nome:
+                flash("Informe o nome da prefeitura.", "warning")
+                return _render_admin_prefeitura_editar(prefeitura, form)
+            if not slug:
+                flash("Informe um slug valido.", "warning")
+                return _render_admin_prefeitura_editar(prefeitura, form)
 
-        existe_nome = Prefeitura.query.filter(Prefeitura.nome == nome, Prefeitura.id != prefeitura.id).first()
-        if existe_nome:
-            flash("Ja existe outra prefeitura com esse nome.", "danger")
-            return redirect(url_for("main.admin_prefeituras"))
+            existe_slug = Prefeitura.query.filter(Prefeitura.slug == slug, Prefeitura.id != prefeitura.id).first()
+            if existe_slug:
+                flash("Ja existe outra prefeitura com esse slug.", "danger")
+                return _render_admin_prefeitura_editar(prefeitura, form)
 
-        prefeitura.nome = nome
-        prefeitura.slug = slug
-        prefeitura.ativa = ativa
+            existe_nome = Prefeitura.query.filter(Prefeitura.nome == nome, Prefeitura.id != prefeitura.id).first()
+            if existe_nome:
+                flash("Ja existe outra prefeitura com esse nome.", "danger")
+                return _render_admin_prefeitura_editar(prefeitura, form)
+
+            prefeitura.nome = nome
+            prefeitura.slug = slug
+            prefeitura.ativa = ativa
+
+            try:
+                db.session.commit()
+                flash("Prefeitura atualizada com sucesso!", "success")
+                return redirect(url_for("main.admin_prefeituras"))
+            except IntegrityError:
+                db.session.rollback()
+                flash("Nao foi possivel atualizar: nome ou slug ja utilizado.", "danger")
+            except Exception:
+                db.session.rollback()
+                current_app.logger.exception("Erro ao atualizar prefeitura %s.", prefeitura.id)
+                flash("Erro interno ao atualizar prefeitura. Tente novamente.", "danger")
+
+            return _render_admin_prefeitura_editar(prefeitura, form)
+
+        return _render_admin_prefeitura_editar(prefeitura, form)
+
+    @bp.route("/admin/prefeituras/<int:id>/excluir", methods=["POST"], endpoint="admin_prefeitura_excluir")
+    @login_required
+    def admin_prefeitura_excluir(id):
+        if not _admin_only():
+            return redirect(url_for("main.dashboard"))
+
+        prefeitura = Prefeitura.query.get_or_404(id)
+        linked = _prefeitura_dependency_labels(prefeitura)
+        if linked:
+            linked_preview = ", ".join(linked[:4])
+            if len(linked) > 4:
+                linked_preview = f"{linked_preview} e outros vinculos"
+            flash(
+                f"Nao e possivel excluir esta prefeitura porque ainda existem registros vinculados: {linked_preview}.",
+                "danger",
+            )
+            return redirect(url_for("main.admin_prefeituras"))
 
         try:
+            db.session.delete(prefeitura)
             db.session.commit()
-            flash("Prefeitura atualizada com sucesso!", "success")
+            flash("Prefeitura excluida com sucesso!", "success")
         except IntegrityError:
             db.session.rollback()
-            flash("Nao foi possivel atualizar: nome ou slug ja utilizado.", "danger")
+            flash(
+                "Nao foi possivel excluir a prefeitura porque ainda existem registros vinculados a ela no sistema.",
+                "danger",
+            )
         except Exception:
             db.session.rollback()
-            current_app.logger.exception("Erro ao atualizar prefeitura %s.", prefeitura.id)
-            flash("Erro interno ao atualizar prefeitura. Tente novamente.", "danger")
+            current_app.logger.exception("Erro ao excluir prefeitura %s.", prefeitura.id)
+            flash("Erro interno ao excluir prefeitura. Tente novamente.", "danger")
 
         return redirect(url_for("main.admin_prefeituras"))
 

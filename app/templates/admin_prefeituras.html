@@ -20,6 +20,9 @@
       </h2>
       <p class="text-muted small mb-0">
         Total de registros: <strong>{{ total_prefeituras }}</strong>
+        {% if q or ativa %}
+          <span class="badge bg-filter-custom ms-2">Filtrado</span>
+        {% endif %}
         <span class="badge bg-success ms-2">{{ total_ativas }} ativas</span>
         <span class="badge bg-secondary ms-1">{{ total_inativas }} inativas</span>
       </p>
@@ -34,18 +37,61 @@
     </div>
   </div>
 
-  <div class="card shadow-sm rounded-4 border-0 overflow-hidden listing-table-wrap prefeitura-table-card">
-    <div class="card-header bg-white border-0 p-4 pb-3 d-flex justify-content-between align-items-start gap-3 flex-wrap">
-      <div>
-        <h5 class="text-dark mb-1">
-          <i class="bi bi-table me-1 text-primary"></i> Prefeituras cadastradas
-        </h5>
-        <p class="text-muted small mb-0">
-          Edite nome, slug e status diretamente pela listagem.
-        </p>
+  <div class="card shadow-sm rounded-4 mb-4 border-0">
+    <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center listing-filter-header"
+         data-bs-toggle="collapse"
+         data-bs-target="#collapseFiltrosPrefeituras"
+         aria-expanded="{{ 'true' if (q or ativa) else 'false' }}">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-funnel-fill text-primary"></i>
+        <span class="text-dark">Filtros de busca</span>
+        {% if q or ativa %}
+          <span class="badge bg-danger rounded-circle p-1 listing-filter-dot"></span>
+        {% endif %}
       </div>
-      <span class="badge bg-light text-dark border">{{ total_prefeituras }} registros</span>
+      <i class="bi bi-chevron-down text-muted"></i>
     </div>
+
+    <div class="collapse {% if q or ativa %}show{% endif %}" id="collapseFiltrosPrefeituras">
+      <div class="card-body pt-0 listing-filter-body">
+        <form method="GET" action="{{ url_for('main.admin_prefeituras') }}">
+          <div class="row g-2 align-items-end">
+            <div class="col-md-6">
+              <label for="search_q" class="small text-muted">Buscar (nome ou slug):</label>
+              <input type="text"
+                     class="form-control form-control-sm"
+                     name="q"
+                     id="search_q"
+                     value="{{ q }}"
+                     placeholder="Ex: Campinas ou campinas">
+            </div>
+
+            <div class="col-md-3">
+              <label for="search_ativa" class="small text-muted">Status:</label>
+              <select class="form-select form-select-sm" name="ativa" id="search_ativa">
+                <option value="">Todas</option>
+                <option value="1" {% if ativa == '1' %}selected{% endif %}>Ativas</option>
+                <option value="0" {% if ativa == '0' %}selected{% endif %}>Inativas</option>
+              </select>
+            </div>
+
+            <div class="col-md-3 listing-filter-actions">
+              <button type="submit" class="btn btn-success btn-sm">
+                <i class="bi bi-funnel"></i> Filtrar
+              </button>
+              {% if q or ativa %}
+              <a href="{{ url_for('main.admin_prefeituras') }}" class="btn btn-outline-secondary btn-sm" title="Remover todos os filtros">
+                <i class="bi bi-x-lg"></i> Limpar
+              </a>
+              {% endif %}
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm rounded-4 border-0 overflow-hidden listing-table-wrap prefeitura-table-card">
     <div class="card-body p-0">
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0 listing-table prefeituras-table">
@@ -54,8 +100,8 @@
               <th class="col-id">ID</th>
               <th>Prefeitura</th>
               <th class="col-status">Status</th>
-              <th class="col-usuarios">Usuários</th>
-              <th class="col-editar">Atualização</th>
+              <th class="col-usuarios">Usuarios</th>
+              <th class="col-acoes">Acoes</th>
             </tr>
           </thead>
           <tbody>
@@ -78,31 +124,24 @@
                   Criada em {{ prefeitura.criada_em.strftime('%d/%m/%Y') if prefeitura.criada_em else '--' }}
                 </div>
               </td>
-              <td data-label="Usuários">
+              <td data-label="Usuarios">
                 <span class="prefeitura-count-chip">{{ prefeitura.usuarios|length }}</span>
               </td>
-              <td data-label="Editar" class="col-editar">
-                <form method="POST" action="{{ url_for('main.admin_prefeitura_editar', id=prefeitura.id) }}" class="prefeitura-inline-form">
-                  <div class="row g-2">
-                    <div class="col-lg-4">
-                      <input type="text" name="nome" class="form-control form-control-sm" value="{{ prefeitura.nome }}" placeholder="Nome da prefeitura" required>
-                    </div>
-                    <div class="col-lg-3">
-                      <input type="text" name="slug" class="form-control form-control-sm" value="{{ prefeitura.slug }}" placeholder="slug" required>
-                    </div>
-                    <div class="col-lg-2">
-                      <select name="ativa" class="form-select form-select-sm">
-                        <option value="1" {% if prefeitura.ativa %}selected{% endif %}>Ativa</option>
-                        <option value="0" {% if not prefeitura.ativa %}selected{% endif %}>Inativa</option>
-                      </select>
-                    </div>
-                    <div class="col-lg-3 d-grid">
-                      <button type="submit" class="btn btn-sm btn-success text-white shadow-sm">
-                        <i class="bi bi-save me-1"></i> Salvar
-                      </button>
-                    </div>
-                  </div>
-                </form>
+              <td data-label="Acoes" class="listing-cell-actions prefeitura-actions-cell">
+                <div class="listing-actions-group">
+                  <a href="{{ url_for('main.admin_prefeitura_editar', id=prefeitura.id) }}"
+                     class="btn btn-sm btn-success text-white shadow-sm">
+                    <i class="bi bi-pencil-square me-1"></i> Editar
+                  </a>
+                  <form method="POST"
+                        action="{{ url_for('main.admin_prefeitura_excluir', id=prefeitura.id) }}"
+                        class="m-0"
+                        onsubmit="return confirm('Tem certeza que deseja excluir a prefeitura {{ prefeitura.nome }}?');">
+                    <button type="submit" class="btn btn-sm btn-danger shadow-sm">
+                      <i class="bi bi-trash me-1"></i> Excluir
+                    </button>
+                  </form>
+                </div>
               </td>
             </tr>
             {% else %}

@@ -4,9 +4,7 @@
 }
 
 .prefeitura-create-card .form-control,
-.prefeitura-create-card .form-select,
-.prefeitura-inline-form .form-control,
-.prefeitura-inline-form .form-select {
+.prefeitura-create-card .form-select {
   border-color: rgba(44, 82, 130, 0.12);
 }
 
@@ -28,10 +26,11 @@
   text-align: center;
 }
 
-.prefeituras-table .col-editar,
-.prefeituras-table td.col-editar {
-  width: 480px;
-  min-width: 480px;
+.prefeituras-table .col-acoes,
+.prefeituras-table .prefeitura-actions-cell {
+  width: 240px;
+  min-width: 240px;
+  text-align: center;
 }
 
 .prefeitura-meta {
@@ -64,41 +63,14 @@
   font-weight: 700;
 }
 
-.prefeitura-inline-form {
-  padding: 0.85rem;
-  border: 1px solid rgba(44, 82, 130, 0.1);
-  border-radius: 16px;
-  background: linear-gradient(180deg, rgba(248, 251, 255, 0.96), rgba(255, 255, 255, 0.96));
-}
-
-.prefeitura-inline-form .btn {
-  min-height: 31px;
-  white-space: nowrap;
-}
-
 @media (max-width: 991.98px) {
   .prefeitura-create-submit .btn {
     width: 100%;
   }
 
-  .prefeituras-table .col-editar,
-  .prefeituras-table td.col-editar {
+  .prefeituras-table .col-acoes,
+  .prefeituras-table .prefeitura-actions-cell {
     width: auto;
     min-width: 0;
-  }
-
-  .prefeitura-inline-form {
-    padding: 0;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-  }
-
-  .prefeitura-inline-form .row.g-2 > div {
-    width: 100%;
-  }
-
-  .prefeitura-inline-form .btn {
-    width: 100%;
   }
 }
