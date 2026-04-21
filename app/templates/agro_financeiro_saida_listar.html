@@ -6,18 +6,53 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/listing_pattern.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+  <style>
+    @media (min-width: 992px) {
+      .manual-finance-header {
+        align-items: center;
+      }
+
+      .manual-finance-header > div:first-child {
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+
+      .manual-finance-actions {
+        flex-wrap: nowrap;
+        justify-content: flex-end;
+        align-items: center;
+      }
+    }
+
+    .manual-finance-actions .btn {
+      min-height: 42px;
+      justify-content: center;
+      white-space: nowrap;
+    }
+
+    .manual-finance-actions .btn .bi {
+      width: 16px;
+      text-align: center;
+      flex: 0 0 16px;
+    }
+  </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4 listing-page">
-  <div class="listing-header mb-4">
+  <div class="listing-header manual-finance-header mb-4">
     <div>
-      <h2 class="text-dark m-0"><i class="bi bi-arrow-up-circle-fill me-2 text-danger"></i> Saídas Manuais</h2>
-      <p class="text-muted small mb-0">Despesas, impostos e retenções classificados por subcategoria do DRE.</p>
+      <h2 class="text-dark m-0"><i class="bi bi-arrow-up-circle-fill me-2 text-success"></i> Sa&iacute;das Manuais</h2>
+      <p class="text-muted small mb-0">
+        Despesas, impostos e reten&ccedil;&otilde;es classificados por subcategoria do DRE.
+        {% if filters.q or filters.tipo_saida or filters.status or filters.mes or filters.ano %}
+          <span class="badge bg-filter-custom ms-2">Filtrado</span>
+        {% endif %}
+      </p>
     </div>
-    <div class="listing-actions">
+    <div class="listing-actions manual-finance-actions">
       <a href="{{ url_for('main.agro_financeiro_listar') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2"><i class="bi bi-cash-coin"></i> Recebíveis</a>
-      <a href="{{ url_for('main.agro_financeiro_entrada_listar') }}" class="btn btn-outline-success d-flex align-items-center gap-2"><i class="bi bi-arrow-down-circle"></i> Entradas</a>
+      <a href="{{ url_for('main.agro_financeiro_entrada_listar') }}" class="btn btn-outline-primary d-flex align-items-center gap-2"><i class="bi bi-arrow-down-circle"></i> Entradas</a>
       {% if can_manage_competencias %}
         <a href="{{ url_for('main.agro_financeiro_configuracoes') }}" class="btn btn-outline-primary d-flex align-items-center gap-2"><i class="bi bi-sliders"></i> Configurações</a>
       {% endif %}
@@ -31,49 +66,67 @@
     <div class="col-md-3"><div class="card info status-warning shadow-sm rounded-4 border-0 h-100"><div class="card-body"><span class="text-muted small d-block">Previsto</span><h4 class="text-dark mt-2 mb-0">{{ resumo.total_previsto|currencybr }}</h4></div></div></div>
     <div class="col-md-3"><div class="card info status-danger shadow-sm rounded-4 border-0 h-100"><div class="card-body"><span class="text-muted small d-block">Pago</span><h4 class="text-dark mt-2 mb-0">{{ resumo.total_pago|currencybr }}</h4></div></div></div>
     <div class="col-md-3"><div class="card info status-danger shadow-sm rounded-4 border-0 h-100"><div class="card-body"><span class="text-muted small d-block">Impostos</span><h4 class="text-dark mt-2 mb-0">{{ resumo.total_impostos|currencybr }}</h4></div></div></div>
-    <div class="col-md-3"><div class="card info status-danger shadow-sm rounded-4 border-0 h-100"><div class="card-body"><span class="text-muted small d-block">Retenções</span><h4 class="text-dark mt-2 mb-0">{{ resumo.total_retencoes|currencybr }}</h4></div></div></div>
+    <div class="col-md-3"><div class="card info status-danger shadow-sm rounded-4 border-0 h-100"><div class="card-body"><span class="text-muted small d-block">Reten&ccedil;&otilde;es</span><h4 class="text-dark mt-2 mb-0">{{ resumo.total_retencoes|currencybr }}</h4></div></div></div>
   </div>
 
   <div class="card shadow-sm rounded-4 mb-4 border-0">
-    <div class="card-body">
-      <form method="GET" action="{{ url_for('main.agro_financeiro_saida_listar') }}">
-        <div class="row g-2 align-items-end">
-          <div class="col-md-4">
-            <label class="small text-muted mb-1">Busca geral</label>
-            <input type="text" class="form-control form-control-sm" name="q" value="{{ filters.q }}" placeholder="Favorecido, categoria, doc...">
+    <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center listing-filter-header"
+         data-bs-toggle="collapse"
+         data-bs-target="#collapseFiltrosSaidasAgro"
+         aria-expanded="{{ 'true' if (filters.q or filters.tipo_saida or filters.status or filters.mes or filters.ano) else 'false' }}">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-funnel-fill text-primary"></i>
+        <span class="text-dark">Filtros</span>
+        {% if filters.q or filters.tipo_saida or filters.status or filters.mes or filters.ano %}
+          <span class="badge bg-danger rounded-circle p-1 listing-filter-dot"></span>
+        {% endif %}
+      </div>
+      <i class="bi bi-chevron-down text-muted"></i>
+    </div>
+
+    <div class="collapse {% if filters.q or filters.tipo_saida or filters.status or filters.mes or filters.ano %}show{% endif %}" id="collapseFiltrosSaidasAgro">
+      <div class="card-body pt-0 listing-filter-body">
+        <form method="GET" action="{{ url_for('main.agro_financeiro_saida_listar') }}">
+          <div class="row g-2 align-items-end">
+            <div class="col-md-4">
+              <label class="small text-muted mb-1">Busca geral:</label>
+              <input type="text" class="form-control form-control-sm" name="q" value="{{ filters.q }}" placeholder="Favorecido, categoria, doc...">
+            </div>
+            <div class="col-md-3">
+              <label class="small text-muted mb-1">Tipo:</label>
+              <select name="tipo_saida" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for tipo in tipo_options %}
+                  <option value="{{ tipo }}" {% if filters.tipo_saida == tipo %}selected{% endif %}>{{ tipo }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="small text-muted mb-1">Status:</label>
+              <select name="status" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for status_value in status_options %}
+                  <option value="{{ status_value }}" {% if filters.status == status_value %}selected{% endif %}>{{ status_value }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-1">
+              <label class="small text-muted mb-1">M&ecirc;s:</label>
+              <input type="number" min="1" max="12" class="form-control form-control-sm" name="mes" value="{{ filters.mes or '' }}">
+            </div>
+            <div class="col-md-1">
+              <label class="small text-muted mb-1">Ano:</label>
+              <input type="number" min="2024" max="2100" class="form-control form-control-sm" name="ano" value="{{ filters.ano or '' }}">
+            </div>
+            <div class="col-12 listing-filter-actions">
+              <button type="submit" class="btn btn-danger btn-sm"><i class="bi bi-funnel"></i> Filtrar</button>
+              {% if filters.q or filters.tipo_saida or filters.status or filters.mes or filters.ano %}
+                <a href="{{ url_for('main.agro_financeiro_saida_listar') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x-lg"></i> Limpar</a>
+              {% endif %}
+            </div>
           </div>
-          <div class="col-md-3">
-            <label class="small text-muted mb-1">Tipo</label>
-            <select name="tipo_saida" class="form-select form-select-sm">
-              <option value="">Todos</option>
-              {% for tipo in tipo_options %}
-                <option value="{{ tipo }}" {% if filters.tipo_saida == tipo %}selected{% endif %}>{{ tipo }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="col-md-3">
-            <label class="small text-muted mb-1">Status</label>
-            <select name="status" class="form-select form-select-sm">
-              <option value="">Todos</option>
-              {% for status_value in status_options %}
-                <option value="{{ status_value }}" {% if filters.status == status_value %}selected{% endif %}>{{ status_value }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="col-md-1">
-            <label class="small text-muted mb-1">Mês</label>
-            <input type="number" min="1" max="12" class="form-control form-control-sm" name="mes" value="{{ filters.mes or '' }}">
-          </div>
-          <div class="col-md-1">
-            <label class="small text-muted mb-1">Ano</label>
-            <input type="number" min="2024" max="2100" class="form-control form-control-sm" name="ano" value="{{ filters.ano or '' }}">
-          </div>
-        </div>
-        <div class="d-flex gap-2 pt-3">
-          <button type="submit" class="btn btn-danger btn-sm"><i class="bi bi-funnel"></i> Filtrar</button>
-          <a href="{{ url_for('main.agro_financeiro_saida_listar') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x-lg"></i> Limpar</a>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   </div>
 
@@ -84,11 +137,11 @@
           <thead class="table-light">
             <tr>
               <th>Favorecido</th>
-              <th>Classificação</th>
+              <th>Classifica&ccedil;&atilde;o</th>
               <th>Datas</th>
               <th>Valor</th>
               <th>Status</th>
-              <th>Ações</th>
+              <th>A&ccedil;&otilde;es</th>
             </tr>
           </thead>
           <tbody>
@@ -106,8 +159,8 @@
                   <div class="text-muted small">{{ item.subcategoria or '-' }}</div>
                 </td>
                 <td>
-                  <div class="text-muted small">Lançamento: {{ item.data_lancamento.strftime('%d/%m/%Y') if item.data_lancamento else '-' }}</div>
-                  <div class="text-muted small">Emissão: {{ item.data_emissao.strftime('%d/%m/%Y') if item.data_emissao else '-' }}</div>
+                  <div class="text-muted small">Lan&ccedil;amento: {{ item.data_lancamento.strftime('%d/%m/%Y') if item.data_lancamento else '-' }}</div>
+                  <div class="text-muted small">Emiss&atilde;o: {{ item.data_emissao.strftime('%d/%m/%Y') if item.data_emissao else '-' }}</div>
                   <div class="text-muted small">Prevista: {{ item.data_vencimento.strftime('%d/%m/%Y') if item.data_vencimento else '-' }}</div>
                   <div class="text-muted small">Pagamento: {{ item.data_pagamento.strftime('%d/%m/%Y') if item.data_pagamento else '-' }}</div>
                 </td>
@@ -117,7 +170,7 @@
                   <div class="d-flex gap-2">
                     {% if is_editable %}
                       <a href="{{ url_for('main.agro_financeiro_saida_editar', lancamento_id=item.id) }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-pencil-square"></i></a>
-                      <form method="POST" action="{{ url_for('main.agro_financeiro_saida_deletar', lancamento_id=item.id) }}" onsubmit="return confirm('Deseja excluir esta saída manual?');">
+                      <form method="POST" action="{{ url_for('main.agro_financeiro_saida_deletar', lancamento_id=item.id) }}" onsubmit="return confirm('Deseja excluir esta sa&iacute;da manual?');">
                         <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i></button>
                       </form>
                     {% endif %}
@@ -125,7 +178,7 @@
                 </td>
               </tr>
             {% else %}
-              <tr><td colspan="6" class="text-center py-5 text-muted">Nenhuma saída manual encontrada.</td></tr>
+              <tr><td colspan="6" class="text-center py-5 text-muted">Nenhuma sa&iacute;da manual encontrada.</td></tr>
             {% endfor %}
           </tbody>
         </table>

@@ -111,193 +111,147 @@
 
 .agro-pilot-dashboard {
   display: grid;
-  gap: 24px;
+  gap: 20px;
 }
 
 .agro-pilot-page-header {
-  display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
+  gap: 1rem;
 }
 
 .agro-pilot-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
-.agro-pilot-header-actions .btn-canceladas {
-  border-radius: 999px;
-  padding: 8px 14px;
+.agro-pilot-overview {
+  background: linear-gradient(180deg, #fcfefc 0%, #f7fbf8 100%);
 }
 
-.agro-pilot-header-actions .btn-nova {
-  border-radius: 999px;
-  padding: 8px 16px;
-}
-
-.agro-pilot-hero {
-  padding: 28px;
-  border-radius: 28px;
-  background:
-    radial-gradient(circle at top right, rgba(110, 231, 183, 0.26), transparent 28%),
-    linear-gradient(130deg, #f4fbf5 0%, #ecfdf3 55%, #ffffff 100%);
-  border: 1px solid rgba(20, 83, 45, 0.08);
-  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.06);
-}
-
-.agro-pilot-hero-chips {
+.agro-pilot-overview-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 0.65rem;
 }
 
-.agro-pilot-chip {
+.agro-pilot-overview-tag {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
+  gap: 0.5rem;
+  padding: 0.6rem 0.9rem;
   border-radius: 999px;
-  background: rgba(22, 101, 52, 0.08);
-  color: #166534;
+  background: #ffffff;
+  border: 1px solid rgba(20, 83, 45, 0.08);
+  color: var(--color-text-main);
   font-size: 0.92rem;
   font-weight: 600;
 }
 
-.agro-pilot-chip-alert {
-  background: rgba(245, 158, 11, 0.14);
+.agro-pilot-overview-tag i {
+  color: var(--color-primary);
+}
+
+.agro-pilot-overview-tag.is-alert {
+  background: #fff8e8;
+  border-color: rgba(217, 119, 6, 0.14);
   color: #b45309;
 }
 
-.agro-pilot-focus-card {
-  padding: 24px;
-  border-radius: 24px;
-  background: linear-gradient(150deg, rgba(255, 255, 255, 0.96) 0%, rgba(236, 253, 243, 0.98) 100%);
-  border: 1px solid rgba(20, 83, 45, 0.12);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+.agro-pilot-overview-tag.is-alert i {
+  color: inherit;
 }
 
-.agro-pilot-focus-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.agro-pilot-focus-metric {
-  padding: 14px 16px;
-  border-radius: 18px;
+.agro-pilot-overview-note {
+  padding: 1rem 1.1rem;
+  border-radius: 1rem;
   background: #ffffff;
   border: 1px solid rgba(20, 83, 45, 0.08);
-}
-
-.agro-pilot-focus-metric span {
-  display: block;
-  color: #64748b;
-  font-size: 0.8rem;
-  margin-bottom: 4px;
-}
-
-.agro-pilot-focus-metric strong {
-  font-size: 1.4rem;
-  color: #0f172a;
+  height: 100%;
 }
 
 .agro-pilot-stat {
-  padding: 20px;
-  border-radius: 22px;
   background: #ffffff;
-  border: 1px solid rgba(20, 83, 45, 0.08);
-  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.05);
 }
 
-.agro-pilot-soft-card {
-  padding: 24px;
-  border-radius: 24px;
+.agro-pilot-section-card {
   background: #ffffff;
-  border: 1px solid rgba(20, 83, 45, 0.08);
-  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.05);
 }
 
 .agro-pilot-section-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
+  gap: 0.75rem;
   flex-wrap: wrap;
 }
 
-.agro-pilot-demand-board {
+.agro-pilot-demand-groups {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  gap: 1.25rem;
 }
 
-.agro-pilot-demand-card {
-  padding: 18px;
-  border-radius: 22px;
-  border: 1px solid rgba(20, 83, 45, 0.1);
-  background:
-    radial-gradient(circle at top right, rgba(187, 247, 208, 0.18), transparent 26%),
-    #f8fffa;
-  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.04);
+.agro-pilot-demand-group {
+  display: grid;
+  gap: 0.85rem;
 }
 
-.agro-pilot-demand-card.is-os {
-  background:
-    radial-gradient(circle at top right, rgba(191, 219, 254, 0.22), transparent 28%),
-    #f8fbff;
-}
-
-.agro-pilot-demand-head {
+.agro-pilot-group-head {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
   align-items: center;
-  margin-bottom: 12px;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
-.agro-pilot-demand-tag {
-  display: inline-flex;
-  align-items: center;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: rgba(245, 158, 11, 0.14);
-  color: #b45309;
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+.agro-pilot-demand-list {
+  display: grid;
+  gap: 0.85rem;
 }
 
-.agro-pilot-demand-tag.is-blue {
-  background: rgba(59, 130, 246, 0.12);
-  color: #1d4ed8;
+.agro-pilot-demand-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem 1.05rem;
+  border: 1px solid #edf2f7;
+  border-radius: 1rem;
+  background: #f8fafc;
+}
+
+.agro-pilot-demand-main {
+  min-width: 0;
+}
+
+.agro-pilot-demand-title {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.35rem;
 }
 
 .agro-pilot-demand-meta {
-  display: grid;
-  gap: 8px;
-  color: #64748b;
-  font-size: 0.84rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem 1rem;
+  margin-top: 0.5rem;
+  color: var(--color-text-muted);
+  font-size: 0.83rem;
 }
 
 .agro-pilot-demand-meta span {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.4rem;
 }
 
-.agro-pilot-card-actions {
+.agro-pilot-demand-action {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 12px;
+  justify-content: flex-end;
 }
 
-.agro-pilot-card-actions .btn {
+.agro-pilot-demand-action .btn {
   white-space: nowrap;
 }
 
@@ -305,10 +259,10 @@
   display: grid;
   place-items: center;
   text-align: center;
-  min-height: 240px;
+  min-height: 220px;
   padding: 24px;
   border-radius: 22px;
-  background: linear-gradient(180deg, #f8fffa 0%, #ffffff 100%);
+  background: #f8fafc;
   border: 1px dashed rgba(20, 83, 45, 0.18);
 }
 
@@ -326,125 +280,94 @@
 
 .agro-pilot-profile-list {
   display: grid;
-  gap: 12px;
+  gap: 0.75rem;
 }
 
 .agro-pilot-profile-item {
   display: flex;
   justify-content: space-between;
-  gap: 16px;
-  align-items: center;
-  padding: 12px 14px;
-  border-radius: 16px;
+  gap: 1rem;
+  align-items: flex-start;
+  padding: 0.9rem 1rem;
+  border-radius: 1rem;
   background: #f8fafc;
   border: 1px solid rgba(148, 163, 184, 0.14);
 }
 
 .agro-pilot-profile-item span {
-  color: #64748b;
+  color: var(--color-text-muted);
   font-size: 0.84rem;
 }
 
 .agro-pilot-profile-item strong {
-  color: #0f172a;
+  color: var(--color-text-main);
   text-align: right;
 }
 
 .agro-pilot-help-box {
-  padding: 16px 18px;
-  border-radius: 18px;
-  background: linear-gradient(145deg, #14532d 0%, #166534 100%);
-  color: #f8fafc;
+  padding: 1rem 1.1rem;
+  border-radius: 1rem;
+  background: #f8fafc;
+  border: 1px solid rgba(20, 83, 45, 0.08);
 }
 
-.agro-pilot-help-box small,
 .agro-pilot-help-box p {
   color: inherit;
 }
 
 body.dark-mode.agro-mode .agro-pilot-page-header .text-dark,
 body.dark-mode.agro-mode .agro-pilot-page-header .text-muted,
-body.dark-mode.agro-mode .agro-pilot-hero .text-dark,
-body.dark-mode.agro-mode .agro-pilot-hero .text-muted,
-body.dark-mode.agro-mode .agro-pilot-focus-card .text-dark,
-body.dark-mode.agro-mode .agro-pilot-focus-card .text-muted,
+body.dark-mode.agro-mode .agro-pilot-overview .text-dark,
+body.dark-mode.agro-mode .agro-pilot-overview .text-muted,
 body.dark-mode.agro-mode .agro-pilot-stat .text-dark,
 body.dark-mode.agro-mode .agro-pilot-stat .text-muted,
-body.dark-mode.agro-mode .agro-pilot-soft-card .text-dark,
-body.dark-mode.agro-mode .agro-pilot-soft-card .text-muted {
+body.dark-mode.agro-mode .agro-pilot-section-card .text-dark,
+body.dark-mode.agro-mode .agro-pilot-section-card .text-muted {
   color: inherit !important;
 }
 
-body.dark-mode.agro-mode .agro-pilot-hero {
-  background:
-    radial-gradient(circle at top right, rgba(103, 212, 141, 0.16), transparent 30%),
-    linear-gradient(145deg, #152233 0%, #132031 55%, #18283c 100%);
-  border-color: #233549;
-  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.26);
-}
-
-body.dark-mode.agro-mode .agro-pilot-focus-card,
+body.dark-mode.agro-mode .agro-pilot-overview,
 body.dark-mode.agro-mode .agro-pilot-stat,
-body.dark-mode.agro-mode .agro-pilot-soft-card,
-body.dark-mode.agro-mode .agro-pilot-demand-card,
-body.dark-mode.agro-mode .agro-pilot-profile-item {
+body.dark-mode.agro-mode .agro-pilot-section-card,
+body.dark-mode.agro-mode .agro-pilot-demand-item,
+body.dark-mode.agro-mode .agro-pilot-profile-item,
+body.dark-mode.agro-mode .agro-pilot-help-box,
+body.dark-mode.agro-mode .agro-pilot-overview-note {
   background: #152233;
   border-color: #233549;
   box-shadow: 0 14px 28px rgba(0, 0, 0, 0.24);
 }
 
-body.dark-mode.agro-mode .agro-pilot-demand-card.is-os {
-  background:
-    radial-gradient(circle at top right, rgba(84, 167, 255, 0.12), transparent 28%),
-    #182638;
-}
-
-body.dark-mode.agro-mode .agro-pilot-focus-metric,
-body.dark-mode.agro-mode .agro-pilot-profile-item,
-body.dark-mode.agro-mode .agro-pilot-help-box {
-  border-color: #233549;
-}
-
-body.dark-mode.agro-mode .agro-pilot-focus-metric,
-body.dark-mode.agro-mode .agro-pilot-profile-item {
+body.dark-mode.agro-mode .agro-pilot-overview-tag {
   background: #1c2b3f;
+  border-color: #233549;
+  color: var(--color-text-main);
 }
 
-body.dark-mode.agro-mode .agro-pilot-chip {
-  background: rgba(99, 208, 138, 0.12);
-  color: #bfeecf;
-}
-
-body.dark-mode.agro-mode .agro-pilot-chip-alert {
+body.dark-mode.agro-mode .agro-pilot-overview-tag.is-alert {
   background: rgba(241, 211, 122, 0.14);
   color: #f3d98f;
 }
 
-body.dark-mode.agro-mode .agro-pilot-focus-metric span,
 body.dark-mode.agro-mode .agro-pilot-demand-meta,
 body.dark-mode.agro-mode .agro-pilot-profile-item span {
   color: var(--color-text-muted);
 }
 
-body.dark-mode.agro-mode .agro-pilot-focus-metric strong,
+body.dark-mode.agro-mode .agro-pilot-demand-title strong,
 body.dark-mode.agro-mode .agro-pilot-profile-item strong,
-body.dark-mode.agro-mode .agro-pilot-demand-card h6,
 body.dark-mode.agro-mode .agro-pilot-empty-state h6 {
   color: var(--color-text-main);
 }
 
 body.dark-mode.agro-mode .agro-pilot-empty-state {
-  background: linear-gradient(180deg, #152233 0%, #182638 100%);
+  background: #152233;
   border-color: #29415f;
 }
 
 body.dark-mode.agro-mode .agro-pilot-empty-icon {
   background: rgba(99, 208, 138, 0.14);
   color: #9fe7bb;
-}
-
-body.dark-mode.agro-mode .agro-pilot-help-box {
-  background: linear-gradient(145deg, #1d5735 0%, #236a41 100%);
 }
 
 @media (max-width: 991.98px) {
@@ -454,22 +377,17 @@ body.dark-mode.agro-mode .agro-pilot-help-box {
   }
 
   .agro-pilot-panel,
-  .agro-pilot-card,
-  .agro-pilot-hero,
-  .agro-pilot-soft-card,
-  .agro-pilot-stat {
+  .agro-pilot-card {
     border-radius: 22px;
   }
 
-  .agro-pilot-demand-board,
-  .agro-pilot-focus-grid {
+  .agro-pilot-demand-item {
     grid-template-columns: 1fr;
+    align-items: stretch;
   }
 
-  .agro-pilot-page-header,
-  .agro-pilot-section-head,
-  .agro-pilot-card-actions {
-    align-items: stretch;
+  .agro-pilot-demand-action {
+    justify-content: flex-start;
   }
 }
 
@@ -477,21 +395,20 @@ body.dark-mode.agro-mode .agro-pilot-help-box {
   .agro-pilot-page-header,
   .agro-pilot-header-actions,
   .agro-pilot-section-head,
-  .agro-pilot-card-actions {
+  .agro-pilot-group-head {
     flex-direction: column;
     align-items: stretch;
   }
 
   .agro-pilot-header-actions .btn,
   .agro-pilot-section-head .btn,
-  .agro-pilot-card-actions .btn {
+  .agro-pilot-demand-action .btn {
     width: 100%;
     justify-content: center;
   }
 
   .agro-pilot-profile-item {
     flex-direction: column;
-    align-items: flex-start;
   }
 
   .agro-pilot-profile-item strong {

@@ -6,16 +6,51 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/listing_pattern.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+  <style>
+    @media (min-width: 992px) {
+      .manual-finance-header {
+        align-items: center;
+      }
+
+      .manual-finance-header > div:first-child {
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+
+      .manual-finance-actions {
+        flex-wrap: nowrap;
+        justify-content: flex-end;
+        align-items: center;
+      }
+    }
+
+    .manual-finance-actions .btn {
+      min-height: 42px;
+      justify-content: center;
+      white-space: nowrap;
+    }
+
+    .manual-finance-actions .btn .bi {
+      width: 16px;
+      text-align: center;
+      flex: 0 0 16px;
+    }
+  </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4 listing-page">
-  <div class="listing-header mb-4">
+  <div class="listing-header manual-finance-header mb-4">
     <div>
       <h2 class="text-dark m-0"><i class="bi bi-arrow-down-circle-fill me-2 text-success"></i> Entradas Manuais</h2>
-      <p class="text-muted small mb-0">Controle das entradas manuais que alimentam o caixa e o DRE.</p>
+      <p class="text-muted small mb-0">
+        Controle das entradas manuais que alimentam o caixa e o DRE.
+        {% if filters.q or filters.status or filters.mes or filters.ano %}
+          <span class="badge bg-filter-custom ms-2">Filtrado</span>
+        {% endif %}
+      </p>
     </div>
-    <div class="listing-actions">
+    <div class="listing-actions manual-finance-actions">
       <a href="{{ url_for('main.agro_financeiro_listar') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2"><i class="bi bi-cash-coin"></i> Recebíveis</a>
       <a href="{{ url_for('main.agro_financeiro_saida_listar') }}" class="btn btn-outline-danger d-flex align-items-center gap-2"><i class="bi bi-arrow-up-circle"></i> Saídas</a>
       {% if can_manage_competencias %}
@@ -37,36 +72,54 @@
   </div>
 
   <div class="card shadow-sm rounded-4 mb-4 border-0">
-    <div class="card-body">
-      <form method="GET" action="{{ url_for('main.agro_financeiro_entrada_listar') }}">
-        <div class="row g-2 align-items-end">
-          <div class="col-md-5">
-            <label class="small text-muted mb-1">Busca geral</label>
-            <input type="text" class="form-control form-control-sm" name="q" value="{{ filters.q }}" placeholder="Cliente, categoria, doc...">
+    <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center listing-filter-header"
+         data-bs-toggle="collapse"
+         data-bs-target="#collapseFiltrosEntradasAgro"
+         aria-expanded="{{ 'true' if (filters.q or filters.status or filters.mes or filters.ano) else 'false' }}">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-funnel-fill text-primary"></i>
+        <span class="text-dark">Filtros</span>
+        {% if filters.q or filters.status or filters.mes or filters.ano %}
+          <span class="badge bg-danger rounded-circle p-1 listing-filter-dot"></span>
+        {% endif %}
+      </div>
+      <i class="bi bi-chevron-down text-muted"></i>
+    </div>
+
+    <div class="collapse {% if filters.q or filters.status or filters.mes or filters.ano %}show{% endif %}" id="collapseFiltrosEntradasAgro">
+      <div class="card-body pt-0 listing-filter-body">
+        <form method="GET" action="{{ url_for('main.agro_financeiro_entrada_listar') }}">
+          <div class="row g-2 align-items-end">
+            <div class="col-md-5">
+              <label class="small text-muted mb-1">Busca geral:</label>
+              <input type="text" class="form-control form-control-sm" name="q" value="{{ filters.q }}" placeholder="Cliente, categoria, doc...">
+            </div>
+            <div class="col-md-3">
+              <label class="small text-muted mb-1">Status:</label>
+              <select name="status" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for status_value in status_options %}
+                  <option value="{{ status_value }}" {% if filters.status == status_value %}selected{% endif %}>{{ status_value }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-2">
+              <label class="small text-muted mb-1">M&ecirc;s:</label>
+              <input type="number" min="1" max="12" class="form-control form-control-sm" name="mes" value="{{ filters.mes or '' }}">
+            </div>
+            <div class="col-md-2">
+              <label class="small text-muted mb-1">Ano:</label>
+              <input type="number" min="2024" max="2100" class="form-control form-control-sm" name="ano" value="{{ filters.ano or '' }}">
+            </div>
+            <div class="col-12 listing-filter-actions">
+              <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-funnel"></i> Filtrar</button>
+              {% if filters.q or filters.status or filters.mes or filters.ano %}
+                <a href="{{ url_for('main.agro_financeiro_entrada_listar') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x-lg"></i> Limpar</a>
+              {% endif %}
+            </div>
           </div>
-          <div class="col-md-3">
-            <label class="small text-muted mb-1">Status</label>
-            <select name="status" class="form-select form-select-sm">
-              <option value="">Todos</option>
-              {% for status_value in status_options %}
-                <option value="{{ status_value }}" {% if filters.status == status_value %}selected{% endif %}>{{ status_value }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="col-md-2">
-            <label class="small text-muted mb-1">Mês</label>
-            <input type="number" min="1" max="12" class="form-control form-control-sm" name="mes" value="{{ filters.mes or '' }}">
-          </div>
-          <div class="col-md-2">
-            <label class="small text-muted mb-1">Ano</label>
-            <input type="number" min="2024" max="2100" class="form-control form-control-sm" name="ano" value="{{ filters.ano or '' }}">
-          </div>
-        </div>
-        <div class="d-flex gap-2 pt-3">
-          <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-funnel"></i> Filtrar</button>
-          <a href="{{ url_for('main.agro_financeiro_entrada_listar') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x-lg"></i> Limpar</a>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   </div>
 
@@ -76,12 +129,12 @@
         <table class="table table-hover align-middle mb-0">
           <thead class="table-light">
             <tr>
-              <th>Cliente / referência</th>
-              <th>Classificação</th>
+              <th>Cliente / refer&ecirc;ncia</th>
+              <th>Classifica&ccedil;&atilde;o</th>
               <th>Datas</th>
               <th>Valor</th>
               <th>Status</th>
-              <th>Ações</th>
+              <th>A&ccedil;&otilde;es</th>
             </tr>
           </thead>
           <tbody>
@@ -98,8 +151,8 @@
                   <div class="text-muted small">Forma: {{ item.forma_recebimento or '-' }}</div>
                 </td>
                 <td>
-                  <div class="text-muted small">Lançamento: {{ item.data_lancamento.strftime('%d/%m/%Y') if item.data_lancamento else '-' }}</div>
-                  <div class="text-muted small">Emissão: {{ item.data_emissao.strftime('%d/%m/%Y') if item.data_emissao else '-' }}</div>
+                  <div class="text-muted small">Lan&ccedil;amento: {{ item.data_lancamento.strftime('%d/%m/%Y') if item.data_lancamento else '-' }}</div>
+                  <div class="text-muted small">Emiss&atilde;o: {{ item.data_emissao.strftime('%d/%m/%Y') if item.data_emissao else '-' }}</div>
                   <div class="text-muted small">Prevista: {{ item.data_vencimento.strftime('%d/%m/%Y') if item.data_vencimento else '-' }}</div>
                   <div class="text-muted small">Recebimento: {{ item.data_recebimento.strftime('%d/%m/%Y') if item.data_recebimento else '-' }}</div>
                 </td>

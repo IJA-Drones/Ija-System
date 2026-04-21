@@ -3,92 +3,74 @@
 {% block extra_styles %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/listing_pattern.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/piloto_agro.css') }}">
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4" style="max-width: 1360px">
+<div class="container-fluid py-4 listing-page" style="max-width: 1360px">
   <div class="agro-pilot-dashboard">
-    <div class="dashboard-header agro-pilot-page-header">
+    <div class="listing-header agro-pilot-page-header mb-4">
       <div>
         <h2 class="text-dark m-0">
-          <i class="bi bi-tree-fill me-2 text-primary"></i> Dashboard Agro
+          <i class="bi bi-tree-fill me-2 text-primary"></i>Painel do Piloto Agro
         </h2>
-        <p class="text-muted small mb-0">Acesse rapidamente as prioridades do dia e os blocos principais do seu fluxo Agro.</p>
+        <p class="text-muted small mb-0">
+          Acompanhe os contratos aprovados, continue as OS em andamento e consulte os recursos da sua equipe.
+        </p>
       </div>
-      <div class="header-actions agro-pilot-header-actions">
-        <a href="#agroDemandas" class="btn btn-outline-dark shadow-sm btn-canceladas">
-          <i class="bi bi-lightning-charge me-1"></i> Demandas
+
+      <div class="listing-actions agro-pilot-header-actions">
+        <a href="{{ url_for('main.agro_piloto_os_listar') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
+          <i class="bi bi-clipboard2-data"></i> Minhas OS
         </a>
-        <a href="#agroEquipamentos" class="btn btn-success shadow-sm btn-nova">
-          <i class="bi bi-cpu me-1"></i> Equipamentos
+        <a href="#agroEquipamentos" class="btn btn-success btn-sm d-flex align-items-center gap-2">
+          <i class="bi bi-cpu"></i> Equipamentos
         </a>
       </div>
     </div>
 
-    <section class="agro-pilot-hero">
-      <div class="row g-4 align-items-center">
-        <div class="col-lg-7">
-          <span class="badge text-bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-2 mb-3">
-            Painel do piloto Agro
-          </span>
-          <h2 class="fw-bold text-dark mb-2">Olá, {{ piloto.nome }}.</h2>
-          <p class="text-muted mb-3">
-            Aqui você enxerga primeiro o que precisa de ação: contratos aprovados aguardando OS e ordens de serviço que ainda precisam ser preenchidas ou continuadas.
-          </p>
-          <div class="agro-pilot-hero-chips">
-            <span class="agro-pilot-chip">
-              <i class="bi bi-diagram-3-fill"></i> {{ equipe.nome if equipe else "Sem equipe vinculada" }}
+    <section class="card shadow-sm rounded-4 border-0 agro-pilot-overview">
+      <div class="card-body p-4">
+        <div class="row g-4 align-items-start">
+          <div class="col-lg-7">
+            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-2 mb-3">
+              Equipe {{ equipe.nome if equipe else "nao vinculada" }}
             </span>
-            <span class="agro-pilot-chip">
-              <i class="bi bi-clipboard2-check-fill"></i> {{ contratos|length }} contratos aprovados
-            </span>
-            <span class="agro-pilot-chip agro-pilot-chip-alert">
-              <i class="bi bi-lightning-charge-fill"></i> {{ total_demandas_prioritarias }} prioridades agora
-            </span>
-          </div>
-        </div>
+            <h3 class="fw-bold text-dark mb-2">Ola, {{ piloto.nome }}</h3>
+            <p class="text-muted mb-3">
+              Este painel mostra primeiro o que exige acao da sua equipe: contratos prontos para virar OS e ordens de servico que ainda precisam de continuidade.
+            </p>
 
-        <div class="col-lg-5">
-          <div class="agro-pilot-focus-card">
-            <div class="d-flex align-items-start justify-content-between gap-3">
-              <div>
-                <small class="text-uppercase fw-semibold text-success-emphasis d-block mb-2">Seu foco agora</small>
-                <h4 class="fw-bold text-dark mb-2">{{ total_demandas_prioritarias }} item(ns) pedindo ação</h4>
-                <p class="text-muted small mb-0">
-                  {% if contratos_sem_os %}
-                    Priorize os contratos que ainda não viraram OS.
-                  {% elif ordens_ativas %}
-                    Continue as OS que já estão abertas para a sua equipe.
-                  {% else %}
-                    Nenhuma pendência crítica no momento.
-                  {% endif %}
-                </p>
-              </div>
-              <img
-                src="{{ url_for('static', filename='img/logo ija.jpg') }}"
-                alt="IJA Drones"
-                class="agro-pilot-logo"
-              >
+            <div class="agro-pilot-overview-tags">
+              <span class="agro-pilot-overview-tag">
+                <i class="bi bi-diagram-3-fill"></i>
+                {{ equipe.nome if equipe else "Sem equipe vinculada" }}
+              </span>
+              <span class="agro-pilot-overview-tag">
+                <i class="bi bi-clipboard2-check-fill"></i>
+                {{ contratos|length }} contrato(s) aprovados
+              </span>
+              <span class="agro-pilot-overview-tag is-alert">
+                <i class="bi bi-lightning-charge-fill"></i>
+                {{ total_demandas_prioritarias }} prioridade(s)
+              </span>
             </div>
+          </div>
 
-            <div class="agro-pilot-focus-grid mt-4">
-              <div class="agro-pilot-focus-metric">
-                <span>Contratos sem OS</span>
-                <strong>{{ contratos_sem_os|length }}</strong>
-              </div>
-              <div class="agro-pilot-focus-metric">
-                <span>OS ativas</span>
-                <strong>{{ ordens_ativas|length }}</strong>
-              </div>
-              <div class="agro-pilot-focus-metric">
-                <span>OS concluídas</span>
-                <strong>{{ ordens_concluidas|length }}</strong>
-              </div>
-              <div class="agro-pilot-focus-metric">
-                <span>Equipamentos</span>
-                <strong>{{ equipamentos|length }}</strong>
-              </div>
+          <div class="col-lg-5">
+            <div class="agro-pilot-overview-note">
+              <small class="text-uppercase fw-semibold text-muted d-block mb-2">Foco atual</small>
+              <h5 class="fw-bold text-dark mb-2">{{ total_demandas_prioritarias }} item(ns) pedindo acao</h5>
+              <p class="text-muted small mb-0">
+                {% if contratos_sem_os %}
+                  Ha contratos aprovados aguardando criacao de OS.
+                {% elif ordens_ativas %}
+                  Existem ordens de servico em aberto para a sua equipe continuar.
+                {% else %}
+                  Nenhuma pendencia critica no momento.
+                {% endif %}
+              </p>
             </div>
           </div>
         </div>
@@ -96,210 +78,240 @@
     </section>
 
     <div class="row g-3">
-      <div class="col-md-3">
-        <div class="agro-pilot-stat h-100">
-          <small class="text-muted d-block mb-2">Demandas prioritárias</small>
-          <h4 class="fw-bold text-dark mb-1">{{ total_demandas_prioritarias }}</h4>
-          <span class="text-muted small">Soma de contratos sem OS e OS ativas ligadas ao seu fluxo.</span>
+      <div class="col-sm-6 col-xl-3">
+        <div class="card shadow-sm rounded-4 border-0 agro-pilot-stat h-100">
+          <div class="card-body">
+            <small class="text-muted d-block mb-1">Demandas prioritarias</small>
+            <h4 class="fw-bold text-dark mb-1">{{ total_demandas_prioritarias }}</h4>
+            <span class="text-muted small">Contratos sem OS e OS em andamento.</span>
+          </div>
         </div>
       </div>
 
-      <div class="col-md-3">
-        <div class="agro-pilot-stat h-100">
-          <small class="text-muted d-block mb-2">Aguardando criação</small>
-          <h4 class="fw-bold text-dark mb-1">{{ contratos_sem_os|length }}</h4>
-          <span class="text-muted small">Contratos aprovados que ainda precisam virar OS.</span>
+      <div class="col-sm-6 col-xl-3">
+        <div class="card shadow-sm rounded-4 border-0 agro-pilot-stat h-100">
+          <div class="card-body">
+            <small class="text-muted d-block mb-1">Aguardando criacao</small>
+            <h4 class="fw-bold text-dark mb-1">{{ contratos_sem_os|length }}</h4>
+            <span class="text-muted small">Contratos aprovados sem OS gerada.</span>
+          </div>
         </div>
       </div>
 
-      <div class="col-md-3">
-        <div class="agro-pilot-stat h-100">
-          <small class="text-muted d-block mb-2">OS em andamento</small>
-          <h4 class="fw-bold text-dark mb-1">{{ ordens_ativas|length }}</h4>
-          <span class="text-muted small">Ordens abertas para seguir preenchendo ou executar.</span>
+      <div class="col-sm-6 col-xl-3">
+        <div class="card shadow-sm rounded-4 border-0 agro-pilot-stat h-100">
+          <div class="card-body">
+            <small class="text-muted d-block mb-1">OS em andamento</small>
+            <h4 class="fw-bold text-dark mb-1">{{ ordens_ativas|length }}</h4>
+            <span class="text-muted small">Ordens abertas no fluxo atual.</span>
+          </div>
         </div>
       </div>
 
-      <div class="col-md-3">
-        <div class="agro-pilot-stat h-100">
-          <small class="text-muted d-block mb-2">OS concluídas</small>
-          <h4 class="fw-bold text-dark mb-1">{{ ordens_concluidas|length }}</h4>
-          <span class="text-muted small">Histórico concluído pelo seu fluxo atual.</span>
+      <div class="col-sm-6 col-xl-3">
+        <div class="card shadow-sm rounded-4 border-0 agro-pilot-stat h-100">
+          <div class="card-body">
+            <small class="text-muted d-block mb-1">Equipamentos ativos</small>
+            <h4 class="fw-bold text-dark mb-1">{{ equipamentos|length }}</h4>
+            <span class="text-muted small">Recursos vinculados a sua equipe.</span>
+          </div>
         </div>
       </div>
     </div>
 
     <div class="row g-4">
       <div class="col-lg-8">
-        <section class="agro-pilot-soft-card h-100" id="agroDemandas">
-          <div class="agro-pilot-section-head mb-3">
-            <div class="d-flex align-items-center gap-2">
-              <i class="bi bi-lightning-charge-fill text-success fs-5"></i>
-              <h5 class="fw-bold mb-0">Fila de demandas</h5>
-            </div>
-            <a href="#agroEquipamentos" class="btn btn-outline-secondary btn-sm">
-              <i class="bi bi-cpu me-1"></i> Ver equipamentos
-            </a>
-          </div>
-
-          {% if contratos_sem_os or ordens_ativas %}
-            <div class="agro-pilot-demand-board">
-              {% for contrato in contratos_sem_os %}
-                <article class="agro-pilot-demand-card is-contract">
-                  <div class="agro-pilot-demand-head">
-                    <span class="agro-pilot-demand-tag">Criar OS</span>
-                    <span class="text-muted small">Contrato #{{ contrato.id }}</span>
-                  </div>
-                  <h6 class="fw-bold text-dark mb-1">{{ contrato.propriedade_nome or contrato.orcamento.nome_fazenda }}</h6>
-                  <p class="text-muted small mb-3">{{ contrato.orcamento.cliente_nome }} • {{ contrato.orcamento.servico or "-" }}</p>
-                  <div class="agro-pilot-demand-meta">
-                    <span><i class="bi bi-geo-alt"></i> {{ contrato.propriedade_cidade }}/{{ contrato.propriedade_uf }}</span>
-                    <span><i class="bi bi-clock-history"></i> Atualizado em {{ contrato.atualizado_em.strftime('%d/%m/%Y %H:%M') }}</span>
-                  </div>
-                  <div class="agro-pilot-card-actions mt-3">
-                    <span class="text-muted small">Culturas: {{ contrato.culturas_formatadas or contrato.orcamento.culturas_formatadas or "-" }}</span>
-                    <a href="{{ url_for('main.agro_os_nova', contrato_id=contrato.id) }}" class="btn btn-success btn-sm">
-                      <i class="bi bi-clipboard2-plus me-1"></i> Criar OS
-                    </a>
-                  </div>
-                </article>
-              {% endfor %}
-
-              {% for os_agro in ordens_ativas %}
-                <article class="agro-pilot-demand-card is-os">
-                  <div class="agro-pilot-demand-head">
-                    <span class="agro-pilot-demand-tag is-blue">{{ os_agro.status }}</span>
-                    <span class="text-muted small">{{ os_agro.identificador_os }}</span>
-                  </div>
-                  <h6 class="fw-bold text-dark mb-1">{{ os_agro.propriedade_nome }}</h6>
-                  <p class="text-muted small mb-3">{{ os_agro.cliente_nome }} • {{ os_agro.servico or "-" }}</p>
-                  <div class="agro-pilot-demand-meta">
-                    <span><i class="bi bi-calendar-event"></i> {{ os_agro.data_aplicacao.strftime('%d/%m/%Y') if os_agro.data_aplicacao else 'Data não informada' }}</span>
-                    <span><i class="bi bi-geo"></i> {{ os_agro.cidade_operacao }}/{{ os_agro.uf_operacao }}</span>
-                  </div>
-                  <div class="agro-pilot-card-actions mt-3">
-                    <span class="text-muted small">{{ os_agro.periodo_aplicacao or 'Período não informado' }}</span>
-                    <a href="{{ url_for('main.agro_os_editar', os_id=os_agro.id) }}" class="btn btn-outline-primary btn-sm">
-                      <i class="bi bi-pencil-square me-1"></i> Continuar
-                    </a>
-                  </div>
-                </article>
-              {% endfor %}
-            </div>
-          {% else %}
-            <div class="agro-pilot-empty-state">
-              <div class="agro-pilot-empty-icon">
-                <i class="bi bi-check2-circle"></i>
+        <section class="card shadow-sm rounded-4 border-0 agro-pilot-section-card h-100" id="agroDemandas">
+          <div class="card-body p-4">
+            <div class="agro-pilot-section-head mb-4">
+              <div>
+                <h5 class="fw-bold mb-1">Demandas prioritarias</h5>
+                <p class="text-muted small mb-0">Veja primeiro o que precisa de acao imediata.</p>
               </div>
-              <h6 class="fw-bold text-dark mb-1">Sem pendências prioritárias</h6>
-              <p class="text-muted mb-0">Quando um contrato aprovado precisar de OS ou uma OS ficar em aberto, ele vai aparecer aqui.</p>
+              <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-2">
+                {{ total_demandas_prioritarias }} item(ns)
+              </span>
             </div>
-          {% endif %}
+
+            {% if contratos_sem_os or ordens_ativas %}
+              <div class="agro-pilot-demand-groups">
+                {% if contratos_sem_os %}
+                  <div class="agro-pilot-demand-group">
+                    <div class="agro-pilot-group-head">
+                      <h6 class="fw-bold mb-0">Contratos aguardando OS</h6>
+                      <span class="text-muted small">{{ contratos_sem_os|length }} pendencia(s)</span>
+                    </div>
+
+                    <div class="agro-pilot-demand-list">
+                      {% for contrato in contratos_sem_os %}
+                        <article class="agro-pilot-demand-item">
+                          <div class="agro-pilot-demand-main">
+                            <div class="agro-pilot-demand-title">
+                              <strong>#{{ contrato.id }} - {{ contrato.propriedade_nome or contrato.orcamento.nome_fazenda or "-" }}</strong>
+                              <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Criar OS</span>
+                            </div>
+                            <div class="text-muted small">{{ contrato.orcamento.cliente_nome }} - {{ contrato.orcamento.servico or "-" }}</div>
+                            <div class="agro-pilot-demand-meta">
+                              <span><i class="bi bi-geo-alt"></i> {{ contrato.propriedade_cidade or "-" }}/{{ contrato.propriedade_uf or "-" }}</span>
+                              <span><i class="bi bi-clock-history"></i> Atualizado em {{ contrato.atualizado_em.strftime('%d/%m/%Y %H:%M') }}</span>
+                              <span><i class="bi bi-flower1"></i> {{ contrato.culturas_formatadas or contrato.orcamento.culturas_formatadas or "-" }}</span>
+                            </div>
+                          </div>
+                          <div class="agro-pilot-demand-action">
+                            <a href="{{ url_for('main.agro_os_nova', contrato_id=contrato.id) }}" class="btn btn-success btn-sm d-flex align-items-center gap-2">
+                              <i class="bi bi-clipboard2-plus"></i> Criar OS
+                            </a>
+                          </div>
+                        </article>
+                      {% endfor %}
+                    </div>
+                  </div>
+                {% endif %}
+
+                {% if ordens_ativas %}
+                  <div class="agro-pilot-demand-group">
+                    <div class="agro-pilot-group-head">
+                      <h6 class="fw-bold mb-0">OS em andamento</h6>
+                      <span class="text-muted small">{{ ordens_ativas|length }} item(ns)</span>
+                    </div>
+
+                    <div class="agro-pilot-demand-list">
+                      {% for os_agro in ordens_ativas %}
+                        <article class="agro-pilot-demand-item">
+                          <div class="agro-pilot-demand-main">
+                            <div class="agro-pilot-demand-title">
+                              <strong>{{ os_agro.identificador_os }}</strong>
+                              <span class="badge bg-primary-subtle text-primary border border-primary-subtle">{{ os_agro.status }}</span>
+                            </div>
+                            <div class="text-muted small">{{ os_agro.propriedade_nome }} - {{ os_agro.cliente_nome }}</div>
+                            <div class="agro-pilot-demand-meta">
+                              <span><i class="bi bi-calendar-event"></i> {{ os_agro.data_aplicacao.strftime('%d/%m/%Y') if os_agro.data_aplicacao else 'Data nao informada' }}</span>
+                              <span><i class="bi bi-geo"></i> {{ os_agro.cidade_operacao or "-" }}/{{ os_agro.uf_operacao or "-" }}</span>
+                              <span><i class="bi bi-sun"></i> {{ os_agro.periodo_aplicacao or 'Periodo nao informado' }}</span>
+                            </div>
+                          </div>
+                          <div class="agro-pilot-demand-action">
+                            <a href="{{ url_for('main.agro_os_editar', os_id=os_agro.id) }}" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2">
+                              <i class="bi bi-pencil-square"></i> Continuar
+                            </a>
+                          </div>
+                        </article>
+                      {% endfor %}
+                    </div>
+                  </div>
+                {% endif %}
+              </div>
+            {% else %}
+              <div class="agro-pilot-empty-state">
+                <div class="agro-pilot-empty-icon">
+                  <i class="bi bi-check2-circle"></i>
+                </div>
+                <h6 class="fw-bold text-dark mb-1">Sem pendencias prioritarias</h6>
+                <p class="text-muted mb-0">Quando surgir um contrato aguardando OS ou uma OS aberta, ele aparecera aqui.</p>
+              </div>
+            {% endif %}
+          </div>
         </section>
       </div>
 
       <div class="col-lg-4">
-        <section class="agro-pilot-soft-card h-100">
-          <div class="d-flex align-items-center gap-2 mb-3">
-            <i class="bi bi-person-lines-fill text-success fs-5"></i>
-            <h5 class="fw-bold mb-0">Meus dados</h5>
-          </div>
+        <section class="card shadow-sm rounded-4 border-0 agro-pilot-section-card h-100">
+          <div class="card-body p-4">
+            <div class="agro-pilot-section-head mb-4">
+              <div>
+                <h5 class="fw-bold mb-1">Meus dados</h5>
+                <p class="text-muted small mb-0">Informacoes do piloto e da equipe atual.</p>
+              </div>
+            </div>
 
-          <div class="agro-pilot-profile-list">
-            <div class="agro-pilot-profile-item">
-              <span>Nome</span>
-              <strong>{{ piloto.nome }}</strong>
+            <div class="agro-pilot-profile-list">
+              <div class="agro-pilot-profile-item">
+                <span>Nome</span>
+                <strong>{{ piloto.nome }}</strong>
+              </div>
+              <div class="agro-pilot-profile-item">
+                <span>Telefone</span>
+                <strong>{{ piloto.telefone|phonebr if piloto.telefone else "Nao informado" }}</strong>
+              </div>
+              <div class="agro-pilot-profile-item">
+                <span>Login</span>
+                <strong>{{ current_user.login }}</strong>
+              </div>
+              <div class="agro-pilot-profile-item">
+                <span>Equipe</span>
+                <strong>{{ equipe.nome if equipe else "Sem equipe vinculada" }}</strong>
+              </div>
+              <div class="agro-pilot-profile-item">
+                <span>Pilotos da equipe</span>
+                <strong>
+                  {% if equipe and equipe.pilotos %}
+                    {{ equipe.pilotos|selectattr('ativo')|map(attribute='nome')|join(', ') or "Sem pilotos ativos vinculados" }}
+                  {% else %}
+                    Sem pilotos vinculados
+                  {% endif %}
+                </strong>
+              </div>
+              <div class="agro-pilot-profile-item">
+                <span>OS concluidas</span>
+                <strong>{{ ordens_concluidas|length }}</strong>
+              </div>
             </div>
-            <div class="agro-pilot-profile-item">
-              <span>Telefone</span>
-              <strong>{{ piloto.telefone|phonebr if piloto.telefone else "Não informado" }}</strong>
-            </div>
-            <div class="agro-pilot-profile-item">
-              <span>Login</span>
-              <strong>{{ current_user.login }}</strong>
-            </div>
-            <div class="agro-pilot-profile-item">
-              <span>Equipe</span>
-              <strong>{{ equipe.nome if equipe else "Sem equipe vinculada" }}</strong>
-            </div>
-            <div class="agro-pilot-profile-item">
-              <span>Pilotos da equipe</span>
-              <strong>
-                {% if equipe and equipe.pilotos %}
-                  {{ equipe.pilotos|selectattr('ativo')|map(attribute='nome')|join(', ') or "Sem pilotos ativos vinculados" }}
-                {% else %}
-                  Sem pilotos vinculados
-                {% endif %}
-              </strong>
-            </div>
-            <div class="agro-pilot-profile-item">
-              <span>Equipamentos ativos</span>
-              <strong>{{ equipamentos|length }}</strong>
-            </div>
-            <div class="agro-pilot-profile-item">
-              <span>Contratos aprovados</span>
-              <strong>{{ contratos|length }}</strong>
-            </div>
-          </div>
 
-          <div class="agro-pilot-help-box mt-4">
-            <small class="text-uppercase fw-semibold d-block mb-2">Leitura rápida</small>
-            <p class="small mb-2">Use <strong>Criar OS</strong> quando o contrato aprovado ainda não entrou em operação.</p>
-            <p class="small mb-0">Use <strong>Continuar</strong> quando a OS da equipe já existe e ainda precisa de preenchimento.</p>
+            <div class="agro-pilot-help-box mt-4">
+              <small class="text-uppercase fw-semibold d-block mb-2">Leitura rapida</small>
+              <p class="small mb-2">Use <strong>Criar OS</strong> quando o contrato aprovado ainda nao entrou em operacao.</p>
+              <p class="small mb-0">Use <strong>Continuar</strong> quando a OS da equipe ja existe e ainda precisa de preenchimento.</p>
+            </div>
           </div>
         </section>
       </div>
     </div>
 
-    <div class="row g-4">
-      <div class="col-12">
-        <section class="agro-pilot-soft-card" id="agroEquipamentos">
-          <div class="agro-pilot-section-head mb-3">
-            <div class="d-flex align-items-center gap-2">
-              <i class="bi bi-cpu-fill text-success fs-5"></i>
-              <h5 class="fw-bold mb-0">Equipamentos da equipe</h5>
-            </div>
-            <a href="#top" onclick="window.scrollTo({ top: 0, behavior: 'smooth' }); return false;" class="btn btn-outline-secondary btn-sm">
-              <i class="bi bi-arrow-up me-1"></i> Voltar ao topo
-            </a>
+    <section class="card shadow-sm rounded-4 border-0 agro-pilot-section-card" id="agroEquipamentos">
+      <div class="card-body p-4">
+        <div class="agro-pilot-section-head mb-4">
+          <div>
+            <h5 class="fw-bold mb-1">Equipamentos da equipe</h5>
+            <p class="text-muted small mb-0">Equipamentos atualmente vinculados ao fluxo do piloto.</p>
           </div>
+          <a href="#top" onclick="window.scrollTo({ top: 0, behavior: 'smooth' }); return false;" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
+            <i class="bi bi-arrow-up"></i> Voltar ao topo
+          </a>
+        </div>
 
-          {% if equipamentos %}
-            <div class="table-responsive">
-              <table class="table align-middle mb-0">
-                <thead>
+        {% if equipamentos %}
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Identificacao</th>
+                  <th>Funcao</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for equipamento in equipamentos %}
                   <tr>
-                    <th>Identificação</th>
-                    <th>Função</th>
-                    <th>Status</th>
+                    <td>
+                      <div class="fw-semibold">{{ equipamento.identificacao }}</div>
+                      <div class="text-muted small">{{ equipamento.modelo }}</div>
+                    </td>
+                    <td>{{ equipamento.funcao_operacional or equipamento.tipo }}</td>
+                    <td>
+                      <span class="badge bg-success-subtle text-success border border-success-subtle">
+                        {{ equipamento.status }}
+                      </span>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {% for equipamento in equipamentos %}
-                    <tr>
-                      <td>
-                        <div class="fw-semibold">{{ equipamento.identificacao }}</div>
-                        <div class="text-muted small">{{ equipamento.modelo }}</div>
-                      </td>
-                      <td>{{ equipamento.funcao_operacional or equipamento.tipo }}</td>
-                      <td>
-                        <span class="badge bg-success-subtle text-success border border-success-subtle">
-                          {{ equipamento.status }}
-                        </span>
-                      </td>
-                    </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-          {% else %}
-            <p class="text-muted mb-0">
-              Ainda não existem equipamentos cadastrados para a equipe deste piloto.
-            </p>
-          {% endif %}
-        </section>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <p class="text-muted mb-0">Ainda nao existem equipamentos cadastrados para a equipe deste piloto.</p>
+        {% endif %}
       </div>
-    </div>
+    </section>
   </div>
 </div>
 {% endblock %}

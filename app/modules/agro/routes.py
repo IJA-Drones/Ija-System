@@ -2427,6 +2427,38 @@ def register_routes(bp):
             total_demandas_prioritarias=len(contratos_sem_os) + len(ordens_ativas),
         )
 
+    @bp.route("/agro/piloto/os", methods=["GET"], endpoint="agro_piloto_os_listar")
+    @login_required
+    def agro_piloto_os_listar():
+        _require_piloto_agro()
+
+        piloto = _get_logged_piloto_agro()
+        if piloto is None:
+            flash("Seu usuario nao esta vinculado a um piloto agro.", "danger")
+            return redirect(url_for("auth.logout"))
+
+        equipe = piloto.equipe
+        q = (request.args.get("q") or "").strip()
+        status = (request.args.get("status") or "").strip().upper()
+
+        ordens_servico = []
+        if equipe is not None:
+            ordens_servico = build_ordens_servico_agro_query(
+                current_user,
+                q=q,
+                status=status if status in AGRO_OS_STATUS_OPTIONS else "",
+                equipe_id=equipe.id,
+            ).all()
+
+        return render_template(
+            "piloto_agro_os_listar.html",
+            piloto=piloto,
+            equipe=equipe,
+            ordens_servico=ordens_servico,
+            status_options=AGRO_OS_STATUS_OPTIONS,
+            filters={"q": q, "status": status, "total": len(ordens_servico)},
+        )
+
     @bp.route("/agro/admin", endpoint="admin_agro")
     @login_required
     def admin_agro():
@@ -4213,16 +4245,16 @@ def register_routes(bp):
         if contrato.status != ContratoAgro.STATUS_APROVADO:
             flash("A OS Agro so pode ser criada a partir de um contrato aprovado.", "warning")
             if pilot_form_mode:
-                return redirect(url_for("main.agro_piloto_dashboard"))
+                return redirect(url_for("main.agro_piloto_os_listar"))
             return redirect(url_for("main.agro_contrato_editar", orcamento_id=contrato.orcamento.id))
 
         if not contrato.equipe_agro_id:
             flash("Defina a equipe responsavel no template operacional antes de criar a OS Agro.", "warning")
-            return redirect(url_for("main.agro_piloto_dashboard" if pilot_form_mode else "main.agro_contratos_template"))
+            return redirect(url_for("main.agro_piloto_dashboard" if not pilot_form_mode else "main.agro_piloto_os_listar"))
 
         if pilot_form_mode and piloto_logado.equipe_agro_id != contrato.equipe_agro_id:
             flash("Este contrato aprovado esta vinculado a outra equipe.", "warning")
-            return redirect(url_for("main.agro_piloto_dashboard"))
+            return redirect(url_for("main.agro_piloto_os_listar"))
 
         ordem_existente = (
             apply_prefeitura_scope(OrdemServicoAgro.query, current_user, OrdemServicoAgro.prefeitura_id)
@@ -4339,7 +4371,7 @@ def register_routes(bp):
 
             db.session.commit()
             flash("OS Agro criada com sucesso.", "success")
-            return redirect(url_for("main.agro_piloto_dashboard" if pilot_form_mode else "main.agro_os_listar"))
+            return redirect(url_for("main.agro_piloto_os_listar" if pilot_form_mode else "main.agro_os_listar"))
 
         return render_template(
             "agro_os_form.html",
@@ -4370,7 +4402,7 @@ def register_routes(bp):
                 return redirect(url_for("auth.logout"))
             if piloto_logado.equipe_agro_id != ordem_servico.equipe_agro_id:
                 flash("Esta OS Agro pertence a outra equipe.", "warning")
-                return redirect(url_for("main.agro_piloto_dashboard"))
+                return redirect(url_for("main.agro_piloto_os_listar"))
         else:
             _require_agro_edit()
 
@@ -4479,7 +4511,7 @@ def register_routes(bp):
 
             db.session.commit()
             flash("OS Agro atualizada com sucesso.", "success")
-            return redirect(url_for("main.agro_piloto_dashboard" if pilot_form_mode else "main.agro_os_listar"))
+            return redirect(url_for("main.agro_piloto_os_listar" if pilot_form_mode else "main.agro_os_listar"))
 
         form = _serialize_os_agro_form(ordem_servico)
         if not form.get("area_total_ha"):

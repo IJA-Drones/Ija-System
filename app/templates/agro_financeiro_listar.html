@@ -6,21 +6,54 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/listing_pattern.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+  <style>
+    @media (min-width: 992px) {
+      .recebiveis-header {
+        align-items: center;
+      }
+
+      .recebiveis-header > div:first-child {
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+
+      .recebiveis-actions {
+        flex-wrap: nowrap;
+        justify-content: flex-end;
+        align-items: center;
+      }
+    }
+
+    .recebiveis-actions .btn {
+      min-height: 42px;
+      justify-content: center;
+      white-space: nowrap;
+    }
+
+    .recebiveis-actions .btn .bi {
+      width: 16px;
+      text-align: center;
+      flex: 0 0 16px;
+    }
+  </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4 listing-page">
-  <div class="listing-header mb-4">
+  <div class="listing-header recebiveis-header mb-4">
     <div>
       <h2 class="text-dark m-0">
         <i class="bi bi-cash-coin me-2 text-primary"></i> Financeiro Agro
       </h2>
       <p class="text-muted small mb-0">
         Total de registros: <strong>{{ filters.total }}</strong>
+        {% if filters.q or filters.status or filters.mes or filters.ano or filters.contrato_id %}
+          <span class="badge bg-filter-custom ms-2">Filtrado</span>
+        {% endif %}
       </p>
     </div>
 
-    <div class="listing-actions">
+    <div class="listing-actions recebiveis-actions">
       <a href="{{ url_for('main.admin_agro') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
@@ -79,16 +112,31 @@
   </div>
 
   <div class="card shadow-sm rounded-4 mb-4 border-0">
-    <div class="card-body">
+    <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center listing-filter-header"
+         data-bs-toggle="collapse"
+         data-bs-target="#collapseFiltrosRecebiveisAgro"
+         aria-expanded="{{ 'true' if (filters.q or filters.status or filters.mes or filters.ano or filters.contrato_id) else 'false' }}">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-funnel-fill text-primary"></i>
+        <span class="text-dark">Filtros</span>
+        {% if filters.q or filters.status or filters.mes or filters.ano or filters.contrato_id %}
+          <span class="badge bg-danger rounded-circle p-1 listing-filter-dot"></span>
+        {% endif %}
+      </div>
+      <i class="bi bi-chevron-down text-muted"></i>
+    </div>
+
+    <div class="collapse {% if filters.q or filters.status or filters.mes or filters.ano or filters.contrato_id %}show{% endif %}" id="collapseFiltrosRecebiveisAgro">
+      <div class="card-body pt-0 listing-filter-body">
       <form method="GET" action="{{ url_for('main.agro_financeiro_listar') }}">
         <div class="row g-2 align-items-end">
           <div class="col-md-4">
-            <label class="small text-muted mb-1">Busca geral</label>
+            <label class="small text-muted mb-1">Busca geral:</label>
             <input type="text" class="form-control form-control-sm" name="q" value="{{ filters.q }}" placeholder="Cliente, cultura ou forma de recebimento...">
           </div>
 
           <div class="col-md-2">
-            <label class="small text-muted mb-1">Status</label>
+            <label class="small text-muted mb-1">Status:</label>
             <select name="status" class="form-select form-select-sm">
               <option value="">Todos</option>
               {% for status_value in status_options %}
@@ -103,12 +151,12 @@
           </div>
 
           <div class="col-md-2">
-            <label class="small text-muted mb-1">Ano</label>
+            <label class="small text-muted mb-1">Ano:</label>
             <input type="number" min="2024" max="2100" class="form-control form-control-sm" name="ano" value="{{ filters.ano or '' }}" placeholder="2026">
           </div>
 
           <div class="col-md-2">
-            <label class="small text-muted mb-1">Contrato</label>
+            <label class="small text-muted mb-1">Contrato:</label>
             <select name="contrato_id" class="form-select form-select-sm">
               <option value="">Todos</option>
               {% for contrato in contratos %}
@@ -117,16 +165,19 @@
             </select>
           </div>
 
-          <div class="col-12 d-flex gap-2 pt-2">
+          <div class="col-12 listing-filter-actions">
             <button type="submit" class="btn btn-success btn-sm">
               <i class="bi bi-funnel"></i> Filtrar
             </button>
-            <a href="{{ url_for('main.agro_financeiro_listar') }}" class="btn btn-outline-secondary btn-sm">
-              <i class="bi bi-x-lg"></i> Limpar filtros
-            </a>
+            {% if filters.q or filters.status or filters.mes or filters.ano or filters.contrato_id %}
+              <a href="{{ url_for('main.agro_financeiro_listar') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-x-lg"></i> Limpar
+              </a>
+            {% endif %}
           </div>
         </div>
       </form>
+    </div>
     </div>
   </div>
 

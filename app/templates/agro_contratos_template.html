@@ -17,7 +17,7 @@
         <i class="bi bi-diagram-3-fill me-2 text-primary"></i>Contratos Aprovados
       </h2>
       <p class="text-muted small mb-0">
-        Contratos aprovados aguardando definição ou ajuste da equipe responsável.
+        Contratos aprovados aguardando definicao ou ajuste da equipe responsavel.
         Depois disso, a OS Agro passa a ser criada pelo piloto no painel dele.
         Total: <strong>{{ filters.total }}</strong>
       </p>
@@ -27,12 +27,23 @@
       <a href="{{ url_for('main.admin_agro') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
-      <a href="{{ url_for('main.agro_contratos_listar') }}" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2">
-        <i class="bi bi-file-earmark-text-fill"></i> Contratos Agro
-      </a>
-      <a href="{{ url_for('main.agro_orcamentos_listar') }}" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2">
-        <i class="bi bi-file-earmark-text"></i> Orçamentos
-      </a>
+      <div class="dropdown">
+        <button class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2 dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+          <i class="bi bi-box-arrow-up-right"></i> Ir para
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
+          <li>
+            <a href="{{ url_for('main.agro_contratos_listar') }}" class="dropdown-item py-2">
+              <i class="bi bi-file-earmark-text-fill text-primary me-2"></i> Contratos Agro
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('main.agro_orcamentos_listar') }}" class="dropdown-item py-2">
+              <i class="bi bi-file-earmark-text text-primary me-2"></i> Orcamentos
+            </a>
+          </li>
+        </ul>
+      </div>
     </div>
   </div>
 
@@ -100,94 +111,110 @@
           <thead class="table-light">
             <tr>
               <th>Contrato</th>
-              <th>Operação</th>
+              <th>Operacao</th>
               <th>Comercial</th>
               <th style="min-width: 320px;">Template operacional</th>
-              <th>Ações</th>
+              <th>Acoes</th>
             </tr>
           </thead>
           <tbody>
             {% for contrato in contratos %}
+              {% set os_count = contrato.ordens_servico|length %}
               <tr>
                 <td data-label="Contrato">
-                  <div class="fw-bold">#{{ contrato.id }} • {{ contrato.orcamento.cliente_nome }}</div>
+                  <div class="fw-bold">#{{ contrato.id }} - {{ contrato.orcamento.cliente_nome }}</div>
                   <div class="text-muted small">{{ contrato.contratante_nome }}</div>
                   <div class="text-muted small">Atualizado em {{ contrato.atualizado_em.strftime('%d/%m/%Y %H:%M') }}</div>
                 </td>
 
-                <td data-label="Operação">
+                <td data-label="Operacao">
                   <div class="fw-semibold">{{ contrato.propriedade_nome or contrato.orcamento.nome_fazenda or '-' }}</div>
                   <div class="text-muted small">{{ contrato.descricao_servico or '-' }}</div>
                   <div class="text-muted small">
-                    Protocolo: {{ contrato.orcamento.protocolo or 'Não informado' }}
+                    Protocolo: {{ contrato.orcamento.protocolo or 'Nao informado' }}
                   </div>
                 </td>
 
                 <td data-label="Comercial">
                   <div class="fw-bold">{{ contrato.valor_total|currencybr or '-' }}</div>
                   <div class="text-muted small">Assinatura: {{ contrato.data_assinatura.strftime('%d/%m/%Y') if contrato.data_assinatura else '-' }}</div>
-                  <div class="text-muted small">Culturas: {{ contrato.culturas_formatadas or 'Não informadas' }}</div>
+                  <div class="text-muted small">Culturas: {{ contrato.culturas_formatadas or 'Nao informadas' }}</div>
                 </td>
 
                 <td data-label="Template operacional">
-                  <form method="POST" action="{{ url_for('main.agro_contrato_template_salvar', contrato_id=contrato.id) }}" class="agro-template-form">
-                    <div class="agro-template-field">
-                      <label class="small text-muted mb-1">Equipe responsável</label>
-                      <select class="form-select form-select-sm" name="equipe_agro_id">
-                        <option value="">Selecione...</option>
-                        {% for equipe in equipes_ativas %}
-                          <option value="{{ equipe.id }}" {% if contrato.equipe_agro_id == equipe.id %}selected{% endif %}>{{ equipe.nome }}</option>
-                        {% endfor %}
-                      </select>
+                  <div class="agro-template-panel">
+                    <div class="agro-template-summary">
+                      <div class="agro-template-meta">
+                        <span class="badge {% if contrato.equipe %}bg-success-subtle text-success border border-success-subtle{% else %}bg-light text-dark border{% endif %}">
+                          {{ contrato.equipe.nome if contrato.equipe else 'Sem equipe definida' }}
+                        </span>
+                        {% if os_count %}
+                          <span class="badge bg-success-subtle text-success border border-success-subtle">OS criada(s): {{ os_count }}</span>
+                        {% elif contrato.equipe_agro_id %}
+                          <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Aguardando piloto</span>
+                        {% else %}
+                          <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Equipe pendente</span>
+                        {% endif %}
+                      </div>
                     </div>
 
-                    <div class="agro-template-field">
-                      <label class="small text-muted mb-1">Status</label>
-                      <select class="form-select form-select-sm" name="status">
-                        {% for status_value in status_options %}
-                          <option value="{{ status_value }}" {% if contrato.status == status_value %}selected{% endif %}>
-                            {% if status_value == 'APROVADO' %}Aprovado{% else %}Em elaboração{% endif %}
-                          </option>
-                        {% endfor %}
-                      </select>
-                    </div>
+                    <form method="POST" action="{{ url_for('main.agro_contrato_template_salvar', contrato_id=contrato.id) }}" class="agro-template-form">
+                      <div class="agro-template-field agro-template-field-equipe">
+                        <label class="small text-muted mb-1">Equipe</label>
+                        <select class="form-select form-select-sm" name="equipe_agro_id">
+                          <option value="">Selecione...</option>
+                          {% for equipe in equipes_ativas %}
+                            <option value="{{ equipe.id }}" {% if contrato.equipe_agro_id == equipe.id %}selected{% endif %}>{{ equipe.nome }}</option>
+                          {% endfor %}
+                        </select>
+                      </div>
 
-                    <div class="agro-template-submit">
-                      <button type="submit" class="btn btn-primary btn-sm">
-                        <i class="bi bi-check-lg me-1"></i> Salvar
-                      </button>
-                    </div>
+                      <div class="agro-template-field agro-template-field-status">
+                        <label class="small text-muted mb-1">Status</label>
+                        <select class="form-select form-select-sm" name="status">
+                          {% for status_value in status_options %}
+                            <option value="{{ status_value }}" {% if contrato.status == status_value %}selected{% endif %}>
+                              {% if status_value == 'APROVADO' %}Aprovado{% else %}Em elaboracao{% endif %}
+                            </option>
+                          {% endfor %}
+                        </select>
+                      </div>
 
-                    <div class="agro-template-badge">
-                      <span class="badge {% if contrato.equipe %}bg-success-subtle text-success border border-success-subtle{% else %}bg-warning-subtle text-warning border border-warning-subtle{% endif %}">
-                        {{ contrato.equipe.nome if contrato.equipe else 'Sem equipe definida' }}
-                      </span>
-                    </div>
-                  </form>
+                      <div class="agro-template-submit">
+                        <button type="submit" class="btn btn-primary btn-sm agro-template-save-btn" title="Salvar template operacional" aria-label="Salvar template operacional">
+                          <i class="bi bi-check-lg"></i>
+                          <span class="visually-hidden">Salvar</span>
+                        </button>
+                      </div>
+                    </form>
+                  </div>
                 </td>
 
-                <td data-label="Ações">
-                  <div class="agro-template-actions">
-                    <a href="{{ url_for('main.agro_contrato_editar', orcamento_id=contrato.orcamento.id) }}" class="btn btn-outline-secondary btn-sm">
-                      <i class="bi bi-pencil-square me-1"></i> Editar
-                    </a>
-                    {% if contrato.ordens_servico %}
-                      <span class="badge bg-success-subtle text-success border border-success-subtle text-center agro-template-status-badge">
-                        {{ contrato.ordens_servico|length }} OS criada(s)
-                      </span>
-                    {% elif contrato.equipe_agro_id %}
-                      <span class="badge bg-warning-subtle text-warning border border-warning-subtle text-center agro-template-status-badge">
-                        Aguardando preenchimento do piloto
-                      </span>
-                    {% endif %}
-                    <a href="{{ url_for('main.agro_contrato_pdf', orcamento_id=contrato.orcamento.id) }}" target="_blank" class="btn btn-outline-danger btn-sm">
-                      <i class="bi bi-filetype-pdf me-1"></i> PDF
-                    </a>
-                    <form method="POST" action="{{ url_for('main.agro_contrato_deletar', contrato_id=contrato.id) }}" onsubmit="return confirm('Tem certeza que deseja excluir este contrato agro? Exclua antes as OS vinculadas, se houver.');">
-                      <button type="submit" class="btn btn-outline-danger btn-sm w-100">
-                        <i class="bi bi-trash me-1"></i> Excluir
-                      </button>
-                    </form>
+                <td data-label="Acoes" class="listing-cell-actions">
+                  <div class="dropup agro-actions-dropdown">
+                    <button class="btn btn-outline-secondary agro-actions-trigger" type="button" data-bs-toggle="dropdown" data-bs-offset="0,8" aria-expanded="false" title="Mais acoes">
+                      <i class="bi bi-three-dots-vertical"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
+                      <li>
+                        <a href="{{ url_for('main.agro_contrato_editar', orcamento_id=contrato.orcamento.id) }}" class="dropdown-item py-2">
+                          <i class="bi bi-pencil-square text-success me-2"></i> Editar contrato
+                        </a>
+                      </li>
+                      <li>
+                        <a href="{{ url_for('main.agro_contrato_pdf', orcamento_id=contrato.orcamento.id) }}" target="_blank" class="dropdown-item py-2">
+                          <i class="bi bi-filetype-pdf text-danger me-2"></i> PDF do contrato
+                        </a>
+                      </li>
+                      <li><hr class="dropdown-divider"></li>
+                      <li>
+                        <form class="m-0" method="POST" action="{{ url_for('main.agro_contrato_deletar', contrato_id=contrato.id) }}" onsubmit="return confirm('Tem certeza que deseja excluir este contrato agro? Exclua antes as OS vinculadas, se houver.');">
+                          <button type="submit" class="dropdown-item py-2 text-danger">
+                            <i class="bi bi-trash me-2"></i> Excluir contrato
+                          </button>
+                        </form>
+                      </li>
+                    </ul>
                   </div>
                 </td>
               </tr>

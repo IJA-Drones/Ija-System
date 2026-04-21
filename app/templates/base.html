@@ -317,10 +317,10 @@
           {% elif current_user.tipo_usuario == 'piloto_agro' and is_agro_context %}
           <li class="nav-item">
             <a
-              class="nav-link {% if request.endpoint == 'main.agro_piloto_dashboard' %}active{% endif %}"
-              href="{{ url_for('main.agro_piloto_dashboard') }}"
+              class="nav-link {% if request.endpoint in ['main.agro_piloto_os_listar', 'main.agro_os_nova', 'main.agro_os_editar'] %}active{% endif %}"
+              href="{{ url_for('main.agro_piloto_os_listar') }}"
             >
-              <i class="bi bi-tree-fill me-2"></i><span>Painel Agro</span>
+              <i class="bi bi-clipboard2-data-fill me-2"></i><span>Minhas OS</span>
             </a>
           </li>
           {% elif current_user.tipo_usuario == 'uvis' %}

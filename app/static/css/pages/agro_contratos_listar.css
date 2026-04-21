@@ -36,6 +36,10 @@
   justify-content: center;
 }
 
+.agro-template-page-actions .dropdown-menu {
+  min-width: 220px;
+}
+
 .agro-contratos-template-table-wrap,
 .agro-contratos-template-table-wrap .card-body,
 .agro-contratos-template-table-wrap .table-responsive {
@@ -102,14 +106,14 @@
 
 .agro-contratos-template-table-wrap .agro-contratos-table th:nth-child(4),
 .agro-contratos-template-table-wrap .agro-contratos-table td:nth-child(4) {
-  width: 360px;
-  min-width: 360px;
+  width: 400px;
+  min-width: 400px;
 }
 
 .agro-contratos-template-table-wrap .agro-contratos-table th:nth-child(5),
 .agro-contratos-template-table-wrap .agro-contratos-table td:nth-child(5) {
-  width: 170px;
-  min-width: 170px;
+  width: 84px;
+  min-width: 84px;
 }
 
 .agro-contratos-table th,
@@ -126,30 +130,78 @@
 
 .agro-template-form {
   display: grid;
-  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr) auto;
-  gap: 0.75rem;
+  grid-template-columns: minmax(112px, 1fr) minmax(156px, 1.05fr) auto;
+  gap: 0.55rem;
   align-items: end;
+}
+
+.agro-template-panel {
+  padding: 0.8rem;
+  border: 1px solid #edf2f7;
+  border-radius: 18px;
+  background: #f8fafc;
+}
+
+.agro-template-summary {
+  margin-bottom: 0.65rem;
+}
+
+.agro-template-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .agro-template-field {
   min-width: 0;
+  display: grid;
+  gap: 0.35rem;
 }
 
 .agro-template-field label {
   display: block;
-}
-
-.agro-template-submit {
-  display: grid;
-}
-
-.agro-template-submit .btn {
-  min-width: 104px;
   white-space: nowrap;
 }
 
-.agro-template-badge {
-  grid-column: 1 / -1;
+.agro-template-field-equipe {
+  min-width: 112px;
+}
+
+.agro-template-field .form-select,
+.agro-template-field .form-control {
+  width: 100%;
+  min-width: 0;
+}
+
+.agro-template-field-status {
+  min-width: 152px;
+}
+
+.agro-template-field-status .form-select {
+  padding-right: 2.25rem;
+}
+
+.agro-template-submit {
+  display: flex;
+  justify-content: flex-start;
+  flex: 0 0 auto;
+}
+
+.agro-template-save-btn {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 999px;
+}
+
+.agro-template-save-btn .bi {
+  font-size: 1rem;
 }
 
 .agro-template-badge .badge,
@@ -319,6 +371,11 @@ body.dark-mode .agro-actions-dropdown .dropdown-menu {
   border: 1px solid #233549;
 }
 
+body.dark-mode .agro-template-panel {
+  background: #1c2b3f;
+  border-color: #233549;
+}
+
 body.dark-mode .agro-actions-dropdown .dropdown-item {
   color: var(--color-text-main);
 }
@@ -374,6 +431,14 @@ body.dark-mode .agro-detail-list-inline > div + div {
     flex: 1 1 100%;
   }
 
+  .agro-template-page-actions .dropdown {
+    width: 100%;
+  }
+
+  .agro-template-page-actions .dropdown .btn {
+    width: 100%;
+  }
+
   .agro-contratos-template-table-wrap .agro-contratos-table th:nth-child(4),
   .agro-contratos-template-table-wrap .agro-contratos-table td:nth-child(4),
   .agro-contratos-template-table-wrap .agro-contratos-table th:nth-child(5),
@@ -384,6 +449,14 @@ body.dark-mode .agro-detail-list-inline > div + div {
 
   .agro-template-form {
     grid-template-columns: 1fr;
+  }
+
+  .agro-template-field label {
+    white-space: normal;
+  }
+
+  .agro-template-field-status {
+    min-width: 0;
   }
 
   .agro-template-submit .btn {
