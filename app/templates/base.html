@@ -640,34 +640,13 @@
           {% if current_user.tipo_usuario|lower in ['admin', 'operario', 'operador', 'prefeitura_admin'] %}
           {# ===================== VEÍCULOS ===================== #}
           <li class="nav-item">
-            <button type="button"
-                    class="nav-link nav-link-toggle"
-                    data-bs-toggle="collapse"
-                    data-bs-target="#menuVeiculos">
+            <a class="nav-link {% if request.endpoint in ['main.veiculos_menu', 'main.listar_veiculos', 'main.veiculos_logs', 'main.exportar_logs_veiculos_xlsx', 'main.admin_checklists_semanais', 'main.editar_veiculo', 'main.cadastrar_veiculo'] %}active{% endif %}"
+               href="{{ url_for('main.veiculos_menu') }}">
               <span>
                 <i class="bi bi-truck-front-fill me-2"></i>
                 <span>Veículos</span>
               </span>
-              <i class="bi bi-chevron-down chevron"></i>
-            </button>
-
-            <div class="collapse" id="menuVeiculos">
-              <ul class="nav flex-column sub-nav">
-                <li class="nav-item">
-                  <a class="nav-link sub-link {% if request.endpoint == 'main.listar_veiculos' %}active{% endif %}"
-                    href="{{ url_for('main.listar_veiculos') }}">
-                    <i class="bi bi-list-ul me-2"></i><span>Listar</span>
-                  </a>
-                </li>
-
-                <li class="nav-item">
-                  <a class="nav-link sub-link {% if request.endpoint == 'main.cadastrar_veiculo' %}active{% endif %}"
-                    href="{{ url_for('main.cadastrar_veiculo') }}">
-                    <i class="bi bi-plus-lg me-2"></i><span>Cadastrar</span>
-                  </a>
-                </li>
-              </ul>
-            </div>
+            </a>
           </li>
         {% endif %}
 

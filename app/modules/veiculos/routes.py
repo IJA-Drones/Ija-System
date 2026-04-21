@@ -4,6 +4,8 @@ from flask_login import current_user, login_required
 from app.extensions import db
 from app.models import Veiculos
 from app.modules.veiculos.service import (
+    VEICULOS_ALLOWED_TYPES,
+    VEICULOS_LOGS_ALLOWED_TYPES,
     VeiculoTurnoError,
     build_veiculo_form,
     build_piloto_veiculos_context,
@@ -39,6 +41,20 @@ def _get_scoped_veiculo_or_404(veiculo_id: int):
 
 
 def register_routes(bp):
+    @bp.route("/veiculos/menu", methods=["GET"], endpoint="veiculos_menu")
+    @login_required
+    def veiculos_menu():
+        tipo = normalize_role(getattr(current_user, "tipo_usuario", None))
+        if tipo not in VEICULOS_ALLOWED_TYPES:
+            abort(403)
+
+        return render_template(
+            "veiculos_menu.html",
+            can_manage=tipo in {"admin", "operario", "operador", "prefeitura_admin"},
+            can_view_logs=tipo in VEICULOS_LOGS_ALLOWED_TYPES,
+            can_view_checklist=tipo == "admin",
+        )
+
     @bp.route("/veiculos", methods=["GET"], endpoint="listar_veiculos")
     @login_required
     def listar_veiculos_view():
