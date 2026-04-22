@@ -271,23 +271,34 @@ def register_routes(bp):
             flash("Acesso restrito.", "danger")
             return redirect(url_for("main.dashboard"))
 
+        filtro_status_os = (request.args.get("status_os") or "").strip().upper()
         filtro_unidade = (request.args.get("unidade") or "").strip()
         filtro_regiao = (request.args.get("regiao") or "").strip()
         page = request.args.get("page", 1, type=int)
 
-        paginacao = (
-            build_admin_dashboard_query(
-                current_user,
-                filtro_status="",
-                filtro_unidade=filtro_unidade,
-                filtro_regiao=filtro_regiao,
-                filtro_apoio_cet="",
-                filtro_protocolo="",
-                filtro_tipo_visita="",
-                filtro_tipo_imovel="",
-                filtro_foco="",
+        query = build_admin_dashboard_query(
+            current_user,
+            filtro_status="",
+            filtro_unidade=filtro_unidade,
+            filtro_regiao=filtro_regiao,
+            filtro_apoio_cet="",
+            filtro_protocolo="",
+            filtro_tipo_visita="",
+            filtro_tipo_imovel="",
+            filtro_foco="",
+        )
+
+        if filtro_status_os == "EM_ANDAMENTO":
+            query = query.filter(
+                and_(
+                    Solicitacao.status.in_(HISTORICO_OS_ANDAMENTO_STATUSES),
+                    Solicitacao.equipe_id.isnot(None),
+                )
             )
-            .filter(
+        elif filtro_status_os == "CONCLUIDAS":
+            query = query.filter(Solicitacao.status.in_(HISTORICO_OS_CONCLUIDAS_STATUSES))
+        else:
+            query = query.filter(
                 or_(
                     Solicitacao.status.in_(HISTORICO_OS_CONCLUIDAS_STATUSES),
                     and_(
@@ -296,14 +307,18 @@ def register_routes(bp):
                     ),
                 )
             )
-            .order_by(build_status_order(), Solicitacao.data_criacao.desc(), Solicitacao.id.desc())
-            .paginate(page=page, per_page=6, error_out=False)
-        )
+
+        paginacao = query.order_by(
+            build_status_order(),
+            Solicitacao.data_criacao.desc(),
+            Solicitacao.id.desc(),
+        ).paginate(page=page, per_page=6, error_out=False)
 
         return render_template(
             "admin_historico_os.html",
             pedidos=paginacao.items,
             paginacao=paginacao,
             unidades_select=build_uvis_select(current_user),
+            filtro_status_os=filtro_status_os,
             pagination_args=_query_args_without_page(),
         )

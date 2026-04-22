@@ -18,6 +18,15 @@
     .historico-os-filter-actions {
       display: flex;
       gap: 8px;
+      justify-content: flex-end;
+      width: 100%;
+      margin-top: 8px;
+    }
+    .historico-os-filter-submit {
+      flex: 1 1 auto;
+    }
+    .historico-os-filter-clear {
+      flex: 0 0 auto;
     }
     .historico-os-subtitle {
       margin-top: 6px;
@@ -40,6 +49,10 @@
       .historico-os-filter-actions {
         flex-direction: column;
       }
+      .historico-os-filter-actions .btn,
+      .historico-os-filter-actions .btn-sm {
+        width: 100%;
+      }
     }
   </style>
 {% endblock %}
@@ -49,10 +62,10 @@
   <div class="historico-os-toolbar mb-4">
     <div>
       <h2 class="text-dark m-0">
-        <i class="bi bi-clock-history me-2 text-primary"></i> Historico de OS
+        <i class="bi bi-clock-history me-2 text-primary"></i> Histórico de OS
       </h2>
       <div class="historico-os-subtitle">
-        Lista OS concluidas e as OS em andamento que ainda nao foram marcadas como concluidas pelo piloto.
+        Lista OS concluídas e as OS em andamento que ainda nao foram marcadas como concluídas pelo piloto.
       </div>
     </div>
     <div>
@@ -72,18 +85,27 @@
       <div class="d-flex align-items-center gap-2">
         <i class="bi bi-funnel-fill text-primary"></i>
         <span class="text-dark fw-bold">Filtros de busca</span>
-        {% if request.args.get('unidade') or request.args.get('regiao') %}
+        {% if request.args.get('status_os') or request.args.get('unidade') or request.args.get('regiao') %}
           <span class="badge bg-danger rounded-circle p-1" style="width: 8px; height: 8px;"></span>
         {% endif %}
       </div>
       <i class="bi bi-chevron-down text-muted"></i>
     </div>
 
-    <div class="collapse {% if request.args.get('unidade') or request.args.get('regiao') %}show{% endif %}" id="collapseFiltros">
+    <div class="collapse {% if request.args.get('status_os') or request.args.get('unidade') or request.args.get('regiao') %}show{% endif %}" id="collapseFiltros">
       <div class="card-body pt-0">
         <form method="GET">
           <div class="row g-2 align-items-end">
-            <div class="col-md-4">
+            <div class="col-md-3">
+              <label class="small text-muted">Status da OS:</label>
+              <select name="status_os" class="form-select form-select-sm">
+                <option value="" {% if not filtro_status_os %}selected{% endif %}>Todas</option>
+                <option value="EM_ANDAMENTO" {% if filtro_status_os == 'EM_ANDAMENTO' %}selected{% endif %}>Em andamento</option>
+                <option value="CONCLUIDAS" {% if filtro_status_os == 'CONCLUIDAS' %}selected{% endif %}>Concluídas</option>
+              </select>
+            </div>
+
+            <div class="col-md-3">
               <label class="small text-muted">Unidade:</label>
               <select name="unidade" class="form-select form-select-sm">
                 <option value="">Todas as UVIS</option>
@@ -95,8 +117,8 @@
               </select>
             </div>
 
-            <div class="col-md-4">
-              <label class="small text-muted">Regiao:</label>
+            <div class="col-md-3">
+              <label class="small text-muted">Região:</label>
               {% set reg = (request.args.get('regiao', '') or '')|upper %}
               <select name="regiao" class="form-select form-select-sm">
                 <option value="">Todas</option>
@@ -106,15 +128,18 @@
               </select>
             </div>
 
-            <div class="col-md-4 historico-os-filter-actions">
-              <button class="btn btn-success btn-sm w-100" type="submit">
+            <div class="col-md-2 ms-4">
+              <label class="small text-muted d-block">&nbsp;</label>
+              <div class="historico-os-filter-actions">
+              <button class="btn btn-success btn-sm px-3 historico-os-filter-submit" type="submit">
                 <i class="bi bi-search"></i> Filtrar
               </button>
-              {% if request.args.get('unidade') or request.args.get('regiao') %}
-                <a href="{{ url_for('main.admin_historico_os') }}" class="btn btn-outline-secondary btn-sm w-100">
+              {% if request.args.get('status_os') or request.args.get('unidade') or request.args.get('regiao') %}
+                <a href="{{ url_for('main.admin_historico_os') }}" class="btn btn-outline-secondary btn-sm px-3 historico-os-filter-clear">
                   <i class="bi bi-x-lg"></i> Limpar
                 </a>
               {% endif %}
+              </div>
             </div>
           </div>
         </form>
@@ -129,10 +154,10 @@
           <tr>
             <th class="ps-4">OS</th>
             <th>Unidade</th>
-            <th>Operacao</th>
+            <th>Operação</th>
             <th>Equipe</th>
             <th class="text-center">Status</th>
-            <th class="text-center pe-4">Acao</th>
+            <th class="text-center pe-4">Ação</th>
           </tr>
         </thead>
         <tbody>
@@ -189,7 +214,7 @@
           {% else %}
             <tr>
               <td colspan="6" class="text-center py-5 text-muted">
-                Nenhuma OS concluida ou em andamento encontrada.
+                Nenhuma OS concluída ou em andamento encontrada.
               </td>
             </tr>
           {% endfor %}
