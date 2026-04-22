@@ -243,7 +243,7 @@ def _build_fluxo_daily_rows(user, report: dict) -> list[dict]:
 
     movimentos_por_data: dict = {}
     for item in report["lancamentos"]:
-        data_caixa = item.get("data")
+        data_caixa = item.get("data_realizada")
         if not data_caixa or data_caixa.year != report["ano"]:
             continue
         bucket = movimentos_por_data.setdefault(
@@ -269,9 +269,12 @@ def _build_fluxo_daily_rows(user, report: dict) -> list[dict]:
 
         if caixa is not None:
             saldo_abertura = _as_decimal(caixa.saldo_abertura_decimal)
-            saldo_fechamento = _as_decimal(caixa.saldo_fechamento_decimal)
-            total_entradas = _as_decimal(caixa.total_entradas_decimal) if not movimentos else total_entradas
-            total_saidas = _as_decimal(caixa.total_saidas_decimal) if not movimentos else total_saidas
+            if not movimentos:
+                total_entradas = _as_decimal(caixa.total_entradas_decimal)
+                total_saidas = _as_decimal(caixa.total_saidas_decimal)
+                saldo_fechamento = _as_decimal(caixa.saldo_fechamento_decimal)
+            else:
+                saldo_fechamento = saldo_abertura + total_entradas - total_saidas
             status_caixa = caixa.status
             aberto_por = caixa.aberto_por_nome or ""
             fechado_por = caixa.fechado_por_nome or ""

@@ -244,8 +244,8 @@ def _require_agro_admin():
 
 def _agro_finance_lock_message(ano: int | None, mes: int | None) -> str:
     if ano and mes:
-        return f"A competencia {mes:02d}/{ano} esta bloqueada para lancamentos retroativos neste perfil."
-    return "Esta competencia esta bloqueada para lancamentos retroativos neste perfil."
+        return f"A competencia {mes:02d}/{ano} esta bloqueada para lancamentos neste perfil."
+    return "Esta competencia esta bloqueada para lancamentos neste perfil."
 
 
 def _add_agro_finance_lock_error(errors: dict, field_name: str, ano: int | None, mes: int | None):
@@ -487,6 +487,39 @@ def _build_financeiro_agro_form_context(*, modo, form, errors, contratos, bancos
         "status_options": AGRO_FINANCEIRO_STATUS_OPTIONS,
         "lancamento": lancamento,
     }
+
+
+def _get_financeiro_agro_received_contract_ids(user, *, exclude_lancamento_id=None):
+    query = db.session.query(FinanceiroAgro.contrato_agro_id).distinct()
+    query = apply_prefeitura_scope(query, user, FinanceiroAgro.prefeitura_id)
+    query = query.filter(
+        db.or_(
+            FinanceiroAgro.status == FinanceiroAgro.STATUS_RECEBIDO,
+            FinanceiroAgro.data_recebimento.isnot(None),
+        )
+    )
+    if exclude_lancamento_id is not None:
+        query = query.filter(FinanceiroAgro.id != exclude_lancamento_id)
+    return {contrato_id for contrato_id, in query.all() if contrato_id is not None}
+
+
+def _build_financeiro_agro_contratos_disponiveis(
+    user,
+    *,
+    include_contrato_id=None,
+    exclude_lancamento_id=None,
+):
+    contratos = build_contratos_agro_query(user).all()
+    contratos_recebidos_ids = _get_financeiro_agro_received_contract_ids(
+        user,
+        exclude_lancamento_id=exclude_lancamento_id,
+    )
+    contratos_disponiveis = [
+        contrato
+        for contrato in contratos
+        if contrato.id == include_contrato_id or contrato.id not in contratos_recebidos_ids
+    ]
+    return contratos_disponiveis, contratos_recebidos_ids
 
 
 def _mapping_to_choice_list(mapping):
@@ -1127,15 +1160,18 @@ def _resolve_financeiro_agro_competencia(data_servico_executado, data_vencimento
     return "data_vencimento", datetime.now().date()
 
 
-def _validate_financeiro_agro_form(form, contratos):
+def _validate_financeiro_agro_form(form, contratos, blocked_contrato_ids=None):
     errors = {}
     contrato = None
     ordem_servico = None
     banco = _get_banco_agro(_normalize_optional_int(form["banco_agro_id"]))
+    blocked_contrato_ids = blocked_contrato_ids or set()
 
     contrato_id = _normalize_optional_int(form["contrato_agro_id"])
     if contrato_id is None:
         errors["contrato_agro_id"] = "Selecione um contrato agro."
+    elif contrato_id in blocked_contrato_ids:
+        errors["contrato_agro_id"] = "Este contrato ja possui um lancamento recebido e nao pode ser cadastrado novamente."
     else:
         contrato = next((item for item in contratos if item.id == contrato_id), None)
         if contrato is None:
@@ -3242,11 +3278,10 @@ def register_routes(bp):
         if not can_manage_agro_finance_settings(current_user):
             abort(403)
 
-        competencias = build_agro_finance_competencia_settings(24)
+        competencias = build_agro_finance_competencia_settings(24, 12)
         return render_template(
             "agro_financeiro_configuracoes.html",
             competencias=competencias,
-            competencias_passadas=[item for item in competencias if item["is_past"]],
             competencias_configuradas=[item for item in competencias if item["controle"] is not None],
         )
 
@@ -3264,12 +3299,6 @@ def register_routes(bp):
             flash("Competencia invalida para configuracao.", "warning")
             return redirect(url_for("main.agro_financeiro_configuracoes"))
 
-        referencia = datetime.now().date().replace(day=1)
-        competencia = datetime(year=ano, month=mes, day=1).date()
-        if competencia >= referencia:
-            flash("A configuracao de trava so se aplica a meses passados.", "warning")
-            return redirect(url_for("main.agro_financeiro_configuracoes"))
-
         controle = get_agro_finance_competencia_controle(ano, mes)
         if controle is None:
             controle = FinanceiroAgroCompetenciaControle(
@@ -3283,7 +3312,7 @@ def register_routes(bp):
         db.session.commit()
 
         if controle.liberado:
-            flash(f"Competencia {mes:02d}/{ano} liberada para lancamentos retroativos.", "success")
+            flash(f"Competencia {mes:02d}/{ano} liberada para lancamentos.", "success")
         else:
             flash(f"Competencia {mes:02d}/{ano} bloqueada novamente para o perfil financeiro.", "success")
 
@@ -3294,7 +3323,7 @@ def register_routes(bp):
     def agro_financeiro_novo():
         _require_agro_finance_edit()
 
-        contratos = build_contratos_agro_query(current_user).all()
+        contratos, contratos_recebidos_ids = _build_financeiro_agro_contratos_disponiveis(current_user)
         bancos = build_bancos_agro_query(current_user).all()
         errors = {}
 
@@ -3311,7 +3340,11 @@ def register_routes(bp):
                 data_recebimento,
                 numeric_fields,
                 resolved_status,
-            ) = _validate_financeiro_agro_form(form, contratos)
+            ) = _validate_financeiro_agro_form(
+                form,
+                contratos,
+                blocked_contrato_ids=contratos_recebidos_ids,
+            )
             _sync_financeiro_agro_form_numbers(form, numeric_fields, resolved_status)
             competencia_field, competencia = _resolve_financeiro_agro_competencia(
                 data_servico_executado,
@@ -3412,7 +3445,11 @@ def register_routes(bp):
         )
         if redirect_response is not None:
             return redirect_response
-        contratos = build_contratos_agro_query(current_user).all()
+        contratos, contratos_recebidos_ids = _build_financeiro_agro_contratos_disponiveis(
+            current_user,
+            include_contrato_id=lancamento.contrato_agro_id,
+            exclude_lancamento_id=lancamento.id,
+        )
         bancos = build_bancos_agro_query(current_user).all()
         errors = {}
 
@@ -3429,7 +3466,11 @@ def register_routes(bp):
                 data_recebimento,
                 numeric_fields,
                 resolved_status,
-            ) = _validate_financeiro_agro_form(form, contratos)
+            ) = _validate_financeiro_agro_form(
+                form,
+                contratos,
+                blocked_contrato_ids=contratos_recebidos_ids,
+            )
             _sync_financeiro_agro_form_numbers(form, numeric_fields, resolved_status)
             competencia_field, competencia = _resolve_financeiro_agro_competencia(
                 data_servico_executado,

@@ -112,18 +112,27 @@
 
       <form method="post" action="{{ url_for('main.agro_financeiro_configuracoes_salvar') }}" id="competenciaSelectorForm" class="row g-3 align-items-end">
         <div class="col-lg-8">
-          <label class="form-label fw-bold small text-muted">Competência passada</label>
+          <label class="form-label fw-bold small text-muted">Competencia</label>
           <select name="competencia_select" id="competencia_select" class="form-select">
             <option value="">Selecione...</option>
-            {% for item in competencias_passadas %}
+            {% for item in competencias %}
               <option
                 value="{{ item.ano }}-{{ '%02d'|format(item.mes) }}"
                 data-ano="{{ item.ano }}"
                 data-mes="{{ item.mes }}"
-                data-acao="{{ 'bloquear' if item.explicitamente_liberado else 'liberar' }}"
-                data-status="{{ 'liberada' if item.explicitamente_liberado else 'bloqueada' }}"
+                data-acao="{{ 'bloquear' if item.liberado else 'liberar' }}"
+                data-status="{{ 'liberada' if item.liberado else 'bloqueada' }}"
               >
-                {{ item.nome_mes }}/{{ item.ano }} - {{ 'Liberada manualmente' if item.explicitamente_liberado else 'Bloqueada' }}
+                {{ item.nome_mes }}/{{ item.ano }} -
+                {% if item.explicitamente_liberado %}
+                  Liberada manualmente
+                {% elif item.explicitamente_bloqueado %}
+                  Bloqueada manualmente
+                {% elif item.is_past %}
+                  Bloqueada por padrao
+                {% else %}
+                  Liberada por padrao
+                {% endif %}
               </option>
             {% endfor %}
           </select>
