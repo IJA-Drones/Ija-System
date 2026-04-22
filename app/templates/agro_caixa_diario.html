@@ -132,6 +132,39 @@
     </div>
   {% endif %}
 
+  {% if request.args.get('caixa_required') == '1' %}
+    <div class="alert {% if request.args.get('caixa_status') == 'fechado' %}alert-danger{% else %}alert-warning{% endif %} border-0 shadow-sm rounded-4 mb-4">
+      <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+        <div>
+          <div class="fw-semibold mb-1">
+            {% if request.args.get('caixa_status') == 'fechado' %}
+              O caixa de hoje ja foi fechado.
+            {% else %}
+              O caixa de hoje ainda nao foi aberto.
+            {% endif %}
+          </div>
+          <div class="small">
+            {% if request.args.get('caixa_status') == 'fechado' %}
+              {{ request.args.get('origem') or 'Esta movimentacao financeira' }} nao pode continuar sem um caixa aberto no dia.
+            {% else %}
+              {{ request.args.get('origem') or 'Esta movimentacao financeira' }} precisa de um caixa aberto para continuar com seguranca.
+            {% endif %}
+          </div>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+          {% if request.args.get('caixa_status') != 'fechado' and is_editable and not report.caixa_aberto and not report.caixa_fechado %}
+            <a href="#abrir-caixa-form" class="btn btn-warning btn-sm d-inline-flex align-items-center justify-content-center gap-2">
+              <i class="bi bi-unlock-fill"></i> Abrir caixa do dia
+            </a>
+          {% endif %}
+          <a href="{{ url_for('main.agro_caixa_diario', data_caixa=data_caixa_iso) }}" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center justify-content-center gap-2">
+            <i class="bi bi-journal-text"></i> Ver caixa do dia
+          </a>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
   <div class="card shadow-sm rounded-4 mb-4 border-0 overflow-hidden">
     <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center listing-filter-header"
          data-bs-toggle="collapse"
@@ -189,7 +222,7 @@
           </div>
 
           {% if is_editable and not report.caixa_aberto and not report.caixa_fechado %}
-            <form method="post" action="{{ url_for('main.agro_caixa_abrir') }}" class="row g-3">
+            <form method="post" action="{{ url_for('main.agro_caixa_abrir') }}" class="row g-3" id="abrir-caixa-form">
               <input type="hidden" name="data_caixa" value="{{ data_caixa_iso }}">
               <div class="col-md-6">
                 <label class="form-label small text-muted">Saldo de abertura</label>
