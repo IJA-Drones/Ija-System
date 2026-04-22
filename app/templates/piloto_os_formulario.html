@@ -632,13 +632,23 @@
 
   <div class="card info status-primary shadow-sm rounded-4 border-0">
     <div class="card-body p-4 {% if modo_visualizacao %}readonly-form{% endif %}">
+      {% if alerta_edicao_concluida %}
+      <div class="alert alert-danger shadow-sm rounded-4 mb-4" role="alert">
+        <div class="d-flex align-items-center">
+          <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
+          <div>
+            <strong>Atencao Admin:</strong> esta OS ja foi concluida. Alteracoes aqui sao diretas e atualizam o registro final.
+          </div>
+        </div>
+      </div>
+      {% endif %}
       {% if modo_visualizacao %}
       <div class="alert alert-info border-0 shadow-sm">
         <i class="bi bi-eye me-1"></i> Formulário em modo visualização.
       </div>
       {% endif %}
 
-      <form method="post" action="{{ form_action or url_for('main.piloto_os_formulario_view', os_id=solicitacao.id) }}" enctype="multipart/form-data" novalidate>
+      <form method="post" action="{{ form_action or url_for('main.piloto_os_formulario_view', os_id=solicitacao.id) }}" enctype="multipart/form-data" novalidate id="os-form-main">
         <ul class="nav nav-tabs os-form-tabs mb-4" id="osFormTabs" role="tablist">
           <li class="nav-item" role="presentation">
             <button class="nav-link active" id="os-dados-tab" data-bs-toggle="tab" data-bs-target="#os-dados-pane" type="button" role="tab" aria-controls="os-dados-pane" aria-selected="true">
@@ -1627,6 +1637,48 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("form input, form select, form textarea, form button").forEach((el) => {
     if (el.type === "hidden" || el.dataset.bsToggle === "tab") return;
     el.setAttribute("disabled", "disabled");
+  });
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  const exigeConfirmacaoEdicaoConcluida = {{ "true" if alerta_edicao_concluida else "false" }};
+  const form = document.getElementById("os-form-main");
+  if (!exigeConfirmacaoEdicaoConcluida || !form) return;
+
+  let confirmed = false;
+
+  form.addEventListener("submit", async (event) => {
+    if (confirmed) return;
+
+    event.preventDefault();
+
+    if (typeof Swal === "undefined") {
+      confirmed = window.confirm("Esta OS ja foi concluida. Deseja salvar alteracoes diretamente no registro final?");
+      if (confirmed) {
+        form.submit();
+      }
+      return;
+    }
+
+    const result = await Swal.fire({
+      icon: "warning",
+      title: "OS concluida",
+      html: "Esta OS ja foi concluida.<br><strong>Deseja salvar alteracoes diretamente no registro final?</strong>",
+      showCancelButton: true,
+      confirmButtonText: "Sim, salvar alteracoes",
+      cancelButtonText: "Cancelar",
+      confirmButtonColor: "#dc3545",
+      cancelButtonColor: "#6c757d",
+      reverseButtons: true,
+      customClass: {
+        popup: document.body.classList.contains("dark-mode") ? "swal2-dark-mode" : "",
+      },
+    });
+
+    if (!result.isConfirmed) return;
+
+    confirmed = true;
+    form.submit();
   });
 });
 

@@ -2,6 +2,7 @@ from datetime import datetime
 
 from flask import abort, current_app, flash, jsonify, redirect, render_template, request, send_file, url_for
 from flask_login import current_user, login_required
+from sqlalchemy import and_, or_
 
 from app.extensions import db
 from app.models import Solicitacao
@@ -10,7 +11,6 @@ from app.modules.admin_dashboard.service import (
     build_active_teams,
     build_admin_canceladas_query,
     build_admin_dashboard_export,
-    build_admin_historico_os_query,
     build_admin_dashboard_query,
     build_status_order,
     build_uvis_select,
@@ -39,6 +39,17 @@ def _query_args_without_page():
 def _get_scoped_solicitacao_or_404(solicitacao_id: int):
     query = apply_solicitacao_prefeitura_scope(Solicitacao.query, current_user)
     return query.filter(Solicitacao.id == solicitacao_id).first_or_404()
+
+
+HISTORICO_OS_ANDAMENTO_STATUSES = (
+    "APROVADO",
+    "APROVADA",
+    "APROVADO COM RECOMENDACOES",
+    "APROVADA COM RECOMENDACOES",
+    "APROVADO COM RECOMENDAÇÕES",
+    "APROVADA COM RECOMENDAÇÕES",
+)
+HISTORICO_OS_CONCLUIDAS_STATUSES = ("CONCLUIDO", "CONCLUÍDO")
 
 
 def _admin_update_error(message: str, status_code: int, category: str):
@@ -265,12 +276,27 @@ def register_routes(bp):
         page = request.args.get("page", 1, type=int)
 
         paginacao = (
-            build_admin_historico_os_query(
+            build_admin_dashboard_query(
                 current_user,
+                filtro_status="",
                 filtro_unidade=filtro_unidade,
                 filtro_regiao=filtro_regiao,
+                filtro_apoio_cet="",
+                filtro_protocolo="",
+                filtro_tipo_visita="",
+                filtro_tipo_imovel="",
+                filtro_foco="",
             )
-            .order_by(Solicitacao.data_criacao.desc(), Solicitacao.id.desc())
+            .filter(
+                or_(
+                    Solicitacao.status.in_(HISTORICO_OS_CONCLUIDAS_STATUSES),
+                    and_(
+                        Solicitacao.status.in_(HISTORICO_OS_ANDAMENTO_STATUSES),
+                        Solicitacao.equipe_id.isnot(None),
+                    ),
+                )
+            )
+            .order_by(build_status_order(), Solicitacao.data_criacao.desc(), Solicitacao.id.desc())
             .paginate(page=page, per_page=6, error_out=False)
         )
 

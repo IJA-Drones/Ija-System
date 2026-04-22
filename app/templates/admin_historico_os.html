@@ -12,15 +12,17 @@
     .historico-os-toolbar {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
       gap: 16px;
     }
     .historico-os-filter-actions {
       display: flex;
       gap: 8px;
     }
-    .historico-os-table-wrap {
-      width: 100%;
+    .historico-os-subtitle {
+      margin-top: 6px;
+      color: #6c757d;
+      font-size: 0.95rem;
     }
 
     @media (max-width: 991.98px) {
@@ -34,112 +36,9 @@
       }
       .historico-os-toolbar .btn {
         width: 100%;
-        justify-content: center;
-      }
-      #collapseFiltros .row.g-2.align-items-end > div {
-        width: 100%;
       }
       .historico-os-filter-actions {
         flex-direction: column;
-      }
-      .historico-os-filter-actions > * {
-        width: 100%;
-      }
-      .historico-os-table-wrap .table-responsive {
-        overflow-x: visible !important;
-      }
-      .historico-os-table-wrap table thead {
-        display: none;
-      }
-      .historico-os-table-wrap table,
-      .historico-os-table-wrap table tbody,
-      .historico-os-table-wrap table tr,
-      .historico-os-table-wrap table td {
-        display: block;
-        width: 100%;
-      }
-      .historico-os-table-wrap table tbody {
-        display: flex;
-        flex-direction: column;
-        gap: 14px;
-        padding: 12px;
-      }
-      .historico-os-table-wrap table tbody tr {
-        border: 1px solid rgba(0,0,0,.08);
-        border-radius: 16px;
-        overflow: hidden;
-        box-shadow: 0 10px 22px rgba(0,0,0,.06);
-        background: #fff;
-      }
-      .historico-os-table-wrap table tbody tr td {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: 12px;
-        padding: 14px 16px !important;
-        border: 0 !important;
-        text-align: left !important;
-      }
-      .historico-os-table-wrap table tbody tr td + td {
-        border-top: 1px solid rgba(0,0,0,.06) !important;
-      }
-      .historico-os-table-wrap table tbody tr td::before {
-        content: attr(data-label);
-        flex: 0 0 92px;
-        max-width: 92px;
-        font-size: 0.72rem;
-        text-transform: uppercase;
-        font-weight: 700;
-        color: #6c757d;
-        line-height: 1.2;
-        padding-top: 2px;
-      }
-      .historico-os-table-wrap table tbody tr td > * {
-        flex: 1 1 auto;
-        min-width: 0;
-      }
-      .historico-os-table-wrap [data-label="Ação"] .d-flex.gap-2.justify-content-center.flex-wrap {
-        justify-content: flex-start !important;
-      }
-      .historico-os-table-wrap [data-label="Ação"] .btn {
-        min-width: 40px;
-      }
-      .historico-os-table-wrap .pagination {
-        flex-wrap: wrap;
-      }
-    }
-
-    @media (max-width: 420px) {
-      .historico-os-table-wrap table tbody tr td {
-        flex-direction: column;
-        gap: 6px;
-      }
-      .historico-os-table-wrap table tbody tr td::before {
-        flex-basis: auto;
-        max-width: none;
-        margin-bottom: 2px;
-        padding-top: 0;
-      }
-    }
-
-    @media (max-width: 991.98px) {
-      html.dark-mode .historico-os-table-wrap table tbody tr,
-      body.dark-mode .historico-os-table-wrap table tbody tr {
-        background: #0f1a24 !important;
-        border-color: #233549 !important;
-        box-shadow: 0 14px 30px rgba(0,0,0,.35) !important;
-      }
-      html.dark-mode .historico-os-table-wrap table tbody tr td + td,
-      body.dark-mode .historico-os-table-wrap table tbody tr td + td {
-        border-top-color: #233549 !important;
-      }
-      html.dark-mode .historico-os-table-wrap table tbody tr td::before,
-      body.dark-mode .historico-os-table-wrap table tbody tr td::before {
-        color: rgba(255,255,255,.72) !important;
-      }
-      html.dark-mode .historico-os-table-wrap .text-muted,
-      body.dark-mode .historico-os-table-wrap .text-muted {
-        color: rgba(255,255,255,.70) !important;
       }
     }
   </style>
@@ -150,8 +49,11 @@
   <div class="historico-os-toolbar mb-4">
     <div>
       <h2 class="text-dark m-0">
-        <i class="bi bi-clock-history me-2 text-primary"></i> Histórico de OS Concluídas
+        <i class="bi bi-clock-history me-2 text-primary"></i> Historico de OS
       </h2>
+      <div class="historico-os-subtitle">
+        Lista OS concluidas e as OS em andamento que ainda nao foram marcadas como concluidas pelo piloto.
+      </div>
     </div>
     <div>
       <a href="{{ url_for('main.admin_dashboard') }}" class="btn btn-outline-secondary">
@@ -161,10 +63,12 @@
   </div>
 
   <div class="card shadow-sm rounded-4 mb-4 border-0">
-    <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center"
-         data-bs-toggle="collapse"
-         data-bs-target="#collapseFiltros"
-         style="cursor: pointer;">
+    <div
+      class="card-header border-0 p-3 d-flex justify-content-between align-items-center"
+      data-bs-toggle="collapse"
+      data-bs-target="#collapseFiltros"
+      style="cursor: pointer;"
+    >
       <div class="d-flex align-items-center gap-2">
         <i class="bi bi-funnel-fill text-primary"></i>
         <span class="text-dark fw-bold">Filtros de busca</span>
@@ -192,11 +96,11 @@
             </div>
 
             <div class="col-md-4">
-              <label class="small text-muted">Região:</label>
-              {% set reg = (request.args.get('regiao','') or '')|upper %}
+              <label class="small text-muted">Regiao:</label>
+              {% set reg = (request.args.get('regiao', '') or '')|upper %}
               <select name="regiao" class="form-select form-select-sm">
                 <option value="">Todas</option>
-                {% for r in ['NORTE','SUL','LESTE','OESTE','CENTRO','SUDESTE','CENTRO-OESTE'] %}
+                {% for r in ['NORTE', 'SUL', 'LESTE', 'OESTE', 'CENTRO', 'SUDESTE', 'CENTRO-OESTE'] %}
                   <option value="{{ r }}" {% if reg == r %}selected{% endif %}>{{ r }}</option>
                 {% endfor %}
               </select>
@@ -218,65 +122,76 @@
     </div>
   </div>
 
-  <div class="card shadow-sm rounded-4 border-0 overflow-hidden historico-os-table-wrap">
+  <div class="card shadow-sm rounded-4 border-0 overflow-hidden">
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0">
         <thead class="table-light">
           <tr>
             <th class="ps-4">OS</th>
             <th>Unidade</th>
-            <th>Operação</th>
+            <th>Operacao</th>
             <th>Equipe</th>
             <th class="text-center">Status</th>
-            <th class="text-center pe-4">Ação</th>
+            <th class="text-center pe-4">Acao</th>
           </tr>
         </thead>
         <tbody>
           {% for p in pedidos %}
-          <tr>
-            <td class="ps-4" data-label="OS"><strong>#{{ p.id }}</strong></td>
-            <td data-label="Unidade">
-              <strong class="text-primary">#{{ p.id }} {{ p.usuario.nome_uvis if p.usuario else '-' }}</strong><br>
-              <small class="text-muted">{{ p.usuario.regiao if p.usuario else '-' }}</small>
-            </td>
-            <td data-label="Operação">
-              <div class="small">
-                <strong>{{ p.logradouro or '-' }}, {{ p.numero or 'S/N' }}</strong><br>
-                {{ p.bairro or '-' }} - {{ p.cidade or '-' }}<br>
-                <span class="text-muted">
-                  <i class="bi bi-calendar-event me-1"></i>{{ p.data_agendamento.strftime('%d/%m/%Y') if p.data_agendamento else '-' }}
-                  <i class="bi bi-clock ms-2 me-1"></i>{{ p.hora_agendamento.strftime('%H:%M') if p.hora_agendamento else '-' }}
-                </span>
-              </div>
-            </td>
-            <td data-label="Equipe">
-              {% if p.equipe %}
-                <span class="badge bg-light text-dark border py-2 px-3 rounded-pill">
-                  <i class="bi bi-people-fill me-1 text-primary"></i> {{ p.equipe.nome_equipe }}
-                </span>
-              {% else %}
-                <span class="text-muted small">Sem equipe</span>
-              {% endif %}
-            </td>
-            <td class="text-center" data-label="Status">
-              <span class="badge bg-completed">CONCLUÍDO</span>
-            </td>
-            <td class="text-center pe-4" data-label="Ação">
-              <div class="d-flex gap-2 justify-content-center flex-wrap">
-                <a href="{{ url_for('main.admin_os_formulario_view', os_id=p.id) }}" class="btn btn-sm btn-outline-primary shadow-sm" title="Ver Formulário">
-                  <i class="bi bi-clipboard2-check"></i>
-                </a>
-                <a href="{{ url_for('main.admin_export_os_pdf_v2', os_id=p.id) }}" class="btn btn-sm btn-danger shadow-sm" title="Exportar PDF">
-                  <i class="bi bi-file-earmark-pdf"></i>
-                </a>
-                <a href="{{ url_for('main.admin_export_os_excel_v2', os_id=p.id) }}" class="btn btn-sm btn-secondary shadow-sm" title="Exportar Excel">
-                  <i class="bi bi-file-earmark-excel"></i>
-                </a>
-              </div>
-            </td>
-          </tr>
+            {% set status_upper = (p.status or '')|upper %}
+            {% set os_em_andamento = 'CONCLU' not in status_upper %}
+            <tr>
+              <td class="ps-4"><strong>#{{ p.id }}</strong></td>
+              <td>
+                <strong class="text-primary">{{ p.usuario.nome_uvis if p.usuario else '-' }}</strong><br>
+                <small class="text-muted">{{ p.usuario.regiao if p.usuario else '-' }}</small>
+              </td>
+              <td>
+                <div class="small">
+                  <strong>{{ p.logradouro or '-' }}, {{ p.numero or 'S/N' }}</strong><br>
+                  {{ p.bairro or '-' }} - {{ p.cidade or '-' }}<br>
+                  <span class="text-muted">
+                    <i class="bi bi-calendar-event me-1"></i>{{ p.data_agendamento.strftime('%d/%m/%Y') if p.data_agendamento else '-' }}
+                    <i class="bi bi-clock ms-2 me-1"></i>{{ p.hora_agendamento.strftime('%H:%M') if p.hora_agendamento else '-' }}
+                  </span>
+                </div>
+              </td>
+              <td>
+                {% if p.equipe %}
+                  <span class="badge bg-light text-dark border py-2 px-3 rounded-pill">
+                    <i class="bi bi-people-fill me-1 text-primary"></i> {{ p.equipe.nome_equipe }}
+                  </span>
+                {% else %}
+                  <span class="text-muted small">Sem equipe</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                {% if os_em_andamento %}
+                  <span class="badge bg-warning text-dark">EM ANDAMENTO</span>
+                  <div class="small text-muted mt-1">{{ p.status or '-' }}</div>
+                {% else %}
+                  <span class="badge bg-completed">{{ p.status }}</span>
+                {% endif %}
+              </td>
+              <td class="text-center pe-4">
+                <div class="d-flex gap-2 justify-content-center flex-wrap">
+                  <a href="{{ url_for('main.admin_os_formulario_view', os_id=p.id) }}" class="btn btn-sm btn-outline-primary shadow-sm" title="Ver formulario">
+                    <i class="bi bi-clipboard2-check"></i>
+                  </a>
+                  <a href="{{ url_for('main.admin_export_os_pdf_v2', os_id=p.id) }}" class="btn btn-sm btn-danger shadow-sm" title="Exportar PDF">
+                    <i class="bi bi-file-earmark-pdf"></i>
+                  </a>
+                  <a href="{{ url_for('main.admin_export_os_excel_v2', os_id=p.id) }}" class="btn btn-sm btn-secondary shadow-sm" title="Exportar Excel">
+                    <i class="bi bi-file-earmark-excel"></i>
+                  </a>
+                </div>
+              </td>
+            </tr>
           {% else %}
-          <tr><td colspan="6" class="text-center py-5 text-muted">Nenhuma OS concluída encontrada.</td></tr>
+            <tr>
+              <td colspan="6" class="text-center py-5 text-muted">
+                Nenhuma OS concluida ou em andamento encontrada.
+              </td>
+            </tr>
           {% endfor %}
         </tbody>
       </table>

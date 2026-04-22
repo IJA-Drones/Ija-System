@@ -15,6 +15,7 @@ from app.modules.piloto_os.service import (
     build_piloto_os_historico_context,
     concluir_os_piloto,
     get_piloto_drone_payload,
+    salvar_admin_os_form,
     salvar_piloto_os_form,
 )
 from app.shared.access import ADMIN_PANEL_VIEW_TYPES, can_access_regiao
@@ -228,10 +229,33 @@ def register_routes(bp):
         except PilotoOsError as exc:
             return jsonify({"error": str(exc)}), 403
 
-    @bp.route("/admin/os/<int:os_id>/formulario", methods=["GET"], endpoint="admin_os_formulario_view")
+    @bp.route("/admin/os/<int:os_id>/formulario", methods=["GET", "POST"], endpoint="admin_os_formulario_view")
     @login_required
     def admin_os_formulario_view(os_id):
         _require_admin_os_view()
+
+        if request.method == "POST":
+            try:
+                flash(
+                    salvar_admin_os_form(
+                        current_user,
+                        os_id,
+                        request.form,
+                        request.files,
+                        current_app.root_path,
+                    ),
+                    "success",
+                )
+                return redirect(url_for("main.admin_os_formulario_view", os_id=os_id))
+            except PilotoOsError as exc:
+                flash(str(exc), exc.category)
+                if exc.redirect_endpoint == "main.admin_os_formulario_view":
+                    return redirect(url_for("main.admin_os_formulario_view", os_id=os_id))
+                return redirect(url_for(exc.redirect_endpoint))
+            except Exception:
+                db.session.rollback()
+                current_app.logger.exception("Erro ao salvar formulario admin da OS %s", os_id)
+                flash("Erro ao salvar o formulario. Verifique os campos e tente novamente.", "danger")
 
         try:
             context = build_admin_os_form_context(current_user, os_id)
@@ -242,8 +266,8 @@ def register_routes(bp):
         return render_template(
             "piloto_os_formulario.html",
             **context,
-            url_voltar=url_for("main.admin_dashboard"),
-            form_action="#",
+            url_voltar=url_for("main.admin_historico_os"),
+            form_action=url_for("main.admin_os_formulario_view", os_id=os_id),
         )
 
     @bp.route("/admin/os/<int:os_id>/export/pdf/v2", methods=["GET"], endpoint="admin_export_os_pdf_v2")

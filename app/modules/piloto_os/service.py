@@ -7,7 +7,7 @@ from werkzeug.utils import secure_filename
 
 from app.extensions import db
 from app.models import Baterias, Drones, Equipe, EquipePiloto, OrdemServico, Solicitacao, Veiculos
-from app.shared.access import ADMIN_PANEL_VIEW_TYPES, can_access_regiao
+from app.shared.access import ADMIN_PANEL_EDIT_TYPES, ADMIN_PANEL_VIEW_TYPES, can_access_regiao
 from app.shared.query_filters import aplicar_filtros_base
 
 
@@ -354,6 +354,7 @@ def build_admin_os_form_context(user, os_id):
     if not can_access_regiao(user, pedido_regiao):
         raise PilotoOsError("Voce nao tem permissao para acessar esta OS.", "danger", redirect_endpoint="main.dashboard")
 
+    pode_editar_formulario = _admin_can_edit_os_form(user, solicitacao)
     equipe = solicitacao.equipe
     ordem = solicitacao.ordem_servico
     calculo_dosagem_planejado = _parse_json_object(
@@ -372,7 +373,11 @@ def build_admin_os_form_context(user, os_id):
         "solicitacao": solicitacao,
         "equipe": equipe,
         "ordem": ordem,
-        "modo_visualizacao": True,
+        "modo_visualizacao": not pode_editar_formulario,
+        "alerta_edicao_concluida": (
+            pode_editar_formulario
+            and (solicitacao.status or "").strip().upper() in {"CONCLUIDO", "CONCLUÍDO"}
+        ),
         "uvis_nome": solicitacao.usuario.nome_uvis if solicitacao.usuario else "",
         "regiao_nome": (
             getattr(solicitacao.usuario, "regiao", None)
@@ -390,10 +395,10 @@ def build_admin_os_form_context(user, os_id):
         "auxiliar_padrao": (
             equipe.piloto_auxiliar.nome_piloto if equipe and equipe.piloto_auxiliar else ""
         ) if equipe else "",
-        "respondido_por_padrao": "",
+        "respondido_por_padrao": getattr(user, "nome_uvis", "") or "",
         "respondido_em_value": (
             ordem.respondido_em.strftime("%Y-%m-%dT%H:%M")
-            if ordem and ordem.respondido_em else ""
+            if ordem and ordem.respondido_em else datetime.now().strftime("%Y-%m-%dT%H:%M")
         ),
         "calculo_dosagem_planejado": calculo_dosagem_planejado,
         "calculo_dosagem_planejado_json": (
@@ -403,6 +408,51 @@ def build_admin_os_form_context(user, os_id):
         "drones_equipe": drones_equipe,
         **_build_os_media_context(ordem),
     }
+
+
+def salvar_admin_os_form(user, os_id, form_data, files_data, root_path):
+    context = build_admin_os_form_context(user, os_id)
+
+    if context["modo_visualizacao"]:
+        raise PilotoOsError(
+            "Voce nao tem permissao para editar esta OS.",
+            "danger",
+            redirect_endpoint="main.admin_os_formulario_view",
+        )
+
+    solicitacao = context["solicitacao"]
+    ordem = context["ordem"]
+
+    if ordem is None:
+        ordem = OrdemServico(
+            solicitacao_id=solicitacao.id,
+            equipe_id=solicitacao.equipe_id,
+        )
+        db.session.add(ordem)
+
+    _aplicar_campos_formulario(
+        user=user,
+        solicitacao=solicitacao,
+        ordem=ordem,
+        form_data=form_data,
+        files_data=files_data,
+        root_path=root_path,
+        piloto_padrao=context["piloto_padrao"],
+        auxiliar_padrao=context["auxiliar_padrao"],
+        respondido_por_padrao=context["respondido_por_padrao"],
+    )
+
+    gerar_retorno = ((ordem.retornar_proxima_semana_monitorar_larvas or "").strip().upper() == "SIM")
+    if gerar_retorno:
+        retorno_existente = Solicitacao.query.filter_by(origem_retorno_id=solicitacao.id).first()
+        if not retorno_existente:
+            criar_solicitacao_retorno_monitoramento(solicitacao, ordem)
+
+    db.session.commit()
+
+    if gerar_retorno:
+        return "Formulario salvo com sucesso! Uma nova OS de retorno foi criada para 7 dias depois."
+    return "Formulario salvo com sucesso!"
 
 
 def criar_solicitacao_retorno_monitoramento(solicitacao_original, ordem_atual):
@@ -506,6 +556,13 @@ def criar_solicitacao_retorno_monitoramento(solicitacao_original, ordem_atual):
     )
     db.session.add(nova_ordem)
     return nova_solicitacao
+
+
+def _admin_can_edit_os_form(user, solicitacao) -> bool:
+    if getattr(user, "tipo_usuario", None) not in ADMIN_PANEL_EDIT_TYPES:
+        return False
+
+    return (getattr(solicitacao, "status", "") or "").strip().upper() != "CANCELADO"
 
 
 def _aplicar_campos_formulario(
