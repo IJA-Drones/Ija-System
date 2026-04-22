@@ -8,27 +8,73 @@
   </li>
 {%- endmacro %}
 
-{% macro render_pagination(endpoint, paginacao, pagination_args=None, nav_class='mt-4', ul_class='pagination justify-content-center flex-wrap mb-0', size='sm') -%}
-  {% if paginacao and paginacao.pages > 1 %}
+{% macro render_pagination(endpoint, paginacao, pagination_args=None, nav_class='mt-4', ul_class='pagination justify-content-center flex-wrap mb-0', size='sm', show_summary=False, summary_label='registros', page_size_options=None, page_size_label='Itens por pagina') -%}
+  {% if paginacao and (paginacao.pages > 1 or show_summary or page_size_options) %}
     {% set args = pagination_args or {} %}
+    {% set start = ((paginacao.page - 1) * paginacao.per_page) + 1 if paginacao.total else 0 %}
+    {% set end = paginacao.page * paginacao.per_page %}
+    {% if end > paginacao.total %}
+      {% set end = paginacao.total %}
+    {% endif %}
     <nav aria-label="Navegacao de paginas" class="{{ nav_class }}">
-      <div class="d-flex flex-column flex-md-row align-items-center justify-content-center gap-2">
-        <span class="small text-muted">Pagina <strong>{{ paginacao.page }}</strong> de {{ paginacao.pages }}</span>
-        <ul class="{{ ul_class }}{% if size %} pagination-{{ size }}{% endif %}">
-          {{ render_page_item(endpoint, 1, 'Primeira', args, disabled=(paginacao.page <= 1)) }}
-          {{ render_page_item(endpoint, paginacao.prev_num, 'Anterior', args, disabled=(not paginacao.has_prev)) }}
-
-          {% for pg in paginacao.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=1) %}
-            {% if pg %}
-              {{ render_page_item(endpoint, pg, pg, args, active=(pg == paginacao.page)) }}
-            {% else %}
-              <li class="page-item disabled"><span class="page-link">...</span></li>
+      <div class="d-flex flex-column gap-3">
+        {% if show_summary or page_size_options %}
+          <div class="pagination-toolbar d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2 px-2">
+            {% if show_summary %}
+              <span class="small text-muted">
+                {% if paginacao.total %}
+                  Mostrando <strong>{{ start }}-{{ end }}</strong> de <strong>{{ paginacao.total }}</strong> {{ summary_label }}
+                {% else %}
+                  Mostrando <strong>0</strong> de <strong>0</strong> {{ summary_label }}
+                {% endif %}
+              </span>
             {% endif %}
-          {% endfor %}
 
-          {{ render_page_item(endpoint, paginacao.next_num, 'Proxima', args, disabled=(not paginacao.has_next)) }}
-          {{ render_page_item(endpoint, paginacao.pages, 'Ultima', args, disabled=(paginacao.page >= paginacao.pages)) }}
-        </ul>
+            {% if page_size_options %}
+              <form method="GET" class="pagination-page-size-form d-inline-flex align-items-center gap-2 m-0">
+                {% for key, value in args.items() %}
+                  {% if key != 'per_page' %}
+                    <input type="hidden" name="{{ key }}" value="{{ value }}">
+                  {% endif %}
+                {% endfor %}
+                <input type="hidden" name="page" value="1">
+                <label for="per-page-selector-{{ endpoint|replace('.', '-') }}" class="small text-muted mb-0">{{ page_size_label }}</label>
+                <select
+                  id="per-page-selector-{{ endpoint|replace('.', '-') }}"
+                  name="per_page"
+                  class="form-select form-select-sm pagination-page-size-select"
+                  onchange="this.form.submit()"
+                  aria-label="{{ page_size_label }}"
+                >
+                  {% for option in page_size_options %}
+                    <option value="{{ option }}" {% if option == paginacao.per_page %}selected{% endif %}>{{ option }}</option>
+                  {% endfor %}
+                </select>
+              </form>
+            {% endif %}
+          </div>
+        {% endif %}
+
+        {% if paginacao.pages > 1 %}
+          <div class="d-flex flex-column flex-md-row align-items-center justify-content-center gap-2">
+            <span class="small text-muted">Pagina <strong>{{ paginacao.page }}</strong> de {{ paginacao.pages }}</span>
+            <ul class="{{ ul_class }}{% if size %} pagination-{{ size }}{% endif %}">
+              {{ render_page_item(endpoint, 1, 'Primeira', args, disabled=(paginacao.page <= 1)) }}
+              {{ render_page_item(endpoint, paginacao.prev_num, 'Anterior', args, disabled=(not paginacao.has_prev)) }}
+
+              {% for pg in paginacao.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=1) %}
+                {% if pg %}
+                  {{ render_page_item(endpoint, pg, pg, args, active=(pg == paginacao.page)) }}
+                {% else %}
+                  <li class="page-item disabled"><span class="page-link">...</span></li>
+                {% endif %}
+              {% endfor %}
+
+              {{ render_page_item(endpoint, paginacao.next_num, 'Proxima', args, disabled=(not paginacao.has_next)) }}
+              {{ render_page_item(endpoint, paginacao.pages, 'Ultima', args, disabled=(paginacao.page >= paginacao.pages)) }}
+            </ul>
+          </div>
+        {% endif %}
       </div>
     </nav>
   {% endif %}

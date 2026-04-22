@@ -34,6 +34,19 @@
         .admin-table-wrap {
             width: 100%;
         }
+        .admin-table-wrap .pagination-toolbar {
+            padding-inline: 1rem;
+        }
+        .admin-table-wrap .pagination-page-size-form {
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+        .admin-table-wrap .pagination-page-size-select {
+            min-width: 82px;
+            width: auto;
+            border-radius: 999px;
+            padding-right: 2rem;
+        }
         .admin-op-table-wrap {
             margin-top: 14px;
             border: 1px solid rgba(0, 0, 0, 0.08);
@@ -124,6 +137,12 @@
             .admin-table-wrap .pagination {
                 flex-wrap: wrap;
             }
+            .admin-table-wrap .pagination-toolbar {
+                padding-inline: 0.75rem;
+            }
+            .admin-table-wrap .pagination-page-size-form {
+                justify-content: flex-start;
+            }
             .admin-map-modal .modal-dialog {
                 margin: 0.75rem;
             }
@@ -204,6 +223,8 @@
                 <input type="hidden" name="tipo_imovel" value="{{ request.args.get('tipo_imovel', '') }}">
                 <input type="hidden" name="foco" value="{{ request.args.get('foco', '') }}">
                 <input type="hidden" name="protocolo" value="{{ request.args.get('protocolo', '') }}">
+                <input type="hidden" name="data_ini" value="{{ request.args.get('data_ini', '') }}">
+                <input type="hidden" name="data_fim" value="{{ request.args.get('data_fim', '') }}">
                 <button type="submit" class="btn btn-secondary shadow-sm w-100 d-flex align-items-center justify-content-center gap-2" style="height: 38px;">
                     <i class="bi bi-file-earmark-excel-fill"></i> 
                     <span>Exportar Excel</span>
@@ -220,6 +241,8 @@
         {% endif %}
     </div>
 
+    {% set admin_has_filters = request.args.get('status') or request.args.get('unidade') or request.args.get('regiao') or request.args.get('apoio_cet') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or request.args.get('foco') or request.args.get('protocolo') or request.args.get('data_ini') or request.args.get('data_fim') %}
+
     {# --- FILTROS EM "SANFONA" (Accordion) --- #}
     <div class="card shadow-sm rounded-4 mb-4 border-0">
         <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center cursor-pointer"
@@ -234,14 +257,14 @@
                 {% if current_user.tipo_usuario == 'admin' %}
                     <span class="admin-context-badge" id="adminContextFilterBadge">UVIS/PREFEITURA</span>
                 {% endif %}
-                {% if request.args.get('status') or request.args.get('unidade') or request.args.get('regiao') or request.args.get('apoio_cet') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or request.args.get('foco') or request.args.get('protocolo') %}
+                {% if admin_has_filters %}
                     <span class="badge bg-danger rounded-circle p-1" style="width: 8px; height: 8px;"></span>
                 {% endif %}
             </div>
             <i class="bi bi-chevron-down text-muted"></i>
         </div>
 
-        <div class="collapse {% if request.args.get('status') or request.args.get('unidade') or request.args.get('regiao') or request.args.get('apoio_cet') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or request.args.get('foco') or request.args.get('protocolo') %}show{% endif %}" id="collapseFiltros">
+        <div class="collapse {% if admin_has_filters %}show{% endif %}" id="collapseFiltros">
             <div class="card-body pt-0 pb-4">
                 <form method="GET">
                     <div class="row g-2 align-items-end">
@@ -330,9 +353,27 @@
                                 value="{{ request.args.get('protocolo', '') }}"
                             >
                         </div>
+                        <div class="col-md-3">
+                            <label class="small text-muted">Data agendamento de:</label>
+                            <input
+                                type="date"
+                                name="data_ini"
+                                class="form-control form-control-sm"
+                                value="{{ request.args.get('data_ini', '') }}"
+                            >
+                        </div>
+                        <div class="col-md-3">
+                            <label class="small text-muted">Data agendamento ate:</label>
+                            <input
+                                type="date"
+                                name="data_fim"
+                                class="form-control form-control-sm"
+                                value="{{ request.args.get('data_fim', '') }}"
+                            >
+                        </div>
                         <div class="col-md-3 admin-filter-actions">
                             <button class="btn btn-success btn-sm w-100 align-items-center justify-content-center" type="submit"><i class="bi bi-search"></i> Filtrar</button>
-                            {% if request.args.get('status') or request.args.get('unidade') or request.args.get('regiao') or request.args.get('apoio_cet') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or request.args.get('foco') or request.args.get('protocolo') %}
+                            {% if admin_has_filters %}
                                 <a href="{{ url_for(request.endpoint) }}" class="btn btn-outline-secondary btn-sm w-100">
                                     <i class="bi bi-x-lg"></i> Limpar
                                 </a>
@@ -835,8 +876,17 @@
             </tbody>
         </table>
 
-        {# --- PAGINAÇÃO (MANTIDA IGUAL) --- #}
-        {{ render_pagination('main.admin_dashboard', paginacao, pagination_args, nav_class='mt-4 pb-3') }}
+        {# --- PAGINACAO COM RESUMO E SELETOR DE ITENS POR PAGINA --- #}
+        {{ render_pagination(
+            'main.admin_dashboard',
+            paginacao,
+            pagination_args,
+            nav_class='mt-4 pb-3',
+            show_summary=True,
+            summary_label='solicitacoes',
+            page_size_options=per_page_options,
+            page_size_label='Itens por pagina'
+        ) }}
     </div>
 </div>
 {# --- FIM DO CONTAINER PADRONIZADO --- #}

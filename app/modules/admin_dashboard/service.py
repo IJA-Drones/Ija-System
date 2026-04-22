@@ -20,7 +20,34 @@ from app.shared.access import (
     apply_solicitacao_prefeitura_scope,
 )
 from app.shared.uploads import allowed_file, get_upload_folder
+
 APPROVAL_STATUSES = {"APROVADO", "APROVADO COM RECOMENDAÇÕES"}
+
+
+def _parse_filter_date(value: str):
+    raw_value = (value or "").strip()
+    if not raw_value:
+        return None
+    try:
+        return datetime.strptime(raw_value, "%Y-%m-%d").date()
+    except ValueError:
+        return None
+
+
+def _apply_data_agendamento_range(query, filtro_data_ini: str = "", filtro_data_fim: str = ""):
+    data_ini = _parse_filter_date(filtro_data_ini)
+    data_fim = _parse_filter_date(filtro_data_fim)
+
+    if data_ini and data_fim and data_ini > data_fim:
+        data_ini, data_fim = data_fim, data_ini
+
+    if data_ini:
+        query = query.filter(Solicitacao.data_agendamento >= data_ini)
+
+    if data_fim:
+        query = query.filter(Solicitacao.data_agendamento <= data_fim)
+
+    return query
 
 
 def can_access_admin_panel(user) -> bool:
@@ -79,6 +106,8 @@ def build_admin_dashboard_query(
     filtro_tipo_visita: str = "",
     filtro_tipo_imovel: str = "",
     filtro_foco: str = "",
+    filtro_data_ini: str = "",
+    filtro_data_fim: str = "",
 ):
     query = (
         Solicitacao.query
@@ -118,7 +147,7 @@ def build_admin_dashboard_query(
     if filtro_foco:
         query = query.filter(Solicitacao.foco == filtro_foco)
 
-    return query
+    return _apply_data_agendamento_range(query, filtro_data_ini, filtro_data_fim)
 
 
 def build_admin_canceladas_query(
@@ -129,6 +158,8 @@ def build_admin_canceladas_query(
     filtro_protocolo: str,
     filtro_tipo_visita: str = "",
     filtro_tipo_imovel: str = "",
+    filtro_data_ini: str = "",
+    filtro_data_fim: str = "",
 ):
     query = (
         Solicitacao.query
@@ -160,7 +191,7 @@ def build_admin_canceladas_query(
     if filtro_protocolo:
         query = query.filter(Solicitacao.protocolo.ilike(f"%{filtro_protocolo}%"))
 
-    return query
+    return _apply_data_agendamento_range(query, filtro_data_ini, filtro_data_fim)
 
 
 def build_admin_historico_os_query(user, filtro_unidade: str, filtro_regiao: str):
@@ -195,6 +226,8 @@ def build_admin_export_query(
     filtro_tipo_visita: str = "",
     filtro_tipo_imovel: str = "",
     filtro_foco: str = "",
+    filtro_data_ini: str = "",
+    filtro_data_fim: str = "",
 ):
     query = (
         Solicitacao.query
@@ -233,6 +266,8 @@ def build_admin_export_query(
     if filtro_foco:
         query = query.filter(Solicitacao.foco == filtro_foco)
 
+    query = _apply_data_agendamento_range(query, filtro_data_ini, filtro_data_fim)
+
     return query.order_by(Solicitacao.data_criacao.desc())
 
 
@@ -246,6 +281,8 @@ def build_admin_dashboard_export(
     filtro_tipo_visita: str = "",
     filtro_tipo_imovel: str = "",
     filtro_foco: str = "",
+    filtro_data_ini: str = "",
+    filtro_data_fim: str = "",
 ):
     pedidos = build_admin_export_query(
         user=user,
@@ -257,6 +294,8 @@ def build_admin_dashboard_export(
         filtro_tipo_visita=filtro_tipo_visita,
         filtro_tipo_imovel=filtro_tipo_imovel,
         filtro_foco=filtro_foco,
+        filtro_data_ini=filtro_data_ini,
+        filtro_data_fim=filtro_data_fim,
     ).all()
 
     wb = Workbook()

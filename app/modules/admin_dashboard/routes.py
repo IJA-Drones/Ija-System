@@ -22,6 +22,9 @@ from app.modules.admin_dashboard.service import (
 from app.shared.access import apply_solicitacao_prefeitura_scope
 
 
+ADMIN_PER_PAGE_OPTIONS = (10, 25, 50, 100, 250)
+
+
 def _prefers_html_response():
     return request.accept_mimetypes.accept_html and not request.is_json
 
@@ -34,6 +37,14 @@ def _query_args_without_page():
     args = request.args.to_dict(flat=True)
     args.pop("page", None)
     return args
+
+
+def _get_admin_per_page():
+    try:
+        per_page = int(request.args.get("per_page") or 25)
+    except (TypeError, ValueError):
+        per_page = 25
+    return per_page if per_page in ADMIN_PER_PAGE_OPTIONS else 25
 
 
 def _get_scoped_solicitacao_or_404(solicitacao_id: int):
@@ -75,6 +86,8 @@ def register_routes(bp):
         filtro_tipo_visita = (request.args.get("tipo_visita") or "").strip()
         filtro_tipo_imovel = (request.args.get("tipo_imovel") or "").strip()
         filtro_foco = (request.args.get("foco") or "").strip()
+        filtro_data_ini = (request.args.get("data_ini") or "").strip()
+        filtro_data_fim = (request.args.get("data_fim") or "").strip()
 
         if filtro_status == "CANCELADO":
             return redirect(
@@ -86,10 +99,13 @@ def register_routes(bp):
                     tipo_imovel=filtro_tipo_imovel,
                     foco=filtro_foco,
                     protocolo=filtro_protocolo,
+                    data_ini=filtro_data_ini,
+                    data_fim=filtro_data_fim,
                 )
             )
 
         page = request.args.get("page", 1, type=int)
+        per_page = _get_admin_per_page()
         query = build_admin_dashboard_query(
             current_user,
             filtro_status=filtro_status,
@@ -100,10 +116,12 @@ def register_routes(bp):
             filtro_tipo_visita=filtro_tipo_visita,
             filtro_tipo_imovel=filtro_tipo_imovel,
             filtro_foco=filtro_foco,
+            filtro_data_ini=filtro_data_ini,
+            filtro_data_fim=filtro_data_fim,
         )
         paginacao = query.order_by(build_status_order(), Solicitacao.data_criacao.desc()).paginate(
             page=page,
-            per_page=6,
+            per_page=per_page,
             error_out=False,
         )
 
@@ -117,6 +135,7 @@ def register_routes(bp):
             unidades_select=build_uvis_select(current_user),
             google_maps_key=get_google_maps_key(),
             pagination_args=_query_args_without_page(),
+            per_page_options=ADMIN_PER_PAGE_OPTIONS,
         )
 
     @bp.route("/admin/exportar_excel")
@@ -135,6 +154,8 @@ def register_routes(bp):
             filtro_tipo_visita = (request.args.get("tipo_visita") or "").strip()
             filtro_tipo_imovel = (request.args.get("tipo_imovel") or "").strip()
             filtro_foco = (request.args.get("foco") or "").strip()
+            filtro_data_ini = (request.args.get("data_ini") or "").strip()
+            filtro_data_fim = (request.args.get("data_fim") or "").strip()
 
             output = build_admin_dashboard_export(
                 user=current_user,
@@ -146,6 +167,8 @@ def register_routes(bp):
                 filtro_tipo_visita=filtro_tipo_visita,
                 filtro_tipo_imovel=filtro_tipo_imovel,
                 filtro_foco=filtro_foco,
+                filtro_data_ini=filtro_data_ini,
+                filtro_data_fim=filtro_data_fim,
             )
 
             return send_file(
@@ -236,6 +259,8 @@ def register_routes(bp):
         filtro_tipo_visita = (request.args.get("tipo_visita") or "").strip()
         filtro_tipo_imovel = (request.args.get("tipo_imovel") or "").strip()
         filtro_protocolo = (request.args.get("protocolo") or "").strip()
+        filtro_data_ini = (request.args.get("data_ini") or "").strip()
+        filtro_data_fim = (request.args.get("data_fim") or "").strip()
         page = request.args.get("page", 1, type=int)
 
         query = build_admin_canceladas_query(
@@ -246,6 +271,8 @@ def register_routes(bp):
             filtro_protocolo=filtro_protocolo,
             filtro_tipo_visita=filtro_tipo_visita,
             filtro_tipo_imovel=filtro_tipo_imovel,
+            filtro_data_ini=filtro_data_ini,
+            filtro_data_fim=filtro_data_fim,
         )
         paginacao = query.order_by(Solicitacao.data_criacao.desc()).paginate(
             page=page,

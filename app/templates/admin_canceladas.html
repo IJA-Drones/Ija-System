@@ -152,6 +152,8 @@
     </a>
   </div>
 
+  {% set canceladas_has_filters = request.args.get('unidade') or request.args.get('regiao') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or request.args.get('foco') or request.args.get('protocolo') or request.args.get('data_ini') or request.args.get('data_fim') %}
+
   {# filtros (unidade/região) #}
   <div class="card shadow-sm rounded-4 mb-4 border-0 canceladas-filters">
     <div class="card-body">
@@ -226,13 +228,32 @@
               value="{{ request.args.get('protocolo', '') }}"
             >
           </div>
-          
+
+          <div class="col-md-4">
+            <label class="small text-muted">Data agendamento de:</label>
+            <input
+              type="date"
+              name="data_ini"
+              class="form-control form-control-sm"
+              value="{{ request.args.get('data_ini', '') }}"
+            >
+          </div>
+
+          <div class="col-md-4">
+            <label class="small text-muted">Data agendamento ate:</label>
+            <input
+              type="date"
+              name="data_fim"
+              class="form-control form-control-sm"
+              value="{{ request.args.get('data_fim', '') }}"
+            >
+          </div>
 
           <div class="col-md-4 canceladas-filter-actions">
             <button class="btn btn-success btn-sm w-100" type="submit">
               <i class="bi bi-search"></i> Filtrar
             </button>
-            {% if request.args.get('unidade') or request.args.get('regiao') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or request.args.get('foco') or request.args.get('protocolo') %}
+            {% if canceladas_has_filters %}
               <a href="{{ url_for('main.admin_canceladas') }}" class="btn btn-outline-secondary btn-sm w-100">
                 <i class="bi bi-x-lg"></i> Limpar
               </a>
