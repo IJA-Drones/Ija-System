@@ -32,6 +32,36 @@ AGENDA_ROUTE_STATUSES = (
 TZ_BR = ZoneInfo("America/Sao_Paulo")
 
 
+def _parse_filter_date(value):
+    raw_value = (value or "").strip()
+    if not raw_value:
+        return None
+    try:
+        return datetime.strptime(raw_value, "%Y-%m-%d").date()
+    except ValueError:
+        return None
+
+
+def _apply_agenda_date_range(query, data_ini=None, data_fim=None):
+    dt_ini = _parse_filter_date(data_ini)
+    dt_fim = _parse_filter_date(data_fim)
+
+    if dt_ini and dt_fim and dt_ini > dt_fim:
+        dt_ini, dt_fim = dt_fim, dt_ini
+
+    if dt_ini:
+        query = query.filter(Solicitacao.data_agendamento >= dt_ini)
+
+    if dt_fim:
+        query = query.filter(Solicitacao.data_agendamento <= dt_fim)
+
+    return query
+
+
+def _has_agenda_date_range(data_ini=None, data_fim=None):
+    return _parse_filter_date(data_ini) is not None or _parse_filter_date(data_fim) is not None
+
+
 def agenda_status_color(status):
     if status == "APROVADO":
         return "#198754"
@@ -109,6 +139,8 @@ def build_agenda_query(
     filtro_tipo_visita=None,
     filtro_tipo_imovel=None,
     filtro_foco=None,
+    data_ini=None,
+    data_fim=None,
     mes=None,
     ano=None,
 ):
@@ -138,7 +170,9 @@ def build_agenda_query(
     if filtro_foco:
         query = query.filter(Solicitacao.foco == filtro_foco)
 
-    if mes and ano:
+    query = _apply_agenda_date_range(query, data_ini, data_fim)
+
+    if mes and ano and not _has_agenda_date_range(data_ini, data_fim):
         filtro_mesano = f"{ano}-{mes:02d}"
         if db.engine.name == "postgresql":
             query = query.filter(db.func.to_char(Solicitacao.data_agendamento, "YYYY-MM") == filtro_mesano)
@@ -265,10 +299,12 @@ def build_agenda_context(user, args):
     filtro_tipo_visita = (args.get("tipo_visita") or "").strip() or None
     filtro_tipo_imovel = (args.get("tipo_imovel") or "").strip() or None
     filtro_foco = (args.get("foco") or "").strip() or None
+    filtro_data_ini = (args.get("data_ini") or "").strip() or None
+    filtro_data_fim = (args.get("data_fim") or "").strip() or None
     mes = args.get("mes", datetime.now().month, type=int)
     ano = args.get("ano", datetime.now().year, type=int)
     d = (args.get("d") or "").strip()
-    initial_date = d or datetime.now().strftime("%Y-%m-%d")
+    initial_date = d or filtro_data_ini or datetime.now().strftime("%Y-%m-%d")
 
     solicitacoes = build_agenda_query(
         user,
@@ -277,6 +313,8 @@ def build_agenda_context(user, args):
         filtro_tipo_visita=filtro_tipo_visita,
         filtro_tipo_imovel=filtro_tipo_imovel,
         filtro_foco=filtro_foco,
+        data_ini=filtro_data_ini,
+        data_fim=filtro_data_fim,
         mes=mes,
         ano=ano,
     ).all()
@@ -289,6 +327,8 @@ def build_agenda_context(user, args):
             "tipo_visita": filtro_tipo_visita,
             "tipo_imovel": filtro_tipo_imovel,
             "foco": filtro_foco,
+            "data_ini": filtro_data_ini,
+            "data_fim": filtro_data_fim,
             "mes": mes,
             "ano": ano,
         },
@@ -385,6 +425,8 @@ def build_agenda_export(user, args):
     filtro_tipo_visita = None if export_all else (args.get("tipo_visita") or None)
     filtro_tipo_imovel = None if export_all else (args.get("tipo_imovel") or None)
     filtro_foco = None if export_all else (args.get("foco") or None)
+    filtro_data_ini = None if export_all else (args.get("data_ini") or None)
+    filtro_data_fim = None if export_all else (args.get("data_fim") or None)
     mes = None if export_all else args.get("mes", type=int)
     ano = None if export_all else args.get("ano", type=int)
 
@@ -404,7 +446,8 @@ def build_agenda_export(user, args):
         query = query.filter(Solicitacao.tipo_imovel == filtro_tipo_imovel)
     if filtro_foco:
         query = query.filter(Solicitacao.foco == filtro_foco)
-    if mes and ano:
+    query = _apply_agenda_date_range(query, filtro_data_ini, filtro_data_fim)
+    if mes and ano and not _has_agenda_date_range(filtro_data_ini, filtro_data_fim):
         filtro_mesano = f"{ano}-{mes:02d}"
         if db.engine.name == "postgresql":
             query = query.filter(db.func.to_char(Solicitacao.data_agendamento, "YYYY-MM") == filtro_mesano)
