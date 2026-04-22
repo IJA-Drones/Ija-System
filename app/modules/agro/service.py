@@ -133,13 +133,14 @@ def can_user_write_agro_finance_competencia(user, ano: int | None, mes: int | No
     if not can_edit_agro_finance_panel(user):
         return True
 
-    if not is_past_agro_competencia(ano, mes):
-        return True
+    controle = get_agro_finance_competencia_controle(ano, mes)
+    if controle is not None:
+        return bool(controle.liberado)
 
-    return is_agro_finance_competencia_liberada(ano, mes)
+    return not is_past_agro_competencia(ano, mes)
 
 
-def build_agro_finance_competencia_settings(months_back: int = 18) -> list[dict]:
+def build_agro_finance_competencia_settings(months_back: int = 18, months_forward: int = 0) -> list[dict]:
     current_month = date.today().replace(day=1)
     controles = {
         (item.competencia_ano, item.competencia_mes): item
@@ -147,17 +148,22 @@ def build_agro_finance_competencia_settings(months_back: int = 18) -> list[dict]
     }
     items = []
 
-    for offset in range(months_back, -1, -1):
+    for offset in range(-months_back, months_forward + 1):
         year = current_month.year
-        month = current_month.month - offset
+        month = current_month.month + offset
         while month <= 0:
             month += 12
             year -= 1
+        while month > 12:
+            month -= 12
+            year += 1
 
         controle = controles.get((year, month))
+        referencia = date(year, month, 1)
         is_current = year == current_month.year and month == current_month.month
-        is_past = date(year, month, 1) < current_month
-        liberado = bool(controle and controle.liberado)
+        is_past = referencia < current_month
+        is_future = referencia > current_month
+        liberado = bool(controle.liberado) if controle is not None else not is_past
 
         items.append(
             {
@@ -167,8 +173,11 @@ def build_agro_finance_competencia_settings(months_back: int = 18) -> list[dict]
                 "nome_mes": AGRO_REPORT_MONTHS[month - 1][1],
                 "is_current": is_current,
                 "is_past": is_past,
-                "liberado": liberado or not is_past,
-                "explicitamente_liberado": liberado,
+                "is_future": is_future,
+                "liberado": liberado,
+                "explicitamente_liberado": bool(controle and controle.liberado),
+                "explicitamente_bloqueado": bool(controle is not None and not controle.liberado),
+                "configurada_manualmente": controle is not None,
                 "controle": controle,
             }
         )
@@ -620,6 +629,38 @@ def _resolve_agro_cashflow_date(item, realized: bool = False):
     )
 
 
+def _resolve_agro_cashflow_year(item, realized: bool = False) -> int | None:
+    if isinstance(item, dict):
+        field_name = "data_realizada" if realized else "data_prevista"
+        value = item.get(field_name)
+        if value:
+            return value.year
+        competencia_ano = item.get("competencia_ano")
+        return int(competencia_ano) if competencia_ano else None
+
+    value = _resolve_agro_cashflow_date(item, realized=realized)
+    if value:
+        return value.year
+    competencia_ano = _agro_report_get(item, "competencia_ano")
+    return int(competencia_ano) if competencia_ano else None
+
+
+def _resolve_agro_cashflow_month(item, realized: bool = False) -> int | None:
+    if isinstance(item, dict):
+        field_name = "data_realizada" if realized else "data_prevista"
+        value = item.get(field_name)
+        if value:
+            return value.month
+        competencia_mes = item.get("competencia_mes")
+        return int(competencia_mes) if competencia_mes else None
+
+    value = _resolve_agro_cashflow_date(item, realized=realized)
+    if value:
+        return value.month
+    competencia_mes = _agro_report_get(item, "competencia_mes")
+    return int(competencia_mes) if competencia_mes else None
+
+
 def _resolve_agro_report_date(item):
     return _resolve_agro_cashflow_date(item, realized=True) or _resolve_agro_cashflow_date(item, realized=False)
 
@@ -649,7 +690,12 @@ def _resolve_agro_report_year(items, ano: int | None = None) -> int:
     return max(years) if years else datetime.now().year
 
 
-def _resolve_agro_report_month(item):
+def _resolve_agro_report_month(item, realized: bool | None = None):
+    if realized is True:
+        return _resolve_agro_cashflow_month(item, realized=True)
+    if realized is False:
+        return _resolve_agro_cashflow_month(item, realized=False)
+
     data_base = _agro_report_get(item, "data")
     if data_base:
         return data_base.month
@@ -686,29 +732,37 @@ def _init_agro_month_bucket():
     }
 
 
-def _build_agro_report_monthly_totals(itens):
+def _build_agro_report_monthly_totals(
+    itens,
+    *,
+    opening_balance_previsto: Decimal | None = None,
+    opening_balance_realizado: Decimal | None = None,
+):
     mensal = {month: _init_agro_month_bucket() for month, _name in AGRO_REPORT_MONTHS}
 
     for item in itens:
-        month = _resolve_agro_report_month(item)
-        if month not in mensal:
-            continue
-        bucket = mensal[month]
-        bucket["receita_bruta_prevista"] += _agro_decimal(_agro_report_get(item, "entrada_prevista"))
-        bucket["receita_bruta_realizada"] += _agro_decimal(_agro_report_get(item, "entrada_realizada"))
-        bucket["comissao_principal_prevista"] += _agro_decimal(_agro_report_get(item, "comissao_principal_prevista"))
-        bucket["comissao_principal_realizada"] += _agro_decimal(_agro_report_get(item, "comissao_principal_realizada"))
-        bucket["comissao_cooperativa_prevista"] += _agro_decimal(_agro_report_get(item, "comissao_cooperativa_prevista"))
-        bucket["comissao_cooperativa_realizada"] += _agro_decimal(_agro_report_get(item, "comissao_cooperativa_realizada"))
-        bucket["despesas_manuais_previstas"] += _agro_decimal(_agro_report_get(item, "despesas_manuais_previstas"))
-        bucket["despesas_manuais_realizadas"] += _agro_decimal(_agro_report_get(item, "despesas_manuais_realizadas"))
-        bucket["impostos_previstos"] += _agro_decimal(_agro_report_get(item, "impostos_previstos"))
-        bucket["impostos_realizados"] += _agro_decimal(_agro_report_get(item, "impostos_realizados"))
-        bucket["retencoes_previstas"] += _agro_decimal(_agro_report_get(item, "retencoes_previstas"))
-        bucket["retencoes_realizadas"] += _agro_decimal(_agro_report_get(item, "retencoes_realizadas"))
+        month_previsto = _resolve_agro_report_month(item, realized=False)
+        if month_previsto in mensal:
+            bucket_previsto = mensal[month_previsto]
+            bucket_previsto["receita_bruta_prevista"] += _agro_decimal(_agro_report_get(item, "entrada_prevista"))
+            bucket_previsto["comissao_principal_prevista"] += _agro_decimal(_agro_report_get(item, "comissao_principal_prevista"))
+            bucket_previsto["comissao_cooperativa_prevista"] += _agro_decimal(_agro_report_get(item, "comissao_cooperativa_prevista"))
+            bucket_previsto["despesas_manuais_previstas"] += _agro_decimal(_agro_report_get(item, "despesas_manuais_previstas"))
+            bucket_previsto["impostos_previstos"] += _agro_decimal(_agro_report_get(item, "impostos_previstos"))
+            bucket_previsto["retencoes_previstas"] += _agro_decimal(_agro_report_get(item, "retencoes_previstas"))
 
-    saldo_previsto = Decimal("0")
-    saldo_realizado = Decimal("0")
+        month_realizado = _resolve_agro_report_month(item, realized=True)
+        if month_realizado in mensal:
+            bucket_realizado = mensal[month_realizado]
+            bucket_realizado["receita_bruta_realizada"] += _agro_decimal(_agro_report_get(item, "entrada_realizada"))
+            bucket_realizado["comissao_principal_realizada"] += _agro_decimal(_agro_report_get(item, "comissao_principal_realizada"))
+            bucket_realizado["comissao_cooperativa_realizada"] += _agro_decimal(_agro_report_get(item, "comissao_cooperativa_realizada"))
+            bucket_realizado["despesas_manuais_realizadas"] += _agro_decimal(_agro_report_get(item, "despesas_manuais_realizadas"))
+            bucket_realizado["impostos_realizados"] += _agro_decimal(_agro_report_get(item, "impostos_realizados"))
+            bucket_realizado["retencoes_realizadas"] += _agro_decimal(_agro_report_get(item, "retencoes_realizadas"))
+
+    saldo_previsto = _agro_decimal(opening_balance_previsto)
+    saldo_realizado = _agro_decimal(opening_balance_realizado)
     for month, _name in AGRO_REPORT_MONTHS:
         bucket = mensal[month]
         bucket["despesa_total_prevista"] = (
@@ -735,9 +789,13 @@ def _build_agro_report_monthly_totals(itens):
     return mensal
 
 
-def _apply_agro_cashflow_running_balance(itens, opening_balance: Decimal | None = None):
-    saldo_previsto = _agro_decimal(opening_balance)
-    saldo_realizado = _agro_decimal(opening_balance)
+def _apply_agro_cashflow_running_balance(
+    itens,
+    opening_balance_previsto: Decimal | None = None,
+    opening_balance_realizado: Decimal | None = None,
+):
+    saldo_previsto = _agro_decimal(opening_balance_previsto)
+    saldo_realizado = _agro_decimal(opening_balance_realizado)
     for item in itens:
         saldo_previsto += _agro_decimal(item.get("entrada_prevista")) - _agro_decimal(item.get("saida_prevista"))
         saldo_realizado += _agro_decimal(item.get("entrada_realizada")) - _agro_decimal(item.get("saida_realizada"))
@@ -757,6 +815,66 @@ def _sort_agro_cashflow_items(itens):
     )
 
 
+def _normalize_agro_cashflow_item_for_year(item: dict, ano: int) -> dict | None:
+    previsto_no_ano = _resolve_agro_cashflow_year(item, realized=False) == ano
+    realizado_no_ano = _resolve_agro_cashflow_year(item, realized=True) == ano
+
+    if not previsto_no_ano and not realizado_no_ano:
+        return None
+
+    normalized = dict(item)
+    if not previsto_no_ano:
+        normalized["data_prevista"] = None
+        normalized["entrada_prevista"] = Decimal("0")
+        normalized["comissao_principal_prevista"] = Decimal("0")
+        normalized["comissao_cooperativa_prevista"] = Decimal("0")
+        normalized["despesas_manuais_previstas"] = Decimal("0")
+        normalized["impostos_previstos"] = Decimal("0")
+        normalized["retencoes_previstas"] = Decimal("0")
+        normalized["saida_prevista"] = Decimal("0")
+        normalized["resultado_previsto"] = Decimal("0")
+
+    if not realizado_no_ano:
+        normalized["data_realizada"] = None
+        normalized["entrada_realizada"] = Decimal("0")
+        normalized["comissao_principal_realizada"] = Decimal("0")
+        normalized["comissao_cooperativa_realizada"] = Decimal("0")
+        normalized["despesas_manuais_realizadas"] = Decimal("0")
+        normalized["impostos_realizados"] = Decimal("0")
+        normalized["retencoes_realizadas"] = Decimal("0")
+        normalized["saida_realizada"] = Decimal("0")
+        normalized["resultado_realizado"] = Decimal("0")
+
+    normalized["data"] = (
+        normalized.get("data_realizada")
+        or normalized.get("data_prevista")
+        or item.get("data_realizada")
+        or item.get("data_prevista")
+        or item.get("data")
+    )
+    return normalized
+
+
+def _compute_agro_cashflow_opening_balances(user, itens: list[dict], ano: int) -> tuple[Decimal, Decimal]:
+    saldo_inicial_total = sum(
+        (banco.saldo_inicial_decimal for banco in apply_prefeitura_scope(BancoAgro.query, user, BancoAgro.prefeitura_id).all()),
+        Decimal("0"),
+    )
+    saldo_previsto = saldo_inicial_total
+    saldo_realizado = saldo_inicial_total
+
+    for item in itens:
+        ano_previsto = _resolve_agro_cashflow_year(item, realized=False)
+        if ano_previsto is not None and ano_previsto < ano:
+            saldo_previsto += _agro_decimal(item.get("entrada_prevista")) - _agro_decimal(item.get("saida_prevista"))
+
+        ano_realizado = _resolve_agro_cashflow_year(item, realized=True)
+        if ano_realizado is not None and ano_realizado < ano:
+            saldo_realizado += _agro_decimal(item.get("entrada_realizada")) - _agro_decimal(item.get("saida_realizada"))
+
+    return saldo_previsto, saldo_realizado
+
+
 def build_agro_fluxo_caixa_report(user, ano: int | None = None) -> dict:
     lancamentos_contrato = build_financeiro_agro_query(user).all()
     lancamentos_entradas = build_financeiro_agro_entrada_query(user).all()
@@ -766,9 +884,6 @@ def build_agro_fluxo_caixa_report(user, ano: int | None = None) -> dict:
     itens = []
 
     for item in lancamentos_contrato:
-        if _resolve_agro_report_year([item]) != ano:
-            continue
-
         valor_receita = _agro_decimal(item.valor_total_contrato)
         valor_comissao = _agro_decimal(item.valor_comissao)
         valor_comissao_cooperativa = _agro_decimal(item.valor_comissao_cooperativa)
@@ -804,6 +919,8 @@ def build_agro_fluxo_caixa_report(user, ano: int | None = None) -> dict:
                 "favorecido": item.cliente_nome,
                 "forma_recebimento": item.forma_recebimento or "",
                 "status": item.status,
+                "competencia_ano": item.competencia_ano,
+                "competencia_mes": item.competencia_mes,
                 "tipo_saida": "",
                 "entrada_prevista": entrada_prevista,
                 "entrada_realizada": entrada_realizada,
@@ -827,9 +944,6 @@ def build_agro_fluxo_caixa_report(user, ano: int | None = None) -> dict:
         )
 
     for item in lancamentos_entradas:
-        if _resolve_agro_report_year([item]) != ano:
-            continue
-
         valor = _agro_decimal(item.valor)
         entrada_prevista = Decimal("0") if _agro_report_is_cancelled(item) else valor
         entrada_realizada = valor if _agro_report_is_realized(item) else Decimal("0")
@@ -856,6 +970,8 @@ def build_agro_fluxo_caixa_report(user, ano: int | None = None) -> dict:
                 "favorecido": item.cliente_nome,
                 "forma_recebimento": item.forma_recebimento or "",
                 "status": item.status,
+                "competencia_ano": item.competencia_ano,
+                "competencia_mes": item.competencia_mes,
                 "tipo_saida": "",
                 "entrada_prevista": entrada_prevista,
                 "entrada_realizada": entrada_realizada,
@@ -879,9 +995,6 @@ def build_agro_fluxo_caixa_report(user, ano: int | None = None) -> dict:
         )
 
     for item in lancamentos_saidas:
-        if _resolve_agro_report_year([item]) != ano:
-            continue
-
         valor = _agro_decimal(item.valor)
         data_prevista = _resolve_agro_cashflow_date(item, realized=False)
         data_realizada = _resolve_agro_cashflow_date(item, realized=True) if _agro_report_is_realized(item) else None
@@ -927,6 +1040,8 @@ def build_agro_fluxo_caixa_report(user, ano: int | None = None) -> dict:
                 "favorecido": item.favorecido or "",
                 "forma_recebimento": item.forma_pagamento or "",
                 "status": item.status,
+                "competencia_ano": item.competencia_ano,
+                "competencia_mes": item.competencia_mes,
                 "tipo_saida": tipo_saida,
                 "entrada_prevista": Decimal("0"),
                 "entrada_realizada": Decimal("0"),
@@ -949,9 +1064,24 @@ def build_agro_fluxo_caixa_report(user, ano: int | None = None) -> dict:
             }
         )
 
-    lancamentos_ordenados = _sort_agro_cashflow_items(itens)
-    _apply_agro_cashflow_running_balance(lancamentos_ordenados)
-    mensal = _build_agro_report_monthly_totals(lancamentos_ordenados)
+    saldo_abertura_previsto, saldo_abertura_realizado = _compute_agro_cashflow_opening_balances(user, itens, ano)
+    lancamentos_filtrados = []
+    for item in itens:
+        normalized = _normalize_agro_cashflow_item_for_year(item, ano)
+        if normalized is not None:
+            lancamentos_filtrados.append(normalized)
+
+    lancamentos_ordenados = _sort_agro_cashflow_items(lancamentos_filtrados)
+    _apply_agro_cashflow_running_balance(
+        lancamentos_ordenados,
+        opening_balance_previsto=saldo_abertura_previsto,
+        opening_balance_realizado=saldo_abertura_realizado,
+    )
+    mensal = _build_agro_report_monthly_totals(
+        lancamentos_ordenados,
+        opening_balance_previsto=saldo_abertura_previsto,
+        opening_balance_realizado=saldo_abertura_realizado,
+    )
     totais = _init_agro_month_bucket()
     for month, _name in AGRO_REPORT_MONTHS:
         bucket = mensal[month]
@@ -1215,7 +1345,7 @@ def get_agro_finance_dashboard_context(user) -> dict:
         "total_bancos_agro": bancos_query.count(),
         "caixa_hoje": caixa_hoje,
         "competencias_configuradas": sum(
-            1 for item in build_agro_finance_competencia_settings() if item["explicitamente_liberado"]
+            1 for item in build_agro_finance_competencia_settings() if item["configurada_manualmente"]
         ),
         "can_manage_competencias": can_manage_agro_finance_settings(user),
     }
