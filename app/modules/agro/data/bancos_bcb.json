@@ -1,0 +1,4157 @@
+{
+  "source_name": "Banco Central do Brasil - Lista de Participantes do STR",
+  "source_url": "https://www.bcb.gov.br/content/estabilidadefinanceira/str1/ParticipantesSTR.csv",
+  "verified_at": "2026-04-22",
+  "item_count": 461,
+  "items": [
+    {
+      "codigo": "001",
+      "nome": "Banco do Brasil S.A.",
+      "nome_reduzido": "BCO DO BRASIL S.A.",
+      "label": "001 - Banco do Brasil S.A.",
+      "participa_compe": "Sim",
+      "ispb": "00000000",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "003",
+      "nome": "BANCO DA AMAZONIA S.A.",
+      "nome_reduzido": "BCO DA AMAZONIA S.A.",
+      "label": "003 - BANCO DA AMAZONIA S.A.",
+      "participa_compe": "Sim",
+      "ispb": "04902979",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "004",
+      "nome": "Banco do Nordeste do Brasil S.A.",
+      "nome_reduzido": "BCO DO NORDESTE DO BRASIL S.A.",
+      "label": "004 - Banco do Nordeste do Brasil S.A.",
+      "participa_compe": "Sim",
+      "ispb": "07237373",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "007",
+      "nome": "BANCO NACIONAL DE DESENVOLVIMENTO ECONOMICO E SOCIAL",
+      "nome_reduzido": "BNDES",
+      "label": "007 - BANCO NACIONAL DE DESENVOLVIMENTO ECONOMICO E SOCIAL",
+      "participa_compe": "Não",
+      "ispb": "33657248",
+      "inicio_operacao": "30/06/2014"
+    },
+    {
+      "codigo": "010",
+      "nome": "CREDICOAMO CREDITO RURAL COOPERATIVA",
+      "nome_reduzido": "CREDICOAMO",
+      "label": "010 - CREDICOAMO CREDITO RURAL COOPERATIVA",
+      "participa_compe": "Sim",
+      "ispb": "81723108",
+      "inicio_operacao": "10/12/2012"
+    },
+    {
+      "codigo": "011",
+      "nome": "UBS (BRASIL) CORRETORA DE VALORES S.A.",
+      "nome_reduzido": "UBS (BRASIL) CORRETORA DE VALORES S.A.",
+      "label": "011 - UBS (BRASIL) CORRETORA DE VALORES S.A.",
+      "participa_compe": "Não",
+      "ispb": "61809182",
+      "inicio_operacao": "28/06/2011"
+    },
+    {
+      "codigo": "012",
+      "nome": "Banco Inbursa S.A.",
+      "nome_reduzido": "BANCO INBURSA",
+      "label": "012 - Banco Inbursa S.A.",
+      "participa_compe": "Não",
+      "ispb": "04866275",
+      "inicio_operacao": "04/05/2017"
+    },
+    {
+      "codigo": "014",
+      "nome": "STATE STREET BRASIL S.A. - BANCO COMERCIAL",
+      "nome_reduzido": "STATE STREET BR S.A. BCO COMERCIAL",
+      "label": "014 - STATE STREET BRASIL S.A. - BANCO COMERCIAL",
+      "participa_compe": "Não",
+      "ispb": "09274232",
+      "inicio_operacao": "08/08/2008"
+    },
+    {
+      "codigo": "015",
+      "nome": "UBS BB CORRETORA DE CÂMBIO, TÍTULOS E VALORES MOBILIÁRIOS S.A.",
+      "nome_reduzido": "UBS BB CCTVM S.A.",
+      "label": "015 - UBS BB CORRETORA DE CÂMBIO, TÍTULOS E VALORES MOBILIÁRIOS S.A.",
+      "participa_compe": "Não",
+      "ispb": "02819125",
+      "inicio_operacao": "15/03/2011"
+    },
+    {
+      "codigo": "016",
+      "nome": "COOPERATIVA DE CRÉDITO MÚTUO DOS DESPACHANTES DE TRÂNSITO DE SANTA CATARINA E RIO GRANDE DO SUL - SICOOB CREDITRAN",
+      "nome_reduzido": "CCM DESP TRÂNS SC E RS",
+      "label": "016 - COOPERATIVA DE CRÉDITO MÚTUO DOS DESPACHANTES DE TRÂNSITO DE SANTA CATARINA E RIO GRANDE DO SUL - SICOOB CREDITRAN",
+      "participa_compe": "Não",
+      "ispb": "04715685",
+      "inicio_operacao": "08/05/2012"
+    },
+    {
+      "codigo": "017",
+      "nome": "BNY Mellon Banco S.A.",
+      "nome_reduzido": "BNY MELLON BCO S.A.",
+      "label": "017 - BNY Mellon Banco S.A.",
+      "participa_compe": "Não",
+      "ispb": "42272526",
+      "inicio_operacao": "19/11/2012"
+    },
+    {
+      "codigo": "018",
+      "nome": "Banco Tricury S.A.",
+      "nome_reduzido": "BCO TRICURY S.A.",
+      "label": "018 - Banco Tricury S.A.",
+      "participa_compe": "Sim",
+      "ispb": "57839805",
+      "inicio_operacao": "05/08/2013"
+    },
+    {
+      "codigo": "021",
+      "nome": "BANESTES S.A. BANCO DO ESTADO DO ESPIRITO SANTO",
+      "nome_reduzido": "BCO BANESTES S.A.",
+      "label": "021 - BANESTES S.A. BANCO DO ESTADO DO ESPIRITO SANTO",
+      "participa_compe": "Sim",
+      "ispb": "28127603",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "024",
+      "nome": "Banco Bandepe S.A.",
+      "nome_reduzido": "BCO BANDEPE S.A.",
+      "label": "024 - Banco Bandepe S.A.",
+      "participa_compe": "Não",
+      "ispb": "10866788",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "025",
+      "nome": "Banco Alfa S.A.",
+      "nome_reduzido": "BCO ALFA S.A.",
+      "label": "025 - Banco Alfa S.A.",
+      "participa_compe": "Não",
+      "ispb": "03323840",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "029",
+      "nome": "Banco Itaú Consignado S.A.",
+      "nome_reduzido": "BANCO ITAÚ CONSIGNADO S.A.",
+      "label": "029 - Banco Itaú Consignado S.A.",
+      "participa_compe": "Não",
+      "ispb": "33885724",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "033",
+      "nome": "BANCO SANTANDER (BRASIL) S.A.",
+      "nome_reduzido": "BCO SANTANDER (BRASIL) S.A.",
+      "label": "033 - BANCO SANTANDER (BRASIL) S.A.",
+      "participa_compe": "Sim",
+      "ispb": "90400888",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "036",
+      "nome": "Banco Bradesco BBI S.A.",
+      "nome_reduzido": "BCO BBI S.A.",
+      "label": "036 - Banco Bradesco BBI S.A.",
+      "participa_compe": "Sim",
+      "ispb": "06271464",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "037",
+      "nome": "Banco do Estado do Pará S.A.",
+      "nome_reduzido": "BCO DO EST. DO PA S.A.",
+      "label": "037 - Banco do Estado do Pará S.A.",
+      "participa_compe": "Sim",
+      "ispb": "04913711",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "040",
+      "nome": "Banco Cargill S.A.",
+      "nome_reduzido": "BCO CARGILL S.A.",
+      "label": "040 - Banco Cargill S.A.",
+      "participa_compe": "Não",
+      "ispb": "03609817",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "041",
+      "nome": "Banco do Estado do Rio Grande do Sul S.A.",
+      "nome_reduzido": "BCO DO ESTADO DO RS S.A.",
+      "label": "041 - Banco do Estado do Rio Grande do Sul S.A.",
+      "participa_compe": "Sim",
+      "ispb": "92702067",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "047",
+      "nome": "Banco do Estado de Sergipe S.A.",
+      "nome_reduzido": "BCO DO EST. DE SE S.A.",
+      "label": "047 - Banco do Estado de Sergipe S.A.",
+      "participa_compe": "Sim",
+      "ispb": "13009717",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "060",
+      "nome": "CONFIDENCE SOCIEDADE CORRETORA DE CAMBIO S.A.",
+      "nome_reduzido": "CONFIDENCE CC S.A.",
+      "label": "060 - CONFIDENCE SOCIEDADE CORRETORA DE CAMBIO S.A.",
+      "participa_compe": "Não",
+      "ispb": "04913129",
+      "inicio_operacao": "21/09/2010"
+    },
+    {
+      "codigo": "063",
+      "nome": "Banco Bradescard S.A.",
+      "nome_reduzido": "BANCO BRADESCARD",
+      "label": "063 - Banco Bradescard S.A.",
+      "participa_compe": "Sim",
+      "ispb": "04184779",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "064",
+      "nome": "GOLDMAN SACHS DO BRASIL BANCO MULTIPLO S.A.",
+      "nome_reduzido": "GOLDMAN SACHS DO BRASIL BM S.A",
+      "label": "064 - GOLDMAN SACHS DO BRASIL BANCO MULTIPLO S.A.",
+      "participa_compe": "Não",
+      "ispb": "04332281",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "065",
+      "nome": "Banco AndBank (Brasil) S.A.",
+      "nome_reduzido": "BCO ANDBANK S.A.",
+      "label": "065 - Banco AndBank (Brasil) S.A.",
+      "participa_compe": "Sim",
+      "ispb": "48795256",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "066",
+      "nome": "BANCO MORGAN STANLEY S.A.",
+      "nome_reduzido": "BCO MORGAN STANLEY S.A.",
+      "label": "066 - BANCO MORGAN STANLEY S.A.",
+      "participa_compe": "Não",
+      "ispb": "02801938",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "069",
+      "nome": "Banco Crefisa S.A.",
+      "nome_reduzido": "BCO CREFISA S.A.",
+      "label": "069 - Banco Crefisa S.A.",
+      "participa_compe": "Sim",
+      "ispb": "61033106",
+      "inicio_operacao": "18/11/2005"
+    },
+    {
+      "codigo": "070",
+      "nome": "BRB - BANCO DE BRASILIA S.A.",
+      "nome_reduzido": "BRB - BCO DE BRASILIA S.A.",
+      "label": "070 - BRB - BANCO DE BRASILIA S.A.",
+      "participa_compe": "Sim",
+      "ispb": "00000208",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "074",
+      "nome": "Banco J. Safra S.A.",
+      "nome_reduzido": "BCO. J.SAFRA S.A.",
+      "label": "074 - Banco J. Safra S.A.",
+      "participa_compe": "Sim",
+      "ispb": "03017677",
+      "inicio_operacao": "26/08/2004"
+    },
+    {
+      "codigo": "075",
+      "nome": "BANCO ABN AMRO CLEARING S.A.",
+      "nome_reduzido": "BANCO ABN AMRO CLEARING S.A.",
+      "label": "075 - BANCO ABN AMRO CLEARING S.A.",
+      "participa_compe": "Não",
+      "ispb": "03532415",
+      "inicio_operacao": "11/11/2005"
+    },
+    {
+      "codigo": "076",
+      "nome": "Banco KDB do Brasil S.A.",
+      "nome_reduzido": "BCO KDB BRASIL S.A.",
+      "label": "076 - Banco KDB do Brasil S.A.",
+      "participa_compe": "Não",
+      "ispb": "07656500",
+      "inicio_operacao": "10/04/2006"
+    },
+    {
+      "codigo": "077",
+      "nome": "Banco Inter S.A.",
+      "nome_reduzido": "BANCO INTER",
+      "label": "077 - Banco Inter S.A.",
+      "participa_compe": "Sim",
+      "ispb": "00416968",
+      "inicio_operacao": "15/08/2008"
+    },
+    {
+      "codigo": "078",
+      "nome": "Haitong Banco de Investimento do Brasil S.A.",
+      "nome_reduzido": "HAITONG BI DO BRASIL S.A.",
+      "label": "078 - Haitong Banco de Investimento do Brasil S.A.",
+      "participa_compe": "Não",
+      "ispb": "34111187",
+      "inicio_operacao": "31/07/2008"
+    },
+    {
+      "codigo": "079",
+      "nome": "PICPAY BANK - BANCO MÚLTIPLO S.A",
+      "nome_reduzido": "PICPAY BANK - BANCO MÚLTIPLO S.A",
+      "label": "079 - PICPAY BANK - BANCO MÚLTIPLO S.A",
+      "participa_compe": "Não",
+      "ispb": "09516419",
+      "inicio_operacao": "25/07/2008"
+    },
+    {
+      "codigo": "080",
+      "nome": "BT CORRETORA DE CÂMBIO LTDA.",
+      "nome_reduzido": "BT CC LTDA.",
+      "label": "080 - BT CORRETORA DE CÂMBIO LTDA.",
+      "participa_compe": "Não",
+      "ispb": "73622748",
+      "inicio_operacao": "18/11/2010"
+    },
+    {
+      "codigo": "081",
+      "nome": "BancoSeguro S.A.",
+      "nome_reduzido": "BANCOSEGURO S.A.",
+      "label": "081 - BancoSeguro S.A.",
+      "participa_compe": "Não",
+      "ispb": "10264663",
+      "inicio_operacao": "24/10/2008"
+    },
+    {
+      "codigo": "082",
+      "nome": "BANCO TOPÁZIO S.A.",
+      "nome_reduzido": "BANCO TOPÁZIO S.A.",
+      "label": "082 - BANCO TOPÁZIO S.A.",
+      "participa_compe": "Não",
+      "ispb": "07679404",
+      "inicio_operacao": "12/06/2009"
+    },
+    {
+      "codigo": "083",
+      "nome": "Banco da China Brasil S.A.",
+      "nome_reduzido": "BCO DA CHINA BRASIL S.A.",
+      "label": "083 - Banco da China Brasil S.A.",
+      "participa_compe": "Sim",
+      "ispb": "10690848",
+      "inicio_operacao": "14/07/2009"
+    },
+    {
+      "codigo": "084",
+      "nome": "SISPRIME DO BRASIL - COOPERATIVA DE CRÉDITO",
+      "nome_reduzido": "SISPRIME DO BRASIL - COOP",
+      "label": "084 - SISPRIME DO BRASIL - COOPERATIVA DE CRÉDITO",
+      "participa_compe": "Sim",
+      "ispb": "02398976",
+      "inicio_operacao": "24/11/2009"
+    },
+    {
+      "codigo": "085",
+      "nome": "Cooperativa Central de Crédito - Ailos",
+      "nome_reduzido": "COOPCENTRAL AILOS",
+      "label": "085 - Cooperativa Central de Crédito - Ailos",
+      "participa_compe": "Sim",
+      "ispb": "05463212",
+      "inicio_operacao": "17/05/2010"
+    },
+    {
+      "codigo": "088",
+      "nome": "BANCO RANDON S.A.",
+      "nome_reduzido": "BANCO RANDON S.A.",
+      "label": "088 - BANCO RANDON S.A.",
+      "participa_compe": "Não",
+      "ispb": "11476673",
+      "inicio_operacao": "03/08/2020"
+    },
+    {
+      "codigo": "089",
+      "nome": "CREDISAN COOPERATIVA DE CRÉDITO",
+      "nome_reduzido": "CREDISAN CC",
+      "label": "089 - CREDISAN COOPERATIVA DE CRÉDITO",
+      "participa_compe": "Sim",
+      "ispb": "62109566",
+      "inicio_operacao": "30/08/2010"
+    },
+    {
+      "codigo": "093",
+      "nome": "PÓLOCRED   SOCIEDADE DE CRÉDITO AO MICROEMPREENDEDOR E À EMPRESA DE PEQUENO PORTE LTDA.",
+      "nome_reduzido": "POLOCRED SCMEPP LTDA.",
+      "label": "093 - PÓLOCRED   SOCIEDADE DE CRÉDITO AO MICROEMPREENDEDOR E À EMPRESA DE PEQUENO PORTE LTDA.",
+      "participa_compe": "Não",
+      "ispb": "07945233",
+      "inicio_operacao": "09/11/2010"
+    },
+    {
+      "codigo": "094",
+      "nome": "Banco Finaxis S.A.",
+      "nome_reduzido": "BANCO FINAXIS",
+      "label": "094 - Banco Finaxis S.A.",
+      "participa_compe": "Não",
+      "ispb": "11758741",
+      "inicio_operacao": "23/08/2010"
+    },
+    {
+      "codigo": "095",
+      "nome": "BANCO TRAVELEX S.A.",
+      "nome_reduzido": "BANCO TRAVELEX S.A.",
+      "label": "095 - BANCO TRAVELEX S.A.",
+      "participa_compe": "Não",
+      "ispb": "11703662",
+      "inicio_operacao": "22/06/2010"
+    },
+    {
+      "codigo": "096",
+      "nome": "Banco B3 S.A.",
+      "nome_reduzido": "BCO B3 S.A.",
+      "label": "096 - Banco B3 S.A.",
+      "participa_compe": "Não",
+      "ispb": "00997185",
+      "inicio_operacao": "12/11/2004"
+    },
+    {
+      "codigo": "097",
+      "nome": "Credisis - Central de Cooperativas de Crédito Ltda.",
+      "nome_reduzido": "CREDISIS - CENTRAL DE COOPERATIVAS DE CRÉDITO LTDA.",
+      "label": "097 - Credisis - Central de Cooperativas de Crédito Ltda.",
+      "participa_compe": "Sim",
+      "ispb": "04632856",
+      "inicio_operacao": "08/02/2011"
+    },
+    {
+      "codigo": "099",
+      "nome": "UNIPRIME CENTRAL NACIONAL - CENTRAL NACIONAL DE COOPERATIVA DE CREDITO",
+      "nome_reduzido": "UNIPRIME COOPCENTRAL LTDA.",
+      "label": "099 - UNIPRIME CENTRAL NACIONAL - CENTRAL NACIONAL DE COOPERATIVA DE CREDITO",
+      "participa_compe": "Sim",
+      "ispb": "03046391",
+      "inicio_operacao": "11/01/2011"
+    },
+    {
+      "codigo": "100",
+      "nome": "Planner Corretora de Valores S.A.",
+      "nome_reduzido": "PLANNER CV S.A.",
+      "label": "100 - Planner Corretora de Valores S.A.",
+      "participa_compe": "Não",
+      "ispb": "00806535",
+      "inicio_operacao": "27/04/2011"
+    },
+    {
+      "codigo": "101",
+      "nome": "WARREN RENA DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS LTDA",
+      "nome_reduzido": "WARREN RENA DTVM",
+      "label": "101 - WARREN RENA DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS LTDA",
+      "participa_compe": "Não",
+      "ispb": "62287735",
+      "inicio_operacao": "22/04/2010"
+    },
+    {
+      "codigo": "102",
+      "nome": "XP INVESTIMENTOS CORRETORA DE CÂMBIO,TÍTULOS E VALORES MOBILIÁRIOS S/A",
+      "nome_reduzido": "XP INVESTIMENTOS CCTVM S/A",
+      "label": "102 - XP INVESTIMENTOS CORRETORA DE CÂMBIO,TÍTULOS E VALORES MOBILIÁRIOS S/A",
+      "participa_compe": "Não",
+      "ispb": "02332886",
+      "inicio_operacao": "22/11/2011"
+    },
+    {
+      "codigo": "104",
+      "nome": "CAIXA ECONOMICA FEDERAL",
+      "nome_reduzido": "CAIXA ECONOMICA FEDERAL",
+      "label": "104 - CAIXA ECONOMICA FEDERAL",
+      "participa_compe": "Sim",
+      "ispb": "00360305",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "105",
+      "nome": "Lecca Crédito, Financiamento e Investimento S/A",
+      "nome_reduzido": "LECCA CFI S.A.",
+      "label": "105 - Lecca Crédito, Financiamento e Investimento S/A",
+      "participa_compe": "Não",
+      "ispb": "07652226",
+      "inicio_operacao": "27/12/2011"
+    },
+    {
+      "codigo": "107",
+      "nome": "Banco Bocom BBM S.A.",
+      "nome_reduzido": "BCO BOCOM BBM S.A.",
+      "label": "107 - Banco Bocom BBM S.A.",
+      "participa_compe": "Sim",
+      "ispb": "15114366",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "111",
+      "nome": "OLIVEIRA TRUST DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIARIOS S.A.",
+      "nome_reduzido": "OLIVEIRA TRUST DTVM S.A.",
+      "label": "111 - OLIVEIRA TRUST DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIARIOS S.A.",
+      "participa_compe": "Não",
+      "ispb": "36113876",
+      "inicio_operacao": "24/03/2011"
+    },
+    {
+      "codigo": "113",
+      "nome": "NEON CORRETORA DE TÍTULOS E VALORES MOBILIÁRIOS S.A.",
+      "nome_reduzido": "NEON CTVM S.A.",
+      "label": "113 - NEON CORRETORA DE TÍTULOS E VALORES MOBILIÁRIOS S.A.",
+      "participa_compe": "Não",
+      "ispb": "61723847",
+      "inicio_operacao": "28/11/2011"
+    },
+    {
+      "codigo": "119",
+      "nome": "Banco Western Union do Brasil S.A.",
+      "nome_reduzido": "BCO WESTERN UNION",
+      "label": "119 - Banco Western Union do Brasil S.A.",
+      "participa_compe": "Não",
+      "ispb": "13720915",
+      "inicio_operacao": "10/10/2011"
+    },
+    {
+      "codigo": "120",
+      "nome": "BANCO RODOBENS S.A.",
+      "nome_reduzido": "BCO RODOBENS S.A.",
+      "label": "120 - BANCO RODOBENS S.A.",
+      "participa_compe": "Sim",
+      "ispb": "33603457",
+      "inicio_operacao": "06/02/2012"
+    },
+    {
+      "codigo": "121",
+      "nome": "Banco Agibank S.A.",
+      "nome_reduzido": "BCO AGIBANK S.A.",
+      "label": "121 - Banco Agibank S.A.",
+      "participa_compe": "Não",
+      "ispb": "10664513",
+      "inicio_operacao": "04/04/2012"
+    },
+    {
+      "codigo": "122",
+      "nome": "Banco Bradesco BERJ S.A.",
+      "nome_reduzido": "BCO BRADESCO BERJ S.A.",
+      "label": "122 - Banco Bradesco BERJ S.A.",
+      "participa_compe": "Sim",
+      "ispb": "33147315",
+      "inicio_operacao": "08/11/2011"
+    },
+    {
+      "codigo": "124",
+      "nome": "Banco Woori Bank do Brasil S.A.",
+      "nome_reduzido": "BCO WOORI BANK DO BRASIL S.A.",
+      "label": "124 - Banco Woori Bank do Brasil S.A.",
+      "participa_compe": "Sim",
+      "ispb": "15357060",
+      "inicio_operacao": "09/08/2012"
+    },
+    {
+      "codigo": "125",
+      "nome": "BANCO GENIAL S.A.",
+      "nome_reduzido": "BANCO GENIAL",
+      "label": "125 - BANCO GENIAL S.A.",
+      "participa_compe": "Sim",
+      "ispb": "45246410",
+      "inicio_operacao": "19/11/2012"
+    },
+    {
+      "codigo": "126",
+      "nome": "BR Partners Banco de Investimento S.A.",
+      "nome_reduzido": "BR PARTNERS BI",
+      "label": "126 - BR Partners Banco de Investimento S.A.",
+      "participa_compe": "Não",
+      "ispb": "13220493",
+      "inicio_operacao": "04/01/2013"
+    },
+    {
+      "codigo": "127",
+      "nome": "Codepe Corretora de Valores e Câmbio S.A.",
+      "nome_reduzido": "CODEPE CVC S.A.",
+      "label": "127 - Codepe Corretora de Valores e Câmbio S.A.",
+      "participa_compe": "Não",
+      "ispb": "09512542",
+      "inicio_operacao": "09/11/2012"
+    },
+    {
+      "codigo": "128",
+      "nome": "BRAZA BANK S.A. BANCO DE CÂMBIO",
+      "nome_reduzido": "BRAZA BANK S.A. BCO DE CÂMBIO",
+      "label": "128 - BRAZA BANK S.A. BANCO DE CÂMBIO",
+      "participa_compe": "Não",
+      "ispb": "19307785",
+      "inicio_operacao": "27/04/2015"
+    },
+    {
+      "codigo": "129",
+      "nome": "UBS BB BANCO DE INVESTIMENTO S.A.",
+      "nome_reduzido": "UBS BB BI S.A.",
+      "label": "129 - UBS BB BANCO DE INVESTIMENTO S.A.",
+      "participa_compe": "Não",
+      "ispb": "18520834",
+      "inicio_operacao": "12/03/2014"
+    },
+    {
+      "codigo": "130",
+      "nome": "CARUANA S.A. - SOCIEDADE DE CRÉDITO, FINANCIAMENTO E INVESTIMENTO",
+      "nome_reduzido": "CARUANA SCFI",
+      "label": "130 - CARUANA S.A. - SOCIEDADE DE CRÉDITO, FINANCIAMENTO E INVESTIMENTO",
+      "participa_compe": "Não",
+      "ispb": "09313766",
+      "inicio_operacao": "12/08/2013"
+    },
+    {
+      "codigo": "131",
+      "nome": "TULLETT PREBON BRASIL CORRETORA DE VALORES E CÂMBIO LTDA",
+      "nome_reduzido": "TULLETT PREBON BRASIL CVC LTDA",
+      "label": "131 - TULLETT PREBON BRASIL CORRETORA DE VALORES E CÂMBIO LTDA",
+      "participa_compe": "Não",
+      "ispb": "61747085",
+      "inicio_operacao": "15/07/2013"
+    },
+    {
+      "codigo": "132",
+      "nome": "ICBC do Brasil Banco Múltiplo S.A.",
+      "nome_reduzido": "ICBC DO BRASIL BM S.A.",
+      "label": "132 - ICBC do Brasil Banco Múltiplo S.A.",
+      "participa_compe": "Não",
+      "ispb": "17453575",
+      "inicio_operacao": "26/09/2013"
+    },
+    {
+      "codigo": "133",
+      "nome": "CONFEDERAÇÃO NACIONAL DAS COOPERATIVAS CENTRAIS DE CRÉDITO E ECONOMIA FAMILIAR E SOLIDÁRIA - CRESOL CONFEDERAÇÃO",
+      "nome_reduzido": "CRESOL CONFEDERAÇÃO",
+      "label": "133 - CONFEDERAÇÃO NACIONAL DAS COOPERATIVAS CENTRAIS DE CRÉDITO E ECONOMIA FAMILIAR E SOLIDÁRIA - CRESOL CONFEDERAÇÃO",
+      "participa_compe": "Sim",
+      "ispb": "10398952",
+      "inicio_operacao": "02/05/2016"
+    },
+    {
+      "codigo": "134",
+      "nome": "BGC LIQUIDEZ DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS LTDA",
+      "nome_reduzido": "BGC LIQUIDEZ DTVM LTDA",
+      "label": "134 - BGC LIQUIDEZ DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS LTDA",
+      "participa_compe": "Não",
+      "ispb": "33862244",
+      "inicio_operacao": "28/07/2014"
+    },
+    {
+      "codigo": "136",
+      "nome": "COOPERATIVA CENTRAL DE CRÉDITO UNICRED DO BRASIL - UNICRED DO BRASIL",
+      "nome_reduzido": "UNICRED DO BRASIL",
+      "label": "136 - COOPERATIVA CENTRAL DE CRÉDITO UNICRED DO BRASIL - UNICRED DO BRASIL",
+      "participa_compe": "Sim",
+      "ispb": "00315557",
+      "inicio_operacao": "28/07/2014"
+    },
+    {
+      "codigo": "138",
+      "nome": "Get Money Corretora de Câmbio S.A.",
+      "nome_reduzido": "GET MONEY CC LTDA",
+      "label": "138 - Get Money Corretora de Câmbio S.A.",
+      "participa_compe": "Não",
+      "ispb": "10853017",
+      "inicio_operacao": "14/07/2014"
+    },
+    {
+      "codigo": "139",
+      "nome": "Intesa Sanpaolo Brasil S.A. - Banco Múltiplo",
+      "nome_reduzido": "INTESA SANPAOLO BRASIL S.A. BM",
+      "label": "139 - Intesa Sanpaolo Brasil S.A. - Banco Múltiplo",
+      "participa_compe": "Não",
+      "ispb": "55230916",
+      "inicio_operacao": "08/05/2015"
+    },
+    {
+      "codigo": "140",
+      "nome": "NU INVESTIMENTOS S.A. - CORRETORA DE TÍTULOS E VALORES MOBILIÁRIOS",
+      "nome_reduzido": "NU INVESTIMENTOS S.A. - CTVM",
+      "label": "140 - NU INVESTIMENTOS S.A. - CORRETORA DE TÍTULOS E VALORES MOBILIÁRIOS",
+      "participa_compe": "Não",
+      "ispb": "62169875",
+      "inicio_operacao": "26/05/2015"
+    },
+    {
+      "codigo": "141",
+      "nome": "BANCO MASTER DE INVESTIMENTO S.A. - EM LIQUIDAÇÃO EXTRAJUDICIAL",
+      "nome_reduzido": "MASTER BI S.A. - EM LIQUIDAÇÃO EXTRAJUDICIAL",
+      "label": "141 - BANCO MASTER DE INVESTIMENTO S.A. - EM LIQUIDAÇÃO EXTRAJUDICIAL",
+      "participa_compe": "Não",
+      "ispb": "09526594",
+      "inicio_operacao": "20/03/2023"
+    },
+    {
+      "codigo": "142",
+      "nome": "Broker Brasil Corretora de Câmbio Ltda.",
+      "nome_reduzido": "BROKER BRASIL CC LTDA.",
+      "label": "142 - Broker Brasil Corretora de Câmbio Ltda.",
+      "participa_compe": "Não",
+      "ispb": "16944141",
+      "inicio_operacao": "23/06/2015"
+    },
+    {
+      "codigo": "143",
+      "nome": "INTEX BANK BANCO DE CÂMBIO S.A.",
+      "nome_reduzido": "INTEX BANK BCO DE CÂMBIO S.A.",
+      "label": "143 - INTEX BANK BANCO DE CÂMBIO S.A.",
+      "participa_compe": "Não",
+      "ispb": "02992317",
+      "inicio_operacao": "24/08/2015"
+    },
+    {
+      "codigo": "144",
+      "nome": "EBURY BANCO DE CÂMBIO S.A.",
+      "nome_reduzido": "EBURY BCO DE CÂMBIO S.A.",
+      "label": "144 - EBURY BANCO DE CÂMBIO S.A.",
+      "participa_compe": "Não",
+      "ispb": "13059145",
+      "inicio_operacao": "23/05/2016"
+    },
+    {
+      "codigo": "145",
+      "nome": "LEVYCAM - CORRETORA DE CAMBIO E VALORES LTDA.",
+      "nome_reduzido": "LEVYCAM CCV LTDA",
+      "label": "145 - LEVYCAM - CORRETORA DE CAMBIO E VALORES LTDA.",
+      "participa_compe": "Não",
+      "ispb": "50579044",
+      "inicio_operacao": "16/06/2015"
+    },
+    {
+      "codigo": "146",
+      "nome": "GUITTA CORRETORA DE CAMBIO LTDA.",
+      "nome_reduzido": "GUITTA CC LTDA",
+      "label": "146 - GUITTA CORRETORA DE CAMBIO LTDA.",
+      "participa_compe": "Não",
+      "ispb": "24074692",
+      "inicio_operacao": "20/05/2015"
+    },
+    {
+      "codigo": "149",
+      "nome": "Facta Financeira S.A. - Crédito Financiamento e Investimento",
+      "nome_reduzido": "FACTA S.A. CFI",
+      "label": "149 - Facta Financeira S.A. - Crédito Financiamento e Investimento",
+      "participa_compe": "Não",
+      "ispb": "15581638",
+      "inicio_operacao": "08/07/2015"
+    },
+    {
+      "codigo": "157",
+      "nome": "ICAP do Brasil Corretora de Títulos e Valores Mobiliários Ltda.",
+      "nome_reduzido": "ICAP DO BRASIL CTVM LTDA.",
+      "label": "157 - ICAP do Brasil Corretora de Títulos e Valores Mobiliários Ltda.",
+      "participa_compe": "Não",
+      "ispb": "09105360",
+      "inicio_operacao": "12/02/2016"
+    },
+    {
+      "codigo": "159",
+      "nome": "Casa do Crédito S.A. Sociedade de Crédito ao Microempreendedor",
+      "nome_reduzido": "CASA CREDITO S.A. SCM",
+      "label": "159 - Casa do Crédito S.A. Sociedade de Crédito ao Microempreendedor",
+      "participa_compe": "Não",
+      "ispb": "05442029",
+      "inicio_operacao": "04/09/2017"
+    },
+    {
+      "codigo": "173",
+      "nome": "BRL Trust Distribuidora de Títulos e Valores Mobiliários S.A.",
+      "nome_reduzido": "BRL TRUST DTVM SA",
+      "label": "173 - BRL Trust Distribuidora de Títulos e Valores Mobiliários S.A.",
+      "participa_compe": "Não",
+      "ispb": "13486793",
+      "inicio_operacao": "28/11/2016"
+    },
+    {
+      "codigo": "174",
+      "nome": "PEFISA S.A. - CRÉDITO, FINANCIAMENTO E INVESTIMENTO",
+      "nome_reduzido": "PEFISA S.A. - C.F.I.",
+      "label": "174 - PEFISA S.A. - CRÉDITO, FINANCIAMENTO E INVESTIMENTO",
+      "participa_compe": "Não",
+      "ispb": "43180355",
+      "inicio_operacao": "21/11/2017"
+    },
+    {
+      "codigo": "180",
+      "nome": "CM CAPITAL MARKETS CORRETORA DE CÂMBIO, TÍTULOS E VALORES MOBILIÁRIOS LTDA",
+      "nome_reduzido": "CM CAPITAL MARKETS CCTVM LTDA",
+      "label": "180 - CM CAPITAL MARKETS CORRETORA DE CÂMBIO, TÍTULOS E VALORES MOBILIÁRIOS LTDA",
+      "participa_compe": "Não",
+      "ispb": "02685483",
+      "inicio_operacao": "20/01/2017"
+    },
+    {
+      "codigo": "183",
+      "nome": "SOCRED S.A. - SOCIEDADE DE CRÉDITO AO MICROEMPREENDEDOR E À EMPRESA DE PEQUENO PORTE",
+      "nome_reduzido": "SOCRED SA - SCMEPP",
+      "label": "183 - SOCRED S.A. - SOCIEDADE DE CRÉDITO AO MICROEMPREENDEDOR E À EMPRESA DE PEQUENO PORTE",
+      "participa_compe": "Não",
+      "ispb": "09210106",
+      "inicio_operacao": "12/06/2017"
+    },
+    {
+      "codigo": "188",
+      "nome": "ATIVA INVESTIMENTOS S.A. CORRETORA DE TÍTULOS, CÂMBIO E VALORES",
+      "nome_reduzido": "ATIVA S.A. INVESTIMENTOS CCTVM",
+      "label": "188 - ATIVA INVESTIMENTOS S.A. CORRETORA DE TÍTULOS, CÂMBIO E VALORES",
+      "participa_compe": "Não",
+      "ispb": "33775974",
+      "inicio_operacao": "28/07/2017"
+    },
+    {
+      "codigo": "189",
+      "nome": "HS FINANCEIRA S/A CREDITO, FINANCIAMENTO E INVESTIMENTOS",
+      "nome_reduzido": "HS FINANCEIRA",
+      "label": "189 - HS FINANCEIRA S/A CREDITO, FINANCIAMENTO E INVESTIMENTOS",
+      "participa_compe": "Não",
+      "ispb": "07512441",
+      "inicio_operacao": "05/06/2017"
+    },
+    {
+      "codigo": "190",
+      "nome": "SERVICOOP - COOPERATIVA DE CRÉDITO DOS SERVIDORES PÚBLICOS ESTADUAIS E MUNICIPAIS DO RIO GRANDE DO SUL",
+      "nome_reduzido": "SERVICOOP",
+      "label": "190 - SERVICOOP - COOPERATIVA DE CRÉDITO DOS SERVIDORES PÚBLICOS ESTADUAIS E MUNICIPAIS DO RIO GRANDE DO SUL",
+      "participa_compe": "Não",
+      "ispb": "03973814",
+      "inicio_operacao": "16/10/2017"
+    },
+    {
+      "codigo": "191",
+      "nome": "Nova Futura Corretora de Títulos e Valores Mobiliários Ltda.",
+      "nome_reduzido": "NOVA FUTURA CTVM LTDA.",
+      "label": "191 - Nova Futura Corretora de Títulos e Valores Mobiliários Ltda.",
+      "participa_compe": "Não",
+      "ispb": "04257795",
+      "inicio_operacao": "22/06/2017"
+    },
+    {
+      "codigo": "194",
+      "nome": "UNIDA DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS LTDA.",
+      "nome_reduzido": "UNIDA DTVM LTDA",
+      "label": "194 - UNIDA DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS LTDA.",
+      "participa_compe": "Não",
+      "ispb": "20155248",
+      "inicio_operacao": "25/10/2017"
+    },
+    {
+      "codigo": "195",
+      "nome": "VALOR S/A SOCIEDADE DE CRÉDITO, FINANCIAMENTO E INVESTIMENTO",
+      "nome_reduzido": "VALOR S/A SCFI",
+      "label": "195 - VALOR S/A SOCIEDADE DE CRÉDITO, FINANCIAMENTO E INVESTIMENTO",
+      "participa_compe": "Não",
+      "ispb": "07799277",
+      "inicio_operacao": "09/08/2021"
+    },
+    {
+      "codigo": "196",
+      "nome": "FAIR CORRETORA DE CAMBIO S.A.",
+      "nome_reduzido": "FAIR CC S.A.",
+      "label": "196 - FAIR CORRETORA DE CAMBIO S.A.",
+      "participa_compe": "Não",
+      "ispb": "32648370",
+      "inicio_operacao": "11/09/2017"
+    },
+    {
+      "codigo": "197",
+      "nome": "STONE INSTITUIÇÃO DE PAGAMENTO S.A.",
+      "nome_reduzido": "STONE IP S.A.",
+      "label": "197 - STONE INSTITUIÇÃO DE PAGAMENTO S.A.",
+      "participa_compe": "Não",
+      "ispb": "16501555",
+      "inicio_operacao": "18/10/2017"
+    },
+    {
+      "codigo": "208",
+      "nome": "Banco BTG Pactual S.A.",
+      "nome_reduzido": "BANCO BTG PACTUAL S.A.",
+      "label": "208 - Banco BTG Pactual S.A.",
+      "participa_compe": "Sim",
+      "ispb": "30306294",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "212",
+      "nome": "Banco Original S.A.",
+      "nome_reduzido": "BANCO ORIGINAL",
+      "label": "212 - Banco Original S.A.",
+      "participa_compe": "Sim",
+      "ispb": "92894922",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "213",
+      "nome": "Banco Arbi S.A.",
+      "nome_reduzido": "BCO ARBI S.A.",
+      "label": "213 - Banco Arbi S.A.",
+      "participa_compe": "Sim",
+      "ispb": "54403563",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "217",
+      "nome": "Banco John Deere S.A.",
+      "nome_reduzido": "BANCO JOHN DEERE S.A.",
+      "label": "217 - Banco John Deere S.A.",
+      "participa_compe": "Não",
+      "ispb": "91884981",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "218",
+      "nome": "Banco BS2 S.A.",
+      "nome_reduzido": "BCO BS2 S.A.",
+      "label": "218 - Banco BS2 S.A.",
+      "participa_compe": "Não",
+      "ispb": "71027866",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "222",
+      "nome": "BANCO CRÉDIT AGRICOLE BRASIL S.A.",
+      "nome_reduzido": "BCO CRÉDIT AGRICOLE BR S.A.",
+      "label": "222 - BANCO CRÉDIT AGRICOLE BRASIL S.A.",
+      "participa_compe": "Não",
+      "ispb": "75647891",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "224",
+      "nome": "Banco Fibra S.A.",
+      "nome_reduzido": "BCO FIBRA S.A.",
+      "label": "224 - Banco Fibra S.A.",
+      "participa_compe": "Sim",
+      "ispb": "58616418",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "233",
+      "nome": "BANCO BMG SOLUÇÕES FINANCEIRAS S.A.",
+      "nome_reduzido": "BANCO BMG SOLUÇÕES FINANCEIRAS S.A.",
+      "label": "233 - BANCO BMG SOLUÇÕES FINANCEIRAS S.A.",
+      "participa_compe": "Não",
+      "ispb": "62421979",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "237",
+      "nome": "Banco Bradesco S.A.",
+      "nome_reduzido": "BCO BRADESCO S.A.",
+      "label": "237 - Banco Bradesco S.A.",
+      "participa_compe": "Sim",
+      "ispb": "60746948",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "241",
+      "nome": "BANCO CLASSICO S.A.",
+      "nome_reduzido": "BCO CLASSICO S.A.",
+      "label": "241 - BANCO CLASSICO S.A.",
+      "participa_compe": "Sim",
+      "ispb": "31597552",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "243",
+      "nome": "BANCO MASTER S/A - EM LIQUIDAÇÃO EXTRAJUDICIAL",
+      "nome_reduzido": "BANCO MASTER - EM LIQUIDAÇÃO EXTRAJUDICIAL",
+      "label": "243 - BANCO MASTER S/A - EM LIQUIDAÇÃO EXTRAJUDICIAL",
+      "participa_compe": "Não",
+      "ispb": "33923798",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "246",
+      "nome": "Banco ABC Brasil S.A.",
+      "nome_reduzido": "BCO ABC BRASIL S.A.",
+      "label": "246 - Banco ABC Brasil S.A.",
+      "participa_compe": "Não",
+      "ispb": "28195667",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "249",
+      "nome": "Banco Investcred Unibanco S.A.",
+      "nome_reduzido": "BANCO INVESTCRED UNIBANCO S.A.",
+      "label": "249 - Banco Investcred Unibanco S.A.",
+      "participa_compe": "Sim",
+      "ispb": "61182408",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "250",
+      "nome": "BANCO BMG CONSIGNADO S.A.",
+      "nome_reduzido": "BANCO BMG CONSIGNADO S.A.",
+      "label": "250 - BANCO BMG CONSIGNADO S.A.",
+      "participa_compe": "Não",
+      "ispb": "50585090",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "254",
+      "nome": "PARANÁ BANCO S.A.",
+      "nome_reduzido": "PARANA BCO S.A.",
+      "label": "254 - PARANÁ BANCO S.A.",
+      "participa_compe": "Sim",
+      "ispb": "14388334",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "259",
+      "nome": "MONEYCORP BANCO DE CÂMBIO S.A.",
+      "nome_reduzido": "MONEYCORP BCO DE CÂMBIO S.A.",
+      "label": "259 - MONEYCORP BANCO DE CÂMBIO S.A.",
+      "participa_compe": "Não",
+      "ispb": "08609934",
+      "inicio_operacao": "27/01/2020"
+    },
+    {
+      "codigo": "260",
+      "nome": "NU PAGAMENTOS S.A. - INSTITUIÇÃO DE PAGAMENTO",
+      "nome_reduzido": "NU PAGAMENTOS - IP",
+      "label": "260 - NU PAGAMENTOS S.A. - INSTITUIÇÃO DE PAGAMENTO",
+      "participa_compe": "Não",
+      "ispb": "18236120",
+      "inicio_operacao": "10/10/2017"
+    },
+    {
+      "codigo": "265",
+      "nome": "Banco Fator S.A.",
+      "nome_reduzido": "BCO FATOR S.A.",
+      "label": "265 - Banco Fator S.A.",
+      "participa_compe": "Sim",
+      "ispb": "33644196",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "266",
+      "nome": "BANCO CEDULA S.A.",
+      "nome_reduzido": "BCO CEDULA S.A.",
+      "label": "266 - BANCO CEDULA S.A.",
+      "participa_compe": "Sim",
+      "ispb": "33132044",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "268",
+      "nome": "BARI COMPANHIA HIPOTECÁRIA",
+      "nome_reduzido": "BARI CIA HIPOTECÁRIA",
+      "label": "268 - BARI COMPANHIA HIPOTECÁRIA",
+      "participa_compe": "Não",
+      "ispb": "14511781",
+      "inicio_operacao": "21/12/2017"
+    },
+    {
+      "codigo": "269",
+      "nome": "BANCO HSBC S.A.",
+      "nome_reduzido": "BCO HSBC S.A.",
+      "label": "269 - BANCO HSBC S.A.",
+      "participa_compe": "Não",
+      "ispb": "53518684",
+      "inicio_operacao": "07/02/2018"
+    },
+    {
+      "codigo": "271",
+      "nome": "BPY CORRETORA DE CÂMBIO, TÍTULOS E VALORES MOBILIÁRIOS S.A.",
+      "nome_reduzido": "BPY CCTVM S.A.",
+      "label": "271 - BPY CORRETORA DE CÂMBIO, TÍTULOS E VALORES MOBILIÁRIOS S.A.",
+      "participa_compe": "Não",
+      "ispb": "27842177",
+      "inicio_operacao": "26/02/2018"
+    },
+    {
+      "codigo": "272",
+      "nome": "AGK CORRETORA DE CAMBIO S.A.",
+      "nome_reduzido": "AGK CC S.A.",
+      "label": "272 - AGK CORRETORA DE CAMBIO S.A.",
+      "participa_compe": "Não",
+      "ispb": "00250699",
+      "inicio_operacao": "21/11/2018"
+    },
+    {
+      "codigo": "273",
+      "nome": "COOPERATIVA DE CREDITO SULCREDI AMPLEA",
+      "nome_reduzido": "COOP SULCREDI AMPLEA",
+      "label": "273 - COOPERATIVA DE CREDITO SULCREDI AMPLEA",
+      "participa_compe": "Não",
+      "ispb": "08253539",
+      "inicio_operacao": "24/04/2018"
+    },
+    {
+      "codigo": "274",
+      "nome": "BMP SOCIEDADE DE CRÉDITO AO MICROEMPREENDEDOR E A EMPRESA DE PEQUENO PORTE LTDA.",
+      "nome_reduzido": "BMP SCMEPP LTDA",
+      "label": "274 - BMP SOCIEDADE DE CRÉDITO AO MICROEMPREENDEDOR E A EMPRESA DE PEQUENO PORTE LTDA.",
+      "participa_compe": "Não",
+      "ispb": "11581339",
+      "inicio_operacao": "10/09/2019"
+    },
+    {
+      "codigo": "276",
+      "nome": "BANCO SENFF S.A.",
+      "nome_reduzido": "BCO SENFF S.A.",
+      "label": "276 - BANCO SENFF S.A.",
+      "participa_compe": "Não",
+      "ispb": "11970623",
+      "inicio_operacao": "12/06/2018"
+    },
+    {
+      "codigo": "278",
+      "nome": "Genial Investimentos Corretora de Valores Mobiliários S.A.",
+      "nome_reduzido": "GENIAL INVESTIMENTOS CVM S.A.",
+      "label": "278 - Genial Investimentos Corretora de Valores Mobiliários S.A.",
+      "participa_compe": "Não",
+      "ispb": "27652684",
+      "inicio_operacao": "14/05/2018"
+    },
+    {
+      "codigo": "280",
+      "nome": "WILL FINANCEIRA S.A. CRÉDITO, FINANCIAMENTO E INVESTIMENTO - EM LIQUIDAÇÃO EXTRAJUDICIAL",
+      "nome_reduzido": "WILL FINANCEIRA S.A.CFI - EM LIQUIDAÇÃO EXTRAJUDICIAL",
+      "label": "280 - WILL FINANCEIRA S.A. CRÉDITO, FINANCIAMENTO E INVESTIMENTO - EM LIQUIDAÇÃO EXTRAJUDICIAL",
+      "participa_compe": "Não",
+      "ispb": "23862762",
+      "inicio_operacao": "10/05/2018"
+    },
+    {
+      "codigo": "281",
+      "nome": "Cooperativa de Crédito Rural Coopavel",
+      "nome_reduzido": "CCR COOPAVEL",
+      "label": "281 - Cooperativa de Crédito Rural Coopavel",
+      "participa_compe": "Sim",
+      "ispb": "76461557",
+      "inicio_operacao": "05/11/2018"
+    },
+    {
+      "codigo": "283",
+      "nome": "RB INVESTIMENTOS DISTRIBUIDORA DE TITULOS E VALORES MOBILIARIOS LIMITADA",
+      "nome_reduzido": "RB INVESTIMENTOS DTVM LTDA.",
+      "label": "283 - RB INVESTIMENTOS DISTRIBUIDORA DE TITULOS E VALORES MOBILIARIOS LIMITADA",
+      "participa_compe": "Não",
+      "ispb": "89960090",
+      "inicio_operacao": "05/07/2018"
+    },
+    {
+      "codigo": "285",
+      "nome": "FRENTE SOCIEDADE CORRETORA DE CÂMBIO S.A.",
+      "nome_reduzido": "FRENTE SCC S.A",
+      "label": "285 - FRENTE SOCIEDADE CORRETORA DE CÂMBIO S.A.",
+      "participa_compe": "Não",
+      "ispb": "71677850",
+      "inicio_operacao": "25/09/2018"
+    },
+    {
+      "codigo": "288",
+      "nome": "CAROL DISTRIBUIDORA DE TITULOS E VALORES MOBILIARIOS LTDA.",
+      "nome_reduzido": "CAROL DTVM LTDA.",
+      "label": "288 - CAROL DISTRIBUIDORA DE TITULOS E VALORES MOBILIARIOS LTDA.",
+      "participa_compe": "Não",
+      "ispb": "62237649",
+      "inicio_operacao": "05/07/2018"
+    },
+    {
+      "codigo": "289",
+      "nome": "EFX CORRETORA DE CÂMBIO LTDA.",
+      "nome_reduzido": "EFX CC LTDA.",
+      "label": "289 - EFX CORRETORA DE CÂMBIO LTDA.",
+      "participa_compe": "Não",
+      "ispb": "94968518",
+      "inicio_operacao": "14/03/2019"
+    },
+    {
+      "codigo": "290",
+      "nome": "PAGSEGURO INTERNET INSTITUIÇÃO DE PAGAMENTO S.A.",
+      "nome_reduzido": "PAGSEGURO INTERNET IP S.A.",
+      "label": "290 - PAGSEGURO INTERNET INSTITUIÇÃO DE PAGAMENTO S.A.",
+      "participa_compe": "Não",
+      "ispb": "08561701",
+      "inicio_operacao": "07/11/2018"
+    },
+    {
+      "codigo": "292",
+      "nome": "GALAPAGOS CAPITAL DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS S.A.",
+      "nome_reduzido": "GALAPAGOS DTVM S.A.",
+      "label": "292 - GALAPAGOS CAPITAL DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS S.A.",
+      "participa_compe": "Não",
+      "ispb": "28650236",
+      "inicio_operacao": "24/10/2018"
+    },
+    {
+      "codigo": "293",
+      "nome": "Lastro RDV Distribuidora de Títulos e Valores Mobiliários Ltda.",
+      "nome_reduzido": "LASTRO RDV DTVM LTDA",
+      "label": "293 - Lastro RDV Distribuidora de Títulos e Valores Mobiliários Ltda.",
+      "participa_compe": "Não",
+      "ispb": "71590442",
+      "inicio_operacao": "10/09/2018"
+    },
+    {
+      "codigo": "296",
+      "nome": "OZ CORRETORA DE CÂMBIO S.A.",
+      "nome_reduzido": "OZ CORRETORA DE CÂMBIO S.A.",
+      "label": "296 - OZ CORRETORA DE CÂMBIO S.A.",
+      "participa_compe": "Não",
+      "ispb": "04062902",
+      "inicio_operacao": "11/02/2019"
+    },
+    {
+      "codigo": "298",
+      "nome": "VIPS CORRETORA DE CÂMBIO S.A.",
+      "nome_reduzido": "VIPS CC S.A.",
+      "label": "298 - VIPS CORRETORA DE CÂMBIO S.A.",
+      "participa_compe": "Não",
+      "ispb": "17772370",
+      "inicio_operacao": "15/08/2018"
+    },
+    {
+      "codigo": "299",
+      "nome": "BANCO AFINZ S.A. - BANCO MÚLTIPLO",
+      "nome_reduzido": "BCO AFINZ S.A. - BM",
+      "label": "299 - BANCO AFINZ S.A. - BANCO MÚLTIPLO",
+      "participa_compe": "Não",
+      "ispb": "04814563",
+      "inicio_operacao": "03/12/2018"
+    },
+    {
+      "codigo": "300",
+      "nome": "Banco de la Nacion Argentina",
+      "nome_reduzido": "BCO LA NACION ARGENTINA",
+      "label": "300 - Banco de la Nacion Argentina",
+      "participa_compe": "Sim",
+      "ispb": "33042151",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "301",
+      "nome": "DOCK INSTITUIÇÃO DE PAGAMENTO S.A.",
+      "nome_reduzido": "DOCK IP S.A.",
+      "label": "301 - DOCK INSTITUIÇÃO DE PAGAMENTO S.A.",
+      "participa_compe": "Não",
+      "ispb": "13370835",
+      "inicio_operacao": "26/09/2018"
+    },
+    {
+      "codigo": "305",
+      "nome": "FOURTRADE CORRETORA DE CÂMBIO LTDA.",
+      "nome_reduzido": "FOURTRADE COR. DE CAMBIO LTDA",
+      "label": "305 - FOURTRADE CORRETORA DE CÂMBIO LTDA.",
+      "participa_compe": "Não",
+      "ispb": "40353377",
+      "inicio_operacao": "19/02/2024"
+    },
+    {
+      "codigo": "306",
+      "nome": "PORTOPAR DISTRIBUIDORA DE TITULOS E VALORES MOBILIARIOS LTDA.",
+      "nome_reduzido": "PORTOPAR DTVM LTDA",
+      "label": "306 - PORTOPAR DISTRIBUIDORA DE TITULOS E VALORES MOBILIARIOS LTDA.",
+      "participa_compe": "Não",
+      "ispb": "40303299",
+      "inicio_operacao": "06/02/2019"
+    },
+    {
+      "codigo": "307",
+      "nome": "Terra Investimentos Distribuidora de Títulos e Valores Mobiliários Ltda.",
+      "nome_reduzido": "TERRA INVESTIMENTOS DTVM",
+      "label": "307 - Terra Investimentos Distribuidora de Títulos e Valores Mobiliários Ltda.",
+      "participa_compe": "Não",
+      "ispb": "03751794",
+      "inicio_operacao": "25/10/2018"
+    },
+    {
+      "codigo": "310",
+      "nome": "VORTX DISTRIBUIDORA DE TITULOS E VALORES MOBILIARIOS LTDA.",
+      "nome_reduzido": "VORTX DTVM LTDA.",
+      "label": "310 - VORTX DISTRIBUIDORA DE TITULOS E VALORES MOBILIARIOS LTDA.",
+      "participa_compe": "Não",
+      "ispb": "22610500",
+      "inicio_operacao": "18/10/2018"
+    },
+    {
+      "codigo": "312",
+      "nome": "HSCM - SOCIEDADE DE CRÉDITO AO MICROEMPREENDEDOR E À EMPRESA DE PEQUENO PORTE LTDA.",
+      "nome_reduzido": "HSCM SCMEPP LTDA.",
+      "label": "312 - HSCM - SOCIEDADE DE CRÉDITO AO MICROEMPREENDEDOR E À EMPRESA DE PEQUENO PORTE LTDA.",
+      "participa_compe": "Não",
+      "ispb": "07693858",
+      "inicio_operacao": "09/02/2021"
+    },
+    {
+      "codigo": "318",
+      "nome": "Banco BMG S.A.",
+      "nome_reduzido": "BCO BMG S.A.",
+      "label": "318 - Banco BMG S.A.",
+      "participa_compe": "Sim",
+      "ispb": "61186680",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "319",
+      "nome": "OM DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS LTDA",
+      "nome_reduzido": "OM DTVM LTDA",
+      "label": "319 - OM DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS LTDA",
+      "participa_compe": "Não",
+      "ispb": "11495073",
+      "inicio_operacao": "01/03/2019"
+    },
+    {
+      "codigo": "320",
+      "nome": "BANK OF CHINA (BRASIL) BANCO MÚLTIPLO S/A",
+      "nome_reduzido": "BOC BRASIL",
+      "label": "320 - BANK OF CHINA (BRASIL) BANCO MÚLTIPLO S/A",
+      "participa_compe": "Não",
+      "ispb": "07450604",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "321",
+      "nome": "CREFAZ SOCIEDADE DE CRÉDITO AO MICROEMPREENDEDOR E A EMPRESA DE PEQUENO PORTE S.A.",
+      "nome_reduzido": "CREFAZ SCMEPP SA",
+      "label": "321 - CREFAZ SOCIEDADE DE CRÉDITO AO MICROEMPREENDEDOR E A EMPRESA DE PEQUENO PORTE S.A.",
+      "participa_compe": "Não",
+      "ispb": "18188384",
+      "inicio_operacao": "11/06/2019"
+    },
+    {
+      "codigo": "322",
+      "nome": "Cooperativa de Crédito Rural de Abelardo Luz - Sulcredi/Crediluz",
+      "nome_reduzido": "CCR DE ABELARDO LUZ",
+      "label": "322 - Cooperativa de Crédito Rural de Abelardo Luz - Sulcredi/Crediluz",
+      "participa_compe": "Sim",
+      "ispb": "01073966",
+      "inicio_operacao": "14/06/2019"
+    },
+    {
+      "codigo": "323",
+      "nome": "MERCADO PAGO INSTITUIÇÃO DE PAGAMENTO LTDA.",
+      "nome_reduzido": "MERCADO PAGO IP LTDA.",
+      "label": "323 - MERCADO PAGO INSTITUIÇÃO DE PAGAMENTO LTDA.",
+      "participa_compe": "Não",
+      "ispb": "10573521",
+      "inicio_operacao": "24/06/2019"
+    },
+    {
+      "codigo": "324",
+      "nome": "CARTOS SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "CARTOS SCD S.A.",
+      "label": "324 - CARTOS SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "21332862",
+      "inicio_operacao": "16/09/2020"
+    },
+    {
+      "codigo": "326",
+      "nome": "PARATI - CREDITO, FINANCIAMENTO E INVESTIMENTO S.A.",
+      "nome_reduzido": "PARATI - CFI S.A.",
+      "label": "326 - PARATI - CREDITO, FINANCIAMENTO E INVESTIMENTO S.A.",
+      "participa_compe": "Não",
+      "ispb": "03311443",
+      "inicio_operacao": "07/01/2020"
+    },
+    {
+      "codigo": "328",
+      "nome": "COOPERATIVA DE ECONOMIA E CRÉDITO MÚTUO DOS FABRICANTES DE CALÇADOS DE SAPIRANGA LTDA.",
+      "nome_reduzido": "CECM FABRIC CALÇADOS SAPIRANGA",
+      "label": "328 - COOPERATIVA DE ECONOMIA E CRÉDITO MÚTUO DOS FABRICANTES DE CALÇADOS DE SAPIRANGA LTDA.",
+      "participa_compe": "Não",
+      "ispb": "05841967",
+      "inicio_operacao": "22/03/2021"
+    },
+    {
+      "codigo": "329",
+      "nome": "QI Sociedade de Crédito Direto S.A.",
+      "nome_reduzido": "QI SCD S.A.",
+      "label": "329 - QI Sociedade de Crédito Direto S.A.",
+      "participa_compe": "Não",
+      "ispb": "32402502",
+      "inicio_operacao": "30/04/2019"
+    },
+    {
+      "codigo": "330",
+      "nome": "BANCO BARI DE INVESTIMENTOS E FINANCIAMENTOS S.A.",
+      "nome_reduzido": "BANCO BARI S.A.",
+      "label": "330 - BANCO BARI DE INVESTIMENTOS E FINANCIAMENTOS S.A.",
+      "participa_compe": "Não",
+      "ispb": "00556603",
+      "inicio_operacao": "22/07/2019"
+    },
+    {
+      "codigo": "331",
+      "nome": "OSLO CAPITAL DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS S.A",
+      "nome_reduzido": "OSLO CAPITAL DTVM SA",
+      "label": "331 - OSLO CAPITAL DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS S.A",
+      "participa_compe": "Não",
+      "ispb": "13673855",
+      "inicio_operacao": "27/09/2019"
+    },
+    {
+      "codigo": "332",
+      "nome": "ACESSO SOLUÇÕES DE PAGAMENTO S.A. - INSTITUIÇÃO DE PAGAMENTO",
+      "nome_reduzido": "ACESSO SOLUÇÕES DE PAGAMENTO S.A. - INSTITUIÇÃO DE PAGAMENTO",
+      "label": "332 - ACESSO SOLUÇÕES DE PAGAMENTO S.A. - INSTITUIÇÃO DE PAGAMENTO",
+      "participa_compe": "Não",
+      "ispb": "13140088",
+      "inicio_operacao": "16/08/2019"
+    },
+    {
+      "codigo": "334",
+      "nome": "BANCO BESA S.A.",
+      "nome_reduzido": "BANCO BESA S.A.",
+      "label": "334 - BANCO BESA S.A.",
+      "participa_compe": "Não",
+      "ispb": "15124464",
+      "inicio_operacao": "22/02/2023"
+    },
+    {
+      "codigo": "335",
+      "nome": "Banco Digio S.A.",
+      "nome_reduzido": "BANCO DIGIO",
+      "label": "335 - Banco Digio S.A.",
+      "participa_compe": "Não",
+      "ispb": "27098060",
+      "inicio_operacao": "25/11/2019"
+    },
+    {
+      "codigo": "336",
+      "nome": "Banco C6 S.A.",
+      "nome_reduzido": "BCO C6 S.A.",
+      "label": "336 - Banco C6 S.A.",
+      "participa_compe": "Não",
+      "ispb": "31872495",
+      "inicio_operacao": "31/01/2019"
+    },
+    {
+      "codigo": "341",
+      "nome": "ITAÚ UNIBANCO S.A.",
+      "nome_reduzido": "ITAÚ UNIBANCO S.A.",
+      "label": "341 - ITAÚ UNIBANCO S.A.",
+      "participa_compe": "Sim",
+      "ispb": "60701190",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "342",
+      "nome": "Creditas Sociedade de Crédito Direto S.A.",
+      "nome_reduzido": "CREDITAS SCD",
+      "label": "342 - Creditas Sociedade de Crédito Direto S.A.",
+      "participa_compe": "Não",
+      "ispb": "32997490",
+      "inicio_operacao": "26/07/2019"
+    },
+    {
+      "codigo": "348",
+      "nome": "Banco XP S.A.",
+      "nome_reduzido": "BCO XP S.A.",
+      "label": "348 - Banco XP S.A.",
+      "participa_compe": "Não",
+      "ispb": "33264668",
+      "inicio_operacao": "01/11/2019"
+    },
+    {
+      "codigo": "349",
+      "nome": "AL5 S.A. SOCIEDADE DE CRÉDITO, FINANCIAMENTO E INVESTIMENTO",
+      "nome_reduzido": "AL5 S.A. SCFI",
+      "label": "349 - AL5 S.A. SOCIEDADE DE CRÉDITO, FINANCIAMENTO E INVESTIMENTO",
+      "participa_compe": "Não",
+      "ispb": "27214112",
+      "inicio_operacao": "24/10/2019"
+    },
+    {
+      "codigo": "350",
+      "nome": "COOPERATIVA DE CRÉDITO, POUPANÇA E SERVIÇOS FINANCEIROS DE AGRICULTORES E AEROPORTUÁRIOS DO BRASIL - CREHNOR",
+      "nome_reduzido": "COOP DE AGRICULTORES E AEROPORTUÁRIOS DO BRASIL",
+      "label": "350 - COOPERATIVA DE CRÉDITO, POUPANÇA E SERVIÇOS FINANCEIROS DE AGRICULTORES E AEROPORTUÁRIOS DO BRASIL - CREHNOR",
+      "participa_compe": "Não",
+      "ispb": "01330387",
+      "inicio_operacao": "27/05/2020"
+    },
+    {
+      "codigo": "352",
+      "nome": "SANTANDER CORRETORA DE TÍTULOS E VALORES MOBILIÁRIOS S.A.",
+      "nome_reduzido": "SANTANDER CTVM S.A.",
+      "label": "352 - SANTANDER CORRETORA DE TÍTULOS E VALORES MOBILIÁRIOS S.A.",
+      "participa_compe": "Não",
+      "ispb": "29162769",
+      "inicio_operacao": "29/11/2019"
+    },
+    {
+      "codigo": "355",
+      "nome": "ÓTIMO SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "ÓTIMO SCD S.A.",
+      "label": "355 - ÓTIMO SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "34335592",
+      "inicio_operacao": "21/10/2019"
+    },
+    {
+      "codigo": "358",
+      "nome": "MIDWAY S.A. - SOCIEDADE DE CRÉDITO, FINANCIAMENTO E INVESTIMENTO",
+      "nome_reduzido": "MIDWAY S.A. - SCFI",
+      "label": "358 - MIDWAY S.A. - SOCIEDADE DE CRÉDITO, FINANCIAMENTO E INVESTIMENTO",
+      "participa_compe": "Não",
+      "ispb": "09464032",
+      "inicio_operacao": "01/02/2021"
+    },
+    {
+      "codigo": "359",
+      "nome": "ZEMA CRÉDITO, FINANCIAMENTO E INVESTIMENTO S/A",
+      "nome_reduzido": "ZEMA CFI S/A",
+      "label": "359 - ZEMA CRÉDITO, FINANCIAMENTO E INVESTIMENTO S/A",
+      "participa_compe": "Não",
+      "ispb": "05351887",
+      "inicio_operacao": "10/06/2020"
+    },
+    {
+      "codigo": "360",
+      "nome": "TRINUS CAPITAL DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS S.A.",
+      "nome_reduzido": "TRINUS CAPITAL DTVM",
+      "label": "360 - TRINUS CAPITAL DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS S.A.",
+      "participa_compe": "Não",
+      "ispb": "02276653",
+      "inicio_operacao": "16/07/2020"
+    },
+    {
+      "codigo": "362",
+      "nome": "CIELO S.A. - INSTITUIÇÃO DE PAGAMENTO",
+      "nome_reduzido": "CIELO IP S.A.",
+      "label": "362 - CIELO S.A. - INSTITUIÇÃO DE PAGAMENTO",
+      "participa_compe": "Não",
+      "ispb": "01027058",
+      "inicio_operacao": "17/07/2020"
+    },
+    {
+      "codigo": "363",
+      "nome": "QI CORRETORA DE TÍTULOS E VALORES MOBILIÁRIOS S.A.",
+      "nome_reduzido": "QI CTVM S.A.",
+      "label": "363 - QI CORRETORA DE TÍTULOS E VALORES MOBILIÁRIOS S.A.",
+      "participa_compe": "Não",
+      "ispb": "62285390",
+      "inicio_operacao": "01/06/2020"
+    },
+    {
+      "codigo": "364",
+      "nome": "EFÍ S.A. - INSTITUIÇÃO DE PAGAMENTO",
+      "nome_reduzido": "EFÍ S.A. - IP",
+      "label": "364 - EFÍ S.A. - INSTITUIÇÃO DE PAGAMENTO",
+      "participa_compe": "Não",
+      "ispb": "09089356",
+      "inicio_operacao": "16/03/2020"
+    },
+    {
+      "codigo": "365",
+      "nome": "SIMPAUL CORRETORA DE CAMBIO E VALORES MOBILIARIOS  S.A.",
+      "nome_reduzido": "SIMPAUL",
+      "label": "365 - SIMPAUL CORRETORA DE CAMBIO E VALORES MOBILIARIOS  S.A.",
+      "participa_compe": "Não",
+      "ispb": "68757681",
+      "inicio_operacao": "17/03/2020"
+    },
+    {
+      "codigo": "366",
+      "nome": "BANCO SOCIETE GENERALE BRASIL S.A.",
+      "nome_reduzido": "BCO SOCIETE GENERALE BRASIL",
+      "label": "366 - BANCO SOCIETE GENERALE BRASIL S.A.",
+      "participa_compe": "Não",
+      "ispb": "61533584",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "368",
+      "nome": "Banco CSF S.A.",
+      "nome_reduzido": "BCO CSF S.A.",
+      "label": "368 - Banco CSF S.A.",
+      "participa_compe": "Não",
+      "ispb": "08357240",
+      "inicio_operacao": "25/05/2020"
+    },
+    {
+      "codigo": "370",
+      "nome": "Banco Mizuho do Brasil S.A.",
+      "nome_reduzido": "BCO MIZUHO S.A.",
+      "label": "370 - Banco Mizuho do Brasil S.A.",
+      "participa_compe": "Não",
+      "ispb": "61088183",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "373",
+      "nome": "UP.P SOCIEDADE DE EMPRÉSTIMO ENTRE PESSOAS S.A.",
+      "nome_reduzido": "UP.P SEP S.A.",
+      "label": "373 - UP.P SOCIEDADE DE EMPRÉSTIMO ENTRE PESSOAS S.A.",
+      "participa_compe": "Não",
+      "ispb": "35977097",
+      "inicio_operacao": "25/03/2020"
+    },
+    {
+      "codigo": "374",
+      "nome": "REALIZE SOCIEDADE DE CRÉDITO, FINANCIAMENTO E INVESTIMENTO S.A.",
+      "nome_reduzido": "REALIZE SCFI S.A.",
+      "label": "374 - REALIZE SOCIEDADE DE CRÉDITO, FINANCIAMENTO E INVESTIMENTO S.A.",
+      "participa_compe": "Não",
+      "ispb": "27351731",
+      "inicio_operacao": "16/09/2020"
+    },
+    {
+      "codigo": "376",
+      "nome": "BANCO J.P. MORGAN S.A.",
+      "nome_reduzido": "BCO J.P. MORGAN S.A.",
+      "label": "376 - BANCO J.P. MORGAN S.A.",
+      "participa_compe": "Não",
+      "ispb": "33172537",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "377",
+      "nome": "BMS SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "BMS SCD S.A.",
+      "label": "377 - BMS SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "17826860",
+      "inicio_operacao": "01/10/2020"
+    },
+    {
+      "codigo": "378",
+      "nome": "BANCO BRASILEIRO DE CRÉDITO SOCIEDADE ANÔNIMA",
+      "nome_reduzido": "BCO BRASILEIRO DE CRÉDITO S.A.",
+      "label": "378 - BANCO BRASILEIRO DE CRÉDITO SOCIEDADE ANÔNIMA",
+      "participa_compe": "Não",
+      "ispb": "01852137",
+      "inicio_operacao": "11/09/2020"
+    },
+    {
+      "codigo": "379",
+      "nome": "COOPERFORTE COOPERATIVA DE CRÉDITO E INVESTIMENTOS LTDA",
+      "nome_reduzido": "COOP COOPERFORTE LTDA.",
+      "label": "379 - COOPERFORTE COOPERATIVA DE CRÉDITO E INVESTIMENTOS LTDA",
+      "participa_compe": "Não",
+      "ispb": "01658426",
+      "inicio_operacao": "01/09/2020"
+    },
+    {
+      "codigo": "380",
+      "nome": "PICPAY INSTITUIçãO DE PAGAMENTO S.A.",
+      "nome_reduzido": "PICPAY",
+      "label": "380 - PICPAY INSTITUIçãO DE PAGAMENTO S.A.",
+      "participa_compe": "Não",
+      "ispb": "22896431",
+      "inicio_operacao": "15/10/2020"
+    },
+    {
+      "codigo": "381",
+      "nome": "BANCO MERCEDES-BENZ DO BRASIL S.A.",
+      "nome_reduzido": "BCO MERCEDES-BENZ S.A.",
+      "label": "381 - BANCO MERCEDES-BENZ DO BRASIL S.A.",
+      "participa_compe": "Não",
+      "ispb": "60814191",
+      "inicio_operacao": "25/05/2020"
+    },
+    {
+      "codigo": "382",
+      "nome": "FIDÚCIA SOCIEDADE DE CRÉDITO AO MICROEMPREENDEDOR E À EMPRESA DE PEQUENO PORTE LIMITADA.",
+      "nome_reduzido": "FIDUCIA SCMEPP LTDA",
+      "label": "382 - FIDÚCIA SOCIEDADE DE CRÉDITO AO MICROEMPREENDEDOR E À EMPRESA DE PEQUENO PORTE LIMITADA.",
+      "participa_compe": "Não",
+      "ispb": "04307598",
+      "inicio_operacao": "31/07/2020"
+    },
+    {
+      "codigo": "383",
+      "nome": "EBANX INSTITUICAO DE PAGAMENTOS LTDA.",
+      "nome_reduzido": "EBANX IP LTDA.",
+      "label": "383 - EBANX INSTITUICAO DE PAGAMENTOS LTDA.",
+      "participa_compe": "Não",
+      "ispb": "21018182",
+      "inicio_operacao": "09/07/2020"
+    },
+    {
+      "codigo": "384",
+      "nome": "GLOBAL FINANÇAS SOCIEDADE DE CRÉDITO AO MICROEMPREENDEDOR E À EMPRESA DE PEQUENO PORTE LTDA.",
+      "nome_reduzido": "GLOBAL SCM LTDA",
+      "label": "384 - GLOBAL FINANÇAS SOCIEDADE DE CRÉDITO AO MICROEMPREENDEDOR E À EMPRESA DE PEQUENO PORTE LTDA.",
+      "participa_compe": "Não",
+      "ispb": "11165756",
+      "inicio_operacao": "13/10/2020"
+    },
+    {
+      "codigo": "385",
+      "nome": "COOPERATIVA DE ECONOMIA E CREDITO MUTUO DOS TRABALHADORES PORTUARIOS DA GRANDE VITORIA - CREDESTIVA.",
+      "nome_reduzido": "CECM DOS TRAB.PORT. DA G.VITOR",
+      "label": "385 - COOPERATIVA DE ECONOMIA E CREDITO MUTUO DOS TRABALHADORES PORTUARIOS DA GRANDE VITORIA - CREDESTIVA.",
+      "participa_compe": "Não",
+      "ispb": "03844699",
+      "inicio_operacao": "08/03/2022"
+    },
+    {
+      "codigo": "386",
+      "nome": "NU FINANCEIRA S.A. - Sociedade de Crédito, Financiamento e Investimento",
+      "nome_reduzido": "NU FINANCEIRA S.A. CFI",
+      "label": "386 - NU FINANCEIRA S.A. - Sociedade de Crédito, Financiamento e Investimento",
+      "participa_compe": "Não",
+      "ispb": "30680829",
+      "inicio_operacao": "12/01/2021"
+    },
+    {
+      "codigo": "387",
+      "nome": "Banco Toyota do Brasil S.A.",
+      "nome_reduzido": "BCO TOYOTA DO BRASIL S.A.",
+      "label": "387 - Banco Toyota do Brasil S.A.",
+      "participa_compe": "Não",
+      "ispb": "03215790",
+      "inicio_operacao": "21/07/2020"
+    },
+    {
+      "codigo": "389",
+      "nome": "Banco Mercantil do Brasil S.A.",
+      "nome_reduzido": "BCO MERCANTIL DO BRASIL S.A.",
+      "label": "389 - Banco Mercantil do Brasil S.A.",
+      "participa_compe": "Sim",
+      "ispb": "17184037",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "390",
+      "nome": "BANCO GM S.A.",
+      "nome_reduzido": "BCO GM S.A.",
+      "label": "390 - BANCO GM S.A.",
+      "participa_compe": "Não",
+      "ispb": "59274605",
+      "inicio_operacao": "22/07/2020"
+    },
+    {
+      "codigo": "391",
+      "nome": "COOPERATIVA DE CREDITO RURAL DE IBIAM - SULCREDI/IBIAM",
+      "nome_reduzido": "CCR DE IBIAM",
+      "label": "391 - COOPERATIVA DE CREDITO RURAL DE IBIAM - SULCREDI/IBIAM",
+      "participa_compe": "Não",
+      "ispb": "08240446",
+      "inicio_operacao": "10/07/2020"
+    },
+    {
+      "codigo": "393",
+      "nome": "Banco Volkswagen S.A.",
+      "nome_reduzido": "BCO VOLKSWAGEN S.A",
+      "label": "393 - Banco Volkswagen S.A.",
+      "participa_compe": "Não",
+      "ispb": "59109165",
+      "inicio_operacao": "17/08/2020"
+    },
+    {
+      "codigo": "394",
+      "nome": "Banco Bradesco Financiamentos S.A.",
+      "nome_reduzido": "BCO BRADESCO FINANC. S.A.",
+      "label": "394 - Banco Bradesco Financiamentos S.A.",
+      "participa_compe": "Sim",
+      "ispb": "07207996",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "395",
+      "nome": "F.D'GOLD - DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS LTDA.",
+      "nome_reduzido": "F D GOLD DTVM LTDA",
+      "label": "395 - F.D'GOLD - DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS LTDA.",
+      "participa_compe": "Não",
+      "ispb": "08673569",
+      "inicio_operacao": "01/12/2020"
+    },
+    {
+      "codigo": "396",
+      "nome": "MAGALUPAY INSTITUIÇÃO DE PAGAMENTO S.A.",
+      "nome_reduzido": "MAGALUPAY",
+      "label": "396 - MAGALUPAY INSTITUIÇÃO DE PAGAMENTO S.A.",
+      "participa_compe": "Não",
+      "ispb": "13884775",
+      "inicio_operacao": "13/08/2020"
+    },
+    {
+      "codigo": "397",
+      "nome": "LISTO SOCIEDADE DE CREDITO DIRETO S.A.",
+      "nome_reduzido": "LISTO SCD S.A.",
+      "label": "397 - LISTO SOCIEDADE DE CREDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "34088029",
+      "inicio_operacao": "15/10/2020"
+    },
+    {
+      "codigo": "398",
+      "nome": "IDEAL CORRETORA DE TÍTULOS E VALORES MOBILIÁRIOS S.A.",
+      "nome_reduzido": "IDEAL CTVM S.A.",
+      "label": "398 - IDEAL CORRETORA DE TÍTULOS E VALORES MOBILIÁRIOS S.A.",
+      "participa_compe": "Não",
+      "ispb": "31749596",
+      "inicio_operacao": "11/01/2021"
+    },
+    {
+      "codigo": "399",
+      "nome": "Kirton Bank S.A. - Banco Múltiplo",
+      "nome_reduzido": "Kirton Bank",
+      "label": "399 - Kirton Bank S.A. - Banco Múltiplo",
+      "participa_compe": "Não",
+      "ispb": "01701201",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "400",
+      "nome": "COOPERATIVA DE CRÉDITO, POUPANÇA E SERVIÇOS FINANCEIROS - EM LIQUIDAÇÃO EXTRAJUDICIAL",
+      "nome_reduzido": "COOP CREDITAG - EM LIQUIDAÇÃO EXTRAJUDICIAL",
+      "label": "400 - COOPERATIVA DE CRÉDITO, POUPANÇA E SERVIÇOS FINANCEIROS - EM LIQUIDAÇÃO EXTRAJUDICIAL",
+      "participa_compe": "Não",
+      "ispb": "05491616",
+      "inicio_operacao": "24/02/2021"
+    },
+    {
+      "codigo": "401",
+      "nome": "IUGU INSTITUIÇÃO DE PAGAMENTO S.A.",
+      "nome_reduzido": "IUGU IP S.A.",
+      "label": "401 - IUGU INSTITUIÇÃO DE PAGAMENTO S.A.",
+      "participa_compe": "Não",
+      "ispb": "15111975",
+      "inicio_operacao": "06/05/2021"
+    },
+    {
+      "codigo": "402",
+      "nome": "COBUCCIO S/A - SOCIEDADE DE CRÉDITO, FINANCIAMENTO E INVESTIMENTOS",
+      "nome_reduzido": "COBUCCIO S.A. SCFI",
+      "label": "402 - COBUCCIO S/A - SOCIEDADE DE CRÉDITO, FINANCIAMENTO E INVESTIMENTOS",
+      "participa_compe": "Não",
+      "ispb": "36947229",
+      "inicio_operacao": "03/12/2020"
+    },
+    {
+      "codigo": "403",
+      "nome": "CORA SOCIEDADE DE CRÉDITO, FINANCIAMENTO E INVESTIMENTO S.A.",
+      "nome_reduzido": "CORA SCFI",
+      "label": "403 - CORA SOCIEDADE DE CRÉDITO, FINANCIAMENTO E INVESTIMENTO S.A.",
+      "participa_compe": "Não",
+      "ispb": "37880206",
+      "inicio_operacao": "29/09/2020"
+    },
+    {
+      "codigo": "404",
+      "nome": "SUMUP SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "SUMUP SCD S.A.",
+      "label": "404 - SUMUP SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "37241230",
+      "inicio_operacao": "16/10/2020"
+    },
+    {
+      "codigo": "406",
+      "nome": "ACCREDITO - SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "ACCREDITO SCD S.A.",
+      "label": "406 - ACCREDITO - SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "37715993",
+      "inicio_operacao": "27/11/2020"
+    },
+    {
+      "codigo": "407",
+      "nome": "SEFER INVESTIMENTOS DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS LTDA",
+      "nome_reduzido": "SEFER INVESTIMENTOS DTVM LTDA",
+      "label": "407 - SEFER INVESTIMENTOS DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS LTDA",
+      "participa_compe": "Não",
+      "ispb": "00329598",
+      "inicio_operacao": "22/02/2021"
+    },
+    {
+      "codigo": "408",
+      "nome": "BONUSPAGO SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "BONUSPAGO SCD S.A.",
+      "label": "408 - BONUSPAGO SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "36586946",
+      "inicio_operacao": "14/10/2020"
+    },
+    {
+      "codigo": "410",
+      "nome": "PLANNER SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "PLANNER SOCIEDADE DE CRÉDITO DIRETO",
+      "label": "410 - PLANNER SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "05684234",
+      "inicio_operacao": "17/02/2021"
+    },
+    {
+      "codigo": "411",
+      "nome": "Via Certa Financiadora S.A. - Crédito, Financiamento e Investimentos",
+      "nome_reduzido": "VIA CERTA FINANCIADORA S.A. - CFI",
+      "label": "411 - Via Certa Financiadora S.A. - Crédito, Financiamento e Investimentos",
+      "participa_compe": "Não",
+      "ispb": "05192316",
+      "inicio_operacao": "23/06/2025"
+    },
+    {
+      "codigo": "412",
+      "nome": "SOCIAL BANK BANCO MÚLTIPLO S/A",
+      "nome_reduzido": "SOCIAL BANK S/A",
+      "label": "412 - SOCIAL BANK BANCO MÚLTIPLO S/A",
+      "participa_compe": "Não",
+      "ispb": "15173776",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "413",
+      "nome": "BANCO BV S.A.",
+      "nome_reduzido": "BCO BV S.A.",
+      "label": "413 - BANCO BV S.A.",
+      "participa_compe": "Não",
+      "ispb": "01858774",
+      "inicio_operacao": "21/05/2021"
+    },
+    {
+      "codigo": "414",
+      "nome": "LEND SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "LEND SCD S.A.",
+      "label": "414 - LEND SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "37526080",
+      "inicio_operacao": "25/03/2021"
+    },
+    {
+      "codigo": "415",
+      "nome": "BANCO NACIONAL S.A.",
+      "nome_reduzido": "BCO NACIONAL",
+      "label": "415 - BANCO NACIONAL S.A.",
+      "participa_compe": "Não",
+      "ispb": "17157777",
+      "inicio_operacao": "14/10/2024"
+    },
+    {
+      "codigo": "416",
+      "nome": "LAMARA SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "LAMARA SCD S.A.",
+      "label": "416 - LAMARA SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "19324634",
+      "inicio_operacao": "08/04/2021"
+    },
+    {
+      "codigo": "418",
+      "nome": "ZIPDIN SOLUÇÕES DIGITAIS SOCIEDADE DE CRÉDITO DIRETO S/A",
+      "nome_reduzido": "ZIPDIN SCD S.A.",
+      "label": "418 - ZIPDIN SOLUÇÕES DIGITAIS SOCIEDADE DE CRÉDITO DIRETO S/A",
+      "participa_compe": "Não",
+      "ispb": "37414009",
+      "inicio_operacao": "26/08/2021"
+    },
+    {
+      "codigo": "419",
+      "nome": "NUMBRS SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "NUMBRS SCD S.A.",
+      "label": "419 - NUMBRS SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "38129006",
+      "inicio_operacao": "18/03/2021"
+    },
+    {
+      "codigo": "421",
+      "nome": "LAR COOPERATIVA DE CRÉDITO - LAR CREDI",
+      "nome_reduzido": "CC LAR CREDI",
+      "label": "421 - LAR COOPERATIVA DE CRÉDITO - LAR CREDI",
+      "participa_compe": "Sim",
+      "ispb": "39343350",
+      "inicio_operacao": "21/07/2021"
+    },
+    {
+      "codigo": "422",
+      "nome": "Banco Safra S.A.",
+      "nome_reduzido": "BCO SAFRA S.A.",
+      "label": "422 - Banco Safra S.A.",
+      "participa_compe": "Sim",
+      "ispb": "58160789",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "423",
+      "nome": "COLUNA S/A DISTRIBUIDORA DE TITULOS E VALORES MOBILIÁRIOS",
+      "nome_reduzido": "COLUNA S.A. DTVM",
+      "label": "423 - COLUNA S/A DISTRIBUIDORA DE TITULOS E VALORES MOBILIÁRIOS",
+      "participa_compe": "Não",
+      "ispb": "00460065",
+      "inicio_operacao": "07/06/2021"
+    },
+    {
+      "codigo": "425",
+      "nome": "SOCINAL S.A. - CRÉDITO, FINANCIAMENTO E INVESTIMENTO",
+      "nome_reduzido": "SOCINAL S.A. CFI",
+      "label": "425 - SOCINAL S.A. - CRÉDITO, FINANCIAMENTO E INVESTIMENTO",
+      "participa_compe": "Não",
+      "ispb": "03881423",
+      "inicio_operacao": "27/07/2021"
+    },
+    {
+      "codigo": "426",
+      "nome": "NEON FINANCEIRA - SOCIEDADE DE CRÉDITO, FINANCIAMENTO E INVESTIMENTO S.A",
+      "nome_reduzido": "NEON FINANCEIRA - SCFI S.A.",
+      "label": "426 - NEON FINANCEIRA - SOCIEDADE DE CRÉDITO, FINANCIAMENTO E INVESTIMENTO S.A",
+      "participa_compe": "Não",
+      "ispb": "11285104",
+      "inicio_operacao": "21/05/2021"
+    },
+    {
+      "codigo": "427",
+      "nome": "COOPERATIVA DE CRÉDITO DOS SERVIDORES DA UNIVERSIDADE FEDERAL DO ESPIRITO SANTO",
+      "nome_reduzido": "CRED.UFES",
+      "label": "427 - COOPERATIVA DE CRÉDITO DOS SERVIDORES DA UNIVERSIDADE FEDERAL DO ESPIRITO SANTO",
+      "participa_compe": "Não",
+      "ispb": "27302181",
+      "inicio_operacao": "26/04/2021"
+    },
+    {
+      "codigo": "428",
+      "nome": "CREDSYSTEM SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "CREDSYSTEM SCD S.A.",
+      "label": "428 - CREDSYSTEM SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "39664698",
+      "inicio_operacao": "20/04/2021"
+    },
+    {
+      "codigo": "430",
+      "nome": "COOPERATIVA DE CREDITO RURAL SEARA - CREDISEARA",
+      "nome_reduzido": "CCR SEARA",
+      "label": "430 - COOPERATIVA DE CREDITO RURAL SEARA - CREDISEARA",
+      "participa_compe": "Sim",
+      "ispb": "00204963",
+      "inicio_operacao": "27/08/2021"
+    },
+    {
+      "codigo": "433",
+      "nome": "BR-CAPITAL DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS S.A.",
+      "nome_reduzido": "BR-CAPITAL DTVM S.A.",
+      "label": "433 - BR-CAPITAL DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS S.A.",
+      "participa_compe": "Não",
+      "ispb": "44077014",
+      "inicio_operacao": "21/06/2021"
+    },
+    {
+      "codigo": "435",
+      "nome": "DELCRED SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "DELCRED SCD S.A.",
+      "label": "435 - DELCRED SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Sim",
+      "ispb": "38224857",
+      "inicio_operacao": "27/08/2021"
+    },
+    {
+      "codigo": "438",
+      "nome": "TRUSTEE DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS LTDA.",
+      "nome_reduzido": "TRUSTEE DTVM LTDA.",
+      "label": "438 - TRUSTEE DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS LTDA.",
+      "participa_compe": "Não",
+      "ispb": "67030395",
+      "inicio_operacao": "04/05/2021"
+    },
+    {
+      "codigo": "439",
+      "nome": "ID CORRETORA DE TÍTULOS E VALORES MOBILIÁRIOS S.A.",
+      "nome_reduzido": "ID CTVM",
+      "label": "439 - ID CORRETORA DE TÍTULOS E VALORES MOBILIÁRIOS S.A.",
+      "participa_compe": "Não",
+      "ispb": "16695922",
+      "inicio_operacao": "30/09/2021"
+    },
+    {
+      "codigo": "440",
+      "nome": "CREDI&GENTE - COOPERATIVA DE CRÉDITO E INVESTIMENTOS",
+      "nome_reduzido": "COOP CREDI&GENTE",
+      "label": "440 - CREDI&GENTE - COOPERATIVA DE CRÉDITO E INVESTIMENTOS",
+      "participa_compe": "Não",
+      "ispb": "82096447",
+      "inicio_operacao": "02/09/2021"
+    },
+    {
+      "codigo": "443",
+      "nome": "OCTA SOCIEDADE DE CRÉDITO DIRETO S.A. - EM LIQUIDAÇÃO EXTRAJUDICIAL",
+      "nome_reduzido": "OCTA SCD S.A. - EM LIQUIDAÇÃO EXTRAJUDICIAL",
+      "label": "443 - OCTA SOCIEDADE DE CRÉDITO DIRETO S.A. - EM LIQUIDAÇÃO EXTRAJUDICIAL",
+      "participa_compe": "Não",
+      "ispb": "39416705",
+      "inicio_operacao": "18/11/2021"
+    },
+    {
+      "codigo": "444",
+      "nome": "TRINUS SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "TRINUS SCD S.A.",
+      "label": "444 - TRINUS SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "40654622",
+      "inicio_operacao": "09/09/2021"
+    },
+    {
+      "codigo": "445",
+      "nome": "PLANTAE S.A. - CRÉDITO, FINANCIAMENTO E INVESTIMENTO",
+      "nome_reduzido": "PLANTAE CFI",
+      "label": "445 - PLANTAE S.A. - CRÉDITO, FINANCIAMENTO E INVESTIMENTO",
+      "participa_compe": "Não",
+      "ispb": "35551187",
+      "inicio_operacao": "23/06/2021"
+    },
+    {
+      "codigo": "447",
+      "nome": "MIRAE ASSET (BRASIL) CORRETORA DE CÂMBIO, TÍTULOS  E VALORES MOBILIÁRIOS LTDA.",
+      "nome_reduzido": "MIRAE ASSET (BRASIL) CCTVM LTDA.",
+      "label": "447 - MIRAE ASSET (BRASIL) CORRETORA DE CÂMBIO, TÍTULOS  E VALORES MOBILIÁRIOS LTDA.",
+      "participa_compe": "Não",
+      "ispb": "12392983",
+      "inicio_operacao": "27/09/2021"
+    },
+    {
+      "codigo": "448",
+      "nome": "HEMERA DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS LTDA.",
+      "nome_reduzido": "HEMERA DTVM LTDA.",
+      "label": "448 - HEMERA DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS LTDA.",
+      "participa_compe": "Não",
+      "ispb": "39669186",
+      "inicio_operacao": "17/08/2021"
+    },
+    {
+      "codigo": "449",
+      "nome": "DM SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "DM",
+      "label": "449 - DM SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "37555231",
+      "inicio_operacao": "22/10/2021"
+    },
+    {
+      "codigo": "450",
+      "nome": "FITS INSTITUIÇÃO DE PAGAMENTO S.A.",
+      "nome_reduzido": "FITS IP",
+      "label": "450 - FITS INSTITUIÇÃO DE PAGAMENTO S.A.",
+      "participa_compe": "Não",
+      "ispb": "13203354",
+      "inicio_operacao": "30/06/2021"
+    },
+    {
+      "codigo": "451",
+      "nome": "J17 - SOCIEDADE DE CRÉDITO DIRETO S/A",
+      "nome_reduzido": "J17 - SCD S/A",
+      "label": "451 - J17 - SOCIEDADE DE CRÉDITO DIRETO S/A",
+      "participa_compe": "Não",
+      "ispb": "40475846",
+      "inicio_operacao": "18/01/2022"
+    },
+    {
+      "codigo": "452",
+      "nome": "CREDIFIT SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "CREDIFIT SCD S.A.",
+      "label": "452 - CREDIFIT SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "39676772",
+      "inicio_operacao": "15/09/2021"
+    },
+    {
+      "codigo": "454",
+      "nome": "MÉRITO DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS LTDA.",
+      "nome_reduzido": "MÉRITO DTVM LTDA.",
+      "label": "454 - MÉRITO DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS LTDA.",
+      "participa_compe": "Não",
+      "ispb": "41592532",
+      "inicio_operacao": "23/11/2021"
+    },
+    {
+      "codigo": "455",
+      "nome": "VIS DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS LTDA",
+      "nome_reduzido": "VIS DTVM LTDA",
+      "label": "455 - VIS DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS LTDA",
+      "participa_compe": "Não",
+      "ispb": "38429045",
+      "inicio_operacao": "05/12/2022"
+    },
+    {
+      "codigo": "456",
+      "nome": "Banco MUFG Brasil S.A.",
+      "nome_reduzido": "BCO MUFG BRASIL S.A.",
+      "label": "456 - Banco MUFG Brasil S.A.",
+      "participa_compe": "Sim",
+      "ispb": "60498557",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "457",
+      "nome": "UY3 SOCIEDADE DE CRÉDITO DIRETO S/A",
+      "nome_reduzido": "UY3 SCD S/A",
+      "label": "457 - UY3 SOCIEDADE DE CRÉDITO DIRETO S/A",
+      "participa_compe": "Não",
+      "ispb": "39587424",
+      "inicio_operacao": "26/10/2021"
+    },
+    {
+      "codigo": "458",
+      "nome": "HEDGE INVESTMENTS DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS LTDA.",
+      "nome_reduzido": "HEDGE INVESTMENTS DTVM LTDA.",
+      "label": "458 - HEDGE INVESTMENTS DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS LTDA.",
+      "participa_compe": "Não",
+      "ispb": "07253654",
+      "inicio_operacao": "08/09/2021"
+    },
+    {
+      "codigo": "460",
+      "nome": "UNAVANTI SOCIEDADE DE CRÉDITO DIRETO S/A",
+      "nome_reduzido": "UNAVANTI SCD S/A",
+      "label": "460 - UNAVANTI SOCIEDADE DE CRÉDITO DIRETO S/A",
+      "participa_compe": "Não",
+      "ispb": "42047025",
+      "inicio_operacao": "18/01/2022"
+    },
+    {
+      "codigo": "461",
+      "nome": "ASAAS GESTÃO FINANCEIRA INSTITUIÇÃO DE PAGAMENTO S.A.",
+      "nome_reduzido": "ASAAS IP S.A.",
+      "label": "461 - ASAAS GESTÃO FINANCEIRA INSTITUIÇÃO DE PAGAMENTO S.A.",
+      "participa_compe": "Não",
+      "ispb": "19540550",
+      "inicio_operacao": "29/10/2021"
+    },
+    {
+      "codigo": "462",
+      "nome": "STARK SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "STARK SCD S.A.",
+      "label": "462 - STARK SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "39908427",
+      "inicio_operacao": "01/10/2021"
+    },
+    {
+      "codigo": "463",
+      "nome": "AZUMI DISTRIBUIDORA DE TíTULOS E VALORES MOBILIáRIOS LTDA.",
+      "nome_reduzido": "AZUMI DTVM",
+      "label": "463 - AZUMI DISTRIBUIDORA DE TíTULOS E VALORES MOBILIáRIOS LTDA.",
+      "participa_compe": "Não",
+      "ispb": "40434681",
+      "inicio_operacao": "21/12/2021"
+    },
+    {
+      "codigo": "464",
+      "nome": "Banco Sumitomo Mitsui Brasileiro S.A.",
+      "nome_reduzido": "BCO SUMITOMO MITSUI BRASIL S.A.",
+      "label": "464 - Banco Sumitomo Mitsui Brasileiro S.A.",
+      "participa_compe": "Não",
+      "ispb": "60518222",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "465",
+      "nome": "CAPITAL CONSIG SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "CAPITAL CONSIG SCD S.A.",
+      "label": "465 - CAPITAL CONSIG SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "40083667",
+      "inicio_operacao": "03/12/2021"
+    },
+    {
+      "codigo": "467",
+      "nome": "MASTER S/A CORRETORA DE CÂMBIO, TÍTULOS E VALORES MOBILIÁRIOS - EM LIQUIDAÇÃO EXTRAJUDICIAL",
+      "nome_reduzido": "MASTER S/A CCTVM - EM LIQUIDAÇÃO EXTRAJUDICIAL",
+      "label": "467 - MASTER S/A CORRETORA DE CÂMBIO, TÍTULOS E VALORES MOBILIÁRIOS - EM LIQUIDAÇÃO EXTRAJUDICIAL",
+      "participa_compe": "Não",
+      "ispb": "33886862",
+      "inicio_operacao": "16/12/2021"
+    },
+    {
+      "codigo": "468",
+      "nome": "PORTOSEG S.A. - CREDITO, FINANCIAMENTO E INVESTIMENTO",
+      "nome_reduzido": "PORTOSEG S.A. CFI",
+      "label": "468 - PORTOSEG S.A. - CREDITO, FINANCIAMENTO E INVESTIMENTO",
+      "participa_compe": "Não",
+      "ispb": "04862600",
+      "inicio_operacao": "10/07/2025"
+    },
+    {
+      "codigo": "469",
+      "nome": "PICPAY INVEST DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS LTDA",
+      "nome_reduzido": "PICPAY INVEST",
+      "label": "469 - PICPAY INVEST DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS LTDA",
+      "participa_compe": "Não",
+      "ispb": "07138049",
+      "inicio_operacao": "09/03/2022"
+    },
+    {
+      "codigo": "470",
+      "nome": "CDC SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "CDC SCD S.A.",
+      "label": "470 - CDC SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "18394228",
+      "inicio_operacao": "15/03/2022"
+    },
+    {
+      "codigo": "473",
+      "nome": "Banco Caixa Geral - Brasil S.A.",
+      "nome_reduzido": "BCO CAIXA GERAL BRASIL S.A.",
+      "label": "473 - Banco Caixa Geral - Brasil S.A.",
+      "participa_compe": "Não",
+      "ispb": "33466988",
+      "inicio_operacao": "31/03/2009"
+    },
+    {
+      "codigo": "475",
+      "nome": "Banco Yamaha Motor do Brasil S.A.",
+      "nome_reduzido": "BCO YAMAHA MOTOR S.A.",
+      "label": "475 - Banco Yamaha Motor do Brasil S.A.",
+      "participa_compe": "Não",
+      "ispb": "10371492",
+      "inicio_operacao": "05/09/2022"
+    },
+    {
+      "codigo": "477",
+      "nome": "Citibank N.A.",
+      "nome_reduzido": "CITIBANK N.A.",
+      "label": "477 - Citibank N.A.",
+      "participa_compe": "Sim",
+      "ispb": "33042953",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "478",
+      "nome": "GAZINCRED S.A. SOCIEDADE DE CRÉDITO, FINANCIAMENTO E INVESTIMENTO",
+      "nome_reduzido": "GAZINCRED S.A. SCFI",
+      "label": "478 - GAZINCRED S.A. SOCIEDADE DE CRÉDITO, FINANCIAMENTO E INVESTIMENTO",
+      "participa_compe": "Não",
+      "ispb": "11760553",
+      "inicio_operacao": "21/03/2022"
+    },
+    {
+      "codigo": "479",
+      "nome": "Banco ItauBank S.A.",
+      "nome_reduzido": "BCO ITAUBANK S.A.",
+      "label": "479 - Banco ItauBank S.A.",
+      "participa_compe": "Não",
+      "ispb": "60394079",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "481",
+      "nome": "SUPERLÓGICA SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "SUPERLÓGICA SCD S.A.",
+      "label": "481 - SUPERLÓGICA SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "43599047",
+      "inicio_operacao": "29/08/2022"
+    },
+    {
+      "codigo": "482",
+      "nome": "ARTTA SOCIEDADE DE CRÉDITO DIRETO S.A",
+      "nome_reduzido": "ARTTA SCD",
+      "label": "482 - ARTTA SOCIEDADE DE CRÉDITO DIRETO S.A",
+      "participa_compe": "Não",
+      "ispb": "42259084",
+      "inicio_operacao": "11/10/2022"
+    },
+    {
+      "codigo": "484",
+      "nome": "MAF DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS S.A.",
+      "nome_reduzido": "MAF DTVM SA",
+      "label": "484 - MAF DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS S.A.",
+      "participa_compe": "Não",
+      "ispb": "36864992",
+      "inicio_operacao": "20/07/2022"
+    },
+    {
+      "codigo": "487",
+      "nome": "DEUTSCHE BANK S.A. - BANCO ALEMAO",
+      "nome_reduzido": "DEUTSCHE BANK S.A.BCO ALEMAO",
+      "label": "487 - DEUTSCHE BANK S.A. - BANCO ALEMAO",
+      "participa_compe": "Sim",
+      "ispb": "62331228",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "488",
+      "nome": "JPMorgan Chase Bank, National Association",
+      "nome_reduzido": "JPMORGAN CHASE BANK",
+      "label": "488 - JPMorgan Chase Bank, National Association",
+      "participa_compe": "Não",
+      "ispb": "46518205",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "495",
+      "nome": "Banco de La Provincia de Buenos Aires",
+      "nome_reduzido": "BCO LA PROVINCIA B AIRES BCE",
+      "label": "495 - Banco de La Provincia de Buenos Aires",
+      "participa_compe": "Não",
+      "ispb": "44189447",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "496",
+      "nome": "BBVA BRASIL BANCO DE INVESTIMENTO S.A.",
+      "nome_reduzido": "BBVA BRASIL BI S.A.",
+      "label": "496 - BBVA BRASIL BANCO DE INVESTIMENTO S.A.",
+      "participa_compe": "Não",
+      "ispb": "45283173",
+      "inicio_operacao": "22/04/2025"
+    },
+    {
+      "codigo": "505",
+      "nome": "BANCO UBS (BRASIL) S.A.",
+      "nome_reduzido": "BCO UBS BRASIL",
+      "label": "505 - BANCO UBS (BRASIL) S.A.",
+      "participa_compe": "Sim",
+      "ispb": "32062580",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "506",
+      "nome": "RJI CORRETORA DE TITULOS E VALORES MOBILIARIOS LTDA",
+      "nome_reduzido": "RJI",
+      "label": "506 - RJI CORRETORA DE TITULOS E VALORES MOBILIARIOS LTDA",
+      "participa_compe": "Não",
+      "ispb": "42066258",
+      "inicio_operacao": "21/07/2022"
+    },
+    {
+      "codigo": "507",
+      "nome": "SOCIEDADE DE CRÉDITO, FINANCIAMENTO E INVESTIMENTO EFÍ S.A.",
+      "nome_reduzido": "SCFI EFÍ S.A.",
+      "label": "507 - SOCIEDADE DE CRÉDITO, FINANCIAMENTO E INVESTIMENTO EFÍ S.A.",
+      "participa_compe": "Não",
+      "ispb": "37229413",
+      "inicio_operacao": "12/12/2022"
+    },
+    {
+      "codigo": "508",
+      "nome": "AVENUE SECURITIES BANCO DE INVESTIMENTO S.A.",
+      "nome_reduzido": "AVENUE SECURITIES BI S.A.",
+      "label": "508 - AVENUE SECURITIES BANCO DE INVESTIMENTO S.A.",
+      "participa_compe": "Não",
+      "ispb": "61384004",
+      "inicio_operacao": "18/08/2022"
+    },
+    {
+      "codigo": "509",
+      "nome": "CELCOIN INSTITUICAO DE PAGAMENTO S.A.",
+      "nome_reduzido": "CELCOIN IP S.A.",
+      "label": "509 - CELCOIN INSTITUICAO DE PAGAMENTO S.A.",
+      "participa_compe": "Não",
+      "ispb": "13935893",
+      "inicio_operacao": "23/01/2023"
+    },
+    {
+      "codigo": "510",
+      "nome": "FFCRED SOCIEDADE DE CRÉDITO DIRETO S.A..",
+      "nome_reduzido": "FFCRED SCD S.A.",
+      "label": "510 - FFCRED SOCIEDADE DE CRÉDITO DIRETO S.A..",
+      "participa_compe": "Não",
+      "ispb": "39738065",
+      "inicio_operacao": "30/11/2022"
+    },
+    {
+      "codigo": "511",
+      "nome": "MAGNUM SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "MAGNUM SCD",
+      "label": "511 - MAGNUM SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Sim",
+      "ispb": "44683140",
+      "inicio_operacao": "22/08/2022"
+    },
+    {
+      "codigo": "512",
+      "nome": "FINVEST DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS LTDA.",
+      "nome_reduzido": "FINVEST DTVM",
+      "label": "512 - FINVEST DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS LTDA.",
+      "participa_compe": "Não",
+      "ispb": "36266751",
+      "inicio_operacao": "01/08/2022"
+    },
+    {
+      "codigo": "513",
+      "nome": "ATF SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "ATF SCD S.A.",
+      "label": "513 - ATF SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "44728700",
+      "inicio_operacao": "02/12/2022"
+    },
+    {
+      "codigo": "514",
+      "nome": "EXIM CORRETORA DE CAMBIO LTDA",
+      "nome_reduzido": "EXIM CC LTDA.",
+      "label": "514 - EXIM CORRETORA DE CAMBIO LTDA",
+      "participa_compe": "Não",
+      "ispb": "73302408",
+      "inicio_operacao": "01/11/2023"
+    },
+    {
+      "codigo": "516",
+      "nome": "QISTA S.A. - CRÉDITO, FINANCIAMENTO E INVESTIMENTO",
+      "nome_reduzido": "QISTA S.A. CFI",
+      "label": "516 - QISTA S.A. - CRÉDITO, FINANCIAMENTO E INVESTIMENTO",
+      "participa_compe": "Não",
+      "ispb": "36583700",
+      "inicio_operacao": "24/10/2022"
+    },
+    {
+      "codigo": "517",
+      "nome": "PAGUEVELOZ INSTITUIÇÃO DE PAGAMENTO LTDA.",
+      "nome_reduzido": "PAGUEVELOZ IP LTDA.",
+      "label": "517 - PAGUEVELOZ INSTITUIÇÃO DE PAGAMENTO LTDA.",
+      "participa_compe": "Não",
+      "ispb": "03816413",
+      "inicio_operacao": "10/03/2026"
+    },
+    {
+      "codigo": "518",
+      "nome": "MERCADO CRÉDITO SOCIEDADE DE CRÉDITO, FINANCIAMENTO E INVESTIMENTO S.A.",
+      "nome_reduzido": "MERCADO CRÉDITO SCFI S.A.",
+      "label": "518 - MERCADO CRÉDITO SOCIEDADE DE CRÉDITO, FINANCIAMENTO E INVESTIMENTO S.A.",
+      "participa_compe": "Não",
+      "ispb": "37679449",
+      "inicio_operacao": "30/01/2023"
+    },
+    {
+      "codigo": "519",
+      "nome": "LIONS TRUST DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS LTDA.",
+      "nome_reduzido": "LIONS TRUST DTVM",
+      "label": "519 - LIONS TRUST DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS LTDA.",
+      "participa_compe": "Não",
+      "ispb": "40768766",
+      "inicio_operacao": "12/12/2022"
+    },
+    {
+      "codigo": "520",
+      "nome": "SOMAPAY SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "SOMAPAY SCD S.A.",
+      "label": "520 - SOMAPAY SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "44705774",
+      "inicio_operacao": "04/09/2023"
+    },
+    {
+      "codigo": "521",
+      "nome": "PEAK SOCIEDADE DE EMPRÉSTIMO ENTRE PESSOAS S.A.",
+      "nome_reduzido": "PEAK SEP S.A.",
+      "label": "521 - PEAK SOCIEDADE DE EMPRÉSTIMO ENTRE PESSOAS S.A.",
+      "participa_compe": "Não",
+      "ispb": "44019481",
+      "inicio_operacao": "27/01/2023"
+    },
+    {
+      "codigo": "522",
+      "nome": "RED SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "RED SCD S.A.",
+      "label": "522 - RED SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "47593544",
+      "inicio_operacao": "27/03/2023"
+    },
+    {
+      "codigo": "523",
+      "nome": "HR DIGITAL - SOCIEDADE DE CRÉDITO DIRETO S/A",
+      "nome_reduzido": "HR DIGITAL SCD",
+      "label": "523 - HR DIGITAL - SOCIEDADE DE CRÉDITO DIRETO S/A",
+      "participa_compe": "Não",
+      "ispb": "44292580",
+      "inicio_operacao": "15/02/2023"
+    },
+    {
+      "codigo": "524",
+      "nome": "WNT CAPITAL DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS S.A.",
+      "nome_reduzido": "WNT CAPITAL DTVM",
+      "label": "524 - WNT CAPITAL DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS S.A.",
+      "participa_compe": "Não",
+      "ispb": "45854066",
+      "inicio_operacao": "01/03/2023"
+    },
+    {
+      "codigo": "525",
+      "nome": "INTERCAM CORRETORA DE CÂMBIO LTDA.",
+      "nome_reduzido": "INTERCAM CC LTDA",
+      "label": "525 - INTERCAM CORRETORA DE CÂMBIO LTDA.",
+      "participa_compe": "Não",
+      "ispb": "34265629",
+      "inicio_operacao": "05/12/2022"
+    },
+    {
+      "codigo": "526",
+      "nome": "MONETARIE SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "MONETARIE SCD",
+      "label": "526 - MONETARIE SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "46026562",
+      "inicio_operacao": "20/01/2023"
+    },
+    {
+      "codigo": "527",
+      "nome": "ATICCA - SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "ATICCA SCD S.A.",
+      "label": "527 - ATICCA - SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "44478623",
+      "inicio_operacao": "06/02/2023"
+    },
+    {
+      "codigo": "528",
+      "nome": "CBSF DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS S.A.- EM LIQUIDAÇÃO EXTRAJUDICIAL",
+      "nome_reduzido": "CBSF DTVM -EM LIQUIDAÇÃO EXTRAJUDICIAL",
+      "label": "528 - CBSF DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS S.A.- EM LIQUIDAÇÃO EXTRAJUDICIAL",
+      "participa_compe": "Não",
+      "ispb": "34829992",
+      "inicio_operacao": "06/03/2023"
+    },
+    {
+      "codigo": "529",
+      "nome": "PINBANK BRASIL INSTITUIÇÃO DE PAGAMENTO S.A.",
+      "nome_reduzido": "PINBANK IP",
+      "label": "529 - PINBANK BRASIL INSTITUIÇÃO DE PAGAMENTO S.A.",
+      "participa_compe": "Não",
+      "ispb": "17079937",
+      "inicio_operacao": "16/11/2022"
+    },
+    {
+      "codigo": "530",
+      "nome": "SER FINANCE SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "SER FINANCE SCD S.A.",
+      "label": "530 - SER FINANCE SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "47873449",
+      "inicio_operacao": "14/03/2023"
+    },
+    {
+      "codigo": "531",
+      "nome": "BMP SOCIEDADE DE CRÉDITO DIRETO S.A",
+      "nome_reduzido": "BMP SCD S.A.",
+      "label": "531 - BMP SOCIEDADE DE CRÉDITO DIRETO S.A",
+      "participa_compe": "Não",
+      "ispb": "34337707",
+      "inicio_operacao": "22/05/2023"
+    },
+    {
+      "codigo": "532",
+      "nome": "EAGLE SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "EAGLE SCD S.A.",
+      "label": "532 - EAGLE SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "45745537",
+      "inicio_operacao": "03/04/2023"
+    },
+    {
+      "codigo": "533",
+      "nome": "SRM BANK INSTITUIÇÃO DE PAGAMENTO S/A",
+      "nome_reduzido": "SRM BANK",
+      "label": "533 - SRM BANK INSTITUIÇÃO DE PAGAMENTO S/A",
+      "participa_compe": "Não",
+      "ispb": "22575466",
+      "inicio_operacao": "17/07/2023"
+    },
+    {
+      "codigo": "534",
+      "nome": "EWALLY INSTITUIÇÃO DE PAGAMENTO S.A.",
+      "nome_reduzido": "EWALLY IP S.A.",
+      "label": "534 - EWALLY INSTITUIÇÃO DE PAGAMENTO S.A.",
+      "participa_compe": "Não",
+      "ispb": "00714671",
+      "inicio_operacao": "03/04/2023"
+    },
+    {
+      "codigo": "535",
+      "nome": "OPEA SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "OPEA SCD",
+      "label": "535 - OPEA SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "39519944",
+      "inicio_operacao": "10/02/2023"
+    },
+    {
+      "codigo": "536",
+      "nome": "NEON PAGAMENTOS S.A. - INSTITUIÇÃO DE PAGAMENTO",
+      "nome_reduzido": "NEON PAGAMENTOS S.A. IP",
+      "label": "536 - NEON PAGAMENTOS S.A. - INSTITUIÇÃO DE PAGAMENTO",
+      "participa_compe": "Não",
+      "ispb": "20855875",
+      "inicio_operacao": "12/01/2023"
+    },
+    {
+      "codigo": "537",
+      "nome": "MICROCASH SOCIEDADE DE CRÉDITO AO MICROEMPREENDEDOR E À EMPRESA DE PEQUENO PORTE LTDA.",
+      "nome_reduzido": "MICROCASH SCMEPP LTDA.",
+      "label": "537 - MICROCASH SOCIEDADE DE CRÉDITO AO MICROEMPREENDEDOR E À EMPRESA DE PEQUENO PORTE LTDA.",
+      "participa_compe": "Não",
+      "ispb": "45756448",
+      "inicio_operacao": "06/03/2023"
+    },
+    {
+      "codigo": "538",
+      "nome": "SUDACRED SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "SUDACRED SCD S.A.",
+      "label": "538 - SUDACRED SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "20251847",
+      "inicio_operacao": "08/05/2023"
+    },
+    {
+      "codigo": "539",
+      "nome": "SANTINVEST S.A. - CREDITO, FINANCIAMENTO E INVESTIMENTOS",
+      "nome_reduzido": "SANTINVEST S.A. - CFI",
+      "label": "539 - SANTINVEST S.A. - CREDITO, FINANCIAMENTO E INVESTIMENTOS",
+      "participa_compe": "Não",
+      "ispb": "00122327",
+      "inicio_operacao": "17/04/2023"
+    },
+    {
+      "codigo": "540",
+      "nome": "HBI SOCIEDADE DE CRÉDITO DIRETO S/A.",
+      "nome_reduzido": "HBI SCD",
+      "label": "540 - HBI SOCIEDADE DE CRÉDITO DIRETO S/A.",
+      "participa_compe": "Não",
+      "ispb": "04849745",
+      "inicio_operacao": "08/01/2024"
+    },
+    {
+      "codigo": "541",
+      "nome": "FUNDO GARANTIDOR DE CREDITOS - FGC",
+      "nome_reduzido": "FDO GARANTIDOR CRÉDITOS",
+      "label": "541 - FUNDO GARANTIDOR DE CREDITOS - FGC",
+      "participa_compe": "Não",
+      "ispb": "00954288",
+      "inicio_operacao": "08/03/2023"
+    },
+    {
+      "codigo": "542",
+      "nome": "CLOUDWALK INSTITUIÇÃO DE PAGAMENTO E SERVICOS LTDA",
+      "nome_reduzido": "CLOUDWALK IP LTDA",
+      "label": "542 - CLOUDWALK INSTITUIÇÃO DE PAGAMENTO E SERVICOS LTDA",
+      "participa_compe": "Não",
+      "ispb": "18189547",
+      "inicio_operacao": "19/07/2023"
+    },
+    {
+      "codigo": "543",
+      "nome": "COOPERATIVA DE ECONOMIA E CRÉDITO MÚTUO DOS ELETRICITÁRIOS E DOS TRABALHADORES DAS EMPRESAS DO SETOR DE ENERGIA - COOPCRECE",
+      "nome_reduzido": "COOPCRECE",
+      "label": "543 - COOPERATIVA DE ECONOMIA E CRÉDITO MÚTUO DOS ELETRICITÁRIOS E DOS TRABALHADORES DAS EMPRESAS DO SETOR DE ENERGIA - COOPCRECE",
+      "participa_compe": "Não",
+      "ispb": "92825397",
+      "inicio_operacao": "23/06/2023"
+    },
+    {
+      "codigo": "544",
+      "nome": "MULTICRED SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "MULTICRED SCD S.A.",
+      "label": "544 - MULTICRED SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "38593706",
+      "inicio_operacao": "04/09/2023"
+    },
+    {
+      "codigo": "545",
+      "nome": "SENSO CORRETORA DE CAMBIO E VALORES MOBILIARIOS S.A",
+      "nome_reduzido": "SENSO CCVM S.A.",
+      "label": "545 - SENSO CORRETORA DE CAMBIO E VALORES MOBILIARIOS S.A",
+      "participa_compe": "Não",
+      "ispb": "17352220",
+      "inicio_operacao": "27/09/2010"
+    },
+    {
+      "codigo": "546",
+      "nome": "OKTO INSTITUIÇÃO DE PAGAMENTO S.A.",
+      "nome_reduzido": "OKTO IP",
+      "label": "546 - OKTO INSTITUIÇÃO DE PAGAMENTO S.A.",
+      "participa_compe": "Não",
+      "ispb": "30980539",
+      "inicio_operacao": "24/04/2023"
+    },
+    {
+      "codigo": "547",
+      "nome": "BNK DIGITAL SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "BNK DIGITAL SCD S.A.",
+      "label": "547 - BNK DIGITAL SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "45331622",
+      "inicio_operacao": "01/06/2023"
+    },
+    {
+      "codigo": "548",
+      "nome": "RPW S/A SOCIEDADE DE CRÉDITO, FINANCIAMENTO E INVESTIMENTO",
+      "nome_reduzido": "RPW S.A. SCFI",
+      "label": "548 - RPW S/A SOCIEDADE DE CRÉDITO, FINANCIAMENTO E INVESTIMENTO",
+      "participa_compe": "Não",
+      "ispb": "06249129",
+      "inicio_operacao": "29/05/2023"
+    },
+    {
+      "codigo": "550",
+      "nome": "BEETELLER INSTITUIÇÃO DE PAGAMENTO LTDA.",
+      "nome_reduzido": "BEETELLER IP LTDA.",
+      "label": "550 - BEETELLER INSTITUIÇÃO DE PAGAMENTO LTDA.",
+      "participa_compe": "Não",
+      "ispb": "32074986",
+      "inicio_operacao": "11/09/2023"
+    },
+    {
+      "codigo": "551",
+      "nome": "VERT DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS LTDA",
+      "nome_reduzido": "VERT DTVM LTDA.",
+      "label": "551 - VERT DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS LTDA",
+      "participa_compe": "Não",
+      "ispb": "48967968",
+      "inicio_operacao": "27/05/2024"
+    },
+    {
+      "codigo": "552",
+      "nome": "UZZIPAY INSTITUIÇÃO DE PAGAMENTO S.A.",
+      "nome_reduzido": "UZZIPAY IP S.A.",
+      "label": "552 - UZZIPAY INSTITUIÇÃO DE PAGAMENTO S.A.",
+      "participa_compe": "Não",
+      "ispb": "32192325",
+      "inicio_operacao": "13/09/2023"
+    },
+    {
+      "codigo": "553",
+      "nome": "PERCAPITAL SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "PERCAPITAL SCD S.A.",
+      "label": "553 - PERCAPITAL SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "48707451",
+      "inicio_operacao": "21/09/2023"
+    },
+    {
+      "codigo": "554",
+      "nome": "BANCO STONEX S.A.",
+      "nome_reduzido": "BCO STONEX S.A.",
+      "label": "554 - BANCO STONEX S.A.",
+      "participa_compe": "Não",
+      "ispb": "28811341",
+      "inicio_operacao": "24/07/2023"
+    },
+    {
+      "codigo": "555",
+      "nome": "PAN FINANCEIRA S.A. - SOCIEDADE DE CRÉDITO, FINANCIAMENTO E INVESTIMENTOS",
+      "nome_reduzido": "PAN FINAN",
+      "label": "555 - PAN FINANCEIRA S.A. - SOCIEDADE DE CRÉDITO, FINANCIAMENTO E INVESTIMENTOS",
+      "participa_compe": "Não",
+      "ispb": "02682287",
+      "inicio_operacao": "03/07/2023"
+    },
+    {
+      "codigo": "556",
+      "nome": "SAYGO CORRETORA DE CÂMBIO S.A.",
+      "nome_reduzido": "SAYGO CÂMBIO",
+      "label": "556 - SAYGO CORRETORA DE CÂMBIO S.A.",
+      "participa_compe": "Não",
+      "ispb": "40333582",
+      "inicio_operacao": "03/08/2023"
+    },
+    {
+      "codigo": "557",
+      "nome": "PAGPRIME INSTITUICAO DE PAGAMENTO LTDA",
+      "nome_reduzido": "PAGPRIME IP",
+      "label": "557 - PAGPRIME INSTITUICAO DE PAGAMENTO LTDA",
+      "participa_compe": "Não",
+      "ispb": "30944783",
+      "inicio_operacao": "23/10/2023"
+    },
+    {
+      "codigo": "559",
+      "nome": "KANASTRA FINANCEIRA S.A, CREDITO, FINANCIAMENTO E INVESTIMENTO",
+      "nome_reduzido": "KANASTRA CFI",
+      "label": "559 - KANASTRA FINANCEIRA S.A, CREDITO, FINANCIAMENTO E INVESTIMENTO",
+      "participa_compe": "Não",
+      "ispb": "49288113",
+      "inicio_operacao": "25/09/2023"
+    },
+    {
+      "codigo": "560",
+      "nome": "MAG INSTITUICAO DE PAGAMENTO LTDA",
+      "nome_reduzido": "MAG IP LTDA.",
+      "label": "560 - MAG INSTITUICAO DE PAGAMENTO LTDA",
+      "participa_compe": "Não",
+      "ispb": "21995256",
+      "inicio_operacao": "17/10/2023"
+    },
+    {
+      "codigo": "561",
+      "nome": "PAY4FUN INSTITUICAO DE PAGAMENTO S.A.",
+      "nome_reduzido": "PAY4FUN IP S.A.",
+      "label": "561 - PAY4FUN INSTITUICAO DE PAGAMENTO S.A.",
+      "participa_compe": "Não",
+      "ispb": "20757199",
+      "inicio_operacao": "18/10/2023"
+    },
+    {
+      "codigo": "562",
+      "nome": "AZIMUT BRASIL DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS LTDA",
+      "nome_reduzido": "AZIMUT BRASIL DTVM LTDA",
+      "label": "562 - AZIMUT BRASIL DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS LTDA",
+      "participa_compe": "Não",
+      "ispb": "18684408",
+      "inicio_operacao": "08/01/2024"
+    },
+    {
+      "codigo": "563",
+      "nome": "PROTEGE CASH INSTITUIÇÃO DE PAGAMENTO S.A.",
+      "nome_reduzido": "PROTEGE CASH",
+      "label": "563 - PROTEGE CASH INSTITUIÇÃO DE PAGAMENTO S.A.",
+      "participa_compe": "Não",
+      "ispb": "40276692",
+      "inicio_operacao": "18/09/2023"
+    },
+    {
+      "codigo": "565",
+      "nome": "ÁGORA CORRETORA DE TITULOS E VALORES MOBILIARIOS S.A.",
+      "nome_reduzido": "ÁGORA CTVM S.A.",
+      "label": "565 - ÁGORA CORRETORA DE TITULOS E VALORES MOBILIARIOS S.A.",
+      "participa_compe": "Não",
+      "ispb": "74014747",
+      "inicio_operacao": "20/11/2023"
+    },
+    {
+      "codigo": "566",
+      "nome": "FLAGSHIP INSTITUICAO DE PAGAMENTO LTDA",
+      "nome_reduzido": "FLAGSHIP IP LTDA",
+      "label": "566 - FLAGSHIP INSTITUICAO DE PAGAMENTO LTDA",
+      "participa_compe": "Não",
+      "ispb": "23114447",
+      "inicio_operacao": "30/10/2023"
+    },
+    {
+      "codigo": "567",
+      "nome": "MERCANTIL FINANCEIRA S.A. - SOCIEDADE DE CRÉDITO, FINANCIAMENTO E INVESTIMENTO.",
+      "nome_reduzido": "MERCANTIL FINANCEIRA",
+      "label": "567 - MERCANTIL FINANCEIRA S.A. - SOCIEDADE DE CRÉDITO, FINANCIAMENTO E INVESTIMENTO.",
+      "participa_compe": "Não",
+      "ispb": "33040601",
+      "inicio_operacao": "28/08/2023"
+    },
+    {
+      "codigo": "568",
+      "nome": "BRCONDOS SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "BRCONDOS SCD S.A.",
+      "label": "568 - BRCONDOS SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "49933388",
+      "inicio_operacao": "08/12/2023"
+    },
+    {
+      "codigo": "569",
+      "nome": "CONTA PRONTA INSTITUICAO DE PAGAMENTO LTDA",
+      "nome_reduzido": "CONTA PRONTA IP",
+      "label": "569 - CONTA PRONTA INSTITUICAO DE PAGAMENTO LTDA",
+      "participa_compe": "Não",
+      "ispb": "12473687",
+      "inicio_operacao": "31/10/2023"
+    },
+    {
+      "codigo": "572",
+      "nome": "ALL IN CRED SOCIEDADE DE CREDITO DIRETO S.A.",
+      "nome_reduzido": "ALL IN CRED SCD S.A.",
+      "label": "572 - ALL IN CRED SOCIEDADE DE CREDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "51414521",
+      "inicio_operacao": "22/12/2023"
+    },
+    {
+      "codigo": "573",
+      "nome": "OXY COMPANHIA HIPOTECÁRIA",
+      "nome_reduzido": "OXY CH",
+      "label": "573 - OXY COMPANHIA HIPOTECÁRIA",
+      "participa_compe": "Não",
+      "ispb": "18282093",
+      "inicio_operacao": "20/10/2025"
+    },
+    {
+      "codigo": "574",
+      "nome": "A55 SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "A55 SCD S.A.",
+      "label": "574 - A55 SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "48756121",
+      "inicio_operacao": "21/02/2025"
+    },
+    {
+      "codigo": "575",
+      "nome": "DGBK CREDIT S.A. - SOCIEDADE DE CRÉDITO DIRETO.",
+      "nome_reduzido": "DGBK CREDIT S.A. - SOCIEDADE DE CRÉDITO DIRETO.",
+      "label": "575 - DGBK CREDIT S.A. - SOCIEDADE DE CRÉDITO DIRETO.",
+      "participa_compe": "Não",
+      "ispb": "48584954",
+      "inicio_operacao": "13/06/2024"
+    },
+    {
+      "codigo": "576",
+      "nome": "MERCADO BITCOIN INSTITUICAO DE PAGAMENTO LTDA",
+      "nome_reduzido": "MERCADO BITCOIN IP LTDA",
+      "label": "576 - MERCADO BITCOIN INSTITUICAO DE PAGAMENTO LTDA",
+      "participa_compe": "Não",
+      "ispb": "11351086",
+      "inicio_operacao": "01/04/2024"
+    },
+    {
+      "codigo": "577",
+      "nome": "DESENVOLVE SP - AGÊNCIA DE FOMENTO DO ESTADO DE SÃO PAULO S.A.",
+      "nome_reduzido": "AF DESENVOLVE SP S.A.",
+      "label": "577 - DESENVOLVE SP - AGÊNCIA DE FOMENTO DO ESTADO DE SÃO PAULO S.A.",
+      "participa_compe": "Não",
+      "ispb": "10663610",
+      "inicio_operacao": "15/03/2024"
+    },
+    {
+      "codigo": "579",
+      "nome": "QUADRA SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "QUADRA SCD",
+      "label": "579 - QUADRA SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "49555647",
+      "inicio_operacao": "07/11/2023"
+    },
+    {
+      "codigo": "580",
+      "nome": "COOPERATIVA CENTRAL DE CRÉDITO, POUPANÇA E INVESTIMENTO DO SUL E SUDESTE - CENTRAL SICREDI SUL/SUDESTE",
+      "nome_reduzido": "CCCPOUPINV SUL E SUDESTE - CENTRAL SUL/SUDESTE",
+      "label": "580 - COOPERATIVA CENTRAL DE CRÉDITO, POUPANÇA E INVESTIMENTO DO SUL E SUDESTE - CENTRAL SICREDI SUL/SUDESTE",
+      "participa_compe": "Não",
+      "ispb": "87437687",
+      "inicio_operacao": "21/02/2024"
+    },
+    {
+      "codigo": "581",
+      "nome": "COOPERATIVA CENTRAL DE CRÉDITO, POUPANÇA E INVESTIMENTO DO NORDESTE - CENTRAL SICREDI NORDESTE",
+      "nome_reduzido": "CENTRAL NORDESTE",
+      "label": "581 - COOPERATIVA CENTRAL DE CRÉDITO, POUPANÇA E INVESTIMENTO DO NORDESTE - CENTRAL SICREDI NORDESTE",
+      "participa_compe": "Não",
+      "ispb": "70119680",
+      "inicio_operacao": "22/03/2024"
+    },
+    {
+      "codigo": "582",
+      "nome": "COOPERATIVA CENTRAL DE CRÉDITO, POUPANÇA E INVESTIMENTO DE MATO GROSSO DO SUL, GOIÁS, DISTRITO FEDERAL E TOCANTINS - CENTRAL SICREDI BRASIL CENTRAL",
+      "nome_reduzido": "CCC POUP INV DE MS, GO, DF E TO",
+      "label": "582 - COOPERATIVA CENTRAL DE CRÉDITO, POUPANÇA E INVESTIMENTO DE MATO GROSSO DO SUL, GOIÁS, DISTRITO FEDERAL E TOCANTINS - CENTRAL SICREDI BRASIL CENTRAL",
+      "participa_compe": "Não",
+      "ispb": "33737818",
+      "inicio_operacao": "08/03/2024"
+    },
+    {
+      "codigo": "583",
+      "nome": "COOPERATIVA CENTRAL DE CRÉDITO, POUPANÇA E INVESTIMENTO DO CENTRO NORTE DO BRASIL - CENTRAL SICREDI CENTRO NORTE",
+      "nome_reduzido": "CCC POUP INV DO CENTRO NORTE DO BRASIL",
+      "label": "583 - COOPERATIVA CENTRAL DE CRÉDITO, POUPANÇA E INVESTIMENTO DO CENTRO NORTE DO BRASIL - CENTRAL SICREDI CENTRO NORTE",
+      "participa_compe": "Não",
+      "ispb": "33667205",
+      "inicio_operacao": "15/03/2024"
+    },
+    {
+      "codigo": "584",
+      "nome": "COOPERATIVA CENTRAL DE CRÉDITO, POUPANÇA E INVESTIMENTO DOS ESTADOS DO PARANÁ, SÃO PAULO E RIO DE JANEIRO - CENTRAL SICREDI PR/SP/RJ",
+      "nome_reduzido": "CCC POUP E INV DOS ESTADOS DO PR, SP E RJ",
+      "label": "584 - COOPERATIVA CENTRAL DE CRÉDITO, POUPANÇA E INVESTIMENTO DOS ESTADOS DO PARANÁ, SÃO PAULO E RIO DE JANEIRO - CENTRAL SICREDI PR/SP/RJ",
+      "participa_compe": "Não",
+      "ispb": "80230774",
+      "inicio_operacao": "28/02/2024"
+    },
+    {
+      "codigo": "585",
+      "nome": "SETHI SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "SETHI SCD SA",
+      "label": "585 - SETHI SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "50946592",
+      "inicio_operacao": "24/06/2024"
+    },
+    {
+      "codigo": "586",
+      "nome": "Z1 INSTITUIÇÃO DE PAGAMENTO LTDA.",
+      "nome_reduzido": "Z1 IP LTDA.",
+      "label": "586 - Z1 INSTITUIÇÃO DE PAGAMENTO LTDA.",
+      "participa_compe": "Não",
+      "ispb": "35810871",
+      "inicio_operacao": "21/02/2024"
+    },
+    {
+      "codigo": "587",
+      "nome": "FIDD DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS LTDA.",
+      "nome_reduzido": "FIDD DTVM LTDA.",
+      "label": "587 - FIDD DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS LTDA.",
+      "participa_compe": "Não",
+      "ispb": "37678915",
+      "inicio_operacao": "17/06/2024"
+    },
+    {
+      "codigo": "588",
+      "nome": "AVANCARD PROVER INSTITUIÇÃO DE PAGAMENTO LTDA",
+      "nome_reduzido": "AVANCARD PROVER IP LTDA",
+      "label": "588 - AVANCARD PROVER INSTITUIÇÃO DE PAGAMENTO LTDA",
+      "participa_compe": "Não",
+      "ispb": "20308187",
+      "inicio_operacao": "04/03/2024"
+    },
+    {
+      "codigo": "589",
+      "nome": "G5 SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "G5 SCD SA",
+      "label": "589 - G5 SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "51212088",
+      "inicio_operacao": "18/06/2024"
+    },
+    {
+      "codigo": "590",
+      "nome": "REPASSES FINANCEIROS E SOLUCOES TECNOLOGICAS INSTITUICAO DE PAGAMENTO S.A.",
+      "nome_reduzido": "REPASSES FINANCEIROS E SOLUCOES TECNOLOGICAS IP S.A.",
+      "label": "590 - REPASSES FINANCEIROS E SOLUCOES TECNOLOGICAS INSTITUICAO DE PAGAMENTO S.A.",
+      "participa_compe": "Não",
+      "ispb": "40473435",
+      "inicio_operacao": "04/03/2024"
+    },
+    {
+      "codigo": "591",
+      "nome": "BANVOX DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS LTDA",
+      "nome_reduzido": "BANVOX DTVM",
+      "label": "591 - BANVOX DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS LTDA",
+      "participa_compe": "Não",
+      "ispb": "02671743",
+      "inicio_operacao": "28/06/2024"
+    },
+    {
+      "codigo": "592",
+      "nome": "INSTITUIÇÃO DE PAGAMENTOS MAPS LTDA.",
+      "nome_reduzido": "MAPS IP LTDA.",
+      "label": "592 - INSTITUIÇÃO DE PAGAMENTOS MAPS LTDA.",
+      "participa_compe": "Não",
+      "ispb": "45548763",
+      "inicio_operacao": "03/06/2024"
+    },
+    {
+      "codigo": "593",
+      "nome": "TRANSFEERA INSTITUIÇÃO DE PAGAMENTO S.A",
+      "nome_reduzido": "TRANSFEERA IP S.A.",
+      "label": "593 - TRANSFEERA INSTITUIÇÃO DE PAGAMENTO S.A",
+      "participa_compe": "Não",
+      "ispb": "27084098",
+      "inicio_operacao": "15/05/2024"
+    },
+    {
+      "codigo": "594",
+      "nome": "ASA SOCIEDADE DE CRÉDITO FINANCIAMENTO E INVESTIMENTO S.A.",
+      "nome_reduzido": "ASA SCFI S.A.",
+      "label": "594 - ASA SOCIEDADE DE CRÉDITO FINANCIAMENTO E INVESTIMENTO S.A.",
+      "participa_compe": "Não",
+      "ispb": "48703388",
+      "inicio_operacao": "11/03/2024"
+    },
+    {
+      "codigo": "595",
+      "nome": "IFOOD PAGO INSTITUIÇÃO DE PAGAMENTO S.A.",
+      "nome_reduzido": "IFOOD PAGO IP",
+      "label": "595 - IFOOD PAGO INSTITUIÇÃO DE PAGAMENTO S.A.",
+      "participa_compe": "Não",
+      "ispb": "19468242",
+      "inicio_operacao": "21/03/2024"
+    },
+    {
+      "codigo": "596",
+      "nome": "CACTVS INSTITUICAO DE PAGAMENTO S.A",
+      "nome_reduzido": "CACTVS IP S.A.",
+      "label": "596 - CACTVS INSTITUICAO DE PAGAMENTO S.A",
+      "participa_compe": "Não",
+      "ispb": "39696395",
+      "inicio_operacao": "23/02/2026"
+    },
+    {
+      "codigo": "597",
+      "nome": "ISSUER INSTITUICAO DE PAGAMENTO LTDA.",
+      "nome_reduzido": "ISSUER IP LTDA.",
+      "label": "597 - ISSUER INSTITUICAO DE PAGAMENTO LTDA.",
+      "participa_compe": "Não",
+      "ispb": "34747388",
+      "inicio_operacao": "08/03/2024"
+    },
+    {
+      "codigo": "598",
+      "nome": "KONECT SOCIEDADE DE CRÉDITO DIRETO S/A",
+      "nome_reduzido": "KONECT SCD S/A",
+      "label": "598 - KONECT SOCIEDADE DE CRÉDITO DIRETO S/A",
+      "participa_compe": "Não",
+      "ispb": "50626276",
+      "inicio_operacao": "29/09/2025"
+    },
+    {
+      "codigo": "599",
+      "nome": "AGORACRED S/A SOCIEDADE DE CRÉDITO, FINANCIAMENTO E INVESTIMENTO",
+      "nome_reduzido": "AGORACRED S/A SCFI",
+      "label": "599 - AGORACRED S/A SOCIEDADE DE CRÉDITO, FINANCIAMENTO E INVESTIMENTO",
+      "participa_compe": "Não",
+      "ispb": "36321990",
+      "inicio_operacao": "07/08/2024"
+    },
+    {
+      "codigo": "600",
+      "nome": "Banco Luso Brasileiro S.A.",
+      "nome_reduzido": "BCO LUSO BRASILEIRO S.A.",
+      "label": "600 - Banco Luso Brasileiro S.A.",
+      "participa_compe": "Sim",
+      "ispb": "59118133",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "604",
+      "nome": "Banco Industrial do Brasil S.A.",
+      "nome_reduzido": "BCO INDUSTRIAL DO BRASIL S.A.",
+      "label": "604 - Banco Industrial do Brasil S.A.",
+      "participa_compe": "Sim",
+      "ispb": "31895683",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "610",
+      "nome": "Banco VR S.A.",
+      "nome_reduzido": "BCO VR S.A.",
+      "label": "610 - Banco VR S.A.",
+      "participa_compe": "Não",
+      "ispb": "78626983",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "611",
+      "nome": "Banco Paulista S.A.",
+      "nome_reduzido": "BCO PAULISTA S.A.",
+      "label": "611 - Banco Paulista S.A.",
+      "participa_compe": "Sim",
+      "ispb": "61820817",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "612",
+      "nome": "Banco Guanabara S.A.",
+      "nome_reduzido": "BCO GUANABARA S.A.",
+      "label": "612 - Banco Guanabara S.A.",
+      "participa_compe": "Sim",
+      "ispb": "31880826",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "613",
+      "nome": "Omni Banco S.A.",
+      "nome_reduzido": "OMNI BANCO S.A.",
+      "label": "613 - Omni Banco S.A.",
+      "participa_compe": "Não",
+      "ispb": "60850229",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "614",
+      "nome": "SANTS SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "SANTS SCD S.A.",
+      "label": "614 - SANTS SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "52440987",
+      "inicio_operacao": "14/06/2024"
+    },
+    {
+      "codigo": "615",
+      "nome": "SMART SOLUTIONS GROUP INSTITUICAO DE PAGAMENTO LTDA",
+      "nome_reduzido": "SMART SOLUTIONS GROUP IP LTDA",
+      "label": "615 - SMART SOLUTIONS GROUP INSTITUICAO DE PAGAMENTO LTDA",
+      "participa_compe": "Não",
+      "ispb": "37470405",
+      "inicio_operacao": "04/10/2024"
+    },
+    {
+      "codigo": "619",
+      "nome": "TRIO INSTITUICAO DE PAGAMENTO LTDA.",
+      "nome_reduzido": "TRIO IP LTDA.",
+      "label": "619 - TRIO INSTITUICAO DE PAGAMENTO LTDA.",
+      "participa_compe": "Não",
+      "ispb": "49931906",
+      "inicio_operacao": "01/08/2024"
+    },
+    {
+      "codigo": "620",
+      "nome": "REVOLUT SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "REVOLUT SCD S.A.",
+      "label": "620 - REVOLUT SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "51342763",
+      "inicio_operacao": "15/05/2024"
+    },
+    {
+      "codigo": "623",
+      "nome": "Banco Pan S.A.",
+      "nome_reduzido": "BANCO PAN",
+      "label": "623 - Banco Pan S.A.",
+      "participa_compe": "Sim",
+      "ispb": "59285411",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "626",
+      "nome": "BANCO C6 CONSIGNADO S.A.",
+      "nome_reduzido": "BCO C6 CONSIG",
+      "label": "626 - BANCO C6 CONSIGNADO S.A.",
+      "participa_compe": "Não",
+      "ispb": "61348538",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "630",
+      "nome": "BANCO LETSBANK S.A. - EM LIQUIDAÇÃO EXTRAJUDICIAL",
+      "nome_reduzido": "BANCO LETSBANK S.A. - EM LIQUIDAÇÃO EXTRAJUDICIAL",
+      "label": "630 - BANCO LETSBANK S.A. - EM LIQUIDAÇÃO EXTRAJUDICIAL",
+      "participa_compe": "Não",
+      "ispb": "58497702",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "632",
+      "nome": "Z-ON SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "Z-ON SCD S.A.",
+      "label": "632 - Z-ON SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "52586293",
+      "inicio_operacao": "03/10/2024"
+    },
+    {
+      "codigo": "633",
+      "nome": "Banco Rendimento S.A.",
+      "nome_reduzido": "BCO RENDIMENTO S.A.",
+      "label": "633 - Banco Rendimento S.A.",
+      "participa_compe": "Sim",
+      "ispb": "68900810",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "634",
+      "nome": "BANCO TRIANGULO S.A.",
+      "nome_reduzido": "BCO TRIANGULO S.A.",
+      "label": "634 - BANCO TRIANGULO S.A.",
+      "participa_compe": "Não",
+      "ispb": "17351180",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "636",
+      "nome": "GIRO - SOCIEDADE DE CRÉDITO DIRETO S/A",
+      "nome_reduzido": "GIRO - SCD S/A",
+      "label": "636 - GIRO - SOCIEDADE DE CRÉDITO DIRETO S/A",
+      "participa_compe": "Não",
+      "ispb": "40112555",
+      "inicio_operacao": "02/10/2024"
+    },
+    {
+      "codigo": "637",
+      "nome": "BANCO SOFISA S.A.",
+      "nome_reduzido": "BCO SOFISA S.A.",
+      "label": "637 - BANCO SOFISA S.A.",
+      "participa_compe": "Sim",
+      "ispb": "60889128",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "643",
+      "nome": "Banco Pine S.A.",
+      "nome_reduzido": "BCO PINE S.A.",
+      "label": "643 - Banco Pine S.A.",
+      "participa_compe": "Sim",
+      "ispb": "62144175",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "644",
+      "nome": "321 SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "321 SCD S.A.",
+      "label": "644 - 321 SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "54647259",
+      "inicio_operacao": "13/06/2024"
+    },
+    {
+      "codigo": "646",
+      "nome": "DM SOCIEDADE DE CRÉDITO, FINANCIAMENTO E INVESTIMENTO S.A",
+      "nome_reduzido": "DM SCFI",
+      "label": "646 - DM SOCIEDADE DE CRÉDITO, FINANCIAMENTO E INVESTIMENTO S.A",
+      "participa_compe": "Não",
+      "ispb": "91669747",
+      "inicio_operacao": "20/09/2024"
+    },
+    {
+      "codigo": "651",
+      "nome": "PAGARE INSTITUICAO DE PAGAMENTO S.A.",
+      "nome_reduzido": "PAGARE IP S.A.",
+      "label": "651 - PAGARE INSTITUICAO DE PAGAMENTO S.A.",
+      "participa_compe": "Não",
+      "ispb": "25104230",
+      "inicio_operacao": "28/08/2024"
+    },
+    {
+      "codigo": "653",
+      "nome": "BANCO PLENO S.A. - EM LIQUIDAÇÃO EXTRAJUDICIAL",
+      "nome_reduzido": "BM PLENO S.A. - EM LIQUIDAÇÃO EXTRAJUDICIAL",
+      "label": "653 - BANCO PLENO S.A. - EM LIQUIDAÇÃO EXTRAJUDICIAL",
+      "participa_compe": "Não",
+      "ispb": "61024352",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "654",
+      "nome": "BANCO DIGIMAIS S.A.",
+      "nome_reduzido": "BCO DIGIMAIS S.A.",
+      "label": "654 - BANCO DIGIMAIS S.A.",
+      "participa_compe": "Não",
+      "ispb": "92874270",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "655",
+      "nome": "Banco Votorantim S.A.",
+      "nome_reduzido": "BCO VOTORANTIM S.A.",
+      "label": "655 - Banco Votorantim S.A.",
+      "participa_compe": "Não",
+      "ispb": "59588111",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "659",
+      "nome": "ONEKEY PAYMENTS INSTITUICAO DE PAGAMENTO SA",
+      "nome_reduzido": "ONEKEY PAYMENTS IP S.A.",
+      "label": "659 - ONEKEY PAYMENTS INSTITUICAO DE PAGAMENTO SA",
+      "participa_compe": "Não",
+      "ispb": "35210410",
+      "inicio_operacao": "30/09/2024"
+    },
+    {
+      "codigo": "660",
+      "nome": "PAGME INSTITUIÇÃO DE PAGAMENTO LTDA.",
+      "nome_reduzido": "PAGME IP LTDA",
+      "label": "660 - PAGME INSTITUIÇÃO DE PAGAMENTO LTDA.",
+      "participa_compe": "Não",
+      "ispb": "34471744",
+      "inicio_operacao": "22/10/2024"
+    },
+    {
+      "codigo": "661",
+      "nome": "FREEX SOCIEDADE CORRETORA DE CÂMBIO S.A.",
+      "nome_reduzido": "FREEX SCC S.A.",
+      "label": "661 - FREEX SOCIEDADE CORRETORA DE CÂMBIO S.A.",
+      "participa_compe": "Não",
+      "ispb": "55428859",
+      "inicio_operacao": "11/09/2024"
+    },
+    {
+      "codigo": "662",
+      "nome": "WE PAY OUT INSTITUICAO DE PAGAMENTO LTDA.",
+      "nome_reduzido": "WE PAY OUT IP LTDA.",
+      "label": "662 - WE PAY OUT INSTITUICAO DE PAGAMENTO LTDA.",
+      "participa_compe": "Não",
+      "ispb": "32708748",
+      "inicio_operacao": "25/11/2024"
+    },
+    {
+      "codigo": "663",
+      "nome": "ACTUAL DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS S.A.",
+      "nome_reduzido": "ACTUAL DTVM S.A.",
+      "label": "663 - ACTUAL DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS S.A.",
+      "participa_compe": "Não",
+      "ispb": "44782130",
+      "inicio_operacao": "16/12/2024"
+    },
+    {
+      "codigo": "664",
+      "nome": "EAGLE INSTITUICAO DE PAGAMENTO LTDA.",
+      "nome_reduzido": "EAGLE IP LTDA.",
+      "label": "664 - EAGLE INSTITUICAO DE PAGAMENTO LTDA.",
+      "participa_compe": "Não",
+      "ispb": "11414839",
+      "inicio_operacao": "30/09/2024"
+    },
+    {
+      "codigo": "665",
+      "nome": "STARK BANK S.A. - INSTITUICAO DE PAGAMENTO",
+      "nome_reduzido": "STARK BANK S.A. - IP",
+      "label": "665 - STARK BANK S.A. - INSTITUICAO DE PAGAMENTO",
+      "participa_compe": "Não",
+      "ispb": "20018183",
+      "inicio_operacao": "25/11/2024"
+    },
+    {
+      "codigo": "667",
+      "nome": "LIQUIDO INSTITUICAO DE PAGAMENTO LTDA",
+      "nome_reduzido": "LIQUIDO IP LTDA",
+      "label": "667 - LIQUIDO INSTITUICAO DE PAGAMENTO LTDA",
+      "participa_compe": "Não",
+      "ispb": "48552108",
+      "inicio_operacao": "05/03/2025"
+    },
+    {
+      "codigo": "668",
+      "nome": "CELCOIN SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "CELCOIN SCD",
+      "label": "668 - CELCOIN SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "48632754",
+      "inicio_operacao": "04/02/2025"
+    },
+    {
+      "codigo": "669",
+      "nome": "TRANSFERO INSTITUICAO DE PAGAMENTO LTDA.",
+      "nome_reduzido": "TRANSFERO IP LTDA.",
+      "label": "669 - TRANSFERO INSTITUICAO DE PAGAMENTO LTDA.",
+      "participa_compe": "Não",
+      "ispb": "47133056",
+      "inicio_operacao": "06/04/2026"
+    },
+    {
+      "codigo": "670",
+      "nome": "BSN PAGAMENTOS INSTITUIÇÃO DE PAGAMENTO LTDA",
+      "nome_reduzido": "BSN",
+      "label": "670 - BSN PAGAMENTOS INSTITUIÇÃO DE PAGAMENTO LTDA",
+      "participa_compe": "Não",
+      "ispb": "11491029",
+      "inicio_operacao": "08/09/2025"
+    },
+    {
+      "codigo": "671",
+      "nome": "ZERO INSTITUIÇÃO DE PAGAMENTO S.A.",
+      "nome_reduzido": "ZERO IP",
+      "label": "671 - ZERO INSTITUIÇÃO DE PAGAMENTO S.A.",
+      "participa_compe": "Não",
+      "ispb": "26264220",
+      "inicio_operacao": "11/11/2024"
+    },
+    {
+      "codigo": "672",
+      "nome": "STONE SOCIEDADE DE CREDITO, FINANCIAMENTO E INVESTIMENTO S.A.",
+      "nome_reduzido": "STONE CFI S.A.",
+      "label": "672 - STONE SOCIEDADE DE CREDITO, FINANCIAMENTO E INVESTIMENTO S.A.",
+      "participa_compe": "Não",
+      "ispb": "53505601",
+      "inicio_operacao": "18/03/2025"
+    },
+    {
+      "codigo": "673",
+      "nome": "COOPERATIVA DE CRÉDITO RURAL DO AGRESTE ALAGOANO - COOPERAGRE",
+      "nome_reduzido": "CCR DO AGRESTE ALAGOANO",
+      "label": "673 - COOPERATIVA DE CRÉDITO RURAL DO AGRESTE ALAGOANO - COOPERAGRE",
+      "participa_compe": "Não",
+      "ispb": "08482873",
+      "inicio_operacao": "10/03/2025"
+    },
+    {
+      "codigo": "674",
+      "nome": "HINOVA PAY INSTITUICAO DE PAGAMENTO S.A.",
+      "nome_reduzido": "HINOVA PAY IP S.A.",
+      "label": "674 - HINOVA PAY INSTITUICAO DE PAGAMENTO S.A.",
+      "participa_compe": "Não",
+      "ispb": "27970567",
+      "inicio_operacao": "12/12/2024"
+    },
+    {
+      "codigo": "675",
+      "nome": "BANQI INSTITUICAO DE PAGAMENTO LTDA.",
+      "nome_reduzido": "BANQI",
+      "label": "675 - BANQI INSTITUICAO DE PAGAMENTO LTDA.",
+      "participa_compe": "Não",
+      "ispb": "30723871",
+      "inicio_operacao": "07/05/2025"
+    },
+    {
+      "codigo": "676",
+      "nome": "DUFRIO FINANCEIRA, CRÉDITO, FINANCIAMENTO E INVESTIMENTOS S.A.",
+      "nome_reduzido": "DUFRIO CFI S.A.",
+      "label": "676 - DUFRIO FINANCEIRA, CRÉDITO, FINANCIAMENTO E INVESTIMENTOS S.A.",
+      "participa_compe": "Não",
+      "ispb": "35479592",
+      "inicio_operacao": "10/01/2025"
+    },
+    {
+      "codigo": "678",
+      "nome": "FIDEM SOCIEDADE DE CRÉDITO DIRETO S/A",
+      "nome_reduzido": "FIDEM SCD S/A",
+      "label": "678 - FIDEM SOCIEDADE DE CRÉDITO DIRETO S/A",
+      "participa_compe": "Não",
+      "ispb": "45716916",
+      "inicio_operacao": "23/06/2025"
+    },
+    {
+      "codigo": "679",
+      "nome": "PAY INSTITUICAO DE PAGAMENTO S.A.",
+      "nome_reduzido": "PAY IP S.A.",
+      "label": "679 - PAY INSTITUICAO DE PAGAMENTO S.A.",
+      "participa_compe": "Não",
+      "ispb": "36690516",
+      "inicio_operacao": "01/04/2025"
+    },
+    {
+      "codigo": "680",
+      "nome": "DELTA GLOBAL SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "DELTA GLOBAL SCD S.A.",
+      "label": "680 - DELTA GLOBAL SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "55823094",
+      "inicio_operacao": "17/04/2025"
+    },
+    {
+      "codigo": "681",
+      "nome": "MT INSTITUICAO DE PAGAMENTO SA",
+      "nome_reduzido": "MT IP S.A.",
+      "label": "681 - MT INSTITUICAO DE PAGAMENTO SA",
+      "participa_compe": "Não",
+      "ispb": "50871921",
+      "inicio_operacao": "10/04/2025"
+    },
+    {
+      "codigo": "682",
+      "nome": "MONERY INSTITUICAO DE PAGAMENTO S.A.",
+      "nome_reduzido": "MONERY IP S.A.",
+      "label": "682 - MONERY INSTITUICAO DE PAGAMENTO S.A.",
+      "participa_compe": "Não",
+      "ispb": "46505612",
+      "inicio_operacao": "03/02/2025"
+    },
+    {
+      "codigo": "683",
+      "nome": "BRASIL CASH INSTITUICAO DE PAGAMENTO S.A",
+      "nome_reduzido": "BRASIL CASH IP S.A.",
+      "label": "683 - BRASIL CASH INSTITUICAO DE PAGAMENTO S.A",
+      "participa_compe": "Não",
+      "ispb": "30507541",
+      "inicio_operacao": "25/03/2026"
+    },
+    {
+      "codigo": "684",
+      "nome": "HARMOS S.A. - SOCIEDADE DE CRÉDITO, FINANCIAMENTO E INVESTIMENTO",
+      "nome_reduzido": "HARMOS S.A. - SCFI",
+      "label": "684 - HARMOS S.A. - SOCIEDADE DE CRÉDITO, FINANCIAMENTO E INVESTIMENTO",
+      "participa_compe": "Não",
+      "ispb": "56392166",
+      "inicio_operacao": "24/06/2025"
+    },
+    {
+      "codigo": "685",
+      "nome": "TYCOON TECHNOLOGY INSTITUICAO DE PAGAMENTO S.A",
+      "nome_reduzido": "TYCOON TECHNOLOGY IIP S.A",
+      "label": "685 - TYCOON TECHNOLOGY INSTITUICAO DE PAGAMENTO S.A",
+      "participa_compe": "Não",
+      "ispb": "26615279",
+      "inicio_operacao": "10/03/2025"
+    },
+    {
+      "codigo": "686",
+      "nome": "BIZ INSTITUIÇÃO DE PAGAMENTO S.A.",
+      "nome_reduzido": "BIZ IP LTDA.",
+      "label": "686 - BIZ INSTITUIÇÃO DE PAGAMENTO S.A.",
+      "participa_compe": "Não",
+      "ispb": "12481100",
+      "inicio_operacao": "28/07/2025"
+    },
+    {
+      "codigo": "687",
+      "nome": "INCO SOCIEDADE DE EMPRÉSTIMO ENTRE PESSOAS S.A.",
+      "nome_reduzido": "INCO SEP S.A.",
+      "label": "687 - INCO SOCIEDADE DE EMPRÉSTIMO ENTRE PESSOAS S.A.",
+      "participa_compe": "Não",
+      "ispb": "35340796",
+      "inicio_operacao": "10/06/2025"
+    },
+    {
+      "codigo": "688",
+      "nome": "KIKAI SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "KIKAI SCD S.A.",
+      "label": "688 - KIKAI SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "43978697",
+      "inicio_operacao": "15/04/2025"
+    },
+    {
+      "codigo": "689",
+      "nome": "NVIO BRASIL SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "NVIO BRASIL SCD S.A.",
+      "label": "689 - NVIO BRASIL SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "51118718",
+      "inicio_operacao": "16/05/2025"
+    },
+    {
+      "codigo": "690",
+      "nome": "BK INSTITUIÇÃO DE PAGAMENTO S.A.",
+      "nome_reduzido": "BK IP S.A.",
+      "label": "690 - BK INSTITUIÇÃO DE PAGAMENTO S.A.",
+      "participa_compe": "Não",
+      "ispb": "16814330",
+      "inicio_operacao": "02/04/2025"
+    },
+    {
+      "codigo": "692",
+      "nome": "SQUID SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "SQUID SCD S.A.",
+      "label": "692 - SQUID SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "56198117",
+      "inicio_operacao": "27/06/2025"
+    },
+    {
+      "codigo": "693",
+      "nome": "EFEX INSTITUIÇÃO DE PAGAMENTO S.A.",
+      "nome_reduzido": "EFEX IP",
+      "label": "693 - EFEX INSTITUIÇÃO DE PAGAMENTO S.A.",
+      "participa_compe": "Não",
+      "ispb": "32820711",
+      "inicio_operacao": "05/09/2025"
+    },
+    {
+      "codigo": "694",
+      "nome": "WOOVI INSTITUICAO DE PAGAMENTO LTDA",
+      "nome_reduzido": "WOOVI IP LTDA.",
+      "label": "694 - WOOVI INSTITUICAO DE PAGAMENTO LTDA",
+      "participa_compe": "Não",
+      "ispb": "54811417",
+      "inicio_operacao": "07/04/2025"
+    },
+    {
+      "codigo": "695",
+      "nome": "BEES INSTITUICAO DE PAGAMENTO LTDA.",
+      "nome_reduzido": "BEES IP LTDA.",
+      "label": "695 - BEES INSTITUICAO DE PAGAMENTO LTDA.",
+      "participa_compe": "Não",
+      "ispb": "35523352",
+      "inicio_operacao": "04/09/2025"
+    },
+    {
+      "codigo": "696",
+      "nome": "LOAN BRASIL SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "LOAN BRASIL SCD S.A.",
+      "label": "696 - LOAN BRASIL SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "50032584",
+      "inicio_operacao": "06/01/2026"
+    },
+    {
+      "codigo": "697",
+      "nome": "JM CORRETORA DE CÂMBIO LTDA.",
+      "nome_reduzido": "JM CORRETORA DE CÂMBIO",
+      "label": "697 - JM CORRETORA DE CÂMBIO LTDA.",
+      "participa_compe": "Não",
+      "ispb": "45056494",
+      "inicio_operacao": "07/10/2025"
+    },
+    {
+      "codigo": "698",
+      "nome": "BIT SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "BIT SCD S.A.",
+      "label": "698 - BIT SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "58367961",
+      "inicio_operacao": "22/07/2025"
+    },
+    {
+      "codigo": "699",
+      "nome": "BFC SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "BFC SCD S.A.",
+      "label": "699 - BFC SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "59396084",
+      "inicio_operacao": "30/09/2025"
+    },
+    {
+      "codigo": "700",
+      "nome": "MW INSTITUICAO DE PAGAMENTO LTDA",
+      "nome_reduzido": "MW IP LTDA.",
+      "label": "700 - MW INSTITUICAO DE PAGAMENTO LTDA",
+      "participa_compe": "Não",
+      "ispb": "53822116",
+      "inicio_operacao": "21/10/2025"
+    },
+    {
+      "codigo": "701",
+      "nome": "INTEGRAÇÃO DE CRÉDITO E COBRANÇA SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "INTEGRAÇÃO DE CRÉDITO E COBRANÇA SCD",
+      "label": "701 - INTEGRAÇÃO DE CRÉDITO E COBRANÇA SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "51118615",
+      "inicio_operacao": "20/06/2025"
+    },
+    {
+      "codigo": "703",
+      "nome": "GETNET ADQUIRÊNCIA E SERVIÇOS PARA MEIOS DE PAGAMENTO S.A. INSTITUIÇÃO DE PAGAMENTO",
+      "nome_reduzido": "GETNET IP",
+      "label": "703 - GETNET ADQUIRÊNCIA E SERVIÇOS PARA MEIOS DE PAGAMENTO S.A. INSTITUIÇÃO DE PAGAMENTO",
+      "participa_compe": "Não",
+      "ispb": "10440482",
+      "inicio_operacao": "13/08/2025"
+    },
+    {
+      "codigo": "704",
+      "nome": "FEATBANK INSTITUICAO DE PAGAMENTO LTDA",
+      "nome_reduzido": "FEATBANK IP LTDA",
+      "label": "704 - FEATBANK INSTITUICAO DE PAGAMENTO LTDA",
+      "participa_compe": "Não",
+      "ispb": "44663846",
+      "inicio_operacao": "01/10/2025"
+    },
+    {
+      "codigo": "707",
+      "nome": "Banco Daycoval S.A.",
+      "nome_reduzido": "BCO DAYCOVAL S.A",
+      "label": "707 - Banco Daycoval S.A.",
+      "participa_compe": "Sim",
+      "ispb": "62232889",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "708",
+      "nome": "BANCO INDUSCRED DE INVESTIMENTO S.A.",
+      "nome_reduzido": "BCO INDUSCRED DE INVESTIM. S/A",
+      "label": "708 - BANCO INDUSCRED DE INVESTIMENTO S.A.",
+      "participa_compe": "Não",
+      "ispb": "33588252",
+      "inicio_operacao": "17/09/2025"
+    },
+    {
+      "codigo": "712",
+      "nome": "OURIBANK S.A. BANCO MÚLTIPLO",
+      "nome_reduzido": "OURIBANK S.A.",
+      "label": "712 - OURIBANK S.A. BANCO MÚLTIPLO",
+      "participa_compe": "Não",
+      "ispb": "78632767",
+      "inicio_operacao": "28/01/2014"
+    },
+    {
+      "codigo": "714",
+      "nome": "FINAMAX S.A. - CREDITO, FINANCIAMENTO E INVESTIMENTO",
+      "nome_reduzido": "FINAMAX S.A. CFI",
+      "label": "714 - FINAMAX S.A. - CREDITO, FINANCIAMENTO E INVESTIMENTO",
+      "participa_compe": "Não",
+      "ispb": "00411939",
+      "inicio_operacao": "04/06/2025"
+    },
+    {
+      "codigo": "719",
+      "nome": "BANCO MASTER MÚLTIPLO S.A. - EM LIQUIDAÇÃO EXTRAJUDICIAL",
+      "nome_reduzido": "BANCO MASTER MÚLTIPLO - EM LIQUIDAÇÃO EXTRAJUDICIAL",
+      "label": "719 - BANCO MASTER MÚLTIPLO S.A. - EM LIQUIDAÇÃO EXTRAJUDICIAL",
+      "participa_compe": "Não",
+      "ispb": "33884941",
+      "inicio_operacao": "02/09/2024"
+    },
+    {
+      "codigo": "720",
+      "nome": "BANCO RNX S.A.",
+      "nome_reduzido": "BCO RNX S.A.",
+      "label": "720 - BANCO RNX S.A.",
+      "participa_compe": "Não",
+      "ispb": "80271455",
+      "inicio_operacao": "24/02/2021"
+    },
+    {
+      "codigo": "741",
+      "nome": "BANCO RIBEIRAO PRETO S.A.",
+      "nome_reduzido": "BCO RIBEIRAO PRETO S.A.",
+      "label": "741 - BANCO RIBEIRAO PRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "00517645",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "743",
+      "nome": "Banco Semear S.A.",
+      "nome_reduzido": "BANCO SEMEAR",
+      "label": "743 - Banco Semear S.A.",
+      "participa_compe": "Sim",
+      "ispb": "00795423",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "745",
+      "nome": "Banco Citibank S.A.",
+      "nome_reduzido": "BCO CITIBANK S.A.",
+      "label": "745 - Banco Citibank S.A.",
+      "participa_compe": "Sim",
+      "ispb": "33479023",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "747",
+      "nome": "Banco Rabobank International Brasil S.A.",
+      "nome_reduzido": "BCO RABOBANK INTL BRASIL S.A.",
+      "label": "747 - Banco Rabobank International Brasil S.A.",
+      "participa_compe": "Não",
+      "ispb": "01023570",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "748",
+      "nome": "BANCO COOPERATIVO SICREDI S.A.",
+      "nome_reduzido": "BCO COOPERATIVO SICREDI S.A.",
+      "label": "748 - BANCO COOPERATIVO SICREDI S.A.",
+      "participa_compe": "Sim",
+      "ispb": "01181521",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "751",
+      "nome": "Scotiabank Brasil S.A. Banco Múltiplo",
+      "nome_reduzido": "Scotiabank Brasil",
+      "label": "751 - Scotiabank Brasil S.A. Banco Múltiplo",
+      "participa_compe": "Não",
+      "ispb": "29030467",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "752",
+      "nome": "Banco BNP Paribas Brasil S.A.",
+      "nome_reduzido": "BCO BNP PARIBAS BRASIL S A",
+      "label": "752 - Banco BNP Paribas Brasil S.A.",
+      "participa_compe": "Sim",
+      "ispb": "01522368",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "753",
+      "nome": "Novo Banco Continental S.A. - Banco Múltiplo",
+      "nome_reduzido": "NOVO BCO CONTINENTAL S.A. - BM",
+      "label": "753 - Novo Banco Continental S.A. - Banco Múltiplo",
+      "participa_compe": "Sim",
+      "ispb": "74828799",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "754",
+      "nome": "Banco Sistema S.A.",
+      "nome_reduzido": "BANCO SISTEMA",
+      "label": "754 - Banco Sistema S.A.",
+      "participa_compe": "Não",
+      "ispb": "76543115",
+      "inicio_operacao": "15/07/2015"
+    },
+    {
+      "codigo": "755",
+      "nome": "Bank of America Merrill Lynch Banco Múltiplo S.A.",
+      "nome_reduzido": "BOFA MERRILL LYNCH BM S.A.",
+      "label": "755 - Bank of America Merrill Lynch Banco Múltiplo S.A.",
+      "participa_compe": "Não",
+      "ispb": "62073200",
+      "inicio_operacao": "09/11/2007"
+    },
+    {
+      "codigo": "756",
+      "nome": "BANCO COOPERATIVO SICOOB S.A. - BANCO SICOOB",
+      "nome_reduzido": "BANCO SICOOB S.A.",
+      "label": "756 - BANCO COOPERATIVO SICOOB S.A. - BANCO SICOOB",
+      "participa_compe": "Sim",
+      "ispb": "02038232",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "757",
+      "nome": "BANCO KEB HANA DO BRASIL S.A.",
+      "nome_reduzido": "BCO KEB HANA DO BRASIL S.A.",
+      "label": "757 - BANCO KEB HANA DO BRASIL S.A.",
+      "participa_compe": "Sim",
+      "ispb": "02318507",
+      "inicio_operacao": "22/04/2002"
+    },
+    {
+      "codigo": "759",
+      "nome": "BANSUR JM SOCIEDADE DE CRÉDITO DIRETO S/A",
+      "nome_reduzido": "BANSUR JM SCD S.A.",
+      "label": "759 - BANSUR JM SOCIEDADE DE CRÉDITO DIRETO S/A",
+      "participa_compe": "Não",
+      "ispb": "42963742",
+      "inicio_operacao": "15/09/2025"
+    },
+    {
+      "codigo": "760",
+      "nome": "EMCASH SERVIÇOS FINANCEIROS SOCIEDADE DE EMPRÉSTIMO ENTRE PESSOAS S.A.",
+      "nome_reduzido": "EMCASH SERV FINANC SEP S.A.",
+      "label": "760 - EMCASH SERVIÇOS FINANCEIROS SOCIEDADE DE EMPRÉSTIMO ENTRE PESSOAS S.A.",
+      "participa_compe": "Não",
+      "ispb": "34139916",
+      "inicio_operacao": "08/08/2025"
+    },
+    {
+      "codigo": "761",
+      "nome": "URBANO S.A. - SOCIEDADE DE CRÉDITO, FINANCIAMENTO E INVESTIMENTO",
+      "nome_reduzido": "URBANO S.A. SCFI",
+      "label": "761 - URBANO S.A. - SOCIEDADE DE CRÉDITO, FINANCIAMENTO E INVESTIMENTO",
+      "participa_compe": "Não",
+      "ispb": "53842122",
+      "inicio_operacao": "23/12/2024"
+    },
+    {
+      "codigo": "763",
+      "nome": "VUE INSTITUIÇÃO DE PAGAMENTO S.A.",
+      "nome_reduzido": "VUE IP S.A.",
+      "label": "763 - VUE INSTITUIÇÃO DE PAGAMENTO S.A.",
+      "participa_compe": "Não",
+      "ispb": "56106523",
+      "inicio_operacao": "28/07/2025"
+    },
+    {
+      "codigo": "764",
+      "nome": "INDEPENDÊNCIA COOPERATIVA DE CRÉDITO E INVESTIMENTO - INDEPENDÊNCIA COOPERATIVA DE CRÉDITO",
+      "nome_reduzido": "INDEPENDÊNCIA CC",
+      "label": "764 - INDEPENDÊNCIA COOPERATIVA DE CRÉDITO E INVESTIMENTO - INDEPENDÊNCIA COOPERATIVA DE CRÉDITO",
+      "participa_compe": "Não",
+      "ispb": "04306351",
+      "inicio_operacao": "23/06/2025"
+    },
+    {
+      "codigo": "766",
+      "nome": "LB PAY INSTITUIÇÃO DE PAGAMENTO LTDA",
+      "nome_reduzido": "LB PAY IP LTDA",
+      "label": "766 - LB PAY INSTITUIÇÃO DE PAGAMENTO LTDA",
+      "participa_compe": "Não",
+      "ispb": "52833288",
+      "inicio_operacao": "26/09/2025"
+    },
+    {
+      "codigo": "767",
+      "nome": "QORE DISTRIBUIDORA DE TITULOS E VALORES MOBILIÁRIOS LTDA",
+      "nome_reduzido": "QORE",
+      "label": "767 - QORE DISTRIBUIDORA DE TITULOS E VALORES MOBILIÁRIOS LTDA",
+      "participa_compe": "Não",
+      "ispb": "62264924",
+      "inicio_operacao": "24/11/2025"
+    },
+    {
+      "codigo": "768",
+      "nome": "BECKER FINANCEIRA S.A. - CRÉDITO, FINANCIAMENTO E INVESTIMENTO",
+      "nome_reduzido": "BECKER FINANCEIRA SA - CFI",
+      "label": "768 - BECKER FINANCEIRA S.A. - CRÉDITO, FINANCIAMENTO E INVESTIMENTO",
+      "participa_compe": "Não",
+      "ispb": "20443996",
+      "inicio_operacao": "13/08/2025"
+    },
+    {
+      "codigo": "769",
+      "nome": "99PAY INSTITUICAO DE PAGAMENTO S.A.",
+      "nome_reduzido": "99PAY IP S.A.",
+      "label": "769 - 99PAY INSTITUICAO DE PAGAMENTO S.A.",
+      "participa_compe": "Não",
+      "ispb": "24313102",
+      "inicio_operacao": "18/08/2025"
+    },
+    {
+      "codigo": "771",
+      "nome": "WX INSTITUICAO DE PAGAMENTO LTDA",
+      "nome_reduzido": "WX IP LTDA.",
+      "label": "771 - WX INSTITUICAO DE PAGAMENTO LTDA",
+      "participa_compe": "Não",
+      "ispb": "57824223",
+      "inicio_operacao": "20/10/2025"
+    },
+    {
+      "codigo": "772",
+      "nome": "COOPERATIVA DE CRÉDITO MÚTUO DOS EMPREGADOS DO CENTRO UNIVERSITÁRIO NEWTON PAIVA LTDA. - CREDIPAIVA",
+      "nome_reduzido": "CC MECUNP",
+      "label": "772 - COOPERATIVA DE CRÉDITO MÚTUO DOS EMPREGADOS DO CENTRO UNIVERSITÁRIO NEWTON PAIVA LTDA. - CREDIPAIVA",
+      "participa_compe": "Não",
+      "ispb": "20833992",
+      "inicio_operacao": "22/09/2025"
+    },
+    {
+      "codigo": "773",
+      "nome": "KIWIFY INSTITUICAO DE PAGAMENTO LTDA",
+      "nome_reduzido": "KIWIFY IP",
+      "label": "773 - KIWIFY INSTITUICAO DE PAGAMENTO LTDA",
+      "participa_compe": "Não",
+      "ispb": "53908413",
+      "inicio_operacao": "31/10/2025"
+    },
+    {
+      "codigo": "774",
+      "nome": "MOVA SOCIEDADE DE EMPRÉSTIMO ENTRE PESSOAS S.A.",
+      "nome_reduzido": "MOVA SEP S.A.",
+      "label": "774 - MOVA SOCIEDADE DE EMPRÉSTIMO ENTRE PESSOAS S.A.",
+      "participa_compe": "Não",
+      "ispb": "33959738",
+      "inicio_operacao": "02/02/2026"
+    },
+    {
+      "codigo": "775",
+      "nome": "CONTAAZUL INSTITUICAO DE PAGAMENTO LTDA.",
+      "nome_reduzido": "CONTAAZUL IP LTDA.",
+      "label": "775 - CONTAAZUL INSTITUICAO DE PAGAMENTO LTDA.",
+      "participa_compe": "Não",
+      "ispb": "47381104",
+      "inicio_operacao": "13/01/2026"
+    },
+    {
+      "codigo": "780",
+      "nome": "SAFETYPAY BRASIL INSTITUICAO DE PAGAMENTO LTDA",
+      "nome_reduzido": "SAFETYPAY BRASIL IP LTDA",
+      "label": "780 - SAFETYPAY BRASIL INSTITUICAO DE PAGAMENTO LTDA",
+      "participa_compe": "Não",
+      "ispb": "12102128",
+      "inicio_operacao": "06/02/2026"
+    },
+    {
+      "codigo": "781",
+      "nome": "BARU DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS LTDA.",
+      "nome_reduzido": "BARU DTVM LTDA.",
+      "label": "781 - BARU DISTRIBUIDORA DE TÍTULOS E VALORES MOBILIÁRIOS LTDA.",
+      "participa_compe": "Não",
+      "ispb": "58006471",
+      "inicio_operacao": "15/04/2026"
+    },
+    {
+      "codigo": "783",
+      "nome": "SWAP INSTITUIÇÃO DE PAGAMENTO S.A.",
+      "nome_reduzido": "SWAP IP S.A.",
+      "label": "783 - SWAP INSTITUIÇÃO DE PAGAMENTO S.A.",
+      "participa_compe": "Não",
+      "ispb": "31680151",
+      "inicio_operacao": "19/02/2026"
+    },
+    {
+      "codigo": "786",
+      "nome": "AWX BRASIL  INSTITUICAO DE PAGAMENTO LTDA",
+      "nome_reduzido": "AWX BRASIL IP LTDA.",
+      "label": "786 - AWX BRASIL  INSTITUICAO DE PAGAMENTO LTDA",
+      "participa_compe": "Não",
+      "ispb": "52076716",
+      "inicio_operacao": "13/01/2026"
+    },
+    {
+      "codigo": "788",
+      "nome": "PROTOTYPE INSTITUICAO DE PAGAMENTO S.A.",
+      "nome_reduzido": "PROTOTYPE IP S.A.",
+      "label": "788 - PROTOTYPE INSTITUICAO DE PAGAMENTO S.A.",
+      "participa_compe": "Não",
+      "ispb": "35713491",
+      "inicio_operacao": "15/01/2026"
+    },
+    {
+      "codigo": "790",
+      "nome": "MAX INSTITUIÇÃO DE PAGAMENTO LTDA",
+      "nome_reduzido": "MAX IP",
+      "label": "790 - MAX INSTITUIÇÃO DE PAGAMENTO LTDA",
+      "participa_compe": "Não",
+      "ispb": "54024532",
+      "inicio_operacao": "12/11/2025"
+    },
+    {
+      "codigo": "791",
+      "nome": "MULTIPLIKE FINANCEIRA S.A. SOCIEDADE DE CRÉDITO, FINANCIAMENTO E INVESTIMENTO",
+      "nome_reduzido": "MULTIPLIKE FINANCEIRA S.A. SCFI",
+      "label": "791 - MULTIPLIKE FINANCEIRA S.A. SOCIEDADE DE CRÉDITO, FINANCIAMENTO E INVESTIMENTO",
+      "participa_compe": "Não",
+      "ispb": "62448932",
+      "inicio_operacao": "20/02/2026"
+    },
+    {
+      "codigo": "792",
+      "nome": "NIXFIN SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "nome_reduzido": "NIXFIN SCD",
+      "label": "792 - NIXFIN SOCIEDADE DE CRÉDITO DIRETO S.A.",
+      "participa_compe": "Não",
+      "ispb": "44921281",
+      "inicio_operacao": "02/02/2026"
+    }
+  ]
+}

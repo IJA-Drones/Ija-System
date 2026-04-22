@@ -34,6 +34,7 @@ from app.modules.agro.excel_exporters import (
     build_agro_dre_gerencial_excel_export,
     build_agro_fluxo_caixa_excel_export,
 )
+from app.modules.agro.bank_catalog import get_banco_agro_catalog, get_banco_agro_options
 from app.modules.agro.service import (
     agro_bool_label,
     build_agro_caixa_diario_report,
@@ -577,11 +578,15 @@ def _build_financeiro_agro_saida_form_context(*, modo, form, errors, clientes, b
 
 
 def _build_banco_agro_form_context(*, modo, form, errors, banco=None):
+    banco_catalog = get_banco_agro_catalog()
+    current_label = (form.get("banco_nome") or getattr(banco, "banco_nome", "")).strip()
     return {
         "modo": modo,
         "form": form,
         "errors": errors,
         "tipo_options": AGRO_BANCO_TIPO_OPTIONS,
+        "banco_options": get_banco_agro_options(current_label=current_label),
+        "banco_catalog": banco_catalog,
         "banco": banco,
     }
 
@@ -733,12 +738,20 @@ def _validate_cliente_agro_form(form, *, cliente_atual=None):
 def _validate_banco_agro_form(form, *, banco_atual=None):
     errors = {}
     saldo_inicial = parse_currency_br(form["saldo_inicial"])
+    allowed_bank_labels = {
+        item["label"]
+        for item in get_banco_agro_options(
+            current_label=getattr(banco_atual, "banco_nome", None),
+        )
+    }
 
     if not form["nome"]:
         errors["nome"] = "Informe o nome interno do banco agro."
 
     if not form["banco_nome"]:
         errors["banco_nome"] = "Informe o nome do banco."
+    elif form["banco_nome"] not in allowed_bank_labels:
+        errors["banco_nome"] = "Selecione um banco valido na lista oficial."
 
     if form["tipo_conta"] not in AGRO_BANCO_TIPO_OPTIONS:
         errors["tipo_conta"] = "Selecione um tipo de conta valido."

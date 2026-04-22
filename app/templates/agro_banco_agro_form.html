@@ -31,8 +31,18 @@
             {% if errors.get('nome') %}<div class="invalid-feedback">{{ errors.get('nome') }}</div>{% endif %}
           </div>
           <div class="col-md-4">
-            <label class="form-label fw-bold small text-muted">Banco *</label>
-            <input type="text" name="banco_nome" value="{{ form.get('banco_nome', '') }}" class="form-control {% if errors.get('banco_nome') %}is-invalid{% endif %}" placeholder="Ex.: BMP, Sicoob, Caixa">
+            <label class="form-label fw-bold small text-muted">Banco oficial *</label>
+            <select name="banco_nome" class="form-select {% if errors.get('banco_nome') %}is-invalid{% endif %}">
+              <option value="">Selecione o banco pelo codigo</option>
+              {% for option in banco_options %}
+                <option value="{{ option.label }}" {% if form.get('banco_nome') == option.label %}selected{% endif %}>
+                  {{ option.label }}{% if option.legacy %} (cadastro atual){% endif %}
+                </option>
+              {% endfor %}
+            </select>
+            <div class="form-text">
+              Digite o codigo do banco para localizar.
+            </div>
             {% if errors.get('banco_nome') %}<div class="invalid-feedback">{{ errors.get('banco_nome') }}</div>{% endif %}
           </div>
           <div class="col-md-4">
