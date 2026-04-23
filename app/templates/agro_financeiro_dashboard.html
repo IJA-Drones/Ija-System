@@ -3,36 +3,214 @@
 {% block extra_styles %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+  <style>
+
+    .agro-finance-top-actions {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .agro-finance-top-actions .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      min-width: 148px;
+    }
+    
+    .agro-finance-dashboard {
+      max-width: 1200px;
+    }
+
+    .agro-finance-header-copy {
+      display: grid;
+      gap: 0.4rem;
+    }
+
+    .agro-finance-top-actions .btn {
+      min-height: 40px;
+    }
+
+    .agro-finance-top-actions .dropdown-menu {
+      min-width: 240px;
+    }
+
+    .agro-finance-stat-card {
+      padding: 1.25rem 1.35rem;
+      border-radius: 1.4rem;
+      border: 1px solid #e8eef3;
+      background: linear-gradient(180deg, #ffffff 0%, #f9fcfb 100%);
+      box-shadow: var(--shadow-sm);
+      height: 100%;
+    }
+
+    .agro-finance-stat-card.is-primary {
+      border-top: 4px solid var(--color-primary);
+    }
+
+    .agro-finance-stat-card.is-success {
+      border-top: 4px solid var(--color-success);
+    }
+
+    .agro-finance-stat-card.is-danger {
+      border-top: 4px solid var(--color-danger, #dc3545);
+    }
+
+    .agro-finance-stat-card.is-warning {
+      border-top: 4px solid #d6a033;
+    }
+
+    .agro-finance-stat-card .agro-stat-label {
+      margin-bottom: 0.55rem;
+    }
+
+    .agro-finance-stat-note {
+      margin-top: 0.55rem;
+      color: var(--color-text-muted);
+      font-size: 0.86rem;
+    }
+
+    .agro-finance-panel-copy {
+      margin: 0.35rem 0 0;
+      color: var(--color-text-muted);
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+
+    .agro-finance-shortcut-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      margin-bottom: 0;
+    }
+
+    .agro-finance-shortcut-card {
+      height: 100%;
+      border: 1px solid #e7edf2;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .agro-finance-shortcut-card.is-success .agro-shortcut-icon {
+      background: rgba(47, 133, 90, 0.12);
+      color: var(--color-success);
+    }
+
+    .agro-finance-shortcut-card.is-danger .agro-shortcut-icon {
+      background: rgba(220, 53, 69, 0.12);
+      color: var(--color-danger, #dc3545);
+    }
+
+    .agro-finance-shortcut-card.is-secondary .agro-shortcut-icon {
+      background: rgba(108, 117, 125, 0.12);
+      color: #5f6b76;
+    }
+
+    .agro-finance-caixa-stack {
+      display: grid;
+      gap: 0.85rem;
+    }
+
+    .agro-finance-caixa-item {
+      padding: 1rem 1.05rem;
+      border-radius: 1rem;
+      background: #f8fbfc;
+      border: 1px solid #e6edf2;
+    }
+
+    .agro-finance-caixa-item strong {
+      display: block;
+      margin-top: 0.2rem;
+      color: var(--color-primary-dark);
+      font-size: 1rem;
+    }
+
+    .agro-finance-caixa-item.is-highlight strong {
+      font-size: 1.75rem;
+      line-height: 1.05;
+    }
+
+    @media (max-width: 991.98px) {
+      .agro-finance-top-actions {
+        width: 100%;
+      }
+
+      .agro-finance-top-actions .btn,
+      .agro-finance-top-actions .dropdown {
+        width: 100%;
+      }
+
+      .agro-finance-top-actions .dropdown .btn {
+        justify-content: center;
+      }
+    }
+
+    @media (max-width: 767.98px) {
+      .agro-finance-shortcut-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4" style="max-width: 1200px">
-  <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
-    <div>
-      <h2 class="text-dark m-0">
+<div class="container-fluid py-4 agro-shell agro-finance-dashboard">
+  <div class="agro-page-header">
+    <div class="agro-finance-header-copy">
+      <h2 class="agro-page-title">
         <i class="bi bi-cash-coin me-2 text-primary"></i> Painel Financeiro Agro
       </h2>
-      <p class="text-muted small mb-0">Acesso focado no caixa, recebiveis e lancamentos manuais do Agro.</p>
+      <p class="agro-page-subtitle">Acesso focado no caixa, recebiveis e lancamentos manuais do Agro.</p>
     </div>
 
-    <div class="d-flex flex-wrap gap-2">
-      <a href="{{ url_for('main.agro_fluxo_caixa_exportar_excel') }}" class="btn btn-success d-flex align-items-center gap-2">
+    <div class="agro-actions-inline agro-finance-top-actions">
+      <a href="{{ url_for('main.admin_agro') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+      <a href="{{ url_for('main.agro_fluxo_caixa_exportar_excel') }}" class="btn btn-success btn-sm d-flex align-items-center gap-2">
         <i class="bi bi-file-earmark-excel-fill"></i> Exportar Excel
       </a>
-      <a href="{{ url_for('main.agro_financeiro_contas') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
-        <i class="bi bi-wallet2"></i> Contas
-      </a>
-      <a href="{{ url_for('main.agro_caixa_diario') }}" class="btn btn-outline-success d-flex align-items-center gap-2">
-        <i class="bi bi-journal-text"></i> Caixa Diario
-      </a>
-      <a href="{{ url_for('main.agro_bancos_conciliacao') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
-        <i class="bi bi-bank2"></i> Conciliacao bancaria
-      </a>
-      <a href="{{ url_for('main.agro_financeiro_listar') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
-        <i class="bi bi-receipt-cutoff"></i> Recebiveis
-      </a>
+      <div class="dropdown">
+        <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
+          <li>
+            <a href="{{ url_for('main.agro_financeiro_contas') }}" class="dropdown-item py-2">
+              <i class="bi bi-wallet2 text-primary me-2"></i> Contas
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('main.agro_contas_receber_listar') }}" class="dropdown-item py-2">
+              <i class="bi bi-cash-stack text-success me-2"></i> Contas a receber
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('main.agro_contas_pagar_listar') }}" class="dropdown-item py-2">
+              <i class="bi bi-credit-card-2-front text-danger me-2"></i> Contas a pagar
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('main.agro_financeiro_listar') }}" class="dropdown-item py-2">
+              <i class="bi bi-receipt-cutoff text-primary me-2"></i> Recebiveis
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('main.agro_caixa_diario') }}" class="dropdown-item py-2">
+              <i class="bi bi-journal-text text-success me-2"></i> Caixa diario
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('main.agro_bancos_conciliacao') }}" class="dropdown-item py-2">
+              <i class="bi bi-bank2 text-secondary me-2"></i> Conciliacao bancaria
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('main.agro_bancos_listar') }}" class="dropdown-item py-2">
+              <i class="bi bi-bank text-secondary me-2"></i> Bancos Agro
+            </a>
+          </li>
+        </ul>
+      </div>
       {% if can_manage_competencias %}
-        <a href="{{ url_for('main.agro_financeiro_configuracoes') }}" class="btn btn-primary d-flex align-items-center gap-2">
+        <a href="{{ url_for('main.agro_financeiro_configuracoes') }}" class="btn btn-primary btn-sm d-flex align-items-center gap-2">
           <i class="bi bi-sliders"></i> Configuracoes
         </a>
       {% endif %}
@@ -41,76 +219,103 @@
 
   <div class="row g-3 mb-4">
     <div class="col-md-3">
-      <div class="card info status-primary shadow-sm rounded-4 border-0 h-100">
-        <div class="card-body">
-          <span class="text-muted small d-block">Recebiveis</span>
-          <h3 class="text-dark mb-0 mt-2">{{ total_recebiveis }}</h3>
-          <div class="small text-muted mt-1">{{ total_recebiveis_pendentes }} pendente(s)</div>
-        </div>
+      <div class="agro-finance-stat-card is-primary">
+        <span class="agro-stat-label">Recebiveis</span>
+        <span class="agro-stat-value">{{ total_recebiveis }}</span>
+        <div class="agro-finance-stat-note">{{ total_recebiveis_pendentes }} pendente(s)</div>
       </div>
     </div>
     <div class="col-md-3">
-      <div class="card info status-success shadow-sm rounded-4 border-0 h-100">
-        <div class="card-body">
-          <span class="text-muted small d-block">Entradas manuais</span>
-          <h3 class="text-dark mb-0 mt-2">{{ total_entradas_manuais }}</h3>
-        </div>
+      <div class="agro-finance-stat-card is-success">
+        <span class="agro-stat-label">Entradas manuais</span>
+        <span class="agro-stat-value">{{ total_entradas_manuais }}</span>
       </div>
     </div>
     <div class="col-md-3">
-      <div class="card info status-danger shadow-sm rounded-4 border-0 h-100">
-        <div class="card-body">
-          <span class="text-muted small d-block">Saidas manuais</span>
-          <h3 class="text-dark mb-0 mt-2">{{ total_saidas_manuais }}</h3>
-        </div>
+      <div class="agro-finance-stat-card is-danger">
+        <span class="agro-stat-label">Saidas manuais</span>
+        <span class="agro-stat-value">{{ total_saidas_manuais }}</span>
       </div>
     </div>
     <div class="col-md-3">
-      <div class="card info status-warning shadow-sm rounded-4 border-0 h-100">
-        <div class="card-body">
-          <span class="text-muted small d-block">Bancos Agro</span>
-          <h3 class="text-dark mb-0 mt-2">{{ total_bancos_agro }}</h3>
-          {% if can_manage_competencias %}
-            <div class="small text-muted mt-1">{{ competencias_configuradas }} competencia(s) liberada(s)</div>
-          {% endif %}
-        </div>
+      <div class="agro-finance-stat-card is-warning">
+        <span class="agro-stat-label">Bancos Agro</span>
+        <span class="agro-stat-value">{{ total_bancos_agro }}</span>
+        {% if can_manage_competencias %}
+          <div class="agro-finance-stat-note">{{ competencias_configuradas }} competencia(s) liberada(s)</div>
+        {% endif %}
       </div>
     </div>
   </div>
 
   <div class="row g-3">
     <div class="col-lg-7">
-      <div class="card shadow-sm rounded-4 border-0 h-100">
-        <div class="card-header bg-transparent border-0 pt-4 px-4">
-          <h5 class="m-0 text-dark">Atalhos do financeiro</h5>
+      <div class="agro-panel-card h-100">
+        <div class="agro-card-head">
+          <div>
+            <h5 class="agro-card-title">Atalhos do financeiro</h5>
+            <p class="agro-finance-panel-copy">Os acessos operacionais ficam centralizados aqui, com o mesmo padrao visual do restante do Agro.</p>
+          </div>
         </div>
-        <div class="card-body px-4 pb-4">
-          <div class="d-flex flex-wrap gap-2">
-            <a href="{{ url_for('main.agro_financeiro_contas') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
-              <i class="bi bi-wallet2"></i> Contas
+        <div class="agro-card-body">
+          <div class="agro-shortcut-grid agro-finance-shortcut-grid">
+            <a href="{{ url_for('main.agro_financeiro_contas') }}" class="agro-panel-card agro-shortcut-card agro-finance-shortcut-card">
+              <span class="agro-shortcut-icon">
+                <i class="bi bi-wallet2"></i>
+              </span>
+              <h6 class="agro-shortcut-title">Contas</h6>
+              <p class="agro-shortcut-copy">Visao central das contas a pagar e a receber.</p>
             </a>
-            <a href="{{ url_for('main.agro_contas_receber_listar') }}" class="btn btn-outline-success d-flex align-items-center gap-2">
-              <i class="bi bi-cash-stack"></i> Contas a Receber
+            <a href="{{ url_for('main.agro_contas_receber_listar') }}" class="agro-panel-card agro-shortcut-card agro-finance-shortcut-card is-success">
+              <span class="agro-shortcut-icon">
+                <i class="bi bi-cash-stack"></i>
+              </span>
+              <h6 class="agro-shortcut-title">Contas a receber</h6>
+              <p class="agro-shortcut-copy">Acompanhe pendencias e baixas de recebimento.</p>
             </a>
-            <a href="{{ url_for('main.agro_contas_pagar_listar') }}" class="btn btn-outline-danger d-flex align-items-center gap-2">
-              <i class="bi bi-credit-card-2-front"></i> Contas a Pagar
+            <a href="{{ url_for('main.agro_contas_pagar_listar') }}" class="agro-panel-card agro-shortcut-card agro-finance-shortcut-card is-danger">
+              <span class="agro-shortcut-icon">
+                <i class="bi bi-credit-card-2-front"></i>
+              </span>
+              <h6 class="agro-shortcut-title">Contas a pagar</h6>
+              <p class="agro-shortcut-copy">Controle os compromissos e pagamentos do Agro.</p>
             </a>
-            <a href="{{ url_for('main.agro_financeiro_listar') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
-              <i class="bi bi-receipt-cutoff"></i> Recebiveis
+            <a href="{{ url_for('main.agro_financeiro_listar') }}" class="agro-panel-card agro-shortcut-card agro-finance-shortcut-card">
+              <span class="agro-shortcut-icon">
+                <i class="bi bi-receipt-cutoff"></i>
+              </span>
+              <h6 class="agro-shortcut-title">Recebiveis</h6>
+              <p class="agro-shortcut-copy">Consulte os lancamentos vinculados aos contratos.</p>
             </a>
             {% if is_editable %}
-              <a href="{{ url_for('main.agro_financeiro_entrada_novo') }}" class="btn btn-outline-success d-flex align-items-center gap-2">
-                <i class="bi bi-plus-circle"></i> Nova entrada manual
+              <a href="{{ url_for('main.agro_financeiro_entrada_novo') }}" class="agro-panel-card agro-shortcut-card agro-finance-shortcut-card is-success">
+                <span class="agro-shortcut-icon">
+                  <i class="bi bi-plus-circle"></i>
+                </span>
+                <h6 class="agro-shortcut-title">Nova entrada manual</h6>
+                <p class="agro-shortcut-copy">Cadastre receitas avulsas fora do fluxo de contrato.</p>
               </a>
-              <a href="{{ url_for('main.agro_financeiro_saida_novo') }}" class="btn btn-outline-danger d-flex align-items-center gap-2">
-                <i class="bi bi-plus-circle"></i> Nova saida manual
+              <a href="{{ url_for('main.agro_financeiro_saida_novo') }}" class="agro-panel-card agro-shortcut-card agro-finance-shortcut-card is-danger">
+                <span class="agro-shortcut-icon">
+                  <i class="bi bi-plus-circle"></i>
+                </span>
+                <h6 class="agro-shortcut-title">Nova saida manual</h6>
+                <p class="agro-shortcut-copy">Registre despesas avulsas com o mesmo padrao visual.</p>
               </a>
             {% endif %}
-            <a href="{{ url_for('main.agro_bancos_conciliacao') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
-              <i class="bi bi-bank2"></i> Conciliacao bancaria
+            <a href="{{ url_for('main.agro_bancos_conciliacao') }}" class="agro-panel-card agro-shortcut-card agro-finance-shortcut-card is-secondary">
+              <span class="agro-shortcut-icon">
+                <i class="bi bi-bank2"></i>
+              </span>
+              <h6 class="agro-shortcut-title">Conciliacao bancaria</h6>
+              <p class="agro-shortcut-copy">Conferencias e ajustes por banco e competencia.</p>
             </a>
-            <a href="{{ url_for('main.agro_bancos_listar') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
-              <i class="bi bi-bank"></i> Bancos Agro
+            <a href="{{ url_for('main.agro_bancos_listar') }}" class="agro-panel-card agro-shortcut-card agro-finance-shortcut-card is-secondary">
+              <span class="agro-shortcut-icon">
+                <i class="bi bi-bank"></i>
+              </span>
+              <h6 class="agro-shortcut-title">Bancos Agro</h6>
+              <p class="agro-shortcut-copy">Cadastros, contas e saldos bancarios do modulo.</p>
             </a>
           </div>
         </div>
@@ -118,26 +323,34 @@
     </div>
 
     <div class="col-lg-5">
-      <div class="card shadow-sm rounded-4 border-0 h-100">
-        <div class="card-header bg-transparent border-0 pt-4 px-4">
-          <h5 class="m-0 text-dark">Caixa de hoje</h5>
+      <div class="agro-panel-card h-100">
+        <div class="agro-card-head">
+          <div>
+            <h5 class="agro-card-title">Caixa de hoje</h5>
+            <p class="agro-finance-panel-copy">Resumo rapido para saber se o caixa diario ja foi aberto e qual o saldo calculado.</p>
+          </div>
         </div>
-        <div class="card-body px-4 pb-4">
+        <div class="agro-card-body">
           {% if caixa_hoje %}
-            <div class="small text-muted">Status atual</div>
-            <div class="fs-4 fw-semibold mt-1">{{ caixa_hoje.status }}</div>
-            <div class="small text-muted mt-3">Saldo de fechamento calculado</div>
-            <div class="fs-5 fw-semibold">{{ caixa_hoje.saldo_fechamento_decimal|currencybr }}</div>
+            <div class="agro-finance-caixa-stack">
+              <div class="agro-finance-caixa-item is-highlight">
+                <div class="small text-muted">Status atual</div>
+                <strong>{{ caixa_hoje.status }}</strong>
+              </div>
+              <div class="agro-finance-caixa-item">
+                <div class="small text-muted">Saldo de fechamento calculado</div>
+                <strong>{{ caixa_hoje.saldo_fechamento_decimal|currencybr }}</strong>
+              </div>
+            </div>
           {% else %}
-            <div class="small text-muted">Ainda nao existe caixa aberto para hoje.</div>
+            <div class="agro-finance-caixa-item">
+              <div class="small text-muted">Ainda nao existe caixa aberto para hoje.</div>
+            </div>
           {% endif %}
 
-          <a href="{{ url_for('main.agro_caixa_diario') }}" class="btn btn-outline-primary mt-4 d-inline-flex align-items-center gap-2">
+          <a href="{{ url_for('main.agro_caixa_diario') }}" class="btn btn-outline-primary btn-sm mt-4 d-inline-flex align-items-center gap-2">
             <i class="bi bi-arrow-right-circle"></i> Ir para o caixa
           </a>
         </div>
       </div>
-    </div>
-  </div>
-</div>
 {% endblock %}

@@ -2967,6 +2967,13 @@ def register_routes(bp):
         context = get_agro_dashboard_context(current_user)
         return render_template("admin_agro.html", **context)
 
+    @bp.route("/agro/financeiro", endpoint="agro_financeiro_dashboard")
+    @login_required
+    def agro_financeiro_dashboard():
+        _require_agro_access()
+        context = get_agro_finance_dashboard_context(current_user)
+        return render_template("agro_financeiro_dashboard.html", **context)
+
     @bp.route("/agro/bancos", methods=["GET"], endpoint="agro_bancos_listar")
     @login_required
     def agro_bancos_listar():
