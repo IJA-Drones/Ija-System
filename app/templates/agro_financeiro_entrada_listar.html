@@ -143,6 +143,9 @@
                 <td>
                   <div class="fw-bold">{{ item.cliente_nome }}</div>
                   <div class="text-muted small">{{ item.descricao }}</div>
+                  {% if item.parcela_total > 1 %}
+                    <div class="text-muted small">Parcela {{ item.parcela_numero }}/{{ item.parcela_total }}</div>
+                  {% endif %}
                   <div class="text-muted small">NF / Doc: {{ item.documento_referencia or '-' }}</div>
                 </td>
                 <td>

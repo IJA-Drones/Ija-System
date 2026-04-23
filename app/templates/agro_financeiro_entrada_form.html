@@ -16,7 +16,7 @@
       </h2>
       <p class="text-muted small mb-0">Use categoria e subcategoria para alimentar o caixa e o DRE do Agro corretamente.</p>
     </div>
-    <a href="{{ url_for('main.agro_financeiro_entrada_listar') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
+    <a href="{{ url_for('main.agro_contas_receber_listar', origem='entrada') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
       <i class="bi bi-arrow-left"></i> Voltar
     </a>
   </div>
@@ -25,6 +25,12 @@
     <div class="card-body p-4">
       <form method="post" novalidate id="agroEntradaManualForm">
         <input type="hidden" name="confirmar_lancamento_retroativo" id="confirmar_lancamento_retroativo" value="{{ form.get('confirmar_lancamento_retroativo', '') }}">
+        {% if modo == 'editar' and lancamento and lancamento.parcela_total > 1 %}
+          <div class="alert alert-light border rounded-4 mb-4">
+            <div class="fw-semibold text-success mb-1">Lan&ccedil;amento parcelado</div>
+            <div class="small text-muted">Esta entrada faz parte do grupo de parcelas {{ lancamento.parcela_numero }}/{{ lancamento.parcela_total }}. Nesta fase, a edi&ccedil;&atilde;o segue por parcela individual.</div>
+          </div>
+        {% endif %}
         <div class="row g-3">
           <div class="col-md-4">
             <label class="form-label fw-bold small text-muted">Cliente cadastrado</label>
@@ -97,6 +103,20 @@
             {% if errors.get('valor') %}<div class="invalid-feedback">{{ errors.get('valor') }}</div>{% endif %}
           </div>
 
+          {% if modo == 'novo' %}
+            <div class="col-md-3">
+              <label class="form-label fw-bold small text-muted">Parcelas *</label>
+              <input id="quantidade_parcelas" type="number" min="1" max="120" name="quantidade_parcelas" value="{{ form.get('quantidade_parcelas', '1') }}" class="form-control {% if errors.get('quantidade_parcelas') %}is-invalid{% endif %}">
+              {% if errors.get('quantidade_parcelas') %}<div class="invalid-feedback">{{ errors.get('quantidade_parcelas') }}</div>{% endif %}
+              <div class="form-text">Se for maior que 1, o sistema divide o valor total em parcelas mensais a partir da data prevista.</div>
+            </div>
+          {% elif lancamento and lancamento.parcela_total > 1 %}
+            <div class="col-md-3">
+              <label class="form-label fw-bold small text-muted">Parcela</label>
+              <input type="text" value="{{ lancamento.parcela_numero }}/{{ lancamento.parcela_total }}" class="form-control" readonly>
+            </div>
+          {% endif %}
+
           <div class="col-md-3">
             <label class="form-label fw-bold small text-muted">Data do lançamento</label>
             <input type="date" name="data_lancamento" value="{{ form.get('data_lancamento', '') }}" class="form-control {% if errors.get('data_lancamento') %}is-invalid{% endif %}">
@@ -140,7 +160,7 @@
               <i class="bi bi-trash"></i> Excluir
             </button>
           {% endif %}
-          <a href="{{ url_for('main.agro_financeiro_entrada_listar') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+          <a href="{{ url_for('main.agro_contas_receber_listar', origem='entrada') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
             <i class="bi bi-x-circle"></i> Cancelar
           </a>
         </div>
@@ -193,6 +213,9 @@
       });
 
       const formEl = document.getElementById("agroEntradaManualForm");
+      const parcelasEl = document.getElementById("quantidade_parcelas");
+      const statusEl = formEl ? formEl.querySelector('select[name="status"]') : null;
+      const recebimentoEl = formEl ? formEl.querySelector('input[name="data_recebimento"]') : null;
       const dateFields = formEl ? Array.from(formEl.querySelectorAll('input[type="date"]')) : [];
       const confirmationEl = document.getElementById("confirmar_lancamento_retroativo");
       const isCreateMode = {{ (modo == 'novo')|tojson }};
@@ -235,7 +258,33 @@
         return retroactiveAlertContext.liberated_competencias.includes(getCompetenciaKey(dateValue));
       }
 
+      function syncInstallmentMode() {
+        if (!parcelasEl || !statusEl || !recebimentoEl) return;
+
+        const isInstallment = Number(parcelasEl.value || "1") > 1;
+        Array.from(statusEl.options).forEach((option) => {
+          option.disabled = isInstallment && option.value !== "PENDENTE";
+        });
+
+        if (isInstallment) {
+          statusEl.value = "PENDENTE";
+          recebimentoEl.value = "";
+        }
+
+        recebimentoEl.disabled = isInstallment;
+      }
+
       if (formEl && dateFields.length) {
+        if (parcelasEl) {
+          parcelasEl.addEventListener("input", () => {
+            if (confirmationEl) {
+              confirmationEl.value = "";
+            }
+            syncInstallmentMode();
+          });
+          syncInstallmentMode();
+        }
+
         dateFields.forEach((field) => {
           field.addEventListener("input", () => {
             if (confirmationEl) {

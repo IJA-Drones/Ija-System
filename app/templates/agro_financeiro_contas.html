@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1200px">
+  <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+    <div>
+      <h2 class="text-dark m-0">
+        <i class="bi bi-wallet2 me-2 text-primary"></i> Contas do Financeiro Agro
+      </h2>
+      <p class="text-muted small mb-0">Uma visao mais direta das contas a receber e das contas a pagar.</p>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{{ url_for('main.admin_agro') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+      <a href="{{ url_for('main.agro_caixa_diario') }}" class="btn btn-outline-success d-flex align-items-center gap-2">
+        <i class="bi bi-journal-text"></i> Caixa Diario
+      </a>
+      <a href="{{ url_for('main.agro_bancos_conciliacao') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+        <i class="bi bi-bank2"></i> Conciliacao
+      </a>
+      {% if can_manage_competencias %}
+        <a href="{{ url_for('main.agro_financeiro_configuracoes') }}" class="btn btn-primary d-flex align-items-center gap-2">
+          <i class="bi bi-sliders"></i> Configuracoes
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-lg-6">
+      <div class="card shadow-sm rounded-4 border-0 h-100">
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-between align-items-start gap-3 mb-4">
+            <div>
+              <div class="small text-muted">Contas a receber</div>
+              <div class="fs-4 fw-semibold mt-1">{{ resumo_receber.total_previsto|currencybr }}</div>
+              <div class="small text-muted mt-2">{{ resumo_receber.total_pendentes }} pendente(s) | {{ resumo_receber.total_realizados }} realizado(s)</div>
+            </div>
+            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2">Receber</span>
+          </div>
+
+          <div class="row g-3 mb-4">
+            <div class="col-6">
+              <div class="small text-muted">Pendente</div>
+              <div class="fw-semibold text-warning">{{ resumo_receber.total_pendente|currencybr }}</div>
+            </div>
+            <div class="col-6">
+              <div class="small text-muted">Recebido</div>
+              <div class="fw-semibold text-success">{{ resumo_receber.total_realizado|currencybr }}</div>
+            </div>
+          </div>
+
+          <div class="d-flex flex-wrap gap-2">
+            <a href="{{ url_for('main.agro_contas_receber_listar') }}" class="btn btn-success d-flex align-items-center gap-2">
+              <i class="bi bi-arrow-right-circle"></i> Abrir contas a receber
+            </a>
+            {% if is_editable %}
+              <a href="{{ url_for('main.agro_financeiro_novo') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
+                <i class="bi bi-plus-circle"></i> Novo recebivel
+              </a>
+              <a href="{{ url_for('main.agro_financeiro_entrada_novo') }}" class="btn btn-outline-success d-flex align-items-center gap-2">
+                <i class="bi bi-plus-circle"></i> Nova entrada manual
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card shadow-sm rounded-4 border-0 h-100">
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-between align-items-start gap-3 mb-4">
+            <div>
+              <div class="small text-muted">Contas a pagar</div>
+              <div class="fs-4 fw-semibold mt-1">{{ resumo_pagar.total_previsto|currencybr }}</div>
+              <div class="small text-muted mt-2">{{ resumo_pagar.total_pendentes }} pendente(s) | {{ resumo_pagar.total_realizados }} pago(s)</div>
+            </div>
+            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2">Pagar</span>
+          </div>
+
+          <div class="row g-3 mb-4">
+            <div class="col-6">
+              <div class="small text-muted">Pendente</div>
+              <div class="fw-semibold text-warning">{{ resumo_pagar.total_pendente|currencybr }}</div>
+            </div>
+            <div class="col-6">
+              <div class="small text-muted">Pago</div>
+              <div class="fw-semibold text-danger">{{ resumo_pagar.total_realizado|currencybr }}</div>
+            </div>
+          </div>
+
+          <div class="d-flex flex-wrap gap-2">
+            <a href="{{ url_for('main.agro_contas_pagar_listar') }}" class="btn btn-danger d-flex align-items-center gap-2">
+              <i class="bi bi-arrow-right-circle"></i> Abrir contas a pagar
+            </a>
+            {% if is_editable %}
+              <a href="{{ url_for('main.agro_financeiro_saida_novo') }}" class="btn btn-outline-danger d-flex align-items-center gap-2">
+                <i class="bi bi-plus-circle"></i> Nova conta a pagar
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

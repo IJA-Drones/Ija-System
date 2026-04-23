@@ -1,7 +1,9 @@
 import os
 import math
-from datetime import datetime
-from decimal import Decimal, InvalidOperation
+import calendar
+import uuid
+from datetime import date, datetime
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 from flask import abort, flash, redirect, render_template, request, send_file, send_from_directory, url_for
 from flask_login import current_user, login_required
@@ -90,9 +92,14 @@ AGRO_FINANCEIRO_ENTRADA_STATUS_OPTIONS = FinanceiroAgroEntrada.STATUS_OPTIONS
 AGRO_FINANCEIRO_SAIDA_STATUS_OPTIONS = FinanceiroAgroSaida.STATUS_OPTIONS
 AGRO_FINANCEIRO_SAIDA_TIPO_OPTIONS = FinanceiroAgroSaida.TIPO_OPTIONS
 AGRO_BANCO_TIPO_OPTIONS = BancoAgro.TIPO_OPTIONS
-AGRO_CONCILIACAO_STATUS_OPTIONS = ("REALIZADO", "PENDENTE", "CANCELADO")
+AGRO_CONCILIACAO_STATUS_OPTIONS = ("REALIZADO", "PENDENTE", "ATRASADO", "CANCELADO")
 AGRO_CONCILIACAO_MOVIMENTO_OPTIONS = ("ENTRADA", "SAIDA")
+AGRO_CONTAS_RECEBER_ORIGEM_OPTIONS = (
+    ("recebivel", "Recebiveis de contrato"),
+    ("entrada", "Entradas manuais"),
+)
 AGRO_OS_MAP_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg"}
+AGRO_FINANCEIRO_MAX_PARCELAS = 120
 
 AGRO_FINANCEIRO_ENTRADA_ESTRUTURA = {
     "Entradas - Caixa": (
@@ -603,6 +610,77 @@ def _build_financeiro_agro_saida_form_context(*, modo, form, errors, clientes, b
     }
 
 
+def _parse_positive_int(raw_value):
+    raw_value = (raw_value or "").strip()
+    if not raw_value:
+        return None
+    try:
+        value = int(raw_value)
+    except (TypeError, ValueError):
+        return None
+    return value if value > 0 else None
+
+
+def _add_months_preserving_day(base_date: date, months: int) -> date:
+    month_index = (base_date.month - 1) + months
+    year = base_date.year + (month_index // 12)
+    month = (month_index % 12) + 1
+    last_day = calendar.monthrange(year, month)[1]
+    return date(year, month, min(base_date.day, last_day))
+
+
+def _build_agro_installment_schedule(first_due_date: date, quantidade_parcelas: int) -> list[date]:
+    return [
+        _add_months_preserving_day(first_due_date, offset)
+        for offset in range(max(quantidade_parcelas, 1))
+    ]
+
+
+def _split_agro_installment_values(total: Decimal, quantidade_parcelas: int) -> list[Decimal]:
+    total_value = FinanceiroAgro._decimal_or_zero(total).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    quantidade = max(int(quantidade_parcelas or 1), 1)
+    total_cents = int((total_value * 100).to_integral_value(rounding=ROUND_HALF_UP))
+    base_cents, remainder = divmod(total_cents, quantidade)
+    values = []
+    for index in range(quantidade):
+        cents = base_cents + (1 if index < remainder else 0)
+        values.append((Decimal(cents) / Decimal("100")).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
+    return values
+
+
+def _check_agro_installment_dates_permissions(user, due_dates, *, field_name: str):
+    allowed_retroactive_dates = []
+    blocked_dates = []
+    today = datetime.now().date()
+
+    for due_date in due_dates or []:
+        if not can_user_write_agro_finance_competencia(user, due_date.year, due_date.month):
+            blocked_dates.append(due_date)
+        elif due_date < today:
+            allowed_retroactive_dates.append(due_date)
+
+    return allowed_retroactive_dates, blocked_dates
+
+
+def _rebalance_agro_installment_group(model, group_id):
+    if not group_id:
+        return
+
+    siblings = (
+        model.query
+        .filter(model.grupo_lancamento == group_id)
+        .order_by(model.parcela_numero.asc(), model.id.asc())
+        .all()
+    )
+    total = len(siblings)
+    if not total:
+        return
+
+    for index, item in enumerate(siblings, start=1):
+        item.parcela_numero = index
+        item.parcela_total = total
+
+
 def _build_banco_agro_form_context(*, modo, form, errors, banco=None):
     banco_catalog = get_banco_agro_catalog()
     current_label = (form.get("banco_nome") or getattr(banco, "banco_nome", "")).strip()
@@ -674,6 +752,7 @@ def _normalize_financeiro_agro_entrada_form(form_source):
         "data_vencimento": (form_source.get("data_vencimento") or "").strip(),
         "data_recebimento": (form_source.get("data_recebimento") or "").strip(),
         "valor": (form_source.get("valor") or "").strip(),
+        "quantidade_parcelas": (form_source.get("quantidade_parcelas") or "1").strip(),
         "status": (form_source.get("status") or FinanceiroAgroEntrada.STATUS_PENDENTE).strip().upper(),
         "observacoes": (form_source.get("observacoes") or "").strip(),
         "confirmar_lancamento_retroativo": (form_source.get("confirmar_lancamento_retroativo") or "").strip(),
@@ -697,6 +776,7 @@ def _normalize_financeiro_agro_saida_form(form_source):
         "data_vencimento": (form_source.get("data_vencimento") or "").strip(),
         "data_pagamento": (form_source.get("data_pagamento") or "").strip(),
         "valor": (form_source.get("valor") or "").strip(),
+        "quantidade_parcelas": (form_source.get("quantidade_parcelas") or "1").strip(),
         "status": (form_source.get("status") or FinanceiroAgroSaida.STATUS_PENDENTE).strip().upper(),
         "observacoes": (form_source.get("observacoes") or "").strip(),
         "confirmar_lancamento_retroativo": (form_source.get("confirmar_lancamento_retroativo") or "").strip(),
@@ -953,6 +1033,23 @@ def _resolve_financeiro_agro_saida_status(status, data_vencimento, data_pagament
     return FinanceiroAgroSaida.STATUS_PENDENTE
 
 
+def _get_financeiro_agro_saida_display_status(status, data_vencimento, data_pagamento):
+    resolved_status = _resolve_financeiro_agro_saida_status(status, data_vencimento, data_pagamento)
+    if resolved_status == FinanceiroAgroSaida.STATUS_VENCIDO:
+        return "ATRASADO"
+    return resolved_status
+
+
+def _get_financeiro_agro_receber_display_status(status, data_vencimento, data_recebimento):
+    if status in {FinanceiroAgro.STATUS_CANCELADO, FinanceiroAgroEntrada.STATUS_CANCELADO}:
+        return "CANCELADO"
+    if data_recebimento or status in {FinanceiroAgro.STATUS_RECEBIDO, FinanceiroAgroEntrada.STATUS_RECEBIDO}:
+        return "RECEBIDO"
+    if data_vencimento and data_vencimento < datetime.now().date():
+        return "ATRASADO"
+    return "PENDENTE"
+
+
 def _build_financeiro_agro_summary(lancamentos):
     total_receber = Decimal("0")
     total_comissoes = Decimal("0")
@@ -1031,9 +1128,12 @@ def _build_agro_conciliacao_item(item):
         valor = FinanceiroAgro._decimal_or_zero(item.valor)
         realizado_em = item.data_pagamento
         previsto_em = item.data_vencimento or item.data_lancamento or item.data_emissao
-        status = (item.status or FinanceiroAgroSaida.STATUS_PENDENTE).strip().upper()
+        status = _resolve_financeiro_agro_saida_status(item.status, item.data_vencimento, item.data_pagamento)
+        display_status = _get_financeiro_agro_saida_display_status(item.status, item.data_vencimento, item.data_pagamento)
         cancelado = status == FinanceiroAgroSaida.STATUS_CANCELADO
         realizado = bool(realizado_em) or status == FinanceiroAgroSaida.STATUS_PAGO
+        atrasado = status == FinanceiroAgroSaida.STATUS_VENCIDO
+        parcela_label = f" | Parcela {item.parcela_numero}/{item.parcela_total}" if (item.parcela_total or 1) > 1 else ""
         return {
             "id": item.id,
             "origem": "Saida manual",
@@ -1041,16 +1141,18 @@ def _build_agro_conciliacao_item(item):
             "movimento": "SAIDA",
             "banco_agro_id": item.banco_agro_id,
             "titulo": item.favorecido or "Sem favorecido",
-            "descricao": item.descricao or "",
+            "descricao": f"{item.descricao or ''}{parcela_label}".strip(),
             "detalhe": item.categoria or "",
             "documento": item.documento_referencia or "",
             "status": status,
+            "display_status": display_status,
             "valor": valor,
             "previsto_em": previsto_em,
             "realizado_em": realizado_em,
             "referencia_em": realizado_em or previsto_em,
             "realizado": realizado,
             "cancelado": cancelado,
+            "atrasado": atrasado,
             "edit_url": url_for("main.agro_financeiro_saida_editar", lancamento_id=item.id),
         }
 
@@ -1058,9 +1160,12 @@ def _build_agro_conciliacao_item(item):
         valor = FinanceiroAgro._decimal_or_zero(item.valor)
         realizado_em = item.data_recebimento
         previsto_em = item.data_vencimento or item.data_lancamento or item.data_emissao
-        status = (item.status or FinanceiroAgroEntrada.STATUS_PENDENTE).strip().upper()
+        status = _resolve_financeiro_agro_entrada_status(item.status, item.data_vencimento, item.data_recebimento)
+        display_status = _get_financeiro_agro_receber_display_status(status, item.data_vencimento, item.data_recebimento)
         cancelado = status == FinanceiroAgroEntrada.STATUS_CANCELADO
         realizado = bool(realizado_em) or status == FinanceiroAgroEntrada.STATUS_RECEBIDO
+        atrasado = status == FinanceiroAgroEntrada.STATUS_VENCIDO
+        parcela_label = f" | Parcela {item.parcela_numero}/{item.parcela_total}" if (item.parcela_total or 1) > 1 else ""
         return {
             "id": item.id,
             "origem": "Entrada manual",
@@ -1068,25 +1173,29 @@ def _build_agro_conciliacao_item(item):
             "movimento": "ENTRADA",
             "banco_agro_id": item.banco_agro_id,
             "titulo": item.cliente_nome or "Sem cliente",
-            "descricao": item.descricao or "",
+            "descricao": f"{item.descricao or ''}{parcela_label}".strip(),
             "detalhe": item.categoria or "",
             "documento": item.documento_referencia or "",
             "status": status,
+            "display_status": display_status,
             "valor": valor,
             "previsto_em": previsto_em,
             "realizado_em": realizado_em,
             "referencia_em": realizado_em or previsto_em,
             "realizado": realizado,
             "cancelado": cancelado,
+            "atrasado": atrasado,
             "edit_url": url_for("main.agro_financeiro_entrada_editar", lancamento_id=item.id),
         }
 
     valor = FinanceiroAgro._decimal_or_zero(item.valor_total_contrato)
     realizado_em = item.data_recebimento
     previsto_em = item.data_vencimento or item.data_servico_executado or item.data_elaboracao_contrato
-    status = (item.status or FinanceiroAgro.STATUS_PENDENTE).strip().upper()
+    status = _resolve_financeiro_agro_status(item.status, item.data_vencimento, item.data_recebimento)
+    display_status = _get_financeiro_agro_receber_display_status(status, item.data_vencimento, item.data_recebimento)
     cancelado = status == FinanceiroAgro.STATUS_CANCELADO
     realizado = bool(realizado_em) or status == FinanceiroAgro.STATUS_RECEBIDO
+    atrasado = status == FinanceiroAgro.STATUS_VENCIDO
     contrato_label = f"Contrato #{item.contrato_agro_id}" if item.contrato_agro_id else "Contrato sem vinculo"
     return {
         "id": item.id,
@@ -1099,12 +1208,14 @@ def _build_agro_conciliacao_item(item):
         "detalhe": item.cultura or "",
         "documento": contrato_label,
         "status": status,
+        "display_status": display_status,
         "valor": valor,
         "previsto_em": previsto_em,
         "realizado_em": realizado_em,
         "referencia_em": realizado_em or previsto_em,
         "realizado": realizado,
         "cancelado": cancelado,
+        "atrasado": atrasado,
         "edit_url": url_for("main.agro_financeiro_editar", lancamento_id=item.id),
     }
 
@@ -1166,6 +1277,142 @@ def _build_agro_conciliacao_summary(lancamentos, bancos, banco_selecionado=None)
     }
 
 
+def _apply_agro_finance_items_filters(items, *, q="", mes=None, ano=None, situacao="", origem_slug=""):
+    filtered = list(items or [])
+
+    if mes or ano:
+        period_filtered = []
+        for item in filtered:
+            if _matches_agro_conciliacao_period(item.get("realizado_em"), mes=mes, ano=ano):
+                period_filtered.append(item)
+                continue
+            if _matches_agro_conciliacao_period(item.get("previsto_em"), mes=mes, ano=ano):
+                period_filtered.append(item)
+        filtered = period_filtered
+
+    if situacao:
+        if situacao == "REALIZADO":
+            filtered = [item for item in filtered if item["realizado"] and not item["cancelado"]]
+        elif situacao == "PENDENTE":
+            filtered = [item for item in filtered if not item["realizado"] and not item["cancelado"] and not item.get("atrasado")]
+        elif situacao == "ATRASADO":
+            filtered = [item for item in filtered if item.get("atrasado") and not item["cancelado"]]
+        elif situacao == "CANCELADO":
+            filtered = [item for item in filtered if item["cancelado"]]
+
+    if origem_slug:
+        filtered = [item for item in filtered if item.get("origem_slug") == origem_slug]
+
+    if q:
+        q_lower = q.casefold()
+        filtered = [
+            item
+            for item in filtered
+            if q_lower in " ".join(
+                value
+                for value in (
+                    item.get("origem"),
+                    item.get("titulo"),
+                    item.get("descricao"),
+                    item.get("detalhe"),
+                    item.get("documento"),
+                    item.get("status"),
+                )
+                if value
+            ).casefold()
+        ]
+
+    def _sort_key(item):
+        if item.get("cancelado"):
+            reference_date = item.get("previsto_em") or item.get("referencia_em")
+            return (
+                3,
+                -(reference_date.toordinal() if reference_date else 0),
+                item.get("titulo", "").casefold(),
+                item.get("id") or 0,
+            )
+
+        if item.get("realizado"):
+            reference_date = item.get("realizado_em") or item.get("referencia_em")
+            return (
+                2,
+                -(reference_date.toordinal() if reference_date else 0),
+                item.get("titulo", "").casefold(),
+                item.get("id") or 0,
+            )
+
+        due_date = item.get("previsto_em") or item.get("referencia_em") or date.max
+        return (
+            0 if item.get("atrasado") else 1,
+            due_date.toordinal(),
+            item.get("titulo", "").casefold(),
+            item.get("id") or 0,
+        )
+
+    filtered.sort(key=_sort_key)
+    return filtered
+
+
+def _build_agro_contas_summary(items):
+    total_previsto = Decimal("0")
+    total_realizado = Decimal("0")
+    total_pendente = Decimal("0")
+    total_atrasado = Decimal("0")
+    total_cancelado = Decimal("0")
+
+    for item in items:
+        valor = FinanceiroAgro._decimal_or_zero(item["valor"])
+        if item["cancelado"]:
+            total_cancelado += valor
+            continue
+        total_previsto += valor
+        if item["realizado"]:
+            total_realizado += valor
+        elif item.get("atrasado"):
+            total_atrasado += valor
+        else:
+            total_pendente += valor
+
+    return {
+        "total_previsto": total_previsto,
+        "total_realizado": total_realizado,
+        "total_pendente": total_pendente,
+        "total_atrasado": total_atrasado,
+        "total_cancelado": total_cancelado,
+        "total_itens": len(items),
+        "total_realizados": sum(1 for item in items if item["realizado"] and not item["cancelado"]),
+        "total_pendentes": sum(1 for item in items if not item["realizado"] and not item["cancelado"] and not item.get("atrasado")),
+        "total_atrasados": sum(1 for item in items if item.get("atrasado") and not item["cancelado"]),
+        "total_cancelados": sum(1 for item in items if item["cancelado"]),
+    }
+
+
+def _map_agro_entry_status_to_contas_situacao(status):
+    normalized = (status or "").strip().upper()
+    if normalized == FinanceiroAgroEntrada.STATUS_RECEBIDO:
+        return "REALIZADO"
+    if normalized == FinanceiroAgroEntrada.STATUS_CANCELADO:
+        return "CANCELADO"
+    if normalized == FinanceiroAgroEntrada.STATUS_VENCIDO:
+        return "ATRASADO"
+    if normalized == FinanceiroAgroEntrada.STATUS_PENDENTE:
+        return "PENDENTE"
+    return ""
+
+
+def _map_agro_saida_status_to_contas_situacao(status):
+    normalized = (status or "").strip().upper()
+    if normalized == FinanceiroAgroSaida.STATUS_PAGO:
+        return "REALIZADO"
+    if normalized == FinanceiroAgroSaida.STATUS_CANCELADO:
+        return "CANCELADO"
+    if normalized == FinanceiroAgroSaida.STATUS_VENCIDO:
+        return "ATRASADO"
+    if normalized == FinanceiroAgroSaida.STATUS_PENDENTE:
+        return "PENDENTE"
+    return ""
+
+
 def _validate_categoria_subcategoria(form, mapping, errors):
     categoria = (form.get("categoria") or "").strip()
     subcategoria = (form.get("subcategoria") or "").strip()
@@ -1196,6 +1443,7 @@ def _validate_financeiro_agro_entrada_form(form):
     data_vencimento = _parse_iso_date(form["data_vencimento"])
     data_recebimento = _parse_iso_date(form["data_recebimento"])
     valor = parse_currency_br(form["valor"])
+    quantidade_parcelas = _parse_positive_int(form.get("quantidade_parcelas"))
 
     if not cliente_nome:
         errors["cliente_nome"] = "Informe o cliente / referencia da entrada."
@@ -1225,8 +1473,19 @@ def _validate_financeiro_agro_entrada_form(form):
     if valor is None or valor <= 0:
         errors["valor"] = "Informe um valor monetario valido maior que zero."
 
+    if quantidade_parcelas is None:
+        errors["quantidade_parcelas"] = "Informe uma quantidade de parcelas valida."
+    elif quantidade_parcelas > AGRO_FINANCEIRO_MAX_PARCELAS:
+        errors["quantidade_parcelas"] = f"O limite atual e de {AGRO_FINANCEIRO_MAX_PARCELAS} parcelas."
+
     if form["status"] not in AGRO_FINANCEIRO_ENTRADA_STATUS_OPTIONS:
         errors["status"] = "Selecione um status valido."
+
+    if quantidade_parcelas and quantidade_parcelas > 1:
+        if data_recebimento is not None:
+            errors["data_recebimento"] = "Lancamentos parcelados devem ser criados sem data de recebimento."
+        if form["status"] != FinanceiroAgroEntrada.STATUS_PENDENTE:
+            errors["status"] = "Lancamentos parcelados devem ser criados como pendentes."
 
     resolved_status = _resolve_financeiro_agro_entrada_status(form["status"], data_vencimento, data_recebimento)
     competencia = data_recebimento or data_vencimento or data_lancamento or datetime.now().date()
@@ -1241,6 +1500,7 @@ def _validate_financeiro_agro_entrada_form(form):
         "data_vencimento": data_vencimento,
         "data_recebimento": data_recebimento,
         "valor": valor or Decimal("0"),
+        "quantidade_parcelas": quantidade_parcelas or 1,
         "status": resolved_status,
         "competencia": competencia,
     }
@@ -1255,6 +1515,7 @@ def _validate_financeiro_agro_saida_form(form):
     data_vencimento = _parse_iso_date(form["data_vencimento"])
     data_pagamento = _parse_iso_date(form["data_pagamento"])
     valor = parse_currency_br(form["valor"])
+    quantidade_parcelas = _parse_positive_int(form.get("quantidade_parcelas"))
 
     if not form["favorecido"]:
         errors["favorecido"] = "Informe o favorecido."
@@ -1287,11 +1548,22 @@ def _validate_financeiro_agro_saida_form(form):
     if valor is None or valor <= 0:
         errors["valor"] = "Informe um valor monetario valido maior que zero."
 
+    if quantidade_parcelas is None:
+        errors["quantidade_parcelas"] = "Informe uma quantidade de parcelas valida."
+    elif quantidade_parcelas > AGRO_FINANCEIRO_MAX_PARCELAS:
+        errors["quantidade_parcelas"] = f"O limite atual e de {AGRO_FINANCEIRO_MAX_PARCELAS} parcelas."
+
     if form["status"] not in AGRO_FINANCEIRO_SAIDA_STATUS_OPTIONS:
         errors["status"] = "Selecione um status valido."
 
     if form["tipo_saida"] in {FinanceiroAgroSaida.TIPO_IMPOSTO, FinanceiroAgroSaida.TIPO_RETENCAO} and not form["detalhamento_imposto"]:
         errors["detalhamento_imposto"] = "Explique do que e esse imposto / retencao."
+
+    if quantidade_parcelas and quantidade_parcelas > 1:
+        if data_pagamento is not None:
+            errors["data_pagamento"] = "Lancamentos parcelados devem ser criados sem data de pagamento."
+        if form["status"] != FinanceiroAgroSaida.STATUS_PENDENTE:
+            errors["status"] = "Lancamentos parcelados devem ser criados como pendentes."
 
     resolved_status = _resolve_financeiro_agro_saida_status(form["status"], data_vencimento, data_pagamento)
     competencia = data_pagamento or data_vencimento or data_lancamento or datetime.now().date()
@@ -1305,6 +1577,7 @@ def _validate_financeiro_agro_saida_form(form):
         "data_vencimento": data_vencimento,
         "data_pagamento": data_pagamento,
         "valor": valor or Decimal("0"),
+        "quantidade_parcelas": quantidade_parcelas or 1,
         "status": resolved_status,
         "competencia": competencia,
     }
@@ -2768,8 +3041,10 @@ def register_routes(bp):
             if conciliacao_status == "REALIZADO":
                 lancamentos = [item for item in lancamentos if item["realizado"] and not item["cancelado"]]
             elif conciliacao_status == "PENDENTE":
-                lancamentos = [item for item in lancamentos if not item["realizado"] and not item["cancelado"]]
-            else:
+                lancamentos = [item for item in lancamentos if not item["realizado"] and not item["cancelado"] and not item.get("atrasado")]
+            elif conciliacao_status == "ATRASADO":
+                lancamentos = [item for item in lancamentos if item.get("atrasado") and not item["cancelado"]]
+            elif conciliacao_status == "CANCELADO":
                 lancamentos = [item for item in lancamentos if item["cancelado"]]
 
         if q:
@@ -3527,6 +3802,114 @@ def register_routes(bp):
             build_endereco_agro=build_endereco_agro,
         )
 
+    @bp.route("/agro/financeiro/contas", methods=["GET"], endpoint="agro_financeiro_contas")
+    @login_required
+    def agro_financeiro_contas():
+        _require_agro_access()
+
+        contas_receber = []
+        contas_receber.extend(_build_agro_conciliacao_item(item) for item in build_financeiro_agro_query(current_user).all())
+        contas_receber.extend(_build_agro_conciliacao_item(item) for item in build_financeiro_agro_entrada_query(current_user).all())
+        contas_pagar = [_build_agro_conciliacao_item(item) for item in build_financeiro_agro_saida_query(current_user).all()]
+
+        return render_template(
+            "agro_financeiro_contas.html",
+            resumo_receber=_build_agro_contas_summary(contas_receber),
+            resumo_pagar=_build_agro_contas_summary(contas_pagar),
+            is_editable=can_edit_agro_finance_panel(current_user),
+            can_manage_competencias=can_manage_agro_finance_settings(current_user),
+        )
+
+    @bp.route("/agro/financeiro/contas-receber", methods=["GET"], endpoint="agro_contas_receber_listar")
+    @login_required
+    def agro_contas_receber_listar():
+        _require_agro_access()
+
+        q = (request.args.get("q") or "").strip()
+        situacao = (request.args.get("situacao") or "").strip().upper()
+        origem = (request.args.get("origem") or "").strip().lower()
+        mes = request.args.get("mes", type=int)
+        ano = request.args.get("ano", type=int)
+
+        if situacao not in {"", *AGRO_CONCILIACAO_STATUS_OPTIONS}:
+            situacao = ""
+        if origem not in {"", *(value for value, _label in AGRO_CONTAS_RECEBER_ORIGEM_OPTIONS)}:
+            origem = ""
+
+        lancamentos = []
+        lancamentos.extend(_build_agro_conciliacao_item(item) for item in build_financeiro_agro_query(current_user).all())
+        lancamentos.extend(_build_agro_conciliacao_item(item) for item in build_financeiro_agro_entrada_query(current_user).all())
+        lancamentos = _apply_agro_finance_items_filters(
+            lancamentos,
+            q=q,
+            mes=mes,
+            ano=ano,
+            situacao=situacao,
+            origem_slug=origem,
+        )
+
+        return render_template(
+            "agro_contas_receber_listar.html",
+            lancamentos=lancamentos,
+            resumo=_build_agro_contas_summary(lancamentos),
+            filters={
+                "q": q,
+                "situacao": situacao,
+                "origem": origem,
+                "mes": mes,
+                "ano": ano,
+                "total": len(lancamentos),
+            },
+            situacao_options=AGRO_CONCILIACAO_STATUS_OPTIONS,
+            origem_options=AGRO_CONTAS_RECEBER_ORIGEM_OPTIONS,
+            is_editable=can_edit_agro_finance_panel(current_user),
+            can_manage_competencias=can_manage_agro_finance_settings(current_user),
+        )
+
+    @bp.route("/agro/financeiro/contas-pagar", methods=["GET"], endpoint="agro_contas_pagar_listar")
+    @login_required
+    def agro_contas_pagar_listar():
+        _require_agro_access()
+
+        q = (request.args.get("q") or "").strip()
+        situacao = (request.args.get("situacao") or "").strip().upper()
+        tipo_saida = (request.args.get("tipo_saida") or "").strip().upper()
+        mes = request.args.get("mes", type=int)
+        ano = request.args.get("ano", type=int)
+
+        if situacao not in {"", *AGRO_CONCILIACAO_STATUS_OPTIONS}:
+            situacao = ""
+        if tipo_saida and tipo_saida not in AGRO_FINANCEIRO_SAIDA_TIPO_OPTIONS:
+            tipo_saida = ""
+
+        saidas = build_financeiro_agro_saida_query(current_user, tipo_saida=tipo_saida).all()
+        lancamentos = [_build_agro_conciliacao_item(item) for item in saidas]
+        lancamentos = _apply_agro_finance_items_filters(
+            lancamentos,
+            q=q,
+            mes=mes,
+            ano=ano,
+            situacao=situacao,
+        )
+
+        return render_template(
+            "agro_contas_pagar_listar.html",
+            lancamentos=lancamentos,
+            resumo=_build_agro_contas_summary(lancamentos),
+            filters={
+                "q": q,
+                "situacao": situacao,
+                "tipo_saida": tipo_saida,
+                "mes": mes,
+                "ano": ano,
+                "total": len(lancamentos),
+            },
+            situacao_options=AGRO_CONCILIACAO_STATUS_OPTIONS,
+            tipo_options=AGRO_FINANCEIRO_SAIDA_TIPO_OPTIONS,
+            is_editable=can_edit_agro_finance_panel(current_user),
+            can_manage_competencias=can_manage_agro_finance_settings(current_user),
+        )
+
     @bp.route("/agro/financeiro", methods=["GET"], endpoint="agro_financeiro_listar")
     @login_required
     def agro_financeiro_listar():
@@ -3885,21 +4268,23 @@ def register_routes(bp):
         status = (request.args.get("status") or "").strip().upper()
         mes = request.args.get("mes", type=int)
         ano = request.args.get("ano", type=int)
-        if status and status not in AGRO_FINANCEIRO_ENTRADA_STATUS_OPTIONS:
+        if status not in {"", *AGRO_FINANCEIRO_ENTRADA_STATUS_OPTIONS}:
             status = ""
 
-        lancamentos = build_financeiro_agro_entrada_query(current_user, q=q, status=status, mes=mes, ano=ano).all()
-        resumo = _build_financeiro_agro_entrada_summary(lancamentos)
+        redirect_args = {
+            "origem": "entrada",
+        }
+        if q:
+            redirect_args["q"] = q
+        if mes:
+            redirect_args["mes"] = mes
+        if ano:
+            redirect_args["ano"] = ano
+        situacao = _map_agro_entry_status_to_contas_situacao(status)
+        if situacao:
+            redirect_args["situacao"] = situacao
 
-        return render_template(
-            "agro_financeiro_entrada_listar.html",
-            lancamentos=lancamentos,
-            resumo=resumo,
-            filters={"q": q, "status": status, "mes": mes, "ano": ano, "total": len(lancamentos)},
-            status_options=AGRO_FINANCEIRO_ENTRADA_STATUS_OPTIONS,
-            is_editable=can_edit_agro_finance_panel(current_user),
-            can_manage_competencias=can_manage_agro_finance_settings(current_user),
-        )
+        return redirect(url_for("main.agro_contas_receber_listar", **redirect_args))
 
     @bp.route("/agro/financeiro/entradas/cadastrar", methods=["GET", "POST"], endpoint="agro_financeiro_entrada_novo")
     @login_required
@@ -3918,26 +4303,52 @@ def register_routes(bp):
             form = _normalize_financeiro_agro_entrada_form(request.form)
             payload = _validate_financeiro_agro_entrada_form(form)
             errors = payload["errors"]
-            if not can_user_write_agro_finance_competencia(current_user, payload["competencia"].year, payload["competencia"].month):
+            quantidade_parcelas = payload["quantidade_parcelas"]
+            vencimentos = (
+                _build_agro_installment_schedule(payload["data_vencimento"], quantidade_parcelas)
+                if payload["data_vencimento"] and not errors.get("data_vencimento")
+                else []
+            )
+            if quantidade_parcelas == 1 and not can_user_write_agro_finance_competencia(current_user, payload["competencia"].year, payload["competencia"].month):
                 _add_agro_finance_lock_error(
                     errors,
                     "data_vencimento",
                     payload["competencia"].year,
                     payload["competencia"].month,
                 )
+            elif quantidade_parcelas > 1:
+                _allowed_due_dates, blocked_due_dates = _check_agro_installment_dates_permissions(
+                    current_user,
+                    vencimentos,
+                    field_name="data_vencimento",
+                )
+                if blocked_due_dates:
+                    first_blocked = blocked_due_dates[0]
+                    _add_agro_finance_lock_error(errors, "data_vencimento", first_blocked.year, first_blocked.month)
+
             allowed_retroactive_dates, blocked_retroactive_dates = _split_agro_retroactive_dates_by_permission(
                 current_user,
                 {
                     "data_lancamento": payload["data_lancamento"],
                     "data_emissao": payload["data_emissao"],
-                    "data_vencimento": payload["data_vencimento"],
-                    "data_recebimento": payload["data_recebimento"],
+                    "data_vencimento": payload["data_vencimento"] if quantidade_parcelas == 1 else None,
+                    "data_recebimento": payload["data_recebimento"] if quantidade_parcelas == 1 else None,
                 }
             )
             _add_agro_retroactive_blocked_errors(errors, blocked_retroactive_dates)
+            allowed_retroactive_due_dates = []
+            if quantidade_parcelas > 1:
+                allowed_retroactive_due_dates, _blocked_due_dates = _check_agro_installment_dates_permissions(
+                    current_user,
+                    vencimentos,
+                    field_name="data_vencimento",
+                )
+
             if allowed_retroactive_dates and form.get("confirmar_lancamento_retroativo") != "1":
                 first_field = next(iter(allowed_retroactive_dates))
                 errors.setdefault(first_field, "Confirme o alerta de lancamento retroativo para continuar.")
+            elif allowed_retroactive_due_dates and form.get("confirmar_lancamento_retroativo") != "1":
+                errors.setdefault("data_vencimento", "Confirme o alerta de lancamento retroativo para continuar.")
 
             if errors:
                 flash("Corrija os campos destacados da entrada manual.", "warning")
@@ -3946,33 +4357,44 @@ def register_routes(bp):
                     **_build_financeiro_agro_entrada_form_context(modo="novo", form=form, errors=errors, clientes=clientes, bancos=bancos),
                 )
 
-            lancamento = FinanceiroAgroEntrada(
-                prefeitura_id=getattr(current_user, "prefeitura_id", None),
-                cliente_agro_id=getattr(payload["cliente"], "id", None),
-                banco_agro_id=getattr(payload["banco"], "id", None),
-                cliente_nome=payload["cliente_nome"],
-                categoria=form["categoria"],
-                subcategoria=form["subcategoria"],
-                descricao=form["descricao"],
-                documento_referencia=form["documento_referencia"] or None,
-                forma_recebimento=form["forma_recebimento"] or None,
-                status=payload["status"],
-                observacoes=form["observacoes"] or None,
-                competencia_mes=payload["competencia"].month,
-                competencia_ano=payload["competencia"].year,
-                data_lancamento=payload["data_lancamento"],
-                data_emissao=payload["data_emissao"],
-                data_vencimento=payload["data_vencimento"],
-                data_recebimento=payload["data_recebimento"],
-                valor=payload["valor"],
-            )
-            db.session.add(lancamento)
+            valores_parcelas = _split_agro_installment_values(payload["valor"], quantidade_parcelas)
+            grupo_lancamento = str(uuid.uuid4()) if quantidade_parcelas > 1 else None
+
+            for parcela_numero, (data_vencimento, valor_parcela) in enumerate(zip(vencimentos, valores_parcelas), start=1):
+                competencia = payload["data_recebimento"] if quantidade_parcelas == 1 and payload["data_recebimento"] else data_vencimento
+                lancamento = FinanceiroAgroEntrada(
+                    prefeitura_id=getattr(current_user, "prefeitura_id", None),
+                    cliente_agro_id=getattr(payload["cliente"], "id", None),
+                    banco_agro_id=getattr(payload["banco"], "id", None),
+                    cliente_nome=payload["cliente_nome"],
+                    categoria=form["categoria"],
+                    subcategoria=form["subcategoria"],
+                    descricao=form["descricao"],
+                    documento_referencia=form["documento_referencia"] or None,
+                    forma_recebimento=form["forma_recebimento"] or None,
+                    status=payload["status"],
+                    observacoes=form["observacoes"] or None,
+                    competencia_mes=competencia.month,
+                    competencia_ano=competencia.year,
+                    data_lancamento=payload["data_lancamento"],
+                    data_emissao=payload["data_emissao"],
+                    data_vencimento=data_vencimento,
+                    data_recebimento=payload["data_recebimento"] if quantidade_parcelas == 1 else None,
+                    grupo_lancamento=grupo_lancamento,
+                    parcela_numero=parcela_numero,
+                    parcela_total=quantidade_parcelas,
+                    valor=valor_parcela,
+                )
+                db.session.add(lancamento)
             db.session.flush()
             recalculate_bancos_agro([getattr(payload["banco"], "id", None)])
             db.session.commit()
 
-            flash("Entrada manual cadastrada com sucesso.", "success")
-            return redirect(url_for("main.agro_financeiro_entrada_listar"))
+            if quantidade_parcelas > 1:
+                flash(f"{quantidade_parcelas} parcelas de entrada manual cadastradas com sucesso.", "success")
+            else:
+                flash("Entrada manual cadastrada com sucesso.", "success")
+            return redirect(url_for("main.agro_contas_receber_listar", origem="entrada"))
 
         form = _normalize_financeiro_agro_entrada_form({})
         if bancos:
@@ -3980,6 +4402,7 @@ def register_routes(bp):
         form["data_lancamento"] = hoje.isoformat()
         form["data_emissao"] = hoje.isoformat()
         form["data_vencimento"] = hoje.isoformat()
+        form["quantidade_parcelas"] = "1"
         return render_template(
             "agro_financeiro_entrada_form.html",
             **_build_financeiro_agro_entrada_form_context(modo="novo", form=form, errors=errors, clientes=clientes, bancos=bancos),
@@ -3999,7 +4422,7 @@ def register_routes(bp):
         redirect_response = _enforce_agro_finance_lock_or_redirect(
             lancamento.competencia_ano,
             lancamento.competencia_mes,
-            "main.agro_financeiro_entrada_listar",
+            "main.agro_contas_receber_listar",
         )
         if redirect_response is not None:
             return redirect_response
@@ -4061,7 +4484,7 @@ def register_routes(bp):
             db.session.commit()
 
             flash("Entrada manual atualizada com sucesso.", "success")
-            return redirect(url_for("main.agro_financeiro_entrada_listar"))
+            return redirect(url_for("main.agro_contas_receber_listar", origem="entrada"))
 
         form = {
             "cliente_agro_id": str(lancamento.cliente_agro_id or ""),
@@ -4077,6 +4500,7 @@ def register_routes(bp):
             "data_vencimento": lancamento.data_vencimento.isoformat() if lancamento.data_vencimento else "",
             "data_recebimento": lancamento.data_recebimento.isoformat() if lancamento.data_recebimento else "",
             "valor": format_currency_br(lancamento.valor),
+            "quantidade_parcelas": str(lancamento.parcela_total or 1),
             "status": lancamento.status or FinanceiroAgroEntrada.STATUS_PENDENTE,
             "observacoes": lancamento.observacoes or "",
         }
@@ -4099,17 +4523,19 @@ def register_routes(bp):
         redirect_response = _enforce_agro_finance_lock_or_redirect(
             lancamento.competencia_ano,
             lancamento.competencia_mes,
-            "main.agro_financeiro_entrada_listar",
+            "main.agro_contas_receber_listar",
         )
         if redirect_response is not None:
             return redirect_response
         banco_id = lancamento.banco_agro_id
+        grupo_lancamento = lancamento.grupo_lancamento
         db.session.delete(lancamento)
         db.session.flush()
+        _rebalance_agro_installment_group(FinanceiroAgroEntrada, grupo_lancamento)
         recalculate_bancos_agro([banco_id])
         db.session.commit()
         flash("Entrada manual removida com sucesso.", "success")
-        return _redirect_back_to_agro("main.agro_financeiro_entrada_listar")
+        return _redirect_back_to_agro("main.agro_contas_receber_listar")
 
     @bp.route("/agro/financeiro/saidas", methods=["GET"], endpoint="agro_financeiro_saida_listar")
     @login_required
@@ -4121,24 +4547,25 @@ def register_routes(bp):
         tipo_saida = (request.args.get("tipo_saida") or "").strip().upper()
         mes = request.args.get("mes", type=int)
         ano = request.args.get("ano", type=int)
-        if status and status not in AGRO_FINANCEIRO_SAIDA_STATUS_OPTIONS:
+        if status not in {"", *AGRO_FINANCEIRO_SAIDA_STATUS_OPTIONS}:
             status = ""
         if tipo_saida and tipo_saida not in AGRO_FINANCEIRO_SAIDA_TIPO_OPTIONS:
             tipo_saida = ""
 
-        lancamentos = build_financeiro_agro_saida_query(current_user, q=q, status=status, tipo_saida=tipo_saida, mes=mes, ano=ano).all()
-        resumo = _build_financeiro_agro_saida_summary(lancamentos)
+        redirect_args = {}
+        if q:
+            redirect_args["q"] = q
+        if mes:
+            redirect_args["mes"] = mes
+        if ano:
+            redirect_args["ano"] = ano
+        if tipo_saida:
+            redirect_args["tipo_saida"] = tipo_saida
+        situacao = _map_agro_saida_status_to_contas_situacao(status)
+        if situacao:
+            redirect_args["situacao"] = situacao
 
-        return render_template(
-            "agro_financeiro_saida_listar.html",
-            lancamentos=lancamentos,
-            resumo=resumo,
-            filters={"q": q, "status": status, "tipo_saida": tipo_saida, "mes": mes, "ano": ano, "total": len(lancamentos)},
-            status_options=AGRO_FINANCEIRO_SAIDA_STATUS_OPTIONS,
-            tipo_options=AGRO_FINANCEIRO_SAIDA_TIPO_OPTIONS,
-            is_editable=can_edit_agro_finance_panel(current_user),
-            can_manage_competencias=can_manage_agro_finance_settings(current_user),
-        )
+        return redirect(url_for("main.agro_contas_pagar_listar", **redirect_args))
 
     @bp.route("/agro/financeiro/saidas/cadastrar", methods=["GET", "POST"], endpoint="agro_financeiro_saida_novo")
     @login_required
@@ -4157,26 +4584,52 @@ def register_routes(bp):
             form = _normalize_financeiro_agro_saida_form(request.form)
             payload = _validate_financeiro_agro_saida_form(form)
             errors = payload["errors"]
-            if not can_user_write_agro_finance_competencia(current_user, payload["competencia"].year, payload["competencia"].month):
+            quantidade_parcelas = payload["quantidade_parcelas"]
+            vencimentos = (
+                _build_agro_installment_schedule(payload["data_vencimento"], quantidade_parcelas)
+                if payload["data_vencimento"] and not errors.get("data_vencimento")
+                else []
+            )
+            if quantidade_parcelas == 1 and not can_user_write_agro_finance_competencia(current_user, payload["competencia"].year, payload["competencia"].month):
                 _add_agro_finance_lock_error(
                     errors,
                     "data_vencimento",
                     payload["competencia"].year,
                     payload["competencia"].month,
                 )
+            elif quantidade_parcelas > 1:
+                _allowed_due_dates, blocked_due_dates = _check_agro_installment_dates_permissions(
+                    current_user,
+                    vencimentos,
+                    field_name="data_vencimento",
+                )
+                if blocked_due_dates:
+                    first_blocked = blocked_due_dates[0]
+                    _add_agro_finance_lock_error(errors, "data_vencimento", first_blocked.year, first_blocked.month)
+
             allowed_retroactive_dates, blocked_retroactive_dates = _split_agro_retroactive_dates_by_permission(
                 current_user,
                 {
                     "data_lancamento": payload["data_lancamento"],
                     "data_emissao": payload["data_emissao"],
-                    "data_vencimento": payload["data_vencimento"],
-                    "data_pagamento": payload["data_pagamento"],
+                    "data_vencimento": payload["data_vencimento"] if quantidade_parcelas == 1 else None,
+                    "data_pagamento": payload["data_pagamento"] if quantidade_parcelas == 1 else None,
                 }
             )
             _add_agro_retroactive_blocked_errors(errors, blocked_retroactive_dates)
+            allowed_retroactive_due_dates = []
+            if quantidade_parcelas > 1:
+                allowed_retroactive_due_dates, _blocked_due_dates = _check_agro_installment_dates_permissions(
+                    current_user,
+                    vencimentos,
+                    field_name="data_vencimento",
+                )
+
             if allowed_retroactive_dates and form.get("confirmar_lancamento_retroativo") != "1":
                 first_field = next(iter(allowed_retroactive_dates))
                 errors.setdefault(first_field, "Confirme o alerta de lancamento retroativo para continuar.")
+            elif allowed_retroactive_due_dates and form.get("confirmar_lancamento_retroativo") != "1":
+                errors.setdefault("data_vencimento", "Confirme o alerta de lancamento retroativo para continuar.")
 
             if errors:
                 flash("Corrija os campos destacados da saida manual.", "warning")
@@ -4185,35 +4638,46 @@ def register_routes(bp):
                     **_build_financeiro_agro_saida_form_context(modo="novo", form=form, errors=errors, clientes=clientes, bancos=bancos),
                 )
 
-            lancamento = FinanceiroAgroSaida(
-                prefeitura_id=getattr(current_user, "prefeitura_id", None),
-                cliente_agro_id=getattr(payload["cliente"], "id", None),
-                banco_agro_id=getattr(payload["banco"], "id", None),
-                favorecido=form["favorecido"],
-                tipo_saida=form["tipo_saida"],
-                categoria=form["categoria"],
-                subcategoria=form["subcategoria"],
-                descricao=form["descricao"],
-                documento_referencia=form["documento_referencia"] or None,
-                detalhamento_imposto=form["detalhamento_imposto"] or None,
-                forma_pagamento=form["forma_pagamento"] or None,
-                status=payload["status"],
-                observacoes=form["observacoes"] or None,
-                competencia_mes=payload["competencia"].month,
-                competencia_ano=payload["competencia"].year,
-                data_lancamento=payload["data_lancamento"],
-                data_emissao=payload["data_emissao"],
-                data_vencimento=payload["data_vencimento"],
-                data_pagamento=payload["data_pagamento"],
-                valor=payload["valor"],
-            )
-            db.session.add(lancamento)
+            valores_parcelas = _split_agro_installment_values(payload["valor"], quantidade_parcelas)
+            grupo_lancamento = str(uuid.uuid4()) if quantidade_parcelas > 1 else None
+
+            for parcela_numero, (data_vencimento, valor_parcela) in enumerate(zip(vencimentos, valores_parcelas), start=1):
+                competencia = payload["data_pagamento"] if quantidade_parcelas == 1 and payload["data_pagamento"] else data_vencimento
+                lancamento = FinanceiroAgroSaida(
+                    prefeitura_id=getattr(current_user, "prefeitura_id", None),
+                    cliente_agro_id=getattr(payload["cliente"], "id", None),
+                    banco_agro_id=getattr(payload["banco"], "id", None),
+                    favorecido=form["favorecido"],
+                    tipo_saida=form["tipo_saida"],
+                    categoria=form["categoria"],
+                    subcategoria=form["subcategoria"],
+                    descricao=form["descricao"],
+                    documento_referencia=form["documento_referencia"] or None,
+                    detalhamento_imposto=form["detalhamento_imposto"] or None,
+                    forma_pagamento=form["forma_pagamento"] or None,
+                    status=payload["status"],
+                    observacoes=form["observacoes"] or None,
+                    competencia_mes=competencia.month,
+                    competencia_ano=competencia.year,
+                    data_lancamento=payload["data_lancamento"],
+                    data_emissao=payload["data_emissao"],
+                    data_vencimento=data_vencimento,
+                    data_pagamento=payload["data_pagamento"] if quantidade_parcelas == 1 else None,
+                    grupo_lancamento=grupo_lancamento,
+                    parcela_numero=parcela_numero,
+                    parcela_total=quantidade_parcelas,
+                    valor=valor_parcela,
+                )
+                db.session.add(lancamento)
             db.session.flush()
             recalculate_bancos_agro([getattr(payload["banco"], "id", None)])
             db.session.commit()
 
-            flash("Saida manual cadastrada com sucesso.", "success")
-            return redirect(url_for("main.agro_financeiro_saida_listar"))
+            if quantidade_parcelas > 1:
+                flash(f"{quantidade_parcelas} parcelas de saida manual cadastradas com sucesso.", "success")
+            else:
+                flash("Saida manual cadastrada com sucesso.", "success")
+            return redirect(url_for("main.agro_contas_pagar_listar"))
 
         form = _normalize_financeiro_agro_saida_form({})
         if bancos:
@@ -4221,6 +4685,7 @@ def register_routes(bp):
         form["data_lancamento"] = hoje.isoformat()
         form["data_emissao"] = hoje.isoformat()
         form["data_vencimento"] = hoje.isoformat()
+        form["quantidade_parcelas"] = "1"
         return render_template(
             "agro_financeiro_saida_form.html",
             **_build_financeiro_agro_saida_form_context(modo="novo", form=form, errors=errors, clientes=clientes, bancos=bancos),
@@ -4240,7 +4705,7 @@ def register_routes(bp):
         redirect_response = _enforce_agro_finance_lock_or_redirect(
             lancamento.competencia_ano,
             lancamento.competencia_mes,
-            "main.agro_financeiro_saida_listar",
+            "main.agro_contas_pagar_listar",
         )
         if redirect_response is not None:
             return redirect_response
@@ -4304,7 +4769,7 @@ def register_routes(bp):
             db.session.commit()
 
             flash("Saida manual atualizada com sucesso.", "success")
-            return redirect(url_for("main.agro_financeiro_saida_listar"))
+            return redirect(url_for("main.agro_contas_pagar_listar"))
 
         form = {
             "cliente_agro_id": str(lancamento.cliente_agro_id or ""),
@@ -4322,7 +4787,8 @@ def register_routes(bp):
             "data_vencimento": lancamento.data_vencimento.isoformat() if lancamento.data_vencimento else "",
             "data_pagamento": lancamento.data_pagamento.isoformat() if lancamento.data_pagamento else "",
             "valor": format_currency_br(lancamento.valor),
-            "status": lancamento.status or FinanceiroAgroSaida.STATUS_PENDENTE,
+            "quantidade_parcelas": str(lancamento.parcela_total or 1),
+            "status": _resolve_financeiro_agro_saida_status(lancamento.status, lancamento.data_vencimento, lancamento.data_pagamento),
             "observacoes": lancamento.observacoes or "",
         }
         return render_template(
@@ -4344,17 +4810,19 @@ def register_routes(bp):
         redirect_response = _enforce_agro_finance_lock_or_redirect(
             lancamento.competencia_ano,
             lancamento.competencia_mes,
-            "main.agro_financeiro_saida_listar",
+            "main.agro_contas_pagar_listar",
         )
         if redirect_response is not None:
             return redirect_response
         banco_id = lancamento.banco_agro_id
+        grupo_lancamento = lancamento.grupo_lancamento
         db.session.delete(lancamento)
         db.session.flush()
+        _rebalance_agro_installment_group(FinanceiroAgroSaida, grupo_lancamento)
         recalculate_bancos_agro([banco_id])
         db.session.commit()
         flash("Saida manual removida com sucesso.", "success")
-        return _redirect_back_to_agro("main.agro_financeiro_saida_listar")
+        return _redirect_back_to_agro("main.agro_contas_pagar_listar")
 
     @bp.route("/agro/caixa", methods=["GET"], endpoint="agro_caixa_diario")
     @login_required
