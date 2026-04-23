@@ -90,6 +90,8 @@ AGRO_FINANCEIRO_ENTRADA_STATUS_OPTIONS = FinanceiroAgroEntrada.STATUS_OPTIONS
 AGRO_FINANCEIRO_SAIDA_STATUS_OPTIONS = FinanceiroAgroSaida.STATUS_OPTIONS
 AGRO_FINANCEIRO_SAIDA_TIPO_OPTIONS = FinanceiroAgroSaida.TIPO_OPTIONS
 AGRO_BANCO_TIPO_OPTIONS = BancoAgro.TIPO_OPTIONS
+AGRO_CONCILIACAO_STATUS_OPTIONS = ("REALIZADO", "PENDENTE", "CANCELADO")
+AGRO_CONCILIACAO_MOVIMENTO_OPTIONS = ("ENTRADA", "SAIDA")
 AGRO_OS_MAP_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg"}
 
 AGRO_FINANCEIRO_ENTRADA_ESTRUTURA = {
@@ -260,6 +262,30 @@ def _enforce_agro_finance_lock_or_redirect(ano: int | None, mes: int | None, fal
 
     flash(_agro_finance_lock_message(ano, mes), "warning")
     return redirect(url_for(fallback_endpoint, **values))
+
+
+def _enforce_agro_caixa_open_or_redirect(origem_label: str):
+    hoje = datetime.now().date()
+    report = build_agro_caixa_diario_report(current_user, data_caixa=hoje)
+    if report.get("caixa_aberto"):
+        return None
+
+    caixa_status = "fechado" if report.get("caixa_fechado") else "nao_aberto"
+    flash(
+        f"{origem_label}: o caixa do dia precisa estar aberto antes de qualquer movimentacao financeira.",
+        "warning",
+    )
+
+    target_url = url_for(
+        "main.agro_caixa_diario",
+        data_caixa=hoje.isoformat(),
+        caixa_required="1",
+        caixa_status=caixa_status,
+        origem=origem_label,
+    )
+    if caixa_status == "nao_aberto":
+        target_url = f"{target_url}#abrir-caixa-form"
+    return redirect(target_url)
 
 
 def _require_piloto_agro():
@@ -987,6 +1013,156 @@ def _build_financeiro_agro_saida_summary(lancamentos):
         "total_pago": total_pago,
         "total_impostos": total_impostos,
         "total_retencoes": total_retencoes,
+    }
+
+
+def _matches_agro_conciliacao_period(data_value, mes=None, ano=None):
+    if data_value is None:
+        return False
+    if mes and data_value.month != mes:
+        return False
+    if ano and data_value.year != ano:
+        return False
+    return True
+
+
+def _build_agro_conciliacao_item(item):
+    if isinstance(item, FinanceiroAgroSaida):
+        valor = FinanceiroAgro._decimal_or_zero(item.valor)
+        realizado_em = item.data_pagamento
+        previsto_em = item.data_vencimento or item.data_lancamento or item.data_emissao
+        status = (item.status or FinanceiroAgroSaida.STATUS_PENDENTE).strip().upper()
+        cancelado = status == FinanceiroAgroSaida.STATUS_CANCELADO
+        realizado = bool(realizado_em) or status == FinanceiroAgroSaida.STATUS_PAGO
+        return {
+            "id": item.id,
+            "origem": "Saida manual",
+            "origem_slug": "saida",
+            "movimento": "SAIDA",
+            "banco_agro_id": item.banco_agro_id,
+            "titulo": item.favorecido or "Sem favorecido",
+            "descricao": item.descricao or "",
+            "detalhe": item.categoria or "",
+            "documento": item.documento_referencia or "",
+            "status": status,
+            "valor": valor,
+            "previsto_em": previsto_em,
+            "realizado_em": realizado_em,
+            "referencia_em": realizado_em or previsto_em,
+            "realizado": realizado,
+            "cancelado": cancelado,
+            "edit_url": url_for("main.agro_financeiro_saida_editar", lancamento_id=item.id),
+        }
+
+    if isinstance(item, FinanceiroAgroEntrada):
+        valor = FinanceiroAgro._decimal_or_zero(item.valor)
+        realizado_em = item.data_recebimento
+        previsto_em = item.data_vencimento or item.data_lancamento or item.data_emissao
+        status = (item.status or FinanceiroAgroEntrada.STATUS_PENDENTE).strip().upper()
+        cancelado = status == FinanceiroAgroEntrada.STATUS_CANCELADO
+        realizado = bool(realizado_em) or status == FinanceiroAgroEntrada.STATUS_RECEBIDO
+        return {
+            "id": item.id,
+            "origem": "Entrada manual",
+            "origem_slug": "entrada",
+            "movimento": "ENTRADA",
+            "banco_agro_id": item.banco_agro_id,
+            "titulo": item.cliente_nome or "Sem cliente",
+            "descricao": item.descricao or "",
+            "detalhe": item.categoria or "",
+            "documento": item.documento_referencia or "",
+            "status": status,
+            "valor": valor,
+            "previsto_em": previsto_em,
+            "realizado_em": realizado_em,
+            "referencia_em": realizado_em or previsto_em,
+            "realizado": realizado,
+            "cancelado": cancelado,
+            "edit_url": url_for("main.agro_financeiro_entrada_editar", lancamento_id=item.id),
+        }
+
+    valor = FinanceiroAgro._decimal_or_zero(item.valor_total_contrato)
+    realizado_em = item.data_recebimento
+    previsto_em = item.data_vencimento or item.data_servico_executado or item.data_elaboracao_contrato
+    status = (item.status or FinanceiroAgro.STATUS_PENDENTE).strip().upper()
+    cancelado = status == FinanceiroAgro.STATUS_CANCELADO
+    realizado = bool(realizado_em) or status == FinanceiroAgro.STATUS_RECEBIDO
+    contrato_label = f"Contrato #{item.contrato_agro_id}" if item.contrato_agro_id else "Contrato sem vinculo"
+    return {
+        "id": item.id,
+        "origem": "Recebivel",
+        "origem_slug": "recebivel",
+        "movimento": "ENTRADA",
+        "banco_agro_id": item.banco_agro_id,
+        "titulo": item.cliente_nome or "Sem cliente",
+        "descricao": contrato_label,
+        "detalhe": item.cultura or "",
+        "documento": contrato_label,
+        "status": status,
+        "valor": valor,
+        "previsto_em": previsto_em,
+        "realizado_em": realizado_em,
+        "referencia_em": realizado_em or previsto_em,
+        "realizado": realizado,
+        "cancelado": cancelado,
+        "edit_url": url_for("main.agro_financeiro_editar", lancamento_id=item.id),
+    }
+
+
+def _build_agro_conciliacao_summary(lancamentos, bancos, banco_selecionado=None):
+    saldo_inicial = Decimal("0")
+    total_entradas_realizadas = Decimal("0")
+    total_saidas_realizadas = Decimal("0")
+    pendente_entrar = Decimal("0")
+    pendente_sair = Decimal("0")
+    total_cancelado = Decimal("0")
+
+    if banco_selecionado is not None:
+        saldo_inicial = FinanceiroAgro._decimal_or_zero(banco_selecionado.saldo_inicial)
+        saldo_atual_cadastrado = FinanceiroAgro._decimal_or_zero(banco_selecionado.saldo_atual)
+        saldo_previsto_cadastrado = FinanceiroAgro._decimal_or_zero(banco_selecionado.saldo_previsto)
+    else:
+        saldo_atual_cadastrado = Decimal("0")
+        saldo_previsto_cadastrado = Decimal("0")
+        for banco in bancos:
+            saldo_inicial += FinanceiroAgro._decimal_or_zero(banco.saldo_inicial)
+            saldo_atual_cadastrado += FinanceiroAgro._decimal_or_zero(banco.saldo_atual)
+            saldo_previsto_cadastrado += FinanceiroAgro._decimal_or_zero(banco.saldo_previsto)
+
+    for item in lancamentos:
+        valor = FinanceiroAgro._decimal_or_zero(item["valor"])
+        if item["cancelado"]:
+            total_cancelado += valor
+            continue
+        if item["movimento"] == "ENTRADA":
+            if item["realizado"]:
+                total_entradas_realizadas += valor
+            else:
+                pendente_entrar += valor
+        else:
+            if item["realizado"]:
+                total_saidas_realizadas += valor
+            else:
+                pendente_sair += valor
+
+    saldo_realizado = saldo_inicial + total_entradas_realizadas - total_saidas_realizadas
+    saldo_previsto = saldo_realizado + pendente_entrar - pendente_sair
+
+    return {
+        "saldo_inicial": saldo_inicial,
+        "entradas_realizadas": total_entradas_realizadas,
+        "saidas_realizadas": total_saidas_realizadas,
+        "pendente_entrar": pendente_entrar,
+        "pendente_sair": pendente_sair,
+        "saldo_realizado": saldo_realizado,
+        "saldo_previsto": saldo_previsto,
+        "saldo_atual_cadastrado": saldo_atual_cadastrado,
+        "saldo_previsto_cadastrado": saldo_previsto_cadastrado,
+        "diferenca_previsto_realizado": saldo_previsto - saldo_realizado,
+        "total_cancelado": total_cancelado,
+        "total_itens": len(lancamentos),
+        "total_realizados": sum(1 for item in lancamentos if item["realizado"] and not item["cancelado"]),
+        "total_pendentes": sum(1 for item in lancamentos if not item["realizado"] and not item["cancelado"]),
     }
 
 
@@ -2536,6 +2712,116 @@ def register_routes(bp):
             is_editable=can_edit_agro_finance_panel(current_user),
         )
 
+    @bp.route("/agro/bancos/conciliacao", methods=["GET"], endpoint="agro_bancos_conciliacao")
+    @login_required
+    def agro_bancos_conciliacao():
+        _require_agro_access()
+
+        q = (request.args.get("q") or "").strip()
+        banco_agro_id = request.args.get("banco_agro_id", type=int)
+        mes = request.args.get("mes", type=int)
+        ano = request.args.get("ano", type=int)
+        conciliacao_status = (request.args.get("conciliacao_status") or "").strip().upper()
+        movimento = (request.args.get("movimento") or "").strip().upper()
+
+        if conciliacao_status not in {"", *AGRO_CONCILIACAO_STATUS_OPTIONS}:
+            conciliacao_status = ""
+        if movimento not in {"", *AGRO_CONCILIACAO_MOVIMENTO_OPTIONS}:
+            movimento = ""
+        if mes is not None and (mes < 1 or mes > 12):
+            mes = None
+        if ano is not None and (ano < 2024 or ano > 2100):
+            ano = None
+
+        bancos = build_bancos_agro_query(current_user).all()
+        banco_selecionado = next((item for item in bancos if item.id == banco_agro_id), None) if banco_agro_id else None
+        if banco_agro_id and banco_selecionado is None:
+            banco_agro_id = None
+
+        recebiveis_query = apply_prefeitura_scope(FinanceiroAgro.query, current_user, FinanceiroAgro.prefeitura_id)
+        entradas_query = apply_prefeitura_scope(FinanceiroAgroEntrada.query, current_user, FinanceiroAgroEntrada.prefeitura_id)
+        saidas_query = apply_prefeitura_scope(FinanceiroAgroSaida.query, current_user, FinanceiroAgroSaida.prefeitura_id)
+
+        if banco_agro_id:
+            recebiveis_query = recebiveis_query.filter(FinanceiroAgro.banco_agro_id == banco_agro_id)
+            entradas_query = entradas_query.filter(FinanceiroAgroEntrada.banco_agro_id == banco_agro_id)
+            saidas_query = saidas_query.filter(FinanceiroAgroSaida.banco_agro_id == banco_agro_id)
+
+        lancamentos = []
+        if movimento in {"", "ENTRADA"}:
+            lancamentos.extend(_build_agro_conciliacao_item(item) for item in recebiveis_query.all())
+            lancamentos.extend(_build_agro_conciliacao_item(item) for item in entradas_query.all())
+        if movimento in {"", "SAIDA"}:
+            lancamentos.extend(_build_agro_conciliacao_item(item) for item in saidas_query.all())
+
+        if mes or ano:
+            filtered = []
+            for item in lancamentos:
+                if _matches_agro_conciliacao_period(item["realizado_em"], mes=mes, ano=ano):
+                    filtered.append(item)
+                    continue
+                if _matches_agro_conciliacao_period(item["previsto_em"], mes=mes, ano=ano):
+                    filtered.append(item)
+            lancamentos = filtered
+
+        if conciliacao_status:
+            if conciliacao_status == "REALIZADO":
+                lancamentos = [item for item in lancamentos if item["realizado"] and not item["cancelado"]]
+            elif conciliacao_status == "PENDENTE":
+                lancamentos = [item for item in lancamentos if not item["realizado"] and not item["cancelado"]]
+            else:
+                lancamentos = [item for item in lancamentos if item["cancelado"]]
+
+        if q:
+            q_lower = q.casefold()
+            lancamentos = [
+                item
+                for item in lancamentos
+                if q_lower in " ".join(
+                    value
+                    for value in (
+                        item["origem"],
+                        item["movimento"],
+                        item["titulo"],
+                        item["descricao"],
+                        item["detalhe"],
+                        item["documento"],
+                        item["status"],
+                    )
+                    if value
+                ).casefold()
+            ]
+
+        lancamentos.sort(
+            key=lambda item: (
+                -(item["referencia_em"].toordinal() if item["referencia_em"] else 0),
+                item["movimento"] != "ENTRADA",
+                item["titulo"].casefold(),
+            ),
+        )
+
+        resumo = _build_agro_conciliacao_summary(lancamentos, bancos, banco_selecionado=banco_selecionado)
+
+        return render_template(
+            "agro_bancos_conciliacao.html",
+            lancamentos=lancamentos,
+            bancos=bancos,
+            banco_selecionado=banco_selecionado,
+            resumo=resumo,
+            filters={
+                "q": q,
+                "banco_agro_id": banco_agro_id,
+                "mes": mes,
+                "ano": ano,
+                "conciliacao_status": conciliacao_status,
+                "movimento": movimento,
+                "total": len(lancamentos),
+            },
+            conciliacao_status_options=AGRO_CONCILIACAO_STATUS_OPTIONS,
+            movimento_options=AGRO_CONCILIACAO_MOVIMENTO_OPTIONS,
+            is_editable=can_edit_agro_finance_panel(current_user),
+        )
+
     @bp.route("/agro/bancos/cadastrar", methods=["GET", "POST"], endpoint="agro_banco_novo")
     @login_required
     def agro_banco_novo():
@@ -3335,6 +3621,9 @@ def register_routes(bp):
     @login_required
     def agro_financeiro_novo():
         _require_agro_finance_edit()
+        redirect_response = _enforce_agro_caixa_open_or_redirect("Novo lancamento financeiro")
+        if redirect_response is not None:
+            return redirect_response
 
         contratos, contratos_recebidos_ids = _build_financeiro_agro_contratos_disponiveis(current_user)
         bancos = build_bancos_agro_query(current_user).all()
@@ -3449,6 +3738,9 @@ def register_routes(bp):
     @login_required
     def agro_financeiro_editar(lancamento_id):
         _require_agro_finance_edit()
+        redirect_response = _enforce_agro_caixa_open_or_redirect("Edicao de lancamento financeiro")
+        if redirect_response is not None:
+            return redirect_response
 
         lancamento = _get_financeiro_agro_or_404(lancamento_id)
         redirect_response = _enforce_agro_finance_lock_or_redirect(
@@ -3563,6 +3855,9 @@ def register_routes(bp):
     @login_required
     def agro_financeiro_deletar(lancamento_id):
         _require_agro_finance_edit()
+        redirect_response = _enforce_agro_caixa_open_or_redirect("Exclusao de lancamento financeiro")
+        if redirect_response is not None:
+            return redirect_response
 
         lancamento = _get_financeiro_agro_or_404(lancamento_id)
         redirect_response = _enforce_agro_finance_lock_or_redirect(
@@ -3610,6 +3905,9 @@ def register_routes(bp):
     @login_required
     def agro_financeiro_entrada_novo():
         _require_agro_finance_edit()
+        redirect_response = _enforce_agro_caixa_open_or_redirect("Nova entrada manual")
+        if redirect_response is not None:
+            return redirect_response
 
         clientes = build_clientes_agro_query(current_user).all()
         bancos = build_bancos_agro_query(current_user).all()
@@ -3691,6 +3989,9 @@ def register_routes(bp):
     @login_required
     def agro_financeiro_entrada_editar(lancamento_id):
         _require_agro_finance_edit()
+        redirect_response = _enforce_agro_caixa_open_or_redirect("Edicao de entrada manual")
+        if redirect_response is not None:
+            return redirect_response
 
         lancamento = apply_prefeitura_scope(FinanceiroAgroEntrada.query, current_user, FinanceiroAgroEntrada.prefeitura_id).filter(
             FinanceiroAgroEntrada.id == lancamento_id
@@ -3788,6 +4089,9 @@ def register_routes(bp):
     @login_required
     def agro_financeiro_entrada_deletar(lancamento_id):
         _require_agro_finance_edit()
+        redirect_response = _enforce_agro_caixa_open_or_redirect("Exclusao de entrada manual")
+        if redirect_response is not None:
+            return redirect_response
 
         lancamento = apply_prefeitura_scope(FinanceiroAgroEntrada.query, current_user, FinanceiroAgroEntrada.prefeitura_id).filter(
             FinanceiroAgroEntrada.id == lancamento_id
@@ -3840,6 +4144,9 @@ def register_routes(bp):
     @login_required
     def agro_financeiro_saida_novo():
         _require_agro_finance_edit()
+        redirect_response = _enforce_agro_caixa_open_or_redirect("Nova saida manual")
+        if redirect_response is not None:
+            return redirect_response
 
         clientes = build_clientes_agro_query(current_user).all()
         bancos = build_bancos_agro_query(current_user).all()
@@ -3923,6 +4230,9 @@ def register_routes(bp):
     @login_required
     def agro_financeiro_saida_editar(lancamento_id):
         _require_agro_finance_edit()
+        redirect_response = _enforce_agro_caixa_open_or_redirect("Edicao de saida manual")
+        if redirect_response is not None:
+            return redirect_response
 
         lancamento = apply_prefeitura_scope(FinanceiroAgroSaida.query, current_user, FinanceiroAgroSaida.prefeitura_id).filter(
             FinanceiroAgroSaida.id == lancamento_id
@@ -4024,6 +4334,9 @@ def register_routes(bp):
     @login_required
     def agro_financeiro_saida_deletar(lancamento_id):
         _require_agro_finance_edit()
+        redirect_response = _enforce_agro_caixa_open_or_redirect("Exclusao de saida manual")
+        if redirect_response is not None:
+            return redirect_response
 
         lancamento = apply_prefeitura_scope(FinanceiroAgroSaida.query, current_user, FinanceiroAgroSaida.prefeitura_id).filter(
             FinanceiroAgroSaida.id == lancamento_id

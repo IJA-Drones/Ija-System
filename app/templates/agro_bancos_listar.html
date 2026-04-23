@@ -20,6 +20,9 @@
       <a href="{{ url_for('main.admin_agro') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
+      <a href="{{ url_for('main.agro_bancos_conciliacao') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
+        <i class="bi bi-bank2"></i> Conciliacao bancaria
+      </a>
       {% if is_editable %}
         <a href="{{ url_for('main.agro_banco_novo') }}" class="btn btn-success d-flex align-items-center gap-2">
           <i class="bi bi-plus-circle-fill"></i> Novo banco
@@ -88,13 +91,16 @@
               <div class="small text-muted mb-3">{{ banco.observacoes }}</div>
             {% endif %}
 
-            {% if is_editable %}
-              <div class="d-flex flex-wrap gap-2">
+            <div class="d-flex flex-wrap gap-2">
+              <a href="{{ url_for('main.agro_bancos_conciliacao', banco_agro_id=banco.id) }}" class="btn btn-outline-success btn-sm d-flex align-items-center gap-2">
+                <i class="bi bi-bank2"></i> Conciliar
+              </a>
+              {% if is_editable %}
                 <a href="{{ url_for('main.agro_banco_editar', banco_id=banco.id) }}" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2">
                   <i class="bi bi-pencil-square"></i> Editar
                 </a>
-              </div>
-            {% endif %}
+              {% endif %}
+            </div>
           </div>
         </div>
       </div>

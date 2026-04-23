@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/listing_pattern.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 listing-page">
+  <div class="listing-header mb-4">
+    <div>
+      <h2 class="text-dark m-0">
+        <i class="bi bi-bank2 me-2 text-primary"></i> Conciliação Bancária Agro
+      </h2>
+      <p class="text-muted small mb-0">
+        Confira o que entrou, saiu e ainda está pendente por banco.
+        {% if filters.q or filters.banco_agro_id or filters.mes or filters.ano or filters.conciliacao_status or filters.movimento %}
+          <span class="badge bg-filter-custom ms-2">Filtrado</span>
+        {% endif %}
+      </p>
+    </div>
+
+    <div class="listing-actions">
+      <a href="{{ url_for('main.admin_agro') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+      <a href="{{ url_for('main.agro_bancos_listar') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
+        <i class="bi bi-bank"></i> Bancos Agro
+      </a>
+      <a href="{{ url_for('main.agro_financeiro_listar') }}" class="btn btn-outline-success d-flex align-items-center gap-2">
+        <i class="bi bi-cash-coin"></i> Recebíveis
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card info status-primary shadow-sm rounded-4 border-0 h-100">
+        <div class="card-body">
+          <span class="text-muted small d-block">Saldo inicial</span>
+          <h4 class="text-dark mt-2 mb-0">{{ resumo.saldo_inicial|currencybr }}</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card info status-success shadow-sm rounded-4 border-0 h-100">
+        <div class="card-body">
+          <span class="text-muted small d-block">Entradas realizadas</span>
+          <h4 class="text-dark mt-2 mb-0">{{ resumo.entradas_realizadas|currencybr }}</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card info status-danger shadow-sm rounded-4 border-0 h-100">
+        <div class="card-body">
+          <span class="text-muted small d-block">Saídas realizadas</span>
+          <h4 class="text-dark mt-2 mb-0">{{ resumo.saidas_realizadas|currencybr }}</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card info status-info shadow-sm rounded-4 border-0 h-100">
+        <div class="card-body">
+          <span class="text-muted small d-block">Saldo realizado no recorte</span>
+          <h4 class="text-dark mt-2 mb-0">{{ resumo.saldo_realizado|currencybr }}</h4>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card info status-warning shadow-sm rounded-4 border-0 h-100">
+        <div class="card-body">
+          <span class="text-muted small d-block">Pendente a entrar</span>
+          <h4 class="text-dark mt-2 mb-0">{{ resumo.pendente_entrar|currencybr }}</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card info status-warning shadow-sm rounded-4 border-0 h-100">
+        <div class="card-body">
+          <span class="text-muted small d-block">Pendente a sair</span>
+          <h4 class="text-dark mt-2 mb-0">{{ resumo.pendente_sair|currencybr }}</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card info status-primary shadow-sm rounded-4 border-0 h-100">
+        <div class="card-body">
+          <span class="text-muted small d-block">Saldo previsto no recorte</span>
+          <h4 class="text-dark mt-2 mb-0">{{ resumo.saldo_previsto|currencybr }}</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card info {% if resumo.diferenca_previsto_realizado < 0 %}status-danger{% else %}status-secondary{% endif %} shadow-sm rounded-4 border-0 h-100">
+        <div class="card-body">
+          <span class="text-muted small d-block">Diferença pendente</span>
+          <h4 class="text-dark mt-2 mb-0">{{ resumo.diferenca_previsto_realizado|currencybr }}</h4>
+          <div class="small text-muted mt-2">{{ resumo.total_pendentes }} pendente(s) | {{ resumo.total_realizados }} realizado(s)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm rounded-4 border-0 mb-4">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-lg-6">
+          <div class="small text-muted">Banco analisado</div>
+          <div class="fw-semibold fs-5">{{ banco_selecionado.nome if banco_selecionado else 'Todos os bancos Agro' }}</div>
+          <div class="text-muted small">
+            {{ banco_selecionado.banco_nome if banco_selecionado else 'Visão consolidada de todos os bancos cadastrados.' }}
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="small text-muted">Saldos cadastrados no sistema</div>
+          <div class="fw-semibold">Saldo atual: {{ resumo.saldo_atual_cadastrado|currencybr }}</div>
+          <div class="fw-semibold">Saldo previsto: {{ resumo.saldo_previsto_cadastrado|currencybr }}</div>
+          <div class="text-muted small mt-1">Esses valores seguem o saldo acumulado do cadastro do banco, fora do recorte filtrado.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm rounded-4 mb-4 border-0">
+    <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center listing-filter-header"
+         data-bs-toggle="collapse"
+         data-bs-target="#collapseFiltrosConciliacaoAgro"
+         aria-expanded="{{ 'true' if (filters.q or filters.banco_agro_id or filters.mes or filters.ano or filters.conciliacao_status or filters.movimento) else 'false' }}">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-funnel-fill text-primary"></i>
+        <span class="text-dark">Filtros</span>
+        {% if filters.q or filters.banco_agro_id or filters.mes or filters.ano or filters.conciliacao_status or filters.movimento %}
+          <span class="badge bg-danger rounded-circle p-1 listing-filter-dot"></span>
+        {% endif %}
+      </div>
+      <i class="bi bi-chevron-down text-muted"></i>
+    </div>
+
+    <div class="collapse {% if filters.q or filters.banco_agro_id or filters.mes or filters.ano or filters.conciliacao_status or filters.movimento %}show{% endif %}" id="collapseFiltrosConciliacaoAgro">
+      <div class="card-body pt-0 listing-filter-body">
+        <form method="GET" action="{{ url_for('main.agro_bancos_conciliacao') }}">
+          <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+              <label class="small text-muted mb-1">Banco</label>
+              <select name="banco_agro_id" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for banco in bancos %}
+                  <option value="{{ banco.id }}" {% if filters.banco_agro_id == banco.id %}selected{% endif %}>{{ banco.nome }} - {{ banco.banco_nome }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="small text-muted mb-1">Busca geral</label>
+              <input type="text" class="form-control form-control-sm" name="q" value="{{ filters.q }}" placeholder="Cliente, favorecido, contrato, doc...">
+            </div>
+            <div class="col-md-2">
+              <label class="small text-muted mb-1">Situação</label>
+              <select name="conciliacao_status" class="form-select form-select-sm">
+                <option value="">Todas</option>
+                {% for status_value in conciliacao_status_options %}
+                  <option value="{{ status_value }}" {% if filters.conciliacao_status == status_value %}selected{% endif %}>{{ status_value }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-2">
+              <label class="small text-muted mb-1">Movimento</label>
+              <select name="movimento" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for movimento_value in movimento_options %}
+                  <option value="{{ movimento_value }}" {% if filters.movimento == movimento_value %}selected{% endif %}>{{ movimento_value }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-1">
+              <label class="small text-muted mb-1">Mês</label>
+              <input type="number" min="1" max="12" class="form-control form-control-sm" name="mes" value="{{ filters.mes or '' }}">
+            </div>
+            <div class="col-md-1">
+              <label class="small text-muted mb-1">Ano</label>
+              <input type="number" min="2024" max="2100" class="form-control form-control-sm" name="ano" value="{{ filters.ano or '' }}">
+            </div>
+            <div class="col-12 listing-filter-actions">
+              <button type="submit" class="btn btn-primary btn-sm">
+                <i class="bi bi-funnel"></i> Filtrar
+              </button>
+              {% if filters.q or filters.banco_agro_id or filters.mes or filters.ano or filters.conciliacao_status or filters.movimento %}
+                <a href="{{ url_for('main.agro_bancos_conciliacao') }}" class="btn btn-outline-secondary btn-sm">
+                  <i class="bi bi-x-lg"></i> Limpar
+                </a>
+              {% endif %}
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm rounded-4 border-0 overflow-hidden">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Origem</th>
+              <th>Pessoa / referência</th>
+              <th>Datas</th>
+              <th>Movimento</th>
+              <th>Valor</th>
+              <th>Situação</th>
+              {% if is_editable %}
+                <th>Ações</th>
+              {% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in lancamentos %}
+              <tr>
+                <td>
+                  <div class="fw-semibold">{{ item.origem }}</div>
+                  <div class="text-muted small">{{ item.detalhe or '-' }}</div>
+                </td>
+                <td>
+                  <div class="fw-bold">{{ item.titulo }}</div>
+                  <div class="text-muted small">{{ item.descricao or '-' }}</div>
+                  <div class="text-muted small">Doc / Ref: {{ item.documento or '-' }}</div>
+                </td>
+                <td>
+                  <div class="text-muted small">Previsto: {{ item.previsto_em.strftime('%d/%m/%Y') if item.previsto_em else '-' }}</div>
+                  <div class="text-muted small">Realizado: {{ item.realizado_em.strftime('%d/%m/%Y') if item.realizado_em else '-' }}</div>
+                </td>
+                <td>
+                  {% if item.movimento == 'ENTRADA' %}
+                    <span class="badge bg-success-subtle text-success border border-success-subtle">ENTRADA</span>
+                  {% else %}
+                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle">SAÍDA</span>
+                  {% endif %}
+                </td>
+                <td class="fw-semibold {% if item.movimento == 'ENTRADA' %}text-success{% else %}text-danger{% endif %}">
+                  {{ item.valor|currencybr }}
+                </td>
+                <td>
+                  {% if item.cancelado %}
+                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">CANCELADO</span>
+                  {% elif item.realizado %}
+                    <span class="badge bg-success-subtle text-success border border-success-subtle">REALIZADO</span>
+                  {% else %}
+                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle">PENDENTE</span>
+                  {% endif %}
+                  <div class="text-muted small mt-1">{{ item.status }}</div>
+                </td>
+                {% if is_editable %}
+                  <td>
+                    <a href="{{ item.edit_url }}" class="btn btn-outline-primary btn-sm">
+                      <i class="bi bi-pencil-square"></i>
+                    </a>
+                  </td>
+                {% endif %}
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="{{ 7 if is_editable else 6 }}" class="text-center py-5 text-muted">
+                  Nenhum lançamento encontrado para a conciliação.
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
