@@ -1197,6 +1197,9 @@ class FinanceiroAgroSaida(db.Model):
     data_emissao = db.Column(db.Date, index=True)
     data_vencimento = db.Column(db.Date, nullable=False, index=True)
     data_pagamento = db.Column(db.Date, index=True)
+    grupo_lancamento = db.Column(db.String(36), index=True)
+    parcela_numero = db.Column(db.Integer, nullable=False, default=1)
+    parcela_total = db.Column(db.Integer, nullable=False, default=1)
 
     valor = db.Column(db.Numeric(12, 2), nullable=False, default=0)
 
@@ -1267,6 +1270,9 @@ class FinanceiroAgroEntrada(db.Model):
     data_emissao = db.Column(db.Date, index=True)
     data_vencimento = db.Column(db.Date, nullable=False, index=True)
     data_recebimento = db.Column(db.Date, index=True)
+    grupo_lancamento = db.Column(db.String(36), index=True)
+    parcela_numero = db.Column(db.Integer, nullable=False, default=1)
+    parcela_total = db.Column(db.Integer, nullable=False, default=1)
 
     valor = db.Column(db.Numeric(12, 2), nullable=False, default=0)
 

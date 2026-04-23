@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/listing_pattern.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 listing-page">
+  <div class="listing-header mb-4">
+    <div>
+      <h2 class="text-dark m-0">
+        <i class="bi bi-cash-stack me-2 text-success"></i> Contas a Receber
+      </h2>
+      <p class="text-muted small mb-0">
+        Recebiveis de contrato e entradas manuais em uma unica visao.
+        {% if filters.q or filters.situacao or filters.origem or filters.mes or filters.ano %}
+          <span class="badge bg-filter-custom ms-2">Filtrado</span>
+        {% endif %}
+      </p>
+    </div>
+
+    <div class="listing-actions">
+      <a href="{{ url_for('main.agro_financeiro_contas') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+      {% if is_editable %}
+        <a href="{{ url_for('main.agro_financeiro_novo') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
+          <i class="bi bi-plus-circle"></i> Novo recebivel
+        </a>
+        <a href="{{ url_for('main.agro_financeiro_entrada_novo') }}" class="btn btn-success d-flex align-items-center gap-2">
+          <i class="bi bi-plus-circle-fill"></i> Nova entrada
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="d-flex flex-wrap gap-2 mb-4">
+    <a href="{{ url_for('main.agro_contas_receber_listar') }}" class="btn {% if not filters.origem %}btn-success{% else %}btn-outline-success{% endif %} btn-sm d-flex align-items-center gap-2">
+      <i class="bi bi-grid"></i> Todas as contas
+    </a>
+    <a href="{{ url_for('main.agro_contas_receber_listar', origem='recebivel') }}" class="btn {% if filters.origem == 'recebivel' %}btn-primary{% else %}btn-outline-primary{% endif %} btn-sm d-flex align-items-center gap-2">
+      <i class="bi bi-receipt-cutoff"></i> So recebiveis
+    </a>
+    <a href="{{ url_for('main.agro_contas_receber_listar', origem='entrada') }}" class="btn {% if filters.origem == 'entrada' %}btn-success{% else %}btn-outline-success{% endif %} btn-sm d-flex align-items-center gap-2">
+      <i class="bi bi-box-arrow-in-down-right"></i> So entradas manuais
+    </a>
+  </div>
+
+  {% if resumo.total_atrasados %}
+    <div class="alert alert-warning border-0 shadow-sm rounded-4 mb-4">
+      Existem {{ resumo.total_atrasados }} conta(s) a receber em atraso, somando {{ resumo.total_atrasado|currencybr }}.
+    </div>
+  {% endif %}
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card info status-primary shadow-sm rounded-4 border-0 h-100">
+        <div class="card-body">
+          <span class="text-muted small d-block">Previsto</span>
+          <h4 class="text-dark mt-2 mb-0">{{ resumo.total_previsto|currencybr }}</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card info status-success shadow-sm rounded-4 border-0 h-100">
+        <div class="card-body">
+          <span class="text-muted small d-block">Recebido</span>
+          <h4 class="text-dark mt-2 mb-0">{{ resumo.total_realizado|currencybr }}</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card info status-warning shadow-sm rounded-4 border-0 h-100">
+        <div class="card-body">
+          <span class="text-muted small d-block">Pendente</span>
+          <h4 class="text-dark mt-2 mb-0">{{ resumo.total_pendente|currencybr }}</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card info {% if resumo.total_atrasados %}status-danger{% else %}status-secondary{% endif %} shadow-sm rounded-4 border-0 h-100">
+        <div class="card-body">
+          <span class="text-muted small d-block">{% if resumo.total_atrasados %}Em atraso{% else %}Cancelado{% endif %}</span>
+          <h4 class="text-dark mt-2 mb-0">{% if resumo.total_atrasados %}{{ resumo.total_atrasado|currencybr }}{% else %}{{ resumo.total_cancelado|currencybr }}{% endif %}</h4>
+          {% if resumo.total_atrasados %}
+            <div class="small text-muted mt-1">{{ resumo.total_atrasados }} vencida(s)</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm rounded-4 mb-4 border-0">
+    <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center listing-filter-header"
+         data-bs-toggle="collapse"
+         data-bs-target="#collapseFiltrosContasReceber"
+         aria-expanded="{{ 'true' if (filters.q or filters.situacao or filters.origem or filters.mes or filters.ano) else 'false' }}">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-funnel-fill text-primary"></i>
+        <span class="text-dark">Filtros</span>
+        {% if filters.q or filters.situacao or filters.origem or filters.mes or filters.ano %}
+          <span class="badge bg-danger rounded-circle p-1 listing-filter-dot"></span>
+        {% endif %}
+      </div>
+      <i class="bi bi-chevron-down text-muted"></i>
+    </div>
+
+    <div class="collapse {% if filters.q or filters.situacao or filters.origem or filters.mes or filters.ano %}show{% endif %}" id="collapseFiltrosContasReceber">
+      <div class="card-body pt-0 listing-filter-body">
+        <form method="GET" action="{{ url_for('main.agro_contas_receber_listar') }}">
+          <div class="row g-2 align-items-end">
+            <div class="col-md-4">
+              <label class="small text-muted mb-1">Busca geral</label>
+              <input type="text" class="form-control form-control-sm" name="q" value="{{ filters.q }}" placeholder="Cliente, descricao, doc...">
+            </div>
+            <div class="col-md-3">
+              <label class="small text-muted mb-1">Origem</label>
+              <select name="origem" class="form-select form-select-sm">
+                <option value="">Todas</option>
+                {% for value, label in origem_options %}
+                  <option value="{{ value }}" {% if filters.origem == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-2">
+              <label class="small text-muted mb-1">Situacao</label>
+              <select name="situacao" class="form-select form-select-sm">
+                <option value="">Todas</option>
+                {% for status_value in situacao_options %}
+                  <option value="{{ status_value }}" {% if filters.situacao == status_value %}selected{% endif %}>{{ status_value }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-1">
+              <label class="small text-muted mb-1">Mes</label>
+              <input type="number" min="1" max="12" class="form-control form-control-sm" name="mes" value="{{ filters.mes or '' }}">
+            </div>
+            <div class="col-md-2">
+              <label class="small text-muted mb-1">Ano</label>
+              <input type="number" min="2024" max="2100" class="form-control form-control-sm" name="ano" value="{{ filters.ano or '' }}">
+            </div>
+            <div class="col-12 listing-filter-actions">
+              <button type="submit" class="btn btn-success btn-sm">
+                <i class="bi bi-funnel"></i> Filtrar
+              </button>
+              {% if filters.q or filters.situacao or filters.origem or filters.mes or filters.ano %}
+                <a href="{{ url_for('main.agro_contas_receber_listar') }}" class="btn btn-outline-secondary btn-sm">
+                  <i class="bi bi-x-lg"></i> Limpar
+                </a>
+              {% endif %}
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm rounded-4 border-0 overflow-hidden">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Origem</th>
+              <th>Pessoa / referencia</th>
+              <th>Datas</th>
+              <th>Valor</th>
+              <th>Situacao</th>
+              {% if is_editable %}
+                <th>Acoes</th>
+              {% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in lancamentos %}
+              <tr>
+                <td>
+                  <div class="fw-semibold">{{ item.origem }}</div>
+                  <div class="text-muted small">{{ item.detalhe or '-' }}</div>
+                </td>
+                <td>
+                  <div class="fw-bold">{{ item.titulo }}</div>
+                  <div class="text-muted small">{{ item.descricao or '-' }}</div>
+                  <div class="text-muted small">Doc / Ref: {{ item.documento or '-' }}</div>
+                </td>
+                <td>
+                  <div class="text-muted small">Previsto: {{ item.previsto_em.strftime('%d/%m/%Y') if item.previsto_em else '-' }}</div>
+                  <div class="text-muted small">Recebido: {{ item.realizado_em.strftime('%d/%m/%Y') if item.realizado_em else '-' }}</div>
+                </td>
+                <td class="fw-semibold text-success">{{ item.valor|currencybr }}</td>
+                <td>
+                  {% if item.cancelado %}
+                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">CANCELADO</span>
+                  {% elif item.realizado %}
+                    <span class="badge bg-success-subtle text-success border border-success-subtle">RECEBIDO</span>
+                  {% elif item.atrasado %}
+                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle">ATRASADO</span>
+                  {% else %}
+                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle">PENDENTE</span>
+                  {% endif %}
+                  <div class="text-muted small mt-1">{{ item.display_status }}</div>
+                </td>
+                {% if is_editable %}
+                  <td>
+                    <a href="{{ item.edit_url }}" class="btn btn-outline-primary btn-sm">
+                      <i class="bi bi-pencil-square"></i>
+                    </a>
+                  </td>
+                {% endif %}
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="{{ 6 if is_editable else 5 }}" class="text-center py-5 text-muted">
+                  Nenhuma conta a receber encontrada.
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

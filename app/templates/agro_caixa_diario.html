@@ -57,10 +57,10 @@
       <a href="{{ url_for('main.agro_financeiro_listar') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
         <i class="bi bi-cash-coin"></i> Recebiveis
       </a>
-      <a href="{{ url_for('main.agro_financeiro_entrada_listar') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.agro_contas_receber_listar', origem='entrada') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
         <i class="bi bi-arrow-down-circle"></i> Entradas
       </a>
-      <a href="{{ url_for('main.agro_financeiro_saida_listar') }}" class="btn btn-outline-danger d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.agro_contas_pagar_listar') }}" class="btn btn-outline-danger d-flex align-items-center gap-2">
         <i class="bi bi-arrow-up-circle"></i> Saidas
       </a>
     </div>

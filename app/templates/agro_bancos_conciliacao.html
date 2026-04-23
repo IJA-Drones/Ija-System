@@ -244,16 +244,18 @@
                 <td class="fw-semibold {% if item.movimento == 'ENTRADA' %}text-success{% else %}text-danger{% endif %}">
                   {{ item.valor|currencybr }}
                 </td>
-                <td>
-                  {% if item.cancelado %}
-                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">CANCELADO</span>
-                  {% elif item.realizado %}
-                    <span class="badge bg-success-subtle text-success border border-success-subtle">REALIZADO</span>
-                  {% else %}
-                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle">PENDENTE</span>
-                  {% endif %}
-                  <div class="text-muted small mt-1">{{ item.status }}</div>
-                </td>
+                  <td>
+                    {% if item.cancelado %}
+                      <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">CANCELADO</span>
+                    {% elif item.realizado %}
+                      <span class="badge bg-success-subtle text-success border border-success-subtle">REALIZADO</span>
+                    {% elif item.atrasado %}
+                      <span class="badge bg-danger-subtle text-danger border border-danger-subtle">ATRASADO</span>
+                    {% else %}
+                      <span class="badge bg-warning-subtle text-warning border border-warning-subtle">PENDENTE</span>
+                    {% endif %}
+                    <div class="text-muted small mt-1">{{ item.display_status }}</div>
+                  </td>
                 {% if is_editable %}
                   <td>
                     <a href="{{ item.edit_url }}" class="btn btn-outline-primary btn-sm">

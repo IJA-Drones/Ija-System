@@ -353,6 +353,9 @@
           {% if (is_admin_panel_user or is_financeiro_agro_user) and is_agro_context %}
           {% set agro_financeiro_menu_active = request.endpoint in [
             'main.agro_caixa_diario',
+            'main.agro_financeiro_contas',
+            'main.agro_contas_receber_listar',
+            'main.agro_contas_pagar_listar',
             'main.agro_financeiro_listar',
             'main.agro_financeiro_novo',
             'main.agro_financeiro_editar',
@@ -411,6 +414,30 @@
               <ul class="nav flex-column sub-nav">
                 <li class="nav-item">
                   <a
+                    class="nav-link sub-link {% if request.endpoint in ['main.agro_financeiro_contas'] %}active{% endif %}"
+                    href="{{ url_for('main.agro_financeiro_contas') }}"
+                  >
+                    <i class="bi bi-wallet2 me-2"></i><span>Contas</span>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a
+                    class="nav-link sub-link {% if request.endpoint in ['main.agro_contas_receber_listar'] %}active{% endif %}"
+                    href="{{ url_for('main.agro_contas_receber_listar') }}"
+                  >
+                    <i class="bi bi-cash-stack me-2"></i><span>Contas a Receber</span>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a
+                    class="nav-link sub-link {% if request.endpoint in ['main.agro_contas_pagar_listar'] %}active{% endif %}"
+                    href="{{ url_for('main.agro_contas_pagar_listar') }}"
+                  >
+                    <i class="bi bi-credit-card-2-front me-2"></i><span>Contas a Pagar</span>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a
                     class="nav-link sub-link {% if request.endpoint in ['main.agro_caixa_diario'] %}active{% endif %}"
                     href="{{ url_for('main.agro_caixa_diario') }}"
                   >
@@ -443,18 +470,18 @@
                 </li>
                 <li class="nav-item">
                   <a
-                    class="nav-link sub-link {% if request.endpoint in ['main.agro_financeiro_entrada_listar', 'main.agro_financeiro_entrada_novo', 'main.agro_financeiro_entrada_editar'] %}active{% endif %}"
-                    href="{{ url_for('main.agro_financeiro_entrada_listar') }}"
+                    class="nav-link sub-link {% if request.endpoint in ['main.agro_financeiro_entrada_novo', 'main.agro_financeiro_entrada_editar'] %}active{% endif %}"
+                    href="{{ url_for('main.agro_financeiro_entrada_novo') }}"
                   >
-                    <i class="bi bi-box-arrow-in-down-right me-2"></i><span>Entradas Manuais</span>
+                    <i class="bi bi-plus-circle me-2"></i><span>Nova Entrada Manual</span>
                   </a>
                 </li>
                 <li class="nav-item">
                   <a
-                    class="nav-link sub-link {% if request.endpoint in ['main.agro_financeiro_saida_listar', 'main.agro_financeiro_saida_novo', 'main.agro_financeiro_saida_editar'] %}active{% endif %}"
-                    href="{{ url_for('main.agro_financeiro_saida_listar') }}"
+                    class="nav-link sub-link {% if request.endpoint in ['main.agro_financeiro_saida_novo', 'main.agro_financeiro_saida_editar'] %}active{% endif %}"
+                    href="{{ url_for('main.agro_financeiro_saida_novo') }}"
                   >
-                    <i class="bi bi-box-arrow-up-right me-2"></i><span>Saidas Manuais</span>
+                    <i class="bi bi-plus-circle me-2"></i><span>Nova Saida Manual</span>
                   </a>
                 </li>
                 {% if is_financeiro_agro_admin %}

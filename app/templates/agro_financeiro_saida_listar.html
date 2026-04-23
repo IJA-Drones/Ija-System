@@ -102,11 +102,11 @@
               </select>
             </div>
             <div class="col-md-3">
-              <label class="small text-muted mb-1">Status:</label>
+                <label class="small text-muted mb-1">Status:</label>
               <select name="status" class="form-select form-select-sm">
                 <option value="">Todos</option>
                 {% for status_value in status_options %}
-                  <option value="{{ status_value }}" {% if filters.status == status_value %}selected{% endif %}>{{ status_value }}</option>
+                  <option value="{{ status_value }}" {% if filters.status == status_value %}selected{% endif %}>{{ 'ATRASADO' if status_value == 'VENCIDO' else status_value }}</option>
                 {% endfor %}
               </select>
             </div>
@@ -150,6 +150,9 @@
                 <td>
                   <div class="fw-bold">{{ item.favorecido }}</div>
                   <div class="text-muted small">{{ item.descricao }}</div>
+                  {% if item.parcela_total > 1 %}
+                    <div class="text-muted small">Parcela {{ item.parcela_numero }}/{{ item.parcela_total }}</div>
+                  {% endif %}
                   <div class="text-muted small">NF / Doc: {{ item.documento_referencia or '-' }}</div>
                   {% if item.detalhamento_imposto %}<div class="text-muted small">Fiscal: {{ item.detalhamento_imposto }}</div>{% endif %}
                 </td>
@@ -165,7 +168,18 @@
                   <div class="text-muted small">Pagamento: {{ item.data_pagamento.strftime('%d/%m/%Y') if item.data_pagamento else '-' }}</div>
                 </td>
                 <td class="fw-semibold text-danger">{{ item.valor|currencybr }}</td>
-                <td><span class="badge bg-danger-subtle text-danger border border-danger-subtle">{{ item.status }}</span></td>
+                <td>
+                  {% if item.status_resolvido == 'CANCELADO' %}
+                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">CANCELADO</span>
+                  {% elif item.status_resolvido == 'PAGO' %}
+                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle">PAGO</span>
+                  {% elif item.atrasado %}
+                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle">ATRASADO</span>
+                  {% else %}
+                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle">PENDENTE</span>
+                  {% endif %}
+                  <div class="text-muted small mt-1">{{ item.status_exibicao }}</div>
+                </td>
                 <td>
                   <div class="d-flex gap-2">
                     {% if is_editable %}

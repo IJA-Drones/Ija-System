@@ -442,6 +442,7 @@ def build_financeiro_agro_entrada_query(
         FinanceiroAgroEntrada.data_recebimento.asc().nullslast(),
         FinanceiroAgroEntrada.data_lancamento.asc().nullslast(),
         FinanceiroAgroEntrada.data_vencimento.asc(),
+        FinanceiroAgroEntrada.parcela_numero.asc(),
         FinanceiroAgroEntrada.id.desc(),
     )
 
@@ -477,7 +478,33 @@ def build_financeiro_agro_saida_query(
         )
 
     if status:
-        query = query.filter(FinanceiroAgroSaida.status == status)
+        today = datetime.now().date()
+        if status == FinanceiroAgroSaida.STATUS_CANCELADO:
+            query = query.filter(FinanceiroAgroSaida.status == FinanceiroAgroSaida.STATUS_CANCELADO)
+        elif status == FinanceiroAgroSaida.STATUS_PAGO:
+            query = query.filter(
+                FinanceiroAgroSaida.status != FinanceiroAgroSaida.STATUS_CANCELADO,
+                or_(
+                    FinanceiroAgroSaida.data_pagamento.isnot(None),
+                    FinanceiroAgroSaida.status == FinanceiroAgroSaida.STATUS_PAGO,
+                ),
+            )
+        elif status == FinanceiroAgroSaida.STATUS_VENCIDO:
+            query = query.filter(
+                FinanceiroAgroSaida.status != FinanceiroAgroSaida.STATUS_CANCELADO,
+                FinanceiroAgroSaida.data_pagamento.is_(None),
+                FinanceiroAgroSaida.status != FinanceiroAgroSaida.STATUS_PAGO,
+                FinanceiroAgroSaida.data_vencimento < today,
+            )
+        elif status == FinanceiroAgroSaida.STATUS_PENDENTE:
+            query = query.filter(
+                FinanceiroAgroSaida.status != FinanceiroAgroSaida.STATUS_CANCELADO,
+                FinanceiroAgroSaida.data_pagamento.is_(None),
+                FinanceiroAgroSaida.status != FinanceiroAgroSaida.STATUS_PAGO,
+                FinanceiroAgroSaida.data_vencimento >= today,
+            )
+        else:
+            query = query.filter(FinanceiroAgroSaida.status == status)
 
     if tipo_saida:
         query = query.filter(FinanceiroAgroSaida.tipo_saida == tipo_saida)
@@ -492,6 +519,7 @@ def build_financeiro_agro_saida_query(
         FinanceiroAgroSaida.data_pagamento.asc().nullslast(),
         FinanceiroAgroSaida.data_lancamento.asc().nullslast(),
         FinanceiroAgroSaida.data_vencimento.asc(),
+        FinanceiroAgroSaida.parcela_numero.asc(),
         FinanceiroAgroSaida.id.desc(),
     )
 
