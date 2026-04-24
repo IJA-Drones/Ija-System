@@ -32,6 +32,7 @@
       {% else %}
       <div class="list-group list-group-flush">
         {% for n in itens %}
+        {% set is_alerta_automatico = (n.titulo or '').lower().startswith('alerta automatico:') %}
         <div
           class="list-group-item d-flex justify-content-between align-items-start {% if not n.lida_em %}list-group-item-light-custom{% endif %}"
         >
@@ -42,14 +43,18 @@
             <div class="me-3">
               <div class="d-flex align-items-center mb-1">
                 <i
-                  class="bi bi-calendar-event-fill me-2 text-primary"
+                  class="bi {% if is_alerta_automatico %}bi-exclamation-triangle-fill text-warning{% else %}bi-calendar-event-fill text-primary{% endif %} me-2"
                   style="font-size: 1.1rem"
                 ></i>
 
                 <div
                   class="fw-bold {% if not n.lida_em %}text-dark{% else %}text-muted{% endif %}"
                 >
-                  {{ n.titulo }} {% if not n.lida_em %}
+                  {{ n.titulo }}
+                  {% if is_alerta_automatico %}
+                  <span class="badge bg-warning text-dark ms-2">Automatico</span>
+                  {% endif %}
+                  {% if not n.lida_em %}
                   <span class="badge bg-danger ms-2">Nova</span>
                   {% endif %}
                 </div>
