@@ -641,7 +641,7 @@ def _sincronizar_alerta_baterias_ciclos(user, usuario_id):
         _sincronizar_notificacao_por_link(
             usuario_id,
             link=link,
-            titulo="Alerta automatico: baterias com ciclo alto",
+            titulo="Alerta automático: baterias com ciclo alto",
             mensagem=None,
         )
         return
@@ -658,17 +658,17 @@ def _sincronizar_alerta_baterias_ciclos(user, usuario_id):
         ]
     )
     mensagem = (
-        f"{len(baterias)} bateria(s) acima do limite de atencao "
+        f"{len(baterias)} bateria(s) acima do limite de atenção "
         f"(>= {AUTO_ALERT_BATTERY_WARNING_CYCLES} ciclos)"
     )
     if qtd_criticas:
-        mensagem += f"; {qtd_criticas} em nivel critico (>= {AUTO_ALERT_BATTERY_CRITICAL_CYCLES})"
+        mensagem += f"; {qtd_criticas} em nível crítico (>= {AUTO_ALERT_BATTERY_CRITICAL_CYCLES})"
     mensagem += f": {preview}."
 
     _sincronizar_notificacao_por_link(
         usuario_id,
         link=link,
-        titulo="Alerta automatico: baterias com ciclo alto",
+        titulo="Alerta automático: baterias com ciclo alto",
         mensagem=mensagem,
     )
 
@@ -692,7 +692,7 @@ def _sincronizar_alerta_revisoes_veiculos(user, usuario_id):
         _sincronizar_notificacao_por_link(
             usuario_id,
             link=link,
-            titulo="Alerta automatico: revisoes de veiculo",
+            titulo="Alerta automático: revisões de veículo",
             mensagem=None,
         )
         return
@@ -700,17 +700,17 @@ def _sincronizar_alerta_revisoes_veiculos(user, usuario_id):
     qtd_vencidos = sum(1 for item in veiculos if (item.km_restante_revisao or 0) < 0)
     preview = _build_preview_text([_build_veiculo_review_label(item) for item in veiculos])
     mensagem = (
-        f"{len(veiculos)} veiculo(s) com revisao vencida ou proxima "
-        f"(ate {AUTO_ALERT_VEHICLE_REVIEW_WARNING_KM:.0f} km)"
+        f"{len(veiculos)} veículo(s) com revisão vencida ou próxima "
+        f"(até {AUTO_ALERT_VEHICLE_REVIEW_WARNING_KM:.0f} km)"
     )
     if qtd_vencidos:
-        mensagem += f"; {qtd_vencidos} ja vencido(s)"
+        mensagem += f"; {qtd_vencidos} já vencido(s)"
     mensagem += f": {preview}."
 
     _sincronizar_notificacao_por_link(
         usuario_id,
         link=link,
-        titulo="Alerta automatico: revisoes de veiculo",
+        titulo="Alerta automático: revisões de veículo",
         mensagem=mensagem,
     )
 
@@ -723,24 +723,30 @@ def _sincronizar_alerta_drones_manutencao(user, usuario_id):
         .all()
     )
 
-    link = url_for("main.equipamentos_manutencao", alert="drones")
-    if not drones:
+    base_link = url_for("main.equipamentos_manutencao", alert="drones")
+    active_links = set()
+
+    for drone in drones:
+        label = _drone_label(drone)
+        link = url_for("main.equipamentos_manutencao", alert="drones", item=drone.id)
+        active_links.add(link)
         _sincronizar_notificacao_por_link(
             usuario_id,
             link=link,
-            titulo="Alerta automatico: drones em manutencao",
-            mensagem=None,
+            titulo=f"Alerta automático: drone em manutenção - {label}",
+            mensagem=f"{label} indisponível para operação por manutenção.",
         )
-        return
 
-    preview = _build_preview_text([_drone_label(drone) for drone in drones])
-    mensagem = f"{len(drones)} drone(s) indisponivel(is) para operacao por manutencao: {preview}."
-
-    _sincronizar_notificacao_por_link(
+    _apagar_notificacoes_por_prefixo_link(
         usuario_id,
-        link=link,
-        titulo="Alerta automatico: drones em manutencao",
-        mensagem=mensagem,
+        link_prefix=base_link,
+        keep_links=active_links,
+        allowed_title_prefixes=(
+            "Alerta automático: drones em manutenção",
+            "Alerta automático: drone em manutenção",
+            "Alerta automatico: drones em manutencao",
+            "Alerta automatico: drone em manutencao",
+        ),
     )
 
 
@@ -760,7 +766,7 @@ def _sincronizar_alerta_manutencao_desatualizada_drones(user, usuario_id):
         _sincronizar_notificacao_por_link(
             usuario_id,
             link=link,
-            titulo="Alerta automatico: manutencao de drones desatualizada",
+            titulo="Alerta automático: manutenção de drones desatualizada",
             mensagem=None,
         )
         return
@@ -772,14 +778,14 @@ def _sincronizar_alerta_manutencao_desatualizada_drones(user, usuario_id):
         ]
     )
     mensagem = (
-        f"{len(drones)} drone(s) com ultima manutencao acima de "
+        f"{len(drones)} drone(s) com última manutenção acima de "
         f"{AUTO_ALERT_DRONE_MAINTENANCE_STALE_DAYS} dias: {preview}."
     )
 
     _sincronizar_notificacao_por_link(
         usuario_id,
         link=link,
-        titulo="Alerta automatico: manutencao de drones desatualizada",
+        titulo="Alerta automático: manutenção de drones desatualizada",
         mensagem=mensagem,
     )
 
@@ -826,6 +832,43 @@ def _sincronizar_notificacao_por_link(usuario_id, *, link, titulo, mensagem):
             notificacao.apagada_em = agora
 
 
+def _apagar_notificacoes_por_prefixo_link(
+    usuario_id,
+    *,
+    link_prefix,
+    keep_links=None,
+    allowed_title_prefixes=None,
+):
+    if not usuario_id or not link_prefix:
+        return
+
+    keep_links = {link for link in (keep_links or set()) if link}
+    title_prefixes = tuple(
+        (prefix or "").strip().lower()
+        for prefix in (allowed_title_prefixes or ())
+        if (prefix or "").strip()
+    )
+    existentes = (
+        Notificacao.query
+        .filter(
+            Notificacao.usuario_id == usuario_id,
+            Notificacao.link.isnot(None),
+            Notificacao.link.like(f"{link_prefix}%"),
+        )
+        .all()
+    )
+
+    agora = agora_brasilia_naive()
+    for notificacao in existentes:
+        if notificacao.link in keep_links:
+            continue
+        titulo = (notificacao.titulo or "").strip().lower()
+        if title_prefixes and not any(titulo.startswith(prefix) for prefix in title_prefixes):
+            continue
+        if notificacao.apagada_em is None:
+            notificacao.apagada_em = agora
+
+
 def _build_preview_text(values):
     cleaned = [str(value).strip() for value in values if str(value or "").strip()]
     if not cleaned:
@@ -857,12 +900,12 @@ def _days_since(value):
 
 
 def _build_veiculo_review_label(veiculo):
-    placa = (veiculo.placa or veiculo.renomacao or veiculo.modelo or "").strip() or f"Veiculo {veiculo.id}"
+    placa = (veiculo.placa or veiculo.renomacao or veiculo.modelo or "").strip() or f"Veículo {veiculo.id}"
     faltante = veiculo.km_restante_revisao
     if faltante is None:
         return placa
     if faltante < 0:
-        return f"{placa} (vencido ha {abs(int(faltante))} km)"
+        return f"{placa} (vencido há {abs(int(faltante))} km)"
     return f"{placa} (faltam {int(faltante)} km)"
 
 
