@@ -363,6 +363,7 @@ def build_financeiro_agro_query(
 ):
     query = FinanceiroAgro.query.options(
         joinedload(FinanceiroAgro.contrato).joinedload(ContratoAgro.orcamento),
+        joinedload(FinanceiroAgro.contrato).selectinload(ContratoAgro.ordens_servico),
         joinedload(FinanceiroAgro.ordem_servico),
         joinedload(FinanceiroAgro.cliente),
         joinedload(FinanceiroAgro.banco_agro),
