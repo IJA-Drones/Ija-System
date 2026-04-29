@@ -342,10 +342,20 @@
                 </td>
                 {% if is_editable %}
                   <td>
-                    <a href="{{ item.edit_url }}" class="btn btn-sm btn-success text-white shadow-sm d-inline-flex align-items-center gap-1">
-                      <i class="bi bi-pencil-square"></i>
-                      <span>Editar</span>
-                    </a>
+                    <div class="d-flex flex-wrap gap-2">
+                      {% if item.can_quick_receive %}
+                        <form method="POST" action="{{ item.quick_receive_url }}" class="m-0">
+                          <button type="submit" class="btn btn-sm btn-outline-success shadow-sm d-inline-flex align-items-center gap-1" onclick="return confirm('Confirmar o recebimento desta OS concluida com o valor integral do contrato?');">
+                            <i class="bi bi-cash-coin"></i>
+                            <span>Receber</span>
+                          </button>
+                        </form>
+                      {% endif %}
+                      <a href="{{ item.edit_url }}" class="btn btn-sm btn-success text-white shadow-sm d-inline-flex align-items-center gap-1">
+                        <i class="bi bi-pencil-square"></i>
+                        <span>Editar</span>
+                      </a>
+                    </div>
                   </td>
                 {% endif %}
               </tr>

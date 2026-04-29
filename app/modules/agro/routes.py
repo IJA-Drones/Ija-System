@@ -537,6 +537,15 @@ def _get_financeiro_agro_received_contract_ids(user, *, exclude_lancamento_id=No
     return {contrato_id for contrato_id, in query.all() if contrato_id is not None}
 
 
+def _get_latest_agro_ordem_servico(contrato):
+    if not contrato or not getattr(contrato, "ordens_servico", None):
+        return None
+    return max(
+        contrato.ordens_servico,
+        key=lambda item: (item.data_aplicacao or datetime.min.date(), item.id),
+    )
+
+
 def _build_financeiro_agro_contratos_disponiveis(
     user,
     *,
@@ -1197,6 +1206,8 @@ def _build_agro_conciliacao_item(item):
     realizado = bool(realizado_em) or status == FinanceiroAgro.STATUS_RECEBIDO
     atrasado = status == FinanceiroAgro.STATUS_VENCIDO
     contrato_label = f"Contrato #{item.contrato_agro_id}" if item.contrato_agro_id else "Contrato sem vinculo"
+    ordem_servico = item.ordem_servico or _get_latest_agro_ordem_servico(item.contrato)
+    os_concluida = bool(ordem_servico and ordem_servico.status == OrdemServicoAgro.STATUS_CONCLUIDA)
     return {
         "id": item.id,
         "origem": "Recebivel",
@@ -1217,6 +1228,9 @@ def _build_agro_conciliacao_item(item):
         "cancelado": cancelado,
         "atrasado": atrasado,
         "edit_url": url_for("main.agro_financeiro_editar", lancamento_id=item.id),
+        "can_quick_receive": os_concluida and not cancelado and not realizado,
+        "quick_receive_url": url_for("main.agro_financeiro_receber_os_concluida", lancamento_id=item.id),
+        "ordem_servico_label": getattr(ordem_servico, "identificador_os", None) or "",
     }
 
 
@@ -1724,11 +1738,8 @@ def _validate_financeiro_agro_form(form, contratos, blocked_contrato_ids=None):
         "valor_comissao_cooperativa": valor_comissao_cooperativa,
     }
 
-    if contrato and contrato.ordens_servico:
-        ordem_servico = max(
-            contrato.ordens_servico,
-            key=lambda item: (item.data_aplicacao or datetime.min.date(), item.id),
-        )
+    if contrato:
+        ordem_servico = _get_latest_agro_ordem_servico(contrato)
 
     resolved_status = _resolve_financeiro_agro_status(form["status"], data_vencimento, data_recebimento)
 
@@ -4240,6 +4251,62 @@ def register_routes(bp):
                 lancamento=lancamento,
             ),
         )
+
+    @bp.route("/agro/financeiro/<int:lancamento_id>/receber", methods=["POST"], endpoint="agro_financeiro_receber_os_concluida")
+    @login_required
+    def agro_financeiro_receber_os_concluida(lancamento_id):
+        _require_agro_finance_edit()
+        redirect_response = _enforce_agro_caixa_open_or_redirect("Recebimento de OS concluida")
+        if redirect_response is not None:
+            return redirect_response
+
+        lancamento = _get_financeiro_agro_or_404(lancamento_id)
+        status_atual = _resolve_financeiro_agro_status(
+            lancamento.status,
+            lancamento.data_vencimento,
+            lancamento.data_recebimento,
+        )
+        if status_atual == FinanceiroAgro.STATUS_CANCELADO:
+            flash("Lancamentos cancelados nao podem ser recebidos por este atalho.", "warning")
+            return _redirect_back_to_agro("main.agro_contas_receber_listar")
+        if status_atual == FinanceiroAgro.STATUS_RECEBIDO:
+            flash("Esse recebivel ja esta marcado como recebido.", "info")
+            return _redirect_back_to_agro("main.agro_contas_receber_listar")
+
+        ordem_servico = lancamento.ordem_servico or _get_latest_agro_ordem_servico(lancamento.contrato)
+        if ordem_servico is None or ordem_servico.status != OrdemServicoAgro.STATUS_CONCLUIDA:
+            flash("Esse recebivel so pode ser recebido por aqui quando a OS vinculada estiver concluida.", "warning")
+            return _redirect_back_to_agro("main.agro_contas_receber_listar")
+
+        hoje = datetime.now().date()
+        _competencia_field, competencia = _resolve_financeiro_agro_competencia(
+            lancamento.data_servico_executado or getattr(ordem_servico, "data_aplicacao", None),
+            lancamento.data_vencimento,
+            hoje,
+        )
+        competencia_ano = getattr(competencia, "year", None)
+        competencia_mes = getattr(competencia, "month", None)
+        if not can_user_write_agro_finance_competencia(current_user, competencia_ano, competencia_mes):
+            flash(_agro_finance_lock_message(competencia_ano, competencia_mes), "warning")
+            return _redirect_back_to_agro("main.agro_contas_receber_listar")
+
+        banco_id = lancamento.banco_agro_id
+        valor_integral = FinanceiroAgro._decimal_or_zero(getattr(lancamento.contrato, "valor_total", None))
+        if valor_integral > 0:
+            lancamento.valor_total_contrato = valor_integral
+        if not lancamento.data_servico_executado:
+            lancamento.data_servico_executado = getattr(ordem_servico, "data_aplicacao", None)
+        lancamento.ordem_servico_agro_id = ordem_servico.id
+        lancamento.data_recebimento = hoje
+        lancamento.status = FinanceiroAgro.STATUS_RECEBIDO
+        lancamento.competencia_ano = competencia_ano
+        lancamento.competencia_mes = competencia_mes
+        db.session.flush()
+        recalculate_bancos_agro([banco_id])
+        db.session.commit()
+
+        flash("Recebimento da OS concluida registrado com o valor integral do contrato.", "success")
+        return _redirect_back_to_agro("main.agro_contas_receber_listar")
 
     @bp.route("/agro/financeiro/<int:lancamento_id>/deletar", methods=["POST"], endpoint="agro_financeiro_deletar")
     @login_required
