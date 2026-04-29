@@ -1,6 +1,6 @@
 import json
 import os
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from io import BytesIO
 from zoneinfo import ZoneInfo
 
@@ -12,7 +12,7 @@ from openpyxl.utils import get_column_letter
 from sqlalchemy.orm import joinedload
 
 from app.extensions import db
-from app.models import Equipe, EquipePiloto, Notificacao, Solicitacao, Usuario
+from app.models import Baterias, Drones, Equipe, EquipePiloto, Notificacao, Solicitacao, Usuario, Veiculos
 from app.shared.access import (
     apply_prefeitura_scope,
     apply_regiao_scope,
@@ -30,6 +30,12 @@ AGENDA_ROUTE_STATUSES = (
     "APROVADO COM RECOMENDAÇÕES",
 )
 TZ_BR = ZoneInfo("America/Sao_Paulo")
+AUTO_ALERT_PREVIEW_LIMIT = 4
+AUTO_ALERT_BATTERY_WARNING_CYCLES = 200
+AUTO_ALERT_BATTERY_CRITICAL_CYCLES = 250
+AUTO_ALERT_VEHICLE_REVIEW_WARNING_KM = 500
+AUTO_ALERT_DRONE_MAINTENANCE_STALE_DAYS = 90
+MANUTENCAO_STATUS = "Em Manutenção"
 
 
 def _parse_filter_date(value):
@@ -594,6 +600,315 @@ def garantir_notificacoes_do_dia(usuario_id):
         )
 
 
+def sincronizar_notificacoes_automaticas(user):
+    if not getattr(user, "is_authenticated", False):
+        return
+
+    if can_view_all_notifications(user):
+        _sincronizar_alertas_operacionais(user)
+        return
+
+    garantir_notificacoes_do_dia(user.id)
+
+
+def _sincronizar_alertas_operacionais(user):
+    usuario_id = getattr(user, "id", None)
+    if not usuario_id:
+        return
+
+    try:
+        _sincronizar_alerta_baterias_ciclos(user, usuario_id)
+        _sincronizar_alerta_revisoes_veiculos(user, usuario_id)
+        _sincronizar_alerta_drones_manutencao(user, usuario_id)
+        _sincronizar_alerta_manutencao_desatualizada_drones(user, usuario_id)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception("Erro ao sincronizar alertas automaticos operacionais.")
+
+
+def _sincronizar_alerta_baterias_ciclos(user, usuario_id):
+    baterias = (
+        apply_prefeitura_scope(Baterias.query, user, Baterias.prefeitura_id)
+        .filter(Baterias.ciclo >= AUTO_ALERT_BATTERY_WARNING_CYCLES)
+        .filter(db.func.lower(db.func.coalesce(Baterias.status, "")) != "inativo")
+        .order_by(Baterias.ciclo.desc(), Baterias.renomacao.asc(), Baterias.id.asc())
+        .all()
+    )
+
+    link = url_for("main.listar_baterias", alert="ciclos")
+    if not baterias:
+        _sincronizar_notificacao_por_link(
+            usuario_id,
+            link=link,
+            titulo="Alerta automático: baterias com ciclo alto",
+            mensagem=None,
+        )
+        return
+
+    qtd_criticas = sum(
+        1
+        for bateria in baterias
+        if int(bateria.ciclo or 0) >= AUTO_ALERT_BATTERY_CRITICAL_CYCLES
+    )
+    preview = _build_preview_text(
+        [
+            f"{_bateria_label(bateria)} ({int(bateria.ciclo or 0)}c)"
+            for bateria in baterias
+        ]
+    )
+    mensagem = (
+        f"{len(baterias)} bateria(s) acima do limite de atenção "
+        f"(>= {AUTO_ALERT_BATTERY_WARNING_CYCLES} ciclos)"
+    )
+    if qtd_criticas:
+        mensagem += f"; {qtd_criticas} em nível crítico (>= {AUTO_ALERT_BATTERY_CRITICAL_CYCLES})"
+    mensagem += f": {preview}."
+
+    _sincronizar_notificacao_por_link(
+        usuario_id,
+        link=link,
+        titulo="Alerta automático: baterias com ciclo alto",
+        mensagem=mensagem,
+    )
+
+
+def _sincronizar_alerta_revisoes_veiculos(user, usuario_id):
+    veiculos_base = (
+        apply_prefeitura_scope(Veiculos.query, user, Veiculos.prefeitura_id)
+        .filter(db.func.lower(db.func.coalesce(Veiculos.status, "")) == "ativo")
+        .filter(Veiculos.km_prox_revisao.isnot(None))
+        .order_by(Veiculos.km_prox_revisao.asc(), Veiculos.placa.asc(), Veiculos.id.asc())
+        .all()
+    )
+    veiculos = [
+        item
+        for item in veiculos_base
+        if item.km_restante_revisao is not None and item.km_restante_revisao <= AUTO_ALERT_VEHICLE_REVIEW_WARNING_KM
+    ]
+
+    link = url_for("main.listar_veiculos", alert="revisao")
+    if not veiculos:
+        _sincronizar_notificacao_por_link(
+            usuario_id,
+            link=link,
+            titulo="Alerta automático: revisões de veículo",
+            mensagem=None,
+        )
+        return
+
+    qtd_vencidos = sum(1 for item in veiculos if (item.km_restante_revisao or 0) < 0)
+    preview = _build_preview_text([_build_veiculo_review_label(item) for item in veiculos])
+    mensagem = (
+        f"{len(veiculos)} veículo(s) com revisão vencida ou próxima "
+        f"(até {AUTO_ALERT_VEHICLE_REVIEW_WARNING_KM:.0f} km)"
+    )
+    if qtd_vencidos:
+        mensagem += f"; {qtd_vencidos} já vencido(s)"
+    mensagem += f": {preview}."
+
+    _sincronizar_notificacao_por_link(
+        usuario_id,
+        link=link,
+        titulo="Alerta automático: revisões de veículo",
+        mensagem=mensagem,
+    )
+
+
+def _sincronizar_alerta_drones_manutencao(user, usuario_id):
+    drones = (
+        apply_prefeitura_scope(Drones.query, user, Drones.prefeitura_id)
+        .filter(Drones.status == MANUTENCAO_STATUS)
+        .order_by(Drones.renomacao.asc(), Drones.id.asc())
+        .all()
+    )
+
+    base_link = url_for("main.equipamentos_manutencao", alert="drones")
+    active_links = set()
+
+    for drone in drones:
+        label = _drone_label(drone)
+        link = url_for("main.equipamentos_manutencao", alert="drones", item=drone.id)
+        active_links.add(link)
+        _sincronizar_notificacao_por_link(
+            usuario_id,
+            link=link,
+            titulo=f"Alerta automático: drone em manutenção - {label}",
+            mensagem=f"{label} indisponível para operação por manutenção.",
+        )
+
+    _apagar_notificacoes_por_prefixo_link(
+        usuario_id,
+        link_prefix=base_link,
+        keep_links=active_links,
+        allowed_title_prefixes=(
+            "Alerta automático: drones em manutenção",
+            "Alerta automático: drone em manutenção",
+            "Alerta automatico: drones em manutencao",
+            "Alerta automatico: drone em manutencao",
+        ),
+    )
+
+
+def _sincronizar_alerta_manutencao_desatualizada_drones(user, usuario_id):
+    data_limite = date.today() - timedelta(days=AUTO_ALERT_DRONE_MAINTENANCE_STALE_DAYS)
+    drones = (
+        apply_prefeitura_scope(Drones.query, user, Drones.prefeitura_id)
+        .filter(db.func.lower(db.func.coalesce(Drones.status, "")) == "ativo")
+        .filter(Drones.ultima_manutencao.isnot(None))
+        .filter(Drones.ultima_manutencao < data_limite)
+        .order_by(Drones.ultima_manutencao.asc(), Drones.renomacao.asc(), Drones.id.asc())
+        .all()
+    )
+
+    link = url_for("main.listar_drones", alert="manutencao")
+    if not drones:
+        _sincronizar_notificacao_por_link(
+            usuario_id,
+            link=link,
+            titulo="Alerta automático: manutenção de drones desatualizada",
+            mensagem=None,
+        )
+        return
+
+    preview = _build_preview_text(
+        [
+            f"{_drone_label(drone)} ({_days_since(drone.ultima_manutencao)} dias)"
+            for drone in drones
+        ]
+    )
+    mensagem = (
+        f"{len(drones)} drone(s) com última manutenção acima de "
+        f"{AUTO_ALERT_DRONE_MAINTENANCE_STALE_DAYS} dias: {preview}."
+    )
+
+    _sincronizar_notificacao_por_link(
+        usuario_id,
+        link=link,
+        titulo="Alerta automático: manutenção de drones desatualizada",
+        mensagem=mensagem,
+    )
+
+
+def _sincronizar_notificacao_por_link(usuario_id, *, link, titulo, mensagem):
+    if not usuario_id or not link:
+        return
+
+    existentes = (
+        Notificacao.query
+        .filter(
+            Notificacao.usuario_id == usuario_id,
+            Notificacao.link == link,
+        )
+        .order_by(Notificacao.id.desc())
+        .all()
+    )
+
+    agora = agora_brasilia_naive()
+    principal = existentes[0] if existentes else None
+
+    if mensagem:
+        if principal:
+            principal.titulo = (titulo or "")[:140]
+            principal.mensagem = mensagem
+            principal.criada_em = agora
+            principal.lida_em = None
+            principal.apagada_em = None
+        else:
+            criar_notificacao(
+                usuario_id=usuario_id,
+                titulo=titulo,
+                mensagem=mensagem,
+                link=link,
+                commit=False,
+            )
+        for extra in existentes[1:]:
+            if extra.apagada_em is None:
+                extra.apagada_em = agora
+        return
+
+    for notificacao in existentes:
+        if notificacao.apagada_em is None:
+            notificacao.apagada_em = agora
+
+
+def _apagar_notificacoes_por_prefixo_link(
+    usuario_id,
+    *,
+    link_prefix,
+    keep_links=None,
+    allowed_title_prefixes=None,
+):
+    if not usuario_id or not link_prefix:
+        return
+
+    keep_links = {link for link in (keep_links or set()) if link}
+    title_prefixes = tuple(
+        (prefix or "").strip().lower()
+        for prefix in (allowed_title_prefixes or ())
+        if (prefix or "").strip()
+    )
+    existentes = (
+        Notificacao.query
+        .filter(
+            Notificacao.usuario_id == usuario_id,
+            Notificacao.link.isnot(None),
+            Notificacao.link.like(f"{link_prefix}%"),
+        )
+        .all()
+    )
+
+    agora = agora_brasilia_naive()
+    for notificacao in existentes:
+        if notificacao.link in keep_links:
+            continue
+        titulo = (notificacao.titulo or "").strip().lower()
+        if title_prefixes and not any(titulo.startswith(prefix) for prefix in title_prefixes):
+            continue
+        if notificacao.apagada_em is None:
+            notificacao.apagada_em = agora
+
+
+def _build_preview_text(values):
+    cleaned = [str(value).strip() for value in values if str(value or "").strip()]
+    if not cleaned:
+        return "Sem detalhes"
+    if len(cleaned) <= AUTO_ALERT_PREVIEW_LIMIT:
+        return ", ".join(cleaned)
+    extras = len(cleaned) - AUTO_ALERT_PREVIEW_LIMIT
+    return f"{', '.join(cleaned[:AUTO_ALERT_PREVIEW_LIMIT])} e +{extras}"
+
+
+def _bateria_label(bateria):
+    nome = (bateria.renomacao or bateria.modelo or "").strip()
+    if nome:
+        return nome
+    return f"Bateria {bateria.id}"
+
+
+def _drone_label(drone):
+    nome = (drone.renomacao or drone.modelo or "").strip()
+    if nome:
+        return nome
+    return f"Drone {drone.id}"
+
+
+def _days_since(value):
+    if value is None:
+        return 0
+    return max((date.today() - value).days, 0)
+
+
+def _build_veiculo_review_label(veiculo):
+    placa = (veiculo.placa or veiculo.renomacao or veiculo.modelo or "").strip() or f"Veículo {veiculo.id}"
+    faltante = veiculo.km_restante_revisao
+    if faltante is None:
+        return placa
+    if faltante < 0:
+        return f"{placa} (vencido há {abs(int(faltante))} km)"
+    return f"{placa} (faltam {int(faltante)} km)"
+
+
 def get_notificacao_or_404(user, notif_id):
     if can_view_all_notifications(user):
         return Notificacao.query.get_or_404(notif_id)
@@ -606,8 +921,7 @@ def get_notificacao_or_404(user, notif_id):
 
 
 def list_notificacoes(user):
-    if not can_view_all_notifications(user):
-        garantir_notificacoes_do_dia(user.id)
+    sincronizar_notificacoes_automaticas(user)
 
     base = Notificacao.query.filter(Notificacao.apagada_em.is_(None))
     if can_view_all_notifications(user):

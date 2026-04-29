@@ -6,6 +6,7 @@ from werkzeug.routing import BuildError
 
 from app import db
 from app.models import Notificacao
+from app.modules.agenda_notificacoes.service import can_view_all_notifications
 from app.shared.formatters import format_currency_br, format_phone_br
 from app.shared.solicitacao_focos import build_focus_catalog
 
@@ -29,7 +30,7 @@ def register_template_helpers(bp):
                     Notificacao.apagada_em.is_(None),
                 )
 
-                if current_user.tipo_usuario not in ["admin", "operario", "visualizar"]:
+                if not can_view_all_notifications(current_user):
                     query = query.filter(Notificacao.usuario_id == current_user.id)
 
                 return {

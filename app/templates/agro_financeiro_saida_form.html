@@ -9,29 +9,33 @@
 {% block content %}
 <div class="container-fluid py-4" style="max-width: 1100px">
   <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
-    <div>
-      <h2 class="text-dark m-0">
-        <i class="bi bi-dash-square-fill me-2 text-danger"></i>
-        {{ 'Nova saída manual' if modo == 'novo' else 'Editar saída manual' }}
-      </h2>
-      <p class="text-muted small mb-0">Classifique a saída por categoria e subcategoria para refletir no DRE corretamente.</p>
-    </div>
+    <h2 class="text-dark m-0">
+      <i class="bi bi-dash-square-fill me-2 text-success"></i>
+      {{ 'Nova saída manual' if modo == 'novo' else 'Editar saída manual' }}
+    </h2>
     <a href="{{ url_for('main.agro_contas_pagar_listar') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
       <i class="bi bi-arrow-left"></i> Voltar
     </a>
   </div>
 
-  <div class="card shadow-sm rounded-4 border-0">
+  <div class="card info status-primary shadow-sm rounded-4 border-0">
     <div class="card-body p-4">
       <form method="post" novalidate id="agroSaidaManualForm">
         <input type="hidden" name="confirmar_lancamento_retroativo" id="confirmar_lancamento_retroativo" value="{{ form.get('confirmar_lancamento_retroativo', '') }}">
+
         {% if modo == 'editar' and lancamento and lancamento.parcela_total > 1 %}
           <div class="alert alert-light border rounded-4 mb-4">
             <div class="fw-semibold text-danger mb-1">Lan&ccedil;amento parcelado</div>
             <div class="small text-muted">Esta sa&iacute;da faz parte do grupo de parcelas {{ lancamento.parcela_numero }}/{{ lancamento.parcela_total }}. Nesta fase, a edi&ccedil;&atilde;o segue por parcela individual.</div>
           </div>
         {% endif %}
-        <div class="row g-3">
+
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-card-heading text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Identifica&ccedil;&atilde;o</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
           <div class="col-md-3">
             <label class="form-label fw-bold small text-muted">Tipo de saída *</label>
             <select id="tipo_saida" name="tipo_saida" class="form-select {% if errors.get('tipo_saida') %}is-invalid{% endif %}">
@@ -69,7 +73,16 @@
             </select>
             {% if errors.get('banco_agro_id') %}<div class="invalid-feedback">{{ errors.get('banco_agro_id') }}</div>{% endif %}
           </div>
+        </div>
 
+        <hr class="text-muted opacity-25 my-4">
+
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-tags-fill text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Classifica&ccedil;&atilde;o</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
           <div class="col-md-4">
             <label class="form-label fw-bold small text-muted">Categoria *</label>
             <select id="categoria" name="categoria" class="form-select {% if errors.get('categoria') %}is-invalid{% endif %}">
@@ -96,7 +109,6 @@
             </select>
             {% if errors.get('status') %}<div class="invalid-feedback">{{ errors.get('status') }}</div>{% endif %}
           </div>
-
           <div class="col-md-6">
             <label class="form-label fw-bold small text-muted">Descrição *</label>
             <input type="text" name="descricao" value="{{ form.get('descricao', '') }}" class="form-control {% if errors.get('descricao') %}is-invalid{% endif %}" placeholder="Ex.: pagamento de internet do escritório agro">
@@ -111,12 +123,28 @@
             <input type="text" name="valor" value="{{ form.get('valor', '') }}" class="form-control {% if errors.get('valor') %}is-invalid{% endif %}" placeholder="R$ 0,00">
             {% if errors.get('valor') %}<div class="invalid-feedback">{{ errors.get('valor') }}</div>{% endif %}
           </div>
+          <div class="col-12">
+            <label class="form-label fw-bold small text-muted">Imposto: do que se trata?</label>
+            <input id="detalhamento_imposto" type="text" name="detalhamento_imposto" value="{{ form.get('detalhamento_imposto', '') }}" class="form-control {% if errors.get('detalhamento_imposto') %}is-invalid{% endif %}" placeholder="Ex.: ISS sobre NF 123 / ICMS da venda / retenção de contrato XYZ">
+            {% if errors.get('detalhamento_imposto') %}<div class="invalid-feedback">{{ errors.get('detalhamento_imposto') }}</div>{% endif %}
+            <small class="text-muted d-block mt-2">Obrigatório quando o tipo for imposto ou retenção.</small>
+          </div>
+        </div>
+
+        <hr class="text-muted opacity-25 my-4">
+
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-calendar-event text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Prazos e controle</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
           {% if modo == 'novo' %}
             <div class="col-md-3">
               <label class="form-label fw-bold small text-muted">Parcelas *</label>
               <input id="quantidade_parcelas" type="number" min="1" max="120" name="quantidade_parcelas" value="{{ form.get('quantidade_parcelas', '1') }}" class="form-control {% if errors.get('quantidade_parcelas') %}is-invalid{% endif %}">
               {% if errors.get('quantidade_parcelas') %}<div class="invalid-feedback">{{ errors.get('quantidade_parcelas') }}</div>{% endif %}
-              <div class="form-text">Se for maior que 1, o sistema divide o valor total em parcelas mensais a partir da data prevista.</div>
+              <small class="text-muted d-block mt-2">Se for maior que 1, o sistema divide o valor total em parcelas mensais a partir da data prevista.</small>
             </div>
           {% elif lancamento and lancamento.parcela_total > 1 %}
             <div class="col-md-3">
@@ -124,13 +152,6 @@
               <input type="text" value="{{ lancamento.parcela_numero }}/{{ lancamento.parcela_total }}" class="form-control" readonly>
             </div>
           {% endif %}
-
-          <div class="col-12">
-            <label class="form-label fw-bold small text-muted">Imposto: do que se trata?</label>
-            <input id="detalhamento_imposto" type="text" name="detalhamento_imposto" value="{{ form.get('detalhamento_imposto', '') }}" class="form-control {% if errors.get('detalhamento_imposto') %}is-invalid{% endif %}" placeholder="Ex.: ISS sobre NF 123 / ICMS da venda / retenção de contrato XYZ">
-            {% if errors.get('detalhamento_imposto') %}<div class="invalid-feedback">{{ errors.get('detalhamento_imposto') }}</div>{% endif %}
-            <div class="form-text">Obrigatório quando o tipo for imposto ou retenção.</div>
-          </div>
 
           <div class="col-md-3">
             <label class="form-label fw-bold small text-muted">Data do lançamento</label>
@@ -152,21 +173,34 @@
             <input type="date" name="data_pagamento" value="{{ form.get('data_pagamento', '') }}" class="form-control {% if errors.get('data_pagamento') %}is-invalid{% endif %}">
             {% if errors.get('data_pagamento') %}<div class="invalid-feedback">{{ errors.get('data_pagamento') }}</div>{% endif %}
           </div>
+        </div>
 
+        <hr class="text-muted opacity-25 my-4">
+
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-journal-text text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Observa&ccedil;&otilde;es</h5>
+        </div>
+
+        <div class="row g-3">
           <div class="col-12">
             <label class="form-label fw-bold small text-muted">Observações</label>
             <textarea name="observacoes" rows="3" class="form-control">{{ form.get('observacoes', '') }}</textarea>
           </div>
         </div>
 
-        <div class="d-flex flex-wrap gap-2 mt-4">
-          <button type="submit" class="btn btn-danger d-flex align-items-center gap-2">
-            <i class="bi bi-check-circle-fill"></i> Salvar saída
-          </button>
+        <small class="text-muted d-block mt-4">
+          Campos com <span class="text-danger">*</span> sao obrigatorios.
+        </small>
+
+        <div class="d-flex justify-content-end flex-wrap gap-2 mt-5">
+          <a href="{{ url_for('main.agro_contas_pagar_listar') }}" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-2">
+            <i class="bi bi-x-lg"></i> Cancelar
+          </a>
           {% if modo == 'editar' and lancamento %}
             <button
               type="submit"
-              class="btn btn-outline-danger d-flex align-items-center gap-2"
+              class="btn btn-outline-danger btn-sm d-flex align-items-center gap-2"
               formaction="{{ url_for('main.agro_financeiro_saida_deletar', lancamento_id=lancamento.id) }}"
               formmethod="POST"
               formnovalidate
@@ -175,9 +209,9 @@
               <i class="bi bi-trash"></i> Excluir
             </button>
           {% endif %}
-          <a href="{{ url_for('main.agro_contas_pagar_listar') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
-            <i class="bi bi-x-circle"></i> Cancelar
-          </a>
+          <button type="submit" class="btn btn-danger btn-sm d-flex align-items-center gap-2">
+            <i class="bi bi-check-lg"></i> Salvar saída
+          </button>
         </div>
       </form>
     </div>

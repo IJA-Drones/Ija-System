@@ -6,35 +6,210 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/listing_pattern.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+  <style>
+    .contas-pagar-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: start;
+      gap: 1.5rem;
+      margin-bottom: 1.75rem;
+    }
+
+    .contas-pagar-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 0.75rem;
+      margin-left: auto;
+    }
+
+    .contas-pagar-actions .btn {
+      min-height: 42px;
+      padding-inline: 1.15rem;
+      justify-content: center;
+    }
+
+    .contas-pagar-shortcuts {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .contas-pagar-alert {
+      margin-bottom: 2rem !important;
+    }
+
+    .contas-pagar-resumo {
+      margin-bottom: 2rem;
+    }
+
+    .contas-pagar-filtros {
+      margin-bottom: 2rem !important;
+    }
+
+    .contas-pagar-shortcut {
+      display: block;
+      height: 100%;
+      padding: 1.5rem 1.6rem;
+      border-radius: 1.5rem;
+      border: 1px solid rgba(220, 53, 69, 0.22);
+      background: linear-gradient(180deg, #ffffff 0%, #fffafa 100%);
+      box-shadow: var(--shadow-sm);
+      color: inherit;
+      text-decoration: none;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+
+    .contas-pagar-shortcut:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+      color: inherit;
+    }
+
+    .contas-pagar-shortcut.is-active {
+      border-color: rgba(220, 53, 69, 0.7);
+      box-shadow: 0 16px 32px rgba(176, 45, 57, 0.12);
+    }
+
+    .contas-pagar-shortcut.is-warning {
+      border-color: rgba(214, 160, 51, 0.28);
+      background: linear-gradient(180deg, #ffffff 0%, #fffaf1 100%);
+    }
+
+    .contas-pagar-shortcut-head {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .contas-pagar-shortcut-icon {
+      width: 3.2rem;
+      height: 3.2rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 1.1rem;
+      background: rgba(220, 53, 69, 0.12);
+      color: var(--color-danger, #dc3545);
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+
+    .contas-pagar-shortcut.is-warning .contas-pagar-shortcut-icon {
+      background: rgba(214, 160, 51, 0.14);
+      color: #b7861b;
+    }
+
+    .contas-pagar-shortcut-title {
+      margin: 0;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--color-primary-dark);
+    }
+
+    .contas-pagar-shortcut-copy {
+      margin: 0;
+      color: var(--color-text-muted);
+      line-height: 1.5;
+    }
+
+    @media (max-width: 991.98px) {
+      .contas-pagar-header {
+        grid-template-columns: 1fr;
+      }
+
+      .contas-pagar-actions {
+        justify-content: flex-start;
+        margin-left: 0;
+      }
+
+      .contas-pagar-actions .btn {
+        width: 100%;
+      }
+
+      .contas-pagar-shortcuts {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4 listing-page">
-  <div class="listing-header mb-4">
+  <div class="contas-pagar-header">
     <div>
       <h2 class="text-dark m-0">
         <i class="bi bi-credit-card-2-front me-2 text-danger"></i> Contas a Pagar
       </h2>
-      <p class="text-muted small mb-0">
-        Saidas manuais, despesas, impostos e retencoes em uma visao focada no pagamento.
+     
         {% if filters.q or filters.situacao or filters.tipo_saida or filters.mes or filters.ano %}
           <span class="badge bg-filter-custom ms-2">Filtrado</span>
         {% endif %}
-      </p>
     </div>
 
-    <div class="listing-actions">
+    <div class="listing-actions contas-pagar-actions">
       <a href="{{ url_for('main.agro_financeiro_contas') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
       {% if is_editable %}
+        <a href="{{ url_for('main.agro_financeiro_saida_novo') }}" class="btn btn-danger d-flex align-items-center gap-2">
+          <i class="bi bi-plus-circle-fill"></i> Nova saída manual
+        </a>
         <a href="{{ url_for('main.agro_financeiro_saida_novo') }}" class="btn btn-danger d-flex align-items-center gap-2">
           <i class="bi bi-plus-circle-fill"></i> Nova conta a pagar
         </a>
       {% endif %}
     </div>
   </div>
-  <div class="row g-3 mb-4">
+
+  <div class="contas-pagar-shortcuts">
+    <a href="{{ url_for('main.agro_contas_pagar_listar') }}" class="contas-pagar-shortcut {% if not filters.tipo_saida %}is-active{% endif %}">
+      <div class="contas-pagar-shortcut-head">
+        <span class="contas-pagar-shortcut-icon">
+          <i class="bi bi-grid"></i>
+        </span>
+        <h3 class="contas-pagar-shortcut-title">Todas as contas</h3>
+      </div>
+      <p class="contas-pagar-shortcut-copy">Visão completa com todas as saídas do financeiro, independentemente da classificação.</p>
+    </a>
+    <a href="{{ url_for('main.agro_contas_pagar_listar', tipo_saida='DESPESA') }}" class="contas-pagar-shortcut {% if filters.tipo_saida == 'DESPESA' %}is-active{% endif %}">
+      <div class="contas-pagar-shortcut-head">
+        <span class="contas-pagar-shortcut-icon">
+          <i class="bi bi-receipt-cutoff"></i>
+        </span>
+        <h3 class="contas-pagar-shortcut-title">Despesas</h3>
+      </div>
+      <p class="contas-pagar-shortcut-copy">Mostra apenas os pagamentos operacionais e administrativos classificados como despesa.</p>
+    </a>
+    <a href="{{ url_for('main.agro_contas_pagar_listar', tipo_saida='IMPOSTO') }}" class="contas-pagar-shortcut is-warning {% if filters.tipo_saida == 'IMPOSTO' %}is-active{% endif %}">
+      <div class="contas-pagar-shortcut-head">
+        <span class="contas-pagar-shortcut-icon">
+          <i class="bi bi-bank"></i>
+        </span>
+        <h3 class="contas-pagar-shortcut-title">Impostos</h3>
+      </div>
+      <p class="contas-pagar-shortcut-copy">Filtra os lançamentos ligados a tributos, encargos e obrigações fiscais.</p>
+    </a>
+    <a href="{{ url_for('main.agro_contas_pagar_listar', tipo_saida='RETENCAO') }}" class="contas-pagar-shortcut is-warning {% if filters.tipo_saida == 'RETENCAO' %}is-active{% endif %}">
+      <div class="contas-pagar-shortcut-head">
+        <span class="contas-pagar-shortcut-icon">
+          <i class="bi bi-percent"></i>
+        </span>
+        <h3 class="contas-pagar-shortcut-title">Retenções</h3>
+      </div>
+      <p class="contas-pagar-shortcut-copy">Exibe apenas as saídas classificadas como retenção para leitura mais rápida.</p>
+    </a>
+  </div>
+
+  {% if resumo.total_atrasados %}
+    <div class="alert alert-warning border-0 shadow-sm rounded-4 contas-pagar-alert">
+      Existem {{ resumo.total_atrasados }} conta(s) a pagar em atraso, somando {{ resumo.total_atrasado|currencybr }}.
+    </div>
+  {% endif %}
+
+  <div class="row g-3 contas-pagar-resumo">
     <div class="col-md-3">
       <div class="card info status-warning shadow-sm rounded-4 border-0 h-100">
         <div class="card-body">
@@ -60,16 +235,19 @@
       </div>
     </div>
     <div class="col-md-3">
-      <div class="card info status-secondary shadow-sm rounded-4 border-0 h-100">
+      <div class="card info {% if resumo.total_atrasados %}status-danger{% else %}status-secondary{% endif %} shadow-sm rounded-4 border-0 h-100">
         <div class="card-body">
-          <span class="text-muted small d-block">Cancelado</span>
-          <h4 class="text-dark mt-2 mb-0">{{ resumo.total_cancelado|currencybr }}</h4>
+          <span class="text-muted small d-block">{% if resumo.total_atrasados %}Em atraso{% else %}Cancelado{% endif %}</span>
+          <h4 class="text-dark mt-2 mb-0">{% if resumo.total_atrasados %}{{ resumo.total_atrasado|currencybr }}{% else %}{{ resumo.total_cancelado|currencybr }}{% endif %}</h4>
+          {% if resumo.total_atrasados %}
+            <div class="small text-muted mt-1">{{ resumo.total_atrasados }} vencida(s)</div>
+          {% endif %}
         </div>
       </div>
     </div>
   </div>
 
-  <div class="card shadow-sm rounded-4 mb-4 border-0">
+  <div class="card shadow-sm rounded-4 border-0 contas-pagar-filtros">
     <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center listing-filter-header"
          data-bs-toggle="collapse"
          data-bs-target="#collapseFiltrosContasPagar"
@@ -90,10 +268,10 @@
           <div class="row g-2 align-items-end">
             <div class="col-md-4">
               <label class="small text-muted mb-1">Busca geral</label>
-              <input type="text" class="form-control form-control-sm" name="q" value="{{ filters.q }}" placeholder="Favorecido, descricao, doc...">
+              <input type="text" class="form-control form-control-sm" name="q" value="{{ filters.q }}" placeholder="Favorecido, descrição, doc...">
             </div>
             <div class="col-md-3">
-              <label class="small text-muted mb-1">Tipo de saida</label>
+              <label class="small text-muted mb-1">Tipo de saída</label>
               <select name="tipo_saida" class="form-select form-select-sm">
                 <option value="">Todos</option>
                 {% for tipo in tipo_options %}
@@ -102,7 +280,7 @@
               </select>
             </div>
             <div class="col-md-2">
-              <label class="small text-muted mb-1">Situacao</label>
+              <label class="small text-muted mb-1">Situação</label>
               <select name="situacao" class="form-select form-select-sm">
                 <option value="">Todas</option>
                 {% for status_value in situacao_options %}
@@ -111,7 +289,7 @@
               </select>
             </div>
             <div class="col-md-1">
-              <label class="small text-muted mb-1">Mes</label>
+              <label class="small text-muted mb-1">Mês</label>
               <input type="number" min="1" max="12" class="form-control form-control-sm" name="mes" value="{{ filters.mes or '' }}">
             </div>
             <div class="col-md-2">
@@ -141,12 +319,12 @@
           <thead class="table-light">
             <tr>
               <th>Favorecido</th>
-              <th>Classificacao</th>
+              <th>Classificação</th>
               <th>Datas</th>
               <th>Valor</th>
-              <th>Situacao</th>
+              <th>Situação</th>
               {% if is_editable %}
-                <th>Acoes</th>
+                <th>Ações</th>
               {% endif %}
             </tr>
           </thead>
@@ -168,6 +346,7 @@
                 </td>
                 <td class="fw-semibold text-danger">{{ item.valor|currencybr }}</td>
                 <td>
+                  {% set status_label = 'CANCELADO' if item.cancelado else 'PAGO' if item.realizado else 'ATRASADO' if item.atrasado else 'PENDENTE' %}
                   {% if item.cancelado %}
                     <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">CANCELADO</span>
                   {% elif item.realizado %}
@@ -177,12 +356,15 @@
                   {% else %}
                     <span class="badge bg-warning-subtle text-warning border border-warning-subtle">PENDENTE</span>
                   {% endif %}
-                  <div class="text-muted small mt-1">{{ item.display_status }}</div>
+                  {% if item.display_status and item.display_status != status_label %}
+                    <div class="text-muted small mt-1">{{ item.display_status }}</div>
+                  {% endif %}
                 </td>
                 {% if is_editable %}
                   <td>
-                    <a href="{{ item.edit_url }}" class="btn btn-outline-primary btn-sm">
+                    <a href="{{ item.edit_url }}" class="btn btn-sm btn-success text-white shadow-sm d-inline-flex align-items-center gap-1">
                       <i class="bi bi-pencil-square"></i>
+                      <span>Editar</span>
                     </a>
                   </td>
                 {% endif %}
