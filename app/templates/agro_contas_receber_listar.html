@@ -324,13 +324,21 @@
                   <div class="text-muted small">Previsto: {{ item.previsto_em.strftime('%d/%m/%Y') if item.previsto_em else '-' }}</div>
                   <div class="text-muted small">Recebido: {{ item.realizado_em.strftime('%d/%m/%Y') if item.realizado_em else '-' }}</div>
                 </td>
-                <td class="fw-semibold text-success">{{ item.valor|currencybr }}</td>
+                <td class="fw-semibold text-success">
+                  {{ item.valor|currencybr }}
+                  {% if item.origem_slug == 'recebivel' %}
+                    <div class="text-muted small">Total: {{ item.valor_total_contrato|currencybr }}</div>
+                    <div class="text-muted small">Ja recebido: {{ item.valor_recebido|currencybr }}</div>
+                  {% endif %}
+                </td>
                 <td>
-                  {% set status_label = 'CANCELADO' if item.cancelado else 'RECEBIDO' if item.realizado else 'ATRASADO' if item.atrasado else 'PENDENTE' %}
+                  {% set status_label = 'CANCELADO' if item.cancelado else 'RECEBIDO' if item.realizado else 'PARCIAL' if item.parcial else 'ATRASADO' if item.atrasado else 'PENDENTE' %}
                   {% if item.cancelado %}
                     <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">CANCELADO</span>
                   {% elif item.realizado %}
                     <span class="badge bg-success-subtle text-success border border-success-subtle">RECEBIDO</span>
+                  {% elif item.parcial %}
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle">PARCIAL</span>
                   {% elif item.atrasado %}
                     <span class="badge bg-danger-subtle text-danger border border-danger-subtle">ATRASADO</span>
                   {% else %}

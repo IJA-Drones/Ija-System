@@ -991,11 +991,13 @@ class FinanceiroAgro(db.Model):
     __tablename__ = "financeiro_agro"
 
     STATUS_PENDENTE = "PENDENTE"
+    STATUS_PARCIAL = "PARCIAL"
     STATUS_RECEBIDO = "RECEBIDO"
     STATUS_VENCIDO = "VENCIDO"
     STATUS_CANCELADO = "CANCELADO"
     STATUS_OPTIONS = (
         STATUS_PENDENTE,
+        STATUS_PARCIAL,
         STATUS_RECEBIDO,
         STATUS_VENCIDO,
         STATUS_CANCELADO,
@@ -1033,6 +1035,7 @@ class FinanceiroAgro(db.Model):
     total_pulverizacao = db.Column(db.Numeric(12, 2), nullable=False, default=0)
 
     valor_total_contrato = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+    valor_recebido = db.Column(db.Numeric(12, 2), nullable=False, default=0)
 
     comissao_por_ha = db.Column(db.Numeric(12, 2), nullable=False, default=8)
     valor_comissao = db.Column(db.Numeric(12, 2), nullable=False, default=0)
@@ -1089,6 +1092,17 @@ class FinanceiroAgro(db.Model):
         return (
             self._decimal_or_zero(self.valor_total_contrato) - self.total_comissoes
         ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+    @property
+    def valor_recebido_decimal(self):
+        return self._decimal_or_zero(self.valor_recebido).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+    @property
+    def saldo_receber(self):
+        saldo = self._decimal_or_zero(self.valor_total_contrato) - self.valor_recebido_decimal
+        if saldo < Decimal("0"):
+            saldo = Decimal("0")
+        return saldo.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
 class BancoAgro(db.Model):

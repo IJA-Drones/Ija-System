@@ -212,8 +212,10 @@
 
                 <td>
                   <div class="fw-bold">{{ item.valor_total_contrato|currencybr }}</div>
+                  <div class="text-muted small">Recebido: {{ item.valor_recebido|currencybr }}</div>
+                  <div class="text-muted small">Saldo em aberto: {{ item.saldo_receber|currencybr }}</div>
                   <div class="text-muted small">Data de vencimento: {{ item.data_vencimento.strftime('%d/%m/%Y') if item.data_vencimento else '-' }}</div>
-                  <div class="text-muted small">Data do recebimento: {{ item.data_recebimento.strftime('%d/%m/%Y') if item.data_recebimento else '-' }}</div>
+                  <div class="text-muted small">Ultimo recebimento: {{ item.data_recebimento.strftime('%d/%m/%Y') if item.data_recebimento else '-' }}</div>
                   <div class="text-muted small">Forma de recebimento: {{ item.forma_recebimento or '-' }}</div>
                 </td>
 
@@ -226,6 +228,8 @@
                 <td>
                   {% if item.status == 'RECEBIDO' %}
                     <span class="badge bg-success-subtle text-success border border-success-subtle">Recebido</span>
+                  {% elif item.status == 'PARCIAL' %}
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Parcial</span>
                   {% elif item.status == 'VENCIDO' %}
                     <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Vencido</span>
                   {% elif item.status == 'CANCELADO' %}
