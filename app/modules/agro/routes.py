@@ -728,6 +728,7 @@ def _normalize_financeiro_agro_form(form_source):
         "data_servico_executado": (form_source.get("data_servico_executado") or "").strip(),
         "data_vencimento": (form_source.get("data_vencimento") or "").strip(),
         "data_recebimento": (form_source.get("data_recebimento") or "").strip(),
+        "valor_recebido": (form_source.get("valor_recebido") or "").strip(),
         "area_mapeamento_ha": (form_source.get("area_mapeamento_ha") or "").strip(),
         "valor_mapeamento_ha": (form_source.get("valor_mapeamento_ha") or "").strip(),
         "total_mapeamento": (form_source.get("total_mapeamento") or "").strip(),
@@ -1012,10 +1013,16 @@ def _calculate_application_days(start_date, end_date):
     return (end_date - start_date).days + 1
 
 
-def _resolve_financeiro_agro_status(status, data_vencimento, data_recebimento):
+def _resolve_financeiro_agro_status(status, data_vencimento, data_recebimento, valor_total_contrato=None, valor_recebido=None):
     if status == FinanceiroAgro.STATUS_CANCELADO:
         return FinanceiroAgro.STATUS_CANCELADO
-    if data_recebimento:
+    total_contrato = FinanceiroAgro._decimal_or_zero(valor_total_contrato)
+    total_recebido = FinanceiroAgro._decimal_or_zero(valor_recebido)
+    if total_recebido > 0:
+        if total_contrato > 0 and total_recebido < total_contrato:
+            return FinanceiroAgro.STATUS_PARCIAL
+        return FinanceiroAgro.STATUS_RECEBIDO
+    if data_recebimento and total_contrato <= 0:
         return FinanceiroAgro.STATUS_RECEBIDO
     if data_vencimento and data_vencimento < datetime.now().date():
         return FinanceiroAgro.STATUS_VENCIDO
@@ -1049,9 +1056,19 @@ def _get_financeiro_agro_saida_display_status(status, data_vencimento, data_paga
     return resolved_status
 
 
-def _get_financeiro_agro_receber_display_status(status, data_vencimento, data_recebimento):
+def _get_financeiro_agro_receber_display_status(
+    status,
+    data_vencimento,
+    data_recebimento,
+    valor_total_contrato=None,
+    valor_recebido=None,
+):
     if status in {FinanceiroAgro.STATUS_CANCELADO, FinanceiroAgroEntrada.STATUS_CANCELADO}:
         return "CANCELADO"
+    total_contrato = FinanceiroAgro._decimal_or_zero(valor_total_contrato)
+    total_recebido = FinanceiroAgro._decimal_or_zero(valor_recebido)
+    if total_recebido > 0 and total_contrato > 0 and total_recebido < total_contrato:
+        return "PARCIAL"
     if data_recebimento or status in {FinanceiroAgro.STATUS_RECEBIDO, FinanceiroAgroEntrada.STATUS_RECEBIDO}:
         return "RECEBIDO"
     if data_vencimento and data_vencimento < datetime.now().date():
@@ -1066,11 +1083,11 @@ def _build_financeiro_agro_summary(lancamentos):
     total_recebido = Decimal("0")
 
     for item in lancamentos:
-        total_receber += FinanceiroAgro._decimal_or_zero(item.valor_total_contrato)
-        total_comissoes += FinanceiroAgro._decimal_or_zero(item.total_comissoes)
-        total_liquido += FinanceiroAgro._decimal_or_zero(item.valor_liquido_previsto)
-        if item.status == FinanceiroAgro.STATUS_RECEBIDO:
-            total_recebido += FinanceiroAgro._decimal_or_zero(item.valor_total_contrato)
+        if item.status != FinanceiroAgro.STATUS_CANCELADO:
+            total_receber += FinanceiroAgro._decimal_or_zero(getattr(item, "saldo_receber", None))
+            total_comissoes += FinanceiroAgro._decimal_or_zero(item.total_comissoes)
+            total_liquido += FinanceiroAgro._decimal_or_zero(item.valor_liquido_previsto)
+            total_recebido += FinanceiroAgro._decimal_or_zero(getattr(item, "valor_recebido", None))
 
     return {
         "total_receber": total_receber,
@@ -1197,13 +1214,27 @@ def _build_agro_conciliacao_item(item):
             "edit_url": url_for("main.agro_financeiro_entrada_editar", lancamento_id=item.id),
         }
 
-    valor = FinanceiroAgro._decimal_or_zero(item.valor_total_contrato)
+    valor_total = FinanceiroAgro._decimal_or_zero(item.valor_total_contrato)
+    valor_recebido = FinanceiroAgro._decimal_or_zero(getattr(item, "valor_recebido", None))
+    valor_pendente = FinanceiroAgro._decimal_or_zero(getattr(item, "saldo_receber", None))
     realizado_em = item.data_recebimento
     previsto_em = item.data_vencimento or item.data_servico_executado or item.data_elaboracao_contrato
-    status = _resolve_financeiro_agro_status(item.status, item.data_vencimento, item.data_recebimento)
-    display_status = _get_financeiro_agro_receber_display_status(status, item.data_vencimento, item.data_recebimento)
+    status = _resolve_financeiro_agro_status(
+        item.status,
+        item.data_vencimento,
+        item.data_recebimento,
+        valor_total,
+        valor_recebido,
+    )
+    display_status = _get_financeiro_agro_receber_display_status(
+        status,
+        item.data_vencimento,
+        item.data_recebimento,
+        valor_total,
+        valor_recebido,
+    )
     cancelado = status == FinanceiroAgro.STATUS_CANCELADO
-    realizado = bool(realizado_em) or status == FinanceiroAgro.STATUS_RECEBIDO
+    realizado = status == FinanceiroAgro.STATUS_RECEBIDO
     atrasado = status == FinanceiroAgro.STATUS_VENCIDO
     contrato_label = f"Contrato #{item.contrato_agro_id}" if item.contrato_agro_id else "Contrato sem vinculo"
     ordem_servico = item.ordem_servico or _get_latest_agro_ordem_servico(item.contrato)
@@ -1220,15 +1251,21 @@ def _build_agro_conciliacao_item(item):
         "documento": contrato_label,
         "status": status,
         "display_status": display_status,
-        "valor": valor,
+        "valor": valor_total if realizado else valor_pendente,
+        "valor_previsto": Decimal("0") if cancelado else valor_total,
+        "valor_realizado": Decimal("0") if cancelado else valor_recebido,
+        "valor_pendente": Decimal("0") if cancelado else valor_pendente,
+        "valor_total_contrato": valor_total,
+        "valor_recebido": valor_recebido,
         "previsto_em": previsto_em,
         "realizado_em": realizado_em,
         "referencia_em": realizado_em or previsto_em,
         "realizado": realizado,
         "cancelado": cancelado,
         "atrasado": atrasado,
+        "parcial": status == FinanceiroAgro.STATUS_PARCIAL,
         "edit_url": url_for("main.agro_financeiro_editar", lancamento_id=item.id),
-        "can_quick_receive": os_concluida and not cancelado and not realizado,
+        "can_quick_receive": os_concluida and not cancelado and status != FinanceiroAgro.STATUS_RECEBIDO,
         "quick_receive_url": url_for("main.agro_financeiro_receber_os_concluida", lancamento_id=item.id),
         "ordem_servico_label": getattr(ordem_servico, "identificador_os", None) or "",
     }
@@ -1376,16 +1413,22 @@ def _build_agro_contas_summary(items):
 
     for item in items:
         valor = FinanceiroAgro._decimal_or_zero(item["valor"])
+        valor_previsto = FinanceiroAgro._decimal_or_zero(item.get("valor_previsto", valor))
+        valor_realizado = FinanceiroAgro._decimal_or_zero(
+            item.get("valor_realizado", valor if item.get("realizado") else Decimal("0"))
+        )
+        valor_pendente = FinanceiroAgro._decimal_or_zero(
+            item.get("valor_pendente", Decimal("0") if item.get("realizado") else valor)
+        )
         if item["cancelado"]:
-            total_cancelado += valor
+            total_cancelado += valor_previsto
             continue
-        total_previsto += valor
-        if item["realizado"]:
-            total_realizado += valor
-        elif item.get("atrasado"):
-            total_atrasado += valor
+        total_previsto += valor_previsto
+        total_realizado += valor_realizado
+        if item.get("atrasado"):
+            total_atrasado += valor_pendente
         else:
-            total_pendente += valor
+            total_pendente += valor_pendente
 
     return {
         "total_previsto": total_previsto,
@@ -1700,6 +1743,22 @@ def _validate_financeiro_agro_form(form, contratos, blocked_contrato_ids=None):
     if valor_total_contrato is None:
         valor_total_contrato = (total_mapeamento or Decimal("0")) + (total_pulverizacao or Decimal("0"))
 
+    valor_recebido = parse_currency_br(form["valor_recebido"])
+    if form["valor_recebido"] and valor_recebido is None:
+        errors["valor_recebido"] = "Informe um valor monetario valido."
+    if valor_recebido is None:
+        valor_recebido = Decimal("0")
+    if valor_recebido < Decimal("0"):
+        errors["valor_recebido"] = "O valor recebido nao pode ser negativo."
+    if valor_total_contrato is not None and valor_recebido > valor_total_contrato:
+        errors["valor_recebido"] = "O valor recebido nao pode ser maior que o valor total do contrato."
+    if valor_recebido > 0 and data_recebimento is None:
+        errors["data_recebimento"] = "Informe a data do ultimo recebimento parcial ou final."
+    if data_recebimento and valor_recebido <= 0 and form["status"] != FinanceiroAgro.STATUS_CANCELADO:
+        errors["valor_recebido"] = "Informe um valor recebido maior que zero para registrar a data de recebimento."
+    if form["status"] == FinanceiroAgro.STATUS_CANCELADO and valor_recebido > 0:
+        errors["valor_recebido"] = "Zere o valor recebido antes de cancelar o recebivel."
+
     comissao_por_ha = parse_currency_br(form["comissao_por_ha"]) or Decimal("0")
     valor_comissao = parse_currency_br(form["valor_comissao"])
     if form["valor_comissao"] and valor_comissao is None:
@@ -1732,6 +1791,7 @@ def _validate_financeiro_agro_form(form, contratos, blocked_contrato_ids=None):
         "valor_pulverizacao_ha": valor_pulverizacao_ha,
         "total_pulverizacao": total_pulverizacao,
         "valor_total_contrato": valor_total_contrato,
+        "valor_recebido": valor_recebido,
         "comissao_por_ha": comissao_por_ha,
         "valor_comissao": valor_comissao,
         "comissao_cooperativa_por_ha": comissao_cooperativa_por_ha,
@@ -1741,7 +1801,13 @@ def _validate_financeiro_agro_form(form, contratos, blocked_contrato_ids=None):
     if contrato:
         ordem_servico = _get_latest_agro_ordem_servico(contrato)
 
-    resolved_status = _resolve_financeiro_agro_status(form["status"], data_vencimento, data_recebimento)
+    resolved_status = _resolve_financeiro_agro_status(
+        form["status"],
+        data_vencimento,
+        data_recebimento,
+        valor_total_contrato,
+        valor_recebido,
+    )
 
     return (
         errors,
@@ -1766,6 +1832,7 @@ def _sync_financeiro_agro_form_numbers(form, numeric_fields, status):
     form["valor_pulverizacao_ha"] = format_currency_br(numeric_fields["valor_pulverizacao_ha"])
     form["total_pulverizacao"] = format_currency_br(numeric_fields["total_pulverizacao"])
     form["valor_total_contrato"] = format_currency_br(numeric_fields["valor_total_contrato"])
+    form["valor_recebido"] = format_currency_br(numeric_fields["valor_recebido"])
     form["comissao_por_ha"] = format_currency_br(numeric_fields["comissao_por_ha"])
     form["valor_comissao"] = format_currency_br(numeric_fields["valor_comissao"])
     form["comissao_cooperativa_por_ha"] = format_currency_br(numeric_fields["comissao_cooperativa_por_ha"])
@@ -4099,6 +4166,7 @@ def register_routes(bp):
                 valor_pulverizacao_ha=numeric_fields["valor_pulverizacao_ha"],
                 total_pulverizacao=numeric_fields["total_pulverizacao"],
                 valor_total_contrato=numeric_fields["valor_total_contrato"],
+                valor_recebido=numeric_fields["valor_recebido"],
                 comissao_por_ha=numeric_fields["comissao_por_ha"],
                 valor_comissao=numeric_fields["valor_comissao"],
                 comissao_cooperativa_por_ha=numeric_fields["comissao_cooperativa_por_ha"],
@@ -4228,6 +4296,7 @@ def register_routes(bp):
             lancamento.valor_pulverizacao_ha = numeric_fields["valor_pulverizacao_ha"]
             lancamento.total_pulverizacao = numeric_fields["total_pulverizacao"]
             lancamento.valor_total_contrato = numeric_fields["valor_total_contrato"]
+            lancamento.valor_recebido = numeric_fields["valor_recebido"]
             lancamento.comissao_por_ha = numeric_fields["comissao_por_ha"]
             lancamento.valor_comissao = numeric_fields["valor_comissao"]
             lancamento.comissao_cooperativa_por_ha = numeric_fields["comissao_cooperativa_por_ha"]
@@ -4265,6 +4334,8 @@ def register_routes(bp):
             lancamento.status,
             lancamento.data_vencimento,
             lancamento.data_recebimento,
+            lancamento.valor_total_contrato,
+            lancamento.valor_recebido,
         )
         if status_atual == FinanceiroAgro.STATUS_CANCELADO:
             flash("Lancamentos cancelados nao podem ser recebidos por este atalho.", "warning")
@@ -4294,6 +4365,7 @@ def register_routes(bp):
         valor_integral = FinanceiroAgro._decimal_or_zero(getattr(lancamento.contrato, "valor_total", None))
         if valor_integral > 0:
             lancamento.valor_total_contrato = valor_integral
+        lancamento.valor_recebido = lancamento.valor_total_contrato
         if not lancamento.data_servico_executado:
             lancamento.data_servico_executado = getattr(ordem_servico, "data_aplicacao", None)
         lancamento.ordem_servico_agro_id = ordem_servico.id
