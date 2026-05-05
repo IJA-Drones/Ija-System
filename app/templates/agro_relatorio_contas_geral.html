@@ -49,6 +49,307 @@
       white-space: normal;
     }
 
+    .relatorio-contas-entry {
+      display: grid;
+      gap: 0.28rem;
+      min-width: 280px;
+      max-width: 520px;
+      white-space: normal;
+    }
+
+    .relatorio-contas-entry-title {
+      color: var(--color-text-main);
+      font-weight: 700;
+      line-height: 1.25;
+    }
+
+    .relatorio-contas-entry-meta,
+    .relatorio-contas-date-stack {
+      color: var(--color-text-muted);
+      font-size: 0.84rem;
+      line-height: 1.35;
+    }
+
+    .relatorio-contas-entry-meta {
+      display: grid;
+      gap: 0.16rem;
+    }
+
+    .relatorio-contas-date-stack,
+    .relatorio-contas-value-stack {
+      display: grid;
+      gap: 0.18rem;
+      min-width: 160px;
+    }
+
+    .relatorio-contas-value-stack {
+      min-width: 170px;
+    }
+
+    .relatorio-contas-value-main {
+      font-size: 1rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .relatorio-contas-value-note {
+      color: var(--color-text-muted);
+      font-size: 0.84rem;
+      font-weight: 600;
+      line-height: 1.35;
+      white-space: normal;
+    }
+
+    .relatorio-contas-actions-dropdown {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .relatorio-contas-actions-trigger {
+      width: 38px;
+      height: 38px;
+      padding: 0;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 38px;
+      background: #fff;
+    }
+
+    .relatorio-contas-actions-trigger::after {
+      display: none;
+    }
+
+    .relatorio-contas-actions-dropdown .dropdown-menu {
+      min-width: 210px;
+    }
+
+    .relatorio-contas-actions-dropdown .dropdown-item {
+      display: flex;
+      align-items: center;
+    }
+
+    .relatorio-contas-modal {
+      overflow: hidden;
+    }
+
+    .relatorio-contas-modal .modal-header {
+      padding: 1.25rem 1.4rem;
+      border-bottom: 1px solid #e6efea;
+      background: linear-gradient(180deg, #ffffff 0%, #f7fbf8 100%);
+      align-items: flex-start;
+    }
+
+    .relatorio-contas-modal .modal-title {
+      color: var(--color-primary-dark);
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    .relatorio-contas-modal .modal-body {
+      padding: 1.35rem 1.4rem;
+      background: #fbfdfc;
+    }
+
+    .relatorio-contas-modal .modal-footer {
+      padding: 1rem 1.4rem;
+      border-top-color: #e6efea;
+      background: #fff;
+    }
+
+    .relatorio-contas-modal-head {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.9rem;
+      min-width: 0;
+    }
+
+    .relatorio-contas-modal-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 44px;
+      background: rgba(31, 122, 67, 0.12);
+      color: var(--color-primary);
+      font-size: 1.15rem;
+    }
+
+    .relatorio-contas-modal-subtitle {
+      margin-top: 0.35rem;
+      color: var(--color-text-muted);
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+
+    .relatorio-contas-modal-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin-top: 0.7rem;
+    }
+
+    .relatorio-contas-modal-badges .badge {
+      min-height: 28px;
+      padding: 0.4rem 0.7rem;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+    }
+
+    .relatorio-contas-modal-summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.85rem;
+      margin-bottom: 1.1rem;
+    }
+
+    .relatorio-contas-summary-item {
+      padding: 1rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      background: #fff;
+    }
+
+    .relatorio-contas-summary-label {
+      display: block;
+      margin-bottom: 0.35rem;
+      color: var(--color-text-muted);
+      font-size: 0.76rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .relatorio-contas-summary-value {
+      display: block;
+      color: var(--color-text-main);
+      font-size: 1.12rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.2;
+    }
+
+    .relatorio-contas-detail-section {
+      margin: 0 0 0.75rem;
+      color: var(--color-primary-dark);
+      font-size: 0.86rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .relatorio-contas-detail-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.85rem;
+    }
+
+    .relatorio-contas-detail-item {
+      padding: 0.95rem 1rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      background: #fff;
+    }
+
+    .relatorio-contas-detail-item.is-wide {
+      grid-column: 1 / -1;
+    }
+
+    .relatorio-contas-detail-label {
+      display: block;
+      margin-bottom: 0.32rem;
+      color: var(--color-text-muted);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .relatorio-contas-detail-value {
+      color: var(--color-text-main);
+      font-size: 0.96rem;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+
+    body.dark-mode.agro-mode .relatorio-contas-detail-item,
+    body.dark-mode.agro-mode .relatorio-contas-summary-item {
+      background: #122030;
+      border-color: #233549;
+    }
+
+    body.dark-mode.agro-mode .relatorio-contas-actions-trigger {
+      background: #152233;
+    }
+
+    body.dark-mode.agro-mode .relatorio-contas-modal .modal-header,
+    body.dark-mode.agro-mode .relatorio-contas-modal .modal-body,
+    body.dark-mode.agro-mode .relatorio-contas-modal .modal-footer {
+      background: #152233;
+      border-color: #233549;
+    }
+
+    body.dark-mode.agro-mode .relatorio-contas-modal-icon {
+      background: rgba(99, 208, 138, 0.14);
+      color: #d9f7e4;
+    }
+
+    .relatorio-contas-filter-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 1rem 0.75rem;
+      align-items: end;
+    }
+
+    .relatorio-contas-filter-field {
+      min-width: 0;
+    }
+
+    .relatorio-contas-filter-field label {
+      display: block;
+      margin-bottom: 0.45rem;
+      color: var(--color-text-muted);
+      font-size: 0.88rem;
+      font-weight: 700;
+    }
+
+    .relatorio-contas-filter-field .form-control,
+    .relatorio-contas-filter-field .form-select {
+      width: 100%;
+      min-height: 48px;
+      border-radius: 14px;
+      font-size: 0.95rem;
+    }
+
+    .relatorio-contas-filter-field .form-select {
+      padding-right: 2.5rem;
+    }
+
+    .relatorio-contas-filter-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      min-height: 48px;
+    }
+
+    .relatorio-contas-filter-actions .btn {
+      min-height: 44px;
+      padding-inline: 1.15rem;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
     @media (max-width: 991.98px) {
       .relatorio-contas-header {
         grid-template-columns: 1fr;
@@ -63,6 +364,33 @@
         width: 100%;
       }
     }
+
+    @media (max-width: 575.98px) {
+      .relatorio-contas-filter-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .relatorio-contas-filter-actions {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .relatorio-contas-filter-actions .btn {
+        width: 100%;
+      }
+
+      .relatorio-contas-detail-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .relatorio-contas-modal-summary {
+        grid-template-columns: 1fr;
+      }
+
+      .relatorio-contas-modal-head {
+        gap: 0.7rem;
+      }
+    }
   </style>
 {% endblock %}
 
@@ -71,7 +399,7 @@
   <div class="relatorio-contas-header">
     <div>
       <h2 class="text-dark m-0">
-        <i class="bi bi-clipboard-data me-2 text-primary"></i> Relatorio Geral de Contas
+        <i class="bi bi-clipboard-data me-2 text-primary"></i> Relatório Geral de Contas
       </h2>
       {% if filters.q or filters.movimento or filters.situacao or filters.origem or filters.tipo_saida or filters.mes or filters.ano or filters.data_inicio_raw or filters.data_fim_raw %}
         <span class="badge bg-filter-custom ms-2">Filtrado</span>
@@ -90,7 +418,7 @@
 
   {% if resumo.total_atrasados %}
     <div class="alert alert-warning border-0 shadow-sm rounded-4 mb-4">
-      Existem {{ resumo.total_atrasados }} lancamento(s) em atraso, somando {{ resumo.total_atrasado|currencybr }}.
+      Existem {{ resumo.total_atrasados }} lançamento(s) em atraso, somando {{ resumo.total_atrasado|currencybr }}.
     </div>
   {% endif %}
 
@@ -125,9 +453,9 @@
     <div class="col-md-3">
       <div class="card info status-warning shadow-sm rounded-4 border-0 h-100">
         <div class="card-body">
-          <span class="text-muted small d-block">Em aberto liquido</span>
+          <span class="text-muted small d-block">Em aberto líquido</span>
           <h4 class="text-dark mt-2 mb-0">{{ resumo.saldo_pendente|currencybr }}</h4>
-          <div class="small text-muted mt-1">{{ resumo.total_itens }} lancamento(s)</div>
+          <div class="small text-muted mt-1">{{ resumo.total_itens }} lançamento(s)</div>
         </div>
       </div>
     </div>
@@ -151,21 +479,21 @@
     <div class="collapse {% if filters.q or filters.movimento or filters.situacao or filters.origem or filters.tipo_saida or filters.mes or filters.ano or filters.data_inicio_raw or filters.data_fim_raw %}show{% endif %}" id="collapseFiltrosRelatorioContas">
       <div class="card-body pt-0 listing-filter-body">
         <form method="GET" action="{{ url_for('main.agro_relatorio_contas_geral') }}">
-          <div class="row g-2 align-items-end">
-            <div class="col-lg-3 col-md-6">
-              <label class="small text-muted mb-1">Busca geral</label>
-              <input type="text" class="form-control form-control-sm" name="q" value="{{ filters.q }}" placeholder="Cliente, favorecido, descricao, doc...">
+          <div class="relatorio-contas-filter-grid">
+            <div class="relatorio-contas-filter-field">
+              <label>Busca geral</label>
+              <input type="text" class="form-control form-control-sm" name="q" value="{{ filters.q }}" placeholder="Cliente, favorecido, descrição, doc...">
             </div>
-            <div class="col-lg-2 col-md-6">
-              <label class="small text-muted mb-1">Movimento</label>
+            <div class="relatorio-contas-filter-field">
+              <label>Movimento</label>
               <select name="movimento" class="form-select form-select-sm">
                 <option value="">Todos</option>
                 <option value="ENTRADA" {% if filters.movimento == 'ENTRADA' %}selected{% endif %}>Entradas</option>
-                <option value="SAIDA" {% if filters.movimento == 'SAIDA' %}selected{% endif %}>Saidas</option>
+                <option value="SAIDA" {% if filters.movimento == 'SAIDA' %}selected{% endif %}>Saídas</option>
               </select>
             </div>
-            <div class="col-lg-2 col-md-6">
-              <label class="small text-muted mb-1">Origem</label>
+            <div class="relatorio-contas-filter-field">
+              <label>Origem</label>
               <select name="origem" class="form-select form-select-sm">
                 <option value="">Todas</option>
                 {% for value, label in origem_options %}
@@ -173,8 +501,8 @@
                 {% endfor %}
               </select>
             </div>
-            <div class="col-lg-2 col-md-6">
-              <label class="small text-muted mb-1">Situacao</label>
+            <div class="relatorio-contas-filter-field">
+              <label>Situação</label>
               <select name="situacao" class="form-select form-select-sm">
                 <option value="">Todas</option>
                 {% for status_value in situacao_options %}
@@ -182,8 +510,8 @@
                 {% endfor %}
               </select>
             </div>
-            <div class="col-lg-3 col-md-6">
-              <label class="small text-muted mb-1">Tipo de saida</label>
+            <div class="relatorio-contas-filter-field">
+              <label>Tipo de saída</label>
               <select name="tipo_saida" class="form-select form-select-sm">
                 <option value="">Todos</option>
                 {% for tipo in tipo_options %}
@@ -191,23 +519,23 @@
                 {% endfor %}
               </select>
             </div>
-            <div class="col-lg-2 col-md-3">
-              <label class="small text-muted mb-1">Mes</label>
+            <div class="relatorio-contas-filter-field">
+              <label>Mês</label>
               <input type="number" min="1" max="12" class="form-control form-control-sm" name="mes" value="{{ filters.mes or '' }}">
             </div>
-            <div class="col-lg-2 col-md-3">
-              <label class="small text-muted mb-1">Ano</label>
+            <div class="relatorio-contas-filter-field">
+              <label>Ano</label>
               <input type="number" min="2024" max="2100" class="form-control form-control-sm" name="ano" value="{{ filters.ano or '' }}">
             </div>
-            <div class="col-lg-2 col-md-3">
-              <label class="small text-muted mb-1">Data inicial</label>
+            <div class="relatorio-contas-filter-field">
+              <label>Data inicial</label>
               <input type="date" class="form-control form-control-sm" name="data_inicio" value="{{ filters.data_inicio_raw }}">
             </div>
-            <div class="col-lg-2 col-md-3">
-              <label class="small text-muted mb-1">Data final</label>
+            <div class="relatorio-contas-filter-field">
+              <label>Data final</label>
               <input type="date" class="form-control form-control-sm" name="data_fim" value="{{ filters.data_fim_raw }}">
             </div>
-            <div class="col-12 listing-filter-actions">
+            <div class="relatorio-contas-filter-actions">
               <button type="submit" class="btn btn-primary btn-sm">
                 <i class="bi bi-funnel"></i> Filtrar
               </button>
@@ -229,18 +557,12 @@
         <table class="table table-hover align-middle mb-0 relatorio-contas-table">
           <thead class="table-light">
             <tr>
-              <th>Movimento</th>
               <th>Origem</th>
-              <th class="col-reference">Pessoa / referencia</th>
-              <th class="col-description">Descricao</th>
+              <th class="col-reference">Pessoa / referência</th>
               <th>Datas</th>
-              <th class="text-end">Previsto</th>
-              <th class="text-end">Realizado</th>
-              <th class="text-end">Pendente</th>
-              <th>Situacao</th>
-              {% if is_editable %}
-                <th>Acoes</th>
-              {% endif %}
+              <th>Valor</th>
+              <th>Situação</th>
+              <th class="text-end">Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -248,43 +570,51 @@
               {% set valor_previsto = item.valor_previsto if item.valor_previsto is defined else (0 if item.cancelado else item.valor) %}
               {% set valor_realizado = item.valor_realizado if item.valor_realizado is defined else (item.valor if item.realizado and not item.cancelado else 0) %}
               {% set valor_pendente = item.valor_pendente if item.valor_pendente is defined else (0 if item.realizado or item.cancelado else item.valor) %}
+              {% set valor_destaque = valor_pendente if valor_pendente else valor_realizado %}
               <tr>
-                <td>
-                  {% if item.movimento == 'SAIDA' %}
-                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle">SAIDA</span>
-                  {% else %}
-                    <span class="badge bg-success-subtle text-success border border-success-subtle">ENTRADA</span>
-                  {% endif %}
-                </td>
                 <td>
                   <div class="fw-semibold">{{ item.origem }}</div>
                   <div class="text-muted small">{{ item.detalhe or '-' }}</div>
-                </td>
-                <td class="col-reference">
-                  <div class="fw-bold">{{ item.titulo }}</div>
-                  <div class="text-muted small">Doc / Ref: {{ item.documento or '-' }}</div>
-                </td>
-                <td class="col-description">
-                  <div>{{ item.descricao or '-' }}</div>
-                  {% if item.ordem_servico_label %}
-                    <div class="text-muted small">OS: {{ item.ordem_servico_label }}</div>
-                  {% endif %}
-                </td>
-                <td>
-                  <div class="text-muted small">Previsto: {{ item.previsto_em.strftime('%d/%m/%Y') if item.previsto_em else '-' }}</div>
-                  <div class="text-muted small">
-                    {% if item.movimento == 'SAIDA' %}Pago{% else %}Recebido{% endif %}:
-                    {{ item.realizado_em.strftime('%d/%m/%Y') if item.realizado_em else '-' }}
+                  <div class="mt-2">
+                    {% if item.movimento == 'SAIDA' %}
+                      <span class="badge bg-danger-subtle text-danger border border-danger-subtle">SAÍDA</span>
+                    {% else %}
+                      <span class="badge bg-success-subtle text-success border border-success-subtle">ENTRADA</span>
+                    {% endif %}
                   </div>
                 </td>
-                <td class="text-end fw-semibold {% if item.movimento == 'SAIDA' %}text-danger{% else %}text-success{% endif %}">
-                  {{ valor_previsto|currencybr }}
+                <td class="col-reference">
+                  <div class="relatorio-contas-entry">
+                    <div class="relatorio-contas-entry-title">{{ item.titulo }}</div>
+                    <div class="relatorio-contas-entry-meta">
+                      <div>{{ item.descricao or '-' }}</div>
+                      <div>Doc / Ref: {{ item.documento or '-' }}</div>
+                      {% if item.ordem_servico_label %}
+                        <div>OS: {{ item.ordem_servico_label }}</div>
+                      {% endif %}
+                    </div>
+                  </div>
                 </td>
-                <td class="text-end fw-semibold {% if item.movimento == 'SAIDA' %}text-danger{% else %}text-success{% endif %}">
-                  {{ valor_realizado|currencybr }}
+                <td>
+                  <div class="relatorio-contas-date-stack">
+                    <div>Previsto: {{ item.previsto_em.strftime('%d/%m/%Y') if item.previsto_em else '-' }}</div>
+                    <div>
+                      {% if item.movimento == 'SAIDA' %}Pago{% else %}Recebido{% endif %}:
+                      {{ item.realizado_em.strftime('%d/%m/%Y') if item.realizado_em else '-' }}
+                    </div>
+                  </div>
                 </td>
-                <td class="text-end fw-semibold {% if item.atrasado %}text-danger{% else %}text-warning{% endif %}">
-                  {{ valor_pendente|currencybr }}
+                <td>
+                  <div class="relatorio-contas-value-stack">
+                    <div class="relatorio-contas-value-main {% if item.movimento == 'SAIDA' %}text-danger{% else %}text-success{% endif %}">
+                      {{ valor_destaque|currencybr }}
+                    </div>
+                    <div class="relatorio-contas-value-note">Total: {{ valor_previsto|currencybr }}</div>
+                    <div class="relatorio-contas-value-note">
+                      {% if item.movimento == 'SAIDA' %}Já pago{% else %}Já recebido{% endif %}: {{ valor_realizado|currencybr }}
+                    </div>
+                    <div class="relatorio-contas-value-note">Pendente: {{ valor_pendente|currencybr }}</div>
+                  </div>
                 </td>
                 <td>
                   {% set status_label = 'CANCELADO' if item.cancelado else 'PAGO' if item.movimento == 'SAIDA' and item.realizado else 'RECEBIDO' if item.realizado else 'PARCIAL' if item.parcial else 'ATRASADO' if item.atrasado else 'PENDENTE' %}
@@ -305,19 +635,42 @@
                     <div class="text-muted small mt-1">{{ item.display_status }}</div>
                   {% endif %}
                 </td>
-                {% if is_editable %}
-                  <td>
-                    <a href="{{ item.edit_url }}" class="btn btn-sm btn-outline-primary shadow-sm d-inline-flex align-items-center gap-1">
-                      <i class="bi bi-pencil-square"></i>
-                      <span>Editar</span>
-                    </a>
-                  </td>
-                {% endif %}
+                <td data-label="Ações" class="text-end listing-cell-actions">
+                  <div class="dropup relatorio-contas-actions-dropdown">
+                    <button class="btn btn-outline-secondary relatorio-contas-actions-trigger"
+                            type="button"
+                            data-bs-toggle="dropdown"
+                            data-bs-offset="0,8"
+                            aria-expanded="false"
+                            title="Mais ações"
+                            aria-label="Mais ações">
+                      <i class="bi bi-three-dots-vertical"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow rounded-3">
+                      <li>
+                        <button class="dropdown-item py-2"
+                                type="button"
+                                data-bs-toggle="modal"
+                                data-bs-target="#relatorioContaDetalhes{{ loop.index }}">
+                          <i class="bi bi-eye text-primary me-2"></i> Ver detalhes
+                        </button>
+                      </li>
+                      {% if is_editable %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                          <a href="{{ item.edit_url }}" class="dropdown-item py-2">
+                            <i class="bi bi-pencil-square text-success me-2"></i> Editar
+                          </a>
+                        </li>
+                      {% endif %}
+                    </ul>
+                  </div>
+                </td>
               </tr>
             {% else %}
               <tr>
-                <td colspan="{{ 10 if is_editable else 9 }}" class="text-center py-5 text-muted">
-                  Nenhum lancamento encontrado.
+                <td colspan="6" class="text-center py-5 text-muted">
+                  Nenhum lançamento encontrado.
                 </td>
               </tr>
             {% endfor %}
@@ -326,5 +679,130 @@
       </div>
     </div>
   </div>
+
+  {% for item in lancamentos %}
+    {% set valor_previsto = item.valor_previsto if item.valor_previsto is defined else (0 if item.cancelado else item.valor) %}
+    {% set valor_realizado = item.valor_realizado if item.valor_realizado is defined else (item.valor if item.realizado and not item.cancelado else 0) %}
+    {% set valor_pendente = item.valor_pendente if item.valor_pendente is defined else (0 if item.realizado or item.cancelado else item.valor) %}
+    {% set status_label = 'CANCELADO' if item.cancelado else 'PAGO' if item.movimento == 'SAIDA' and item.realizado else 'RECEBIDO' if item.realizado else 'PARCIAL' if item.parcial else 'ATRASADO' if item.atrasado else 'PENDENTE' %}
+    <div class="modal fade" id="relatorioContaDetalhes{{ loop.index }}" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 rounded-4 shadow relatorio-contas-modal">
+          <div class="modal-header">
+            <div class="relatorio-contas-modal-head">
+              <div class="relatorio-contas-modal-icon">
+                <i class="bi bi-receipt"></i>
+              </div>
+              <div>
+                <h5 class="modal-title mb-0">{{ item.titulo }}</h5>
+                <div class="relatorio-contas-modal-subtitle">
+                  {{ item.origem }}{% if item.detalhe %} / {{ item.detalhe }}{% endif %}
+                </div>
+                <div class="relatorio-contas-modal-badges">
+                  {% if item.movimento == 'SAIDA' %}
+                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle">SAÍDA</span>
+                  {% else %}
+                    <span class="badge bg-success-subtle text-success border border-success-subtle">ENTRADA</span>
+                  {% endif %}
+                  {% if item.cancelado %}
+                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">CANCELADO</span>
+                  {% elif item.realizado and item.movimento == 'SAIDA' %}
+                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle">PAGO</span>
+                  {% elif item.realizado %}
+                    <span class="badge bg-success-subtle text-success border border-success-subtle">RECEBIDO</span>
+                  {% elif item.parcial %}
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle">PARCIAL</span>
+                  {% elif item.atrasado %}
+                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle">ATRASADO</span>
+                  {% else %}
+                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle">PENDENTE</span>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+          </div>
+          <div class="modal-body">
+            <div class="relatorio-contas-modal-summary">
+              <div class="relatorio-contas-summary-item">
+                <span class="relatorio-contas-summary-label">Previsto</span>
+                <span class="relatorio-contas-summary-value {% if item.movimento == 'SAIDA' %}text-danger{% else %}text-success{% endif %}">
+                  {{ valor_previsto|currencybr }}
+                </span>
+              </div>
+              <div class="relatorio-contas-summary-item">
+                <span class="relatorio-contas-summary-label">Realizado</span>
+                <span class="relatorio-contas-summary-value {% if item.movimento == 'SAIDA' %}text-danger{% else %}text-success{% endif %}">
+                  {{ valor_realizado|currencybr }}
+                </span>
+              </div>
+              <div class="relatorio-contas-summary-item">
+                <span class="relatorio-contas-summary-label">Pendente</span>
+                <span class="relatorio-contas-summary-value {% if item.atrasado %}text-danger{% else %}text-warning{% endif %}">
+                  {{ valor_pendente|currencybr }}
+                </span>
+              </div>
+            </div>
+
+            <div class="relatorio-contas-detail-section">Dados do lançamento</div>
+            <div class="relatorio-contas-detail-grid">
+              <div class="relatorio-contas-detail-item">
+                <span class="relatorio-contas-detail-label">Movimento</span>
+                <div class="relatorio-contas-detail-value">{{ item.movimento }}</div>
+              </div>
+              <div class="relatorio-contas-detail-item">
+                <span class="relatorio-contas-detail-label">Situação</span>
+                <div class="relatorio-contas-detail-value">
+                  {{ status_label }}
+                  {% if item.display_status and item.display_status != status_label %}
+                    <span class="text-muted">/ {{ item.display_status }}</span>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="relatorio-contas-detail-item">
+                <span class="relatorio-contas-detail-label">Origem</span>
+                <div class="relatorio-contas-detail-value">{{ item.origem }}</div>
+              </div>
+              <div class="relatorio-contas-detail-item">
+                <span class="relatorio-contas-detail-label">Detalhe</span>
+                <div class="relatorio-contas-detail-value">{{ item.detalhe or '-' }}</div>
+              </div>
+              <div class="relatorio-contas-detail-item">
+                <span class="relatorio-contas-detail-label">Pessoa / referência</span>
+                <div class="relatorio-contas-detail-value">{{ item.titulo }}</div>
+              </div>
+              <div class="relatorio-contas-detail-item">
+                <span class="relatorio-contas-detail-label">Doc / Ref</span>
+                <div class="relatorio-contas-detail-value">{{ item.documento or '-' }}</div>
+              </div>
+              <div class="relatorio-contas-detail-item is-wide">
+                <span class="relatorio-contas-detail-label">Descrição</span>
+                <div class="relatorio-contas-detail-value">{{ item.descricao or '-' }}</div>
+              </div>
+              <div class="relatorio-contas-detail-item">
+                <span class="relatorio-contas-detail-label">Ordem de serviço</span>
+                <div class="relatorio-contas-detail-value">{{ item.ordem_servico_label or '-' }}</div>
+              </div>
+              <div class="relatorio-contas-detail-item">
+                <span class="relatorio-contas-detail-label">Datas</span>
+                <div class="relatorio-contas-detail-value">
+                  Previsto: {{ item.previsto_em.strftime('%d/%m/%Y') if item.previsto_em else '-' }}<br>
+                  {% if item.movimento == 'SAIDA' %}Pago{% else %}Recebido{% endif %}:
+                  {{ item.realizado_em.strftime('%d/%m/%Y') if item.realizado_em else '-' }}
+                </div>
+              </div>
+            </div>
+          </div>
+          {% if is_editable %}
+            <div class="modal-footer">
+              <a href="{{ item.edit_url }}" class="btn btn-primary d-inline-flex align-items-center gap-2">
+                <i class="bi bi-pencil-square"></i> Editar lançamento
+              </a>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  {% endfor %}
 </div>
 {% endblock %}
