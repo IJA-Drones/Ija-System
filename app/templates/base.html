@@ -355,6 +355,7 @@
             'main.agro_financeiro_dashboard',
             'main.agro_caixa_diario',
             'main.agro_financeiro_contas',
+            'main.agro_relatorio_contas_geral',
             'main.agro_contas_receber_listar',
             'main.agro_contas_pagar_listar',
             'main.agro_financeiro_listar',
@@ -427,6 +428,14 @@
                     href="{{ url_for('main.agro_financeiro_contas') }}"
                   >
                     <i class="bi bi-wallet2 me-2"></i><span>Contas</span>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a
+                    class="nav-link sub-link {% if request.endpoint in ['main.agro_relatorio_contas_geral'] %}active{% endif %}"
+                    href="{{ url_for('main.agro_relatorio_contas_geral') }}"
+                  >
+                    <i class="bi bi-clipboard-data me-2"></i><span>Relatorio Geral</span>
                   </a>
                 </li>
                 <li class="nav-item">
