@@ -12,9 +12,9 @@
     <div>
       <h2 class="text-dark m-0">
         <i class="bi bi-cash-stack me-2 text-primary"></i>
-        {{ 'Novo lançamento financeiro agro' if modo == 'novo' else 'Editar lançamento financeiro agro' }}
+        {{ 'Novo lancamento financeiro agro' if modo == 'novo' else 'Editar lancamento financeiro agro' }}
       </h2>
-      <p class="text-muted small mb-0">Estrutura baseada na planilha atual de contratos, execução, recebimento e comissões.</p>
+      <p class="text-muted small mb-0">Estrutura baseada na planilha atual de contratos, execucao, recebimento e comissoes.</p>
     </div>
 
     <a href="{{ url_for('main.agro_financeiro_listar') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
@@ -27,7 +27,7 @@
       <form method="post" novalidate>
         <div class="d-flex align-items-center mb-3">
           <i class="bi bi-link-45deg text-primary me-2 fs-5"></i>
-          <h5 class="m-0 text-primary fw-bold">Origem do lançamento</h5>
+          <h5 class="m-0 text-primary fw-bold">Origem do lancamento</h5>
         </div>
 
         <div class="row g-3 mb-4">
@@ -42,7 +42,7 @@
               {% endfor %}
             </select>
             {% if errors.get('contrato_agro_id') %}<div class="invalid-feedback">{{ errors.get('contrato_agro_id') }}</div>{% endif %}
-            <div class="form-text">Ao selecionar um contrato, o sistema usa o cliente, as culturas e os valores do contrato/orçamento como base inicial. Depois, você pode ajustar tudo manualmente.</div>
+            <div class="form-text">Ao selecionar um contrato, o sistema usa o cliente, as culturas e os valores do contrato/orcamento como base inicial. Depois, voce pode ajustar tudo manualmente.</div>
           </div>
 
           <div class="col-md-3">
@@ -64,6 +64,7 @@
               {% endfor %}
             </select>
             {% if errors.get('status') %}<div class="invalid-feedback">{{ errors.get('status') }}</div>{% endif %}
+            <div class="form-text">Use cancelado apenas quando o recebivel nao deve mais ser cobrado. Pendente, parcial e recebido seguem o valor recebido.</div>
           </div>
 
           <div class="col-md-2">
@@ -76,7 +77,7 @@
 
         <div class="d-flex align-items-center mb-3">
           <i class="bi bi-calendar-check text-primary me-2 fs-5"></i>
-          <h5 class="m-0 text-primary fw-bold">Datas e identificação</h5>
+          <h5 class="m-0 text-primary fw-bold">Datas e identificacao</h5>
         </div>
 
         <div class="row g-3 mb-4">
@@ -92,13 +93,13 @@
           </div>
 
           <div class="col-md-2">
-            <label class="form-label fw-bold small text-muted">Data de elaboração do contrato</label>
+            <label class="form-label fw-bold small text-muted">Data de elaboracao do contrato</label>
             <input type="date" name="data_elaboracao_contrato" value="{{ form.get('data_elaboracao_contrato', '') }}" class="form-control {% if errors.get('data_elaboracao_contrato') %}is-invalid{% endif %}">
             {% if errors.get('data_elaboracao_contrato') %}<div class="invalid-feedback">{{ errors.get('data_elaboracao_contrato') }}</div>{% endif %}
           </div>
 
           <div class="col-md-2">
-            <label class="form-label fw-bold small text-muted">Data do serviço executado</label>
+            <label class="form-label fw-bold small text-muted">Data do servico executado</label>
             <input type="date" name="data_servico_executado" value="{{ form.get('data_servico_executado', '') }}" class="form-control {% if errors.get('data_servico_executado') %}is-invalid{% endif %}">
             {% if errors.get('data_servico_executado') %}<div class="invalid-feedback">{{ errors.get('data_servico_executado') }}</div>{% endif %}
           </div>
@@ -110,7 +111,7 @@
           </div>
 
           <div class="col-md-2">
-            <label class="form-label fw-bold small text-muted">Data do recebimento</label>
+            <label class="form-label fw-bold small text-muted">Data do ultimo recebimento</label>
             <input type="date" name="data_recebimento" value="{{ form.get('data_recebimento', '') }}" class="form-control {% if errors.get('data_recebimento') %}is-invalid{% endif %}">
             {% if errors.get('data_recebimento') %}<div class="invalid-feedback">{{ errors.get('data_recebimento') }}</div>{% endif %}
           </div>
@@ -120,63 +121,80 @@
 
         <div class="d-flex align-items-center mb-3">
           <i class="bi bi-map text-primary me-2 fs-5"></i>
-          <h5 class="m-0 text-primary fw-bold">Mapeamento e pulverização</h5>
+          <h5 class="m-0 text-primary fw-bold">Mapeamento e pulverizacao</h5>
         </div>
 
         <div class="alert alert-light border rounded-4 mb-4">
-          <div class="fw-semibold text-primary mb-2">Como os cálculos funcionam</div>
-          <div class="small text-muted mb-1"><strong>Mapeamento:</strong> área prevista para mapeamento x preço por hectare = total previsto do mapeamento.</div>
-          <div class="small text-muted mb-1"><strong>Pulverização:</strong> área realmente pulverizada x preço por hectare = total previsto da pulverização.</div>
-          <div class="small text-muted">Se a área realmente pulverizada ficar em branco, o sistema usa a área planejada como base para o cálculo.</div>
-          <div class="small text-muted"><strong>Total do contrato:</strong> total do mapeamento + total da pulverização. Se precisar, você pode ajustar manualmente qualquer valor.</div>
+          <div class="fw-semibold text-primary mb-2">Como os calculos funcionam</div>
+          <div class="small text-muted mb-1"><strong>Mapeamento:</strong> area prevista para mapeamento x preco por hectare = total previsto do mapeamento.</div>
+          <div class="small text-muted mb-1"><strong>Pulverizacao:</strong> area realmente pulverizada x preco por hectare = total previsto da pulverizacao.</div>
+          <div class="small text-muted">Se a area realmente pulverizada ficar em branco, o sistema usa a area planejada como base para o calculo.</div>
+          <div class="small text-muted"><strong>Total do contrato:</strong> total do mapeamento + total da pulverizacao. Se precisar, voce pode ajustar manualmente qualquer valor.</div>
         </div>
 
         <div class="row g-3 mb-4">
           <div class="col-md-2">
-            <label class="form-label fw-bold small text-muted">Área prevista para mapeamento (ha)</label>
+            <label class="form-label fw-bold small text-muted">Area prevista para mapeamento (ha)</label>
             <input type="text" name="area_mapeamento_ha" value="{{ form.get('area_mapeamento_ha', '') }}" class="form-control">
-            <div class="form-text">Quantidade de hectares incluídos no serviço de mapeamento.</div>
+            <div class="form-text">Quantidade de hectares incluidos no servico de mapeamento.</div>
           </div>
+
           <div class="col-md-2">
-            <label class="form-label fw-bold small text-muted">Preço do mapeamento por ha</label>
+            <label class="form-label fw-bold small text-muted">Preco do mapeamento por ha</label>
             <input type="text" name="valor_mapeamento_ha" value="{{ form.get('valor_mapeamento_ha', '') }}" class="form-control">
             <div class="form-text">Valor cobrado por hectare mapeado.</div>
           </div>
+
           <div class="col-md-2">
             <label class="form-label fw-bold small text-muted">Total previsto do mapeamento</label>
             <input type="text" name="total_mapeamento" value="{{ form.get('total_mapeamento', '') }}" class="form-control {% if errors.get('total_mapeamento') %}is-invalid{% endif %}">
             {% if errors.get('total_mapeamento') %}<div class="invalid-feedback">{{ errors.get('total_mapeamento') }}</div>{% endif %}
-            <div class="form-text">Base calculada por área de mapeamento x preço por hectare.</div>
+            <div class="form-text">Base calculada por area de mapeamento x preco por hectare.</div>
           </div>
 
           <div class="col-md-2">
-            <label class="form-label fw-bold small text-muted">Área prevista para pulverização (ha)</label>
+            <label class="form-label fw-bold small text-muted">Area prevista para pulverizacao (ha)</label>
             <input type="text" name="area_pulverizacao_ha" value="{{ form.get('area_pulverizacao_ha', '') }}" class="form-control">
-            <div class="form-text">Área planejada no contrato/orçamento para pulverizar.</div>
+            <div class="form-text">Area planejada no contrato/orcamento para pulverizar.</div>
           </div>
+
           <div class="col-md-2">
-            <label class="form-label fw-bold small text-muted">Área realmente pulverizada (ha)</label>
+            <label class="form-label fw-bold small text-muted">Area realmente pulverizada (ha)</label>
             <input type="text" name="area_pulverizada_real_ha" value="{{ form.get('area_pulverizada_real_ha', '') }}" class="form-control">
-            <div class="form-text">Área que de fato foi executada no campo.</div>
+            <div class="form-text">Area que de fato foi executada no campo.</div>
           </div>
+
           <div class="col-md-2">
-            <label class="form-label fw-bold small text-muted">Preço por hectare da pulverização</label>
+            <label class="form-label fw-bold small text-muted">Preco por hectare da pulverizacao</label>
             <input type="text" name="valor_pulverizacao_ha" value="{{ form.get('valor_pulverizacao_ha', '') }}" class="form-control">
             <div class="form-text">Valor cobrado por hectare pulverizado.</div>
           </div>
 
           <div class="col-md-3">
-            <label class="form-label fw-bold small text-muted">Total previsto da pulverização</label>
+            <label class="form-label fw-bold small text-muted">Total previsto da pulverizacao</label>
             <input type="text" name="total_pulverizacao" value="{{ form.get('total_pulverizacao', '') }}" class="form-control {% if errors.get('total_pulverizacao') %}is-invalid{% endif %}">
             {% if errors.get('total_pulverizacao') %}<div class="invalid-feedback">{{ errors.get('total_pulverizacao') }}</div>{% endif %}
-            <div class="form-text">Base calculada por área realmente pulverizada x preço por hectare.</div>
+            <div class="form-text">Base calculada por area realmente pulverizada x preco por hectare.</div>
           </div>
 
           <div class="col-md-3">
             <label class="form-label fw-bold small text-muted">Valor total a receber do contrato</label>
             <input type="text" name="valor_total_contrato" value="{{ form.get('valor_total_contrato', '') }}" class="form-control {% if errors.get('valor_total_contrato') %}is-invalid{% endif %}">
             {% if errors.get('valor_total_contrato') %}<div class="invalid-feedback">{{ errors.get('valor_total_contrato') }}</div>{% endif %}
-            <div class="form-text">Se ficar em branco, o sistema soma o total do mapeamento com o total da pulverização.</div>
+            <div class="form-text">Se ficar em branco, o sistema soma o total do mapeamento com o total da pulverizacao.</div>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Valor ja recebido</label>
+            <input type="text" name="valor_recebido" value="{{ form.get('valor_recebido', '') }}" class="form-control {% if errors.get('valor_recebido') %}is-invalid{% endif %}" placeholder="R$ 0,00">
+            {% if errors.get('valor_recebido') %}<div class="invalid-feedback">{{ errors.get('valor_recebido') }}</div>{% endif %}
+            <div class="form-text">Informe o total acumulado recebido neste contrato.</div>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Saldo em aberto</label>
+            <input type="text" name="saldo_em_aberto" value="" class="form-control" readonly>
+            <div class="form-text">Esse saldo continua em contas a receber ate a quitacao total.</div>
           </div>
         </div>
 
@@ -184,42 +202,44 @@
 
         <div class="d-flex align-items-center mb-3">
           <i class="bi bi-people-fill text-primary me-2 fs-5"></i>
-          <h5 class="m-0 text-primary fw-bold">Comissões</h5>
+          <h5 class="m-0 text-primary fw-bold">Comissoes</h5>
         </div>
 
         <div class="alert alert-light border rounded-4 mb-4">
-          <div class="small text-muted mb-1"><strong>Comissão principal:</strong> área realmente pulverizada x comissão por hectare.</div>
-          <div class="small text-muted"><strong>Comissão da cooperativa:</strong> mesma lógica, usando o valor por hectare definido para a cooperativa.</div>
+          <div class="small text-muted mb-1"><strong>Comissao principal:</strong> area realmente pulverizada x comissao por hectare.</div>
+          <div class="small text-muted"><strong>Comissao da cooperativa:</strong> mesma logica, usando o valor por hectare definido para a cooperativa.</div>
         </div>
 
         <div class="row g-3 mb-4">
           <div class="col-md-3">
-            <label class="form-label fw-bold small text-muted">Comissão principal por hectare</label>
+            <label class="form-label fw-bold small text-muted">Comissao principal por hectare</label>
             <input type="text" name="comissao_por_ha" value="{{ form.get('comissao_por_ha', '') }}" class="form-control">
-            <div class="form-text">Valor de comissão pago por hectare executado.</div>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label fw-bold small text-muted">Total da comissão principal</label>
-            <input type="text" name="valor_comissao" value="{{ form.get('valor_comissao', '') }}" class="form-control {% if errors.get('valor_comissao') %}is-invalid{% endif %}">
-            {% if errors.get('valor_comissao') %}<div class="invalid-feedback">{{ errors.get('valor_comissao') }}</div>{% endif %}
-            <div class="form-text">Calculado com base na área realmente pulverizada.</div>
+            <div class="form-text">Valor de comissao pago por hectare executado.</div>
           </div>
 
           <div class="col-md-3">
-            <label class="form-label fw-bold small text-muted">Comissão da cooperativa por hectare</label>
-            <input type="text" name="comissao_cooperativa_por_ha" value="{{ form.get('comissao_cooperativa_por_ha', '') }}" class="form-control">
-            <div class="form-text">Valor por hectare da comissão da cooperativa.</div>
+            <label class="form-label fw-bold small text-muted">Total da comissao principal</label>
+            <input type="text" name="valor_comissao" value="{{ form.get('valor_comissao', '') }}" class="form-control {% if errors.get('valor_comissao') %}is-invalid{% endif %}">
+            {% if errors.get('valor_comissao') %}<div class="invalid-feedback">{{ errors.get('valor_comissao') }}</div>{% endif %}
+            <div class="form-text">Calculado com base na area realmente pulverizada.</div>
           </div>
+
           <div class="col-md-3">
-            <label class="form-label fw-bold small text-muted">Total da comissão cooperativa</label>
+            <label class="form-label fw-bold small text-muted">Comissao da cooperativa por hectare</label>
+            <input type="text" name="comissao_cooperativa_por_ha" value="{{ form.get('comissao_cooperativa_por_ha', '') }}" class="form-control">
+            <div class="form-text">Valor por hectare da comissao da cooperativa.</div>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Total da comissao cooperativa</label>
             <input type="text" name="valor_comissao_cooperativa" value="{{ form.get('valor_comissao_cooperativa', '') }}" class="form-control {% if errors.get('valor_comissao_cooperativa') %}is-invalid{% endif %}">
             {% if errors.get('valor_comissao_cooperativa') %}<div class="invalid-feedback">{{ errors.get('valor_comissao_cooperativa') }}</div>{% endif %}
-            <div class="form-text">Calculado com base na área realmente pulverizada.</div>
+            <div class="form-text">Calculado com base na area realmente pulverizada.</div>
           </div>
         </div>
 
         <div class="mb-4">
-          <label class="form-label fw-bold small text-muted">Observações</label>
+          <label class="form-label fw-bold small text-muted">Observacoes</label>
           <textarea name="observacoes" rows="3" class="form-control">{{ form.get('observacoes', '') }}</textarea>
         </div>
 
@@ -234,10 +254,10 @@
               formaction="{{ url_for('main.agro_financeiro_deletar', lancamento_id=lancamento.id) }}"
               formmethod="POST"
               formnovalidate
-              onclick="return confirm('Tem certeza de que deseja excluir este lançamento financeiro agro?');"
+              onclick="return confirm('Tem certeza de que deseja excluir este lancamento financeiro agro?');"
             >
-            <i class="bi bi-trash"></i> Excluir
-          </button>
+              <i class="bi bi-trash"></i> Excluir
+            </button>
           {% endif %}
           <a href="{{ url_for('main.agro_financeiro_listar') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
             <i class="bi bi-x-circle"></i> Cancelar
@@ -271,6 +291,7 @@
         "data_elaboracao_contrato",
         "data_servico_executado",
         "data_vencimento",
+        "valor_recebido",
         "area_mapeamento_ha",
         "valor_mapeamento_ha",
         "total_mapeamento",
@@ -286,6 +307,7 @@
       ];
 
       const currencyFields = new Set([
+        "valor_recebido",
         "valor_mapeamento_ha",
         "total_mapeamento",
         "valor_pulverizacao_ha",
@@ -338,6 +360,14 @@
           : decimalFormatter.format(numeric);
       }
 
+      function recalculateOpenBalance() {
+        const totalContrato = parseNumber(getInput("valor_total_contrato")?.value);
+        const valorRecebido = parseNumber(getInput("valor_recebido")?.value);
+        const saldoInput = getInput("saldo_em_aberto");
+        if (!saldoInput) return;
+        saldoInput.value = currencyFormatter.format(Math.max(totalContrato - valorRecebido, 0));
+      }
+
       function recalculateFinancialFields() {
         const areaMapeamento = parseNumber(getInput("area_mapeamento_ha")?.value);
         const precoMapeamento = parseNumber(getInput("valor_mapeamento_ha")?.value);
@@ -361,6 +391,7 @@
         setFormattedValue("valor_total_contrato", totalContrato);
         setFormattedValue("valor_comissao", totalComissao);
         setFormattedValue("valor_comissao_cooperativa", totalComissaoCooperativa);
+        recalculateOpenBalance();
       }
 
       function populateBaseFields(preset) {
@@ -379,11 +410,26 @@
         recalculateFinancialFields();
       }
 
-      ["area_mapeamento_ha", "valor_mapeamento_ha", "area_pulverizacao_ha", "area_pulverizada_real_ha", "valor_pulverizacao_ha", "comissao_por_ha", "comissao_cooperativa_por_ha"].forEach((fieldName) => {
+      [
+        "area_mapeamento_ha",
+        "valor_mapeamento_ha",
+        "area_pulverizacao_ha",
+        "area_pulverizada_real_ha",
+        "valor_pulverizacao_ha",
+        "comissao_por_ha",
+        "comissao_cooperativa_por_ha",
+      ].forEach((fieldName) => {
         const input = getInput(fieldName);
         if (!input) return;
         input.addEventListener("input", recalculateFinancialFields);
         input.addEventListener("change", recalculateFinancialFields);
+      });
+
+      ["valor_total_contrato", "valor_recebido"].forEach((fieldName) => {
+        const input = getInput(fieldName);
+        if (!input) return;
+        input.addEventListener("input", recalculateOpenBalance);
+        input.addEventListener("change", recalculateOpenBalance);
       });
 
       contractEl.addEventListener("change", (event) => {
@@ -394,9 +440,9 @@
 
       if ("{{ modo }}" === "novo" && contractEl.value) {
         applyPreset(contractEl.value);
-      } else {
-        recalculateFinancialFields();
       }
+
+      recalculateOpenBalance();
     })();
   </script>
 {% endblock %}

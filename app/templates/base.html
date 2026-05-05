@@ -352,6 +352,7 @@
 
           {% if (is_admin_panel_user or is_financeiro_agro_user) and is_agro_context %}
           {% set agro_financeiro_menu_active = request.endpoint in [
+            'main.agro_financeiro_dashboard',
             'main.agro_caixa_diario',
             'main.agro_financeiro_contas',
             'main.agro_contas_receber_listar',
@@ -414,6 +415,14 @@
               <ul class="nav flex-column sub-nav">
                 <li class="nav-item">
                   <a
+                    class="nav-link sub-link {% if request.endpoint in ['main.agro_financeiro_dashboard'] %}active{% endif %}"
+                    href="{{ url_for('main.agro_financeiro_dashboard') }}"
+                  >
+                    <i class="bi bi-grid-1x2-fill me-2"></i><span>Dashboard</span>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a
                     class="nav-link sub-link {% if request.endpoint in ['main.agro_financeiro_contas'] %}active{% endif %}"
                     href="{{ url_for('main.agro_financeiro_contas') }}"
                   >
@@ -446,8 +455,8 @@
                 </li>
                 <li class="nav-item">
                   <a
-                    class="nav-link sub-link {% if request.endpoint in ['main.agro_financeiro_listar', 'main.agro_financeiro_novo', 'main.agro_financeiro_editar'] %}active{% endif %}"
-                    href="{{ url_for('main.agro_financeiro_listar') }}"
+                    class="nav-link sub-link {% if request.endpoint in ['main.agro_financeiro_listar', 'main.agro_financeiro_novo', 'main.agro_financeiro_editar', 'main.agro_contas_receber_listar'] %}active{% endif %}"
+                    href="{{ url_for('main.agro_contas_receber_listar', origem='recebivel') }}"
                   >
                     <i class="bi bi-receipt-cutoff me-2"></i><span>Recebiveis</span>
                   </a>

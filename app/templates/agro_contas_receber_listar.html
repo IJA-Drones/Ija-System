@@ -6,30 +6,145 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/listing_pattern.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+  <style>
+    .contas-receber-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: start;
+      gap: 1.5rem;
+      margin-bottom: 1.75rem;
+    }
+
+    .contas-receber-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 0.75rem;
+      margin-left: auto;
+    }
+
+    .contas-receber-actions .btn {
+      min-height: 42px;
+      padding-inline: 1.15rem;
+      justify-content: center;
+    }
+
+    .contas-receber-shortcuts {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .contas-receber-alert {
+      margin-bottom: 2rem !important;
+    }
+
+    .contas-receber-resumo {
+      margin-bottom: 2rem;
+    }
+
+    .contas-receber-filtros {
+      margin-bottom: 2rem !important;
+    }
+
+    .contas-receber-shortcut {
+      display: block;
+      height: 100%;
+      padding: 1.5rem 1.6rem;
+      border-radius: 1.5rem;
+      border: 1px solid rgba(47, 133, 90, 0.25);
+      background: linear-gradient(180deg, #ffffff 0%, #f7fcf9 100%);
+      box-shadow: var(--shadow-sm);
+      color: inherit;
+      text-decoration: none;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+
+    .contas-receber-shortcut:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+      color: inherit;
+    }
+
+    .contas-receber-shortcut.is-active {
+      border-color: rgba(47, 133, 90, 0.8);
+      box-shadow: 0 16px 32px rgba(31, 113, 70, 0.12);
+    }
+
+    .contas-receber-shortcut-head {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .contas-receber-shortcut-icon {
+      width: 3.2rem;
+      height: 3.2rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 1.1rem;
+      background: rgba(47, 133, 90, 0.12);
+      color: var(--color-success);
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+
+    .contas-receber-shortcut-title {
+      margin: 0;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--color-primary-dark);
+    }
+
+    .contas-receber-shortcut-copy {
+      margin: 0;
+      color: var(--color-text-muted);
+      line-height: 1.5;
+    }
+
+    @media (max-width: 991.98px) {
+      .contas-receber-header {
+        grid-template-columns: 1fr;
+      }
+
+      .contas-receber-actions {
+        justify-content: flex-start;
+        margin-left: 0;
+      }
+
+      .contas-receber-actions .btn {
+        width: 100%;
+      }
+
+      .contas-receber-shortcuts {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4 listing-page">
-  <div class="listing-header mb-4">
+  <div class="contas-receber-header">
     <div>
       <h2 class="text-dark m-0">
         <i class="bi bi-cash-stack me-2 text-success"></i> Contas a Receber
       </h2>
-      <p class="text-muted small mb-0">
-        Recebiveis de contrato e entradas manuais em uma unica visao.
         {% if filters.q or filters.situacao or filters.origem or filters.mes or filters.ano %}
           <span class="badge bg-filter-custom ms-2">Filtrado</span>
         {% endif %}
-      </p>
     </div>
 
-    <div class="listing-actions">
+    <div class="listing-actions contas-receber-actions">
       <a href="{{ url_for('main.agro_financeiro_contas') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
       {% if is_editable %}
-        <a href="{{ url_for('main.agro_financeiro_novo') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
-          <i class="bi bi-plus-circle"></i> Novo recebivel
+        <a href="{{ url_for('main.agro_financeiro_novo') }}" class="btn btn-success d-flex align-items-center gap-2">
+          <i class="bi bi-plus-circle-fill"></i> Novo recebível
         </a>
         <a href="{{ url_for('main.agro_financeiro_entrada_novo') }}" class="btn btn-success d-flex align-items-center gap-2">
           <i class="bi bi-plus-circle-fill"></i> Nova entrada
@@ -38,25 +153,43 @@
     </div>
   </div>
 
-  <div class="d-flex flex-wrap gap-2 mb-4">
-    <a href="{{ url_for('main.agro_contas_receber_listar') }}" class="btn {% if not filters.origem %}btn-success{% else %}btn-outline-success{% endif %} btn-sm d-flex align-items-center gap-2">
-      <i class="bi bi-grid"></i> Todas as contas
+  <div class="contas-receber-shortcuts">
+    <a href="{{ url_for('main.agro_contas_receber_listar') }}" class="contas-receber-shortcut {% if not filters.origem %}is-active{% endif %}">
+      <div class="contas-receber-shortcut-head">
+        <span class="contas-receber-shortcut-icon">
+          <i class="bi bi-grid"></i>
+        </span>
+        <h3 class="contas-receber-shortcut-title">Todas as contas</h3>
+      </div>
+      <p class="contas-receber-shortcut-copy">Visao completa com recebiveis de contrato e entradas manuais no mesmo lugar.</p>
     </a>
-    <a href="{{ url_for('main.agro_contas_receber_listar', origem='recebivel') }}" class="btn {% if filters.origem == 'recebivel' %}btn-primary{% else %}btn-outline-primary{% endif %} btn-sm d-flex align-items-center gap-2">
-      <i class="bi bi-receipt-cutoff"></i> So recebiveis
+    <a href="{{ url_for('main.agro_contas_receber_listar', origem='recebivel') }}" class="contas-receber-shortcut {% if filters.origem == 'recebivel' %}is-active{% endif %}">
+      <div class="contas-receber-shortcut-head">
+        <span class="contas-receber-shortcut-icon">
+          <i class="bi bi-receipt-cutoff"></i>
+        </span>
+        <h3 class="contas-receber-shortcut-title">Recebíveis</h3>
+      </div>
+      <p class="contas-receber-shortcut-copy">Mostra apenas os lancamentos vinculados aos contratos e ao fluxo comercial.</p>
     </a>
-    <a href="{{ url_for('main.agro_contas_receber_listar', origem='entrada') }}" class="btn {% if filters.origem == 'entrada' %}btn-success{% else %}btn-outline-success{% endif %} btn-sm d-flex align-items-center gap-2">
-      <i class="bi bi-box-arrow-in-down-right"></i> So entradas manuais
+    <a href="{{ url_for('main.agro_contas_receber_listar', origem='entrada') }}" class="contas-receber-shortcut {% if filters.origem == 'entrada' %}is-active{% endif %}">
+      <div class="contas-receber-shortcut-head">
+        <span class="contas-receber-shortcut-icon">
+          <i class="bi bi-box-arrow-in-down-right"></i>
+        </span>
+        <h3 class="contas-receber-shortcut-title">Entradas manuais</h3>
+      </div>
+      <p class="contas-receber-shortcut-copy">Filtra somente os lancamentos avulsos cadastrados manualmente no financeiro.</p>
     </a>
   </div>
 
   {% if resumo.total_atrasados %}
-    <div class="alert alert-warning border-0 shadow-sm rounded-4 mb-4">
+    <div class="alert alert-warning border-0 shadow-sm rounded-4 contas-receber-alert">
       Existem {{ resumo.total_atrasados }} conta(s) a receber em atraso, somando {{ resumo.total_atrasado|currencybr }}.
     </div>
   {% endif %}
 
-  <div class="row g-3 mb-4">
+  <div class="row g-3 contas-receber-resumo">
     <div class="col-md-3">
       <div class="card info status-primary shadow-sm rounded-4 border-0 h-100">
         <div class="card-body">
@@ -94,7 +227,7 @@
     </div>
   </div>
 
-  <div class="card shadow-sm rounded-4 mb-4 border-0">
+  <div class="card shadow-sm rounded-4 border-0 contas-receber-filtros">
     <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center listing-filter-header"
          data-bs-toggle="collapse"
          data-bs-target="#collapseFiltrosContasReceber"
@@ -127,7 +260,7 @@
               </select>
             </div>
             <div class="col-md-2">
-              <label class="small text-muted mb-1">Situacao</label>
+              <label class="small text-muted mb-1">Situação</label>
               <select name="situacao" class="form-select form-select-sm">
                 <option value="">Todas</option>
                 {% for status_value in situacao_options %}
@@ -136,7 +269,7 @@
               </select>
             </div>
             <div class="col-md-1">
-              <label class="small text-muted mb-1">Mes</label>
+              <label class="small text-muted mb-1">Mês</label>
               <input type="number" min="1" max="12" class="form-control form-control-sm" name="mes" value="{{ filters.mes or '' }}">
             </div>
             <div class="col-md-2">
@@ -166,12 +299,12 @@
           <thead class="table-light">
             <tr>
               <th>Origem</th>
-              <th>Pessoa / referencia</th>
+              <th>Pessoa / referência</th>
               <th>Datas</th>
               <th>Valor</th>
-              <th>Situacao</th>
+              <th>Situação</th>
               {% if is_editable %}
-                <th>Acoes</th>
+                <th>Ações</th>
               {% endif %}
             </tr>
           </thead>
@@ -191,24 +324,46 @@
                   <div class="text-muted small">Previsto: {{ item.previsto_em.strftime('%d/%m/%Y') if item.previsto_em else '-' }}</div>
                   <div class="text-muted small">Recebido: {{ item.realizado_em.strftime('%d/%m/%Y') if item.realizado_em else '-' }}</div>
                 </td>
-                <td class="fw-semibold text-success">{{ item.valor|currencybr }}</td>
+                <td class="fw-semibold text-success">
+                  {{ item.valor|currencybr }}
+                  {% if item.origem_slug == 'recebivel' %}
+                    <div class="text-muted small">Total: {{ item.valor_total_contrato|currencybr }}</div>
+                    <div class="text-muted small">Ja recebido: {{ item.valor_recebido|currencybr }}</div>
+                  {% endif %}
+                </td>
                 <td>
+                  {% set status_label = 'CANCELADO' if item.cancelado else 'RECEBIDO' if item.realizado else 'PARCIAL' if item.parcial else 'ATRASADO' if item.atrasado else 'PENDENTE' %}
                   {% if item.cancelado %}
                     <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">CANCELADO</span>
                   {% elif item.realizado %}
                     <span class="badge bg-success-subtle text-success border border-success-subtle">RECEBIDO</span>
+                  {% elif item.parcial %}
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle">PARCIAL</span>
                   {% elif item.atrasado %}
                     <span class="badge bg-danger-subtle text-danger border border-danger-subtle">ATRASADO</span>
                   {% else %}
                     <span class="badge bg-warning-subtle text-warning border border-warning-subtle">PENDENTE</span>
                   {% endif %}
-                  <div class="text-muted small mt-1">{{ item.display_status }}</div>
+                  {% if item.display_status and item.display_status != status_label %}
+                    <div class="text-muted small mt-1">{{ item.display_status }}</div>
+                  {% endif %}
                 </td>
                 {% if is_editable %}
                   <td>
-                    <a href="{{ item.edit_url }}" class="btn btn-outline-primary btn-sm">
-                      <i class="bi bi-pencil-square"></i>
-                    </a>
+                    <div class="d-flex flex-wrap gap-2">
+                      {% if item.can_quick_receive %}
+                        <form method="POST" action="{{ item.quick_receive_url }}" class="m-0">
+                          <button type="submit" class="btn btn-sm btn-outline-success shadow-sm d-inline-flex align-items-center gap-1" onclick="return confirm('Confirmar o recebimento desta OS concluida com o valor integral do contrato?');">
+                            <i class="bi bi-cash-coin"></i>
+                            <span>Receber</span>
+                          </button>
+                        </form>
+                      {% endif %}
+                      <a href="{{ item.edit_url }}" class="btn btn-sm btn-success text-white shadow-sm d-inline-flex align-items-center gap-1">
+                        <i class="bi bi-pencil-square"></i>
+                        <span>Editar</span>
+                      </a>
+                    </div>
                   </td>
                 {% endif %}
               </tr>

@@ -363,6 +363,7 @@ def build_financeiro_agro_query(
 ):
     query = FinanceiroAgro.query.options(
         joinedload(FinanceiroAgro.contrato).joinedload(ContratoAgro.orcamento),
+        joinedload(FinanceiroAgro.contrato).selectinload(ContratoAgro.ordens_servico),
         joinedload(FinanceiroAgro.ordem_servico),
         joinedload(FinanceiroAgro.cliente),
         joinedload(FinanceiroAgro.banco_agro),
@@ -565,11 +566,12 @@ def recalculate_bancos_agro(banco_ids):
 
         for item in FinanceiroAgro.query.filter(FinanceiroAgro.banco_agro_id == banco.id).all():
             valor = FinanceiroAgro._decimal_or_zero(item.valor_total_contrato)
+            valor_recebido = FinanceiroAgro._decimal_or_zero(getattr(item, "valor_recebido", None))
             status = (item.status or "").strip().upper()
             if status != FinanceiroAgro.STATUS_CANCELADO:
                 saldo_previsto += valor
-            if status == FinanceiroAgro.STATUS_RECEBIDO or item.data_recebimento:
-                saldo_atual += valor
+            if status != FinanceiroAgro.STATUS_CANCELADO and valor_recebido > 0:
+                saldo_atual += valor_recebido
 
         for item in FinanceiroAgroEntrada.query.filter(FinanceiroAgroEntrada.banco_agro_id == banco.id).all():
             valor = FinanceiroAgro._decimal_or_zero(item.valor)
@@ -697,6 +699,7 @@ def _resolve_agro_report_year(items, ano: int | None = None) -> int:
     if ano:
         return ano
 
+    current_year = datetime.now().year
     years = []
     for item in items:
         for field in (
@@ -715,7 +718,16 @@ def _resolve_agro_report_year(items, ano: int | None = None) -> int:
         if competencia_ano:
             years.append(int(competencia_ano))
 
-    return max(years) if years else datetime.now().year
+    if not years:
+        return current_year
+
+    non_future_years = [value for value in years if value <= current_year]
+    if non_future_years:
+        if current_year in non_future_years:
+            return current_year
+        return max(non_future_years)
+
+    return current_year
 
 
 def _resolve_agro_report_month(item, realized: bool | None = None):
@@ -913,16 +925,21 @@ def build_agro_fluxo_caixa_report(user, ano: int | None = None) -> dict:
 
     for item in lancamentos_contrato:
         valor_receita = _agro_decimal(item.valor_total_contrato)
+        valor_recebido = _agro_decimal(getattr(item, "valor_recebido", None))
         valor_comissao = _agro_decimal(item.valor_comissao)
         valor_comissao_cooperativa = _agro_decimal(item.valor_comissao_cooperativa)
         data_prevista = _resolve_agro_cashflow_date(item, realized=False)
         data_realizada = _resolve_agro_cashflow_date(item, realized=True) if _agro_report_is_realized(item) else None
         entrada_prevista = Decimal("0") if _agro_report_is_cancelled(item) else valor_receita
-        entrada_realizada = valor_receita if _agro_report_is_realized(item) else Decimal("0")
+        entrada_realizada = Decimal("0") if _agro_report_is_cancelled(item) else valor_recebido
         comissao_principal_prevista = Decimal("0") if _agro_report_is_cancelled(item) else valor_comissao
-        comissao_principal_realizada = valor_comissao if _agro_report_is_realized(item) else Decimal("0")
+        comissao_principal_realizada = (
+            valor_comissao if entrada_realizada >= valor_receita and valor_receita > 0 else Decimal("0")
+        )
         comissao_cooperativa_prevista = Decimal("0") if _agro_report_is_cancelled(item) else valor_comissao_cooperativa
-        comissao_cooperativa_realizada = valor_comissao_cooperativa if _agro_report_is_realized(item) else Decimal("0")
+        comissao_cooperativa_realizada = (
+            valor_comissao_cooperativa if entrada_realizada >= valor_receita and valor_receita > 0 else Decimal("0")
+        )
         saida_prevista = comissao_principal_prevista + comissao_cooperativa_prevista
         saida_realizada = comissao_principal_realizada + comissao_cooperativa_realizada
         protocolo = ""
@@ -1202,7 +1219,11 @@ def build_agro_caixa_diario_report(user, data_caixa: date | None = None) -> dict
         data_movimento = _resolve_agro_cashflow_date(item, realized=True) or _resolve_agro_cashflow_date(item, realized=False)
         if data_movimento != data_caixa or _agro_report_is_cancelled(item):
             continue
-        valor = _agro_decimal(item.valor_total_contrato)
+        valor = (
+            _agro_decimal(getattr(item, "valor_recebido", None))
+            if _agro_report_is_realized(item)
+            else _agro_decimal(item.valor_total_contrato)
+        )
         movimentos.append(
             {
                 "id": item.id,
@@ -1340,6 +1361,7 @@ def get_agro_dashboard_context(user) -> dict:
             FinanceiroAgro.status.in_(
                 (
                     FinanceiroAgro.STATUS_PENDENTE,
+                    FinanceiroAgro.STATUS_PARCIAL,
                     FinanceiroAgro.STATUS_VENCIDO,
                 )
             )
@@ -1366,7 +1388,9 @@ def get_agro_finance_dashboard_context(user) -> dict:
     return {
         "total_recebiveis": financeiro_query.count(),
         "total_recebiveis_pendentes": financeiro_query.filter(
-            FinanceiroAgro.status.in_((FinanceiroAgro.STATUS_PENDENTE, FinanceiroAgro.STATUS_VENCIDO))
+            FinanceiroAgro.status.in_(
+                (FinanceiroAgro.STATUS_PENDENTE, FinanceiroAgro.STATUS_PARCIAL, FinanceiroAgro.STATUS_VENCIDO)
+            )
         ).count(),
         "total_entradas_manuais": entradas_query.count(),
         "total_saidas_manuais": saidas_query.count(),
@@ -1532,6 +1556,7 @@ def build_financeiro_agro_defaults(contrato: ContratoAgro) -> dict:
         "data_servico_executado": latest_os.data_aplicacao.isoformat() if latest_os and latest_os.data_aplicacao else "",
         "data_vencimento": data_vencimento.isoformat() if data_vencimento else "",
         "data_recebimento": "",
+        "valor_recebido": format_currency_br(0),
         "area_mapeamento_ha": area_mapeamento,
         "valor_mapeamento_ha": format_currency_br(contrato.valor_mapeamento_ha),
         "total_mapeamento": total_mapeamento,
@@ -1566,6 +1591,7 @@ def serialize_financeiro_agro_form(lancamento: FinanceiroAgro) -> dict:
         ),
         "data_vencimento": lancamento.data_vencimento.isoformat() if lancamento.data_vencimento else "",
         "data_recebimento": lancamento.data_recebimento.isoformat() if lancamento.data_recebimento else "",
+        "valor_recebido": format_currency_br(lancamento.valor_recebido),
         "area_mapeamento_ha": format_currency_br(lancamento.area_mapeamento_ha).replace("R$ ", ""),
         "valor_mapeamento_ha": format_currency_br(lancamento.valor_mapeamento_ha),
         "total_mapeamento": format_currency_br(lancamento.total_mapeamento),
