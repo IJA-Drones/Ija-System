@@ -35,6 +35,7 @@ from app.modules.agro.exporters import (
 from app.modules.agro.excel_exporters import (
     build_agro_dre_gerencial_excel_export,
     build_agro_fluxo_caixa_excel_export,
+    build_agro_relatorio_contas_excel_export,
 )
 from app.modules.agro.bank_catalog import get_banco_agro_catalog, get_banco_agro_options
 from app.modules.agro.service import (
@@ -1402,6 +1403,128 @@ def _apply_agro_finance_items_filters(items, *, q="", mes=None, ano=None, situac
 
     filtered.sort(key=_sort_key)
     return filtered
+
+
+def _parse_agro_report_date(value):
+    if not value:
+        return None
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").date()
+    except (TypeError, ValueError):
+        return None
+
+
+def _matches_agro_report_date_range(item, data_inicio=None, data_fim=None):
+    if not data_inicio and not data_fim:
+        return True
+
+    reference_dates = [item.get("realizado_em"), item.get("previsto_em")]
+    for reference_date in reference_dates:
+        if not reference_date:
+            continue
+        if data_inicio and reference_date < data_inicio:
+            continue
+        if data_fim and reference_date > data_fim:
+            continue
+        return True
+    return False
+
+
+def _get_agro_relatorio_contas_filters(args):
+    q = (args.get("q") or "").strip()
+    movimento = (args.get("movimento") or "").strip().upper()
+    situacao = (args.get("situacao") or "").strip().upper()
+    origem = (args.get("origem") or "").strip().lower()
+    tipo_saida = (args.get("tipo_saida") or "").strip().upper()
+    mes = args.get("mes", type=int)
+    ano = args.get("ano", type=int)
+    data_inicio_raw = (args.get("data_inicio") or "").strip()
+    data_fim_raw = (args.get("data_fim") or "").strip()
+
+    if movimento not in {"", "ENTRADA", "SAIDA"}:
+        movimento = ""
+    if situacao not in {"", *AGRO_CONCILIACAO_STATUS_OPTIONS}:
+        situacao = ""
+    if origem not in {"", "recebivel", "entrada", "saida"}:
+        origem = ""
+    if tipo_saida and tipo_saida not in AGRO_FINANCEIRO_SAIDA_TIPO_OPTIONS:
+        tipo_saida = ""
+    if mes is not None and not 1 <= mes <= 12:
+        mes = None
+    if ano is not None and not 2024 <= ano <= 2100:
+        ano = None
+
+    data_inicio = _parse_agro_report_date(data_inicio_raw)
+    data_fim = _parse_agro_report_date(data_fim_raw)
+    if data_inicio and data_fim and data_inicio > data_fim:
+        data_inicio, data_fim = data_fim, data_inicio
+        data_inicio_raw, data_fim_raw = data_fim_raw, data_inicio_raw
+
+    return {
+        "q": q,
+        "movimento": movimento,
+        "situacao": situacao,
+        "origem": origem,
+        "tipo_saida": tipo_saida,
+        "mes": mes,
+        "ano": ano,
+        "data_inicio": data_inicio,
+        "data_fim": data_fim,
+        "data_inicio_raw": data_inicio.isoformat() if data_inicio else "",
+        "data_fim_raw": data_fim.isoformat() if data_fim else "",
+    }
+
+
+def _build_agro_relatorio_contas_items(user, filters):
+    lancamentos = []
+
+    if not filters["tipo_saida"] and filters["movimento"] != "SAIDA" and filters["origem"] not in {"saida"}:
+        if filters["origem"] in {"", "recebivel"}:
+            lancamentos.extend(_build_agro_conciliacao_item(item) for item in build_financeiro_agro_query(user).all())
+        if filters["origem"] in {"", "entrada"}:
+            lancamentos.extend(_build_agro_conciliacao_item(item) for item in build_financeiro_agro_entrada_query(user).all())
+
+    if filters["movimento"] != "ENTRADA" and filters["origem"] in {"", "saida"}:
+        saidas = build_financeiro_agro_saida_query(user, tipo_saida=filters["tipo_saida"]).all()
+        lancamentos.extend(_build_agro_conciliacao_item(item) for item in saidas)
+
+    lancamentos = _apply_agro_finance_items_filters(
+        lancamentos,
+        q=filters["q"],
+        mes=filters["mes"],
+        ano=filters["ano"],
+        situacao=filters["situacao"],
+    )
+    return [
+        item
+        for item in lancamentos
+        if _matches_agro_report_date_range(
+            item,
+            data_inicio=filters["data_inicio"],
+            data_fim=filters["data_fim"],
+        )
+    ]
+
+
+def _build_agro_relatorio_contas_summary(items):
+    entradas = [item for item in items if item.get("movimento") == "ENTRADA"]
+    saidas = [item for item in items if item.get("movimento") == "SAIDA"]
+    resumo_entradas = _build_agro_contas_summary(entradas)
+    resumo_saidas = _build_agro_contas_summary(saidas)
+    entradas_em_aberto = resumo_entradas["total_pendente"] + resumo_entradas["total_atrasado"]
+    saidas_em_aberto = resumo_saidas["total_pendente"] + resumo_saidas["total_atrasado"]
+
+    return {
+        "entradas": resumo_entradas,
+        "saidas": resumo_saidas,
+        "saldo_previsto": resumo_entradas["total_previsto"] - resumo_saidas["total_previsto"],
+        "saldo_realizado": resumo_entradas["total_realizado"] - resumo_saidas["total_realizado"],
+        "saldo_pendente": entradas_em_aberto - saidas_em_aberto,
+        "total_itens": len(items),
+        "total_atrasado": resumo_entradas["total_atrasado"] + resumo_saidas["total_atrasado"],
+        "total_atrasados": resumo_entradas["total_atrasados"] + resumo_saidas["total_atrasados"],
+        "total_cancelado": resumo_entradas["total_cancelado"] + resumo_saidas["total_cancelado"],
+    }
 
 
 def _build_agro_contas_summary(items):
@@ -3903,6 +4026,49 @@ def register_routes(bp):
             resumo_pagar=_build_agro_contas_summary(contas_pagar),
             is_editable=can_edit_agro_finance_panel(current_user),
             can_manage_competencias=can_manage_agro_finance_settings(current_user),
+        )
+
+    @bp.route("/agro/financeiro/relatorio-geral", methods=["GET"], endpoint="agro_relatorio_contas_geral")
+    @login_required
+    def agro_relatorio_contas_geral():
+        _require_agro_access()
+
+        filters = _get_agro_relatorio_contas_filters(request.args)
+        lancamentos = _build_agro_relatorio_contas_items(current_user, filters)
+        filters["total"] = len(lancamentos)
+
+        return render_template(
+            "agro_relatorio_contas_geral.html",
+            lancamentos=lancamentos,
+            resumo=_build_agro_relatorio_contas_summary(lancamentos),
+            filters=filters,
+            situacao_options=AGRO_CONCILIACAO_STATUS_OPTIONS,
+            origem_options=(
+                ("recebivel", "Recebiveis de contrato"),
+                ("entrada", "Entradas manuais"),
+                ("saida", "Contas a pagar"),
+            ),
+            tipo_options=AGRO_FINANCEIRO_SAIDA_TIPO_OPTIONS,
+            is_editable=can_edit_agro_finance_panel(current_user),
+        )
+
+    @bp.route("/agro/financeiro/relatorio-geral/excel", methods=["GET"], endpoint="agro_relatorio_contas_geral_excel")
+    @login_required
+    def agro_relatorio_contas_geral_excel():
+        _require_agro_access()
+
+        filters = _get_agro_relatorio_contas_filters(request.args)
+        lancamentos = _build_agro_relatorio_contas_items(current_user, filters)
+        output, filename = build_agro_relatorio_contas_excel_export(
+            lancamentos,
+            _build_agro_relatorio_contas_summary(lancamentos),
+            filters,
+        )
+        return send_file(
+            output,
+            as_attachment=True,
+            download_name=filename,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         )
 
     @bp.route("/agro/financeiro/contas-receber", methods=["GET"], endpoint="agro_contas_receber_listar")

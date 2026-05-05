@@ -1226,3 +1226,239 @@ def build_agro_dre_gerencial_excel_export(user, ano: int | None = None):
     workbook.save(output)
     output.seek(0)
     return output, f"agro_dre_gerencial_{report['ano']}.xlsx"
+
+
+def _relatorio_contas_status_label(item: dict) -> str:
+    if item.get("cancelado"):
+        return "CANCELADO"
+    if item.get("realizado"):
+        return "PAGO" if item.get("movimento") == "SAIDA" else "RECEBIDO"
+    if item.get("parcial"):
+        return "PARCIAL"
+    if item.get("atrasado"):
+        return "ATRASADO"
+    return "PENDENTE"
+
+
+def _relatorio_contas_filter_description(filters: dict) -> str:
+    labels = []
+    if filters.get("q"):
+        labels.append(f"Busca: {filters['q']}")
+    if filters.get("movimento"):
+        labels.append(f"Movimento: {filters['movimento']}")
+    if filters.get("situacao"):
+        labels.append(f"Situacao: {filters['situacao']}")
+    if filters.get("origem"):
+        labels.append(f"Origem: {filters['origem']}")
+    if filters.get("tipo_saida"):
+        labels.append(f"Tipo saida: {filters['tipo_saida']}")
+    if filters.get("mes"):
+        labels.append(f"Mes: {filters['mes']}")
+    if filters.get("ano"):
+        labels.append(f"Ano: {filters['ano']}")
+    if filters.get("data_inicio_raw"):
+        labels.append(f"Data inicial: {filters['data_inicio_raw']}")
+    if filters.get("data_fim_raw"):
+        labels.append(f"Data final: {filters['data_fim_raw']}")
+    return " | ".join(labels) if labels else "Sem filtros aplicados"
+
+
+def _relatorio_contas_values(item: dict) -> tuple[Decimal, Decimal, Decimal]:
+    valor = _as_decimal(item.get("valor"))
+    if item.get("cancelado"):
+        return Decimal("0"), Decimal("0"), Decimal("0")
+
+    valor_previsto = _as_decimal(item.get("valor_previsto", valor))
+    valor_realizado = _as_decimal(item.get("valor_realizado", valor if item.get("realizado") else Decimal("0")))
+    valor_pendente = _as_decimal(item.get("valor_pendente", Decimal("0") if item.get("realizado") else valor))
+    return valor_previsto, valor_realizado, valor_pendente
+
+
+def _build_relatorio_contas_summary_sheet(workbook: Workbook, resumo: dict, filters: dict):
+    ws = workbook.active
+    ws.title = "Resumo"
+    ws.sheet_view.showGridLines = False
+
+    _apply_title_block(
+        ws,
+        title="Relatorio Geral - Contas Agro",
+        subtitle="Contas a receber, contas recebidas, contas a pagar e contas pagas no mesmo arquivo.",
+        year=filters.get("ano") or datetime.now().year,
+        max_col=8,
+    )
+
+    _write_card(ws, row=5, start_col=1, end_col=2, label="Entradas previstas", value=resumo["entradas"]["total_previsto"], fill=FILL_CARD_GREEN)
+    _write_card(ws, row=5, start_col=3, end_col=4, label="Entradas recebidas", value=resumo["entradas"]["total_realizado"], fill=FILL_CARD_GREEN)
+    _write_card(ws, row=5, start_col=5, end_col=6, label="Saidas previstas", value=resumo["saidas"]["total_previsto"], fill=FILL_CARD_RED)
+    _write_card(ws, row=5, start_col=7, end_col=8, label="Saidas pagas", value=resumo["saidas"]["total_realizado"], fill=FILL_CARD_RED)
+
+    _write_card(
+        ws,
+        row=9,
+        start_col=1,
+        end_col=2,
+        label="Saldo previsto",
+        value=resumo["saldo_previsto"],
+        fill=FILL_CARD_BLUE if resumo["saldo_previsto"] >= 0 else FILL_CARD_RED,
+    )
+    _write_card(
+        ws,
+        row=9,
+        start_col=3,
+        end_col=4,
+        label="Saldo realizado",
+        value=resumo["saldo_realizado"],
+        fill=FILL_CARD_BLUE if resumo["saldo_realizado"] >= 0 else FILL_CARD_RED,
+    )
+    _write_card(ws, row=9, start_col=5, end_col=6, label="Em atraso", value=resumo["total_atrasado"], fill=FILL_CARD_AMBER)
+    _write_card(ws, row=9, start_col=7, end_col=8, label="Lancamentos", value=resumo["total_itens"], fill=FILL_SECTION, is_currency=False)
+
+    row = 14
+    _add_section_title(ws, row, "Filtros usados", 8)
+    row += 1
+    ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=8)
+    cell = ws.cell(row=row, column=1, value=_relatorio_contas_filter_description(filters))
+    cell.border = BORDER
+    cell.alignment = Alignment(wrap_text=True, vertical="center")
+    for col in range(2, 9):
+        ws.cell(row=row, column=col).border = BORDER
+
+    row += 2
+    _add_section_title(ws, row, "Resumo por grupo", 8)
+    row += 1
+    _write_table_header(ws, row, ["Grupo", "Previsto", "Realizado", "Pendente", "Atrasado", "Cancelado", "Qtd. realizados", "Qtd. pendentes"])
+    row += 1
+    for index, (label, data) in enumerate((("Contas a receber", resumo["entradas"]), ("Contas a pagar", resumo["saidas"]))):
+        values = [
+            label,
+            data["total_previsto"],
+            data["total_realizado"],
+            data["total_pendente"],
+            data["total_atrasado"],
+            data["total_cancelado"],
+            data["total_realizados"],
+            data["total_pendentes"],
+        ]
+        for col_index, value in enumerate(values, start=1):
+            cell = ws.cell(row=row, column=col_index, value=_safe_number(value))
+            if 2 <= col_index <= 6:
+                _apply_currency(cell)
+        _style_data_row(ws, row=row, col_count=8, zebra=index % 2 == 1)
+        row += 1
+
+    _set_column_widths(ws, {"A": 22, "B": 18, "C": 18, "D": 18, "E": 18, "F": 18, "G": 16, "H": 16})
+
+
+def _build_relatorio_contas_lancamentos_sheet(workbook: Workbook, lancamentos: list[dict]):
+    ws = workbook.create_sheet("Lancamentos")
+    ws.freeze_panes = "A5"
+
+    _apply_title_block(
+        ws,
+        title="Relatorio Geral - Lancamentos",
+        subtitle="Base detalhada com entradas e saidas financeiras do Agro.",
+        year=datetime.now().year,
+        max_col=19,
+    )
+
+    headers = [
+        "Movimento",
+        "Origem",
+        "Pessoa / referencia",
+        "Descricao",
+        "Classificacao",
+        "Documento",
+        "Status",
+        "Status original",
+        "Data prevista",
+        "Data realizada",
+        "Entrada prevista",
+        "Entrada recebida",
+        "Entrada pendente",
+        "Saida prevista",
+        "Saida paga",
+        "Saida pendente",
+        "Saldo previsto",
+        "Saldo realizado",
+        "Saldo em aberto",
+    ]
+    _write_table_header(ws, 4, headers)
+
+    for row_index, item in enumerate(lancamentos, start=5):
+        previsto, realizado, pendente = _relatorio_contas_values(item)
+        is_saida = item.get("movimento") == "SAIDA"
+        entrada_prevista = Decimal("0") if is_saida else previsto
+        entrada_realizada = Decimal("0") if is_saida else realizado
+        entrada_pendente = Decimal("0") if is_saida else pendente
+        saida_prevista = previsto if is_saida else Decimal("0")
+        saida_realizada = realizado if is_saida else Decimal("0")
+        saida_pendente = pendente if is_saida else Decimal("0")
+
+        values = [
+            "SAIDA" if is_saida else "ENTRADA",
+            item.get("origem") or "",
+            item.get("titulo") or "",
+            item.get("descricao") or "",
+            item.get("detalhe") or "",
+            item.get("documento") or "",
+            _relatorio_contas_status_label(item),
+            item.get("display_status") or item.get("status") or "",
+            _fmt_date(item.get("previsto_em")),
+            _fmt_date(item.get("realizado_em")),
+            entrada_prevista,
+            entrada_realizada,
+            entrada_pendente,
+            saida_prevista,
+            saida_realizada,
+            saida_pendente,
+            entrada_prevista - saida_prevista,
+            entrada_realizada - saida_realizada,
+            entrada_pendente - saida_pendente,
+        ]
+        for col_index, value in enumerate(values, start=1):
+            cell = ws.cell(row=row_index, column=col_index, value=_safe_number(value))
+            if col_index >= 11:
+                _apply_currency(cell)
+        fill = FILL_CARD_RED if is_saida else None
+        _style_data_row(ws, row=row_index, col_count=len(headers), zebra=(row_index - 5) % 2 == 1, fill=fill)
+
+    last_row = max(len(lancamentos) + 4, 5)
+    ws.auto_filter.ref = f"A4:S{last_row}"
+    _set_column_widths(
+        ws,
+        {
+            "A": 13,
+            "B": 18,
+            "C": 30,
+            "D": 34,
+            "E": 24,
+            "F": 18,
+            "G": 14,
+            "H": 18,
+            "I": 14,
+            "J": 14,
+            "K": 16,
+            "L": 16,
+            "M": 16,
+            "N": 16,
+            "O": 16,
+            "P": 16,
+            "Q": 16,
+            "R": 16,
+            "S": 16,
+        },
+    )
+
+
+def build_agro_relatorio_contas_excel_export(lancamentos: list[dict], resumo: dict, filters: dict):
+    workbook = Workbook()
+    _build_relatorio_contas_summary_sheet(workbook, resumo, filters)
+    _build_relatorio_contas_lancamentos_sheet(workbook, lancamentos)
+
+    for ws in workbook.worksheets:
+        _auto_width(ws)
+
+    output = BytesIO()
+    workbook.save(output)
+    output.seek(0)
+    return output, f"agro_relatorio_geral_contas_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
