@@ -40,7 +40,7 @@
   {# --- Card Principal --- #}
   <div class="card info status-primary shadow-sm rounded-4 border-0">
     <div class="card-body p-4">
-      <form method="POST" id="formNovoPedido">
+      <form method="POST" id="formNovoPedido" class="form-no-loading">
         {% set form = form_values or {} %}
         <input type="hidden" name="risco_aereo" id="risco_aereo" value="0" />
         {# SEÇÃO 1: AGENDAMENTO #}
@@ -449,7 +449,7 @@
           >
             <i class="bi bi-x-lg me-1"></i> Cancelar
           </a>
-          <button type="submit" class="btn btn-primary px-5 shadow-sm fw-bold">
+          <button type="submit" id="btnEnviarPedido" class="btn btn-primary px-5 shadow-sm fw-bold">
             <i class="bi bi-send me-1"></i> Enviar Pedido
           </button>
         </div>
@@ -950,9 +950,48 @@
     const formSolicitacao = document.getElementById("formNovoPedido");
 
     if (formSolicitacao) {
+      const btnEnviarPedido = document.getElementById("btnEnviarPedido");
+      let validandoEnvio = false;
+
+      function travarBotaoEnvio() {
+        if (typeof showLoadingState === "function") {
+          showLoadingState(btnEnviarPedido);
+          return;
+        }
+
+        if (!btnEnviarPedido) return;
+        btnEnviarPedido.dataset.originalText = btnEnviarPedido.innerHTML;
+        btnEnviarPedido.disabled = true;
+        btnEnviarPedido.innerHTML =
+          '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Aguarde...';
+      }
+
+      function restaurarBotaoEnvio() {
+        if (!btnEnviarPedido) return;
+
+        if (typeof hideLoadingState === "function" && btnEnviarPedido.originalText) {
+          hideLoadingState(btnEnviarPedido);
+          return;
+        }
+
+        btnEnviarPedido.disabled = false;
+
+        const textoOriginal =
+          btnEnviarPedido.originalText || btnEnviarPedido.dataset.originalText;
+
+        if (textoOriginal) {
+          btnEnviarPedido.innerHTML = textoOriginal;
+          delete btnEnviarPedido.originalText;
+          delete btnEnviarPedido.dataset.originalText;
+        }
+      }
+
       formSolicitacao.addEventListener("submit", async function (e) {
         // 1. Bloqueia o envio imediato
         e.preventDefault();
+
+        if (validandoEnvio) return;
+        validandoEnvio = true;
 
         const latField = document.getElementById("latitude");
         const lngField = document.getElementById("longitude");
@@ -969,6 +1008,8 @@
             timer: 2500,
             showConfirmButton: false,
           });
+          validandoEnvio = false;
+          restaurarBotaoEnvio();
           return;
         }
 
@@ -979,12 +1020,17 @@
           if (podeEnviar) {
             // 3. Envia o formulário manualmente chamando o método nativo
             console.log("Validação concluída. Enviando para o Flask...");
-            this.submit();
+            travarBotaoEnvio();
+            HTMLFormElement.prototype.submit.call(this);
+            return;
           }
+          validandoEnvio = false;
+          restaurarBotaoEnvio();
         } catch (error) {
           console.error("Erro no fluxo de validação:", error);
           // Em caso de erro crítico no JS, envia para não perder o pedido
-          this.submit();
+          travarBotaoEnvio();
+          HTMLFormElement.prototype.submit.call(this);
         }
       });
     }
