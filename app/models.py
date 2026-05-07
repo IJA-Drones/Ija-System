@@ -25,6 +25,7 @@ class Prefeitura(db.Model):
     financeiros_agro = db.relationship("FinanceiroAgro", back_populates="prefeitura", lazy="select")
     financeiros_agro_entradas = db.relationship("FinanceiroAgroEntrada", back_populates="prefeitura", lazy="select")
     financeiros_agro_saidas = db.relationship("FinanceiroAgroSaida", back_populates="prefeitura", lazy="select")
+    financeiros_agro_categorias = db.relationship("FinanceiroAgroCategoria", back_populates="prefeitura", lazy="select")
     financeiros_agro_caixa_diarios = db.relationship("FinanceiroAgroCaixaDiario", back_populates="prefeitura", lazy="select")
     pilotos = db.relationship("Pilotos", back_populates="prefeitura", lazy="select")
     pilotos_agro = db.relationship("PilotoAgro", back_populates="prefeitura", lazy="select")
@@ -1181,6 +1182,57 @@ class BancoAgro(db.Model):
     @property
     def saldo_atual_decimal(self):
         return FinanceiroAgro._decimal_or_zero(self.saldo_atual)
+
+
+class FinanceiroAgroCategoria(db.Model):
+    __tablename__ = "financeiro_agro_categorias"
+
+    TIPO_ENTRADA = "ENTRADA"
+    TIPO_SAIDA = "SAIDA"
+    TIPO_OPTIONS = (
+        TIPO_ENTRADA,
+        TIPO_SAIDA,
+    )
+
+    id = db.Column(db.Integer, primary_key=True, index=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
+    tipo_movimento = db.Column(db.String(20), nullable=False, index=True)
+    nome = db.Column(db.String(120), nullable=False, index=True)
+    ativo = db.Column(db.Boolean, nullable=False, default=True, index=True)
+    criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+    atualizado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True, onupdate=datetime.now)
+
+    prefeitura = db.relationship("Prefeitura", back_populates="financeiros_agro_categorias", lazy="joined")
+    subcategorias = db.relationship(
+        "FinanceiroAgroSubcategoria",
+        back_populates="categoria",
+        lazy="select",
+        cascade="all, delete-orphan",
+        order_by="FinanceiroAgroSubcategoria.nome",
+    )
+
+    __table_args__ = (
+        db.UniqueConstraint("prefeitura_id", "tipo_movimento", "nome", name="uq_financeiro_agro_categoria_pref_tipo_nome"),
+        db.Index("ix_financeiro_agro_categoria_pref_tipo_ativo", "prefeitura_id", "tipo_movimento", "ativo"),
+    )
+
+
+class FinanceiroAgroSubcategoria(db.Model):
+    __tablename__ = "financeiro_agro_subcategorias"
+
+    id = db.Column(db.Integer, primary_key=True, index=True)
+    categoria_id = db.Column(db.Integer, db.ForeignKey("financeiro_agro_categorias.id"), nullable=False, index=True)
+    nome = db.Column(db.String(120), nullable=False, index=True)
+    ativo = db.Column(db.Boolean, nullable=False, default=True, index=True)
+    criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+    atualizado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True, onupdate=datetime.now)
+
+    categoria = db.relationship("FinanceiroAgroCategoria", back_populates="subcategorias", lazy="joined")
+
+    __table_args__ = (
+        db.UniqueConstraint("categoria_id", "nome", name="uq_financeiro_agro_subcategoria_categoria_nome"),
+        db.Index("ix_financeiro_agro_subcategoria_categoria_ativo", "categoria_id", "ativo"),
+    )
 
 
 class FinanceiroAgroSaida(db.Model):

@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 860px">
+  <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+    <div>
+      <h2 class="text-dark m-0">
+        <i class="bi bi-tag-fill me-2 text-primary"></i>
+        {{ 'Nova categoria' if modo == 'novo' else 'Editar categoria' }}
+      </h2>
+      <p class="text-muted small mb-0">A subcategoria fica sempre vinculada a uma categoria e a um tipo de movimento.</p>
+    </div>
+    <a href="{{ url_for('main.agro_financeiro_categorias_listar') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+  </div>
+
+  <div class="card info status-primary shadow-sm rounded-4 border-0">
+    <div class="card-body p-4">
+      <form method="post" novalidate>
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Tipo *</label>
+            <select id="tipo_movimento" name="tipo_movimento" class="form-select {% if errors.get('tipo_movimento') %}is-invalid{% endif %}">
+              {% for tipo in tipo_options %}
+                <option value="{{ tipo }}" {% if form.get('tipo_movimento') == tipo %}selected{% endif %}>{{ tipo_labels.get(tipo, tipo) }}</option>
+              {% endfor %}
+            </select>
+            {% if errors.get('tipo_movimento') %}<div class="invalid-feedback">{{ errors.get('tipo_movimento') }}</div>{% endif %}
+          </div>
+          <div class="col-md-8">
+            <label class="form-label fw-bold small text-muted">Categoria *</label>
+            <input
+              type="text"
+              name="categoria"
+              value="{{ form.get('categoria', '') }}"
+              class="form-control {% if errors.get('categoria') %}is-invalid{% endif %}"
+              list="agro-categorias-existentes"
+              placeholder="Ex.: Despesas Administrativas"
+            >
+            <datalist id="agro-categorias-existentes">
+              {% for categoria in categoria_options %}
+                <option value="{{ categoria }}"></option>
+              {% endfor %}
+            </datalist>
+            {% if errors.get('categoria') %}<div class="invalid-feedback">{{ errors.get('categoria') }}</div>{% endif %}
+          </div>
+          <div class="col-md-8">
+            <label class="form-label fw-bold small text-muted">Subcategoria *</label>
+            <input
+              type="text"
+              name="subcategoria"
+              value="{{ form.get('subcategoria', '') }}"
+              class="form-control {% if errors.get('subcategoria') %}is-invalid{% endif %}"
+              placeholder="Ex.: Internet"
+            >
+            {% if errors.get('subcategoria') %}<div class="invalid-feedback">{{ errors.get('subcategoria') }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Status *</label>
+            <select name="ativo" class="form-select {% if errors.get('ativo') %}is-invalid{% endif %}">
+              <option value="SIM" {% if form.get('ativo') != 'NAO' %}selected{% endif %}>Ativa</option>
+              <option value="NAO" {% if form.get('ativo') == 'NAO' %}selected{% endif %}>Inativa</option>
+            </select>
+            {% if errors.get('ativo') %}<div class="invalid-feedback">{{ errors.get('ativo') }}</div>{% endif %}
+          </div>
+        </div>
+
+        <small class="text-muted d-block mt-4">
+          Campos com <span class="text-danger">*</span> sao obrigatorios.
+        </small>
+
+        <div class="d-flex justify-content-end flex-wrap gap-2 mt-5">
+          <a href="{{ url_for('main.agro_financeiro_categorias_listar') }}" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-2">
+            <i class="bi bi-x-lg"></i> Cancelar
+          </a>
+          <button type="submit" class="btn btn-success btn-sm d-flex align-items-center gap-2">
+            <i class="bi bi-check-lg"></i> Salvar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

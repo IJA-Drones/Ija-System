@@ -366,6 +366,9 @@
             'main.agro_banco_editar',
             'main.agro_bancos_conciliacao',
             'main.agro_financeiro_configuracoes',
+            'main.agro_financeiro_categorias_listar',
+            'main.agro_financeiro_categoria_nova',
+            'main.agro_financeiro_categoria_editar',
             'main.agro_financeiro_entrada_listar',
             'main.agro_financeiro_entrada_novo',
             'main.agro_financeiro_entrada_editar',
@@ -509,6 +512,14 @@
                     href="{{ url_for('main.agro_financeiro_configuracoes') }}"
                   >
                     <i class="bi bi-sliders me-2"></i><span>Configuracoes</span>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a
+                    class="nav-link sub-link {% if request.endpoint in ['main.agro_financeiro_categorias_listar', 'main.agro_financeiro_categoria_nova', 'main.agro_financeiro_categoria_editar'] %}active{% endif %}"
+                    href="{{ url_for('main.agro_financeiro_categorias_listar') }}"
+                  >
+                    <i class="bi bi-tags me-2"></i><span>Categorias</span>
                   </a>
                 </li>
                 {% endif %}

@@ -86,15 +86,14 @@
         <div class="row g-3 mb-4">
           <div class="col-md-5">
             <label class="form-label fw-bold small text-muted">Subcategoria *</label>
-            <input id="subcategoria_filtro" type="text" class="form-control form-control-sm mb-2" placeholder="Filtrar subcategoria">
             <div class="input-group">
-              <select id="subcategoria" name="subcategoria" class="form-select {% if errors.get('subcategoria') %}is-invalid{% endif %}">
-                <option value="{{ form.get('subcategoria', '') }}">{{ form.get('subcategoria') or 'Selecione' }}</option>
-              </select>
-              <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#novaSubcategoriaModal" title="Criar subcategoria">
-                <i class="bi bi-plus-lg"></i>
-              </button>
+              <span class="input-group-text bg-white text-muted">
+                <i class="bi bi-search"></i>
+              </span>
+              <input id="subcategoria_busca" type="text" class="form-control {% if errors.get('subcategoria') %}is-invalid{% endif %}" list="subcategoria_sugestoes" value="{{ (form.get('subcategoria') ~ ' - ' ~ form.get('categoria')) if form.get('subcategoria') and form.get('categoria') else form.get('subcategoria', '') }}" placeholder="Pesquisar subcategoria" autocomplete="off">
             </div>
+            <input id="subcategoria" type="hidden" name="subcategoria" value="{{ form.get('subcategoria', '') }}">
+            <datalist id="subcategoria_sugestoes"></datalist>
             {% if errors.get('subcategoria') %}<div class="invalid-feedback d-block">{{ errors.get('subcategoria') }}</div>{% endif %}
           </div>
           <div class="col-md-4">
@@ -220,38 +219,6 @@
   </div>
 </div>
 
-<div class="modal fade" id="novaSubcategoriaModal" tabindex="-1" aria-labelledby="novaSubcategoriaModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="novaSubcategoriaModalLabel">Nova subcategoria</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-      </div>
-      <div class="modal-body">
-        <div class="mb-3">
-          <label class="form-label fw-bold small text-muted">Categoria *</label>
-          <input id="nova_subcategoria_categoria" type="text" class="form-control" list="nova-subcategoria-categorias" placeholder="Selecione ou digite a categoria">
-          <datalist id="nova-subcategoria-categorias">
-            {% for categoria in categoria_options %}
-              <option value="{{ categoria }}"></option>
-            {% endfor %}
-          </datalist>
-        </div>
-        <div class="mb-2">
-          <label class="form-label fw-bold small text-muted">Subcategoria *</label>
-          <input id="nova_subcategoria_nome" type="text" class="form-control" placeholder="Nome da subcategoria">
-        </div>
-        <div id="nova_subcategoria_error" class="text-danger small d-none">Informe a categoria e a subcategoria.</div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
-        <button type="button" id="salvarNovaSubcategoria" class="btn btn-success btn-sm">
-          <i class="bi bi-check-lg me-1"></i> Usar subcategoria
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
 {% endblock %}
 
 {% block scripts %}
@@ -261,18 +228,13 @@
     (function () {
       const categoryEl = document.getElementById("categoria");
       const subcategoryEl = document.getElementById("subcategoria");
-      const subcategoryFilterEl = document.getElementById("subcategoria_filtro");
+      const subcategorySearchEl = document.getElementById("subcategoria_busca");
+      const subcategoryListEl = document.getElementById("subcategoria_sugestoes");
       const tipoEl = document.getElementById("tipo_saida");
       const detailEl = document.getElementById("detalhamento_imposto");
       const subcategoryOptions = JSON.parse(document.getElementById("agro-subcategoria-options").textContent || "[]");
       const initialSubcategory = {{ form.get('subcategoria', '')|tojson }};
       const initialCategory = {{ form.get('categoria', '')|tojson }};
-      const modalEl = document.getElementById("novaSubcategoriaModal");
-      const modalCategoryEl = document.getElementById("nova_subcategoria_categoria");
-      const modalSubcategoryEl = document.getElementById("nova_subcategoria_nome");
-      const modalErrorEl = document.getElementById("nova_subcategoria_error");
-      const modalSaveEl = document.getElementById("salvarNovaSubcategoria");
-      const modalCategoryListEl = document.getElementById("nova-subcategoria-categorias");
 
       function normalizeChoice(value) {
         return (value || "").trim().toLocaleLowerCase("pt-BR");
@@ -282,97 +244,78 @@
         return `${normalizeChoice(category)}::${normalizeChoice(subcategory)}`;
       }
 
-      function ensureCategoryOption(category) {
-        const normalized = normalizeChoice(category);
-        if (!normalized) return;
-
-        const modalExists = Array.from(modalCategoryListEl.options).some((option) => normalizeChoice(option.value) === normalized);
-        if (!modalExists) {
-          const option = document.createElement("option");
-          option.value = category;
-          modalCategoryListEl.appendChild(option);
-        }
+      function choiceLabel(item) {
+        return `${item.subcategoria} - ${item.categoria}`;
       }
 
-      function syncCategoryFromSelected() {
-        const selectedOption = subcategoryEl.options[subcategoryEl.selectedIndex];
-        categoryEl.value = selectedOption && selectedOption.value ? selectedOption.dataset.category || "" : "";
+      function renderSubcategorySuggestions() {
+        subcategoryListEl.innerHTML = "";
+        subcategoryOptions
+          .slice()
+          .sort((left, right) => choiceLabel(left).localeCompare(choiceLabel(right), "pt-BR"))
+          .forEach((item) => {
+            const option = document.createElement("option");
+            option.value = choiceLabel(item);
+            subcategoryListEl.appendChild(option);
+          });
       }
 
-      function renderSubcategories(selectedSubcategory = "", selectedCategory = "") {
-        const filter = normalizeChoice(subcategoryFilterEl.value);
-        const selectedKey = makePairKey(selectedCategory, selectedSubcategory);
-        const options = subcategoryOptions.filter((item) => {
-          if (!filter) return true;
-          return normalizeChoice(`${item.subcategoria} ${item.categoria}`).includes(filter);
-        });
+      function findSubcategoryChoice(value) {
+        const normalized = normalizeChoice(value);
+        if (!normalized) return null;
 
-        subcategoryEl.innerHTML = "";
+        const displayMatch = subcategoryOptions.find((item) => normalizeChoice(choiceLabel(item)) === normalized);
+        if (displayMatch) return displayMatch;
 
-        const placeholder = document.createElement("option");
-        placeholder.value = "";
-        placeholder.textContent = options.length ? "Selecione" : "Nenhuma subcategoria encontrada";
-        subcategoryEl.appendChild(placeholder);
-
-        options.forEach((item) => {
-          const option = document.createElement("option");
-          option.value = item.subcategoria;
-          option.textContent = `${item.subcategoria} - ${item.categoria}`;
-          option.dataset.category = item.categoria;
-          if (makePairKey(item.categoria, item.subcategoria) === selectedKey) option.selected = true;
-          subcategoryEl.appendChild(option);
-        });
-
-        syncCategoryFromSelected();
-      }
-
-      function addSubcategory(category, subcategory) {
-        const exists = subcategoryOptions.some((item) =>
-          normalizeChoice(item.categoria) === normalizeChoice(category) &&
-          normalizeChoice(item.subcategoria) === normalizeChoice(subcategory)
+        const selectedByPair = subcategoryOptions.find(
+          (item) => makePairKey(item.categoria, item.subcategoria) === makePairKey(categoryEl.value, value)
         );
-        if (!exists) {
-          subcategoryOptions.push({ categoria: category, subcategoria: subcategory });
-        }
+        if (selectedByPair) return selectedByPair;
+
+        const subcategoryMatches = subcategoryOptions.filter((item) => normalizeChoice(item.subcategoria) === normalized);
+        return subcategoryMatches.length === 1 ? subcategoryMatches[0] : null;
       }
 
-      function saveModalSubcategory() {
-        const category = modalCategoryEl.value.trim();
-        const subcategory = modalSubcategoryEl.value.trim();
-        if (!category || !subcategory) {
-          modalErrorEl.classList.remove("d-none");
+      function syncSubcategoryFromSearch(formatDisplay = false) {
+        const value = subcategorySearchEl.value.trim();
+        const match = findSubcategoryChoice(value);
+        if (match) {
+          subcategoryEl.value = match.subcategoria;
+          categoryEl.value = match.categoria;
+          if (formatDisplay) {
+            subcategorySearchEl.value = choiceLabel(match);
+          }
           return;
         }
 
-        modalErrorEl.classList.add("d-none");
-        ensureCategoryOption(category);
-        addSubcategory(category, subcategory);
-        subcategoryFilterEl.value = "";
-        renderSubcategories(subcategory, category);
-        syncCategoryFromSelected();
-        bootstrap.Modal.getOrCreateInstance(modalEl).hide();
-        modalSubcategoryEl.value = "";
+        subcategoryEl.value = value;
+        categoryEl.value = "";
       }
 
       function syncTaxHint() {
         detailEl.required = ["IMPOSTO", "RETENCAO"].includes(tipoEl.value);
       }
 
-      subcategoryEl.addEventListener("change", syncCategoryFromSelected);
-      subcategoryFilterEl.addEventListener("input", () => renderSubcategories(subcategoryEl.value, categoryEl.value));
-      modalEl.addEventListener("show.bs.modal", () => {
-        modalCategoryEl.value = categoryEl.value || modalCategoryEl.value;
-        modalErrorEl.classList.add("d-none");
-      });
-      modalSaveEl.addEventListener("click", saveModalSubcategory);
-      modalSubcategoryEl.addEventListener("keydown", (event) => {
-        if (event.key === "Enter") {
-          event.preventDefault();
-          saveModalSubcategory();
+      function setInitialSubcategory() {
+        const match = subcategoryOptions.find((item) => makePairKey(item.categoria, item.subcategoria) === makePairKey(initialCategory, initialSubcategory));
+        if (match) {
+          subcategorySearchEl.value = choiceLabel(match);
+          subcategoryEl.value = match.subcategoria;
+          categoryEl.value = match.categoria;
+          return;
         }
-      });
+
+        subcategorySearchEl.value = initialSubcategory || "";
+        subcategoryEl.value = initialSubcategory || "";
+        categoryEl.value = initialCategory || "";
+      }
+
+      renderSubcategorySuggestions();
+      setInitialSubcategory();
+      subcategorySearchEl.addEventListener("input", () => syncSubcategoryFromSearch(false));
+      subcategorySearchEl.addEventListener("change", () => syncSubcategoryFromSearch(true));
+      subcategorySearchEl.addEventListener("blur", () => syncSubcategoryFromSearch(true));
       tipoEl.addEventListener("change", syncTaxHint);
-      renderSubcategories(initialSubcategory, initialCategory);
       syncTaxHint();
 
       const formEl = document.getElementById("agroSaidaManualForm");
@@ -384,6 +327,10 @@
       const isCreateMode = {{ (modo == 'novo')|tojson }};
       const retroactiveAlertContext = {{ retroactive_alert_context|tojson }};
       const initialDateValues = new Map(dateFields.map((field) => [field.name, (field.value || "").trim()]));
+
+      if (formEl) {
+        formEl.addEventListener("submit", () => syncSubcategoryFromSearch(true));
+      }
 
       function isoToday() {
         const now = new Date();

@@ -7,6 +7,7 @@ from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 from flask import abort, flash, redirect, render_template, request, send_file, send_from_directory, url_for
 from flask_login import current_user, login_required
+from sqlalchemy import or_
 from werkzeug.utils import secure_filename
 
 from app.extensions import db
@@ -18,9 +19,11 @@ from app.models import (
     EquipeAgro,
     FinanceiroAgro,
     FinanceiroAgroCaixaDiario,
+    FinanceiroAgroCategoria,
     FinanceiroAgroCompetenciaControle,
     FinanceiroAgroEntrada,
     FinanceiroAgroSaida,
+    FinanceiroAgroSubcategoria,
     FornecedorAgro,
     OrcamentoAgro,
     OrdemServicoAgro,
@@ -225,6 +228,12 @@ AGRO_FINANCEIRO_SAIDA_ESTRUTURA = {
         "Retencao Contrato",
     ),
 }
+
+AGRO_FINANCEIRO_CATEGORIA_TIPO_LABELS = {
+    FinanceiroAgroCategoria.TIPO_ENTRADA: "Entrada",
+    FinanceiroAgroCategoria.TIPO_SAIDA: "Saida",
+}
+
 
 def _query_args_without_page():
     args = request.args.to_dict(flat=True)
@@ -585,7 +594,140 @@ def _mapping_to_choice_list(mapping):
     return [{"categoria": categoria, "subcategorias": list(subcategorias)} for categoria, subcategorias in mapping.items()]
 
 
-def _build_categoria_subcategoria_choices(mapping, model, *, current_categoria="", current_subcategoria=""):
+def _get_agro_categoria_tipo_mapping(tipo_movimento):
+    if tipo_movimento == FinanceiroAgroCategoria.TIPO_ENTRADA:
+        return AGRO_FINANCEIRO_ENTRADA_ESTRUTURA
+    if tipo_movimento == FinanceiroAgroCategoria.TIPO_SAIDA:
+        return AGRO_FINANCEIRO_SAIDA_ESTRUTURA
+    return {}
+
+
+def _agro_categoria_scope_filter(model):
+    prefeitura_id = getattr(current_user, "prefeitura_id", None)
+    if prefeitura_id is None or getattr(current_user, "tipo_usuario", None) == "admin":
+        return True
+    return or_(model.prefeitura_id.is_(None), model.prefeitura_id == prefeitura_id)
+
+
+def _build_financeiro_agro_categoria_base_query(tipo_movimento="", *, include_inactive=False):
+    query = FinanceiroAgroCategoria.query
+    scope_filter = _agro_categoria_scope_filter(FinanceiroAgroCategoria)
+    if scope_filter is not True:
+        query = query.filter(scope_filter)
+
+    tipo_movimento = (tipo_movimento or "").strip().upper()
+    if tipo_movimento in FinanceiroAgroCategoria.TIPO_OPTIONS:
+        query = query.filter(FinanceiroAgroCategoria.tipo_movimento == tipo_movimento)
+
+    if not include_inactive:
+        query = query.filter(FinanceiroAgroCategoria.ativo.is_(True))
+
+    return query
+
+
+def _find_financeiro_agro_categoria(tipo_movimento, nome, *, prefeitura_id=None):
+    nome = (nome or "").strip()
+    tipo_movimento = (tipo_movimento or "").strip().upper()
+    if not nome or tipo_movimento not in FinanceiroAgroCategoria.TIPO_OPTIONS:
+        return None
+
+    return (
+        FinanceiroAgroCategoria.query
+        .filter(
+            FinanceiroAgroCategoria.prefeitura_id == prefeitura_id,
+            FinanceiroAgroCategoria.tipo_movimento == tipo_movimento,
+            db.func.lower(FinanceiroAgroCategoria.nome) == nome.lower(),
+        )
+        .first()
+    )
+
+
+def _find_financeiro_agro_subcategoria(categoria, nome):
+    nome = (nome or "").strip()
+    if categoria is None or not nome:
+        return None
+
+    return (
+        FinanceiroAgroSubcategoria.query
+        .filter(
+            FinanceiroAgroSubcategoria.categoria_id == categoria.id,
+            db.func.lower(FinanceiroAgroSubcategoria.nome) == nome.lower(),
+        )
+        .first()
+    )
+
+
+def _ensure_financeiro_agro_categoria_subcategoria(tipo_movimento, categoria_nome, subcategoria_nome, *, commit=False):
+    categoria_nome = (categoria_nome or "").strip()
+    subcategoria_nome = (subcategoria_nome or "").strip()
+    tipo_movimento = (tipo_movimento or "").strip().upper()
+    if not categoria_nome or not subcategoria_nome or tipo_movimento not in FinanceiroAgroCategoria.TIPO_OPTIONS:
+        return None, None
+
+    prefeitura_id = getattr(current_user, "prefeitura_id", None)
+    categoria = _find_financeiro_agro_categoria(tipo_movimento, categoria_nome, prefeitura_id=prefeitura_id)
+    if categoria is None:
+        categoria = _find_financeiro_agro_categoria(tipo_movimento, categoria_nome, prefeitura_id=None)
+
+    if categoria is None or (categoria.prefeitura_id is None and prefeitura_id is not None):
+        categoria = FinanceiroAgroCategoria(
+            prefeitura_id=prefeitura_id,
+            tipo_movimento=tipo_movimento,
+            nome=categoria_nome,
+            ativo=True,
+        )
+        db.session.add(categoria)
+        db.session.flush()
+    elif not categoria.ativo:
+        categoria.ativo = True
+
+    subcategoria = _find_financeiro_agro_subcategoria(categoria, subcategoria_nome)
+    if subcategoria is None:
+        subcategoria = FinanceiroAgroSubcategoria(
+            categoria_id=categoria.id,
+            nome=subcategoria_nome,
+            ativo=True,
+        )
+        db.session.add(subcategoria)
+    elif not subcategoria.ativo:
+        subcategoria.ativo = True
+
+    if commit:
+        db.session.commit()
+
+    return categoria, subcategoria
+
+
+def _resolve_categoria_for_subcategoria(tipo_movimento, subcategoria):
+    subcategoria = (subcategoria or "").strip()
+    if not subcategoria:
+        return ""
+
+    mapping = _get_agro_categoria_tipo_mapping(tipo_movimento)
+    for mapped_categoria, mapped_subcategorias in mapping.items():
+        if subcategoria in mapped_subcategorias:
+            return mapped_categoria
+
+    query = (
+        FinanceiroAgroSubcategoria.query
+        .join(FinanceiroAgroCategoria)
+        .filter(
+            FinanceiroAgroCategoria.tipo_movimento == tipo_movimento,
+            FinanceiroAgroCategoria.ativo.is_(True),
+            FinanceiroAgroSubcategoria.ativo.is_(True),
+            db.func.lower(FinanceiroAgroSubcategoria.nome) == subcategoria.lower(),
+        )
+        .order_by(FinanceiroAgroCategoria.prefeitura_id.desc(), FinanceiroAgroCategoria.nome.asc())
+    )
+    scope_filter = _agro_categoria_scope_filter(FinanceiroAgroCategoria)
+    if scope_filter is not True:
+        query = query.filter(scope_filter)
+
+    item = query.first()
+    return item.categoria.nome if item and item.categoria else ""
+
+
+def _build_categoria_subcategoria_choices(mapping, model, *, tipo_movimento, current_categoria="", current_subcategoria=""):
     categoria_options = []
     subcategoria_options = []
     seen_categorias = set()
@@ -614,6 +756,17 @@ def _build_categoria_subcategoria_choices(mapping, model, *, current_categoria="
         add_categoria(categoria)
         for subcategoria in subcategorias:
             add_subcategoria(categoria, subcategoria)
+
+    categorias_db = (
+        _build_financeiro_agro_categoria_base_query(tipo_movimento)
+        .order_by(FinanceiroAgroCategoria.nome.asc())
+        .all()
+    )
+    for categoria_db in categorias_db:
+        add_categoria(categoria_db.nome)
+        for subcategoria_db in categoria_db.subcategorias:
+            if subcategoria_db.ativo:
+                add_subcategoria(categoria_db.nome, subcategoria_db.nome)
 
     rows = (
         apply_prefeitura_scope(model.query, current_user, model.prefeitura_id)
@@ -658,6 +811,7 @@ def _build_financeiro_agro_entrada_form_context(*, modo, form, errors, clientes,
     choices = _build_categoria_subcategoria_choices(
         AGRO_FINANCEIRO_ENTRADA_ESTRUTURA,
         FinanceiroAgroEntrada,
+        tipo_movimento=FinanceiroAgroCategoria.TIPO_ENTRADA,
         current_categoria=form.get("categoria"),
         current_subcategoria=form.get("subcategoria"),
     )
@@ -679,6 +833,7 @@ def _build_financeiro_agro_saida_form_context(*, modo, form, errors, fornecedore
     choices = _build_categoria_subcategoria_choices(
         AGRO_FINANCEIRO_SAIDA_ESTRUTURA,
         FinanceiroAgroSaida,
+        tipo_movimento=FinanceiroAgroCategoria.TIPO_SAIDA,
         current_categoria=form.get("categoria"),
         current_subcategoria=form.get("subcategoria"),
     )
@@ -894,6 +1049,49 @@ def _normalize_banco_agro_form(form_source):
         "saldo_inicial": (form_source.get("saldo_inicial") or "").strip(),
         "ativo": (form_source.get("ativo") or "SIM").strip().upper(),
         "observacoes": (form_source.get("observacoes") or "").strip(),
+    }
+
+
+def _normalize_financeiro_agro_categoria_form(form_source):
+    return {
+        "tipo_movimento": (form_source.get("tipo_movimento") or FinanceiroAgroCategoria.TIPO_SAIDA).strip().upper(),
+        "categoria": (form_source.get("categoria") or "").strip(),
+        "subcategoria": (form_source.get("subcategoria") or "").strip(),
+        "ativo": (form_source.get("ativo") or "SIM").strip().upper(),
+    }
+
+
+def _validate_financeiro_agro_categoria_form(form):
+    errors = {}
+
+    if form["tipo_movimento"] not in FinanceiroAgroCategoria.TIPO_OPTIONS:
+        errors["tipo_movimento"] = "Selecione um tipo valido."
+    if not form["categoria"]:
+        errors["categoria"] = "Informe a categoria."
+    if not form["subcategoria"]:
+        errors["subcategoria"] = "Informe a subcategoria."
+    if form["ativo"] not in {"SIM", "NAO"}:
+        errors["ativo"] = "Selecione se o cadastro esta ativo."
+
+    return errors
+
+
+def _build_financeiro_agro_categoria_form_context(*, modo, form, errors, subcategoria=None):
+    return {
+        "modo": modo,
+        "form": form,
+        "errors": errors,
+        "subcategoria": subcategoria,
+        "tipo_options": FinanceiroAgroCategoria.TIPO_OPTIONS,
+        "tipo_labels": AGRO_FINANCEIRO_CATEGORIA_TIPO_LABELS,
+        "categoria_options": sorted({
+            categoria.nome
+            for categoria in (
+                _build_financeiro_agro_categoria_base_query(form.get("tipo_movimento"), include_inactive=True)
+                .order_by(FinanceiroAgroCategoria.nome.asc())
+                .all()
+            )
+        }, key=lambda value: value.casefold()),
     }
 
 
@@ -1716,7 +1914,7 @@ def _map_agro_saida_status_to_contas_situacao(status):
     return ""
 
 
-def _validate_categoria_subcategoria(form, mapping, errors):
+def _validate_categoria_subcategoria(form, tipo_movimento, errors):
     categoria = (form.get("categoria") or "").strip()
     subcategoria = (form.get("subcategoria") or "").strip()
 
@@ -1724,11 +1922,9 @@ def _validate_categoria_subcategoria(form, mapping, errors):
         errors["subcategoria"] = "Informe ou selecione a subcategoria."
 
     if not categoria:
-        for mapped_categoria, mapped_subcategorias in mapping.items():
-            if subcategoria in mapped_subcategorias:
-                form["categoria"] = mapped_categoria
-                categoria = mapped_categoria
-                break
+        categoria = _resolve_categoria_for_subcategoria(tipo_movimento, subcategoria)
+        if categoria:
+            form["categoria"] = categoria
 
     if not categoria:
         errors["categoria"] = "Informe a categoria."
@@ -1752,7 +1948,7 @@ def _validate_financeiro_agro_entrada_form(form):
     if banco is None:
         errors["banco_agro_id"] = "Selecione o banco agro que vai receber essa entrada."
 
-    _validate_categoria_subcategoria(form, AGRO_FINANCEIRO_ENTRADA_ESTRUTURA, errors)
+    _validate_categoria_subcategoria(form, FinanceiroAgroCategoria.TIPO_ENTRADA, errors)
 
     if not form["descricao"]:
         errors["descricao"] = "Informe a descricao do lancamento."
@@ -1827,7 +2023,7 @@ def _validate_financeiro_agro_saida_form(form):
     if form["tipo_saida"] not in AGRO_FINANCEIRO_SAIDA_TIPO_OPTIONS:
         errors["tipo_saida"] = "Selecione um tipo de saida valido."
 
-    _validate_categoria_subcategoria(form, AGRO_FINANCEIRO_SAIDA_ESTRUTURA, errors)
+    _validate_categoria_subcategoria(form, FinanceiroAgroCategoria.TIPO_SAIDA, errors)
 
     if not form["descricao"]:
         errors["descricao"] = "Informe a descricao do lancamento."
@@ -3295,6 +3491,177 @@ def register_routes(bp):
         _require_agro_access()
         context = get_agro_finance_dashboard_context(current_user)
         return render_template("agro_financeiro_dashboard.html", **context)
+
+    @bp.route("/agro/financeiro/categorias", methods=["GET"], endpoint="agro_financeiro_categorias_listar")
+    @login_required
+    def agro_financeiro_categorias_listar():
+        _require_agro_access()
+        if not can_manage_agro_finance_settings(current_user):
+            abort(403)
+
+        q = (request.args.get("q") or "").strip()
+        tipo_movimento = (request.args.get("tipo_movimento") or "").strip().upper()
+        ativo = (request.args.get("ativo") or "").strip().upper()
+        if tipo_movimento not in {"", *FinanceiroAgroCategoria.TIPO_OPTIONS}:
+            tipo_movimento = ""
+        if ativo not in {"", "ATIVO", "INATIVO"}:
+            ativo = ""
+
+        query = FinanceiroAgroSubcategoria.query.join(FinanceiroAgroCategoria)
+        scope_filter = _agro_categoria_scope_filter(FinanceiroAgroCategoria)
+        if scope_filter is not True:
+            query = query.filter(scope_filter)
+        if tipo_movimento:
+            query = query.filter(FinanceiroAgroCategoria.tipo_movimento == tipo_movimento)
+        if ativo == "ATIVO":
+            query = query.filter(FinanceiroAgroCategoria.ativo.is_(True), FinanceiroAgroSubcategoria.ativo.is_(True))
+        elif ativo == "INATIVO":
+            query = query.filter(or_(FinanceiroAgroCategoria.ativo.is_(False), FinanceiroAgroSubcategoria.ativo.is_(False)))
+        if q:
+            like = f"%{q}%"
+            query = query.filter(or_(FinanceiroAgroCategoria.nome.ilike(like), FinanceiroAgroSubcategoria.nome.ilike(like)))
+
+        subcategorias = (
+            query
+            .order_by(
+                FinanceiroAgroCategoria.tipo_movimento.asc(),
+                FinanceiroAgroCategoria.nome.asc(),
+                FinanceiroAgroSubcategoria.nome.asc(),
+            )
+            .all()
+        )
+
+        return render_template(
+            "agro_financeiro_categorias_listar.html",
+            subcategorias=subcategorias,
+            filters={"q": q, "tipo_movimento": tipo_movimento, "ativo": ativo, "total": len(subcategorias)},
+            tipo_options=FinanceiroAgroCategoria.TIPO_OPTIONS,
+            tipo_labels=AGRO_FINANCEIRO_CATEGORIA_TIPO_LABELS,
+        )
+
+    @bp.route("/agro/financeiro/categorias/cadastrar", methods=["GET", "POST"], endpoint="agro_financeiro_categoria_nova")
+    @login_required
+    def agro_financeiro_categoria_nova():
+        _require_agro_access()
+        if not can_manage_agro_finance_settings(current_user):
+            abort(403)
+
+        errors = {}
+        if request.method == "POST":
+            form = _normalize_financeiro_agro_categoria_form(request.form)
+            errors = _validate_financeiro_agro_categoria_form(form)
+
+            if not errors:
+                categoria, subcategoria = _ensure_financeiro_agro_categoria_subcategoria(
+                    form["tipo_movimento"],
+                    form["categoria"],
+                    form["subcategoria"],
+                )
+                if categoria and subcategoria:
+                    categoria.ativo = form["ativo"] == "SIM"
+                    subcategoria.ativo = form["ativo"] == "SIM"
+                    db.session.commit()
+                    flash("Categoria e subcategoria cadastradas com sucesso.", "success")
+                    return redirect(url_for("main.agro_financeiro_categorias_listar"))
+                errors["subcategoria"] = "Nao foi possivel cadastrar a subcategoria."
+
+            flash("Corrija os campos destacados da categoria.", "warning")
+            return render_template(
+                "agro_financeiro_categoria_form.html",
+                **_build_financeiro_agro_categoria_form_context(modo="novo", form=form, errors=errors),
+            )
+
+        form = _normalize_financeiro_agro_categoria_form(request.args)
+        return render_template(
+            "agro_financeiro_categoria_form.html",
+            **_build_financeiro_agro_categoria_form_context(modo="novo", form=form, errors=errors),
+        )
+
+    @bp.route("/agro/financeiro/categorias/<int:subcategoria_id>/editar", methods=["GET", "POST"], endpoint="agro_financeiro_categoria_editar")
+    @login_required
+    def agro_financeiro_categoria_editar(subcategoria_id):
+        _require_agro_access()
+        if not can_manage_agro_finance_settings(current_user):
+            abort(403)
+
+        query = FinanceiroAgroSubcategoria.query.join(FinanceiroAgroCategoria)
+        scope_filter = _agro_categoria_scope_filter(FinanceiroAgroCategoria)
+        if scope_filter is not True:
+            query = query.filter(scope_filter)
+        subcategoria = query.filter(FinanceiroAgroSubcategoria.id == subcategoria_id).first_or_404()
+        if subcategoria.categoria.prefeitura_id is None and getattr(current_user, "tipo_usuario", None) != "admin":
+            abort(403)
+
+        errors = {}
+        if request.method == "POST":
+            form = _normalize_financeiro_agro_categoria_form(request.form)
+            errors = _validate_financeiro_agro_categoria_form(form)
+
+            if not errors:
+                prefeitura_id = getattr(current_user, "prefeitura_id", None)
+                categoria = _find_financeiro_agro_categoria(form["tipo_movimento"], form["categoria"], prefeitura_id=prefeitura_id)
+                if categoria is None:
+                    categoria = _find_financeiro_agro_categoria(form["tipo_movimento"], form["categoria"], prefeitura_id=None)
+                if categoria is None or (categoria.prefeitura_id is None and prefeitura_id is not None):
+                    categoria = FinanceiroAgroCategoria(
+                        prefeitura_id=prefeitura_id,
+                        tipo_movimento=form["tipo_movimento"],
+                        nome=form["categoria"],
+                        ativo=True,
+                    )
+                    db.session.add(categoria)
+                    db.session.flush()
+
+                existing_subcategoria = _find_financeiro_agro_subcategoria(categoria, form["subcategoria"])
+                if existing_subcategoria is not None and existing_subcategoria.id != subcategoria.id:
+                    errors["subcategoria"] = "Ja existe uma subcategoria com esse nome nessa categoria."
+                elif categoria is not None:
+                    subcategoria.categoria_id = categoria.id
+                    subcategoria.nome = form["subcategoria"]
+                    subcategoria.ativo = form["ativo"] == "SIM"
+                    categoria.ativo = True
+                    db.session.commit()
+                    flash("Categoria e subcategoria atualizadas com sucesso.", "success")
+                    return redirect(url_for("main.agro_financeiro_categorias_listar"))
+                else:
+                    errors["subcategoria"] = "Nao foi possivel atualizar a subcategoria."
+
+            flash("Corrija os campos destacados da categoria.", "warning")
+            return render_template(
+                "agro_financeiro_categoria_form.html",
+                **_build_financeiro_agro_categoria_form_context(modo="editar", form=form, errors=errors, subcategoria=subcategoria),
+            )
+
+        form = {
+            "tipo_movimento": subcategoria.categoria.tipo_movimento,
+            "categoria": subcategoria.categoria.nome,
+            "subcategoria": subcategoria.nome,
+            "ativo": "SIM" if subcategoria.ativo and subcategoria.categoria.ativo else "NAO",
+        }
+        return render_template(
+            "agro_financeiro_categoria_form.html",
+            **_build_financeiro_agro_categoria_form_context(modo="editar", form=form, errors=errors, subcategoria=subcategoria),
+        )
+
+    @bp.route("/agro/financeiro/categorias/<int:subcategoria_id>/alternar", methods=["POST"], endpoint="agro_financeiro_categoria_alternar")
+    @login_required
+    def agro_financeiro_categoria_alternar(subcategoria_id):
+        _require_agro_access()
+        if not can_manage_agro_finance_settings(current_user):
+            abort(403)
+
+        query = FinanceiroAgroSubcategoria.query.join(FinanceiroAgroCategoria)
+        scope_filter = _agro_categoria_scope_filter(FinanceiroAgroCategoria)
+        if scope_filter is not True:
+            query = query.filter(scope_filter)
+        subcategoria = query.filter(FinanceiroAgroSubcategoria.id == subcategoria_id).first_or_404()
+        if subcategoria.categoria.prefeitura_id is None and getattr(current_user, "tipo_usuario", None) != "admin":
+            abort(403)
+
+        subcategoria.ativo = not subcategoria.ativo
+        db.session.commit()
+        flash("Status da subcategoria atualizado.", "success")
+        return _redirect_back_to_agro("main.agro_financeiro_categorias_listar")
 
     @bp.route("/agro/bancos", methods=["GET"], endpoint="agro_bancos_listar")
     @login_required
@@ -4932,6 +5299,11 @@ def register_routes(bp):
                     **_build_financeiro_agro_entrada_form_context(modo="novo", form=form, errors=errors, clientes=clientes, bancos=bancos),
                 )
 
+            _ensure_financeiro_agro_categoria_subcategoria(
+                FinanceiroAgroCategoria.TIPO_ENTRADA,
+                form["categoria"],
+                form["subcategoria"],
+            )
             valores_parcelas = _split_agro_installment_values(payload["valor"], quantidade_parcelas)
             grupo_lancamento = str(uuid.uuid4()) if quantidade_parcelas > 1 else None
 
@@ -5036,6 +5408,11 @@ def register_routes(bp):
                     **_build_financeiro_agro_entrada_form_context(modo="editar", form=form, errors=errors, clientes=clientes, bancos=bancos, lancamento=lancamento),
                 )
 
+            _ensure_financeiro_agro_categoria_subcategoria(
+                FinanceiroAgroCategoria.TIPO_ENTRADA,
+                form["categoria"],
+                form["subcategoria"],
+            )
             banco_ids = {lancamento.banco_agro_id, getattr(payload["banco"], "id", None)}
             lancamento.cliente_agro_id = getattr(payload["cliente"], "id", None)
             lancamento.banco_agro_id = getattr(payload["banco"], "id", None)
@@ -5213,6 +5590,11 @@ def register_routes(bp):
                     **_build_financeiro_agro_saida_form_context(modo="novo", form=form, errors=errors, fornecedores=fornecedores, bancos=bancos),
                 )
 
+            _ensure_financeiro_agro_categoria_subcategoria(
+                FinanceiroAgroCategoria.TIPO_SAIDA,
+                form["categoria"],
+                form["subcategoria"],
+            )
             valores_parcelas = _split_agro_installment_values(payload["valor"], quantidade_parcelas)
             grupo_lancamento = str(uuid.uuid4()) if quantidade_parcelas > 1 else None
 
@@ -5328,6 +5710,11 @@ def register_routes(bp):
                     **_build_financeiro_agro_saida_form_context(modo="editar", form=form, errors=errors, fornecedores=fornecedores, bancos=bancos, lancamento=lancamento),
                 )
 
+            _ensure_financeiro_agro_categoria_subcategoria(
+                FinanceiroAgroCategoria.TIPO_SAIDA,
+                form["categoria"],
+                form["subcategoria"],
+            )
             banco_ids = {lancamento.banco_agro_id, getattr(payload["banco"], "id", None)}
             fornecedor = payload["fornecedor"]
             lancamento.fornecedor_agro_id = getattr(fornecedor, "id", None)

@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1200px">
+  <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+    <div>
+      <h2 class="text-dark m-0">
+        <i class="bi bi-tags-fill me-2 text-primary"></i> Categorias Financeiras
+      </h2>
+      <p class="text-muted small mb-0">Controle as categorias e subcategorias usadas nas entradas e saidas manuais.</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{{ url_for('main.agro_financeiro_configuracoes') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+      <a href="{{ url_for('main.agro_financeiro_categoria_nova') }}" class="btn btn-success d-flex align-items-center gap-2">
+        <i class="bi bi-plus-lg"></i> Nova Categoria
+      </a>
+    </div>
+  </div>
+
+  <div class="card shadow-sm rounded-4 border-0 mb-4">
+    <div class="card-body p-4">
+      <form method="get" class="row g-3 align-items-end">
+        <div class="col-lg-5">
+          <label class="form-label fw-bold small text-muted">Buscar</label>
+          <input type="text" name="q" value="{{ filters.q }}" class="form-control" placeholder="Categoria ou subcategoria">
+        </div>
+        <div class="col-lg-3">
+          <label class="form-label fw-bold small text-muted">Tipo</label>
+          <select name="tipo_movimento" class="form-select">
+            <option value="">Todos</option>
+            {% for tipo in tipo_options %}
+              <option value="{{ tipo }}" {% if filters.tipo_movimento == tipo %}selected{% endif %}>{{ tipo_labels.get(tipo, tipo) }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-lg-2">
+          <label class="form-label fw-bold small text-muted">Status</label>
+          <select name="ativo" class="form-select">
+            <option value="">Todos</option>
+            <option value="ATIVO" {% if filters.ativo == 'ATIVO' %}selected{% endif %}>Ativos</option>
+            <option value="INATIVO" {% if filters.ativo == 'INATIVO' %}selected{% endif %}>Inativos</option>
+          </select>
+        </div>
+        <div class="col-lg-2 d-grid">
+          <button type="submit" class="btn btn-primary d-flex align-items-center justify-content-center gap-2">
+            <i class="bi bi-search"></i> Filtrar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card shadow-sm rounded-4 border-0">
+    <div class="card-header bg-transparent border-0 pt-4 px-4">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h5 class="m-0 text-dark">Subcategorias Cadastradas</h5>
+        <span class="badge bg-light text-dark border">{{ filters.total }} item(ns)</span>
+      </div>
+    </div>
+    <div class="card-body px-4 pb-4">
+      {% if subcategorias %}
+        <div class="table-responsive">
+          <table class="table align-middle">
+            <thead>
+              <tr>
+                <th>Tipo</th>
+                <th>Categoria</th>
+                <th>Subcategoria</th>
+                <th>Status</th>
+                <th class="text-end">Acoes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for subcategoria in subcategorias %}
+                {% set categoria = subcategoria.categoria %}
+                {% set ativo = subcategoria.ativo and categoria.ativo %}
+                {% set is_global = categoria.prefeitura_id is none %}
+                <tr>
+                  <td>
+                    <span class="badge {{ 'bg-success-subtle text-success border border-success-subtle' if categoria.tipo_movimento == 'ENTRADA' else 'bg-danger-subtle text-danger border border-danger-subtle' }}">
+                      {{ tipo_labels.get(categoria.tipo_movimento, categoria.tipo_movimento) }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="fw-semibold">{{ categoria.nome }}</div>
+                    {% if is_global %}
+                      <div class="text-muted small">Base do sistema</div>
+                    {% endif %}
+                  </td>
+                  <td>{{ subcategoria.nome }}</td>
+                  <td>
+                    {% if ativo %}
+                      <span class="badge bg-success-subtle text-success border border-success-subtle">Ativa</span>
+                    {% else %}
+                      <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Inativa</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <div class="d-flex justify-content-end flex-wrap gap-2">
+                      {% if not is_global or current_user.tipo_usuario == 'admin' %}
+                        <a href="{{ url_for('main.agro_financeiro_categoria_editar', subcategoria_id=subcategoria.id) }}" class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1">
+                          <i class="bi bi-pencil-square"></i> Editar
+                        </a>
+                        <form method="post" action="{{ url_for('main.agro_financeiro_categoria_alternar', subcategoria_id=subcategoria.id) }}">
+                          <button type="submit" class="btn btn-sm {{ 'btn-outline-secondary' if ativo else 'btn-success' }} d-flex align-items-center gap-1">
+                            <i class="bi {{ 'bi-eye-slash' if ativo else 'bi-eye' }}"></i>
+                            {{ 'Desativar' if ativo else 'Ativar' }}
+                          </button>
+                        </form>
+                      {% else %}
+                        <a href="{{ url_for('main.agro_financeiro_categoria_nova', tipo_movimento=categoria.tipo_movimento, categoria=categoria.nome) }}" class="btn btn-sm btn-outline-success d-flex align-items-center gap-1">
+                          <i class="bi bi-plus-lg"></i> Criar local
+                        </a>
+                      {% endif %}
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="text-muted small">Nenhuma categoria encontrada para os filtros atuais.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
