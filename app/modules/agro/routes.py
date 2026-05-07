@@ -21,6 +21,7 @@ from app.models import (
     FinanceiroAgroCompetenciaControle,
     FinanceiroAgroEntrada,
     FinanceiroAgroSaida,
+    FornecedorAgro,
     OrcamentoAgro,
     OrdemServicoAgro,
     PilotoAgro,
@@ -53,6 +54,7 @@ from app.modules.agro.service import (
     build_financeiro_agro_entrada_query,
     build_financeiro_agro_query,
     build_financeiro_agro_saida_query,
+    build_fornecedores_agro_query,
     can_manage_agro_finance_settings,
     build_ordens_servico_agro_query,
     build_orcamentos_agro_query,
@@ -71,6 +73,7 @@ from app.modules.agro.service import (
     save_orcamento_attachment,
     serialize_contrato_agro_form,
     serialize_cliente_agro,
+    serialize_fornecedor_agro,
     serialize_banco_agro_form,
     serialize_financeiro_agro_form,
     update_orcamento_snapshot_from_cliente,
@@ -311,6 +314,18 @@ def _get_cliente_agro(cliente_id: int | None):
         return None
     query = apply_prefeitura_scope(ClienteAgro.query, current_user, ClienteAgro.prefeitura_id)
     return query.filter(ClienteAgro.id == cliente_id).first()
+
+
+def _get_fornecedor_agro_or_404(fornecedor_id: int):
+    query = apply_prefeitura_scope(FornecedorAgro.query, current_user, FornecedorAgro.prefeitura_id)
+    return query.filter(FornecedorAgro.id == fornecedor_id).first_or_404()
+
+
+def _get_fornecedor_agro(fornecedor_id: int | None):
+    if not fornecedor_id:
+        return None
+    query = apply_prefeitura_scope(FornecedorAgro.query, current_user, FornecedorAgro.prefeitura_id)
+    return query.filter(FornecedorAgro.id == fornecedor_id).first()
 
 
 def _get_banco_agro_or_404(banco_id: int):
@@ -660,7 +675,7 @@ def _build_financeiro_agro_entrada_form_context(*, modo, form, errors, clientes,
     }
 
 
-def _build_financeiro_agro_saida_form_context(*, modo, form, errors, clientes, bancos, lancamento=None):
+def _build_financeiro_agro_saida_form_context(*, modo, form, errors, fornecedores, bancos, lancamento=None):
     choices = _build_categoria_subcategoria_choices(
         AGRO_FINANCEIRO_SAIDA_ESTRUTURA,
         FinanceiroAgroSaida,
@@ -671,9 +686,9 @@ def _build_financeiro_agro_saida_form_context(*, modo, form, errors, clientes, b
         "modo": modo,
         "form": form,
         "errors": errors,
-        "clientes": clientes,
+        "fornecedores": fornecedores,
         "bancos": bancos,
-        "clientes_json": [serialize_cliente_agro(cliente) for cliente in clientes],
+        "fornecedores_json": [serialize_fornecedor_agro(fornecedor) for fornecedor in fornecedores],
         **choices,
         "status_options": AGRO_FINANCEIRO_SAIDA_STATUS_OPTIONS,
         "tipo_options": AGRO_FINANCEIRO_SAIDA_TIPO_OPTIONS,
@@ -781,6 +796,20 @@ def _normalize_cliente_form(form_source):
     }
 
 
+def _normalize_fornecedor_form(form_source):
+    return {
+        "nome": (form_source.get("nome") or "").strip(),
+        "documento": (form_source.get("documento") or "").strip(),
+        "cep": format_cep(form_source.get("cep") or ""),
+        "logradouro": (form_source.get("logradouro") or "").strip(),
+        "numero": (form_source.get("numero") or "").strip(),
+        "complemento": (form_source.get("complemento") or "").strip(),
+        "bairro": (form_source.get("bairro") or "").strip(),
+        "cidade": (form_source.get("cidade") or "").strip(),
+        "uf": (form_source.get("uf") or "").strip().upper(),
+    }
+
+
 def _normalize_financeiro_agro_form(form_source):
     return {
         "contrato_agro_id": (form_source.get("contrato_agro_id") or "").strip(),
@@ -834,9 +863,8 @@ def _normalize_financeiro_agro_entrada_form(form_source):
 
 def _normalize_financeiro_agro_saida_form(form_source):
     return {
-        "cliente_agro_id": (form_source.get("cliente_agro_id") or "").strip(),
+        "fornecedor_agro_id": (form_source.get("fornecedor_agro_id") or "").strip(),
         "banco_agro_id": (form_source.get("banco_agro_id") or "").strip(),
-        "favorecido": (form_source.get("favorecido") or "").strip(),
         "tipo_saida": (form_source.get("tipo_saida") or FinanceiroAgroSaida.TIPO_DESPESA).strip().upper(),
         "categoria": (form_source.get("categoria") or "").strip(),
         "subcategoria": (form_source.get("subcategoria") or "").strip(),
@@ -910,6 +938,38 @@ def _validate_cliente_agro_form(form, *, cliente_atual=None):
         query = apply_prefeitura_scope(query, current_user, ClienteAgro.prefeitura_id)
         if query.first():
             errors["documento"] = "Já existe um cliente agro com esse documento."
+
+    return errors, doc_digits, doc_fmt, cep_digits
+
+
+def _validate_fornecedor_agro_form(form, *, fornecedor_atual=None):
+    errors = {}
+
+    if not form["nome"]:
+        errors["nome"] = "Informe o nome do fornecedor."
+
+    doc_ok = False
+    doc_digits = ""
+    doc_fmt = ""
+    if form["documento"]:
+        doc_ok, _doc_tipo, doc_digits, doc_fmt, doc_error = validate_documento(form["documento"])
+        if not doc_ok:
+            errors["documento"] = doc_error
+
+    cep_digits = only_digits(form["cep"])
+    if form["cep"] and len(cep_digits) != 8:
+        errors["cep"] = "Informe um CEP valido com 8 digitos."
+
+    if form["uf"] and len(form["uf"]) != 2:
+        errors["uf"] = "UF deve ter 2 letras."
+
+    if doc_ok:
+        query = FornecedorAgro.query.filter(FornecedorAgro.documento == doc_digits)
+        if fornecedor_atual is not None:
+            query = query.filter(FornecedorAgro.id != fornecedor_atual.id)
+        query = apply_prefeitura_scope(query, current_user, FornecedorAgro.prefeitura_id)
+        if query.first():
+            errors["documento"] = "Ja existe um fornecedor agro com esse documento."
 
     return errors, doc_digits, doc_fmt, cep_digits
 
@@ -1223,13 +1283,14 @@ def _build_agro_conciliacao_item(item):
         realizado = bool(realizado_em) or status == FinanceiroAgroSaida.STATUS_PAGO
         atrasado = status == FinanceiroAgroSaida.STATUS_VENCIDO
         parcela_label = f" | Parcela {item.parcela_numero}/{item.parcela_total}" if (item.parcela_total or 1) > 1 else ""
+        fornecedor_nome = item.fornecedor.nome if item.fornecedor else (item.favorecido or "")
         return {
             "id": item.id,
             "origem": "Saida manual",
             "origem_slug": "saida",
             "movimento": "SAIDA",
             "banco_agro_id": item.banco_agro_id,
-            "titulo": item.favorecido or "Sem favorecido",
+            "titulo": fornecedor_nome or "Sem fornecedor",
             "descricao": f"{item.descricao or ''}{parcela_label}".strip(),
             "detalhe": item.categoria or "",
             "documento": item.documento_referencia or "",
@@ -1748,7 +1809,7 @@ def _validate_financeiro_agro_entrada_form(form):
 
 def _validate_financeiro_agro_saida_form(form):
     errors = {}
-    cliente = _get_cliente_agro(_normalize_optional_int(form["cliente_agro_id"]))
+    fornecedor = _get_fornecedor_agro(_normalize_optional_int(form["fornecedor_agro_id"]))
     banco = _get_banco_agro(_normalize_optional_int(form["banco_agro_id"]))
     data_lancamento = _parse_iso_date(form["data_lancamento"])
     data_emissao = _parse_iso_date(form["data_emissao"])
@@ -1757,8 +1818,8 @@ def _validate_financeiro_agro_saida_form(form):
     valor = parse_currency_br(form["valor"])
     quantidade_parcelas = _parse_positive_int(form.get("quantidade_parcelas"))
 
-    if not form["favorecido"]:
-        errors["favorecido"] = "Informe o favorecido."
+    if fornecedor is None:
+        errors["fornecedor_agro_id"] = "Selecione o fornecedor da conta a pagar."
 
     if banco is None:
         errors["banco_agro_id"] = "Selecione o banco agro que vai pagar essa saida."
@@ -1810,7 +1871,7 @@ def _validate_financeiro_agro_saida_form(form):
 
     return {
         "errors": errors,
-        "cliente": cliente,
+        "fornecedor": fornecedor,
         "banco": banco,
         "data_lancamento": data_lancamento,
         "data_emissao": data_emissao,
@@ -3519,6 +3580,22 @@ def register_routes(bp):
             is_editable=can_edit_agro_panel(current_user),
         )
 
+    @bp.route("/agro/clientes-fornecedores", methods=["GET"], endpoint="agro_clientes_menu")
+    @login_required
+    def agro_clientes_menu():
+        _require_agro_access()
+
+        clientes_query = apply_prefeitura_scope(ClienteAgro.query, current_user, ClienteAgro.prefeitura_id)
+        fornecedores_query = apply_prefeitura_scope(FornecedorAgro.query, current_user, FornecedorAgro.prefeitura_id)
+
+        return render_template(
+            "agro_clientes_menu.html",
+            total_clientes=clientes_query.count(),
+            total_fornecedores=fornecedores_query.count(),
+            can_edit_clientes=can_edit_agro_panel(current_user),
+            can_edit_fornecedores=can_edit_agro_finance_panel(current_user),
+        )
+
     @bp.route("/agro/clientes/cadastrar", methods=["GET", "POST"], endpoint="agro_cliente_novo")
     @login_required
     def agro_cliente_novo():
@@ -3614,6 +3691,132 @@ def register_routes(bp):
         db.session.commit()
         flash("Cliente agro removido com sucesso.", "success")
         return redirect(url_for("main.agro_clientes_listar"))
+
+    @bp.route("/agro/fornecedores", methods=["GET"], endpoint="agro_fornecedores_listar")
+    @login_required
+    def agro_fornecedores_listar():
+        _require_agro_access()
+
+        q = (request.args.get("q") or "").strip()
+        page = request.args.get("page", 1, type=int)
+        per_page = 12
+
+        query = build_fornecedores_agro_query(current_user, q=q)
+        total = query.count()
+        total_pages = max(1, math.ceil(total / per_page))
+        page = min(max(1, page), total_pages)
+
+        fornecedores = query.offset((page - 1) * per_page).limit(per_page).all()
+
+        return render_template(
+            "agro_fornecedores_listar.html",
+            fornecedores=fornecedores,
+            fornecedores_serializados=[serialize_fornecedor_agro(fornecedor) for fornecedor in fornecedores],
+            filters={"q": q, "page": page, "total": total, "total_pages": total_pages},
+            pagination_args=_query_args_without_page(),
+            is_editable=can_edit_agro_finance_panel(current_user),
+        )
+
+    @bp.route("/agro/fornecedores/cadastrar", methods=["GET", "POST"], endpoint="agro_fornecedor_novo")
+    @login_required
+    def agro_fornecedor_novo():
+        _require_agro_finance_edit()
+
+        errors = {}
+        form = _normalize_fornecedor_form(request.form if request.method == "POST" else {})
+
+        if request.method == "POST":
+            errors, doc_digits, doc_fmt, cep_digits = _validate_fornecedor_agro_form(form)
+            if errors:
+                flash("Corrija os campos destacados do fornecedor agro.", "warning")
+                return render_template("agro_fornecedor_form.html", form=form, errors=errors, modo="novo")
+
+            fornecedor = FornecedorAgro(
+                prefeitura_id=getattr(current_user, "prefeitura_id", None),
+                documento=doc_digits or None,
+                nome=form["nome"],
+                cep=cep_digits or None,
+                logradouro=form["logradouro"] or None,
+                numero=form["numero"] or None,
+                complemento=form["complemento"] or None,
+                bairro=form["bairro"] or None,
+                cidade=form["cidade"] or None,
+                uf=form["uf"] or None,
+            )
+            db.session.add(fornecedor)
+            db.session.commit()
+
+            documento_msg = f" Documento salvo como {doc_fmt}." if doc_fmt else ""
+            flash(f"Fornecedor agro cadastrado com sucesso.{documento_msg}", "success")
+            return redirect(url_for("main.agro_fornecedores_listar"))
+
+        return render_template("agro_fornecedor_form.html", form=form, errors=errors, modo="novo")
+
+    @bp.route("/agro/fornecedores/<int:fornecedor_id>/editar", methods=["GET", "POST"], endpoint="agro_fornecedor_editar")
+    @login_required
+    def agro_fornecedor_editar(fornecedor_id):
+        _require_agro_finance_edit()
+        fornecedor = _get_fornecedor_agro_or_404(fornecedor_id)
+
+        errors = {}
+        if request.method == "POST":
+            form = _normalize_fornecedor_form(request.form)
+            errors, doc_digits, doc_fmt, cep_digits = _validate_fornecedor_agro_form(
+                form,
+                fornecedor_atual=fornecedor,
+            )
+            if errors:
+                flash("Corrija os campos destacados do fornecedor agro.", "warning")
+                return render_template(
+                    "agro_fornecedor_form.html",
+                    form=form,
+                    errors=errors,
+                    modo="editar",
+                    fornecedor=fornecedor,
+                )
+
+            fornecedor.documento = doc_digits or None
+            fornecedor.nome = form["nome"]
+            fornecedor.cep = cep_digits or None
+            fornecedor.logradouro = form["logradouro"] or None
+            fornecedor.numero = form["numero"] or None
+            fornecedor.complemento = form["complemento"] or None
+            fornecedor.bairro = form["bairro"] or None
+            fornecedor.cidade = form["cidade"] or None
+            fornecedor.uf = form["uf"] or None
+            db.session.commit()
+
+            documento_msg = f" Documento: {doc_fmt}" if doc_fmt else ""
+            flash(f"Fornecedor agro atualizado com sucesso.{documento_msg}", "success")
+            return redirect(url_for("main.agro_fornecedores_listar"))
+
+        form = {
+            "nome": fornecedor.nome,
+            "documento": format_documento(fornecedor.documento),
+            "cep": format_cep(fornecedor.cep or ""),
+            "logradouro": fornecedor.logradouro or "",
+            "numero": fornecedor.numero or "",
+            "complemento": fornecedor.complemento or "",
+            "bairro": fornecedor.bairro or "",
+            "cidade": fornecedor.cidade or "",
+            "uf": fornecedor.uf or "",
+        }
+        return render_template("agro_fornecedor_form.html", form=form, errors=errors, modo="editar", fornecedor=fornecedor)
+
+    @bp.route("/agro/fornecedores/<int:fornecedor_id>/deletar", methods=["POST"], endpoint="agro_fornecedor_deletar")
+    @login_required
+    def agro_fornecedor_deletar(fornecedor_id):
+        _require_agro_finance_edit()
+        fornecedor = _get_fornecedor_agro_or_404(fornecedor_id)
+
+        if fornecedor.financeiros_saidas:
+            flash("Nao e possivel excluir este fornecedor porque ele possui contas a pagar vinculadas.", "warning")
+            return redirect(url_for("main.agro_fornecedores_listar"))
+
+        db.session.delete(fornecedor)
+        db.session.commit()
+        flash("Fornecedor agro removido com sucesso.", "success")
+        return redirect(url_for("main.agro_fornecedores_listar"))
 
     @bp.route("/agro/orcamentos", methods=["GET"], endpoint="agro_orcamentos_listar")
     @login_required
@@ -4947,7 +5150,7 @@ def register_routes(bp):
         if redirect_response is not None:
             return redirect_response
 
-        clientes = build_clientes_agro_query(current_user).all()
+        fornecedores = build_fornecedores_agro_query(current_user).all()
         bancos = build_bancos_agro_query(current_user).all()
         errors = {}
         hoje = datetime.now().date()
@@ -5007,7 +5210,7 @@ def register_routes(bp):
                 flash("Corrija os campos destacados da saida manual.", "warning")
                 return render_template(
                     "agro_financeiro_saida_form.html",
-                    **_build_financeiro_agro_saida_form_context(modo="novo", form=form, errors=errors, clientes=clientes, bancos=bancos),
+                    **_build_financeiro_agro_saida_form_context(modo="novo", form=form, errors=errors, fornecedores=fornecedores, bancos=bancos),
                 )
 
             valores_parcelas = _split_agro_installment_values(payload["valor"], quantidade_parcelas)
@@ -5015,11 +5218,20 @@ def register_routes(bp):
 
             for parcela_numero, (data_vencimento, valor_parcela) in enumerate(zip(vencimentos, valores_parcelas), start=1):
                 competencia = payload["data_pagamento"] if quantidade_parcelas == 1 and payload["data_pagamento"] else data_vencimento
+                fornecedor = payload["fornecedor"]
                 lancamento = FinanceiroAgroSaida(
                     prefeitura_id=getattr(current_user, "prefeitura_id", None),
-                    cliente_agro_id=getattr(payload["cliente"], "id", None),
+                    fornecedor_agro_id=getattr(fornecedor, "id", None),
+                    cliente_agro_id=None,
                     banco_agro_id=getattr(payload["banco"], "id", None),
-                    favorecido=form["favorecido"],
+                    favorecido=getattr(fornecedor, "nome", None),
+                    cep=getattr(fornecedor, "cep", None),
+                    logradouro=getattr(fornecedor, "logradouro", None),
+                    numero=getattr(fornecedor, "numero", None),
+                    complemento=getattr(fornecedor, "complemento", None),
+                    bairro=getattr(fornecedor, "bairro", None),
+                    cidade=getattr(fornecedor, "cidade", None),
+                    uf=getattr(fornecedor, "uf", None),
                     tipo_saida=form["tipo_saida"],
                     categoria=form["categoria"],
                     subcategoria=form["subcategoria"],
@@ -5060,7 +5272,7 @@ def register_routes(bp):
         form["quantidade_parcelas"] = "1"
         return render_template(
             "agro_financeiro_saida_form.html",
-            **_build_financeiro_agro_saida_form_context(modo="novo", form=form, errors=errors, clientes=clientes, bancos=bancos),
+            **_build_financeiro_agro_saida_form_context(modo="novo", form=form, errors=errors, fornecedores=fornecedores, bancos=bancos),
         )
 
     @bp.route("/agro/financeiro/saidas/<int:lancamento_id>/editar", methods=["GET", "POST"], endpoint="agro_financeiro_saida_editar")
@@ -5081,7 +5293,7 @@ def register_routes(bp):
         )
         if redirect_response is not None:
             return redirect_response
-        clientes = build_clientes_agro_query(current_user).all()
+        fornecedores = build_fornecedores_agro_query(current_user).all()
         bancos = build_bancos_agro_query(current_user).all()
         errors = {}
 
@@ -5113,13 +5325,22 @@ def register_routes(bp):
                 flash("Corrija os campos destacados da saida manual.", "warning")
                 return render_template(
                     "agro_financeiro_saida_form.html",
-                    **_build_financeiro_agro_saida_form_context(modo="editar", form=form, errors=errors, clientes=clientes, bancos=bancos, lancamento=lancamento),
+                    **_build_financeiro_agro_saida_form_context(modo="editar", form=form, errors=errors, fornecedores=fornecedores, bancos=bancos, lancamento=lancamento),
                 )
 
             banco_ids = {lancamento.banco_agro_id, getattr(payload["banco"], "id", None)}
-            lancamento.cliente_agro_id = getattr(payload["cliente"], "id", None)
+            fornecedor = payload["fornecedor"]
+            lancamento.fornecedor_agro_id = getattr(fornecedor, "id", None)
+            lancamento.cliente_agro_id = None
             lancamento.banco_agro_id = getattr(payload["banco"], "id", None)
-            lancamento.favorecido = form["favorecido"]
+            lancamento.favorecido = getattr(fornecedor, "nome", None)
+            lancamento.cep = getattr(fornecedor, "cep", None)
+            lancamento.logradouro = getattr(fornecedor, "logradouro", None)
+            lancamento.numero = getattr(fornecedor, "numero", None)
+            lancamento.complemento = getattr(fornecedor, "complemento", None)
+            lancamento.bairro = getattr(fornecedor, "bairro", None)
+            lancamento.cidade = getattr(fornecedor, "cidade", None)
+            lancamento.uf = getattr(fornecedor, "uf", None)
             lancamento.tipo_saida = form["tipo_saida"]
             lancamento.categoria = form["categoria"]
             lancamento.subcategoria = form["subcategoria"]
@@ -5144,9 +5365,8 @@ def register_routes(bp):
             return redirect(url_for("main.agro_contas_pagar_listar"))
 
         form = {
-            "cliente_agro_id": str(lancamento.cliente_agro_id or ""),
+            "fornecedor_agro_id": str(lancamento.fornecedor_agro_id or ""),
             "banco_agro_id": str(lancamento.banco_agro_id or ""),
-            "favorecido": lancamento.favorecido or "",
             "tipo_saida": lancamento.tipo_saida or FinanceiroAgroSaida.TIPO_DESPESA,
             "categoria": lancamento.categoria or "",
             "subcategoria": lancamento.subcategoria or "",
@@ -5165,7 +5385,7 @@ def register_routes(bp):
         }
         return render_template(
             "agro_financeiro_saida_form.html",
-            **_build_financeiro_agro_saida_form_context(modo="editar", form=form, errors=errors, clientes=clientes, bancos=bancos, lancamento=lancamento),
+            **_build_financeiro_agro_saida_form_context(modo="editar", form=form, errors=errors, fornecedores=fornecedores, bancos=bancos, lancamento=lancamento),
         )
 
     @bp.route("/agro/financeiro/saidas/<int:lancamento_id>/deletar", methods=["POST"], endpoint="agro_financeiro_saida_deletar")

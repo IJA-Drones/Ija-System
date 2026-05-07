@@ -18,6 +18,7 @@ class Prefeitura(db.Model):
     solicitacoes = db.relationship("Solicitacao", back_populates="prefeitura", lazy="select")
     clientes = db.relationship("Clientes", back_populates="prefeitura", lazy="select")
     clientes_agro = db.relationship("ClienteAgro", back_populates="prefeitura", lazy="select")
+    fornecedores_agro = db.relationship("FornecedorAgro", back_populates="prefeitura", lazy="select")
     orcamentos_agro = db.relationship("OrcamentoAgro", back_populates="prefeitura", lazy="select")
     contratos_agro = db.relationship("ContratoAgro", back_populates="prefeitura", lazy="select")
     ordens_servico_agro = db.relationship("OrdemServicoAgro", back_populates="prefeitura", lazy="select")
@@ -605,6 +606,32 @@ class ClienteAgro(db.Model):
 
 
 # -------------------------------------------------------------
+# FORNECEDORES AGRO
+# -------------------------------------------------------------
+class FornecedorAgro(db.Model):
+    __tablename__ = "fornecedores_agro"
+
+    id = db.Column(db.Integer, primary_key=True, index=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
+
+    documento = db.Column(db.String(50), unique=True, nullable=True, index=True)
+    nome = db.Column(db.String(150), nullable=False, index=True)
+
+    cep = db.Column(db.String(9), nullable=True)
+    logradouro = db.Column(db.String(150), nullable=True)
+    numero = db.Column(db.String(20), nullable=True)
+    complemento = db.Column(db.String(100))
+    bairro = db.Column(db.String(100), nullable=True, index=True)
+    cidade = db.Column(db.String(100), nullable=True, index=True)
+    uf = db.Column(db.String(2), nullable=True, index=True)
+
+    criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+
+    prefeitura = db.relationship("Prefeitura", back_populates="fornecedores_agro", lazy="joined")
+    financeiros_saidas = db.relationship("FinanceiroAgroSaida", back_populates="fornecedor", lazy="select")
+
+
+# -------------------------------------------------------------
 # ORCAMENTOS AGRO
 # -------------------------------------------------------------
 class OrcamentoAgro(db.Model):
@@ -1184,6 +1211,7 @@ class FinanceiroAgroSaida(db.Model):
     id = db.Column(db.Integer, primary_key=True, index=True)
     prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
     cliente_agro_id = db.Column(db.Integer, db.ForeignKey("clientes_agro.id"), nullable=True, index=True)
+    fornecedor_agro_id = db.Column(db.Integer, db.ForeignKey("fornecedores_agro.id"), nullable=True, index=True)
     banco_agro_id = db.Column(db.Integer, db.ForeignKey("banco_agro.id"), nullable=True, index=True)
 
     tipo_saida = db.Column(db.String(30), nullable=False, default=TIPO_DESPESA, index=True)
@@ -1222,6 +1250,7 @@ class FinanceiroAgroSaida(db.Model):
 
     prefeitura = db.relationship("Prefeitura", back_populates="financeiros_agro_saidas", lazy="joined")
     cliente = db.relationship("ClienteAgro", back_populates="financeiros_saidas", lazy="joined")
+    fornecedor = db.relationship("FornecedorAgro", back_populates="financeiros_saidas", lazy="joined")
     banco_agro = db.relationship("BancoAgro", back_populates="financeiros_agro_saidas", lazy="joined")
 
     __table_args__ = (

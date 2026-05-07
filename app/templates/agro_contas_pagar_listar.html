@@ -154,8 +154,8 @@
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
       {% if is_editable %}
-        <a href="{{ url_for('main.agro_financeiro_saida_novo') }}" class="btn btn-danger d-flex align-items-center gap-2">
-          <i class="bi bi-plus-circle-fill"></i> Nova saída manual
+        <a href="{{ url_for('main.agro_fornecedores_listar') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
+          <i class="bi bi-buildings-fill"></i> Fornecedores
         </a>
         <a href="{{ url_for('main.agro_financeiro_saida_novo') }}" class="btn btn-danger d-flex align-items-center gap-2">
           <i class="bi bi-plus-circle-fill"></i> Nova conta a pagar
@@ -268,7 +268,7 @@
           <div class="row g-2 align-items-end">
             <div class="col-md-4">
               <label class="small text-muted mb-1">Busca geral</label>
-              <input type="text" class="form-control form-control-sm" name="q" value="{{ filters.q }}" placeholder="Favorecido, descrição, doc...">
+              <input type="text" class="form-control form-control-sm" name="q" value="{{ filters.q }}" placeholder="Fornecedor, descricao, doc...">
             </div>
             <div class="col-md-3">
               <label class="small text-muted mb-1">Tipo de saída</label>
@@ -318,7 +318,7 @@
         <table class="table table-hover align-middle mb-0">
           <thead class="table-light">
             <tr>
-              <th>Favorecido</th>
+              <th>Fornecedor</th>
               <th>Classificação</th>
               <th>Datas</th>
               <th>Valor</th>

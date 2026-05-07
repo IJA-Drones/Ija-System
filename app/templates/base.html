@@ -383,6 +383,14 @@
           </li>
           <li class="nav-item">
             <a
+              class="nav-link {% if request.endpoint in ['main.agro_fornecedores_listar', 'main.agro_fornecedor_novo', 'main.agro_fornecedor_editar'] %}active{% endif %}"
+              href="{{ url_for('main.agro_fornecedores_listar') }}"
+            >
+              <i class="bi bi-buildings-fill me-2"></i><span>Fornecedores</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a
               class="nav-link {% if request.endpoint in ['main.agro_orcamentos_listar', 'main.agro_orcamento_novo', 'main.agro_orcamento_editar'] %}active{% endif %}"
               href="{{ url_for('main.agro_orcamentos_listar') }}"
             >
@@ -416,14 +424,6 @@
               <ul class="nav flex-column sub-nav">
                 <li class="nav-item">
                   <a
-                    class="nav-link sub-link {% if request.endpoint in ['main.agro_financeiro_dashboard'] %}active{% endif %}"
-                    href="{{ url_for('main.agro_financeiro_dashboard') }}"
-                  >
-                    <i class="bi bi-grid-1x2-fill me-2"></i><span>Dashboard</span>
-                  </a>
-                </li>
-                <li class="nav-item">
-                  <a
                     class="nav-link sub-link {% if request.endpoint in ['main.agro_financeiro_contas'] %}active{% endif %}"
                     href="{{ url_for('main.agro_financeiro_contas') }}"
                   >
@@ -436,22 +436,6 @@
                     href="{{ url_for('main.agro_relatorio_contas_geral') }}"
                   >
                     <i class="bi bi-clipboard-data me-2"></i><span>Relatorio Geral</span>
-                  </a>
-                </li>
-                <li class="nav-item">
-                  <a
-                    class="nav-link sub-link {% if request.endpoint in ['main.agro_contas_receber_listar'] %}active{% endif %}"
-                    href="{{ url_for('main.agro_contas_receber_listar') }}"
-                  >
-                    <i class="bi bi-cash-stack me-2"></i><span>Contas a Receber</span>
-                  </a>
-                </li>
-                <li class="nav-item">
-                  <a
-                    class="nav-link sub-link {% if request.endpoint in ['main.agro_contas_pagar_listar'] %}active{% endif %}"
-                    href="{{ url_for('main.agro_contas_pagar_listar') }}"
-                  >
-                    <i class="bi bi-credit-card-2-front me-2"></i><span>Contas a Pagar</span>
                   </a>
                 </li>
                 <li class="nav-item">
@@ -472,18 +456,10 @@
                 </li>
                 <li class="nav-item">
                   <a
-                    class="nav-link sub-link {% if request.endpoint in ['main.agro_bancos_listar', 'main.agro_banco_novo', 'main.agro_banco_editar'] %}active{% endif %}"
-                    href="{{ url_for('main.agro_bancos_listar') }}"
+                    class="nav-link sub-link {% if request.endpoint in ['main.agro_contas_receber_listar'] %}active{% endif %}"
+                    href="{{ url_for('main.agro_contas_receber_listar') }}"
                   >
-                    <i class="bi bi-bank me-2"></i><span>Bancos Agro</span>
-                  </a>
-                </li>
-                <li class="nav-item">
-                  <a
-                    class="nav-link sub-link {% if request.endpoint == 'main.agro_bancos_conciliacao' %}active{% endif %}"
-                    href="{{ url_for('main.agro_bancos_conciliacao') }}"
-                  >
-                    <i class="bi bi-bank2 me-2"></i><span>Conciliacao Bancaria</span>
+                    <i class="bi bi-cash-stack me-2"></i><span>Contas a Receber</span>
                   </a>
                 </li>
                 <li class="nav-item">
@@ -496,10 +472,34 @@
                 </li>
                 <li class="nav-item">
                   <a
+                    class="nav-link sub-link {% if request.endpoint in ['main.agro_contas_pagar_listar'] %}active{% endif %}"
+                    href="{{ url_for('main.agro_contas_pagar_listar') }}"
+                  >
+                    <i class="bi bi-credit-card-2-front me-2"></i><span>Contas a Pagar</span>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a
                     class="nav-link sub-link {% if request.endpoint in ['main.agro_financeiro_saida_novo', 'main.agro_financeiro_saida_editar'] %}active{% endif %}"
                     href="{{ url_for('main.agro_financeiro_saida_novo') }}"
                   >
                     <i class="bi bi-plus-circle me-2"></i><span>Nova Saida Manual</span>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a
+                    class="nav-link sub-link {% if request.endpoint in ['main.agro_bancos_listar', 'main.agro_banco_novo', 'main.agro_banco_editar'] %}active{% endif %}"
+                    href="{{ url_for('main.agro_bancos_listar') }}"
+                  >
+                    <i class="bi bi-bank me-2"></i><span>Bancos Agro</span>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a
+                    class="nav-link sub-link {% if request.endpoint == 'main.agro_bancos_conciliacao' %}active{% endif %}"
+                    href="{{ url_for('main.agro_bancos_conciliacao') }}"
+                  >
+                    <i class="bi bi-bank2 me-2"></i><span>Conciliacao Bancaria</span>
                   </a>
                 </li>
                 {% if is_financeiro_agro_admin %}

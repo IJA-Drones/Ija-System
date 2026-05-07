@@ -90,7 +90,7 @@
           <div class="row g-2 align-items-end">
             <div class="col-md-4">
               <label class="small text-muted mb-1">Busca geral:</label>
-              <input type="text" class="form-control form-control-sm" name="q" value="{{ filters.q }}" placeholder="Favorecido, categoria, doc...">
+              <input type="text" class="form-control form-control-sm" name="q" value="{{ filters.q }}" placeholder="Fornecedor, categoria, doc...">
             </div>
             <div class="col-md-3">
               <label class="small text-muted mb-1">Tipo:</label>
@@ -136,7 +136,7 @@
         <table class="table table-hover align-middle mb-0">
           <thead class="table-light">
             <tr>
-              <th>Favorecido</th>
+              <th>Fornecedor</th>
               <th>Classifica&ccedil;&atilde;o</th>
               <th>Datas</th>
               <th>Valor</th>
@@ -148,7 +148,7 @@
             {% for item in lancamentos %}
               <tr>
                 <td>
-                  <div class="fw-bold">{{ item.favorecido }}</div>
+                  <div class="fw-bold">{{ item.fornecedor.nome if item.fornecedor else item.favorecido }}</div>
                   <div class="text-muted small">{{ item.descricao }}</div>
                   {% if item.parcela_total > 1 %}
                     <div class="text-muted small">Parcela {{ item.parcela_numero }}/{{ item.parcela_total }}</div>

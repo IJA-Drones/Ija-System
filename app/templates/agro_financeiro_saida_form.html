@@ -45,19 +45,20 @@
             </select>
             {% if errors.get('tipo_saida') %}<div class="invalid-feedback">{{ errors.get('tipo_saida') }}</div>{% endif %}
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-bold small text-muted">Cliente vinculado</label>
-            <select name="cliente_agro_id" class="form-select">
-              <option value="">Sem vínculo</option>
-              {% for cliente in clientes %}
-                <option value="{{ cliente.id }}" {% if form.get('cliente_agro_id')|string == cliente.id|string %}selected{% endif %}>{{ cliente.nome }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label fw-bold small text-muted">Favorecido *</label>
-            <input type="text" name="favorecido" value="{{ form.get('favorecido', '') }}" class="form-control {% if errors.get('favorecido') %}is-invalid{% endif %}" placeholder="Quem recebeu esse pagamento">
-            {% if errors.get('favorecido') %}<div class="invalid-feedback">{{ errors.get('favorecido') }}</div>{% endif %}
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">Fornecedor *</label>
+            <div class="input-group">
+              <select name="fornecedor_agro_id" class="form-select {% if errors.get('fornecedor_agro_id') %}is-invalid{% endif %}">
+                <option value="">Selecione</option>
+                {% for fornecedor in fornecedores %}
+                  <option value="{{ fornecedor.id }}" {% if form.get('fornecedor_agro_id')|string == fornecedor.id|string %}selected{% endif %}>{{ fornecedor.nome }}</option>
+                {% endfor %}
+              </select>
+              <a href="{{ url_for('main.agro_fornecedor_novo') }}" class="btn btn-outline-primary" title="Cadastrar fornecedor">
+                <i class="bi bi-plus-lg"></i>
+              </a>
+              {% if errors.get('fornecedor_agro_id') %}<div class="invalid-feedback">{{ errors.get('fornecedor_agro_id') }}</div>{% endif %}
+            </div>
           </div>
           <div class="col-md-3">
             <label class="form-label fw-bold small text-muted">Forma de pagamento</label>

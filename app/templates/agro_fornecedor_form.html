@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1200px">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div>
+      <h2 class="text-dark m-0">
+        <i class="bi bi-building-add me-2 text-primary"></i>
+        {{ 'Cadastrar fornecedor do Agro' if modo == 'novo' else 'Editar fornecedor do Agro' }}
+      </h2>
+      <p class="text-muted small mb-0">Use este cadastro somente para contas a pagar.</p>
+    </div>
+
+    <a href="{{ url_for('main.agro_fornecedores_listar') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+  </div>
+
+  <div class="card info status-primary shadow-sm rounded-4 border-0">
+    <div class="card-body p-4">
+      <form method="post" novalidate>
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-card-heading text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Identificacao do fornecedor</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-7">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-building me-1 text-primary"></i> Nome do fornecedor *
+            </label>
+            <input
+              type="text"
+              name="nome"
+              value="{{ form.get('nome', '') }}"
+              class="form-control {% if errors.get('nome') %}is-invalid{% endif %}"
+              required
+            >
+            {% if errors.get('nome') %}
+              <div class="invalid-feedback">{{ errors.get('nome') }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-5">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-file-earmark-person-fill me-1 text-primary"></i> Documento
+            </label>
+            <input
+              type="text"
+              id="documento"
+              name="documento"
+              value="{{ form.get('documento', '') }}"
+              class="form-control {% if errors.get('documento') %}is-invalid{% endif %}"
+              placeholder="CPF ou CNPJ"
+            >
+            {% if errors.get('documento') %}
+              <div class="invalid-feedback">{{ errors.get('documento') }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <hr class="text-muted opacity-25 my-4">
+
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-geo-alt-fill text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Endereco</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-mailbox2-flag me-1 text-primary"></i> CEP
+            </label>
+            <div class="input-group">
+              <input
+                type="text"
+                id="cep"
+                name="cep"
+                value="{{ form.get('cep', '') }}"
+                class="form-control {% if errors.get('cep') %}is-invalid{% endif %}"
+              >
+              <button type="button" class="btn btn-outline-primary" id="btnBuscarCep">Buscar</button>
+            </div>
+            {% if errors.get('cep') %}
+              <div class="invalid-feedback d-block">{{ errors.get('cep') }}</div>
+            {% endif %}
+            <div class="form-text" id="cepStatus"></div>
+          </div>
+
+          <div class="col-md-7">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-signpost-2-fill me-1 text-primary"></i> Logradouro
+            </label>
+            <input type="text" id="logradouro" name="logradouro" value="{{ form.get('logradouro', '') }}" class="form-control">
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-hash me-1 text-primary"></i> Numero
+            </label>
+            <input type="text" id="numero" name="numero" value="{{ form.get('numero', '') }}" class="form-control">
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-building me-1 text-primary"></i> Complemento
+            </label>
+            <input type="text" id="complemento" name="complemento" value="{{ form.get('complemento', '') }}" class="form-control">
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-geo me-1 text-primary"></i> Bairro
+            </label>
+            <input type="text" id="bairro" name="bairro" value="{{ form.get('bairro', '') }}" class="form-control">
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-pin-map-fill me-1 text-primary"></i> Cidade
+            </label>
+            <input type="text" id="cidade" name="cidade" value="{{ form.get('cidade', '') }}" class="form-control">
+          </div>
+
+          <div class="col-md-1">
+            <label class="form-label fw-bold small text-muted">
+              <i class="bi bi-compass-fill me-1 text-primary"></i> UF
+            </label>
+            <input
+              type="text"
+              id="uf"
+              name="uf"
+              value="{{ form.get('uf', '') }}"
+              class="form-control text-uppercase {% if errors.get('uf') %}is-invalid{% endif %}"
+              maxlength="2"
+            >
+            {% if errors.get('uf') %}
+              <div class="invalid-feedback">{{ errors.get('uf') }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <small class="text-muted d-block mt-4">
+          Campos com <span class="text-danger">*</span> sao obrigatorios.
+        </small>
+
+        <div class="d-flex justify-content-end gap-2 mt-5">
+          <a href="{{ url_for('main.agro_fornecedores_listar') }}" class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-x-lg me-1"></i> Cancelar
+          </a>
+
+          <button type="submit" class="btn btn-primary btn-sm">
+            <i class="bi bi-check-lg me-1"></i>
+            {{ 'Salvar fornecedor' if modo == 'novo' else 'Atualizar fornecedor' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function onlyDigits(value) {
+    return (value || "").replace(/\D/g, "");
+  }
+
+  function maskCep(value) {
+    const digits = onlyDigits(value).slice(0, 8);
+    if (digits.length <= 5) return digits;
+    return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+  }
+
+  function maskDocumento(value) {
+    const digits = onlyDigits(value);
+    if (digits.length <= 11) {
+      let formatted = digits.slice(0, 11);
+      formatted = formatted.replace(/(\d{3})(\d)/, "$1.$2");
+      formatted = formatted.replace(/(\d{3})(\d)/, "$1.$2");
+      formatted = formatted.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+      return formatted;
+    }
+
+    let formatted = digits.slice(0, 14);
+    formatted = formatted.replace(/(\d{2})(\d)/, "$1.$2");
+    formatted = formatted.replace(/(\d{3})(\d)/, "$1.$2");
+    formatted = formatted.replace(/(\d{3})(\d)/, "$1/$2");
+    formatted = formatted.replace(/(\d{4})(\d{1,2})$/, "$1-$2");
+    return formatted;
+  }
+
+  async function buscarCep() {
+    const cepInput = document.getElementById("cep");
+    const cepStatus = document.getElementById("cepStatus");
+    const cepDigits = onlyDigits(cepInput.value);
+
+    if (cepDigits.length !== 8) {
+      cepStatus.textContent = "Informe um CEP com 8 digitos.";
+      return;
+    }
+
+    cepStatus.textContent = "Buscando CEP...";
+    const url = "{{ url_for('main.api_cep', cep='__CEP__') }}".replace("__CEP__", cepDigits);
+
+    try {
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (!response.ok || data.erro) {
+        cepStatus.textContent = data.erro || "CEP nao encontrado.";
+        return;
+      }
+
+      document.getElementById("logradouro").value = data.logradouro || "";
+      document.getElementById("bairro").value = data.bairro || "";
+      document.getElementById("cidade").value = data.cidade || "";
+      document.getElementById("uf").value = data.uf || "";
+      cepStatus.textContent = "Endereco preenchido.";
+    } catch (error) {
+      cepStatus.textContent = "Nao foi possivel buscar o CEP agora.";
+    }
+  }
+
+  document.getElementById("cep").addEventListener("input", function () {
+    this.value = maskCep(this.value);
+  });
+
+  document.getElementById("documento").addEventListener("input", function () {
+    this.value = maskDocumento(this.value);
+  });
+
+  document.getElementById("btnBuscarCep").addEventListener("click", buscarCep);
+</script>
+{% endblock %}

@@ -21,6 +21,7 @@ from app.models import (
     FinanceiroAgroCompetenciaControle,
     FinanceiroAgroEntrada,
     FinanceiroAgroSaida,
+    FornecedorAgro,
     OrcamentoAgro,
     OrdemServicoAgro,
     PilotoAgro,
@@ -227,6 +228,24 @@ def serialize_cliente_agro(cliente: ClienteAgro) -> dict:
     }
 
 
+def serialize_fornecedor_agro(fornecedor: FornecedorAgro) -> dict:
+    return {
+        "id": fornecedor.id,
+        "nome": fornecedor.nome,
+        "documento_fmt": format_documento(fornecedor.documento),
+        "cep": format_cep(fornecedor.cep or ""),
+        "endereco_completo": build_endereco_agro(
+            fornecedor.cep,
+            fornecedor.logradouro,
+            fornecedor.numero,
+            fornecedor.complemento,
+            fornecedor.bairro,
+            fornecedor.cidade,
+            fornecedor.uf,
+        ),
+    }
+
+
 def build_clientes_agro_query(user, q: str = ""):
     query = ClienteAgro.query
     query = apply_prefeitura_scope(query, user, ClienteAgro.prefeitura_id)
@@ -245,6 +264,26 @@ def build_clientes_agro_query(user, q: str = ""):
         )
 
     return query.order_by(ClienteAgro.nome.asc(), ClienteAgro.id.desc())
+
+
+def build_fornecedores_agro_query(user, q: str = ""):
+    query = FornecedorAgro.query
+    query = apply_prefeitura_scope(query, user, FornecedorAgro.prefeitura_id)
+
+    if q:
+        q_digits = only_digits(q)
+        like = f"%{q}%"
+        query = query.filter(
+            or_(
+                FornecedorAgro.nome.ilike(like),
+                FornecedorAgro.logradouro.ilike(like),
+                FornecedorAgro.bairro.ilike(like),
+                FornecedorAgro.cidade.ilike(like),
+                FornecedorAgro.documento.ilike(f"%{q_digits}%") if q_digits else false(),
+            )
+        )
+
+    return query.order_by(FornecedorAgro.nome.asc(), FornecedorAgro.id.desc())
 
 
 def build_orcamentos_agro_query(user, q: str = "", cliente_id: int | None = None, mapeamento: str = ""):
@@ -458,13 +497,14 @@ def build_financeiro_agro_saida_query(
 ):
     query = FinanceiroAgroSaida.query.options(
         joinedload(FinanceiroAgroSaida.cliente),
+        joinedload(FinanceiroAgroSaida.fornecedor),
         joinedload(FinanceiroAgroSaida.banco_agro),
     )
     query = apply_prefeitura_scope(query, user, FinanceiroAgroSaida.prefeitura_id)
 
     if q:
         like = f"%{q}%"
-        query = query.outerjoin(FinanceiroAgroSaida.banco_agro)
+        query = query.outerjoin(FinanceiroAgroSaida.banco_agro).outerjoin(FinanceiroAgroSaida.fornecedor)
         query = query.filter(
             or_(
                 FinanceiroAgroSaida.categoria.ilike(like),
@@ -473,6 +513,8 @@ def build_financeiro_agro_saida_query(
                 FinanceiroAgroSaida.documento_referencia.ilike(like),
                 FinanceiroAgroSaida.detalhamento_imposto.ilike(like),
                 FinanceiroAgroSaida.favorecido.ilike(like),
+                FornecedorAgro.nome.ilike(like),
+                FornecedorAgro.documento.ilike(f"%{only_digits(q)}%") if only_digits(q) else false(),
                 BancoAgro.nome.ilike(like),
                 FinanceiroAgroSaida.forma_pagamento.ilike(like),
             )
@@ -1073,7 +1115,7 @@ def build_agro_fluxo_caixa_report(user, ano: int | None = None) -> dict:
                 "data_prevista": data_prevista,
                 "data_realizada": data_realizada,
                 "data_emissao": item.data_emissao,
-                "cliente_nome": item.cliente.nome if item.cliente else (item.favorecido or item.descricao),
+                "cliente_nome": item.fornecedor.nome if item.fornecedor else (item.favorecido or item.descricao),
                 "contrato_id": None,
                 "cultura": "",
                 "categoria": build_agro_categoria_composta(item.categoria, item.subcategoria),
@@ -1082,7 +1124,7 @@ def build_agro_fluxo_caixa_report(user, ano: int | None = None) -> dict:
                 "descricao": item.descricao,
                 "documento_referencia": item.documento_referencia or "",
                 "detalhamento_imposto": item.detalhamento_imposto or "",
-                "favorecido": item.favorecido or "",
+                "favorecido": item.fornecedor.nome if item.fornecedor else (item.favorecido or ""),
                 "forma_recebimento": item.forma_pagamento or "",
                 "status": item.status,
                 "competencia_ano": item.competencia_ano,
@@ -1340,6 +1382,7 @@ def build_agro_caixa_diario_report(user, data_caixa: date | None = None) -> dict
 
 def get_agro_dashboard_context(user) -> dict:
     clientes_query = apply_prefeitura_scope(ClienteAgro.query, user, ClienteAgro.prefeitura_id)
+    fornecedores_query = apply_prefeitura_scope(FornecedorAgro.query, user, FornecedorAgro.prefeitura_id)
     orcamentos_query = apply_prefeitura_scope(OrcamentoAgro.query, user, OrcamentoAgro.prefeitura_id)
     contratos_query = apply_prefeitura_scope(ContratoAgro.query, user, ContratoAgro.prefeitura_id)
     pilotos_query = apply_prefeitura_scope(PilotoAgro.query, user, PilotoAgro.prefeitura_id)
@@ -1350,6 +1393,7 @@ def get_agro_dashboard_context(user) -> dict:
 
     return {
         "total_clientes_agro": clientes_query.count(),
+        "total_fornecedores_agro": fornecedores_query.count(),
         "total_orcamentos_agro": orcamentos_query.count(),
         "total_contratos_agro": contratos_query.count(),
         "total_contratos_agro_aprovados": contratos_query.filter(
