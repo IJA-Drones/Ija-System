@@ -570,6 +570,58 @@ def _mapping_to_choice_list(mapping):
     return [{"categoria": categoria, "subcategorias": list(subcategorias)} for categoria, subcategorias in mapping.items()]
 
 
+def _build_categoria_subcategoria_choices(mapping, model, *, current_categoria="", current_subcategoria=""):
+    categoria_options = []
+    subcategoria_options = []
+    seen_categorias = set()
+    seen_subcategorias = set()
+
+    def add_categoria(categoria):
+        categoria = (categoria or "").strip()
+        if not categoria:
+            return
+        key = categoria.casefold()
+        if key not in seen_categorias:
+            seen_categorias.add(key)
+            categoria_options.append(categoria)
+
+    def add_subcategoria(categoria, subcategoria):
+        categoria = (categoria or "").strip()
+        subcategoria = (subcategoria or "").strip()
+        if not categoria or not subcategoria:
+            return
+        key = (subcategoria.casefold(), categoria.casefold())
+        if key not in seen_subcategorias:
+            seen_subcategorias.add(key)
+            subcategoria_options.append({"subcategoria": subcategoria, "categoria": categoria})
+
+    for categoria, subcategorias in mapping.items():
+        add_categoria(categoria)
+        for subcategoria in subcategorias:
+            add_subcategoria(categoria, subcategoria)
+
+    rows = (
+        apply_prefeitura_scope(model.query, current_user, model.prefeitura_id)
+        .with_entities(model.categoria, model.subcategoria)
+        .filter(model.categoria.isnot(None))
+        .order_by(model.categoria.asc(), model.subcategoria.asc())
+        .distinct()
+        .all()
+    )
+    for categoria, subcategoria in rows:
+        add_categoria(categoria)
+        add_subcategoria(categoria, subcategoria)
+
+    add_categoria(current_categoria)
+    add_subcategoria(current_categoria, current_subcategoria)
+
+    return {
+        "categoria_options": categoria_options,
+        "subcategoria_options": subcategoria_options,
+        "categoria_map": _mapping_to_choice_list(mapping),
+    }
+
+
 def _build_agro_retroactive_alert_context():
     liberated_competencias = [
         f"{item.competencia_ano:04d}-{item.competencia_mes:02d}"
@@ -588,6 +640,12 @@ def _build_agro_retroactive_alert_context():
 
 
 def _build_financeiro_agro_entrada_form_context(*, modo, form, errors, clientes, bancos, lancamento=None):
+    choices = _build_categoria_subcategoria_choices(
+        AGRO_FINANCEIRO_ENTRADA_ESTRUTURA,
+        FinanceiroAgroEntrada,
+        current_categoria=form.get("categoria"),
+        current_subcategoria=form.get("subcategoria"),
+    )
     return {
         "modo": modo,
         "form": form,
@@ -595,8 +653,7 @@ def _build_financeiro_agro_entrada_form_context(*, modo, form, errors, clientes,
         "clientes": clientes,
         "bancos": bancos,
         "clientes_json": [serialize_cliente_agro(cliente) for cliente in clientes],
-        "categoria_options": list(AGRO_FINANCEIRO_ENTRADA_ESTRUTURA.keys()),
-        "categoria_map": _mapping_to_choice_list(AGRO_FINANCEIRO_ENTRADA_ESTRUTURA),
+        **choices,
         "status_options": AGRO_FINANCEIRO_ENTRADA_STATUS_OPTIONS,
         "retroactive_alert_context": _build_agro_retroactive_alert_context(),
         "lancamento": lancamento,
@@ -604,6 +661,12 @@ def _build_financeiro_agro_entrada_form_context(*, modo, form, errors, clientes,
 
 
 def _build_financeiro_agro_saida_form_context(*, modo, form, errors, clientes, bancos, lancamento=None):
+    choices = _build_categoria_subcategoria_choices(
+        AGRO_FINANCEIRO_SAIDA_ESTRUTURA,
+        FinanceiroAgroSaida,
+        current_categoria=form.get("categoria"),
+        current_subcategoria=form.get("subcategoria"),
+    )
     return {
         "modo": modo,
         "form": form,
@@ -611,8 +674,7 @@ def _build_financeiro_agro_saida_form_context(*, modo, form, errors, clientes, b
         "clientes": clientes,
         "bancos": bancos,
         "clientes_json": [serialize_cliente_agro(cliente) for cliente in clientes],
-        "categoria_options": list(AGRO_FINANCEIRO_SAIDA_ESTRUTURA.keys()),
-        "categoria_map": _mapping_to_choice_list(AGRO_FINANCEIRO_SAIDA_ESTRUTURA),
+        **choices,
         "status_options": AGRO_FINANCEIRO_SAIDA_STATUS_OPTIONS,
         "tipo_options": AGRO_FINANCEIRO_SAIDA_TIPO_OPTIONS,
         "retroactive_alert_context": _build_agro_retroactive_alert_context(),
@@ -1597,20 +1659,18 @@ def _validate_categoria_subcategoria(form, mapping, errors):
     categoria = (form.get("categoria") or "").strip()
     subcategoria = (form.get("subcategoria") or "").strip()
 
-    if not categoria:
-        errors["categoria"] = "Selecione a categoria."
-        return
-
-    if categoria not in mapping:
-        errors["categoria"] = "Selecione uma categoria valida."
-        return
-
     if not subcategoria:
-        errors["subcategoria"] = "Selecione a subcategoria."
-        return
+        errors["subcategoria"] = "Informe ou selecione a subcategoria."
 
-    if subcategoria not in mapping[categoria]:
-        errors["subcategoria"] = "Selecione uma subcategoria valida para a categoria escolhida."
+    if not categoria:
+        for mapped_categoria, mapped_subcategorias in mapping.items():
+            if subcategoria in mapped_subcategorias:
+                form["categoria"] = mapped_categoria
+                categoria = mapped_categoria
+                break
+
+    if not categoria:
+        errors["categoria"] = "Informe a categoria."
 
 
 def _validate_financeiro_agro_entrada_form(form):
