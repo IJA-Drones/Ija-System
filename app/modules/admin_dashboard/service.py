@@ -1,12 +1,13 @@
 from datetime import date, datetime
 from io import BytesIO
 import os
+import re
 import uuid
 
 from flask import current_app
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
-from sqlalchemy import case
+from sqlalchemy import case, or_
 from sqlalchemy.orm import joinedload
 from werkzeug.utils import secure_filename
 
@@ -46,6 +47,32 @@ def _apply_data_agendamento_range(query, filtro_data_ini: str = "", filtro_data_
 
     if data_fim:
         query = query.filter(Solicitacao.data_agendamento <= data_fim)
+
+    return query
+
+
+def _apply_endereco_filter(query, filtro_endereco: str = ""):
+    termo = (filtro_endereco or "").strip()
+    if not termo:
+        return query
+
+    tokens = [token for token in re.split(r"[\s,;/\-]+", termo) if token]
+    if not tokens:
+        return query
+
+    for token in tokens:
+        like = f"%{token}%"
+        query = query.filter(
+            or_(
+                Solicitacao.logradouro.ilike(like),
+                Solicitacao.numero.ilike(like),
+                Solicitacao.complemento.ilike(like),
+                Solicitacao.bairro.ilike(like),
+                Solicitacao.cidade.ilike(like),
+                Solicitacao.uf.ilike(like),
+                Solicitacao.cep.ilike(like),
+            )
+        )
 
     return query
 
@@ -103,6 +130,7 @@ def build_admin_dashboard_query(
     filtro_regiao: str,
     filtro_apoio_cet: str,
     filtro_protocolo: str,
+    filtro_endereco: str = "",
     filtro_tipo_visita: str = "",
     filtro_tipo_imovel: str = "",
     filtro_foco: str = "",
@@ -138,6 +166,8 @@ def build_admin_dashboard_query(
     if filtro_protocolo:
         query = query.filter(Solicitacao.protocolo.ilike(f"%{filtro_protocolo}%"))
 
+    query = _apply_endereco_filter(query, filtro_endereco)
+
     if filtro_tipo_visita:
         query = query.filter(Solicitacao.tipo_visita == filtro_tipo_visita)
 
@@ -156,6 +186,7 @@ def build_admin_canceladas_query(
     filtro_regiao: str,
     filtro_foco: str,
     filtro_protocolo: str,
+    filtro_endereco: str = "",
     filtro_tipo_visita: str = "",
     filtro_tipo_imovel: str = "",
     filtro_data_ini: str = "",
@@ -191,6 +222,8 @@ def build_admin_canceladas_query(
     if filtro_protocolo:
         query = query.filter(Solicitacao.protocolo.ilike(f"%{filtro_protocolo}%"))
 
+    query = _apply_endereco_filter(query, filtro_endereco)
+
     return _apply_data_agendamento_range(query, filtro_data_ini, filtro_data_fim)
 
 
@@ -223,6 +256,7 @@ def build_admin_export_query(
     filtro_regiao: str,
     filtro_apoio_cet: str,
     filtro_protocolo: str,
+    filtro_endereco: str = "",
     filtro_tipo_visita: str = "",
     filtro_tipo_imovel: str = "",
     filtro_foco: str = "",
@@ -257,6 +291,8 @@ def build_admin_export_query(
     if filtro_protocolo:
         query = query.filter(Solicitacao.protocolo.ilike(f"%{filtro_protocolo}%"))
 
+    query = _apply_endereco_filter(query, filtro_endereco)
+
     if filtro_tipo_visita:
         query = query.filter(Solicitacao.tipo_visita == filtro_tipo_visita)
 
@@ -278,6 +314,7 @@ def build_admin_dashboard_export(
     filtro_regiao: str,
     filtro_apoio_cet: str,
     filtro_protocolo: str,
+    filtro_endereco: str = "",
     filtro_tipo_visita: str = "",
     filtro_tipo_imovel: str = "",
     filtro_foco: str = "",
@@ -291,6 +328,7 @@ def build_admin_dashboard_export(
         filtro_regiao=filtro_regiao,
         filtro_apoio_cet=filtro_apoio_cet,
         filtro_protocolo=filtro_protocolo,
+        filtro_endereco=filtro_endereco,
         filtro_tipo_visita=filtro_tipo_visita,
         filtro_tipo_imovel=filtro_tipo_imovel,
         filtro_foco=filtro_foco,

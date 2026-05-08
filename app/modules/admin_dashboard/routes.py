@@ -83,6 +83,7 @@ def register_routes(bp):
         filtro_regiao = (request.args.get("regiao") or "").strip()
         filtro_apoio_cet = (request.args.get("apoio_cet") or "").strip().upper()
         filtro_protocolo = (request.args.get("protocolo") or "").strip()
+        filtro_endereco = (request.args.get("endereco") or "").strip()
         filtro_tipo_visita = (request.args.get("tipo_visita") or "").strip()
         filtro_tipo_imovel = (request.args.get("tipo_imovel") or "").strip()
         filtro_foco = (request.args.get("foco") or "").strip()
@@ -99,6 +100,7 @@ def register_routes(bp):
                     tipo_imovel=filtro_tipo_imovel,
                     foco=filtro_foco,
                     protocolo=filtro_protocolo,
+                    endereco=filtro_endereco,
                     data_ini=filtro_data_ini,
                     data_fim=filtro_data_fim,
                 )
@@ -113,6 +115,7 @@ def register_routes(bp):
             filtro_regiao=filtro_regiao,
             filtro_apoio_cet=filtro_apoio_cet,
             filtro_protocolo=filtro_protocolo,
+            filtro_endereco=filtro_endereco,
             filtro_tipo_visita=filtro_tipo_visita,
             filtro_tipo_imovel=filtro_tipo_imovel,
             filtro_foco=filtro_foco,
@@ -151,6 +154,7 @@ def register_routes(bp):
             filtro_regiao = (request.args.get("regiao") or "").strip()
             filtro_apoio_cet = (request.args.get("apoio_cet") or "").strip().upper()
             filtro_protocolo = (request.args.get("protocolo") or "").strip()
+            filtro_endereco = (request.args.get("endereco") or "").strip()
             filtro_tipo_visita = (request.args.get("tipo_visita") or "").strip()
             filtro_tipo_imovel = (request.args.get("tipo_imovel") or "").strip()
             filtro_foco = (request.args.get("foco") or "").strip()
@@ -164,6 +168,7 @@ def register_routes(bp):
                 filtro_regiao=filtro_regiao,
                 filtro_apoio_cet=filtro_apoio_cet,
                 filtro_protocolo=filtro_protocolo,
+                filtro_endereco=filtro_endereco,
                 filtro_tipo_visita=filtro_tipo_visita,
                 filtro_tipo_imovel=filtro_tipo_imovel,
                 filtro_foco=filtro_foco,
@@ -259,6 +264,7 @@ def register_routes(bp):
         filtro_tipo_visita = (request.args.get("tipo_visita") or "").strip()
         filtro_tipo_imovel = (request.args.get("tipo_imovel") or "").strip()
         filtro_protocolo = (request.args.get("protocolo") or "").strip()
+        filtro_endereco = (request.args.get("endereco") or "").strip()
         filtro_data_ini = (request.args.get("data_ini") or "").strip()
         filtro_data_fim = (request.args.get("data_fim") or "").strip()
         page = request.args.get("page", 1, type=int)
@@ -269,6 +275,7 @@ def register_routes(bp):
             filtro_regiao=filtro_regiao,
             filtro_foco=filtro_foco,
             filtro_protocolo=filtro_protocolo,
+            filtro_endereco=filtro_endereco,
             filtro_tipo_visita=filtro_tipo_visita,
             filtro_tipo_imovel=filtro_tipo_imovel,
             filtro_data_ini=filtro_data_ini,

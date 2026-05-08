@@ -223,6 +223,7 @@
                 <input type="hidden" name="tipo_imovel" value="{{ request.args.get('tipo_imovel', '') }}">
                 <input type="hidden" name="foco" value="{{ request.args.get('foco', '') }}">
                 <input type="hidden" name="protocolo" value="{{ request.args.get('protocolo', '') }}">
+                <input type="hidden" name="endereco" value="{{ request.args.get('endereco', '') }}">
                 <input type="hidden" name="data_ini" value="{{ request.args.get('data_ini', '') }}">
                 <input type="hidden" name="data_fim" value="{{ request.args.get('data_fim', '') }}">
                 <button type="submit" class="btn btn-secondary shadow-sm w-100 d-flex align-items-center justify-content-center gap-2" style="height: 38px;">
@@ -241,7 +242,7 @@
         {% endif %}
     </div>
 
-    {% set admin_has_filters = request.args.get('status') or request.args.get('unidade') or request.args.get('regiao') or request.args.get('apoio_cet') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or request.args.get('foco') or request.args.get('protocolo') or request.args.get('data_ini') or request.args.get('data_fim') %}
+    {% set admin_has_filters = request.args.get('status') or request.args.get('unidade') or request.args.get('regiao') or request.args.get('apoio_cet') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or request.args.get('foco') or request.args.get('protocolo') or request.args.get('endereco') or request.args.get('data_ini') or request.args.get('data_fim') %}
 
     {# --- FILTROS EM "SANFONA" (Accordion) --- #}
     <div class="card shadow-sm rounded-4 mb-4 border-0">
@@ -351,6 +352,16 @@
                                 class="form-control form-control-sm font-monospace"
                                 placeholder="Digite o protocolo"
                                 value="{{ request.args.get('protocolo', '') }}"
+                            >
+                        </div>
+                        <div class="col-md-3">
+                            <label class="small text-muted">Endereco:</label>
+                            <input
+                                type="text"
+                                name="endereco"
+                                class="form-control form-control-sm"
+                                placeholder="Rua, numero, bairro, cidade ou CEP"
+                                value="{{ request.args.get('endereco', '') }}"
                             >
                         </div>
                         <div class="col-md-3">
