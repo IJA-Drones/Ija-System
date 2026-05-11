@@ -20,6 +20,7 @@ class Prefeitura(db.Model):
     clientes_agro = db.relationship("ClienteAgro", back_populates="prefeitura", lazy="select")
     fornecedores_agro = db.relationship("FornecedorAgro", back_populates="prefeitura", lazy="select")
     orcamentos_agro = db.relationship("OrcamentoAgro", back_populates="prefeitura", lazy="select")
+    rds_mapeamento_agro = db.relationship("RdMapeamentoAgro", back_populates="prefeitura", lazy="select")
     contratos_agro = db.relationship("ContratoAgro", back_populates="prefeitura", lazy="select")
     ordens_servico_agro = db.relationship("OrdemServicoAgro", back_populates="prefeitura", lazy="select")
     financeiros_agro = db.relationship("FinanceiroAgro", back_populates="prefeitura", lazy="select")
@@ -704,6 +705,13 @@ class OrcamentoAgro(db.Model):
         lazy="select",
         cascade="all, delete-orphan",
     )
+    rd_mapeamento = db.relationship(
+        "RdMapeamentoAgro",
+        back_populates="orcamento",
+        uselist=False,
+        lazy="select",
+        cascade="all, delete-orphan",
+    )
     ordens_servico = db.relationship("OrdemServicoAgro", back_populates="orcamento", lazy="select")
     financeiros = db.relationship("FinanceiroAgro", back_populates="orcamento", lazy="select")
 
@@ -908,6 +916,78 @@ class ContratoAgro(db.Model):
     __table_args__ = (
         db.Index("ix_contratos_agro_orcamento_data", "orcamento_agro_id", "atualizado_em"),
         db.Index("ix_contratos_agro_status_equipe", "status", "equipe_agro_id"),
+    )
+
+
+# -------------------------------------------------------------
+# RD DE MAPEAMENTO AGRO
+# -------------------------------------------------------------
+class RdMapeamentoAgro(db.Model):
+    __tablename__ = "rds_mapeamento_agro"
+
+    STATUS_AGUARDANDO_PREENCHIMENTO = "AGUARDANDO PREENCHIMENTO"
+    STATUS_PREENCHIDO = "PREENCHIDO"
+    STATUS_OPTIONS = (
+        STATUS_AGUARDANDO_PREENCHIMENTO,
+        STATUS_PREENCHIDO,
+    )
+    RESPOSTA_SIM = "SIM"
+    RESPOSTA_NAO = "NAO"
+    RESPOSTA_OPTIONS = (
+        RESPOSTA_SIM,
+        RESPOSTA_NAO,
+    )
+
+    id = db.Column(db.Integer, primary_key=True, index=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
+    orcamento_agro_id = db.Column(db.Integer, db.ForeignKey("orcamentos_agro.id"), nullable=False, unique=True, index=True)
+    equipe_agro_id = db.Column(db.Integer, db.ForeignKey("equipes_agro.id"), nullable=True, index=True)
+    piloto_agro_id = db.Column(db.Integer, db.ForeignKey("pilotos_agro.id"), nullable=True, index=True)
+
+    status = db.Column(db.String(40), nullable=False, default=STATUS_AGUARDANDO_PREENCHIMENTO, index=True)
+
+    cliente_nome = db.Column(db.String(150), nullable=False, index=True)
+    numero_os = db.Column(db.String(80), index=True)
+    propriedade_nome = db.Column(db.String(150), nullable=False, index=True)
+    municipio = db.Column(db.String(100), nullable=False, index=True)
+    uf = db.Column(db.String(2), index=True)
+    proprietario_ou_preposto = db.Column(db.String(150))
+
+    tipo_servico = db.Column(db.String(120))
+    cultura = db.Column(db.String(150))
+    equipamento = db.Column(db.String(150))
+    altura_voo_m = db.Column(db.Numeric(10, 2))
+    area_ha = db.Column(db.Numeric(12, 2))
+    sobreposicao_frontal_pct = db.Column(db.Numeric(10, 2))
+    sobreposicao_lateral_pct = db.Column(db.Numeric(10, 2))
+    gsd = db.Column(db.String(50))
+    outros = db.Column(db.Text)
+    data_relatorio = db.Column(db.Date, index=True)
+
+    rede_energia_baixa = db.Column(db.String(3))
+    rede_energia_alta_media = db.Column(db.String(3))
+    poste = db.Column(db.String(3))
+    poste_com_tirante = db.Column(db.String(3))
+    acesso_area = db.Column(db.String(3))
+    arvores_secas = db.Column(db.String(3))
+    outros_area = db.Column(db.Text)
+
+    observacoes = db.Column(db.Text)
+    responsavel_nome = db.Column(db.String(150))
+
+    enviado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+    preenchido_em = db.Column(db.DateTime, index=True)
+    criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+    atualizado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True, onupdate=datetime.now)
+
+    prefeitura = db.relationship("Prefeitura", back_populates="rds_mapeamento_agro", lazy="joined")
+    orcamento = db.relationship("OrcamentoAgro", back_populates="rd_mapeamento", lazy="joined")
+    equipe = db.relationship("EquipeAgro", back_populates="rds_mapeamento", lazy="joined")
+    piloto = db.relationship("PilotoAgro", back_populates="rds_mapeamento_preenchidos", lazy="joined")
+
+    __table_args__ = (
+        db.Index("ix_rd_mapeamento_status_equipe", "status", "equipe_agro_id"),
+        db.Index("ix_rd_mapeamento_orcamento_status", "orcamento_agro_id", "status"),
     )
 
 
@@ -1482,6 +1562,7 @@ class EquipeAgro(db.Model):
 
     prefeitura = db.relationship("Prefeitura", back_populates="equipes_agro", lazy="joined")
     contratos = db.relationship("ContratoAgro", back_populates="equipe", lazy="select")
+    rds_mapeamento = db.relationship("RdMapeamentoAgro", back_populates="equipe", lazy="select")
     ordens_servico = db.relationship("OrdemServicoAgro", back_populates="equipe", lazy="select")
     pilotos = db.relationship("PilotoAgro", back_populates="equipe", lazy="select")
     equipamentos = db.relationship("EquipamentoAgro", back_populates="equipe", lazy="select")
@@ -1504,6 +1585,7 @@ class PilotoAgro(db.Model):
 
     prefeitura = db.relationship("Prefeitura", back_populates="pilotos_agro", lazy="joined")
     equipe = db.relationship("EquipeAgro", back_populates="pilotos", lazy="joined")
+    rds_mapeamento_preenchidos = db.relationship("RdMapeamentoAgro", back_populates="piloto", lazy="select")
     ordens_servico = db.relationship("OrdemServicoAgro", back_populates="piloto", lazy="select")
     usuario = db.relationship("Usuario", back_populates="piloto_agro", uselist=False, foreign_keys="Usuario.piloto_agro_id")
 

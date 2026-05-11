@@ -1,0 +1,153 @@
+<button id="{{ chatbot_id_prefix }}Fab" class="bot-fab" title="{{ chatbot_button_title }}">
+  <i class="bi bi-robot"></i>
+</button>
+
+<div id="{{ chatbot_id_prefix }}Window" class="chat-window">
+  <div class="bot-header">
+    <div class="bot-title">
+      <i class="bi bi-robot fs-5"></i>
+      <div class="bot-title-copy">
+        <span class="bot-title-text">{{ chatbot_title }}</span>
+        <span class="bot-badge">{{ chatbot_badge }}</span>
+      </div>
+    </div>
+    <div class="bot-actions">
+      <button id="{{ chatbot_id_prefix }}Clear" class="btn-close-chat" title="Limpar conversa">
+        <i class="bi bi-trash"></i>
+      </button>
+      <button id="{{ chatbot_id_prefix }}Close" class="btn-close-chat" title="Fechar chat">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+  </div>
+
+  <div class="bot-body">
+    <div id="{{ chatbot_id_prefix }}Messages" class="d-flex flex-column gap-2 mb-3"></div>
+    <div class="chips-container mt-auto">
+      {% for chip in chatbot_chips %}
+      <button class="chip" data-chatbot-prefix="{{ chatbot_id_prefix }}" data-q="{{ chip.question }}">
+        {{ chip.label }}
+      </button>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="bot-footer">
+    <input
+      id="{{ chatbot_id_prefix }}Input"
+      type="text"
+      placeholder="{{ chatbot_placeholder }}"
+      autocomplete="off"
+    >
+    <button id="{{ chatbot_id_prefix }}Send" class="btn-send">
+      <i class="bi bi-send-fill"></i>
+    </button>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const prefix = {{ chatbot_id_prefix|tojson }};
+    const globalKey = `${prefix}ChatInit`;
+    if (window[globalKey]) return;
+    window[globalKey] = true;
+
+    const apiUrl = {{ chatbot_api_url|tojson }};
+    const welcomeHtml = {{ chatbot_welcome_html|tojson }};
+    const fab = document.getElementById(`${prefix}Fab`);
+    const chatWindow = document.getElementById(`${prefix}Window`);
+    const messages = document.getElementById(`${prefix}Messages`);
+    const input = document.getElementById(`${prefix}Input`);
+    const send = document.getElementById(`${prefix}Send`);
+    const clear = document.getElementById(`${prefix}Clear`);
+    const close = document.getElementById(`${prefix}Close`);
+
+    if (!fab || !chatWindow || !messages || !input || !send || !clear || !close) return;
+
+    function formatBotAnswer(text) {
+      return (text || "")
+        .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+        .replace(/\n/g, "<br>");
+    }
+
+    function ensureWelcomeMessage() {
+      if (messages.querySelector(".message")) return;
+
+      const message = document.createElement("div");
+      message.className = "message bot";
+      message.innerHTML = welcomeHtml;
+      messages.appendChild(message);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    function toggleChat(forceOpen = null) {
+      const shouldOpen = forceOpen === null ? !chatWindow.classList.contains("active") : forceOpen;
+      chatWindow.classList.toggle("active", shouldOpen);
+      if (shouldOpen) {
+        ensureWelcomeMessage();
+        setTimeout(() => input.focus(), 180);
+      }
+    }
+
+    function appendUserMessage(text) {
+      const message = document.createElement("div");
+      message.className = "message user";
+      message.innerText = text;
+      messages.appendChild(message);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    function appendBotPlaceholder() {
+      const message = document.createElement("div");
+      message.className = "message bot";
+      message.innerHTML = "...";
+      messages.appendChild(message);
+      messages.scrollTop = messages.scrollHeight;
+      return message;
+    }
+
+    async function ask(question) {
+      const text = (question || input.value || "").trim();
+      if (!text) return;
+
+      toggleChat(true);
+      appendUserMessage(text);
+      input.value = "";
+      send.disabled = true;
+
+      const botMessage = appendBotPlaceholder();
+
+      try {
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: text }),
+        });
+        const data = await response.json().catch(() => ({}));
+        botMessage.innerHTML = formatBotAnswer(data.answer || "Nao consegui responder agora.");
+      } catch (error) {
+        botMessage.innerHTML = "Erro ao conectar com o chatbot.";
+      } finally {
+        send.disabled = false;
+        messages.scrollTop = messages.scrollHeight;
+        setTimeout(() => input.focus(), 100);
+      }
+    }
+
+    fab.addEventListener("click", () => toggleChat());
+    close.addEventListener("click", () => toggleChat(false));
+    clear.addEventListener("click", () => {
+      messages.innerHTML = "";
+      ensureWelcomeMessage();
+      setTimeout(() => input.focus(), 100);
+    });
+    send.addEventListener("click", () => ask());
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") ask();
+    });
+
+    document.querySelectorAll(`[data-chatbot-prefix="${prefix}"]`).forEach((chip) => {
+      chip.addEventListener("click", () => ask(chip.dataset.q || ""));
+    });
+  })();
+</script>

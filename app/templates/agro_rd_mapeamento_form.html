@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1220px">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div>
+      <h2 class="text-dark m-0">
+        <i class="bi bi-map-fill me-2 text-primary"></i>
+        RD de Mapeamento
+      </h2>
+      <p class="text-muted small mb-0">
+        Etapa intermediaria do orcamento <strong>#{{ orcamento.id }}</strong> para envio e preenchimento do relatorio operacional de mapeamento.
+        {% if pilot_form_mode %}Este preenchimento fica vinculado a sua equipe e libera a criacao do contrato depois de concluido.{% endif %}
+      </p>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{{ url_for('main.agro_piloto_dashboard' if pilot_form_mode else 'main.agro_orcamentos_listar') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+      {% if not pilot_form_mode %}
+        <a href="{{ url_for('main.agro_orcamento_pdf', orcamento_id=orcamento.id) }}" target="_blank" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2">
+          <i class="bi bi-filetype-pdf"></i> Orcamento PDF
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card info status-primary shadow-sm rounded-4 border-0">
+    <div class="card-body p-4">
+      <div class="d-flex flex-wrap gap-2 mb-4">
+        <span class="badge {% if rd and rd.status == 'PREENCHIDO' %}bg-success{% else %}bg-warning text-dark{% endif %}">
+          Status: {{ rd.status if rd else 'AGUARDANDO PREENCHIMENTO' }}
+        </span>
+        <span class="badge bg-light text-dark border">
+          Equipe: {{ rd.equipe.nome if rd and rd.equipe else (piloto_logado.equipe.nome if pilot_form_mode and piloto_logado and piloto_logado.equipe else 'Ainda nao definida') }}
+        </span>
+        {% if rd and rd.preenchido_em %}
+          <span class="badge bg-light text-dark border">
+            Preenchido em {{ rd.preenchido_em.strftime('%d/%m/%Y %H:%M') }}
+          </span>
+        {% endif %}
+      </div>
+
+      <div class="alert {% if pilot_form_mode %}alert-primary{% else %}alert-info{% endif %} border-0 rounded-4 mb-4">
+        {% if pilot_form_mode %}
+          Preencha a RD de mapeamento com os dados coletados em campo. Quando salvar, esta etapa sera marcada como concluida e o contrato podera seguir para a proxima fase.
+        {% else %}
+          Defina a equipe responsavel e envie esta RD para o piloto. Enquanto a RD de mapeamento nao estiver preenchida, o contrato deste orcamento fica bloqueado.
+        {% endif %}
+      </div>
+
+      <form method="post" novalidate>
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-person-lines-fill text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Identificacao</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Cliente *</label>
+            <input type="text" name="cliente_nome" value="{{ form.get('cliente_nome', '') }}" class="form-control {% if errors.get('cliente_nome') %}is-invalid{% endif %}">
+            {% if errors.get('cliente_nome') %}<div class="invalid-feedback">{{ errors.get('cliente_nome') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Numero OS / protocolo</label>
+            <input type="text" name="numero_os" value="{{ form.get('numero_os', '') }}" class="form-control">
+          </div>
+
+          <div class="col-md-5">
+            <label class="form-label fw-bold small text-muted">Propriedade *</label>
+            <input type="text" name="propriedade_nome" value="{{ form.get('propriedade_nome', '') }}" class="form-control {% if errors.get('propriedade_nome') %}is-invalid{% endif %}">
+            {% if errors.get('propriedade_nome') %}<div class="invalid-feedback">{{ errors.get('propriedade_nome') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Municipio *</label>
+            <input type="text" name="municipio" value="{{ form.get('municipio', '') }}" class="form-control {% if errors.get('municipio') %}is-invalid{% endif %}">
+            {% if errors.get('municipio') %}<div class="invalid-feedback">{{ errors.get('municipio') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label fw-bold small text-muted">UF{% if pilot_form_mode %} *{% endif %}</label>
+            <input type="text" name="uf" maxlength="2" value="{{ form.get('uf', '') }}" class="form-control text-uppercase {% if errors.get('uf') %}is-invalid{% endif %}">
+            {% if errors.get('uf') %}<div class="invalid-feedback">{{ errors.get('uf') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">Proprietario ou preposto</label>
+            <input type="text" name="proprietario_ou_preposto" value="{{ form.get('proprietario_ou_preposto', '') }}" class="form-control">
+          </div>
+        </div>
+
+        <hr class="text-muted opacity-25 my-4">
+
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-diagram-3-fill text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Equipe e parametros</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          {% if pilot_form_mode %}
+            <div class="col-md-4">
+              <label class="form-label fw-bold small text-muted">Equipe *</label>
+              <input type="hidden" name="equipe_agro_id" value="{{ form.get('equipe_agro_id', '') }}">
+              <input type="text" value="{{ piloto_logado.equipe.nome if piloto_logado and piloto_logado.equipe else 'Sem equipe vinculada' }}" class="form-control {% if errors.get('equipe_agro_id') %}is-invalid{% endif %}" readonly>
+              {% if errors.get('equipe_agro_id') %}<div class="invalid-feedback">{{ errors.get('equipe_agro_id') }}</div>{% endif %}
+            </div>
+          {% else %}
+            <div class="col-md-4">
+              <label class="form-label fw-bold small text-muted">Equipe *</label>
+              <select name="equipe_agro_id" class="form-select {% if errors.get('equipe_agro_id') %}is-invalid{% endif %}">
+                <option value="">Selecione...</option>
+                {% for equipe in equipes %}
+                  <option value="{{ equipe.id }}" {% if form.get('equipe_agro_id')|string == equipe.id|string %}selected{% endif %}>{{ equipe.nome }}</option>
+                {% endfor %}
+              </select>
+              {% if errors.get('equipe_agro_id') %}<div class="invalid-feedback">{{ errors.get('equipe_agro_id') }}</div>{% endif %}
+            </div>
+          {% endif %}
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Tipo de servico</label>
+            <input type="text" name="tipo_servico" value="{{ form.get('tipo_servico', '') }}" class="form-control">
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Cultura</label>
+            <input type="text" name="cultura" value="{{ form.get('cultura', '') }}" class="form-control">
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Equipamento</label>
+            <input type="text" name="equipamento" value="{{ form.get('equipamento', '') }}" class="form-control">
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label fw-bold small text-muted">Altura do voo (m)</label>
+            <input type="text" name="altura_voo_m" value="{{ form.get('altura_voo_m', '') }}" class="form-control {% if errors.get('altura_voo_m') %}is-invalid{% endif %}">
+            {% if errors.get('altura_voo_m') %}<div class="invalid-feedback">{{ errors.get('altura_voo_m') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label fw-bold small text-muted">Area (ha)</label>
+            <input type="text" name="area_ha" value="{{ form.get('area_ha', '') }}" class="form-control {% if errors.get('area_ha') %}is-invalid{% endif %}">
+            {% if errors.get('area_ha') %}<div class="invalid-feedback">{{ errors.get('area_ha') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label fw-bold small text-muted">Sobreposicao frontal (%)</label>
+            <input type="text" name="sobreposicao_frontal_pct" value="{{ form.get('sobreposicao_frontal_pct', '') }}" class="form-control {% if errors.get('sobreposicao_frontal_pct') %}is-invalid{% endif %}">
+            {% if errors.get('sobreposicao_frontal_pct') %}<div class="invalid-feedback">{{ errors.get('sobreposicao_frontal_pct') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label fw-bold small text-muted">Sobreposicao lateral (%)</label>
+            <input type="text" name="sobreposicao_lateral_pct" value="{{ form.get('sobreposicao_lateral_pct', '') }}" class="form-control {% if errors.get('sobreposicao_lateral_pct') %}is-invalid{% endif %}">
+            {% if errors.get('sobreposicao_lateral_pct') %}<div class="invalid-feedback">{{ errors.get('sobreposicao_lateral_pct') }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label fw-bold small text-muted">GSD</label>
+            <input type="text" name="gsd" value="{{ form.get('gsd', '') }}" class="form-control">
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">Outros</label>
+            <input type="text" name="outros" value="{{ form.get('outros', '') }}" class="form-control">
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Data da RD{% if pilot_form_mode %} *{% endif %}</label>
+            <input type="date" name="data_relatorio" value="{{ form.get('data_relatorio', '') }}" class="form-control {% if errors.get('data_relatorio') %}is-invalid{% endif %}">
+            {% if errors.get('data_relatorio') %}<div class="invalid-feedback">{{ errors.get('data_relatorio') }}</div>{% endif %}
+          </div>
+        </div>
+
+        <hr class="text-muted opacity-25 my-4">
+
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-shield-exclamation text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Detalhes da area mapeamento</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          {% for field_name, label in [
+            ('rede_energia_baixa', 'Rede energia (baixa voltagem)'),
+            ('rede_energia_alta_media', 'Rede energia (alta/media voltagem)'),
+            ('poste', 'Poste'),
+            ('poste_com_tirante', 'Poste com tirante'),
+            ('acesso_area', 'Acesso a area'),
+            ('arvores_secas', 'Arvores secas')
+          ] %}
+            <div class="col-md-4">
+              <label class="form-label fw-bold small text-muted">{{ label }}{% if pilot_form_mode %} *{% endif %}</label>
+              <select name="{{ field_name }}" class="form-select {% if errors.get(field_name) %}is-invalid{% endif %}">
+                <option value="">Selecione...</option>
+                {% for option in resposta_options %}
+                  <option value="{{ option }}" {% if form.get(field_name) == option %}selected{% endif %}>{{ option }}</option>
+                {% endfor %}
+              </select>
+              {% if errors.get(field_name) %}<div class="invalid-feedback">{{ errors.get(field_name) }}</div>{% endif %}
+            </div>
+          {% endfor %}
+
+          <div class="col-12">
+            <label class="form-label fw-bold small text-muted">Outros detalhes da area</label>
+            <textarea name="outros_area" rows="3" class="form-control">{{ form.get('outros_area', '') }}</textarea>
+          </div>
+        </div>
+
+        <hr class="text-muted opacity-25 my-4">
+
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-journal-richtext text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Fechamento</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-8">
+            <label class="form-label fw-bold small text-muted">Observacoes</label>
+            <textarea name="observacoes" rows="5" class="form-control">{{ form.get('observacoes', '') }}</textarea>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Responsavel{% if pilot_form_mode %} *{% endif %}</label>
+            <input type="text" name="responsavel_nome" value="{{ form.get('responsavel_nome', '') }}" class="form-control {% if errors.get('responsavel_nome') %}is-invalid{% endif %}">
+            {% if errors.get('responsavel_nome') %}<div class="invalid-feedback">{{ errors.get('responsavel_nome') }}</div>{% endif %}
+            <div class="form-text">Nome de quem realizou ou respondeu pela RD.</div>
+          </div>
+        </div>
+
+        <small class="text-muted d-block mt-4">
+          {% if pilot_form_mode %}
+            Ao salvar esta RD, o orcamento fica apto para o time administrativo montar o contrato e seguir com o restante do fluxo Agro.
+          {% else %}
+            Esta tela serve para preparar e acompanhar a RD de mapeamento. O contrato so sera liberado depois que o piloto concluir o preenchimento.
+          {% endif %}
+        </small>
+
+        <div class="d-flex justify-content-end gap-2 mt-5">
+          <a href="{{ url_for('main.agro_piloto_dashboard' if pilot_form_mode else 'main.agro_orcamentos_listar') }}" class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-x-lg me-1"></i> Cancelar
+          </a>
+
+          <button type="submit" class="btn btn-primary btn-sm">
+            <i class="bi bi-check-lg me-1"></i>
+            {% if pilot_form_mode %}
+              Salvar RD de mapeamento
+            {% elif rd %}
+              Atualizar envio da RD
+            {% else %}
+              Enviar RD ao piloto
+            {% endif %}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

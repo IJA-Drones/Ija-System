@@ -13,10 +13,10 @@
   <div class="listing-header mb-4">
     <div>
       <h2 class="text-dark m-0">
-        <i class="bi bi-clipboard2-data-fill me-2 text-primary"></i> OS Agro
+        <i class="bi bi-clipboard2-data-fill me-2 text-primary"></i> Ordens de Servico do Agro
       </h2>
       <p class="text-muted small mb-0">
-        Base operacional das aplicacoes do Agro.
+        Lista operacional das ordens de servico e aplicacoes em campo.
         Total: <strong>{{ filters.total }}</strong>
       </p>
     </div>
@@ -26,7 +26,7 @@
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
       <a href="{{ url_for('main.agro_contratos_template') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
-        <i class="bi bi-diagram-3-fill"></i> Contratos aprovados
+        <i class="bi bi-diagram-3-fill"></i> Operacional
       </a>
     </div>
   </div>
@@ -170,7 +170,7 @@
             {% else %}
               <tr>
                 <td colspan="{{ 6 if is_editable else 5 }}" class="text-center py-5">
-                  <p class="text-muted mb-0">Nenhuma OS Agro encontrada com os filtros aplicados.</p>
+                  <p class="text-muted mb-0">Nenhuma ordem de servico do Agro foi encontrada com os filtros aplicados.</p>
                 </td>
               </tr>
             {% endfor %}

@@ -25,6 +25,7 @@ from app.models import (
     OrcamentoAgro,
     OrdemServicoAgro,
     PilotoAgro,
+    RdMapeamentoAgro,
 )
 from app.shared.access import (
     ADMIN_PANEL_EDIT_TYPES,
@@ -290,6 +291,7 @@ def build_orcamentos_agro_query(user, q: str = "", cliente_id: int | None = None
     query = OrcamentoAgro.query.options(
         joinedload(OrcamentoAgro.cliente),
         joinedload(OrcamentoAgro.contrato),
+        joinedload(OrcamentoAgro.rd_mapeamento).joinedload(RdMapeamentoAgro.equipe),
         joinedload(OrcamentoAgro.drone_agro),
         joinedload(OrcamentoAgro.drone_mapeamento_agro),
     )
@@ -1467,6 +1469,13 @@ def build_descricao_servico_contrato(orcamento: OrcamentoAgro) -> str:
     return descricao
 
 
+def _format_decimal_field(value) -> str:
+    if value in (None, ""):
+        return ""
+    amount = OrcamentoAgro._decimal_or_zero(value).quantize(Decimal("0.01"))
+    return f"{amount:.2f}".replace(".", ",")
+
+
 def build_contrato_agro_defaults(orcamento: OrcamentoAgro) -> dict:
     cliente = orcamento.cliente
 
@@ -1542,6 +1551,72 @@ def serialize_contrato_agro_form(contrato: ContratoAgro) -> dict:
         "data_assinatura": contrato.data_assinatura.isoformat() if contrato.data_assinatura else "",
         "observacoes_adicionais": contrato.observacoes_adicionais or "",
         "status": contrato.status or ContratoAgro.STATUS_EM_ELABORACAO,
+    }
+
+
+def build_rd_mapeamento_agro_defaults(orcamento: OrcamentoAgro) -> dict:
+    return {
+        "equipe_agro_id": "",
+        "cliente_nome": (orcamento.cliente_nome or "").strip(),
+        "numero_os": (orcamento.protocolo or str(orcamento.id or "")).strip(),
+        "propriedade_nome": (orcamento.nome_fazenda or "").strip(),
+        "municipio": (orcamento.cidade or "").strip(),
+        "uf": (orcamento.uf or "").strip().upper(),
+        "proprietario_ou_preposto": (orcamento.cliente_nome or "").strip(),
+        "tipo_servico": (orcamento.servico or "").strip(),
+        "cultura": (orcamento.culturas_formatadas or "").strip(),
+        "equipamento": (
+            getattr(getattr(orcamento, "drone_mapeamento_agro", None), "identificacao", None)
+            or getattr(getattr(orcamento, "drone_agro", None), "identificacao", None)
+            or ""
+        ).strip(),
+        "altura_voo_m": "",
+        "area_ha": orcamento.area_ha_formatada,
+        "sobreposicao_frontal_pct": "",
+        "sobreposicao_lateral_pct": "",
+        "gsd": "",
+        "outros": "",
+        "data_relatorio": "",
+        "rede_energia_baixa": "",
+        "rede_energia_alta_media": "",
+        "poste": "",
+        "poste_com_tirante": "",
+        "acesso_area": "",
+        "arvores_secas": "",
+        "outros_area": "",
+        "observacoes": "",
+        "responsavel_nome": "",
+    }
+
+
+def serialize_rd_mapeamento_agro_form(rd: RdMapeamentoAgro) -> dict:
+    return {
+        "equipe_agro_id": str(rd.equipe_agro_id or ""),
+        "cliente_nome": rd.cliente_nome or "",
+        "numero_os": rd.numero_os or "",
+        "propriedade_nome": rd.propriedade_nome or "",
+        "municipio": rd.municipio or "",
+        "uf": rd.uf or "",
+        "proprietario_ou_preposto": rd.proprietario_ou_preposto or "",
+        "tipo_servico": rd.tipo_servico or "",
+        "cultura": rd.cultura or "",
+        "equipamento": rd.equipamento or "",
+        "altura_voo_m": _format_decimal_field(rd.altura_voo_m),
+        "area_ha": _format_decimal_field(rd.area_ha),
+        "sobreposicao_frontal_pct": _format_decimal_field(rd.sobreposicao_frontal_pct),
+        "sobreposicao_lateral_pct": _format_decimal_field(rd.sobreposicao_lateral_pct),
+        "gsd": rd.gsd or "",
+        "outros": rd.outros or "",
+        "data_relatorio": rd.data_relatorio.isoformat() if rd.data_relatorio else "",
+        "rede_energia_baixa": rd.rede_energia_baixa or "",
+        "rede_energia_alta_media": rd.rede_energia_alta_media or "",
+        "poste": rd.poste or "",
+        "poste_com_tirante": rd.poste_com_tirante or "",
+        "acesso_area": rd.acesso_area or "",
+        "arvores_secas": rd.arvores_secas or "",
+        "outros_area": rd.outros_area or "",
+        "observacoes": rd.observacoes or "",
+        "responsavel_nome": rd.responsavel_nome or "",
     }
 
 
