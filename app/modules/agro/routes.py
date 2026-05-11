@@ -28,6 +28,7 @@ from app.models import (
     OrcamentoAgro,
     OrdemServicoAgro,
     PilotoAgro,
+    RdMapeamentoAgro,
     Usuario,
 )
 from app.modules.agro.exporters import (
@@ -74,11 +75,13 @@ from app.modules.agro.service import (
     remove_orcamento_attachment,
     resolve_orcamento_attachment,
     save_orcamento_attachment,
+    build_rd_mapeamento_agro_defaults,
     serialize_contrato_agro_form,
     serialize_cliente_agro,
     serialize_fornecedor_agro,
     serialize_banco_agro_form,
     serialize_financeiro_agro_form,
+    serialize_rd_mapeamento_agro_form,
     update_orcamento_snapshot_from_cliente,
 )
 from app.shared.access import apply_prefeitura_scope
@@ -94,6 +97,8 @@ AGRO_SERVICO_OPTIONS = (
 
 AGRO_CONTRATO_STATUS_OPTIONS = ContratoAgro.STATUS_OPTIONS
 AGRO_OS_STATUS_OPTIONS = OrdemServicoAgro.STATUS_OPTIONS
+AGRO_RD_MAPEAMENTO_STATUS_OPTIONS = RdMapeamentoAgro.STATUS_OPTIONS
+AGRO_RD_MAPEAMENTO_RESPOSTA_OPTIONS = RdMapeamentoAgro.RESPOSTA_OPTIONS
 AGRO_FINANCEIRO_STATUS_OPTIONS = FinanceiroAgro.STATUS_OPTIONS
 AGRO_FINANCEIRO_ENTRADA_STATUS_OPTIONS = FinanceiroAgroEntrada.STATUS_OPTIONS
 AGRO_FINANCEIRO_SAIDA_STATUS_OPTIONS = FinanceiroAgroSaida.STATUS_OPTIONS
@@ -3331,6 +3336,190 @@ def _save_os_agro_map_image(ordem_servico, uploaded_file):
     return original_filename
 
 
+def _orcamento_exige_rd_mapeamento(orcamento):
+    return bool(orcamento and orcamento.inclui_mapeamento)
+
+
+def _rd_mapeamento_esta_preenchida(rd):
+    return bool(rd and rd.status == RdMapeamentoAgro.STATUS_PREENCHIDO)
+
+
+def _get_rd_mapeamento_agro_or_404(rd_id: int):
+    if getattr(current_user, "tipo_usuario", None) == "piloto_agro":
+        query = RdMapeamentoAgro.query
+    else:
+        query = apply_prefeitura_scope(RdMapeamentoAgro.query, current_user, RdMapeamentoAgro.prefeitura_id)
+    return query.filter(RdMapeamentoAgro.id == rd_id).first_or_404()
+
+
+def _normalize_rd_mapeamento_form(form_source):
+    return {
+        "equipe_agro_id": (form_source.get("equipe_agro_id") or "").strip(),
+        "cliente_nome": (form_source.get("cliente_nome") or "").strip(),
+        "numero_os": (form_source.get("numero_os") or "").strip(),
+        "propriedade_nome": (form_source.get("propriedade_nome") or "").strip(),
+        "municipio": (form_source.get("municipio") or "").strip(),
+        "uf": (form_source.get("uf") or "").strip().upper(),
+        "proprietario_ou_preposto": (form_source.get("proprietario_ou_preposto") or "").strip(),
+        "tipo_servico": (form_source.get("tipo_servico") or "").strip(),
+        "cultura": (form_source.get("cultura") or "").strip(),
+        "equipamento": (form_source.get("equipamento") or "").strip(),
+        "altura_voo_m": (form_source.get("altura_voo_m") or "").strip(),
+        "area_ha": (form_source.get("area_ha") or "").strip(),
+        "sobreposicao_frontal_pct": (form_source.get("sobreposicao_frontal_pct") or "").strip(),
+        "sobreposicao_lateral_pct": (form_source.get("sobreposicao_lateral_pct") or "").strip(),
+        "gsd": (form_source.get("gsd") or "").strip(),
+        "outros": (form_source.get("outros") or "").strip(),
+        "data_relatorio": (form_source.get("data_relatorio") or "").strip(),
+        "rede_energia_baixa": (form_source.get("rede_energia_baixa") or "").strip().upper(),
+        "rede_energia_alta_media": (form_source.get("rede_energia_alta_media") or "").strip().upper(),
+        "poste": (form_source.get("poste") or "").strip().upper(),
+        "poste_com_tirante": (form_source.get("poste_com_tirante") or "").strip().upper(),
+        "acesso_area": (form_source.get("acesso_area") or "").strip().upper(),
+        "arvores_secas": (form_source.get("arvores_secas") or "").strip().upper(),
+        "outros_area": (form_source.get("outros_area") or "").strip(),
+        "observacoes": (form_source.get("observacoes") or "").strip(),
+        "responsavel_nome": (form_source.get("responsavel_nome") or "").strip(),
+    }
+
+
+def _validate_rd_mapeamento_form(form, equipes, *, require_full=False):
+    errors = {}
+
+    equipe_id = _normalize_optional_int(form["equipe_agro_id"])
+    equipe = None
+    if equipe_id is None:
+        errors["equipe_agro_id"] = "Selecione a equipe responsavel pela RD."
+    else:
+        equipe = next((item for item in equipes if item.id == equipe_id), None)
+        if equipe is None:
+            errors["equipe_agro_id"] = "A equipe selecionada nao foi encontrada."
+
+    for field_name, label in (
+        ("cliente_nome", "cliente"),
+        ("propriedade_nome", "propriedade"),
+        ("municipio", "municipio"),
+    ):
+        if not form[field_name]:
+            errors[field_name] = f"Informe o {label}."
+
+    if form["uf"] and len(form["uf"]) != 2:
+        errors["uf"] = "UF deve ter 2 letras."
+    if require_full and not form["uf"]:
+        errors["uf"] = "Informe a UF."
+
+    data_relatorio = None
+    if form["data_relatorio"]:
+        try:
+            data_relatorio = datetime.strptime(form["data_relatorio"], "%Y-%m-%d").date()
+        except ValueError:
+            errors["data_relatorio"] = "Informe uma data valida."
+    elif require_full:
+        errors["data_relatorio"] = "Informe a data da RD."
+
+    numeric_fields = {}
+    for field_name in (
+        "altura_voo_m",
+        "area_ha",
+        "sobreposicao_frontal_pct",
+        "sobreposicao_lateral_pct",
+    ):
+        value = _parse_decimal_input(form[field_name])
+        if form[field_name] and value is None:
+            errors[field_name] = "Informe um valor numerico valido."
+        numeric_fields[field_name] = value
+
+    for field_name in (
+        "rede_energia_baixa",
+        "rede_energia_alta_media",
+        "poste",
+        "poste_com_tirante",
+        "acesso_area",
+        "arvores_secas",
+    ):
+        raw = form[field_name]
+        if raw and raw not in AGRO_RD_MAPEAMENTO_RESPOSTA_OPTIONS:
+            errors[field_name] = "Selecione Sim ou Nao."
+        elif require_full and not raw:
+            errors[field_name] = "Responda este item."
+
+    if require_full and not form["responsavel_nome"]:
+        errors["responsavel_nome"] = "Informe o responsavel pela RD."
+
+    return errors, equipe_id, equipe, data_relatorio, numeric_fields
+
+
+def _apply_rd_mapeamento_form(
+    rd,
+    orcamento,
+    form,
+    *,
+    equipe_id,
+    equipe=None,
+    data_relatorio,
+    numeric_fields,
+    piloto=None,
+    mark_completed=False,
+):
+    rd.prefeitura_id = (
+        getattr(equipe, "prefeitura_id", None)
+        or getattr(piloto, "prefeitura_id", None)
+        or orcamento.prefeitura_id
+        or rd.prefeitura_id
+    )
+    rd.orcamento_agro_id = orcamento.id
+    rd.equipe_agro_id = equipe_id
+    rd.cliente_nome = form["cliente_nome"]
+    rd.numero_os = form["numero_os"] or None
+    rd.propriedade_nome = form["propriedade_nome"]
+    rd.municipio = form["municipio"]
+    rd.uf = form["uf"] or None
+    rd.proprietario_ou_preposto = form["proprietario_ou_preposto"] or None
+    rd.tipo_servico = form["tipo_servico"] or None
+    rd.cultura = form["cultura"] or None
+    rd.equipamento = form["equipamento"] or None
+    rd.altura_voo_m = numeric_fields["altura_voo_m"]
+    rd.area_ha = numeric_fields["area_ha"]
+    rd.sobreposicao_frontal_pct = numeric_fields["sobreposicao_frontal_pct"]
+    rd.sobreposicao_lateral_pct = numeric_fields["sobreposicao_lateral_pct"]
+    rd.gsd = form["gsd"] or None
+    rd.outros = form["outros"] or None
+    rd.data_relatorio = data_relatorio
+    rd.rede_energia_baixa = form["rede_energia_baixa"] or None
+    rd.rede_energia_alta_media = form["rede_energia_alta_media"] or None
+    rd.poste = form["poste"] or None
+    rd.poste_com_tirante = form["poste_com_tirante"] or None
+    rd.acesso_area = form["acesso_area"] or None
+    rd.arvores_secas = form["arvores_secas"] or None
+    rd.outros_area = form["outros_area"] or None
+    rd.observacoes = form["observacoes"] or None
+    rd.responsavel_nome = form["responsavel_nome"] or None
+
+    if mark_completed:
+        rd.status = RdMapeamentoAgro.STATUS_PREENCHIDO
+        rd.piloto_agro_id = getattr(piloto, "id", None)
+        rd.preenchido_em = datetime.now()
+    elif rd.status != RdMapeamentoAgro.STATUS_PREENCHIDO:
+        rd.status = RdMapeamentoAgro.STATUS_AGUARDANDO_PREENCHIMENTO
+
+    if not rd.enviado_em:
+        rd.enviado_em = datetime.now()
+
+
+def _build_rd_mapeamento_form_context(*, orcamento, form, errors, equipes, rd=None, pilot_form_mode=False, piloto_logado=None):
+    return {
+        "orcamento": orcamento,
+        "rd": rd,
+        "form": form,
+        "errors": errors,
+        "equipes": equipes,
+        "pilot_form_mode": pilot_form_mode,
+        "piloto_logado": piloto_logado,
+        "resposta_options": AGRO_RD_MAPEAMENTO_RESPOSTA_OPTIONS,
+        "rd_status_options": AGRO_RD_MAPEAMENTO_STATUS_OPTIONS,
+    }
+
+
 def _apply_ordem_servico_agro_form(ordem_servico, contrato, form, *, data_aplicacao, equipe_id, drone_pulverizacao_id, drone_pulverizacao, drone_mapeamento_id, drone_mapeamento, numeric_fields):
     orcamento = contrato.orcamento
 
@@ -3401,12 +3590,19 @@ def register_routes(bp):
         equipe = piloto.equipe
         equipamentos = []
         contratos = []
+        rds_mapeamento = []
         ordens_servico = []
         if equipe is not None:
             equipamentos = (
                 apply_prefeitura_scope(EquipamentoAgro.query, current_user, EquipamentoAgro.prefeitura_id)
                 .filter(EquipamentoAgro.equipe_agro_id == equipe.id)
                 .order_by(EquipamentoAgro.identificacao.asc(), EquipamentoAgro.id.asc())
+                .all()
+            )
+            rds_mapeamento = (
+                RdMapeamentoAgro.query
+                .filter(RdMapeamentoAgro.equipe_agro_id == equipe.id)
+                .order_by(RdMapeamentoAgro.atualizado_em.desc(), RdMapeamentoAgro.id.desc())
                 .all()
             )
             contratos = build_contratos_agro_aprovados_query(current_user, equipe_id=equipe.id).all()
@@ -3417,6 +3613,11 @@ def register_routes(bp):
                 .all()
             )
 
+        rds_pendentes = [
+            item
+            for item in rds_mapeamento
+            if item.status != RdMapeamentoAgro.STATUS_PREENCHIDO
+        ]
         contratos_sem_os = [contrato for contrato in contratos if not contrato.ordens_servico]
         ordens_ativas = [
             item
@@ -3434,13 +3635,15 @@ def register_routes(bp):
             piloto=piloto,
             equipe=equipe,
             equipamentos=equipamentos,
+            rds_mapeamento=rds_mapeamento,
+            rds_pendentes=rds_pendentes,
             contratos=contratos,
             contratos_sem_os=contratos_sem_os,
             latest_os_por_contrato=_build_latest_os_by_contrato(contratos),
             ordens_servico=ordens_servico,
             ordens_ativas=ordens_ativas,
             ordens_concluidas=ordens_concluidas,
-            total_demandas_prioritarias=len(contratos_sem_os) + len(ordens_ativas),
+            total_demandas_prioritarias=len(rds_pendentes) + len(contratos_sem_os) + len(ordens_ativas),
         )
 
     @bp.route("/agro/piloto/os", methods=["GET"], endpoint="agro_piloto_os_listar")
@@ -3473,6 +3676,51 @@ def register_routes(bp):
             ordens_servico=ordens_servico,
             status_options=AGRO_OS_STATUS_OPTIONS,
             filters={"q": q, "status": status, "total": len(ordens_servico)},
+        )
+
+    @bp.route("/agro/piloto/mapeamentos", methods=["GET"], endpoint="agro_piloto_mapeamentos_listar")
+    @login_required
+    def agro_piloto_mapeamentos_listar():
+        _require_piloto_agro()
+
+        piloto = _get_logged_piloto_agro()
+        if piloto is None:
+            flash("Seu usuario nao esta vinculado a um piloto agro.", "danger")
+            return redirect(url_for("auth.logout"))
+
+        equipe = piloto.equipe
+        q = (request.args.get("q") or "").strip()
+        status = (request.args.get("status") or "").strip().upper()
+
+        rds_mapeamento = []
+        if equipe is not None:
+            query = (
+                RdMapeamentoAgro.query
+                .filter(RdMapeamentoAgro.equipe_agro_id == equipe.id)
+            )
+            if q:
+                like = f"%{q}%"
+                query = query.filter(
+                    or_(
+                        RdMapeamentoAgro.cliente_nome.ilike(like),
+                        RdMapeamentoAgro.propriedade_nome.ilike(like),
+                        RdMapeamentoAgro.municipio.ilike(like),
+                        RdMapeamentoAgro.tipo_servico.ilike(like),
+                        RdMapeamentoAgro.numero_os.ilike(like),
+                    )
+                )
+            if status in AGRO_RD_MAPEAMENTO_STATUS_OPTIONS:
+                query = query.filter(RdMapeamentoAgro.status == status)
+
+            rds_mapeamento = query.order_by(RdMapeamentoAgro.atualizado_em.desc(), RdMapeamentoAgro.id.desc()).all()
+
+        return render_template(
+            "piloto_agro_mapeamentos_listar.html",
+            piloto=piloto,
+            equipe=equipe,
+            rds_mapeamento=rds_mapeamento,
+            status_options=AGRO_RD_MAPEAMENTO_STATUS_OPTIONS,
+            filters={"q": q, "status": status, "total": len(rds_mapeamento)},
         )
 
     @bp.route("/agro/admin", endpoint="admin_agro")
@@ -4218,6 +4466,7 @@ def register_routes(bp):
             },
             pagination_args=_query_args_without_page(),
             is_editable=can_edit_agro_panel(current_user),
+            is_admin_agro=getattr(current_user, "tipo_usuario", None) == "admin",
         )
 
     @bp.route("/agro/orcamentos/cadastrar", methods=["GET", "POST"], endpoint="agro_orcamento_novo")
@@ -4492,11 +4741,232 @@ def register_routes(bp):
             ),
         )
 
+    @bp.route("/agro/orcamentos/<int:orcamento_id>/rd-mapeamento", methods=["GET", "POST"], endpoint="agro_rd_mapeamento_editar")
+    @login_required
+    def agro_rd_mapeamento_editar(orcamento_id):
+        _require_agro_edit()
+        orcamento = _get_orcamento_agro_or_404(orcamento_id)
+        if not _orcamento_exige_rd_mapeamento(orcamento):
+            flash("Este orcamento nao exige RD de mapeamento.", "info")
+            return redirect(url_for("main.agro_orcamentos_listar"))
+
+        equipes = _build_agro_equipes_ativas()
+        rd = orcamento.rd_mapeamento
+        errors = {}
+
+        if request.method == "POST":
+            form = _normalize_rd_mapeamento_form(request.form)
+            errors, equipe_id, _equipe, data_relatorio, numeric_fields = _validate_rd_mapeamento_form(
+                form,
+                equipes,
+                require_full=False,
+            )
+            if errors:
+                flash("Corrija os campos destacados da RD de mapeamento.", "warning")
+                return render_template(
+                    "agro_rd_mapeamento_form.html",
+                    **_build_rd_mapeamento_form_context(
+                        orcamento=orcamento,
+                        rd=rd,
+                        form=form,
+                        errors=errors,
+                        equipes=equipes,
+                    ),
+                )
+
+            if rd is None:
+                rd = RdMapeamentoAgro(orcamento=orcamento, prefeitura_id=orcamento.prefeitura_id)
+                db.session.add(rd)
+
+            _apply_rd_mapeamento_form(
+                rd,
+                orcamento,
+                form,
+                equipe_id=equipe_id,
+                equipe=_equipe,
+                data_relatorio=data_relatorio,
+                numeric_fields=numeric_fields,
+            )
+            db.session.commit()
+            flash("RD de mapeamento enviada/atualizada com sucesso.", "success")
+            return redirect(url_for("main.agro_rd_mapeamento_editar", orcamento_id=orcamento.id))
+
+        form = serialize_rd_mapeamento_agro_form(rd) if rd else build_rd_mapeamento_agro_defaults(orcamento)
+        return render_template(
+            "agro_rd_mapeamento_form.html",
+            **_build_rd_mapeamento_form_context(
+                orcamento=orcamento,
+                rd=rd,
+                form=form,
+                errors=errors,
+                equipes=equipes,
+            ),
+        )
+
+    @bp.route("/agro/orcamentos/template-mapeamento", methods=["GET"], endpoint="agro_orcamentos_template_mapeamento")
+    @login_required
+    def agro_orcamentos_template_mapeamento():
+        _require_agro_admin()
+
+        q = (request.args.get("q") or "").strip()
+        equipe_id = request.args.get("equipe_id", type=int)
+        orcamentos = (
+            build_orcamentos_agro_query(current_user, q=q, mapeamento="SIM")
+            .filter(~OrcamentoAgro.contrato.has())
+            .all()
+        )
+        equipes_ativas = _build_agro_equipes_ativas()
+        if equipe_id:
+            orcamentos = [
+                item for item in orcamentos
+                if getattr(getattr(item, "rd_mapeamento", None), "equipe_agro_id", None) == equipe_id
+            ]
+
+        return render_template(
+            "agro_orcamentos_template_mapeamento.html",
+            orcamentos=orcamentos,
+            equipes_ativas=equipes_ativas,
+            filters={"q": q, "equipe_id": equipe_id, "total": len(orcamentos)},
+        )
+
+    @bp.route("/agro/orcamentos/<int:orcamento_id>/template-mapeamento", methods=["POST"], endpoint="agro_orcamento_template_mapeamento_salvar")
+    @login_required
+    def agro_orcamento_template_mapeamento_salvar(orcamento_id):
+        _require_agro_admin()
+
+        orcamento = _get_orcamento_agro_or_404(orcamento_id)
+        if not _orcamento_exige_rd_mapeamento(orcamento):
+            flash("Este orcamento nao exige template de mapeamento.", "warning")
+            return _redirect_back_to_agro("main.agro_orcamentos_template_mapeamento")
+
+        equipes_ativas = _build_agro_equipes_ativas()
+        equipe_id = _normalize_optional_int(request.form.get("equipe_agro_id"))
+        equipe = next((item for item in equipes_ativas if item.id == equipe_id), None)
+        if equipe is None:
+            flash("Selecione a equipe responsavel pelo mapeamento.", "warning")
+            return _redirect_back_to_agro("main.agro_orcamentos_template_mapeamento")
+
+        rd = orcamento.rd_mapeamento
+        form = serialize_rd_mapeamento_agro_form(rd) if rd else build_rd_mapeamento_agro_defaults(orcamento)
+        form["equipe_agro_id"] = str(equipe.id)
+        errors, equipe_id, _equipe, data_relatorio, numeric_fields = _validate_rd_mapeamento_form(
+            form,
+            equipes_ativas,
+            require_full=False,
+        )
+        if errors:
+            flash("Nao foi possivel preparar a RD de mapeamento deste orcamento.", "warning")
+            return _redirect_back_to_agro("main.agro_orcamentos_template_mapeamento")
+
+        if rd is None:
+            rd = RdMapeamentoAgro(orcamento=orcamento, prefeitura_id=orcamento.prefeitura_id)
+            db.session.add(rd)
+
+        _apply_rd_mapeamento_form(
+            rd,
+            orcamento,
+            form,
+            equipe_id=equipe_id,
+            equipe=_equipe,
+            data_relatorio=data_relatorio,
+            numeric_fields=numeric_fields,
+        )
+        db.session.commit()
+        flash("Template de mapeamento atualizado com sucesso.", "success")
+        return _redirect_back_to_agro("main.agro_orcamentos_template_mapeamento")
+
+    @bp.route("/agro/piloto/rd-mapeamento/<int:rd_id>", methods=["GET", "POST"], endpoint="agro_piloto_rd_mapeamento")
+    @login_required
+    def agro_piloto_rd_mapeamento(rd_id):
+        _require_piloto_agro()
+        piloto = _get_logged_piloto_agro()
+        if piloto is None:
+            flash("Seu usuario nao esta vinculado a um piloto agro.", "danger")
+            return redirect(url_for("auth.logout"))
+
+        rd = _get_rd_mapeamento_agro_or_404(rd_id)
+        if rd.equipe_agro_id is None or piloto.equipe_agro_id != rd.equipe_agro_id:
+            flash("Esta RD de mapeamento esta vinculada a outra equipe.", "warning")
+            return redirect(url_for("main.agro_piloto_dashboard"))
+
+        orcamento = rd.orcamento
+        equipes = [piloto.equipe] if piloto.equipe else []
+        errors = {}
+
+        if request.method == "POST":
+            form = _normalize_rd_mapeamento_form(request.form)
+            form["equipe_agro_id"] = str(rd.equipe_agro_id or piloto.equipe_agro_id or "")
+            errors, equipe_id, _equipe, data_relatorio, numeric_fields = _validate_rd_mapeamento_form(
+                form,
+                equipes,
+                require_full=True,
+            )
+            if errors:
+                flash("Corrija os campos destacados da RD de mapeamento.", "warning")
+                return render_template(
+                    "agro_rd_mapeamento_form.html",
+                    **_build_rd_mapeamento_form_context(
+                        orcamento=orcamento,
+                        rd=rd,
+                        form=form,
+                        errors=errors,
+                        equipes=equipes,
+                        pilot_form_mode=True,
+                        piloto_logado=piloto,
+                    ),
+                )
+
+            _apply_rd_mapeamento_form(
+                rd,
+                orcamento,
+                form,
+                equipe_id=equipe_id,
+                equipe=_equipe,
+                data_relatorio=data_relatorio,
+                numeric_fields=numeric_fields,
+                piloto=piloto,
+                mark_completed=True,
+            )
+            db.session.commit()
+            flash("RD de mapeamento preenchida com sucesso.", "success")
+            return redirect(url_for("main.agro_piloto_dashboard"))
+
+        form = serialize_rd_mapeamento_agro_form(rd)
+        form["equipe_agro_id"] = str(rd.equipe_agro_id or piloto.equipe_agro_id or "")
+        if not form.get("responsavel_nome"):
+            form["responsavel_nome"] = piloto.nome or ""
+        if not form.get("data_relatorio"):
+            form["data_relatorio"] = datetime.now().date().isoformat()
+
+        return render_template(
+            "agro_rd_mapeamento_form.html",
+            **_build_rd_mapeamento_form_context(
+                orcamento=orcamento,
+                rd=rd,
+                form=form,
+                errors=errors,
+                equipes=equipes,
+                pilot_form_mode=True,
+                piloto_logado=piloto,
+            ),
+        )
+
     @bp.route("/agro/orcamentos/<int:orcamento_id>/contrato", methods=["GET", "POST"], endpoint="agro_contrato_editar")
     @login_required
     def agro_contrato_editar(orcamento_id):
         _require_agro_edit()
         orcamento = _get_orcamento_agro_or_404(orcamento_id)
+        if (
+            orcamento.contrato is None
+            and _orcamento_exige_rd_mapeamento(orcamento)
+            and not _rd_mapeamento_esta_preenchida(orcamento.rd_mapeamento)
+        ):
+            flash(
+                "Antes de montar o contrato, defina a equipe no template de mapeamento, envie a RD para o piloto e aguarde o preenchimento.",
+                "warning",
+            )
+            return redirect(url_for("main.agro_orcamentos_template_mapeamento"))
+
         contrato = orcamento.contrato
         equipes_ativas = _build_agro_equipes_ativas()
         errors = {}
@@ -4535,6 +5005,9 @@ def register_routes(bp):
                     orcamento=orcamento,
                 )
                 db.session.add(contrato)
+
+            if contrato.equipe_agro_id is None and getattr(orcamento, "rd_mapeamento", None) and orcamento.rd_mapeamento.equipe_agro_id:
+                contrato.equipe_agro_id = orcamento.rd_mapeamento.equipe_agro_id
 
             contrato.contratante_nome = form["contratante_nome"]
             contrato.contratante_documento = doc_digits

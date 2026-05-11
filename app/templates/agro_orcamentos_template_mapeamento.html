@@ -14,11 +14,11 @@
   <div class="listing-header agro-template-page-header mb-4">
     <div class="agro-template-page-copy">
       <h2 class="text-dark m-0">
-        <i class="bi bi-diagram-3-fill me-2 text-primary"></i>Contratos Aprovados 
+        <i class="bi bi-map-fill me-2 text-primary"></i>Template de Mapeamento
       </h2>
       <p class="text-muted small mb-0">
-        Contratos aprovados aguardando definicao da equipe e ajuste do fluxo operacional.
-        Depois dessa etapa, a OS fica pronta para seguir no painel do piloto.
+        Orcamentos com mapeamento aguardando definicao ou ajuste da equipe antes do contrato.
+        Depois disso, a RD fica disponivel para preenchimento do piloto.
         Total: <strong>{{ filters.total }}</strong>
       </p>
     </div>
@@ -33,13 +33,13 @@
         </button>
         <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
           <li>
-            <a href="{{ url_for('main.agro_contratos_listar') }}" class="dropdown-item py-2">
-              <i class="bi bi-file-earmark-text-fill text-primary me-2"></i> Contratos
+            <a href="{{ url_for('main.agro_orcamentos_listar') }}" class="dropdown-item py-2">
+              <i class="bi bi-file-earmark-text text-primary me-2"></i> Orçamentos
             </a>
           </li>
           <li>
-            <a href="{{ url_for('main.agro_orcamentos_listar') }}" class="dropdown-item py-2">
-              <i class="bi bi-file-earmark-text text-primary me-2"></i> Orcamentos
+            <a href="{{ url_for('main.agro_contratos_template') }}" class="dropdown-item py-2">
+              <i class="bi bi-diagram-3-fill text-primary me-2"></i> Template operacional
             </a>
           </li>
         </ul>
@@ -50,7 +50,7 @@
   <div class="card shadow-sm rounded-4 mb-4 border-0">
     <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center listing-filter-header"
          data-bs-toggle="collapse"
-         data-bs-target="#collapseFiltrosContratosTemplate"
+         data-bs-target="#collapseFiltrosTemplateMapeamento"
          aria-expanded="{{ 'true' if (filters.q or filters.equipe_id) else 'false' }}">
       <div class="d-flex align-items-center gap-2">
         <i class="bi bi-funnel-fill text-primary"></i>
@@ -62,9 +62,9 @@
       <i class="bi bi-chevron-down text-muted"></i>
     </div>
 
-    <div class="collapse {% if filters.q or filters.equipe_id %}show{% endif %}" id="collapseFiltrosContratosTemplate">
+    <div class="collapse {% if filters.q or filters.equipe_id %}show{% endif %}" id="collapseFiltrosTemplateMapeamento">
       <div class="card-body pt-0 listing-filter-body">
-        <form method="GET" action="{{ url_for('main.agro_contratos_template') }}">
+        <form method="GET" action="{{ url_for('main.agro_orcamentos_template_mapeamento') }}">
           <div class="row g-2 align-items-end">
             <div class="col-md-7">
               <label class="small text-muted mb-1">Busca geral:</label>
@@ -73,7 +73,7 @@
                 class="form-control form-control-sm"
                 name="q"
                 value="{{ filters.q }}"
-                placeholder="Cliente, fazenda, contratante ou protocolo..."
+                placeholder="Cliente, fazenda, cultura, serviço ou protocolo..."
               >
             </div>
 
@@ -93,7 +93,7 @@
               </button>
 
               {% if filters.q or filters.equipe_id %}
-                <a href="{{ url_for('main.agro_contratos_template') }}" class="btn btn-outline-secondary btn-sm">
+                <a href="{{ url_for('main.agro_orcamentos_template_mapeamento') }}" class="btn btn-outline-secondary btn-sm">
                   <i class="bi bi-x-lg"></i> Limpar
                 </a>
               {% endif %}
@@ -110,78 +110,70 @@
         <table class="table table-hover align-middle mb-0 listing-table agro-contratos-table">
           <thead class="table-light">
             <tr>
-              <th>Contrato</th>
-              <th>Servico / Fazenda</th>
-              <th>Dados comerciais</th>
-              <th style="min-width: 320px;">Planejamento operacional</th>
-              <th>Acoes</th>
+              <th>Orçamento</th>
+              <th>Operação</th>
+              <th>Comercial</th>
+              <th style="min-width: 320px;">Template de mapeamento</th>
+              <th>Ações</th>
             </tr>
           </thead>
           <tbody>
-            {% for contrato in contratos %}
-              {% set os_count = contrato.ordens_servico|length %}
+            {% for orcamento in orcamentos %}
+              {% set rd = orcamento.rd_mapeamento %}
               <tr>
-                <td data-label="Contrato">
-                  <div class="fw-bold">#{{ contrato.id }} - {{ contrato.orcamento.cliente_nome }}</div>
-                  <div class="text-muted small">{{ contrato.contratante_nome }}</div>
-                  <div class="text-muted small">Atualizado em {{ contrato.atualizado_em.strftime('%d/%m/%Y %H:%M') }}</div>
+                <td data-label="Orçamento">
+                  <div class="fw-bold">#{{ orcamento.id }} - {{ orcamento.cliente_nome }}</div>
+                  <div class="text-muted small">{{ orcamento.cliente_documento or '-' }}</div>
+                  <div class="text-muted small">Criado em {{ orcamento.data_criacao.strftime('%d/%m/%Y %H:%M') }}</div>
                 </td>
 
-                <td data-label="Servico / Fazenda">
-                  <div class="fw-semibold">{{ contrato.propriedade_nome or contrato.orcamento.nome_fazenda or '-' }}</div>
-                  <div class="text-muted small">{{ contrato.descricao_servico or '-' }}</div>
-                  <div class="text-muted small">
-                    Protocolo: {{ contrato.orcamento.protocolo or 'Nao informado' }}
-                  </div>
+                <td data-label="Operação">
+                  <div class="fw-semibold">{{ orcamento.nome_fazenda or '-' }}</div>
+                  <div class="text-muted small">{{ orcamento.servico or '-' }}</div>
+                  <div class="text-muted small">Protocolo: {{ orcamento.protocolo or 'Não informado' }}</div>
                 </td>
 
-                <td data-label="Dados comerciais">
-                  <div class="fw-bold">{{ contrato.valor_total|currencybr or '-' }}</div>
-                  <div class="text-muted small">Assinatura: {{ contrato.data_assinatura.strftime('%d/%m/%Y') if contrato.data_assinatura else '-' }}</div>
-                  <div class="text-muted small">Culturas: {{ contrato.culturas_formatadas or 'Nao informadas' }}</div>
+                <td data-label="Comercial">
+                  <div class="fw-bold">{{ orcamento.valor_total_calculado|currencybr or '-' }}</div>
+                  <div class="text-muted small">Área: {{ orcamento.area_ha_formatada ~ ' ha' if orcamento.area_ha_formatada else '-' }}</div>
+                  <div class="text-muted small">Culturas: {{ orcamento.culturas_formatadas or 'Não informadas' }}</div>
                 </td>
 
-                <td data-label="Planejamento operacional">
+                <td data-label="Template de mapeamento">
                   <div class="agro-template-panel">
                     <div class="agro-template-summary">
                       <div class="agro-template-meta">
-                        <span class="badge {% if contrato.equipe %}bg-success-subtle text-success border border-success-subtle{% else %}bg-light text-dark border{% endif %}">
-                          {{ contrato.equipe.nome if contrato.equipe else 'Sem equipe definida' }}
+                        <span class="badge {% if rd and rd.equipe %}bg-success-subtle text-success border border-success-subtle{% else %}bg-light text-dark border{% endif %}">
+                          {{ rd.equipe.nome if rd and rd.equipe else 'Sem equipe definida' }}
                         </span>
-                        {% if os_count %}
-                          <span class="badge bg-success-subtle text-success border border-success-subtle">OS geradas: {{ os_count }}</span>
-                        {% elif contrato.equipe_agro_id %}
-                          <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Aguardando criacao da OS</span>
+                        {% if rd and rd.status == 'PREENCHIDO' %}
+                          <span class="badge bg-success-subtle text-success border border-success-subtle">RD preenchida</span>
+                        {% elif rd %}
+                          <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Aguardando piloto</span>
                         {% else %}
-                          <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Definir equipe</span>
+                          <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Equipe pendente</span>
                         {% endif %}
                       </div>
                     </div>
 
-                    <form method="POST" action="{{ url_for('main.agro_contrato_template_salvar', contrato_id=contrato.id) }}" class="agro-template-form">
+                    <form method="POST" action="{{ url_for('main.agro_orcamento_template_mapeamento_salvar', orcamento_id=orcamento.id) }}" class="agro-template-form">
                       <div class="agro-template-field agro-template-field-equipe">
                         <label class="small text-muted mb-1">Equipe</label>
                         <select class="form-select form-select-sm" name="equipe_agro_id">
                           <option value="">Selecione...</option>
                           {% for equipe in equipes_ativas %}
-                            <option value="{{ equipe.id }}" {% if contrato.equipe_agro_id == equipe.id %}selected{% endif %}>{{ equipe.nome }}</option>
+                            <option value="{{ equipe.id }}" {% if rd and rd.equipe_agro_id == equipe.id %}selected{% endif %}>{{ equipe.nome }}</option>
                           {% endfor %}
                         </select>
                       </div>
 
                       <div class="agro-template-field agro-template-field-status">
                         <label class="small text-muted mb-1">Status</label>
-                        <select class="form-select form-select-sm" name="status">
-                          {% for status_value in status_options %}
-                            <option value="{{ status_value }}" {% if contrato.status == status_value %}selected{% endif %}>
-                              {% if status_value == 'APROVADO' %}Aprovado{% else %}Em elaboracao{% endif %}
-                            </option>
-                          {% endfor %}
-                        </select>
+                        <input type="text" class="form-control form-control-sm" value="{{ rd.status if rd else 'Aguardando envio' }}" readonly>
                       </div>
 
                       <div class="agro-template-submit">
-                        <button type="submit" class="btn btn-primary btn-sm agro-template-save-btn" title="Salvar no operacional" aria-label="Salvar no operacional">
+                        <button type="submit" class="btn btn-primary btn-sm agro-template-save-btn" title="Salvar template de mapeamento" aria-label="Salvar template de mapeamento">
                           <i class="bi bi-check-lg"></i>
                           <span class="visually-hidden">Salvar</span>
                         </button>
@@ -190,30 +182,29 @@
                   </div>
                 </td>
 
-                <td data-label="Acoes" class="listing-cell-actions">
+                <td data-label="Ações" class="listing-cell-actions">
                   <div class="dropup agro-actions-dropdown">
-                    <button class="btn btn-outline-secondary agro-actions-trigger" type="button" data-bs-toggle="dropdown" data-bs-offset="0,8" aria-expanded="false" title="Mais acoes">
+                    <button class="btn btn-outline-secondary agro-actions-trigger" type="button" data-bs-toggle="dropdown" data-bs-offset="0,8" aria-expanded="false" title="Mais ações">
                       <i class="bi bi-three-dots-vertical"></i>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
                       <li>
-                        <a href="{{ url_for('main.agro_contrato_editar', orcamento_id=contrato.orcamento.id) }}" class="dropdown-item py-2">
-                          <i class="bi bi-pencil-square text-success me-2"></i> Editar contrato
+                        <a href="{{ url_for('main.agro_orcamento_editar', orcamento_id=orcamento.id) }}" class="dropdown-item py-2">
+                          <i class="bi bi-pencil-square text-success me-2"></i> Editar orçamento
                         </a>
                       </li>
                       <li>
-                        <a href="{{ url_for('main.agro_contrato_pdf', orcamento_id=contrato.orcamento.id) }}" target="_blank" class="dropdown-item py-2">
-                          <i class="bi bi-filetype-pdf text-danger me-2"></i> PDF do contrato
+                        <a href="{{ url_for('main.agro_rd_mapeamento_editar', orcamento_id=orcamento.id) }}" class="dropdown-item py-2">
+                          <i class="bi bi-map text-primary me-2"></i> Abrir RD de mapeamento
                         </a>
                       </li>
-                      <li><hr class="dropdown-divider"></li>
-                      <li>
-                        <form class="m-0" method="POST" action="{{ url_for('main.agro_contrato_deletar', contrato_id=contrato.id) }}" onsubmit="return confirm('Tem certeza que deseja excluir este contrato agro? Exclua antes as OS vinculadas, se houver.');">
-                          <button type="submit" class="dropdown-item py-2 text-danger">
-                            <i class="bi bi-trash me-2"></i> Excluir contrato
-                          </button>
-                        </form>
-                      </li>
+                      {% if rd and rd.status == 'PREENCHIDO' %}
+                        <li>
+                          <a href="{{ url_for('main.agro_contrato_editar', orcamento_id=orcamento.id) }}" class="dropdown-item py-2">
+                            <i class="bi bi-file-earmark-text text-primary me-2"></i> Montar contrato
+                          </a>
+                        </li>
+                      {% endif %}
                     </ul>
                   </div>
                 </td>
@@ -221,7 +212,7 @@
             {% else %}
               <tr>
                 <td colspan="5" class="text-center py-5">
-                  <p class="text-muted mb-0">Nenhum contrato pronto para o operacional foi encontrado com os filtros aplicados.</p>
+                  <p class="text-muted mb-0">Nenhum orçamento com mapeamento pendente encontrado.</p>
                 </td>
               </tr>
             {% endfor %}

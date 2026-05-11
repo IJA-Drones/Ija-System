@@ -29,6 +29,12 @@
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
 
+      {% if is_admin_agro %}
+        <a href="{{ url_for('main.agro_orcamentos_template_mapeamento') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
+          <i class="bi bi-map"></i> Listagem de Mapeamentos
+        </a>
+      {% endif %}
+
       {% if is_editable %}
         <a href="{{ url_for('main.agro_orcamento_novo') }}" class="btn btn-success d-flex align-items-center gap-2">
           <i class="bi bi-plus-lg"></i> Novo Orçamento
@@ -138,6 +144,18 @@
                       <span class="agro-orcamentos-dot">•</span> {{ orcamento.culturas_formatadas }}
                     {% endif %}
                   </div>
+                  {% if orcamento.inclui_mapeamento %}
+                    <div class="d-flex flex-wrap gap-1 mt-2">
+                      <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Mapeamento</span>
+                      {% if orcamento.rd_mapeamento and orcamento.rd_mapeamento.status == 'PREENCHIDO' %}
+                        <span class="badge bg-success-subtle text-success border border-success-subtle">RD preenchida</span>
+                      {% elif orcamento.rd_mapeamento %}
+                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle">RD aguardando piloto</span>
+                      {% else %}
+                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">RD não enviada</span>
+                      {% endif %}
+                    </div>
+                  {% endif %}
                 </td>
 
                 <td data-label="Valores">
@@ -189,16 +207,42 @@
                       </li>
 
                       {% if is_editable %}
-                        <li>
-                          <a href="{{ url_for('main.agro_contrato_editar', orcamento_id=orcamento.id) }}" class="dropdown-item py-2">
-                            <i class="bi bi-file-earmark-text text-primary me-2"></i>
-                            {{ 'Editar contrato' if orcamento.contrato else 'Montar contrato' }}
-                          </a>
-                        </li>
+                        {% if (not orcamento.contrato) and orcamento.inclui_mapeamento and (not orcamento.rd_mapeamento or orcamento.rd_mapeamento.status != 'PREENCHIDO') %}
+                          <li>
+                            <a href="{{ url_for('main.agro_orcamentos_template_mapeamento') }}" class="dropdown-item py-2">
+                              <i class="bi bi-map-fill text-primary me-2"></i> Listagem de Mapeamentos
+                            </a>
+                          </li>
+                          <li>
+                            <a href="{{ url_for('main.agro_rd_mapeamento_editar', orcamento_id=orcamento.id) }}" class="dropdown-item py-2">
+                              <i class="bi bi-map text-primary me-2"></i>
+                              {{ 'Acompanhar RD de mapeamento' if orcamento.rd_mapeamento else 'Preencher RD de mapeamento' }}
+                            </a>
+                          </li>
+                          <li>
+                            <span class="dropdown-item-text py-2 text-muted">
+                              <i class="bi bi-lock me-2"></i> Contrato liberado após a RD
+                            </span>
+                          </li>
+                        {% else %}
+                          <li>
+                            <a href="{{ url_for('main.agro_contrato_editar', orcamento_id=orcamento.id) }}" class="dropdown-item py-2">
+                              <i class="bi bi-file-earmark-text text-primary me-2"></i>
+                              {{ 'Editar contrato' if orcamento.contrato else 'Montar contrato' }}
+                            </a>
+                          </li>
+                          {% if orcamento.inclui_mapeamento %}
+                            <li>
+                              <a href="{{ url_for('main.agro_rd_mapeamento_editar', orcamento_id=orcamento.id) }}" class="dropdown-item py-2">
+                                <i class="bi bi-map text-primary me-2"></i> Ver RD de mapeamento
+                              </a>
+                            </li>
+                          {% endif %}
+                        {% endif %}
                         {% if orcamento.contrato and orcamento.contrato.status == 'APROVADO' %}
                           <li>
                             <a href="{{ url_for('main.agro_contratos_template') }}" class="dropdown-item py-2">
-                              <i class="bi bi-diagram-3 text-primary me-2"></i> Abrir template operacional
+                              <i class="bi bi-diagram-3 text-primary me-2"></i> Abrir listagem operacional
                             </a>
                           </li>
                         {% endif %}
@@ -310,6 +354,16 @@
                   <dt>Mapeamento</dt>
                   <dd>{{ agro_bool_label(orcamento.inclui_mapeamento) }}</dd>
                 </div>
+                {% if orcamento.inclui_mapeamento %}
+                  <div>
+                    <dt>Status RD</dt>
+                    <dd>{{ orcamento.rd_mapeamento.status if orcamento.rd_mapeamento else "Não enviada" }}</dd>
+                  </div>
+                  <div>
+                    <dt>Equipe RD</dt>
+                    <dd>{{ orcamento.rd_mapeamento.equipe.nome if orcamento.rd_mapeamento and orcamento.rd_mapeamento.equipe else "-" }}</dd>
+                  </div>
+                {% endif %}
                 <div>
                   <dt>Protocolo</dt>
                   <dd>{{ orcamento.protocolo or "Não informado" }}</dd>

@@ -5,6 +5,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/chatbot.css') }}">
   <style>
     .agro-dashboard-page {
       max-width: 1200px;
@@ -110,7 +111,7 @@
         <i class="bi bi-tree-fill me-2 text-primary"></i> Painel Agro
       </h2>
       <p class="text-muted small mb-0">
-        Acesso rapido aos modulos principais do Agro, sem sobrecarregar a tela inicial.
+        Acesso rapido aos fluxos comercial, operacional e financeiro do Agro.
       </p>
     </div>
 
@@ -158,7 +159,7 @@
     <div class="col-6 col-lg-3">
       <div class="card border-0 shadow-sm rounded-4 h-100">
         <div class="card-body">
-          <small class="text-muted fw-bold text-uppercase" style="font-size: 0.68rem;">Contratos Aprovados</small>
+          <small class="text-muted fw-bold text-uppercase" style="font-size: 0.68rem;">Fila Operacional</small>
           <h3 class="fw-bold mb-0 text-dark mt-2">{{ total_contratos_agro_aprovados }}</h3>
           <div class="small text-muted mt-1">de {{ total_contratos_agro }} contrato(s) no total</div>
         </div>
@@ -168,7 +169,7 @@
     <div class="col-6 col-lg-3">
       <div class="card border-0 shadow-sm rounded-4 h-100">
         <div class="card-body">
-          <small class="text-muted fw-bold text-uppercase" style="font-size: 0.68rem;">Pendencias</small>
+          <small class="text-muted fw-bold text-uppercase" style="font-size: 0.68rem;">Pendencias Financeiras</small>
           <h3 class="fw-bold mb-0 text-warning mt-2">{{ total_financeiros_agro_pendentes }}</h3>
           <div class="small text-muted mt-1">de {{ total_financeiros_agro }} registro(s) financeiros</div>
         </div>
@@ -183,7 +184,7 @@
           <h5 class="text-dark mb-1">
             <i class="bi bi-briefcase-fill me-2 text-primary"></i> Comercial
           </h5>
-          <p class="text-muted small mb-0">Fluxo de relacionamento, proposta e contrato.</p>
+          <p class="text-muted small mb-0">Cadastros, propostas e contratos antes da execucao em campo.</p>
         </div>
         <div class="card-body pt-0">
           <div class="agro-menu-list">
@@ -245,8 +246,8 @@
                   <i class="bi bi-diagram-3-fill"></i>
                 </span>
                 <div class="agro-menu-copy">
-                  <span class="agro-menu-title">Contratos Aprovados</span>
-                  <span class="agro-menu-subtitle">{{ total_contratos_agro_aprovados }} pronto(s) para fluxo operacional</span>
+                  <span class="agro-menu-title">Operacional</span>
+                  <span class="agro-menu-subtitle">{{ total_contratos_agro_aprovados }} contrato(s) pronto(s) para seguir para a operacao</span>
                 </div>
               </div>
               <i class="bi bi-arrow-right text-muted"></i>
@@ -260,9 +261,9 @@
       <div class="card border-0 shadow-sm rounded-4 h-100">
         <div class="card-header bg-white border-0 p-4 pb-3">
           <h5 class="text-dark mb-1">
-            <i class="bi bi-gear-fill me-2 text-primary"></i> Operacao
+            <i class="bi bi-gear-fill me-2 text-primary"></i> Operacional
           </h5>
-          <p class="text-muted small mb-0">Execucao, equipes, pilotos e estrutura de campo.</p>
+          <p class="text-muted small mb-0">Planejamento, equipes, pilotos e estrutura da execucao em campo.</p>
         </div>
         <div class="card-body pt-0">
           <div class="agro-menu-list">
@@ -272,8 +273,8 @@
                   <i class="bi bi-journal-check"></i>
                 </span>
                 <div class="agro-menu-copy">
-                  <span class="agro-menu-title">OS Agro</span>
-                  <span class="agro-menu-subtitle">{{ total_ordens_servico_agro }} ordem(ns)</span>
+                  <span class="agro-menu-title">Ordens de Servico</span>
+                  <span class="agro-menu-subtitle">{{ total_ordens_servico_agro }} OS cadastrada(s)</span>
                 </div>
               </div>
               <i class="bi bi-arrow-right text-muted"></i>
@@ -285,8 +286,8 @@
                   <i class="bi bi-person-badge-fill"></i>
                 </span>
                 <div class="agro-menu-copy">
-                  <span class="agro-menu-title">Pilotos</span>
-                  <span class="agro-menu-subtitle">{{ total_pilotos_agro }} piloto(s)</span>
+                  <span class="agro-menu-title">Pilotos Operacionais</span>
+                  <span class="agro-menu-subtitle">{{ total_pilotos_agro }} piloto(s) disponivel(is)</span>
                 </div>
               </div>
               <i class="bi bi-arrow-right text-muted"></i>
@@ -298,8 +299,8 @@
                   <i class="bi bi-people-fill"></i>
                 </span>
                 <div class="agro-menu-copy">
-                  <span class="agro-menu-title">Equipes</span>
-                  <span class="agro-menu-subtitle">{{ total_equipes_agro }} equipe(s)</span>
+                  <span class="agro-menu-title">Equipes Operacionais</span>
+                  <span class="agro-menu-subtitle">{{ total_equipes_agro }} equipe(s) cadastrada(s)</span>
                 </div>
               </div>
               <i class="bi bi-arrow-right text-muted"></i>
@@ -311,8 +312,8 @@
                   <i class="bi bi-cpu-fill"></i>
                 </span>
                 <div class="agro-menu-copy">
-                  <span class="agro-menu-title">Equipamentos</span>
-                  <span class="agro-menu-subtitle">{{ total_equipamentos_agro }} item(ns)</span>
+                  <span class="agro-menu-title">Equipamentos Operacionais</span>
+                  <span class="agro-menu-subtitle">{{ total_equipamentos_agro }} item(ns) para uso em campo</span>
                 </div>
               </div>
               <i class="bi bi-arrow-right text-muted"></i>
@@ -328,7 +329,7 @@
           <h5 class="text-dark mb-1">
             <i class="bi bi-cash-coin me-2 text-primary"></i> Financeiro
           </h5>
-          <p class="text-muted small mb-0">Caixa, recebiveis, bancos e movimentacoes manuais.</p>
+          <p class="text-muted small mb-0">Caixa, contas, bancos e lancamentos manuais do Agro.</p>
         </div>
         <div class="card-body pt-0">
           <div class="agro-menu-list">
@@ -339,7 +340,7 @@
                 </span>
                 <div class="agro-menu-copy">
                   <span class="agro-menu-title">Caixa Diario</span>
-                  <span class="agro-menu-subtitle">Fechamento e conferencia</span>
+                  <span class="agro-menu-subtitle">Fechamento diario e conferencia de caixa</span>
                 </div>
               </div>
               <i class="bi bi-arrow-right text-muted"></i>
@@ -352,7 +353,7 @@
                 </span>
                 <div class="agro-menu-copy">
                   <span class="agro-menu-title">Contas</span>
-                  <span class="agro-menu-subtitle">Pagar e receber em visao central</span>
+                  <span class="agro-menu-subtitle">Visao central de contas a pagar e a receber</span>
                 </div>
               </div>
               <i class="bi bi-arrow-right text-muted"></i>
@@ -364,8 +365,8 @@
                   <i class="bi bi-receipt-cutoff"></i>
                 </span>
                 <div class="agro-menu-copy">
-                  <span class="agro-menu-title">Recebiveis</span>
-                  <span class="agro-menu-subtitle">{{ total_financeiros_agro }} registro(s)</span>
+                  <span class="agro-menu-title">Recebimentos</span>
+                  <span class="agro-menu-subtitle">{{ total_financeiros_agro }} registro(s) a acompanhar</span>
                 </div>
               </div>
               <i class="bi bi-arrow-right text-muted"></i>
@@ -377,8 +378,8 @@
                   <i class="bi bi-bank"></i>
                 </span>
                 <div class="agro-menu-copy">
-                  <span class="agro-menu-title">Bancos Agro</span>
-                  <span class="agro-menu-subtitle">Contas e saldos</span>
+                  <span class="agro-menu-title">Bancos</span>
+                  <span class="agro-menu-subtitle">Contas bancarias e saldos do Agro</span>
                 </div>
               </div>
               <i class="bi bi-arrow-right text-muted"></i>
@@ -428,4 +429,30 @@
     </div>
   </div>
 </div>
+
+{% set chatbot_id_prefix = 'agroAdminBot' %}
+{% set chatbot_title = 'Ajuda do Agro' %}
+{% set chatbot_badge = 'FAQ Admin Agro' %}
+{% set chatbot_button_title = 'Ajuda do Agro administrativo' %}
+{% set chatbot_placeholder = 'Pergunte sobre clientes, orcamentos, contratos ou OS...' %}
+{% set chatbot_api_url = url_for('main.agro_admin_chatbot') %}
+{% set chatbot_chips = [
+  {'label': 'Fluxo completo', 'question': 'Qual e o fluxo completo do Agro?'},
+  {'label': 'Novo cliente', 'question': 'Como cadastrar um cliente?'},
+  {'label': 'Novo orcamento', 'question': 'Como criar um orcamento?'},
+  {'label': 'RD de mapeamento', 'question': 'Quando usar RD de mapeamento?'},
+  {'label': 'Contrato', 'question': 'Como montar o contrato pelo sistema?'},
+  {'label': 'Financeiro', 'question': 'Como funciona o financeiro do Agro?'}
+] %}
+{% set chatbot_welcome_html %}
+Ola! Sou o <strong>assistente do Agro administrativo</strong>.<br>
+Posso te ajudar com:<br>
+- fluxo completo do Agro<br>
+- cadastro de clientes e fornecedores<br>
+- orcamentos, RD de mapeamento e contratos<br>
+- acompanhamento de OS e relatorio final<br>
+- contas, caixa, bancos e recebimentos<br><br>
+Como posso te ajudar hoje?
+{% endset %}
+{% include "_chatbot_widget.html" %}
 {% endblock %}

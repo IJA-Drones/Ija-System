@@ -5,6 +5,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/listing_pattern.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/piloto_agro.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/chatbot.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -16,11 +17,14 @@
           <i class="bi bi-tree-fill me-2 text-primary"></i>Painel do Piloto Agro
         </h2>
         <p class="text-muted small mb-0">
-          Acompanhe os contratos aprovados, continue as OS em andamento e consulte os recursos da sua equipe.
+          Acompanhe as RDs de mapeamento, os contratos aprovados, continue as OS em andamento e consulte os recursos da sua equipe.
         </p>
       </div>
 
       <div class="listing-actions agro-pilot-header-actions">
+        <a href="{{ url_for('main.agro_piloto_mapeamentos_listar') }}" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2">
+          <i class="bi bi-map"></i> Meus mapeamentos
+        </a>
         <a href="{{ url_for('main.agro_piloto_os_listar') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
           <i class="bi bi-clipboard2-data"></i> Minhas OS
         </a>
@@ -39,13 +43,17 @@
             </span>
             <h3 class="fw-bold text-dark mb-2">Ola, {{ piloto.nome }}</h3>
             <p class="text-muted mb-3">
-              Este painel mostra primeiro o que exige acao da sua equipe: contratos prontos para virar OS e ordens de servico que ainda precisam de continuidade.
+              Este painel mostra primeiro o que exige acao da sua equipe: RDs de mapeamento pendentes, contratos prontos para virar OS e ordens de servico que ainda precisam de continuidade.
             </p>
 
             <div class="agro-pilot-overview-tags">
               <span class="agro-pilot-overview-tag">
                 <i class="bi bi-diagram-3-fill"></i>
                 {{ equipe.nome if equipe else "Sem equipe vinculada" }}
+              </span>
+              <span class="agro-pilot-overview-tag">
+                <i class="bi bi-map-fill"></i>
+                {{ rds_pendentes|length }} RD(s) pendentes
               </span>
               <span class="agro-pilot-overview-tag">
                 <i class="bi bi-clipboard2-check-fill"></i>
@@ -63,7 +71,9 @@
               <small class="text-uppercase fw-semibold text-muted d-block mb-2">Foco atual</small>
               <h5 class="fw-bold text-dark mb-2">{{ total_demandas_prioritarias }} item(ns) pedindo acao</h5>
               <p class="text-muted small mb-0">
-                {% if contratos_sem_os %}
+                {% if rds_pendentes %}
+                  Ha RDs de mapeamento aguardando preenchimento.
+                {% elif contratos_sem_os %}
                   Ha contratos aprovados aguardando criacao de OS.
                 {% elif ordens_ativas %}
                   Existem ordens de servico em aberto para a sua equipe continuar.
@@ -83,7 +93,17 @@
           <div class="card-body">
             <small class="text-muted d-block mb-1">Demandas prioritarias</small>
             <h4 class="fw-bold text-dark mb-1">{{ total_demandas_prioritarias }}</h4>
-            <span class="text-muted small">Contratos sem OS e OS em andamento.</span>
+            <span class="text-muted small">RDs pendentes, contratos sem OS e OS em andamento.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-sm-6 col-xl-3">
+        <div class="card shadow-sm rounded-4 border-0 agro-pilot-stat h-100">
+          <div class="card-body">
+            <small class="text-muted d-block mb-1">RDs pendentes</small>
+            <h4 class="fw-bold text-dark mb-1">{{ rds_pendentes|length }}</h4>
+            <span class="text-muted small">Mapeamentos aguardando preenchimento.</span>
           </div>
         </div>
       </div>
@@ -133,8 +153,41 @@
               </span>
             </div>
 
-            {% if contratos_sem_os or ordens_ativas %}
+            {% if rds_pendentes or contratos_sem_os or ordens_ativas %}
               <div class="agro-pilot-demand-groups">
+                {% if rds_pendentes %}
+                  <div class="agro-pilot-demand-group">
+                    <div class="agro-pilot-group-head">
+                      <h6 class="fw-bold mb-0">RDs de mapeamento pendentes</h6>
+                      <span class="text-muted small">{{ rds_pendentes|length }} pendencia(s)</span>
+                    </div>
+
+                    <div class="agro-pilot-demand-list">
+                      {% for rd in rds_pendentes %}
+                        <article class="agro-pilot-demand-item">
+                          <div class="agro-pilot-demand-main">
+                            <div class="agro-pilot-demand-title">
+                              <strong>#{{ rd.id }} - {{ rd.propriedade_nome or rd.orcamento.nome_fazenda or "-" }}</strong>
+                              <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Preencher RD</span>
+                            </div>
+                            <div class="text-muted small">{{ rd.cliente_nome }} - {{ rd.tipo_servico or rd.orcamento.servico or "-" }}</div>
+                            <div class="agro-pilot-demand-meta">
+                              <span><i class="bi bi-geo-alt"></i> {{ rd.municipio or "-" }}/{{ rd.uf or "-" }}</span>
+                              <span><i class="bi bi-clock-history"></i> Enviado em {{ rd.enviado_em.strftime('%d/%m/%Y %H:%M') if rd.enviado_em else '-' }}</span>
+                              <span><i class="bi bi-flower1"></i> {{ rd.cultura or rd.orcamento.culturas_formatadas or "-" }}</span>
+                            </div>
+                          </div>
+                          <div class="agro-pilot-demand-action">
+                            <a href="{{ url_for('main.agro_piloto_rd_mapeamento', rd_id=rd.id) }}" class="btn btn-success btn-sm d-flex align-items-center gap-2">
+                              <i class="bi bi-map"></i> Abrir RD
+                            </a>
+                          </div>
+                        </article>
+                      {% endfor %}
+                    </div>
+                  </div>
+                {% endif %}
+
                 {% if contratos_sem_os %}
                   <div class="agro-pilot-demand-group">
                     <div class="agro-pilot-group-head">
@@ -207,7 +260,7 @@
                   <i class="bi bi-check2-circle"></i>
                 </div>
                 <h6 class="fw-bold text-dark mb-1">Sem pendencias prioritarias</h6>
-                <p class="text-muted mb-0">Quando surgir um contrato aguardando OS ou uma OS aberta, ele aparecera aqui.</p>
+                <p class="text-muted mb-0">Quando surgir uma RD pendente, um contrato aguardando OS ou uma OS aberta, ele aparecera aqui.</p>
               </div>
             {% endif %}
           </div>
@@ -255,10 +308,15 @@
                 <span>OS concluidas</span>
                 <strong>{{ ordens_concluidas|length }}</strong>
               </div>
+              <div class="agro-pilot-profile-item">
+                <span>RDs pendentes</span>
+                <strong>{{ rds_pendentes|length }}</strong>
+              </div>
             </div>
 
             <div class="agro-pilot-help-box mt-4">
               <small class="text-uppercase fw-semibold d-block mb-2">Leitura rapida</small>
+              <p class="small mb-2">Use <strong>Abrir RD</strong> para preencher o relatorio operacional de mapeamento antes da criacao do contrato.</p>
               <p class="small mb-2">Use <strong>Criar OS</strong> quando o contrato aprovado ainda nao entrou em operacao.</p>
               <p class="small mb-0">Use <strong>Continuar</strong> quando a OS da equipe ja existe e ainda precisa de preenchimento.</p>
             </div>
@@ -314,4 +372,30 @@
     </section>
   </div>
 </div>
+
+{% set chatbot_id_prefix = 'agroPilotBot' %}
+{% set chatbot_title = 'Ajuda do Piloto Agro' %}
+{% set chatbot_badge = 'FAQ Operacional' %}
+{% set chatbot_button_title = 'Ajuda do piloto Agro' %}
+{% set chatbot_placeholder = 'Pergunte sobre RD, OS, checklist ou finalizacao...' %}
+{% set chatbot_api_url = url_for('main.agro_piloto_chatbot') %}
+{% set chatbot_chips = [
+  {'label': 'Fluxo do piloto', 'question': 'Qual e o fluxo do piloto Agro?'},
+  {'label': 'Minhas OS', 'question': 'Como funciona Minhas OS?'},
+  {'label': 'RD', 'question': 'Como preencher uma RD de mapeamento?'},
+  {'label': 'Criar OS', 'question': 'Como criar ou continuar uma OS?'},
+  {'label': 'Checklist', 'question': 'Qual o checklist antes da operacao?'},
+  {'label': 'Finalizar', 'question': 'Como finalizar o servico corretamente?'}
+] %}
+{% set chatbot_welcome_html %}
+Ola! Sou o <strong>assistente do piloto Agro</strong>.<br>
+Posso te ajudar com:<br>
+- fluxo operacional do piloto<br>
+- leitura e preenchimento de RD de mapeamento<br>
+- criacao e continuidade da OS<br>
+- checklist antes da operacao<br>
+- finalizacao correta para liberar o relatorio final<br><br>
+Se quiser, pergunte pelo fluxo inteiro ou por uma etapa especifica.
+{% endset %}
+{% include "_chatbot_widget.html" %}
 {% endblock %}

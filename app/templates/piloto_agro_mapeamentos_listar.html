@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/listing_pattern.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 listing-page">
+  <div class="listing-header mb-4">
+    <div>
+      <h2 class="text-dark m-0">
+        <i class="bi bi-map-fill me-2 text-primary"></i>Meus Mapeamentos
+      </h2>
+      <p class="text-muted small mb-0">
+        {% if equipe %}
+          Equipe: <strong>{{ equipe.nome }}</strong>
+        {% else %}
+          Sem equipe vinculada.
+        {% endif %}
+        Total: <strong>{{ filters.total }}</strong>
+      </p>
+    </div>
+
+    <div class="listing-actions">
+      <a href="{{ url_for('main.agro_piloto_dashboard') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  <div class="card shadow-sm rounded-4 mb-4 border-0">
+    <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center listing-filter-header"
+         data-bs-toggle="collapse"
+         data-bs-target="#collapseFiltrosMapeamentosPilotoAgro"
+         aria-expanded="{{ 'true' if (filters.q or filters.status) else 'false' }}">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-funnel-fill text-primary"></i>
+        <span class="text-dark">Filtros</span>
+        {% if filters.q or filters.status %}
+          <span class="badge bg-danger rounded-circle p-1 listing-filter-dot"></span>
+        {% endif %}
+      </div>
+      <i class="bi bi-chevron-down text-muted"></i>
+    </div>
+
+    <div class="collapse {% if filters.q or filters.status %}show{% endif %}" id="collapseFiltrosMapeamentosPilotoAgro">
+      <div class="card-body pt-0 listing-filter-body">
+        <form method="GET" action="{{ url_for('main.agro_piloto_mapeamentos_listar') }}">
+          <div class="row g-2 align-items-end">
+            <div class="col-md-8">
+              <label class="small text-muted mb-1">Busca geral:</label>
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                name="q"
+                value="{{ filters.q }}"
+                placeholder="Cliente, propriedade, municipio, tipo de serviço ou numero..."
+              >
+            </div>
+
+            <div class="col-md-2">
+              <label class="small text-muted mb-1">Status:</label>
+              <select name="status" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for status_value in status_options %}
+                  <option value="{{ status_value }}" {% if filters.status == status_value %}selected{% endif %}>{{ status_value }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-2 listing-filter-actions">
+              <button type="submit" class="btn btn-success btn-sm">
+                <i class="bi bi-funnel"></i> Filtrar
+              </button>
+              {% if filters.q or filters.status %}
+                <a href="{{ url_for('main.agro_piloto_mapeamentos_listar') }}" class="btn btn-outline-secondary btn-sm">
+                  <i class="bi bi-x-lg"></i> Limpar
+                </a>
+              {% endif %}
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm rounded-4 border-0 overflow-hidden listing-table-wrap">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 listing-table">
+          <thead class="table-light">
+            <tr>
+              <th>Mapeamento</th>
+              <th>Operação</th>
+              <th>Equipe</th>
+              <th>Status</th>
+              <th class="col-actions">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for rd in rds_mapeamento %}
+              <tr>
+                <td data-label="Mapeamento">
+                  <div class="fw-bold">#{{ rd.id }} - {{ rd.cliente_nome }}</div>
+                  <div class="text-muted small">{{ rd.tipo_servico or '-' }}</div>
+                  <div class="text-muted small">Número: {{ rd.numero_os or '-' }}</div>
+                </td>
+                <td data-label="Operação">
+                  <div class="fw-semibold">{{ rd.propriedade_nome }}</div>
+                  <div class="text-muted small">{{ rd.municipio or '-' }}/{{ rd.uf or '-' }}</div>
+                  <div class="text-muted small">Cultura: {{ rd.cultura or '-' }}</div>
+                </td>
+                <td data-label="Equipe">
+                  <div class="fw-semibold">{{ rd.equipe.nome if rd.equipe else '-' }}</div>
+                  <div class="text-muted small">Responsável: {{ rd.responsavel_nome or 'Não informado' }}</div>
+                </td>
+                <td data-label="Status">
+                  <span class="badge {% if rd.status == 'PREENCHIDO' %}bg-success-subtle text-success border border-success-subtle{% else %}bg-warning-subtle text-warning border border-warning-subtle{% endif %}">
+                    {{ rd.status }}
+                  </span>
+                  <div class="text-muted small mt-1">
+                    {% if rd.preenchido_em %}
+                      {{ rd.preenchido_em.strftime('%d/%m/%Y %H:%M') }}
+                    {% elif rd.enviado_em %}
+                      Enviado em {{ rd.enviado_em.strftime('%d/%m/%Y %H:%M') }}
+                    {% else %}
+                      Aguardando preenchimento
+                    {% endif %}
+                  </div>
+                </td>
+                <td data-label="Ações" class="listing-cell-actions">
+                  <div class="listing-actions-group">
+                    <a href="{{ url_for('main.agro_piloto_rd_mapeamento', rd_id=rd.id) }}" class="btn btn-sm {% if rd.status == 'PREENCHIDO' %}btn-outline-primary{% else %}btn-success text-white{% endif %} shadow-sm">
+                      <i class="bi bi-pencil-square"></i>
+                      {% if rd.status == 'PREENCHIDO' %}Ver formulário{% else %}Preencher formulário{% endif %}
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="5" class="text-center py-5">
+                  <p class="text-muted mb-0">Nenhum mapeamento encontrado para a equipe logada.</p>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
