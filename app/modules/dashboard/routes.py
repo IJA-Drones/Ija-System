@@ -4,6 +4,7 @@ from flask_login import current_user, login_required
 from app.modules.dashboard.service import (
     DashboardError,
     build_dashboard_context,
+    build_uvis_equipe_os_form_context,
     build_uvis_historico_os_context,
     build_uvis_os_form_context,
 )
@@ -69,5 +70,25 @@ def register_routes(bp):
             respondido_em_value=context["respondido_em_value"],
             drones_equipe=context["drones_equipe"],
             url_voltar=url_for("main.uvis_historico_os"),
+            form_action="#",
+        )
+
+    @bp.route("/uvis/os/<int:os_id>/equipe-formulario", methods=["GET"], endpoint="uvis_equipe_os_formulario_view")
+    @login_required
+    def uvis_equipe_os_formulario_view(os_id):
+        try:
+            context = build_uvis_equipe_os_form_context(current_user, os_id)
+        except DashboardError as exc:
+            flash(exc.message, exc.category)
+            return redirect(url_for(exc.redirect_endpoint))
+
+        url_voltar = url_for("main.dashboard")
+        if (request.args.get("voltar") or "").strip().lower() == "historico":
+            url_voltar = url_for("main.uvis_historico_os")
+
+        return render_template(
+            "equipe_uvis_os_formulario.html",
+            **context,
+            url_voltar=url_voltar,
             form_action="#",
         )

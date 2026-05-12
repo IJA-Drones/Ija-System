@@ -371,16 +371,8 @@ class Solicitacao(db.Model):
         lazy="select",
         cascade="all, delete-orphan"
     )
-
-    __table_args__ = (
-        db.Index("ix_solicitacao_data_status", "data_criacao", "status"),
-        db.Index("ix_solicitacao_usuario_data", "usuario_id", "data_criacao"),
-        db.Index("ix_solicitacao_piloto_data", "piloto_id", "data_criacao"),
-        db.Index("ix_solicitacao_agenda", "data_agendamento", "hora_agendamento"),
-    )
-
-    ordem_servico = db.relationship(
-        "OrdemServico",
+    ordem_servico_equipe_uvis = db.relationship(
+        "OrdemServicoEquipeUvis",
         back_populates="solicitacao",
         uselist=False,
         lazy="select",
@@ -521,6 +513,49 @@ class OrdemServico(db.Model):
         db.Index("ix_os_data_aplicacao", "data_aplicacao"),
         db.Index("ix_os_equipe_drone", "equipe_id", "drone_id"),
     )
+
+
+class OrdemServicoEquipeUvis(db.Model):
+    __tablename__ = "ordens_servico_equipe_uvis"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    solicitacao_id = db.Column(
+        db.Integer,
+        db.ForeignKey("solicitacoes.id"),
+        nullable=False,
+        unique=True,
+        index=True
+    )
+
+    equipe_uvis_nome = db.Column(db.String(100), nullable=False, index=True)
+    equipe_id = db.Column(db.Integer, db.ForeignKey("equipes.id"), nullable=True, index=True)
+
+    identificador_os = db.Column(db.String(100), index=True)
+    respondido_por = db.Column(db.String(150), index=True)
+    respondido_em = db.Column(db.DateTime, index=True)
+
+    situacao_aplicacao = db.Column(db.String(100), index=True)
+    tratamento_adicional_realizado = db.Column(db.String(20))
+    quantos_quais = db.Column(db.Text)
+    quantidade_produto_administrada_ml = db.Column(db.Float)
+    motivo_nao_realizacao = db.Column(db.String(255))
+    larva_visualizada = db.Column(db.String(20))
+    retornar_proxima_semana_monitorar_larvas = db.Column(db.String(20))
+    retorno_monitoramento_em = db.Column(db.DateTime, index=True)
+    observacoes = db.Column(db.Text)
+
+    criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+    atualizado_em = db.Column(
+        db.DateTime,
+        default=datetime.now,
+        onupdate=datetime.now,
+        nullable=False,
+        index=True
+    )
+
+    solicitacao = db.relationship("Solicitacao", back_populates="ordem_servico_equipe_uvis")
+    equipe = db.relationship("Equipe", lazy="joined")
 
 
 # -------------------------------------------------------------

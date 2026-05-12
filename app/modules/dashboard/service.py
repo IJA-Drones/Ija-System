@@ -23,6 +23,7 @@ def build_dashboard_context(user, args, google_maps_key):
         Solicitacao.query.options(
             joinedload(Solicitacao.usuario),
             joinedload(Solicitacao.equipe),
+            joinedload(Solicitacao.ordem_servico_equipe_uvis),
         )
         .filter(Solicitacao.usuario_id == user.id)
         .filter(Solicitacao.status != "CANCELADO")
@@ -111,6 +112,7 @@ def build_uvis_historico_os_context(user, args):
         Solicitacao.query.options(
             joinedload(Solicitacao.usuario),
             joinedload(Solicitacao.equipe),
+            joinedload(Solicitacao.ordem_servico_equipe_uvis),
         )
         .filter(
             Solicitacao.usuario_id == user.id,
@@ -184,4 +186,62 @@ def build_uvis_os_form_context(user, os_id):
             if ordem and ordem.respondido_em else ""
         ),
         "drones_equipe": drones_equipe,
+    }
+
+
+def build_uvis_equipe_os_form_context(user, os_id):
+    if getattr(user, "tipo_usuario", None) != "uvis":
+        raise DashboardError("Acesso restrito.", category="danger")
+
+    solicitacao = (
+        Solicitacao.query
+        .options(
+            joinedload(Solicitacao.usuario),
+            joinedload(Solicitacao.equipe),
+            joinedload(Solicitacao.ordem_servico_equipe_uvis),
+        )
+        .get_or_404(os_id)
+    )
+
+    if solicitacao.usuario_id != user.id:
+        raise DashboardError("Voce nao tem permissao para acessar esta OS da equipe.", category="danger")
+
+    ordem = solicitacao.ordem_servico_equipe_uvis
+    if ordem is None:
+        raise DashboardError(
+            "A equipe UVIS ainda nao preencheu o formulario desta solicitacao.",
+            category="warning",
+            redirect_endpoint="main.dashboard",
+        )
+
+    retorno_existente = (
+        Solicitacao.query
+        .filter(
+            Solicitacao.origem_retorno_id == solicitacao.id,
+            Solicitacao.gerada_automaticamente.is_(True),
+        )
+        .order_by(Solicitacao.id.desc())
+        .first()
+    )
+
+    return {
+        "solicitacao": solicitacao,
+        "ordem": ordem,
+        "modo_visualizacao": True,
+        "nome_equipe": ordem.equipe_uvis_nome or solicitacao.equipe_uvis_nome or "",
+        "uvis_nome": solicitacao.usuario.nome_uvis if solicitacao.usuario else "",
+        "endereco_os": (
+            f"{solicitacao.logradouro or ''}, {solicitacao.numero or 'S/N'} - "
+            f"{solicitacao.bairro or ''} - {solicitacao.cidade or ''}/{solicitacao.uf or ''}"
+        ),
+        "respondido_por_padrao": ordem.respondido_por or "",
+        "respondido_em_value": (
+            ordem.respondido_em.strftime("%Y-%m-%dT%H:%M")
+            if ordem.respondido_em else ""
+        ),
+        "retorno_existente": retorno_existente,
+        "retorno_monitoramento_value": (
+            ordem.retorno_monitoramento_em.strftime("%Y-%m-%dT%H:%M")
+            if ordem.retorno_monitoramento_em else ""
+        ),
     }

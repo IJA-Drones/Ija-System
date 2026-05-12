@@ -447,7 +447,14 @@
                     <i class="bi bi-three-dots-vertical"></i>
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end shadow border-0">
-
+                    {% if p.ordem_servico_equipe_uvis %}
+                    <li>
+                      <a class="dropdown-item py-2" href="{{ url_for('main.uvis_equipe_os_formulario_view', os_id=p.id) }}">
+                        <i class="bi bi-clipboard2-check text-success me-2"></i> Ver OS da Equipe UVIS
+                      </a>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    {% endif %}
                     <li>
                       <button class="dropdown-item py-2" type="button" data-bs-toggle="modal" data-bs-target="#modalDetalhes{{ p.id }}">
                         <i class="bi bi-eye text-primary me-2"></i> Ver Detalhes
@@ -667,6 +674,11 @@
         </div>
 
         <div class="modal-footer">
+          {% if p.ordem_servico_equipe_uvis %}
+          <a href="{{ url_for('main.uvis_equipe_os_formulario_view', os_id=p.id) }}" class="btn btn-primary justify-content-center">
+            <i class="bi bi-clipboard2-check me-1"></i> Ver OS da Equipe UVIS
+          </a>
+          {% endif %}
           <button type="button" class="btn btn-secondary justify-content-center" data-bs-dismiss="modal">Fechar</button>
         </div>
       </div>

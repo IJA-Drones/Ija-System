@@ -89,7 +89,7 @@
         flex: 1 1 auto;
         min-width: 0;
       }
-      .uvis-os-historico-table-wrap [data-label="Ação"] .btn {
+      .uvis-os-historico-table-wrap [data-label="Acao"] .btn {
         width: auto;
       }
       .uvis-os-historico-table-wrap .pagination {
@@ -199,10 +199,17 @@
               <span class="badge bg-completed rounded-pill px-3">CONCLUÍDO</span>
             </td>
 
-            <td class="text-center pe-4" data-label="Ação">
-              <a href="{{ url_for('main.uvis_os_formulario_view', os_id=p.id) }}" class="btn btn-sm btn-outline-primary">
-                <i class="bi bi-clipboard2-check me-1"></i> Abrir formulário
-              </a>
+            <td class="text-center pe-4" data-label="Acao">
+              <div class="d-flex justify-content-center gap-2 flex-wrap">
+                <a href="{{ url_for('main.uvis_os_formulario_view', os_id=p.id) }}" class="btn btn-sm btn-outline-primary">
+                  <i class="bi bi-airplane me-1"></i> OS Piloto
+                </a>
+                {% if p.ordem_servico_equipe_uvis %}
+                <a href="{{ url_for('main.uvis_equipe_os_formulario_view', os_id=p.id, voltar='historico') }}" class="btn btn-sm btn-outline-success">
+                  <i class="bi bi-people me-1"></i> OS Equipe
+                </a>
+                {% endif %}
+              </div>
             </td>
           </tr>
           {% else %}

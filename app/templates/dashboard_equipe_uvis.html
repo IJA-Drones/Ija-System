@@ -444,6 +444,12 @@
                     <i class="bi bi-three-dots-vertical"></i>
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                    <li>
+                      <a class="dropdown-item py-2" href="{{ url_for('main.equipe_uvis_os_formulario_view', os_id=p.id) }}">
+                        <i class="bi bi-clipboard2-check text-success me-2"></i>
+                        {% if 'CONCLU' in (p.status or '') %}Ver OS da equipe{% else %}Preencher OS da equipe{% endif %}
+                      </a>
+                    </li>
 
                     <li>
                       <button class="dropdown-item py-2" type="button" data-bs-toggle="modal" data-bs-target="#modalDetalhes{{ p.id }}">
@@ -640,6 +646,9 @@
         </div>
 
         <div class="modal-footer">
+          <a href="{{ url_for('main.equipe_uvis_os_formulario_view', os_id=p.id) }}" class="btn btn-primary justify-content-center">
+            <i class="bi bi-clipboard2-check me-1"></i>{% if 'CONCLU' in (p.status or '') %}Ver OS da equipe{% else %}Preencher OS da equipe{% endif %}
+          </a>
           <button type="button" class="btn btn-secondary justify-content-center" data-bs-dismiss="modal">Fechar</button>
         </div>
       </div>

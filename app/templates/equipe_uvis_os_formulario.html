@@ -1,0 +1,264 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+<style>
+  .equipe-uvis-os-page {
+    max-width: 980px;
+  }
+  .equipe-uvis-os-card {
+    border: 0;
+    border-radius: 24px;
+    box-shadow: 0 18px 45px rgba(13, 71, 161, 0.08);
+    overflow: hidden;
+  }
+  .equipe-uvis-os-hero {
+    padding: 1.5rem 1.5rem 1.25rem;
+    background:
+      radial-gradient(circle at top right, rgba(56, 142, 60, 0.14), transparent 34%),
+      linear-gradient(135deg, #f5fbff 0%, #ffffff 60%, #f2f8f2 100%);
+    border-bottom: 1px solid rgba(13, 71, 161, 0.08);
+  }
+  .equipe-uvis-os-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+  .equipe-uvis-os-field,
+  .equipe-uvis-os-box {
+    grid-column: span 12;
+  }
+  .equipe-uvis-os-box {
+    border: 1px solid rgba(13, 71, 161, 0.1);
+    border-radius: 20px;
+    padding: 1rem;
+    background: #fff;
+  }
+  .equipe-uvis-os-label {
+    display: block;
+    margin-bottom: 0.45rem;
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: #375a7f;
+  }
+  .equipe-uvis-os-hint {
+    font-size: 0.86rem;
+    color: #6b7a90;
+  }
+  .equipe-uvis-os-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+  .equipe-uvis-os-section-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #0d47a1;
+    margin-bottom: 1rem;
+  }
+  .equipe-uvis-os-readonly .form-control,
+  .equipe-uvis-os-readonly .form-select,
+  .equipe-uvis-os-readonly textarea {
+    pointer-events: none;
+    background-color: #f8fafc;
+  }
+
+  @media (min-width: 768px) {
+    .span-3 { grid-column: span 3; }
+    .span-4 { grid-column: span 4; }
+    .span-5 { grid-column: span 5; }
+    .span-8 { grid-column: span 8; }
+    .span-12 { grid-column: span 12; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 equipe-uvis-os-page">
+  <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+    <div>
+      <h2 class="m-0 text-dark">
+        <i class="bi bi-clipboard2-pulse-fill text-primary me-2"></i>OS da Equipe UVIS
+      </h2>
+      <small class="text-muted">Preenchimento operacional da equipe designada para a solicitação.</small>
+    </div>
+    <a href="{{ url_voltar }}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i>Voltar
+    </a>
+  </div>
+
+  <div class="card equipe-uvis-os-card">
+    <div class="equipe-uvis-os-hero">
+      <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+        <div>
+          <div class="badge bg-primary-subtle text-primary border border-primary-subtle mb-2">{{ nome_equipe }}</div>
+          <h5 class="mb-1">Solicitação #{{ solicitacao.id }}</h5>
+          <div class="text-muted small">{{ endereco_os }}</div>
+        </div>
+        {% if modo_visualizacao %}
+        <div class="alert alert-info py-2 px-3 mb-0">
+          <i class="bi bi-eye me-1"></i>Formulário em modo visualização.
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card-body p-4 {% if modo_visualizacao %}equipe-uvis-os-readonly{% endif %}">
+      <form method="post" action="{{ form_action }}" novalidate>
+        <div class="equipe-uvis-os-section-title">Identificação</div>
+        <div class="equipe-uvis-os-grid mb-4">
+          <div class="equipe-uvis-os-field span-3">
+            <label class="equipe-uvis-os-label">Solicitação ID</label>
+            <input type="number" class="form-control bg-light" value="{{ solicitacao.id }}" readonly>
+          </div>
+          <div class="equipe-uvis-os-field span-4">
+            <label class="equipe-uvis-os-label">Equipe UVIS</label>
+            <input type="text" class="form-control bg-light" value="{{ nome_equipe }}" readonly>
+          </div>
+          <div class="equipe-uvis-os-field span-5">
+            <label class="equipe-uvis-os-label">Identificador OS</label>
+            <input type="text" name="identificador_os" class="form-control" value="{{ ordem.identificador_os if ordem else '' }}">
+          </div>
+        </div>
+
+        <div class="equipe-uvis-os-section-title">Endereço e Responsável pela OS</div>
+        <div class="equipe-uvis-os-box mb-4">
+          <div class="equipe-uvis-os-grid">
+            <div class="equipe-uvis-os-field span-12">
+              <label class="equipe-uvis-os-label">UVIS</label>
+              <input type="text" class="form-control bg-light" value="{{ uvis_nome }}" readonly>
+            </div>
+            <div class="equipe-uvis-os-field span-8">
+              <label class="equipe-uvis-os-label">Endereço</label>
+              <input type="text" class="form-control bg-light" value="{{ endereco_os }}" readonly>
+            </div>
+            <div class="equipe-uvis-os-field span-12">
+              <label class="equipe-uvis-os-label">Respondido por</label>
+              <input type="text" name="respondido_por" class="form-control" value="{{ ordem.respondido_por if ordem and ordem.respondido_por else respondido_por_padrao }}">
+            </div>
+            <div class="equipe-uvis-os-field span-4">
+              <label class="equipe-uvis-os-label">Respondido em</label>
+              <input type="datetime-local" name="respondido_em" class="form-control" value="{{ respondido_em_value }}">
+            </div>
+          </div>
+        </div>
+
+        <div class="equipe-uvis-os-section-title">Execução</div>
+        <div class="equipe-uvis-os-grid mb-4">
+          <div class="equipe-uvis-os-field span-4">
+            <label class="equipe-uvis-os-label">Status</label>
+            {% set status_value = ordem.situacao_aplicacao if ordem else '' %}
+            <select name="situacao_aplicacao" id="situacao_aplicacao" class="form-select">
+              <option value="">Selecione...</option>
+              <option value="APENAS APLICADO" {% if status_value == 'APENAS APLICADO' %}selected{% endif %}>Apenas aplicado</option>
+              <option value="APENAS MONITORADO" {% if status_value == 'APENAS MONITORADO' %}selected{% endif %}>Apenas monitorado</option>
+              <option value="NENHUM VOO REALIZADO" {% if status_value == 'NENHUM VOO REALIZADO' %}selected{% endif %}>Nenhum voo realizado</option>
+            </select>
+          </div>
+          <div class="equipe-uvis-os-field span-4">
+            <label class="equipe-uvis-os-label">Larva visualizada</label>
+            {% set larva_value = ordem.larva_visualizada if ordem else '' %}
+            <select name="larva_visualizada" class="form-select">
+              <option value="">Selecione...</option>
+              <option value="SIM" {% if larva_value == 'SIM' %}selected{% endif %}>Sim</option>
+              <option value="NAO" {% if larva_value == 'NAO' %}selected{% endif %}>Não</option>
+            </select>
+          </div>
+          <div class="equipe-uvis-os-field span-4">
+            <label class="equipe-uvis-os-label">Quantidade aplicada</label>
+            <input type="number" step="0.01" name="quantidade_produto_administrada_ml" class="form-control" value="{{ ordem.quantidade_produto_administrada_ml if ordem and ordem.quantidade_produto_administrada_ml is not none else '' }}">
+          </div>
+
+          <div class="equipe-uvis-os-field span-4">
+            <label class="equipe-uvis-os-label">Outros endereços realizados?</label>
+            {% set extra_value = ordem.tratamento_adicional_realizado if ordem else '' %}
+            <select name="tratamento_adicional_realizado" id="tratamento_adicional_realizado" class="form-select">
+              <option value="">Selecione...</option>
+              <option value="SIM" {% if extra_value == 'SIM' %}selected{% endif %}>Sim</option>
+              <option value="NAO" {% if extra_value == 'NAO' %}selected{% endif %}>Não</option>
+            </select>
+          </div>
+          <div class="equipe-uvis-os-field span-8" id="quantos_quais_wrapper">
+            <label class="equipe-uvis-os-label">Quantos? Quais?</label>
+            <input type="text" name="quantos_quais" class="form-control" value="{{ ordem.quantos_quais if ordem else '' }}" placeholder="Ex.: 2 endereços - Rua X, 10 e Rua Y, 22">
+          </div>
+
+          <div class="equipe-uvis-os-field span-12" id="motivo_wrapper">
+            <label class="equipe-uvis-os-label">Motivo de não realização</label>
+            <textarea name="motivo_nao_realizacao" rows="3" class="form-control" placeholder="Explique por que o voo não foi realizado">{{ ordem.motivo_nao_realizacao if ordem else '' }}</textarea>
+          </div>
+
+          <div class="equipe-uvis-os-field span-4">
+            <label class="equipe-uvis-os-label">Retornar para monitorar</label>
+            {% set retorno_value = (ordem.retornar_proxima_semana_monitorar_larvas if ordem and ordem.retornar_proxima_semana_monitorar_larvas else ('SIM' if retorno_existente else '')) %}
+            <select name="retornar_proxima_semana_monitorar_larvas" id="retornar_monitorar" class="form-select">
+              <option value="">Selecione...</option>
+              <option value="SIM" {% if retorno_value == 'SIM' %}selected{% endif %}>Sim</option>
+              <option value="NAO" {% if retorno_value == 'NAO' %}selected{% endif %}>Não</option>
+            </select>
+          </div>
+          <div class="equipe-uvis-os-field span-4" id="retorno_data_wrapper">
+            <label class="equipe-uvis-os-label">Data e hora do retorno</label>
+            <input type="datetime-local" name="retorno_monitoramento_em" class="form-control" value="{{ retorno_monitoramento_value }}">
+            <div class="equipe-uvis-os-hint mt-2">Ao salvar com "Sim", o sistema cria uma nova solicitação a partir desta OS.</div>
+          </div>
+
+          <div class="equipe-uvis-os-field span-12">
+            <label class="equipe-uvis-os-label">Observação</label>
+            <textarea name="observacoes" rows="4" class="form-control" placeholder="Observações gerais da equipe UVIS">{{ ordem.observacoes if ordem else '' }}</textarea>
+          </div>
+        </div>
+
+        <div class="equipe-uvis-os-actions">
+          <div class="text-muted small">
+            {% if retorno_existente %}
+              Já existe uma solicitação de retorno vinculada a esta OS: <strong>#{{ retorno_existente.id }}</strong>.
+            {% else %}
+              Nenhuma solicitação de retorno vinculada até o momento.
+            {% endif %}
+          </div>
+          {% if not modo_visualizacao %}
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-save me-1"></i>Salvar OS
+          </button>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  (() => {
+    const statusEl = document.getElementById("situacao_aplicacao");
+    const motivoWrapper = document.getElementById("motivo_wrapper");
+    const extraEl = document.getElementById("tratamento_adicional_realizado");
+    const quantosWrapper = document.getElementById("quantos_quais_wrapper");
+    const retornoEl = document.getElementById("retornar_monitorar");
+    const retornoDataWrapper = document.getElementById("retorno_data_wrapper");
+
+    const syncVisibility = () => {
+      const statusValue = (statusEl?.value || "").toUpperCase();
+      const extraValue = (extraEl?.value || "").toUpperCase();
+      const retornoValue = (retornoEl?.value || "").toUpperCase();
+
+      if (motivoWrapper) {
+        motivoWrapper.style.display = statusValue === "NENHUM VOO REALIZADO" ? "" : "none";
+      }
+      if (quantosWrapper) {
+        quantosWrapper.style.display = extraValue === "SIM" ? "" : "none";
+      }
+      if (retornoDataWrapper) {
+        retornoDataWrapper.style.display = retornoValue === "SIM" ? "" : "none";
+      }
+    };
+
+    statusEl?.addEventListener("change", syncVisibility);
+    extraEl?.addEventListener("change", syncVisibility);
+    retornoEl?.addEventListener("change", syncVisibility);
+    syncVisibility();
+  })();
+</script>
+{% endblock %}
