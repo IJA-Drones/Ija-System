@@ -38,6 +38,12 @@
     .btn-tracar-rota:hover { background-color: #e53935; transform: scale(1.05); }
     .btn-tracar-rota:focus { outline: none; box-shadow: 0 0 0 4px rgba(255, 105, 135, 0.4); }
     .btn-tracar-rota i { font-size: 1.1rem; }
+    .equipe-uvis-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
 
     @media (max-width: 768px) {
       .container-fluid.py-4 { padding-left: 12px !important; padding-right: 12px !important; }
@@ -160,7 +166,9 @@
       tbody tr td > * { min-width: 0; }
       tbody tr td:nth-child(2) .d-flex.flex-column { width: 100%; }
       .badge { white-space: normal !important; text-align: center !important; line-height: 1.15 !important; }
-      tbody tr td:nth-child(4) button.btn { width: 100%; }
+      .equipe-uvis-actions { justify-content: stretch; width: 100%; }
+      .equipe-uvis-actions .btn,
+      .equipe-uvis-actions form { width: 100%; }
 
       tbody tr td[colspan] {
         display: block !important;
@@ -439,19 +447,29 @@
               </td>
 
               <td class="text-end pe-4">
-                <div class="dropup">
-                  <button class="btn btn-outline-secondary ms-auto" type="button" data-bs-toggle="dropdown" data-bs-offset="0,8" aria-expanded="false">
-                    <i class="bi bi-three-dots-vertical"></i>
+                <div class="equipe-uvis-actions">
+                  <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#modalDetalhes{{ p.id }}">
+                    <i class="bi bi-eye me-1"></i> Detalhes
                   </button>
-                  <ul class="dropdown-menu dropdown-menu-end shadow border-0">
 
-                    <li>
-                      <button class="dropdown-item py-2" type="button" data-bs-toggle="modal" data-bs-target="#modalDetalhes{{ p.id }}">
-                        <i class="bi bi-eye text-primary me-2"></i> Ver Detalhes
+                  <a class="btn btn-sm btn-primary" href="{{ url_for('main.equipe_uvis_os_formulario_view', os_id=p.id) }}">
+                    <i class="bi bi-clipboard2-check me-1"></i>
+                    {% if 'CONCLU' in (p.status or '') %}Ver OS{% else %}Preencher OS{% endif %}
+                  </a>
+
+                  {% if 'CONCLU' not in (p.status or '') %}
+                    {% if p.ordem_servico_equipe_uvis %}
+                      <form method="POST" action="{{ url_for('main.equipe_uvis_concluir_os', os_id=p.id) }}" class="m-0 form-concluir-equipe-uvis">
+                        <button type="submit" class="btn btn-sm btn-success">
+                          <i class="bi bi-check2-circle me-1"></i> Concluir
+                        </button>
+                      </form>
+                    {% else %}
+                      <button type="button" class="btn btn-sm btn-outline-success" disabled title="Preencha e salve a OS antes de concluir">
+                        <i class="bi bi-check2-circle me-1"></i> Concluir
                       </button>
-                    </li>
-
-                  </ul>
+                    {% endif %}
+                  {% endif %}
                 </div>
               </td>
             </tr>
@@ -640,6 +658,9 @@
         </div>
 
         <div class="modal-footer">
+          <a href="{{ url_for('main.equipe_uvis_os_formulario_view', os_id=p.id) }}" class="btn btn-primary justify-content-center">
+            <i class="bi bi-clipboard2-check me-1"></i>{% if 'CONCLU' in (p.status or '') %}Ver OS da equipe{% else %}Preencher OS da equipe{% endif %}
+          </a>
           <button type="button" class="btn btn-secondary justify-content-center" data-bs-dismiss="modal">Fechar</button>
         </div>
       </div>
@@ -729,6 +750,44 @@
 
 {% block scripts %}
 <script>
+  document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll(".form-concluir-equipe-uvis").forEach((form) => {
+      form.addEventListener("submit", function (e) {
+        const submitButton = form.querySelector('button[type="submit"]');
+        const mensagem = "Ao confirmar, a OS será marcada como CONCLUÍDA.";
+
+        if (!window.Swal) {
+          if (!window.confirm(mensagem)) {
+            e.preventDefault();
+            return;
+          }
+          if (typeof showLoadingState === "function") showLoadingState(submitButton);
+          return;
+        }
+
+        e.preventDefault();
+        const isDarkMode = document.body.classList.contains("dark-mode");
+
+        Swal.fire({
+          title: "Concluir OS?",
+          text: mensagem,
+          icon: "question",
+          showCancelButton: true,
+          confirmButtonText: "Sim, concluir",
+          cancelButtonText: "Cancelar",
+          confirmButtonColor: "#198754",
+          cancelButtonColor: "#6c757d",
+          customClass: { popup: isDarkMode ? "swal2-dark-mode" : "" },
+        }).then((result) => {
+          if (result.isConfirmed) {
+            if (typeof showLoadingState === "function") showLoadingState(submitButton);
+            form.submit();
+          }
+        });
+      });
+    });
+  });
+
   (function () {
     if (window.UVIS_CHAT_INIT) return;
     window.UVIS_CHAT_INIT = true;

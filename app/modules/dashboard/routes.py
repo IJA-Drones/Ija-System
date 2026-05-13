@@ -4,6 +4,7 @@ from flask_login import current_user, login_required
 from app.modules.dashboard.service import (
     DashboardError,
     build_dashboard_context,
+    build_uvis_equipe_os_form_context,
     build_uvis_historico_os_context,
     build_uvis_os_form_context,
 )
@@ -44,6 +45,7 @@ def register_routes(bp):
             flash(exc.message, exc.category)
             return redirect(url_for(exc.redirect_endpoint))
 
+        context["pagination_args"] = {k: v for k, v in request.args.items() if k != "page"}
         return render_template("uvis_os_historico.html", **context)
 
     @bp.route("/uvis/os/<int:os_id>/formulario", methods=["GET"], endpoint="uvis_os_formulario_view")
@@ -54,6 +56,9 @@ def register_routes(bp):
         except DashboardError as exc:
             flash(exc.message, exc.category)
             return redirect(url_for(exc.redirect_endpoint))
+
+        filtro_tipo_os = (request.args.get("tipo_os") or "").strip()
+        url_voltar = url_for("main.uvis_historico_os", tipo_os=filtro_tipo_os) if filtro_tipo_os else url_for("main.uvis_historico_os")
 
         return render_template(
             "piloto_os_formulario.html",
@@ -68,6 +73,28 @@ def register_routes(bp):
             respondido_por_padrao=context["respondido_por_padrao"],
             respondido_em_value=context["respondido_em_value"],
             drones_equipe=context["drones_equipe"],
-            url_voltar=url_for("main.uvis_historico_os"),
+            calculo_dosagem_planejado=context.get("calculo_dosagem_planejado", {}),
+            url_voltar=url_voltar,
+            form_action="#",
+        )
+
+    @bp.route("/uvis/os/<int:os_id>/equipe-formulario", methods=["GET"], endpoint="uvis_equipe_os_formulario_view")
+    @login_required
+    def uvis_equipe_os_formulario_view(os_id):
+        try:
+            context = build_uvis_equipe_os_form_context(current_user, os_id)
+        except DashboardError as exc:
+            flash(exc.message, exc.category)
+            return redirect(url_for(exc.redirect_endpoint))
+
+        url_voltar = url_for("main.dashboard")
+        if (request.args.get("voltar") or "").strip().lower() == "historico":
+            filtro_tipo_os = (request.args.get("tipo_os") or "").strip()
+            url_voltar = url_for("main.uvis_historico_os", tipo_os=filtro_tipo_os) if filtro_tipo_os else url_for("main.uvis_historico_os")
+
+        return render_template(
+            "equipe_uvis_os_formulario.html",
+            **context,
+            url_voltar=url_voltar,
             form_action="#",
         )

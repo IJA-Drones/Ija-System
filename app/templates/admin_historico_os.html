@@ -33,6 +33,37 @@
       color: #6c757d;
       font-size: 0.95rem;
     }
+    .historico-os-tabs {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      width: fit-content;
+      margin-bottom: 16px;
+      padding: 4px;
+      border: 1px solid #dbe4ef;
+      border-radius: 12px;
+      background: #f8fafc;
+    }
+    .historico-os-tabs .nav-link {
+      border: 0;
+      border-radius: 9px;
+      color: #52657a;
+      font-weight: 700;
+      padding: 0.62rem 0.95rem;
+      transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .historico-os-tabs .nav-link:hover {
+      background: #eef4fb;
+      color: var(--color-primary);
+    }
+    .historico-os-tabs .nav-link.active {
+      background: #fff;
+      color: var(--color-primary);
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12);
+    }
+    .historico-os-tabs .nav-link i {
+      color: #0ea5e9;
+    }
 
     @media (max-width: 991.98px) {
       .historico-os-page.container-fluid.py-4 {
@@ -45,6 +76,15 @@
       }
       .historico-os-toolbar .btn {
         width: 100%;
+      }
+      .historico-os-tabs {
+        width: 100%;
+      }
+      .historico-os-tabs .nav-item {
+        flex: 1 1 0;
+      }
+      .historico-os-tabs .nav-link {
+        text-align: center;
       }
       .historico-os-filter-actions {
         flex-direction: column;
@@ -65,7 +105,7 @@
         <i class="bi bi-clock-history me-2 text-primary"></i> Histórico de OS
       </h2>
       <div class="historico-os-subtitle">
-        Lista OS concluídas e as OS em andamento que ainda nao foram marcadas como concluídas pelo piloto.
+        Consulte as OS do piloto e as OS da equipe UVIS em abas separadas.
       </div>
     </div>
     <div>
@@ -74,6 +114,25 @@
       </a>
     </div>
   </div>
+
+  <ul class="nav nav-pills historico-os-tabs">
+    <li class="nav-item">
+      <a
+        class="nav-link {% if filtro_tipo_os == 'piloto' %}active{% endif %}"
+        href="{{ url_for('main.admin_historico_os', tipo_os='piloto', status_os=filtro_status_os, unidade=request.args.get('unidade', ''), regiao=request.args.get('regiao', '')) }}"
+      >
+        <i class="bi bi-airplane me-1"></i> OS Piloto
+      </a>
+    </li>
+    <li class="nav-item">
+      <a
+        class="nav-link {% if filtro_tipo_os == 'equipe_uvis' %}active{% endif %}"
+        href="{{ url_for('main.admin_historico_os', tipo_os='equipe_uvis', status_os=filtro_status_os, unidade=request.args.get('unidade', ''), regiao=request.args.get('regiao', '')) }}"
+      >
+        <i class="bi bi-people me-1"></i> OS Equipe UVIS
+      </a>
+    </li>
+  </ul>
 
   <div class="card shadow-sm rounded-4 mb-4 border-0">
     <div
@@ -95,6 +154,7 @@
     <div class="collapse {% if request.args.get('status_os') or request.args.get('unidade') or request.args.get('regiao') %}show{% endif %}" id="collapseFiltros">
       <div class="card-body pt-0">
         <form method="GET">
+          <input type="hidden" name="tipo_os" value="{{ filtro_tipo_os }}">
           <div class="row g-2 align-items-end">
             <div class="col-md-3">
               <label class="small text-muted">Status da OS:</label>
@@ -135,7 +195,7 @@
                 <i class="bi bi-search"></i> Filtrar
               </button>
               {% if request.args.get('status_os') or request.args.get('unidade') or request.args.get('regiao') %}
-                <a href="{{ url_for('main.admin_historico_os') }}" class="btn btn-outline-secondary btn-sm px-3 historico-os-filter-clear">
+                <a href="{{ url_for('main.admin_historico_os', tipo_os=filtro_tipo_os) }}" class="btn btn-outline-secondary btn-sm px-3 historico-os-filter-clear">
                   <i class="bi bi-x-lg"></i> Limpar
                 </a>
               {% endif %}
@@ -164,8 +224,16 @@
           {% for p in pedidos %}
             {% set status_upper = (p.status or '')|upper %}
             {% set os_em_andamento = 'CONCLU' not in status_upper %}
+            {% set ordem_uvis = p.ordem_servico_equipe_uvis %}
             <tr>
-              <td class="ps-4"><strong>#{{ p.id }}</strong></td>
+              <td class="ps-4">
+                <strong>#{{ p.id }}</strong>
+                {% if filtro_tipo_os == 'equipe_uvis' and ordem_uvis and ordem_uvis.identificador_os %}
+                  <br><small class="text-muted">{{ ordem_uvis.identificador_os }}</small>
+                {% elif filtro_tipo_os == 'piloto' and p.ordem_servico and p.ordem_servico.identificador_os %}
+                  <br><small class="text-muted">{{ p.ordem_servico.identificador_os }}</small>
+                {% endif %}
+              </td>
               <td>
                 <strong class="text-primary">{{ p.usuario.nome_uvis if p.usuario else '-' }}</strong><br>
                 <small class="text-muted">{{ p.usuario.regiao if p.usuario else '-' }}</small>
@@ -181,7 +249,11 @@
                 </div>
               </td>
               <td>
-                {% if p.equipe %}
+                {% if filtro_tipo_os == 'equipe_uvis' and (ordem_uvis or p.equipe_uvis_nome) %}
+                  <span class="badge bg-light text-dark border py-2 px-3 rounded-pill">
+                    <i class="bi bi-people me-1 text-success"></i> {{ (ordem_uvis.equipe_uvis_nome if ordem_uvis else p.equipe_uvis_nome) or 'Equipe UVIS' }}
+                  </span>
+                {% elif p.equipe %}
                   <span class="badge bg-light text-dark border py-2 px-3 rounded-pill">
                     <i class="bi bi-people-fill me-1 text-primary"></i> {{ p.equipe.nome_equipe }}
                   </span>
@@ -190,7 +262,18 @@
                 {% endif %}
               </td>
               <td class="text-center">
-                {% if os_em_andamento %}
+                {% if filtro_tipo_os == 'equipe_uvis' and 'CONCLU' in status_upper %}
+                  <span class="badge bg-completed">CONCLUIDA</span>
+                  {% if ordem_uvis %}
+                    <div class="small text-muted mt-1">{{ ordem_uvis.situacao_aplicacao or p.status or '-' }}</div>
+                  {% endif %}
+                {% elif filtro_tipo_os == 'equipe_uvis' and ordem_uvis %}
+                  <span class="badge bg-success">PREENCHIDA</span>
+                  <div class="small text-muted mt-1">{{ ordem_uvis.situacao_aplicacao or p.status or '-' }}</div>
+                {% elif filtro_tipo_os == 'equipe_uvis' %}
+                  <span class="badge bg-warning text-dark">PENDENTE</span>
+                  <div class="small text-muted mt-1">{{ p.status or '-' }}</div>
+                {% elif os_em_andamento %}
                   <span class="badge bg-warning text-dark">EM ANDAMENTO</span>
                   <div class="small text-muted mt-1">{{ p.status or '-' }}</div>
                 {% else %}
@@ -199,6 +282,17 @@
               </td>
               <td class="text-center pe-4">
                 <div class="d-flex gap-2 justify-content-center flex-wrap">
+                  {% if filtro_tipo_os == 'equipe_uvis' %}
+                    {% if ordem_uvis %}
+                      <a href="{{ url_for('main.admin_equipe_uvis_os_formulario_view', os_id=p.id) }}" class="btn btn-sm btn-outline-success shadow-sm" title="Ver OS da equipe UVIS">
+                        <i class="bi bi-people"></i>
+                      </a>
+                    {% else %}
+                      <button type="button" class="btn btn-sm btn-outline-secondary shadow-sm" disabled title="A equipe UVIS ainda nao preencheu esta OS">
+                        <i class="bi bi-hourglass-split"></i>
+                      </button>
+                    {% endif %}
+                  {% else %}
                   <a href="{{ url_for('main.admin_os_formulario_view', os_id=p.id) }}" class="btn btn-sm btn-outline-primary shadow-sm" title="Ver formulario">
                     <i class="bi bi-clipboard2-check"></i>
                   </a>
@@ -208,13 +302,18 @@
                   <a href="{{ url_for('main.admin_export_os_excel_v2', os_id=p.id) }}" class="btn btn-sm btn-secondary shadow-sm" title="Exportar Excel">
                     <i class="bi bi-file-earmark-excel"></i>
                   </a>
+                  {% endif %}
                 </div>
               </td>
             </tr>
           {% else %}
             <tr>
               <td colspan="6" class="text-center py-5 text-muted">
-                Nenhuma OS concluída ou em andamento encontrada.
+                {% if filtro_tipo_os == 'equipe_uvis' %}
+                  Nenhuma OS da equipe UVIS encontrada.
+                {% else %}
+                  Nenhuma OS concluída ou em andamento encontrada.
+                {% endif %}
               </td>
             </tr>
           {% endfor %}
