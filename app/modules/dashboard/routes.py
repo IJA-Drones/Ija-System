@@ -73,6 +73,7 @@ def register_routes(bp):
             respondido_por_padrao=context["respondido_por_padrao"],
             respondido_em_value=context["respondido_em_value"],
             drones_equipe=context["drones_equipe"],
+            calculo_dosagem_planejado=context.get("calculo_dosagem_planejado", {}),
             url_voltar=url_voltar,
             form_action="#",
         )
