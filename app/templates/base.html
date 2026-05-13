@@ -289,6 +289,15 @@
               <i class="bi bi-clock-history me-2"></i><span>Histórico OS</span>
             </a>
           </li>
+          {% elif current_user.tipo_usuario == 'equipe_uvis' %}
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint == 'main.equipe_uvis_os_historico' or (request.endpoint == 'main.equipe_uvis_os_formulario_view' and request.args.get('voltar') == 'historico') %}active{% endif %}"
+              href="{{ url_for('main.equipe_uvis_os_historico') }}"
+            >
+              <i class="bi bi-clock-history me-2"></i><span>Histórico OS</span>
+            </a>
+          </li>
           {% elif current_user.tipo_usuario == 'piloto' %}
           <li class="nav-item">
             <a

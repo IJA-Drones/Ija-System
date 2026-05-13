@@ -1,154 +1,229 @@
 {% extends "base.html" %}
 
 {% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}" />
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}" />
 <style>
-  .equipe-uvis-os-page {
-    max-width: 980px;
+  .piloto-os-form-page {
+    width: 100%;
   }
-  .equipe-uvis-os-card {
-    border: 0;
-    border-radius: 24px;
-    box-shadow: 0 18px 45px rgba(13, 71, 161, 0.08);
-    overflow: hidden;
-  }
-  .equipe-uvis-os-hero {
-    padding: 1.5rem 1.5rem 1.25rem;
-    background:
-      radial-gradient(circle at top right, rgba(56, 142, 60, 0.14), transparent 34%),
-      linear-gradient(135deg, #f5fbff 0%, #ffffff 60%, #f2f8f2 100%);
-    border-bottom: 1px solid rgba(13, 71, 161, 0.08);
-  }
-  .equipe-uvis-os-grid {
-    display: grid;
-    gap: 1rem;
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-  }
-  .equipe-uvis-os-field,
-  .equipe-uvis-os-box {
-    grid-column: span 12;
-  }
-  .equipe-uvis-os-box {
-    border: 1px solid rgba(13, 71, 161, 0.1);
-    border-radius: 20px;
-    padding: 1rem;
-    background: #fff;
-  }
-  .equipe-uvis-os-label {
-    display: block;
-    margin-bottom: 0.45rem;
-    font-size: 0.75rem;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    font-weight: 700;
-    color: #375a7f;
-  }
-  .equipe-uvis-os-hint {
-    font-size: 0.86rem;
-    color: #6b7a90;
-  }
-  .equipe-uvis-os-actions {
+
+  .piloto-os-form-header {
     display: flex;
-    justify-content: space-between;
-    gap: 0.75rem;
-    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
   }
-  .equipe-uvis-os-section-title {
-    font-size: 1.1rem;
+
+  .equipe-uvis-os-page {
+    max-width: 1200px;
+  }
+
+  .section-title {
+    border-left: 4px solid var(--bs-primary);
+    padding-left: 15px;
+    margin-bottom: 20px;
+    margin-top: 30px;
+  }
+
+  .form-label-header {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #6c757d;
     font-weight: 700;
-    color: #0d47a1;
-    margin-bottom: 1rem;
   }
-  .equipe-uvis-os-readonly .form-control,
-  .equipe-uvis-os-readonly .form-select,
-  .equipe-uvis-os-readonly textarea {
+
+  .bg-snapshot {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+  }
+
+  .readonly-form .form-control,
+  .readonly-form .form-select,
+  .readonly-form textarea {
     pointer-events: none;
     background-color: #f8fafc;
   }
 
-  @media (min-width: 768px) {
-    .span-3 { grid-column: span 3; }
-    .span-4 { grid-column: span 4; }
-    .span-5 { grid-column: span 5; }
-    .span-8 { grid-column: span 8; }
-    .span-12 { grid-column: span 12; }
+  .uvis-os-summary {
+    border-radius: 1rem;
+    background: linear-gradient(180deg, #fcfdff 0%, #f5f9fd 100%);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .uvis-os-summary .badge {
+    border-radius: 999px;
+    padding: 0.45rem 0.8rem;
+    font-weight: 700;
+  }
+
+  .uvis-os-hint {
+    margin-top: 0.45rem;
+    color: #66788e;
+    font-size: 0.82rem;
+    line-height: 1.45;
+  }
+
+  .uvis-os-status-note {
+    border-radius: 1rem;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    color: #6c757d;
+  }
+
+  .uvis-os-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 991.98px) {
+    .piloto-os-form-page.container-fluid.py-4 {
+      padding-left: 12px !important;
+      padding-right: 12px !important;
+    }
+
+    .piloto-os-form-header {
+      align-items: flex-start;
+    }
+
+    .piloto-os-form-page .card-body.p-4 {
+      padding: 1rem !important;
+    }
+
+    .piloto-os-form-page .row.g-3 {
+      --bs-gutter-x: 0.85rem;
+    }
+
+    .uvis-os-actions {
+      flex-direction: column-reverse;
+      align-items: stretch;
+    }
+
+    .uvis-os-actions .btn {
+      width: 100%;
+    }
+  }
+
+  @media (max-width: 767.98px) {
+    .piloto-os-form-page .section-title {
+      padding-left: 12px;
+      margin-top: 24px;
+      margin-bottom: 16px;
+    }
+
+    .piloto-os-form-page .section-title h5 {
+      font-size: 1rem;
+    }
+
+    .piloto-os-form-page input,
+    .piloto-os-form-page select,
+    .piloto-os-form-page textarea {
+      font-size: 16px;
+    }
+  }
+
+  @media (max-width: 420px) {
+    .piloto-os-form-page .card-body.p-4 {
+      padding: 0.85rem !important;
+    }
+
+    .piloto-os-form-page .form-label-header {
+      font-size: 0.68rem;
+      letter-spacing: 0.35px;
+    }
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4 equipe-uvis-os-page">
-  <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
-    <div>
-      <h2 class="m-0 text-dark">
-        <i class="bi bi-clipboard2-pulse-fill text-primary me-2"></i>OS da Equipe UVIS
-      </h2>
-      <small class="text-muted">Preenchimento operacional da equipe designada para a solicitação.</small>
-    </div>
+<div class="container-fluid py-4 piloto-os-form-page equipe-uvis-os-page">
+  <div class="piloto-os-form-header justify-content-between flex-wrap mb-4">
+    <h2 class="m-0 text-dark">
+      <i class="bi bi-clipboard-check-fill me-2 text-primary"></i>OS da Equipe UVIS
+    </h2>
     <a href="{{ url_voltar }}" class="btn btn-outline-secondary">
       <i class="bi bi-arrow-left me-1"></i>Voltar
     </a>
   </div>
 
-  <div class="card equipe-uvis-os-card">
-    <div class="equipe-uvis-os-hero">
-      <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
-        <div>
-          <div class="badge bg-primary-subtle text-primary border border-primary-subtle mb-2">{{ nome_equipe }}</div>
-          <h5 class="mb-1">Solicitação #{{ solicitacao.id }}</h5>
-          <div class="text-muted small">{{ endereco_os }}</div>
-        </div>
-        {% if modo_visualizacao %}
-        <div class="alert alert-info py-2 px-3 mb-0">
-          <i class="bi bi-eye me-1"></i>Formulário em modo visualização.
-        </div>
-        {% endif %}
+  <div class="card info status-primary shadow-sm rounded-4 border-0">
+    <div class="card-body p-4 {% if modo_visualizacao %}readonly-form{% endif %}">
+      {% if modo_visualizacao %}
+      <div class="alert alert-info border-0 shadow-sm rounded-4 mb-4">
+        <i class="bi bi-eye me-1"></i>Formul&aacute;rio em modo visualiza&ccedil;&atilde;o.
       </div>
-    </div>
+      {% endif %}
 
-    <div class="card-body p-4 {% if modo_visualizacao %}equipe-uvis-os-readonly{% endif %}">
+      <div class="uvis-os-summary bg-snapshot p-3 p-lg-4 mb-4">
+        <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+          <div>
+            <div class="badge bg-primary-subtle text-primary border border-primary-subtle mb-2">{{ nome_equipe }}</div>
+            <h5 class="mb-1 text-primary fw-bold">Solicita&ccedil;&atilde;o #{{ solicitacao.id }}</h5>
+            <div class="text-muted small">{{ endereco_os }}</div>
+          </div>
+          <div class="text-muted small text-lg-end">
+            Preenchimento operacional da equipe designada para a solicita&ccedil;&atilde;o.
+          </div>
+        </div>
+      </div>
+
       <form method="post" action="{{ form_action }}" novalidate>
-        <div class="equipe-uvis-os-section-title">Identificação</div>
-        <div class="equipe-uvis-os-grid mb-4">
-          <div class="equipe-uvis-os-field span-3">
-            <label class="equipe-uvis-os-label">Solicitação ID</label>
+        <div class="section-title mt-0">
+          <h5 class="m-0 text-primary fw-bold">Identifica&ccedil;&atilde;o</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-3">
+            <label class="form-label-header">Solicita&ccedil;&atilde;o ID</label>
             <input type="number" class="form-control bg-light" value="{{ solicitacao.id }}" readonly>
           </div>
-          <div class="equipe-uvis-os-field span-4">
-            <label class="equipe-uvis-os-label">Equipe UVIS</label>
+          <div class="col-md-4">
+            <label class="form-label-header">Equipe UVIS</label>
             <input type="text" class="form-control bg-light" value="{{ nome_equipe }}" readonly>
           </div>
-          <div class="equipe-uvis-os-field span-5">
-            <label class="equipe-uvis-os-label">Identificador OS</label>
+          <div class="col-md-5">
+            <label class="form-label-header">Identificador OS</label>
             <input type="text" name="identificador_os" class="form-control" value="{{ ordem.identificador_os if ordem else '' }}">
           </div>
         </div>
 
-        <div class="equipe-uvis-os-section-title">Endereço e Responsável pela OS</div>
-        <div class="equipe-uvis-os-box mb-4">
-          <div class="equipe-uvis-os-grid">
-            <div class="equipe-uvis-os-field span-12">
-              <label class="equipe-uvis-os-label">UVIS</label>
-              <input type="text" class="form-control bg-light" value="{{ uvis_nome }}" readonly>
-            </div>
-            <div class="equipe-uvis-os-field span-8">
-              <label class="equipe-uvis-os-label">Endereço</label>
-              <input type="text" class="form-control bg-light" value="{{ endereco_os }}" readonly>
-            </div>
-            <div class="equipe-uvis-os-field span-12">
-              <label class="equipe-uvis-os-label">Respondido por</label>
-              <input type="text" name="respondido_por" class="form-control" value="{{ ordem.respondido_por if ordem and ordem.respondido_por else respondido_por_padrao }}">
-            </div>
-            <div class="equipe-uvis-os-field span-4">
-              <label class="equipe-uvis-os-label">Respondido em</label>
-              <input type="datetime-local" name="respondido_em" class="form-control" value="{{ respondido_em_value }}">
-            </div>
+        <hr class="opacity-25 my-4" />
+
+        <div class="section-title">
+          <h5 class="m-0 text-primary fw-bold">Endere&ccedil;o e Respons&aacute;vel pela OS</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-12">
+            <label class="form-label-header">UVIS</label>
+            <input type="text" class="form-control bg-light" value="{{ uvis_nome }}" readonly>
+          </div>
+          <div class="col-md-8">
+            <label class="form-label-header">Endere&ccedil;o</label>
+            <input type="text" class="form-control bg-light" value="{{ endereco_os }}" readonly>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label-header">Respondido em</label>
+            <input type="datetime-local" name="respondido_em" class="form-control" value="{{ respondido_em_value }}">
+          </div>
+          <div class="col-md-12">
+            <label class="form-label-header">Respondido por</label>
+            <input type="text" name="respondido_por" class="form-control" value="{{ ordem.respondido_por if ordem and ordem.respondido_por else respondido_por_padrao }}">
           </div>
         </div>
 
-        <div class="equipe-uvis-os-section-title">Execução</div>
-        <div class="equipe-uvis-os-grid mb-4">
-          <div class="equipe-uvis-os-field span-4">
-            <label class="equipe-uvis-os-label">Status</label>
+        <hr class="opacity-25 my-4" />
+
+        <div class="section-title">
+          <h5 class="m-0 text-primary fw-bold">Execu&ccedil;&atilde;o</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <label class="form-label-header">Status</label>
             {% set status_value = ordem.situacao_aplicacao if ordem else '' %}
             <select name="situacao_aplicacao" id="situacao_aplicacao" class="form-select">
               <option value="">Selecione...</option>
@@ -157,66 +232,68 @@
               <option value="NENHUM VOO REALIZADO" {% if status_value == 'NENHUM VOO REALIZADO' %}selected{% endif %}>Nenhum voo realizado</option>
             </select>
           </div>
-          <div class="equipe-uvis-os-field span-4">
-            <label class="equipe-uvis-os-label">Larva visualizada</label>
+          <div class="col-md-4">
+            <label class="form-label-header">Larva visualizada</label>
             {% set larva_value = ordem.larva_visualizada if ordem else '' %}
             <select name="larva_visualizada" class="form-select">
               <option value="">Selecione...</option>
               <option value="SIM" {% if larva_value == 'SIM' %}selected{% endif %}>Sim</option>
-              <option value="NAO" {% if larva_value == 'NAO' %}selected{% endif %}>Não</option>
+              <option value="NAO" {% if larva_value == 'NAO' %}selected{% endif %}>N&atilde;o</option>
             </select>
           </div>
-          <div class="equipe-uvis-os-field span-4">
-            <label class="equipe-uvis-os-label">Quantidade aplicada</label>
+          <div class="col-md-4">
+            <label class="form-label-header">Quantidade aplicada</label>
             <input type="number" step="0.01" name="quantidade_produto_administrada_ml" class="form-control" value="{{ ordem.quantidade_produto_administrada_ml if ordem and ordem.quantidade_produto_administrada_ml is not none else '' }}">
           </div>
 
-          <div class="equipe-uvis-os-field span-4">
-            <label class="equipe-uvis-os-label">Outros endereços realizados?</label>
+          <div class="col-md-4">
+            <label class="form-label-header">Outros endere&ccedil;os realizados?</label>
             {% set extra_value = ordem.tratamento_adicional_realizado if ordem else '' %}
             <select name="tratamento_adicional_realizado" id="tratamento_adicional_realizado" class="form-select">
               <option value="">Selecione...</option>
               <option value="SIM" {% if extra_value == 'SIM' %}selected{% endif %}>Sim</option>
-              <option value="NAO" {% if extra_value == 'NAO' %}selected{% endif %}>Não</option>
+              <option value="NAO" {% if extra_value == 'NAO' %}selected{% endif %}>N&atilde;o</option>
             </select>
           </div>
-          <div class="equipe-uvis-os-field span-8" id="quantos_quais_wrapper">
-            <label class="equipe-uvis-os-label">Quantos? Quais?</label>
-            <input type="text" name="quantos_quais" class="form-control" value="{{ ordem.quantos_quais if ordem else '' }}" placeholder="Ex.: 2 endereços - Rua X, 10 e Rua Y, 22">
+          <div class="col-md-8" id="quantos_quais_wrapper">
+            <label class="form-label-header">Quantos? Quais?</label>
+            <input type="text" name="quantos_quais" class="form-control" value="{{ ordem.quantos_quais if ordem else '' }}" placeholder="Ex.: 2 endere&ccedil;os - Rua X, 10 e Rua Y, 22">
           </div>
 
-          <div class="equipe-uvis-os-field span-12" id="motivo_wrapper">
-            <label class="equipe-uvis-os-label">Motivo de não realização</label>
-            <textarea name="motivo_nao_realizacao" rows="3" class="form-control" placeholder="Explique por que o voo não foi realizado">{{ ordem.motivo_nao_realizacao if ordem else '' }}</textarea>
+          <div class="col-md-12" id="motivo_wrapper">
+            <label class="form-label-header">Motivo de n&atilde;o realiza&ccedil;&atilde;o</label>
+            <textarea name="motivo_nao_realizacao" rows="3" class="form-control" placeholder="Explique por que o voo n&atilde;o foi realizado">{{ ordem.motivo_nao_realizacao if ordem else '' }}</textarea>
           </div>
 
-          <div class="equipe-uvis-os-field span-4">
-            <label class="equipe-uvis-os-label">Retornar para monitorar</label>
+          <div class="col-md-4">
+            <label class="form-label-header">Retornar para monitorar</label>
             {% set retorno_value = (ordem.retornar_proxima_semana_monitorar_larvas if ordem and ordem.retornar_proxima_semana_monitorar_larvas else ('SIM' if retorno_existente else '')) %}
             <select name="retornar_proxima_semana_monitorar_larvas" id="retornar_monitorar" class="form-select">
               <option value="">Selecione...</option>
               <option value="SIM" {% if retorno_value == 'SIM' %}selected{% endif %}>Sim</option>
-              <option value="NAO" {% if retorno_value == 'NAO' %}selected{% endif %}>Não</option>
+              <option value="NAO" {% if retorno_value == 'NAO' %}selected{% endif %}>N&atilde;o</option>
             </select>
           </div>
-          <div class="equipe-uvis-os-field span-4" id="retorno_data_wrapper">
-            <label class="equipe-uvis-os-label">Data e hora do retorno</label>
+          <div class="col-md-4" id="retorno_data_wrapper">
+            <label class="form-label-header">Data e hora do retorno</label>
             <input type="datetime-local" name="retorno_monitoramento_em" class="form-control" value="{{ retorno_monitoramento_value }}">
-            <div class="equipe-uvis-os-hint mt-2">Ao salvar com "Sim", o sistema cria uma nova solicitação a partir desta OS.</div>
+            <div class="uvis-os-hint">Ao salvar com "Sim", o sistema cria uma nova solicita&ccedil;&atilde;o a partir desta OS.</div>
           </div>
 
-          <div class="equipe-uvis-os-field span-12">
-            <label class="equipe-uvis-os-label">Observação</label>
-            <textarea name="observacoes" rows="4" class="form-control" placeholder="Observações gerais da equipe UVIS">{{ ordem.observacoes if ordem else '' }}</textarea>
+          <div class="col-md-12">
+            <label class="form-label-header">Observa&ccedil;&atilde;o</label>
+            <textarea name="observacoes" rows="4" class="form-control" placeholder="Observa&ccedil;&otilde;es gerais da equipe UVIS">{{ ordem.observacoes if ordem else '' }}</textarea>
           </div>
         </div>
 
-        <div class="equipe-uvis-os-actions">
-          <div class="text-muted small">
+        <hr class="opacity-25 my-4" />
+
+        <div class="uvis-os-actions">
+          <div class="uvis-os-status-note small px-3 py-2">
             {% if retorno_existente %}
-              Já existe uma solicitação de retorno vinculada a esta OS: <strong>#{{ retorno_existente.id }}</strong>.
+              J&aacute; existe uma solicita&ccedil;&atilde;o de retorno vinculada a esta OS: <strong>#{{ retorno_existente.id }}</strong>.
             {% else %}
-              Nenhuma solicitação de retorno vinculada até o momento.
+              Nenhuma solicita&ccedil;&atilde;o de retorno vinculada at&eacute; o momento.
             {% endif %}
           </div>
           {% if not modo_visualizacao %}

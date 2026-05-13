@@ -1,13 +1,25 @@
 from datetime import datetime
 
-from sqlalchemy import func, or_
+from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import joinedload
 
 from app.extensions import db
 from app.models import Drones, Equipe, EquipeUvis, Solicitacao
 
+UVIS_HISTORICO_TIPO_OS_OPTIONS = ("todas", "piloto", "equipe_uvis")
 
-STATUS_OS_CONCLUIDAS = ["CONCLUIDO", "CONCLUÍDO"]
+
+STATUS_OS_CONCLUIDAS = ["CONCLUIDO", "CONCLU\u00cdDO"]
+
+
+def _has_equipe_uvis_os():
+    return or_(
+        Solicitacao.ordem_servico_equipe_uvis.has(),
+        and_(
+            Solicitacao.equipe_uvis_nome.isnot(None),
+            func.trim(Solicitacao.equipe_uvis_nome) != "",
+        ),
+    )
 
 
 class DashboardError(Exception):
@@ -108,6 +120,10 @@ def build_uvis_historico_os_context(user, args):
     if getattr(user, "tipo_usuario", None) != "uvis":
         raise DashboardError("Acesso restrito.", category="danger")
 
+    filtro_tipo_os = (args.get("tipo_os") or "todas").strip().lower()
+    if filtro_tipo_os not in UVIS_HISTORICO_TIPO_OS_OPTIONS:
+        filtro_tipo_os = "todas"
+
     query = (
         Solicitacao.query.options(
             joinedload(Solicitacao.usuario),
@@ -116,8 +132,49 @@ def build_uvis_historico_os_context(user, args):
         )
         .filter(
             Solicitacao.usuario_id == user.id,
+        )
+        .filter(Solicitacao.status != "CANCELADO")
+    )
+
+    if filtro_tipo_os == "piloto":
+        query = query.filter(Solicitacao.status.in_(STATUS_OS_CONCLUIDAS))
+    elif filtro_tipo_os == "equipe_uvis":
+        query = query.filter(_has_equipe_uvis_os())
+    else:
+        query = query.filter(
+            or_(
+                Solicitacao.status.in_(STATUS_OS_CONCLUIDAS),
+                _has_equipe_uvis_os(),
+            )
+        )
+
+    total_todas = (
+        Solicitacao.query
+        .filter(Solicitacao.usuario_id == user.id)
+        .filter(Solicitacao.status != "CANCELADO")
+        .filter(
+            or_(
+                Solicitacao.status.in_(STATUS_OS_CONCLUIDAS),
+                _has_equipe_uvis_os(),
+            )
+        )
+        .count()
+    )
+    total_piloto = (
+        Solicitacao.query
+        .filter(
+            Solicitacao.usuario_id == user.id,
             Solicitacao.status.in_(STATUS_OS_CONCLUIDAS),
         )
+        .filter(Solicitacao.status != "CANCELADO")
+        .count()
+    )
+    total_equipe_uvis = (
+        Solicitacao.query
+        .filter(Solicitacao.usuario_id == user.id)
+        .filter(Solicitacao.status != "CANCELADO")
+        .filter(_has_equipe_uvis_os())
+        .count()
     )
 
     page = args.get("page", 1, type=int)
@@ -126,7 +183,16 @@ def build_uvis_historico_os_context(user, args):
         .paginate(page=page, per_page=6, error_out=False)
     )
 
-    return {"pedidos": paginacao.items, "paginacao": paginacao}
+    return {
+        "pedidos": paginacao.items,
+        "paginacao": paginacao,
+        "filtro_tipo_os": filtro_tipo_os,
+        "historico_totais": {
+            "todas": total_todas,
+            "piloto": total_piloto,
+            "equipe_uvis": total_equipe_uvis,
+        },
+    }
 
 
 def build_uvis_os_form_context(user, os_id):

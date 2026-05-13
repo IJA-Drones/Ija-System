@@ -2,10 +2,10 @@ from datetime import datetime
 
 from flask import abort, current_app, flash, jsonify, redirect, render_template, request, send_file, url_for
 from flask_login import current_user, login_required
-from sqlalchemy import and_, or_
+from sqlalchemy import and_, func, or_
 
 from app.extensions import db
-from app.models import Solicitacao
+from app.models import Solicitacao, Usuario
 from app.modules.admin_dashboard.service import (
     apply_admin_update_fields,
     build_active_teams,
@@ -19,7 +19,7 @@ from app.modules.admin_dashboard.service import (
     get_google_maps_key,
     save_admin_attachment,
 )
-from app.shared.access import apply_solicitacao_prefeitura_scope
+from app.shared.access import apply_regiao_scope, apply_solicitacao_prefeitura_scope
 
 
 ADMIN_PER_PAGE_OPTIONS = (10, 25, 50, 100, 250)
@@ -61,6 +61,16 @@ HISTORICO_OS_ANDAMENTO_STATUSES = (
     "APROVADA COM RECOMENDAÇÕES",
 )
 HISTORICO_OS_CONCLUIDAS_STATUSES = ("CONCLUIDO", "CONCLUÍDO")
+
+
+def _has_equipe_uvis_os():
+    return or_(
+        Solicitacao.ordem_servico_equipe_uvis.has(),
+        and_(
+            Solicitacao.equipe_uvis_nome.isnot(None),
+            func.trim(Solicitacao.equipe_uvis_nome) != "",
+        ),
+    )
 
 
 def _admin_update_error(message: str, status_code: int, category: str):
@@ -306,6 +316,9 @@ def register_routes(bp):
             return redirect(url_for("main.dashboard"))
 
         filtro_status_os = (request.args.get("status_os") or "").strip().upper()
+        filtro_tipo_os = (request.args.get("tipo_os") or "piloto").strip().lower()
+        if filtro_tipo_os not in {"piloto", "equipe_uvis"}:
+            filtro_tipo_os = "piloto"
         filtro_unidade = (request.args.get("unidade") or "").strip()
         filtro_regiao = (request.args.get("regiao") or "").strip()
         page = request.args.get("page", 1, type=int)
@@ -321,26 +334,38 @@ def register_routes(bp):
             filtro_tipo_imovel="",
             filtro_foco="",
         )
+        query = query.options(
+            db.selectinload(Solicitacao.ordem_servico),
+            db.selectinload(Solicitacao.ordem_servico_equipe_uvis),
+        )
 
-        if filtro_status_os == "EM_ANDAMENTO":
-            query = query.filter(
-                and_(
-                    Solicitacao.status.in_(HISTORICO_OS_ANDAMENTO_STATUSES),
-                    Solicitacao.equipe_id.isnot(None),
-                )
-            )
-        elif filtro_status_os == "CONCLUIDAS":
-            query = query.filter(Solicitacao.status.in_(HISTORICO_OS_CONCLUIDAS_STATUSES))
+        if filtro_tipo_os == "equipe_uvis":
+            query = query.filter(_has_equipe_uvis_os())
+
+            if filtro_status_os == "EM_ANDAMENTO":
+                query = query.filter(~Solicitacao.status.in_(HISTORICO_OS_CONCLUIDAS_STATUSES))
+            elif filtro_status_os == "CONCLUIDAS":
+                query = query.filter(Solicitacao.status.in_(HISTORICO_OS_CONCLUIDAS_STATUSES))
         else:
-            query = query.filter(
-                or_(
-                    Solicitacao.status.in_(HISTORICO_OS_CONCLUIDAS_STATUSES),
+            if filtro_status_os == "EM_ANDAMENTO":
+                query = query.filter(
                     and_(
                         Solicitacao.status.in_(HISTORICO_OS_ANDAMENTO_STATUSES),
                         Solicitacao.equipe_id.isnot(None),
+                    )
+                )
+            elif filtro_status_os == "CONCLUIDAS":
+                query = query.filter(Solicitacao.status.in_(HISTORICO_OS_CONCLUIDAS_STATUSES))
+            else:
+                query = query.filter(
+                    or_(
+                        Solicitacao.status.in_(HISTORICO_OS_CONCLUIDAS_STATUSES),
+                        and_(
+                            Solicitacao.status.in_(HISTORICO_OS_ANDAMENTO_STATUSES),
+                            Solicitacao.equipe_id.isnot(None),
+                        ),
                     ),
                 )
-            )
 
         paginacao = query.order_by(
             build_status_order(),
@@ -354,5 +379,66 @@ def register_routes(bp):
             paginacao=paginacao,
             unidades_select=build_uvis_select(current_user),
             filtro_status_os=filtro_status_os,
+            filtro_tipo_os=filtro_tipo_os,
             pagination_args=_query_args_without_page(),
+        )
+
+    @bp.route("/admin/os/<int:os_id>/equipe-uvis-formulario", methods=["GET"], endpoint="admin_equipe_uvis_os_formulario_view")
+    @login_required
+    def admin_equipe_uvis_os_formulario_view(os_id):
+        if not can_access_admin_panel(current_user):
+            flash("Acesso restrito.", "danger")
+            return redirect(url_for("main.dashboard"))
+
+        query = (
+            Solicitacao.query
+            .options(
+                db.selectinload(Solicitacao.usuario),
+                db.selectinload(Solicitacao.equipe),
+                db.selectinload(Solicitacao.ordem_servico_equipe_uvis),
+            )
+            .join(Usuario)
+        )
+        query = apply_solicitacao_prefeitura_scope(query, current_user)
+        query = apply_regiao_scope(query, current_user, Usuario.regiao)
+        solicitacao = query.filter(Solicitacao.id == os_id).first_or_404()
+        ordem = solicitacao.ordem_servico_equipe_uvis
+
+        if ordem is None:
+            flash("A equipe UVIS ainda nao preencheu o formulario desta solicitacao.", "warning")
+            return redirect(url_for("main.admin_historico_os", tipo_os="equipe_uvis"))
+
+        retorno_existente = (
+            Solicitacao.query
+            .filter(
+                Solicitacao.origem_retorno_id == solicitacao.id,
+                Solicitacao.gerada_automaticamente.is_(True),
+            )
+            .order_by(Solicitacao.id.desc())
+            .first()
+        )
+
+        return render_template(
+            "equipe_uvis_os_formulario.html",
+            solicitacao=solicitacao,
+            ordem=ordem,
+            modo_visualizacao=True,
+            nome_equipe=ordem.equipe_uvis_nome or solicitacao.equipe_uvis_nome or "",
+            uvis_nome=getattr(getattr(solicitacao, "usuario", None), "nome_uvis", "") or "",
+            endereco_os=(
+                f"{solicitacao.logradouro or ''}, {solicitacao.numero or 'S/N'} - "
+                f"{solicitacao.bairro or ''} - {solicitacao.cidade or ''}/{solicitacao.uf or ''}"
+            ),
+            respondido_por_padrao=ordem.respondido_por or "",
+            respondido_em_value=(
+                ordem.respondido_em.strftime("%Y-%m-%dT%H:%M")
+                if ordem.respondido_em else ""
+            ),
+            retorno_existente=retorno_existente,
+            retorno_monitoramento_value=(
+                ordem.retorno_monitoramento_em.strftime("%Y-%m-%dT%H:%M")
+                if ordem.retorno_monitoramento_em else ""
+            ),
+            url_voltar=url_for("main.admin_historico_os", tipo_os="equipe_uvis"),
+            form_action="#",
         )

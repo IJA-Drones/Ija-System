@@ -37,6 +37,7 @@ def build_dashboard_equipe_uvis_context(user, args, google_maps_key):
         Solicitacao.query.options(
             joinedload(Solicitacao.usuario),
             joinedload(Solicitacao.equipe),
+            joinedload(Solicitacao.ordem_servico_equipe_uvis),
         )
         .filter(Solicitacao.usuario_id == uvis_id)
         .filter(Solicitacao.equipe_uvis_nome == nome_equipe)
@@ -101,6 +102,71 @@ def build_dashboard_equipe_uvis_context(user, args, google_maps_key):
         "google_maps_key": google_maps_key,
         "nome_equipe": nome_equipe,
     }
+
+
+def build_equipe_uvis_os_historico_context(user, args):
+    uvis_id = getattr(user, "equipe_uvis_uvis_usuario_id", None)
+    nome_equipe = (getattr(user, "equipe_uvis_nome", "") or "").strip()
+
+    if not uvis_id or not nome_equipe:
+        raise EquipeUvisDashboardError(
+            "Conta de equipe sem vinculo com UVIS/equipe. Contate o administrador.",
+            redirect_endpoint="auth.login",
+        )
+
+    query = (
+        Solicitacao.query.options(
+            joinedload(Solicitacao.usuario),
+            joinedload(Solicitacao.equipe),
+            joinedload(Solicitacao.ordem_servico_equipe_uvis),
+        )
+        .filter(Solicitacao.usuario_id == uvis_id)
+        .filter(Solicitacao.equipe_uvis_nome == nome_equipe)
+        .filter(Solicitacao.status.in_(STATUS_OS_CONCLUIDAS))
+    )
+
+    page = args.get("page", 1, type=int)
+    paginacao = (
+        query.order_by(Solicitacao.data_criacao.desc(), Solicitacao.id.desc())
+        .paginate(page=page, per_page=6, error_out=False)
+    )
+
+    return {
+        "pedidos": paginacao.items,
+        "paginacao": paginacao,
+        "nome_equipe": nome_equipe,
+    }
+
+
+def concluir_os_equipe_uvis(user, os_id):
+    context = build_equipe_uvis_os_form_context(user, os_id)
+    solicitacao = context["solicitacao"]
+    ordem = context["ordem"]
+
+    if (solicitacao.status or "").strip().upper() in STATUS_OS_CONCLUIDAS:
+        raise EquipeUvisDashboardError(
+            "Esta solicitacao ja esta concluida.",
+            category="warning",
+            redirect_endpoint="main.dashboard_equipe_uvis",
+        )
+
+    if ordem is None:
+        raise EquipeUvisDashboardError(
+            "Preencha e salve a OS da equipe UVIS antes de concluir.",
+            category="warning",
+            redirect_endpoint="main.dashboard_equipe_uvis",
+        )
+
+    if not (ordem.situacao_aplicacao or "").strip():
+        raise EquipeUvisDashboardError(
+            "Informe a situacao da aplicacao no formulario antes de concluir.",
+            category="warning",
+            redirect_endpoint="main.dashboard_equipe_uvis",
+        )
+
+    solicitacao.status = "CONCLUÍDO"
+    db.session.commit()
+    return f"OS #{solicitacao.id} concluida pela equipe UVIS."
 
 
 def build_equipe_uvis_os_form_context(user, os_id):
