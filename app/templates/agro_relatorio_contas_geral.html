@@ -410,6 +410,9 @@
       <a href="{{ url_for('main.agro_financeiro_contas') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
+      <a href="{{ url_for('main.agro_relatorio_contas_geral_pdf', **request.args) }}" class="btn btn-outline-danger d-flex align-items-center gap-2">
+        <i class="bi bi-file-earmark-pdf-fill"></i> Exportar PDF
+      </a>
       <a href="{{ url_for('main.agro_relatorio_contas_geral_excel', **request.args) }}" class="btn btn-success d-flex align-items-center gap-2">
         <i class="bi bi-file-earmark-excel-fill"></i> Exportar Excel
       </a>
@@ -426,7 +429,7 @@
     <div class="col-md-3">
       <div class="card info status-success shadow-sm rounded-4 border-0 h-100">
         <div class="card-body">
-          <span class="text-muted small d-block">A receber previsto</span>
+          <span class="text-muted small d-block">A receber em aberto</span>
           <h4 class="text-dark mt-2 mb-0">{{ resumo.entradas.total_previsto|currencybr }}</h4>
           <div class="small text-muted mt-1">Recebido: {{ resumo.entradas.total_realizado|currencybr }}</div>
         </div>
@@ -435,7 +438,7 @@
     <div class="col-md-3">
       <div class="card info status-danger shadow-sm rounded-4 border-0 h-100">
         <div class="card-body">
-          <span class="text-muted small d-block">A pagar previsto</span>
+          <span class="text-muted small d-block">A pagar em aberto</span>
           <h4 class="text-dark mt-2 mb-0">{{ resumo.saidas.total_previsto|currencybr }}</h4>
           <div class="small text-muted mt-1">Pago: {{ resumo.saidas.total_realizado|currencybr }}</div>
         </div>
@@ -446,7 +449,7 @@
         <div class="card-body">
           <span class="text-muted small d-block">Saldo realizado</span>
           <h4 class="text-dark mt-2 mb-0">{{ resumo.saldo_realizado|currencybr }}</h4>
-          <div class="small text-muted mt-1">Previsto: {{ resumo.saldo_previsto|currencybr }}</div>
+          <div class="small text-muted mt-1">Saldo final projetado: {{ resumo.saldo_previsto|currencybr }}</div>
         </div>
       </div>
     </div>

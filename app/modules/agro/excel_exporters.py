@@ -1287,9 +1287,9 @@ def _build_relatorio_contas_summary_sheet(workbook: Workbook, resumo: dict, filt
         max_col=8,
     )
 
-    _write_card(ws, row=5, start_col=1, end_col=2, label="Entradas previstas", value=resumo["entradas"]["total_previsto"], fill=FILL_CARD_GREEN)
+    _write_card(ws, row=5, start_col=1, end_col=2, label="Entradas em aberto", value=resumo["entradas"]["total_previsto"], fill=FILL_CARD_GREEN)
     _write_card(ws, row=5, start_col=3, end_col=4, label="Entradas recebidas", value=resumo["entradas"]["total_realizado"], fill=FILL_CARD_GREEN)
-    _write_card(ws, row=5, start_col=5, end_col=6, label="Saidas previstas", value=resumo["saidas"]["total_previsto"], fill=FILL_CARD_RED)
+    _write_card(ws, row=5, start_col=5, end_col=6, label="Saidas em aberto", value=resumo["saidas"]["total_previsto"], fill=FILL_CARD_RED)
     _write_card(ws, row=5, start_col=7, end_col=8, label="Saidas pagas", value=resumo["saidas"]["total_realizado"], fill=FILL_CARD_RED)
 
     _write_card(
@@ -1297,7 +1297,7 @@ def _build_relatorio_contas_summary_sheet(workbook: Workbook, resumo: dict, filt
         row=9,
         start_col=1,
         end_col=2,
-        label="Saldo previsto",
+        label="Saldo final projetado",
         value=resumo["saldo_previsto"],
         fill=FILL_CARD_BLUE if resumo["saldo_previsto"] >= 0 else FILL_CARD_RED,
     )

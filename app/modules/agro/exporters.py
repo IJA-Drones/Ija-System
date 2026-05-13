@@ -1925,3 +1925,413 @@ def build_contrato_agro_pdf(contrato):
     doc.build(story, onFirstPage=_build_contract_page_frame, onLaterPages=_build_contract_page_frame)
     buffer.seek(0)
     return buffer
+
+
+def _relatorio_contas_pdf_status_label(item: dict) -> str:
+    if item.get("cancelado"):
+        return "CANCELADO"
+    if item.get("realizado"):
+        return "PAGO" if item.get("movimento") == "SAIDA" else "RECEBIDO"
+    if item.get("parcial"):
+        return "PARCIAL"
+    if item.get("atrasado"):
+        return "ATRASADO"
+    return "PENDENTE"
+
+
+def _relatorio_contas_pdf_filter_description(filters: dict) -> str:
+    labels = []
+    if filters.get("q"):
+        labels.append(f"Busca: {filters['q']}")
+    if filters.get("movimento"):
+        labels.append(f"Movimento: {filters['movimento']}")
+    if filters.get("situacao"):
+        labels.append(f"Situacao: {filters['situacao']}")
+    if filters.get("origem"):
+        labels.append(f"Origem: {filters['origem']}")
+    if filters.get("tipo_saida"):
+        labels.append(f"Tipo saida: {filters['tipo_saida']}")
+    if filters.get("mes"):
+        labels.append(f"Mes: {filters['mes']}")
+    if filters.get("ano"):
+        labels.append(f"Ano: {filters['ano']}")
+    if filters.get("data_inicio_raw"):
+        labels.append(f"Data inicial: {filters['data_inicio_raw']}")
+    if filters.get("data_fim_raw"):
+        labels.append(f"Data final: {filters['data_fim_raw']}")
+    return " | ".join(labels) if labels else "Sem filtros aplicados"
+
+
+def _relatorio_contas_pdf_values(item: dict) -> tuple[Decimal, Decimal, Decimal]:
+    valor = Decimal(item.get("valor") or 0)
+    if item.get("cancelado"):
+        return Decimal("0"), Decimal("0"), Decimal("0")
+
+    valor_previsto = Decimal(item.get("valor_previsto", valor) or 0)
+    valor_realizado = Decimal(item.get("valor_realizado", valor if item.get("realizado") else Decimal("0")) or 0)
+    valor_pendente = Decimal(item.get("valor_pendente", Decimal("0") if item.get("realizado") else valor) or 0)
+    return valor_previsto, valor_realizado, valor_pendente
+
+
+def _relatorio_contas_pdf_date(value) -> str:
+    if not value:
+        return "-"
+    if isinstance(value, datetime):
+        value = value.date()
+    return value.strftime("%d/%m/%Y")
+
+
+def _relatorio_contas_pdf_money(value) -> str:
+    return format_currency_br(Decimal(value or 0))
+
+
+def _build_relatorio_contas_pdf_styles():
+    styles = getSampleStyleSheet()
+    return {
+        "title": ParagraphStyle(
+            "AgroRelatorioTitle",
+            parent=styles["Heading1"],
+            fontName="Helvetica-Bold",
+            fontSize=18,
+            leading=22,
+            textColor=TEXT_MAIN,
+            spaceAfter=2,
+        ),
+        "subtitle": ParagraphStyle(
+            "AgroRelatorioSubtitle",
+            parent=styles["BodyText"],
+            fontName="Helvetica",
+            fontSize=9,
+            leading=12,
+            textColor=TEXT_MUTED,
+        ),
+        "section": ParagraphStyle(
+            "AgroRelatorioSection",
+            parent=styles["Heading2"],
+            fontName="Helvetica-Bold",
+            fontSize=11,
+            leading=14,
+            textColor=TEXT_MAIN,
+            spaceAfter=6,
+        ),
+        "card_label": ParagraphStyle(
+            "AgroRelatorioCardLabel",
+            parent=styles["BodyText"],
+            fontName="Helvetica-Bold",
+            fontSize=8.5,
+            leading=11,
+            textColor=TEXT_MUTED,
+        ),
+        "card_value": ParagraphStyle(
+            "AgroRelatorioCardValue",
+            parent=styles["BodyText"],
+            fontName="Helvetica-Bold",
+            fontSize=14,
+            leading=17,
+            textColor=TEXT_MAIN,
+        ),
+        "card_meta": ParagraphStyle(
+            "AgroRelatorioCardMeta",
+            parent=styles["BodyText"],
+            fontName="Helvetica",
+            fontSize=8,
+            leading=10,
+            textColor=TEXT_MUTED,
+        ),
+        "table_header": ParagraphStyle(
+            "AgroRelatorioTableHeader",
+            parent=styles["BodyText"],
+            fontName="Helvetica-Bold",
+            fontSize=8,
+            leading=10,
+            textColor=colors.white,
+            alignment=1,
+        ),
+        "table_cell": ParagraphStyle(
+            "AgroRelatorioTableCell",
+            parent=styles["BodyText"],
+            fontName="Helvetica",
+            fontSize=7.6,
+            leading=9.2,
+            textColor=TEXT_MAIN,
+        ),
+        "table_cell_small": ParagraphStyle(
+            "AgroRelatorioTableCellSmall",
+            parent=styles["BodyText"],
+            fontName="Helvetica",
+            fontSize=7,
+            leading=8.4,
+            textColor=TEXT_MUTED,
+        ),
+    }
+
+
+def _build_relatorio_contas_pdf_header(doc, styles):
+    logo = _try_make_agro_logo(width_mm=20)
+    header_copy = [
+        Paragraph("Relatorio Geral de Contas", styles["title"]),
+        Paragraph(f"Exportado em {datetime.now().strftime('%d/%m/%Y %H:%M')}", styles["subtitle"]),
+    ]
+    if logo:
+        return Table(
+            [[logo, header_copy]],
+            colWidths=[24 * mm, doc.width - (24 * mm)],
+            style=TableStyle(
+                [
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                    ("TOPPADDING", (0, 0), (-1, -1), 0),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                ]
+            ),
+        )
+    return Table(
+        [[header_copy]],
+        colWidths=[doc.width],
+        style=TableStyle(
+            [
+                ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                ("TOPPADDING", (0, 0), (-1, -1), 0),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+            ]
+        ),
+    )
+
+
+def _build_relatorio_contas_pdf_cards(doc, styles, resumo: dict):
+    cards = [
+        (
+            "A receber previsto",
+            resumo["entradas"]["total_previsto"],
+            f"Recebido: {_relatorio_contas_pdf_money(resumo['entradas']['total_realizado'])}",
+            colors.HexColor("#EAF7EF"),
+        ),
+        (
+            "A pagar previsto",
+            resumo["saidas"]["total_previsto"],
+            f"Pago: {_relatorio_contas_pdf_money(resumo['saidas']['total_realizado'])}",
+            colors.HexColor("#FDEDED"),
+        ),
+        (
+            "Saldo realizado",
+            resumo["saldo_realizado"],
+            f"Previsto: {_relatorio_contas_pdf_money(resumo['saldo_previsto'])}",
+            colors.HexColor("#EEF4FF"),
+        ),
+        (
+            "Em aberto liquido",
+            resumo["saldo_pendente"],
+            f"Lancamentos: {resumo['total_itens']}",
+            colors.HexColor("#FFF8D9"),
+        ),
+    ]
+
+    card_cells = []
+    backgrounds = []
+    for index, (label, value, meta, bg_color) in enumerate(cards):
+        cell = [
+            Paragraph(label, styles["card_label"]),
+            Spacer(1, 1.5 * mm),
+            Paragraph(_relatorio_contas_pdf_money(value), styles["card_value"]),
+            Spacer(1, 1 * mm),
+            Paragraph(meta, styles["card_meta"]),
+        ]
+        card_cells.append(cell)
+        backgrounds.append(((index % 2), (index // 2), bg_color))
+
+    cards_table = Table(
+        [
+            [card_cells[0], card_cells[1]],
+            [card_cells[2], card_cells[3]],
+        ],
+        colWidths=[doc.width / 2.0, doc.width / 2.0],
+        style=TableStyle(
+            [
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("BOX", (0, 0), (-1, -1), 0.6, BORDER),
+                ("INNERGRID", (0, 0), (-1, -1), 0.6, BORDER),
+                ("LEFTPADDING", (0, 0), (-1, -1), 10),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+                ("TOPPADDING", (0, 0), (-1, -1), 9),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 9),
+            ]
+            + [("BACKGROUND", (col, row), (col, row), bg_color) for col, row, bg_color in backgrounds]
+        ),
+    )
+    return cards_table
+
+
+def _build_relatorio_contas_pdf_group_summary(doc, styles, resumo: dict):
+    table_data = [
+        [
+            Paragraph("Grupo", styles["table_header"]),
+            Paragraph("Previsto", styles["table_header"]),
+            Paragraph("Realizado", styles["table_header"]),
+            Paragraph("Pendente", styles["table_header"]),
+            Paragraph("Atrasado", styles["table_header"]),
+            Paragraph("Cancelado", styles["table_header"]),
+            Paragraph("Qtd.", styles["table_header"]),
+        ]
+    ]
+
+    rows = (
+        ("Contas a receber", resumo["entradas"]),
+        ("Contas a pagar", resumo["saidas"]),
+    )
+    for label, data in rows:
+        quantidade = (
+            f"{data['total_itens']} total | "
+            f"{data['total_realizados']} real. | "
+            f"{data['total_pendentes']} pend."
+        )
+        table_data.append(
+            [
+                Paragraph(escape(label), styles["table_cell"]),
+                Paragraph(_relatorio_contas_pdf_money(data["total_previsto"]), styles["table_cell"]),
+                Paragraph(_relatorio_contas_pdf_money(data["total_realizado"]), styles["table_cell"]),
+                Paragraph(_relatorio_contas_pdf_money(data["total_pendente"]), styles["table_cell"]),
+                Paragraph(_relatorio_contas_pdf_money(data["total_atrasado"]), styles["table_cell"]),
+                Paragraph(_relatorio_contas_pdf_money(data["total_cancelado"]), styles["table_cell"]),
+                Paragraph(escape(quantidade), styles["table_cell_small"]),
+            ]
+        )
+
+    return Table(
+        table_data,
+        colWidths=[34 * mm, 22 * mm, 22 * mm, 22 * mm, 22 * mm, 22 * mm, doc.width - (144 * mm)],
+        repeatRows=1,
+        style=TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), CONTRACT_BLUE),
+                ("BOX", (0, 0), (-1, -1), 0.6, BORDER),
+                ("INNERGRID", (0, 0), (-1, -1), 0.5, BORDER),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("ALIGN", (1, 1), (5, -1), "CENTER"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+                ("TOPPADDING", (0, 0), (-1, -1), 6),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                ("BACKGROUND", (0, 1), (-1, 1), colors.white),
+                ("BACKGROUND", (0, 2), (-1, 2), colors.HexColor("#F8FAFC")),
+            ]
+        ),
+    )
+
+
+def _build_relatorio_contas_pdf_lancamentos_table(doc, styles, lancamentos: list[dict]):
+    table_data = [
+        [
+            Paragraph("Mov.", styles["table_header"]),
+            Paragraph("Origem", styles["table_header"]),
+            Paragraph("Pessoa / referencia", styles["table_header"]),
+            Paragraph("Datas", styles["table_header"]),
+            Paragraph("Status", styles["table_header"]),
+            Paragraph("Valores", styles["table_header"]),
+        ]
+    ]
+
+    row_backgrounds = []
+    for row_index, item in enumerate(lancamentos, start=1):
+        valor_previsto, valor_realizado, valor_pendente = _relatorio_contas_pdf_values(item)
+        is_saida = item.get("movimento") == "SAIDA"
+        movimento_label = "Saida" if is_saida else "Entrada"
+        pessoa_html = (
+            f"<b>{escape(item.get('titulo') or '-')}</b><br/>"
+            f"{escape(item.get('descricao') or '-')}"
+        )
+        detalhe = item.get("detalhe") or item.get("documento") or ""
+        if detalhe:
+            pessoa_html += f"<br/><font color='#5C6A80'>{escape(detalhe)}</font>"
+
+        datas_html = (
+            f"Prev.: {_relatorio_contas_pdf_date(item.get('previsto_em'))}<br/>"
+            f"Real.: {_relatorio_contas_pdf_date(item.get('realizado_em'))}"
+        )
+        status_html = (
+            f"<b>{escape(_relatorio_contas_pdf_status_label(item))}</b><br/>"
+            f"{escape(item.get('display_status') or item.get('status') or '-')}"
+        )
+        valores_html = (
+            f"Total: {_relatorio_contas_pdf_money(valor_previsto)}<br/>"
+            f"Real.: {_relatorio_contas_pdf_money(valor_realizado)}<br/>"
+            f"Pend.: {_relatorio_contas_pdf_money(valor_pendente)}"
+        )
+
+        table_data.append(
+            [
+                Paragraph(movimento_label, styles["table_cell"]),
+                Paragraph(escape(item.get("origem") or "-"), styles["table_cell"]),
+                Paragraph(pessoa_html, styles["table_cell"]),
+                Paragraph(datas_html, styles["table_cell"]),
+                Paragraph(status_html, styles["table_cell"]),
+                Paragraph(valores_html, styles["table_cell"]),
+            ]
+        )
+
+        if is_saida:
+            bg_color = colors.HexColor("#FFF3F2")
+        elif row_index % 2 == 0:
+            bg_color = colors.HexColor("#F8FAFC")
+        else:
+            bg_color = colors.white
+        row_backgrounds.append(("BACKGROUND", (0, row_index), (-1, row_index), bg_color))
+
+    return Table(
+        table_data,
+        colWidths=[14 * mm, 23 * mm, 55 * mm, 28 * mm, 24 * mm, doc.width - (144 * mm)],
+        repeatRows=1,
+        style=TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), IJA_GREEN_DARK),
+                ("BOX", (0, 0), (-1, -1), 0.6, BORDER),
+                ("INNERGRID", (0, 0), (-1, -1), 0.45, BORDER),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("ALIGN", (0, 1), (1, -1), "CENTER"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+                ("TOPPADDING", (0, 0), (-1, -1), 6),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+            ]
+            + row_backgrounds
+        ),
+    )
+
+
+def build_agro_relatorio_contas_pdf_export(lancamentos: list[dict], resumo: dict, filters: dict):
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        leftMargin=16 * mm,
+        rightMargin=16 * mm,
+        topMargin=24 * mm,
+        bottomMargin=24 * mm,
+    )
+    styles = _build_relatorio_contas_pdf_styles()
+
+    story = [
+        _build_relatorio_contas_pdf_header(doc, styles),
+        Spacer(1, 6 * mm),
+        Paragraph(
+            escape(_relatorio_contas_pdf_filter_description(filters)),
+            styles["subtitle"],
+        ),
+        Spacer(1, 6 * mm),
+        _build_relatorio_contas_pdf_cards(doc, styles, resumo),
+        Spacer(1, 7 * mm),
+        Paragraph("Resumo por grupo", styles["section"]),
+        _build_relatorio_contas_pdf_group_summary(doc, styles, resumo),
+        Spacer(1, 7 * mm),
+        Paragraph(f"Lancamentos detalhados ({len(lancamentos)})", styles["section"]),
+    ]
+
+    if lancamentos:
+        story.append(_build_relatorio_contas_pdf_lancamentos_table(doc, styles, lancamentos))
+    else:
+        story.append(Paragraph("Nenhum lancamento encontrado para os filtros informados.", styles["subtitle"]))
+
+    doc.build(story, onFirstPage=_build_page_frame, onLaterPages=_build_page_frame)
+    buffer.seek(0)
+    return buffer, f"agro_relatorio_geral_contas_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
