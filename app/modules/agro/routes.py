@@ -35,6 +35,7 @@ from app.modules.agro.exporters import (
     build_contrato_agro_pdf,
     build_orcamento_agro_pdf,
     build_ordem_servico_agro_pdf,
+    build_agro_relatorio_contas_pdf_export,
     merge_orcamento_agro_with_attachment,
 )
 from app.modules.agro.excel_exporters import (
@@ -1429,10 +1430,12 @@ def _build_financeiro_agro_entrada_summary(lancamentos):
 
     for item in lancamentos:
         valor = FinanceiroAgro._decimal_or_zero(item.valor)
-        if item.status != FinanceiroAgroEntrada.STATUS_CANCELADO:
-            total_previsto += valor
+        if item.status == FinanceiroAgroEntrada.STATUS_CANCELADO:
+            continue
         if item.status == FinanceiroAgroEntrada.STATUS_RECEBIDO:
             total_recebido += valor
+        else:
+            total_previsto += valor
 
     return {
         "total_previsto": total_previsto,
@@ -1448,10 +1451,12 @@ def _build_financeiro_agro_saida_summary(lancamentos):
 
     for item in lancamentos:
         valor = FinanceiroAgro._decimal_or_zero(item.valor)
-        if item.status != FinanceiroAgroSaida.STATUS_CANCELADO:
-            total_previsto += valor
+        if item.status == FinanceiroAgroSaida.STATUS_CANCELADO:
+            continue
         if item.status == FinanceiroAgroSaida.STATUS_PAGO:
             total_pago += valor
+        else:
+            total_previsto += valor
         if item.tipo_saida == FinanceiroAgroSaida.TIPO_IMPOSTO:
             total_impostos += valor
         if item.tipo_saida == FinanceiroAgroSaida.TIPO_RETENCAO:
@@ -1839,13 +1844,15 @@ def _build_agro_relatorio_contas_summary(items):
     resumo_saidas = _build_agro_contas_summary(saidas)
     entradas_em_aberto = resumo_entradas["total_pendente"] + resumo_entradas["total_atrasado"]
     saidas_em_aberto = resumo_saidas["total_pendente"] + resumo_saidas["total_atrasado"]
+    saldo_realizado = resumo_entradas["total_realizado"] - resumo_saidas["total_realizado"]
+    saldo_pendente = entradas_em_aberto - saidas_em_aberto
 
     return {
         "entradas": resumo_entradas,
         "saidas": resumo_saidas,
-        "saldo_previsto": resumo_entradas["total_previsto"] - resumo_saidas["total_previsto"],
-        "saldo_realizado": resumo_entradas["total_realizado"] - resumo_saidas["total_realizado"],
-        "saldo_pendente": entradas_em_aberto - saidas_em_aberto,
+        "saldo_previsto": saldo_realizado + saldo_pendente,
+        "saldo_realizado": saldo_realizado,
+        "saldo_pendente": saldo_pendente,
         "total_itens": len(items),
         "total_atrasado": resumo_entradas["total_atrasado"] + resumo_saidas["total_atrasado"],
         "total_atrasados": resumo_entradas["total_atrasados"] + resumo_saidas["total_atrasados"],
@@ -1872,8 +1879,8 @@ def _build_agro_contas_summary(items):
         if item["cancelado"]:
             total_cancelado += valor_previsto
             continue
-        total_previsto += valor_previsto
         total_realizado += valor_realizado
+        total_previsto += valor_pendente
         if item.get("atrasado"):
             total_atrasado += valor_pendente
         else:
@@ -5172,6 +5179,25 @@ def register_routes(bp):
             as_attachment=True,
             download_name=filename,
             mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+
+    @bp.route("/agro/financeiro/relatorio-geral/pdf", methods=["GET"], endpoint="agro_relatorio_contas_geral_pdf")
+    @login_required
+    def agro_relatorio_contas_geral_pdf():
+        _require_agro_access()
+
+        filters = _get_agro_relatorio_contas_filters(request.args)
+        lancamentos = _build_agro_relatorio_contas_items(current_user, filters)
+        output, filename = build_agro_relatorio_contas_pdf_export(
+            lancamentos,
+            _build_agro_relatorio_contas_summary(lancamentos),
+            filters,
+        )
+        return send_file(
+            output,
+            as_attachment=True,
+            download_name=filename,
+            mimetype="application/pdf",
         )
 
     @bp.route("/agro/financeiro/contas-receber", methods=["GET"], endpoint="agro_contas_receber_listar")
