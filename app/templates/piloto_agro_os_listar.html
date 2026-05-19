@@ -66,6 +66,7 @@
               <label class="small text-muted mb-1">Status:</label>
               <select name="status" class="form-select form-select-sm">
                 <option value="">Todos</option>
+                <option value="AGUARDANDO_OS" {% if filters.status == 'AGUARDANDO_OS' %}selected{% endif %}>Aguardando OS</option>
                 {% for status_value in status_options %}
                   <option value="{{ status_value }}" {% if filters.status == status_value %}selected{% endif %}>{{ status_value }}</option>
                 {% endfor %}
@@ -103,6 +104,44 @@
             </tr>
           </thead>
           <tbody>
+            {% for contrato in contratos_sem_os %}
+              <tr>
+                <td data-label="OS">
+                  <div class="fw-bold text-warning">Aguardando OS</div>
+                  <div class="text-muted small">Contrato aprovado</div>
+                </td>
+                <td data-label="Contrato">
+                  <div class="fw-semibold">#{{ contrato.id }} - {{ contrato.orcamento.cliente_nome or contrato.contratante_nome }}</div>
+                  <div class="text-muted small">{{ contrato.propriedade_nome or contrato.orcamento.nome_fazenda }}</div>
+                  <div class="text-muted small">Protocolo: {{ contrato.orcamento.protocolo or "-" }}</div>
+                </td>
+                <td data-label="Aplicacao">
+                  <div>-</div>
+                  <div class="text-muted small">Aguardando criacao</div>
+                  <div class="text-muted small">Area: {{ contrato.area_contratada or '-' }} ha</div>
+                </td>
+                <td data-label="Equipe / Pilotos">
+                  <div class="fw-semibold">{{ contrato.equipe.nome if contrato.equipe else equipe.nome if equipe else '-' }}</div>
+                  <div class="text-muted small">
+                    {% if equipe and equipe.pilotos %}
+                      {{ equipe.pilotos|selectattr('ativo')|map(attribute='nome')|join(', ') or 'Sem pilotos ativos vinculados' }}
+                    {% else %}
+                      Sem pilotos vinculados
+                    {% endif %}
+                  </div>
+                </td>
+                <td data-label="Relatorio">
+                  <span class="text-muted">Sem anexos do relatorio</span>
+                </td>
+                <td data-label="Acoes" class="listing-cell-actions">
+                  <div class="listing-actions-group">
+                    <a href="{{ url_for('main.agro_os_nova', contrato_id=contrato.id) }}" class="btn btn-sm btn-success text-white shadow-sm">
+                      <i class="bi bi-clipboard2-plus"></i> Criar OS
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
             {% for os_agro in ordens_servico %}
               <tr>
                 <td data-label="OS">
@@ -155,13 +194,14 @@
                   </div>
                 </td>
               </tr>
-            {% else %}
+            {% endfor %}
+            {% if not contratos_sem_os and not ordens_servico %}
               <tr>
                 <td colspan="6" class="text-center py-5">
                   <p class="text-muted mb-0">Nenhuma OS Agro encontrada para os filtros aplicados.</p>
                 </td>
               </tr>
-            {% endfor %}
+            {% endif %}
           </tbody>
         </table>
       </div>

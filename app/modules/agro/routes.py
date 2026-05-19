@@ -8,6 +8,7 @@ from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from flask import abort, flash, redirect, render_template, request, send_file, send_from_directory, url_for
 from flask_login import current_user, login_required
 from sqlalchemy import or_
+from sqlalchemy.orm import joinedload, selectinload
 from werkzeug.utils import secure_filename
 
 from app.extensions import db
@@ -418,6 +419,79 @@ def _current_user_display_name():
 
 def _get_logged_piloto_agro():
     return getattr(current_user, "piloto_agro", None)
+
+
+def _build_piloto_agro_contratos_query(piloto, q: str = ""):
+    equipe_id = getattr(piloto, "equipe_agro_id", None)
+
+    if not equipe_id:
+        return ContratoAgro.query.filter(db.false())
+
+    query = ContratoAgro.query.options(
+        joinedload(ContratoAgro.orcamento),
+        joinedload(ContratoAgro.equipe),
+        selectinload(ContratoAgro.ordens_servico),
+    ).filter(
+        ContratoAgro.status == ContratoAgro.STATUS_APROVADO,
+        ContratoAgro.equipe_agro_id == equipe_id,
+    )
+
+    if q:
+        like = f"%{q}%"
+        query = query.join(ContratoAgro.orcamento).filter(
+            or_(
+                ContratoAgro.contratante_nome.ilike(like),
+                ContratoAgro.propriedade_nome.ilike(like),
+                OrcamentoAgro.cliente_nome.ilike(like),
+                OrcamentoAgro.nome_fazenda.ilike(like),
+                OrcamentoAgro.protocolo.ilike(like),
+            )
+        )
+
+    return query.order_by(ContratoAgro.atualizado_em.desc(), ContratoAgro.id.desc())
+
+
+def _get_contrato_agro_for_piloto_or_404(contrato_id: int, piloto):
+    return _build_piloto_agro_contratos_query(piloto).filter(ContratoAgro.id == contrato_id).first_or_404()
+
+
+def _build_piloto_agro_ordens_servico_query(piloto, q: str = "", status: str = ""):
+    equipe_id = getattr(piloto, "equipe_agro_id", None)
+
+    if not equipe_id:
+        return OrdemServicoAgro.query.filter(db.false())
+
+    query = OrdemServicoAgro.query.options(
+        joinedload(OrdemServicoAgro.contrato).joinedload(ContratoAgro.orcamento),
+        joinedload(OrdemServicoAgro.equipe).joinedload(EquipeAgro.pilotos),
+        joinedload(OrdemServicoAgro.piloto),
+        joinedload(OrdemServicoAgro.drone_pulverizacao),
+        joinedload(OrdemServicoAgro.drone_mapeamento),
+    ).filter(OrdemServicoAgro.equipe_agro_id == equipe_id)
+
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            or_(
+                OrdemServicoAgro.identificador_os.ilike(like),
+                OrdemServicoAgro.cliente_nome.ilike(like),
+                OrdemServicoAgro.propriedade_nome.ilike(like),
+                OrdemServicoAgro.protocolo.ilike(like),
+            )
+        )
+
+    if status:
+        query = query.filter(OrdemServicoAgro.status == status)
+
+    return query.order_by(
+        OrdemServicoAgro.data_aplicacao.desc().nullslast(),
+        OrdemServicoAgro.atualizado_em.desc(),
+        OrdemServicoAgro.id.desc(),
+    )
+
+
+def _get_os_agro_for_piloto_or_404(os_id: int, piloto):
+    return _build_piloto_agro_ordens_servico_query(piloto).filter(OrdemServicoAgro.id == os_id).first_or_404()
 
 
 def _build_latest_os_by_contrato(contratos):
@@ -3527,14 +3601,15 @@ def _build_rd_mapeamento_form_context(*, orcamento, form, errors, equipes, rd=No
     }
 
 
-def _apply_ordem_servico_agro_form(ordem_servico, contrato, form, *, data_aplicacao, equipe_id, drone_pulverizacao_id, drone_pulverizacao, drone_mapeamento_id, drone_mapeamento, numeric_fields):
+def _apply_ordem_servico_agro_form(ordem_servico, contrato, form, *, data_aplicacao, equipe_id, drone_pulverizacao_id, drone_pulverizacao, drone_mapeamento_id, drone_mapeamento, numeric_fields, piloto=None):
     orcamento = contrato.orcamento
 
     ordem_servico.prefeitura_id = contrato.prefeitura_id
     ordem_servico.contrato_agro_id = contrato.id
     ordem_servico.orcamento_agro_id = orcamento.id
     ordem_servico.equipe_agro_id = equipe_id
-    ordem_servico.piloto_agro_id = None
+    if piloto is not None:
+        ordem_servico.piloto_agro_id = piloto.id
     ordem_servico.drone_pulverizacao_id = drone_pulverizacao_id
     ordem_servico.drone_mapeamento_id = drone_mapeamento_id
     ordem_servico.identificador_os = form["identificador_os"]
@@ -3612,13 +3687,8 @@ def register_routes(bp):
                 .order_by(RdMapeamentoAgro.atualizado_em.desc(), RdMapeamentoAgro.id.desc())
                 .all()
             )
-            contratos = build_contratos_agro_aprovados_query(current_user, equipe_id=equipe.id).all()
-            ordens_servico = (
-                apply_prefeitura_scope(OrdemServicoAgro.query, current_user, OrdemServicoAgro.prefeitura_id)
-                .filter(OrdemServicoAgro.equipe_agro_id == equipe.id)
-                .order_by(OrdemServicoAgro.data_aplicacao.desc().nullslast(), OrdemServicoAgro.id.desc())
-                .all()
-            )
+            contratos = _build_piloto_agro_contratos_query(piloto).all()
+            ordens_servico = _build_piloto_agro_ordens_servico_query(piloto).all()
 
         rds_pendentes = [
             item
@@ -3668,21 +3738,27 @@ def register_routes(bp):
         status = (request.args.get("status") or "").strip().upper()
 
         ordens_servico = []
+        contratos_sem_os = []
         if equipe is not None:
-            ordens_servico = build_ordens_servico_agro_query(
-                current_user,
+            include_contratos_sem_os = not status or status == "AGUARDANDO_OS"
+            if include_contratos_sem_os:
+                contratos = _build_piloto_agro_contratos_query(piloto, q=q).all()
+                contratos_sem_os = [contrato for contrato in contratos if not contrato.ordens_servico]
+
+            ordens_servico = _build_piloto_agro_ordens_servico_query(
+                piloto,
                 q=q,
-                status=status if status in AGRO_OS_STATUS_OPTIONS else "",
-                equipe_id=equipe.id,
-            ).all()
+                status=status if status in AGRO_OS_STATUS_OPTIONS and status != "AGUARDANDO_OS" else "",
+            ).all() if status != "AGUARDANDO_OS" else []
 
         return render_template(
             "piloto_agro_os_listar.html",
             piloto=piloto,
             equipe=equipe,
             ordens_servico=ordens_servico,
+            contratos_sem_os=contratos_sem_os,
             status_options=AGRO_OS_STATUS_OPTIONS,
-            filters={"q": q, "status": status, "total": len(ordens_servico)},
+            filters={"q": q, "status": status, "total": len(ordens_servico) + len(contratos_sem_os)},
         )
 
     @bp.route("/agro/piloto/mapeamentos", methods=["GET"], endpoint="agro_piloto_mapeamentos_listar")
@@ -6554,7 +6630,10 @@ def register_routes(bp):
             flash("A criacao da OS Agro agora deve ser feita pelo piloto no painel Agro.", "info")
             return redirect(url_for("main.agro_contratos_template"))
 
-        contrato = _get_contrato_agro_or_404(contrato_id)
+        if pilot_form_mode:
+            contrato = _get_contrato_agro_for_piloto_or_404(contrato_id, piloto_logado)
+        else:
+            contrato = _get_contrato_agro_or_404(contrato_id)
         if contrato.status != ContratoAgro.STATUS_APROVADO:
             flash("A OS Agro so pode ser criada a partir de um contrato aprovado.", "warning")
             if pilot_form_mode:
@@ -6569,12 +6648,20 @@ def register_routes(bp):
             flash("Este contrato aprovado esta vinculado a outra equipe.", "warning")
             return redirect(url_for("main.agro_piloto_os_listar"))
 
-        ordem_existente = (
-            apply_prefeitura_scope(OrdemServicoAgro.query, current_user, OrdemServicoAgro.prefeitura_id)
-            .filter(OrdemServicoAgro.contrato_agro_id == contrato.id)
-            .order_by(OrdemServicoAgro.criado_em.desc(), OrdemServicoAgro.id.desc())
-            .first()
-        )
+        if pilot_form_mode:
+            ordem_existente = (
+                _build_piloto_agro_ordens_servico_query(piloto_logado)
+                .filter(OrdemServicoAgro.contrato_agro_id == contrato.id)
+                .order_by(OrdemServicoAgro.criado_em.desc(), OrdemServicoAgro.id.desc())
+                .first()
+            )
+        else:
+            ordem_existente = (
+                apply_prefeitura_scope(OrdemServicoAgro.query, current_user, OrdemServicoAgro.prefeitura_id)
+                .filter(OrdemServicoAgro.contrato_agro_id == contrato.id)
+                .order_by(OrdemServicoAgro.criado_em.desc(), OrdemServicoAgro.id.desc())
+                .first()
+            )
         if ordem_existente is not None:
             flash("Este contrato ja possui OS cadastrada. Voce pode atualiza-la no formulario.", "info")
             return redirect(url_for("main.agro_os_editar", os_id=ordem_existente.id))
@@ -6633,6 +6720,7 @@ def register_routes(bp):
                 drone_mapeamento_id=drone_mapeamento_id,
                 drone_mapeamento=drone_mapeamento,
                 numeric_fields=numeric_fields,
+                piloto=piloto_logado if pilot_form_mode else None,
             )
             db.session.add(ordem_servico)
             db.session.flush()
@@ -6704,8 +6792,6 @@ def register_routes(bp):
     @bp.route("/agro/os/<int:os_id>/editar", methods=["GET", "POST"], endpoint="agro_os_editar")
     @login_required
     def agro_os_editar(os_id):
-        ordem_servico = _get_os_agro_or_404(os_id)
-        contrato = ordem_servico.contrato
         pilot_form_mode = getattr(current_user, "tipo_usuario", None) == "piloto_agro"
         piloto_logado = None
         if pilot_form_mode:
@@ -6713,11 +6799,15 @@ def register_routes(bp):
             if piloto_logado is None:
                 flash("Seu usuario nao esta vinculado a um piloto agro.", "danger")
                 return redirect(url_for("auth.logout"))
+            ordem_servico = _get_os_agro_for_piloto_or_404(os_id, piloto_logado)
             if piloto_logado.equipe_agro_id != ordem_servico.equipe_agro_id:
                 flash("Esta OS Agro pertence a outra equipe.", "warning")
                 return redirect(url_for("main.agro_piloto_os_listar"))
         else:
             _require_agro_edit()
+            ordem_servico = _get_os_agro_or_404(os_id)
+
+        contrato = ordem_servico.contrato
 
         equipes, pilotos, equipamentos = _build_os_agro_form_options(piloto_logado=piloto_logado if pilot_form_mode else None)
 
@@ -6773,6 +6863,7 @@ def register_routes(bp):
                 drone_mapeamento_id=drone_mapeamento_id,
                 drone_mapeamento=drone_mapeamento,
                 numeric_fields=numeric_fields,
+                piloto=piloto_logado if pilot_form_mode else None,
             )
 
             uploaded_report = request.files.get("relatorio_pdf")
