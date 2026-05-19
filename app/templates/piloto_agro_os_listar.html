@@ -183,11 +183,6 @@
                 </td>
                 <td data-label="Acoes" class="listing-cell-actions">
                   <div class="listing-actions-group">
-                    {% if os_agro.status == 'CONCLUIDA' %}
-                      <a href="{{ url_for('main.agro_os_relatorio_pdf', os_id=os_agro.id) }}" class="btn btn-sm btn-outline-danger shadow-sm">
-                        <i class="bi bi-file-earmark-pdf"></i> Relatorio
-                      </a>
-                    {% endif %}
                     <a href="{{ url_for('main.agro_os_editar', os_id=os_agro.id) }}" class="btn btn-sm btn-success text-white shadow-sm">
                       <i class="bi bi-pencil-square"></i> Continuar
                     </a>
