@@ -20,6 +20,20 @@ def authenticate_user(login_value, password):
     return user
 
 
+def authenticate_uvis_operacional(login_value, password):
+    user = _authenticate_any_user(login_value, password)
+    if not user:
+        return None
+
+    if user.tipo_usuario == "uvis":
+        return user
+
+    if user.tipo_usuario == "equipe_uvis" and getattr(user, "equipe_uvis_uvis_usuario_id", None):
+        return user
+
+    return None
+
+
 def authenticate_piloto_agro(login_value, password):
     user = _authenticate_any_user(login_value, password)
     if not user or user.tipo_usuario != "piloto_agro":

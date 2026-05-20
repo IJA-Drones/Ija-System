@@ -12,11 +12,15 @@ from app.modules.equipe_uvis_dashboard.service import (
 )
 
 
+def _can_access_equipe_uvis_panel(user):
+    return getattr(user, "tipo_usuario", None) in {"equipe_uvis", "uvis"}
+
+
 def register_routes(bp):
     @bp.route("/equipe-uvis", methods=["GET"], endpoint="dashboard_equipe_uvis")
     @login_required
     def dashboard_equipe_uvis():
-        if getattr(current_user, "tipo_usuario", None) != "equipe_uvis":
+        if not _can_access_equipe_uvis_panel(current_user):
             return redirect(url_for("main.dashboard"))
 
         google_maps_key = current_app.config.get("KEY_API_GOOGLE_MAPS")
@@ -37,7 +41,7 @@ def register_routes(bp):
     @bp.route("/equipe-uvis/os/<int:os_id>/formulario", methods=["GET", "POST"], endpoint="equipe_uvis_os_formulario_view")
     @login_required
     def equipe_uvis_os_formulario_view(os_id):
-        if getattr(current_user, "tipo_usuario", None) != "equipe_uvis":
+        if not _can_access_equipe_uvis_panel(current_user):
             return redirect(url_for("main.dashboard"))
 
         try:
@@ -74,7 +78,7 @@ def register_routes(bp):
     @bp.route("/equipe-uvis/os/historico", methods=["GET"], endpoint="equipe_uvis_os_historico")
     @login_required
     def equipe_uvis_os_historico():
-        if getattr(current_user, "tipo_usuario", None) != "equipe_uvis":
+        if not _can_access_equipe_uvis_panel(current_user):
             return redirect(url_for("main.dashboard"))
 
         try:
@@ -88,7 +92,7 @@ def register_routes(bp):
     @bp.route("/equipe-uvis/os/<int:os_id>/concluir", methods=["POST"], endpoint="equipe_uvis_concluir_os")
     @login_required
     def equipe_uvis_concluir_os(os_id):
-        if getattr(current_user, "tipo_usuario", None) != "equipe_uvis":
+        if not _can_access_equipe_uvis_panel(current_user):
             return redirect(url_for("main.dashboard"))
 
         try:

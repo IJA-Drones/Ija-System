@@ -1,6 +1,5 @@
 from datetime import datetime
 
-from sqlalchemy import or_
 from sqlalchemy.orm import joinedload
 
 from app.extensions import db
@@ -16,6 +15,11 @@ class EquipeUvisDashboardError(Exception):
 
 
 STATUS_OS_CONCLUIDAS = {"CONCLUIDO", "CONCLUÍDO"}
+STATUS_SOLICITACOES_APROVADAS_EQUIPE_UVIS = {
+    "APROVADO",
+    "APROVADO COM RECOMENDACOES",
+    "APROVADO COM RECOMENDAÇÕES",
+}
 STATUS_PREENCHIMENTO_EQUIPE_UVIS = {
     "APENAS APLICADO",
     "APENAS MONITORADO",
@@ -23,15 +27,58 @@ STATUS_PREENCHIMENTO_EQUIPE_UVIS = {
 }
 
 
-def build_dashboard_equipe_uvis_context(user, args, google_maps_key):
-    uvis_id = getattr(user, "equipe_uvis_uvis_usuario_id", None)
-    nome_equipe = (getattr(user, "equipe_uvis_nome", "") or "").strip()
+def _resolve_uvis_operational_access(user):
+    tipo_usuario = getattr(user, "tipo_usuario", None)
+    if tipo_usuario == "uvis":
+        uvis_id = getattr(user, "id", None)
+        nome_equipe = (getattr(user, "nome_uvis", "") or "UVIS").strip()
+    elif tipo_usuario == "equipe_uvis":
+        uvis_id = getattr(user, "equipe_uvis_uvis_usuario_id", None)
+        uvis_dona = getattr(user, "equipe_uvis_dona", None)
+        nome_equipe = (getattr(uvis_dona, "nome_uvis", None) or "").strip()
+        if not nome_equipe:
+            nome_equipe = (
+                getattr(user, "nome_uvis", None)
+                or getattr(user, "equipe_uvis_nome", None)
+                or "Equipe UVIS"
+            ).strip()
+    else:
+        uvis_id = None
+        nome_equipe = ""
 
-    if not uvis_id or not nome_equipe:
+    if not uvis_id:
         raise EquipeUvisDashboardError(
-            "Conta de equipe sem vinculo com UVIS/equipe. Contate o administrador.",
+            "Conta sem vinculo com UVIS. Contate o administrador.",
             redirect_endpoint="auth.login",
         )
+
+    return uvis_id, nome_equipe or "Equipe UVIS"
+
+
+def _status_key(value):
+    return (
+        (value or "")
+        .strip()
+        .upper()
+        .replace("Ç", "C")
+        .replace("Õ", "O")
+        .replace("Í", "I")
+    )
+
+
+def _is_approved_for_equipe_uvis(solicitacao):
+    return _status_key(getattr(solicitacao, "status", None)) in {
+        "APROVADO",
+        "APROVADO COM RECOMENDACOES",
+    }
+
+
+def _is_concluded(solicitacao):
+    return "CONCLU" in _status_key(getattr(solicitacao, "status", None))
+
+
+def build_dashboard_equipe_uvis_context(user, args, google_maps_key):
+    uvis_id, nome_equipe = _resolve_uvis_operational_access(user)
 
     query = (
         Solicitacao.query.options(
@@ -40,20 +87,12 @@ def build_dashboard_equipe_uvis_context(user, args, google_maps_key):
             joinedload(Solicitacao.ordem_servico_equipe_uvis),
         )
         .filter(Solicitacao.usuario_id == uvis_id)
-        .filter(Solicitacao.equipe_uvis_nome == nome_equipe)
-        .filter(Solicitacao.status != "CANCELADO")
+        .filter(Solicitacao.status.in_(STATUS_SOLICITACOES_APROVADAS_EQUIPE_UVIS))
     )
 
     filtro_status = args.get("status")
     if filtro_status:
-        if filtro_status in {"CONCLUIDO", "CONCLUÍDO"}:
-            query = query.filter(
-                or_(
-                    Solicitacao.status == "CONCLUIDO",
-                    Solicitacao.status == "CONCLUÍDO",
-                )
-            )
-        else:
+        if filtro_status in STATUS_SOLICITACOES_APROVADAS_EQUIPE_UVIS:
             query = query.filter(Solicitacao.status == filtro_status)
 
     filtro_tipo_visita = args.get("tipo_visita")
@@ -105,14 +144,7 @@ def build_dashboard_equipe_uvis_context(user, args, google_maps_key):
 
 
 def build_equipe_uvis_os_historico_context(user, args):
-    uvis_id = getattr(user, "equipe_uvis_uvis_usuario_id", None)
-    nome_equipe = (getattr(user, "equipe_uvis_nome", "") or "").strip()
-
-    if not uvis_id or not nome_equipe:
-        raise EquipeUvisDashboardError(
-            "Conta de equipe sem vinculo com UVIS/equipe. Contate o administrador.",
-            redirect_endpoint="auth.login",
-        )
+    uvis_id, nome_equipe = _resolve_uvis_operational_access(user)
 
     query = (
         Solicitacao.query.options(
@@ -121,7 +153,7 @@ def build_equipe_uvis_os_historico_context(user, args):
             joinedload(Solicitacao.ordem_servico_equipe_uvis),
         )
         .filter(Solicitacao.usuario_id == uvis_id)
-        .filter(Solicitacao.equipe_uvis_nome == nome_equipe)
+        .filter(Solicitacao.ordem_servico_equipe_uvis.has())
         .filter(Solicitacao.status.in_(STATUS_OS_CONCLUIDAS))
     )
 
@@ -143,7 +175,7 @@ def concluir_os_equipe_uvis(user, os_id):
     solicitacao = context["solicitacao"]
     ordem = context["ordem"]
 
-    if (solicitacao.status or "").strip().upper() in STATUS_OS_CONCLUIDAS:
+    if _is_concluded(solicitacao):
         raise EquipeUvisDashboardError(
             "Esta solicitacao ja esta concluida.",
             category="warning",
@@ -170,16 +202,10 @@ def concluir_os_equipe_uvis(user, os_id):
 
 
 def build_equipe_uvis_os_form_context(user, os_id):
-    if getattr(user, "tipo_usuario", None) != "equipe_uvis":
+    if getattr(user, "tipo_usuario", None) not in {"equipe_uvis", "uvis"}:
         raise EquipeUvisDashboardError("Acesso restrito.")
 
-    uvis_id = getattr(user, "equipe_uvis_uvis_usuario_id", None)
-    nome_equipe = (getattr(user, "equipe_uvis_nome", "") or "").strip()
-    if not uvis_id or not nome_equipe:
-        raise EquipeUvisDashboardError(
-            "Conta de equipe sem vinculo com UVIS/equipe.",
-            redirect_endpoint="auth.login",
-        )
+    uvis_id, nome_equipe = _resolve_uvis_operational_access(user)
 
     solicitacao = (
         Solicitacao.query.options(
@@ -190,12 +216,19 @@ def build_equipe_uvis_os_form_context(user, os_id):
         .get_or_404(os_id)
     )
 
-    if solicitacao.usuario_id != uvis_id or (solicitacao.equipe_uvis_nome or "").strip() != nome_equipe:
+    if solicitacao.usuario_id != uvis_id:
         raise EquipeUvisDashboardError("Voce nao tem permissao para acessar esta solicitacao.")
 
     if (solicitacao.status or "").strip().upper() == "CANCELADO":
         raise EquipeUvisDashboardError(
             "Esta solicitacao foi cancelada.",
+            category="warning",
+            redirect_endpoint="main.dashboard_equipe_uvis",
+        )
+
+    if not _is_approved_for_equipe_uvis(solicitacao) and not _is_concluded(solicitacao):
+        raise EquipeUvisDashboardError(
+            "Esta solicitacao ainda nao esta aprovada para a UVIS operacional.",
             category="warning",
             redirect_endpoint="main.dashboard_equipe_uvis",
         )
@@ -226,7 +259,7 @@ def build_equipe_uvis_os_form_context(user, os_id):
     return {
         "solicitacao": solicitacao,
         "ordem": ordem,
-        "modo_visualizacao": (solicitacao.status or "").strip().upper() in STATUS_OS_CONCLUIDAS,
+        "modo_visualizacao": _is_concluded(solicitacao),
         "nome_equipe": nome_equipe,
         "uvis_nome": getattr(getattr(solicitacao, "usuario", None), "nome_uvis", "") or "",
         "endereco_os": (
@@ -249,6 +282,12 @@ def salvar_equipe_uvis_os_form(user, os_id, form_data):
         )
 
     solicitacao = context["solicitacao"]
+    if not _is_approved_for_equipe_uvis(solicitacao):
+        raise EquipeUvisDashboardError(
+            "Somente solicitacoes aprovadas podem ser preenchidas pela UVIS operacional.",
+            category="warning",
+        )
+
     ordem = context["ordem"]
     if ordem is None:
         ordem = OrdemServicoEquipeUvis(

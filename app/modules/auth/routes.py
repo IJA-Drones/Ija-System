@@ -2,7 +2,12 @@ from flask import Blueprint, flash, redirect, render_template, request, session,
 from flask_login import current_user, login_required, login_user, logout_user
 
 from app.models import Usuario
-from app.modules.auth.service import authenticate_piloto_agro, authenticate_user, get_authenticated_redirect_endpoint
+from app.modules.auth.service import (
+    authenticate_piloto_agro,
+    authenticate_user,
+    authenticate_uvis_operacional,
+    get_authenticated_redirect_endpoint,
+)
 
 
 bp = Blueprint("auth", __name__)
@@ -31,6 +36,29 @@ def login():
         flash("Login ou senha incorretos. Tente novamente.", "danger")
 
     return render_template("login.html")
+
+
+@bp.route("/uvis-operacional/login", methods=["GET", "POST"])
+def login_uvis_operacional():
+    if current_user.is_authenticated:
+        user_type = getattr(current_user, "tipo_usuario", None)
+        if user_type in {"uvis", "equipe_uvis"}:
+            return redirect(url_for("main.dashboard_equipe_uvis"))
+        return redirect(url_for(get_authenticated_redirect_endpoint(current_user)))
+
+    if request.method == "POST":
+        login_form = request.form.get("login")
+        senha_form = request.form.get("senha")
+
+        user = authenticate_uvis_operacional(login_form, senha_form)
+        if user:
+            login_user(user)
+            flash(f"Bem-vindo, {user.nome_uvis}! Acesso operacional UVIS liberado.", "success")
+            return redirect(url_for("main.dashboard_equipe_uvis"))
+
+        flash("Login ou senha incorretos para o acesso operacional UVIS.", "danger")
+
+    return render_template("login_uvis_operacional.html")
 
 
 @bp.route("/agro/login", methods=["GET", "POST"])

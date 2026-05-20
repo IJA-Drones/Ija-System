@@ -10,12 +10,14 @@ from app.modules.uvis_equipes.service import (
     build_admin_uvis_teams_listing,
     build_uvis_teams_listing,
     create_team_account,
+    get_operational_uvis_account,
     get_team_account,
     get_team_members,
     next_team_name_for_user,
     next_team_slot,
     suggested_team_login,
     team_exists_for_user,
+    upsert_operational_uvis_account,
     validate_team_login,
     validate_team_password,
 )
@@ -38,6 +40,62 @@ def _admin_or_operario_view_only():
 
 
 def register_routes(bp):
+    @bp.route("/uvis/acesso-operacional", methods=["GET", "POST"], endpoint="uvis_acesso_operacional")
+    @login_required
+    def uvis_acesso_operacional():
+        _uvis_only()
+
+        conta = get_operational_uvis_account(current_user.id)
+        errors = {}
+        form = {
+            "login_operacional": conta.login if conta else "",
+        }
+
+        if request.method == "POST":
+            login_operacional = (request.form.get("login_operacional") or "").strip()
+            senha = (request.form.get("senha") or "").strip()
+            senha2 = (request.form.get("senha2") or "").strip()
+            form["login_operacional"] = login_operacional
+
+            login_error = validate_team_login(
+                login_operacional,
+                current_login=conta.login if conta else None,
+            )
+            if login_error:
+                errors["login_operacional"] = login_error
+
+            errors.update(validate_team_password(senha, senha2, required=conta is None))
+
+            if errors:
+                flash("Revise os dados do acesso operacional.", "warning")
+                return render_template(
+                    "uvis_acesso_operacional.html",
+                    conta=conta,
+                    form=form,
+                    errors=errors,
+                )
+
+            try:
+                upsert_operational_uvis_account(current_user, login_operacional, senha)
+                db.session.commit()
+                flash("Acesso operacional da UVIS salvo com sucesso.", "success")
+                return redirect(url_for("main.uvis_acesso_operacional"))
+            except IntegrityError:
+                db.session.rollback()
+                errors["login_operacional"] = "Este login ja esta em uso. Escolha outro."
+                flash(errors["login_operacional"], "danger")
+            except Exception:
+                db.session.rollback()
+                current_app.logger.exception("Erro ao salvar acesso operacional UVIS para usuario %s.", current_user.id)
+                flash("Erro interno ao salvar o acesso operacional. Tente novamente.", "danger")
+
+        return render_template(
+            "uvis_acesso_operacional.html",
+            conta=conta,
+            form=form,
+            errors=errors,
+        )
+
     @bp.route("/uvis/equipes", methods=["GET"], endpoint="listar_equipes_uvis")
     @login_required
     def listar_equipes_uvis():
