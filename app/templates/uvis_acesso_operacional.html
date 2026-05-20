@@ -24,7 +24,7 @@
       </div>
 
       <div class="alert alert-info py-2 small">
-        Defina aqui o login que será entregue para a equipe operacional acessar e ver somente as demandas aprovadas desta UVIS.
+        Defina aqui o login entregue para a equipe operacional. Esse acesso abre a fila de demandas aprovadas desta UVIS, com registro da solicitação, imagens/anexos, detalhes do endereço, traçado de rota pelo Google Maps, preenchimento da OS, conclusão e retorno automático quando necessário.
         {% if conta %}
           <br>Login atual: <code>{{ conta.login }}</code>
         {% endif %}
@@ -85,7 +85,7 @@
         </div>
 
         <small class="text-muted d-block mt-3">
-          Depois de criado, deixe a senha em branco para manter a atual.
+          Depois de criado, deixe a senha em branco para manter a atual. A conta também pode entrar pela tela de Acesso Operacional UVIS.
         </small>
 
         <div class="d-flex justify-content-end gap-2 mt-5">

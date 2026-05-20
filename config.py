@@ -30,6 +30,10 @@ class Config:
 
     # configuração sqlalchemy
     SQLALCHEMY_DATABASE_URI = uri
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_pre_ping": True,
+        "pool_recycle": 300,
+    }
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SECRET_KEY = os.environ.get('SECRET_KEY')
