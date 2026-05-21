@@ -109,12 +109,13 @@
     .login-visual-content {
       position: relative;
       display: grid;
-      grid-template-columns: minmax(280px, 430px) minmax(360px, 560px);
+      grid-template-columns: minmax(300px, 430px) minmax(420px, 540px);
       align-items: center;
       justify-content: center;
-      gap: clamp(32px, 5vw, 90px);
-      width: 100%;
+      gap: clamp(28px, 3.6vw, 58px);
+      width: min(100%, 1040px);
       margin-top: clamp(6px, 2vh, 28px);
+      margin-inline: auto;
     }
 
     .login-copy {
@@ -235,6 +236,7 @@
       position: relative;
       overflow: hidden;
       align-self: center;
+      width: 100%;
       min-height: 430px;
       padding: 24px;
       border-radius: 28px;
@@ -808,15 +810,16 @@
       }
 
       .login-visual-content {
-        grid-template-columns: minmax(260px, .86fr) minmax(340px, 1fr);
+        grid-template-columns: minmax(280px, 390px) minmax(390px, 520px);
         justify-content: center;
-        gap: clamp(24px, 3.2vw, 42px);
+        gap: clamp(22px, 2.8vw, 36px);
+        width: min(100%, 940px);
       }
 
       .login-copy,
       .login-copy h1,
       .login-copy p {
-        max-width: 620px;
+        max-width: 470px;
       }
 
       .login-ops-panel {
@@ -833,12 +836,19 @@
 
       .login-visual-content {
         grid-template-columns: 1fr;
+        justify-items: center;
         gap: 26px;
+        width: min(100%, 620px);
       }
 
       .login-ops-panel {
+        width: 100%;
         max-width: 620px;
         min-height: auto;
+      }
+
+      .login-copy {
+        width: 100%;
       }
 
       .login-copy h1 {
@@ -859,8 +869,9 @@
 
       .login-visual-content {
         align-items: center;
+        justify-items: center;
         margin-top: 0;
-        gap: 24px;
+        gap: 20px;
       }
 
       .login-kicker {
