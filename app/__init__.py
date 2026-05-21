@@ -16,20 +16,7 @@ UTC_TZ = ZoneInfo("UTC")
 BRAZIL_TZ = ZoneInfo("America/Sao_Paulo")
 
 
-AUDIT_ACTION_KEYWORDS = (
-    "cadastrar",
-    "cadastro",
-    "novo",
-    "criar",
-    "editar",
-    "update",
-    "atualizar",
-    "excluir",
-    "delete",
-    "deletar",
-    "remover",
-    "reset_senha",
-)
+AUDIT_MUTATION_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 
 
 def _resolve_request_ip():
@@ -62,14 +49,39 @@ def _should_audit_request():
     endpoint = (request.endpoint or "").strip().lower()
     path = (request.path or "").strip().lower()
 
-    if request.method not in {"POST", "PUT", "PATCH", "DELETE"}:
-        return False
-
     if path.startswith("/static/") or endpoint.startswith("static"):
         return False
 
-    haystack = f"{endpoint} {path}"
-    return any(keyword in haystack for keyword in AUDIT_ACTION_KEYWORDS)
+    if request.method in AUDIT_MUTATION_METHODS:
+        return True
+
+    if endpoint.endswith("logout") or path.endswith("/logout"):
+        return True
+
+    return False
+
+
+def _resolve_audit_event_type(endpoint, path):
+    haystack = f"{(endpoint or '').lower()} {(path or '').lower()}"
+
+    if "login" in haystack or "logout" in haystack:
+        return "ACESSO"
+    if "formulario" in haystack:
+        return "FORMULARIO"
+    if "concluir" in haystack:
+        return "CONCLUSAO"
+    if "dosagem" in haystack:
+        return "DOSAGEM"
+    if "credenciais" in haystack or "reset_senha" in haystack:
+        return "CREDENCIAIS"
+    if any(keyword in haystack for keyword in ("excluir", "delete", "deletar", "remover")):
+        return "EXCLUSAO"
+    if any(keyword in haystack for keyword in ("cadastrar", "cadastro", "novo", "criar")):
+        return "CRIACAO"
+    if any(keyword in haystack for keyword in ("editar", "update", "atualizar", "salvar")):
+        return "EDICAO"
+
+    return "ACAO"
 
 
 def create_app():
@@ -147,7 +159,7 @@ def create_app():
         query_string = request.query_string.decode("utf-8", errors="ignore").strip() or None
         user_agent = (request.headers.get("User-Agent") or "").strip() or None
         referrer = (request.referrer or "").strip() or None
-        tipo_evento = "ACAO"
+        tipo_evento = _resolve_audit_event_type(endpoint, request.path)
 
         try:
             with db.engine.begin() as conn:

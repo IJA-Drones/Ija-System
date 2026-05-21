@@ -297,7 +297,7 @@
             <div class="card-body pt-0 pb-4">
                 <form method="GET" class="row g-2 align-items-end">
                     <div class="col-md-4">
-                        <label class="small text-muted">Veículo / Placa / Piloto:</label>
+                        <label class="small text-muted">Veículo / Placa / Operador:</label>
                         <input type="text" name="q" value="{{ filters.q or '' }}" class="form-control" placeholder="Modelo, placa, responsável...">
                     </div>
                     <div class="col-md-3">
@@ -333,7 +333,7 @@
                         <tr>
                             <th class="ps-4 text-start">Ultima Movimentacao</th>
                             <th class="text-start">Veículo</th>
-                            <th>Piloto</th>
+                            <th>Operador / Equipe</th>
                             <th>KM Inicial</th>
                             <th>KM Final</th>
                             <th>Abastecimento (R$)</th>
@@ -360,7 +360,15 @@
                                         {% if log.veiculo and log.veiculo.responsavel %} • {{ log.veiculo.responsavel }}{% endif %}
                                     </div>
                                 </td>
-                                <td data-label="Piloto">{{ log.piloto.nome_piloto if log.piloto else '-' }}</td>
+                                <td data-label="Operador / Equipe">
+                                    {% if log.piloto %}
+                                        {{ log.piloto.nome_piloto }}
+                                    {% elif log.equipe %}
+                                        {{ log.equipe.nome_equipe }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
                                 <td data-label="KM Inicial">{{ (log.km_inicial or 0)|round|int }} km</td>
                                 <td data-label="KM Final">
                                     {% if log.km_final is not none %}

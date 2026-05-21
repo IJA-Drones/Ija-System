@@ -48,24 +48,47 @@ def register_routes(bp):
     )
     @login_required
     def admin_checklist_semanal_detalhe(piloto_id, semana_inicio):
-        _admin_only()
+        return _render_admin_checklist_detail("piloto", piloto_id, semana_inicio)
 
-        try:
-            detail = build_admin_checklist_detail(piloto_id=piloto_id, semana_inicio=semana_inicio)
-        except ValueError:
-            abort(404)
+    @bp.route(
+        "/admin/checklists/semanais/<string:actor_type>/<int:actor_id>/<string:semana_inicio>",
+        methods=["GET"],
+        endpoint="admin_checklist_semanal_detalhe_actor",
+    )
+    @login_required
+    def admin_checklist_semanal_detalhe_actor(actor_type, actor_id, semana_inicio):
+        return _render_admin_checklist_detail(actor_type, actor_id, semana_inicio)
 
-        if not detail:
-            abort(404)
 
-        return render_template(
-            "admin_checklist_semanal_detalhe.html",
-            piloto_id=detail["piloto_id"],
-            piloto_nome=detail["piloto_nome"],
-            semana_inicio=detail["semana_inicio"],
-            semana_fim=detail["semana_fim"],
-            ultima_movimentacao=detail["ultima_movimentacao"],
-            veiculos=detail["veiculos"],
-            drones=detail["drones"],
-            totais=detail["totais"],
+def _render_admin_checklist_detail(actor_type, actor_id, semana_inicio):
+    _admin_only()
+
+    if actor_type not in {"piloto", "equipe"}:
+        abort(404)
+
+    try:
+        detail = build_admin_checklist_detail(
+            actor_type=actor_type,
+            actor_id=actor_id,
+            semana_inicio=semana_inicio,
         )
+    except ValueError:
+        abort(404)
+
+    if not detail:
+        abort(404)
+
+    return render_template(
+        "admin_checklist_semanal_detalhe.html",
+        piloto_id=detail["piloto_id"],
+        equipe_id=detail["equipe_id"],
+        actor_id=detail["actor_id"],
+        actor_type=detail["actor_type"],
+        piloto_nome=detail["piloto_nome"],
+        semana_inicio=detail["semana_inicio"],
+        semana_fim=detail["semana_fim"],
+        ultima_movimentacao=detail["ultima_movimentacao"],
+        veiculos=detail["veiculos"],
+        drones=detail["drones"],
+        totais=detail["totais"],
+    )

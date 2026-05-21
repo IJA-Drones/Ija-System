@@ -8,11 +8,15 @@ from app.modules.equipes.service import (
     build_equipes_filters,
     build_equipes_query,
     build_regioes_list,
+    build_equipe_accounts_map,
     find_piloto_conflict,
+    get_equipe_account,
     get_pilotos_ordered,
     is_truthy,
     parse_optional_int,
     regiao_valida,
+    upsert_equipe_account,
+    validate_equipe_account_form,
 )
 from app.shared.access import apply_prefeitura_scope, normalize_role
 
@@ -53,12 +57,6 @@ def register_routes(bp):
 
             if not regiao_valida(regiao):
                 errors["regiao"] = "Selecione uma regiao valida."
-
-            if not piloto_id:
-                errors["piloto_id"] = "Selecione o piloto titular."
-
-            if not auxiliar_id:
-                errors["auxiliar_id"] = "Selecione o piloto auxiliar."
 
             if piloto_id and auxiliar_id and piloto_id == auxiliar_id:
                 errors["auxiliar_id"] = "Auxiliar deve ser diferente do piloto titular."
@@ -135,8 +133,10 @@ def register_routes(bp):
             db.session.add(equipe)
             db.session.flush()
 
-            db.session.add(EquipePiloto(equipe_id=equipe.id, piloto_id=piloto_obj.id, papel="piloto"))
-            db.session.add(EquipePiloto(equipe_id=equipe.id, piloto_id=auxiliar_obj.id, papel="auxiliar"))
+            if piloto_obj:
+                db.session.add(EquipePiloto(equipe_id=equipe.id, piloto_id=piloto_obj.id, papel="piloto"))
+            if auxiliar_obj:
+                db.session.add(EquipePiloto(equipe_id=equipe.id, piloto_id=auxiliar_obj.id, papel="auxiliar"))
 
             try:
                 db.session.commit()
@@ -211,6 +211,7 @@ def register_routes(bp):
 
         pagination = query.paginate(page=page, per_page=per_page, error_out=False)
         equipes = pagination.items
+        equipe_accounts = build_equipe_accounts_map(equipes)
         is_editable = tipo in ["admin", "operario", "operador", "prefeitura_admin"]
         filters = build_equipes_filters(
             q=q,
@@ -234,7 +235,35 @@ def register_routes(bp):
             is_admin=(tipo == "admin"),
             is_editable=is_editable,
             tipo_usuario=tipo,
+            equipe_accounts=equipe_accounts,
         )
+
+    @bp.route("/equipes/<int:equipe_id>/credenciais", methods=["POST"], endpoint="atualizar_credenciais_equipe")
+    @login_required
+    def atualizar_credenciais_equipe(equipe_id):
+        _require_admin_or_operario()
+
+        equipe = apply_prefeitura_scope(Equipe.query, current_user, Equipe.prefeitura_id).filter(Equipe.id == equipe_id).first_or_404()
+        account = get_equipe_account(equipe.id)
+        login = (request.form.get("login_equipe") or "").strip()
+        senha = request.form.get("senha_equipe") or ""
+        senha2 = request.form.get("senha_equipe2") or ""
+        errors = validate_equipe_account_form(login, senha, senha2, current_account=account)
+        if errors:
+            for message in errors.values():
+                flash(message, "warning")
+            return redirect(url_for("main.listar_equipes"))
+
+        try:
+            upsert_equipe_account(equipe, login, senha)
+            db.session.commit()
+            flash(f"Login operacional da equipe '{equipe.nome_equipe}' atualizado.", "success")
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("Erro ao atualizar credenciais da equipe %s.", equipe.id)
+            flash("Erro ao atualizar credenciais da equipe. Tente novamente.", "danger")
+
+        return redirect(url_for("main.listar_equipes"))
 
     @bp.route("/equipes/<int:equipe_id>/editar", methods=["GET", "POST"], endpoint="editar_equipe")
     @login_required
@@ -276,9 +305,7 @@ def register_routes(bp):
             piloto_id = parse_optional_int(piloto_id_raw)
             auxiliar_id = parse_optional_int(auxiliar_id_raw)
 
-            if not piloto_id:
-                errors["piloto_id"] = "Selecione o piloto titular."
-            elif piloto_id_raw and piloto_id is None:
+            if piloto_id_raw and piloto_id is None:
                 errors["piloto_id"] = "Piloto titular invalido."
 
             if auxiliar_id_raw and auxiliar_id is None:
@@ -334,10 +361,13 @@ def register_routes(bp):
                 equipe.descricao = descricao or None
 
                 membro_piloto = next((membro for membro in equipe.membros if membro.papel == "piloto"), None)
-                if membro_piloto:
-                    membro_piloto.piloto_id = piloto_id
-                else:
-                    equipe.membros.append(EquipePiloto(equipe_id=equipe.id, piloto_id=piloto_id, papel="piloto"))
+                if piloto_id:
+                    if membro_piloto:
+                        membro_piloto.piloto_id = piloto_id
+                    else:
+                        equipe.membros.append(EquipePiloto(equipe_id=equipe.id, piloto_id=piloto_id, papel="piloto"))
+                elif membro_piloto:
+                    db.session.delete(membro_piloto)
 
                 membro_aux = next((membro for membro in equipe.membros if membro.papel == "auxiliar"), None)
                 if auxiliar_id:
@@ -350,7 +380,11 @@ def register_routes(bp):
                 elif membro_aux:
                     db.session.delete(membro_aux)
 
-                ids = [membro.piloto_id for membro in equipe.membros if membro.piloto_id]
+                ids = [
+                    membro.piloto_id
+                    for membro in equipe.membros
+                    if membro.piloto_id and membro not in db.session.deleted
+                ]
                 if len(ids) != len(set(ids)):
                     db.session.rollback()
                     errors["auxiliar_id"] = "Equipe nao pode ter o mesmo piloto em mais de um papel."

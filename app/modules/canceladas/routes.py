@@ -24,7 +24,7 @@ def register_routes(bp):
     @bp.route("/canceladas", endpoint="solicitacoes_canceladas")
     @login_required
     def solicitacoes_canceladas():
-        if current_user.tipo_usuario == "piloto":
+        if current_user.tipo_usuario in {"piloto", "equipe_oceano"}:
             return redirect(url_for("main.piloto_os"))
 
         page = request.args.get("page", 1, type=int)

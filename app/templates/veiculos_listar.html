@@ -255,7 +255,14 @@
                                 <span class="badge bg-light text-dark border">{{ v.frota }}</span>
                                 <span class="badge bg-light text-primary border">{{ v.operacao }}</span>
                             </td>
-                            <td><div class="small">{{ v.responsavel or '-' }}</div></td>
+                            <td>
+                                <div class="small">{{ v.responsavel or '-' }}</div>
+                                {% if v.equipe %}
+                                    <div class="small text-primary fw-bold mt-1">
+                                        <i class="bi bi-people-fill me-1"></i>{{ v.equipe.nome_equipe }}
+                                    </div>
+                                {% endif %}
+                            </td>
                             <td>
                                 <span class="badge bg-light text-dark border rounded-pill px-3">
                                     {{ (v.km_atual or 0)|round|int }} km

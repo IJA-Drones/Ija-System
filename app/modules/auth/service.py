@@ -54,7 +54,7 @@ def get_authenticated_redirect_endpoint(user):
         return "main.admin_agro"
     if user.tipo_usuario in ADMIN_PANEL_VIEW_TYPES:
         return "main.admin_dashboard"
-    if user.tipo_usuario == "piloto":
+    if user.tipo_usuario in {"piloto", "equipe_oceano"}:
         return "main.piloto_os"
     if user.tipo_usuario == "piloto_agro":
         return "main.agro_piloto_dashboard"

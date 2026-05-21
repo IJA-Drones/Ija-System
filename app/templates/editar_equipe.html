@@ -94,18 +94,18 @@
         {# SEÇÃO 2: MEMBROS #}
         <div class="d-flex align-items-center mb-3">
           <i class="bi bi-person-badge-fill text-primary me-2 fs-5"></i>
-          <h5 class="m-0 text-primary fw-bold">Membros</h5>
+          <h5 class="m-0 text-primary fw-bold">Membros opcionais</h5>
         </div>
 
         <div class="row g-3 mb-4">
           <div class="col-md-6">
             <label class="form-label fw-bold small text-muted">
-              <i class="bi bi-person-check me-1 text-primary"></i> Piloto Titular *
+              <i class="bi bi-person-check me-1 text-primary"></i> Piloto Titular
             </label>
 
             {% set piloto_sel = form.get('piloto_id', (piloto_atual.id if piloto_atual else '')) %}
-            <select name="piloto_id" class="form-select {% if errors.get('piloto_id') %}is-invalid{% endif %}" required>
-              <option value="">Selecione...</option>
+            <select name="piloto_id" class="form-select {% if errors.get('piloto_id') %}is-invalid{% endif %}">
+              <option value="">Sem piloto vinculado</option>
               {% for p in pilotos %}
                 <option value="{{ p.id }}" {% if piloto_sel|string == p.id|string %}selected{% endif %}>
                   #{{ p.id }} — {{ p.nome_piloto }}{% if p.regiao %} ({{ p.regiao }}){% endif %}
@@ -117,7 +117,7 @@
               <div class="invalid-feedback">{{ errors.get('piloto_id') }}</div>
             {% endif %}
             <div class="form-text small">
-              Este é o piloto principal da equipe.
+              O vínculo com piloto ficou opcional; o acesso operacional pode ser feito pelo login da equipe.
             </div>
           </div>
 
