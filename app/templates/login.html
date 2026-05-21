@@ -126,13 +126,13 @@
       display: inline-flex;
       align-items: center;
       gap: 9px;
-      margin-bottom: 20px;
-      padding: 8px 13px;
+      margin-bottom: 18px;
+      padding: 7px 12px;
       border-radius: 999px;
       border: 1px solid rgba(255,255,255,.22);
-      background: rgba(255,255,255,.11);
-      color: rgba(255,255,255,.92);
-      font-size: .78rem;
+      background: rgba(255,255,255,.08);
+      color: rgba(255,255,255,.84);
+      font-size: .74rem;
       font-weight: 800;
       backdrop-filter: blur(12px);
     }
@@ -158,22 +158,25 @@
     }
 
     .login-feature-pills {
-      display: flex;
-      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(118px, 1fr));
       gap: 10px;
-      margin-top: 20px;
+      margin-top: 18px;
+      max-width: 540px;
     }
 
     .login-feature-pill {
       display: inline-flex;
       align-items: center;
+      justify-content: flex-start;
       gap: 8px;
-      padding: 9px 12px;
+      min-height: 42px;
+      padding: 8px 12px;
       border-radius: 999px;
-      border: 1px solid rgba(158,244,255,.20);
-      background: rgba(255,255,255,.08);
-      color: rgba(255,255,255,.88);
-      font-size: .74rem;
+      border: 1px solid rgba(158,244,255,.16);
+      background: rgba(255,255,255,.055);
+      color: rgba(255,255,255,.78);
+      font-size: .68rem;
       font-weight: 800;
       backdrop-filter: blur(10px);
       transition: transform .18s ease, border-color .18s ease, background .18s ease;
@@ -185,26 +188,26 @@
     }
 
     .login-feature-pill:hover {
-      transform: translateY(-2px);
-      border-color: rgba(158,244,255,.42);
-      background: rgba(255,255,255,.12);
+      transform: translateY(-1px);
+      border-color: rgba(158,244,255,.28);
+      background: rgba(255,255,255,.08);
     }
 
     .login-info-trigger {
       display: inline-flex;
       align-items: center;
-      gap: 12px;
-      margin-top: 28px;
-      padding: 12px 16px 12px 12px;
+      gap: 10px;
+      margin-top: 22px;
+      padding: 10px 15px 10px 10px;
       border-radius: 999px;
-      border: 1px solid rgba(255, 215, 120, .34);
-      background: rgba(255, 255, 255, .09);
-      color: #ffffff;
+      border: 1px solid rgba(255, 215, 120, .26);
+      background: rgba(255, 255, 255, .075);
+      color: rgba(255,255,255,.92);
       font-family: inherit;
-      font-size: .86rem;
+      font-size: .8rem;
       font-weight: 850;
       cursor: pointer;
-      box-shadow: 0 16px 36px rgba(0, 0, 0, .16);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, .12);
       backdrop-filter: blur(12px);
       transition: transform .18s ease, border-color .18s ease, background .18s ease;
     }
@@ -217,16 +220,15 @@
     }
 
     .login-info-trigger .info-bulb {
-      width: 40px;
-      height: 40px;
+      width: 34px;
+      height: 34px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       border-radius: 999px;
       color: #102236;
       background: linear-gradient(135deg, #ffd96a, #fff3b8);
-      box-shadow: 0 0 0 7px rgba(255, 217, 106, .12);
-      animation: infoGlow 2.4s ease-in-out infinite;
+      box-shadow: 0 0 0 6px rgba(255, 217, 106, .10);
     }
 
     .login-ops-panel {
@@ -258,10 +260,11 @@
     }
 
     .ops-panel-head,
-    .ops-insight-grid,
+    .ops-status-line,
+    .ops-status-item,
     .ops-step,
     .ops-progress,
-    .ops-status-grid {
+    .ops-progress-label {
       position: relative;
       z-index: 1;
     }
@@ -271,7 +274,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 14px;
-      margin-bottom: 22px;
+      margin-bottom: 16px;
     }
 
     .ops-panel-head strong {
@@ -311,112 +314,89 @@
       animation: opsPulse 1.8s ease-out infinite;
     }
 
-    .ops-insight-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 8px;
+    .ops-status-line {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px 12px;
       margin-bottom: 18px;
-      padding: 8px;
+      padding: 11px 13px;
       border-radius: 18px;
       border: 1px solid rgba(255,255,255,.10);
       background: rgba(3, 17, 29, .18);
     }
 
-    .ops-insight {
-      position: relative;
-      overflow: hidden;
-      min-height: 62px;
-      padding: 10px 12px;
-      border-radius: 13px;
-      border: 1px solid transparent;
-      background: rgba(255,255,255,.06);
-      transition: transform .18s ease, border-color .18s ease, background .18s ease;
-    }
-
-    .ops-insight::after {
-      display: none;
-    }
-
-    .ops-insight:nth-child(2)::after {
-      animation-delay: .45s;
-    }
-
-    .ops-insight:nth-child(3)::after {
-      animation-delay: .9s;
-    }
-
-    .ops-insight:hover {
-      transform: translateY(-1px);
-      border-color: rgba(158,244,255,.22);
-      background: rgba(255,255,255,.09);
-    }
-
-    .ops-insight span {
-      display: block;
-      color: rgba(255,255,255,.64);
-      font-size: .68rem;
+    .ops-status-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: rgba(255,255,255,.78);
+      font-size: .72rem;
+      line-height: 1.2;
       font-weight: 800;
-      line-height: 1.15;
-      text-transform: uppercase;
+      white-space: nowrap;
     }
 
-    .ops-insight strong {
-      display: block;
-      margin-top: 6px;
-      color: #ffffff;
-      font-size: .95rem;
-      line-height: 1.1;
+    .ops-status-item::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      flex: 0 0 7px;
+      border-radius: 999px;
+      background: #42f5c8;
+      box-shadow: 0 0 0 4px rgba(66,245,200,.10);
     }
 
     .ops-flow {
       position: relative;
       z-index: 1;
       display: grid;
-      gap: 12px;
-      margin: 20px 0;
+      gap: 10px;
+      margin: 18px 0 16px;
     }
 
     .ops-flow::before {
       content: "";
       position: absolute;
-      left: 23px;
-      top: 22px;
-      bottom: 22px;
+      left: 21px;
+      top: 26px;
+      bottom: 26px;
       width: 2px;
       background: linear-gradient(180deg, #9ef4ff, rgba(158,244,255,.14));
-      opacity: .85;
+      opacity: .62;
     }
 
     .ops-step {
       display: grid;
-      grid-template-columns: 54px 1fr;
-      gap: 14px;
+      grid-template-columns: 46px 1fr;
+      gap: 12px;
       align-items: center;
-      min-height: 76px;
-      padding: 12px 14px;
+      min-height: 72px;
+      padding: 12px;
       border-radius: 18px;
       border: 1px solid rgba(255,255,255,.13);
-      background: rgba(255,255,255,.08);
+      background: rgba(3, 17, 29, .18);
       transition: transform .18s ease, background .18s ease, border-color .18s ease;
     }
 
     .ops-step:nth-child(2) {
-      animation: opsFloat 3.8s ease-in-out infinite;
+      border-color: rgba(158,244,255,.30);
+      background: rgba(158,244,255,.11);
     }
 
     .ops-step:hover {
-      transform: translateX(4px);
-      border-color: rgba(158,244,255,.38);
+      transform: translateX(2px);
+      border-color: rgba(158,244,255,.32);
       background: rgba(255,255,255,.12);
     }
 
     .ops-node {
-      width: 50px;
-      height: 50px;
+      width: 42px;
+      height: 42px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      border-radius: 16px;
+      border-radius: 14px;
       color: #061827;
       background: #9ef4ff;
       font-size: .76rem;
@@ -458,42 +438,22 @@
       animation: opsProgress 4.8s ease-in-out infinite;
     }
 
-    .ops-status-grid {
-      display: none;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+    .ops-progress-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       gap: 12px;
-      margin-top: 22px;
-    }
-
-    .ops-status {
-      min-height: 88px;
-      padding: 14px;
-      border-radius: 18px;
-      border: 1px solid rgba(255,255,255,.13);
-      background: rgba(3, 17, 29, .30);
-    }
-
-    .ops-status i {
-      display: block;
-      margin-bottom: 9px;
-      color: #9ef4ff;
-      font-size: 1rem;
-    }
-
-    .ops-status strong {
-      display: block;
-      color: #ffffff;
-      font-size: .76rem;
-      line-height: 1.15;
-    }
-
-    .ops-status span {
-      display: block;
-      margin-top: 6px;
+      margin-top: 9px;
       color: rgba(255,255,255,.58);
       font-size: .68rem;
       line-height: 1.2;
-      font-weight: 700;
+      font-weight: 750;
+    }
+
+    .ops-progress-label strong {
+      color: rgba(158,244,255,.82);
+      font-size: inherit;
+      white-space: nowrap;
     }
 
     .system-modal .modal-content {
@@ -921,12 +881,13 @@
       }
 
       .login-feature-pills {
+        grid-template-columns: repeat(3, minmax(104px, 1fr));
         gap: 8px;
         margin-top: 16px;
       }
 
       .login-feature-pill {
-        gap: 7px;
+        min-height: 38px;
         padding: 7px 10px;
         font-size: .68rem;
       }
@@ -953,23 +914,14 @@
         margin-bottom: 12px;
       }
 
-      .ops-insight-grid {
+      .ops-status-line {
         margin-bottom: 12px;
-      }
-
-      .ops-insight {
-        min-height: 68px;
-        padding: 10px 12px 14px;
+        padding: 9px 11px;
         border-radius: 15px;
       }
 
-      .ops-insight::after {
-        display: none;
-      }
-
-      .ops-insight strong {
-        margin-top: 6px;
-        font-size: .9rem;
+      .ops-status-item {
+        font-size: .66rem;
       }
 
       .ops-flow {
@@ -982,7 +934,7 @@
       }
 
       .ops-step {
-        grid-template-columns: 44px 1fr;
+        grid-template-columns: 40px 1fr;
         gap: 10px;
         min-height: 58px;
         padding: 8px 10px;
@@ -990,8 +942,8 @@
       }
 
       .ops-node {
-        width: 40px;
-        height: 40px;
+        width: 36px;
+        height: 36px;
         border-radius: 13px;
       }
 
@@ -1004,8 +956,9 @@
         font-size: .68rem;
       }
 
-      .ops-status-grid {
-        display: none;
+      .ops-progress-label {
+        margin-top: 7px;
+        font-size: .64rem;
       }
 
       .login-panel {
@@ -1104,6 +1057,7 @@
       }
 
       .login-feature-pills {
+        grid-template-columns: repeat(3, minmax(96px, 1fr));
         margin-top: 14px;
       }
 
@@ -1182,13 +1136,12 @@
         transform: translateY(0);
       }
 
-      .ops-insight-grid {
-        grid-template-columns: 1fr 1fr 1fr;
+      .ops-status-line {
+        gap: 7px 10px;
       }
 
-      .ops-insight {
-        min-height: 64px;
-        padding-bottom: 12px;
+      .ops-status-item {
+        font-size: .62rem;
       }
     }
 
@@ -1325,6 +1278,7 @@
       }
 
       .login-feature-pills {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 8px;
         margin-top: 16px;
       }
@@ -1448,16 +1402,6 @@
       }
     }
 
-    @keyframes opsFloat {
-      0%, 100% {
-        transform: translateY(0);
-      }
-
-      50% {
-        transform: translateY(-5px);
-      }
-    }
-
     @keyframes opsProgress {
       0%, 100% {
         width: 58%;
@@ -1468,25 +1412,6 @@
       }
     }
 
-    @keyframes opsMeter {
-      0%, 100% {
-        transform: scaleX(.42);
-      }
-
-      50% {
-        transform: scaleX(.92);
-      }
-    }
-
-    @keyframes infoGlow {
-      0%, 100% {
-        box-shadow: 0 0 0 7px rgba(255, 217, 106, .12);
-      }
-
-      50% {
-        box-shadow: 0 0 0 12px rgba(255, 217, 106, .04);
-      }
-    }
   </style>
 {% endblock %}
 
@@ -1497,12 +1422,11 @@
       <div class="login-copy">
         <span class="login-kicker"><i class="bi bi-shield-check"></i> Plataforma operacional</span>
         <h1>Gestão de demandas em campo.</h1>
-        <p>Da solicitação ao histórico, o sistema organiza registros, imagens, agenda, análise administrativa, liberação para a UVIS, OS da equipe, rotas, relatórios em PDF/Excel, retorno e conclusão.</p>
+        <p>Organize solicitações, análise, UVIS, ordens de serviço, rotas e relatórios em um fluxo único de operação.</p>
         <div class="login-feature-pills" aria-label="Funcionalidades em destaque">
           <span class="login-feature-pill"><i class="bi bi-clipboard2-plus"></i> Solicitações</span>
           <span class="login-feature-pill"><i class="bi bi-calendar-event"></i> Agenda</span>
           <span class="login-feature-pill"><i class="bi bi-images"></i> Imagens</span>
-          <span class="login-feature-pill"><i class="bi bi-check2-circle"></i> Aprovação</span>
           <span class="login-feature-pill"><i class="bi bi-map"></i> Rotas</span>
           <span class="login-feature-pill"><i class="bi bi-filetype-pdf"></i> PDF</span>
           <span class="login-feature-pill"><i class="bi bi-file-earmark-excel"></i> Excel</span>
@@ -1519,19 +1443,10 @@
           <span class="ops-live">Ao vivo</span>
         </div>
 
-        <div class="ops-insight-grid">
-          <div class="ops-insight">
-            <span>Status</span>
-            <strong>Em fluxo</strong>
-          </div>
-          <div class="ops-insight">
-            <span>UVIS</span>
-            <strong>Fila própria</strong>
-          </div>
-          <div class="ops-insight">
-            <span>OS</span>
-            <strong>Execução</strong>
-          </div>
+        <div class="ops-status-line">
+          <span class="ops-status-item">Aprovada para UVIS</span>
+          <span class="ops-status-item">OS em execução</span>
+          <span class="ops-status-item">Relatório pendente</span>
         </div>
 
         <div class="ops-flow">
@@ -1559,23 +1474,8 @@
         </div>
 
         <div class="ops-progress"><span></span></div>
-
-        <div class="ops-status-grid">
-          <div class="ops-status">
-            <i class="bi bi-check2-square"></i>
-            <strong>Registros</strong>
-            <span>Cadastro, imagens e filtros.</span>
-          </div>
-          <div class="ops-status">
-            <i class="bi bi-pin-map"></i>
-            <strong>Rotas</strong>
-            <span>Google Maps com GPS.</span>
-          </div>
-          <div class="ops-status">
-            <i class="bi bi-file-earmark-arrow-down"></i>
-            <strong>Relatórios</strong>
-            <span>PDFs e planilhas Excel.</span>
-          </div>
+        <div class="ops-progress-label">
+          <span>Fluxo operacional</span>
         </div>
       </div>
     </div>
