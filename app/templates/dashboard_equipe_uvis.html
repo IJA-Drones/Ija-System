@@ -237,7 +237,7 @@
 <div class="d-flex justify-content-between align-items-center mb-4 dashboard-header">
   <h2 class="text-dark m-0">
     <i class="bi bi-list-task me-2 text-primary"></i>
-    Solicitações da Equipe: <span class="fw-bold">{{ nome_equipe }}</span>
+    Demandas aprovadas da UVIS: <span class="fw-bold">{{ nome_equipe }}</span>
   </h2>
   <div class="header-actions">
     <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-dark shadow-sm btn-canceladas">
@@ -273,13 +273,9 @@
                       <div class="col-md-3">
                           <label class="small text-muted mb-1">Filtrar por Status</label>
                           <select name="status" class="form-select form-select-sm">
-                              <option value="">Todos os Pedidos</option>
-                              <option value="PENDENTE" {{ 'selected' if request.args.get('status')=='PENDENTE' else '' }}>⚪️ Pendentes</option>
-                              <option value="EM ANÁLISE" {{ 'selected' if request.args.get('status')=='EM ANÁLISE' else '' }}>🟡 Em Análise</option>
+                              <option value="">Aprovados e aprovados c/ rec.</option>
                               <option value="APROVADO" {{ 'selected' if request.args.get('status')=='APROVADO' else '' }}>🟢 Aprovados</option>
                               <option value="APROVADO COM RECOMENDAÇÕES" {{ 'selected' if request.args.get('status')=='APROVADO COM RECOMENDAÇÕES' else ''}}>🟠 Aprovado c/ Recomendações</option>
-                              <option value="NEGADO" {{ 'selected' if request.args.get('status')=='NEGADO' else '' }}>🔴 Negados</option>
-                              <option value="CONCLUÍDO" {{ 'selected' if request.args.get('status') in ['CONCLUÍDO', 'CONCLUIDO'] else '' }}>🟣 Concluídos</option>
                           </select>
                       </div>
 
@@ -397,9 +393,6 @@
                     {% if p.latitude %}
                       <i class="bi bi-geo-alt-fill text-danger ms-1" title="Localização GPS salva"></i>
                     {% endif %}
-                    {% if p.equipe_uvis_nome %}
-                      <span class="badge bg-dark ms-1">{{ p.equipe_uvis_nome }}</span>
-                    {% endif %}
                   </div>
 
                   {% if p.latitude and p.longitude %}
@@ -477,7 +470,7 @@
             <tr>
               <td colspan="4" class="text-center py-5 text-muted">
                 <i class="bi bi-inbox fs-1 d-block mb-3"></i>
-                <p>Nenhuma solicitação encontrada para esta equipe.</p>
+                <p>Nenhuma demanda aprovada encontrada para esta UVIS.</p>
               </td>
             </tr>
             {% endfor %}
@@ -538,17 +531,13 @@
           {% endif %}
 
           <h6 class="text-primary border-bottom pb-2 fw-bold mt-3">
-            <i class="bi bi-people"></i> Equipe UVIS
+            <i class="bi bi-people"></i> UVIS operacional
           </h6>
 
           <div class="row g-2 mb-3">
             <div class="col-12">
-              <small class="text-muted d-block">Equipe atribuída:</small>
-              {% if p.equipe_uvis_nome %}
-                <strong>{{ p.equipe_uvis_nome }}</strong>
-              {% else %}
-                <span class="badge bg-secondary">Ainda não atribuída</span>
-              {% endif %}
+              <small class="text-muted d-block">Acesso:</small>
+              <strong>{{ nome_equipe }}</strong>
             </div>
           </div>
 

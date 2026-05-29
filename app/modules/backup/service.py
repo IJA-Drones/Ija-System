@@ -192,7 +192,7 @@ def list_backups():
 
         result = dbx.files_list_folder("/backups")
 
-        for entry in sorted(result.entries, key=lambda item: item.name, reverse=True):
+        for entry in result.entries:
             if isinstance(entry, dropbox.files.FileMetadata):
                 backups.append(
                     {
@@ -219,4 +219,5 @@ def list_backups():
                 }
             )
 
+    backups.sort(key=lambda backup: backup["modified_at"], reverse=True)
     return backups

@@ -896,7 +896,7 @@
                 A base da planilha continua a mesma: <strong>500 g de BTI WDG para 10 L de agua</strong>, equivalente a <strong>50 g por litro de calda</strong>. Nesta area voce confere o planejamento, informa o realizado e usa a comparacao automatica como conferencia final.
               </p>
             </div>
-            {% if current_user.tipo_usuario == 'piloto' %}
+            {% if current_user.tipo_usuario in ['piloto', 'equipe_oceano'] %}
             <a href="{{ url_for('main.piloto_os_dosagem', os_id=solicitacao.id) }}" class="btn btn-primary btn-sm">
               <i class="bi bi-calculator me-1"></i>{% if modo_visualizacao %}Ver planejamento{% else %}Planejar dosagem{% endif %}
             </a>

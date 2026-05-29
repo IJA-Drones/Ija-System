@@ -361,7 +361,7 @@
                      name="q"
                      class="form-control form-control-sm"
                      value="{{ filters.q }}"
-                     placeholder="Usuario, login, rota, path ou IP">
+                     placeholder="Usuario, login, tipo, evento, rota, path ou IP">
             </div>
 
             <div class="col-md-2">
@@ -378,8 +378,20 @@
               <label class="small text-muted">Tipo</label>
               <select name="tipo_evento" class="form-select form-select-sm">
                 <option value="">Todos</option>
-                <option value="ACESSO" {% if filters.tipo_evento == 'ACESSO' %}selected{% endif %}>Acesso</option>
-                <option value="ACAO" {% if filters.tipo_evento == 'ACAO' %}selected{% endif %}>Acao</option>
+                {% set tipos_evento = [
+                  ('ACESSO', 'Acesso'),
+                  ('ACAO', 'Acao'),
+                  ('FORMULARIO', 'Formulario'),
+                  ('CONCLUSAO', 'Conclusao'),
+                  ('DOSAGEM', 'Dosagem'),
+                  ('CREDENCIAIS', 'Credenciais'),
+                  ('CRIACAO', 'Criacao'),
+                  ('EDICAO', 'Edicao'),
+                  ('EXCLUSAO', 'Exclusao')
+                ] %}
+                {% for valor, label in tipos_evento %}
+                  <option value="{{ valor }}" {% if filters.tipo_evento == valor %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
               </select>
             </div>
 

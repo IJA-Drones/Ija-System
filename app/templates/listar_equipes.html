@@ -8,6 +8,76 @@
 
 <style>
   .equipes-table-wrap { width: 100%; }
+  .equipes-table-wrap .table-responsive {
+    overflow-x: auto;
+  }
+
+  .equipes-table-wrap table.table {
+    min-width: 1080px;
+  }
+
+  .operational-login {
+    display: grid;
+    gap: 8px;
+    min-width: 150px;
+  }
+
+  .operational-login-code {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    width: fit-content;
+    max-width: 180px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(13, 110, 253, .18);
+    background: rgba(13, 110, 253, .08);
+    color: #16477d;
+    font-size: .8rem;
+    font-weight: 800;
+  }
+
+  .operational-login-code span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .operational-login-empty {
+    color: #6c757d;
+    font-size: .82rem;
+    line-height: 1.25;
+  }
+
+  .operational-login-action {
+    width: fit-content;
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: .76rem;
+    font-weight: 800;
+  }
+
+  .team-actions {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: nowrap;
+  }
+
+  .team-actions .btn {
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .credential-modal .modal-content {
+    border: 0;
+    border-radius: 18px;
+    box-shadow: 0 22px 60px rgba(15, 23, 42, .18);
+  }
+
+  .credential-modal .modal-header {
+    border-bottom: 1px solid rgba(100, 116, 139, .12);
+  }
 
   @media (max-width: 991.98px) {
     .container-fluid.py-4 {
@@ -86,7 +156,8 @@
     .equipes-table-wrap table.table tbody tr td:nth-child(6)::before { content: "Auxiliar"; }
     .equipes-table-wrap table.table tbody tr td:nth-child(7)::before { content: "Drones"; }
     .equipes-table-wrap table.table tbody tr td:nth-child(8)::before { content: "Criada em"; }
-    .equipes-table-wrap table.table tbody tr td:nth-child(9)::before { content: "Ações"; }
+    .equipes-table-wrap table.table tbody tr td:nth-child(9)::before { content: "Login operacional"; }
+    .equipes-table-wrap table.table tbody tr td:nth-child(10)::before { content: "Ações"; }
 
     .equipes-table-wrap table.table tbody tr td::before {
       flex: 0 0 130px;
@@ -103,14 +174,19 @@
       min-width: 0;
     }
 
-    /* ações agora é a 9ª coluna */
-    .equipes-table-wrap td:nth-child(9) .d-flex.gap-2 {
+    /* ações agora é a 10ª coluna */
+    .equipes-table-wrap td:nth-child(10) .team-actions {
       flex-direction: column;
       width: 100%;
     }
-    .equipes-table-wrap td:nth-child(9) .d-flex.gap-2 .btn {
+    .equipes-table-wrap td:nth-child(10) .team-actions .btn {
       width: 100%;
       justify-content: center;
+    }
+
+    .operational-login,
+    .operational-login-action {
+      width: 100%;
     }
 
     .card-footer .d-flex.justify-content-between.align-items-center {
@@ -176,7 +252,7 @@
   }
 </style>
 
-<div class="container-fluid py-4" style="max-width: 1200px">
+<div class="container-fluid py-4" style="max-width: 1360px">
   <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
       <h2 class="text-dark">
@@ -334,7 +410,8 @@
               <th>Auxiliar</th>
               <th>Drones</th>
               <th>Criada em</th>
-              <th class="text-center" style="width: 210px">Ações</th>
+              <th style="width: 190px">Login operacional</th>
+              <th class="text-center" style="width: 170px">Ações</th>
             </tr>
           </thead>
 
@@ -344,6 +421,7 @@
                 {% set piloto = e.piloto_titular %}
                 {% set aux = e.piloto_auxiliar %}
                 {% set drones = (e.equipamentos | selectattr('tipo_equipamento', 'equalto', 'drones') | list) %}
+                {% set conta_equipe = equipe_accounts.get(e.id) if equipe_accounts else none %}
 
                 <tr>
                   <td class="ps-3 text-muted">#{{ e.id }}</td>
@@ -415,19 +493,44 @@
                     {% endif %}
                   </td>
 
+                  <td>
+                    <div class="operational-login">
+                      {% if conta_equipe %}
+                        <div class="operational-login-code" title="{{ conta_equipe.login }}">
+                          <i class="bi bi-key"></i>
+                          <span>{{ conta_equipe.login }}</span>
+                        </div>
+                      {% else %}
+                        <div class="operational-login-empty">Sem login definido</div>
+                      {% endif %}
+
+                      {% if is_editable %}
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-primary operational-login-action"
+                          data-bs-toggle="modal"
+                          data-bs-target="#modalCredenciaisEquipe{{ e.id }}"
+                        >
+                          <i class="bi bi-sliders me-1"></i>
+                          {{ 'Alterar' if conta_equipe else 'Criar login' }}
+                        </button>
+                      {% endif %}
+                    </div>
+                  </td>
+
                   <td class="text-center pe-3">
                     {% if is_editable %}
-                      <div class="d-flex gap-2 justify-content-center">
+                      <div class="team-actions">
                         <a href="{{ url_for('main.editar_equipe', equipe_id=e.id) }}"
                            class="btn btn-sm btn-success text-white shadow-sm"
                            title="Editar">
-                          <i class="bi bi-pencil-square"></i> Editar
+                          <i class="bi bi-pencil-square"></i>
                         </a>
 
                         <form class="form-deletar m-0" method="POST"
                               action="{{ url_for('main.deletar_equipe', equipe_id=e.id) }}">
                           <button type="submit" class="btn btn-sm btn-danger shadow-sm" title="Excluir">
-                            <i class="bi bi-trash"></i> Excluir
+                            <i class="bi bi-trash"></i>
                           </button>
                         </form>
                       </div>
@@ -439,7 +542,7 @@
               {% endfor %}
             {% else %}
               <tr>
-                <td colspan="9" class="text-center py-5">
+                <td colspan="10" class="text-center py-5">
                   <p class="text-muted mb-0">Nenhuma equipe encontrada com os filtros aplicados.</p>
                 </td>
               </tr>
@@ -486,6 +589,59 @@
       </div>
     {% endif %}
   </div>
+
+  {% if is_editable and equipes %}
+    {% for e in equipes %}
+      {% set conta_equipe = equipe_accounts.get(e.id) if equipe_accounts else none %}
+      <div class="modal fade credential-modal" id="modalCredenciaisEquipe{{ e.id }}" tabindex="-1" aria-labelledby="modalCredenciaisEquipe{{ e.id }}Label" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <form method="POST" action="{{ url_for('main.atualizar_credenciais_equipe', equipe_id=e.id) }}">
+              <div class="modal-header">
+                <div>
+                  <h5 class="modal-title fw-bold" id="modalCredenciaisEquipe{{ e.id }}Label">Login operacional</h5>
+                  <div class="text-muted small">{{ e.nome_equipe }}</div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+              </div>
+              <div class="modal-body">
+                <div class="mb-3">
+                  <label class="form-label fw-semibold small text-muted">Login da equipe</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    name="login_equipe"
+                    value="{{ conta_equipe.login if conta_equipe else ('ploa.' ~ e.id) }}"
+                    placeholder="Ex: ploa.19"
+                    required
+                  >
+                </div>
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label fw-semibold small text-muted">{{ 'Nova senha' if conta_equipe else 'Senha' }}</label>
+                    <input type="password" class="form-control" name="senha_equipe" placeholder="{{ 'Deixe em branco para manter' if conta_equipe else 'Informe a senha' }}">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label fw-semibold small text-muted">Confirmar senha</label>
+                    <input type="password" class="form-control" name="senha_equipe2" placeholder="Repita a senha">
+                  </div>
+                </div>
+                {% if conta_equipe %}
+                  <div class="form-text mt-2">Preencha a senha apenas se quiser alterar a senha atual.</div>
+                {% endif %}
+              </div>
+              <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-primary">
+                  <i class="bi bi-key me-1"></i> Salvar credenciais
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  {% endif %}
 </div>
 
 {% endblock %}

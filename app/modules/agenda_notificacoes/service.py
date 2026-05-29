@@ -29,6 +29,7 @@ AGENDA_ROUTE_STATUSES = (
     "APROVADO COM RECOMENDACOES",
     "APROVADO COM RECOMENDAÇÕES",
 )
+EQUIPE_OCEANO_USER_TYPE = "equipe_oceano"
 TZ_BR = ZoneInfo("America/Sao_Paulo")
 AUTO_ALERT_PREVIEW_LIMIT = 4
 AUTO_ALERT_BATTERY_WARNING_CYCLES = 200
@@ -100,6 +101,17 @@ def is_piloto_agenda_user(user):
     return getattr(user, "tipo_usuario", None) == "piloto"
 
 
+def is_equipe_oceano_agenda_user(user):
+    return getattr(user, "tipo_usuario", None) == EQUIPE_OCEANO_USER_TYPE
+
+
+def _parse_equipe_oceano_id(user):
+    try:
+        return int((getattr(user, "codigo_setor", None) or "").strip())
+    except (TypeError, ValueError):
+        return None
+
+
 def _build_piloto_equipes_query(user):
     piloto_id = getattr(user, "piloto_id", None)
     if not piloto_id:
@@ -126,6 +138,12 @@ def apply_agenda_user_scope(query, user):
         if equipes_query is None:
             return query.filter(false())
         return query.filter(Solicitacao.equipe_id.in_(equipes_query))
+
+    if is_equipe_oceano_agenda_user(user):
+        equipe_id = _parse_equipe_oceano_id(user)
+        if not equipe_id:
+            return query.filter(false())
+        return query.filter(Solicitacao.equipe_id == equipe_id)
 
     if not can_view_all_agenda(user):
         return query.filter(Solicitacao.usuario_id == user.id)
@@ -157,7 +175,7 @@ def build_agenda_query(
     )
     query = apply_agenda_user_scope(query, user)
 
-    if is_piloto_agenda_user(user):
+    if is_piloto_agenda_user(user) or is_equipe_oceano_agenda_user(user):
         filtro_uvis_id = None
     elif not can_view_all_agenda(user):
         filtro_uvis_id = None

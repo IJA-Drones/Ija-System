@@ -9,6 +9,7 @@ from app.models import EquipeUvis, Solicitacao, Usuario
 
 MAX_MEMBROS_EQUIPE_UVIS = 5
 TEAM_ACCOUNT_TYPE = "equipe_uvis"
+OPERATIONAL_UVIS_ACCOUNT_NAME = "OPERACIONAL UVIS"
 LOGIN_PATTERN = re.compile(r"^[A-Za-z0-9._-]+$")
 
 
@@ -75,6 +76,25 @@ def get_team_account(uvis_id: int, nome_equipe: str):
         )
         .first()
     )
+
+
+def get_operational_uvis_account(uvis_id: int):
+    account = get_team_account(uvis_id, OPERATIONAL_UVIS_ACCOUNT_NAME)
+    if account:
+        return account
+
+    legacy_accounts = (
+        Usuario.query.filter(
+            Usuario.tipo_usuario == TEAM_ACCOUNT_TYPE,
+            Usuario.equipe_uvis_uvis_usuario_id == uvis_id,
+        )
+        .order_by(Usuario.id.asc())
+        .all()
+    )
+    if len(legacy_accounts) == 1:
+        return legacy_accounts[0]
+
+    return None
 
 
 def get_team_members(uvis_id: int, nome_equipe: str):
@@ -227,6 +247,35 @@ def create_team_account(user, nome_equipe: str, login_equipe: str, senha: str):
     usuario_equipe.set_senha(senha)
     db.session.add(usuario_equipe)
     return usuario_equipe
+
+
+def upsert_operational_uvis_account(user, login_operacional: str, senha: str):
+    account = get_operational_uvis_account(user.id)
+    if account is None:
+        account = Usuario(
+            nome_uvis=f"Operacional - {user.nome_uvis}",
+            regiao=user.regiao,
+            codigo_setor=user.codigo_setor,
+            login=login_operacional,
+            tipo_usuario=TEAM_ACCOUNT_TYPE,
+            piloto_id=None,
+            prefeitura_id=getattr(user, "prefeitura_id", None),
+            equipe_uvis_uvis_usuario_id=user.id,
+            equipe_uvis_nome=OPERATIONAL_UVIS_ACCOUNT_NAME,
+        )
+        db.session.add(account)
+    else:
+        account.nome_uvis = f"Operacional - {user.nome_uvis}"
+        account.regiao = user.regiao
+        account.codigo_setor = user.codigo_setor
+        account.prefeitura_id = getattr(user, "prefeitura_id", None)
+        account.login = login_operacional
+        account.equipe_uvis_nome = OPERATIONAL_UVIS_ACCOUNT_NAME
+
+    if senha:
+        account.set_senha(senha)
+
+    return account
 
 
 def team_exists_for_user(uvis_id: int, nome_equipe: str):

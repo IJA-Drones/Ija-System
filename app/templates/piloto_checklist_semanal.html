@@ -365,7 +365,7 @@
 
   <div class="checklist-intro mb-4">
     <div class="checklist-intro-title">Preenchimento semanal consolidado</div>
-    <div class="checklist-intro-text">Revise primeiro o veiculo, depois o drone e finalize com os dados do piloto. O ultimo checklist salvo continua sendo usado como base para reduzir retrabalho.</div>
+    <div class="checklist-intro-text">Revise primeiro o veiculo, depois o drone e finalize com os dados do responsavel. O ultimo checklist salvo continua sendo usado como base para reduzir retrabalho.</div>
   </div>
 
   <form method="post" id="formChecklist">
@@ -617,7 +617,7 @@
           <i class="bi bi-pen fs-5"></i>
         </span>
         <div class="section-head-copy">
-          <h5 class="m-0 fw-bold text-dark-blue">Informacoes do Piloto</h5>
+          <h5 class="m-0 fw-bold text-dark-blue">Informacoes do Responsavel</h5>
           <div class="section-subtitle">Responsavel pelo checklist e assinatura digital.</div>
         </div>
       </div>
@@ -625,7 +625,7 @@
       <div class="row g-4 align-items-start">
         <div class="col-lg-5">
           <div class="pilot-info-box">
-            <label class="small fw-bold text-muted">NOME DO PILOTO / RESPONSAVEL</label>
+            <label class="small fw-bold text-muted">NOME DO RESPONSAVEL</label>
             <input type="text" class="form-control mt-2 border-2 fw-bold text-primary" name="nome_responsavel" id="nome_responsavel" value="{{ piloto_nome }}">
           </div>
         </div>
@@ -878,7 +878,7 @@ function applyVehiclePrefill() {
 
       if (!signatureInput.value) {
         event.preventDefault();
-        alert("A assinatura do piloto e obrigatoria.");
+        alert("A assinatura do responsavel e obrigatoria.");
       }
     });
   });

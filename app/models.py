@@ -54,7 +54,7 @@ class Usuario(UserMixin, db.Model):
     senha_hash = db.Column(db.String(200), nullable=False)
 
     # + incluir "equipe_uvis" e "regional"
-    # tipos esperados: "admin", "uvis", "operario", "visualizador", "regional", "piloto", "equipe_uvis"
+    # tipos esperados: "admin", "uvis", "operario", "visualizador", "regional", "piloto", "equipe_uvis", "equipe_oceano"
     tipo_usuario = db.Column(db.String(20), default="uvis", index=True)
 
     # ----------------------------
@@ -1692,6 +1692,24 @@ class Equipe(db.Model):
         lazy="select"
     )
 
+    logs_veiculo = db.relationship(
+        "LogVeiculo",
+        back_populates="equipe",
+        lazy="select"
+    )
+
+    checklists_veiculo = db.relationship(
+        "ChecklistSemanalVeiculo",
+        back_populates="equipe",
+        lazy="select"
+    )
+
+    checklists_drone = db.relationship(
+        "ChecklistSemanalDrone",
+        back_populates="equipe",
+        lazy="select"
+    )
+
     @property
     def piloto_titular(self):
         return next((m.piloto for m in self.membros if m.papel == "piloto"), None)
@@ -1862,7 +1880,8 @@ class LogVeiculo(db.Model):
 
     # Identificação e Relacionamentos
     veiculo_id = db.Column(db.Integer, db.ForeignKey("veiculos.id"), nullable=False, index=True)
-    piloto_id = db.Column(db.Integer, db.ForeignKey("pilotos.id"), nullable=False, index=True)
+    piloto_id = db.Column(db.Integer, db.ForeignKey("pilotos.id"), nullable=True, index=True)
+    equipe_id = db.Column(db.Integer, db.ForeignKey("equipes.id"), nullable=True, index=True)
     data_registro = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
 
     # Quilometragem (Essencial para ambos os formulários)
@@ -1891,6 +1910,7 @@ class LogVeiculo(db.Model):
         backref=db.backref("logs", lazy="select", cascade="all, delete-orphan")
     )
     piloto = db.relationship("Pilotos", backref=db.backref("logs_veiculo", lazy="select"))
+    equipe = db.relationship("Equipe", back_populates="logs_veiculo", lazy="joined")
 
     @property
     def abastecimentos_ordenados(self):
@@ -1983,7 +2003,8 @@ class ChecklistSemanalVeiculo(db.Model):
     
     # Identificação
     veiculo_id = db.Column(db.Integer, db.ForeignKey("veiculos.id"), nullable=False, index=True)
-    piloto_id = db.Column(db.Integer, db.ForeignKey("pilotos.id"), nullable=False, index=True)
+    piloto_id = db.Column(db.Integer, db.ForeignKey("pilotos.id"), nullable=True, index=True)
+    equipe_id = db.Column(db.Integer, db.ForeignKey("equipes.id"), nullable=True, index=True)
     data_registro = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
     km_leitura = db.Column(db.Float, nullable=False)
 
@@ -2051,6 +2072,7 @@ class ChecklistSemanalVeiculo(db.Model):
     # Relacionamentos
     veiculo = db.relationship("Veiculos", backref=db.backref("checklists_semanais", lazy="select"))
     piloto = db.relationship("Pilotos", backref=db.backref("checklists_veiculo", lazy="select"))
+    equipe = db.relationship("Equipe", back_populates="checklists_veiculo", lazy="joined")
 
 
 # -------------------------------------------------------------
@@ -2063,7 +2085,8 @@ class ChecklistSemanalDrone(db.Model):
     
     # Identificação
     drone_id = db.Column(db.Integer, db.ForeignKey("drones.id"), nullable=False, index=True)
-    piloto_id = db.Column(db.Integer, db.ForeignKey("pilotos.id"), nullable=False, index=True)
+    piloto_id = db.Column(db.Integer, db.ForeignKey("pilotos.id"), nullable=True, index=True)
+    equipe_id = db.Column(db.Integer, db.ForeignKey("equipes.id"), nullable=True, index=True)
     data_registro = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
 
     # Itens do Drone
@@ -2095,6 +2118,7 @@ class ChecklistSemanalDrone(db.Model):
     # Relacionamentos
     drone = db.relationship("Drones", backref=db.backref("checklists_semanais", lazy="select"))
     piloto = db.relationship("Pilotos", backref=db.backref("checklists_drone", lazy="select"))
+    equipe = db.relationship("Equipe", back_populates="checklists_drone", lazy="joined")
 
 
 # -------------------------------------------------------------

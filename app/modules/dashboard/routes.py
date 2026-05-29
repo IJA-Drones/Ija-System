@@ -17,7 +17,7 @@ def register_routes(bp):
     def dashboard():
         google_maps_key = current_app.config.get("KEY_API_GOOGLE_MAPS")
 
-        if current_user.tipo_usuario == "piloto":
+        if current_user.tipo_usuario in {"piloto", "equipe_oceano"}:
             return redirect(url_for("main.piloto_os"))
 
         if current_user.tipo_usuario == "piloto_agro":

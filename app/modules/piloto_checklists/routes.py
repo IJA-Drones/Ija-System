@@ -3,6 +3,7 @@ from flask_login import current_user, login_required
 
 from app.extensions import db
 from app.modules.piloto_checklists.service import (
+    EQUIPE_OCEANO_USER_TYPE,
     PilotoChecklistError,
     build_piloto_checklist_context,
     save_piloto_checklist,
@@ -10,7 +11,7 @@ from app.modules.piloto_checklists.service import (
 
 
 def _require_piloto():
-    if getattr(current_user, "tipo_usuario", None) != "piloto":
+    if getattr(current_user, "tipo_usuario", None) not in {"piloto", EQUIPE_OCEANO_USER_TYPE}:
         abort(403)
 
 

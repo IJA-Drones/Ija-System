@@ -3,8 +3,7 @@ from datetime import datetime
 from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import joinedload
 
-from app.extensions import db
-from app.models import Drones, Equipe, EquipeUvis, Solicitacao
+from app.models import Drones, Equipe, Solicitacao
 
 UVIS_HISTORICO_TIPO_OS_OPTIONS = ("todas", "piloto", "equipe_uvis")
 
@@ -98,21 +97,11 @@ def build_dashboard_context(user, args, google_maps_key):
         equipes_query = equipes_query.filter(Equipe.regiao == user.regiao)
     equipes = equipes_query.order_by(Equipe.nome_equipe.asc()).all()
 
-    rows = (
-        db.session.query(EquipeUvis.nome_equipe, func.count(EquipeUvis.id).label("total"))
-        .filter(EquipeUvis.uvis_usuario_id == user.id)
-        .group_by(EquipeUvis.nome_equipe)
-        .order_by(EquipeUvis.nome_equipe.asc())
-        .all()
-    )
-    equipes_uvis = [{"nome_equipe": row[0], "total": int(row[1])} for row in rows]
-
     return {
         "solicitacoes": paginacao.items,
         "paginacao": paginacao,
         "google_maps_key": google_maps_key,
         "equipes": equipes,
-        "equipes_uvis": equipes_uvis,
     }
 
 

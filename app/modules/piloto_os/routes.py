@@ -15,6 +15,7 @@ from app.modules.piloto_os.service import (
     build_piloto_os_historico_context,
     concluir_os_piloto,
     get_piloto_drone_payload,
+    is_piloto_os_user,
     salvar_admin_os_form,
     salvar_piloto_os_form,
 )
@@ -22,7 +23,7 @@ from app.shared.access import ADMIN_PANEL_VIEW_TYPES, can_access_regiao
 
 
 def _require_piloto():
-    if getattr(current_user, "tipo_usuario", None) != "piloto":
+    if not is_piloto_os_user(current_user):
         abort(403)
 
 

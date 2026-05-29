@@ -252,7 +252,7 @@
             <tr>
               <th class="ps-4 text-start">Ultimo Registro</th>
               <th>Semana</th>
-              <th class="text-start">Piloto</th>
+              <th class="text-start">Responsavel</th>
               <th>Resumo</th>
               <th>Status</th>
               <th class="pe-4">Detalhes</th>
@@ -268,9 +268,9 @@
               <td data-label="Semana">
                 {{ grupo.semana_inicio.strftime('%d/%m/%Y') }} a {{ grupo.semana_fim.strftime('%d/%m/%Y') }}
               </td>
-              <td class="text-start" data-label="Piloto">
+              <td class="text-start" data-label="Responsavel">
                 <div class="fw-bold text-dark">{{ grupo.piloto_nome }}</div>
-                <div class="small text-muted">Semana consolidada</div>
+                <div class="small text-muted">{{ grupo.actor_label or 'Responsavel' }} • Semana consolidada</div>
               </td>
               <td data-label="Resumo">
                 <div class="fw-semibold text-dark">{{ grupo.resumo_label }}</div>
@@ -288,7 +288,7 @@
               </td>
               <td class="pe-4" data-label="Detalhes">
                 <a class="btn btn-sm btn-outline-primary rounded-pill px-3"
-                   href="{{ url_for('main.admin_checklist_semanal_detalhe', piloto_id=grupo.piloto_id, semana_inicio=grupo.semana_inicio.isoformat()) }}">
+                   href="{{ url_for('main.admin_checklist_semanal_detalhe_actor', actor_type=grupo.actor_type, actor_id=grupo.actor_id, semana_inicio=grupo.semana_inicio.isoformat()) }}">
                   <i class="bi bi-card-list me-1"></i> Ver checklist
                 </a>
               </td>

@@ -20,6 +20,20 @@ def authenticate_user(login_value, password):
     return user
 
 
+def authenticate_uvis_operacional(login_value, password):
+    user = _authenticate_any_user(login_value, password)
+    if not user:
+        return None
+
+    if user.tipo_usuario == "uvis":
+        return user
+
+    if user.tipo_usuario == "equipe_uvis" and getattr(user, "equipe_uvis_uvis_usuario_id", None):
+        return user
+
+    return None
+
+
 def authenticate_piloto_agro(login_value, password):
     user = _authenticate_any_user(login_value, password)
     if not user or user.tipo_usuario != "piloto_agro":
@@ -40,7 +54,7 @@ def get_authenticated_redirect_endpoint(user):
         return "main.admin_agro"
     if user.tipo_usuario in ADMIN_PANEL_VIEW_TYPES:
         return "main.admin_dashboard"
-    if user.tipo_usuario == "piloto":
+    if user.tipo_usuario in {"piloto", "equipe_oceano"}:
         return "main.piloto_os"
     if user.tipo_usuario == "piloto_agro":
         return "main.agro_piloto_dashboard"

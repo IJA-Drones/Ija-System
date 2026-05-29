@@ -6,7 +6,7 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
 from app.extensions import db
-from app.models import Equipe, EquipePiloto, Pilotos
+from app.models import Equipe, EquipePiloto, Pilotos, Usuario
 from app.shared.access import apply_prefeitura_scope, normalize_role
 
 
@@ -14,6 +14,7 @@ REGIOES = ("CENTRO", "CENTRO-OESTE", "LESTE", "NORTE", "OESTE", "SUL", "SUDESTE"
 REGIOES_VALIDAS = set(REGIOES) | {"SULDESTE"}
 ATIVA_TRUE_VALUES = {"1", "true", "sim", "yes", "on"}
 ATIVA_FALSE_VALUES = {"0", "false", "nao", "no"}
+EQUIPE_OCEANO_USER_TYPE = "equipe_oceano"
 
 
 def build_regioes_list():
@@ -40,6 +41,100 @@ def get_pilotos_ordered(user=None):
     if user is not None:
         query = apply_prefeitura_scope(query, user, Pilotos.prefeitura_id)
     return query.order_by(Pilotos.nome_piloto.asc()).all()
+
+
+def login_em_uso(login: str, exclude_user_id=None):
+    query = Usuario.query.filter(db.func.lower(Usuario.login) == (login or "").strip().lower())
+    if exclude_user_id:
+        query = query.filter(Usuario.id != exclude_user_id)
+    return db.session.query(query.exists()).scalar()
+
+
+def suggested_equipe_login(equipe):
+    nome = (getattr(equipe, "nome_equipe", None) or f"Ploa {equipe.id}").strip().lower()
+    base = "".join(ch if ch.isalnum() else "." for ch in nome)
+    base = ".".join(part for part in base.split(".") if part)
+    return (base or f"ploa.{equipe.id}")[:50]
+
+
+def get_equipe_account(equipe_id: int):
+    return (
+        Usuario.query
+        .filter(
+            Usuario.tipo_usuario == EQUIPE_OCEANO_USER_TYPE,
+            Usuario.codigo_setor == str(equipe_id),
+        )
+        .first()
+    )
+
+
+def build_equipe_accounts_map(equipes):
+    equipe_ids = [str(equipe.id) for equipe in equipes]
+    if not equipe_ids:
+        return {}
+
+    contas = (
+        Usuario.query
+        .filter(
+            Usuario.tipo_usuario == EQUIPE_OCEANO_USER_TYPE,
+            Usuario.codigo_setor.in_(equipe_ids),
+        )
+        .all()
+    )
+    return {int(conta.codigo_setor): conta for conta in contas if str(conta.codigo_setor or "").isdigit()}
+
+
+def validate_equipe_account_form(login: str, senha: str, senha2: str, current_account=None):
+    errors = {}
+    login = (login or "").strip()
+    senha = senha or ""
+    senha2 = senha2 or ""
+
+    if not login:
+        errors["login"] = "Informe o login da equipe."
+    elif len(login) < 4:
+        errors["login"] = "O login deve ter pelo menos 4 caracteres."
+    elif len(login) > 50:
+        errors["login"] = "O login deve ter no maximo 50 caracteres."
+    elif login_em_uso(login, exclude_user_id=(current_account.id if current_account else None)):
+        errors["login"] = "Este login ja esta em uso."
+
+    if not current_account and not senha:
+        errors["senha"] = "Informe a senha da equipe."
+    elif senha and len(senha) < 6:
+        errors["senha"] = "A senha deve ter pelo menos 6 caracteres."
+
+    if senha or senha2:
+        if senha != senha2:
+            errors["senha2"] = "As senhas nao conferem."
+
+    return errors
+
+
+def upsert_equipe_account(equipe, login: str, senha: str):
+    account = get_equipe_account(equipe.id)
+    if account is None:
+        account = Usuario(
+            nome_uvis=equipe.nome_equipe or f"Ploa {equipe.id}",
+            regiao=equipe.regiao,
+            prefeitura_id=equipe.prefeitura_id,
+            codigo_setor=str(equipe.id),
+            login=login,
+            tipo_usuario=EQUIPE_OCEANO_USER_TYPE,
+            piloto_id=None,
+        )
+        db.session.add(account)
+
+    account.nome_uvis = equipe.nome_equipe or f"Ploa {equipe.id}"
+    account.regiao = equipe.regiao
+    account.prefeitura_id = equipe.prefeitura_id
+    account.codigo_setor = str(equipe.id)
+    account.login = login
+    account.tipo_usuario = EQUIPE_OCEANO_USER_TYPE
+    account.piloto_id = None
+    if senha:
+        account.set_senha(senha)
+    return account
 
 
 def find_piloto_conflict(piloto_id: int, exclude_equipe_id=None, user=None):

@@ -18,6 +18,8 @@ from app.models import (
 from app.modules.agenda_notificacoes import agora_brasilia_naive, criar_notificacao
 
 
+EQUIPE_OCEANO_USER_TYPE = "equipe_oceano"
+
 CHECKLIST_VEICULO_BOOL_LABELS = [
     ("farois_funcionando", "Farois"),
     ("setas_funcionando", "Setas"),
@@ -135,6 +137,7 @@ def build_piloto_checklist_context(user, args):
 def save_piloto_checklist(user, form_data):
     state = _build_equipment_state(user, include_prefill=False)
     week_bounds = _week_bounds()
+    actor_filter = _checklist_actor_filter(user, state["equipe"])
 
     veiculo_ids = [item.id for item in state["veiculos_equipe"]]
     drone_ids = [item.id for item in state["drones_equipe"]]
@@ -154,7 +157,7 @@ def save_piloto_checklist(user, form_data):
         raise PilotoChecklistError("Selecione ao menos um veiculo ou um drone para registrar o checklist.")
 
     if not assinatura_piloto:
-        raise PilotoChecklistError("A assinatura do piloto e obrigatoria.")
+        raise PilotoChecklistError("A assinatura do responsavel e obrigatoria.")
 
     try:
         if veiculo_id:
@@ -164,6 +167,7 @@ def save_piloto_checklist(user, form_data):
                 veiculos_equipe=state["veiculos_equipe"],
                 form_data=form_data,
                 assinatura_piloto=assinatura_piloto,
+                actor_filter=actor_filter,
                 week_bounds=week_bounds,
             )
 
@@ -175,13 +179,14 @@ def save_piloto_checklist(user, form_data):
                 form_data=form_data,
                 assinatura_piloto=assinatura_piloto,
                 nome_responsavel=nome_responsavel,
+                actor_filter=actor_filter,
                 week_bounds=week_bounds,
             )
 
         db.session.flush()
 
         pendencias_semanais = _coletar_pendencias_checklists_semanais(
-            user.piloto_id,
+            actor_filter,
             week_bounds["inicio_dt"],
             week_bounds["proxima_dt"],
         )
@@ -200,13 +205,13 @@ def save_piloto_checklist(user, form_data):
 
 def _build_equipment_state(user, args=None, include_prefill=True):
     vinculo = _piloto_vinculo_ativo(user)
-    if not vinculo or not vinculo.equipe_id:
+    equipe = _equipe_operacional_ativa(user)
+    if not equipe:
         raise PilotoChecklistError(
             "Voce ainda nao esta vinculado a nenhuma equipe ativa.",
             redirect_endpoint="main.piloto_os",
         )
 
-    equipe = vinculo.equipe
     piloto_nome = _piloto_nome(user)
 
     veiculos_equipe = (
@@ -215,6 +220,7 @@ def _build_equipment_state(user, args=None, include_prefill=True):
             db.or_(
                 Veiculos.equipe_id == equipe.id,
                 db.func.lower(Veiculos.responsavel) == piloto_nome.lower(),
+                db.func.lower(Veiculos.responsavel) == equipe.nome_equipe.lower(),
             )
         )
         .distinct()
@@ -281,7 +287,7 @@ def _build_equipment_state(user, args=None, include_prefill=True):
     return {
         "vinculo": vinculo,
         "equipe": equipe,
-        "papel_equipe": (vinculo.papel or "").lower(),
+        "papel_equipe": "equipe" if _is_equipe_oceano(user) else ((vinculo.papel or "").lower() if vinculo else ""),
         "piloto_nome": piloto_nome,
         "veiculos_equipe": veiculos_equipe,
         "drones_equipe": drones_equipe,
@@ -335,20 +341,27 @@ def _build_drone_prefill(drone_ids):
     return prefill
 
 
-def _save_vehicle_checklist(user, veiculo_id, veiculos_equipe, form_data, assinatura_piloto, week_bounds):
+def _save_vehicle_checklist(user, veiculo_id, veiculos_equipe, form_data, assinatura_piloto, actor_filter, week_bounds):
     veiculo = next((item for item in veiculos_equipe if item.id == veiculo_id), None)
+    if not veiculo:
+        raise PilotoChecklistError("Selecione um veiculo valido da sua equipe.")
+
     checklist = (
         ChecklistSemanalVeiculo.query
         .filter(
             ChecklistSemanalVeiculo.veiculo_id == veiculo_id,
-            ChecklistSemanalVeiculo.piloto_id == user.piloto_id,
+            actor_filter["veiculo"],
             ChecklistSemanalVeiculo.data_registro >= week_bounds["inicio_dt"],
             ChecklistSemanalVeiculo.data_registro < week_bounds["proxima_dt"],
         )
         .first()
     )
     if not checklist:
-        checklist = ChecklistSemanalVeiculo(veiculo_id=veiculo_id, piloto_id=user.piloto_id)
+        checklist = ChecklistSemanalVeiculo(
+            veiculo_id=veiculo_id,
+            piloto_id=actor_filter["piloto_id"],
+            equipe_id=actor_filter["equipe_id"],
+        )
         db.session.add(checklist)
 
     checklist.data_registro = datetime.now()
@@ -362,19 +375,23 @@ def _save_vehicle_checklist(user, veiculo_id, veiculos_equipe, form_data, assina
     checklist.assinatura_piloto = assinatura_piloto
 
 
-def _save_drone_checklist(user, drone_id, baterias_por_drone, form_data, assinatura_piloto, nome_responsavel, week_bounds):
+def _save_drone_checklist(user, drone_id, baterias_por_drone, form_data, assinatura_piloto, nome_responsavel, actor_filter, week_bounds):
     checklist = (
         ChecklistSemanalDrone.query
         .filter(
             ChecklistSemanalDrone.drone_id == drone_id,
-            ChecklistSemanalDrone.piloto_id == user.piloto_id,
+            actor_filter["drone"],
             ChecklistSemanalDrone.data_registro >= week_bounds["inicio_dt"],
             ChecklistSemanalDrone.data_registro < week_bounds["proxima_dt"],
         )
         .first()
     )
     if not checklist:
-        checklist = ChecklistSemanalDrone(drone_id=drone_id, piloto_id=user.piloto_id)
+        checklist = ChecklistSemanalDrone(
+            drone_id=drone_id,
+            piloto_id=actor_filter["piloto_id"],
+            equipe_id=actor_filter["equipe_id"],
+        )
         db.session.add(checklist)
 
     checklist.data_registro = datetime.now()
@@ -393,11 +410,14 @@ def _save_drone_checklist(user, drone_id, baterias_por_drone, form_data, assinat
 
 
 def _sincronizar_pendencias(user, piloto_nome, pendencias_semanais, semana_inicio):
-    detalhe_link = url_for(
-        "main.admin_checklist_semanal_detalhe",
-        piloto_id=user.piloto_id,
-        semana_inicio=semana_inicio.isoformat(),
-    )
+    if getattr(user, "piloto_id", None):
+        detalhe_link = url_for(
+            "main.admin_checklist_semanal_detalhe",
+            piloto_id=user.piloto_id,
+            semana_inicio=semana_inicio.isoformat(),
+        )
+    else:
+        detalhe_link = url_for("main.admin_checklists_semanais", q=piloto_nome)
     titulo = f"Pendencias no checklist semanal de {piloto_nome}"
     admin_ids = [row[0] for row in db.session.query(Usuario.id).filter(Usuario.tipo_usuario == "admin").all()]
     _sincronizar_notificacoes_pendencia_checklist(
@@ -450,14 +470,14 @@ def _sincronizar_notificacoes_pendencia_checklist(admin_ids, link, titulo, mensa
             notificacao.apagada_em = agora
 
 
-def _coletar_pendencias_checklists_semanais(piloto_id, inicio_semana_dt, proxima_semana_dt):
+def _coletar_pendencias_checklists_semanais(actor_filter, inicio_semana_dt, proxima_semana_dt):
     pendencias = []
 
     checklists_veiculo = (
         ChecklistSemanalVeiculo.query
         .options(joinedload(ChecklistSemanalVeiculo.veiculo))
         .filter(
-            ChecklistSemanalVeiculo.piloto_id == piloto_id,
+            actor_filter["veiculo"],
             ChecklistSemanalVeiculo.data_registro >= inicio_semana_dt,
             ChecklistSemanalVeiculo.data_registro < proxima_semana_dt,
         )
@@ -473,7 +493,7 @@ def _coletar_pendencias_checklists_semanais(piloto_id, inicio_semana_dt, proxima
         ChecklistSemanalDrone.query
         .options(joinedload(ChecklistSemanalDrone.drone))
         .filter(
-            ChecklistSemanalDrone.piloto_id == piloto_id,
+            actor_filter["drone"],
             ChecklistSemanalDrone.data_registro >= inicio_semana_dt,
             ChecklistSemanalDrone.data_registro < proxima_semana_dt,
         )
@@ -534,7 +554,62 @@ def _piloto_vinculo_ativo(user):
     )
 
 
+def _is_equipe_oceano(user):
+    return getattr(user, "tipo_usuario", None) == EQUIPE_OCEANO_USER_TYPE
+
+
+def _parse_equipe_oceano_id(user):
+    raw = (getattr(user, "codigo_setor", None) or "").strip()
+    if not raw:
+        return None
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return None
+
+
+def _equipe_operacional_ativa(user):
+    if _is_equipe_oceano(user):
+        equipe_id = _parse_equipe_oceano_id(user)
+        if not equipe_id:
+            return None
+        query = Equipe.query.filter(Equipe.id == equipe_id, Equipe.ativa.is_(True))
+        prefeitura_id = getattr(user, "prefeitura_id", None)
+        if prefeitura_id is not None:
+            query = query.filter(Equipe.prefeitura_id == prefeitura_id)
+        return query.first()
+
+    vinculo = _piloto_vinculo_ativo(user)
+    if not vinculo or not vinculo.equipe_id:
+        return None
+    return vinculo.equipe
+
+
+def _checklist_actor_filter(user, equipe):
+    if _is_equipe_oceano(user):
+        equipe_id = equipe.id if equipe else _parse_equipe_oceano_id(user)
+        return {
+            "piloto_id": None,
+            "equipe_id": equipe_id,
+            "veiculo": ChecklistSemanalVeiculo.equipe_id == equipe_id,
+            "drone": ChecklistSemanalDrone.equipe_id == equipe_id,
+        }
+
+    piloto_id = getattr(user, "piloto_id", None)
+    return {
+        "piloto_id": piloto_id,
+        "equipe_id": None,
+        "veiculo": ChecklistSemanalVeiculo.piloto_id == piloto_id,
+        "drone": ChecklistSemanalDrone.piloto_id == piloto_id,
+    }
+
+
 def _piloto_nome(user):
+    if _is_equipe_oceano(user):
+        equipe = _equipe_operacional_ativa(user)
+        if equipe:
+            return equipe.nome_equipe
+
     if getattr(user, "piloto", None) and user.piloto:
         return user.piloto.nome_piloto
     return getattr(user, "nome_uvis", "") or ""

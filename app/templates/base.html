@@ -120,7 +120,7 @@
   <body class="{% if is_agro_context %}agro-mode{% endif %}">
     {% set navbar_home_endpoint = 'main.dashboard' %}
     {% if current_user and current_user.is_authenticated %}
-      {% if current_user.tipo_usuario == 'piloto' %}
+      {% if current_user.tipo_usuario in ['piloto', 'equipe_oceano'] %}
         {% set navbar_home_endpoint = 'main.piloto_os' %}
       {% elif current_user.tipo_usuario == 'piloto_agro' %}
         {% set navbar_home_endpoint = 'main.agro_piloto_dashboard' %}
@@ -254,7 +254,7 @@
       <div class="app-sidebar d-flex flex-column" id="appSidebar">
         {% set sidebar_dashboard_endpoint = 'main.dashboard' %}
         {% set sidebar_dashboard_active = request.endpoint == 'main.dashboard' %}
-        {% if current_user.tipo_usuario == 'piloto' %}
+        {% if current_user.tipo_usuario in ['piloto', 'equipe_oceano'] %}
           {% set sidebar_dashboard_endpoint = 'main.piloto_os' %}
           {% set sidebar_dashboard_active = request.endpoint == 'main.piloto_os' %}
         {% elif current_user.tipo_usuario == 'piloto_agro' %}
@@ -298,7 +298,7 @@
               <i class="bi bi-clock-history me-2"></i><span>Histórico OS</span>
             </a>
           </li>
-          {% elif current_user.tipo_usuario == 'piloto' %}
+          {% elif current_user.tipo_usuario in ['piloto', 'equipe_oceano'] %}
           <li class="nav-item">
             <a
               class="nav-link {% if request.endpoint == 'main.piloto_os_historico' %}active{% endif %}"
@@ -765,7 +765,7 @@
           {% endif %}
 
           {# ===================== EQUIPES (UVIS) ===================== #}
-          {% if current_user.tipo_usuario|lower in ['uvis', 'admin', 'operario', 'operador'] %}
+          {% if current_user.tipo_usuario|lower in ['admin', 'operario', 'operador'] %}
           <li class="nav-item">
             <button type="button" class="nav-link nav-link-toggle" data-bs-toggle="collapse" data-bs-target="#menuEquipesUvis">
               <span>
@@ -812,6 +812,33 @@
 
 
           {% if current_user.tipo_usuario == 'uvis' %}
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint == 'main.uvis_acesso_operacional' %}active{% endif %}"
+              href="{{ url_for('main.uvis_acesso_operacional') }}"
+            >
+              <i class="bi bi-person-workspace me-2"></i><span>Acesso Operacional</span>
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint == 'main.dashboard_equipe_uvis' %}active{% endif %}"
+              href="{{ url_for('main.dashboard_equipe_uvis') }}"
+            >
+              <i class="bi bi-clipboard2-check-fill me-2"></i><span>Demandas Aprovadas</span>
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint == 'main.equipe_uvis_os_historico' %}active{% endif %}"
+              href="{{ url_for('main.equipe_uvis_os_historico') }}"
+            >
+              <i class="bi bi-clock-history me-2"></i><span>Historico Operacional</span>
+            </a>
+          </li>
+
           <li class="nav-item">
             <a
               class="nav-link {% if request.endpoint == 'main.agenda' %}active{% endif %}"

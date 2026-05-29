@@ -28,6 +28,7 @@ STATUS_OS_APROVADAS_COM_ACENTO = [
 STATUS_OS_CONCLUIDAS = ["CONCLUIDO", "CONCLU\u00cdDO"]
 OS_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png"}
 OS_VIDEO_EXTENSIONS = {"mp4", "mov", "webm", "m4v"}
+EQUIPE_OCEANO_USER_TYPE = "equipe_oceano"
 
 
 class PilotoOsError(Exception):
@@ -37,13 +38,59 @@ class PilotoOsError(Exception):
         self.redirect_endpoint = redirect_endpoint
 
 
+def is_piloto_os_user(user):
+    return getattr(user, "tipo_usuario", None) in {"piloto", EQUIPE_OCEANO_USER_TYPE}
+
+
+def _parse_equipe_id_from_user(user):
+    try:
+        return int((getattr(user, "codigo_setor", None) or "").strip())
+    except (TypeError, ValueError):
+        return None
+
+
+def _buscar_equipe_operacional_usuario(user):
+    equipe_id = _parse_equipe_id_from_user(user)
+    if not equipe_id:
+        raise PilotoOsError("Conta de equipe sem vinculo operacional.", "danger", redirect_endpoint="main.piloto_os")
+
+    equipe = (
+        Equipe.query
+        .filter(
+            Equipe.id == equipe_id,
+            Equipe.ativa.is_(True),
+        )
+        .first()
+    )
+    if not equipe:
+        raise PilotoOsError("Equipe operacional inativa ou nao encontrada.", "danger", redirect_endpoint="main.piloto_os")
+    return equipe
+
+
+def _buscar_equipe_do_usuario_na_os(user, equipe_id):
+    if getattr(user, "tipo_usuario", None) == EQUIPE_OCEANO_USER_TYPE:
+        equipe = _buscar_equipe_operacional_usuario(user)
+        return equipe if equipe.id == equipe_id else None
+
+    vinculo = _buscar_vinculo_piloto_na_equipe(getattr(user, "piloto_id", None), equipe_id)
+    return vinculo.equipe if vinculo else None
+
+
 def build_piloto_os_context(user, args, google_maps_key):
-    if not getattr(user, "piloto_id", None):
+    is_equipe_oceano = getattr(user, "tipo_usuario", None) == EQUIPE_OCEANO_USER_TYPE
+    if not is_equipe_oceano and not getattr(user, "piloto_id", None):
         raise PilotoOsError("Piloto sem vinculo cadastrado.", "danger", redirect_endpoint="main.piloto_os")
 
     piloto = getattr(user, "piloto", None)
-    vinculo = _buscar_vinculo_ativo_piloto(user.piloto_id)
-    if not vinculo or not vinculo.equipe_id:
+    vinculo = None
+    equipe = None
+    if is_equipe_oceano:
+        equipe = _buscar_equipe_operacional_usuario(user)
+    else:
+        vinculo = _buscar_vinculo_ativo_piloto(user.piloto_id)
+        equipe = vinculo.equipe if vinculo else None
+
+    if not equipe:
         return {
             "sem_equipe_ativa": True,
             "pedidos": [],
@@ -67,7 +114,7 @@ def build_piloto_os_context(user, args, google_maps_key):
             joinedload(Solicitacao.equipe),
         )
         .filter(
-            Solicitacao.equipe_id == vinculo.equipe_id,
+            Solicitacao.equipe_id == equipe.id,
             Solicitacao.status.in_(STATUS_OS_APROVADAS_COM_ACENTO),
         )
     )
@@ -90,29 +137,29 @@ def build_piloto_os_context(user, args, google_maps_key):
         "pedidos": paginacao.items,
         "paginacao": paginacao,
         "status_ok": STATUS_OS_APROVADAS_COM_ACENTO,
-        "pilot_team_nome": vinculo.equipe.nome_equipe if vinculo.equipe else None,
-        "pilot_team_regiao": vinculo.equipe.regiao if vinculo.equipe else None,
-        "pilot_team_papel": (vinculo.papel or "").lower(),
+        "pilot_team_nome": equipe.nome_equipe,
+        "pilot_team_regiao": equipe.regiao,
+        "pilot_team_papel": "equipe" if is_equipe_oceano else (vinculo.papel or "").lower(),
         "pilot_regiao_principal": getattr(piloto, "regiao", None),
         "pilot_regiao_alternativa": getattr(piloto, "regiao_alternativa", None),
         "google_maps_key": google_maps_key,
         "drones_equipe": (
             Drones.query
             .options(joinedload(Drones.equipe))
-            .filter(Drones.equipe_id == vinculo.equipe_id)
+            .filter(Drones.equipe_id == equipe.id)
             .order_by(Drones.renomacao.asc())
             .all()
         ),
         "baterias_equipe": (
             Baterias.query
             .join(Drones, Baterias.drone_id == Drones.id)
-            .filter(Drones.equipe_id == vinculo.equipe_id)
+            .filter(Drones.equipe_id == equipe.id)
             .order_by(Baterias.renomacao.asc())
             .all()
         ),
         "veiculos_equipe": (
             Veiculos.query
-            .filter(Veiculos.equipe_id == vinculo.equipe_id)
+            .filter(Veiculos.equipe_id == equipe.id)
             .order_by(Veiculos.operacao.asc(), Veiculos.modelo.asc())
             .all()
         ),
@@ -120,17 +167,21 @@ def build_piloto_os_context(user, args, google_maps_key):
 
 
 def build_piloto_os_historico_context(user, args):
-    if not getattr(user, "piloto_id", None):
+    if getattr(user, "tipo_usuario", None) == EQUIPE_OCEANO_USER_TYPE:
+        equipe = _buscar_equipe_operacional_usuario(user)
+        equipes_filter = Solicitacao.equipe_id == equipe.id
+    elif not getattr(user, "piloto_id", None):
         raise PilotoOsError("Piloto sem vinculo cadastrado.", "danger", redirect_endpoint="main.piloto_os")
-
-    equipes_vinculadas = (
-        db.session.query(EquipePiloto.equipe_id)
-        .filter(
-            EquipePiloto.piloto_id == user.piloto_id,
-            EquipePiloto.equipe_id.isnot(None),
+    else:
+        equipes_vinculadas = (
+            db.session.query(EquipePiloto.equipe_id)
+            .filter(
+                EquipePiloto.piloto_id == user.piloto_id,
+                EquipePiloto.equipe_id.isnot(None),
+            )
+            .distinct()
         )
-        .distinct()
-    )
+        equipes_filter = Solicitacao.equipe_id.in_(equipes_vinculadas)
 
     query = (
         Solicitacao.query
@@ -139,7 +190,7 @@ def build_piloto_os_historico_context(user, args):
             joinedload(Solicitacao.equipe),
         )
         .filter(
-            Solicitacao.equipe_id.in_(equipes_vinculadas),
+            equipes_filter,
             Solicitacao.status.in_(STATUS_OS_CONCLUIDAS),
         )
     )
@@ -155,7 +206,7 @@ def build_piloto_os_historico_context(user, args):
 
 
 def concluir_os_piloto(user, os_id):
-    if not getattr(user, "piloto_id", None):
+    if getattr(user, "tipo_usuario", None) != EQUIPE_OCEANO_USER_TYPE and not getattr(user, "piloto_id", None):
         raise PilotoOsError("Piloto sem vinculo cadastrado.", "danger", redirect_endpoint="main.piloto_os")
 
     solicitacao = Solicitacao.query.get_or_404(os_id)
@@ -166,15 +217,15 @@ def concluir_os_piloto(user, os_id):
     if not solicitacao.equipe_id:
         raise PilotoOsError("Esta OS nao possui equipe atribuida.", "danger")
 
-    vinculo = _buscar_vinculo_piloto_na_equipe(user.piloto_id, solicitacao.equipe_id)
-    if not vinculo:
+    equipe = _buscar_equipe_do_usuario_na_os(user, solicitacao.equipe_id)
+    if not equipe:
         raise PilotoOsError("Voce nao faz parte da equipe atribuida a esta OS.", "danger")
 
     solicitacao.status = "CONCLU\u00cdDO"
     db.session.commit()
 
-    equipe_nome = vinculo.equipe.nome_equipe if vinculo.equipe else None
-    papel = (vinculo.papel or "").lower() if vinculo.papel else None
+    equipe_nome = equipe.nome_equipe if equipe else None
+    papel = "equipe" if getattr(user, "tipo_usuario", None) == EQUIPE_OCEANO_USER_TYPE else None
 
     if equipe_nome and papel:
         return f"OS #{solicitacao.id} concluida! Equipe: {equipe_nome} | Papel: {papel}."
@@ -184,7 +235,7 @@ def concluir_os_piloto(user, os_id):
 
 
 def build_piloto_os_form_context(user, os_id):
-    if not getattr(user, "piloto_id", None):
+    if getattr(user, "tipo_usuario", None) != EQUIPE_OCEANO_USER_TYPE and not getattr(user, "piloto_id", None):
         raise PilotoOsError("Piloto sem vinculo cadastrado.", "danger", redirect_endpoint="main.piloto_os")
 
     solicitacao = (
@@ -204,11 +255,10 @@ def build_piloto_os_form_context(user, os_id):
     if not solicitacao.equipe_id:
         raise PilotoOsError("Esta OS nao possui equipe atribuida.", "danger")
 
-    vinculo = _buscar_vinculo_piloto_na_equipe(user.piloto_id, solicitacao.equipe_id)
-    if not vinculo:
+    equipe = _buscar_equipe_do_usuario_na_os(user, solicitacao.equipe_id)
+    if not equipe:
         raise PilotoOsError("Voce nao tem permissao para acessar esta OS.", "danger")
 
-    equipe = vinculo.equipe
     ordem = solicitacao.ordem_servico
     calculo_dosagem_planejado = _parse_json_object(
         getattr(ordem, "calculo_dosagem_planejado", None) if ordem else None
@@ -312,15 +362,15 @@ def salvar_piloto_os_form(user, os_id, form_data, files_data, root_path):
 
 
 def get_piloto_drone_payload(user, drone_id):
-    if not getattr(user, "piloto_id", None):
+    if getattr(user, "tipo_usuario", None) != EQUIPE_OCEANO_USER_TYPE and not getattr(user, "piloto_id", None):
         raise PilotoOsError("Piloto sem vinculo.", "danger")
 
     drone = Drones.query.get_or_404(drone_id)
     if not drone.equipe_id:
         raise PilotoOsError("Drone sem equipe.", "danger")
 
-    vinculo = _buscar_vinculo_piloto_na_equipe(user.piloto_id, drone.equipe_id)
-    if not vinculo:
+    equipe = _buscar_equipe_do_usuario_na_os(user, drone.equipe_id)
+    if not equipe:
         raise PilotoOsError("Sem permissao.", "danger")
 
     return {

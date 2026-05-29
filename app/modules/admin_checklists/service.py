@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from sqlalchemy.orm import joinedload
 
 from app.extensions import db
-from app.models import ChecklistSemanalDrone, ChecklistSemanalVeiculo, Drones, Pilotos, Veiculos
+from app.models import ChecklistSemanalDrone, ChecklistSemanalVeiculo, Drones, Equipe, Pilotos, Veiculos
 
 
 CHECKLIST_VEICULO_BOOL_LABELS = [
@@ -112,16 +112,45 @@ def _checklist_notes_items(checklist, labels):
     return notes
 
 
+def _checklist_actor_info(checklist):
+    piloto = getattr(checklist, "piloto", None)
+    equipe = getattr(checklist, "equipe", None)
+
+    if piloto:
+        return {
+            "actor_type": "piloto",
+            "actor_id": checklist.piloto_id,
+            "actor_nome": piloto.nome_piloto or "-",
+            "actor_label": "Piloto",
+        }
+
+    if equipe:
+        return {
+            "actor_type": "equipe",
+            "actor_id": checklist.equipe_id,
+            "actor_nome": equipe.nome_equipe or "-",
+            "actor_label": "Equipe",
+        }
+
+    return {
+        "actor_type": "piloto",
+        "actor_id": checklist.piloto_id,
+        "actor_nome": "-",
+        "actor_label": "Responsavel",
+    }
+
+
 def normalize_checklist_veiculo_admin(checklist):
     items, failures = _checklist_status_items(checklist, CHECKLIST_VEICULO_BOOL_LABELS)
     notes = _checklist_notes_items(checklist, CHECKLIST_VEICULO_TEXT_LABELS)
     veiculo = checklist.veiculo
-    piloto = checklist.piloto
+    actor = _checklist_actor_info(checklist)
 
     meta = [
         {"label": "Placa", "value": (veiculo.placa if veiculo else "") or "-"},
         {"label": "Operacao", "value": (veiculo.operacao if veiculo else "") or "-"},
-        {"label": "Responsavel", "value": (veiculo.responsavel if veiculo else "") or "-"},
+        {"label": "Responsavel", "value": (veiculo.responsavel if veiculo else "") or actor["actor_nome"] or "-"},
+        {"label": actor["actor_label"], "value": actor["actor_nome"]},
         {"label": "KM lido", "value": _format_km_admin(checklist.km_leitura)},
     ]
 
@@ -132,10 +161,14 @@ def normalize_checklist_veiculo_admin(checklist):
         "tipo_label": "Veiculo",
         "data_registro": checklist.data_registro,
         "piloto_id": checklist.piloto_id,
+        "equipe_id": checklist.equipe_id,
+        "actor_type": actor["actor_type"],
+        "actor_id": actor["actor_id"],
+        "actor_label": actor["actor_label"],
         "titulo": (veiculo.modelo if veiculo else "") or "Veiculo sem identificacao",
         "subtitulo": (veiculo.placa if veiculo else "") or "-",
-        "complemento": (veiculo.responsavel if veiculo else "") or "",
-        "piloto_nome": (piloto.nome_piloto if piloto else "") or "-",
+        "complemento": (veiculo.responsavel if veiculo else "") or actor["actor_nome"] or "",
+        "piloto_nome": actor["actor_nome"],
         "status_label": "Conforme" if failures == 0 else f"{failures} pendencia(s)",
         "status_class": "success" if failures == 0 else "warning",
         "falhas": failures,
@@ -153,7 +186,7 @@ def normalize_checklist_drone_admin(checklist):
     items, failures = _checklist_status_items(checklist, CHECKLIST_DRONE_BOOL_LABELS)
     notes = _checklist_notes_items(checklist, CHECKLIST_DRONE_TEXT_LABELS)
     drone = checklist.drone
-    piloto = checklist.piloto
+    actor = _checklist_actor_info(checklist)
 
     meta = [
         {"label": "Renomacao", "value": (drone.renomacao if drone else "") or "-"},
@@ -162,6 +195,7 @@ def normalize_checklist_drone_admin(checklist):
         {"label": "Baterias", "value": str(int(checklist.num_baterias or 0))},
         {"label": "Baterias WB", "value": str(int(checklist.num_baterias_wb or 0))},
         {"label": "Responsavel informado", "value": checklist.nome_responsavel or "-"},
+        {"label": actor["actor_label"], "value": actor["actor_nome"]},
     ]
 
     total_items = len(CHECKLIST_DRONE_BOOL_LABELS)
@@ -171,10 +205,14 @@ def normalize_checklist_drone_admin(checklist):
         "tipo_label": "Drone",
         "data_registro": checklist.data_registro,
         "piloto_id": checklist.piloto_id,
+        "equipe_id": checklist.equipe_id,
+        "actor_type": actor["actor_type"],
+        "actor_id": actor["actor_id"],
+        "actor_label": actor["actor_label"],
         "titulo": (drone.renomacao if drone else "") or "Drone sem identificacao",
         "subtitulo": (drone.modelo if drone else "") or "-",
         "complemento": (drone.numero_serie if drone else "") or "",
-        "piloto_nome": (piloto.nome_piloto if piloto else "") or "-",
+        "piloto_nome": actor["actor_nome"],
         "status_label": "Conforme" if failures == 0 else f"{failures} pendencia(s)",
         "status_class": "success" if failures == 0 else "warning",
         "falhas": failures,
@@ -199,12 +237,18 @@ def group_admin_checklists_by_week(records):
         base_date = registered_at.date()
         week_start = base_date - timedelta(days=base_date.weekday())
         week_end = week_start + timedelta(days=6)
-        group_key = (item.get("piloto_id"), week_start.isoformat())
+        actor_type = item.get("actor_type") or "piloto"
+        actor_id = item.get("actor_id") or item.get("piloto_id")
+        group_key = (actor_type, actor_id, week_start.isoformat())
 
         group = groups.setdefault(
             group_key,
             {
                 "piloto_id": item.get("piloto_id"),
+                "equipe_id": item.get("equipe_id"),
+                "actor_type": actor_type,
+                "actor_id": actor_id,
+                "actor_label": item.get("actor_label") or "Responsavel",
                 "piloto_nome": item.get("piloto_nome") or "-",
                 "semana_inicio": week_start,
                 "semana_fim": week_end,
@@ -251,9 +295,11 @@ def build_admin_checklists_weekly_groups(q: str, data_inicio: str, data_fim: str
         .options(
             joinedload(ChecklistSemanalVeiculo.veiculo),
             joinedload(ChecklistSemanalVeiculo.piloto),
+            joinedload(ChecklistSemanalVeiculo.equipe),
         )
         .join(Veiculos, ChecklistSemanalVeiculo.veiculo_id == Veiculos.id)
-        .join(Pilotos, ChecklistSemanalVeiculo.piloto_id == Pilotos.id)
+        .outerjoin(Pilotos, ChecklistSemanalVeiculo.piloto_id == Pilotos.id)
+        .outerjoin(Equipe, ChecklistSemanalVeiculo.equipe_id == Equipe.id)
     )
 
     if q:
@@ -264,6 +310,7 @@ def build_admin_checklists_weekly_groups(q: str, data_inicio: str, data_fim: str
                 Veiculos.placa.ilike(like),
                 Veiculos.responsavel.ilike(like),
                 Pilotos.nome_piloto.ilike(like),
+                Equipe.nome_equipe.ilike(like),
             )
         )
 
@@ -291,9 +338,11 @@ def build_admin_checklists_weekly_groups(q: str, data_inicio: str, data_fim: str
         .options(
             joinedload(ChecklistSemanalDrone.drone),
             joinedload(ChecklistSemanalDrone.piloto),
+            joinedload(ChecklistSemanalDrone.equipe),
         )
         .join(Drones, ChecklistSemanalDrone.drone_id == Drones.id)
-        .join(Pilotos, ChecklistSemanalDrone.piloto_id == Pilotos.id)
+        .outerjoin(Pilotos, ChecklistSemanalDrone.piloto_id == Pilotos.id)
+        .outerjoin(Equipe, ChecklistSemanalDrone.equipe_id == Equipe.id)
     )
 
     if q:
@@ -304,6 +353,7 @@ def build_admin_checklists_weekly_groups(q: str, data_inicio: str, data_fim: str
                 Drones.modelo.ilike(like),
                 Drones.numero_serie.ilike(like),
                 Pilotos.nome_piloto.ilike(like),
+                Equipe.nome_equipe.ilike(like),
             )
         )
 
@@ -342,10 +392,24 @@ def build_admin_checklists_totals(groups):
     }
 
 
-def build_admin_checklist_detail(piloto_id: int, semana_inicio: str):
+def _actor_filters(actor_type: str, actor_id: int):
+    if actor_type == "equipe":
+        return (
+            ChecklistSemanalVeiculo.equipe_id == actor_id,
+            ChecklistSemanalDrone.equipe_id == actor_id,
+        )
+
+    return (
+        ChecklistSemanalVeiculo.piloto_id == actor_id,
+        ChecklistSemanalDrone.piloto_id == actor_id,
+    )
+
+
+def build_admin_checklist_detail(actor_id: int, semana_inicio: str, actor_type: str = "piloto"):
     semana_inicio_date = datetime.strptime(semana_inicio, "%Y-%m-%d").date()
     semana_inicio_dt = datetime.combine(semana_inicio_date, datetime.min.time())
     semana_fim_dt = semana_inicio_dt + timedelta(days=7)
+    veiculo_actor_filter, drone_actor_filter = _actor_filters(actor_type, actor_id)
 
     veiculos = [
         normalize_checklist_veiculo_admin(item)
@@ -354,9 +418,10 @@ def build_admin_checklist_detail(piloto_id: int, semana_inicio: str):
             .options(
                 joinedload(ChecklistSemanalVeiculo.veiculo),
                 joinedload(ChecklistSemanalVeiculo.piloto),
+                joinedload(ChecklistSemanalVeiculo.equipe),
             )
             .filter(
-                ChecklistSemanalVeiculo.piloto_id == piloto_id,
+                veiculo_actor_filter,
                 ChecklistSemanalVeiculo.data_registro >= semana_inicio_dt,
                 ChecklistSemanalVeiculo.data_registro < semana_fim_dt,
             )
@@ -372,9 +437,10 @@ def build_admin_checklist_detail(piloto_id: int, semana_inicio: str):
             .options(
                 joinedload(ChecklistSemanalDrone.drone),
                 joinedload(ChecklistSemanalDrone.piloto),
+                joinedload(ChecklistSemanalDrone.equipe),
             )
             .filter(
-                ChecklistSemanalDrone.piloto_id == piloto_id,
+                drone_actor_filter,
                 ChecklistSemanalDrone.data_registro >= semana_inicio_dt,
                 ChecklistSemanalDrone.data_registro < semana_fim_dt,
             )
@@ -406,7 +472,10 @@ def build_admin_checklist_detail(piloto_id: int, semana_inicio: str):
     }
 
     return {
-        "piloto_id": piloto_id,
+        "piloto_id": actor_id if actor_type == "piloto" else None,
+        "equipe_id": actor_id if actor_type == "equipe" else None,
+        "actor_id": actor_id,
+        "actor_type": actor_type,
         "piloto_nome": piloto_nome,
         "semana_inicio": semana_inicio_date,
         "semana_fim": semana_inicio_date + timedelta(days=6),

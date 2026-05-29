@@ -41,6 +41,8 @@ def build_auditoria_query(q="", metodo="", tipo_evento="", status="", data_inici
             or_(
                 func.lower(func.coalesce(AuditoriaUsuario.usuario_nome, "")).like(term),
                 func.lower(func.coalesce(AuditoriaUsuario.usuario_login, "")).like(term),
+                func.lower(func.coalesce(AuditoriaUsuario.tipo_usuario, "")).like(term),
+                func.lower(func.coalesce(AuditoriaUsuario.tipo_evento, "")).like(term),
                 func.lower(func.coalesce(AuditoriaUsuario.endpoint, "")).like(term),
                 func.lower(func.coalesce(AuditoriaUsuario.path, "")).like(term),
                 func.lower(func.coalesce(AuditoriaUsuario.ip, "")).like(term),

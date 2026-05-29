@@ -9,7 +9,8 @@ from app.modules.piloto_os.service import (
     PilotoOsError,
     STATUS_OS_APROVADAS_COM_ACENTO,
     STATUS_OS_CONCLUIDAS,
-    _buscar_vinculo_piloto_na_equipe,
+    EQUIPE_OCEANO_USER_TYPE,
+    _buscar_equipe_do_usuario_na_os,
     _parse_json_object,
     _sanitize_calculo_dosagem_planejado,
 )
@@ -219,7 +220,7 @@ def _build_base_context(user):
 
 
 def _get_piloto_os_planejamento(user, os_id):
-    if not getattr(user, "piloto_id", None):
+    if getattr(user, "tipo_usuario", None) != EQUIPE_OCEANO_USER_TYPE and not getattr(user, "piloto_id", None):
         raise PilotoOsError("Piloto sem vinculo cadastrado.", "danger", redirect_endpoint="main.piloto_os")
 
     solicitacao = (
@@ -247,8 +248,8 @@ def _get_piloto_os_planejamento(user, os_id):
             redirect_endpoint="main.piloto_os",
         )
 
-    vinculo = _buscar_vinculo_piloto_na_equipe(user.piloto_id, solicitacao.equipe_id)
-    if not vinculo:
+    equipe = _buscar_equipe_do_usuario_na_os(user, solicitacao.equipe_id)
+    if not equipe:
         raise PilotoOsError(
             "Voce nao tem permissao para acessar esta OS.",
             "danger",

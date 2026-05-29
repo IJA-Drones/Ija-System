@@ -14,7 +14,9 @@ from app.modules.veiculos.service import (
     create_veiculo,
     delete_veiculo,
     encerrar_turno_piloto,
+    EQUIPE_OCEANO_USER_TYPE,
     iniciar_turno_piloto,
+    list_equipes_choices,
     list_veiculos,
     list_veiculos_logs,
     list_responsaveis_choices,
@@ -31,7 +33,7 @@ def _require_admin_or_operario():
 
 
 def _require_piloto():
-    if getattr(current_user, "tipo_usuario", None) != "piloto":
+    if getattr(current_user, "tipo_usuario", None) not in {"piloto", EQUIPE_OCEANO_USER_TYPE}:
         abort(403)
 
 
@@ -94,9 +96,14 @@ def register_routes(bp):
         errors = {}
         form = {}
         responsaveis = list_responsaveis_choices(user=current_user)
+        equipes = list_equipes_choices(user=current_user)
 
         if request.method == "POST":
-            form, cleaned, errors = validate_veiculo_form(request.form, responsaveis=responsaveis)
+            form, cleaned, errors = validate_veiculo_form(
+                request.form,
+                responsaveis=responsaveis,
+                equipes=equipes,
+            )
 
             if errors:
                 flash("Corrija os campos destacados.", "warning")
@@ -105,6 +112,7 @@ def register_routes(bp):
                     form=form,
                     errors=errors,
                     responsaveis=responsaveis,
+                    equipes=equipes,
                 )
 
             try:
@@ -120,6 +128,7 @@ def register_routes(bp):
                     form=form,
                     errors=errors,
                     responsaveis=responsaveis,
+                    equipes=equipes,
                 )
 
         return render_template(
@@ -127,6 +136,7 @@ def register_routes(bp):
             form=form,
             errors=errors,
             responsaveis=responsaveis,
+            equipes=equipes,
         )
 
     @bp.route("/veiculos/<int:veiculo_id>/editar", methods=["GET", "POST"], endpoint="editar_veiculo")
@@ -137,11 +147,13 @@ def register_routes(bp):
         veiculo = _get_scoped_veiculo_or_404(veiculo_id)
         errors = {}
         responsaveis = list_responsaveis_choices(user=current_user)
+        equipes = list_equipes_choices(user=current_user)
 
         if request.method == "POST":
             form, cleaned, errors = validate_veiculo_form(
                 request.form,
                 responsaveis=responsaveis,
+                equipes=equipes,
                 existing_veiculo=veiculo,
             )
 
@@ -153,6 +165,7 @@ def register_routes(bp):
                     errors=errors,
                     veiculo=veiculo,
                     responsaveis=responsaveis,
+                    equipes=equipes,
                 )
 
             try:
@@ -169,6 +182,7 @@ def register_routes(bp):
                     errors=errors,
                     veiculo=veiculo,
                     responsaveis=responsaveis,
+                    equipes=equipes,
                 )
 
         return render_template(
@@ -177,6 +191,7 @@ def register_routes(bp):
             errors=errors,
             veiculo=veiculo,
             responsaveis=responsaveis,
+            equipes=equipes,
         )
 
     @bp.route("/veiculos/<int:veiculo_id>/deletar", methods=["POST"], endpoint="deletar_veiculo")
