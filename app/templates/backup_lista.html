@@ -4,105 +4,555 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
 <style>
-  .error-page-bg { position: relative; overflow: hidden; }
-  .error-page-bg::before {
-    content: "";
-    position: absolute;
-    inset: -200px;
+  .backup-page {
+    position: relative;
+    overflow: hidden;
+    max-width: 1180px;
   }
-  .error-card { position: relative; z-index: 1; backdrop-filter: blur(6px); background: rgba(255,255,255,.96); }
-  body.dark-mode .error-card {
-    background: rgba(21, 34, 51, .94);
-    border: 1px solid #233549 !important;
+
+  .backup-shell {
+    position: relative;
+    z-index: 1;
+    background: rgba(255, 255, 255, 0.98);
+    border: 1px solid rgba(26, 74, 124, 0.08);
+    border-radius: 18px;
+    box-shadow: 0 20px 55px rgba(16, 34, 58, 0.12);
+  }
+
+  .backup-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid #e9eef5;
+  }
+
+  .backup-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.95rem;
+    min-width: 0;
+  }
+
+  .backup-title-icon {
+    width: 48px;
+    height: 48px;
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    border-radius: 14px;
+    color: #fff;
+    background: linear-gradient(135deg, var(--color-primary-dark), var(--color-accent));
+    box-shadow: 0 12px 24px rgba(26, 74, 124, 0.2);
+  }
+
+  .backup-title-icon .bi {
+    color: currentColor;
+    font-size: 1.35rem;
+  }
+
+  .backup-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+  }
+
+  .backup-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin: 1.25rem 0;
+  }
+
+  .backup-stat {
+    min-width: 0;
+    padding: 0.9rem 1rem;
+    border: 1px solid #e4ebf3;
+    border-radius: 12px;
+    background: #f8fbfe;
+  }
+
+  .backup-stat-label {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: var(--color-text-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .backup-stat-label .bi {
+    color: var(--color-accent);
+  }
+
+  .backup-stat-value {
+    display: block;
+    margin-top: 0.25rem;
+    color: var(--color-text-main);
+    font-size: 1.05rem;
+    font-weight: 700;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+  }
+
+  .backup-table-wrap {
+    overflow: hidden;
+    border: 1px solid #dde6f0;
+    border-radius: 14px;
+    background: var(--color-bg-white);
+  }
+
+  .backup-table {
+    table-layout: fixed;
+  }
+
+  .backup-table th:first-child,
+  .backup-table td:first-child {
+    width: 56%;
+  }
+
+  .backup-table th:nth-child(2),
+  .backup-table td:nth-child(2) {
+    width: 27%;
+  }
+
+  .backup-table th:nth-child(3),
+  .backup-table td:nth-child(3) {
+    width: 17%;
+  }
+
+  .backup-file {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    min-width: 0;
+  }
+
+  .backup-file-icon {
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    border-radius: 12px;
+    color: var(--color-primary);
+    background: rgba(0, 163, 196, 0.11);
+  }
+
+  .backup-file-icon .bi {
+    color: currentColor;
+    font-size: 1.05rem;
+  }
+
+  .backup-file-name {
+    display: block;
+    color: var(--color-text-main);
+    font-weight: 700;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  .backup-file-origin {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.3rem;
+    color: var(--color-text-muted);
+    font-size: 0.76rem;
+    font-weight: 600;
+  }
+
+  .backup-file-origin .bi {
+    color: var(--color-accent);
+  }
+
+  .backup-date {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    color: var(--color-text-muted);
+    font-weight: 500;
+  }
+
+  .backup-date .bi {
+    color: var(--color-primary);
+  }
+
+  .backup-size {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 76px;
+    padding: 0.38rem 0.72rem;
+    border-radius: 999px;
+    color: var(--color-primary-dark);
+    background: #eef6fb;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .backup-latest-row td {
+    background: #f7fbff;
+  }
+
+  .backup-latest-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-left: 0.5rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    color: #1f6f3f;
+    background: rgba(47, 143, 79, 0.12);
+    font-size: 0.68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+
+  .backup-latest-badge .bi {
+    color: currentColor;
+  }
+
+  .backup-note {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin-top: 1rem;
+    color: var(--color-text-muted);
+  }
+
+  .backup-empty {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 1rem;
+    border: 1px solid #f4d895;
+    border-radius: 14px;
+    color: #8a5a00;
+    background: #fff8e6;
+  }
+
+  body.dark-mode .backup-shell {
+    background: rgba(21, 34, 51, 0.96);
+    border-color: #233549;
     color: var(--color-text-main);
   }
-  body.dark-mode .error-card .table-responsive {
-    background: transparent;
+
+  body.dark-mode .backup-header,
+  body.dark-mode .backup-table-wrap,
+  body.dark-mode .backup-stat {
+    border-color: #233549;
   }
-  body.dark-mode .error-card .text-muted {
-    color: var(--color-text-muted) !important;
+
+  body.dark-mode .backup-stat {
+    background: #18263a;
+  }
+
+  body.dark-mode .backup-table-wrap {
+    background: #152233;
+  }
+
+  body.dark-mode .backup-file-icon {
+    background: rgba(0, 224, 255, 0.12);
+  }
+
+  body.dark-mode .backup-size {
+    color: #d8efff;
+    background: rgba(76, 163, 255, 0.16);
+  }
+
+  body.dark-mode .backup-latest-row td {
+    background: #1d3048;
+  }
+
+  body.dark-mode .backup-latest-badge {
+    color: #baf0d2;
+    background: rgba(87, 199, 139, 0.16);
+  }
+
+  body.dark-mode .backup-empty {
+    color: #ffd77a;
+    background: rgba(214, 158, 46, 0.12);
+    border-color: rgba(214, 158, 46, 0.3);
+  }
+
+  @media (max-width: 767.98px) {
+    .backup-page {
+      padding-top: 1rem !important;
+      padding-bottom: 1rem !important;
+    }
+
+    .backup-shell {
+      padding: 1.25rem !important;
+      border-radius: 14px;
+    }
+
+    .backup-header {
+      display: block;
+    }
+
+    .backup-title-wrap {
+      align-items: flex-start;
+    }
+
+    .backup-actions {
+      justify-content: stretch;
+      margin-top: 1rem;
+    }
+
+    .backup-actions .btn {
+      flex: 1 1 160px;
+    }
+
+    .backup-summary {
+      grid-template-columns: 1fr;
+    }
+
+    .backup-table-wrap {
+      overflow: visible;
+      border: none;
+      background: transparent;
+    }
+
+    .backup-table,
+    .backup-table tbody,
+    .backup-table tr,
+    .backup-table td {
+      display: block;
+      width: 100% !important;
+    }
+
+    .backup-table thead {
+      display: none;
+    }
+
+    .backup-table tr {
+      margin-bottom: 0.85rem;
+      border: 1px solid #dde6f0;
+      border-radius: 14px;
+      background: var(--color-bg-white);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+
+    .backup-table td {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.85rem 1rem;
+      border-top: 1px solid #edf2f7;
+    }
+
+    .backup-table td:first-child {
+      display: block;
+      border-top: none;
+    }
+
+    .backup-table td::before {
+      content: attr(data-label);
+      color: var(--color-text-muted);
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .backup-table td:first-child::before {
+      display: none;
+    }
+
+    .backup-date {
+      justify-content: flex-end;
+      text-align: right;
+    }
+
+    .backup-note {
+      align-items: flex-start;
+    }
+
+    body.dark-mode .backup-table tr {
+      background: #152233;
+      border-color: #233549;
+    }
+
+    body.dark-mode .backup-table td {
+      border-top-color: #233549;
+    }
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid py-5 error-page-bg" style="max-width: 1200px;">
-  <div class="row justify-content-center align-items-center" style="min-height: 70vh;">
-    <div class="col-md-10 col-lg-9 col-xl-8">
-
-      <div class="card shadow-lg rounded-4 border-0 p-4 p-sm-5 error-card">
-        <div class="card-body p-0">
-
-          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
-            <div>
-              <h2 class="h4 fw-bold mb-1">{{ titulo|default('Backups') }}</h2>
-              <p class="text-muted mb-0">{{ mensagem|default('') }}</p>
+<div class="container-fluid py-4 py-lg-5 backup-page">
+  <div class="row justify-content-center">
+    <div class="col-12 col-xl-10">
+      <div class="backup-shell p-4 p-lg-5">
+        <div class="backup-header">
+          <div class="backup-title-wrap">
+            <div class="backup-title-icon" aria-hidden="true">
+              <i class="bi bi-database-down"></i>
             </div>
-
-            <div class="d-flex gap-2">
-              <a href="{{ url_for('main.backup_page') }}" class="btn btn-primary rounded-pill px-4">
-                <i class="bi bi-plus-circle me-2"></i>Gerar agora
-              </a>
-              <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary rounded-pill px-4">
-                <i class="bi bi-house-door me-2"></i>Voltar
-              </a>
+            <div>
+              <h1 class="h4 fw-bold mb-1">{{ titulo|default('Backups') }}</h1>
+              <p class="text-muted mb-0">{{ mensagem|default('') }}</p>
             </div>
           </div>
 
-          {% if is_error %}
-            <div class="alert alert-danger rounded-4 mb-0">
-              {{ mensagem }}
+          <div class="backup-actions">
+            <a href="{{ url_for('main.backup_page') }}" class="btn btn-primary">
+              <i class="bi bi-plus-circle"></i>
+              Gerar agora
+            </a>
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+              <i class="bi bi-house-door"></i>
+              Voltar
+            </a>
+          </div>
+        </div>
+
+        {% if is_error %}
+          <div class="alert alert-danger rounded-4 mt-4 mb-0">
+            {{ mensagem }}
+          </div>
+        {% else %}
+          {% if backups|length == 0 %}
+            <div class="backup-empty mt-4">
+              <i class="bi bi-exclamation-triangle fs-4"></i>
+              <div>
+                <strong>Nenhum backup encontrado.</strong>
+                <div class="small">A pasta de backups ainda não possui arquivos disponíveis.</div>
+              </div>
             </div>
           {% else %}
-            {% if backups|length == 0 %}
-              <div class="alert alert-warning rounded-4 mb-0">
-                Nenhum backup encontrado na pasta.
-              </div>
-            {% else %}
-              <div class="table-responsive">
-                <table class="table align-middle mb-0">
-                  <thead>
-                    <tr>
-                      <th>Arquivo</th>
-                      <th>Data/Hora</th>
-                        <th class="text-end">Tamanho</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {% for b in backups %}
-                      <tr>
-                        <td>
-                          <i class="bi bi-filetype-sql me-2 text-primary"></i>
-                          <span class="fw-semibold">{{ b.name }}</span>
-                        </td>
-                        <td class="text-muted">
-                          {{ b.modified_at.strftime('%d/%m/%Y às %H:%M') }}
+            {% set ns = namespace(total_bytes=0, cloud_count=0, local_count=0) %}
+            {% for b in backups %}
+              {% set ns.total_bytes = ns.total_bytes + b.size_bytes %}
+              {% if b.is_cloud|default(false) %}
+                {% set ns.cloud_count = ns.cloud_count + 1 %}
+              {% else %}
+                {% set ns.local_count = ns.local_count + 1 %}
+              {% endif %}
+            {% endfor %}
+            {% set total_kb = ns.total_bytes / 1024 %}
+            {% set total_mb = total_kb / 1024 %}
 
-                        </td>
-                        <td class="text-end text-muted">
-                          {% set kb = (b.size_bytes / 1024) %}
-                          {% set mb = (kb / 1024) %}
+            <div class="backup-summary" aria-label="Resumo dos backups">
+              <div class="backup-stat">
+                <span class="backup-stat-label">
+                  <i class="bi bi-archive"></i>
+                  Total
+                </span>
+                <span class="backup-stat-value">
+                  {{ backups|length }} {{ 'backup' if backups|length == 1 else 'backups' }}
+                </span>
+              </div>
+
+              <div class="backup-stat">
+                <span class="backup-stat-label">
+                  <i class="bi bi-clock-history"></i>
+                  Mais recente
+                </span>
+                <span class="backup-stat-value">
+                  {{ backups[0].modified_at.strftime('%d/%m/%Y às %H:%M') }}
+                </span>
+              </div>
+
+              <div class="backup-stat">
+                <span class="backup-stat-label">
+                  <i class="bi bi-device-hdd"></i>
+                  Espaço usado
+                </span>
+                <span class="backup-stat-value">
+                  {% if total_mb >= 1 %}
+                    {{ '%.2f'|format(total_mb) }} MB
+                  {% else %}
+                    {{ '%.0f'|format(total_kb) }} KB
+                  {% endif %}
+                </span>
+              </div>
+            </div>
+
+            <div class="table-responsive backup-table-wrap">
+              <table class="table align-middle mb-0 backup-table">
+                <thead>
+                  <tr>
+                    <th>Arquivo</th>
+                    <th>Data e hora</th>
+                    <th class="text-end">Tamanho</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for b in backups %}
+                    {% set kb = (b.size_bytes / 1024) %}
+                    {% set mb = (kb / 1024) %}
+                    <tr class="{{ 'backup-latest-row' if loop.first else '' }}">
+                      <td data-label="Arquivo">
+                        <div class="backup-file">
+                          <span class="backup-file-icon" aria-hidden="true">
+                            <i class="bi bi-file-earmark-zip"></i>
+                          </span>
+                          <div class="min-w-0">
+                            <span class="backup-file-name" title="{{ b.name }}">
+                              {{ b.name }}
+                              {% if loop.first %}
+                                <span class="backup-latest-badge">
+                                  <i class="bi bi-stars"></i>
+                                  Recente
+                                </span>
+                              {% endif %}
+                            </span>
+                            <span class="backup-file-origin">
+                              {% if b.is_cloud|default(false) %}
+                                <i class="bi bi-cloud-check"></i>
+                                Nuvem
+                              {% else %}
+                                <i class="bi bi-hdd-stack"></i>
+                                Local
+                              {% endif %}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+                      <td data-label="Data/Hora">
+                        <span class="backup-date">
+                          <i class="bi bi-calendar2-check"></i>
+                          {{ b.modified_at.strftime('%d/%m/%Y às %H:%M') }}
+                        </span>
+                      </td>
+                      <td class="text-end" data-label="Tamanho">
+                        <span class="backup-size">
                           {% if mb >= 1 %}
                             {{ '%.2f'|format(mb) }} MB
                           {% else %}
                             {{ '%.0f'|format(kb) }} KB
                           {% endif %}
-                        </td>
-                      </tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
-              </div>
+                        </span>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
 
-              <p class="small text-muted mb-0 mt-3">
-                Backups automáticos rodam diariamente às <strong>05:00</strong> ({{ "America/Sao_Paulo" }}).
-              </p>
-            {% endif %}
+            <p class="backup-note small mb-0">
+              <i class="bi bi-info-circle"></i>
+              Backups automáticos rodam diariamente às <strong>05:00</strong> (America/Sao_Paulo).
+              {% if ns.cloud_count and ns.local_count %}
+                Foram encontrados {{ ns.cloud_count }} na nuvem e {{ ns.local_count }} locais.
+              {% endif %}
+            </p>
           {% endif %}
-
-        </div>
+        {% endif %}
       </div>
-
     </div>
   </div>
 </div>
