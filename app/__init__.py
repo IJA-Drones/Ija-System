@@ -18,6 +18,56 @@ BRAZIL_TZ = ZoneInfo("America/Sao_Paulo")
 
 AUDIT_MUTATION_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 
+AUDIT_IGNORED_KEYWORDS = (
+    "login",
+    "logout",
+    "chatbot",
+    "api_cep",
+    "api_geocode",
+    "heatmap",
+    "backup_status",
+)
+
+AUDIT_ACTION_KEYWORDS = (
+    "acesso-operacional",
+    "acesso_operacional",
+    "abrir",
+    "adicionar",
+    "alternar",
+    "atribuir",
+    "atualizar",
+    "cadastro",
+    "cadastrar",
+    "cancelamento",
+    "cancelar",
+    "checklist",
+    "concluir",
+    "configuracoes",
+    "credenciais",
+    "criar",
+    "deletar",
+    "delete",
+    "dosagem",
+    "editar",
+    "encerrar",
+    "excluir",
+    "fechar",
+    "formulario",
+    "importar",
+    "limpar",
+    "manutencao",
+    "mapeamento",
+    "nova",
+    "novo",
+    "receber",
+    "registrar",
+    "remover",
+    "reset_senha",
+    "salvar",
+    "template",
+    "update",
+)
+
 
 def _resolve_request_ip():
     forwarded_for = (request.headers.get("X-Forwarded-For") or "").split(",")[0].strip()
@@ -48,37 +98,38 @@ def _to_brazil_datetime(value):
 def _should_audit_request():
     endpoint = (request.endpoint or "").strip().lower()
     path = (request.path or "").strip().lower()
+    haystack = f"{endpoint} {path}"
 
     if path.startswith("/static/") or endpoint.startswith("static"):
         return False
 
-    if request.method in AUDIT_MUTATION_METHODS:
-        return True
+    if any(keyword in haystack for keyword in AUDIT_IGNORED_KEYWORDS):
+        return False
 
-    if endpoint.endswith("logout") or path.endswith("/logout"):
-        return True
+    if request.method not in AUDIT_MUTATION_METHODS:
+        return False
 
-    return False
+    return any(keyword in haystack for keyword in AUDIT_ACTION_KEYWORDS)
 
 
 def _resolve_audit_event_type(endpoint, path):
     haystack = f"{(endpoint or '').lower()} {(path or '').lower()}"
 
-    if "login" in haystack or "logout" in haystack:
-        return "ACESSO"
-    if "formulario" in haystack:
-        return "FORMULARIO"
-    if "concluir" in haystack:
+    if "cancelar" in haystack or "cancelamento" in haystack:
+        return "CANCELAMENTO"
+    if any(keyword in haystack for keyword in ("excluir", "delete", "deletar", "remover")):
+        return "EXCLUSAO"
+    if any(keyword in haystack for keyword in ("concluir", "encerrar", "fechar")):
         return "CONCLUSAO"
     if "dosagem" in haystack:
         return "DOSAGEM"
-    if "credenciais" in haystack or "reset_senha" in haystack:
+    if "formulario" in haystack or "checklist" in haystack:
+        return "FORMULARIO"
+    if any(keyword in haystack for keyword in ("credenciais", "reset_senha", "acesso-operacional", "acesso_operacional")):
         return "CREDENCIAIS"
-    if any(keyword in haystack for keyword in ("excluir", "delete", "deletar", "remover")):
-        return "EXCLUSAO"
-    if any(keyword in haystack for keyword in ("cadastrar", "cadastro", "novo", "criar")):
+    if any(keyword in haystack for keyword in ("cadastrar", "cadastro", "novo", "nova", "criar", "importar", "registrar", "abrir")):
         return "CRIACAO"
-    if any(keyword in haystack for keyword in ("editar", "update", "atualizar", "salvar")):
+    if any(keyword in haystack for keyword in ("editar", "update", "atualizar", "salvar", "atribuir", "alternar", "receber", "limpar", "manutencao", "mapeamento", "configuracoes", "template")):
         return "EDICAO"
 
     return "ACAO"
