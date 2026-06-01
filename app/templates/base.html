@@ -579,7 +579,7 @@
           </li>
           <li class="nav-item">
             <a
-              class="nav-link {% if request.endpoint in ['main.agro_equipamentos_listar', 'main.agro_equipamento_novo', 'main.agro_equipamento_editar'] %}active{% endif %}"
+              class="nav-link {% if request.endpoint in ['main.agro_equipamentos_listar', 'main.agro_equipamento_novo', 'main.agro_equipamento_editar', 'main.agro_importar_planilha_drones'] %}active{% endif %}"
               href="{{ url_for('main.agro_equipamentos_listar') }}"
             >
               <i class="bi bi-cpu-fill me-2"></i><span>Equipamentos Operacionais</span>
@@ -714,7 +714,7 @@
           {# ===================== EQUIPAMNETOS ===================== #} 
           {% if current_user.tipo_usuario|lower in ['admin', 'operario', 'operador', 'prefeitura_admin'] %}
           <li class="nav-item">
-            <a class="nav-link {% if request.endpoint == 'main.listar_equipamentos' %}active{% endif %}"
+            <a class="nav-link {% if request.endpoint in ['main.listar_equipamentos', 'main.importar_planilha_drones'] %}active{% endif %}"
               href="{{ url_for('main.listar_equipamentos') }}">
               <i class="bi bi-gear-fill me-2"></i><span>Equipamentos</span>
             </a> 
