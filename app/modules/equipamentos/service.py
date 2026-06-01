@@ -6,6 +6,12 @@ from app.shared.access import apply_prefeitura_scope
 
 
 MANUTENCAO_STATUS = "Em Manuten\u00e7\u00e3o"
+MANUTENCAO_STATUS_ALIASES = (
+    MANUTENCAO_STATUS,
+    "Manuten\u00e7\u00e3o",
+    "Manutencao",
+    "Em Manutencao",
+)
 
 
 def list_equipamentos_dashboard(user=None):
@@ -16,7 +22,7 @@ def list_equipamentos_dashboard(user=None):
         "equipamentos": query.order_by(Equipamentos.criado_em.desc()).all(),
         "total_drones": query.filter_by(tipo_equipamento="drones").count(),
         "total_baterias": query.filter_by(tipo_equipamento="baterias").count(),
-        "em_manutencao": query.filter_by(status=MANUTENCAO_STATUS).count(),
+        "em_manutencao": query.filter(Equipamentos.status.in_(MANUTENCAO_STATUS_ALIASES)).count(),
     }
 
 
@@ -54,7 +60,7 @@ def list_equipamentos_manutencao(user=None):
         query = apply_prefeitura_scope(query, user, Equipamentos.prefeitura_id)
     return (
         query
-        .filter(Equipamentos.status == MANUTENCAO_STATUS)
+        .filter(Equipamentos.status.in_(MANUTENCAO_STATUS_ALIASES))
         .order_by(Equipamentos.criado_em.desc())
         .all()
     )
@@ -309,7 +315,7 @@ def delete_drone(drone):
 
 
 def send_drone_to_manutencao(drone):
-    if (drone.status or "").strip() == MANUTENCAO_STATUS:
+    if (drone.status or "").strip() in MANUTENCAO_STATUS_ALIASES:
         return False
 
     drone.status = MANUTENCAO_STATUS

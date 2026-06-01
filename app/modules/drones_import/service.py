@@ -10,10 +10,11 @@ from io import BytesIO
 import requests
 from dotenv import dotenv_values
 from flask import current_app
+from sqlalchemy import or_
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions import db
-from app.models import Drones, EquipamentoAgro, Equipamentos
+from app.models import Drones, EquipamentoAgro, Equipamentos, Equipe, EquipeAgro
 
 
 ALLOWED_EXTENSIONS = {"csv", "xls", "xlsx"}
@@ -87,15 +88,85 @@ def _parse_float(value, default=None):
         return default
 
 
+def _parse_int(value, default=None):
+    text = _clean_text(value)
+    if text is None:
+        return default
+
+    try:
+        return int(float(text.replace(",", ".")))
+    except (TypeError, ValueError):
+        return default
+
+
 def _normalize_status(value):
     status = (_clean_text(value) or "Ativo").strip().lower()
     if status in {"ativo", "operacional", "disponivel", "ok"}:
         return "Ativo"
-    if status in {"manutencao", "em manutencao", "revisao"}:
-        return "Manutenção"
+    if status in {
+        "manutencao",
+        "manutenção",
+        "em manutencao",
+        "em manutenção",
+        "revisao",
+        "revisão",
+        "oficina",
+        "manut",
+    }:
+        return "Em Manutenção"
     if status in {"inativo", "baixado", "desativado", "indisponivel"}:
         return "Inativo"
     return "Ativo"
+
+
+def _normalize_lookup(value):
+    return re.sub(r"\s+", " ", _clean_text(value) or "").strip().lower()
+
+
+def _resolve_urban_team_id(item, prefeitura_id):
+    equipe_id = _parse_int(item.get("equipe_id"))
+    if equipe_id:
+        equipe = Equipe.query.filter(Equipe.id == equipe_id, Equipe.ativa.is_(True)).first()
+        if equipe and equipe.prefeitura_id in (None, prefeitura_id):
+            return equipe.id
+
+    equipe_nome = _normalize_lookup(item.get("equipe_nome"))
+    if not equipe_nome:
+        return None
+
+    equipes = (
+        Equipe.query
+        .filter(Equipe.ativa.is_(True))
+        .filter(or_(Equipe.prefeitura_id == prefeitura_id, Equipe.prefeitura_id.is_(None)))
+        .all()
+    )
+    for equipe in equipes:
+        if _normalize_lookup(equipe.nome_equipe) == equipe_nome:
+            return equipe.id
+    return None
+
+
+def _resolve_agro_team_id(item, prefeitura_id):
+    equipe_id = _parse_int(item.get("equipe_id"))
+    if equipe_id:
+        equipe = EquipeAgro.query.filter(EquipeAgro.id == equipe_id, EquipeAgro.ativa.is_(True)).first()
+        if equipe and equipe.prefeitura_id in (None, prefeitura_id):
+            return equipe.id
+
+    equipe_nome = _normalize_lookup(item.get("equipe_nome"))
+    if not equipe_nome:
+        return None
+
+    equipes = (
+        EquipeAgro.query
+        .filter(EquipeAgro.ativa.is_(True))
+        .filter(or_(EquipeAgro.prefeitura_id == prefeitura_id, EquipeAgro.prefeitura_id.is_(None)))
+        .all()
+    )
+    for equipe in equipes:
+        if _normalize_lookup(equipe.nome) == equipe_nome:
+            return equipe.id
+    return None
 
 
 def _build_renomacao(modelo, numero_serie, fallback_prefix="Drone"):
@@ -161,6 +232,10 @@ def _gemini_drone_import_schema():
         "pmd_kg": {"type": "STRING"},
         "capacidade_tanque_l": {"type": "STRING"},
         "largura_faixa_m": {"type": "STRING"},
+        "equipe_nome": {"type": "STRING"},
+        "equipe_id": {"type": "STRING"},
+        "categoria": {"type": "STRING"},
+        "ano_fabricacao": {"type": "STRING"},
     }
     return {
         "type": "OBJECT",
@@ -324,7 +399,10 @@ def normalize_spreadsheet_with_ai(table_text, *, agro=False):
         "Situação, Estado e Condição para status; Apelido, Nome, Renomeação e Identificação para renomacao; "
         "ANATEL e Homologação para registro_anatel; ANAC, SISANT e cadastro ANAC para registro_anac; "
         "PMD, peso máximo, peso de decolagem para pmd_kg; tanque, capacidade e volume para capacidade_tanque_l; "
-        "faixa, largura de faixa e largura para largura_faixa_m. "
+        "faixa, largura de faixa e largura para largura_faixa_m; "
+        "Equipe, Equipe Vinculada, Time, Grupo, Responsável e Equipe Responsável para equipe_nome; "
+        "Equipe ID, ID Equipe e Código da Equipe para equipe_id; "
+        "Categoria, Categoria Frota e Tipo de Frota para categoria; Ano e Ano Fabricação para ano_fabricacao. "
         "Preserve textos importantes, normalize números como texto simples e retorne null quando o dado não existir. "
         "Se uma linha não representar um drone/equipamento, ignore. "
         "A chave raiz deve ser drones."
@@ -388,6 +466,9 @@ def _create_urban_drone(item, prefeitura_id):
         registro_anatel=registro_anatel,
         registro_anac=registro_anac,
         pmd_kg=_parse_float(item.get("pmd_kg"), default=0.0),
+        categoria=_clean_text(item.get("categoria")),
+        ano_fabricacao=_parse_int(item.get("ano_fabricacao")),
+        equipe_id=_resolve_urban_team_id(item, prefeitura_id),
         prefeitura_id=prefeitura_id,
     )
     db.session.add(drone)
@@ -410,6 +491,7 @@ def _create_agro_equipment(item, prefeitura_id):
         registro_anac=_clean_text(item.get("registro_anac")),
         capacidade_tanque_l=_parse_float(item.get("capacidade_tanque_l")),
         largura_faixa_m=_parse_float(item.get("largura_faixa_m")),
+        equipe_agro_id=_resolve_agro_team_id(item, prefeitura_id),
         prefeitura_id=prefeitura_id,
     )
     db.session.add(equipamento)
