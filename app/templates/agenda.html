@@ -623,15 +623,41 @@
   function setStatusBadge(el, statusText) {
     el.textContent = statusText || "—";
 
-    if (statusText === "APROVADO") el.classList.add("bg-success");
-    else if (statusText === "NEGADO") el.classList.add("bg-danger");
-    else if (statusText === "EM ANÁLISE" || statusText === "EM ANALISE")
+    el.classList.remove(
+      "bg-success",
+      "bg-danger",
+      "bg-warning",
+      "bg-recomended",
+      "bg-secondary",
+      "bg-dark",
+      "bg-completed",
+      "text-dark",
+    );
+
+    const statusNorm = (statusText || "").trim().toUpperCase();
+
+    if (statusNorm === "APROVADO" || statusNorm === "APROVADA")
+      el.classList.add("bg-success");
+    else if (statusNorm === "NEGADO" || statusNorm === "NEGADA")
+      el.classList.add("bg-danger");
+    else if (statusNorm === "EM ANÁLISE" || statusNorm === "EM ANALISE")
       el.classList.add("bg-warning", "text-dark");
-    else if (statusText === "APROVADO COM RECOMENDAÇÕES" || statusText === "APROVADO COM RECOMENDACOES")
+    else if (
+      statusNorm === "APROVADO COM RECOMENDAÇÕES" ||
+      statusNorm === "APROVADO COM RECOMENDACOES" ||
+      statusNorm === "APROVADA COM RECOMENDAÇÕES" ||
+      statusNorm === "APROVADA COM RECOMENDACOES"
+    )
       el.classList.add("bg-recomended");
-    else if (statusText === "PENDENTE") el.classList.add("bg-secondary");
-    else if (statusText === "CANCELADO") el.classList.add("bg-dark");
-    else if (statusText === "CONCLUÍDO" || statusText === "CONCLUIDO")
+    else if (statusNorm === "PENDENTE") el.classList.add("bg-secondary");
+    else if (statusNorm === "CANCELADO" || statusNorm === "CANCELADA")
+      el.classList.add("bg-dark");
+    else if (
+      statusNorm === "CONCLUÍDO" ||
+      statusNorm === "CONCLUIDO" ||
+      statusNorm === "CONCLUÍDA" ||
+      statusNorm === "CONCLUIDA"
+    )
       el.classList.add("bg-completed");
     else el.classList.add("bg-secondary");
   }
@@ -832,6 +858,17 @@
       nowIndicator: true,
       dayMaxEvents: true,
       events: eventos,
+      eventClassNames: function (info) {
+        const status = (info.event.extendedProps?.status || "")
+          .trim()
+          .toUpperCase();
+
+        if (status.includes("CONCLU")) {
+          return ["agenda-event-completed"];
+        }
+
+        return [];
+      },
 
       headerToolbar: {
         left: "prev,next today",

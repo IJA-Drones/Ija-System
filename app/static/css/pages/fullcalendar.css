@@ -121,6 +121,15 @@
   box-shadow: 0 10px 24px rgba(0,0,0,.18);
 }
 
+.fc .fc-event.agenda-event-completed {
+  opacity: .58;
+  filter: saturate(.55);
+}
+
+.fc .fc-event.agenda-event-completed:hover {
+  opacity: .78;
+}
+
 /* =========================
    MOBILE UX
    ========================= */

@@ -69,18 +69,6 @@ def _has_agenda_date_range(data_ini=None, data_fim=None):
     return _parse_filter_date(data_ini) is not None or _parse_filter_date(data_fim) is not None
 
 
-def agenda_status_color(status):
-    if status == "APROVADO":
-        return "#198754"
-    if status == "APROVADO COM RECOMENDAÇÕES":
-        return "#ffa023"
-    if status == "NEGADO":
-        return "#dc3545"
-    if status == "EM ANÁLISE":
-        return "#e9fa05"
-    return "#0d6efd"
-
-
 def agora_brasilia_naive():
     return datetime.now(TZ_BR).replace(tzinfo=None)
 
@@ -256,7 +244,6 @@ def build_agenda_eventos(solicitacoes):
                 "id": str(solicitacao.id),
                 "title": f"{endereco_txt or solicitacao.foco or 'Local não informado'} - {uvis_nome}",
                 "start": f"{data}T{hora}",
-                "color": agenda_status_color(solicitacao.status),
                 "extendedProps": {
                     "foco": solicitacao.foco,
                     "tipo_visita": solicitacao.tipo_visita,
@@ -362,6 +349,7 @@ def build_agenda_context(user, args):
             "APROVADO",
             "APROVADO COM RECOMENDAÇÕES",
             "NEGADO",
+            "CONCLUÍDO",
         ],
         "uvis_disponiveis": build_agenda_uvis_disponiveis(user),
         "anos_disponiveis": build_agenda_anos_disponiveis(user),
