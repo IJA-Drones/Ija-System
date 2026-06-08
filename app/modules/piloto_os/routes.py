@@ -96,6 +96,9 @@ def register_routes(bp):
             drones_equipe=context["drones_equipe"],
             baterias_equipe=context["baterias_equipe"],
             veiculos_equipe=context["veiculos_equipe"],
+            busca=context["busca"],
+            semana_inicio=context["semana_inicio"],
+            semana_fim=context["semana_fim"],
             pagination_args={k: v for k, v in request.args.items() if k != "page"},
         )
 

@@ -1,12 +1,14 @@
 import json
 import os
 from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
+from sqlalchemy import or_
 from sqlalchemy.orm import joinedload
 from werkzeug.utils import secure_filename
 
 from app.extensions import db
-from app.models import Baterias, Drones, Equipe, EquipePiloto, OrdemServico, Solicitacao, Veiculos
+from app.models import Baterias, Drones, Equipe, EquipePiloto, OrdemServico, Solicitacao, Usuario, Veiculos
 from app.shared.access import ADMIN_PANEL_EDIT_TYPES, ADMIN_PANEL_VIEW_TYPES, can_access_regiao
 from app.shared.query_filters import aplicar_filtros_base
 
@@ -29,6 +31,7 @@ STATUS_OS_CONCLUIDAS = ["CONCLUIDO", "CONCLU\u00cdDO"]
 OS_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png"}
 OS_VIDEO_EXTENSIONS = {"mp4", "mov", "webm", "m4v"}
 EQUIPE_OCEANO_USER_TYPE = "equipe_oceano"
+BRAZIL_TZ = ZoneInfo("America/Sao_Paulo")
 
 
 class PilotoOsError(Exception):
@@ -77,6 +80,11 @@ def _buscar_equipe_do_usuario_na_os(user, equipe_id):
 
 
 def build_piloto_os_context(user, args, google_maps_key):
+    hoje = datetime.now(BRAZIL_TZ).date()
+    semana_inicio = hoje - timedelta(days=hoje.weekday())
+    semana_fim = semana_inicio + timedelta(days=6)
+    busca = (args.get("q") or "").strip()
+
     is_equipe_oceano = getattr(user, "tipo_usuario", None) == EQUIPE_OCEANO_USER_TYPE
     if not is_equipe_oceano and not getattr(user, "piloto_id", None):
         raise PilotoOsError("Piloto sem vinculo cadastrado.", "danger", redirect_endpoint="main.piloto_os")
@@ -105,6 +113,9 @@ def build_piloto_os_context(user, args, google_maps_key):
             "drones_equipe": [],
             "baterias_equipe": [],
             "veiculos_equipe": [],
+            "busca": busca,
+            "semana_inicio": semana_inicio,
+            "semana_fim": semana_fim,
         }
 
     query = (
@@ -116,8 +127,27 @@ def build_piloto_os_context(user, args, google_maps_key):
         .filter(
             Solicitacao.equipe_id == equipe.id,
             Solicitacao.status.in_(STATUS_OS_APROVADAS_COM_ACENTO),
+            Solicitacao.data_agendamento.between(semana_inicio, semana_fim),
         )
     )
+
+    if busca:
+        termo = f"%{busca}%"
+        criterios_busca = [
+            Solicitacao.protocolo.ilike(termo),
+            Solicitacao.logradouro.ilike(termo),
+            Solicitacao.numero.ilike(termo),
+            Solicitacao.complemento.ilike(termo),
+            Solicitacao.bairro.ilike(termo),
+            Solicitacao.cidade.ilike(termo),
+            Solicitacao.foco.ilike(termo),
+            Solicitacao.equipe_uvis_nome.ilike(termo),
+            Solicitacao.usuario.has(Usuario.nome_uvis.ilike(termo)),
+        ]
+        busca_id = busca.lower().removeprefix("os").lstrip(" #")
+        if busca_id.isdigit():
+            criterios_busca.append(Solicitacao.id == int(busca_id))
+        query = query.filter(or_(*criterios_busca))
 
     filtro_data = args.get("data")
     uvis_id = args.get("uvis_id")
@@ -157,6 +187,9 @@ def build_piloto_os_context(user, args, google_maps_key):
             .order_by(Baterias.renomacao.asc())
             .all()
         ),
+        "busca": busca,
+        "semana_inicio": semana_inicio,
+        "semana_fim": semana_fim,
         "veiculos_equipe": (
             Veiculos.query
             .filter(Veiculos.equipe_id == equipe.id)
