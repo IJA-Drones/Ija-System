@@ -375,10 +375,10 @@
               </div>
               <div class="col-6">
                 <div class="agenda-modal-stat agenda-modal-soft h-100">
-                  <span class="agenda-modal-kicker">Foco da Ação</span>
+                  <span class="agenda-modal-kicker">Endereço</span>
                   <div class="d-flex align-items-start text-dark">
-                    <i class="bi bi-crosshair me-2 text-danger"></i>
-                    <span id="m-foco" class="agenda-modal-stat-value">—</span>
+                    <i class="bi bi-geo-alt-fill me-2 text-danger"></i>
+                    <span id="m-endereco-resumo" class="agenda-modal-stat-value">—</span>
                   </div>
                 </div>
               </div>
@@ -634,7 +634,7 @@
     const lng = safeFloat(props.lng);
 
     const elUvis = document.getElementById("m-uvis");
-    const elFoco = document.getElementById("m-foco");
+    const elEnderecoResumo = document.getElementById("m-endereco-resumo");
     const elTipoVisita = document.getElementById("m-tipo-visita");
     const elTipoImovel = document.getElementById("m-tipo-imovel");
     const elTipoOperacao = document.getElementById("m-tipo-operacao");
@@ -648,7 +648,7 @@
     const elSub = document.getElementById("m-title-sub");
 
     if (elUvis) elUvis.textContent = uvis;
-    if (elFoco) elFoco.textContent = foco;
+    if (elEnderecoResumo) elEnderecoResumo.textContent = endereco || foco;
     if (elTipoVisita) elTipoVisita.textContent = tipoVisita;
     if (elTipoImovel) elTipoImovel.textContent = tipoImovel;
     if (elTipoOperacao) elTipoOperacao.textContent = tipoOperacao;
@@ -667,13 +667,14 @@
       }
     }
 
-    // Subtítulo (foco + data)
+    // Subtítulo (endereço + data)
     try {
       const dt = fcEvent.start;
       const dia = dt ? isoDay(dt) : "";
-      if (elSub) elSub.textContent = `${foco}${dia ? " • " + dia : ""}`;
+      const resumo = endereco || foco;
+      if (elSub) elSub.textContent = `${resumo}${dia ? " • " + dia : ""}`;
     } catch {
-      if (elSub) elSub.textContent = foco;
+      if (elSub) elSub.textContent = endereco || foco;
     }
 
     // ---- coordenadas e botões ----

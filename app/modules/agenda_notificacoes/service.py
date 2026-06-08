@@ -254,7 +254,7 @@ def build_agenda_eventos(solicitacoes):
         agenda_eventos.append(
             {
                 "id": str(solicitacao.id),
-                "title": f"{solicitacao.foco} - {uvis_nome}",
+                "title": f"{endereco_txt or solicitacao.foco or 'Local não informado'} - {uvis_nome}",
                 "start": f"{data}T{hora}",
                 "color": agenda_status_color(solicitacao.status),
                 "extendedProps": {
