@@ -88,6 +88,18 @@
     line-height: 1.5;
   }
 
+  .agenda-modal-primary-action {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(44, 82, 130, 0.12);
+  }
+
+  .agenda-modal-primary-action .btn {
+    min-height: 44px;
+    font-weight: 700;
+    box-shadow: 0 10px 22px rgba(13, 110, 253, 0.22);
+  }
+
   @media (max-width: 991.98px) {
     .agenda-modal-meta-grid {
       grid-template-columns: 1fr;
@@ -375,10 +387,10 @@
               </div>
               <div class="col-6">
                 <div class="agenda-modal-stat agenda-modal-soft h-100">
-                  <span class="agenda-modal-kicker">Endereço</span>
+                  <span class="agenda-modal-kicker">Foco da Ação</span>
                   <div class="d-flex align-items-start text-dark">
-                    <i class="bi bi-geo-alt-fill me-2 text-danger"></i>
-                    <span id="m-endereco-resumo" class="agenda-modal-stat-value">—</span>
+                    <i class="bi bi-crosshair me-2 text-danger"></i>
+                    <span id="m-foco" class="agenda-modal-stat-value">—</span>
                   </div>
                 </div>
               </div>
@@ -415,6 +427,10 @@
                 <div class="agenda-modal-meta-item">
                   <span class="agenda-modal-meta-label">Apoio CET?</span>
                   <div id="m-apoio-cet" class="agenda-modal-meta-value">—</div>
+                </div>
+                <div class="agenda-modal-meta-item">
+                  <span class="agenda-modal-meta-label">ID da Solicitação</span>
+                  <div id="m-solicitacao-id" class="agenda-modal-meta-value">—</div>
                 </div>
                 <div class="agenda-modal-meta-item">
                   <span class="agenda-modal-meta-label">Protocolo</span>
@@ -490,6 +506,19 @@
                 <i class="bi bi-sign-turn-right me-2"></i> Traçar Rota
               </a>
             </div>
+            {% if current_user.tipo_usuario in ['piloto', 'equipe_oceano'] %}
+              <div class="agenda-modal-primary-action">
+                <a
+                  id="m-formulario"
+                  href="#"
+                  data-url-template="{{ url_for('main.piloto_os_formulario_view', os_id=0) }}"
+                  class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2"
+                >
+                  <i class="bi bi-clipboard2-check-fill"></i>
+                  <span>Abrir Formulário</span>
+                </a>
+              </div>
+            {% endif %}
           </div>
         </div>
       </div>
@@ -615,7 +644,11 @@
 
   async function openEventoModalFromEvent(fcEvent) {
     const props = fcEvent.extendedProps || {};
-
+    const elFormulario = document.getElementById("m-formulario");
+    if (elFormulario) {
+      const urlTemplate = elFormulario.dataset.urlTemplate;
+      elFormulario.href = urlTemplate.replace("/0/", `/${fcEvent.id}/`);
+    }
     // ---- preencher textos ----
     const uvis = props.uvis || "—";
     const foco = props.foco || "—";
@@ -624,6 +657,7 @@
     const tipoOperacao = props.tipo_operacao || "—";
     const altura = props.altura_voo || "—";
     const apoioCet = props.apoio_cet || "—";
+    const solicitacaoId = fcEvent.id || "—";
     const protocolo = props.protocolo || "—";
     const observacao = props.observacao || "";
     const hora = props.hora || "—";
@@ -634,12 +668,13 @@
     const lng = safeFloat(props.lng);
 
     const elUvis = document.getElementById("m-uvis");
-    const elEnderecoResumo = document.getElementById("m-endereco-resumo");
+    const elFoco = document.getElementById("m-foco");
     const elTipoVisita = document.getElementById("m-tipo-visita");
     const elTipoImovel = document.getElementById("m-tipo-imovel");
     const elTipoOperacao = document.getElementById("m-tipo-operacao");
     const elAltura = document.getElementById("m-altura");
     const elApoioCet = document.getElementById("m-apoio-cet");
+    const elSolicitacaoId = document.getElementById("m-solicitacao-id");
     const elProtocolo = document.getElementById("m-protocolo");
     const boxObservacao = document.getElementById("boxObservacao");
     const elObservacao = document.getElementById("m-observacao");
@@ -648,12 +683,13 @@
     const elSub = document.getElementById("m-title-sub");
 
     if (elUvis) elUvis.textContent = uvis;
-    if (elEnderecoResumo) elEnderecoResumo.textContent = endereco || foco;
+    if (elFoco) elFoco.textContent = foco;
     if (elTipoVisita) elTipoVisita.textContent = tipoVisita;
     if (elTipoImovel) elTipoImovel.textContent = tipoImovel;
     if (elTipoOperacao) elTipoOperacao.textContent = tipoOperacao;
     if (elAltura) elAltura.textContent = altura;
     if (elApoioCet) elApoioCet.textContent = apoioCet;
+    if (elSolicitacaoId) elSolicitacaoId.textContent = solicitacaoId;
     if (elProtocolo) elProtocolo.textContent = protocolo;
     if (elHora) elHora.textContent = hora;
     if (elStatus) setStatusBadge(elStatus, status);
