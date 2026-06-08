@@ -323,6 +323,30 @@
               <i class="bi bi-calculator-fill me-2"></i><span>Dosagem</span>
             </a>
           </li>
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint == 'main.piloto_checklist_semanal' %}active{% endif %}"
+              href="{{ url_for('main.piloto_checklist_semanal') }}"
+            >
+              <i class="bi bi-ui-checks-grid me-2"></i><span>Checklist Semanal</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint == 'main.piloto_veiculos' and request.args.get('acao') == 'abrir_turno' %}active{% endif %}"
+              href="{{ url_for('main.piloto_veiculos', acao='abrir_turno') }}#veiculos-equipe"
+            >
+              <i class="bi bi-play-circle-fill me-2"></i><span>Abrir Turno</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint == 'main.piloto_veiculos' and request.args.get('acao') != 'abrir_turno' %}active{% endif %}"
+              href="{{ url_for('main.piloto_veiculos') }}"
+            >
+              <i class="bi bi-truck-front-fill me-2"></i><span>Veículos da Equipe</span>
+            </a>
+          </li>
           {% elif current_user.tipo_usuario == 'piloto_agro' and is_agro_context %}
           <li class="nav-item">
             <a
