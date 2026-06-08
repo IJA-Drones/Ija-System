@@ -16,6 +16,7 @@ from app.modules.chatbot import register_routes as register_chatbot_routes
 from app.modules.clientes import register_routes as register_clientes_routes
 from app.modules.dashboard import register_routes as register_dashboard_routes
 from app.modules.dji_flight_logs import register_routes as register_dji_flight_logs_routes
+from app.modules.drones_import import register_routes as register_drones_import_routes
 from app.modules.equipamentos import register_routes as register_equipamentos_routes
 from app.modules.equipe_uvis_dashboard import register_routes as register_equipe_uvis_dashboard_routes
 from app.modules.equipes import register_routes as register_equipes_routes
@@ -50,6 +51,7 @@ register_chatbot_routes(bp)
 register_clientes_routes(bp)
 register_dashboard_routes(bp)
 register_dji_flight_logs_routes(bp)
+register_drones_import_routes(bp)
 register_equipamentos_routes(bp)
 register_equipe_uvis_dashboard_routes(bp)
 register_equipes_routes(bp)
