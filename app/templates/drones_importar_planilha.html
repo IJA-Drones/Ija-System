@@ -1,0 +1,591 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}" />
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}" />
+<style>
+  .ai-import-page {
+    max-width: 1120px;
+  }
+
+  .ai-import-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(280px, 0.95fr);
+    gap: 18px;
+    align-items: stretch;
+  }
+
+  .ai-import-panel {
+    border: 1px solid rgba(65, 199, 161, 0.24);
+    background:
+      linear-gradient(135deg, rgba(11, 31, 45, 0.98), rgba(13, 48, 47, 0.96)),
+      #0b1f2d;
+    color: #eefaf7;
+    border-radius: 8px;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.24);
+    overflow: hidden;
+  }
+
+  .ai-import-panel-header {
+    padding: 22px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .ai-import-title {
+    margin: 0;
+    color: #ffffff;
+    font-size: 1.35rem;
+    font-weight: 800;
+  }
+
+  .ai-import-subtitle {
+    margin: 6px 0 0;
+    color: rgba(238, 250, 247, 0.72);
+    font-size: 0.92rem;
+  }
+
+  .ai-import-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 34px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: rgba(41, 185, 135, 0.16);
+    color: #8cf0c4;
+    border: 1px solid rgba(140, 240, 196, 0.22);
+    font-size: 0.82rem;
+    font-weight: 700;
+  }
+
+  .ai-import-body {
+    padding: 22px;
+    display: grid;
+    gap: 18px;
+  }
+
+  .fleet-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 5px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 8px;
+  }
+
+  .fleet-tab {
+    min-height: 54px;
+    border: 0;
+    border-radius: 6px;
+    color: rgba(238, 250, 247, 0.72);
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-weight: 800;
+    transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+  }
+
+  .fleet-tab.is-active {
+    background: linear-gradient(135deg, #19b77f, #0b7ed0);
+    color: #ffffff;
+    box-shadow: 0 10px 22px rgba(11, 126, 208, 0.28);
+  }
+
+  .drop-zone {
+    border: 1px dashed rgba(140, 240, 196, 0.42);
+    border-radius: 8px;
+    min-height: 236px;
+    padding: 28px;
+    background: rgba(255, 255, 255, 0.045);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 14px;
+    cursor: pointer;
+    transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+  }
+
+  .drop-zone.is-dragging {
+    border-color: #8cf0c4;
+    background: rgba(25, 183, 127, 0.12);
+    transform: translateY(-1px);
+  }
+
+  .drop-zone-icon {
+    width: 62px;
+    height: 62px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: rgba(11, 126, 208, 0.18);
+    color: #8cf0c4;
+    font-size: 1.55rem;
+  }
+
+  .drop-zone-title {
+    margin: 0;
+    color: #ffffff;
+    font-weight: 800;
+  }
+
+  .drop-zone-copy {
+    margin: 0;
+    max-width: 420px;
+    color: rgba(238, 250, 247, 0.68);
+    font-size: 0.9rem;
+  }
+
+  .selected-file {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+  }
+
+  .selected-file.is-visible {
+    display: flex;
+  }
+
+  .selected-file-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #ffffff;
+    font-weight: 700;
+  }
+
+  .ai-import-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .ai-import-submit {
+    min-height: 46px;
+    border: 0;
+    border-radius: 8px;
+    padding: 0 18px;
+    background: linear-gradient(135deg, #18b979, #0a86d8);
+    color: #ffffff;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 0 12px 24px rgba(10, 134, 216, 0.22);
+  }
+
+  .ai-import-submit:disabled {
+    opacity: 0.62;
+    cursor: not-allowed;
+  }
+
+  .ai-import-status {
+    display: none;
+    padding: 14px 16px;
+    border-radius: 8px;
+    font-weight: 700;
+  }
+
+  .ai-import-status.is-visible {
+    display: block;
+  }
+
+  .ai-import-status.success {
+    color: #c9ffe8;
+    background: rgba(25, 183, 127, 0.16);
+    border: 1px solid rgba(140, 240, 196, 0.25);
+  }
+
+  .ai-import-status.error {
+    color: #ffd0d0;
+    background: rgba(220, 53, 69, 0.16);
+    border: 1px solid rgba(255, 160, 160, 0.28);
+  }
+
+  .ai-import-progress {
+    display: none;
+    height: 8px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.10);
+  }
+
+  .ai-import-progress.is-visible {
+    display: block;
+  }
+
+  .ai-import-progress span {
+    display: block;
+    width: 42%;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #8cf0c4, #0a86d8);
+    animation: importProgress 1.1s ease-in-out infinite;
+  }
+
+  .ai-import-side {
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: #ffffff;
+    box-shadow: var(--shadow-sm);
+    padding: 22px;
+    display: grid;
+    align-content: start;
+    gap: 16px;
+  }
+
+  .ai-import-side h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--color-text-main);
+  }
+
+  .ai-import-side-list {
+    display: grid;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .ai-import-side-list li {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+  }
+
+  .ai-import-side-list i {
+    color: #19a66f;
+    margin-top: 2px;
+  }
+
+  .prefeitura-field {
+    display: grid;
+    gap: 6px;
+  }
+
+  .prefeitura-field label {
+    color: rgba(238, 250, 247, 0.72);
+    font-size: 0.82rem;
+    font-weight: 700;
+  }
+
+  .prefeitura-field input {
+    min-height: 42px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+    padding: 0 12px;
+  }
+
+  html.dark-mode .ai-import-side,
+  body.dark-mode .ai-import-side {
+    background: #101927;
+    border-color: #233549;
+  }
+
+  @keyframes importProgress {
+    0% { transform: translateX(-115%); }
+    100% { transform: translateX(245%); }
+  }
+
+  @media (max-width: 900px) {
+    .ai-import-shell {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 575.98px) {
+    .ai-import-panel-header,
+    .ai-import-body,
+    .ai-import-side {
+      padding: 16px;
+    }
+
+    .fleet-tabs {
+      grid-template-columns: 1fr;
+    }
+
+    .ai-import-actions,
+    .ai-import-submit {
+      width: 100%;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 ai-import-page">
+  <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-4">
+    <div>
+      <h2 class="text-dark mb-1">
+        <i class="bi bi-stars me-2 text-primary"></i> Importação Inteligente de Drones
+      </h2>
+      <p class="text-muted small mb-0">Upload administrativo para cadastro automático de frotas urbanas e agro.</p>
+    </div>
+
+    <a
+      href="{{ url_for('main.agro_equipamentos_listar') if default_agro else url_for('main.listar_drones') }}"
+      class="btn btn-outline-secondary d-flex align-items-center gap-2"
+    >
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+  </div>
+
+  <div class="ai-import-shell">
+    <section class="ai-import-panel">
+      <div class="ai-import-panel-header">
+        <div>
+          <h3 class="ai-import-title">Planilha de drones</h3>
+          <p class="ai-import-subtitle">Arquivos Excel ou CSV processados com normalização por IA.</p>
+        </div>
+        <span class="ai-import-badge"><i class="bi bi-cpu"></i> Gemini</span>
+      </div>
+
+      <div class="ai-import-body">
+        <div class="fleet-tabs" role="group" aria-label="Tipo de frota">
+          <button type="button" class="fleet-tab" data-fleet="urbano" aria-pressed="false">
+            <i class="bi bi-buildings-fill"></i>
+            <span>Urbano</span>
+          </button>
+          <button type="button" class="fleet-tab" data-fleet="agro" aria-pressed="false">
+            <i class="bi bi-tree-fill"></i>
+            <span>Agro</span>
+          </button>
+        </div>
+
+        {% if default_prefeitura_id %}
+          <input type="hidden" id="prefeituraIdInput" value="{{ default_prefeitura_id }}">
+        {% else %}
+          <div class="prefeitura-field">
+            <label for="prefeituraIdInput">Prefeitura ID</label>
+            <input type="number" id="prefeituraIdInput" min="1" inputmode="numeric" placeholder="Informe o ID">
+          </div>
+        {% endif %}
+
+        <input type="file" id="spreadsheetInput" class="d-none" accept=".csv,.xls,.xlsx">
+        <div class="drop-zone" id="dropZone" role="button" tabindex="0">
+          <span class="drop-zone-icon"><i class="bi bi-cloud-arrow-up-fill"></i></span>
+          <div>
+            <p class="drop-zone-title">Arrastar e soltar</p>
+            <p class="drop-zone-copy">Selecione uma planilha .xlsx, .xls ou .csv para iniciar o cadastro inteligente.</p>
+          </div>
+          <button type="button" class="btn btn-outline-light btn-sm">
+            <i class="bi bi-folder2-open"></i> Escolher arquivo
+          </button>
+        </div>
+
+        <div class="selected-file" id="selectedFile">
+          <div class="d-flex align-items-center gap-2 min-w-0">
+            <i class="bi bi-file-earmark-spreadsheet text-success"></i>
+            <span class="selected-file-name" id="selectedFileName"></span>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-light" id="clearFileButton" title="Limpar seleção">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+
+        <div class="ai-import-progress" id="importProgress" aria-hidden="true"><span></span></div>
+        <div class="ai-import-status" id="importStatus"></div>
+
+        <div class="ai-import-actions">
+          <button type="button" class="ai-import-submit" id="submitImportButton" disabled>
+            <span class="spinner-border spinner-border-sm d-none" id="submitSpinner" aria-hidden="true"></span>
+            <i class="bi bi-magic" id="submitIcon"></i>
+            <span>Importar Planilha com IA</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <aside class="ai-import-side">
+      <h3>Campos reconhecidos</h3>
+      <ul class="ai-import-side-list">
+        <li><i class="bi bi-check-circle-fill"></i><span>Modelo, apelido, número de série, status, ANATEL e ANAC.</span></li>
+        <li><i class="bi bi-check-circle-fill"></i><span>PMD para drones urbanos, tanque e faixa para equipamentos agro.</span></li>
+        <li><i class="bi bi-check-circle-fill"></i><span>Fallbacks automáticos para registros obrigatórios ausentes.</span></li>
+      </ul>
+    </aside>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const apiUrl = {{ url_for('main.importar_planilha_drones_api')|tojson }};
+    let selectedFleet = {{ ('agro' if default_agro else 'urbano')|tojson }};
+    let selectedFile = null;
+
+    const tabs = document.querySelectorAll("[data-fleet]");
+    const dropZone = document.getElementById("dropZone");
+    const fileInput = document.getElementById("spreadsheetInput");
+    const selectedFileBox = document.getElementById("selectedFile");
+    const selectedFileName = document.getElementById("selectedFileName");
+    const clearFileButton = document.getElementById("clearFileButton");
+    const submitButton = document.getElementById("submitImportButton");
+    const submitSpinner = document.getElementById("submitSpinner");
+    const submitIcon = document.getElementById("submitIcon");
+    const statusBox = document.getElementById("importStatus");
+    const progress = document.getElementById("importProgress");
+    const prefeituraInput = document.getElementById("prefeituraIdInput");
+
+    function syncTabs() {
+      tabs.forEach((tab) => {
+        const active = tab.dataset.fleet === selectedFleet;
+        tab.classList.toggle("is-active", active);
+        tab.setAttribute("aria-pressed", active ? "true" : "false");
+      });
+    }
+
+    function setStatus(type, message) {
+      statusBox.className = "ai-import-status";
+      statusBox.textContent = "";
+      if (!message) return;
+      statusBox.classList.add("is-visible", type);
+      statusBox.textContent = message;
+    }
+
+    function setLoading(isLoading) {
+      submitButton.disabled = isLoading || !selectedFile;
+      submitSpinner.classList.toggle("d-none", !isLoading);
+      submitIcon.classList.toggle("d-none", isLoading);
+      progress.classList.toggle("is-visible", isLoading);
+    }
+
+    function setFile(file, options = {}) {
+      selectedFile = file || null;
+      fileInput.value = "";
+      selectedFileBox.classList.toggle("is-visible", Boolean(selectedFile));
+      selectedFileName.textContent = selectedFile ? selectedFile.name : "";
+      submitButton.disabled = !selectedFile;
+      if (!options.keepStatus) {
+        setStatus("", "");
+      }
+    }
+
+    function showImportToast(type, title, text) {
+      if (!window.Swal) return;
+
+      const isDarkMode = document.body.classList.contains("dark-mode");
+      Swal.fire({
+        icon: type,
+        title,
+        text,
+        confirmButtonText: "Fechar",
+        confirmButtonColor: type === "success" ? "#19a66f" : "#dc3545",
+        background: isDarkMode ? "#152233" : "#ffffff",
+        color: isDarkMode ? "#ffffff" : "#1f2937",
+        customClass: {
+          popup: isDarkMode ? "swal2-dark-mode" : "",
+        },
+      });
+    }
+
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        selectedFleet = tab.dataset.fleet;
+        syncTabs();
+      });
+    });
+
+    dropZone.addEventListener("click", () => fileInput.click());
+    dropZone.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        fileInput.click();
+      }
+    });
+
+    ["dragenter", "dragover"].forEach((eventName) => {
+      dropZone.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        dropZone.classList.add("is-dragging");
+      });
+    });
+
+    ["dragleave", "drop"].forEach((eventName) => {
+      dropZone.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        dropZone.classList.remove("is-dragging");
+      });
+    });
+
+    dropZone.addEventListener("drop", (event) => {
+      const file = event.dataTransfer.files && event.dataTransfer.files[0];
+      if (file) setFile(file);
+    });
+
+    fileInput.addEventListener("change", () => {
+      const file = fileInput.files && fileInput.files[0];
+      if (file) setFile(file);
+    });
+
+    clearFileButton.addEventListener("click", () => setFile(null));
+
+    submitButton.addEventListener("click", async () => {
+      if (!selectedFile) return;
+
+      const prefeituraId = (prefeituraInput.value || "").trim();
+      if (!prefeituraId) {
+        setStatus("error", "Informe a prefeitura relacionada antes de importar.");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      formData.append("agro", selectedFleet === "agro" ? "true" : "false");
+      formData.append("prefeitura_id", prefeituraId);
+
+      setLoading(true);
+      setStatus("", "");
+
+      try {
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          body: formData,
+        });
+        const payload = await response.json();
+        if (!response.ok || !payload.success) {
+          throw new Error(payload.error || "Erro ao importar a planilha.");
+        }
+
+        const total = payload.imported_count || 0;
+        const successMessage = `${total} drone(s) cadastrado(s) com sucesso. A frota já foi atualizada.`;
+        setFile(null, { keepStatus: true });
+        setStatus("success", successMessage);
+        showImportToast("success", "Importação concluída", successMessage);
+      } catch (error) {
+        const errorMessage = error.message || "Erro de conexão com o servidor.";
+        setStatus("error", errorMessage);
+        showImportToast("error", "Não foi possível importar", errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    syncTabs();
+  });
+</script>
+{% endblock %}

@@ -1,13 +1,18 @@
 import os
-import os
+import secrets
 from dotenv import load_dotenv
 
 # Adicione isso aqui para garantir que o config.py leia o .env antes de definir a classe
-load_dotenv()
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 class Config:
     # Gera uma chave secreta aleatória ou usa uma fixa
-    SECRET_KEY = os.environ.get('SECRET_KEY')
+    SECRET_KEY = (
+        os.environ.get("SECRET_KEY")
+        or os.environ.get("FLASK_SECRET_KEY")
+        or ("dev-" + secrets.token_hex(32))
+    )
     uri = os.environ.get('DATABASE_URL')
     Maps_KEY_FRONT = os.getenv("KEY_API_GOOGLE_MAPS")
 
@@ -36,4 +41,3 @@ class Config:
     }
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SECRET_KEY = os.environ.get('SECRET_KEY')

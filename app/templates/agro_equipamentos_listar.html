@@ -29,6 +29,9 @@
       </a>
 
       {% if is_editable %}
+        <a href="{{ url_for('main.agro_importar_planilha_drones') }}" class="btn btn-primary d-flex align-items-center gap-2">
+          <i class="bi bi-stars"></i> Importar com IA
+        </a>
         <a href="{{ url_for('main.agro_equipamento_novo') }}" class="btn btn-success d-flex align-items-center gap-2">
           <i class="bi bi-plus-lg"></i> Novo equipamento
         </a>
