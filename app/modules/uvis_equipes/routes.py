@@ -358,28 +358,62 @@ def register_routes(bp):
     @login_required
     def admin_listar_equipes_uvis():
         _admin_or_operario_view_only()
-        equipes = build_admin_uvis_teams_listing()
-        return render_template("admin_uvis_equipes_listar.html", equipes=equipes)
+        search = (request.args.get("q") or "").strip()
+        equipes = build_admin_uvis_teams_listing(search=search)
+        return render_template(
+            "admin_uvis_equipes_listar.html",
+            equipes=equipes,
+            search=search,
+        )
+
+    @bp.route(
+        "/admin/uvis/<int:uvis_id>/acesso-operacional",
+        methods=["POST"],
+        endpoint="admin_atualizar_acesso_operacional_uvis",
+    )
+    @login_required
+    def admin_atualizar_acesso_operacional_uvis(uvis_id):
+        _admin_or_operario_view_only()
+
+        uvis = Usuario.query.filter_by(id=uvis_id, tipo_usuario="uvis").first_or_404()
+        conta = get_operational_uvis_account(uvis.id)
+        login_operacional = (request.form.get("login_operacional") or "").strip()
+        senha = (request.form.get("senha") or "").strip()
+        senha2 = (request.form.get("senha2") or "").strip()
+
+        login_error = validate_team_login(
+            login_operacional,
+            current_login=conta.login if conta else None,
+        )
+        if login_error:
+            flash(login_error, "danger" if "uso" in login_error.lower() else "warning")
+            return redirect(url_for("main.admin_listar_equipes_uvis"))
+
+        password_errors = validate_team_password(senha, senha2, required=conta is None)
+        if password_errors:
+            flash(next(iter(password_errors.values())), "warning")
+            return redirect(url_for("main.admin_listar_equipes_uvis"))
+
+        try:
+            upsert_operational_uvis_account(uvis, login_operacional, senha)
+            db.session.commit()
+            flash(f"Acesso operacional de {uvis.nome_uvis} atualizado com sucesso.", "success")
+        except IntegrityError:
+            db.session.rollback()
+            flash("Este login ja esta em uso. Escolha outro.", "danger")
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception(
+                "Erro ao salvar acesso operacional da UVIS %s pelo painel administrativo.",
+                uvis.id,
+            )
+            flash("Erro interno ao salvar o acesso operacional. Tente novamente.", "danger")
+
+        return redirect(url_for("main.admin_listar_equipes_uvis"))
 
     @bp.route("/admin/uvis/<int:uvis_id>/equipes/<string:nome_equipe>", methods=["GET"], endpoint="admin_listar_membros_equipe_uvis")
     @login_required
     def admin_listar_membros_equipe_uvis(uvis_id, nome_equipe):
         _admin_or_operario_view_only()
-
-        nome_equipe = (nome_equipe or "").strip()
-        if not nome_equipe:
-            abort(404)
-
-        membros = get_team_members(uvis_id, nome_equipe)
-        uvis = Usuario.query.get(uvis_id)
-        uvis_nome = (uvis.nome_uvis if uvis else "") or ""
-
-        return render_template(
-            "admin_uvis_equipe_membros_listar.html",
-            uvis_id=uvis_id,
-            uvis_nome=uvis_nome,
-            nome_equipe=nome_equipe,
-            membros=membros,
-            total=len(membros),
-            maximo=MAX_MEMBROS_EQUIPE_UVIS,
-        )
+        flash("A gestao por membros foi substituida pelo acesso operacional unico de cada UVIS.", "info")
+        return redirect(url_for("main.admin_listar_equipes_uvis"))
