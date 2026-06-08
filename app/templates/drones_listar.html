@@ -170,6 +170,9 @@
                 <i class="bi bi-arrow-left"></i> Voltar
             </a>
             {% if can_manage %}
+            <a href="{{ url_for('main.importar_planilha_drones') }}" class="btn btn-primary shadow-sm">
+                <i class="bi bi-stars"></i> Importar com IA
+            </a>
             <a href="{{ url_for('main.cadastrar_drone') }}" class="btn btn-success shadow-sm">
                 <i class="bi bi-plus-lg"></i> Novo Drone
             </a>
@@ -231,7 +234,7 @@
                                 <td>
                                     {% if d.status == 'Ativo' %}
                                         <span class="badge bg-success-light text-success">Ativo</span>
-                                    {% elif d.status == 'Em Manutenção' %}
+                                    {% elif d.status in ['Em Manutenção', 'Manutenção', 'Em Manutencao', 'Manutencao'] %}
                                         <span class="badge bg-danger-light text-danger">Manutenção</span>
                                     {% else %}
                                         <span class="badge bg-secondary-light text-secondary">{{ d.status }}</span>
@@ -248,7 +251,7 @@
                                             <li><a class="dropdown-item py-2" href="{{ url_for('main.editar_drone', drone_id=d.id) }}"><i class="bi bi-pencil me-2"></i> Editar Dados</a></li>
                                             <li>
                                                 <form method="post" action="{{ url_for('main.enviar_manutencao_drone', drone_id=d.id) }}">
-                                                    <button type="submit" class="dropdown-item py-2 text-danger" {% if d.status == 'Em Manutenção' %}disabled{% endif %}>
+                                                    <button type="submit" class="dropdown-item py-2 text-danger" {% if d.status in ['Em Manutenção', 'Manutenção', 'Em Manutencao', 'Manutencao'] %}disabled{% endif %}>
                                                         <i class="bi bi-tools me-2"></i> Enviar Manutenção
                                                     </button>
                                                 </form>
