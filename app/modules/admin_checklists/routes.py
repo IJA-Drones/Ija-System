@@ -6,10 +6,11 @@ from app.modules.admin_checklists.service import (
     build_admin_checklists_totals,
     build_admin_checklists_weekly_groups,
 )
+from app.shared.access import is_admin_global_user
 
 
 def _admin_only():
-    if getattr(current_user, "tipo_usuario", None) != "admin":
+    if not is_admin_global_user(current_user):
         abort(403)
 
 

@@ -5,7 +5,7 @@ from sqlalchemy.orm import joinedload
 
 from app.extensions import db
 from app.models import Solicitacao, Usuario
-from app.shared.access import apply_prefeitura_scope, is_prefeitura_admin_user
+from app.shared.access import apply_prefeitura_scope, is_admin_global_user, is_prefeitura_admin_user
 from app.shared.geofencing import detectar_area_restrita
 from app.shared.solicitacao_focos import (
     FILTER_FOCO_OPCOES,
@@ -48,12 +48,12 @@ class SolicitacaoAccessError(Exception):
 def can_use_custom_visit_other(user) -> bool:
     tipo_usuario = (getattr(user, "tipo_usuario", None) or "").strip().lower()
     regiao = (getattr(user, "regiao", None) or "").strip().upper()
-    return tipo_usuario == "admin" or (tipo_usuario != "uvis" and regiao == "COVISA")
+    return tipo_usuario in {"dev", "admin"} or (tipo_usuario != "uvis" and regiao == "COVISA")
 
 
 def build_novo_cadastro_context(user, google_maps_key):
     uvis_lista = []
-    if user.tipo_usuario in ["admin", "visualizar", "prefeitura_admin"]:
+    if user.tipo_usuario in ["dev", "admin", "visualizar", "prefeitura_admin"]:
         query = Usuario.query.filter_by(tipo_usuario="uvis")
         query = apply_prefeitura_scope(query, user, Usuario.prefeitura_id)
         uvis_lista = query.order_by(Usuario.nome_uvis.asc()).all()
@@ -101,7 +101,7 @@ def create_nova_solicitacao(user, form_data):
     data_obj = datetime.strptime(data_str, "%Y-%m-%d").date() if data_str else None
     hora_obj = datetime.strptime(hora_str, "%H:%M").time() if hora_str else None
 
-    if user.tipo_usuario in ["admin", "visualizar", "prefeitura_admin"]:
+    if user.tipo_usuario in ["dev", "admin", "visualizar", "prefeitura_admin"]:
         uvis_id_final = form_data.get("uvis_responsavel_id")
         if not uvis_id_final:
             raise NovoCadastroValidationError("Por favor, selecione a UVIS responsavel.")
@@ -172,7 +172,7 @@ def build_editar_solicitacao_context(user, solicitacao_id):
         Solicitacao.query.options(joinedload(Solicitacao.usuario))
         .get_or_404(solicitacao_id)
     )
-    is_admin = user.tipo_usuario == "admin"
+    is_admin = is_admin_global_user(user)
     allow_custom_visit_other = can_use_custom_visit_other(user)
     pedido_tipo_visita_padrao = canonical_tipo_visita(pedido.tipo_visita)
     pedido_tipo_visita_outros = ""
@@ -296,7 +296,7 @@ def atualizar_solicitacao(user, solicitacao_id, form_data):
 
 
 def deletar_solicitacao_admin(user, solicitacao_id):
-    if user.tipo_usuario != "admin":
+    if not is_admin_global_user(user):
         raise SolicitacaoAccessError(
             "Permiss\u00e3o negada. Apenas administradores podem deletar registros.",
             redirect_endpoint="main.admin_dashboard",

@@ -2,11 +2,11 @@ from flask import abort, render_template, request
 from flask_login import current_user, login_required
 
 from app.modules.auditoria.service import build_auditoria_filters, build_auditoria_query
-from app.shared.access import normalize_role
+from app.shared.access import is_dev_user
 
 
-def _admin_only():
-    if normalize_role(getattr(current_user, "tipo_usuario", None)) != "admin":
+def _dev_only():
+    if not is_dev_user(current_user):
         abort(403)
 
 
@@ -20,7 +20,7 @@ def register_routes(bp):
     @bp.route("/admin/logs-usuarios", methods=["GET"], endpoint="admin_logs_usuarios")
     @login_required
     def admin_logs_usuarios():
-        _admin_only()
+        _dev_only()
 
         filters = build_auditoria_filters(
             q=request.args.get("q"),

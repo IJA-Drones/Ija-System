@@ -7,15 +7,18 @@ REGIONAL_USER_TYPE = "regional"
 PREFEITURA_ADMIN_USER_TYPE = "prefeitura_admin"
 FINANCEIRO_ADMIN_USER_TYPE = "financeiro_admin"
 FINANCEIRO_USER_TYPE = "financeiro"
+ADMIN_USER_TYPE = "admin"
+DEV_USER_TYPE = "dev"
+GLOBAL_ADMIN_USER_TYPES = {ADMIN_USER_TYPE, DEV_USER_TYPE}
 ADMIN_PANEL_VIEW_TYPES = {
-    "admin",
+    *GLOBAL_ADMIN_USER_TYPES,
     "operario",
     "visualizar",
     "visualizador",
     REGIONAL_USER_TYPE,
     PREFEITURA_ADMIN_USER_TYPE,
 }
-ADMIN_PANEL_EDIT_TYPES = {"admin", "operario", PREFEITURA_ADMIN_USER_TYPE}
+ADMIN_PANEL_EDIT_TYPES = {*GLOBAL_ADMIN_USER_TYPES, "operario", PREFEITURA_ADMIN_USER_TYPE}
 AGRO_FINANCE_VIEW_TYPES = {
     FINANCEIRO_ADMIN_USER_TYPE,
     FINANCEIRO_USER_TYPE,
@@ -55,7 +58,11 @@ def is_agro_finance_user(user) -> bool:
 
 
 def is_admin_global_user(user) -> bool:
-    return normalize_role(getattr(user, "tipo_usuario", None)) == "admin"
+    return normalize_role(getattr(user, "tipo_usuario", None)) in GLOBAL_ADMIN_USER_TYPES
+
+
+def is_dev_user(user) -> bool:
+    return normalize_role(getattr(user, "tipo_usuario", None)) == DEV_USER_TYPE
 
 
 def get_user_regiao(user) -> str:

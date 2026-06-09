@@ -37,7 +37,7 @@ def build_heatmap_query(user, *, uvis_id=None, mes=None, ano=None):
 
     if getattr(user, "tipo_usuario", None) == "uvis":
         query = query.filter(Solicitacao.usuario_id == user.id)
-    elif getattr(user, "tipo_usuario", None) in {"admin", "regional", "prefeitura_admin"} and uvis_id:
+    elif getattr(user, "tipo_usuario", None) in {"dev", "admin", "regional", "prefeitura_admin"} and uvis_id:
         query = query.filter(Solicitacao.usuario_id == uvis_id)
 
     return query
@@ -66,7 +66,7 @@ def build_heatmap_points(user, *, uvis_id=None, mes=None, ano=None):
 
 
 def build_uvis_disponiveis(user):
-    if getattr(user, "tipo_usuario", None) not in {"admin", "regional", "prefeitura_admin"}:
+    if getattr(user, "tipo_usuario", None) not in {"dev", "admin", "regional", "prefeitura_admin"}:
         return []
 
     query = db.session.query(Usuario.id, Usuario.nome_uvis).filter(Usuario.tipo_usuario == "uvis")

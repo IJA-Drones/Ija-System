@@ -28,7 +28,7 @@ from app.shared.access import apply_prefeitura_scope, normalize_role
 
 
 def _require_admin_or_operario():
-    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"admin", "operario", "operador", "prefeitura_admin"}:
+    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"dev", "admin", "operario", "operador", "prefeitura_admin"}:
         abort(403)
 
 
@@ -52,9 +52,9 @@ def register_routes(bp):
 
         return render_template(
             "veiculos_menu.html",
-            can_manage=tipo in {"admin", "operario", "operador", "prefeitura_admin"},
+            can_manage=tipo in {"dev", "admin", "operario", "operador", "prefeitura_admin"},
             can_view_logs=tipo in VEICULOS_LOGS_ALLOWED_TYPES,
-            can_view_checklist=tipo == "admin",
+            can_view_checklist=tipo in {"dev", "admin"},
         )
 
     @bp.route("/veiculos", methods=["GET"], endpoint="listar_veiculos")

@@ -17,6 +17,7 @@ from app.shared.access import apply_prefeitura_scope, normalize_role
 
 EQUIPE_OCEANO_USER_TYPE = "equipe_oceano"
 VEICULOS_ALLOWED_TYPES = (
+    "dev",
     "admin",
     "visualizar",
     "operario",
@@ -27,6 +28,7 @@ VEICULOS_ALLOWED_TYPES = (
     "prefeitura_admin",
 )
 VEICULOS_LOGS_ALLOWED_TYPES = (
+    "dev",
     "admin",
     "visualizar",
     "operario",
@@ -90,8 +92,8 @@ def list_veiculos(tipo_usuario, args, user=None):
 
     return {
         "veiculos": veiculos,
-        "is_admin": tipo_usuario == "admin",
-        "can_manage": tipo_usuario in {"admin", "operario", "operador"},
+        "is_admin": tipo_usuario in {"dev", "admin"},
+        "can_manage": tipo_usuario in {"dev", "admin", "operario", "operador"},
         "filters": {
             "q": q,
             "operacao": operacao,
