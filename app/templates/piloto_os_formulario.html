@@ -1349,9 +1349,10 @@
                       <div class="os-media-gallery-label">Galeria atual</div>
                       <div class="os-image-grid" id="outras-imagens-salvas-grid">
                         {% for imagem_path in outras_imagens_paths %}
+                        {% set imagem_url = url_for('main.os_imagem_complementar', os_id=solicitacao.id, image_index=loop.index) %}
                         <div class="os-image-thumb-card">
-                          <img src="{{ url_for('static', filename=imagem_path) }}" alt="Imagem complementar {{ loop.index }}" class="os-image-thumb mb-2">
-                          <a href="{{ url_for('static', filename=imagem_path) }}" target="_blank" class="os-media-thumb-link">
+                          <img src="{{ imagem_url }}" alt="Imagem complementar {{ loop.index }}" class="os-image-thumb mb-2">
+                          <a href="{{ imagem_url }}" target="_blank" class="os-media-thumb-link">
                             Abrir imagem {{ loop.index }}
                           </a>
                         </div>
@@ -1391,14 +1392,15 @@
 
                   <div class="os-media-preview-frame mb-3">
                     {% if video_path %}
+                    {% set video_url = url_for('main.os_video', os_id=solicitacao.id) %}
                     <div id="video-salvo-wrapper">
                       <video controls preload="metadata" class="os-video-preview" id="video-salvo">
-                        <source src="{{ url_for('static', filename=video_path) }}">
+                        <source src="{{ video_url }}">
                         Seu navegador nao suporta a exibicao de video.
                       </video>
                     </div>
                     <div class="os-media-actions mt-3" id="video-salvo-acoes">
-                      <a href="{{ url_for('static', filename=video_path) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                      <a href="{{ video_url }}" target="_blank" class="btn btn-sm btn-outline-primary">
                         <i class="bi bi-play-btn me-1"></i>Abrir video
                       </a>
                     </div>

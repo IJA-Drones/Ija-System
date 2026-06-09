@@ -11,6 +11,15 @@ from app.extensions import db
 from app.models import Baterias, Drones, Equipe, EquipePiloto, OrdemServico, Solicitacao, Usuario, Veiculos
 from app.shared.access import ADMIN_PANEL_EDIT_TYPES, ADMIN_PANEL_VIEW_TYPES, can_access_regiao
 from app.shared.query_filters import aplicar_filtros_base
+from app.shared.skybox import (
+    SkyboxError,
+    build_os_media_remote_path,
+    build_os_video_remote_path,
+    delete_skybox_file,
+    is_skybox_path,
+    skybox_enabled,
+    upload_file_to_skybox,
+)
 
 
 STATUS_OS_APROVADAS = [
@@ -538,6 +547,44 @@ def salvar_admin_os_form(user, os_id, form_data, files_data, root_path):
     return "Formulario salvo com sucesso!"
 
 
+def get_os_video_path_for_user(user, os_id):
+    if getattr(user, "tipo_usuario", None) in ADMIN_PANEL_VIEW_TYPES:
+        context = build_admin_os_form_context(user, os_id)
+    else:
+        context = build_piloto_os_form_context(user, os_id)
+
+    ordem = context.get("ordem")
+    video_path = getattr(ordem, "video", None) if ordem else None
+    if not video_path:
+        raise PilotoOsError(
+            "Esta OS nao possui video anexado.",
+            "warning",
+            redirect_endpoint="main.piloto_os_formulario_view",
+        )
+    return video_path
+
+
+def get_os_complementary_image_path_for_user(user, os_id, image_index):
+    if getattr(user, "tipo_usuario", None) in ADMIN_PANEL_VIEW_TYPES:
+        context = build_admin_os_form_context(user, os_id)
+    else:
+        context = build_piloto_os_form_context(user, os_id)
+
+    ordem = context.get("ordem")
+    imagens = _parse_json_list(getattr(ordem, "outras_imagens", None) if ordem else None)
+    try:
+        index = int(image_index) - 1
+    except (TypeError, ValueError):
+        index = -1
+    if index < 0 or index >= len(imagens):
+        raise PilotoOsError(
+            "Imagem complementar nao encontrada.",
+            "warning",
+            redirect_endpoint="main.piloto_os_formulario_view",
+        )
+    return imagens[index]
+
+
 def criar_solicitacao_retorno_monitoramento(solicitacao_original, ordem_atual):
     data_base = (
         solicitacao_original.data_agendamento
@@ -983,17 +1030,38 @@ def _validar_arquivo_video_os(arquivo):
     return ext
 
 
-def _salvar_upload_os_imagem(arquivo, root_path, os_id, prefixo):
+def _upload_os_media_para_skybox(arquivo, os_id, nome, *, tipo="arquivo"):
+    try:
+        return upload_file_to_skybox(
+            arquivo,
+            build_os_media_remote_path(os_id, nome),
+        )
+    except SkyboxError as exc:
+        raise PilotoOsError(
+            f"Falha ao enviar {tipo} para o Skybox: {exc}",
+            "danger",
+            redirect_endpoint="main.piloto_os_formulario_view",
+        ) from exc
+
+
+def _salvar_upload_os_imagem(arquivo, root_path, os_id, prefixo, *, usar_skybox=False, copiar_skybox=False):
     if not arquivo or not arquivo.filename:
         return None
 
     ext = _validar_arquivo_imagem_os(arquivo)
-    pasta_destino = os.path.join(root_path, "static", "uploads", "os", str(os_id))
-    os.makedirs(pasta_destino, exist_ok=True)
-
     stamp = datetime.now().strftime("%Y%m%d%H%M%S%f")
     nome = secure_filename(f"{prefixo}_os_{os_id}_{stamp}.{ext}")
+
+    if usar_skybox and skybox_enabled():
+        return _upload_os_media_para_skybox(arquivo, os_id, nome, tipo="imagem")
+
+    pasta_destino = os.path.join(root_path, "static", "uploads", "os", str(os_id))
+    os.makedirs(pasta_destino, exist_ok=True)
     arquivo.save(os.path.join(pasta_destino, nome))
+
+    if copiar_skybox and skybox_enabled():
+        _upload_os_media_para_skybox(arquivo, os_id, nome, tipo="imagem")
+
     return f"uploads/os/{os_id}/{nome}"
 
 
@@ -1002,11 +1070,21 @@ def _salvar_upload_os_video(arquivo, root_path, os_id, prefixo):
         return None
 
     ext = _validar_arquivo_video_os(arquivo)
-    pasta_destino = os.path.join(root_path, "static", "uploads", "os", str(os_id))
-    os.makedirs(pasta_destino, exist_ok=True)
-
     stamp = datetime.now().strftime("%Y%m%d%H%M%S%f")
     nome = secure_filename(f"{prefixo}_os_{os_id}_{stamp}.{ext}")
+
+    if skybox_enabled():
+        try:
+            return upload_file_to_skybox(arquivo, build_os_video_remote_path(os_id, nome))
+        except SkyboxError as exc:
+            raise PilotoOsError(
+                f"Falha ao enviar o video para o Skybox: {exc}",
+                "danger",
+                redirect_endpoint="main.piloto_os_formulario_view",
+            ) from exc
+
+    pasta_destino = os.path.join(root_path, "static", "uploads", "os", str(os_id))
+    os.makedirs(pasta_destino, exist_ok=True)
     arquivo.save(os.path.join(pasta_destino, nome))
     return f"uploads/os/{os_id}/{nome}"
 
@@ -1015,8 +1093,26 @@ def _remover_upload_os_arquivo(root_path, rel_path):
     if not rel_path:
         return
 
+    if is_skybox_path(rel_path):
+        try:
+            delete_skybox_file(rel_path)
+        except SkyboxError:
+            pass
+        return
+
+    rel_normalizado = str(rel_path or "").replace("\\", "/")
+    partes = rel_normalizado.split("/")
+    if len(partes) >= 4 and partes[-4] == "uploads" and partes[-3] == "os":
+        os_id = partes[-2]
+        nome = partes[-1]
+        if os_id and nome:
+            try:
+                delete_skybox_file(build_os_media_remote_path(os_id, nome))
+            except SkyboxError:
+                pass
+
     static_root = os.path.abspath(os.path.join(root_path, "static"))
-    abs_path = os.path.abspath(os.path.join(static_root, rel_path.replace("/", os.sep)))
+    abs_path = os.path.abspath(os.path.join(static_root, rel_normalizado.replace("/", os.sep)))
     if not abs_path.startswith(static_root):
         return
     if os.path.exists(abs_path) and os.path.isfile(abs_path):
@@ -1054,6 +1150,7 @@ def _aplicar_midias_os(*, solicitacao, ordem, form_data, files_data, root_path):
             root_path,
             solicitacao.id,
             "principal",
+            copiar_skybox=True,
         )
 
     if limpar_outras_imagens and outras_imagens_atuais:
@@ -1070,6 +1167,7 @@ def _aplicar_midias_os(*, solicitacao, ordem, form_data, files_data, root_path):
                     root_path,
                     solicitacao.id,
                     f"complementar_{indice}",
+                    usar_skybox=True,
                 )
             )
 

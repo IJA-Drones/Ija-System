@@ -20,6 +20,10 @@ class Config:
     DROPBOX_APP_KEY = os.environ.get('DROPBOX_APP_KEY')
     DROPBOX_APP_SECRET = os.environ.get('DROPBOX_APP_SECRET')
     DROPBOX_REFRESH_TOKEN = os.environ.get('DROPBOX_REFRESH_TOKEN')
+    SKYBOX_WEBDAV_URL = os.environ.get("SKYBOX_WEBDAV_URL")
+    SKYBOX_USERNAME = os.environ.get("SKYBOX_USERNAME")
+    SKYBOX_APP_PASSWORD = os.environ.get("SKYBOX_APP_PASSWORD")
+    SKYBOX_BASE_DIR = os.environ.get("SKYBOX_BASE_DIR", "dados ordens de serviço")
 
     # Nova variável (sem restrição de site) apenas para o Geocode do Python
     Maps_KEY_BACK = os.getenv("GOOGLE_MAPS_KEY_BACK")
