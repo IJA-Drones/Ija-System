@@ -293,27 +293,50 @@ def assign_team_to_solicitacao(solicitacao_id: int, nome_equipe: str):
     return solicitacao
 
 
-def build_admin_uvis_teams_listing():
-    rows = (
-        db.session.query(
-            Usuario.id.label("uvis_id"),
-            Usuario.nome_uvis.label("uvis_nome"),
-            EquipeUvis.nome_equipe.label("nome_equipe"),
-            func.count(EquipeUvis.id).label("total"),
-        )
-        .join(Usuario, Usuario.id == EquipeUvis.uvis_usuario_id)
-        .filter(Usuario.tipo_usuario == "uvis")
-        .group_by(Usuario.id, Usuario.nome_uvis, EquipeUvis.nome_equipe)
-        .order_by(Usuario.nome_uvis.asc(), EquipeUvis.nome_equipe.asc())
+def build_admin_uvis_teams_listing(search: str = ""):
+    uvis_list = (
+        Usuario.query.filter(Usuario.tipo_usuario == "uvis")
+        .order_by(Usuario.nome_uvis.asc())
         .all()
     )
+    uvis_ids = [uvis.id for uvis in uvis_list]
+    accounts = (
+        Usuario.query.filter(
+            Usuario.tipo_usuario == TEAM_ACCOUNT_TYPE,
+            Usuario.equipe_uvis_uvis_usuario_id.in_(uvis_ids),
+            Usuario.equipe_uvis_nome == OPERATIONAL_UVIS_ACCOUNT_NAME,
+        )
+        .all()
+        if uvis_ids
+        else []
+    )
+    accounts_by_uvis_id = {
+        account.equipe_uvis_uvis_usuario_id: account
+        for account in accounts
+    }
 
-    return [
-        {
-            "uvis_id": int(row.uvis_id),
-            "uvis_nome": row.uvis_nome or "",
-            "nome_equipe": row.nome_equipe,
-            "total": int(row.total),
-        }
-        for row in rows
-    ]
+    term = (search or "").strip().casefold()
+    result = []
+    for uvis in uvis_list:
+        account = accounts_by_uvis_id.get(uvis.id)
+        searchable = " ".join(
+            (
+                uvis.nome_uvis or "",
+                uvis.regiao or "",
+                account.login if account else "",
+            )
+        ).casefold()
+        if term and term not in searchable:
+            continue
+
+        result.append(
+            {
+                "uvis_id": int(uvis.id),
+                "uvis_nome": uvis.nome_uvis or "",
+                "regiao": uvis.regiao or "",
+                "login": account.login if account else "",
+                "conta_criada": account is not None,
+            }
+        )
+
+    return result
