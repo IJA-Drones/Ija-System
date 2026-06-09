@@ -1,3 +1,4 @@
+import mimetypes
 import os
 
 from flask import abort, current_app, flash, jsonify, redirect, render_template, request, send_file, url_for
@@ -14,12 +15,15 @@ from app.modules.piloto_os.service import (
     build_piloto_os_context,
     build_piloto_os_historico_context,
     concluir_os_piloto,
+    get_os_complementary_image_path_for_user,
+    get_os_video_path_for_user,
     get_piloto_drone_payload,
     is_piloto_os_user,
     salvar_admin_os_form,
     salvar_piloto_os_form,
 )
 from app.shared.access import ADMIN_PANEL_VIEW_TYPES, can_access_regiao
+from app.shared.skybox import SkyboxError, is_skybox_path, stream_skybox_file
 
 
 def _require_piloto():
@@ -54,6 +58,34 @@ def _query_args_without_page():
     args = request.args.to_dict(flat=True)
     args.pop("page", None)
     return args
+
+
+def _send_local_os_media(media_path):
+    static_root = os.path.abspath(os.path.join(current_app.root_path, "static"))
+    abs_path = os.path.abspath(os.path.join(static_root, str(media_path or "").replace("/", os.sep)))
+    if os.path.commonpath([static_root, abs_path]) != static_root:
+        abort(404)
+    if not os.path.isfile(abs_path):
+        abort(404)
+
+    return send_file(
+        abs_path,
+        mimetype=mimetypes.guess_type(abs_path)[0] or "application/octet-stream",
+        as_attachment=False,
+        download_name=os.path.basename(abs_path),
+        conditional=True,
+    )
+
+
+def _send_os_media(media_path):
+    if is_skybox_path(media_path):
+        try:
+            return stream_skybox_file(media_path, request.headers.get("Range"))
+        except SkyboxError:
+            current_app.logger.exception("Erro ao servir midia da OS pelo Skybox.")
+            abort(404)
+
+    return _send_local_os_media(media_path)
 
 
 def _redirect_from_piloto_os_error(exc, *, os_id=None):
@@ -222,6 +254,26 @@ def register_routes(bp):
             url_voltar=url_for("main.piloto_os"),
             form_action=url_for("main.piloto_os_formulario_view", os_id=os_id),
         )
+
+    @bp.route("/os/<int:os_id>/video", methods=["GET"], endpoint="os_video")
+    @login_required
+    def os_video(os_id):
+        try:
+            video_path = get_os_video_path_for_user(current_user, os_id)
+        except PilotoOsError as exc:
+            abort(404 if "video" in str(exc).lower() else 403)
+
+        return _send_os_media(video_path)
+
+    @bp.route("/os/<int:os_id>/imagem-complementar/<int:image_index>", methods=["GET"], endpoint="os_imagem_complementar")
+    @login_required
+    def os_imagem_complementar(os_id, image_index):
+        try:
+            image_path = get_os_complementary_image_path_for_user(current_user, os_id, image_index)
+        except PilotoOsError as exc:
+            abort(404 if "imagem" in str(exc).lower() else 403)
+
+        return _send_os_media(image_path)
 
     @bp.route("/piloto/api/drone/<int:drone_id>", methods=["GET"], endpoint="piloto_api_drone")
     @login_required
