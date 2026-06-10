@@ -11,6 +11,8 @@ from app.extensions import db
 from app.models import Prefeitura, Usuario
 from app.modules.usuarios.service import (
     build_admin_users_query,
+    can_assign_dev_role,
+    can_manage_admin_user,
     delete_admin_user,
     get_admin_user_type_form_value,
     is_admin_managed_user,
@@ -20,10 +22,11 @@ from app.modules.usuarios.service import (
     validate_new_admin_user,
     validate_password_reset,
 )
+from app.shared.access import DEV_USER_TYPE, is_admin_global_user, is_dev_user
 
 
 def _admin_only():
-    if getattr(current_user, "tipo_usuario", None) != "admin":
+    if not is_admin_global_user(current_user):
         flash("Acesso restrito.", "danger")
         return False
     return True
@@ -278,7 +281,7 @@ def register_routes(bp):
     @bp.route("/admin/usuarios/novo", methods=["GET", "POST"], endpoint="admin_usuario_novo")
     @login_required
     def admin_usuario_novo():
-        if getattr(current_user, "tipo_usuario", None) != "admin":
+        if not is_admin_global_user(current_user):
             flash("Voce nao tem permissao para acessar esta pagina.", "danger")
             return redirect(url_for("main.dashboard"))
 
@@ -311,6 +314,17 @@ def register_routes(bp):
                 "senha2": senha2,
             }
 
+            if tipo_usuario_form == DEV_USER_TYPE and not can_assign_dev_role(current_user):
+                errors["tipo_usuario"] = "Apenas um desenvolvedor pode criar outra conta dev."
+                flash(errors["tipo_usuario"], "danger")
+                return render_template(
+                    "admin_usuario_novo.html",
+                    errors=errors,
+                    form=form,
+                    prefeituras=prefeituras,
+                    can_assign_dev=False,
+                )
+
             errors = validate_new_admin_user(
                 nome,
                 login,
@@ -327,6 +341,7 @@ def register_routes(bp):
                     errors=errors,
                     form=form,
                     prefeituras=prefeituras,
+                    can_assign_dev=can_assign_dev_role(current_user),
                 )
 
             novo = Usuario(
@@ -358,6 +373,7 @@ def register_routes(bp):
             errors=errors,
             form=form,
             prefeituras=prefeituras,
+            can_assign_dev=can_assign_dev_role(current_user),
         )
 
     @bp.route("/admin/usuarios", methods=["GET"], endpoint="admin_usuarios_listar")
@@ -378,12 +394,13 @@ def register_routes(bp):
             paginacao=paginacao,
             q=q,
             tipo=tipo,
+            can_manage_dev_accounts=is_dev_user(current_user),
         )
 
     @bp.route("/admin/usuarios/<int:id>/editar", methods=["GET", "POST"], endpoint="admin_usuario_editar")
     @login_required
     def admin_usuario_editar(id):
-        if getattr(current_user, "tipo_usuario", None) != "admin":
+        if not is_admin_global_user(current_user):
             abort(403)
 
         usuario = Usuario.query.get_or_404(id)
@@ -391,6 +408,8 @@ def register_routes(bp):
         if not is_admin_managed_user(usuario):
             flash("Registro invalido para edicao.", "warning")
             return redirect(url_for("main.admin_usuarios_listar"))
+        if not can_manage_admin_user(current_user, usuario):
+            abort(403)
 
         errors = {}
         form = {}
@@ -406,6 +425,8 @@ def register_routes(bp):
                 tipo_usuario_form = get_admin_user_type_form_value(usuario)
             else:
                 tipo_usuario_form = (request.form.get("tipo_usuario") or "").strip().lower()
+                if tipo_usuario_form == DEV_USER_TYPE and not can_assign_dev_role(current_user):
+                    abort(403)
                 tipo_usuario = normalize_admin_user_type(tipo_usuario_form)
             regiao = normalize_admin_user_regiao(
                 tipo_usuario_form,
@@ -441,6 +462,7 @@ def register_routes(bp):
                     errors=errors,
                     form=form,
                     prefeituras=prefeituras,
+                    can_assign_dev=can_assign_dev_role(current_user),
                 )
 
             usuario.nome_uvis = nome_uvis
@@ -471,6 +493,7 @@ def register_routes(bp):
                 errors=errors,
                 form=form,
                 prefeituras=prefeituras,
+                can_assign_dev=can_assign_dev_role(current_user),
             )
 
         form = {
@@ -488,6 +511,7 @@ def register_routes(bp):
             errors=errors,
             form=form,
             prefeituras=prefeituras,
+            can_assign_dev=can_assign_dev_role(current_user),
         )
 
     @bp.route("/admin/usuarios/<int:id>/reset_senha", methods=["POST"], endpoint="admin_usuario_reset_senha")
@@ -500,6 +524,8 @@ def register_routes(bp):
         if not is_admin_managed_user(user):
             flash("Usuario invalido.", "warning")
             return redirect(url_for("main.admin_usuarios_listar"))
+        if not can_manage_admin_user(current_user, user):
+            abort(403)
 
         senha = (request.form.get("senha") or "").strip()
         senha2 = (request.form.get("senha2") or "").strip()
@@ -533,6 +559,8 @@ def register_routes(bp):
         if not is_admin_managed_user(user):
             flash("Usuario invalido.", "warning")
             return redirect(url_for("main.admin_usuarios_listar"))
+        if not can_manage_admin_user(current_user, user):
+            abort(403)
 
         if user.id == current_user.id:
             flash("Voce nao pode excluir seu proprio usuario.", "warning")

@@ -17,6 +17,7 @@ from app.modules.clientes.service import (
     validate_email,
 )
 from app.modules.admin_uvis.service import build_uvis_query
+from app.shared.access import is_admin_global_user, is_prefeitura_admin_user
 
 
 def _query_args_without_page():
@@ -26,7 +27,7 @@ def _query_args_without_page():
 
 
 def _can_manage_clientes(user) -> bool:
-    return getattr(user, "tipo_usuario", None) in {"admin", "prefeitura_admin"}
+    return is_admin_global_user(user) or is_prefeitura_admin_user(user)
 
 
 def _get_scoped_cliente_or_404(cliente_id: int):

@@ -419,7 +419,12 @@ def _sincronizar_pendencias(user, piloto_nome, pendencias_semanais, semana_inici
     else:
         detalhe_link = url_for("main.admin_checklists_semanais", q=piloto_nome)
     titulo = f"Pendencias no checklist semanal de {piloto_nome}"
-    admin_ids = [row[0] for row in db.session.query(Usuario.id).filter(Usuario.tipo_usuario == "admin").all()]
+    admin_ids = [
+        row[0]
+        for row in db.session.query(Usuario.id)
+        .filter(Usuario.tipo_usuario.in_(("dev", "admin")))
+        .all()
+    ]
     _sincronizar_notificacoes_pendencia_checklist(
         admin_ids=admin_ids,
         link=detalhe_link,

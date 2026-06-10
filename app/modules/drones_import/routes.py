@@ -3,10 +3,10 @@ from flask_login import current_user, login_required
 from werkzeug.exceptions import HTTPException
 
 from app.modules.drones_import.service import import_drone_spreadsheet
-from app.shared.access import normalize_role
+from app.shared.access import is_admin_global_user, normalize_role
 
 
-IMPORT_ALLOWED_ROLES = {"admin", "operario", "operador", "prefeitura_admin"}
+IMPORT_ALLOWED_ROLES = {"dev", "admin", "operario", "operador", "prefeitura_admin"}
 
 
 def _require_import_permission():
@@ -26,7 +26,7 @@ def _resolve_prefeitura_id():
         prefeitura_id = None
 
     user_prefeitura_id = getattr(current_user, "prefeitura_id", None)
-    if normalize_role(getattr(current_user, "tipo_usuario", None)) != "admin":
+    if not is_admin_global_user(current_user):
         if user_prefeitura_id is None:
             abort(403)
         if prefeitura_id is not None and prefeitura_id != user_prefeitura_id:

@@ -75,6 +75,9 @@
             {% set tipo = (form.get('tipo_usuario', '') or '') %}
             <select name="tipo_usuario" class="form-select {% if errors.get('tipo_usuario') %}is-invalid{% endif %}" required>
               <option value="">Selecione...</option>
+              {% if can_assign_dev %}
+              <option value="dev" {% if tipo == 'dev' %}selected{% endif %}>Desenvolvedor</option>
+              {% endif %}
               <option value="admin" {% if tipo == 'admin' %}selected{% endif %}>Admin</option>
               <option value="covisa" {% if tipo == 'covisa' %}selected{% endif %}>COVISA</option>
               <option value="regional" {% if tipo == 'regional' %}selected{% endif %}>Regional</option>

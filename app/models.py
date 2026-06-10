@@ -54,7 +54,7 @@ class Usuario(UserMixin, db.Model):
     senha_hash = db.Column(db.String(200), nullable=False)
 
     # + incluir "equipe_uvis" e "regional"
-    # tipos esperados: "admin", "uvis", "operario", "visualizador", "regional", "piloto", "equipe_uvis", "equipe_oceano"
+    # tipos esperados: "dev", "admin", "uvis", "operario", "visualizador", "regional", "piloto", "equipe_uvis", "equipe_oceano"
     tipo_usuario = db.Column(db.String(20), default="uvis", index=True)
 
     # ----------------------------

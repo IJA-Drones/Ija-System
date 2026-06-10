@@ -5,8 +5,8 @@ from app.shared.access import can_access_regiao
 from app.shared.uploads import get_upload_folder
 
 
-ALLOWED_ATTACHMENT_VIEW_TYPES = {"admin", "operario", "visualizar", "uvis", "regional"}
-ALLOWED_ATTACHMENT_EDIT_TYPES = {"admin", "operario"}
+ALLOWED_ATTACHMENT_VIEW_TYPES = {"dev", "admin", "operario", "visualizar", "uvis", "regional"}
+ALLOWED_ATTACHMENT_EDIT_TYPES = {"dev", "admin", "operario"}
 
 
 def can_view_attachment(user, pedido) -> bool:

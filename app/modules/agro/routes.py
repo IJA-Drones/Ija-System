@@ -86,7 +86,7 @@ from app.modules.agro.service import (
     serialize_rd_mapeamento_agro_form,
     update_orcamento_snapshot_from_cliente,
 )
-from app.shared.access import apply_prefeitura_scope
+from app.shared.access import apply_prefeitura_scope, is_admin_global_user
 from app.shared.formatters import format_cep, format_currency_br, format_documento, format_phone_br, only_digits, parse_currency_br
 from app.shared.validators import validate_documento
 
@@ -268,7 +268,7 @@ def _require_agro_finance_edit():
 
 
 def _require_agro_admin():
-    if getattr(current_user, "tipo_usuario", None) != "admin":
+    if not is_admin_global_user(current_user):
         abort(403)
 
 
@@ -684,7 +684,7 @@ def _get_agro_categoria_tipo_mapping(tipo_movimento):
 
 def _agro_categoria_scope_filter(model):
     prefeitura_id = getattr(current_user, "prefeitura_id", None)
-    if prefeitura_id is None or getattr(current_user, "tipo_usuario", None) == "admin":
+    if prefeitura_id is None or is_admin_global_user(current_user):
         return True
     return or_(model.prefeitura_id.is_(None), model.prefeitura_id == prefeitura_id)
 
@@ -3920,7 +3920,7 @@ def register_routes(bp):
         if scope_filter is not True:
             query = query.filter(scope_filter)
         subcategoria = query.filter(FinanceiroAgroSubcategoria.id == subcategoria_id).first_or_404()
-        if subcategoria.categoria.prefeitura_id is None and getattr(current_user, "tipo_usuario", None) != "admin":
+        if subcategoria.categoria.prefeitura_id is None and not is_admin_global_user(current_user):
             abort(403)
 
         errors = {}
@@ -3986,7 +3986,7 @@ def register_routes(bp):
         if scope_filter is not True:
             query = query.filter(scope_filter)
         subcategoria = query.filter(FinanceiroAgroSubcategoria.id == subcategoria_id).first_or_404()
-        if subcategoria.categoria.prefeitura_id is None and getattr(current_user, "tipo_usuario", None) != "admin":
+        if subcategoria.categoria.prefeitura_id is None and not is_admin_global_user(current_user):
             abort(403)
 
         subcategoria.ativo = not subcategoria.ativo
@@ -4549,7 +4549,7 @@ def register_routes(bp):
             },
             pagination_args=_query_args_without_page(),
             is_editable=can_edit_agro_panel(current_user),
-            is_admin_agro=getattr(current_user, "tipo_usuario", None) == "admin",
+            is_admin_agro=is_admin_global_user(current_user),
         )
 
     @bp.route("/agro/orcamentos/cadastrar", methods=["GET", "POST"], endpoint="agro_orcamento_novo")
@@ -5128,7 +5128,7 @@ def register_routes(bp):
 
             db.session.commit()
             if contrato.status == ContratoAgro.STATUS_APROVADO:
-                if getattr(current_user, "tipo_usuario", None) == "admin":
+                if is_admin_global_user(current_user):
                     flash(
                         "Contrato agro aprovado e enviado para o template operacional. Agora defina a equipe responsavel.",
                         "success",
@@ -5192,7 +5192,7 @@ def register_routes(bp):
             pagination_args=_query_args_without_page(),
             status_options=AGRO_CONTRATO_STATUS_OPTIONS,
             is_editable=can_edit_agro_panel(current_user),
-            is_admin_agro=getattr(current_user, "tipo_usuario", None) == "admin",
+            is_admin_agro=is_admin_global_user(current_user),
             build_endereco_agro=build_endereco_agro,
         )
 
@@ -6612,7 +6612,7 @@ def register_routes(bp):
             status_options=AGRO_OS_STATUS_OPTIONS,
             filters={"q": q, "status": status, "equipe_id": equipe_id, "total": len(ordens_servico)},
             is_editable=can_edit_agro_panel(current_user),
-            is_admin_agro=getattr(current_user, "tipo_usuario", None) == "admin",
+            is_admin_agro=is_admin_global_user(current_user),
         )
 
     @bp.route("/agro/contratos/<int:contrato_id>/os/cadastrar", methods=["GET", "POST"], endpoint="agro_os_nova")

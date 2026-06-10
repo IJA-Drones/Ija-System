@@ -84,7 +84,7 @@
       </a>
     </div>
 
-    {% if current_user.tipo_usuario == 'admin' %}
+    {% if is_admin_global_user(current_user) %}
     <div class="col-md-6 col-xl-4">
       <a href="{{ url_for('main.relatorios_dji_logs') }}" class="text-decoration-none">
         <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-info border-4 hover-shadow" style="transition: all 0.2s ease; cursor: pointer;">

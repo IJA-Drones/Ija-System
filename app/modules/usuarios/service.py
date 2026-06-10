@@ -3,15 +3,19 @@ from sqlalchemy import and_, func, or_
 from app.extensions import db
 from app.models import Notificacao, Usuario
 from app.shared.access import (
+    DEV_USER_TYPE,
     FINANCEIRO_ADMIN_USER_TYPE,
     FINANCEIRO_USER_TYPE,
     PREFEITURA_ADMIN_USER_TYPE,
     REGIONAL_USER_TYPE,
+    is_admin_global_user,
+    is_dev_user,
     normalize_regiao,
 )
 
 
 ADMIN_USER_TYPES = (
+    DEV_USER_TYPE,
     "admin",
     "operario",
     REGIONAL_USER_TYPE,
@@ -52,6 +56,16 @@ def is_admin_managed_user(usuario) -> bool:
     return getattr(usuario, "tipo_usuario", None) in ADMIN_USER_TYPES or is_legacy_covisa_user(usuario)
 
 
+def can_assign_dev_role(actor) -> bool:
+    if is_dev_user(actor):
+        return True
+    return is_admin_global_user(actor) and not Usuario.query.filter_by(tipo_usuario=DEV_USER_TYPE).first()
+
+
+def can_manage_admin_user(actor, usuario) -> bool:
+    return getattr(usuario, "tipo_usuario", None) != DEV_USER_TYPE or is_dev_user(actor)
+
+
 def get_admin_user_type_form_value(usuario) -> str:
     if is_legacy_covisa_user(usuario):
         return "covisa"
@@ -73,6 +87,7 @@ def build_admin_users_query(q: str, tipo: str):
         or_(
             Usuario.tipo_usuario.in_(
                 (
+                    DEV_USER_TYPE,
                     "admin",
                     "operario",
                     REGIONAL_USER_TYPE,

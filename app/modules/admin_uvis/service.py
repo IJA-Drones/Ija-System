@@ -7,7 +7,12 @@ from sqlalchemy import or_
 
 from app.extensions import db
 from app.models import EquipeUvis, Notificacao, PilotoUvis, Usuario
-from app.shared.access import ADMIN_PANEL_VIEW_TYPES, apply_prefeitura_scope, apply_regiao_scope
+from app.shared.access import (
+    ADMIN_PANEL_VIEW_TYPES,
+    GLOBAL_ADMIN_USER_TYPES,
+    apply_prefeitura_scope,
+    apply_regiao_scope,
+)
 
 
 def can_access_admin_uvis(user) -> bool:
@@ -15,11 +20,11 @@ def can_access_admin_uvis(user) -> bool:
 
 
 def is_admin_user(user) -> bool:
-    return getattr(user, "tipo_usuario", None) == "admin"
+    return getattr(user, "tipo_usuario", None) in GLOBAL_ADMIN_USER_TYPES
 
 
 def is_admin_or_prefeitura_admin(user) -> bool:
-    return getattr(user, "tipo_usuario", None) in {"admin", "prefeitura_admin"}
+    return getattr(user, "tipo_usuario", None) in GLOBAL_ADMIN_USER_TYPES | {"prefeitura_admin"}
 
 
 def is_uvis_user(user) -> bool:

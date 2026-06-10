@@ -186,7 +186,7 @@ def build_equipes_query(
         else:
             query = query.filter(Equipe.regiao.ilike(regiao))
             query = query.filter(Equipe.ativa.is_(True))
-    elif tipo not in ["admin", "visualizar", "operario", "operador", "prefeitura_admin"]:
+    elif tipo not in ["dev", "admin", "visualizar", "operario", "operador", "prefeitura_admin"]:
         if user_regiao:
             query = query.filter(Equipe.regiao.ilike(user_regiao))
             regiao = user_regiao

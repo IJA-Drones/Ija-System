@@ -4,6 +4,7 @@ from flask_login import current_user, login_required
 from app.extensions import db
 from app.models import Solicitacao
 from app.modules.canceladas.service import build_canceladas_query
+from app.shared.access import is_admin_global_user
 
 
 def register_routes(bp):
@@ -12,7 +13,7 @@ def register_routes(bp):
     def cancelar_solicitacao(id):
         solicitacao = Solicitacao.query.get_or_404(id)
 
-        if current_user.tipo_usuario != "admin" and solicitacao.usuario_id != current_user.id:
+        if not is_admin_global_user(current_user) and solicitacao.usuario_id != current_user.id:
             abort(403)
 
         solicitacao.status = "CANCELADO"
