@@ -20,6 +20,7 @@ from app.shared.access import (
     apply_regiao_scope,
     apply_solicitacao_prefeitura_scope,
 )
+from app.shared.query_filters import id_search_clause
 from app.shared.uploads import allowed_file, get_upload_folder
 
 APPROVAL_STATUSES = {"APROVADO", "APROVADO COM RECOMENDAÇÕES"}
@@ -153,7 +154,12 @@ def build_admin_dashboard_query(
         query = query.filter(Solicitacao.status == filtro_status)
 
     if filtro_unidade:
-        query = query.filter(Usuario.nome_uvis.ilike(f"%{filtro_unidade}%"))
+        query = query.filter(
+            or_(
+                id_search_clause(Usuario.id, filtro_unidade),
+                Usuario.nome_uvis.ilike(f"%{filtro_unidade}%"),
+            )
+        )
 
     if filtro_regiao:
         query = query.filter(Usuario.regiao.ilike(f"%{filtro_regiao}%"))
@@ -164,7 +170,12 @@ def build_admin_dashboard_query(
         query = query.filter(Solicitacao.apoio_cet.is_(False))
 
     if filtro_protocolo:
-        query = query.filter(Solicitacao.protocolo.ilike(f"%{filtro_protocolo}%"))
+        query = query.filter(
+            or_(
+                id_search_clause(Solicitacao.id, filtro_protocolo, prefixes=("id", "os")),
+                Solicitacao.protocolo.ilike(f"%{filtro_protocolo}%"),
+            )
+        )
 
     query = _apply_endereco_filter(query, filtro_endereco)
 
@@ -205,7 +216,12 @@ def build_admin_canceladas_query(
     query = apply_regiao_scope(query, user, Usuario.regiao)
 
     if filtro_unidade:
-        query = query.filter(Usuario.nome_uvis.ilike(f"%{filtro_unidade}%"))
+        query = query.filter(
+            or_(
+                id_search_clause(Usuario.id, filtro_unidade),
+                Usuario.nome_uvis.ilike(f"%{filtro_unidade}%"),
+            )
+        )
 
     if filtro_regiao:
         query = query.filter(Usuario.regiao.ilike(f"%{filtro_regiao}%"))
@@ -220,7 +236,12 @@ def build_admin_canceladas_query(
         query = query.filter(Solicitacao.tipo_imovel == filtro_tipo_imovel)
 
     if filtro_protocolo:
-        query = query.filter(Solicitacao.protocolo.ilike(f"%{filtro_protocolo}%"))
+        query = query.filter(
+            or_(
+                id_search_clause(Solicitacao.id, filtro_protocolo, prefixes=("id", "os")),
+                Solicitacao.protocolo.ilike(f"%{filtro_protocolo}%"),
+            )
+        )
 
     query = _apply_endereco_filter(query, filtro_endereco)
 
@@ -241,7 +262,12 @@ def build_admin_historico_os_query(user, filtro_unidade: str, filtro_regiao: str
     query = apply_regiao_scope(query, user, Usuario.regiao)
 
     if filtro_unidade:
-        query = query.filter(Usuario.nome_uvis.ilike(f"%{filtro_unidade}%"))
+        query = query.filter(
+            or_(
+                id_search_clause(Usuario.id, filtro_unidade),
+                Usuario.nome_uvis.ilike(f"%{filtro_unidade}%"),
+            )
+        )
 
     if filtro_regiao:
         query = query.filter(Usuario.regiao.ilike(f"%{filtro_regiao}%"))
@@ -278,7 +304,12 @@ def build_admin_export_query(
         query = query.filter(Solicitacao.status == filtro_status)
 
     if filtro_unidade:
-        query = query.filter(Usuario.nome_uvis.ilike(f"%{filtro_unidade}%"))
+        query = query.filter(
+            or_(
+                id_search_clause(Usuario.id, filtro_unidade),
+                Usuario.nome_uvis.ilike(f"%{filtro_unidade}%"),
+            )
+        )
 
     if filtro_regiao:
         query = query.filter(Usuario.regiao.ilike(f"%{filtro_regiao}%"))
@@ -289,7 +320,12 @@ def build_admin_export_query(
         query = query.filter(Solicitacao.apoio_cet.is_(False))
 
     if filtro_protocolo:
-        query = query.filter(Solicitacao.protocolo.ilike(f"%{filtro_protocolo}%"))
+        query = query.filter(
+            or_(
+                id_search_clause(Solicitacao.id, filtro_protocolo, prefixes=("id", "os")),
+                Solicitacao.protocolo.ilike(f"%{filtro_protocolo}%"),
+            )
+        )
 
     query = _apply_endereco_filter(query, filtro_endereco)
 

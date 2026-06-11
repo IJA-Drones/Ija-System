@@ -10,7 +10,7 @@ from werkzeug.utils import secure_filename
 from app.extensions import db
 from app.models import Baterias, Drones, Equipe, EquipePiloto, OrdemServico, Solicitacao, Usuario, Veiculos
 from app.shared.access import ADMIN_PANEL_EDIT_TYPES, ADMIN_PANEL_VIEW_TYPES, can_access_regiao
-from app.shared.query_filters import aplicar_filtros_base
+from app.shared.query_filters import aplicar_filtros_base, id_search_clause
 from app.shared.skybox import (
     SkyboxError,
     build_os_media_remote_path,
@@ -152,10 +152,8 @@ def build_piloto_os_context(user, args, google_maps_key):
             Solicitacao.foco.ilike(termo),
             Solicitacao.equipe_uvis_nome.ilike(termo),
             Solicitacao.usuario.has(Usuario.nome_uvis.ilike(termo)),
+            id_search_clause(Solicitacao.id, busca, prefixes=("id", "os")),
         ]
-        busca_id = busca.lower().removeprefix("os").lstrip(" #")
-        if busca_id.isdigit():
-            criterios_busca.append(Solicitacao.id == int(busca_id))
         query = query.filter(or_(*criterios_busca))
 
     filtro_data = args.get("data")

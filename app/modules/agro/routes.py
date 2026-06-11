@@ -88,6 +88,7 @@ from app.modules.agro.service import (
 )
 from app.shared.access import apply_prefeitura_scope
 from app.shared.formatters import format_cep, format_currency_br, format_documento, format_phone_br, only_digits, parse_currency_br
+from app.shared.query_filters import id_search_clause
 from app.shared.validators import validate_documento
 
 
@@ -440,6 +441,8 @@ def _build_piloto_agro_contratos_query(piloto, q: str = ""):
         like = f"%{q}%"
         query = query.join(ContratoAgro.orcamento).filter(
             or_(
+                id_search_clause(ContratoAgro.id, q),
+                id_search_clause(OrcamentoAgro.id, q),
                 ContratoAgro.contratante_nome.ilike(like),
                 ContratoAgro.propriedade_nome.ilike(like),
                 OrcamentoAgro.cliente_nome.ilike(like),
@@ -473,6 +476,8 @@ def _build_piloto_agro_ordens_servico_query(piloto, q: str = "", status: str = "
         like = f"%{q}%"
         query = query.filter(
             or_(
+                id_search_clause(OrdemServicoAgro.id, q),
+                id_search_clause(OrdemServicoAgro.contrato_agro_id, q),
                 OrdemServicoAgro.identificador_os.ilike(like),
                 OrdemServicoAgro.cliente_nome.ilike(like),
                 OrdemServicoAgro.propriedade_nome.ilike(like),
@@ -1774,6 +1779,7 @@ def _apply_agro_finance_items_filters(items, *, q="", mes=None, ano=None, situac
                     item.get("detalhe"),
                     item.get("documento"),
                     item.get("status"),
+                    str(item.get("id") or ""),
                 )
                 if value
             ).casefold()
@@ -3785,6 +3791,8 @@ def register_routes(bp):
                 like = f"%{q}%"
                 query = query.filter(
                     or_(
+                        id_search_clause(RdMapeamentoAgro.id, q),
+                        id_search_clause(RdMapeamentoAgro.equipe_agro_id, q),
                         RdMapeamentoAgro.cliente_nome.ilike(like),
                         RdMapeamentoAgro.propriedade_nome.ilike(like),
                         RdMapeamentoAgro.municipio.ilike(like),
@@ -3850,7 +3858,14 @@ def register_routes(bp):
             query = query.filter(or_(FinanceiroAgroCategoria.ativo.is_(False), FinanceiroAgroSubcategoria.ativo.is_(False)))
         if q:
             like = f"%{q}%"
-            query = query.filter(or_(FinanceiroAgroCategoria.nome.ilike(like), FinanceiroAgroSubcategoria.nome.ilike(like)))
+            query = query.filter(
+                or_(
+                    id_search_clause(FinanceiroAgroCategoria.id, q),
+                    id_search_clause(FinanceiroAgroSubcategoria.id, q),
+                    FinanceiroAgroCategoria.nome.ilike(like),
+                    FinanceiroAgroSubcategoria.nome.ilike(like),
+                )
+            )
 
         subcategorias = (
             query
@@ -4089,6 +4104,7 @@ def register_routes(bp):
                         item["detalhe"],
                         item["documento"],
                         item["status"],
+                        str(item.get("id") or ""),
                     )
                     if value
                 ).casefold()
@@ -6964,6 +6980,7 @@ def register_routes(bp):
         if q:
             query = query.filter(
                 db.or_(
+                    id_search_clause(EquipeAgro.id, q),
                     EquipeAgro.nome.ilike(f"%{q}%"),
                     EquipeAgro.descricao.ilike(f"%{q}%"),
                 )
@@ -7050,6 +7067,8 @@ def register_routes(bp):
         if q:
             query = query.filter(
                 db.or_(
+                    id_search_clause(PilotoAgro.id, q),
+                    id_search_clause(PilotoAgro.equipe_agro_id, q),
                     PilotoAgro.nome.ilike(f"%{q}%"),
                     PilotoAgro.telefone.ilike(f"%{only_digits(q)}%") if only_digits(q) else db.false(),
                     PilotoAgro.usuario.has(Usuario.login.ilike(f"%{q}%")),
@@ -7173,6 +7192,8 @@ def register_routes(bp):
         if q:
             query = query.filter(
                 db.or_(
+                    id_search_clause(EquipamentoAgro.id, q),
+                    id_search_clause(EquipamentoAgro.equipe_agro_id, q),
                     EquipamentoAgro.tipo.ilike(f"%{q}%"),
                     EquipamentoAgro.funcao_operacional.ilike(f"%{q}%"),
                     EquipamentoAgro.modelo.ilike(f"%{q}%"),

@@ -8,6 +8,7 @@ from sqlalchemy import or_
 from app.extensions import db
 from app.models import EquipeUvis, Notificacao, PilotoUvis, Usuario
 from app.shared.access import ADMIN_PANEL_VIEW_TYPES, apply_prefeitura_scope, apply_regiao_scope
+from app.shared.query_filters import id_search_clause
 
 
 def can_access_admin_uvis(user) -> bool:
@@ -48,6 +49,7 @@ def build_uvis_query(user, q: str, regiao: str, codigo_setor: str, prefeitura_id
         like = f"%{q}%"
         query = query.filter(
             or_(
+                id_search_clause(Usuario.id, q),
                 Usuario.nome_uvis.ilike(like),
                 Usuario.login.ilike(like),
             )

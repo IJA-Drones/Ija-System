@@ -255,7 +255,7 @@
             <i class="bi bi-funnel-fill text-primary"></i>
             <span class="fw-bold text-dark">Filtros de Busca</span>
             {% if request.args.get('status') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or request.args.get('foco')
-               or request.args.get('data_ini') or request.args.get('data_fim') or filtro_tipo_operacao %}
+               or request.args.get('protocolo') or request.args.get('data_ini') or request.args.get('data_fim') or filtro_tipo_operacao %}
                 <span class="badge rounded-pill bg-primary" style="font-size: 0.7rem;">Filtros Ativos</span>
             {% endif %}
         </div>
@@ -263,7 +263,7 @@
     </div>
 
     <div class="collapse {% if request.args.get('status') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or request.args.get('foco')
-         or request.args.get('data_ini') or request.args.get('data_fim') or filtro_tipo_operacao %}show{% endif %}" id="collapseFiltros">
+         or request.args.get('protocolo') or request.args.get('data_ini') or request.args.get('data_fim') or filtro_tipo_operacao %}show{% endif %}" id="collapseFiltros">
           <div class="card-body pt-0">
               <form method="GET">
                   <div class="row g-3">
@@ -336,11 +336,21 @@
                                   <option value="Tratamento" {{ 'selected' if filtro_tipo_operacao == 'Tratamento' }}>Tratamento</option>
                               </select>
                           </div>
-                          <div class="d-flex align-items-end gap-2" style="height: 38px; margin-top: 45px;">
+                          <div class="mb-3">
+                              <label class="small fw-bold text-muted mb-1 text-uppercase">ID ou protocolo</label>
+                              <input
+                                  type="text"
+                                  name="protocolo"
+                                  class="form-control shadow-sm border-light-subtle font-monospace"
+                                  placeholder="ID da solicitação ou protocolo"
+                                  value="{{ request.args.get('protocolo', '') }}"
+                              >
+                          </div>
+                          <div class="d-flex align-items-end gap-2" style="height: 38px;">
                               <button type="submit" class="btn btn-primary w-100 fw-bold shadow-sm d-flex align-items-center justify-content-center" style="background-color: #2c5282; border: none; height: 38px;">
                                   <i class="bi bi-search me-2"></i> Filtrar
                               </button>
-                              {% if request.args.get('status') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or filtro_tipo_operacao or request.args.get('foco') or request.args.get('data_ini') or request.args.get('data_fim') %}
+                              {% if request.args.get('status') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or filtro_tipo_operacao or request.args.get('foco') or request.args.get('protocolo') or request.args.get('data_ini') or request.args.get('data_fim') %}
                                   <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary px-3 shadow-sm d-flex align-items-center justify-content-center" style="height: 38px;" title="Limpar Filtros">
                                       <i class="bi bi-x-lg"></i> Limpar
                                   </a>

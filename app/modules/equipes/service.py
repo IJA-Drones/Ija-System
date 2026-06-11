@@ -8,6 +8,7 @@ from openpyxl.utils import get_column_letter
 from app.extensions import db
 from app.models import Equipe, EquipePiloto, Pilotos, Usuario
 from app.shared.access import apply_prefeitura_scope, normalize_role
+from app.shared.query_filters import id_search_clause
 
 
 REGIOES = ("CENTRO", "CENTRO-OESTE", "LESTE", "NORTE", "OESTE", "SUL", "SUDESTE")
@@ -228,12 +229,14 @@ def build_equipes_query(
         like = f"%{q}%"
         query = query.filter(
             db.or_(
+                id_search_clause(Equipe.id, q),
                 Equipe.nome_equipe.ilike(like),
                 Equipe.descricao.ilike(like),
                 Equipe.regiao.ilike(like),
                 Equipe.membros.any(
                     EquipePiloto.piloto.has(
                         db.or_(
+                            id_search_clause(Pilotos.id, q),
                             Pilotos.nome_piloto.ilike(like),
                             Pilotos.telefone.ilike(like),
                         )

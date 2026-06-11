@@ -1,6 +1,27 @@
-from sqlalchemy import Integer, cast, extract
+from sqlalchemy import Integer, cast, extract, false
 
 from app.models import Solicitacao
+
+
+def parse_search_id(value, prefixes=("id",)):
+    text = (value or "").strip().lower()
+    if not text:
+        return None
+
+    for prefix in prefixes or ():
+        if text.startswith(prefix):
+            text = text[len(prefix):].lstrip(" #:-")
+            break
+
+    text = text.lstrip(" #:-")
+    if text.isdigit():
+        return int(text)
+    return None
+
+
+def id_search_clause(column, value, prefixes=("id",)):
+    search_id = parse_search_id(value, prefixes=prefixes)
+    return column == search_id if search_id is not None else false()
 
 
 def aplicar_filtros_base(query, filtro_data, uvis_id):

@@ -4,6 +4,7 @@ from sqlalchemy.orm import joinedload
 
 from app.extensions import db
 from app.models import ChecklistSemanalDrone, ChecklistSemanalVeiculo, Drones, Equipe, Pilotos, Veiculos
+from app.shared.query_filters import id_search_clause
 
 
 CHECKLIST_VEICULO_BOOL_LABELS = [
@@ -306,6 +307,10 @@ def build_admin_checklists_weekly_groups(q: str, data_inicio: str, data_fim: str
         like = f"%{q}%"
         query_veiculos = query_veiculos.filter(
             db.or_(
+                id_search_clause(ChecklistSemanalVeiculo.id, q),
+                id_search_clause(Veiculos.id, q),
+                id_search_clause(Pilotos.id, q),
+                id_search_clause(Equipe.id, q),
                 Veiculos.modelo.ilike(like),
                 Veiculos.placa.ilike(like),
                 Veiculos.responsavel.ilike(like),
@@ -349,6 +354,10 @@ def build_admin_checklists_weekly_groups(q: str, data_inicio: str, data_fim: str
         like = f"%{q}%"
         query_drones = query_drones.filter(
             db.or_(
+                id_search_clause(ChecklistSemanalDrone.id, q),
+                id_search_clause(Drones.id, q),
+                id_search_clause(Pilotos.id, q),
+                id_search_clause(Equipe.id, q),
                 Drones.renomacao.ilike(like),
                 Drones.modelo.ilike(like),
                 Drones.numero_serie.ilike(like),

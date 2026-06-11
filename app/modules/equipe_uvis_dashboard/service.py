@@ -1,9 +1,11 @@
 from datetime import datetime
 
+from sqlalchemy import or_
 from sqlalchemy.orm import joinedload
 
 from app.extensions import db
 from app.models import OrdemServicoEquipeUvis, Solicitacao
+from app.shared.query_filters import id_search_clause
 
 
 class EquipeUvisDashboardError(Exception):
@@ -110,6 +112,15 @@ def build_dashboard_equipe_uvis_context(user, args, google_maps_key):
     filtro_foco = args.get("foco")
     if filtro_foco:
         query = query.filter(Solicitacao.foco == filtro_foco)
+
+    filtro_protocolo = (args.get("protocolo") or "").strip()
+    if filtro_protocolo:
+        query = query.filter(
+            or_(
+                id_search_clause(Solicitacao.id, filtro_protocolo, prefixes=("id", "os")),
+                Solicitacao.protocolo.ilike(f"%{filtro_protocolo}%"),
+            )
+        )
 
     data_ini = args.get("data_ini")
     data_fim = args.get("data_fim")

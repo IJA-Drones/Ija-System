@@ -144,14 +144,14 @@
       <div class="d-flex align-items-center gap-2">
         <i class="bi bi-funnel-fill text-primary"></i>
         <span class="text-dark fw-bold">Filtros de busca</span>
-        {% if request.args.get('status_os') or request.args.get('unidade') or request.args.get('regiao') %}
+        {% if request.args.get('status_os') or request.args.get('unidade') or request.args.get('regiao') or request.args.get('protocolo') %}
           <span class="badge bg-danger rounded-circle p-1" style="width: 8px; height: 8px;"></span>
         {% endif %}
       </div>
       <i class="bi bi-chevron-down text-muted"></i>
     </div>
 
-    <div class="collapse {% if request.args.get('status_os') or request.args.get('unidade') or request.args.get('regiao') %}show{% endif %}" id="collapseFiltros">
+    <div class="collapse {% if request.args.get('status_os') or request.args.get('unidade') or request.args.get('regiao') or request.args.get('protocolo') %}show{% endif %}" id="collapseFiltros">
       <div class="card-body pt-0">
         <form method="GET">
           <input type="hidden" name="tipo_os" value="{{ filtro_tipo_os }}">
@@ -188,13 +188,24 @@
               </select>
             </div>
 
+            <div class="col-md-3">
+              <label class="small text-muted">ID ou protocolo:</label>
+              <input
+                type="text"
+                name="protocolo"
+                class="form-control form-control-sm font-monospace"
+                placeholder="ID da solicitação ou protocolo"
+                value="{{ request.args.get('protocolo', '') }}"
+              >
+            </div>
+
             <div class="col-md-2 ms-4">
               <label class="small text-muted d-block">&nbsp;</label>
               <div class="historico-os-filter-actions">
               <button class="btn btn-success btn-sm px-3 historico-os-filter-submit" type="submit">
                 <i class="bi bi-search"></i> Filtrar
               </button>
-              {% if request.args.get('status_os') or request.args.get('unidade') or request.args.get('regiao') %}
+              {% if request.args.get('status_os') or request.args.get('unidade') or request.args.get('regiao') or request.args.get('protocolo') %}
                 <a href="{{ url_for('main.admin_historico_os', tipo_os=filtro_tipo_os) }}" class="btn btn-outline-secondary btn-sm px-3 historico-os-filter-clear">
                   <i class="bi bi-x-lg"></i> Limpar
                 </a>

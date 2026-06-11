@@ -257,7 +257,7 @@
               <i class="bi bi-funnel-fill text-primary"></i>
               <span class="text-dark">Filtros de Busca</span>
               {% if request.args.get('status') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or filtro_tipo_operacao or request.args.get('foco')
-                 or request.args.get('data_ini') or request.args.get('data_fim') %}
+                 or request.args.get('protocolo') or request.args.get('data_ini') or request.args.get('data_fim') %}
                   <span class="badge bg-danger rounded-circle p-1" style="width: 8px; height: 8px;"></span>
               {% endif %}
           </div>
@@ -265,7 +265,7 @@
       </div>
 
       <div class="collapse {% if request.args.get('status') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or filtro_tipo_operacao or request.args.get('foco')
-         or request.args.get('data_ini') or request.args.get('data_fim') %}show{% endif %}" id="collapseFiltros">
+         or request.args.get('protocolo') or request.args.get('data_ini') or request.args.get('data_fim') %}show{% endif %}" id="collapseFiltros">
           <div class="card-body pt-0">
               <form method="GET">
                   <div class="row g-2 align-items-end">
@@ -333,13 +333,24 @@
                                value="{{ request.args.get('data_fim', '') }}">
                       </div>
 
+                      <div class="col-md-3">
+                        <label class="small text-muted mb-1">ID ou protocolo</label>
+                        <input
+                          type="text"
+                          name="protocolo"
+                          class="form-control form-control-sm font-monospace"
+                          placeholder="ID da solicitação ou protocolo"
+                          value="{{ request.args.get('protocolo', '') }}"
+                        >
+                      </div>
+
                       <div class="col-md-3 d-flex gap-2">
                           <button type="submit" class="btn btn-success btn-sm w-100">
                             <i class="bi bi-funnel me-2"></i> Filtrar
                           </button>
 
                           {% if request.args.get('status') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or filtro_tipo_operacao or request.args.get('foco')
-                             or request.args.get('data_ini') or request.args.get('data_fim') %}
+                             or request.args.get('protocolo') or request.args.get('data_ini') or request.args.get('data_fim') %}
                               <a href="{{ url_for('main.dashboard_equipe_uvis') }}" class="btn btn-outline-secondary btn-sm w-100">
                                   <i class="bi bi-x-lg"></i> Limpar
                               </a>

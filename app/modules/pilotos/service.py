@@ -10,6 +10,7 @@ from app.extensions import db
 from app.models import Pilotos, Usuario
 from app.shared.access import apply_prefeitura_scope
 from app.shared.formatters import format_phone_br, only_digits
+from app.shared.query_filters import id_search_clause
 
 
 REGIOES = {"NORTE", "SUL", "LESTE", "OESTE", "CENTRO", "SULDESTE", "CENTRO-OESTE"}
@@ -83,6 +84,7 @@ def build_pilotos_query(user_tipo: str, regiao: str, telefone: str, q: str, sort
         q_digits = only_digits(q)
         query = query.filter(
             db.or_(
+                id_search_clause(Pilotos.id, q),
                 Pilotos.nome_piloto.ilike(like),
                 Pilotos.regiao.ilike(like),
                 Pilotos.regiao_alternativa.ilike(like),

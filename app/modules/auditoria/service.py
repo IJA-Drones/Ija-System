@@ -4,6 +4,7 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import func, or_
 
 from app.models import AuditoriaUsuario
+from app.shared.query_filters import id_search_clause
 
 
 UTC_TZ = ZoneInfo("UTC")
@@ -39,6 +40,8 @@ def build_auditoria_query(q="", metodo="", tipo_evento="", status="", data_inici
         term = f"%{q.lower()}%"
         query = query.filter(
             or_(
+                id_search_clause(AuditoriaUsuario.id, q),
+                id_search_clause(AuditoriaUsuario.usuario_id, q),
                 func.lower(func.coalesce(AuditoriaUsuario.usuario_nome, "")).like(term),
                 func.lower(func.coalesce(AuditoriaUsuario.usuario_login, "")).like(term),
                 func.lower(func.coalesce(AuditoriaUsuario.tipo_usuario, "")).like(term),

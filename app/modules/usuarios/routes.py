@@ -20,6 +20,7 @@ from app.modules.usuarios.service import (
     validate_new_admin_user,
     validate_password_reset,
 )
+from app.shared.query_filters import id_search_clause
 
 
 def _admin_only():
@@ -161,6 +162,7 @@ def register_routes(bp):
             term = f"%{q}%"
             query = query.filter(
                 or_(
+                    id_search_clause(Prefeitura.id, q),
                     Prefeitura.nome.ilike(term),
                     Prefeitura.slug.ilike(term),
                 )

@@ -37,6 +37,7 @@ from app.shared.access import (
     normalize_role,
 )
 from app.shared.formatters import format_cep, format_currency_br, format_documento, only_digits
+from app.shared.query_filters import id_search_clause
 from app.shared.uploads import get_upload_folder
 
 
@@ -256,6 +257,7 @@ def build_clientes_agro_query(user, q: str = ""):
         like = f"%{q}%"
         query = query.filter(
             or_(
+                id_search_clause(ClienteAgro.id, q),
                 ClienteAgro.nome.ilike(like)
                 , ClienteAgro.logradouro.ilike(like)
                 , ClienteAgro.bairro.ilike(like)
@@ -276,6 +278,7 @@ def build_fornecedores_agro_query(user, q: str = ""):
         like = f"%{q}%"
         query = query.filter(
             or_(
+                id_search_clause(FornecedorAgro.id, q),
                 FornecedorAgro.nome.ilike(like),
                 FornecedorAgro.logradouro.ilike(like),
                 FornecedorAgro.bairro.ilike(like),
@@ -301,6 +304,8 @@ def build_orcamentos_agro_query(user, q: str = "", cliente_id: int | None = None
         like = f"%{q}%"
         query = query.filter(
             or_(
+                id_search_clause(OrcamentoAgro.id, q),
+                id_search_clause(OrcamentoAgro.cliente_agro_id, q),
                 OrcamentoAgro.cliente_nome.ilike(like),
                 OrcamentoAgro.cliente_documento.ilike(like),
                 OrcamentoAgro.nome_fazenda.ilike(like),
@@ -337,6 +342,8 @@ def build_contratos_agro_query(user, q: str = "", status: str = "", equipe_id: i
         like = f"%{q}%"
         query = query.join(ContratoAgro.orcamento).filter(
             or_(
+                id_search_clause(ContratoAgro.id, q),
+                id_search_clause(OrcamentoAgro.id, q),
                 ContratoAgro.contratante_nome.ilike(like),
                 ContratoAgro.propriedade_nome.ilike(like),
                 OrcamentoAgro.cliente_nome.ilike(like),
@@ -374,6 +381,8 @@ def build_ordens_servico_agro_query(user, q: str = "", status: str = "", equipe_
         like = f"%{q}%"
         query = query.filter(
             or_(
+                id_search_clause(OrdemServicoAgro.id, q),
+                id_search_clause(OrdemServicoAgro.contrato_agro_id, q),
                 OrdemServicoAgro.identificador_os.ilike(like),
                 OrdemServicoAgro.cliente_nome.ilike(like),
                 OrdemServicoAgro.propriedade_nome.ilike(like),
@@ -416,6 +425,11 @@ def build_financeiro_agro_query(
         query = query.outerjoin(FinanceiroAgro.banco_agro)
         query = query.filter(
             or_(
+                id_search_clause(FinanceiroAgro.id, q),
+                id_search_clause(FinanceiroAgro.contrato_agro_id, q),
+                id_search_clause(FinanceiroAgro.ordem_servico_agro_id, q),
+                id_search_clause(FinanceiroAgro.cliente_agro_id, q),
+                id_search_clause(FinanceiroAgro.banco_agro_id, q),
                 FinanceiroAgro.cliente_nome.ilike(like),
                 FinanceiroAgro.cultura.ilike(like),
                 BancoAgro.nome.ilike(like),
@@ -461,6 +475,9 @@ def build_financeiro_agro_entrada_query(
         query = query.outerjoin(FinanceiroAgroEntrada.banco_agro)
         query = query.filter(
             or_(
+                id_search_clause(FinanceiroAgroEntrada.id, q),
+                id_search_clause(FinanceiroAgroEntrada.cliente_agro_id, q),
+                id_search_clause(FinanceiroAgroEntrada.banco_agro_id, q),
                 FinanceiroAgroEntrada.cliente_nome.ilike(like),
                 FinanceiroAgroEntrada.categoria.ilike(like),
                 FinanceiroAgroEntrada.subcategoria.ilike(like),
@@ -509,6 +526,10 @@ def build_financeiro_agro_saida_query(
         query = query.outerjoin(FinanceiroAgroSaida.banco_agro).outerjoin(FinanceiroAgroSaida.fornecedor)
         query = query.filter(
             or_(
+                id_search_clause(FinanceiroAgroSaida.id, q),
+                id_search_clause(FinanceiroAgroSaida.cliente_agro_id, q),
+                id_search_clause(FinanceiroAgroSaida.fornecedor_agro_id, q),
+                id_search_clause(FinanceiroAgroSaida.banco_agro_id, q),
                 FinanceiroAgroSaida.categoria.ilike(like),
                 FinanceiroAgroSaida.subcategoria.ilike(like),
                 FinanceiroAgroSaida.descricao.ilike(like),
@@ -588,6 +609,7 @@ def build_bancos_agro_query(user, q: str = "", ativo: str = ""):
         like = f"%{q}%"
         query = query.filter(
             or_(
+                id_search_clause(BancoAgro.id, q),
                 BancoAgro.nome.ilike(like),
                 BancoAgro.banco_nome.ilike(like),
                 BancoAgro.agencia.ilike(like),

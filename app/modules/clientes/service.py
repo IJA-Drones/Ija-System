@@ -14,6 +14,7 @@ from app.shared.formatters import (
     format_phone_br,
     only_digits,
 )
+from app.shared.query_filters import id_search_clause
 from app.shared.validators import validate_documento, validate_email
 
 
@@ -62,6 +63,7 @@ def build_clientes_query(q: str, documento: str, email: str, telefone: str, sort
         q_digits = only_digits(q)
         query = query.filter(
             db.or_(
+                id_search_clause(Clientes.id, q),
                 Clientes.nome_cliente.ilike(like),
                 Clientes.contato.ilike(like),
                 Clientes.email.ilike(like),

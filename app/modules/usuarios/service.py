@@ -9,6 +9,7 @@ from app.shared.access import (
     REGIONAL_USER_TYPE,
     normalize_regiao,
 )
+from app.shared.query_filters import id_search_clause
 
 
 ADMIN_USER_TYPES = (
@@ -101,6 +102,7 @@ def build_admin_users_query(q: str, tipo: str):
         like = f"%{q}%"
         query = query.filter(
             or_(
+                id_search_clause(Usuario.id, q),
                 Usuario.nome_uvis.ilike(like),
                 Usuario.login.ilike(like),
             )

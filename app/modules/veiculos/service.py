@@ -13,6 +13,7 @@ from werkzeug.utils import secure_filename
 from app.extensions import db
 from app.models import Abastecimento, Equipe, EquipePiloto, LogVeiculo, Pilotos, Veiculos
 from app.shared.access import apply_prefeitura_scope, normalize_role
+from app.shared.query_filters import id_search_clause
 
 
 EQUIPE_OCEANO_USER_TYPE = "equipe_oceano"
@@ -71,6 +72,7 @@ def list_veiculos(tipo_usuario, args, user=None):
         like = f"%{q}%"
         query = query.filter(
             db.or_(
+                id_search_clause(Veiculos.id, q),
                 Veiculos.modelo.ilike(like),
                 Veiculos.placa.ilike(like),
                 Veiculos.responsavel.ilike(like),
@@ -1316,6 +1318,10 @@ def _build_veiculos_logs_query(*, user=None, q="", data_inicio="", data_fim=""):
         like = f"%{q}%"
         query = query.filter(
             db.or_(
+                id_search_clause(LogVeiculo.id, q),
+                id_search_clause(Veiculos.id, q),
+                id_search_clause(Pilotos.id, q),
+                id_search_clause(Equipe.id, q),
                 Veiculos.modelo.ilike(like),
                 Veiculos.placa.ilike(like),
                 Veiculos.responsavel.ilike(like),

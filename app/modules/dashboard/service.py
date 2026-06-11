@@ -4,6 +4,7 @@ from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import joinedload
 
 from app.models import Drones, Equipe, Solicitacao
+from app.shared.query_filters import id_search_clause
 
 UVIS_HISTORICO_TIPO_OS_OPTIONS = ("todas", "piloto", "equipe_uvis")
 
@@ -67,6 +68,15 @@ def build_dashboard_context(user, args, google_maps_key):
     filtro_foco = args.get("foco")
     if filtro_foco:
         query = query.filter(Solicitacao.foco == filtro_foco)
+
+    filtro_protocolo = (args.get("protocolo") or "").strip()
+    if filtro_protocolo:
+        query = query.filter(
+            or_(
+                id_search_clause(Solicitacao.id, filtro_protocolo, prefixes=("id", "os")),
+                Solicitacao.protocolo.ilike(f"%{filtro_protocolo}%"),
+            )
+        )
 
     data_ini = args.get("data_ini")
     data_fim = args.get("data_fim")
