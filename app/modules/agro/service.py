@@ -14,6 +14,7 @@ from app.models import (
     BancoAgro,
     ClienteAgro,
     ContratoAgro,
+    CurriculoAgro,
     EquipamentoAgro,
     EquipeAgro,
     FinanceiroAgro,
@@ -1409,6 +1410,7 @@ def get_agro_dashboard_context(user) -> dict:
     fornecedores_query = apply_prefeitura_scope(FornecedorAgro.query, user, FornecedorAgro.prefeitura_id)
     orcamentos_query = apply_prefeitura_scope(OrcamentoAgro.query, user, OrcamentoAgro.prefeitura_id)
     contratos_query = apply_prefeitura_scope(ContratoAgro.query, user, ContratoAgro.prefeitura_id)
+    curriculos_query = apply_prefeitura_scope(CurriculoAgro.query, user, CurriculoAgro.prefeitura_id)
     pilotos_query = apply_prefeitura_scope(PilotoAgro.query, user, PilotoAgro.prefeitura_id)
     equipes_query = apply_prefeitura_scope(EquipeAgro.query, user, EquipeAgro.prefeitura_id)
     equipamentos_query = apply_prefeitura_scope(EquipamentoAgro.query, user, EquipamentoAgro.prefeitura_id)
@@ -1420,6 +1422,10 @@ def get_agro_dashboard_context(user) -> dict:
         "total_fornecedores_agro": fornecedores_query.count(),
         "total_orcamentos_agro": orcamentos_query.count(),
         "total_contratos_agro": contratos_query.count(),
+        "total_curriculos_agro": curriculos_query.count(),
+        "total_curriculos_agro_novos": curriculos_query.filter(
+            CurriculoAgro.status == CurriculoAgro.STATUS_NOVO
+        ).count(),
         "total_contratos_agro_aprovados": contratos_query.filter(
             ContratoAgro.status == ContratoAgro.STATUS_APROVADO
         ).count(),

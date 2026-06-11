@@ -30,6 +30,7 @@ class Prefeitura(db.Model):
     financeiros_agro_caixa_diarios = db.relationship("FinanceiroAgroCaixaDiario", back_populates="prefeitura", lazy="select")
     pilotos = db.relationship("Pilotos", back_populates="prefeitura", lazy="select")
     pilotos_agro = db.relationship("PilotoAgro", back_populates="prefeitura", lazy="select")
+    curriculos_agro = db.relationship("CurriculoAgro", back_populates="prefeitura", lazy="select")
     equipes = db.relationship("Equipe", lazy="select")
     equipes_agro = db.relationship("EquipeAgro", back_populates="prefeitura", lazy="select")
     equipamentos = db.relationship("Equipamentos", back_populates="prefeitura", lazy="select")
@@ -1623,6 +1624,89 @@ class PilotoAgro(db.Model):
     rds_mapeamento_preenchidos = db.relationship("RdMapeamentoAgro", back_populates="piloto", lazy="select")
     ordens_servico = db.relationship("OrdemServicoAgro", back_populates="piloto", lazy="select")
     usuario = db.relationship("Usuario", back_populates="piloto_agro", uselist=False, foreign_keys="Usuario.piloto_agro_id")
+
+
+# -------------------------------------------------------------
+# BANCO DE TALENTOS AGRO
+# -------------------------------------------------------------
+class CurriculoAgro(db.Model):
+    __tablename__ = "curriculos_agro"
+
+    STATUS_NOVO = "NOVO"
+    STATUS_EM_ANALISE = "EM_ANALISE"
+    STATUS_ENTREVISTA = "ENTREVISTA"
+    STATUS_APROVADO = "APROVADO"
+    STATUS_ARQUIVADO = "ARQUIVADO"
+    STATUS_OPTIONS = (
+        STATUS_NOVO,
+        STATUS_EM_ANALISE,
+        STATUS_ENTREVISTA,
+        STATUS_APROVADO,
+        STATUS_ARQUIVADO,
+    )
+
+    ANALISE_PROCESSANDO = "PROCESSANDO"
+    ANALISE_CONCLUIDA = "CONCLUIDA"
+    ANALISE_ERRO = "ERRO"
+
+    id = db.Column(db.Integer, primary_key=True, index=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
+    criado_por_usuario_id = db.Column(
+        db.Integer,
+        db.ForeignKey("usuarios.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
+    nome = db.Column(db.String(180), nullable=False, index=True)
+    email = db.Column(db.String(180), index=True)
+    telefone = db.Column(db.String(40), index=True)
+    cidade = db.Column(db.String(120), index=True)
+    uf = db.Column(db.String(2), index=True)
+    linkedin = db.Column(db.String(255))
+
+    titulo_profissional = db.Column(db.String(180), index=True)
+    area_principal = db.Column(db.String(180), index=True)
+    resumo_perfil = db.Column(db.Text)
+    objetivo_profissional = db.Column(db.Text)
+    habilidades_tecnicas = db.Column(db.JSON, nullable=False, default=list)
+    habilidades_comportamentais = db.Column(db.JSON, nullable=False, default=list)
+    areas_atuacao = db.Column(db.JSON, nullable=False, default=list)
+    areas_desenvolvimento = db.Column(db.JSON, nullable=False, default=list)
+    experiencias = db.Column(db.JSON, nullable=False, default=list)
+    formacoes = db.Column(db.JSON, nullable=False, default=list)
+    certificacoes = db.Column(db.JSON, nullable=False, default=list)
+    idiomas = db.Column(db.JSON, nullable=False, default=list)
+
+    status = db.Column(db.String(30), nullable=False, default=STATUS_NOVO, index=True)
+    observacoes = db.Column(db.Text)
+    analise_status = db.Column(db.String(30), nullable=False, default=ANALISE_PROCESSANDO, index=True)
+    analise_erro = db.Column(db.Text)
+    gemini_modelo = db.Column(db.String(100))
+    analisado_em = db.Column(db.DateTime, index=True)
+
+    arquivo_nome_original = db.Column(db.String(255), nullable=False)
+    arquivo_mime_type = db.Column(db.String(100), nullable=False, default="application/pdf")
+    arquivo_tamanho = db.Column(db.Integer, nullable=False)
+    arquivo_sha256 = db.Column(db.String(64), nullable=False, index=True)
+    dropbox_path = db.Column(db.String(500), nullable=False, unique=True)
+    dropbox_rev = db.Column(db.String(100))
+
+    criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+    atualizado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True, onupdate=datetime.now)
+
+    prefeitura = db.relationship("Prefeitura", back_populates="curriculos_agro", lazy="joined")
+    criado_por = db.relationship("Usuario", foreign_keys=[criado_por_usuario_id], lazy="joined")
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "prefeitura_id",
+            "arquivo_sha256",
+            name="uq_curriculos_agro_prefeitura_arquivo_sha256",
+        ),
+        db.Index("ix_curriculos_agro_status_analise", "status", "analise_status"),
+        db.Index("ix_curriculos_agro_area_criado_em", "area_principal", "criado_em"),
+    )
 
 
 # -------------------------------------------------------------
