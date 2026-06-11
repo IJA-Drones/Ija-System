@@ -21,8 +21,8 @@ from app.models import DjiFlightKmlRoute, DjiFlightLogImport, DjiFlightRecord
 from app.shared.uploads import get_upload_folder
 
 
-DJI_LOG_ALLOWED_VIEW_TYPES = {"admin"}
-DJI_LOG_ALLOWED_IMPORT_TYPES = {"admin"}
+DJI_LOG_ALLOWED_VIEW_TYPES = {"dev", "admin"}
+DJI_LOG_ALLOWED_IMPORT_TYPES = {"dev", "admin"}
 
 _FLIGHT_WINDOW_RE = re.compile(
     r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})-(\d{2}:\d{2}:\d{2}|\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})$"

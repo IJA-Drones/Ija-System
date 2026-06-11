@@ -105,7 +105,7 @@
                   </td>
                   <td>
                     <div class="d-flex justify-content-end flex-wrap gap-2">
-                      {% if not is_global or current_user.tipo_usuario == 'admin' %}
+                      {% if not is_global or is_admin_global_user(current_user) %}
                         <a href="{{ url_for('main.agro_financeiro_categoria_editar', subcategoria_id=subcategoria.id) }}" class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1">
                           <i class="bi bi-pencil-square"></i> Editar
                         </a>

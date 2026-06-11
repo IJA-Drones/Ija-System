@@ -28,7 +28,7 @@
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
 
-      {% if tipo_usuario in ['admin', 'visualizar', 'regional'] %}
+      {% if tipo_usuario in ['dev', 'admin', 'visualizar', 'regional'] %}
       <a href="{{ url_for('main.listar_pilotos', export='xlsx', **request.args) }}" class="btn btn-secondary d-flex align-items-center gap-2">
         <i class="bi bi-file-earmark-excel-fill"></i> Exportar Excel
       </a>

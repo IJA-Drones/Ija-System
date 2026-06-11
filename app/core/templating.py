@@ -7,6 +7,7 @@ from werkzeug.routing import BuildError
 from app import db
 from app.models import Notificacao
 from app.modules.agenda_notificacoes.service import can_view_all_notifications
+from app.shared.access import is_admin_global_user, is_dev_user
 from app.shared.formatters import format_currency_br, format_phone_br
 from app.shared.solicitacao_focos import build_focus_catalog
 
@@ -36,6 +37,8 @@ def register_template_helpers(bp):
                 return {
                     "notif_count": query.scalar() or 0,
                     "safe_url_for": safe_url_for,
+                    "is_admin_global_user": is_admin_global_user,
+                    "is_dev_user": is_dev_user,
                     "solicitacao_focus_catalog": focus_catalog,
                     "solicitacao_filter_foco_opcoes": focus_catalog["filtro_foco_opcoes"],
                     "solicitacao_tipo_visita_opcoes": focus_catalog["tipo_visita_opcoes"],
@@ -46,6 +49,8 @@ def register_template_helpers(bp):
                 return {
                     "notif_count": 0,
                     "safe_url_for": safe_url_for,
+                    "is_admin_global_user": is_admin_global_user,
+                    "is_dev_user": is_dev_user,
                     "solicitacao_focus_catalog": focus_catalog,
                     "solicitacao_filter_foco_opcoes": focus_catalog["filtro_foco_opcoes"],
                     "solicitacao_tipo_visita_opcoes": focus_catalog["tipo_visita_opcoes"],
@@ -55,6 +60,8 @@ def register_template_helpers(bp):
         return {
             "notif_count": 0,
             "safe_url_for": safe_url_for,
+            "is_admin_global_user": is_admin_global_user,
+            "is_dev_user": is_dev_user,
             "solicitacao_focus_catalog": focus_catalog,
             "solicitacao_filter_foco_opcoes": focus_catalog["filtro_foco_opcoes"],
             "solicitacao_tipo_visita_opcoes": focus_catalog["tipo_visita_opcoes"],

@@ -90,7 +90,7 @@ def can_edit_agro_finance_panel(user) -> bool:
 
 
 def is_financeiro_agro_admin(user) -> bool:
-    return normalize_role(getattr(user, "tipo_usuario", None)) in {"admin", FINANCEIRO_ADMIN_USER_TYPE}
+    return normalize_role(getattr(user, "tipo_usuario", None)) in {"dev", "admin", FINANCEIRO_ADMIN_USER_TYPE}
 
 
 def is_financeiro_agro_only_user(user) -> bool:

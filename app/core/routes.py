@@ -1,9 +1,11 @@
 from flask import abort, current_app
-from flask_login import login_required
+from flask_login import current_user, login_required
+
+from app.shared.access import is_dev_user
 
 
 def _dev_only():
-    if not current_app.debug:
+    if not current_app.debug or not is_dev_user(current_user):
         abort(404)
 
 
@@ -13,7 +15,9 @@ def register_core_routes(bp):
         return bp.send_static_file("sw.js")
 
     @bp.route("/forcar_erro")
+    @login_required
     def forcar_erro():
+        _dev_only()
         1 / 0
         return "nunca vai chegar aqui"
 

@@ -19,7 +19,7 @@ def register_routes(bp):
     @bp.route("/novo_cadastro", methods=["GET", "POST"], endpoint="novo")
     @login_required
     def novo():
-        if getattr(current_user, "tipo_usuario", None) not in {"uvis", "admin", "visualizar", "prefeitura_admin"}:
+        if getattr(current_user, "tipo_usuario", None) not in {"uvis", "dev", "admin", "visualizar", "prefeitura_admin"}:
             flash("Seu perfil nao possui permissao para criar solicitacoes.", "warning")
             return redirect(url_for("main.dashboard"))
 

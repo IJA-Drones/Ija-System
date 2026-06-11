@@ -200,12 +200,12 @@
     <div class="admin-toolbar mb-4">
         <h2 class="text-dark"><i class="bi bi-shield-lock-fill me-2 text-primary"></i> Painel de Gestão</h2>
 
-        {% if current_user.tipo_usuario in ['admin', 'operario', 'visualizar', 'regional'] %}
+        {% if current_user.tipo_usuario in ['dev', 'admin', 'operario', 'visualizar', 'regional'] %}
         {# 'flex-wrap' aqui garante que os botões se organizem entre si se a tela for muito estreita #}
         <div class="admin-toolbar-actions">
             
             {# Substituímos o style fixo por uma classe que o Bootstrap entende, ou mantemos o style mas permitimos que ele diminua #}
-            {% if current_user.tipo_usuario in ['admin', 'visualizar'] %}
+            {% if current_user.tipo_usuario in ['dev', 'admin', 'visualizar'] %}
             <div class="admin-toolbar-slot flex-grow-1 flex-md-grow-0">
                 <a href="{{ url_for('main.novo') }}" class="btn btn-success shadow-sm w-100 d-flex align-items-center justify-content-center gap-2" style="height: 38px;">
                     <i class="bi bi-plus-lg"></i> 
@@ -255,7 +255,7 @@
             <div class="d-flex align-items-center gap-2">
                 <i class="bi bi-funnel-fill text-primary"></i>
                 <span class="text-dark">Filtros de Busca</span>
-                {% if current_user.tipo_usuario == 'admin' %}
+                {% if current_user.tipo_usuario in ['dev', 'admin'] %}
                     <span class="admin-context-badge" id="adminContextFilterBadge">UVIS/PREFEITURA</span>
                 {% endif %}
                 {% if admin_has_filters %}
@@ -430,7 +430,7 @@
                                     #{{ p.id }} {{ p.usuario.nome_uvis }}
                                 </strong>
                                 {# FILTRO DE PERFIL: Aplica-se a ambos os alertas abaixo #}
-                                {% if current_user.tipo_usuario|lower in ['admin', 'visualizar', 'operario', 'regional'] %}
+                                {% if current_user.tipo_usuario|lower in ['dev', 'admin', 'visualizar', 'operario', 'regional'] %}
                                     
                                     {# 1. ALERTA GEOFENCING #}
                                     {% if p.area_restrita %}
@@ -503,7 +503,7 @@
                         </div>
 
                         {# Botões de Admin Desktop #}
-                        {% if current_user.tipo_usuario == 'admin' %}
+                        {% if current_user.tipo_usuario in ['dev', 'admin'] %}
                         <div class="d-none d-lg-flex gap-1 mt-4">
                             <a href="{{ url_for('main.editar_solicitacao', id=p.id) }}"
                                 class="btn btn-sm btn-success"
@@ -856,7 +856,7 @@
                                           id="formRemoverAnexo{{ p.id }}_mob"></form>
                                     {% endif %}
 
-                                    {% if current_user.tipo_usuario == 'admin' %}
+                                    {% if current_user.tipo_usuario in ['dev', 'admin'] %}
                                     <div class="d-flex gap-1 mt-2 align-items-center justify-content-center">
                                         <a href="{{ url_for('main.admin_os_formulario_view', os_id=p.id) }}"
                                            class="btn btn-sm btn-outline-primary">
@@ -903,7 +903,7 @@
 {# --- FIM DO CONTAINER PADRONIZADO --- #}
 
 {# --- CHATBOT (Mantido igual) --- #}
-{% if current_user.tipo_usuario in ['admin', 'operario', 'visualizar', 'regional'] %}
+{% if current_user.tipo_usuario in ['dev', 'admin', 'operario', 'visualizar', 'regional'] %}
 <button id="adminBotFab" class="bot-fab" title="Ajuda do painel" onclick="toggleAdminChat()">
     <i class="bi bi-robot"></i>
 </button>

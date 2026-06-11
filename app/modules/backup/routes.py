@@ -7,6 +7,7 @@ from app.modules.backup.service import (
     start_daily_backup_scheduler,
     trigger_backup_async,
 )
+from app.shared.access import is_dev_user
 
 
 def register_routes(bp):
@@ -17,13 +18,13 @@ def register_routes(bp):
     @bp.route("/backup", methods=["GET"], endpoint="backup_page")
     @login_required
     def backup_page():
-        if getattr(current_user, "tipo_usuario", None) != "admin":
+        if not is_dev_user(current_user):
             return (
                 render_template(
                     "backup_aguarde.html",
                     codigo=403,
                     titulo="Acesso negado",
-                    mensagem="Apenas administradores podem gerar backup do banco.",
+                    mensagem="Apenas desenvolvedores podem gerar backup do banco.",
                     is_error=True,
                 ),
                 403,
@@ -42,7 +43,7 @@ def register_routes(bp):
     @bp.route("/backup/status", methods=["GET"], endpoint="backup_status")
     @login_required
     def backup_status():
-        if getattr(current_user, "tipo_usuario", None) != "admin":
+        if not is_dev_user(current_user):
             return jsonify({"ok": False, "error": "forbidden"}), 403
 
         return jsonify(get_backup_state())
@@ -50,13 +51,13 @@ def register_routes(bp):
     @bp.route("/backups", methods=["GET"], endpoint="backups_list_page")
     @login_required
     def backups_list_page():
-        if getattr(current_user, "tipo_usuario", None) != "admin":
+        if not is_dev_user(current_user):
             return (
                 render_template(
                     "backup_lista.html",
                     codigo=403,
                     titulo="Acesso negado",
-                    mensagem="Apenas administradores podem visualizar os backups.",
+                    mensagem="Apenas desenvolvedores podem visualizar os backups.",
                     backups=[],
                     is_error=True,
                 ),

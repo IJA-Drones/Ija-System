@@ -21,7 +21,7 @@ from app.modules.uvis_equipes.service import (
     validate_team_login,
     validate_team_password,
 )
-from app.shared.access import normalize_role
+from app.shared.access import is_admin_global_user, normalize_role
 
 
 def _uvis_only():
@@ -30,12 +30,12 @@ def _uvis_only():
 
 
 def _admin_only():
-    if getattr(current_user, "tipo_usuario", None) != "admin":
+    if not is_admin_global_user(current_user):
         abort(403)
 
 
 def _admin_or_operario_view_only():
-    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"admin", "operario", "operador"}:
+    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"dev", "admin", "operario", "operador"}:
         abort(403)
 
 
@@ -335,7 +335,7 @@ def register_routes(bp):
     def atribuir_equipe_uvis_solicitacao(id):
         solicitacao = Solicitacao.query.get_or_404(id)
 
-        if solicitacao.usuario_id != current_user.id and current_user.tipo_usuario != "admin":
+        if solicitacao.usuario_id != current_user.id and not is_admin_global_user(current_user):
             flash("Voce nao tem permissao para alterar esta solicitacao.", "danger")
             return redirect(url_for("main.dashboard"))
 

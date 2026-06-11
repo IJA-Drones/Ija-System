@@ -268,6 +268,7 @@
                 <option value="operario" {% if tipo == 'operario' %}selected{% endif %}>Operário</option>
                 <option value="regional" {% if tipo == 'regional' %}selected{% endif %}>Regional</option>
                 <option value="financeiro_admin" {% if tipo == 'financeiro_admin' %}selected{% endif %}>Financeiro Admin</option>
+                <option value="dev" {% if tipo == 'dev' %}selected{% endif %}>Desenvolvedor</option>
                 <option value="financeiro" {% if tipo == 'financeiro' %}selected{% endif %}>Financeiro</option>
                 <option value="prefeitura_admin" {% if tipo == 'prefeitura_admin' %}selected{% endif %}>Prefeitura (Admin)</option>
               </select>
@@ -322,6 +323,8 @@
                 <td>
                   {% if u.tipo_usuario == 'visualizar' and (u.regiao or '')|upper == 'COVISA' %}
                     <span class="badge bg-info">COVISA</span>
+                  {% elif u.tipo_usuario == 'dev' %}
+                    <span class="badge bg-danger">DEV</span>
                   {% elif u.tipo_usuario == 'admin' %}
                     <span class="badge bg-primary">ADMIN</span>
                   {% elif u.tipo_usuario == 'regional' %}
@@ -349,7 +352,8 @@
                 <td class="cell-acoes">
                   <div class="usuarios-actions-row">
                     <a class="btn btn-sm btn-success text-white shadow-sm"
-                       href="{{ url_for('main.admin_usuario_editar', id=u.id) }}">
+                       href="{{ url_for('main.admin_usuario_editar', id=u.id) }}"
+                       {% if u.tipo_usuario == 'dev' and not can_manage_dev_accounts %}aria-disabled="true" tabindex="-1" style="pointer-events:none;opacity:.55"{% endif %}>
                       <i class="bi bi-pencil-square me-1"></i> Editar
                     </a>
 
@@ -358,6 +362,7 @@
                           action="{{ url_for('main.admin_usuario_excluir', id=u.id) }}">
                       <button type="submit"
                               class="btn btn-sm btn-danger shadow-sm"
+                              {% if u.tipo_usuario == 'dev' and not can_manage_dev_accounts %}disabled title="Apenas dev pode excluir uma conta dev"{% endif %}
                               {% if u.id == current_user.id %}disabled title="Você não pode excluir seu próprio usuário"{% endif %}>
                         <i class="bi bi-trash me-1"></i> Excluir
                       </button>
