@@ -1,5 +1,6 @@
 import json
 import os
+import unicodedata
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
@@ -41,6 +42,8 @@ OS_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png"}
 OS_VIDEO_EXTENSIONS = {"mp4", "mov", "webm", "m4v"}
 EQUIPE_OCEANO_USER_TYPE = "equipe_oceano"
 BRAZIL_TZ = ZoneInfo("America/Sao_Paulo")
+DRONE_CATEGORY_PULVERIZACAO = "pulverizacao"
+DRONE_CATEGORY_MONITORAMENTO = "monitoramento"
 
 
 class PilotoOsError(Exception):
@@ -48,6 +51,53 @@ class PilotoOsError(Exception):
         super().__init__(message)
         self.category = category
         self.redirect_endpoint = redirect_endpoint
+
+
+def _normalize_drone_category(value):
+    normalized = unicodedata.normalize("NFKD", (value or "").strip())
+    return "".join(char for char in normalized if not unicodedata.combining(char)).lower()
+
+
+def _split_drones_by_category(drones):
+    pulverizacao = []
+    monitoramento = []
+    for drone in drones:
+        category = _normalize_drone_category(drone.categoria)
+        if category == DRONE_CATEGORY_PULVERIZACAO:
+            pulverizacao.append(drone)
+        elif category == DRONE_CATEGORY_MONITORAMENTO:
+            monitoramento.append(drone)
+    return pulverizacao, monitoramento
+
+
+def _drone_form_error_redirect(user):
+    if getattr(user, "tipo_usuario", None) in ADMIN_PANEL_VIEW_TYPES:
+        return "main.admin_os_formulario_view"
+    return "main.piloto_os_formulario_view"
+
+
+def _get_valid_os_drone(user, solicitacao, drone_id, expected_category, field_label):
+    drone = Drones.query.get(drone_id)
+    redirect_endpoint = _drone_form_error_redirect(user)
+    if not drone or drone.equipe_id != solicitacao.equipe_id:
+        raise PilotoOsError(
+            f"Selecione um {field_label} pertencente a equipe desta OS.",
+            "danger",
+            redirect_endpoint=redirect_endpoint,
+        )
+    if (drone.status or "").strip().lower() != "ativo":
+        raise PilotoOsError(
+            f"O {field_label} selecionado nao esta ativo.",
+            "danger",
+            redirect_endpoint=redirect_endpoint,
+        )
+    if _normalize_drone_category(drone.categoria) != expected_category:
+        raise PilotoOsError(
+            f"O equipamento selecionado nao esta cadastrado como {field_label}.",
+            "danger",
+            redirect_endpoint=redirect_endpoint,
+        )
+    return drone
 
 
 def is_piloto_os_user(user):
@@ -312,6 +362,7 @@ def build_piloto_os_form_context(user, os_id):
         .order_by(Drones.renomacao.asc())
         .all()
     )
+    drones_pulverizacao, drones_monitoramento = _split_drones_by_category(drones_equipe)
 
     respondido_por_padrao = ""
     if getattr(user, "piloto", None):
@@ -352,6 +403,8 @@ def build_piloto_os_form_context(user, os_id):
             if calculo_dosagem_planejado else ""
         ),
         "drones_equipe": drones_equipe,
+        "drones_pulverizacao": drones_pulverizacao,
+        "drones_monitoramento": drones_monitoramento,
         **_build_os_media_context(ordem),
     }
 
@@ -454,10 +507,14 @@ def build_admin_os_form_context(user, os_id):
     if solicitacao.equipe_id:
         drones_equipe = (
             Drones.query
-            .filter(Drones.equipe_id == solicitacao.equipe_id)
+            .filter(
+                Drones.equipe_id == solicitacao.equipe_id,
+                Drones.status == "Ativo",
+            )
             .order_by(Drones.renomacao.asc())
             .all()
         )
+    drones_pulverizacao, drones_monitoramento = _split_drones_by_category(drones_equipe)
 
     return {
         "solicitacao": solicitacao,
@@ -496,6 +553,8 @@ def build_admin_os_form_context(user, os_id):
             if calculo_dosagem_planejado else ""
         ),
         "drones_equipe": drones_equipe,
+        "drones_pulverizacao": drones_pulverizacao,
+        "drones_monitoramento": drones_monitoramento,
         **_build_os_media_context(ordem),
     }
 
@@ -709,15 +768,20 @@ def _aplicar_campos_formulario(
     drone_monit_id = _to_int(form_data.get("drone_monitoramento_id"))
 
     if drone_pulv_id:
-        drone_p = Drones.query.get(drone_pulv_id)
-        if drone_p and drone_p.equipe_id == solicitacao.equipe_id:
-            ordem.drone_id = drone_p.id
-            ordem.drone_denominacao = drone_p.renomacao
-            ordem.drone_modelo = drone_p.modelo
-            ordem.drone_numero_serie = drone_p.numero_serie
-            ordem.drone_registro_anatel = drone_p.registro_anatel
-            ordem.drone_registro_anac = drone_p.registro_anac
-            ordem.prefixo_aeronave_pulverizacao = drone_p.renomacao
+        drone_p = _get_valid_os_drone(
+            user,
+            solicitacao,
+            drone_pulv_id,
+            DRONE_CATEGORY_PULVERIZACAO,
+            "drone de pulverizacao",
+        )
+        ordem.drone_id = drone_p.id
+        ordem.drone_denominacao = drone_p.renomacao
+        ordem.drone_modelo = drone_p.modelo
+        ordem.drone_numero_serie = drone_p.numero_serie
+        ordem.drone_registro_anatel = drone_p.registro_anatel
+        ordem.drone_registro_anac = drone_p.registro_anac
+        ordem.prefixo_aeronave_pulverizacao = drone_p.renomacao
     else:
         ordem.drone_id = None
         ordem.drone_denominacao = ""
@@ -728,15 +792,20 @@ def _aplicar_campos_formulario(
         ordem.prefixo_aeronave_pulverizacao = _clean_str(form_data.get("prefixo_aeronave_pulverizacao"))
 
     if drone_monit_id:
-        drone_m = Drones.query.get(drone_monit_id)
-        if drone_m and drone_m.equipe_id == solicitacao.equipe_id:
-            ordem.drone_monitoramento_id = drone_m.id
-            ordem.drone_monitoramento_denominacao = drone_m.renomacao
-            ordem.drone_monitoramento_modelo = drone_m.modelo
-            ordem.drone_monitoramento_numero_serie = drone_m.numero_serie
-            ordem.drone_monitoramento_registro_anatel = drone_m.registro_anatel
-            ordem.drone_monitoramento_registro_anac = drone_m.registro_anac
-            ordem.prefixo_aeronave_monitoramento = drone_m.renomacao
+        drone_m = _get_valid_os_drone(
+            user,
+            solicitacao,
+            drone_monit_id,
+            DRONE_CATEGORY_MONITORAMENTO,
+            "drone de monitoramento",
+        )
+        ordem.drone_monitoramento_id = drone_m.id
+        ordem.drone_monitoramento_denominacao = drone_m.renomacao
+        ordem.drone_monitoramento_modelo = drone_m.modelo
+        ordem.drone_monitoramento_numero_serie = drone_m.numero_serie
+        ordem.drone_monitoramento_registro_anatel = drone_m.registro_anatel
+        ordem.drone_monitoramento_registro_anac = drone_m.registro_anac
+        ordem.prefixo_aeronave_monitoramento = drone_m.renomacao
     else:
         ordem.drone_monitoramento_id = None
         ordem.drone_monitoramento_denominacao = ""

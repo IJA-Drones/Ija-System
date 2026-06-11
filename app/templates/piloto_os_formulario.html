@@ -724,8 +724,14 @@
             <label class="form-label-header">Drone de Pulverização (Principal) *</label>
             <select name="drone_id" id="drone_id" class="form-select border-primary shadow-sm mb-3">
               <option value="">Selecione o drone de pulverização...</option>
-              {% for d in drones_equipe or [] %}
-                <option value="{{ d.id }}" {% if ordem and ordem.drone_id == d.id %}selected{% endif %}>
+              {% for d in drones_pulverizacao or [] %}
+                <option value="{{ d.id }}"
+                        data-serie="{{ d.numero_serie or '' }}"
+                        data-modelo="{{ d.modelo or '' }}"
+                        data-renomacao="{{ d.renomacao or '' }}"
+                        data-anatel="{{ d.registro_anatel or '' }}"
+                        data-anac="{{ d.registro_anac or '' }}"
+                        {% if ordem and ordem.drone_id == d.id %}selected{% endif %}>
                   {{ d.renomacao }} — {{ d.modelo }}
                 </option>
               {% endfor %}
@@ -747,7 +753,7 @@
                 <div class="col-4">
                   <label class="form-label-header small">Renomação</label>
                   <input type="text" id="drone_renomacao_pulv" class="form-control form-control-sm" readonly
-                         value="{{ ordem.drone_renomacao if ordem and ordem.drone_renomacao else '' }}" />
+                         value="{{ ordem.drone_denominacao if ordem and ordem.drone_denominacao else '' }}" />
                 </div>
                 <div class="col-4">
                   <label class="form-label-header small">ANATEL</label>
@@ -773,8 +779,14 @@
             <label class="form-label-header">Drone de Monitoramento</label>
             <select name="drone_monitoramento_id" id="drone_monitoramento_id" class="form-select shadow-sm mb-3">
               <option value="">Selecione o drone de monitoramento...</option>
-              {% for d in drones_equipe or [] %}
-                <option value="{{ d.id }}" {% if ordem and ordem.drone_monitoramento_id == d.id %}selected{% endif %}>
+              {% for d in drones_monitoramento or [] %}
+                <option value="{{ d.id }}"
+                        data-serie="{{ d.numero_serie or '' }}"
+                        data-modelo="{{ d.modelo or '' }}"
+                        data-renomacao="{{ d.renomacao or '' }}"
+                        data-anatel="{{ d.registro_anatel or '' }}"
+                        data-anac="{{ d.registro_anac or '' }}"
+                        {% if ordem and ordem.drone_monitoramento_id == d.id %}selected{% endif %}>
                   {{ d.renomacao }} — {{ d.modelo }}
                 </option>
               {% endfor %}
@@ -796,7 +808,7 @@
                 <div class="col-4">
                   <label class="form-label-header small">Renomação</label>
                   <input type="text" id="drone_renomacao_monit" class="form-control form-control-sm" readonly
-                         value="{{ ordem.drone_monitoramento_renomacao if ordem and ordem.drone_monitoramento_renomacao else '' }}" />
+                         value="{{ ordem.drone_monitoramento_denominacao if ordem and ordem.drone_monitoramento_denominacao else '' }}" />
                 </div>
                 <div class="col-4">
                   <label class="form-label-header small">ANATEL</label>
@@ -1487,8 +1499,9 @@
     Object.values(snapshot).forEach((el) => { if (el) el.value = ""; });
   }
 
-  async function loadDroneData(droneId, type) {
-    if (!droneId) {
+  function loadDroneData(select, type) {
+    const selectedOption = select?.selectedOptions?.[0];
+    if (!selectedOption?.value) {
       if (type === "pulv") {
         clearSnapshot(pulvSnapshot);
         if (prefixoPulv) prefixoPulv.value = "";
@@ -1499,34 +1512,26 @@
       return;
     }
 
-    try {
-      const url = `{{ url_for('main.piloto_api_drone', drone_id=0) }}`.replace("0", droneId);
-      const res = await fetch(url);
-      const data = await res.json();
-      if (!res.ok) return;
-
-      if (type === "pulv") {
-        if (pulvSnapshot.serie) pulvSnapshot.serie.value = data.numero_serie || "";
-        if (pulvSnapshot.modelo) pulvSnapshot.modelo.value = data.modelo || "";
-        if (pulvSnapshot.renomacao) pulvSnapshot.renomacao.value = data.renomacao || "";
-        if (pulvSnapshot.anatel) pulvSnapshot.anatel.value = data.registro_anatel || "";
-        if (pulvSnapshot.anac) pulvSnapshot.anac.value = data.registro_anac || "";
-        if (prefixoPulv) prefixoPulv.value = data.renomacao || "";
-      } else {
-        if (monitSnapshot.serie) monitSnapshot.serie.value = data.numero_serie || "";
-        if (monitSnapshot.modelo) monitSnapshot.modelo.value = data.modelo || "";
-        if (monitSnapshot.renomacao) monitSnapshot.renomacao.value = data.renomacao || "";
-        if (monitSnapshot.anatel) monitSnapshot.anatel.value = data.registro_anatel || "";
-        if (monitSnapshot.anac) monitSnapshot.anac.value = data.registro_anac || "";
-        if (prefixoMonit) prefixoMonit.value = data.renomacao || "";
-      }
-    } catch (e) {
-      console.error("Erro ao carregar dados do drone:", e);
+    const data = selectedOption.dataset;
+    if (type === "pulv") {
+      if (pulvSnapshot.serie) pulvSnapshot.serie.value = data.serie || "";
+      if (pulvSnapshot.modelo) pulvSnapshot.modelo.value = data.modelo || "";
+      if (pulvSnapshot.renomacao) pulvSnapshot.renomacao.value = data.renomacao || "";
+      if (pulvSnapshot.anatel) pulvSnapshot.anatel.value = data.anatel || "";
+      if (pulvSnapshot.anac) pulvSnapshot.anac.value = data.anac || "";
+      if (prefixoPulv) prefixoPulv.value = data.renomacao || "";
+    } else {
+      if (monitSnapshot.serie) monitSnapshot.serie.value = data.serie || "";
+      if (monitSnapshot.modelo) monitSnapshot.modelo.value = data.modelo || "";
+      if (monitSnapshot.renomacao) monitSnapshot.renomacao.value = data.renomacao || "";
+      if (monitSnapshot.anatel) monitSnapshot.anatel.value = data.anatel || "";
+      if (monitSnapshot.anac) monitSnapshot.anac.value = data.anac || "";
+      if (prefixoMonit) prefixoMonit.value = data.renomacao || "";
     }
   }
 
-  if (selPulv) selPulv.addEventListener("change", () => loadDroneData(selPulv.value, "pulv"));
-  if (selMonit) selMonit.addEventListener("change", () => loadDroneData(selMonit.value, "monit"));
+  if (selPulv) selPulv.addEventListener("change", () => loadDroneData(selPulv, "pulv"));
+  if (selMonit) selMonit.addEventListener("change", () => loadDroneData(selMonit, "monit"));
 
   const responded = document.getElementById("respondido_em");
   if (responded && !responded.value) {
@@ -1536,8 +1541,8 @@
   }
 
   window.addEventListener("DOMContentLoaded", () => {
-    if (selPulv && selPulv.value) loadDroneData(selPulv.value, "pulv");
-    if (selMonit && selMonit.value) loadDroneData(selMonit.value, "monit");
+    if (selPulv && selPulv.value) loadDroneData(selPulv, "pulv");
+    if (selMonit && selMonit.value) loadDroneData(selMonit, "monit");
   });
 })();
 
