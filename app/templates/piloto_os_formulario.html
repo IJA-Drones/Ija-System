@@ -1344,12 +1344,16 @@
                   {% if not modo_visualizacao %}
                   <div class="os-media-upload-box mb-3">
                     <label class="form-label-header">Adicionar imagens</label>
-                    <input type="file" name="outras_imagens_files" id="outras_imagens_files" class="form-control" accept="image/png,image/jpeg,image/jpg" multiple />
+                    <input type="file" id="outras_imagens_files" class="form-control" accept="image/png,image/jpeg,image/jpg" multiple />
                     <div class="d-flex flex-wrap align-items-center gap-2 mt-2">
-                      <div class="os-media-help">Voce pode selecionar varias imagens de uma vez ou montar a selecao em etapas antes de salvar.</div>
+                      <div class="os-media-help">Voce pode selecionar varias imagens de uma vez ou montar a selecao em etapas antes de enviar.</div>
+                      <button type="button" class="btn btn-sm btn-primary" id="btnUploadOutrasImagens">
+                        <i class="bi bi-cloud-arrow-up me-1"></i>Enviar imagens
+                      </button>
                       <button type="button" class="btn btn-sm btn-outline-secondary d-none" id="limpar-selecao-outras-imagens">
                         <i class="bi bi-x-circle me-1"></i>Limpar selecao
                       </button>
+                      <span class="os-media-help" id="statusUploadOutrasImagens">Aguardando selecao.</span>
                     </div>
                     {% if outras_imagens_paths %}
                     <div class="form-check mt-3">
@@ -1369,11 +1373,21 @@
                       <div class="os-image-grid" id="outras-imagens-salvas-grid">
                         {% for imagem_path in outras_imagens_paths %}
                         {% set imagem_url = url_for('main.os_imagem_complementar', os_id=solicitacao.id, image_index=loop.index) %}
-                        <div class="os-image-thumb-card">
+                        <div class="os-image-thumb-card" data-complementary-card data-image-index="{{ loop.index }}">
                           <img src="{{ imagem_url }}" alt="Imagem complementar {{ loop.index }}" class="os-image-thumb mb-2">
                           <a href="{{ imagem_url }}" target="_blank" class="os-media-thumb-link">
                             Abrir imagem {{ loop.index }}
                           </a>
+                          {% if not modo_visualizacao %}
+                          <button
+                            type="button"
+                            class="btn btn-sm btn-outline-danger mt-2 w-100"
+                            data-delete-complementary
+                            data-image-index="{{ loop.index }}"
+                          >
+                            <i class="bi bi-trash me-1"></i>Remover
+                          </button>
+                          {% endif %}
                         </div>
                         {% endfor %}
                       </div>
@@ -1414,12 +1428,12 @@
                     {% set video_url = url_for('main.os_video', os_id=solicitacao.id) %}
                     <div id="video-salvo-wrapper">
                       <video controls preload="metadata" class="os-video-preview" id="video-salvo">
-                        <source src="{{ video_url }}">
+                        <source src="{{ video_url }}" id="video-salvo-source">
                         Seu navegador nao suporta a exibicao de video.
                       </video>
                     </div>
                     <div class="os-media-actions mt-3" id="video-salvo-acoes">
-                      <a href="{{ video_url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                      <a href="{{ video_url }}" target="_blank" class="btn btn-sm btn-outline-primary" id="video-salvo-link">
                         <i class="bi bi-play-btn me-1"></i>Abrir video
                       </a>
                     </div>
@@ -1442,8 +1456,14 @@
                   {% if not modo_visualizacao %}
                   <div class="os-media-upload-box">
                     <label class="form-label-header">Enviar novo video</label>
-                    <input type="file" name="video_file" id="video_file" class="form-control" accept="video/mp4,video/webm,video/quicktime,.mp4,.mov,.webm,.m4v" />
-                    <div class="os-media-help mt-2">Formatos aceitos: MP4, MOV, WEBM e M4V. O video fica salvo apenas no formulario da OS.</div>
+                    <input type="file" id="video_file" class="form-control" accept="video/mp4,video/webm,video/quicktime,.mp4,.mov,.webm,.m4v" />
+                    <div class="d-flex flex-wrap align-items-center gap-2 mt-3">
+                      <button type="button" class="btn btn-sm btn-primary" id="btnUploadVideo">
+                        <i class="bi bi-cloud-arrow-up me-1"></i>Enviar video
+                      </button>
+                      <span class="os-media-help" id="statusUploadVideo">Aguardando selecao.</span>
+                    </div>
+                    <div class="os-media-help mt-2">Formatos aceitos: MP4, MOV, WEBM e M4V. O envio e feito diretamente para o WebDAV.</div>
                     {% if video_path %}
                     <div class="form-check mt-3">
                       <input class="form-check-input" type="checkbox" value="1" id="remover_video" name="remover_video">
@@ -1726,15 +1746,23 @@ document.addEventListener("DOMContentLoaded", () => {
   const extrasInput = document.getElementById("outras_imagens_files");
   const extrasBadge = document.getElementById("outras-imagens-badge");
   const extrasSavedWrapper = document.getElementById("outras-imagens-salvas-wrapper");
+  const extrasSavedGrid = document.getElementById("outras-imagens-salvas-grid");
   const extrasEmpty = document.getElementById("outras-imagens-vazio");
   const extrasPending = document.getElementById("outras-imagens-pendentes");
   const extrasPendingGrid = document.getElementById("outras-imagens-pendentes-grid");
   const extrasClear = document.getElementById("limpar_outras_imagens");
   const extrasClearPending = document.getElementById("limpar-selecao-outras-imagens");
+  const extrasUploadButton = document.getElementById("btnUploadOutrasImagens");
+  const extrasUploadStatus = document.getElementById("statusUploadOutrasImagens");
   const videoInput = document.getElementById("video_file");
+  const videoUploadButton = document.getElementById("btnUploadVideo");
+  const videoUploadStatus = document.getElementById("statusUploadVideo");
   const videoBadge = document.getElementById("video-badge");
   const videoSavedWrapper = document.getElementById("video-salvo-wrapper");
   const videoSavedActions = document.getElementById("video-salvo-acoes");
+  const videoSaved = document.getElementById("video-salvo");
+  const videoSavedSource = document.getElementById("video-salvo-source");
+  const videoSavedLink = document.getElementById("video-salvo-link");
   const videoEmpty = document.getElementById("video-vazio");
   const videoPending = document.getElementById("video-pendente");
   const videoPreview = document.getElementById("video-preview");
@@ -1742,9 +1770,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const videoRemove = document.getElementById("remover_video");
   const totalBadgeValue = document.getElementById("os-media-count-value");
 
-  const savedExtrasCount = Number(extrasBadge?.dataset.savedCount || 0);
+  let savedExtrasCount = Number(extrasBadge?.dataset.savedCount || 0);
   let savedPrincipalCount = Number('{{ 1 if imagem_principal_path else 0 }}');
-  const savedVideoCount = Number(videoBadge?.dataset.savedCount || 0);
+  let savedVideoCount = Number(videoBadge?.dataset.savedCount || 0);
   const canAccumulateFiles = typeof DataTransfer !== "undefined";
   let extrasSelectedFiles = [];
 
@@ -1760,6 +1788,26 @@ document.addEventListener("DOMContentLoaded", () => {
     else if (state === "success") principalUploadStatus.classList.add("text-success");
     else if (state === "error") principalUploadStatus.classList.add("text-danger");
     else principalUploadStatus.classList.add("text-muted");
+  };
+
+  const setVideoUploadStatus = (message, state) => {
+    if (!videoUploadStatus) return;
+    videoUploadStatus.textContent = message;
+    videoUploadStatus.classList.remove("text-primary", "text-success", "text-danger", "text-muted");
+    if (state === "loading") videoUploadStatus.classList.add("text-primary");
+    else if (state === "success") videoUploadStatus.classList.add("text-success");
+    else if (state === "error") videoUploadStatus.classList.add("text-danger");
+    else videoUploadStatus.classList.add("text-muted");
+  };
+
+  const setExtrasUploadStatus = (message, state) => {
+    if (!extrasUploadStatus) return;
+    extrasUploadStatus.textContent = message;
+    extrasUploadStatus.classList.remove("text-primary", "text-success", "text-danger", "text-muted");
+    if (state === "loading") extrasUploadStatus.classList.add("text-primary");
+    else if (state === "success") extrasUploadStatus.classList.add("text-success");
+    else if (state === "error") extrasUploadStatus.classList.add("text-danger");
+    else extrasUploadStatus.classList.add("text-muted");
   };
 
   const fileSignature = (file) => `${file.name}::${file.size}::${file.lastModified}`;
@@ -1897,6 +1945,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (videoSavedWrapper) videoSavedWrapper.classList.remove("d-none");
         if (videoSavedActions) videoSavedActions.classList.remove("d-none");
         if (!videoSavedWrapper && videoEmpty) videoEmpty.classList.remove("d-none");
+        setVideoUploadStatus("Aguardando selecao.", "idle");
         updateBadges();
         return;
       }
@@ -1905,12 +1954,67 @@ document.addEventListener("DOMContentLoaded", () => {
       videoPreview.src = previewUrl;
       videoPreview.load();
       setText(videoPreviewNome, file.name);
+      setVideoUploadStatus("Arquivo pronto para envio.", "idle");
       videoPending.classList.remove("d-none");
       if (videoSavedWrapper) videoSavedWrapper.classList.add("d-none");
       if (videoSavedActions) videoSavedActions.classList.add("d-none");
       if (videoEmpty) videoEmpty.classList.add("d-none");
       updateBadges();
     });
+  }
+
+  const uploadVideoStream = async () => {
+    const file = videoInput?.files && videoInput.files[0];
+    if (!file) {
+      setVideoUploadStatus("Selecione um video antes de enviar.", "error");
+      return;
+    }
+
+    if (videoUploadButton) videoUploadButton.disabled = true;
+    if (videoInput) videoInput.disabled = true;
+    setVideoUploadStatus("Enviando video para o WebDAV...", "loading");
+
+    try {
+      const response = await fetch("{{ url_for('main.os_upload_video_stream', os_id=solicitacao.id) }}", {
+        method: "PUT",
+        headers: {
+          "Content-Type": file.type || "application/octet-stream",
+          "X-File-Name": encodeURIComponent(file.name),
+        },
+        body: file,
+      });
+
+      let payload = {};
+      try {
+        payload = await response.json();
+      } catch (error) {
+        payload = {};
+      }
+
+      if (!response.ok || !payload.success) {
+        throw new Error(payload.error || "Falha ao enviar o video.");
+      }
+
+      savedVideoCount = 1;
+      if (payload.media_url && videoSavedSource) {
+        videoSavedSource.src = `${payload.media_url}?t=${Date.now()}`;
+        if (videoSaved) videoSaved.load();
+      }
+      if (payload.media_url && videoSavedLink) {
+        videoSavedLink.href = payload.media_url;
+      }
+      setVideoUploadStatus(payload.message || "Upload do video concluido com sucesso.", "success");
+      updateBadges();
+    } catch (error) {
+      setVideoUploadStatus(error.message || "Falha ao enviar o video.", "error");
+    } finally {
+      if (videoUploadButton) videoUploadButton.disabled = false;
+      if (videoInput) videoInput.disabled = false;
+    }
+  };
+
+  if (videoUploadButton) {
+    videoUploadButton.addEventListener("click", uploadVideoStream);
   }
 
   if (extrasInput && extrasPending && extrasPendingGrid) {
@@ -1921,6 +2025,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!files.length) {
         extrasPending.classList.add("d-none");
         if (!savedExtrasCount && extrasEmpty) extrasEmpty.classList.remove("d-none");
+        setExtrasUploadStatus("Aguardando selecao.", "idle");
         updateBadges();
         return;
       }
@@ -1945,6 +2050,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       extrasPending.classList.remove("d-none");
       if (extrasEmpty) extrasEmpty.classList.add("d-none");
+      setExtrasUploadStatus(`${files.length} imagem(ns) pronta(s) para envio.`, "idle");
       updateBadges();
     };
 
@@ -1975,6 +2081,136 @@ document.addEventListener("DOMContentLoaded", () => {
         renderPendingExtras();
       });
     }
+
+    const bindComplementaryDeleteButtons = () => {
+      document.querySelectorAll("[data-delete-complementary]").forEach((button) => {
+        if (button.dataset.boundDelete === "1") return;
+        button.dataset.boundDelete = "1";
+        button.addEventListener("click", async () => {
+          const imageIndex = Number(button.dataset.imageIndex || 0);
+          if (!imageIndex) return;
+
+          const confirmed = window.confirm("Remover esta imagem complementar?");
+          if (!confirmed) return;
+
+          button.disabled = true;
+          setExtrasUploadStatus("Removendo imagem complementar...", "loading");
+
+          try {
+            const response = await fetch(`/api/os/{{ solicitacao.id }}/imagem-complementar/${imageIndex}`, {
+              method: "DELETE",
+            });
+            let payload = {};
+            try {
+              payload = await response.json();
+            } catch (error) {
+              payload = {};
+            }
+
+            if (!response.ok || !payload.success) {
+              throw new Error(payload.error || "Falha ao remover a imagem complementar.");
+            }
+
+            const card = button.closest("[data-complementary-card]");
+            if (card) card.remove();
+            savedExtrasCount = Math.max(0, Number(payload.total_complementary_images ?? (savedExtrasCount - 1)));
+
+            if (extrasSavedGrid) {
+              Array.from(extrasSavedGrid.querySelectorAll("[data-complementary-card]")).forEach((cardEl, index) => {
+                const nextIndex = index + 1;
+                const mediaUrl = `/os/{{ solicitacao.id }}/imagem-complementar/${nextIndex}`;
+                cardEl.dataset.imageIndex = String(nextIndex);
+                const img = cardEl.querySelector("img");
+                if (img) {
+                  img.src = `${mediaUrl}?t=${Date.now()}`;
+                  img.alt = `Imagem complementar ${nextIndex}`;
+                }
+                const link = cardEl.querySelector(".os-media-thumb-link");
+                if (link) {
+                  link.href = mediaUrl;
+                  link.textContent = `Abrir imagem ${nextIndex}`;
+                }
+                cardEl.querySelectorAll("[data-delete-complementary]").forEach((deleteButton) => {
+                  deleteButton.dataset.imageIndex = String(nextIndex);
+                });
+              });
+            }
+
+            if (!savedExtrasCount) {
+              if (extrasSavedWrapper) extrasSavedWrapper.classList.add("d-none");
+              if (extrasEmpty) extrasEmpty.classList.remove("d-none");
+            }
+
+            setExtrasUploadStatus(payload.message || "Imagem complementar removida com sucesso.", "success");
+            updateBadges();
+          } catch (error) {
+            button.disabled = false;
+            setExtrasUploadStatus(error.message || "Falha ao remover imagem complementar.", "error");
+          }
+        });
+      });
+    };
+
+    const uploadOutrasImagensStream = async () => {
+      const files = extrasSelectedFiles.filter((file) => file.type.startsWith("image/"));
+      if (!files.length) {
+        setExtrasUploadStatus("Selecione pelo menos uma imagem antes de enviar.", "error");
+        return;
+      }
+
+      if (extrasUploadButton) extrasUploadButton.disabled = true;
+      if (extrasInput) extrasInput.disabled = true;
+      if (extrasClearPending) extrasClearPending.disabled = true;
+
+      let uploadedCount = 0;
+      try {
+        for (const [index, file] of files.entries()) {
+          setExtrasUploadStatus(`Enviando imagem ${index + 1} de ${files.length} para o WebDAV...`, "loading");
+          const response = await fetch("{{ url_for('main.os_upload_complementary_stream', os_id=solicitacao.id) }}", {
+            method: "PUT",
+            headers: {
+              "Content-Type": file.type || "application/octet-stream",
+              "X-File-Name": encodeURIComponent(file.name),
+            },
+            body: file,
+          });
+
+          let payload = {};
+          try {
+            payload = await response.json();
+          } catch (error) {
+            payload = {};
+          }
+
+          if (!response.ok || !payload.success) {
+            throw new Error(payload.error || `Falha ao enviar ${file.name}.`);
+          }
+
+          uploadedCount += 1;
+        }
+
+        savedExtrasCount += uploadedCount;
+        extrasSelectedFiles = [];
+        extrasInput.value = "";
+        if (extrasClear) extrasClear.checked = false;
+        syncExtrasInput();
+        renderPendingExtras();
+        setExtrasUploadStatus(`${uploadedCount} imagem(ns) enviada(s) com sucesso.`, "success");
+        updateBadges();
+      } catch (error) {
+        setExtrasUploadStatus(error.message || "Falha ao enviar imagens.", "error");
+      } finally {
+        if (extrasUploadButton) extrasUploadButton.disabled = false;
+        if (extrasInput) extrasInput.disabled = false;
+        if (extrasClearPending) extrasClearPending.disabled = false;
+      }
+    };
+
+    if (extrasUploadButton) {
+      extrasUploadButton.addEventListener("click", uploadOutrasImagensStream);
+    }
+
+    bindComplementaryDeleteButtons();
   }
 
   if (extrasClear) {

@@ -1,3 +1,4 @@
+import json
 import mimetypes
 import os
 from urllib.parse import unquote
@@ -142,6 +143,18 @@ def _webdav_url_for_remote_path(remote_path):
     return f"{base_url}/{remote_path}"
 
 
+def _delete_webdav_file(value):
+    _base_url, auth = _webdav_config()
+    remote_path = _webdav_remote_path_from_marker(value)
+    response = requests.delete(
+        _webdav_url_for_remote_path(remote_path),
+        auth=auth,
+        timeout=WEBDAV_TIMEOUT,
+    )
+    if response.status_code not in (200, 202, 204, 404):
+        raise requests.RequestException(f"Falha ao remover arquivo do WebDAV ({response.status_code}).")
+
+
 def _stream_webdav_file(value, range_header=None):
     _base_url, auth = _webdav_config()
     headers = {}
@@ -209,6 +222,67 @@ def _decode_uploaded_file_name():
 
     decoded_name = unquote(encoded_name).strip()
     return secure_filename(decoded_name)
+
+
+def _upload_request_stream_to_webdav(os_id):
+    file_name = _decode_uploaded_file_name()
+    if not file_name:
+        return None, None, jsonify({"success": False, "error": "Header X-File-Name ausente ou invalido."}), 400
+
+    webdav_url, auth = _webdav_config()
+    folder_url = f"{webdav_url}/{os_id}"
+    file_url = f"{folder_url}/{file_name}"
+    content_type = request.headers.get("Content-Type") or "application/octet-stream"
+
+    try:
+        requests.request("MKCOL", folder_url, auth=auth, timeout=WEBDAV_TIMEOUT)
+    except requests.RequestException:
+        current_app.logger.info("MKCOL WebDAV ignorado para OS %s; a pasta pode ja existir.", os_id, exc_info=True)
+
+    upload_headers = {"Content-Type": content_type}
+    if request.content_length is not None:
+        upload_headers["Content-Length"] = str(request.content_length)
+
+    response = requests.put(
+        file_url,
+        data=request.stream,
+        headers=upload_headers,
+        auth=auth,
+        timeout=WEBDAV_TIMEOUT,
+    )
+    if response.status_code not in (200, 201, 204):
+        return None, None, jsonify({
+            "success": False,
+            "error": "Falha ao enviar arquivo para o WebDAV.",
+            "status_code": response.status_code,
+            "details": response.text[:500],
+        }), 502
+
+    return file_name, file_url, None, None
+
+
+def _get_or_create_ordem_for_upload(context):
+    solicitacao = context["solicitacao"]
+    ordem = context["ordem"]
+    if ordem is None:
+        ordem = OrdemServico(
+            solicitacao_id=solicitacao.id,
+            equipe_id=solicitacao.equipe_id,
+        )
+        db.session.add(ordem)
+    return ordem
+
+
+def _parse_media_list(value):
+    if not value:
+        return []
+    try:
+        parsed = json.loads(value)
+    except (TypeError, ValueError):
+        return []
+    if not isinstance(parsed, list):
+        return []
+    return [str(item) for item in parsed if item]
 
 
 def _redirect_from_piloto_os_error(exc, *, os_id=None):
@@ -423,48 +497,11 @@ def register_routes(bp):
     def os_upload_stream(os_id):
         try:
             context = _build_upload_context(os_id)
-            file_name = _decode_uploaded_file_name()
-            if not file_name:
-                return jsonify({"success": False, "error": "Header X-File-Name ausente ou invalido."}), 400
+            file_name, file_url, error_response, error_status = _upload_request_stream_to_webdav(os_id)
+            if error_response is not None:
+                return error_response, error_status
 
-            webdav_url, auth = _webdav_config()
-            folder_url = f"{webdav_url}/{os_id}"
-            file_url = f"{folder_url}/{file_name}"
-            content_type = request.headers.get("Content-Type") or "application/octet-stream"
-
-            try:
-                requests.request("MKCOL", folder_url, auth=auth, timeout=WEBDAV_TIMEOUT)
-            except requests.RequestException:
-                current_app.logger.info("MKCOL WebDAV ignorado para OS %s; a pasta pode ja existir.", os_id, exc_info=True)
-
-            upload_headers = {"Content-Type": content_type}
-            if request.content_length is not None:
-                upload_headers["Content-Length"] = str(request.content_length)
-
-            response = requests.put(
-                file_url,
-                data=request.stream,
-                headers=upload_headers,
-                auth=auth,
-                timeout=WEBDAV_TIMEOUT,
-            )
-            if response.status_code not in (200, 201, 204):
-                return jsonify({
-                    "success": False,
-                    "error": "Falha ao enviar arquivo para o WebDAV.",
-                    "status_code": response.status_code,
-                    "details": response.text[:500],
-                }), 502
-
-            solicitacao = context["solicitacao"]
-            ordem = context["ordem"]
-            if ordem is None:
-                ordem = OrdemServico(
-                    solicitacao_id=solicitacao.id,
-                    equipe_id=solicitacao.equipe_id,
-                )
-                db.session.add(ordem)
-
+            ordem = _get_or_create_ordem_for_upload(context)
             ordem.imagem_principal = _build_webdav_marker(os_id, file_name)
             if not ordem.quantidade_imagens_registradas or ordem.quantidade_imagens_registradas < 1:
                 ordem.quantidade_imagens_registradas = 1
@@ -485,6 +522,130 @@ def register_routes(bp):
         except Exception as exc:
             db.session.rollback()
             current_app.logger.exception("Erro no upload stream da OS %s", os_id)
+            return jsonify({"success": False, "error": str(exc)}), 500
+
+    @bp.route("/api/os/<int:os_id>/upload-video-stream", methods=["PUT"], endpoint="os_upload_video_stream")
+    @login_required
+    def os_upload_video_stream(os_id):
+        try:
+            context = _build_upload_context(os_id)
+            file_name, file_url, error_response, error_status = _upload_request_stream_to_webdav(os_id)
+            if error_response is not None:
+                return error_response, error_status
+
+            ordem = _get_or_create_ordem_for_upload(context)
+            ordem.video = _build_webdav_marker(os_id, file_name)
+            if not ordem.quantidade_videos_registradas or ordem.quantidade_videos_registradas < 1:
+                ordem.quantidade_videos_registradas = 1
+            db.session.commit()
+
+            return jsonify({
+                "success": True,
+                "message": "Upload do video concluido com sucesso.",
+                "file_name": file_name,
+                "webdav_url": file_url,
+                "media_url": url_for("main.os_video", os_id=os_id),
+            }), 201
+        except RuntimeError as exc:
+            db.session.rollback()
+            return jsonify({"success": False, "error": str(exc)}), 500
+        except HTTPException:
+            raise
+        except Exception as exc:
+            db.session.rollback()
+            current_app.logger.exception("Erro no upload stream do video da OS %s", os_id)
+            return jsonify({"success": False, "error": str(exc)}), 500
+
+    @bp.route("/api/os/<int:os_id>/upload-complementary-stream", methods=["PUT"], endpoint="os_upload_complementary_stream")
+    @login_required
+    def os_upload_complementary_stream(os_id):
+        try:
+            context = _build_upload_context(os_id)
+            file_name, file_url, error_response, error_status = _upload_request_stream_to_webdav(os_id)
+            if error_response is not None:
+                return error_response, error_status
+
+            ordem = _get_or_create_ordem_for_upload(context)
+            imagens = _parse_media_list(getattr(ordem, "outras_imagens", None))
+            imagens.append(_build_webdav_marker(os_id, file_name))
+            ordem.outras_imagens = json.dumps(imagens, ensure_ascii=False)
+            total_imagens = len(imagens) + (1 if getattr(ordem, "imagem_principal", None) else 0)
+            if not ordem.quantidade_imagens_registradas or ordem.quantidade_imagens_registradas < total_imagens:
+                ordem.quantidade_imagens_registradas = total_imagens
+            db.session.commit()
+
+            image_index = len(imagens)
+            return jsonify({
+                "success": True,
+                "message": "Upload da imagem complementar concluido com sucesso.",
+                "file_name": file_name,
+                "webdav_url": file_url,
+                "image_index": image_index,
+                "media_url": url_for("main.os_imagem_complementar", os_id=os_id, image_index=image_index),
+                "total_complementary_images": len(imagens),
+            }), 201
+        except RuntimeError as exc:
+            db.session.rollback()
+            return jsonify({"success": False, "error": str(exc)}), 500
+        except HTTPException:
+            raise
+        except Exception as exc:
+            db.session.rollback()
+            current_app.logger.exception("Erro no upload stream da imagem complementar da OS %s", os_id)
+            return jsonify({"success": False, "error": str(exc)}), 500
+
+    @bp.route("/api/os/<int:os_id>/imagem-complementar/<int:image_index>", methods=["DELETE"], endpoint="os_delete_complementary_image")
+    @login_required
+    def os_delete_complementary_image(os_id, image_index):
+        try:
+            context = _build_upload_context(os_id)
+            ordem = context.get("ordem")
+            imagens = _parse_media_list(getattr(ordem, "outras_imagens", None) if ordem else None)
+            index = int(image_index) - 1
+            if index < 0 or index >= len(imagens):
+                return jsonify({"success": False, "error": "Imagem complementar nao encontrada."}), 404
+
+            removed_path = imagens.pop(index)
+            if _is_webdav_path(removed_path):
+                try:
+                    _delete_webdav_file(removed_path)
+                except requests.RequestException:
+                    current_app.logger.info("Falha ignorada ao remover arquivo WebDAV da OS %s.", os_id, exc_info=True)
+            elif is_skybox_path(removed_path):
+                try:
+                    from app.shared.skybox import delete_skybox_file
+
+                    delete_skybox_file(removed_path)
+                except SkyboxError:
+                    current_app.logger.info("Falha ignorada ao remover arquivo Skybox da OS %s.", os_id, exc_info=True)
+            else:
+                static_root = os.path.abspath(os.path.join(current_app.root_path, "static"))
+                abs_path = os.path.abspath(os.path.join(static_root, str(removed_path).replace("/", os.sep)))
+                if os.path.commonpath([static_root, abs_path]) == static_root and os.path.isfile(abs_path):
+                    try:
+                        os.remove(abs_path)
+                    except OSError:
+                        current_app.logger.info("Falha ignorada ao remover arquivo local da OS %s.", os_id, exc_info=True)
+
+            ordem.outras_imagens = json.dumps(imagens, ensure_ascii=False) if imagens else None
+            total_imagens = len(imagens) + (1 if getattr(ordem, "imagem_principal", None) else 0)
+            ordem.quantidade_imagens_registradas = total_imagens or None
+            db.session.commit()
+
+            return jsonify({
+                "success": True,
+                "message": "Imagem complementar removida com sucesso.",
+                "removed_index": image_index,
+                "total_complementary_images": len(imagens),
+            })
+        except RuntimeError as exc:
+            db.session.rollback()
+            return jsonify({"success": False, "error": str(exc)}), 500
+        except HTTPException:
+            raise
+        except Exception as exc:
+            db.session.rollback()
+            current_app.logger.exception("Erro ao remover imagem complementar da OS %s", os_id)
             return jsonify({"success": False, "error": str(exc)}), 500
 
     @bp.route("/admin/os/<int:os_id>/formulario", methods=["GET", "POST"], endpoint="admin_os_formulario_view")

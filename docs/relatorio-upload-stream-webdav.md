@@ -1,5 +1,7 @@
 # Relatório técnico: upload assíncrono de mídias para o Skybox via WebDAV
 
+Data: 15 de junho de 2026
+
 ## 1. Contexto
 
 A aplicação Flask, servida em produção via Gunicorn, apresentava falhas durante o upload de mídias grandes, especialmente fotos e vídeos de drones vinculados a Ordens de Serviço.
@@ -54,12 +56,20 @@ O papel do Gunicorn no problema foi evidenciar que uma requisição longa demais
 
 ## 4. Solução implementada
 
-A solução foi separar o upload da mídia principal do envio tradicional do formulário e criar um fluxo assíncrono, usando JavaScript Vanilla no frontend e uma nova rota `PUT` no backend.
+A solução foi separar o upload da foto principal, das imagens complementares e do vídeo do envio tradicional do formulário e criar um fluxo assíncrono, usando JavaScript Vanilla no frontend e novas rotas `PUT` no backend.
 
-O novo endpoint criado foi:
+Os novos endpoints criados foram:
 
 ```text
 PUT /api/os/<os_id>/upload-stream
+PUT /api/os/<os_id>/upload-complementary-stream
+PUT /api/os/<os_id>/upload-video-stream
+```
+
+Também foi adicionada uma rota para remover imagens complementares de forma individual:
+
+```text
+DELETE /api/os/<os_id>/imagem-complementar/<image_index>
 ```
 
 O upload agora é feito com bytes brutos, usando o próprio objeto `File` como corpo da requisição:
@@ -109,7 +119,7 @@ Skybox/Nextcloud
   -> armazena a mídia
 ```
 
-Portanto, o Flask envia a foto para o Skybox usando WebDAV.
+Portanto, o Flask envia a foto principal, as imagens complementares e o vídeo para o Skybox usando WebDAV.
 
 ## 6. Variáveis de ambiente
 
@@ -133,9 +143,9 @@ Isso permite reaproveitar a configuração existente, sem obrigar uma mudança i
 
 ## 7. Fluxo novo
 
-O novo fluxo de upload da foto principal ficou assim:
+O novo fluxo de upload da foto principal, das imagens complementares e do vídeo ficou assim:
 
-1. O usuário seleciona a foto no campo `input type="file"`.
+1. O usuário seleciona a foto, as imagens complementares ou o vídeo no campo `input type="file"`.
 2. O usuário clica no botão de upload.
 3. O JavaScript desabilita o botão e mostra o status de carregamento.
 4. O frontend envia o arquivo via `fetch()`, com método `PUT`.
@@ -146,17 +156,24 @@ O novo fluxo de upload da foto principal ficou assim:
 9. O backend salva a referência remota no banco.
 10. O frontend mostra uma mensagem de sucesso ou erro.
 
+No caso das imagens complementares, quando vários arquivos são selecionados, o frontend envia uma imagem por vez para a rota assíncrona. O backend adiciona cada referência remota à lista JSON de `ordem.outras_imagens`.
+
+Também foi adicionado um fluxo de remoção individual para as imagens complementares. Antes, a interface permitia limpar a galeria inteira. Agora, cada imagem complementar exibida na galeria tem um botão próprio de remoção. Ao remover uma imagem, o backend atualiza apenas aquela posição da lista, preservando as demais imagens.
+
 ## 8. Arquivos alterados
 
 ### `app/templates/piloto_os_formulario.html`
 
-Foi substituído o envio tradicional da foto principal por:
+Foi substituído o envio tradicional da foto principal, das imagens complementares e do vídeo por:
 
 - `input type="file" id="imagemPrincipal"`;
-- botão dedicado de upload;
+- `input type="file" id="outras_imagens_files"`;
+- `input type="file" id="video_file"`;
+- botões dedicados de upload;
 - função assíncrona com `fetch()`;
 - headers `Content-Type` e `X-File-Name`;
 - feedback visual de carregando, sucesso e falha.
+- botão individual para remover cada imagem complementar já salva.
 
 ### `app/modules/piloto_os/routes.py`
 
@@ -164,6 +181,14 @@ Foi criada a rota:
 
 ```text
 PUT /api/os/<int:os_id>/upload-stream
+PUT /api/os/<int:os_id>/upload-complementary-stream
+PUT /api/os/<int:os_id>/upload-video-stream
+```
+
+Também foi criada a rota:
+
+```text
+DELETE /api/os/<int:os_id>/imagem-complementar/<int:image_index>
 ```
 
 Responsabilidades da rota:
@@ -177,10 +202,27 @@ Responsabilidades da rota:
 - salvar a referência remota no banco;
 - retornar JSON de sucesso ou erro.
 
+Para imagens complementares, a rota adiciona o novo marcador remoto à lista JSON de imagens da OS.
+
+Na remoção individual, a rota:
+
+- valida o acesso à OS;
+- localiza a imagem complementar pelo índice;
+- remove somente aquela imagem da lista `ordem.outras_imagens`;
+- tenta apagar o arquivo remoto no WebDAV, Skybox ou armazenamento local;
+- atualiza a quantidade de imagens registradas;
+- retorna JSON de sucesso ou erro.
+
 Também foi criada uma rota para exibir a foto principal:
 
 ```text
 GET /os/<int:os_id>/imagem-principal
+```
+
+A rota de vídeo já existente continua sendo usada para exibição:
+
+```text
+GET /os/<int:os_id>/video
 ```
 
 ### `app/modules/piloto_os/service.py`
@@ -193,10 +235,11 @@ A mudança trouxe os seguintes benefícios:
 
 - reduz o risco de `CRITICAL: WORKER TIMEOUT`;
 - evita carregar arquivos grandes inteiros na memória do Flask;
-- desacopla o upload da mídia do salvamento completo do formulário;
+- desacopla o upload da foto principal, das imagens complementares e do vídeo do salvamento completo do formulário;
 - melhora a experiência do usuário com status de envio;
 - mantém compatibilidade com o Skybox/Nextcloud via WebDAV;
-- permite que a foto principal remota continue sendo exibida no formulário.
+- permite que a foto principal, as imagens complementares e o vídeo remotos continuem sendo exibidos no formulário.
+- permite remover uma imagem complementar específica sem apagar a galeria inteira.
 
 ## 10. Testes recomendados
 
@@ -210,6 +253,22 @@ A mudança trouxe os seguintes benefícios:
 6. Recarregar a página.
 7. Confirmar que a foto principal aparece.
 8. Conferir se o arquivo foi criado no Skybox/Nextcloud.
+9. Selecionar uma ou mais imagens complementares.
+10. Clicar em `Enviar imagens`.
+11. Confirmar que o botão fica desabilitado durante o envio.
+12. Confirmar a mensagem de sucesso com a quantidade enviada.
+13. Recarregar a página.
+14. Confirmar que as imagens complementares aparecem.
+15. Clicar em `Remover` em uma imagem complementar específica.
+16. Confirmar que apenas essa imagem é removida.
+17. Recarregar a página.
+18. Confirmar que as demais imagens continuam aparecendo.
+19. Selecionar um vídeo MP4, MOV, WEBM ou M4V.
+20. Clicar em `Enviar video`.
+21. Confirmar que o botão fica desabilitado durante o envio.
+22. Confirmar a mensagem de sucesso.
+23. Recarregar a página.
+24. Confirmar que o vídeo aparece e reproduz.
 
 ### Teste com arquivo grande
 
@@ -228,6 +287,8 @@ Testar os seguintes cenários:
 - testar arquivo com nome contendo espaços ou acentos;
 - tentar upload em OS sem permissão;
 - tentar upload em OS concluída ou bloqueada para edição.
+- tentar remover imagem complementar inexistente;
+- remover uma imagem complementar do meio da lista e confirmar que os links das demais continuam funcionando.
 
 ## 11. Validações realizadas
 
@@ -243,6 +304,6 @@ Também foi validado que a rota nova foi registrada no mapa de rotas Flask.
 
 O problema principal era um fluxo de upload pesado, sincronizado e acoplado ao formulário completo da OS. Isso mantinha o worker do Gunicorn ocupado por tempo demais e podia resultar em `CRITICAL: WORKER TIMEOUT`.
 
-A solução implementada criou um upload assíncrono e em streaming para o Skybox/Nextcloud via WebDAV. O backend agora repassa o corpo recebido diretamente para o storage usando `request.stream`, reduzindo o consumo de memória e diminuindo o risco de timeout.
+A solução implementada criou uploads assíncronos e em streaming para o Skybox/Nextcloud via WebDAV. O backend agora repassa o corpo recebido diretamente para o storage usando `request.stream`, reduzindo o consumo de memória e diminuindo o risco de timeout.
 
 O resultado é um fluxo mais robusto para arquivos grandes e uma experiência melhor para o usuário durante o envio de mídias.
