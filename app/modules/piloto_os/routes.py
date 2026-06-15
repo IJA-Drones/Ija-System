@@ -1,11 +1,15 @@
 import mimetypes
 import os
+from urllib.parse import unquote
 
+import requests
 from flask import abort, current_app, flash, jsonify, redirect, render_template, request, send_file, url_for
 from flask_login import current_user, login_required
+from werkzeug.exceptions import HTTPException
+from werkzeug.utils import secure_filename
 
 from app.extensions import db
-from app.models import Solicitacao
+from app.models import OrdemServico, Solicitacao
 from app.modules.piloto_os.dosagem import build_piloto_dosagem_context, salvar_piloto_dosagem_planejada
 from app.modules.piloto_os.exporters import build_admin_os_excel_v2_export, build_admin_os_pdf_v2_export
 from app.modules.piloto_os.service import (
@@ -16,6 +20,7 @@ from app.modules.piloto_os.service import (
     build_piloto_os_historico_context,
     concluir_os_piloto,
     get_os_complementary_image_path_for_user,
+    get_os_principal_image_path_for_user,
     get_os_video_path_for_user,
     get_piloto_drone_payload,
     is_piloto_os_user,
@@ -24,6 +29,10 @@ from app.modules.piloto_os.service import (
 )
 from app.shared.access import ADMIN_PANEL_VIEW_TYPES, can_access_regiao
 from app.shared.skybox import SkyboxError, is_skybox_path, stream_skybox_file
+
+
+WEBDAV_MARKER_PREFIX = "webdav://"
+WEBDAV_TIMEOUT = (15, 900)
 
 
 def _require_piloto():
@@ -78,6 +87,13 @@ def _send_local_os_media(media_path):
 
 
 def _send_os_media(media_path):
+    if _is_webdav_path(media_path):
+        try:
+            return _stream_webdav_file(media_path, request.headers.get("Range"))
+        except requests.RequestException:
+            current_app.logger.exception("Erro ao servir midia da OS pelo WebDAV.")
+            abort(404)
+
     if is_skybox_path(media_path):
         try:
             return stream_skybox_file(media_path, request.headers.get("Range"))
@@ -86,6 +102,113 @@ def _send_os_media(media_path):
             abort(404)
 
     return _send_local_os_media(media_path)
+
+
+def _setting(*names):
+    for name in names:
+        value = current_app.config.get(name) or os.getenv(name)
+        if value:
+            return value
+    return None
+
+
+def _webdav_config():
+    base_url = (_setting("WEBDAV_URL", "SKYBOX_WEBDAV_URL") or "").strip().rstrip("/")
+    username = (_setting("WEBDAV_USER", "SKYBOX_USERNAME") or "").strip()
+    password = _setting("WEBDAV_PASS", "SKYBOX_APP_PASSWORD") or ""
+    if not base_url or not username or not password:
+        raise RuntimeError("WEBDAV_URL, WEBDAV_USER e WEBDAV_PASS precisam estar configurados.")
+    return base_url, (username, password)
+
+
+def _is_webdav_path(value):
+    return str(value or "").startswith(WEBDAV_MARKER_PREFIX)
+
+
+def _build_webdav_marker(os_id, file_name):
+    return f"{WEBDAV_MARKER_PREFIX}{os_id}/{file_name}"
+
+
+def _webdav_remote_path_from_marker(value):
+    remote_path = str(value or "")[len(WEBDAV_MARKER_PREFIX):].replace("\\", "/")
+    parts = [part.strip() for part in remote_path.split("/") if part.strip()]
+    if not parts or any(part in {".", ".."} for part in parts):
+        abort(404)
+    return "/".join(parts)
+
+
+def _webdav_url_for_remote_path(remote_path):
+    base_url, _auth = _webdav_config()
+    return f"{base_url}/{remote_path}"
+
+
+def _stream_webdav_file(value, range_header=None):
+    _base_url, auth = _webdav_config()
+    headers = {}
+    if range_header:
+        headers["Range"] = range_header
+
+    remote_path = _webdav_remote_path_from_marker(value)
+    upstream = requests.get(
+        _webdav_url_for_remote_path(remote_path),
+        auth=auth,
+        headers=headers,
+        stream=True,
+        timeout=WEBDAV_TIMEOUT,
+    )
+    if upstream.status_code == 404:
+        upstream.close()
+        abort(404)
+    if upstream.status_code not in (200, 206):
+        status_code = upstream.status_code
+        upstream.close()
+        raise requests.RequestException(f"Falha ao baixar arquivo do WebDAV ({status_code}).")
+
+    def generate():
+        with upstream:
+            for chunk in upstream.iter_content(chunk_size=1024 * 1024):
+                if chunk:
+                    yield chunk
+
+    return current_app.response_class(
+        generate(),
+        status=upstream.status_code,
+        headers={
+            key: value
+            for key, value in {
+                "Content-Type": upstream.headers.get("Content-Type") or mimetypes.guess_type(remote_path)[0] or "application/octet-stream",
+                "Content-Length": upstream.headers.get("Content-Length"),
+                "Content-Range": upstream.headers.get("Content-Range"),
+                "Accept-Ranges": upstream.headers.get("Accept-Ranges") or "bytes",
+                "Last-Modified": upstream.headers.get("Last-Modified"),
+                "ETag": upstream.headers.get("ETag"),
+                "Content-Disposition": f'inline; filename="{os.path.basename(remote_path)}"',
+            }.items()
+            if value
+        },
+        direct_passthrough=True,
+    )
+
+
+def _build_upload_context(os_id):
+    if getattr(current_user, "tipo_usuario", None) in ADMIN_PANEL_VIEW_TYPES:
+        context = build_admin_os_form_context(current_user, os_id)
+    else:
+        _require_piloto()
+        context = build_piloto_os_form_context(current_user, os_id)
+
+    if context.get("modo_visualizacao"):
+        abort(403)
+    return context
+
+
+def _decode_uploaded_file_name():
+    encoded_name = (request.headers.get("X-File-Name") or "").strip()
+    if not encoded_name:
+        return None
+
+    decoded_name = unquote(encoded_name).strip()
+    return secure_filename(decoded_name)
 
 
 def _redirect_from_piloto_os_error(exc, *, os_id=None):
@@ -265,6 +388,16 @@ def register_routes(bp):
 
         return _send_os_media(video_path)
 
+    @bp.route("/os/<int:os_id>/imagem-principal", methods=["GET"], endpoint="os_imagem_principal")
+    @login_required
+    def os_imagem_principal(os_id):
+        try:
+            image_path = get_os_principal_image_path_for_user(current_user, os_id)
+        except PilotoOsError as exc:
+            abort(404 if "foto" in str(exc).lower() or "imagem" in str(exc).lower() else 403)
+
+        return _send_os_media(image_path)
+
     @bp.route("/os/<int:os_id>/imagem-complementar/<int:image_index>", methods=["GET"], endpoint="os_imagem_complementar")
     @login_required
     def os_imagem_complementar(os_id, image_index):
@@ -284,6 +417,75 @@ def register_routes(bp):
             return jsonify(get_piloto_drone_payload(current_user, drone_id))
         except PilotoOsError as exc:
             return jsonify({"error": str(exc)}), 403
+
+    @bp.route("/api/os/<int:os_id>/upload-stream", methods=["PUT"], endpoint="os_upload_stream")
+    @login_required
+    def os_upload_stream(os_id):
+        try:
+            context = _build_upload_context(os_id)
+            file_name = _decode_uploaded_file_name()
+            if not file_name:
+                return jsonify({"success": False, "error": "Header X-File-Name ausente ou invalido."}), 400
+
+            webdav_url, auth = _webdav_config()
+            folder_url = f"{webdav_url}/{os_id}"
+            file_url = f"{folder_url}/{file_name}"
+            content_type = request.headers.get("Content-Type") or "application/octet-stream"
+
+            try:
+                requests.request("MKCOL", folder_url, auth=auth, timeout=WEBDAV_TIMEOUT)
+            except requests.RequestException:
+                current_app.logger.info("MKCOL WebDAV ignorado para OS %s; a pasta pode ja existir.", os_id, exc_info=True)
+
+            upload_headers = {"Content-Type": content_type}
+            if request.content_length is not None:
+                upload_headers["Content-Length"] = str(request.content_length)
+
+            response = requests.put(
+                file_url,
+                data=request.stream,
+                headers=upload_headers,
+                auth=auth,
+                timeout=WEBDAV_TIMEOUT,
+            )
+            if response.status_code not in (200, 201, 204):
+                return jsonify({
+                    "success": False,
+                    "error": "Falha ao enviar arquivo para o WebDAV.",
+                    "status_code": response.status_code,
+                    "details": response.text[:500],
+                }), 502
+
+            solicitacao = context["solicitacao"]
+            ordem = context["ordem"]
+            if ordem is None:
+                ordem = OrdemServico(
+                    solicitacao_id=solicitacao.id,
+                    equipe_id=solicitacao.equipe_id,
+                )
+                db.session.add(ordem)
+
+            ordem.imagem_principal = _build_webdav_marker(os_id, file_name)
+            if not ordem.quantidade_imagens_registradas or ordem.quantidade_imagens_registradas < 1:
+                ordem.quantidade_imagens_registradas = 1
+            db.session.commit()
+
+            return jsonify({
+                "success": True,
+                "message": "Upload concluido com sucesso.",
+                "file_name": file_name,
+                "webdav_url": file_url,
+                "media_url": url_for("main.os_imagem_principal", os_id=os_id),
+            }), 201
+        except RuntimeError as exc:
+            db.session.rollback()
+            return jsonify({"success": False, "error": str(exc)}), 500
+        except HTTPException:
+            raise
+        except Exception as exc:
+            db.session.rollback()
+            current_app.logger.exception("Erro no upload stream da OS %s", os_id)
+            return jsonify({"success": False, "error": str(exc)}), 500
 
     @bp.route("/admin/os/<int:os_id>/formulario", methods=["GET", "POST"], endpoint="admin_os_formulario_view")
     @login_required

@@ -1281,11 +1281,12 @@
 
                   <div class="os-media-preview-frame mb-3">
                     {% if imagem_principal_path %}
+                    {% set imagem_principal_url = url_for('main.os_imagem_principal', os_id=solicitacao.id) %}
                     <div id="imagem-principal-salva">
-                      <img src="{{ url_for('static', filename=imagem_principal_path) }}" alt="Foto principal da OS" class="os-image-preview">
+                      <img src="{{ imagem_principal_url }}" alt="Foto principal da OS" class="os-image-preview" id="imagem-principal-salva-img">
                     </div>
                     <div class="os-media-actions mt-3" id="imagem-principal-salva-acoes">
-                      <a href="{{ url_for('static', filename=imagem_principal_path) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                      <a href="{{ imagem_principal_url }}" target="_blank" class="btn btn-sm btn-outline-primary" id="imagem-principal-salva-link">
                         <i class="bi bi-arrows-fullscreen me-1"></i>Abrir imagem
                       </a>
                     </div>
@@ -1308,8 +1309,14 @@
                   {% if not modo_visualizacao %}
                   <div class="os-media-upload-box">
                     <label class="form-label-header">Enviar nova foto principal</label>
-                    <input type="file" name="imagem_principal_file" id="imagem_principal_file" class="form-control" accept="image/png,image/jpeg,image/jpg" />
-                    <div class="os-media-help mt-2">Use JPG ou PNG. Se voce enviar uma nova imagem, ela substitui a foto principal atual ao salvar.</div>
+                    <input type="file" id="imagemPrincipal" class="form-control" accept="image/png,image/jpeg,image/jpg" />
+                    <div class="d-flex flex-wrap align-items-center gap-2 mt-3">
+                      <button type="button" class="btn btn-sm btn-primary" id="btnUploadImagemPrincipal">
+                        <i class="bi bi-cloud-arrow-up me-1"></i>Enviar foto principal
+                      </button>
+                      <span class="os-media-help" id="statusUploadImagemPrincipal">Aguardando selecao.</span>
+                    </div>
+                    <div class="os-media-help mt-2">Use JPG ou PNG. O envio e feito diretamente para o WebDAV sem passar pelo salvamento normal do formulario.</div>
                     {% if imagem_principal_path %}
                     <div class="form-check mt-3">
                       <input class="form-check-input" type="checkbox" value="1" id="remover_imagem_principal" name="remover_imagem_principal">
@@ -1703,9 +1710,13 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 document.addEventListener("DOMContentLoaded", () => {
-  const principalInput = document.getElementById("imagem_principal_file");
+  const principalInput = document.getElementById("imagemPrincipal");
+  const principalUploadButton = document.getElementById("btnUploadImagemPrincipal");
+  const principalUploadStatus = document.getElementById("statusUploadImagemPrincipal");
   const principalSaved = document.getElementById("imagem-principal-salva");
   const principalSavedActions = document.getElementById("imagem-principal-salva-acoes");
+  const principalSavedImg = document.getElementById("imagem-principal-salva-img");
+  const principalSavedLink = document.getElementById("imagem-principal-salva-link");
   const principalEmpty = document.getElementById("imagem-principal-vazio");
   const principalPending = document.getElementById("imagem-principal-pendente");
   const principalPreview = document.getElementById("imagem-principal-preview");
@@ -1732,13 +1743,23 @@ document.addEventListener("DOMContentLoaded", () => {
   const totalBadgeValue = document.getElementById("os-media-count-value");
 
   const savedExtrasCount = Number(extrasBadge?.dataset.savedCount || 0);
-  const savedPrincipalCount = Number('{{ 1 if imagem_principal_path else 0 }}');
+  let savedPrincipalCount = Number('{{ 1 if imagem_principal_path else 0 }}');
   const savedVideoCount = Number(videoBadge?.dataset.savedCount || 0);
   const canAccumulateFiles = typeof DataTransfer !== "undefined";
   let extrasSelectedFiles = [];
 
   const setText = (el, text) => {
     if (el) el.textContent = text;
+  };
+
+  const setUploadStatus = (message, state) => {
+    if (!principalUploadStatus) return;
+    principalUploadStatus.textContent = message;
+    principalUploadStatus.classList.remove("text-primary", "text-success", "text-danger", "text-muted");
+    if (state === "loading") principalUploadStatus.classList.add("text-primary");
+    else if (state === "success") principalUploadStatus.classList.add("text-success");
+    else if (state === "error") principalUploadStatus.classList.add("text-danger");
+    else principalUploadStatus.classList.add("text-muted");
   };
 
   const fileSignature = (file) => `${file.name}::${file.size}::${file.lastModified}`;
@@ -1799,6 +1820,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (principalSaved) principalSaved.classList.remove("d-none");
         if (principalSavedActions) principalSavedActions.classList.remove("d-none");
         if (!principalSaved && principalEmpty) principalEmpty.classList.remove("d-none");
+        setUploadStatus("Aguardando selecao.", "idle");
         updateBadges();
         return;
       }
@@ -1806,12 +1828,65 @@ document.addEventListener("DOMContentLoaded", () => {
       const previewUrl = URL.createObjectURL(file);
       principalPreview.src = previewUrl;
       setText(principalPreviewNome, file.name);
+      setUploadStatus("Arquivo pronto para envio.", "idle");
       principalPending.classList.remove("d-none");
       if (principalSaved) principalSaved.classList.add("d-none");
       if (principalSavedActions) principalSavedActions.classList.add("d-none");
       if (principalEmpty) principalEmpty.classList.add("d-none");
       updateBadges();
     });
+  }
+
+  const uploadImagemPrincipalStream = async () => {
+    const file = principalInput?.files && principalInput.files[0];
+    if (!file) {
+      setUploadStatus("Selecione uma foto antes de enviar.", "error");
+      return;
+    }
+
+    if (principalUploadButton) principalUploadButton.disabled = true;
+    if (principalInput) principalInput.disabled = true;
+    setUploadStatus("Enviando arquivo para o WebDAV...", "loading");
+
+    try {
+      const response = await fetch("{{ url_for('main.os_upload_stream', os_id=solicitacao.id) }}", {
+        method: "PUT",
+        headers: {
+          "Content-Type": file.type || "application/octet-stream",
+          "X-File-Name": encodeURIComponent(file.name),
+        },
+        body: file,
+      });
+
+      let payload = {};
+      try {
+        payload = await response.json();
+      } catch (error) {
+        payload = {};
+      }
+
+      if (!response.ok || !payload.success) {
+        throw new Error(payload.error || "Falha ao enviar a foto principal.");
+      }
+
+      savedPrincipalCount = 1;
+      if (payload.media_url) {
+        const mediaUrl = `${payload.media_url}?t=${Date.now()}`;
+        if (principalSavedImg) principalSavedImg.src = mediaUrl;
+        if (principalSavedLink) principalSavedLink.href = payload.media_url;
+      }
+      setUploadStatus(payload.message || "Upload concluido com sucesso.", "success");
+      updateBadges();
+    } catch (error) {
+      setUploadStatus(error.message || "Falha ao enviar o arquivo.", "error");
+    } finally {
+      if (principalUploadButton) principalUploadButton.disabled = false;
+      if (principalInput) principalInput.disabled = false;
+    }
+  };
+
+  if (principalUploadButton) {
+    principalUploadButton.addEventListener("click", uploadImagemPrincipalStream);
   }
 
   if (videoInput && videoPending && videoPreview) {

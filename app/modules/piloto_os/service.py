@@ -621,6 +621,23 @@ def get_os_video_path_for_user(user, os_id):
     return video_path
 
 
+def get_os_principal_image_path_for_user(user, os_id):
+    if getattr(user, "tipo_usuario", None) in ADMIN_PANEL_VIEW_TYPES:
+        context = build_admin_os_form_context(user, os_id)
+    else:
+        context = build_piloto_os_form_context(user, os_id)
+
+    ordem = context.get("ordem")
+    image_path = getattr(ordem, "imagem_principal", None) if ordem else None
+    if not image_path:
+        raise PilotoOsError(
+            "Esta OS nao possui foto principal anexada.",
+            "warning",
+            redirect_endpoint="main.piloto_os_formulario_view",
+        )
+    return image_path
+
+
 def get_os_complementary_image_path_for_user(user, os_id, image_index):
     if getattr(user, "tipo_usuario", None) in ADMIN_PANEL_VIEW_TYPES:
         context = build_admin_os_form_context(user, os_id)
