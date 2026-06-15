@@ -1,6 +1,6 @@
 # Relatório técnico: upload assíncrono de mídias para o Skybox via WebDAV
 
-Data: 15 de junho de 2026
+Data: 15 de junho de 2026.
 
 ## 1. Contexto
 
@@ -14,7 +14,28 @@ CRITICAL: WORKER TIMEOUT
 
 Esse erro acontece quando um worker do Gunicorn fica ocupado por tempo demais processando uma única requisição. No caso da aplicação, o upload era feito por um formulário HTML tradicional, com `multipart/form-data`, e o backend precisava receber o arquivo para, em seguida, repassá-lo ao storage externo Skybox/Nextcloud.
 
-## 2. Causa raiz
+## 2. Papel do Gunicorn
+
+O Gunicorn é um servidor WSGI usado para executar aplicações Python em produção. No desenvolvimento, o Flask pode rodar com o servidor embutido, mas esse servidor interno não é indicado para produção. Em ambientes reais, o Flask precisa ser executado por um servidor WSGI, e o Gunicorn cumpre esse papel.
+
+Na prática, o Gunicorn recebe as requisições HTTP encaminhadas pelo servidor web, ou pela plataforma de hospedagem, e entrega essas requisições à aplicação Flask. Ele também cria e gerencia processos chamados workers. Cada worker é uma unidade de trabalho capaz de atender requisições da aplicação.
+
+Um fluxo simplificado fica assim:
+
+```text
+Usuário
+  -> navegador
+  -> servidor/plataforma
+  -> Gunicorn
+  -> worker
+  -> Flask
+```
+
+Cada worker tem um limite de tempo para responder. Quando uma requisição demora demais, o Gunicorn entende que o worker travou ou ficou indisponível. Nesse caso, o worker não estava necessariamente travado; ele estava ocupado fazendo upload e repasse de mídia grande. Mesmo assim, para o Gunicorn, o resultado era o mesmo: a requisição excedia o tempo permitido.
+
+O erro `CRITICAL: WORKER TIMEOUT` era, portanto, um sintoma do fluxo de upload pesado e sincronizado.
+
+## 3. Causa raiz
 
 O fluxo anterior concentrava muitas responsabilidades em uma única requisição sincronizada:
 
@@ -29,36 +50,11 @@ Para arquivos grandes, esse processo podia ultrapassar o limite de timeout do Gu
 
 O problema não era apenas o tamanho do arquivo, mas o fato de o worker ficar bloqueado durante todo o ciclo de upload e repasse ao armazenamento externo.
 
-## 3. Papel do Gunicorn
-
-O Gunicorn é um servidor WSGI usado para executar aplicações Python em produção. No desenvolvimento, normalmente o Flask pode ser iniciado com o servidor embutido, mas esse servidor interno não é indicado para produção. Em ambientes reais, o Flask precisa ser executado por um servidor WSGI, e o Gunicorn cumpre esse papel.
-
-Na prática, o Gunicorn fica responsável por receber as requisições HTTP encaminhadas pelo servidor web, ou pela plataforma de hospedagem, e entregá-las à aplicação Flask. Ele também cria e gerencia processos chamados workers. Cada worker é uma unidade de trabalho capaz de atender requisições da aplicação.
-
-Um fluxo simplificado fica assim:
-
-```text
-Usuário
-  -> navegador
-  -> servidor/plataforma
-  -> Gunicorn
-  -> worker
-  -> Flask
-```
-
-Cada worker tem um limite de tempo para responder. Quando uma requisição demora demais, o Gunicorn entende que o worker travou ou ficou indisponível.
-
-Nesse caso, o worker não estava necessariamente travado; ele estava ocupado fazendo upload e repasse de mídia grande. Mesmo assim, para o Gunicorn, o resultado era o mesmo: a requisição excedia o tempo permitido.
-
-O erro `CRITICAL: WORKER TIMEOUT` era, portanto, um sintoma do fluxo de upload pesado e sincronizado.
-
-O papel do Gunicorn no problema foi evidenciar que uma requisição longa demais estava prendendo um worker. O papel da correção foi reduzir o peso desse trabalho dentro do Flask, usando um fluxo de upload mais direto e em streaming para o armazenamento remoto.
-
 ## 4. Solução implementada
 
-A solução foi separar o upload da foto principal, das imagens complementares e do vídeo do envio tradicional do formulário e criar um fluxo assíncrono, usando JavaScript Vanilla no frontend e novas rotas `PUT` no backend.
+A solução foi separar o upload da foto principal, das imagens complementares e do vídeo do envio tradicional do formulário. Foi criado um fluxo assíncrono usando JavaScript Vanilla no frontend e rotas `PUT` no backend.
 
-Os novos endpoints criados foram:
+Os endpoints de upload criados foram:
 
 ```text
 PUT /api/os/<os_id>/upload-stream
@@ -66,10 +62,12 @@ PUT /api/os/<os_id>/upload-complementary-stream
 PUT /api/os/<os_id>/upload-video-stream
 ```
 
-Também foi adicionada uma rota para remover imagens complementares de forma individual:
+Também foram adicionadas rotas de remoção direta:
 
 ```text
+DELETE /api/os/<os_id>/imagem-principal
 DELETE /api/os/<os_id>/imagem-complementar/<image_index>
+DELETE /api/os/<os_id>/video
 ```
 
 O upload agora é feito com bytes brutos, usando o próprio objeto `File` como corpo da requisição:
@@ -85,23 +83,30 @@ const response = await fetch(`/api/os/${osId}/upload-stream`, {
 });
 ```
 
-No backend, o ponto principal da otimização foi repassar o stream recebido diretamente para o WebDAV:
+No backend, o ponto principal da otimização foi repassar o fluxo recebido para o WebDAV em partes, sem carregar o arquivo inteiro na memória:
 
 ```python
+def stream_chunks():
+    while True:
+        chunk = request.stream.read(chunk_size)
+        if not chunk:
+            break
+        yield chunk
+
 response = requests.put(
     file_url,
-    data=request.stream,
+    data=stream_chunks(),
     headers=upload_headers,
     auth=auth,
-    timeout=WEBDAV_TIMEOUT,
+    timeout=webdav_timeout,
 )
 ```
 
-O uso de `data=request.stream` evita carregar o arquivo inteiro na memória RAM antes de enviá-lo ao Skybox/Nextcloud.
+Esse fluxo reduz o consumo de memória do Flask e diminui o risco de timeout em uploads grandes.
 
 ## 5. WebDAV, Skybox e Nextcloud
 
-O Skybox/Nextcloud é o armazenamento remoto usado para guardar os arquivos. O WebDAV é o protocolo/API usado para enviar e buscar arquivos nesse armazenamento.
+O Skybox/Nextcloud é o armazenamento remoto usado para guardar os arquivos. O WebDAV é o protocolo/API usado para enviar, buscar e remover arquivos nesse armazenamento.
 
 Em outras palavras:
 
@@ -110,7 +115,7 @@ Navegador
   -> envia bytes para o Flask
 
 Flask
-  -> repassa request.stream com requests.put()
+  -> repassa o fluxo para o WebDAV com requests.put()
 
 WebDAV
   -> recebe o arquivo
@@ -121,127 +126,174 @@ Skybox/Nextcloud
 
 Portanto, o Flask envia a foto principal, as imagens complementares e o vídeo para o Skybox usando WebDAV.
 
-## 6. Variáveis de ambiente
+## 6. Pasta raiz no Skybox
 
-A nova rota usa as variáveis:
+Foi corrigido um detalhe importante: as pastas das OS não devem ser criadas diretamente na raiz do Skybox. Elas devem ficar dentro da pasta raiz já usada pelo sistema:
+
+```text
+dados ordens de serviço
+```
+
+O destino correto passou a ser:
+
+```text
+<WEBDAV_URL>/dados ordens de serviço/<os_id>/<arquivo>
+```
+
+Internamente, a referência salva no banco usa marcador remoto:
+
+```text
+webdav://dados ordens de serviço/<os_id>/<arquivo>
+```
+
+Isso garante que novos uploads fiquem dentro da pasta raiz correta, em vez de criar pastas com o ID da OS fora dela.
+
+## 7. Variáveis de ambiente
+
+A integração usa as variáveis:
 
 ```env
 WEBDAV_URL
 WEBDAV_USER
 WEBDAV_PASS
+WEBDAV_BASE_DIR
+WEBDAV_CONNECT_TIMEOUT_SECONDS
+WEBDAV_TRANSFER_TIMEOUT_SECONDS
+WEBDAV_UPLOAD_CHUNK_SIZE_BYTES
 ```
 
-Também foi mantido fallback para as variáveis que o projeto já usava para o Skybox:
+Também foi mantido fallback para variáveis já usadas pelo projeto:
 
 ```env
 SKYBOX_WEBDAV_URL
 SKYBOX_USERNAME
 SKYBOX_APP_PASSWORD
+SKYBOX_BASE_DIR
 ```
 
-Isso permite reaproveitar a configuração existente, sem obrigar uma mudança imediata no ambiente.
+Se `WEBDAV_BASE_DIR` e `SKYBOX_BASE_DIR` não forem configuradas, o sistema usa como padrão:
 
-## 7. Fluxo novo
+```text
+dados ordens de serviço
+```
 
-O novo fluxo de upload da foto principal, das imagens complementares e do vídeo ficou assim:
+## 8. Fluxo novo
 
-1. O usuário seleciona a foto, as imagens complementares ou o vídeo no campo `input type="file"`.
-2. O usuário clica no botão de upload.
+O novo fluxo de upload ficou assim:
+
+1. O usuário seleciona a foto principal, as imagens complementares ou o vídeo.
+2. O usuário clica no botão de upload específico.
 3. O JavaScript desabilita o botão e mostra o status de carregamento.
 4. O frontend envia o arquivo via `fetch()`, com método `PUT`.
 5. O Flask recebe o corpo bruto da requisição.
 6. O Flask lê o nome do arquivo pelo header `X-File-Name`.
-7. O Flask cria a pasta da OS no WebDAV com `MKCOL`.
-8. O Flask envia o arquivo para o WebDAV com `requests.put(..., data=request.stream)`.
+7. O Flask cria a pasta raiz e a pasta da OS no WebDAV com `MKCOL`.
+8. O Flask envia o arquivo para o WebDAV em streaming/chunks.
 9. O backend salva a referência remota no banco.
-10. O frontend mostra uma mensagem de sucesso ou erro.
+10. O frontend atualiza a tela e mostra sucesso ou erro.
 
-No caso das imagens complementares, quando vários arquivos são selecionados, o frontend envia uma imagem por vez para a rota assíncrona. O backend adiciona cada referência remota à lista JSON de `ordem.outras_imagens`.
+No caso das imagens complementares, quando vários arquivos são selecionados, o frontend envia uma imagem por vez. Após cada sucesso, a nova imagem é adicionada à galeria atual sem precisar recarregar a página.
 
-Também foi adicionado um fluxo de remoção individual para as imagens complementares. Antes, a interface permitia limpar a galeria inteira. Agora, cada imagem complementar exibida na galeria tem um botão próprio de remoção. Ao remover uma imagem, o backend atualiza apenas aquela posição da lista, preservando as demais imagens.
+## 9. Remoção de mídias
 
-## 8. Arquivos alterados
+Antes, as imagens complementares só podiam ser removidas em bloco. Agora, cada imagem complementar tem seu próprio botão `Remover`.
+
+Também foram adicionados botões de remoção para:
+
+- foto principal;
+- vídeo da OS;
+- imagem complementar individual.
+
+Ao remover uma mídia, o sistema:
+
+1. Exibe confirmação no padrão de alertas do sistema.
+2. Mostra loading enquanto a exclusão acontece.
+3. Chama a rota `DELETE` correspondente.
+4. Remove a referência do banco.
+5. Tenta apagar o arquivo remoto no WebDAV/Skybox.
+6. Atualiza a interface.
+7. Exibe alerta de sucesso.
+
+Também foi ajustado o fluxo de limpeza da galeria para apagar arquivos remotos `webdav://`, e não apenas limpar a lista no banco. Com isso, quando a galeria é limpa ou uma mídia é removida, o sistema também tenta excluir o arquivo correspondente no Skybox.
+
+## 10. Interface do formulário
+
+O template `app/templates/piloto_os_formulario.html` foi atualizado para:
+
+- substituir uploads tradicionais por inputs e botões específicos;
+- enviar foto principal, imagens complementares e vídeo por `fetch()`;
+- desabilitar botões durante o envio;
+- mostrar mensagens de carregamento, sucesso e falha;
+- exibir a imagem complementar enviada imediatamente na galeria;
+- remover mídias com alertas padronizados;
+- mostrar loading durante exclusão;
+- mostrar alerta de sucesso após exclusão;
+- corrigir a acentuação dos textos visíveis do formulário de OS.
+
+## 11. Arquivos alterados
 
 ### `app/templates/piloto_os_formulario.html`
 
-Foi substituído o envio tradicional da foto principal, das imagens complementares e do vídeo por:
+Foram adicionados:
 
 - `input type="file" id="imagemPrincipal"`;
 - `input type="file" id="outras_imagens_files"`;
 - `input type="file" id="video_file"`;
 - botões dedicados de upload;
-- função assíncrona com `fetch()`;
+- botões dedicados de remoção;
+- funções assíncronas com `fetch()`;
 - headers `Content-Type` e `X-File-Name`;
-- feedback visual de carregando, sucesso e falha.
-- botão individual para remover cada imagem complementar já salva.
+- feedback visual de carregando, sucesso e falha;
+- atualização dinâmica da galeria de imagens complementares;
+- alertas padronizados para confirmação, loading e sucesso;
+- correções de acentuação na interface.
 
 ### `app/modules/piloto_os/routes.py`
 
-Foi criada a rota:
+Foram criadas ou ajustadas as rotas:
 
 ```text
 PUT /api/os/<int:os_id>/upload-stream
 PUT /api/os/<int:os_id>/upload-complementary-stream
 PUT /api/os/<int:os_id>/upload-video-stream
-```
-
-Também foi criada a rota:
-
-```text
+DELETE /api/os/<int:os_id>/imagem-principal
 DELETE /api/os/<int:os_id>/imagem-complementar/<int:image_index>
-```
-
-Responsabilidades da rota:
-
-- validar a permissão da OS;
-- decodificar o header `X-File-Name`;
-- montar `folder_url = f"{WEBDAV_URL}/{os_id}"`;
-- montar `file_url = f"{folder_url}/{file_name}"`;
-- criar a pasta remota com `MKCOL`;
-- enviar o arquivo com `requests.put(..., data=request.stream)`;
-- salvar a referência remota no banco;
-- retornar JSON de sucesso ou erro.
-
-Para imagens complementares, a rota adiciona o novo marcador remoto à lista JSON de imagens da OS.
-
-Na remoção individual, a rota:
-
-- valida o acesso à OS;
-- localiza a imagem complementar pelo índice;
-- remove somente aquela imagem da lista `ordem.outras_imagens`;
-- tenta apagar o arquivo remoto no WebDAV, Skybox ou armazenamento local;
-- atualiza a quantidade de imagens registradas;
-- retorna JSON de sucesso ou erro.
-
-Também foi criada uma rota para exibir a foto principal:
-
-```text
+DELETE /api/os/<int:os_id>/video
 GET /os/<int:os_id>/imagem-principal
 ```
 
-A rota de vídeo já existente continua sendo usada para exibição:
+Responsabilidades principais:
 
-```text
-GET /os/<int:os_id>/video
-```
+- validar a permissão da OS;
+- decodificar o header `X-File-Name`;
+- montar o caminho remoto dentro da pasta raiz do Skybox;
+- criar a pasta raiz e a pasta da OS com `MKCOL`;
+- enviar o arquivo com `requests.put(..., data=stream_chunks())`;
+- salvar marcador `webdav://...` no banco;
+- buscar mídia remota para exibição no formulário;
+- remover arquivos remotos no WebDAV;
+- retornar JSON de sucesso ou erro.
 
 ### `app/modules/piloto_os/service.py`
 
-Foi adicionada uma função para obter a foto principal, respeitando as regras de acesso já existentes no módulo.
+O serviço foi ajustado para tratar marcadores `webdav://` na rotina antiga de remoção/limpeza de arquivos. Assim, quando a galeria atual é limpa pelo formulário, os arquivos remotos também são apagados do Skybox quando possível.
 
-## 9. Benefícios
+## 12. Benefícios
 
 A mudança trouxe os seguintes benefícios:
 
 - reduz o risco de `CRITICAL: WORKER TIMEOUT`;
 - evita carregar arquivos grandes inteiros na memória do Flask;
-- desacopla o upload da foto principal, das imagens complementares e do vídeo do salvamento completo do formulário;
-- melhora a experiência do usuário com status de envio;
+- desacopla uploads pesados do salvamento completo do formulário;
 - mantém compatibilidade com o Skybox/Nextcloud via WebDAV;
-- permite que a foto principal, as imagens complementares e o vídeo remotos continuem sendo exibidos no formulário.
-- permite remover uma imagem complementar específica sem apagar a galeria inteira.
+- mantém os arquivos dentro da pasta raiz correta no Skybox;
+- permite upload de foto principal, imagens complementares e vídeo;
+- permite remover foto principal, vídeo e imagens complementares individualmente;
+- remove arquivos do Skybox ao apagar mídias no sistema;
+- melhora a experiência do usuário com status, loading e alertas padronizados;
+- atualiza a galeria sem precisar recarregar a página após upload.
 
-## 10. Testes recomendados
+## 13. Testes recomendados
 
 ### Teste funcional no navegador
 
@@ -252,31 +304,30 @@ A mudança trouxe os seguintes benefícios:
 5. Confirmar a mensagem de sucesso.
 6. Recarregar a página.
 7. Confirmar que a foto principal aparece.
-8. Conferir se o arquivo foi criado no Skybox/Nextcloud.
-9. Selecionar uma ou mais imagens complementares.
-10. Clicar em `Enviar imagens`.
-11. Confirmar que o botão fica desabilitado durante o envio.
-12. Confirmar a mensagem de sucesso com a quantidade enviada.
-13. Recarregar a página.
-14. Confirmar que as imagens complementares aparecem.
+8. Conferir se o arquivo foi criado em `dados ordens de serviço/<os_id>` no Skybox.
+9. Clicar em `Remover` na foto principal.
+10. Confirmar o alerta, o loading e a mensagem de sucesso.
+11. Confirmar que a foto sumiu do formulário e do Skybox.
+12. Selecionar uma ou mais imagens complementares.
+13. Clicar em `Enviar imagens`.
+14. Confirmar que cada imagem aparece na galeria sem recarregar a página.
 15. Clicar em `Remover` em uma imagem complementar específica.
 16. Confirmar que apenas essa imagem é removida.
 17. Recarregar a página.
 18. Confirmar que as demais imagens continuam aparecendo.
 19. Selecionar um vídeo MP4, MOV, WEBM ou M4V.
-20. Clicar em `Enviar video`.
-21. Confirmar que o botão fica desabilitado durante o envio.
-22. Confirmar a mensagem de sucesso.
-23. Recarregar a página.
-24. Confirmar que o vídeo aparece e reproduz.
+20. Clicar em `Enviar vídeo`.
+21. Confirmar que o vídeo aparece e reproduz.
+22. Clicar em `Remover` no vídeo.
+23. Confirmar o alerta, o loading, a mensagem de sucesso e a remoção no Skybox.
 
 ### Teste com arquivo grande
 
-1. Selecionar uma foto grande ou mídia pesada.
+1. Selecionar uma foto grande ou vídeo pesado.
 2. Fazer o upload pelo novo botão.
 3. Observar os logs do Gunicorn.
 4. Confirmar que não aparece `CRITICAL: WORKER TIMEOUT`.
-5. Confirmar que o arquivo aparece no Skybox/Nextcloud.
+5. Confirmar que o arquivo aparece no Skybox/Nextcloud dentro da pasta raiz correta.
 
 ### Testes de erro
 
@@ -286,11 +337,12 @@ Testar os seguintes cenários:
 - usar credenciais WebDAV ausentes ou inválidas;
 - testar arquivo com nome contendo espaços ou acentos;
 - tentar upload em OS sem permissão;
-- tentar upload em OS concluída ou bloqueada para edição.
-- tentar remover imagem complementar inexistente;
-- remover uma imagem complementar do meio da lista e confirmar que os links das demais continuam funcionando.
+- tentar upload em OS concluída ou bloqueada para edição;
+- tentar remover mídia inexistente;
+- remover uma imagem complementar do meio da lista e confirmar que os links das demais continuam funcionando;
+- limpar a galeria atual e confirmar que os arquivos remotos também são removidos.
 
-## 11. Validações realizadas
+## 14. Validações realizadas
 
 Foi executada a validação de sintaxe Python:
 
@@ -298,12 +350,16 @@ Foi executada a validação de sintaxe Python:
 .\venv\Scripts\python.exe -m py_compile app\modules\piloto_os\routes.py app\modules\piloto_os\service.py
 ```
 
-Também foi validado que a rota nova foi registrada no mapa de rotas Flask.
+Também foi executada validação de diff do template:
 
-## 12. Conclusão
+```powershell
+git diff --check -- app\templates\piloto_os_formulario.html
+```
+
+## 15. Conclusão
 
 O problema principal era um fluxo de upload pesado, sincronizado e acoplado ao formulário completo da OS. Isso mantinha o worker do Gunicorn ocupado por tempo demais e podia resultar em `CRITICAL: WORKER TIMEOUT`.
 
-A solução implementada criou uploads assíncronos e em streaming para o Skybox/Nextcloud via WebDAV. O backend agora repassa o corpo recebido diretamente para o storage usando `request.stream`, reduzindo o consumo de memória e diminuindo o risco de timeout.
+A solução implementada criou uploads assíncronos e em streaming para o Skybox/Nextcloud via WebDAV. O backend agora repassa o corpo recebido em chunks para o storage, reduzindo o consumo de memória e diminuindo o risco de timeout.
 
-O resultado é um fluxo mais robusto para arquivos grandes e uma experiência melhor para o usuário durante o envio de mídias.
+Além disso, o formulário ficou mais claro para o usuário: os uploads têm status próprio, as remoções têm confirmação/loading/sucesso, a galeria atualiza imediatamente e os arquivos passam a ser salvos dentro da pasta raiz correta do Skybox.
