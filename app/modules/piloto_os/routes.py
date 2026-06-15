@@ -1,7 +1,7 @@
 import json
 import mimetypes
 import os
-from urllib.parse import unquote
+from urllib.parse import quote, unquote
 
 import requests
 from flask import abort, current_app, flash, jsonify, redirect, render_template, request, send_file, url_for
@@ -33,7 +33,9 @@ from app.shared.skybox import SkyboxError, is_skybox_path, stream_skybox_file
 
 
 WEBDAV_MARKER_PREFIX = "webdav://"
-WEBDAV_TIMEOUT = (15, 900)
+DEFAULT_WEBDAV_CONNECT_TIMEOUT_SECONDS = 30
+DEFAULT_WEBDAV_TRANSFER_TIMEOUT_SECONDS = 3600
+DEFAULT_WEBDAV_UPLOAD_CHUNK_SIZE_BYTES = 1024 * 1024
 
 
 def _require_piloto():
@@ -113,6 +115,35 @@ def _setting(*names):
     return None
 
 
+def _setting_int(name, default):
+    raw_value = current_app.config.get(name) or os.getenv(name)
+    if raw_value in (None, ""):
+        return default
+    try:
+        return int(raw_value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _webdav_timeout():
+    connect_timeout = _setting_int(
+        "WEBDAV_CONNECT_TIMEOUT_SECONDS",
+        DEFAULT_WEBDAV_CONNECT_TIMEOUT_SECONDS,
+    )
+    transfer_timeout = _setting_int(
+        "WEBDAV_TRANSFER_TIMEOUT_SECONDS",
+        DEFAULT_WEBDAV_TRANSFER_TIMEOUT_SECONDS,
+    )
+    return connect_timeout, None if transfer_timeout <= 0 else transfer_timeout
+
+
+def _webdav_upload_chunk_size():
+    return _setting_int(
+        "WEBDAV_UPLOAD_CHUNK_SIZE_BYTES",
+        DEFAULT_WEBDAV_UPLOAD_CHUNK_SIZE_BYTES,
+    )
+
+
 def _webdav_config():
     base_url = (_setting("WEBDAV_URL", "SKYBOX_WEBDAV_URL") or "").strip().rstrip("/")
     username = (_setting("WEBDAV_USER", "SKYBOX_USERNAME") or "").strip()
@@ -126,21 +157,42 @@ def _is_webdav_path(value):
     return str(value or "").startswith(WEBDAV_MARKER_PREFIX)
 
 
-def _build_webdav_marker(os_id, file_name):
-    return f"{WEBDAV_MARKER_PREFIX}{os_id}/{file_name}"
-
-
-def _webdav_remote_path_from_marker(value):
-    remote_path = str(value or "")[len(WEBDAV_MARKER_PREFIX):].replace("\\", "/")
-    parts = [part.strip() for part in remote_path.split("/") if part.strip()]
-    if not parts or any(part in {".", ".."} for part in parts):
+def _clean_webdav_remote_path(value):
+    parts = [part.strip() for part in str(value or "").replace("\\", "/").split("/") if part.strip()]
+    if any(part in {".", ".."} for part in parts):
         abort(404)
     return "/".join(parts)
 
 
+def _webdav_base_dir():
+    return _clean_webdav_remote_path(
+        _setting("WEBDAV_BASE_DIR", "SKYBOX_BASE_DIR") or "dados ordens de servi\u00e7o"
+    )
+
+
+def _build_webdav_os_remote_path(os_id, file_name=None):
+    parts = [_webdav_base_dir(), str(os_id)]
+    if file_name:
+        parts.append(file_name)
+    return "/".join(part for part in parts if part)
+
+
+def _build_webdav_marker(os_id, file_name):
+    return f"{WEBDAV_MARKER_PREFIX}{_build_webdav_os_remote_path(os_id, file_name)}"
+
+
+def _webdav_remote_path_from_marker(value):
+    remote_path = str(value or "")[len(WEBDAV_MARKER_PREFIX):].replace("\\", "/")
+    remote_path = _clean_webdav_remote_path(remote_path)
+    if not remote_path:
+        abort(404)
+    return remote_path
+
+
 def _webdav_url_for_remote_path(remote_path):
     base_url, _auth = _webdav_config()
-    return f"{base_url}/{remote_path}"
+    encoded = "/".join(quote(part, safe="") for part in str(remote_path or "").split("/") if part)
+    return f"{base_url}/{encoded}" if encoded else base_url
 
 
 def _delete_webdav_file(value):
@@ -149,7 +201,7 @@ def _delete_webdav_file(value):
     response = requests.delete(
         _webdav_url_for_remote_path(remote_path),
         auth=auth,
-        timeout=WEBDAV_TIMEOUT,
+        timeout=_webdav_timeout(),
     )
     if response.status_code not in (200, 202, 204, 404):
         raise requests.RequestException(f"Falha ao remover arquivo do WebDAV ({response.status_code}).")
@@ -167,7 +219,7 @@ def _stream_webdav_file(value, range_header=None):
         auth=auth,
         headers=headers,
         stream=True,
-        timeout=WEBDAV_TIMEOUT,
+        timeout=_webdav_timeout(),
     )
     if upstream.status_code == 404:
         upstream.close()
@@ -229,27 +281,50 @@ def _upload_request_stream_to_webdav(os_id):
     if not file_name:
         return None, None, jsonify({"success": False, "error": "Header X-File-Name ausente ou invalido."}), 400
 
-    webdav_url, auth = _webdav_config()
-    folder_url = f"{webdav_url}/{os_id}"
-    file_url = f"{folder_url}/{file_name}"
+    _base_url, auth = _webdav_config()
+    base_remote_path = _webdav_base_dir()
+    folder_remote_path = _build_webdav_os_remote_path(os_id)
+    file_remote_path = _build_webdav_os_remote_path(os_id, file_name)
+    base_url = _webdav_url_for_remote_path(base_remote_path)
+    folder_url = _webdav_url_for_remote_path(folder_remote_path)
+    file_url = _webdav_url_for_remote_path(file_remote_path)
     content_type = request.headers.get("Content-Type") or "application/octet-stream"
 
     try:
-        requests.request("MKCOL", folder_url, auth=auth, timeout=WEBDAV_TIMEOUT)
+        requests.request("MKCOL", base_url, auth=auth, timeout=_webdav_timeout())
+        requests.request("MKCOL", folder_url, auth=auth, timeout=_webdav_timeout())
     except requests.RequestException:
         current_app.logger.info("MKCOL WebDAV ignorado para OS %s; a pasta pode ja existir.", os_id, exc_info=True)
 
     upload_headers = {"Content-Type": content_type}
-    if request.content_length is not None:
-        upload_headers["Content-Length"] = str(request.content_length)
 
-    response = requests.put(
-        file_url,
-        data=request.stream,
-        headers=upload_headers,
-        auth=auth,
-        timeout=WEBDAV_TIMEOUT,
-    )
+    def stream_chunks():
+        chunk_size = max(64 * 1024, _webdav_upload_chunk_size())
+        while True:
+            chunk = request.stream.read(chunk_size)
+            if not chunk:
+                break
+            yield chunk
+
+    try:
+        response = requests.put(
+            file_url,
+            data=stream_chunks(),
+            headers=upload_headers,
+            auth=auth,
+            timeout=_webdav_timeout(),
+        )
+    except requests.Timeout:
+        return None, None, jsonify({
+            "success": False,
+            "error": "Tempo limite ao enviar o arquivo para o WebDAV. O Skybox/Nextcloud demorou demais para receber os dados.",
+        }), 504
+    except requests.RequestException as exc:
+        current_app.logger.exception("Falha de conexao no upload WebDAV da OS %s para %s", os_id, file_url)
+        return None, None, jsonify({
+            "success": False,
+            "error": f"Falha de conexao ao enviar arquivo para o WebDAV: {exc}",
+        }), 502
     if response.status_code not in (200, 201, 204):
         return None, None, jsonify({
             "success": False,
@@ -283,6 +358,35 @@ def _parse_media_list(value):
     if not isinstance(parsed, list):
         return []
     return [str(item) for item in parsed if item]
+
+
+def _delete_os_media_path(os_id, media_path):
+    if not media_path:
+        return
+
+    if _is_webdav_path(media_path):
+        try:
+            _delete_webdav_file(media_path)
+        except requests.RequestException:
+            current_app.logger.info("Falha ignorada ao remover arquivo WebDAV da OS %s.", os_id, exc_info=True)
+        return
+
+    if is_skybox_path(media_path):
+        try:
+            from app.shared.skybox import delete_skybox_file
+
+            delete_skybox_file(media_path)
+        except SkyboxError:
+            current_app.logger.info("Falha ignorada ao remover arquivo Skybox da OS %s.", os_id, exc_info=True)
+        return
+
+    static_root = os.path.abspath(os.path.join(current_app.root_path, "static"))
+    abs_path = os.path.abspath(os.path.join(static_root, str(media_path).replace("/", os.sep)))
+    if os.path.commonpath([static_root, abs_path]) == static_root and os.path.isfile(abs_path):
+        try:
+            os.remove(abs_path)
+        except OSError:
+            current_app.logger.info("Falha ignorada ao remover arquivo local da OS %s.", os_id, exc_info=True)
 
 
 def _redirect_from_piloto_os_error(exc, *, os_id=None):
@@ -594,6 +698,66 @@ def register_routes(bp):
             current_app.logger.exception("Erro no upload stream da imagem complementar da OS %s", os_id)
             return jsonify({"success": False, "error": str(exc)}), 500
 
+    @bp.route("/api/os/<int:os_id>/imagem-principal", methods=["DELETE"], endpoint="os_delete_principal_image")
+    @login_required
+    def os_delete_principal_image(os_id):
+        try:
+            context = _build_upload_context(os_id)
+            ordem = context.get("ordem")
+            image_path = getattr(ordem, "imagem_principal", None) if ordem else None
+            if not image_path:
+                return jsonify({"success": False, "error": "Foto principal nao encontrada."}), 404
+
+            _delete_os_media_path(os_id, image_path)
+            ordem.imagem_principal = None
+            imagens = _parse_media_list(getattr(ordem, "outras_imagens", None))
+            ordem.quantidade_imagens_registradas = len(imagens) or None
+            db.session.commit()
+
+            return jsonify({
+                "success": True,
+                "message": "Foto principal removida com sucesso.",
+                "total_images": len(imagens),
+            })
+        except RuntimeError as exc:
+            db.session.rollback()
+            return jsonify({"success": False, "error": str(exc)}), 500
+        except HTTPException:
+            raise
+        except Exception as exc:
+            db.session.rollback()
+            current_app.logger.exception("Erro ao remover foto principal da OS %s", os_id)
+            return jsonify({"success": False, "error": str(exc)}), 500
+
+    @bp.route("/api/os/<int:os_id>/video", methods=["DELETE"], endpoint="os_delete_video")
+    @login_required
+    def os_delete_video(os_id):
+        try:
+            context = _build_upload_context(os_id)
+            ordem = context.get("ordem")
+            video_path = getattr(ordem, "video", None) if ordem else None
+            if not video_path:
+                return jsonify({"success": False, "error": "Video nao encontrado."}), 404
+
+            _delete_os_media_path(os_id, video_path)
+            ordem.video = None
+            ordem.quantidade_videos_registradas = None
+            db.session.commit()
+
+            return jsonify({
+                "success": True,
+                "message": "Video removido com sucesso.",
+            })
+        except RuntimeError as exc:
+            db.session.rollback()
+            return jsonify({"success": False, "error": str(exc)}), 500
+        except HTTPException:
+            raise
+        except Exception as exc:
+            db.session.rollback()
+            current_app.logger.exception("Erro ao remover video da OS %s", os_id)
+            return jsonify({"success": False, "error": str(exc)}), 500
+
     @bp.route("/api/os/<int:os_id>/imagem-complementar/<int:image_index>", methods=["DELETE"], endpoint="os_delete_complementary_image")
     @login_required
     def os_delete_complementary_image(os_id, image_index):
@@ -606,26 +770,7 @@ def register_routes(bp):
                 return jsonify({"success": False, "error": "Imagem complementar nao encontrada."}), 404
 
             removed_path = imagens.pop(index)
-            if _is_webdav_path(removed_path):
-                try:
-                    _delete_webdav_file(removed_path)
-                except requests.RequestException:
-                    current_app.logger.info("Falha ignorada ao remover arquivo WebDAV da OS %s.", os_id, exc_info=True)
-            elif is_skybox_path(removed_path):
-                try:
-                    from app.shared.skybox import delete_skybox_file
-
-                    delete_skybox_file(removed_path)
-                except SkyboxError:
-                    current_app.logger.info("Falha ignorada ao remover arquivo Skybox da OS %s.", os_id, exc_info=True)
-            else:
-                static_root = os.path.abspath(os.path.join(current_app.root_path, "static"))
-                abs_path = os.path.abspath(os.path.join(static_root, str(removed_path).replace("/", os.sep)))
-                if os.path.commonpath([static_root, abs_path]) == static_root and os.path.isfile(abs_path):
-                    try:
-                        os.remove(abs_path)
-                    except OSError:
-                        current_app.logger.info("Falha ignorada ao remover arquivo local da OS %s.", os_id, exc_info=True)
+            _delete_os_media_path(os_id, removed_path)
 
             ordem.outras_imagens = json.dumps(imagens, ensure_ascii=False) if imagens else None
             total_imagens = len(imagens) + (1 if getattr(ordem, "imagem_principal", None) else 0)

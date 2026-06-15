@@ -626,7 +626,7 @@
 <div class="container-fluid py-4 piloto-os-form-page" style="max-width: 1200px">
   <div class="piloto-os-form-header mb-4">
     <h2 class="text-dark m-0">
-      <i class="bi bi-clipboard-check-fill me-2 text-primary"></i> Formulario de Ordem de Servico
+      <i class="bi bi-clipboard-check-fill me-2 text-primary"></i> Formulário de Ordem de Serviço
     </h2>
   </div>
 
@@ -637,7 +637,7 @@
         <div class="d-flex align-items-center">
           <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
           <div>
-            <strong>Atencao Admin:</strong> esta OS ja foi concluida. Alteracoes aqui sao diretas e atualizam o registro final.
+            <strong>Atenção Admin:</strong> esta OS já foi concluída. Alterações aqui são diretas e atualizam o registro final.
           </div>
         </div>
       </div>
@@ -652,12 +652,12 @@
         <ul class="nav nav-tabs os-form-tabs mb-4" id="osFormTabs" role="tablist">
           <li class="nav-item" role="presentation">
             <button class="nav-link active" id="os-dados-tab" data-bs-toggle="tab" data-bs-target="#os-dados-pane" type="button" role="tab" aria-controls="os-dados-pane" aria-selected="true">
-              <i class="bi bi-clipboard-data me-2"></i>Formulario da OS
+              <i class="bi bi-clipboard-data me-2"></i>Formulário da OS
             </button>
           </li>
           <li class="nav-item" role="presentation">
             <button class="nav-link" id="os-imagens-tab" data-bs-toggle="tab" data-bs-target="#os-imagens-pane" type="button" role="tab" aria-controls="os-imagens-pane" aria-selected="false">
-              <i class="bi bi-images me-2"></i>Levantamento de Midias{% if total_midias_formulario %} ({{ total_midias_formulario }}){% endif %}
+              <i class="bi bi-images me-2"></i>Levantamento de Mídias{% if total_midias_formulario %} ({{ total_midias_formulario }}){% endif %}
             </button>
           </li>
         </ul>
@@ -667,12 +667,12 @@
 
         {# ===================== IDENTIFICAÇÃO ===================== #}
         <div class="section-title mt-0">
-          <h5 class="m-0 text-primary fw-bold">Identificacao</h5>
+          <h5 class="m-0 text-primary fw-bold">Identificação</h5>
         </div>
 
         <div class="row g-3 mb-4">
           <div class="col-md-3">
-            <label class="form-label-header">Solicitacao ID *</label>
+            <label class="form-label-header">Solicitação ID *</label>
             <input type="number" name="solicitacao_id" class="form-control bg-light" value="{{ solicitacao.id }}" readonly />
           </div>
           <div class="col-md-3">
@@ -766,7 +766,7 @@
                          value="{{ ordem.drone_registro_anac if ordem and ordem.drone_registro_anac else '' }}" />
                 </div>
                 <div class="col-md-4">
-                  <label class="form-label-header">Prefixo Pulverizacao</label>
+                  <label class="form-label-header">Prefixo Pulverização</label>
                   <input type="text" name="prefixo_aeronave_pulverizacao" id="prefixo_pulverizacao" class="form-control fw-bold text-primary"
                         value="{{ ordem.prefixo_aeronave_pulverizacao if ordem else '' }}" />
                 </div>
@@ -832,12 +832,12 @@
 
         {# ===================== APLICAÇÃO ===================== #}
         <div class="section-title">
-          <h5 class="m-0 text-primary fw-bold">Aplicacao</h5>
+          <h5 class="m-0 text-primary fw-bold">Aplicação</h5>
         </div>
 
         <div class="row g-3 mb-4">
           <div class="col-md-4">
-              <label class="form-label-header">Situacao da aplicacao</label>
+              <label class="form-label-header">Situação da aplicação</label>
               <select name="situacao_aplicacao" class="form-select">
                   <option value="">Selecione...</option>
                   <option value="MONITORADO E LARVICIDA APLICADO" {% if ordem and ordem.situacao_aplicacao == 'MONITORADO E LARVICIDA APLICADO' %}selected{% endif %}>MONITORADO E LARVICIDA APLICADO</option>
@@ -851,7 +851,7 @@
             <select name="larva_visualizada" class="form-select">
               <option value="">Selecione...</option>
               <option value="SIM" {% if ordem and ordem.larva_visualizada == 'SIM' %}selected{% endif %}>SIM</option>
-              <option value="NAO" {% if ordem and ordem.larva_visualizada == 'NAO' %}selected{% endif %}>NAO</option>
+              <option value="NAO" {% if ordem and ordem.larva_visualizada == 'NAO' %}selected{% endif %}>NÃO</option>
             </select>
           </div>
           <div class="col-md-3">
@@ -859,7 +859,7 @@
             <input type="text" name="da" class="form-control" value="{{ ordem.distrito_administrativo if ordem else '' }}" />
           </div>
           <div class="col-md-5">
-            <label class="form-label-header">Nome/RF do ACE responsavel</label>
+            <label class="form-label-header">Nome/RF do ACE responsável</label>
             <input type="text" name="nome_rf_ace_responsavel_os" class="form-control" value="{{ ordem.nome_rf_ace_responsavel_os if ordem else '' }}" />
           </div>
           <div class="col-md-4">
@@ -867,15 +867,15 @@
             <input type="text" name="criadouro_os_tipo_volume" class="form-control" value="{{ ordem.criadouro_os_tipo_volume if (ordem and ordem.criadouro_os_tipo_volume) else (solicitacao.foco if solicitacao else '') }}" />
           </div>
           <div class="col-md-4">
-            <label class="form-label-header">Data aplicacao</label>
+            <label class="form-label-header">Data aplicação</label>
             <input type="date" name="data_aplicacao" class="form-control" value="{{ ordem.data_aplicacao.strftime('%Y-%m-%d') if ordem and ordem.data_aplicacao else '' }}" />
           </div>
           <div class="col-md-4">
-            <label class="form-label-header">Hora Inicio</label>
+            <label class="form-label-header">Hora Início</label>
             <input type="time" name="hora_inicio_aplicacao" class="form-control" value="{{ ordem.hora_inicio_aplicacao.strftime('%H:%M') if ordem and ordem.hora_inicio_aplicacao else '' }}" />
           </div>
           <div class="col-md-4">
-            <label class="form-label-header">Hora Termino</label>
+            <label class="form-label-header">Hora Término</label>
             <input type="time" name="hora_termino_aplicacao" class="form-control" value="{{ ordem.hora_termino_aplicacao.strftime('%H:%M') if ordem and ordem.hora_termino_aplicacao else '' }}" />
           </div>
           <div class="col-md-4">
@@ -883,7 +883,7 @@
             <select name="tratamento_adicional_realizado" class="form-select">
               <option value="">Selecione...</option>
               <option value="SIM" {% if ordem and ordem.tratamento_adicional_realizado == 'SIM' %}selected{% endif %}>SIM</option>
-              <option value="NAO" {% if ordem and ordem.tratamento_adicional_realizado == 'NAO' %}selected{% endif %}>NAO</option>
+              <option value="NAO" {% if ordem and ordem.tratamento_adicional_realizado == 'NAO' %}selected{% endif %}>NÃO</option>
             </select>
           </div>
           <div class="col-md-8">
@@ -896,16 +896,16 @@
 
         {# ===================== DOSAGEM E PARAMETROS ===================== #}
         <div class="section-title">
-          <h5 class="m-0 text-primary fw-bold">Dosagem e Parametros de Aplicacao</h5>
+          <h5 class="m-0 text-primary fw-bold">Dosagem e Parâmetros de Aplicação</h5>
         </div>
 
         <div class="dosagem-panel p-3 p-lg-4 mb-4">
           <div class="dosagem-section-head">
             <div>
-              <div class="form-label-header text-primary">Leitura rapida</div>
+              <div class="form-label-header text-primary">Leitura rápida</div>
               <h6 class="mb-1 text-primary fw-bold">Planejamento salvo e registro do que foi realmente aplicado</h6>
               <p>
-                A base da planilha continua a mesma: <strong>500 g de BTI WDG para 10 L de agua</strong>, equivalente a <strong>50 g por litro de calda</strong>. Nesta area voce confere o planejamento, informa o realizado e usa a comparacao automatica como conferencia final.
+                A base da planilha continua a mesma: <strong>500 g de BTI WDG para 10 L de água</strong>, equivalente a <strong>50 g por litro de calda</strong>. Nesta área você confere o planejamento, informa o realizado e usa a comparação automática como conferência final.
               </p>
             </div>
             {% if current_user.tipo_usuario in ['piloto', 'equipe_oceano'] %}
@@ -919,15 +919,15 @@
             <div class="dosagem-helper-card">
               <span class="dosagem-helper-title">Mistura base</span>
               <div class="dosagem-helper-value">500 g em 10 L</div>
-              <div class="dosagem-helper-note">Concentracao de referencia trazida da planilha de calculo.</div>
+              <div class="dosagem-helper-note">Concentração de referência trazida da planilha de cálculo.</div>
             </div>
             <div class="dosagem-helper-card">
-              <span class="dosagem-helper-title">Concentracao equivalente</span>
+              <span class="dosagem-helper-title">Concentração equivalente</span>
               <div class="dosagem-helper-value">50 g por litro</div>
               <div class="dosagem-helper-note">Ajuda a interpretar a dosagem informada no campo em g/10L.</div>
             </div>
             <div class="dosagem-helper-card">
-              <span class="dosagem-helper-title">Formula do comparativo</span>
+              <span class="dosagem-helper-title">Fórmula do comparativo</span>
               <div class="dosagem-helper-value">dosagem x calda / 10.000</div>
               <div class="dosagem-helper-note">Assim o sistema estima a carga real de BTI e compara com o planejamento salvo.</div>
             </div>
@@ -937,11 +937,11 @@
             <div class="dosagem-planning-head">
               <div>
                 <div class="form-label-header text-primary">Planejamento salvo</div>
-                <h6>Resumo da referencia desta OS</h6>
-                <p>Essa leitura serve como guia para preencher os campos realizados e entender de onde veio cada numero.</p>
+                <h6>Resumo da referência desta OS</h6>
+                <p>Essa leitura serve como guia para preencher os campos realizados e entender de onde veio cada número.</p>
               </div>
               <span class="badge bg-primary-subtle text-primary">
-                {{ ordem.calculo_dosagem_planejado_em.strftime('%d/%m/%Y %H:%M') if ordem and ordem.calculo_dosagem_planejado_em else 'Nao salvo' }}
+                {{ ordem.calculo_dosagem_planejado_em.strftime('%d/%m/%Y %H:%M') if ordem and ordem.calculo_dosagem_planejado_em else 'Não salvo' }}
               </span>
             </div>
 
@@ -954,12 +954,12 @@
               <div class="dosagem-summary-card">
                 <span class="dosagem-summary-label">Tipo visita</span>
                 <div class="dosagem-summary-value">{{ solicitacao.tipo_visita or '-' }}</div>
-                <div class="dosagem-summary-note">Operacao: {{ solicitacao.tipo_operacao if solicitacao.tipo_operacao and solicitacao.tipo_operacao != 'None' else '-' }}</div>
+                <div class="dosagem-summary-note">Operação: {{ solicitacao.tipo_operacao if solicitacao.tipo_operacao and solicitacao.tipo_operacao != 'None' else '-' }}</div>
               </div>
 
               {% if calculo_dosagem_planejado %}
               <div class="dosagem-summary-card">
-                <span class="dosagem-summary-label">Cenario e medicao</span>
+                <span class="dosagem-summary-label">Cenário e medição</span>
                 <div class="dosagem-summary-value">{{ calculo_dosagem_planejado.cenario_label or '-' }}</div>
                 <div class="dosagem-summary-note">{{ calculo_dosagem_planejado.medicao.resumo or '-' }}</div>
               </div>
@@ -974,20 +974,20 @@
                 <div class="dosagem-summary-note">Valor esperado para o campo de dosagem realizada.</div>
               </div>
               <div class="dosagem-summary-card">
-                <span class="dosagem-summary-label">Configuracao sugerida</span>
+                <span class="dosagem-summary-label">Configuração sugerida</span>
                 <div class="dosagem-summary-value">{{ calculo_dosagem_planejado.resultado.ponta_pulverizacao or '-' }}</div>
                 <div class="dosagem-summary-note">{{ calculo_dosagem_planejado.resultado.numero_bicos or '-' }} bicos | {{ calculo_dosagem_planejado.resultado.vazao_bicos_ml_min or '-' }} mL/min | {{ calculo_dosagem_planejado.resultado.pressao_bar or '-' }} bar</div>
               </div>
               <div class="dosagem-summary-card">
-                <span class="dosagem-summary-label">Leitura da formula</span>
+                <span class="dosagem-summary-label">Leitura da fórmula</span>
                 <div class="dosagem-summary-value">{{ calculo_dosagem_planejado.medicao.formula_hint or '-' }}</div>
-                <div class="dosagem-summary-note">Use esta leitura para confirmar se a medida usada bate com o foco ou a area atendida.</div>
+                <div class="dosagem-summary-note">Use esta leitura para confirmar se a medida usada bate com o foco ou a área atendida.</div>
               </div>
               {% else %}
               <div class="dosagem-summary-card">
                 <span class="dosagem-summary-label">Planejamento</span>
-                <div class="dosagem-summary-value">Nao salvo</div>
-                <div class="dosagem-summary-note">Abra a tela de dosagem da OS para gerar a referencia antes da conferencia automatica.</div>
+                <div class="dosagem-summary-value">Não salvo</div>
+                <div class="dosagem-summary-note">Abra a tela de dosagem da OS para gerar a referência antes da conferência automática.</div>
               </div>
               {% endif %}
             </div>
@@ -1007,12 +1007,12 @@
 
         <div class="dosagem-field-grid mb-4">
           <div class="dosagem-field-card">
-            <label class="form-label-header">Descricao produto</label>
+            <label class="form-label-header">Descrição produto</label>
             <input type="text" name="descricao_produto" class="form-control" value="{{ ordem.descricao_produto if ordem else 'BTI' }}" />
           </div>
           <div class="dosagem-field-card">
-            <label class="form-label-header">Formulacao</label>
-            <input type="text" name="formulacao_produto" class="form-control" value="{{ ordem.formulacao_produto if ordem else 'Granulo dispersivel' }}" />
+            <label class="form-label-header">Formulação</label>
+            <input type="text" name="formulacao_produto" class="form-control" value="{{ ordem.formulacao_produto if ordem else 'Grânulo dispersível' }}" />
           </div>
           <div class="dosagem-field-card">
             <label class="form-label-header">Dosagem (g/10L)</label>
@@ -1020,7 +1020,7 @@
             <div class="dosagem-field-hint">Exemplo: 500 significa 500 g de BTI para cada 10 L de calda.</div>
           </div>
           <div class="dosagem-field-card">
-              <label class="form-label-header">Tipo aplicacao</label>
+              <label class="form-label-header">Tipo aplicação</label>
               <input type="text" name="tipo_aplicacao" list="lista_tipos_aplicacao" class="form-control" 
                     value="{{ ordem.tipo_aplicacao if (ordem and ordem.tipo_aplicacao) else '' }}" 
                     placeholder="Selecione ou digite..." />
@@ -1033,15 +1033,15 @@
           <div class="dosagem-field-card">
             <label class="form-label-header">Qtd Administrada (ml)</label>
             <input type="number" step="0.01" name="quantidade_produto_administrada_ml" class="form-control" value="{{ ordem.quantidade_produto_administrada_ml if ordem else '' }}" />
-            <div class="dosagem-field-hint">Informe o volume real de calda ou produto aplicado na execucao.</div>
+            <div class="dosagem-field-hint">Informe o volume real de calda ou produto aplicado na execução.</div>
           </div>
           <div class="dosagem-field-card">
-            <label class="form-label-header">Pulverizacao Area (l/ha)</label>
+            <label class="form-label-header">Pulverização Área (l/ha)</label>
             <input type="number" step="0.01" name="pulverizacao_area_l_ha" class="form-control" value="{{ ordem.pulverizacao_area_l_ha if ordem else '10' }}" />
-            <div class="dosagem-field-hint">Quando o cenario for de foco, este campo nao entra no comparativo de area.</div>
+            <div class="dosagem-field-hint">Quando o cenário for de foco, este campo não entra no comparativo de área.</div>
           </div>
           <div class="dosagem-field-card field-span-2">
-              <label class="form-label-header">Ponta de Pulverizacao</label>
+              <label class="form-label-header">Ponta de Pulverização</label>
               <input type="text" name="ponta_pulverizacao" list="lista_pontas" class="form-control" 
                     value="{{ ordem.ponta_pulverizacao if (ordem and ordem.ponta_pulverizacao) else '' }}" 
                     placeholder="Selecione ou digite a ponta...">
@@ -1050,17 +1050,17 @@
                   <option value="TXA8001">
                   <option value="TX11001">
               </datalist>
-              <div class="dosagem-field-hint">A conferencia automatica destaca se a ponta usada ficou alinhada com a configuracao planejada.</div>
+              <div class="dosagem-field-hint">A conferência automática destaca se a ponta usada ficou alinhada com a configuração planejada.</div>
           </div>
         </div>
 
         <div class="dosagem-panel p-3 p-lg-4 mb-4">
           <div class="dosagem-compare-header">
             <div>
-              <div class="form-label-header text-primary">Comparacao automatica</div>
-              <p>O sistema compara o planejamento com os campos realizados para facilitar a conferencia depois da operacao.</p>
+              <div class="form-label-header text-primary">Comparação automática</div>
+              <p>O sistema compara o planejamento com os campos realizados para facilitar a conferência depois da operação.</p>
             </div>
-            <span class="badge bg-primary-subtle text-primary">Comparacao automatica</span>
+            <span class="badge bg-primary-subtle text-primary">Comparação automática</span>
           </div>
 
           <div class="row g-3">
@@ -1069,7 +1069,7 @@
                 <span class="dosagem-compare-label">Carga BTI (g)</span>
                 <div class="dosagem-compare-planned" id="compare_carga_planejada">Planejado: -</div>
                 <div class="dosagem-compare-actual" id="compare_carga_real">Real estimado: -</div>
-                <div class="dosagem-compare-diff is-neutral" id="compare_carga_diff">Diferenca: -</div>
+                <div class="dosagem-compare-diff is-neutral" id="compare_carga_diff">Diferença: -</div>
               </div>
             </div>
             <div class="col-md-4">
@@ -1077,20 +1077,20 @@
                 <span class="dosagem-compare-label">Calda / produto administrado</span>
                 <div class="dosagem-compare-planned" id="compare_calda_planejada">Planejado: -</div>
                 <div class="dosagem-compare-actual" id="compare_calda_real">Real: -</div>
-                <div class="dosagem-compare-diff is-neutral" id="compare_calda_diff">Diferenca: -</div>
+                <div class="dosagem-compare-diff is-neutral" id="compare_calda_diff">Diferença: -</div>
               </div>
             </div>
             <div class="col-md-4">
               <div class="dosagem-compare-card">
-                <span class="dosagem-compare-label">Pulverizacao (l/ha)</span>
+                <span class="dosagem-compare-label">Pulverização (l/ha)</span>
                 <div class="dosagem-compare-planned" id="compare_lha_planejada">Planejado: -</div>
                 <div class="dosagem-compare-actual" id="compare_lha_real">Real: -</div>
-                <div class="dosagem-compare-diff is-neutral" id="compare_lha_diff">Diferenca: -</div>
+                <div class="dosagem-compare-diff is-neutral" id="compare_lha_diff">Diferença: -</div>
               </div>
             </div>
             <div class="col-md-6">
               <div class="dosagem-compare-card">
-                <span class="dosagem-compare-label">Tipo de aplicacao</span>
+                <span class="dosagem-compare-label">Tipo de aplicação</span>
                 <div class="dosagem-compare-planned" id="compare_tipo_planejado">Planejado: -</div>
                 <div class="dosagem-compare-actual" id="compare_tipo_real">Real: -</div>
                 <div class="dosagem-compare-diff is-neutral" id="compare_tipo_diff">Status: -</div>
@@ -1098,7 +1098,7 @@
             </div>
             <div class="col-md-6">
               <div class="dosagem-compare-card">
-                <span class="dosagem-compare-label">Ponta de pulverizacao</span>
+                <span class="dosagem-compare-label">Ponta de pulverização</span>
                 <div class="dosagem-compare-planned" id="compare_ponta_planejada">Planejado: -</div>
                 <div class="dosagem-compare-actual" id="compare_ponta_real">Real: -</div>
                 <div class="dosagem-compare-diff is-neutral" id="compare_ponta_diff">Status: -</div>
@@ -1111,7 +1111,7 @@
 
         {# ===================== AERONAVE / AMBIENTE ===================== #}
         <div class="section-title">
-          <h5 class="m-0 text-primary fw-bold">Condicoes Ambientais</h5>
+          <h5 class="m-0 text-primary fw-bold">Condições Ambientais</h5>
         </div>
 
         <div class="row g-3 mb-4">
@@ -1225,13 +1225,13 @@
                   <span class="os-media-hero-label">
                     <i class="bi bi-camera-fill"></i>Levantamento visual da OS
                   </span>
-                  <h5 class="os-media-hero-title">Relatorio de Levantamento de Midias</h5>
+                  <h5 class="os-media-hero-title">Relatório de Levantamento de Mídias</h5>
                   <p class="os-media-hero-copy">
-                    A foto principal vai para o PDF final da ordem de servico. As imagens complementares e o video ficam arquivados aqui para consulta interna da equipe.
+                    A foto principal vai para o PDF final da ordem de serviço. As imagens complementares e o vídeo ficam arquivados aqui para consulta interna da equipe.
                   </p>
                 </div>
                 <span class="os-media-count is-hero" id="os-media-count">
-                  <i class="bi bi-images"></i><span id="os-media-count-value">{{ total_midias_formulario }} midia(s) salva(s)</span>
+                  <i class="bi bi-images"></i><span id="os-media-count-value">{{ total_midias_formulario }} mídia(s) salva(s)</span>
                 </span>
               </div>
             </div>
@@ -1242,7 +1242,7 @@
                 <input type="text" class="form-control bg-light" value="{{ uvis_nome or '-' }}" readonly />
               </div>
               <div class="col-md-4">
-                <label class="form-label-header">Regiao</label>
+                <label class="form-label-header">Região</label>
                 <input type="text" class="form-control bg-light" value="{{ regiao_nome or '-' }}" readonly />
               </div>
               <div class="col-md-4">
@@ -1250,7 +1250,7 @@
                 <input type="text" class="form-control bg-light" value="{{ solicitacao.foco or '-' }}" readonly />
               </div>
               <div class="col-md-8">
-                <label class="form-label-header">Endereco</label>
+                <label class="form-label-header">Endereço</label>
                 <input type="text" class="form-control bg-light" value="{{ endereco_os or '-' }}" readonly />
               </div>
               <div class="col-md-4">
@@ -1272,7 +1272,7 @@
                 <div class="os-image-card os-media-card p-3 p-lg-4">
                   <div class="os-media-card-header">
                     <div>
-                      <div class="os-media-card-kicker">Destaque do relatorio</div>
+                      <div class="os-media-card-kicker">Destaque do relatório</div>
                       <h6 class="os-media-card-title">Foto principal</h6>
                       <p class="os-media-card-description">Selecione a imagem que melhor representa esta OS no documento final.</p>
                     </div>
@@ -1280,25 +1280,27 @@
                   </div>
 
                   <div class="os-media-preview-frame mb-3">
-                    {% if imagem_principal_path %}
                     {% set imagem_principal_url = url_for('main.os_imagem_principal', os_id=solicitacao.id) %}
-                    <div id="imagem-principal-salva">
-                      <img src="{{ imagem_principal_url }}" alt="Foto principal da OS" class="os-image-preview" id="imagem-principal-salva-img">
+                    <div id="imagem-principal-salva" class="{% if not imagem_principal_path %}d-none{% endif %}">
+                      <img src="{{ imagem_principal_url if imagem_principal_path else '' }}" alt="Foto principal da OS" class="os-image-preview" id="imagem-principal-salva-img">
                     </div>
-                    <div class="os-media-actions mt-3" id="imagem-principal-salva-acoes">
-                      <a href="{{ imagem_principal_url }}" target="_blank" class="btn btn-sm btn-outline-primary" id="imagem-principal-salva-link">
+                    <div class="os-media-actions mt-3 {% if not imagem_principal_path %}d-none{% endif %}" id="imagem-principal-salva-acoes">
+                      <a href="{{ imagem_principal_url if imagem_principal_path else '#' }}" target="_blank" class="btn btn-sm btn-outline-primary" id="imagem-principal-salva-link">
                         <i class="bi bi-arrows-fullscreen me-1"></i>Abrir imagem
                       </a>
+                      {% if not modo_visualizacao %}
+                      <button type="button" class="btn btn-sm btn-outline-danger" id="btnRemoverImagemPrincipal">
+                        <i class="bi bi-trash me-1"></i>Remover
+                      </button>
+                      {% endif %}
                     </div>
-                    {% else %}
-                    <div class="os-image-empty" id="imagem-principal-vazio">
+                    <div class="os-image-empty {% if imagem_principal_path %}d-none{% endif %}" id="imagem-principal-vazio">
                       <div>
                         <i class="bi bi-image fs-1 d-block mb-2 text-primary"></i>
                         <span class="os-empty-title">Nenhuma foto principal definida</span>
-                        <div class="os-empty-subtitle">Escolha uma imagem de destaque para compor o relatorio final desta OS.</div>
+                        <div class="os-empty-subtitle">Escolha uma imagem de destaque para compor o relatório final desta OS.</div>
                       </div>
                     </div>
-                    {% endif %}
 
                     <div class="d-none{% if imagem_principal_path %} mt-3{% endif %}" id="imagem-principal-pendente">
                       <img src="" alt="Preview da foto principal" class="os-image-preview" id="imagem-principal-preview">
@@ -1314,17 +1316,9 @@
                       <button type="button" class="btn btn-sm btn-primary" id="btnUploadImagemPrincipal">
                         <i class="bi bi-cloud-arrow-up me-1"></i>Enviar foto principal
                       </button>
-                      <span class="os-media-help" id="statusUploadImagemPrincipal">Aguardando selecao.</span>
+                      <span class="os-media-help" id="statusUploadImagemPrincipal">Aguardando seleção.</span>
                     </div>
-                    <div class="os-media-help mt-2">Use JPG ou PNG. O envio e feito diretamente para o WebDAV sem passar pelo salvamento normal do formulario.</div>
-                    {% if imagem_principal_path %}
-                    <div class="form-check mt-3">
-                      <input class="form-check-input" type="checkbox" value="1" id="remover_imagem_principal" name="remover_imagem_principal">
-                      <label class="form-check-label small" for="remover_imagem_principal">
-                        Remover a foto principal atual ao salvar.
-                      </label>
-                    </div>
-                    {% endif %}
+                    <div class="os-media-help mt-2">Use JPG ou PNG. O envio é feito diretamente para o WebDAV sem passar pelo salvamento normal do formulário.</div>
                   </div>
                   {% endif %}
                 </div>
@@ -1346,14 +1340,14 @@
                     <label class="form-label-header">Adicionar imagens</label>
                     <input type="file" id="outras_imagens_files" class="form-control" accept="image/png,image/jpeg,image/jpg" multiple />
                     <div class="d-flex flex-wrap align-items-center gap-2 mt-2">
-                      <div class="os-media-help">Voce pode selecionar varias imagens de uma vez ou montar a selecao em etapas antes de enviar.</div>
+                      <div class="os-media-help">Você pode selecionar várias imagens de uma vez ou montar a seleção em etapas antes de enviar.</div>
                       <button type="button" class="btn btn-sm btn-primary" id="btnUploadOutrasImagens">
                         <i class="bi bi-cloud-arrow-up me-1"></i>Enviar imagens
                       </button>
                       <button type="button" class="btn btn-sm btn-outline-secondary d-none" id="limpar-selecao-outras-imagens">
-                        <i class="bi bi-x-circle me-1"></i>Limpar selecao
+                        <i class="bi bi-x-circle me-1"></i>Limpar seleção
                       </button>
-                      <span class="os-media-help" id="statusUploadOutrasImagens">Aguardando selecao.</span>
+                      <span class="os-media-help" id="statusUploadOutrasImagens">Aguardando seleção.</span>
                     </div>
                     {% if outras_imagens_paths %}
                     <div class="form-check mt-3">
@@ -1367,8 +1361,7 @@
                   {% endif %}
 
                   <div class="os-media-preview-frame">
-                    {% if outras_imagens_paths %}
-                    <div id="outras-imagens-salvas-wrapper">
+                    <div id="outras-imagens-salvas-wrapper" class="{% if not outras_imagens_paths %}d-none{% endif %}">
                       <div class="os-media-gallery-label">Galeria atual</div>
                       <div class="os-image-grid" id="outras-imagens-salvas-grid">
                         {% for imagem_path in outras_imagens_paths %}
@@ -1392,15 +1385,13 @@
                         {% endfor %}
                       </div>
                     </div>
-                    {% else %}
-                    <div class="os-image-empty" id="outras-imagens-vazio">
+                    <div class="os-image-empty {% if outras_imagens_paths %}d-none{% endif %}" id="outras-imagens-vazio">
                       <div>
                         <i class="bi bi-images fs-1 d-block mb-2 text-primary"></i>
                         <span class="os-empty-title">Nenhuma imagem complementar anexada</span>
-                        <div class="os-empty-subtitle">Use esta galeria para registrar angulos extras, detalhes do local e imagens de apoio.</div>
+                        <div class="os-empty-subtitle">Use esta galeria para registrar ângulos extras, detalhes do local e imagens de apoio.</div>
                       </div>
                     </div>
-                    {% endif %}
 
                     <div class="d-none mt-3" id="outras-imagens-pendentes">
                       <div class="os-media-gallery-label text-primary">Novas imagens selecionadas</div>
@@ -1417,35 +1408,37 @@
                   <div class="os-media-card-header">
                     <div>
                       <div class="os-media-card-kicker">Arquivo complementar</div>
-                      <h6 class="os-media-card-title">Video da OS</h6>
-                      <p class="os-media-card-description">Guarde aqui um video de apoio da operacao para consulta interna da equipe.</p>
+                      <h6 class="os-media-card-title">Vídeo da OS</h6>
+                      <p class="os-media-card-description">Guarde aqui um vídeo de apoio da operação para consulta interna da equipe.</p>
                     </div>
-                    <span class="os-media-pill" id="video-badge" data-saved-count="{{ 1 if video_path else 0 }}">{{ 1 if video_path else 0 }} video(s)</span>
+                    <span class="os-media-pill" id="video-badge" data-saved-count="{{ 1 if video_path else 0 }}">{{ 1 if video_path else 0 }} vídeo(s)</span>
                   </div>
 
                   <div class="os-media-preview-frame mb-3">
-                    {% if video_path %}
                     {% set video_url = url_for('main.os_video', os_id=solicitacao.id) %}
-                    <div id="video-salvo-wrapper">
+                    <div id="video-salvo-wrapper" class="{% if not video_path %}d-none{% endif %}">
                       <video controls preload="metadata" class="os-video-preview" id="video-salvo">
-                        <source src="{{ video_url }}" id="video-salvo-source">
-                        Seu navegador nao suporta a exibicao de video.
+                        <source src="{{ video_url if video_path else '' }}" id="video-salvo-source">
+                        Seu navegador não suporta a exibição de vídeo.
                       </video>
                     </div>
-                    <div class="os-media-actions mt-3" id="video-salvo-acoes">
-                      <a href="{{ video_url }}" target="_blank" class="btn btn-sm btn-outline-primary" id="video-salvo-link">
-                        <i class="bi bi-play-btn me-1"></i>Abrir video
+                    <div class="os-media-actions mt-3 {% if not video_path %}d-none{% endif %}" id="video-salvo-acoes">
+                      <a href="{{ video_url if video_path else '#' }}" target="_blank" class="btn btn-sm btn-outline-primary" id="video-salvo-link">
+                        <i class="bi bi-play-btn me-1"></i>Abrir vídeo
                       </a>
+                      {% if not modo_visualizacao %}
+                      <button type="button" class="btn btn-sm btn-outline-danger" id="btnRemoverVideo">
+                        <i class="bi bi-trash me-1"></i>Remover
+                      </button>
+                      {% endif %}
                     </div>
-                    {% else %}
-                    <div class="os-image-empty" id="video-vazio">
+                    <div class="os-image-empty {% if video_path %}d-none{% endif %}" id="video-vazio">
                       <div>
                         <i class="bi bi-camera-video fs-1 d-block mb-2 text-primary"></i>
-                        <span class="os-empty-title">Nenhum video anexado</span>
-                        <div class="os-empty-subtitle">Adicione um video quando for importante registrar movimento, percurso ou contexto do local.</div>
+                        <span class="os-empty-title">Nenhum vídeo anexado</span>
+                        <div class="os-empty-subtitle">Adicione um vídeo quando for importante registrar movimento, percurso ou contexto do local.</div>
                       </div>
                     </div>
-                    {% endif %}
 
                     <div class="d-none{% if video_path %} mt-3{% endif %}" id="video-pendente">
                       <video controls preload="metadata" class="os-video-preview" id="video-preview"></video>
@@ -1455,23 +1448,15 @@
 
                   {% if not modo_visualizacao %}
                   <div class="os-media-upload-box">
-                    <label class="form-label-header">Enviar novo video</label>
+                    <label class="form-label-header">Enviar novo vídeo</label>
                     <input type="file" id="video_file" class="form-control" accept="video/mp4,video/webm,video/quicktime,.mp4,.mov,.webm,.m4v" />
                     <div class="d-flex flex-wrap align-items-center gap-2 mt-3">
                       <button type="button" class="btn btn-sm btn-primary" id="btnUploadVideo">
-                        <i class="bi bi-cloud-arrow-up me-1"></i>Enviar video
+                        <i class="bi bi-cloud-arrow-up me-1"></i>Enviar vídeo
                       </button>
-                      <span class="os-media-help" id="statusUploadVideo">Aguardando selecao.</span>
+                      <span class="os-media-help" id="statusUploadVideo">Aguardando seleção.</span>
                     </div>
-                    <div class="os-media-help mt-2">Formatos aceitos: MP4, MOV, WEBM e M4V. O envio e feito diretamente para o WebDAV.</div>
-                    {% if video_path %}
-                    <div class="form-check mt-3">
-                      <input class="form-check-input" type="checkbox" value="1" id="remover_video" name="remover_video">
-                      <label class="form-check-label small" for="remover_video">
-                        Remover o video atual ao salvar.
-                      </label>
-                    </div>
-                    {% endif %}
+                    <div class="os-media-help mt-2">Formatos aceitos: MP4, MOV, WEBM e M4V. O envio é feito diretamente para o WebDAV.</div>
                   </div>
                   {% endif %}
                 </div>
@@ -1485,7 +1470,7 @@
           <a href="{{ url_voltar or url_for('main.piloto_os') }}" class="btn btn-outline-danger btn-sm px-4">Voltar</a>
           {% if not modo_visualizacao %}
           <button type="submit" class="btn btn-primary btn-sm px-4">
-            <i class="bi bi-check-lg me-1"></i> Salvar Formulário
+            <i class="bi bi-check-lg me-1"></i> Salvar formulário
           </button>
           {% endif %}
         </div>
@@ -1679,7 +1664,7 @@ document.addEventListener("DOMContentLoaded", () => {
     event.preventDefault();
 
     if (typeof Swal === "undefined") {
-      confirmed = window.confirm("Esta OS ja foi concluida. Deseja salvar alteracoes diretamente no registro final?");
+      confirmed = window.confirm("Esta OS já foi concluída. Deseja salvar alterações diretamente no registro final?");
       if (confirmed) {
         form.submit();
       }
@@ -1688,10 +1673,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const result = await Swal.fire({
       icon: "warning",
-      title: "OS concluida",
-      html: "Esta OS ja foi concluida.<br><strong>Deseja salvar alteracoes diretamente no registro final?</strong>",
+      title: "OS concluída",
+      html: "Esta OS já foi concluída.<br><strong>Deseja salvar alterações diretamente no registro final?</strong>",
       showCancelButton: true,
-      confirmButtonText: "Sim, salvar alteracoes",
+      confirmButtonText: "Sim, salvar alterações",
       cancelButtonText: "Cancelar",
       confirmButtonColor: "#dc3545",
       cancelButtonColor: "#6c757d",
@@ -1737,6 +1722,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const principalSavedActions = document.getElementById("imagem-principal-salva-acoes");
   const principalSavedImg = document.getElementById("imagem-principal-salva-img");
   const principalSavedLink = document.getElementById("imagem-principal-salva-link");
+  const principalDeleteButton = document.getElementById("btnRemoverImagemPrincipal");
   const principalEmpty = document.getElementById("imagem-principal-vazio");
   const principalPending = document.getElementById("imagem-principal-pendente");
   const principalPreview = document.getElementById("imagem-principal-preview");
@@ -1763,6 +1749,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const videoSaved = document.getElementById("video-salvo");
   const videoSavedSource = document.getElementById("video-salvo-source");
   const videoSavedLink = document.getElementById("video-salvo-link");
+  const videoDeleteButton = document.getElementById("btnRemoverVideo");
   const videoEmpty = document.getElementById("video-vazio");
   const videoPending = document.getElementById("video-pendente");
   const videoPreview = document.getElementById("video-preview");
@@ -1812,6 +1799,57 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const fileSignature = (file) => `${file.name}::${file.size}::${file.lastModified}`;
 
+  const confirmMediaRemoval = async ({ title, html }) => {
+    if (typeof Swal === "undefined") {
+      return window.confirm(title);
+    }
+
+    const result = await Swal.fire({
+      icon: "warning",
+      title,
+      html,
+      showCancelButton: true,
+      confirmButtonText: "Sim, remover",
+      cancelButtonText: "Cancelar",
+      confirmButtonColor: "#dc3545",
+      cancelButtonColor: "#6c757d",
+      reverseButtons: true,
+      customClass: {
+        popup: document.body.classList.contains("dark-mode") ? "swal2-dark-mode" : "",
+      },
+    });
+    return result.isConfirmed;
+  };
+
+  const showRemovalLoading = (title) => {
+    if (typeof Swal === "undefined") return;
+    Swal.fire({
+      title,
+      html: "Aguarde enquanto o arquivo é removido.",
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      showConfirmButton: false,
+      didOpen: () => Swal.showLoading(),
+      customClass: {
+        popup: document.body.classList.contains("dark-mode") ? "swal2-dark-mode" : "",
+      },
+    });
+  };
+
+  const showRemovalSuccess = async (title, text) => {
+    if (typeof Swal === "undefined") return;
+    await Swal.fire({
+      icon: "success",
+      title,
+      text,
+      confirmButtonText: "OK",
+      confirmButtonColor: "#1565c0",
+      customClass: {
+        popup: document.body.classList.contains("dark-mode") ? "swal2-dark-mode" : "",
+      },
+    });
+  };
+
   const syncExtrasInput = () => {
     if (!extrasInput || !canAccumulateFiles) return;
     const transfer = new DataTransfer();
@@ -1835,10 +1873,10 @@ document.addEventListener("DOMContentLoaded", () => {
       setText(extrasBadge, `${visibleExtrasCount} arquivo(s)`);
     }
     if (videoBadge) {
-      setText(videoBadge, `${visibleVideoCount} video(s)`);
+      setText(videoBadge, `${visibleVideoCount} vídeo(s)`);
     }
     if (totalBadgeValue) {
-      setText(totalBadgeValue, `${visibleTotal} midia(s) no formulario`);
+      setText(totalBadgeValue, `${visibleTotal} mídia(s) no formulário`);
     }
     if (extrasSavedWrapper) {
       extrasSavedWrapper.classList.toggle("os-muted-panel", clearExtras);
@@ -1868,7 +1906,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (principalSaved) principalSaved.classList.remove("d-none");
         if (principalSavedActions) principalSavedActions.classList.remove("d-none");
         if (!principalSaved && principalEmpty) principalEmpty.classList.remove("d-none");
-        setUploadStatus("Aguardando selecao.", "idle");
+        setUploadStatus("Aguardando seleção.", "idle");
         updateBadges();
         return;
       }
@@ -1923,7 +1961,12 @@ document.addEventListener("DOMContentLoaded", () => {
         if (principalSavedImg) principalSavedImg.src = mediaUrl;
         if (principalSavedLink) principalSavedLink.href = payload.media_url;
       }
-      setUploadStatus(payload.message || "Upload concluido com sucesso.", "success");
+      if (principalSaved) principalSaved.classList.remove("d-none");
+      if (principalSavedActions) principalSavedActions.classList.remove("d-none");
+      if (principalDeleteButton) principalDeleteButton.disabled = false;
+      if (principalEmpty) principalEmpty.classList.add("d-none");
+      if (principalPending) principalPending.classList.add("d-none");
+      setUploadStatus(payload.message || "Upload concluído com sucesso.", "success");
       updateBadges();
     } catch (error) {
       setUploadStatus(error.message || "Falha ao enviar o arquivo.", "error");
@@ -1937,6 +1980,52 @@ document.addEventListener("DOMContentLoaded", () => {
     principalUploadButton.addEventListener("click", uploadImagemPrincipalStream);
   }
 
+  if (principalDeleteButton) {
+    principalDeleteButton.addEventListener("click", async () => {
+      const confirmed = await confirmMediaRemoval({
+        title: "Remover foto principal",
+        html: "Deseja remover a foto principal desta OS?<br><strong>Essa ação não poderá ser desfeita.</strong>",
+      });
+      if (!confirmed) return;
+
+      principalDeleteButton.disabled = true;
+      setUploadStatus("Removendo foto principal...", "loading");
+      showRemovalLoading("Removendo foto principal");
+
+      try {
+        const response = await fetch("{{ url_for('main.os_delete_principal_image', os_id=solicitacao.id) }}", {
+          method: "DELETE",
+        });
+        let payload = {};
+        try {
+          payload = await response.json();
+        } catch (error) {
+          payload = {};
+        }
+
+        if (!response.ok || !payload.success) {
+          throw new Error(payload.error || "Falha ao remover a foto principal.");
+        }
+
+        savedPrincipalCount = 0;
+        if (principalInput) principalInput.value = "";
+        if (principalSavedImg) principalSavedImg.removeAttribute("src");
+        if (principalSavedLink) principalSavedLink.href = "#";
+        if (principalSaved) principalSaved.classList.add("d-none");
+        if (principalSavedActions) principalSavedActions.classList.add("d-none");
+        if (principalPending) principalPending.classList.add("d-none");
+        if (principalEmpty) principalEmpty.classList.remove("d-none");
+        setUploadStatus(payload.message || "Foto principal removida com sucesso.", "success");
+        updateBadges();
+        await showRemovalSuccess("Foto removida", payload.message || "Foto principal removida com sucesso.");
+      } catch (error) {
+        if (typeof Swal !== "undefined") Swal.close();
+        principalDeleteButton.disabled = false;
+        setUploadStatus(error.message || "Falha ao remover a foto principal.", "error");
+      }
+    });
+  }
+
   if (videoInput && videoPending && videoPreview) {
     videoInput.addEventListener("change", () => {
       const file = videoInput.files && videoInput.files[0];
@@ -1945,7 +2034,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (videoSavedWrapper) videoSavedWrapper.classList.remove("d-none");
         if (videoSavedActions) videoSavedActions.classList.remove("d-none");
         if (!videoSavedWrapper && videoEmpty) videoEmpty.classList.remove("d-none");
-        setVideoUploadStatus("Aguardando selecao.", "idle");
+        setVideoUploadStatus("Aguardando seleção.", "idle");
         updateBadges();
         return;
       }
@@ -1966,13 +2055,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const uploadVideoStream = async () => {
     const file = videoInput?.files && videoInput.files[0];
     if (!file) {
-      setVideoUploadStatus("Selecione um video antes de enviar.", "error");
+      setVideoUploadStatus("Selecione um vídeo antes de enviar.", "error");
       return;
     }
 
     if (videoUploadButton) videoUploadButton.disabled = true;
     if (videoInput) videoInput.disabled = true;
-    setVideoUploadStatus("Enviando video para o WebDAV...", "loading");
+    setVideoUploadStatus("Enviando vídeo para o WebDAV...", "loading");
 
     try {
       const response = await fetch("{{ url_for('main.os_upload_video_stream', os_id=solicitacao.id) }}", {
@@ -1992,7 +2081,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       if (!response.ok || !payload.success) {
-        throw new Error(payload.error || "Falha ao enviar o video.");
+        throw new Error(payload.error || "Falha ao enviar o vídeo.");
       }
 
       savedVideoCount = 1;
@@ -2003,10 +2092,15 @@ document.addEventListener("DOMContentLoaded", () => {
       if (payload.media_url && videoSavedLink) {
         videoSavedLink.href = payload.media_url;
       }
-      setVideoUploadStatus(payload.message || "Upload do video concluido com sucesso.", "success");
+      if (videoSavedWrapper) videoSavedWrapper.classList.remove("d-none");
+      if (videoSavedActions) videoSavedActions.classList.remove("d-none");
+      if (videoDeleteButton) videoDeleteButton.disabled = false;
+      if (videoEmpty) videoEmpty.classList.add("d-none");
+      if (videoPending) videoPending.classList.add("d-none");
+      setVideoUploadStatus(payload.message || "Upload do vídeo concluído com sucesso.", "success");
       updateBadges();
     } catch (error) {
-      setVideoUploadStatus(error.message || "Falha ao enviar o video.", "error");
+      setVideoUploadStatus(error.message || "Falha ao enviar o vídeo.", "error");
     } finally {
       if (videoUploadButton) videoUploadButton.disabled = false;
       if (videoInput) videoInput.disabled = false;
@@ -2017,6 +2111,53 @@ document.addEventListener("DOMContentLoaded", () => {
     videoUploadButton.addEventListener("click", uploadVideoStream);
   }
 
+  if (videoDeleteButton) {
+    videoDeleteButton.addEventListener("click", async () => {
+      const confirmed = await confirmMediaRemoval({
+        title: "Remover vídeo",
+        html: "Deseja remover o vídeo desta OS?<br><strong>Essa ação não poderá ser desfeita.</strong>",
+      });
+      if (!confirmed) return;
+
+      videoDeleteButton.disabled = true;
+      setVideoUploadStatus("Removendo vídeo...", "loading");
+      showRemovalLoading("Removendo vídeo");
+
+      try {
+        const response = await fetch("{{ url_for('main.os_delete_video', os_id=solicitacao.id) }}", {
+          method: "DELETE",
+        });
+        let payload = {};
+        try {
+          payload = await response.json();
+        } catch (error) {
+          payload = {};
+        }
+
+        if (!response.ok || !payload.success) {
+          throw new Error(payload.error || "Falha ao remover o vídeo.");
+        }
+
+        savedVideoCount = 0;
+        if (videoInput) videoInput.value = "";
+        if (videoSavedSource) videoSavedSource.removeAttribute("src");
+        if (videoSaved) videoSaved.load();
+        if (videoSavedLink) videoSavedLink.href = "#";
+        if (videoSavedWrapper) videoSavedWrapper.classList.add("d-none");
+        if (videoSavedActions) videoSavedActions.classList.add("d-none");
+        if (videoPending) videoPending.classList.add("d-none");
+        if (videoEmpty) videoEmpty.classList.remove("d-none");
+        setVideoUploadStatus(payload.message || "Vídeo removido com sucesso.", "success");
+        updateBadges();
+        await showRemovalSuccess("Vídeo removido", payload.message || "Vídeo removido com sucesso.");
+      } catch (error) {
+        if (typeof Swal !== "undefined") Swal.close();
+        videoDeleteButton.disabled = false;
+        setVideoUploadStatus(error.message || "Falha ao remover o vídeo.", "error");
+      }
+    });
+  }
+
   if (extrasInput && extrasPending && extrasPendingGrid) {
     const renderPendingExtras = () => {
       const files = extrasSelectedFiles.filter((file) => file.type.startsWith("image/"));
@@ -2025,7 +2166,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!files.length) {
         extrasPending.classList.add("d-none");
         if (!savedExtrasCount && extrasEmpty) extrasEmpty.classList.remove("d-none");
-        setExtrasUploadStatus("Aguardando selecao.", "idle");
+        setExtrasUploadStatus("Aguardando seleção.", "idle");
         updateBadges();
         return;
       }
@@ -2090,11 +2231,15 @@ document.addEventListener("DOMContentLoaded", () => {
           const imageIndex = Number(button.dataset.imageIndex || 0);
           if (!imageIndex) return;
 
-          const confirmed = window.confirm("Remover esta imagem complementar?");
+          const confirmed = await confirmMediaRemoval({
+            title: "Remover imagem",
+            html: "Deseja remover esta imagem complementar?<br><strong>Essa ação não poderá ser desfeita.</strong>",
+          });
           if (!confirmed) return;
 
           button.disabled = true;
           setExtrasUploadStatus("Removendo imagem complementar...", "loading");
+          showRemovalLoading("Removendo imagem");
 
           try {
             const response = await fetch(`/api/os/{{ solicitacao.id }}/imagem-complementar/${imageIndex}`, {
@@ -2143,12 +2288,51 @@ document.addEventListener("DOMContentLoaded", () => {
 
             setExtrasUploadStatus(payload.message || "Imagem complementar removida com sucesso.", "success");
             updateBadges();
+            await showRemovalSuccess("Imagem removida", payload.message || "Imagem complementar removida com sucesso.");
           } catch (error) {
+            if (typeof Swal !== "undefined") Swal.close();
             button.disabled = false;
             setExtrasUploadStatus(error.message || "Falha ao remover imagem complementar.", "error");
           }
         });
       });
+    };
+
+    const appendSavedComplementaryCard = (payload) => {
+      if (!extrasSavedGrid || !payload?.media_url || !payload?.image_index) return;
+
+      const imageIndex = Number(payload.image_index);
+      const card = document.createElement("div");
+      card.className = "os-image-thumb-card";
+      card.dataset.complementaryCard = "";
+      card.dataset.imageIndex = String(imageIndex);
+
+      const img = document.createElement("img");
+      img.className = "os-image-thumb mb-2";
+      img.alt = `Imagem complementar ${imageIndex}`;
+      img.src = `${payload.media_url}?t=${Date.now()}`;
+
+      const link = document.createElement("a");
+      link.href = payload.media_url;
+      link.target = "_blank";
+      link.className = "os-media-thumb-link";
+      link.textContent = `Abrir imagem ${imageIndex}`;
+
+      const removeButton = document.createElement("button");
+      removeButton.type = "button";
+      removeButton.className = "btn btn-sm btn-outline-danger mt-2 w-100";
+      removeButton.dataset.deleteComplementary = "";
+      removeButton.dataset.imageIndex = String(imageIndex);
+      removeButton.innerHTML = '<i class="bi bi-trash me-1"></i>Remover';
+
+      card.appendChild(img);
+      card.appendChild(link);
+      card.appendChild(removeButton);
+      extrasSavedGrid.appendChild(card);
+
+      if (extrasSavedWrapper) extrasSavedWrapper.classList.remove("d-none");
+      if (extrasEmpty) extrasEmpty.classList.add("d-none");
+      bindComplementaryDeleteButtons();
     };
 
     const uploadOutrasImagensStream = async () => {
@@ -2186,6 +2370,7 @@ document.addEventListener("DOMContentLoaded", () => {
             throw new Error(payload.error || `Falha ao enviar ${file.name}.`);
           }
 
+          appendSavedComplementaryCard(payload);
           uploadedCount += 1;
         }
 
@@ -2333,11 +2518,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function resetSummary(message) {
     summaryEls.carga.textContent = "-";
-    summaryEls.medicao.textContent = message || "Informe a area ou o volume para gerar o planejamento.";
+    summaryEls.medicao.textContent = message || "Informe a área ou o volume para gerar o planejamento.";
     summaryEls.calda.textContent = "-";
     summaryEls.tempo.textContent = "Tempo planejado: -";
     summaryEls.ponta.textContent = "-";
-    summaryEls.hardware.textContent = "Bicos, vazao e pressao aparecerao aqui.";
+    summaryEls.hardware.textContent = "Bicos, vazão e pressão aparecerão aqui.";
     if (copyButton) {
       copyButton.disabled = true;
     }
@@ -2408,47 +2593,47 @@ document.addEventListener("DOMContentLoaded", () => {
     compareEls.cargaPlanejada.textContent = `Planejado: ${planned.carga_bti_g !== undefined ? `${formatNumber(planned.carga_bti_g, 2)} g` : "-"}`;
     compareEls.cargaReal.textContent = `Real estimado: ${actualCarga !== null ? `${formatNumber(actualCarga, 2)} g` : "-"}`;
     if (planned.carga_bti_g === undefined || actualCarga === null) {
-      setCompareDiff(compareEls.cargaDiff, "Diferenca: pendente", "neutral");
+      setCompareDiff(compareEls.cargaDiff, "Diferença: pendente", "neutral");
     } else {
       const diff = actualCarga - planned.carga_bti_g;
       if (Math.abs(diff) < 0.05) {
-        setCompareDiff(compareEls.cargaDiff, "Diferenca: alinhado com o planejado", "positive");
+        setCompareDiff(compareEls.cargaDiff, "Diferença: alinhado com o planejado", "positive");
       } else {
         const direction = diff > 0 ? "acima" : "abaixo";
-        setCompareDiff(compareEls.cargaDiff, `Diferenca: ${formatNumber(Math.abs(diff), 2)} g ${direction} do planejado`, "negative");
+        setCompareDiff(compareEls.cargaDiff, `Diferença: ${formatNumber(Math.abs(diff), 2)} g ${direction} do planejado`, "negative");
       }
     }
 
     compareEls.caldaPlanejada.textContent = `Planejado: ${planned.calda_total_ml !== undefined ? formatMlLabel(planned.calda_total_ml) : "-"}`;
     compareEls.caldaReal.textContent = `Real: ${actualCaldaMl !== null ? formatMlLabel(actualCaldaMl) : "-"}`;
     if (planned.calda_total_ml === undefined || actualCaldaMl === null) {
-      setCompareDiff(compareEls.caldaDiff, "Diferenca: pendente", "neutral");
+      setCompareDiff(compareEls.caldaDiff, "Diferença: pendente", "neutral");
     } else {
       const diff = actualCaldaMl - planned.calda_total_ml;
       if (Math.abs(diff) < 1) {
-        setCompareDiff(compareEls.caldaDiff, "Diferenca: alinhado com o planejado", "positive");
+        setCompareDiff(compareEls.caldaDiff, "Diferença: alinhado com o planejado", "positive");
       } else {
         const direction = diff > 0 ? "acima" : "abaixo";
-        setCompareDiff(compareEls.caldaDiff, `Diferenca: ${formatNumber(Math.abs(diff), 0)} mL ${direction} do planejado`, "negative");
+        setCompareDiff(compareEls.caldaDiff, `Diferença: ${formatNumber(Math.abs(diff), 0)} mL ${direction} do planejado`, "negative");
       }
     }
 
     if (planned.pulverizacao_area_l_ha === null || planned.pulverizacao_area_l_ha === undefined) {
-      compareEls.lhaPlanejada.textContent = "Planejado: nao se aplica";
+      compareEls.lhaPlanejada.textContent = "Planejado: não se aplica";
       compareEls.lhaReal.textContent = `Real: ${actualLha !== null ? `${formatNumber(actualLha, 2)} l/ha` : "-"}`;
-      setCompareDiff(compareEls.lhaDiff, "Diferenca: nao se aplica ao cenario escolhido", "neutral");
+      setCompareDiff(compareEls.lhaDiff, "Diferença: não se aplica ao cenário escolhido", "neutral");
     } else {
       compareEls.lhaPlanejada.textContent = `Planejado: ${formatNumber(planned.pulverizacao_area_l_ha, 2)} l/ha`;
       compareEls.lhaReal.textContent = `Real: ${actualLha !== null ? `${formatNumber(actualLha, 2)} l/ha` : "-"}`;
       if (actualLha === null) {
-        setCompareDiff(compareEls.lhaDiff, "Diferenca: pendente", "neutral");
+        setCompareDiff(compareEls.lhaDiff, "Diferença: pendente", "neutral");
       } else {
         const diff = actualLha - planned.pulverizacao_area_l_ha;
         if (Math.abs(diff) < 0.05) {
-          setCompareDiff(compareEls.lhaDiff, "Diferenca: alinhado com o planejado", "positive");
+          setCompareDiff(compareEls.lhaDiff, "Diferença: alinhado com o planejado", "positive");
         } else {
           const direction = diff > 0 ? "acima" : "abaixo";
-          setCompareDiff(compareEls.lhaDiff, `Diferenca: ${formatNumber(Math.abs(diff), 2)} l/ha ${direction} do planejado`, "negative");
+          setCompareDiff(compareEls.lhaDiff, `Diferença: ${formatNumber(Math.abs(diff), 2)} l/ha ${direction} do planejado`, "negative");
         }
       }
     }

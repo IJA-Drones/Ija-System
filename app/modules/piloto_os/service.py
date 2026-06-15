@@ -2,8 +2,11 @@ import json
 import os
 import unicodedata
 from datetime import date, datetime, timedelta
+from urllib.parse import quote
 from zoneinfo import ZoneInfo
 
+import requests
+from flask import current_app
 from sqlalchemy import or_
 from sqlalchemy.orm import joinedload
 from werkzeug.utils import secure_filename
@@ -44,6 +47,8 @@ EQUIPE_OCEANO_USER_TYPE = "equipe_oceano"
 BRAZIL_TZ = ZoneInfo("America/Sao_Paulo")
 DRONE_CATEGORY_PULVERIZACAO = "pulverizacao"
 DRONE_CATEGORY_MONITORAMENTO = "monitoramento"
+WEBDAV_MARKER_PREFIX = "webdav://"
+WEBDAV_DELETE_TIMEOUT = (30, 300)
 
 
 class PilotoOsError(Exception):
@@ -1173,8 +1178,57 @@ def _salvar_upload_os_video(arquivo, root_path, os_id, prefixo):
     return f"uploads/os/{os_id}/{nome}"
 
 
+def _webdav_setting(*names):
+    for name in names:
+        value = current_app.config.get(name) or os.getenv(name)
+        if value:
+            return value
+    return None
+
+
+def _is_webdav_path(value):
+    return str(value or "").startswith(WEBDAV_MARKER_PREFIX)
+
+
+def _clean_webdav_remote_path(value):
+    parts = [part.strip() for part in str(value or "").replace("\\", "/").split("/") if part.strip()]
+    if any(part in {".", ".."} for part in parts):
+        return None
+    return "/".join(parts)
+
+
+def _webdav_remote_path_from_marker(value):
+    remote_path = str(value or "")[len(WEBDAV_MARKER_PREFIX):].replace("\\", "/")
+    return _clean_webdav_remote_path(remote_path)
+
+
+def _delete_webdav_marker(value):
+    base_url = (_webdav_setting("WEBDAV_URL", "SKYBOX_WEBDAV_URL") or "").strip().rstrip("/")
+    username = (_webdav_setting("WEBDAV_USER", "SKYBOX_USERNAME") or "").strip()
+    password = _webdav_setting("WEBDAV_PASS", "SKYBOX_APP_PASSWORD") or ""
+    remote_path = _webdav_remote_path_from_marker(value)
+    if not base_url or not username or not password or not remote_path:
+        return
+
+    encoded_path = "/".join(quote(part, safe="") for part in remote_path.split("/") if part)
+    response = requests.delete(
+        f"{base_url}/{encoded_path}",
+        auth=(username, password),
+        timeout=WEBDAV_DELETE_TIMEOUT,
+    )
+    if response.status_code not in (200, 202, 204, 404):
+        raise requests.RequestException(f"Falha ao remover arquivo WebDAV ({response.status_code}).")
+
+
 def _remover_upload_os_arquivo(root_path, rel_path):
     if not rel_path:
+        return
+
+    if _is_webdav_path(rel_path):
+        try:
+            _delete_webdav_marker(rel_path)
+        except requests.RequestException:
+            pass
         return
 
     if is_skybox_path(rel_path):
