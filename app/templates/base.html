@@ -602,6 +602,16 @@
               <i class="bi bi-person-badge-fill me-2"></i><span>Pilotos Operacionais</span>
             </a>
           </li>
+          {% if is_admin_panel_user %}
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint in ['main.agro_talentos_listar', 'main.agro_talento_novo', 'main.agro_talento_detalhe', 'main.agro_talento_pdf'] %}active{% endif %}"
+              href="{{ url_for('main.agro_talentos_listar') }}"
+            >
+              <i class="bi bi-person-vcard-fill me-2"></i><span>Banco de Talentos</span>
+            </a>
+          </li>
+          {% endif %}
           <li class="nav-item">
             <a
               class="nav-link {% if request.endpoint in ['main.agro_equipamentos_listar', 'main.agro_equipamento_novo', 'main.agro_equipamento_editar', 'main.agro_importar_planilha_drones'] %}active{% endif %}"

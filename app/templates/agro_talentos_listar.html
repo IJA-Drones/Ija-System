@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/listing_pattern.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+{% endblock %}
+
+{% macro status_label(status) -%}
+  {{ {
+    'NOVO': 'Novo',
+    'EM_ANALISE': 'Em análise',
+    'ENTREVISTA': 'Entrevista',
+    'APROVADO': 'Aprovado',
+    'ARQUIVADO': 'Arquivado'
+  }.get(status, status|replace('_', ' ')|title) }}
+{%- endmacro %}
+
+{% block content %}
+<div class="container-fluid py-4 listing-page">
+  <div class="listing-header mb-4">
+    <div>
+      <h2 class="text-dark m-0">
+        <i class="bi bi-person-vcard-fill me-2 text-primary"></i> Banco de Talentos
+      </h2>
+      <p class="text-muted small mb-0">
+        Perfis profissionais extraídos dos currículos. Total: <strong>{{ filters.total }}</strong>
+      </p>
+    </div>
+    <div class="listing-actions">
+      <a href="{{ url_for('main.admin_agro') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Voltar
+      </a>
+      {% if is_editable %}
+        <a href="{{ url_for('main.agro_talento_novo') }}" class="btn btn-success">
+          <i class="bi bi-file-earmark-arrow-up-fill me-1"></i> Enviar currículo
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card shadow-sm rounded-4 mb-4 border-0">
+    <div class="card-body">
+      <form method="GET" class="row g-2 align-items-end">
+        <div class="col-lg-6">
+          <label class="form-label small text-muted">Busca geral</label>
+          <input type="text" name="q" value="{{ filters.q }}" class="form-control"
+                 placeholder="Nome, área, habilidade, formação ou contato...">
+        </div>
+        <div class="col-sm-6 col-lg-2">
+          <label class="form-label small text-muted">Etapa</label>
+          <select name="status" class="form-select">
+            <option value="">Todas</option>
+            {% for option in status_options %}
+              <option value="{{ option }}" {% if filters.status == option %}selected{% endif %}>
+                {{ status_label(option) }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-sm-6 col-lg-2">
+          <label class="form-label small text-muted">Leitura da IA</label>
+          <select name="analise_status" class="form-select">
+            <option value="">Todas</option>
+            <option value="CONCLUIDA" {% if filters.analise_status == 'CONCLUIDA' %}selected{% endif %}>Concluída</option>
+            <option value="PROCESSANDO" {% if filters.analise_status == 'PROCESSANDO' %}selected{% endif %}>Processando</option>
+            <option value="ERRO" {% if filters.analise_status == 'ERRO' %}selected{% endif %}>Com erro</option>
+          </select>
+        </div>
+        <div class="col-lg-2 d-flex gap-2">
+          <button class="btn btn-primary flex-grow-1"><i class="bi bi-search"></i></button>
+          <a href="{{ url_for('main.agro_talentos_listar') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-x-lg"></i>
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card shadow-sm rounded-4 border-0 overflow-hidden listing-table-wrap">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 listing-table">
+          <thead class="table-light">
+            <tr>
+              <th>Candidato</th>
+              <th>Perfil</th>
+              <th>Habilidades em destaque</th>
+              <th>Etapa</th>
+              <th>IA</th>
+              <th>Cadastro</th>
+              <th class="col-actions">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for curriculo in curriculos %}
+              <tr>
+                <td data-label="Candidato">
+                  <div class="fw-bold">{{ curriculo.nome }}</div>
+                  <div class="small text-muted">{{ curriculo.email or curriculo.telefone or "Contato não identificado" }}</div>
+                </td>
+                <td data-label="Perfil">
+                  <div class="fw-semibold">{{ curriculo.titulo_profissional or "Perfil em análise" }}</div>
+                  <div class="small text-muted">{{ curriculo.area_principal or "Área ainda não identificada" }}</div>
+                </td>
+                <td data-label="Habilidades">
+                  <div class="d-flex flex-wrap gap-1">
+                    {% for habilidade in (curriculo.habilidades_tecnicas or [])[:3] %}
+                      <span class="badge bg-primary-subtle text-primary border border-primary-subtle">{{ habilidade }}</span>
+                    {% else %}
+                      <span class="text-muted small">Nenhuma habilidade extraída</span>
+                    {% endfor %}
+                  </div>
+                </td>
+                <td data-label="Etapa">
+                  <span class="badge bg-secondary-subtle text-secondary border">{{ status_label(curriculo.status) }}</span>
+                </td>
+                <td data-label="IA">
+                  {% if curriculo.analise_status == 'CONCLUIDA' %}
+                    <span class="badge bg-success-subtle text-success border border-success-subtle">Concluída</span>
+                  {% elif curriculo.analise_status == 'ERRO' %}
+                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Erro</span>
+                  {% else %}
+                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">Processando</span>
+                  {% endif %}
+                </td>
+                <td data-label="Cadastro" class="text-muted">{{ curriculo.criado_em.strftime('%d/%m/%Y') }}</td>
+                <td data-label="Ações" class="listing-cell-actions">
+                  <a href="{{ url_for('main.agro_talento_detalhe', curriculo_id=curriculo.id) }}"
+                     class="btn btn-sm btn-primary">
+                    <i class="bi bi-eye-fill me-1"></i> Ver perfil
+                  </a>
+                </td>
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="7" class="text-center py-5">
+                  <i class="bi bi-person-vcard fs-1 text-muted"></i>
+                  <p class="text-muted mt-2 mb-0">Nenhum candidato encontrado.</p>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

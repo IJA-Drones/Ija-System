@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+  <style>
+    .talent-chip {
+      display: inline-flex;
+      padding: .35rem .65rem;
+      border-radius: 999px;
+      background: var(--bs-primary-bg-subtle);
+      color: var(--bs-primary-text-emphasis);
+      border: 1px solid var(--bs-primary-border-subtle);
+      font-size: .82rem;
+    }
+    .talent-section-list li + li { margin-top: .6rem; }
+  </style>
+{% endblock %}
+
+{% macro chips(items, empty_text='Nenhuma informação identificada') %}
+  {% if items %}
+    <div class="d-flex flex-wrap gap-2">
+      {% for item in items %}<span class="talent-chip">{{ item }}</span>{% endfor %}
+    </div>
+  {% else %}
+    <span class="text-muted small">{{ empty_text }}</span>
+  {% endif %}
+{% endmacro %}
+
+{% macro text_list(items) %}
+  {% if items %}
+    <ul class="talent-section-list mb-0">
+      {% for item in items %}<li>{{ item }}</li>{% endfor %}
+    </ul>
+  {% else %}
+    <span class="text-muted small">Nenhuma informação identificada.</span>
+  {% endif %}
+{% endmacro %}
+
+{% macro status_label(status) -%}
+  {{ {
+    'NOVO': 'Novo',
+    'EM_ANALISE': 'Em análise',
+    'ENTREVISTA': 'Entrevista',
+    'APROVADO': 'Aprovado',
+    'ARQUIVADO': 'Arquivado'
+  }.get(status, status|replace('_', ' ')|title) }}
+{%- endmacro %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1240px">
+  <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-4">
+    <div>
+      <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+        <h2 class="text-dark m-0">{{ curriculo.nome }}</h2>
+        {% if curriculo.analise_status == 'CONCLUIDA' %}
+          <span class="badge bg-success-subtle text-success border border-success-subtle">Perfil lido pelo Gemini</span>
+        {% elif curriculo.analise_status == 'ERRO' %}
+          <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Falha na leitura</span>
+        {% else %}
+          <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">Processando</span>
+        {% endif %}
+      </div>
+      <p class="text-muted mb-0">{{ curriculo.titulo_profissional or "Título profissional não identificado" }}</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('main.agro_talentos_listar') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Voltar
+      </a>
+      <a href="{{ url_for('main.agro_talento_pdf', curriculo_id=curriculo.id) }}" target="_blank" class="btn btn-outline-primary">
+        <i class="bi bi-file-earmark-pdf-fill me-1"></i> Abrir PDF
+      </a>
+      {% if is_editable %}
+        <form method="POST" action="{{ url_for('main.agro_talento_reprocessar', curriculo_id=curriculo.id) }}">
+          <button class="btn btn-primary"><i class="bi bi-stars me-1"></i> Reprocessar IA</button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if curriculo.analise_status == 'ERRO' %}
+    <div class="alert alert-warning rounded-4">
+      <strong>A leitura automática não foi concluída.</strong>
+      <div class="small mt-1">{{ curriculo.analise_erro }}</div>
+    </div>
+  {% endif %}
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-4">
+          <h5 class="text-primary mb-3"><i class="bi bi-person-lines-fill me-2"></i>Resumo do perfil</h5>
+          <p class="mb-0" style="white-space: pre-line;">{{ curriculo.resumo_perfil or "Resumo ainda não disponível." }}</p>
+        </div>
+      </div>
+
+      <div class="row g-4 mb-4">
+        <div class="col-md-6">
+          <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body p-4">
+              <h5 class="text-primary mb-3"><i class="bi bi-tools me-2"></i>Habilidades técnicas</h5>
+              {{ chips(curriculo.habilidades_tecnicas) }}
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body p-4">
+              <h5 class="text-primary mb-3"><i class="bi bi-people-fill me-2"></i>Habilidades comportamentais</h5>
+              {{ chips(curriculo.habilidades_comportamentais) }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-4 mb-4">
+        <div class="col-md-6">
+          <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body p-4">
+              <h5 class="text-primary mb-3"><i class="bi bi-briefcase-fill me-2"></i>Áreas de atuação</h5>
+              {{ chips(curriculo.areas_atuacao) }}
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body p-4">
+              <h5 class="text-primary mb-3"><i class="bi bi-signpost-split-fill me-2"></i>Possíveis especializações</h5>
+              {{ chips(curriculo.areas_desenvolvimento, 'Nenhum caminho adicional sugerido.') }}
+              <div class="small text-muted mt-3">
+                Estas são sugestões de desenvolvimento, não habilidades já comprovadas.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {% for title, icon, items in [
+        ('Experiências', 'bi-building-fill', curriculo.experiencias),
+        ('Formação', 'bi-mortarboard-fill', curriculo.formacoes),
+        ('Certificações', 'bi-patch-check-fill', curriculo.certificacoes),
+        ('Idiomas', 'bi-translate', curriculo.idiomas)
+      ] %}
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+          <div class="card-body p-4">
+            <h5 class="text-primary mb-3"><i class="bi {{ icon }} me-2"></i>{{ title }}</h5>
+            {{ text_list(items) }}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-4">
+          <h5 class="text-primary mb-3"><i class="bi bi-info-circle-fill me-2"></i>Dados do candidato</h5>
+          <dl class="mb-0">
+            <dt class="small text-muted">Área principal</dt>
+            <dd>{{ curriculo.area_principal or "Não identificada" }}</dd>
+            <dt class="small text-muted">Objetivo profissional</dt>
+            <dd>{{ curriculo.objetivo_profissional or "Não identificado" }}</dd>
+            <dt class="small text-muted">Email</dt>
+            <dd>{{ curriculo.email or "Não identificado" }}</dd>
+            <dt class="small text-muted">Telefone</dt>
+            <dd>{{ curriculo.telefone or "Não identificado" }}</dd>
+            <dt class="small text-muted">Localidade</dt>
+            <dd>{{ [curriculo.cidade, curriculo.uf]|select|join(' / ') or "Não identificada" }}</dd>
+            <dt class="small text-muted">LinkedIn</dt>
+            <dd>
+              {% if curriculo.linkedin %}
+                <a href="{{ curriculo.linkedin }}" target="_blank" rel="noopener noreferrer">Abrir perfil</a>
+              {% else %}Não identificado{% endif %}
+            </dd>
+          </dl>
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-4">
+          <h5 class="text-primary mb-3"><i class="bi bi-cloud-check-fill me-2"></i>Arquivo e processamento</h5>
+          <div class="small text-muted">Arquivo original</div>
+          <div class="fw-semibold text-break mb-3">{{ curriculo.arquivo_nome_original }}</div>
+          <div class="small text-muted">Tamanho</div>
+          <div class="mb-3">{{ '%.2f'|format(curriculo.arquivo_tamanho / 1024 / 1024) }} MB</div>
+          <div class="small text-muted">Modelo Gemini</div>
+          <div class="mb-3">{{ curriculo.gemini_modelo or "Processamento ainda não concluído" }}</div>
+          <div class="small text-muted">Cadastrado em</div>
+          <div>{{ curriculo.criado_em.strftime('%d/%m/%Y às %H:%M') }}</div>
+        </div>
+      </div>
+
+      {% if is_editable %}
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+          <div class="card-body p-4">
+            <h5 class="text-primary mb-3"><i class="bi bi-kanban-fill me-2"></i>Acompanhamento</h5>
+            <form method="POST">
+              <div class="mb-3">
+                <label class="form-label">Etapa do candidato</label>
+                <select name="status" class="form-select">
+                  {% for option in status_options %}
+                    <option value="{{ option }}" {% if curriculo.status == option %}selected{% endif %}>
+                      {{ status_label(option) }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Observações internas</label>
+                <textarea name="observacoes" class="form-control" rows="5">{{ curriculo.observacoes or '' }}</textarea>
+              </div>
+              <button class="btn btn-success w-100"><i class="bi bi-check-lg me-1"></i> Salvar acompanhamento</button>
+            </form>
+          </div>
+        </div>
+
+        <div class="card border-danger-subtle shadow-sm rounded-4">
+          <div class="card-body p-4">
+            <h5 class="text-danger mb-2">Excluir candidato</h5>
+            <p class="small text-muted">Remove o perfil e o PDF armazenado no Dropbox.</p>
+            <form method="POST" action="{{ url_for('main.agro_talento_deletar', curriculo_id=curriculo.id) }}"
+                  onsubmit="return confirm('Excluir permanentemente este candidato e o PDF?');">
+              <button class="btn btn-outline-danger w-100"><i class="bi bi-trash-fill me-1"></i> Excluir</button>
+            </form>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
