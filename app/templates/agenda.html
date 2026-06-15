@@ -151,7 +151,16 @@
     </div>
   </div>
 
-  {% set agenda_has_filters = filtros.uvis_id or filtros.status or filtros.tipo_visita or filtros.tipo_imovel or filtros.foco or filtros.data_ini or filtros.data_fim %}
+  {% set agenda_has_filters = filtros.uvis_id or filtros.status or filtros.tipo_visita or filtros.tipo_imovel or filtros.foco or (not periodo_semanal_fixo and (filtros.data_ini or filtros.data_fim)) %}
+
+  {% if periodo_semanal_fixo %}
+  <div class="alert alert-primary border-0 shadow-sm rounded-4 mb-4">
+    <i class="bi bi-calendar-week me-2"></i>
+    Exibindo somente as solicitações da semana:
+    <strong>{{ semana_inicio.strftime('%d/%m/%Y') }}</strong>
+    a <strong>{{ semana_fim.strftime('%d/%m/%Y') }}</strong>.
+  </div>
+  {% endif %}
 
   {# --- FILTROS DA AGENDA (SANFONA) --- #}
   <div class="card shadow-sm rounded-4 mb-4 border-0">
@@ -261,6 +270,7 @@
               </select>
             </div>
 
+            {% if not periodo_semanal_fixo %}
             <div class="col-md-3">
               <label class="small text-muted">Data agendamento de:</label>
               <input
@@ -308,6 +318,7 @@
                 {% endfor %}
               </select>
             </div>
+            {% endif %}
 
             <div class="col-md-2 d-flex gap-2">
               <button
@@ -849,9 +860,10 @@
     const calendarEl = document.getElementById("calendar");
     const initialDateFromServer = "{{ initial_date }}";
     const isMobile = window.matchMedia("(max-width: 768px)").matches;
+    const weeklyOnly = {{ periodo_semanal_fixo | tojson }};
 
     const calendar = new FullCalendar.Calendar(calendarEl, {
-      initialView: isMobile ? "listWeek" : "dayGridMonth",
+      initialView: weeklyOnly ? "dayGridMonth" : (isMobile ? "listWeek" : "dayGridMonth"),
       initialDate: initialDateFromServer,
       locale: "pt-br",
       height: "auto",
@@ -873,7 +885,7 @@
       headerToolbar: {
         left: "prev,next today",
         center: "title",
-        right: isMobile ? "listWeek" : "dayGridMonth,listWeek",
+        right: weeklyOnly ? "dayGridMonth,listWeek" : (isMobile ? "listWeek" : "dayGridMonth,listWeek"),
       },
 
       dateClick: function (info) {
@@ -963,13 +975,13 @@
     // responsivo
     window.addEventListener("resize", () => {
       const mobileNow = window.matchMedia("(max-width: 768px)").matches;
-      const desiredView = mobileNow ? "listWeek" : "dayGridMonth";
+      const desiredView = weeklyOnly ? "dayGridMonth" : (mobileNow ? "listWeek" : "dayGridMonth");
       if (calendar.view.type !== desiredView) calendar.changeView(desiredView);
 
       calendar.setOption("headerToolbar", {
         left: "prev,next today",
         center: "title",
-        right: mobileNow ? "listWeek" : "dayGridMonth,listWeek",
+        right: weeklyOnly ? "dayGridMonth,listWeek" : (mobileNow ? "listWeek" : "dayGridMonth,listWeek"),
       });
     });
   });

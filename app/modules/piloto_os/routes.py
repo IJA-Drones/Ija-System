@@ -430,8 +430,7 @@ def register_routes(bp):
             baterias_equipe=context["baterias_equipe"],
             veiculos_equipe=context["veiculos_equipe"],
             busca=context["busca"],
-            semana_inicio=context["semana_inicio"],
-            semana_fim=context["semana_fim"],
+            data_hoje=context["data_hoje"],
             pagination_args={k: v for k, v in request.args.items() if k != "page"},
         )
 

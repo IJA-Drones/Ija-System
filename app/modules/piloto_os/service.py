@@ -143,10 +143,12 @@ def _buscar_equipe_do_usuario_na_os(user, equipe_id):
     return vinculo.equipe if vinculo else None
 
 
+def current_piloto_dashboard_date():
+    return datetime.now(BRAZIL_TZ).date()
+
+
 def build_piloto_os_context(user, args, google_maps_key):
-    hoje = datetime.now(BRAZIL_TZ).date()
-    semana_inicio = hoje - timedelta(days=hoje.weekday())
-    semana_fim = semana_inicio + timedelta(days=6)
+    hoje = current_piloto_dashboard_date()
     busca = (args.get("q") or "").strip()
 
     is_equipe_oceano = getattr(user, "tipo_usuario", None) == EQUIPE_OCEANO_USER_TYPE
@@ -178,8 +180,7 @@ def build_piloto_os_context(user, args, google_maps_key):
             "baterias_equipe": [],
             "veiculos_equipe": [],
             "busca": busca,
-            "semana_inicio": semana_inicio,
-            "semana_fim": semana_fim,
+            "data_hoje": hoje,
         }
 
     query = (
@@ -191,7 +192,7 @@ def build_piloto_os_context(user, args, google_maps_key):
         .filter(
             Solicitacao.equipe_id == equipe.id,
             Solicitacao.status.in_(STATUS_OS_APROVADAS_COM_ACENTO),
-            Solicitacao.data_agendamento.between(semana_inicio, semana_fim),
+            Solicitacao.data_agendamento == hoje,
         )
     )
 
@@ -250,8 +251,7 @@ def build_piloto_os_context(user, args, google_maps_key):
             .all()
         ),
         "busca": busca,
-        "semana_inicio": semana_inicio,
-        "semana_fim": semana_fim,
+        "data_hoje": hoje,
         "veiculos_equipe": (
             Veiculos.query
             .filter(Veiculos.equipe_id == equipe.id)
