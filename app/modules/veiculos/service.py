@@ -56,19 +56,14 @@ def list_veiculos(tipo_usuario, args, user=None):
     status = (args.get("status") or "").strip()
 
     query = Veiculos.query
-    if user is not None:
+    if user is not None and tipo_usuario != EQUIPE_OCEANO_USER_TYPE:
         query = apply_prefeitura_scope(query, user, Veiculos.prefeitura_id)
 
     if tipo_usuario == EQUIPE_OCEANO_USER_TYPE:
         equipe = _equipe_oceano_logada(user)
         if not equipe:
             raise PermissionError
-        query = query.filter(
-            db.or_(
-                Veiculos.equipe_id == equipe.id,
-                db.func.lower(Veiculos.responsavel) == equipe.nome_equipe.lower(),
-            )
-        )
+        query = query.filter(_veiculo_equipe_operacional_filter(equipe, user))
 
     if q:
         like = f"%{q}%"
@@ -269,6 +264,7 @@ def validate_veiculo_form(form_data, *, responsaveis, equipes=None, existing_vei
 
 
 def create_veiculo(cleaned, *, prefeitura_id=None):
+    prefeitura_id = _resolve_prefeitura_id_veiculo(cleaned["equipe_id"], prefeitura_id)
     novo = Veiculos(
         tipo_equipamento="veiculos",
         status=cleaned["status"],
@@ -302,6 +298,7 @@ def update_veiculo(veiculo, cleaned):
     veiculo.placa = cleaned["placa"]
     veiculo.responsavel = cleaned["responsavel"]
     veiculo.equipe_id = cleaned["equipe_id"]
+    veiculo.prefeitura_id = _resolve_prefeitura_id_veiculo(cleaned["equipe_id"], veiculo.prefeitura_id)
     veiculo.km_atual = cleaned["km_atual"]
     veiculo.km_prox_revisao = cleaned["km_prox_revisao"]
     veiculo.status = cleaned["status"]
@@ -348,13 +345,8 @@ def build_piloto_veiculos_context(user):
             }
 
         veiculos = (
-            apply_prefeitura_scope(Veiculos.query, user, Veiculos.prefeitura_id)
-            .filter(
-                db.or_(
-                    Veiculos.equipe_id == equipe.id,
-                    db.func.lower(Veiculos.responsavel) == equipe.nome_equipe.lower(),
-                )
-            )
+            Veiculos.query
+            .filter(_veiculo_equipe_operacional_filter(equipe, user))
             .order_by(Veiculos.operacao.asc(), Veiculos.modelo.asc())
             .all()
         )
@@ -374,12 +366,12 @@ def build_piloto_veiculos_context(user):
         }
 
     equipe_ids = _equipe_ids_do_piloto(user)
-    filtros_responsabilidade = [db.func.lower(Veiculos.responsavel) == nome_piloto.lower()]
+    filtros_responsabilidade = [_veiculo_responsavel_filter(nome_piloto, user)]
     if equipe_ids:
         filtros_responsabilidade.append(Veiculos.equipe_id.in_(equipe_ids))
 
     veiculos = (
-        apply_prefeitura_scope(Veiculos.query, user, Veiculos.prefeitura_id)
+        Veiculos.query
         .filter(db.or_(*filtros_responsabilidade))
         .order_by(Veiculos.operacao.asc(), Veiculos.modelo.asc())
         .all()
@@ -616,20 +608,64 @@ def _equipe_oceano_logada(user):
     return query.first()
 
 
+def _resolve_prefeitura_id_veiculo(equipe_id, fallback_prefeitura_id=None):
+    if not equipe_id:
+        return fallback_prefeitura_id
+
+    equipe = Equipe.query.filter(Equipe.id == equipe_id).first()
+    if equipe and equipe.prefeitura_id is not None:
+        return equipe.prefeitura_id
+    return fallback_prefeitura_id
+
+
+def _veiculo_prefeitura_legacy_filter(user):
+    prefeitura_id = getattr(user, "prefeitura_id", None)
+    if prefeitura_id is None:
+        return db.true()
+    return db.or_(Veiculos.prefeitura_id == prefeitura_id, Veiculos.prefeitura_id.is_(None))
+
+
+def _veiculo_responsavel_filter(nome, user):
+    return db.and_(
+        db.func.lower(Veiculos.responsavel) == (nome or "").strip().lower(),
+        _veiculo_prefeitura_legacy_filter(user),
+    )
+
+
+def _veiculo_equipe_operacional_filter(equipe, user):
+    return db.or_(
+        Veiculos.equipe_id == equipe.id,
+        _veiculo_responsavel_filter(equipe.nome_equipe, user),
+    )
+
+
+def _veiculo_responsavel_ok(veiculo, nome, user):
+    responsavel = (getattr(veiculo, "responsavel", None) or "").strip().lower()
+    if responsavel != (nome or "").strip().lower():
+        return False
+
+    prefeitura_id = getattr(user, "prefeitura_id", None)
+    return prefeitura_id is None or getattr(veiculo, "prefeitura_id", None) in (None, prefeitura_id)
+
+
 def _equipe_ids_do_piloto(user):
     piloto_id = getattr(user, "piloto_id", None)
     if not piloto_id:
         return []
 
-    rows = (
+    query = (
         db.session.query(EquipePiloto.equipe_id)
         .join(Equipe, Equipe.id == EquipePiloto.equipe_id)
         .filter(
             EquipePiloto.piloto_id == piloto_id,
             Equipe.ativa.is_(True),
         )
-        .all()
     )
+    prefeitura_id = getattr(user, "prefeitura_id", None)
+    if prefeitura_id is not None:
+        query = query.filter(Equipe.prefeitura_id == prefeitura_id)
+
+    rows = query.all()
     return [row.equipe_id for row in rows if row.equipe_id]
 
 
@@ -658,22 +694,18 @@ def _parse_optional_int(raw_value):
 
 def _veiculo_do_operacional_logado(veiculo_id, *, user=None):
     query = Veiculos.query.filter(Veiculos.id == veiculo_id)
-    if user is not None:
-        query = apply_prefeitura_scope(query, user, Veiculos.prefeitura_id)
     veiculo = query.first_or_404()
 
     if getattr(user, "tipo_usuario", None) == EQUIPE_OCEANO_USER_TYPE:
         equipe = _equipe_oceano_logada(user)
-        responsavel_ok = bool(
-            equipe and (veiculo.responsavel or "").strip().lower() == equipe.nome_equipe.lower()
-        )
+        responsavel_ok = bool(equipe and _veiculo_responsavel_ok(veiculo, equipe.nome_equipe, user))
         if not equipe or (veiculo.equipe_id != equipe.id and not responsavel_ok):
             raise PermissionError
         return veiculo
 
     nome_piloto = _piloto_nome_logado(user, strict=True)
     equipe_ids = _equipe_ids_do_piloto(user)
-    responsavel_ok = (veiculo.responsavel or "").strip().lower() == nome_piloto.lower()
+    responsavel_ok = _veiculo_responsavel_ok(veiculo, nome_piloto, user)
     equipe_ok = bool(veiculo.equipe_id and veiculo.equipe_id in equipe_ids)
     if not responsavel_ok and not equipe_ok:
         raise PermissionError
@@ -1302,7 +1334,6 @@ def _build_veiculos_logs_query(*, user=None, q="", data_inicio="", data_fim=""):
         .outerjoin(Equipe, LogVeiculo.equipe_id == Equipe.id)
     )
     if user is not None:
-        query = apply_prefeitura_scope(query, user, Veiculos.prefeitura_id)
         if getattr(user, "tipo_usuario", None) == EQUIPE_OCEANO_USER_TYPE:
             equipe = _equipe_oceano_logada(user)
             if not equipe:
@@ -1311,10 +1342,11 @@ def _build_veiculos_logs_query(*, user=None, q="", data_inicio="", data_fim=""):
                 query = query.filter(
                     db.or_(
                         LogVeiculo.equipe_id == equipe.id,
-                        Veiculos.equipe_id == equipe.id,
-                        db.func.lower(Veiculos.responsavel) == equipe.nome_equipe.lower(),
+                        _veiculo_equipe_operacional_filter(equipe, user),
                     )
                 )
+        else:
+            query = apply_prefeitura_scope(query, user, Veiculos.prefeitura_id)
 
     if q:
         like = f"%{q}%"
