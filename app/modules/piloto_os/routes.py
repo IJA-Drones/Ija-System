@@ -1,11 +1,14 @@
 import json
 import mimetypes
 import os
+from datetime import datetime
 from urllib.parse import quote, unquote
 
 import requests
 from flask import abort, current_app, flash, jsonify, redirect, render_template, request, send_file, url_for
 from flask_login import current_user, login_required
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.orm import lazyload
 from werkzeug.exceptions import HTTPException
 from werkzeug.utils import secure_filename
 
@@ -36,6 +39,18 @@ WEBDAV_MARKER_PREFIX = "webdav://"
 DEFAULT_WEBDAV_CONNECT_TIMEOUT_SECONDS = 30
 DEFAULT_WEBDAV_TRANSFER_TIMEOUT_SECONDS = 3600
 DEFAULT_WEBDAV_UPLOAD_CHUNK_SIZE_BYTES = 1024 * 1024
+MEDIA_STORAGE_UNAVAILABLE_MESSAGE = (
+    "Nao foi possivel acessar o armazenamento de midias agora. "
+    "Tente novamente em instantes."
+)
+MEDIA_DATABASE_ERROR_MESSAGE = (
+    "A midia foi processada, mas nao foi possivel atualizar o registro da OS. "
+    "Atualize a pagina e tente novamente."
+)
+MEDIA_UNEXPECTED_ERROR_MESSAGE = (
+    "Nao foi possivel concluir esta acao agora. "
+    "Tente novamente em instantes."
+)
 
 
 def _require_piloto():
@@ -267,17 +282,31 @@ def _build_upload_context(os_id):
     return context
 
 
-def _decode_uploaded_file_name():
+def _media_error_response(message=MEDIA_UNEXPECTED_ERROR_MESSAGE, status=500):
+    return jsonify({"success": False, "error": message}), status
+
+
+def _build_stream_upload_file_name(os_id, media_prefix):
     encoded_name = (request.headers.get("X-File-Name") or "").strip()
     if not encoded_name:
         return None
 
     decoded_name = unquote(encoded_name).strip()
-    return secure_filename(decoded_name)
+    original_file_name = secure_filename(decoded_name)
+    if not original_file_name:
+        return None
+
+    _root, extension = os.path.splitext(original_file_name)
+    if not extension:
+        extension = mimetypes.guess_extension(request.headers.get("Content-Type") or "") or ""
+
+    safe_prefix = secure_filename(str(media_prefix or "arquivo")).strip("_") or "arquivo"
+    stamp = datetime.now().strftime("%Y%m%d%H%M%S%f")
+    return secure_filename(f"{safe_prefix}_os_{os_id}_{stamp}{extension.lower()}")
 
 
-def _upload_request_stream_to_webdav(os_id):
-    file_name = _decode_uploaded_file_name()
+def _upload_request_stream_to_webdav(os_id, media_prefix):
+    file_name = _build_stream_upload_file_name(os_id, media_prefix)
     if not file_name:
         return None, None, jsonify({"success": False, "error": "Header X-File-Name ausente ou invalido."}), 400
 
@@ -323,29 +352,110 @@ def _upload_request_stream_to_webdav(os_id):
         current_app.logger.exception("Falha de conexao no upload WebDAV da OS %s para %s", os_id, file_url)
         return None, None, jsonify({
             "success": False,
-            "error": f"Falha de conexao ao enviar arquivo para o WebDAV: {exc}",
+            "error": MEDIA_STORAGE_UNAVAILABLE_MESSAGE,
         }), 502
     if response.status_code not in (200, 201, 204):
+        current_app.logger.warning(
+            "Falha no upload WebDAV da OS %s para %s: status=%s body=%s",
+            os_id,
+            file_url,
+            response.status_code,
+            response.text[:500],
+        )
         return None, None, jsonify({
             "success": False,
-            "error": "Falha ao enviar arquivo para o WebDAV.",
+            "error": MEDIA_STORAGE_UNAVAILABLE_MESSAGE,
             "status_code": response.status_code,
-            "details": response.text[:500],
         }), 502
 
     return file_name, file_url, None, None
 
 
-def _get_or_create_ordem_for_upload(context):
+def _build_ordem_servico_upload_stub(solicitacao):
+    return OrdemServico(
+        solicitacao_id=solicitacao.id,
+        equipe_id=solicitacao.equipe_id,
+        identificador_os="",
+        respondido_por="",
+        respondido_em=None,
+        situacao_aplicacao="",
+        larva_visualizada="",
+        retornar_proxima_semana_monitorar_larvas="NAO",
+        distrito_administrativo="",
+        nome_rf_ace_responsavel_os="",
+        criadouro_os_tipo_volume="",
+        data_aplicacao=None,
+        hora_inicio_aplicacao=None,
+        hora_termino_aplicacao=None,
+        tratamento_adicional_realizado="",
+        quantos_quais="",
+        descricao_produto="",
+        formulacao_produto="",
+        dosagem_g_10l="",
+        tipo_aplicacao="",
+        quantidade_produto_administrada_ml=None,
+        pulverizacao_area_l_ha=None,
+        prefixo_aeronave_pulverizacao="",
+        prefixo_aeronave_monitoramento="",
+        quantidade_videos_registradas=None,
+        quantidade_imagens_registradas=None,
+        ponta_pulverizacao="",
+        temperatura_c=None,
+        umidade_relativa_pct=None,
+        velocidade_vento_kmh=None,
+        motivo_nao_realizacao="",
+        observacoes="",
+        piloto="",
+        assinatura_piloto="",
+        auxiliar="",
+        proprietario_ou_preposto="",
+        assinatura_proprietario_ou_preposto="",
+        drone_id=None,
+        drone_monitoramento_id=None,
+        drone_denominacao="",
+        drone_modelo="",
+        drone_numero_serie="",
+        drone_registro_anatel="",
+        drone_registro_anac="",
+        drone_monitoramento_denominacao="",
+        drone_monitoramento_modelo="",
+        drone_monitoramento_numero_serie="",
+        drone_monitoramento_registro_anatel="",
+        drone_monitoramento_registro_anac="",
+    )
+
+
+def _query_ordem_servico_for_upload(solicitacao_id, *, lock=False):
+    query = (
+        OrdemServico.query
+        .options(lazyload("*"))
+        .filter_by(solicitacao_id=solicitacao_id)
+    )
+    if lock:
+        query = query.with_for_update(of=OrdemServico)
+    return query
+
+
+def _get_or_create_ordem_for_upload(context, *, lock=False):
     solicitacao = context["solicitacao"]
-    ordem = context["ordem"]
-    if ordem is None:
-        ordem = OrdemServico(
-            solicitacao_id=solicitacao.id,
-            equipe_id=solicitacao.equipe_id,
-        )
-        db.session.add(ordem)
-    return ordem
+    solicitacao_id = solicitacao.id
+
+    with db.session.no_autoflush:
+        ordem = _query_ordem_servico_for_upload(solicitacao_id, lock=lock).first()
+    if ordem:
+        return ordem, None
+
+    ordem = _build_ordem_servico_upload_stub(solicitacao)
+    db.session.add(ordem)
+    try:
+        db.session.flush()
+    except IntegrityError:
+        db.session.rollback()
+        ordem = _query_ordem_servico_for_upload(solicitacao_id, lock=lock).first()
+        if ordem is None:
+            raise
+
+    return ordem, None
 
 
 def _parse_media_list(value):
@@ -600,11 +710,19 @@ def register_routes(bp):
     def os_upload_stream(os_id):
         try:
             context = _build_upload_context(os_id)
-            file_name, file_url, error_response, error_status = _upload_request_stream_to_webdav(os_id)
+            _ordem_existente, error_response = _get_or_create_ordem_for_upload(context)
+            if error_response is not None:
+                return error_response
+            db.session.commit()
+
+            file_name, file_url, error_response, error_status = _upload_request_stream_to_webdav(os_id, "principal")
             if error_response is not None:
                 return error_response, error_status
 
-            ordem = _get_or_create_ordem_for_upload(context)
+            ordem, error_response = _get_or_create_ordem_for_upload(context, lock=True)
+            if error_response is not None:
+                return error_response
+
             ordem.imagem_principal = _build_webdav_marker(os_id, file_name)
             if not ordem.quantidade_imagens_registradas or ordem.quantidade_imagens_registradas < 1:
                 ordem.quantidade_imagens_registradas = 1
@@ -617,26 +735,39 @@ def register_routes(bp):
                 "webdav_url": file_url,
                 "media_url": url_for("main.os_imagem_principal", os_id=os_id),
             }), 201
-        except RuntimeError as exc:
+        except RuntimeError:
             db.session.rollback()
-            return jsonify({"success": False, "error": str(exc)}), 500
+            current_app.logger.exception("Configuracao de armazenamento indisponivel no upload principal da OS %s", os_id)
+            return _media_error_response(MEDIA_STORAGE_UNAVAILABLE_MESSAGE, 500)
+        except SQLAlchemyError:
+            db.session.rollback()
+            current_app.logger.exception("Erro de banco no upload principal da OS %s", os_id)
+            return _media_error_response(MEDIA_DATABASE_ERROR_MESSAGE, 500)
         except HTTPException:
             raise
-        except Exception as exc:
+        except Exception:
             db.session.rollback()
             current_app.logger.exception("Erro no upload stream da OS %s", os_id)
-            return jsonify({"success": False, "error": str(exc)}), 500
+            return _media_error_response()
 
     @bp.route("/api/os/<int:os_id>/upload-video-stream", methods=["PUT"], endpoint="os_upload_video_stream")
     @login_required
     def os_upload_video_stream(os_id):
         try:
             context = _build_upload_context(os_id)
-            file_name, file_url, error_response, error_status = _upload_request_stream_to_webdav(os_id)
+            _ordem_existente, error_response = _get_or_create_ordem_for_upload(context)
+            if error_response is not None:
+                return error_response
+            db.session.commit()
+
+            file_name, file_url, error_response, error_status = _upload_request_stream_to_webdav(os_id, "video")
             if error_response is not None:
                 return error_response, error_status
 
-            ordem = _get_or_create_ordem_for_upload(context)
+            ordem, error_response = _get_or_create_ordem_for_upload(context, lock=True)
+            if error_response is not None:
+                return error_response
+
             ordem.video = _build_webdav_marker(os_id, file_name)
             if not ordem.quantidade_videos_registradas or ordem.quantidade_videos_registradas < 1:
                 ordem.quantidade_videos_registradas = 1
@@ -649,27 +780,44 @@ def register_routes(bp):
                 "webdav_url": file_url,
                 "media_url": url_for("main.os_video", os_id=os_id),
             }), 201
-        except RuntimeError as exc:
+        except RuntimeError:
             db.session.rollback()
-            return jsonify({"success": False, "error": str(exc)}), 500
+            current_app.logger.exception("Configuracao de armazenamento indisponivel no upload de video da OS %s", os_id)
+            return _media_error_response(MEDIA_STORAGE_UNAVAILABLE_MESSAGE, 500)
+        except SQLAlchemyError:
+            db.session.rollback()
+            current_app.logger.exception("Erro de banco no upload de video da OS %s", os_id)
+            return _media_error_response(MEDIA_DATABASE_ERROR_MESSAGE, 500)
         except HTTPException:
             raise
-        except Exception as exc:
+        except Exception:
             db.session.rollback()
             current_app.logger.exception("Erro no upload stream do video da OS %s", os_id)
-            return jsonify({"success": False, "error": str(exc)}), 500
+            return _media_error_response()
 
     @bp.route("/api/os/<int:os_id>/upload-complementary-stream", methods=["PUT"], endpoint="os_upload_complementary_stream")
     @login_required
     def os_upload_complementary_stream(os_id):
         try:
             context = _build_upload_context(os_id)
-            file_name, file_url, error_response, error_status = _upload_request_stream_to_webdav(os_id)
+            ordem, error_response = _get_or_create_ordem_for_upload(context)
             if error_response is not None:
+                return error_response
+            db.session.commit()
+
+            imagens = _parse_media_list(getattr(ordem, "outras_imagens", None))
+            image_index = len(imagens) + 1
+            file_name, file_url, error_response, error_status = _upload_request_stream_to_webdav(os_id, f"complementar_{image_index}")
+            if error_response is not None:
+                db.session.rollback()
                 return error_response, error_status
 
-            ordem = _get_or_create_ordem_for_upload(context)
+            ordem, error_response = _get_or_create_ordem_for_upload(context, lock=True)
+            if error_response is not None:
+                return error_response
+
             imagens = _parse_media_list(getattr(ordem, "outras_imagens", None))
+            image_index = len(imagens) + 1
             imagens.append(_build_webdav_marker(os_id, file_name))
             ordem.outras_imagens = json.dumps(imagens, ensure_ascii=False)
             total_imagens = len(imagens) + (1 if getattr(ordem, "imagem_principal", None) else 0)
@@ -677,7 +825,6 @@ def register_routes(bp):
                 ordem.quantidade_imagens_registradas = total_imagens
             db.session.commit()
 
-            image_index = len(imagens)
             return jsonify({
                 "success": True,
                 "message": "Upload da imagem complementar concluido com sucesso.",
@@ -687,15 +834,20 @@ def register_routes(bp):
                 "media_url": url_for("main.os_imagem_complementar", os_id=os_id, image_index=image_index),
                 "total_complementary_images": len(imagens),
             }), 201
-        except RuntimeError as exc:
+        except RuntimeError:
             db.session.rollback()
-            return jsonify({"success": False, "error": str(exc)}), 500
+            current_app.logger.exception("Configuracao de armazenamento indisponivel no upload complementar da OS %s", os_id)
+            return _media_error_response(MEDIA_STORAGE_UNAVAILABLE_MESSAGE, 500)
+        except SQLAlchemyError:
+            db.session.rollback()
+            current_app.logger.exception("Erro de banco no upload complementar da OS %s", os_id)
+            return _media_error_response(MEDIA_DATABASE_ERROR_MESSAGE, 500)
         except HTTPException:
             raise
-        except Exception as exc:
+        except Exception:
             db.session.rollback()
             current_app.logger.exception("Erro no upload stream da imagem complementar da OS %s", os_id)
-            return jsonify({"success": False, "error": str(exc)}), 500
+            return _media_error_response()
 
     @bp.route("/api/os/<int:os_id>/imagem-principal", methods=["DELETE"], endpoint="os_delete_principal_image")
     @login_required
@@ -718,15 +870,20 @@ def register_routes(bp):
                 "message": "Foto principal removida com sucesso.",
                 "total_images": len(imagens),
             })
-        except RuntimeError as exc:
+        except RuntimeError:
             db.session.rollback()
-            return jsonify({"success": False, "error": str(exc)}), 500
+            current_app.logger.exception("Configuracao de armazenamento indisponivel ao remover foto principal da OS %s", os_id)
+            return _media_error_response(MEDIA_STORAGE_UNAVAILABLE_MESSAGE, 500)
+        except SQLAlchemyError:
+            db.session.rollback()
+            current_app.logger.exception("Erro de banco ao remover foto principal da OS %s", os_id)
+            return _media_error_response(MEDIA_DATABASE_ERROR_MESSAGE, 500)
         except HTTPException:
             raise
-        except Exception as exc:
+        except Exception:
             db.session.rollback()
             current_app.logger.exception("Erro ao remover foto principal da OS %s", os_id)
-            return jsonify({"success": False, "error": str(exc)}), 500
+            return _media_error_response()
 
     @bp.route("/api/os/<int:os_id>/video", methods=["DELETE"], endpoint="os_delete_video")
     @login_required
@@ -747,15 +904,20 @@ def register_routes(bp):
                 "success": True,
                 "message": "Video removido com sucesso.",
             })
-        except RuntimeError as exc:
+        except RuntimeError:
             db.session.rollback()
-            return jsonify({"success": False, "error": str(exc)}), 500
+            current_app.logger.exception("Configuracao de armazenamento indisponivel ao remover video da OS %s", os_id)
+            return _media_error_response(MEDIA_STORAGE_UNAVAILABLE_MESSAGE, 500)
+        except SQLAlchemyError:
+            db.session.rollback()
+            current_app.logger.exception("Erro de banco ao remover video da OS %s", os_id)
+            return _media_error_response(MEDIA_DATABASE_ERROR_MESSAGE, 500)
         except HTTPException:
             raise
-        except Exception as exc:
+        except Exception:
             db.session.rollback()
             current_app.logger.exception("Erro ao remover video da OS %s", os_id)
-            return jsonify({"success": False, "error": str(exc)}), 500
+            return _media_error_response()
 
     @bp.route("/api/os/<int:os_id>/imagem-complementar/<int:image_index>", methods=["DELETE"], endpoint="os_delete_complementary_image")
     @login_required
@@ -782,15 +944,20 @@ def register_routes(bp):
                 "removed_index": image_index,
                 "total_complementary_images": len(imagens),
             })
-        except RuntimeError as exc:
+        except RuntimeError:
             db.session.rollback()
-            return jsonify({"success": False, "error": str(exc)}), 500
+            current_app.logger.exception("Configuracao de armazenamento indisponivel ao remover imagem complementar da OS %s", os_id)
+            return _media_error_response(MEDIA_STORAGE_UNAVAILABLE_MESSAGE, 500)
+        except SQLAlchemyError:
+            db.session.rollback()
+            current_app.logger.exception("Erro de banco ao remover imagem complementar da OS %s", os_id)
+            return _media_error_response(MEDIA_DATABASE_ERROR_MESSAGE, 500)
         except HTTPException:
             raise
-        except Exception as exc:
+        except Exception:
             db.session.rollback()
             current_app.logger.exception("Erro ao remover imagem complementar da OS %s", os_id)
-            return jsonify({"success": False, "error": str(exc)}), 500
+            return _media_error_response()
 
     @bp.route("/admin/os/<int:os_id>/formulario", methods=["GET", "POST"], endpoint="admin_os_formulario_view")
     @login_required

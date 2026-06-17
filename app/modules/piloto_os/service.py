@@ -7,8 +7,9 @@ from zoneinfo import ZoneInfo
 
 import requests
 from flask import current_app
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy import or_
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, lazyload
 from werkzeug.utils import secure_filename
 
 from app.extensions import db
@@ -428,11 +429,7 @@ def salvar_piloto_os_form(user, os_id, form_data, files_data, root_path):
     ordem = context["ordem"]
 
     if ordem is None:
-        ordem = OrdemServico(
-            solicitacao_id=solicitacao.id,
-            equipe_id=solicitacao.equipe_id,
-        )
-        db.session.add(ordem)
+        ordem = _get_or_create_ordem_servico_for_solicitacao(solicitacao)
 
     _aplicar_campos_formulario(
         user=user,
@@ -578,11 +575,7 @@ def salvar_admin_os_form(user, os_id, form_data, files_data, root_path):
     ordem = context["ordem"]
 
     if ordem is None:
-        ordem = OrdemServico(
-            solicitacao_id=solicitacao.id,
-            equipe_id=solicitacao.equipe_id,
-        )
-        db.session.add(ordem)
+        ordem = _get_or_create_ordem_servico_for_solicitacao(solicitacao)
 
     _aplicar_campos_formulario(
         user=user,
@@ -1010,6 +1003,42 @@ def _parse_json_object(value):
     except Exception:
         return None
     return data if isinstance(data, dict) else None
+
+
+def _get_or_create_ordem_servico_for_solicitacao(solicitacao):
+    solicitacao_id = solicitacao.id
+    equipe_id = solicitacao.equipe_id
+
+    with db.session.no_autoflush:
+        ordem = (
+            OrdemServico.query
+            .options(lazyload("*"))
+            .filter_by(solicitacao_id=solicitacao_id)
+            .with_for_update(of=OrdemServico)
+            .first()
+        )
+    if ordem:
+        return ordem
+
+    ordem = OrdemServico(
+        solicitacao_id=solicitacao_id,
+        equipe_id=equipe_id,
+    )
+    db.session.add(ordem)
+    try:
+        db.session.flush()
+    except IntegrityError:
+        db.session.rollback()
+        ordem = (
+            OrdemServico.query
+            .options(lazyload("*"))
+            .filter_by(solicitacao_id=solicitacao_id)
+            .with_for_update(of=OrdemServico)
+            .first()
+        )
+        if ordem is None:
+            raise
+    return ordem
 
 
 def _truncate_text(value, max_length):

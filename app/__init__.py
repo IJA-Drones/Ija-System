@@ -3,7 +3,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from dotenv import load_dotenv
-from flask import Flask, g, render_template, request
+from flask import Flask, g, jsonify, render_template, request
 from flask_login import current_user
 from flask_talisman import Talisman
 from sqlalchemy.exc import SQLAlchemyError
@@ -258,6 +258,13 @@ def create_app():
 
     @app.errorhandler(404)
     def erro_404(e):
+        if request.path.startswith("/api/") or "/api/" in request.path or request.is_json:
+            return jsonify({
+                "success": False,
+                "error": "O recurso solicitado nao foi encontrado.",
+                "code": 404,
+            }), 404
+
         return render_template(
             "erro.html",
             codigo=404,
@@ -267,6 +274,14 @@ def create_app():
 
     @app.errorhandler(500)
     def erro_500(e):
+        app.logger.exception("Erro interno nao tratado.")
+        if request.path.startswith("/api/") or "/api/" in request.path or request.is_json:
+            return jsonify({
+                "success": False,
+                "error": "Ocorreu um erro no servidor. Tente novamente em instantes.",
+                "code": 500,
+            }), 500
+
         return render_template(
             "erro.html",
             codigo=500,

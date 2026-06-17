@@ -1,6 +1,6 @@
 import uuid
 
-from flask import current_app, render_template, request
+from flask import current_app, jsonify, render_template, request
 from werkzeug.exceptions import HTTPException
 
 
@@ -31,6 +31,14 @@ def _render_error(code: int, titulo=None, mensagem=None):
         titulo = titulo or default_title
         mensagem = mensagem or default_message
 
+    if _wants_json_response():
+        return jsonify({
+            "success": False,
+            "error": mensagem,
+            "code": code,
+            "request_id": request_id,
+        }), code
+
     return render_template(
         "erro.html",
         codigo=code,
@@ -40,24 +48,33 @@ def _render_error(code: int, titulo=None, mensagem=None):
     ), code
 
 
+def _wants_json_response():
+    if request.path.startswith("/api/") or "/api/" in request.path:
+        return True
+    if request.is_json:
+        return True
+    return (
+        request.accept_mimetypes["application/json"]
+        >= request.accept_mimetypes["text/html"]
+    )
+
+
 def register_error_handlers(bp):
     @bp.app_errorhandler(404)
     def pagina_nao_encontrada(e):
-        return render_template(
-            "erro.html",
-            codigo=404,
+        return _render_error(
+            404,
             titulo="Pagina nao encontrada",
             mensagem="Ops! A pagina que voce esta procurando nao existe ou foi movida.",
-        ), 404
+        )
 
     @bp.app_errorhandler(500)
     def erro_interno(e):
-        return render_template(
-            "erro.html",
-            codigo=500,
+        return _render_error(
+            500,
             titulo="Erro Interno do Servidor",
             mensagem="Desculpe, algo deu errado do nosso lado. Tente novamente mais tarde.",
-        ), 500
+        )
 
     @bp.app_errorhandler(HTTPException)
     def handle_http_exception(e: HTTPException):
