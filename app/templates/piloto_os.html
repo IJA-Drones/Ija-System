@@ -397,7 +397,7 @@
     </div>
   </div>
 
-  {# --- FILTRO DA SEMANA ATUAL --- #}
+  {# --- FILTRO DO DIA ATUAL --- #}
   <div class="card border-0 shadow-sm rounded-4 mb-4 piloto-os-filter-card">
     <div class="card-body p-3 p-md-4">
       <form method="GET" action="{{ url_for('main.piloto_os') }}" class="piloto-os-filter-form">
@@ -411,7 +411,7 @@
             class="form-control border-start-0"
             value="{{ busca }}"
             placeholder="Buscar por ID da solicitação, OS, protocolo, endereço, bairro, foco ou UVIS"
-            aria-label="Buscar ordens de serviço da semana"
+            aria-label="Buscar ordens de serviço do dia"
           >
         </div>
         <div class="piloto-os-filter-actions">
@@ -425,9 +425,8 @@
           {% endif %}
         </div>
         <div class="piloto-os-week small text-muted">
-          <i class="bi bi-calendar-week me-1 text-primary"></i>
-          Semana de <strong>{{ semana_inicio.strftime('%d/%m/%Y') }}</strong>
-          a <strong>{{ semana_fim.strftime('%d/%m/%Y') }}</strong>
+          <i class="bi bi-calendar-day me-1 text-primary"></i>
+          Solicitações de hoje: <strong>{{ data_hoje.strftime('%d/%m/%Y') }}</strong>
         </div>
       </form>
     </div>
@@ -562,13 +561,13 @@
     <i class="bi bi-inbox text-muted display-4"></i>
     <p class="mt-3 mb-1 text-muted">
       {% if busca %}
-        Nenhuma ordem de serviço encontrada para "{{ busca }}" nesta semana.
+        Nenhuma ordem de serviço encontrada para "{{ busca }}" hoje.
       {% else %}
-        Nenhuma ordem de serviço liberada para você nesta semana.
+        Nenhuma ordem de serviço liberada para você hoje.
       {% endif %}
     </p>
     <small class="text-muted">
-      Período: {{ semana_inicio.strftime('%d/%m/%Y') }} a {{ semana_fim.strftime('%d/%m/%Y') }}
+      Data: {{ data_hoje.strftime('%d/%m/%Y') }}
     </small>
   </div>
   {% endif %}

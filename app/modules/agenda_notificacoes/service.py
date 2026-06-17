@@ -93,6 +93,16 @@ def is_equipe_oceano_agenda_user(user):
     return getattr(user, "tipo_usuario", None) == EQUIPE_OCEANO_USER_TYPE
 
 
+def is_operational_agenda_user(user):
+    return is_piloto_agenda_user(user) or is_equipe_oceano_agenda_user(user)
+
+
+def current_week_range():
+    hoje = datetime.now(TZ_BR).date()
+    semana_inicio = hoje - timedelta(days=hoje.weekday())
+    return semana_inicio, semana_inicio + timedelta(days=6)
+
+
 def _parse_equipe_oceano_id(user):
     try:
         return int((getattr(user, "codigo_setor", None) or "").strip())
@@ -163,7 +173,7 @@ def build_agenda_query(
     )
     query = apply_agenda_user_scope(query, user)
 
-    if is_piloto_agenda_user(user) or is_equipe_oceano_agenda_user(user):
+    if is_operational_agenda_user(user):
         filtro_uvis_id = None
     elif not can_view_all_agenda(user):
         filtro_uvis_id = None
@@ -315,7 +325,18 @@ def build_agenda_context(user, args):
     mes = args.get("mes", datetime.now().month, type=int)
     ano = args.get("ano", datetime.now().year, type=int)
     d = (args.get("d") or "").strip()
-    initial_date = d or filtro_data_ini or datetime.now().strftime("%Y-%m-%d")
+    periodo_semanal_fixo = is_operational_agenda_user(user)
+    semana_inicio = None
+    semana_fim = None
+
+    if periodo_semanal_fixo:
+        semana_inicio, semana_fim = current_week_range()
+        filtro_data_ini = semana_inicio.isoformat()
+        filtro_data_fim = semana_fim.isoformat()
+        mes = None
+        ano = None
+
+    initial_date = d or filtro_data_ini or datetime.now(TZ_BR).strftime("%Y-%m-%d")
 
     solicitacoes = build_agenda_query(
         user,
@@ -356,6 +377,9 @@ def build_agenda_context(user, args):
         "initial_date": initial_date,
         "pode_filtrar_uvis": can_view_all_agenda(user),
         "google_maps_key": get_agenda_google_maps_key(),
+        "periodo_semanal_fixo": periodo_semanal_fixo,
+        "semana_inicio": semana_inicio,
+        "semana_fim": semana_fim,
     }
 
 
