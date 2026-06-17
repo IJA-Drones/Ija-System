@@ -125,10 +125,9 @@
         <i class="bi bi-arrow-left me-1"></i>{{ voltar_label }}
       </a>
       <form method="GET" action="{{ url_for('main.relatorios_coleta_imagens_export_pdf') }}" class="m-0">
-        <input type="hidden" name="mes" value="{{ mes_selecionado or '' }}">
-        <input type="hidden" name="ano" value="{{ ano_selecionado or '' }}">
-        <input type="hidden" name="uvis_id" value="{{ uvis_id_selecionado or '' }}">
-        <input type="hidden" name="regiao" value="{{ regiao_selecionada or '' }}">
+        {% for nome, valor in filtros_exportacao.items() %}
+          <input type="hidden" name="{{ nome }}" value="{{ valor or '' }}">
+        {% endfor %}
         <button type="submit" class="btn btn-danger">
           <i class="bi bi-file-earmark-pdf-fill me-1"></i>Exportar PDF
         </button>
@@ -140,6 +139,18 @@
     <div class="card-body">
       <form method="GET">
         <div class="row g-3 align-items-end">
+          <div class="col-sm-6 col-lg-2">
+            <label class="small text-muted">ID da OS</label>
+            <input type="number" min="1" name="os_id" class="form-control" value="{{ os_id_selecionado or '' }}" placeholder="Ex: 1745">
+          </div>
+          <div class="col-sm-6 col-lg-2">
+            <label class="small text-muted">Periodo de</label>
+            <input type="date" name="data_inicio" class="form-control" value="{{ data_inicio_selecionada }}">
+          </div>
+          <div class="col-sm-6 col-lg-2">
+            <label class="small text-muted">Periodo ate</label>
+            <input type="date" name="data_fim" class="form-control" value="{{ data_fim_selecionada }}">
+          </div>
           <div class="col-md-2">
             <label class="small text-muted">Mes</label>
             <select name="mes" class="form-select">
@@ -158,6 +169,19 @@
               {% endfor %}
             </select>
           </div>
+          <div class="col-sm-6 col-lg-2">
+            <label class="small text-muted">Ordenar por</label>
+            <select name="ordenar" class="form-select">
+              <option value="uvis_data" {% if ordenar_selecionado == 'uvis_data' %}selected{% endif %}>UVIS e recentes</option>
+              <option value="data_desc" {% if ordenar_selecionado == 'data_desc' %}selected{% endif %}>Data mais recente</option>
+              <option value="data_asc" {% if ordenar_selecionado == 'data_asc' %}selected{% endif %}>Data mais antiga</option>
+              <option value="os_desc" {% if ordenar_selecionado == 'os_desc' %}selected{% endif %}>OS maior primeiro</option>
+              <option value="os_asc" {% if ordenar_selecionado == 'os_asc' %}selected{% endif %}>OS menor primeiro</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row g-3 align-items-end mt-1">
           {% if pode_filtrar_regiao %}
           <div class="col-md-3">
             <label class="small text-muted">Regiao</label>
@@ -192,6 +216,32 @@
           </div>
           {% endif %}
 
+          <div class="col-md-2">
+            <label class="small text-muted">Foco</label>
+            <select name="foco" class="form-select">
+              <option value="">Todos</option>
+              {% for foco in focos_disponiveis %}
+                <option value="{{ foco }}" {% if foco == foco_selecionado %}selected{% endif %}>{{ foco }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-2">
+            <label class="small text-muted">Midia</label>
+            <select name="midia" class="form-select">
+              <option value="" {% if not midia_selecionada %}selected{% endif %}>Todas</option>
+              <option value="com_video" {% if midia_selecionada == 'com_video' %}selected{% endif %}>Com video</option>
+              <option value="sem_video" {% if midia_selecionada == 'sem_video' %}selected{% endif %}>Sem video</option>
+              <option value="com_complementares" {% if midia_selecionada == 'com_complementares' %}selected{% endif %}>Com extras</option>
+              <option value="sem_complementares" {% if midia_selecionada == 'sem_complementares' %}selected{% endif %}>Sem extras</option>
+            </select>
+          </div>
+
+          <div class="col-md-3">
+            <label class="small text-muted">Busca</label>
+            <input type="search" name="busca" class="form-control" value="{{ busca_selecionada }}" placeholder="Endereco, CEP, UVIS, foco...">
+          </div>
+
           <div class="col-md-2 d-flex gap-2">
             <button class="btn btn-success w-100" type="submit">
               <i class="bi bi-funnel me-1"></i>Filtrar
@@ -208,6 +258,12 @@
   <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
     <div class="text-muted small">
       Periodo selecionado: <strong>{{ periodo_label }}</strong>
+      {% if os_id_selecionado %}
+        <span class="ms-2">OS: <strong>#{{ os_id_selecionado }}</strong></span>
+      {% endif %}
+      {% if busca_selecionada %}
+        <span class="ms-2">Busca: <strong>{{ busca_selecionada }}</strong></span>
+      {% endif %}
     </div>
   </div>
 
@@ -396,19 +452,19 @@
       <nav class="mt-4">
         <ul class="pagination justify-content-center">
           <li class="page-item {% if not paginacao.has_prev %}disabled{% endif %}">
-            <a class="page-link" href="{{ url_for('main.relatorios_coleta_imagens', page=paginacao.prev_num, uvis_id=uvis_id_selecionado, regiao=regiao_selecionada) }}">Anterior</a>
+            <a class="page-link" href="{{ url_for('main.relatorios_coleta_imagens', page=paginacao.prev_num, **pagination_args) }}">Anterior</a>
           </li>
           {% for pg in paginacao.iter_pages() %}
             {% if pg == paginacao.page %}
               <li class="page-item active"><span class="page-link">{{ pg }}</span></li>
             {% else %}
               <li class="page-item">
-                <a class="page-link" href="{{ url_for('main.relatorios_coleta_imagens', page=pg, uvis_id=uvis_id_selecionado, regiao=regiao_selecionada) }}">{{ pg }}</a>
+                <a class="page-link" href="{{ url_for('main.relatorios_coleta_imagens', page=pg, **pagination_args) }}">{{ pg }}</a>
               </li>
             {% endif %}
           {% endfor %}
           <li class="page-item {% if not paginacao.has_next %}disabled{% endif %}">
-            <a class="page-link" href="{{ url_for('main.relatorios_coleta_imagens', page=paginacao.next_num, uvis_id=uvis_id_selecionado, regiao=regiao_selecionada) }}">Proxima</a>
+            <a class="page-link" href="{{ url_for('main.relatorios_coleta_imagens', page=paginacao.next_num, **pagination_args) }}">Proxima</a>
           </li>
         </ul>
       </nav>

@@ -147,7 +147,36 @@ def _coleta_period_exprs():
     return ano_ref, mes_ref
 
 
-def _format_coleta_periodo_label(mes=None, ano=None):
+def _parse_coleta_date_filter(args, name):
+    value = (args.get(name) or "").strip()
+    if not value:
+        return None
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").date()
+    except ValueError:
+        return None
+
+
+def _coleta_data_expr():
+    return func.coalesce(
+        OrdemServico.data_aplicacao,
+        func.date(OrdemServico.respondido_em),
+        Solicitacao.data_agendamento,
+    )
+
+
+def _format_coleta_date(value):
+    return value.strftime("%d/%m/%Y") if value else ""
+
+
+def _format_coleta_periodo_label(mes=None, ano=None, data_inicio=None, data_fim=None):
+    if data_inicio and data_fim:
+        return f"{_format_coleta_date(data_inicio)} a {_format_coleta_date(data_fim)}"
+    if data_inicio:
+        return f"A partir de {_format_coleta_date(data_inicio)}"
+    if data_fim:
+        return f"Ate {_format_coleta_date(data_fim)}"
+
     nome_mes = COLETA_IMAGENS_MONTH_NAMES.get(int(mes)) if mes else None
     if nome_mes and ano:
         return f"{nome_mes} de {ano}"
@@ -191,19 +220,53 @@ def _serialize_coleta_imagem_row(ordem, solicitacao, usuario):
 
 def _resolve_coleta_imagens_filters(user, args):
     user_type = getattr(user, "tipo_usuario", None)
-    mes = args.get("mes", type=int)
-    ano = args.get("ano", type=int)
+    filters = {
+        "mes": args.get("mes", type=int),
+        "ano": args.get("ano", type=int),
+        "os_id": args.get("os_id", type=int),
+        "data_inicio": _parse_coleta_date_filter(args, "data_inicio"),
+        "data_fim": _parse_coleta_date_filter(args, "data_fim"),
+        "busca": (args.get("busca") or "").strip(),
+        "foco": (args.get("foco") or "").strip(),
+        "midia": (args.get("midia") or "").strip(),
+        "ordenar": (args.get("ordenar") or "uvis_data").strip(),
+    }
+    if filters["midia"] not in {"com_video", "sem_video", "com_complementares", "sem_complementares"}:
+        filters["midia"] = ""
+    if filters["ordenar"] not in {"uvis_data", "data_desc", "data_asc", "os_desc", "os_asc"}:
+        filters["ordenar"] = "uvis_data"
+    if filters["data_inicio"] or filters["data_fim"]:
+        filters["mes"] = None
+        filters["ano"] = None
+
     if user_type == "uvis":
-        return (getattr(user, "regiao", None) or "").strip(), user.id, mes, ano
+        filters["regiao"] = (getattr(user, "regiao", None) or "").strip()
+        filters["uvis_id"] = user.id
+        return filters
     if is_regional_user(user):
-        return (getattr(user, "regiao", None) or "").strip(), args.get("uvis_id", type=int), mes, ano
+        filters["regiao"] = (getattr(user, "regiao", None) or "").strip()
+        filters["uvis_id"] = args.get("uvis_id", type=int)
+        return filters
 
-    regiao = (args.get("regiao") or "").strip()
-    uvis_id = args.get("uvis_id", type=int)
-    return regiao, uvis_id, mes, ano
+    filters["regiao"] = (args.get("regiao") or "").strip()
+    filters["uvis_id"] = args.get("uvis_id", type=int)
+    return filters
 
 
-def _build_coleta_imagens_query(user, *, regiao="", uvis_id=None, mes=None, ano=None):
+def _build_coleta_imagens_query(
+    user,
+    *,
+    regiao="",
+    uvis_id=None,
+    mes=None,
+    ano=None,
+    os_id=None,
+    data_inicio=None,
+    data_fim=None,
+    busca="",
+    foco="",
+    midia="",
+):
     query = (
         db.session.query(OrdemServico, Solicitacao, Usuario)
         .join(Solicitacao, Solicitacao.id == OrdemServico.solicitacao_id)
@@ -223,8 +286,59 @@ def _build_coleta_imagens_query(user, *, regiao="", uvis_id=None, mes=None, ano=
             query = query.filter(ano_ref == ano)
         if mes:
             query = query.filter(mes_ref == mes)
+    if os_id:
+        query = query.filter(Solicitacao.id == os_id)
+    if data_inicio or data_fim:
+        data_ref = _coleta_data_expr()
+        if data_inicio:
+            query = query.filter(data_ref >= data_inicio)
+        if data_fim:
+            query = query.filter(data_ref <= data_fim)
+    if foco:
+        query = query.filter(Solicitacao.foco == foco)
+    if busca:
+        like = f"%{busca}%"
+        query = query.filter(or_(
+            db.cast(Solicitacao.id, db.String).ilike(like),
+            func.coalesce(OrdemServico.identificador_os, "").ilike(like),
+            func.coalesce(Solicitacao.protocolo, "").ilike(like),
+            func.coalesce(Usuario.nome_uvis, "").ilike(like),
+            func.coalesce(Usuario.regiao, "").ilike(like),
+            func.coalesce(Solicitacao.foco, "").ilike(like),
+            func.coalesce(Solicitacao.cep, "").ilike(like),
+            func.coalesce(Solicitacao.logradouro, "").ilike(like),
+            func.coalesce(Solicitacao.numero, "").ilike(like),
+            func.coalesce(Solicitacao.bairro, "").ilike(like),
+            func.coalesce(Solicitacao.cidade, "").ilike(like),
+        ))
+    if midia == "com_video":
+        query = query.filter(func.length(func.trim(func.coalesce(OrdemServico.video, ""))) > 0)
+    elif midia == "sem_video":
+        query = query.filter(func.length(func.trim(func.coalesce(OrdemServico.video, ""))) == 0)
+    elif midia == "com_complementares":
+        query = query.filter(func.length(func.trim(func.coalesce(OrdemServico.outras_imagens, ""))) > 2)
+    elif midia == "sem_complementares":
+        query = query.filter(func.length(func.trim(func.coalesce(OrdemServico.outras_imagens, ""))) <= 2)
 
     return query
+
+
+def _coleta_imagens_order_by(ordenar):
+    data_ref = _coleta_data_expr()
+    if ordenar == "data_desc":
+        return [data_ref.desc(), OrdemServico.id.desc()]
+    if ordenar == "data_asc":
+        return [data_ref.asc(), OrdemServico.id.asc()]
+    if ordenar == "os_desc":
+        return [Solicitacao.id.desc()]
+    if ordenar == "os_asc":
+        return [Solicitacao.id.asc()]
+    return [
+        Usuario.nome_uvis.asc(),
+        OrdemServico.data_aplicacao.desc(),
+        OrdemServico.respondido_em.desc(),
+        OrdemServico.id.desc(),
+    ]
 
 
 def _agrupar_por(base_query, campo):
@@ -600,7 +714,19 @@ def build_relatorio_coleta_imagens_export_data(user, args):
     is_uvis = user_type == "uvis"
     is_regional = is_regional_user(user)
 
-    regiao_selecionada, uvis_id, mes_selecionado, ano_selecionado = _resolve_coleta_imagens_filters(user, args)
+    filtros = _resolve_coleta_imagens_filters(user, args)
+    regiao_selecionada = filtros["regiao"]
+    uvis_id = filtros["uvis_id"]
+    mes_selecionado = filtros["mes"]
+    ano_selecionado = filtros["ano"]
+    os_id_selecionado = filtros["os_id"]
+    data_inicio_selecionada = filtros["data_inicio"]
+    data_fim_selecionada = filtros["data_fim"]
+    busca_selecionada = filtros["busca"]
+    foco_selecionado = filtros["foco"]
+    midia_selecionada = filtros["midia"]
+    ordenar_selecionado = filtros["ordenar"]
+
     periodos_query = _build_coleta_imagens_query(user, regiao=regiao_selecionada, uvis_id=uvis_id)
     base_query = _build_coleta_imagens_query(
         user,
@@ -608,16 +734,17 @@ def build_relatorio_coleta_imagens_export_data(user, args):
         uvis_id=uvis_id,
         mes=mes_selecionado,
         ano=ano_selecionado,
+        os_id=os_id_selecionado,
+        data_inicio=data_inicio_selecionada,
+        data_fim=data_fim_selecionada,
+        busca=busca_selecionada,
+        foco=foco_selecionado,
+        midia=midia_selecionada,
     )
 
     rows = (
         base_query
-        .order_by(
-            Usuario.nome_uvis.asc(),
-            OrdemServico.data_aplicacao.desc(),
-            OrdemServico.respondido_em.desc(),
-            OrdemServico.id.desc(),
-        )
+        .order_by(*_coleta_imagens_order_by(ordenar_selecionado))
         .all()
     )
 
@@ -634,6 +761,18 @@ def build_relatorio_coleta_imagens_export_data(user, args):
 
     uvis_disponiveis = build_uvis_disponiveis(user, regiao_selecionada)
     regioes_disponiveis = build_regioes_disponiveis(user)
+    focos_disponiveis = [
+        foco
+        for (foco,) in (
+            periodos_query
+            .with_entities(Solicitacao.foco)
+            .filter(Solicitacao.foco.isnot(None), Solicitacao.foco != "")
+            .distinct()
+            .order_by(Solicitacao.foco.asc())
+            .all()
+        )
+        if foco
+    ]
     ano_ref, mes_ref = _coleta_period_exprs()
     dados_mensais = [
         (f"{int(ano_h):04d}-{int(mes_h):02d}", total)
@@ -675,7 +814,30 @@ def build_relatorio_coleta_imagens_export_data(user, args):
         voltar_endpoint = "main.relatorios"
         voltar_label = "Voltar"
 
-    periodo_label = _format_coleta_periodo_label(mes_selecionado, ano_selecionado)
+    periodo_label = _format_coleta_periodo_label(
+        mes_selecionado,
+        ano_selecionado,
+        data_inicio_selecionada,
+        data_fim_selecionada,
+    )
+    filtros_exportacao = {
+        "mes": mes_selecionado,
+        "ano": ano_selecionado,
+        "uvis_id": uvis_id,
+        "regiao": regiao_selecionada,
+        "os_id": os_id_selecionado,
+        "data_inicio": data_inicio_selecionada.isoformat() if data_inicio_selecionada else "",
+        "data_fim": data_fim_selecionada.isoformat() if data_fim_selecionada else "",
+        "busca": busca_selecionada,
+        "foco": foco_selecionado,
+        "midia": midia_selecionada,
+        "ordenar": ordenar_selecionado,
+    }
+    pagination_args = {
+        key: value
+        for key, value in filtros_exportacao.items()
+        if value not in (None, "")
+    }
 
     return {
         "levantamentos": levantamentos,
@@ -689,13 +851,23 @@ def build_relatorio_coleta_imagens_export_data(user, args):
         "dados_regiao": sorted(dados_regiao_counter.items(), key=lambda item: (-item[1], item[0])),
         "uvis_disponiveis": uvis_disponiveis,
         "regioes_disponiveis": regioes_disponiveis,
+        "focos_disponiveis": focos_disponiveis,
         "uvis_id_selecionado": uvis_id,
         "regiao_selecionada": regiao_selecionada,
         "mes_selecionado": mes_selecionado,
         "ano_selecionado": ano_selecionado,
+        "os_id_selecionado": os_id_selecionado,
+        "data_inicio_selecionada": data_inicio_selecionada.isoformat() if data_inicio_selecionada else "",
+        "data_fim_selecionada": data_fim_selecionada.isoformat() if data_fim_selecionada else "",
+        "busca_selecionada": busca_selecionada,
+        "foco_selecionado": foco_selecionado,
+        "midia_selecionada": midia_selecionada,
+        "ordenar_selecionado": ordenar_selecionado,
         "anos_disponiveis": anos_disponiveis,
         "dados_mensais": dados_mensais,
         "periodo_label": periodo_label,
+        "filtros_exportacao": filtros_exportacao,
+        "pagination_args": pagination_args,
         "uvis_nome_selecionado": nome_uvis or "Todas as Unidades",
         "regiao_nome_selecionada": regiao_selecionada or "Todas as Regioes",
         "descricao_painel": descricao_painel,
