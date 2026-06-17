@@ -1,6 +1,10 @@
 import json
 import mimetypes
 import os
+import threading
+import time
+import uuid
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from urllib.parse import quote, unquote
 
@@ -50,6 +54,12 @@ MEDIA_DATABASE_ERROR_MESSAGE = (
 MEDIA_UNEXPECTED_ERROR_MESSAGE = (
     "Nao foi possivel concluir esta acao agora. "
     "Tente novamente em instantes."
+)
+VIDEO_BACKGROUND_UPLOAD_CHUNK_SIZE_BYTES = 1024 * 1024
+VIDEO_BACKGROUND_UPLOAD_JOBS = {}
+VIDEO_BACKGROUND_UPLOAD_LOCK = threading.Lock()
+VIDEO_BACKGROUND_UPLOAD_EXECUTOR = ThreadPoolExecutor(
+    max_workers=int(os.getenv("VIDEO_BACKGROUND_UPLOAD_WORKERS", "2"))
 )
 
 
@@ -326,6 +336,9 @@ def _upload_request_stream_to_webdav(os_id, media_prefix):
         current_app.logger.info("MKCOL WebDAV ignorado para OS %s; a pasta pode ja existir.", os_id, exc_info=True)
 
     upload_headers = {"Content-Type": content_type}
+    content_length = request.content_length
+    if content_length is not None:
+        upload_headers["Content-Length"] = str(content_length)
 
     def stream_chunks():
         chunk_size = max(64 * 1024, _webdav_upload_chunk_size())
@@ -335,10 +348,19 @@ def _upload_request_stream_to_webdav(os_id, media_prefix):
                 break
             yield chunk
 
+    class SizedRequestStream:
+        def __iter__(self):
+            return stream_chunks()
+
+        def __len__(self):
+            return int(content_length or 0)
+
+    upload_body = SizedRequestStream() if content_length is not None else stream_chunks()
+
     try:
         response = requests.put(
             file_url,
-            data=stream_chunks(),
+            data=upload_body,
             headers=upload_headers,
             auth=auth,
             timeout=_webdav_timeout(),
@@ -434,6 +456,170 @@ def _query_ordem_servico_for_upload(solicitacao_id, *, lock=False):
     if lock:
         query = query.with_for_update(of=OrdemServico)
     return query
+
+
+def _video_upload_jobs_dir():
+    path = os.path.join(current_app.instance_path, "video_upload_jobs")
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
+def _now_epoch():
+    return time.time()
+
+
+def _set_video_upload_job(job_id, **updates):
+    with VIDEO_BACKGROUND_UPLOAD_LOCK:
+        job = VIDEO_BACKGROUND_UPLOAD_JOBS.get(job_id)
+        if not job:
+            return None
+        job.update(updates)
+        job["updated_at"] = _now_epoch()
+        return dict(job)
+
+
+def _get_video_upload_job(job_id):
+    with VIDEO_BACKGROUND_UPLOAD_LOCK:
+        job = VIDEO_BACKGROUND_UPLOAD_JOBS.get(job_id)
+        return dict(job) if job else None
+
+
+def _create_video_upload_job(*, os_id, user_id, file_name, original_name, content_type, temp_path, total_bytes):
+    job_id = uuid.uuid4().hex
+    now = _now_epoch()
+    with VIDEO_BACKGROUND_UPLOAD_LOCK:
+        VIDEO_BACKGROUND_UPLOAD_JOBS[job_id] = {
+            "id": job_id,
+            "os_id": os_id,
+            "user_id": user_id,
+            "file_name": file_name,
+            "original_name": original_name,
+            "content_type": content_type,
+            "temp_path": temp_path,
+            "total_bytes": total_bytes,
+            "status": "queued",
+            "progress": 0,
+            "message": "Video recebido. Aguardando envio para o Skybox.",
+            "media_url": None,
+            "created_at": now,
+            "updated_at": now,
+        }
+    return job_id
+
+
+def _save_video_request_to_temp(file_name):
+    temp_path = os.path.join(_video_upload_jobs_dir(), f"{uuid.uuid4().hex}_{file_name}")
+    total_bytes = 0
+    chunk_size = max(64 * 1024, _webdav_upload_chunk_size())
+    with open(temp_path, "wb") as temp_file:
+        while True:
+            chunk = request.stream.read(chunk_size)
+            if not chunk:
+                break
+            temp_file.write(chunk)
+            total_bytes += len(chunk)
+    return temp_path, total_bytes
+
+
+def _run_video_upload_job(app, job_id):
+    with app.app_context():
+        job = _get_video_upload_job(job_id)
+        if not job:
+            return
+
+        temp_path = job["temp_path"]
+        os_id = job["os_id"]
+        file_name = job["file_name"]
+        file_remote_path = _build_webdav_os_remote_path(os_id, file_name)
+        file_url = _webdav_url_for_remote_path(file_remote_path)
+        total_bytes = max(1, int(job.get("total_bytes") or os.path.getsize(temp_path) or 1))
+
+        try:
+            _set_video_upload_job(
+                job_id,
+                status="uploading",
+                progress=1,
+                message="Enviando video para o Skybox em segundo plano.",
+            )
+
+            _base_url, auth = _webdav_config()
+            base_remote_path = _webdav_base_dir()
+            folder_remote_path = _build_webdav_os_remote_path(os_id)
+            try:
+                requests.request("MKCOL", _webdav_url_for_remote_path(base_remote_path), auth=auth, timeout=_webdav_timeout())
+                requests.request("MKCOL", _webdav_url_for_remote_path(folder_remote_path), auth=auth, timeout=_webdav_timeout())
+            except requests.RequestException:
+                current_app.logger.info("MKCOL WebDAV ignorado para video em background da OS %s.", os_id, exc_info=True)
+
+            uploaded_bytes = 0
+
+            class ProgressFileStream:
+                def __iter__(self):
+                    nonlocal uploaded_bytes
+                    with open(temp_path, "rb") as video_file:
+                        while True:
+                            chunk = video_file.read(VIDEO_BACKGROUND_UPLOAD_CHUNK_SIZE_BYTES)
+                            if not chunk:
+                                break
+                            uploaded_bytes += len(chunk)
+                            progress = min(95, max(1, int((uploaded_bytes / total_bytes) * 95)))
+                            _set_video_upload_job(
+                                job_id,
+                                progress=progress,
+                                message=f"Enviando video para o Skybox... {progress}%",
+                            )
+                            yield chunk
+
+                def __len__(self):
+                    return total_bytes
+
+            response = requests.put(
+                file_url,
+                data=ProgressFileStream(),
+                headers={
+                    "Content-Type": job.get("content_type") or "application/octet-stream",
+                    "Content-Length": str(total_bytes),
+                },
+                auth=auth,
+                timeout=_webdav_timeout(),
+            )
+            if response.status_code not in (200, 201, 204):
+                current_app.logger.warning(
+                    "Falha no upload de video background da OS %s: status=%s body=%s",
+                    os_id,
+                    response.status_code,
+                    response.text[:500],
+                )
+                raise RuntimeError("Falha ao enviar video para o Skybox.")
+
+            _set_video_upload_job(job_id, progress=97, message="Atualizando registro da OS.")
+            ordem, _error_response = _get_or_create_ordem_for_upload({"solicitacao": Solicitacao.query.get(os_id)}, lock=True)
+            ordem.video = _build_webdav_marker(os_id, file_name)
+            if not ordem.quantidade_videos_registradas or ordem.quantidade_videos_registradas < 1:
+                ordem.quantidade_videos_registradas = 1
+            db.session.commit()
+
+            _set_video_upload_job(
+                job_id,
+                status="success",
+                progress=100,
+                message="Video enviado com sucesso.",
+                media_url=f"/os/{os_id}/video",
+            )
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("Erro no upload de video em background da OS %s.", os_id)
+            _set_video_upload_job(
+                job_id,
+                status="error",
+                message="Nao foi possivel concluir o envio do video.",
+            )
+        finally:
+            try:
+                if temp_path and os.path.isfile(temp_path):
+                    os.remove(temp_path)
+            except OSError:
+                current_app.logger.info("Falha ignorada ao remover temporario de video %s.", temp_path, exc_info=True)
 
 
 def _get_or_create_ordem_for_upload(context, *, lock=False):
@@ -794,6 +980,93 @@ def register_routes(bp):
             db.session.rollback()
             current_app.logger.exception("Erro no upload stream do video da OS %s", os_id)
             return _media_error_response()
+
+    @bp.route("/api/os/<int:os_id>/upload-video-background", methods=["PUT"], endpoint="os_upload_video_background")
+    @login_required
+    def os_upload_video_background(os_id):
+        try:
+            context = _build_upload_context(os_id)
+            _ordem_existente, error_response = _get_or_create_ordem_for_upload(context)
+            if error_response is not None:
+                return error_response
+            db.session.commit()
+
+            file_name = _build_stream_upload_file_name(os_id, "video")
+            if not file_name:
+                return _media_error_response("Header X-File-Name ausente ou invalido.", 400)
+
+            original_name = secure_filename(unquote((request.headers.get("X-File-Name") or "").strip()))
+            content_type = request.headers.get("Content-Type") or "application/octet-stream"
+            temp_path, total_bytes = _save_video_request_to_temp(file_name)
+            if total_bytes <= 0:
+                try:
+                    os.remove(temp_path)
+                except OSError:
+                    pass
+                return _media_error_response("Arquivo de video vazio ou invalido.", 400)
+
+            job_id = _create_video_upload_job(
+                os_id=os_id,
+                user_id=getattr(current_user, "id", None),
+                file_name=file_name,
+                original_name=original_name or file_name,
+                content_type=content_type,
+                temp_path=temp_path,
+                total_bytes=total_bytes,
+            )
+            VIDEO_BACKGROUND_UPLOAD_EXECUTOR.submit(
+                _run_video_upload_job,
+                current_app._get_current_object(),
+                job_id,
+            )
+
+            return jsonify({
+                "success": True,
+                "message": "Video recebido. O envio para o Skybox continuara em segundo plano.",
+                "job_id": job_id,
+                "file_name": file_name,
+                "progress": 0,
+            }), 202
+        except RuntimeError:
+            db.session.rollback()
+            current_app.logger.exception("Configuracao de armazenamento indisponivel no upload background de video da OS %s", os_id)
+            return _media_error_response(MEDIA_STORAGE_UNAVAILABLE_MESSAGE, 500)
+        except SQLAlchemyError:
+            db.session.rollback()
+            current_app.logger.exception("Erro de banco ao preparar upload background de video da OS %s", os_id)
+            return _media_error_response(MEDIA_DATABASE_ERROR_MESSAGE, 500)
+        except HTTPException:
+            raise
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("Erro ao iniciar upload background de video da OS %s", os_id)
+            return _media_error_response()
+
+    @bp.route("/api/video-upload-jobs/<job_id>", methods=["GET"], endpoint="video_upload_job_status")
+    @login_required
+    def video_upload_job_status(job_id):
+        job = _get_video_upload_job(job_id)
+        if not job:
+            return jsonify({
+                "success": False,
+                "error": "Upload de video nao encontrado.",
+                "status": "missing",
+            }), 404
+
+        current_user_id = getattr(current_user, "id", None)
+        if job.get("user_id") != current_user_id and getattr(current_user, "tipo_usuario", None) not in ADMIN_PANEL_VIEW_TYPES:
+            abort(403)
+
+        return jsonify({
+            "success": True,
+            "job_id": job["id"],
+            "status": job["status"],
+            "progress": int(job.get("progress") or 0),
+            "message": job.get("message") or "",
+            "os_id": job.get("os_id"),
+            "file_name": job.get("file_name"),
+            "media_url": job.get("media_url"),
+        })
 
     @bp.route("/api/os/<int:os_id>/upload-complementary-stream", methods=["PUT"], endpoint="os_upload_complementary_stream")
     @login_required

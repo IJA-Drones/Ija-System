@@ -115,6 +115,38 @@
         }
 
       }
+
+      .global-video-upload-status {
+        position: fixed;
+        right: 18px;
+        bottom: 18px;
+        z-index: 1080;
+        width: min(360px, calc(100vw - 32px));
+        border: 1px solid rgba(21, 101, 192, 0.18);
+        border-radius: 14px;
+        background: #ffffff;
+        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
+        padding: 14px;
+      }
+
+      .global-video-upload-status .progress {
+        height: 0.6rem;
+        border-radius: 999px;
+        background: #dbe7f4;
+        overflow: hidden;
+      }
+
+      .global-video-upload-title {
+        color: #173b62;
+        font-weight: 800;
+        font-size: 0.92rem;
+      }
+
+      .global-video-upload-message {
+        color: #64748b;
+        font-size: 0.8rem;
+        line-height: 1.4;
+      }
     </style>
   </head>
 
@@ -949,6 +981,25 @@
     <div class="container py-4">{% block auth_content %}{% endblock %}</div>
     {% endif %}
 
+    {% if current_user.is_authenticated %}
+    <div class="global-video-upload-status d-none" id="globalVideoUploadStatus">
+      <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
+        <div>
+          <div class="global-video-upload-title">Upload de video</div>
+          <div class="global-video-upload-message" id="globalVideoUploadMessage">Preparando envio...</div>
+        </div>
+        <span class="badge text-bg-primary" id="globalVideoUploadPercent">0%</span>
+      </div>
+      <div class="progress" role="progressbar" aria-label="Status do upload de video" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div class="progress-bar progress-bar-striped progress-bar-animated" id="globalVideoUploadProgressBar" style="width: 0%"></div>
+      </div>
+      <div class="d-flex justify-content-end gap-2 mt-2">
+        <a href="#" class="btn btn-sm btn-outline-primary d-none" id="globalVideoUploadOpen">Abrir video</a>
+        <button type="button" class="btn btn-sm btn-outline-secondary d-none" id="globalVideoUploadDismiss">Fechar</button>
+      </div>
+    </div>
+    {% endif %}
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
@@ -1300,6 +1351,87 @@
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
       if (isIOS && !isStandalone) {
           if (iosLink) iosLink.style.display = "block";
+      }
+
+      const videoUploadWidget = document.getElementById("globalVideoUploadStatus");
+      const videoUploadMessage = document.getElementById("globalVideoUploadMessage");
+      const videoUploadPercent = document.getElementById("globalVideoUploadPercent");
+      const videoUploadProgressBar = document.getElementById("globalVideoUploadProgressBar");
+      const videoUploadOpen = document.getElementById("globalVideoUploadOpen");
+      const videoUploadDismiss = document.getElementById("globalVideoUploadDismiss");
+      const videoUploadStorageKey = "ijaActiveVideoUploadJobId";
+      let videoUploadPollTimer = null;
+
+      function setGlobalVideoUploadProgress(progress, message, status, mediaUrl) {
+          if (!videoUploadWidget) return;
+          const normalized = Math.max(0, Math.min(100, Math.round(Number(progress) || 0)));
+          videoUploadWidget.classList.remove("d-none");
+          if (videoUploadMessage) videoUploadMessage.textContent = message || "Enviando video...";
+          if (videoUploadPercent) {
+              videoUploadPercent.textContent = `${normalized}%`;
+              videoUploadPercent.className = status === "error" ? "badge text-bg-danger" : status === "success" ? "badge text-bg-success" : "badge text-bg-primary";
+          }
+          if (videoUploadProgressBar) {
+              videoUploadProgressBar.style.width = `${normalized}%`;
+              videoUploadProgressBar.setAttribute("aria-valuenow", String(normalized));
+              videoUploadProgressBar.classList.toggle("progress-bar-animated", status !== "success" && status !== "error");
+              videoUploadProgressBar.classList.toggle("bg-danger", status === "error");
+              videoUploadProgressBar.classList.toggle("bg-success", status === "success");
+          }
+          if (videoUploadOpen) {
+              videoUploadOpen.classList.toggle("d-none", !(status === "success" && mediaUrl));
+              if (mediaUrl) videoUploadOpen.href = mediaUrl;
+          }
+          if (videoUploadDismiss) {
+              videoUploadDismiss.classList.toggle("d-none", !(status === "success" || status === "error"));
+          }
+      }
+
+      async function pollGlobalVideoUploadJob() {
+          const jobId = localStorage.getItem(videoUploadStorageKey);
+          if (!jobId || !videoUploadWidget) return;
+
+          try {
+              const response = await fetch(`/api/video-upload-jobs/${encodeURIComponent(jobId)}`, {
+                  headers: { "Accept": "application/json" },
+              });
+              const payload = await response.json().catch(() => ({}));
+              if (!response.ok || !payload.success) {
+                  setGlobalVideoUploadProgress(0, payload.error || "Nao foi possivel consultar o upload do video.", "error");
+                  return;
+              }
+
+              setGlobalVideoUploadProgress(payload.progress, payload.message, payload.status, payload.media_url);
+              if (payload.status === "success" || payload.status === "error") {
+                  if (videoUploadPollTimer) clearInterval(videoUploadPollTimer);
+                  videoUploadPollTimer = null;
+              }
+          } catch (error) {
+              setGlobalVideoUploadProgress(0, "Conexao instavel ao consultar o upload do video.", "error");
+          }
+      }
+
+      window.trackBackgroundVideoUpload = function (jobId) {
+          if (!jobId) return;
+          localStorage.setItem(videoUploadStorageKey, jobId);
+          setGlobalVideoUploadProgress(0, "Video recebido. Envio em segundo plano iniciado.", "queued");
+          pollGlobalVideoUploadJob();
+          if (videoUploadPollTimer) clearInterval(videoUploadPollTimer);
+          videoUploadPollTimer = setInterval(pollGlobalVideoUploadJob, 2500);
+      };
+
+      if (videoUploadDismiss) {
+          videoUploadDismiss.addEventListener("click", () => {
+              localStorage.removeItem(videoUploadStorageKey);
+              if (videoUploadPollTimer) clearInterval(videoUploadPollTimer);
+              videoUploadPollTimer = null;
+              if (videoUploadWidget) videoUploadWidget.classList.add("d-none");
+          });
+      }
+
+      if (localStorage.getItem(videoUploadStorageKey)) {
+          pollGlobalVideoUploadJob();
+          videoUploadPollTimer = setInterval(pollGlobalVideoUploadJob, 2500);
       }
   });
 
