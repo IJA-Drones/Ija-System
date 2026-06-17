@@ -329,7 +329,8 @@
         <div class="col-md-6 col-xl-4">
           <div class="media-report-card">
             {% if item.imagem_principal_path %}
-              <img src="{{ url_for('static', filename=item.imagem_principal_path) }}" alt="Imagem principal da OS {{ item.solicitacao_id }}" class="media-report-thumb">
+              {% set imagem_principal_url = url_for('main.os_imagem_principal', os_id=item.solicitacao_id) %}
+              <img src="{{ imagem_principal_url }}" alt="Imagem principal da OS {{ item.solicitacao_id }}" class="media-report-thumb">
             {% else %}
               <div class="media-report-empty">
                 <div>
@@ -379,9 +380,11 @@
                 <a href="{{ url_for(os_detail_endpoint, os_id=item.solicitacao_id) }}" class="btn btn-sm btn-primary">
                   <i class="bi bi-eye me-1"></i>Abrir OS
                 </a>
-                <a href="{{ url_for('static', filename=item.imagem_principal_path) }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                  <i class="bi bi-arrows-fullscreen me-1"></i>Abrir imagem
-                </a>
+                {% if item.imagem_principal_path %}
+                  <a href="{{ imagem_principal_url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-arrows-fullscreen me-1"></i>Abrir imagem
+                  </a>
+                {% endif %}
               </div>
             </div>
           </div>

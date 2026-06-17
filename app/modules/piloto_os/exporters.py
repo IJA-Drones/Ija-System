@@ -5,7 +5,7 @@ import re
 import tempfile
 from datetime import datetime
 from io import BytesIO
-from urllib.parse import urlencode
+from urllib.parse import quote, urlencode
 
 import requests
 from flask import current_app
@@ -23,6 +23,9 @@ from sqlalchemy.orm import joinedload
 
 from app.extensions import db
 from app.models import Solicitacao
+
+REMOTE_MEDIA_PREFIXES = ("webdav://", "skybox://")
+REMOTE_MEDIA_TIMEOUT = (30, 300)
 
 
 def _fmt_dt(value):
@@ -138,16 +141,79 @@ def _try_make_logo(args, width_mm=34):
         return None
 
 
+def _setting(*names):
+    for name in names:
+        value = current_app.config.get(name) or os.getenv(name)
+        if value:
+            return value
+    return None
+
+
+def _is_remote_media_path(value):
+    return str(value or "").startswith(REMOTE_MEDIA_PREFIXES)
+
+
+def _remote_media_path_from_marker(value):
+    text = str(value or "").strip().replace("\\", "/")
+    for prefix in REMOTE_MEDIA_PREFIXES:
+        if text.startswith(prefix):
+            text = text[len(prefix):]
+            break
+
+    parts = [part.strip() for part in text.split("/") if part.strip()]
+    if not parts or any(part in {".", ".."} for part in parts):
+        return None
+    return "/".join(parts)
+
+
+def _download_remote_media_bytes(marker):
+    base_url = (_setting("WEBDAV_URL", "SKYBOX_WEBDAV_URL") or "").strip().rstrip("/")
+    username = (_setting("WEBDAV_USER", "SKYBOX_USERNAME") or "").strip()
+    password = _setting("WEBDAV_PASS", "SKYBOX_APP_PASSWORD") or ""
+    remote_path = _remote_media_path_from_marker(marker)
+    if not base_url or not username or not password or not remote_path:
+        return None
+
+    encoded_path = "/".join(quote(part, safe="") for part in remote_path.split("/") if part)
+    try:
+        response = requests.get(
+            f"{base_url}/{encoded_path}",
+            auth=(username, password),
+            timeout=REMOTE_MEDIA_TIMEOUT,
+        )
+        if response.status_code != 200:
+            current_app.logger.warning(
+                "Falha ao baixar imagem remota da OS para PDF (%s): HTTP %s",
+                remote_path,
+                response.status_code,
+            )
+            return None
+        return BytesIO(response.content)
+    except Exception:
+        current_app.logger.exception("Erro ao baixar imagem remota da OS para PDF.")
+        return None
+
+
 def _try_make_local_rlimage(rel_path, width_mm=165, max_height_mm=110):
     if not rel_path:
         return None
 
-    abs_path = os.path.join(current_app.root_path, "static", rel_path.replace("/", os.sep))
-    if not os.path.exists(abs_path):
-        return None
+    image_source = None
+    if _is_remote_media_path(rel_path):
+        image_source = _download_remote_media_bytes(rel_path)
+        if image_source is None:
+            return None
+    else:
+        static_root = os.path.abspath(os.path.join(current_app.root_path, "static"))
+        abs_path = os.path.abspath(os.path.join(static_root, str(rel_path).replace("/", os.sep)))
+        if os.path.commonpath([static_root, abs_path]) != static_root:
+            return None
+        if not os.path.exists(abs_path):
+            return None
+        image_source = abs_path
 
     try:
-        image = RLImage(abs_path)
+        image = RLImage(image_source)
         base_width = width_mm * mm
         img_width = float(getattr(image, "imageWidth", 0) or 1)
         img_height = float(getattr(image, "imageHeight", 0) or 1)
