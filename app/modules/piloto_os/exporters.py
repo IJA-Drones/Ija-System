@@ -13,6 +13,7 @@ from openpyxl import Workbook
 from openpyxl.drawing.image import Image as XLImage
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
+from PIL import Image, ImageOps
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
@@ -26,6 +27,8 @@ from app.models import Solicitacao
 
 REMOTE_MEDIA_PREFIXES = ("webdav://", "skybox://")
 REMOTE_MEDIA_TIMEOUT = (30, 300)
+PDF_IMAGE_DPI = 350
+PDF_IMAGE_JPEG_QUALITY = 95
 
 
 def _fmt_dt(value):
@@ -194,6 +197,55 @@ def _download_remote_media_bytes(marker):
         return None
 
 
+def _prepare_pdf_image_source(image_source, width_mm=165, max_height_mm=110):
+    try:
+        with Image.open(image_source) as img:
+            img = ImageOps.exif_transpose(img)
+            source_width, source_height = img.size
+            if source_width <= 0 or source_height <= 0:
+                return image_source
+
+            draw_width_mm = float(width_mm)
+            draw_height_mm = draw_width_mm * (source_height / source_width)
+            if max_height_mm and draw_height_mm > float(max_height_mm):
+                scale = float(max_height_mm) / draw_height_mm
+                draw_width_mm *= scale
+                draw_height_mm = float(max_height_mm)
+
+            target_width = max(1, int(round((draw_width_mm / 25.4) * PDF_IMAGE_DPI)))
+            target_height = max(1, int(round((draw_height_mm / 25.4) * PDF_IMAGE_DPI)))
+
+            if source_width > target_width or source_height > target_height:
+                img.thumbnail((target_width, target_height), Image.Resampling.LANCZOS)
+
+            if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
+                rgba = img.convert("RGBA")
+                background = Image.new("RGB", img.size, "white")
+                background.paste(rgba, mask=rgba.getchannel("A"))
+                img = background
+            elif img.mode != "RGB":
+                img = img.convert("RGB")
+
+            output = BytesIO()
+            img.save(
+                output,
+                format="JPEG",
+                quality=PDF_IMAGE_JPEG_QUALITY,
+                optimize=True,
+                progressive=True,
+                dpi=(PDF_IMAGE_DPI, PDF_IMAGE_DPI),
+            )
+            output.seek(0)
+            return output
+    except Exception:
+        current_app.logger.exception("Erro ao preparar imagem da OS para o PDF.")
+        try:
+            image_source.seek(0)
+        except Exception:
+            pass
+        return image_source
+
+
 def _try_make_local_rlimage(rel_path, width_mm=165, max_height_mm=110):
     if not rel_path:
         return None
@@ -213,6 +265,7 @@ def _try_make_local_rlimage(rel_path, width_mm=165, max_height_mm=110):
         image_source = abs_path
 
     try:
+        image_source = _prepare_pdf_image_source(image_source, width_mm=width_mm, max_height_mm=max_height_mm)
         image = RLImage(image_source)
         base_width = width_mm * mm
         img_width = float(getattr(image, "imageWidth", 0) or 1)
