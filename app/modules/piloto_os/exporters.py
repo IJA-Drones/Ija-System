@@ -27,8 +27,23 @@ from app.models import Solicitacao
 
 REMOTE_MEDIA_PREFIXES = ("webdav://", "skybox://")
 REMOTE_MEDIA_TIMEOUT = (30, 300)
-PDF_IMAGE_DPI = 350
-PDF_IMAGE_JPEG_QUALITY = 95
+
+
+def _env_int(name, default, minimum=None, maximum=None):
+    try:
+        value = int(os.getenv(name, str(default)))
+    except (TypeError, ValueError):
+        value = default
+    if minimum is not None:
+        value = max(minimum, value)
+    if maximum is not None:
+        value = min(maximum, value)
+    return value
+
+
+PDF_IMAGE_DPI = _env_int("PDF_IMAGE_DPI", 350, minimum=120, maximum=350)
+PDF_IMAGE_JPEG_QUALITY = _env_int("PDF_IMAGE_JPEG_QUALITY", 95, minimum=70, maximum=95)
+PDF_REMOTE_MEDIA_MAX_BYTES = _env_int("PDF_REMOTE_MEDIA_MAX_MB", 25, minimum=1, maximum=100) * 1024 * 1024
 
 
 def _fmt_dt(value):
@@ -179,25 +194,44 @@ def _download_remote_media_bytes(marker):
 
     encoded_path = "/".join(quote(part, safe="") for part in remote_path.split("/") if part)
     try:
-        response = requests.get(
+        with requests.get(
             f"{base_url}/{encoded_path}",
             auth=(username, password),
             timeout=REMOTE_MEDIA_TIMEOUT,
-        )
-        if response.status_code != 200:
-            current_app.logger.warning(
-                "Falha ao baixar imagem remota da OS para PDF (%s): HTTP %s",
-                remote_path,
-                response.status_code,
-            )
-            return None
-        return BytesIO(response.content)
+            stream=True,
+        ) as response:
+            if response.status_code != 200:
+                current_app.logger.warning(
+                    "Falha ao baixar imagem remota da OS para PDF (%s): HTTP %s",
+                    remote_path,
+                    response.status_code,
+                )
+                return None
+
+            total = 0
+            output = tempfile.SpooledTemporaryFile(max_size=4 * 1024 * 1024, mode="w+b")
+            for chunk in response.iter_content(chunk_size=256 * 1024):
+                if not chunk:
+                    continue
+                total += len(chunk)
+                if total > PDF_REMOTE_MEDIA_MAX_BYTES:
+                    output.close()
+                    current_app.logger.warning(
+                        "Imagem remota ignorada no PDF por exceder o limite de %s MB (%s).",
+                        PDF_REMOTE_MEDIA_MAX_BYTES // (1024 * 1024),
+                        remote_path,
+                    )
+                    return None
+                output.write(chunk)
+            output.seek(0)
+            return output
     except Exception:
         current_app.logger.exception("Erro ao baixar imagem remota da OS para PDF.")
         return None
 
 
 def _prepare_pdf_image_source(image_source, width_mm=165, max_height_mm=110):
+    original_source = image_source
     try:
         with Image.open(image_source) as img:
             img = ImageOps.exif_transpose(img)
@@ -226,7 +260,7 @@ def _prepare_pdf_image_source(image_source, width_mm=165, max_height_mm=110):
             elif img.mode != "RGB":
                 img = img.convert("RGB")
 
-            output = BytesIO()
+            output = tempfile.SpooledTemporaryFile(max_size=2 * 1024 * 1024, mode="w+b")
             img.save(
                 output,
                 format="JPEG",
@@ -236,6 +270,11 @@ def _prepare_pdf_image_source(image_source, width_mm=165, max_height_mm=110):
                 dpi=(PDF_IMAGE_DPI, PDF_IMAGE_DPI),
             )
             output.seek(0)
+            if hasattr(original_source, "close"):
+                try:
+                    original_source.close()
+                except Exception:
+                    pass
             return output
     except Exception:
         current_app.logger.exception("Erro ao preparar imagem da OS para o PDF.")

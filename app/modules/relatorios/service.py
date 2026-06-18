@@ -1,5 +1,5 @@
 import json
-from collections import Counter
+import os
 from datetime import datetime
 from math import ceil
 
@@ -46,8 +46,8 @@ def can_access_relatorio_coleta_imagens(user) -> bool:
 
 
 class SimplePagination:
-    def __init__(self, items, page, per_page):
-        self.total = len(items)
+    def __init__(self, items, page, per_page, total=None, already_sliced=False):
+        self.total = len(items) if total is None else int(total or 0)
         self.per_page = per_page
         self.pages = max(1, ceil(self.total / per_page)) if self.total else 1
         self.page = max(1, min(page, self.pages))
@@ -55,9 +55,12 @@ class SimplePagination:
         self.has_next = self.page < self.pages
         self.prev_num = self.page - 1
         self.next_num = self.page + 1
-        start = (self.page - 1) * self.per_page
-        end = start + self.per_page
-        self.items = items[start:end]
+        if already_sliced:
+            self.items = items
+        else:
+            start = (self.page - 1) * self.per_page
+            end = start + self.per_page
+            self.items = items[start:end]
 
     def iter_pages(self):
         return range(1, self.pages + 1)
@@ -709,7 +712,36 @@ def build_relatorio_os_export_data(user, args):
     }
 
 
-def build_relatorio_coleta_imagens_export_data(user, args):
+def _coleta_imagens_max_export_items():
+    try:
+        value = int(os.getenv("RELATORIO_COLETA_IMAGENS_MAX_EXPORT_ITEMS", "0"))
+    except (TypeError, ValueError):
+        return None
+    return value if value > 0 else None
+
+
+def _coleta_imagens_complementares_count(query):
+    total = 0
+    rows = query.with_entities(OrdemServico.outras_imagens).yield_per(200)
+    for (outras_imagens,) in rows:
+        total += len(_parse_media_list(outras_imagens))
+    return total
+
+
+def _coleta_imagens_group_count(query, campo):
+    return [
+        (valor or "Nao informado", total)
+        for valor, total in (
+            query
+            .with_entities(campo, func.count(OrdemServico.id))
+            .group_by(campo)
+            .order_by(func.count(OrdemServico.id).desc())
+            .all()
+        )
+    ]
+
+
+def build_relatorio_coleta_imagens_export_data(user, args, *, page=None, per_page=None, max_items=None):
     user_type = getattr(user, "tipo_usuario", None)
     is_uvis = user_type == "uvis"
     is_regional = is_regional_user(user)
@@ -742,22 +774,29 @@ def build_relatorio_coleta_imagens_export_data(user, args):
         midia=midia_selecionada,
     )
 
-    rows = (
-        base_query
-        .order_by(*_coleta_imagens_order_by(ordenar_selecionado))
-        .all()
-    )
+    total_levantamentos = base_query.count()
+    rows_query = base_query.order_by(*_coleta_imagens_order_by(ordenar_selecionado))
+    export_limit_aplicado = False
+    if page is not None and per_page is not None:
+        safe_page = max(1, int(page or 1))
+        safe_per_page = max(1, int(per_page or 9))
+        rows_query = rows_query.offset((safe_page - 1) * safe_per_page).limit(safe_per_page)
+    elif max_items:
+        export_limit_aplicado = total_levantamentos > max_items
+        rows_query = rows_query.limit(max_items)
+
+    rows = rows_query.all()
 
     levantamentos = [_serialize_coleta_imagem_row(ordem, solicitacao, usuario) for ordem, solicitacao, usuario in rows]
 
-    dados_unidade_counter = Counter(item["uvis_nome"] for item in levantamentos)
-    dados_regiao_counter = Counter(item["regiao_nome"] for item in levantamentos)
+    dados_unidade = _coleta_imagens_group_count(base_query, Usuario.nome_uvis)
+    dados_regiao = _coleta_imagens_group_count(base_query, Usuario.regiao)
 
-    total_imagens_complementares = sum(item["outras_imagens_count"] for item in levantamentos)
-    total_videos = sum(1 for item in levantamentos if item["tem_video"])
-    total_midias = sum(item["total_midias"] for item in levantamentos)
-    total_uvis = len({item["uvis_nome"] for item in levantamentos if item["uvis_nome"] and item["uvis_nome"] != "Nao informado"})
-    total_regioes = len({item["regiao_nome"] for item in levantamentos if item["regiao_nome"] and item["regiao_nome"] != "Nao informado"})
+    total_imagens_complementares = _coleta_imagens_complementares_count(base_query)
+    total_videos = base_query.filter(func.length(func.trim(func.coalesce(OrdemServico.video, ""))) > 0).count()
+    total_midias = total_levantamentos + total_imagens_complementares + total_videos
+    total_uvis = len([nome for nome, _ in dados_unidade if nome and nome != "Nao informado"])
+    total_regioes = len([nome for nome, _ in dados_regiao if nome and nome != "Nao informado"])
 
     uvis_disponiveis = build_uvis_disponiveis(user, regiao_selecionada)
     regioes_disponiveis = build_regioes_disponiveis(user)
@@ -838,17 +877,35 @@ def build_relatorio_coleta_imagens_export_data(user, args):
         for key, value in filtros_exportacao.items()
         if value not in (None, "")
     }
+    pode_filtrar_uvis = not is_uvis
+    pode_filtrar_regiao = not (is_uvis or is_regional)
+    filtros_coleta_ativos = any([
+        mes_selecionado,
+        ano_selecionado,
+        os_id_selecionado,
+        data_inicio_selecionada,
+        data_fim_selecionada,
+        busca_selecionada,
+        foco_selecionado,
+        midia_selecionada,
+        ordenar_selecionado != "uvis_data",
+        bool(regiao_selecionada) and pode_filtrar_regiao,
+        bool(uvis_id) and not is_uvis,
+    ])
 
     return {
         "levantamentos": levantamentos,
-        "total_levantamentos": len(levantamentos),
+        "total_levantamentos": total_levantamentos,
+        "total_levantamentos_exportados": len(levantamentos),
+        "export_limit_aplicado": export_limit_aplicado,
+        "max_items_exportacao": max_items,
         "total_uvis_com_registro": total_uvis,
         "total_regioes_com_registro": total_regioes,
         "total_imagens_complementares": total_imagens_complementares,
         "total_videos": total_videos,
         "total_midias": total_midias,
-        "dados_unidade": sorted(dados_unidade_counter.items(), key=lambda item: (-item[1], item[0])),
-        "dados_regiao": sorted(dados_regiao_counter.items(), key=lambda item: (-item[1], item[0])),
+        "dados_unidade": dados_unidade,
+        "dados_regiao": dados_regiao,
         "uvis_disponiveis": uvis_disponiveis,
         "regioes_disponiveis": regioes_disponiveis,
         "focos_disponiveis": focos_disponiveis,
@@ -868,24 +925,31 @@ def build_relatorio_coleta_imagens_export_data(user, args):
         "periodo_label": periodo_label,
         "filtros_exportacao": filtros_exportacao,
         "pagination_args": pagination_args,
+        "filtros_coleta_ativos": filtros_coleta_ativos,
         "uvis_nome_selecionado": nome_uvis or "Todas as Unidades",
         "regiao_nome_selecionada": regiao_selecionada or "Todas as Regioes",
         "descricao_painel": descricao_painel,
         "voltar_endpoint": voltar_endpoint,
         "voltar_label": voltar_label,
         "os_detail_endpoint": "main.uvis_os_formulario_view" if is_uvis else "main.admin_os_formulario_view",
-        "pode_filtrar_uvis": not is_uvis,
-        "pode_filtrar_regiao": not (is_uvis or is_regional),
+        "pode_filtrar_uvis": pode_filtrar_uvis,
+        "pode_filtrar_regiao": pode_filtrar_regiao,
     }
 
 
 def build_relatorios_coleta_imagens_context(user, args):
-    data = build_relatorio_coleta_imagens_export_data(user, args)
     page = args.get("page", 1, type=int)
-    paginacao = SimplePagination(data["levantamentos"], page, per_page=9)
+    per_page = 9
+    data = build_relatorio_coleta_imagens_export_data(user, args, page=page, per_page=per_page)
+    paginacao = SimplePagination(
+        data["levantamentos"],
+        page,
+        per_page=per_page,
+        total=data["total_levantamentos"],
+        already_sliced=True,
+    )
 
     return {
         **data,
-        "levantamentos": paginacao.items,
         "paginacao": paginacao,
     }

@@ -1,1 +1,1 @@
-web: flask --app app:create_app db upgrade && gunicorn "app:create_app()" --timeout 120 --workers 2 --threads 4
+web: flask --app app:create_app db upgrade && gunicorn "app:create_app()" --timeout ${GUNICORN_TIMEOUT:-180} --workers ${WEB_CONCURRENCY:-1} --threads ${GUNICORN_THREADS:-4} --max-requests ${GUNICORN_MAX_REQUESTS:-500} --max-requests-jitter ${GUNICORN_MAX_REQUESTS_JITTER:-50}

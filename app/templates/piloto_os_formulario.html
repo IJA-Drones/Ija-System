@@ -1816,6 +1816,32 @@ document.addEventListener("DOMContentLoaded", () => {
     if (videoUploadProgressLabel) videoUploadProgressLabel.textContent = `${normalized}%`;
   };
 
+  const applySavedVideoState = (mediaUrl, message) => {
+    savedVideoCount = 1;
+    if (mediaUrl && videoSavedSource) {
+      videoSavedSource.src = `${mediaUrl}?t=${Date.now()}`;
+      if (videoSaved) videoSaved.load();
+    }
+    if (mediaUrl && videoSavedLink) {
+      videoSavedLink.href = mediaUrl;
+    }
+    if (videoSavedWrapper) videoSavedWrapper.classList.remove("d-none");
+    if (videoSavedActions) videoSavedActions.classList.remove("d-none");
+    if (videoDeleteButton) videoDeleteButton.disabled = false;
+    if (videoEmpty) videoEmpty.classList.add("d-none");
+    if (videoPending) videoPending.classList.add("d-none");
+    if (videoInput) videoInput.value = "";
+    setVideoUploadProgress(100, false);
+    setVideoUploadStatus(message || "Upload do video concluido com sucesso.", "success");
+    updateBadges();
+  };
+
+  window.addEventListener("ija:video-upload-complete", (event) => {
+    const payload = event.detail || {};
+    if (Number(payload.os_id) !== Number("{{ solicitacao.id }}")) return;
+    applySavedVideoState(payload.media_url, payload.message || "Video anexado com sucesso.");
+  });
+
   const uploadFileWithProgress = (url, file, onProgress) => new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("PUT", url, true);

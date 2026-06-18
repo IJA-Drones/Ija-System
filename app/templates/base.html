@@ -1402,6 +1402,9 @@
               }
 
               setGlobalVideoUploadProgress(payload.progress, payload.message, payload.status, payload.media_url);
+              if (payload.status === "success") {
+                  window.dispatchEvent(new CustomEvent("ija:video-upload-complete", { detail: payload }));
+              }
               if (payload.status === "success" || payload.status === "error") {
                   if (videoUploadPollTimer) clearInterval(videoUploadPollTimer);
                   videoUploadPollTimer = null;

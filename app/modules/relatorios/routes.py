@@ -1,3 +1,6 @@
+import os
+import threading
+
 from flask import flash, redirect, render_template, request, send_file, url_for
 from flask_login import current_user, login_required
 
@@ -16,6 +19,26 @@ from app.modules.relatorios.service import (
     can_access_relatorio_coleta_imagens,
     can_access_relatorios_menu,
 )
+
+
+def _env_int(name, default, minimum=1):
+    try:
+        value = int(os.getenv(name, str(default)))
+    except (TypeError, ValueError):
+        value = default
+    return max(minimum, value)
+
+
+PDF_EXPORT_SEMAPHORE = threading.BoundedSemaphore(_env_int("PDF_EXPORT_MAX_CONCURRENT", 1))
+
+
+def _build_pdf_export_with_memory_guard(builder, user, args):
+    if not PDF_EXPORT_SEMAPHORE.acquire(blocking=False):
+        return None
+    try:
+        return builder(user, args)
+    finally:
+        PDF_EXPORT_SEMAPHORE.release()
 
 
 def register_routes(bp):
@@ -94,7 +117,11 @@ def register_routes(bp):
             flash("Acesso restrito.", "danger")
             return redirect(url_for("main.dashboard"))
 
-        caminho_pdf, download_name = build_relatorio_pdf_export(current_user, request.args)
+        result = _build_pdf_export_with_memory_guard(build_relatorio_pdf_export, current_user, request.args)
+        if result is None:
+            flash("Ja existe uma exportacao PDF em andamento. Aguarde alguns instantes e tente novamente.", "warning")
+            return redirect(request.referrer or url_for("main.relatorios"))
+        caminho_pdf, download_name = result
         return send_file(
             caminho_pdf,
             as_attachment=True,
@@ -139,7 +166,11 @@ def register_routes(bp):
             flash("Acesso restrito.", "danger")
             return redirect(url_for("main.dashboard"))
 
-        caminho_pdf, download_name = build_relatorio_os_pdf_export(current_user, request.args)
+        result = _build_pdf_export_with_memory_guard(build_relatorio_os_pdf_export, current_user, request.args)
+        if result is None:
+            flash("Ja existe uma exportacao PDF em andamento. Aguarde alguns instantes e tente novamente.", "warning")
+            return redirect(request.referrer or url_for("main.relatorios_os"))
+        caminho_pdf, download_name = result
         return send_file(
             caminho_pdf,
             as_attachment=True,
@@ -154,7 +185,11 @@ def register_routes(bp):
             flash("Acesso restrito.", "danger")
             return redirect(url_for("main.dashboard"))
 
-        caminho_pdf, download_name = build_relatorio_coleta_imagens_pdf_export(current_user, request.args)
+        result = _build_pdf_export_with_memory_guard(build_relatorio_coleta_imagens_pdf_export, current_user, request.args)
+        if result is None:
+            flash("Ja existe uma exportacao PDF em andamento. Aguarde alguns instantes e tente novamente.", "warning")
+            return redirect(request.referrer or url_for("main.relatorios_coleta_imagens"))
+        caminho_pdf, download_name = result
         return send_file(
             caminho_pdf,
             as_attachment=True,

@@ -13,6 +13,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 TIMEZONE = "America/Sao_Paulo"
 TZ = ZoneInfo(TIMEZONE)
+DROPBOX_UPLOAD_CHUNK_SIZE = 8 * 1024 * 1024
 # Preserve the historical local backup folder under app/backup.
 BACKUP_DIR = Path(__file__).resolve().parents[2] / "backup"
 
@@ -52,8 +53,33 @@ def upload_to_dropbox(file_path):
         )
 
         dest_path = f"/backups/{zipped_file.name}"
+        file_size = zipped_file.stat().st_size
         with open(zipped_file, "rb") as handle:
-            meta = dbx.files_upload(handle.read(), dest_path, mode=dropbox.files.WriteMode.overwrite)
+            if file_size <= DROPBOX_UPLOAD_CHUNK_SIZE:
+                meta = dbx.files_upload(
+                    handle.read(DROPBOX_UPLOAD_CHUNK_SIZE),
+                    dest_path,
+                    mode=dropbox.files.WriteMode.overwrite,
+                )
+            else:
+                session = dbx.files_upload_session_start(handle.read(DROPBOX_UPLOAD_CHUNK_SIZE))
+                cursor = dropbox.files.UploadSessionCursor(
+                    session_id=session.session_id,
+                    offset=handle.tell(),
+                )
+                commit = dropbox.files.CommitInfo(
+                    path=dest_path,
+                    mode=dropbox.files.WriteMode.overwrite,
+                )
+
+                while handle.tell() < file_size:
+                    remaining = file_size - handle.tell()
+                    chunk = handle.read(DROPBOX_UPLOAD_CHUNK_SIZE)
+                    if remaining <= DROPBOX_UPLOAD_CHUNK_SIZE:
+                        meta = dbx.files_upload_session_finish(chunk, cursor, commit)
+                    else:
+                        dbx.files_upload_session_append_v2(chunk, cursor)
+                        cursor.offset = handle.tell()
             print(f" SUCESSO ABSOLUTO! Salvo em: {meta.path_display}")
 
         if zipped_file.exists():

@@ -1,3 +1,4 @@
+import os
 import tempfile
 from datetime import datetime
 from io import BytesIO
@@ -15,7 +16,11 @@ from reportlab.platypus import PageBreak, Paragraph, SimpleDocTemplate, Spacer, 
 from app.extensions import db
 from app.models import Solicitacao, Usuario
 from app.modules.piloto_os.exporters import _fmt_date, _try_make_local_rlimage, _try_make_logo
-from app.modules.relatorios.service import build_relatorio_coleta_imagens_export_data, build_relatorio_os_export_data
+from app.modules.relatorios.service import (
+    _coleta_imagens_max_export_items,
+    build_relatorio_coleta_imagens_export_data,
+    build_relatorio_os_export_data,
+)
 from app.shared.access import (
     apply_prefeitura_scope,
     apply_regiao_scope,
@@ -30,6 +35,21 @@ try:
     MATPLOTLIB_AVAILABLE = True
 except ImportError:
     MATPLOTLIB_AVAILABLE = False
+
+
+def _env_int(name, default, minimum=None, maximum=None):
+    try:
+        value = int(os.getenv(name, str(default)))
+    except (TypeError, ValueError):
+        value = default
+    if minimum is not None:
+        value = max(minimum, value)
+    if maximum is not None:
+        value = min(maximum, value)
+    return value
+
+
+RELATORIO_PDF_DETALHE_MAX_ROWS = _env_int("RELATORIO_PDF_DETALHE_MAX_ROWS", 300, minimum=50, maximum=2000)
 
 
 def _resolve_filters(user, args):
@@ -65,7 +85,13 @@ def _build_pdf_export_data(user, args):
     query_detalhe = apply_solicitacao_prefeitura_scope(query_detalhe, user)
     query_detalhe = apply_regiao_scope(query_detalhe, user, Usuario.regiao)
 
-    query_results = query_detalhe.order_by(Solicitacao.data_criacao.desc()).all()
+    query_results_total = query_detalhe.count()
+    query_results = (
+        query_detalhe
+        .order_by(Solicitacao.data_criacao.desc())
+        .limit(RELATORIO_PDF_DETALHE_MAX_ROWS)
+        .all()
+    )
 
     total_solicitacoes = base_query.count()
     total_aprovadas = base_query.filter(Solicitacao.status == "APROVADO").count()
@@ -208,6 +234,9 @@ def _build_pdf_export_data(user, args):
         "filtro_data": filtro_data,
         "uvis_id": uvis_id,
         "query_results": query_results,
+        "query_results_total": query_results_total,
+        "query_results_limit": RELATORIO_PDF_DETALHE_MAX_ROWS,
+        "query_results_limited": query_results_total > RELATORIO_PDF_DETALHE_MAX_ROWS,
         "total_solicitacoes": total_solicitacoes,
         "total_aprovadas": total_aprovadas,
         "total_aprovadas_com_recomendacoes": total_aprovadas_com_recomendacoes,
@@ -472,7 +501,18 @@ def build_relatorio_pdf_export(user, args):
 
     story.append(PageBreak())
     story.append(Paragraph("Registros Detalhados", section_h))
-    story.append(Paragraph("Listagem completa dos registros retornados pelo filtro selecionado.", normal))
+    if data.get("query_results_limited"):
+        story.append(Paragraph(
+            (
+                f"Totais e agrupamentos consideram {data['query_results_total']} registros. "
+                f"Para preservar memoria do servidor, o detalhamento abaixo exibe os "
+                f"{data['query_results_limit']} registros mais recentes. Refine os filtros "
+                "para obter um detalhamento completo de um periodo menor."
+            ),
+            normal,
+        ))
+    else:
+        story.append(Paragraph("Listagem completa dos registros retornados pelo filtro selecionado.", normal))
     story.append(Spacer(1, 8))
 
     registros_header = [
@@ -1101,7 +1141,11 @@ def build_relatorio_os_pdf_export(user, args):
 
 
 def build_relatorio_coleta_imagens_pdf_export(user, args):
-    data = build_relatorio_coleta_imagens_export_data(user, args)
+    data = build_relatorio_coleta_imagens_export_data(
+        user,
+        args,
+        max_items=_coleta_imagens_max_export_items(),
+    )
 
     tmp_pdf = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
     path = tmp_pdf.name
@@ -1267,6 +1311,16 @@ def build_relatorio_coleta_imagens_pdf_export(user, args):
 
         story.append(Paragraph("Relatorio de Coleta de Imagens - Operacao Dengue PMSP", title_style))
         story.append(Spacer(1, 24))
+        if index == 0 and data.get("export_limit_aplicado"):
+            story.append(Paragraph(
+                (
+                    f"Exportacao limitada aos primeiros {data.get('total_levantamentos_exportados')} "
+                    f"levantamentos de {data.get('total_levantamentos')} para preservar a memoria do servidor. "
+                    "Refine os filtros para exportar um periodo menor."
+                ),
+                top_info_style,
+            ))
+            story.append(Spacer(1, 10))
 
         resumo_topo = Table([[
             Paragraph(f"<b>UVIS:</b> {_os_safe(item['uvis_nome'])}", top_info_style),

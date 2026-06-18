@@ -98,9 +98,25 @@
     .media-table-card .table td {
       vertical-align: middle;
     }
+    .media-filter-card .form-control,
+    .media-filter-card .form-select {
+      min-height: 31px;
+    }
+    .media-filter-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      justify-content: flex-end;
+    }
+    .media-filter-actions .btn {
+      min-width: 120px;
+    }
     @media (max-width: 767.98px) {
       .media-report-meta {
         grid-template-columns: 1fr;
+      }
+      .media-filter-actions .btn {
+        width: 100%;
       }
     }
   </style>
@@ -135,123 +151,142 @@
     </div>
   </div>
 
-  <div class="card media-filter-card mb-4">
-    <div class="card-body">
-      <form method="GET">
-        <div class="row g-3 align-items-end">
-          <div class="col-sm-6 col-lg-2">
-            <label class="small text-muted">ID da OS</label>
-            <input type="number" min="1" name="os_id" class="form-control" value="{{ os_id_selecionado or '' }}" placeholder="Ex: 1745">
-          </div>
-          <div class="col-sm-6 col-lg-2">
-            <label class="small text-muted">Periodo de</label>
-            <input type="date" name="data_inicio" class="form-control" value="{{ data_inicio_selecionada }}">
-          </div>
-          <div class="col-sm-6 col-lg-2">
-            <label class="small text-muted">Periodo ate</label>
-            <input type="date" name="data_fim" class="form-control" value="{{ data_fim_selecionada }}">
-          </div>
-          <div class="col-md-2">
-            <label class="small text-muted">Mes</label>
-            <select name="mes" class="form-select">
-              <option value="">Todos</option>
-              {% for numero, nome in meses.items() %}
-                <option value="{{ numero }}" {% if numero|int == mes_selecionado|int %}selected{% endif %}>{{ nome }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="col-md-2">
-            <label class="small text-muted">Ano</label>
-            <select name="ano" class="form-select">
-              <option value="">Todos</option>
-              {% for ano in anos_disponiveis %}
-                <option value="{{ ano }}" {% if ano|int == ano_selecionado|int %}selected{% endif %}>{{ ano }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="col-sm-6 col-lg-2">
-            <label class="small text-muted">Ordenar por</label>
-            <select name="ordenar" class="form-select">
-              <option value="uvis_data" {% if ordenar_selecionado == 'uvis_data' %}selected{% endif %}>UVIS e recentes</option>
-              <option value="data_desc" {% if ordenar_selecionado == 'data_desc' %}selected{% endif %}>Data mais recente</option>
-              <option value="data_asc" {% if ordenar_selecionado == 'data_asc' %}selected{% endif %}>Data mais antiga</option>
-              <option value="os_desc" {% if ordenar_selecionado == 'os_desc' %}selected{% endif %}>OS maior primeiro</option>
-              <option value="os_asc" {% if ordenar_selecionado == 'os_asc' %}selected{% endif %}>OS menor primeiro</option>
-            </select>
-          </div>
-        </div>
+  <div class="card media-filter-card shadow-sm rounded-4 mb-4 border-0">
+    <div
+      class="card-header border-0 p-3 d-flex justify-content-between align-items-center"
+      data-bs-toggle="collapse"
+      data-bs-target="#collapseFiltrosColetaImagens"
+      aria-expanded="{{ 'true' if filtros_coleta_ativos else 'false' }}"
+      style="cursor: pointer; background: none;"
+    >
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-funnel-fill text-primary"></i>
+        <span class="text-dark fw-bold">Filtros de busca</span>
+        {% if filtros_coleta_ativos %}
+          <span class="badge bg-danger rounded-circle p-1" style="width: 8px; height: 8px;"></span>
+        {% endif %}
+      </div>
+      <i class="bi bi-chevron-down text-muted"></i>
+    </div>
 
-        <div class="row g-3 align-items-end mt-1">
-          {% if pode_filtrar_regiao %}
-          <div class="col-md-3">
-            <label class="small text-muted">Regiao</label>
-            <select name="regiao" class="form-select">
-              <option value="">Todas as Regioes</option>
-              {% for regiao in regioes_disponiveis %}
-                <option value="{{ regiao }}" {% if regiao == regiao_selecionada %}selected{% endif %}>{{ regiao }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          {% else %}
-          <div class="col-md-3">
-            <label class="small text-muted">Regiao</label>
-            <input type="text" class="form-control" value="{{ regiao_nome_selecionada }}" disabled>
-          </div>
-          {% endif %}
+    <div class="collapse {% if filtros_coleta_ativos %}show{% endif %}" id="collapseFiltrosColetaImagens">
+      <div class="card-body pt-0 pb-4">
+        <form method="GET">
+          <div class="row g-2 align-items-end">
+            <div class="col-md-6 col-xl-2">
+              <label class="small text-muted">ID da OS</label>
+              <input type="number" min="1" name="os_id" class="form-control form-control-sm" value="{{ os_id_selecionado or '' }}" placeholder="Ex: 1745">
+            </div>
+            <div class="col-md-6 col-xl-2">
+              <label class="small text-muted">Periodo de</label>
+              <input type="date" name="data_inicio" class="form-control form-control-sm" value="{{ data_inicio_selecionada }}">
+            </div>
+            <div class="col-md-6 col-xl-2">
+              <label class="small text-muted">Periodo ate</label>
+              <input type="date" name="data_fim" class="form-control form-control-sm" value="{{ data_fim_selecionada }}">
+            </div>
+            <div class="col-md-6 col-xl-2">
+              <label class="small text-muted">Mes</label>
+              <select name="mes" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for numero, nome in meses.items() %}
+                  <option value="{{ numero }}" {% if numero|int == mes_selecionado|int %}selected{% endif %}>{{ nome }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6 col-xl-2">
+              <label class="small text-muted">Ano</label>
+              <select name="ano" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for ano in anos_disponiveis %}
+                  <option value="{{ ano }}" {% if ano|int == ano_selecionado|int %}selected{% endif %}>{{ ano }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6 col-xl-2">
+              <label class="small text-muted">Ordenar por</label>
+              <select name="ordenar" class="form-select form-select-sm">
+                <option value="uvis_data" {% if ordenar_selecionado == 'uvis_data' %}selected{% endif %}>UVIS e recentes</option>
+                <option value="data_desc" {% if ordenar_selecionado == 'data_desc' %}selected{% endif %}>Data mais recente</option>
+                <option value="data_asc" {% if ordenar_selecionado == 'data_asc' %}selected{% endif %}>Data mais antiga</option>
+                <option value="os_desc" {% if ordenar_selecionado == 'os_desc' %}selected{% endif %}>OS maior primeiro</option>
+                <option value="os_asc" {% if ordenar_selecionado == 'os_asc' %}selected{% endif %}>OS menor primeiro</option>
+              </select>
+            </div>
 
-          {% if pode_filtrar_uvis %}
-          <div class="col-md-3">
-            <label class="small text-muted">UVIS</label>
-            <select name="uvis_id" class="form-select">
-              <option value="">Todas as Unidades</option>
-              {% for id, nome in uvis_disponiveis %}
-                <option value="{{ id }}" {% if id|int == uvis_id_selecionado|int %}selected{% endif %}>{{ nome }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          {% else %}
-          <div class="col-md-3">
-            <label class="small text-muted">UVIS</label>
-            <input type="text" class="form-control" value="{{ uvis_nome_selecionado }}" disabled>
-          </div>
-          {% endif %}
+            {% if pode_filtrar_regiao %}
+            <div class="col-md-6 col-xl-3">
+              <label class="small text-muted">Regiao</label>
+              <select name="regiao" class="form-select form-select-sm">
+                <option value="">Todas as Regioes</option>
+                {% for regiao in regioes_disponiveis %}
+                  <option value="{{ regiao }}" {% if regiao == regiao_selecionada %}selected{% endif %}>{{ regiao }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            {% else %}
+            <div class="col-md-6 col-xl-3">
+              <label class="small text-muted">Regiao</label>
+              <input type="text" class="form-control form-control-sm" value="{{ regiao_nome_selecionada }}" disabled>
+            </div>
+            {% endif %}
 
-          <div class="col-md-2">
-            <label class="small text-muted">Foco</label>
-            <select name="foco" class="form-select">
-              <option value="">Todos</option>
-              {% for foco in focos_disponiveis %}
-                <option value="{{ foco }}" {% if foco == foco_selecionado %}selected{% endif %}>{{ foco }}</option>
-              {% endfor %}
-            </select>
-          </div>
+            {% if pode_filtrar_uvis %}
+            <div class="col-md-6 col-xl-3">
+              <label class="small text-muted">UVIS</label>
+              <select name="uvis_id" class="form-select form-select-sm">
+                <option value="">Todas as Unidades</option>
+                {% for id, nome in uvis_disponiveis %}
+                  <option value="{{ id }}" {% if id|int == uvis_id_selecionado|int %}selected{% endif %}>{{ nome }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            {% else %}
+            <div class="col-md-6 col-xl-3">
+              <label class="small text-muted">UVIS</label>
+              <input type="text" class="form-control form-control-sm" value="{{ uvis_nome_selecionado }}" disabled>
+            </div>
+            {% endif %}
 
-          <div class="col-md-2">
-            <label class="small text-muted">Midia</label>
-            <select name="midia" class="form-select">
-              <option value="" {% if not midia_selecionada %}selected{% endif %}>Todas</option>
-              <option value="com_video" {% if midia_selecionada == 'com_video' %}selected{% endif %}>Com video</option>
-              <option value="sem_video" {% if midia_selecionada == 'sem_video' %}selected{% endif %}>Sem video</option>
-              <option value="com_complementares" {% if midia_selecionada == 'com_complementares' %}selected{% endif %}>Com extras</option>
-              <option value="sem_complementares" {% if midia_selecionada == 'sem_complementares' %}selected{% endif %}>Sem extras</option>
-            </select>
-          </div>
+            <div class="col-md-6 col-xl-2">
+              <label class="small text-muted">Foco</label>
+              <select name="foco" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for foco in focos_disponiveis %}
+                  <option value="{{ foco }}" {% if foco == foco_selecionado %}selected{% endif %}>{{ foco }}</option>
+                {% endfor %}
+              </select>
+            </div>
 
-          <div class="col-md-3">
-            <label class="small text-muted">Busca</label>
-            <input type="search" name="busca" class="form-control" value="{{ busca_selecionada }}" placeholder="Endereco, CEP, UVIS, foco...">
-          </div>
+            <div class="col-md-6 col-xl-2">
+              <label class="small text-muted">Midia</label>
+              <select name="midia" class="form-select form-select-sm">
+                <option value="" {% if not midia_selecionada %}selected{% endif %}>Todas</option>
+                <option value="com_video" {% if midia_selecionada == 'com_video' %}selected{% endif %}>Com video</option>
+                <option value="sem_video" {% if midia_selecionada == 'sem_video' %}selected{% endif %}>Sem video</option>
+                <option value="com_complementares" {% if midia_selecionada == 'com_complementares' %}selected{% endif %}>Com extras</option>
+                <option value="sem_complementares" {% if midia_selecionada == 'sem_complementares' %}selected{% endif %}>Sem extras</option>
+              </select>
+            </div>
 
-          <div class="col-md-2 d-flex gap-2">
-            <button class="btn btn-success w-100" type="submit">
-              <i class="bi bi-funnel me-1"></i>Filtrar
-            </button>
-            <a href="{{ url_for('main.relatorios_coleta_imagens') }}" class="btn btn-outline-secondary w-100">
-              <i class="bi bi-x-lg me-1"></i>Limpar
-            </a>
+            <div class="col-md-12 col-xl-2">
+              <label class="small text-muted">Busca</label>
+              <input type="search" name="busca" class="form-control form-control-sm" value="{{ busca_selecionada }}" placeholder="Endereco, CEP, UVIS, foco...">
+            </div>
+
+            <div class="col-12">
+              <div class="media-filter-actions mt-2">
+                <button class="btn btn-success btn-sm" type="submit">
+                  <i class="bi bi-funnel me-1"></i>Filtrar
+                </button>
+                <a href="{{ url_for('main.relatorios_coleta_imagens') }}" class="btn btn-outline-secondary btn-sm">
+                  <i class="bi bi-x-lg me-1"></i>Limpar
+                </a>
+              </div>
+            </div>
           </div>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   </div>
 
