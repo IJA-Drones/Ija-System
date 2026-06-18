@@ -21,7 +21,7 @@ from app.modules.relatorios.service import (
 )
 
 
-def _env_int(name, default, minimum=1):
+def _env_int(name, default, minimum=0):
     try:
         value = int(os.getenv(name, str(default)))
     except (TypeError, ValueError):
@@ -29,10 +29,17 @@ def _env_int(name, default, minimum=1):
     return max(minimum, value)
 
 
-PDF_EXPORT_SEMAPHORE = threading.BoundedSemaphore(_env_int("PDF_EXPORT_MAX_CONCURRENT", 1))
+PDF_EXPORT_MAX_CONCURRENT = _env_int("PDF_EXPORT_MAX_CONCURRENT", 0)
+PDF_EXPORT_SEMAPHORE = (
+    threading.BoundedSemaphore(PDF_EXPORT_MAX_CONCURRENT)
+    if PDF_EXPORT_MAX_CONCURRENT > 0
+    else None
+)
 
 
 def _build_pdf_export_with_memory_guard(builder, user, args):
+    if PDF_EXPORT_SEMAPHORE is None:
+        return builder(user, args)
     if not PDF_EXPORT_SEMAPHORE.acquire(blocking=False):
         return None
     try:
