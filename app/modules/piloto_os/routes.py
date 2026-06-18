@@ -8,7 +8,7 @@ import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from urllib.parse import quote, unquote
+from urllib.parse import quote, unquote, urlsplit
 
 import requests
 from flask import abort, current_app, flash, jsonify, redirect, render_template, request, send_file, url_for
@@ -74,6 +74,16 @@ VIDEO_BACKGROUND_UPLOAD_EXECUTOR = ThreadPoolExecutor(
 def _require_piloto():
     if not is_piloto_os_user(current_user):
         abort(403)
+
+
+def _safe_local_redirect(default_endpoint):
+    target = (request.form.get("next") or request.args.get("next") or "").strip()
+    parsed = urlsplit(target)
+
+    if target.startswith("/") and not target.startswith("//") and not parsed.scheme and not parsed.netloc:
+        return redirect(target)
+
+    return redirect(url_for(default_endpoint))
 
 
 def _require_admin_os_view():
@@ -997,7 +1007,7 @@ def register_routes(bp):
         except PilotoOsError as exc:
             flash(str(exc), exc.category)
 
-        return redirect(url_for("main.piloto_os"))
+        return _safe_local_redirect("main.piloto_os")
 
     @bp.route("/piloto/os/formulario", methods=["GET"], endpoint="piloto_os_formulario_redirect")
     @login_required
