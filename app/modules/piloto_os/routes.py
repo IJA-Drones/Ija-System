@@ -36,7 +36,13 @@ from app.modules.piloto_os.service import (
     salvar_piloto_os_form,
 )
 from app.shared.access import ADMIN_PANEL_VIEW_TYPES, can_access_regiao
-from app.shared.skybox import SkyboxError, is_skybox_path, stream_skybox_file
+from app.shared.skybox import (
+    SkyboxError,
+    build_os_video_remote_path,
+    build_skybox_marker,
+    is_skybox_path,
+    stream_skybox_file,
+)
 
 
 WEBDAV_MARKER_PREFIX = "webdav://"
@@ -484,6 +490,37 @@ def _get_video_upload_job(job_id):
         return dict(job) if job else None
 
 
+def _build_video_upload_status_from_os(os_id):
+    if getattr(current_user, "tipo_usuario", None) in ADMIN_PANEL_VIEW_TYPES:
+        context = build_admin_os_form_context(current_user, os_id)
+    else:
+        context = build_piloto_os_form_context(current_user, os_id)
+
+    ordem = context.get("ordem")
+    if getattr(ordem, "video", None):
+        return {
+            "success": True,
+            "job_id": None,
+            "status": "success",
+            "progress": 100,
+            "message": "Video enviado com sucesso.",
+            "os_id": os_id,
+            "file_name": os.path.basename(str(ordem.video or "")),
+            "media_url": url_for("main.os_video", os_id=os_id),
+        }
+
+    return {
+        "success": True,
+        "job_id": None,
+        "status": "uploading",
+        "progress": 1,
+        "message": "Video ainda em processamento. Voce pode continuar usando o sistema.",
+        "os_id": os_id,
+        "file_name": None,
+        "media_url": None,
+    }
+
+
 def _create_video_upload_job(*, os_id, user_id, file_name, original_name, content_type, temp_path, total_bytes):
     job_id = uuid.uuid4().hex
     now = _now_epoch()
@@ -530,7 +567,7 @@ def _run_video_upload_job(app, job_id):
         temp_path = job["temp_path"]
         os_id = job["os_id"]
         file_name = job["file_name"]
-        file_remote_path = _build_webdav_os_remote_path(os_id, file_name)
+        file_remote_path = build_os_video_remote_path(os_id, file_name)
         file_url = _webdav_url_for_remote_path(file_remote_path)
         total_bytes = max(1, int(job.get("total_bytes") or os.path.getsize(temp_path) or 1))
 
@@ -543,11 +580,16 @@ def _run_video_upload_job(app, job_id):
             )
 
             _base_url, auth = _webdav_config()
-            base_remote_path = _webdav_base_dir()
-            folder_remote_path = _build_webdav_os_remote_path(os_id)
             try:
-                requests.request("MKCOL", _webdav_url_for_remote_path(base_remote_path), auth=auth, timeout=_webdav_timeout())
-                requests.request("MKCOL", _webdav_url_for_remote_path(folder_remote_path), auth=auth, timeout=_webdav_timeout())
+                parent_parts = []
+                for part in file_remote_path.split("/")[:-1]:
+                    parent_parts.append(part)
+                    requests.request(
+                        "MKCOL",
+                        _webdav_url_for_remote_path("/".join(parent_parts)),
+                        auth=auth,
+                        timeout=_webdav_timeout(),
+                    )
             except requests.RequestException:
                 current_app.logger.info("MKCOL WebDAV ignorado para video em background da OS %s.", os_id, exc_info=True)
 
@@ -594,7 +636,7 @@ def _run_video_upload_job(app, job_id):
 
             _set_video_upload_job(job_id, progress=97, message="Atualizando registro da OS.")
             ordem, _error_response = _get_or_create_ordem_for_upload({"solicitacao": Solicitacao.query.get(os_id)}, lock=True)
-            ordem.video = _build_webdav_marker(os_id, file_name)
+            ordem.video = build_skybox_marker(file_remote_path)
             if not ordem.quantidade_videos_registradas or ordem.quantidade_videos_registradas < 1:
                 ordem.quantidade_videos_registradas = 1
             db.session.commit()
@@ -1024,6 +1066,7 @@ def register_routes(bp):
                 "success": True,
                 "message": "Video recebido. O envio para o Skybox continuara em segundo plano.",
                 "job_id": job_id,
+                "os_id": os_id,
                 "file_name": file_name,
                 "progress": 0,
             }), 202
@@ -1047,6 +1090,13 @@ def register_routes(bp):
     def video_upload_job_status(job_id):
         job = _get_video_upload_job(job_id)
         if not job:
+            fallback_os_id = request.args.get("os_id", type=int)
+            if fallback_os_id:
+                try:
+                    return jsonify(_build_video_upload_status_from_os(fallback_os_id))
+                except PilotoOsError:
+                    abort(403)
+
             return jsonify({
                 "success": False,
                 "error": "Upload de video nao encontrado.",

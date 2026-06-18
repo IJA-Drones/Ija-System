@@ -10,12 +10,14 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
+from reportlab.lib.utils import ImageReader
+from reportlab.pdfgen import canvas as pdf_canvas
 from reportlab.platypus import Image as RLImage
 from reportlab.platypus import PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from app.extensions import db
 from app.models import Solicitacao, Usuario
-from app.modules.piloto_os.exporters import _fmt_date, _try_make_local_rlimage, _try_make_logo
+from app.modules.piloto_os.exporters import _fmt_date, _try_make_local_rlimage, _try_make_logo, _try_prepare_pdf_image_for_canvas
 from app.modules.relatorios.service import (
     _coleta_imagens_max_export_items,
     build_relatorio_coleta_imagens_export_data,
@@ -1140,12 +1142,214 @@ def build_relatorio_os_pdf_export(user, args):
     return path, nome
 
 
+def _coleta_imagens_pdf_name(data):
+    nome = "relatorio_coleta_imagens"
+    if data["ano_selecionado"]:
+        nome += f"_{data['ano_selecionado']}"
+    if data["mes_selecionado"]:
+        nome += f"_{int(data['mes_selecionado']):02d}"
+    if data["regiao_selecionada"]:
+        nome += f"_regiao_{data['regiao_selecionada'].replace(' ', '_').lower()}"
+    if data["uvis_id_selecionado"]:
+        nome += f"_uvis_{data['uvis_id_selecionado']}"
+    return f"{nome}.pdf"
+
+
+def _canvas_text_lines(text, max_width, font_name="Helvetica", font_size=8):
+    words = _os_safe(text).split()
+    if not words:
+        return [""]
+    lines = []
+    current = ""
+    for word in words:
+        candidate = f"{current} {word}".strip()
+        if pdf_canvas.pdfmetrics.stringWidth(candidate, font_name, font_size) <= max_width:
+            current = candidate
+        else:
+            if current:
+                lines.append(current)
+            current = word
+    if current:
+        lines.append(current)
+    return lines
+
+
+def _draw_wrapped_text(c, text, x, y, max_width, *, font_name="Helvetica", font_size=8, leading=10, max_lines=None):
+    c.setFont(font_name, font_size)
+    lines = _canvas_text_lines(text, max_width, font_name, font_size)
+    if max_lines:
+        lines = lines[:max_lines]
+    for line in lines:
+        c.drawString(x, y, line)
+        y -= leading
+    return y
+
+
+def _draw_centered_wrapped_text(c, text, x, y, width, *, font_name="Helvetica-Bold", font_size=8, leading=10, max_lines=2):
+    c.setFont(font_name, font_size)
+    lines = _canvas_text_lines(text, width - 8, font_name, font_size)[:max_lines]
+    for line in lines:
+        c.drawCentredString(x + width / 2, y, line)
+        y -= leading
+    return y
+
+
+def _draw_coleta_pdf_footer(c, page_width):
+    c.setFillColor(colors.HexColor("#4f81c7"))
+    c.setFont("Helvetica-Bold", 7.2)
+    c.drawCentredString(page_width / 2, 17 * mm, "OCEANO AZUL COMERCIO INTERNACIONAL LTDA")
+    c.setFillColor(colors.HexColor("#a0a7b3"))
+    c.setFont("Helvetica", 5.8)
+    c.drawCentredString(page_width / 2, 13.5 * mm, "Alameda Rio Negro, 503 - sala 2401")
+    c.drawCentredString(page_width / 2, 10.5 * mm, "Alphaville Centro Industrial e Empresarial - Barueri SP")
+
+
+def _draw_coleta_pdf_page(c, item, data, args, *, is_first=False):
+    page_width, page_height = A4
+    left = 21 * mm
+    right = 21 * mm
+    top = 18 * mm
+    bottom = 20 * mm
+    content_width = page_width - left - right
+    y = page_height - top
+
+    c.setFillColor(colors.black)
+    c.setFont("Helvetica-Bold", 14.4)
+    c.drawCentredString(page_width / 2, y, "Relatorio de Coleta de Imagens - Operacao Dengue PMSP")
+    y -= 18 * mm
+
+    if is_first and data.get("export_limit_aplicado"):
+        c.setFillColor(colors.HexColor("#111827"))
+        y = _draw_wrapped_text(
+            c,
+            (
+                f"Exportacao limitada aos primeiros {data.get('total_levantamentos_exportados')} "
+                f"levantamentos de {data.get('total_levantamentos')} para preservar a memoria do servidor. "
+                "Refine os filtros para exportar um periodo menor."
+            ),
+            left,
+            y,
+            content_width,
+            font_size=8,
+            leading=10,
+            max_lines=3,
+        )
+        y -= 5 * mm
+
+    summary_width = min(content_width - (20 * mm), 128 * mm)
+    summary_x = left + (content_width - summary_width) / 2
+    summary_y = y
+    summary_h = 15 * mm
+    col_w = summary_width / 3
+    c.setStrokeColor(colors.black)
+    c.rect(summary_x, summary_y - summary_h, summary_width, summary_h, stroke=1, fill=0)
+    c.line(summary_x + col_w, summary_y, summary_x + col_w, summary_y - summary_h)
+    c.line(summary_x + (2 * col_w), summary_y, summary_x + (2 * col_w), summary_y - summary_h)
+    c.setFillColor(colors.HexColor("#111827"))
+    _draw_centered_wrapped_text(c, f"UVIS: {item['uvis_nome']}", summary_x, summary_y - 6 * mm, col_w, font_size=8.4)
+    _draw_centered_wrapped_text(c, f"REGIAO: {item['regiao_nome']}", summary_x + col_w, summary_y - 6 * mm, col_w, font_size=8.4)
+    _draw_centered_wrapped_text(c, f"PERIODO: {data['periodo_label']}", summary_x + 2 * col_w, summary_y - 6 * mm, col_w, font_size=8.4)
+    y = summary_y - summary_h - 10 * mm
+
+    block_width = min(content_width, 162 * mm)
+    block_x = left + (content_width - block_width) / 2
+    block_h = 133 * mm
+    block_top = y
+    c.setStrokeColor(colors.black)
+    c.rect(block_x, block_top - block_h, block_width, block_h, stroke=1, fill=0)
+
+    image_area_h = 103 * mm
+    image_area_top = block_top
+    image_area_bottom = block_top - image_area_h
+    image_result = _try_prepare_pdf_image_for_canvas(
+        item.get("imagem_principal_path"),
+        width_mm=148,
+        max_height_mm=96,
+    )
+    if image_result:
+        image_source, draw_w, draw_h = image_result
+        image_x = block_x + (block_width - draw_w) / 2
+        image_y = image_area_bottom + (image_area_h - draw_h) / 2
+        try:
+            c.drawImage(ImageReader(image_source), image_x, image_y, width=draw_w, height=draw_h, preserveAspectRatio=True, mask="auto")
+        finally:
+            if hasattr(image_source, "close"):
+                try:
+                    image_source.close()
+                except Exception:
+                    pass
+    else:
+        c.setFillColor(colors.HexColor("#4b5563"))
+        c.setFont("Helvetica", 9.4)
+        c.drawCentredString(block_x + block_width / 2, image_area_bottom + image_area_h / 2, "Imagem principal indisponivel no momento da exportacao.")
+
+    details_top = image_area_bottom - 5 * mm
+    label_w = 44 * mm
+    row_h = 7 * mm
+    rows = [
+        ("ENDERECO:", item.get("endereco")),
+        ("CEP:", item.get("cep")),
+        ("COORDENADAS:", item.get("coordenadas")),
+        ("DATA DE COLETA DE IMG:", item.get("data_coleta_label")),
+        ("FOCO:", item.get("foco")),
+    ]
+    y_row = details_top
+    for label, value in rows:
+        c.setFillColor(colors.HexColor("#111827"))
+        c.setFont("Helvetica-Bold", 7.4)
+        c.drawString(block_x + 8, y_row, label)
+        _draw_wrapped_text(
+            c,
+            value,
+            block_x + label_w,
+            y_row,
+            block_width - label_w - 12,
+            font_size=7.4,
+            leading=8,
+            max_lines=2 if label == "ENDERECO:" else 1,
+        )
+        y_row -= row_h if label != "ENDERECO:" else 11 * mm
+
+    _draw_coleta_pdf_footer(c, page_width)
+
+
+def _build_relatorio_coleta_imagens_pdf_export_streamed(data, args):
+    tmp_pdf = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
+    path = tmp_pdf.name
+    tmp_pdf.close()
+
+    c = pdf_canvas.Canvas(path, pagesize=A4)
+    if not data["levantamentos"]:
+        item = {
+            "uvis_nome": data["uvis_nome_selecionado"],
+            "regiao_nome": data["regiao_nome_selecionada"],
+            "imagem_principal_path": None,
+            "endereco": "Nenhum levantamento com foto principal foi encontrado para os filtros selecionados.",
+            "cep": "",
+            "coordenadas": "",
+            "data_coleta_label": "",
+            "foco": "",
+        }
+        _draw_coleta_pdf_page(c, item, data, args, is_first=True)
+        c.save()
+        return path, "relatorio_coleta_imagens.pdf"
+
+    for index, item in enumerate(data["levantamentos"]):
+        if index:
+            c.showPage()
+        _draw_coleta_pdf_page(c, item, data, args, is_first=(index == 0))
+
+    c.save()
+    return path, _coleta_imagens_pdf_name(data)
+
+
 def build_relatorio_coleta_imagens_pdf_export(user, args):
     data = build_relatorio_coleta_imagens_export_data(
         user,
         args,
         max_items=_coleta_imagens_max_export_items(),
     )
+    return _build_relatorio_coleta_imagens_pdf_export_streamed(data, args)
 
     tmp_pdf = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
     path = tmp_pdf.name

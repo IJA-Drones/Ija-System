@@ -2217,7 +2217,7 @@ document.addEventListener("DOMContentLoaded", () => {
       setVideoUploadProgress(100, true);
       setVideoUploadStatus(payload.message || "Video recebido. O envio continuara em segundo plano.", "success");
       if (payload.job_id && typeof window.trackBackgroundVideoUpload === "function") {
-        window.trackBackgroundVideoUpload(payload.job_id);
+        window.trackBackgroundVideoUpload(payload.job_id, payload.os_id || "{{ solicitacao.id }}");
       }
 
       if (typeof Swal !== "undefined") {

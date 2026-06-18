@@ -1361,6 +1361,19 @@
       const videoUploadDismiss = document.getElementById("globalVideoUploadDismiss");
       const videoUploadStorageKey = "ijaActiveVideoUploadJobId";
       let videoUploadPollTimer = null;
+      let videoUploadMissingPolls = 0;
+
+      function readVideoUploadJobRecord() {
+          const raw = localStorage.getItem(videoUploadStorageKey);
+          if (!raw) return null;
+          try {
+              const parsed = JSON.parse(raw);
+              if (parsed && parsed.jobId) return parsed;
+          } catch (error) {
+              return { jobId: raw };
+          }
+          return { jobId: raw };
+      }
 
       function setGlobalVideoUploadProgress(progress, message, status, mediaUrl) {
           if (!videoUploadWidget) return;
@@ -1388,24 +1401,36 @@
       }
 
       async function pollGlobalVideoUploadJob() {
-          const jobId = localStorage.getItem(videoUploadStorageKey);
+          const jobRecord = readVideoUploadJobRecord();
+          const jobId = jobRecord?.jobId;
           if (!jobId || !videoUploadWidget) return;
 
           try {
-              const response = await fetch(`/api/video-upload-jobs/${encodeURIComponent(jobId)}`, {
+              const params = jobRecord?.osId ? `?os_id=${encodeURIComponent(jobRecord.osId)}` : "";
+              const response = await fetch(`/api/video-upload-jobs/${encodeURIComponent(jobId)}${params}`, {
                   headers: { "Accept": "application/json" },
               });
               const payload = await response.json().catch(() => ({}));
               if (!response.ok || !payload.success) {
+                  if (response.status === 404 || payload.status === "missing") {
+                      videoUploadMissingPolls += 1;
+                      if (videoUploadMissingPolls <= 12) {
+                          setGlobalVideoUploadProgress(1, "Sincronizando status do upload do video...", "queued");
+                          return;
+                      }
+                      localStorage.removeItem(videoUploadStorageKey);
+                  }
                   setGlobalVideoUploadProgress(0, payload.error || "Nao foi possivel consultar o upload do video.", "error");
                   return;
               }
 
+              videoUploadMissingPolls = 0;
               setGlobalVideoUploadProgress(payload.progress, payload.message, payload.status, payload.media_url);
               if (payload.status === "success") {
                   window.dispatchEvent(new CustomEvent("ija:video-upload-complete", { detail: payload }));
               }
               if (payload.status === "success" || payload.status === "error") {
+                  localStorage.removeItem(videoUploadStorageKey);
                   if (videoUploadPollTimer) clearInterval(videoUploadPollTimer);
                   videoUploadPollTimer = null;
               }
@@ -1414,9 +1439,10 @@
           }
       }
 
-      window.trackBackgroundVideoUpload = function (jobId) {
+      window.trackBackgroundVideoUpload = function (jobId, osId) {
           if (!jobId) return;
-          localStorage.setItem(videoUploadStorageKey, jobId);
+          videoUploadMissingPolls = 0;
+          localStorage.setItem(videoUploadStorageKey, JSON.stringify({ jobId, osId: osId || null, createdAt: Date.now() }));
           setGlobalVideoUploadProgress(0, "Video recebido. Envio em segundo plano iniciado.", "queued");
           pollGlobalVideoUploadJob();
           if (videoUploadPollTimer) clearInterval(videoUploadPollTimer);

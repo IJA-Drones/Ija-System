@@ -43,7 +43,7 @@ def _env_int(name, default, minimum=None, maximum=None):
 
 PDF_IMAGE_DPI = _env_int("PDF_IMAGE_DPI", 350, minimum=120, maximum=350)
 PDF_IMAGE_JPEG_QUALITY = _env_int("PDF_IMAGE_JPEG_QUALITY", 95, minimum=70, maximum=95)
-PDF_REMOTE_MEDIA_MAX_BYTES = _env_int("PDF_REMOTE_MEDIA_MAX_MB", 25, minimum=1, maximum=100) * 1024 * 1024
+PDF_REMOTE_MEDIA_MAX_BYTES = _env_int("PDF_REMOTE_MEDIA_MAX_MB", 100, minimum=1, maximum=100) * 1024 * 1024
 
 
 def _fmt_dt(value):
@@ -318,6 +318,50 @@ def _try_make_local_rlimage(rel_path, width_mm=165, max_height_mm=110):
             image.drawWidth = image.drawWidth * scale
         return image
     except Exception:
+        return None
+
+
+def _try_prepare_pdf_image_for_canvas(rel_path, width_mm=165, max_height_mm=110):
+    if not rel_path:
+        return None
+
+    image_source = None
+    if _is_remote_media_path(rel_path):
+        image_source = _download_remote_media_bytes(rel_path)
+        if image_source is None:
+            return None
+    else:
+        static_root = os.path.abspath(os.path.join(current_app.root_path, "static"))
+        abs_path = os.path.abspath(os.path.join(static_root, str(rel_path).replace("/", os.sep)))
+        if os.path.commonpath([static_root, abs_path]) != static_root:
+            return None
+        if not os.path.exists(abs_path):
+            return None
+        image_source = abs_path
+
+    try:
+        prepared_source = _prepare_pdf_image_source(image_source, width_mm=width_mm, max_height_mm=max_height_mm)
+        with Image.open(prepared_source) as img:
+            img_width, img_height = img.size
+
+        if hasattr(prepared_source, "seek"):
+            prepared_source.seek(0)
+
+        draw_width = width_mm * mm
+        draw_height = draw_width * (float(img_height or 1) / float(img_width or 1))
+        if max_height_mm and draw_height > max_height_mm * mm:
+            scale = (max_height_mm * mm) / draw_height
+            draw_height = max_height_mm * mm
+            draw_width *= scale
+
+        return prepared_source, draw_width, draw_height
+    except Exception:
+        if hasattr(image_source, "close"):
+            try:
+                image_source.close()
+            except Exception:
+                pass
+        current_app.logger.exception("Erro ao preparar imagem da OS para canvas PDF.")
         return None
 
 
