@@ -967,10 +967,12 @@ def _build_os_media_context(ordem):
     imagem_principal_path = getattr(ordem, "imagem_principal", None) if ordem else None
     outras_imagens_paths = _parse_json_list(getattr(ordem, "outras_imagens", None) if ordem else None)
     video_path = getattr(ordem, "video", None) if ordem else None
+    video_filename = os.path.basename(str(video_path or "").replace("\\", "/")) if video_path else ""
     return {
         "imagem_principal_path": imagem_principal_path,
         "outras_imagens_paths": outras_imagens_paths,
         "video_path": video_path,
+        "video_filename": video_filename,
         "total_midias_formulario": (
             (1 if imagem_principal_path else 0)
             + len(outras_imagens_paths)

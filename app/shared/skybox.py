@@ -69,7 +69,7 @@ def delete_skybox_file(value):
     raise SkyboxError(f"Falha ao remover arquivo do Skybox ({response.status_code}).")
 
 
-def stream_skybox_file(value, range_header=None):
+def stream_skybox_file(value, range_header=None, *, as_attachment=False):
     if not skybox_enabled():
         raise SkyboxError("Skybox nao esta configurado.")
 
@@ -87,15 +87,25 @@ def stream_skybox_file(value, range_header=None):
         upstream.close()
         raise SkyboxError(f"Falha ao baixar arquivo do Skybox ({status_code}).")
 
+    if range_header and upstream.status_code == 200:
+        ranged_response = _build_range_response_from_full_upstream(
+            upstream,
+            remote_path,
+            range_header,
+            as_attachment=as_attachment,
+        )
+        if ranged_response is not None:
+            return ranged_response
+
     response_headers = {}
     for header in ("Content-Length", "Content-Range", "Accept-Ranges", "Last-Modified", "ETag"):
         if upstream.headers.get(header):
             response_headers[header] = upstream.headers[header]
 
-    content_type = upstream.headers.get("Content-Type") or mimetypes.guess_type(remote_path)[0] or "application/octet-stream"
+    content_type = _media_content_type(remote_path, upstream.headers.get("Content-Type"))
     response_headers["Content-Type"] = content_type
     response_headers.setdefault("Accept-Ranges", "bytes")
-    response_headers["Content-Disposition"] = f'inline; filename="{os.path.basename(remote_path)}"'
+    response_headers["Content-Disposition"] = _content_disposition(remote_path, as_attachment=as_attachment)
 
     def generate():
         with upstream:
@@ -113,6 +123,99 @@ def stream_skybox_file(value, range_header=None):
 
 def _setting(name):
     return current_app.config.get(name) or os.getenv(name)
+
+
+def _media_content_type(remote_path, upstream_content_type=None):
+    guessed = mimetypes.guess_type(remote_path)[0]
+    upstream = (upstream_content_type or "").split(";", 1)[0].strip().lower()
+    if guessed and upstream in {"", "application/octet-stream", "binary/octet-stream"}:
+        return guessed
+    return upstream_content_type or guessed or "application/octet-stream"
+
+
+def _content_disposition(remote_path, *, as_attachment=False):
+    disposition = "attachment" if as_attachment else "inline"
+    return f'{disposition}; filename="{os.path.basename(remote_path)}"'
+
+
+def _parse_range_header(range_header, total_size):
+    if not range_header or not str(range_header).startswith("bytes="):
+        return None
+    if not total_size or total_size <= 0:
+        return None
+
+    range_value = str(range_header).split("=", 1)[1].split(",", 1)[0].strip()
+    if "-" not in range_value:
+        return None
+
+    start_raw, end_raw = range_value.split("-", 1)
+    try:
+        if start_raw == "":
+            suffix_length = int(end_raw)
+            if suffix_length <= 0:
+                return None
+            start = max(total_size - suffix_length, 0)
+            end = total_size - 1
+        else:
+            start = int(start_raw)
+            end = int(end_raw) if end_raw else total_size - 1
+    except ValueError:
+        return None
+
+    if start < 0 or start >= total_size:
+        return None
+    end = min(end, total_size - 1)
+    if end < start:
+        return None
+    return start, end
+
+
+def _build_range_response_from_full_upstream(upstream, remote_path, range_header, *, as_attachment=False):
+    try:
+        total_size = int(upstream.headers.get("Content-Length") or 0)
+    except (TypeError, ValueError):
+        total_size = 0
+
+    parsed_range = _parse_range_header(range_header, total_size)
+    if parsed_range is None:
+        return None
+
+    start, end = parsed_range
+    response_length = end - start + 1
+    content_type = _media_content_type(remote_path, upstream.headers.get("Content-Type"))
+
+    def generate():
+        remaining_skip = start
+        remaining_send = response_length
+        with upstream:
+            for chunk in upstream.iter_content(chunk_size=STREAM_CHUNK_SIZE):
+                if not chunk:
+                    continue
+                if remaining_skip:
+                    if len(chunk) <= remaining_skip:
+                        remaining_skip -= len(chunk)
+                        continue
+                    chunk = chunk[remaining_skip:]
+                    remaining_skip = 0
+                if remaining_send <= 0:
+                    break
+                if len(chunk) > remaining_send:
+                    chunk = chunk[:remaining_send]
+                remaining_send -= len(chunk)
+                yield chunk
+
+    return Response(
+        stream_with_context(generate()),
+        status=206,
+        headers={
+            "Content-Type": content_type,
+            "Content-Length": str(response_length),
+            "Content-Range": f"bytes {start}-{end}/{total_size}",
+            "Accept-Ranges": "bytes",
+            "Content-Disposition": _content_disposition(remote_path, as_attachment=as_attachment),
+        },
+        direct_passthrough=True,
+    )
 
 
 def _base_dir():

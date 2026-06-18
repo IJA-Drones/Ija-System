@@ -1425,15 +1425,28 @@
 
                   <div class="os-media-preview-frame mb-3">
                     {% set video_url = url_for('main.os_video', os_id=solicitacao.id) %}
+                    {% set video_download_url = url_for('main.os_video', os_id=solicitacao.id, download=1) %}
                     <div id="video-salvo-wrapper" class="{% if not video_path %}d-none{% endif %}">
-                      <video controls preload="metadata" class="os-video-preview" id="video-salvo">
-                        <source src="{{ video_url if video_path else '' }}" id="video-salvo-source">
+                      <div class="os-image-empty text-start p-3">
+                        <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center gap-3 w-100">
+                          <div class="text-primary fs-2 lh-1">
+                            <i class="bi bi-file-earmark-play"></i>
+                          </div>
+                          <div class="flex-grow-1 min-w-0">
+                            <span class="os-empty-title d-block">Ví­deo anexado</span>
+                            <div class="os-image-thumb-name text-break" id="video-salvo-nome">{{ video_filename or 'video_da_os.mp4' }}</div>
+                            <div class="os-empty-subtitle">Arquivo original salvo no Skybox para consulta e download.</div>
+                          </div>
+                        </div>
+                      </div>
+                      <video controls preload="none" class="os-video-preview d-none" id="video-salvo">
+                        <source src="" id="video-salvo-source">
                         Seu navegador não suporta a exibição de vídeo.
                       </video>
                     </div>
                     <div class="os-media-actions mt-3 {% if not video_path %}d-none{% endif %}" id="video-salvo-acoes">
-                      <a href="{{ video_url if video_path else '#' }}" target="_blank" class="btn btn-sm btn-outline-primary" id="video-salvo-link">
-                        <i class="bi bi-play-btn me-1"></i>Abrir vídeo
+                      <a href="{{ video_download_url if video_path else '#' }}" class="btn btn-sm btn-outline-primary" id="video-salvo-link" download>
+                        <i class="bi bi-download me-1"></i>Baixar video
                       </a>
                       {% if not modo_visualizacao %}
                       <button type="button" class="btn btn-sm btn-outline-danger" id="btnRemoverVideo">
@@ -1450,7 +1463,7 @@
                     </div>
 
                     <div class="d-none{% if video_path %} mt-3{% endif %}" id="video-pendente">
-                      <video controls preload="metadata" class="os-video-preview" id="video-preview"></video>
+                      <video controls preload="none" class="os-video-preview d-none" id="video-preview"></video>
                       <div class="os-image-thumb-name mt-2" id="video-preview-nome"></div>
                     </div>
                   </div>
@@ -1767,6 +1780,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const videoSaved = document.getElementById("video-salvo");
   const videoSavedSource = document.getElementById("video-salvo-source");
   const videoSavedLink = document.getElementById("video-salvo-link");
+  const videoSavedName = document.getElementById("video-salvo-nome");
   const videoDeleteButton = document.getElementById("btnRemoverVideo");
   const videoEmpty = document.getElementById("video-vazio");
   const videoPending = document.getElementById("video-pendente");
@@ -1816,15 +1830,19 @@ document.addEventListener("DOMContentLoaded", () => {
     if (videoUploadProgressLabel) videoUploadProgressLabel.textContent = `${normalized}%`;
   };
 
-  const applySavedVideoState = (mediaUrl, message) => {
+  const videoDownloadUrl = (mediaUrl) => {
+    if (!mediaUrl) return "#";
+    const separator = mediaUrl.includes("?") ? "&" : "?";
+    return `${mediaUrl}${separator}download=1`;
+  };
+
+  const applySavedVideoState = (mediaUrl, message, fileName) => {
     savedVideoCount = 1;
-    if (mediaUrl && videoSavedSource) {
-      videoSavedSource.src = `${mediaUrl}?t=${Date.now()}`;
-      if (videoSaved) videoSaved.load();
-    }
+    if (videoSavedSource) videoSavedSource.removeAttribute("src");
     if (mediaUrl && videoSavedLink) {
-      videoSavedLink.href = mediaUrl;
+      videoSavedLink.href = videoDownloadUrl(mediaUrl);
     }
+    if (fileName && videoSavedName) setText(videoSavedName, fileName);
     if (videoSavedWrapper) videoSavedWrapper.classList.remove("d-none");
     if (videoSavedActions) videoSavedActions.classList.remove("d-none");
     if (videoDeleteButton) videoDeleteButton.disabled = false;
@@ -1839,7 +1857,7 @@ document.addEventListener("DOMContentLoaded", () => {
   window.addEventListener("ija:video-upload-complete", (event) => {
     const payload = event.detail || {};
     if (Number(payload.os_id) !== Number("{{ solicitacao.id }}")) return;
-    applySavedVideoState(payload.media_url, payload.message || "Video anexado com sucesso.");
+    applySavedVideoState(payload.media_url, payload.message || "Video anexado com sucesso.", payload.file_name);
   });
 
   const uploadFileWithProgress = (url, file, onProgress) => new Promise((resolve, reject) => {
@@ -2124,9 +2142,6 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      const previewUrl = URL.createObjectURL(file);
-      videoPreview.src = previewUrl;
-      videoPreview.load();
       setText(videoPreviewNome, file.name);
       setVideoUploadStatus("Arquivo pronto para envio.", "idle");
       videoPending.classList.remove("d-none");
@@ -2170,13 +2185,11 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       savedVideoCount = 1;
-      if (payload.media_url && videoSavedSource) {
-        videoSavedSource.src = `${payload.media_url}?t=${Date.now()}`;
-        if (videoSaved) videoSaved.load();
-      }
+      if (videoSavedSource) videoSavedSource.removeAttribute("src");
       if (payload.media_url && videoSavedLink) {
-        videoSavedLink.href = payload.media_url;
+        videoSavedLink.href = videoDownloadUrl(payload.media_url);
       }
+      if (payload.file_name && videoSavedName) setText(videoSavedName, payload.file_name);
       if (videoSavedWrapper) videoSavedWrapper.classList.remove("d-none");
       if (videoSavedActions) videoSavedActions.classList.remove("d-none");
       if (videoDeleteButton) videoDeleteButton.disabled = false;

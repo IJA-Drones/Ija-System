@@ -1,6 +1,8 @@
 import json
 import mimetypes
 import os
+import shutil
+import subprocess
 import threading
 import time
 import uuid
@@ -103,7 +105,7 @@ def _query_args_without_page():
     return args
 
 
-def _send_local_os_media(media_path):
+def _send_local_os_media(media_path, *, as_attachment=False):
     static_root = os.path.abspath(os.path.join(current_app.root_path, "static"))
     abs_path = os.path.abspath(os.path.join(static_root, str(media_path or "").replace("/", os.sep)))
     if os.path.commonpath([static_root, abs_path]) != static_root:
@@ -114,28 +116,28 @@ def _send_local_os_media(media_path):
     return send_file(
         abs_path,
         mimetype=mimetypes.guess_type(abs_path)[0] or "application/octet-stream",
-        as_attachment=False,
+        as_attachment=as_attachment,
         download_name=os.path.basename(abs_path),
         conditional=True,
     )
 
 
-def _send_os_media(media_path):
+def _send_os_media(media_path, *, as_attachment=False):
     if _is_webdav_path(media_path):
         try:
-            return _stream_webdav_file(media_path, request.headers.get("Range"))
+            return _stream_webdav_file(media_path, request.headers.get("Range"), as_attachment=as_attachment)
         except requests.RequestException:
             current_app.logger.exception("Erro ao servir midia da OS pelo WebDAV.")
             abort(404)
 
     if is_skybox_path(media_path):
         try:
-            return stream_skybox_file(media_path, request.headers.get("Range"))
+            return stream_skybox_file(media_path, request.headers.get("Range"), as_attachment=as_attachment)
         except SkyboxError:
             current_app.logger.exception("Erro ao servir midia da OS pelo Skybox.")
             abort(404)
 
-    return _send_local_os_media(media_path)
+    return _send_local_os_media(media_path, as_attachment=as_attachment)
 
 
 def _setting(*names):
@@ -188,6 +190,14 @@ def _is_webdav_path(value):
     return str(value or "").startswith(WEBDAV_MARKER_PREFIX)
 
 
+def _media_content_type(remote_path, upstream_content_type=None):
+    guessed = mimetypes.guess_type(remote_path)[0]
+    upstream = (upstream_content_type or "").split(";", 1)[0].strip().lower()
+    if guessed and upstream in {"", "application/octet-stream", "binary/octet-stream"}:
+        return guessed
+    return upstream_content_type or guessed or "application/octet-stream"
+
+
 def _clean_webdav_remote_path(value):
     parts = [part.strip() for part in str(value or "").replace("\\", "/").split("/") if part.strip()]
     if any(part in {".", ".."} for part in parts):
@@ -238,7 +248,12 @@ def _delete_webdav_file(value):
         raise requests.RequestException(f"Falha ao remover arquivo do WebDAV ({response.status_code}).")
 
 
-def _stream_webdav_file(value, range_header=None):
+def _content_disposition(remote_path, *, as_attachment=False):
+    disposition = "attachment" if as_attachment else "inline"
+    return f'{disposition}; filename="{os.path.basename(remote_path)}"'
+
+
+def _stream_webdav_file(value, range_header=None, *, as_attachment=False):
     _base_url, auth = _webdav_config()
     headers = {}
     if range_header:
@@ -260,6 +275,16 @@ def _stream_webdav_file(value, range_header=None):
         upstream.close()
         raise requests.RequestException(f"Falha ao baixar arquivo do WebDAV ({status_code}).")
 
+    if range_header and upstream.status_code == 200:
+        ranged_response = _build_webdav_range_response_from_full_upstream(
+            upstream,
+            remote_path,
+            range_header,
+            as_attachment=as_attachment,
+        )
+        if ranged_response is not None:
+            return ranged_response
+
     def generate():
         with upstream:
             for chunk in upstream.iter_content(chunk_size=1024 * 1024):
@@ -272,15 +297,95 @@ def _stream_webdav_file(value, range_header=None):
         headers={
             key: value
             for key, value in {
-                "Content-Type": upstream.headers.get("Content-Type") or mimetypes.guess_type(remote_path)[0] or "application/octet-stream",
+                "Content-Type": _media_content_type(remote_path, upstream.headers.get("Content-Type")),
                 "Content-Length": upstream.headers.get("Content-Length"),
                 "Content-Range": upstream.headers.get("Content-Range"),
                 "Accept-Ranges": upstream.headers.get("Accept-Ranges") or "bytes",
                 "Last-Modified": upstream.headers.get("Last-Modified"),
                 "ETag": upstream.headers.get("ETag"),
-                "Content-Disposition": f'inline; filename="{os.path.basename(remote_path)}"',
+                "Content-Disposition": _content_disposition(remote_path, as_attachment=as_attachment),
             }.items()
             if value
+        },
+        direct_passthrough=True,
+    )
+
+
+def _parse_range_header(range_header, total_size):
+    if not range_header or not str(range_header).startswith("bytes="):
+        return None
+    if not total_size or total_size <= 0:
+        return None
+
+    range_value = str(range_header).split("=", 1)[1].split(",", 1)[0].strip()
+    if "-" not in range_value:
+        return None
+
+    start_raw, end_raw = range_value.split("-", 1)
+    try:
+        if start_raw == "":
+            suffix_length = int(end_raw)
+            if suffix_length <= 0:
+                return None
+            start = max(total_size - suffix_length, 0)
+            end = total_size - 1
+        else:
+            start = int(start_raw)
+            end = int(end_raw) if end_raw else total_size - 1
+    except ValueError:
+        return None
+
+    if start < 0 or start >= total_size:
+        return None
+    end = min(end, total_size - 1)
+    if end < start:
+        return None
+    return start, end
+
+
+def _build_webdav_range_response_from_full_upstream(upstream, remote_path, range_header, *, as_attachment=False):
+    try:
+        total_size = int(upstream.headers.get("Content-Length") or 0)
+    except (TypeError, ValueError):
+        total_size = 0
+
+    parsed_range = _parse_range_header(range_header, total_size)
+    if parsed_range is None:
+        return None
+
+    start, end = parsed_range
+    response_length = end - start + 1
+    content_type = _media_content_type(remote_path, upstream.headers.get("Content-Type"))
+
+    def generate():
+        remaining_skip = start
+        remaining_send = response_length
+        with upstream:
+            for chunk in upstream.iter_content(chunk_size=1024 * 1024):
+                if not chunk:
+                    continue
+                if remaining_skip:
+                    if len(chunk) <= remaining_skip:
+                        remaining_skip -= len(chunk)
+                        continue
+                    chunk = chunk[remaining_skip:]
+                    remaining_skip = 0
+                if remaining_send <= 0:
+                    break
+                if len(chunk) > remaining_send:
+                    chunk = chunk[:remaining_send]
+                remaining_send -= len(chunk)
+                yield chunk
+
+    return current_app.response_class(
+        generate(),
+        status=206,
+        headers={
+            "Content-Type": content_type,
+            "Content-Length": str(response_length),
+            "Content-Range": f"bytes {start}-{end}/{total_size}",
+            "Accept-Ranges": "bytes",
+            "Content-Disposition": _content_disposition(remote_path, as_attachment=as_attachment),
         },
         direct_passthrough=True,
     )
@@ -333,7 +438,7 @@ def _upload_request_stream_to_webdav(os_id, media_prefix):
     base_url = _webdav_url_for_remote_path(base_remote_path)
     folder_url = _webdav_url_for_remote_path(folder_remote_path)
     file_url = _webdav_url_for_remote_path(file_remote_path)
-    content_type = request.headers.get("Content-Type") or "application/octet-stream"
+    content_type = _media_content_type(file_name, request.headers.get("Content-Type"))
 
     try:
         requests.request("MKCOL", base_url, auth=auth, timeout=_webdav_timeout())
@@ -505,7 +610,7 @@ def _build_video_upload_status_from_os(os_id):
             "progress": 100,
             "message": "Video enviado com sucesso.",
             "os_id": os_id,
-            "file_name": os.path.basename(str(ordem.video or "")),
+            "file_name": os.path.basename(str(ordem.video or "").replace("\\", "/")),
             "media_url": url_for("main.os_video", os_id=os_id),
         }
 
@@ -556,6 +661,64 @@ def _save_video_request_to_temp(file_name):
             temp_file.write(chunk)
             total_bytes += len(chunk)
     return temp_path, total_bytes
+
+
+def _file_contains_bytes(path, needle, *, chunk_size=1024 * 1024):
+    overlap = max(len(needle) - 1, 0)
+    previous_tail = b""
+    with open(path, "rb") as handle:
+        while True:
+            chunk = handle.read(chunk_size)
+            if not chunk:
+                break
+            data = previous_tail + chunk
+            if needle in data:
+                return True
+            previous_tail = data[-overlap:] if overlap else b""
+    return False
+
+
+def _validate_uploaded_video_file(temp_path, file_name):
+    extension = os.path.splitext(str(file_name or ""))[1].lower()
+    if extension in {".mp4", ".mov", ".m4v"} and not _file_contains_bytes(temp_path, b"moov"):
+        return "O arquivo de video chegou incompleto ou corrompido. Envie novamente o video original."
+
+    ffprobe_path = shutil.which("ffprobe")
+    if not ffprobe_path:
+        return None
+
+    try:
+        result = subprocess.run(
+            [
+                ffprobe_path,
+                "-v",
+                "error",
+                "-select_streams",
+                "v:0",
+                "-show_entries",
+                "stream=codec_name",
+                "-of",
+                "default=noprint_wrappers=1:nokey=1",
+                temp_path,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        current_app.logger.info("Validacao ffprobe ignorada para video %s.", file_name, exc_info=True)
+        return None
+
+    if result.returncode != 0:
+        current_app.logger.warning(
+            "Video invalido no upload %s: %s",
+            file_name,
+            (result.stderr or result.stdout or "").strip()[:500],
+        )
+        return "O arquivo de video chegou incompleto ou corrompido. Envie novamente o video original."
+
+    return None
 
 
 def _run_video_upload_job(app, job_id):
@@ -901,7 +1064,7 @@ def register_routes(bp):
         except PilotoOsError as exc:
             abort(404 if "video" in str(exc).lower() else 403)
 
-        return _send_os_media(video_path)
+        return _send_os_media(video_path, as_attachment=request.args.get("download") == "1")
 
     @bp.route("/os/<int:os_id>/imagem-principal", methods=["GET"], endpoint="os_imagem_principal")
     @login_required
@@ -1038,7 +1201,8 @@ def register_routes(bp):
                 return _media_error_response("Header X-File-Name ausente ou invalido.", 400)
 
             original_name = secure_filename(unquote((request.headers.get("X-File-Name") or "").strip()))
-            content_type = request.headers.get("Content-Type") or "application/octet-stream"
+            content_type = _media_content_type(file_name, request.headers.get("Content-Type"))
+            expected_bytes = request.content_length
             temp_path, total_bytes = _save_video_request_to_temp(file_name)
             if total_bytes <= 0:
                 try:
@@ -1046,6 +1210,22 @@ def register_routes(bp):
                 except OSError:
                     pass
                 return _media_error_response("Arquivo de video vazio ou invalido.", 400)
+            if expected_bytes is not None and int(expected_bytes) != int(total_bytes):
+                try:
+                    os.remove(temp_path)
+                except OSError:
+                    pass
+                return _media_error_response(
+                    "O upload do video foi interrompido antes de terminar. Envie o arquivo novamente.",
+                    400,
+                )
+            validation_error = _validate_uploaded_video_file(temp_path, file_name)
+            if validation_error:
+                try:
+                    os.remove(temp_path)
+                except OSError:
+                    pass
+                return _media_error_response(validation_error, 400)
 
             job_id = _create_video_upload_job(
                 os_id=os_id,
