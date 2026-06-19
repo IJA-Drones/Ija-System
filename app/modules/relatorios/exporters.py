@@ -1142,16 +1142,55 @@ def build_relatorio_os_pdf_export(user, args):
     return path, nome
 
 
+import re
+import unicodedata
+
+MESES_PT_BR = {
+    1: "janeiro",
+    2: "fevereiro",
+    3: "marco",
+    4: "abril",
+    5: "maio",
+    6: "junho",
+    7: "julho",
+    8: "agosto",
+    9: "setembro",
+    10: "outubro",
+    11: "novembro",
+    12: "dezembro",
+}
+
+
+def _slug_filename(value):
+    value = str(value or "").strip().lower()
+    value = unicodedata.normalize("NFKD", value)
+    value = "".join(ch for ch in value if not unicodedata.combining(ch))
+    value = re.sub(r"[^a-z0-9]+", "_", value)
+    return value.strip("_")
+
+
 def _coleta_imagens_pdf_name(data):
     nome = "relatorio_coleta_imagens"
-    if data["ano_selecionado"]:
+
+    if data.get("ano_selecionado"):
         nome += f"_{data['ano_selecionado']}"
-    if data["mes_selecionado"]:
-        nome += f"_{int(data['mes_selecionado']):02d}"
-    if data["regiao_selecionada"]:
-        nome += f"_regiao_{data['regiao_selecionada'].replace(' ', '_').lower()}"
-    if data["uvis_id_selecionado"]:
-        nome += f"_uvis_{data['uvis_id_selecionado']}"
+
+    if data.get("mes_selecionado"):
+        mes_numero = int(data["mes_selecionado"])
+        nome += f"_{MESES_PT_BR.get(mes_numero, mes_numero)}"
+
+    if data.get("regiao_selecionada"):
+        nome += f"_regiao_{_slug_filename(data['regiao_selecionada'])}"
+
+    if data.get("uvis_id_selecionado"):
+        uvis_nome = data.get("uvis_nome_selecionado") or f"uvis_{data['uvis_id_selecionado']}"
+        uvis_slug = _slug_filename(uvis_nome)
+
+        if uvis_slug.startswith("uvis_"):
+            nome += f"_{uvis_slug}"
+        else:
+            nome += f"_uvis_{uvis_slug}"
+
     return f"{nome}.pdf"
 
 
