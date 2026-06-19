@@ -1204,23 +1204,31 @@ def _draw_coleta_pdf_footer(c, page_width):
     c.drawCentredString(page_width / 2, 10.5 * mm, "Alphaville Centro Industrial e Empresarial - Barueri SP")
 
 
+def _draw_coleta_pdf_logo(c, args, x, y_top):
+    logo = _try_make_logo(args, width_mm=30)
+    if not logo:
+        return
+    try:
+        logo.drawOn(c, x, y_top - logo.drawHeight)
+    except Exception:
+        return
+
+
 def _draw_coleta_pdf_page(c, item, data, args, *, is_first=False):
     page_width, page_height = A4
     left = 21 * mm
     right = 21 * mm
-    top = 18 * mm
-    bottom = 20 * mm
     content_width = page_width - left - right
-    y = page_height - top
+
+    _draw_coleta_pdf_logo(c, args, left, page_height - 21 * mm)
 
     c.setFillColor(colors.black)
-    c.setFont("Helvetica-Bold", 14.4)
-    c.drawCentredString(page_width / 2, y, "Relatorio de Coleta de Imagens - Operacao Dengue PMSP")
-    y -= 18 * mm
+    c.setFont("Helvetica-Bold", 12.2)
+    c.drawCentredString(page_width / 2, page_height - 43 * mm, "Relatorio de Coleta de Imagens - Operacao Dengue PMSP")
 
     if is_first and data.get("export_limit_aplicado"):
         c.setFillColor(colors.HexColor("#111827"))
-        y = _draw_wrapped_text(
+        _draw_wrapped_text(
             c,
             (
                 f"Exportacao limitada aos primeiros {data.get('total_levantamentos_exportados')} "
@@ -1228,17 +1236,16 @@ def _draw_coleta_pdf_page(c, item, data, args, *, is_first=False):
                 "Refine os filtros para exportar um periodo menor."
             ),
             left,
-            y,
+            page_height - 50 * mm,
             content_width,
             font_size=8,
             leading=10,
             max_lines=3,
         )
-        y -= 5 * mm
 
     summary_width = min(content_width - (20 * mm), 128 * mm)
     summary_x = left + (content_width - summary_width) / 2
-    summary_y = y
+    summary_y = page_height - 59 * mm
     summary_h = 15 * mm
     col_w = summary_width / 3
     c.setStrokeColor(colors.black)
@@ -1249,12 +1256,11 @@ def _draw_coleta_pdf_page(c, item, data, args, *, is_first=False):
     _draw_centered_wrapped_text(c, f"UVIS: {item['uvis_nome']}", summary_x, summary_y - 6 * mm, col_w, font_size=8.4)
     _draw_centered_wrapped_text(c, f"REGIAO: {item['regiao_nome']}", summary_x + col_w, summary_y - 6 * mm, col_w, font_size=8.4)
     _draw_centered_wrapped_text(c, f"PERIODO: {data['periodo_label']}", summary_x + 2 * col_w, summary_y - 6 * mm, col_w, font_size=8.4)
-    y = summary_y - summary_h - 10 * mm
 
     block_width = min(content_width, 162 * mm)
     block_x = left + (content_width - block_width) / 2
-    block_h = 133 * mm
-    block_top = y
+    block_h = 154 * mm
+    block_top = page_height - 78 * mm
     c.setStrokeColor(colors.black)
     c.rect(block_x, block_top - block_h, block_width, block_h, stroke=1, fill=0)
 
