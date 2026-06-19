@@ -3,6 +3,7 @@ import platform
 from datetime import datetime, timedelta
 
 from flask import current_app
+from flask_login import current_user
 from sqlalchemy import func, text
 
 from app.extensions import db
@@ -37,8 +38,42 @@ def _writable_directory_check(name, path):
     return _check_item(name, "Atenção", detail, "warning")
 
 
+def _display_name(user):
+    return (
+        getattr(user, "nome_uvis", None)
+        or getattr(user, "login", None)
+        or "dev"
+    )
+
+
+def _greeting_for(hour):
+    if 5 <= hour < 12:
+        return "Bom dia"
+    if 12 <= hour < 18:
+        return "Boa tarde"
+    return "Boa noite"
+
+
+def _current_user_activity(since_24h, since_7d):
+    user_id = getattr(current_user, "id", None)
+    if not user_id:
+        return {
+            "actions_24h": 0,
+            "actions_7d": 0,
+            "last_event": None,
+        }
+
+    base_query = AuditoriaUsuario.query.filter(AuditoriaUsuario.usuario_id == user_id)
+    return {
+        "actions_24h": base_query.filter(AuditoriaUsuario.criado_em >= since_24h).count(),
+        "actions_7d": base_query.filter(AuditoriaUsuario.criado_em >= since_7d).count(),
+        "last_event": base_query.order_by(AuditoriaUsuario.criado_em.desc()).first(),
+    }
+
+
 def build_dev_dashboard_context():
     now = datetime.utcnow()
+    generated_at = datetime.now()
     since_24h = now - timedelta(hours=24)
     since_7d = now - timedelta(days=7)
 
@@ -126,6 +161,17 @@ def build_dev_dashboard_context():
     error_rate = round((errors_24h / total_24h) * 100, 1) if total_24h else 0
     dev_count = Usuario.query.filter_by(tipo_usuario="dev").count()
     route_count = len(list(current_app.url_map.iter_rules()))
+    active_users_24h = (
+        db.session.query(func.count(func.distinct(AuditoriaUsuario.usuario_id)))
+        .filter(
+            AuditoriaUsuario.criado_em >= since_24h,
+            AuditoriaUsuario.usuario_id.isnot(None),
+        )
+        .scalar()
+        or 0
+    )
+    healthy_checks = sum(1 for item in checks if item["severity"] == "success")
+    current_user_activity = _current_user_activity(since_24h, since_7d)
 
     alerts = []
     if server_errors_7d:
@@ -151,11 +197,32 @@ def build_dev_dashboard_context():
     )
 
     return {
-        "generated_at": datetime.now(),
+        "generated_at": generated_at,
         "checks": checks,
         "alerts": alerts,
         "recent_errors": recent_errors,
         "top_error_routes": top_error_routes,
+        "maps_key": maps_key or "",
+        "maps_enabled": bool(maps_key),
+        "dev_profile": {
+            "name": _display_name(current_user),
+            "login": getattr(current_user, "login", None),
+            "type": getattr(current_user, "tipo_usuario", None),
+            "region": getattr(current_user, "regiao", None),
+            "city_hint": "São Paulo, SP",
+            "greeting": _greeting_for(generated_at.hour),
+            "actions_24h": current_user_activity["actions_24h"],
+            "actions_7d": current_user_activity["actions_7d"],
+            "last_event": current_user_activity["last_event"],
+        },
+        "local_context": {
+            "default_location": {
+                "lat": -23.55052,
+                "lng": -46.63331,
+                "label": "São Paulo, SP",
+            },
+            "weather_provider": "Open-Meteo",
+        },
         "metrics": {
             "audited_24h": total_24h,
             "errors_24h": errors_24h,
@@ -163,6 +230,9 @@ def build_dev_dashboard_context():
             "server_errors_7d": server_errors_7d,
             "route_count": route_count,
             "dev_count": dev_count,
+            "active_users_24h": active_users_24h,
+            "healthy_checks": healthy_checks,
+            "total_checks": len(checks),
         },
         "runtime": {
             "python": platform.python_version(),

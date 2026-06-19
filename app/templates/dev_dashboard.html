@@ -2,28 +2,190 @@
 
 {% block extra_styles %}
 <style>
-  .dev-shell { max-width: 1400px; }
-  .dev-hero {
-    background: linear-gradient(135deg, #111827, #312e81);
-    color: #fff;
-    border-radius: 1.5rem;
+  .dev-shell {
+    max-width: 1440px;
   }
-  .dev-metrics {
+
+  .dev-hero {
+    position: relative;
+    overflow: hidden;
+    background:
+      linear-gradient(135deg, rgba(15, 23, 42, .98), rgba(17, 100, 102, .94)),
+      linear-gradient(90deg, rgba(242, 140, 40, .32), transparent);
+    color: #fff;
+    border-radius: 8px;
+  }
+
+  .dev-hero-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(300px, .65fr);
+    gap: 1.25rem;
+    align-items: stretch;
+  }
+
+  .dev-hero h1 {
+    font-size: clamp(1.6rem, 2.4vw, 2.45rem);
+    line-height: 1.12;
+  }
+
+  .dev-command-panel {
+    border: 1px solid rgba(255, 255, 255, .18);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, .1);
+    backdrop-filter: blur(10px);
+  }
+
+  .dev-command-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: .82rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, .14);
+  }
+
+  .dev-command-item:last-child {
+    border-bottom: 0;
+  }
+
+  .dev-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 1rem;
   }
-  .dev-metric, .dev-card {
-    border: 0;
-    border-radius: 1.25rem;
-    box-shadow: 0 10px 28px rgba(15, 23, 42, .08);
+
+  .dev-card,
+  .dev-metric {
+    border: 1px solid rgba(15, 23, 42, .08);
+    border-radius: 8px;
+    box-shadow: 0 10px 26px rgba(15, 23, 42, .08);
   }
-  .dev-metric-value { font-size: 2rem; font-weight: 700; }
-  .dev-checks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .85rem; }
-  .dev-check { border: 1px solid var(--bs-border-color); border-radius: 1rem; padding: 1rem; }
-  .dev-path { max-width: 420px; overflow-wrap: anywhere; }
+
+  .dev-metric .card-body {
+    min-height: 132px;
+  }
+
+  .dev-metric-label {
+    color: #64748b;
+    font-size: .72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .dev-metric-value {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #0f172a;
+  }
+
+  .dev-map-shell {
+    position: relative;
+    min-height: 360px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #d8e7ea;
+  }
+
+  #devMap {
+    width: 100%;
+    height: 360px;
+  }
+
+  .dev-map-placeholder {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 1rem;
+    color: #475569;
+    text-align: center;
+    background: repeating-linear-gradient(
+      45deg,
+      #e2edf0,
+      #e2edf0 12px,
+      #d7e5e8 12px,
+      #d7e5e8 24px
+    );
+  }
+
+  .dev-weather-value {
+    font-size: 2.45rem;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1;
+  }
+
+  .dev-pill-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .75rem;
+  }
+
+  .dev-pill {
+    border: 1px solid var(--bs-border-color);
+    border-radius: 8px;
+    padding: .8rem;
+    min-height: 78px;
+  }
+
+  .dev-checks {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .85rem;
+  }
+
+  .dev-check {
+    border: 1px solid var(--bs-border-color);
+    border-radius: 8px;
+    padding: 1rem;
+  }
+
+  .dev-path {
+    max-width: 460px;
+    overflow-wrap: anywhere;
+  }
+
+  .dark-mode .dev-card,
+  .dark-mode .dev-metric,
+  .dark-mode .dev-check,
+  .dark-mode .dev-pill {
+    background: #152233;
+    border-color: rgba(255, 255, 255, .12);
+  }
+
+  .dark-mode .dev-metric-value,
+  .dark-mode .dev-weather-value {
+    color: #f8fafc;
+  }
+
+  .dark-mode .dev-metric-label {
+    color: #94a3b8;
+  }
+
+  @media (max-width: 1199.98px) {
+    .dev-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
   @media (max-width: 991.98px) {
-    .dev-metrics, .dev-checks { grid-template-columns: 1fr; }
+    .dev-hero-grid,
+    .dev-checks {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 575.98px) {
+    .dev-grid,
+    .dev-pill-grid {
+      grid-template-columns: 1fr;
+    }
+
+    #devMap,
+    .dev-map-shell {
+      min-height: 300px;
+      height: 300px;
+    }
   }
 </style>
 {% endblock %}
@@ -31,36 +193,158 @@
 {% block content %}
 <div class="container-fluid dev-shell py-4">
   <section class="dev-hero p-4 p-lg-5 mb-4">
-    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
-      <div>
-        <span class="badge text-bg-danger mb-3">EXCLUSIVO PARA DEV</span>
-        <h1 class="h2 fw-bold mb-2">Painel do Desenvolvedor</h1>
-        <p class="mb-0 text-white-50">Saúde da aplicação, configuração e sinais de falha observados pelo sistema.</p>
+    <div class="dev-hero-grid">
+      <div class="d-flex flex-column justify-content-between gap-4">
+        <div>
+          <span class="badge text-bg-danger mb-3">EXCLUSIVO PARA DEV</span>
+          <h1 class="fw-bold mb-3">{{ dev_profile.greeting }}, {{dev_profile.name }}</h1>
+          <p class="mb-0 text-white-50">
+            Painel de desenvolvimento com saúde da aplicação, atividade recente e contexto local para operar o sistema com mais clareza.
+          </p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+          <a class="btn btn-light btn-sm" href="{{ url_for('main.admin_logs_usuarios') }}">
+            <i class="bi bi-clipboard-data me-1"></i> Auditoria
+          </a>
+          <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.admin_dashboard') }}">
+            <i class="bi bi-speedometer2 me-1"></i> Admin
+          </a>
+        </div>
       </div>
-      <div class="small text-white-50">Atualizado em {{ generated_at.strftime('%d/%m/%Y %H:%M:%S') }}</div>
+
+      <aside class="dev-command-panel p-3">
+        <div class="dev-command-item">
+          <span class="text-white-50">Ambiente</span>
+          <strong>{{ 'Debug ativo' if runtime.debug else 'Debug off' }}</strong>
+        </div>
+        <div class="dev-command-item">
+          <span class="text-white-50">Sessão dev</span>
+          <strong>{{ dev_profile.actions_24h }} ação(ões) / 24h</strong>
+        </div>
+        <div class="dev-command-item">
+          <span class="text-white-50">Checks OK</span>
+          <strong>{{ metrics.healthy_checks }}/{{ metrics.total_checks }}</strong>
+        </div>
+        <div class="dev-command-item">
+          <span class="text-white-50">Atualizado</span>
+          <strong>{{ generated_at.strftime('%d/%m/%Y %H:%M') }}</strong>
+        </div>
+      </aside>
     </div>
   </section>
 
-  <section class="dev-metrics mb-4">
-    <div class="card dev-metric"><div class="card-body">
-      <div class="text-muted small">AÇÕES AUDITADAS / 24H</div>
-      <div class="dev-metric-value">{{ metrics.audited_24h }}</div>
-    </div></div>
-    <div class="card dev-metric"><div class="card-body">
-      <div class="text-muted small">ERROS / 24H</div>
-      <div class="dev-metric-value text-warning">{{ metrics.errors_24h }}</div>
-      <div class="small text-muted">{{ metrics.error_rate }}% das ações</div>
-    </div></div>
-    <div class="card dev-metric"><div class="card-body">
-      <div class="text-muted small">ERROS 5XX / 7 DIAS</div>
-      <div class="dev-metric-value text-danger">{{ metrics.server_errors_7d }}</div>
-    </div></div>
-    <div class="card dev-metric"><div class="card-body">
-      <div class="text-muted small">ROTAS REGISTRADAS</div>
-      <div class="dev-metric-value">{{ metrics.route_count }}</div>
-      <div class="small text-muted">{{ metrics.dev_count }} conta(s) de desenvolvedor</div>
-    </div></div>
+  <section class="dev-grid mb-4">
+    <div class="card dev-metric">
+      <div class="card-body">
+        <div class="dev-metric-label">Ações auditadas / 24h</div>
+        <div class="dev-metric-value">{{ metrics.audited_24h }}</div>
+        <div class="small text-muted">Sistema inteiro</div>
+      </div>
+    </div>
+    <div class="card dev-metric">
+      <div class="card-body">
+        <div class="dev-metric-label">Erros / 24h</div>
+        <div class="dev-metric-value text-warning">{{ metrics.errors_24h }}</div>
+        <div class="small text-muted">{{ metrics.error_rate }}% das ações</div>
+      </div>
+    </div>
+    <div class="card dev-metric">
+      <div class="card-body">
+        <div class="dev-metric-label">Usuários ativos / 24h</div>
+        <div class="dev-metric-value">{{ metrics.active_users_24h }}</div>
+        <div class="small text-muted">{{ metrics.dev_count }} conta(s) dev</div>
+      </div>
+    </div>
+    <div class="card dev-metric">
+      <div class="card-body">
+        <div class="dev-metric-label">Rotas registradas</div>
+        <div class="dev-metric-value">{{ metrics.route_count }}</div>
+        <div class="small text-muted">{{ metrics.server_errors_7d }} erro(s) 5xx / 7 dias</div>
+      </div>
+    </div>
   </section>
+
+  <div class="row g-4 mb-4">
+    <div class="col-xl-7">
+      <section class="card dev-card h-100">
+        <div class="card-body p-4">
+          <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+            <div>
+              <h2 class="h5 fw-bold mb-1"><i class="bi bi-geo-alt-fill text-success me-2"></i>Contexto local</h2>
+              <div class="small text-muted" id="devLocationLabel">{{ local_context.default_location.label }}</div>
+            </div>
+            <button class="btn btn-outline-primary btn-sm" type="button" id="devUseLocation">
+              <i class="bi bi-crosshair me-1"></i> Minha localização
+            </button>
+          </div>
+          <div class="dev-map-shell">
+            <div id="devMap"></div>
+            <div class="dev-map-placeholder" id="devMapPlaceholder">
+              <div>
+                <i class="bi bi-map fs-2 d-block mb-2"></i>
+                <span id="devMapStatus">{{ 'Carregando Google Maps...' if maps_enabled else 'Google Maps sem chave configurada.' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="col-xl-5">
+      <section class="card dev-card h-100">
+        <div class="card-body p-4">
+          <div class="d-flex align-items-start justify-content-between gap-3 mb-4">
+            <div>
+              <h2 class="h5 fw-bold mb-1"><i class="bi bi-cloud-sun-fill text-warning me-2"></i>Clima</h2>
+              <div class="small text-muted" id="devWeatherSummary">Sincronizando previsão local</div>
+            </div>
+            <span class="badge text-bg-light border" id="devWeatherSource">{{ local_context.weather_provider }}</span>
+          </div>
+
+          <div class="d-flex align-items-end gap-3 mb-4">
+            <div class="dev-weather-value" id="devTemperature">--</div>
+            <div class="pb-2">
+              <div class="fw-semibold" id="devWeatherCondition">Aguardando dados</div>
+              <div class="small text-muted" id="devWeatherUpdated">--</div>
+            </div>
+          </div>
+
+          <div class="dev-pill-grid mb-4">
+            <div class="dev-pill">
+              <div class="small text-muted">Umidade</div>
+              <strong id="devHumidity">--</strong>
+            </div>
+            <div class="dev-pill">
+              <div class="small text-muted">Vento</div>
+              <strong id="devWind">--</strong>
+            </div>
+            <div class="dev-pill">
+              <div class="small text-muted">Latitude</div>
+              <strong id="devLatitude">{{ '%.4f'|format(local_context.default_location.lat) }}</strong>
+            </div>
+            <div class="dev-pill">
+              <div class="small text-muted">Longitude</div>
+              <strong id="devLongitude">{{ '%.4f'|format(local_context.default_location.lng) }}</strong>
+            </div>
+          </div>
+
+          <hr>
+          <dl class="row mb-0">
+            <dt class="col-4">Dev</dt><dd class="col-8">{{ dev_profile.name }}</dd>
+            <dt class="col-4">Tipo</dt><dd class="col-8">{{ dev_profile.type or '-' }}</dd>
+            <dt class="col-4">Última ação</dt>
+            <dd class="col-8">
+              {% if dev_profile.last_event %}
+                {{ brazil_datetime(dev_profile.last_event.criado_em).strftime('%d/%m/%Y %H:%M') if dev_profile.last_event.criado_em else '-' }}
+              {% else %}
+                -
+              {% endif %}
+            </dd>
+          </dl>
+        </div>
+      </section>
+    </div>
+  </div>
 
   {% if alerts %}
   <section class="card dev-card mb-4">
@@ -106,13 +390,6 @@
             <dt class="col-4">Debug</dt><dd class="col-8">{{ 'Ativo' if runtime.debug else 'Desativado' }}</dd>
             <dt class="col-4">Plataforma</dt><dd class="col-8 small dev-path">{{ runtime.platform }}</dd>
           </dl>
-          <hr>
-          <a class="btn btn-outline-primary btn-sm me-2" href="{{ url_for('main.admin_logs_usuarios') }}">
-            <i class="bi bi-clipboard-data me-1"></i> Auditoria completa
-          </a>
-          <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('main.admin_dashboard') }}">
-            <i class="bi bi-speedometer2 me-1"></i> Painel admin
-          </a>
         </div>
       </section>
     </div>
@@ -164,4 +441,196 @@
     </div>
   </section>
 </div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+  (function () {
+    const mapsKey = {{ maps_key|tojson }};
+    const defaultLocation = {{ local_context.default_location|tojson }};
+    let map = null;
+    let marker = null;
+    let geocoder = null;
+
+    const weatherCodes = {
+      0: "Céu limpo",
+      1: "Predomínio de sol",
+      2: "Parcialmente nublado",
+      3: "Nublado",
+      45: "Neblina",
+      48: "Neblina com gelo",
+      51: "Garoa leve",
+      53: "Garoa moderada",
+      55: "Garoa forte",
+      61: "Chuva leve",
+      63: "Chuva moderada",
+      65: "Chuva forte",
+      80: "Pancadas leves",
+      81: "Pancadas moderadas",
+      82: "Pancadas fortes",
+      95: "Trovoadas",
+    };
+
+    function setText(id, value) {
+      const element = document.getElementById(id);
+      if (element) element.textContent = value;
+    }
+
+    function setMapStatus(message, visible = true) {
+      setText("devMapStatus", message);
+      const placeholder = document.getElementById("devMapPlaceholder");
+      if (placeholder) placeholder.classList.toggle("d-none", !visible);
+    }
+
+    function formatCoord(value) {
+      return Number(value).toFixed(4);
+    }
+
+    function applyLocation(location, label) {
+      const lat = Number(location.lat);
+      const lng = Number(location.lng);
+      setText("devLocationLabel", label || defaultLocation.label);
+      setText("devLatitude", formatCoord(lat));
+      setText("devLongitude", formatCoord(lng));
+      updateMap({ lat, lng }, label || defaultLocation.label);
+      fetchWeather(lat, lng);
+    }
+
+    function updateMap(location, label) {
+      if (!window.google || !window.google.maps || !map) return;
+
+      map.setCenter(location);
+      map.setZoom(label === defaultLocation.label ? 11 : 14);
+
+      if (!marker) {
+        marker = new google.maps.Marker({
+          map,
+          position: location,
+          title: label,
+        });
+      } else {
+        marker.setPosition(location);
+        marker.setTitle(label);
+      }
+
+      setMapStatus("", false);
+    }
+
+    function reverseGeocode(location) {
+      if (!geocoder) return;
+      geocoder.geocode({ location }, (results, status) => {
+        if (status === "OK" && results && results[0]) {
+          setText("devLocationLabel", results[0].formatted_address);
+        }
+      });
+    }
+
+    async function fetchWeather(lat, lng) {
+      setText("devWeatherSummary", "Atualizando previsão local");
+      try {
+        const params = new URLSearchParams({
+          latitude: lat,
+          longitude: lng,
+          current: "temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m",
+          timezone: "auto",
+        });
+        const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params.toString()}`);
+        if (!response.ok) throw new Error("weather_response");
+        const payload = await response.json();
+        const current = payload.current || {};
+        const temp = Math.round(Number(current.temperature_2m));
+        const humidity = Number(current.relative_humidity_2m);
+        const wind = Number(current.wind_speed_10m);
+        const code = Number(current.weather_code);
+
+        setText("devTemperature", Number.isFinite(temp) ? `${temp}°C` : "--");
+        setText("devWeatherCondition", weatherCodes[code] || "Condição variável");
+        setText("devHumidity", Number.isFinite(humidity) ? `${humidity}%` : "--");
+        setText("devWind", Number.isFinite(wind) ? `${Math.round(wind)} km/h` : "--");
+        setText("devWeatherSummary", "Clima local sincronizado");
+        setText("devWeatherUpdated", current.time ? new Date(current.time).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : "--");
+      } catch (error) {
+        setText("devWeatherSummary", "Clima indisponível no momento");
+        setText("devWeatherCondition", "Sem leitura");
+      }
+    }
+
+    window.__initDevDashboardMap = function () {
+      const canvas = document.getElementById("devMap");
+      if (!canvas || !window.google || !window.google.maps) return;
+
+      const location = {
+        lat: Number(defaultLocation.lat),
+        lng: Number(defaultLocation.lng),
+      };
+
+      geocoder = new google.maps.Geocoder();
+      map = new google.maps.Map(canvas, {
+        center: location,
+        zoom: 11,
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: true,
+      });
+
+      updateMap(location, defaultLocation.label);
+    };
+
+    function loadGoogleMaps() {
+      if (!mapsKey) {
+        setMapStatus("Google Maps sem chave configurada.");
+        return;
+      }
+      if (window.google && window.google.maps) {
+        window.__initDevDashboardMap();
+        return;
+      }
+
+      const script = document.createElement("script");
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(mapsKey)}&callback=__initDevDashboardMap`;
+      script.async = true;
+      script.defer = true;
+      script.onerror = () => setMapStatus("Não foi possível carregar o Google Maps.");
+      document.head.appendChild(script);
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      applyLocation(defaultLocation, defaultLocation.label);
+      loadGoogleMaps();
+
+      const locationButton = document.getElementById("devUseLocation");
+      if (!locationButton) return;
+
+      locationButton.addEventListener("click", () => {
+        if (!navigator.geolocation) {
+          setText("devLocationLabel", "Geolocalização indisponível neste navegador");
+          return;
+        }
+
+        locationButton.disabled = true;
+        locationButton.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> Localizando';
+
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const location = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            };
+            applyLocation(location, "Minha localização");
+            reverseGeocode(location);
+            locationButton.disabled = false;
+            locationButton.innerHTML = '<i class="bi bi-crosshair me-1"></i> Minha localização';
+          },
+          () => {
+            setText("devLocationLabel", "Localização não autorizada. Usando referência padrão.");
+            locationButton.disabled = false;
+            locationButton.innerHTML = '<i class="bi bi-crosshair me-1"></i> Minha localização';
+          },
+          { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }
+        );
+      });
+    });
+  })();
+</script>
 {% endblock %}
