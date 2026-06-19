@@ -100,6 +100,10 @@
     box-shadow: 0 10px 22px rgba(13, 110, 253, 0.22);
   }
 
+  .agenda-modal-primary-action .btn-success {
+    box-shadow: 0 10px 22px rgba(25, 135, 84, 0.2);
+  }
+
   @media (max-width: 991.98px) {
     .agenda-modal-meta-grid {
       grid-template-columns: 1fr;
@@ -528,6 +532,27 @@
                   <i class="bi bi-clipboard2-check-fill"></i>
                   <span>Abrir Formulário</span>
                 </a>
+                <form
+                  id="m-concluir-form"
+                  method="POST"
+                  action="#"
+                  data-url-template="{{ url_for('main.piloto_concluir_os', os_id=0) }}"
+                  class="mt-2"
+                >
+                  <input
+                    type="hidden"
+                    name="next"
+                    value="{{ request.full_path if request.query_string else request.path }}"
+                  >
+                  <button
+                    id="m-concluir"
+                    type="submit"
+                    class="btn btn-success w-100 d-flex align-items-center justify-content-center gap-2"
+                  >
+                    <i class="bi bi-check2-circle"></i>
+                    <span>Concluir OS</span>
+                  </button>
+                </form>
               </div>
             {% endif %}
           </div>
@@ -686,6 +711,12 @@
       const urlTemplate = elFormulario.dataset.urlTemplate;
       elFormulario.href = urlTemplate.replace("/0/", `/${fcEvent.id}/`);
     }
+    const elConcluirForm = document.getElementById("m-concluir-form");
+    const elConcluir = document.getElementById("m-concluir");
+    if (elConcluirForm) {
+      const urlTemplate = elConcluirForm.dataset.urlTemplate;
+      elConcluirForm.action = urlTemplate.replace("/0/", `/${fcEvent.id}/`);
+    }
     // ---- preencher textos ----
     const uvis = props.uvis || "—";
     const foco = props.foco || "—";
@@ -700,6 +731,20 @@
     const hora = props.hora || "—";
     const status = props.status || "—";
     const endereco = props.endereco || "";
+    const statusNorm = String(status)
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim()
+      .toUpperCase();
+
+    if (elConcluirForm && elConcluir) {
+      const isConcluida = statusNorm.includes("CONCLUI");
+      const isAprovada = statusNorm.startsWith("APROVAD");
+
+      elConcluirForm.classList.toggle("d-none", isConcluida);
+      elConcluir.disabled = !isAprovada;
+      elConcluir.title = isAprovada ? "" : "A OS precisa estar aprovada para ser concluida";
+    }
 
     const lat = safeFloat(props.lat);
     const lng = safeFloat(props.lng);
@@ -861,6 +906,41 @@
     const initialDateFromServer = "{{ initial_date }}";
     const isMobile = window.matchMedia("(max-width: 768px)").matches;
     const weeklyOnly = {{ periodo_semanal_fixo | tojson }};
+    const concluirForm = document.getElementById("m-concluir-form");
+
+    concluirForm?.addEventListener("submit", function (e) {
+      const submitButton = concluirForm.querySelector('button[type="submit"]');
+      const mensagem = "Ao confirmar, a ordem de servico sera marcada como CONCLUIDA.";
+
+      if (!window.Swal) {
+        if (!window.confirm(mensagem)) {
+          e.preventDefault();
+          return;
+        }
+        if (typeof showLoadingState === "function") showLoadingState(submitButton);
+        return;
+      }
+
+      e.preventDefault();
+      const isDarkMode = document.body.classList.contains("dark-mode");
+
+      Swal.fire({
+        title: "Concluir OS?",
+        text: "Ao confirmar, a ordem de serviço será marcada como CONCLUÍDA.",
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonText: "Sim, concluir",
+        cancelButtonText: "Cancelar",
+        confirmButtonColor: "#198754",
+        cancelButtonColor: "#6c757d",
+        customClass: { popup: isDarkMode ? "swal2-dark-mode" : "" },
+      }).then((result) => {
+        if (result.isConfirmed) {
+          if (typeof showLoadingState === "function") showLoadingState(submitButton);
+          concluirForm.submit();
+        }
+      });
+    });
 
     const calendar = new FullCalendar.Calendar(calendarEl, {
       initialView: weeklyOnly ? "dayGridMonth" : (isMobile ? "listWeek" : "dayGridMonth"),
