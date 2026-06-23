@@ -993,8 +993,7 @@ def register_routes(bp):
 
         return render_template(
             "piloto_os_historico.html",
-            pedidos=context["pedidos"],
-            paginacao=context["paginacao"],
+            **context,
         )
 
     @bp.route("/piloto/os/<int:os_id>/concluir", methods=["POST"], endpoint="piloto_concluir_os")

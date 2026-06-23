@@ -4,6 +4,7 @@ from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import joinedload
 
 from app.models import Drones, Equipe, Solicitacao
+from app.shared.os_history_filters import apply_os_history_filters, get_os_history_filters
 from app.shared.query_filters import id_search_clause
 
 UVIS_HISTORICO_TIPO_OS_OPTIONS = ("todas", "piloto", "equipe_uvis")
@@ -147,6 +148,9 @@ def build_uvis_historico_os_context(user, args):
             )
         )
 
+    filtros = get_os_history_filters(args)
+    query = apply_os_history_filters(query, filtros)
+
     total_todas = (
         Solicitacao.query
         .filter(Solicitacao.usuario_id == user.id)
@@ -186,6 +190,8 @@ def build_uvis_historico_os_context(user, args):
         "pedidos": paginacao.items,
         "paginacao": paginacao,
         "filtro_tipo_os": filtro_tipo_os,
+        "filtros": filtros,
+        "unidades_select": [user],
         "historico_totais": {
             "todas": total_todas,
             "piloto": total_piloto,

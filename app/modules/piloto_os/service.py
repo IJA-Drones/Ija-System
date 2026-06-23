@@ -16,6 +16,7 @@ from app.extensions import db
 from app.models import Baterias, Drones, Equipe, EquipePiloto, OrdemServico, Solicitacao, Usuario, Veiculos
 from app.shared.access import ADMIN_PANEL_EDIT_TYPES, ADMIN_PANEL_VIEW_TYPES, can_access_regiao
 from app.shared.query_filters import aplicar_filtros_base, id_search_clause
+from app.shared.os_history_filters import apply_os_history_filters, get_os_history_filters
 from app.shared.skybox import (
     SkyboxError,
     build_os_media_remote_path,
@@ -291,6 +292,18 @@ def build_piloto_os_historico_context(user, args):
         )
     )
 
+    filtros = get_os_history_filters(args)
+    query = apply_os_history_filters(query, filtros)
+
+    unidades_select = (
+        Usuario.query
+        .join(Solicitacao, Solicitacao.usuario_id == Usuario.id)
+        .filter(equipes_filter, Solicitacao.status.in_(STATUS_OS_CONCLUIDAS))
+        .distinct()
+        .order_by(Usuario.nome_uvis.asc())
+        .all()
+    )
+
     page = args.get("page", 1, type=int)
     paginacao = (
         query
@@ -298,7 +311,13 @@ def build_piloto_os_historico_context(user, args):
         .paginate(page=page, per_page=6, error_out=False)
     )
 
-    return {"pedidos": paginacao.items, "paginacao": paginacao}
+    return {
+        "pedidos": paginacao.items,
+        "paginacao": paginacao,
+        "filtros": filtros,
+        "unidades_select": unidades_select,
+        "pagination_args": {key: value for key, value in filtros.items() if value},
+    }
 
 
 def concluir_os_piloto(user, os_id):

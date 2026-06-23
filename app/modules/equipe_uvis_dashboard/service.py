@@ -4,7 +4,8 @@ from sqlalchemy import or_
 from sqlalchemy.orm import joinedload
 
 from app.extensions import db
-from app.models import OrdemServicoEquipeUvis, Solicitacao
+from app.models import OrdemServicoEquipeUvis, Solicitacao, Usuario
+from app.shared.os_history_filters import apply_os_history_filters, get_os_history_filters
 from app.shared.query_filters import id_search_clause
 
 
@@ -168,6 +169,9 @@ def build_equipe_uvis_os_historico_context(user, args):
         .filter(Solicitacao.status.in_(STATUS_OS_CONCLUIDAS))
     )
 
+    filtros = get_os_history_filters(args)
+    query = apply_os_history_filters(query, filtros)
+
     page = args.get("page", 1, type=int)
     paginacao = (
         query.order_by(Solicitacao.data_criacao.desc(), Solicitacao.id.desc())
@@ -178,6 +182,8 @@ def build_equipe_uvis_os_historico_context(user, args):
         "pedidos": paginacao.items,
         "paginacao": paginacao,
         "nome_equipe": nome_equipe,
+        "filtros": filtros,
+        "unidades_select": Usuario.query.filter(Usuario.id == uvis_id).all(),
     }
 
 

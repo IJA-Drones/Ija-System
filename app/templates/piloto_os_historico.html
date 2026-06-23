@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_historico_os_filters.html" import render_historico_os_filters %}
 
 {% block extra_styles %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
@@ -22,6 +23,11 @@
       padding: 0.4rem 0.7rem;
       font-weight: 600;
     }
+    .piloto-os-filter-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
 
     @media (max-width: 991.98px) {
       .piloto-os-historico-page.container-fluid.py-4 {
@@ -35,6 +41,12 @@
       .piloto-os-historico-toolbar .btn {
         width: 100%;
         justify-content: center;
+      }
+      .piloto-os-filter-actions {
+        flex-direction: column;
+      }
+      .piloto-os-filter-actions .btn {
+        width: 100%;
       }
       .piloto-os-historico-table-wrap .table-responsive {
         overflow-x: visible !important;
@@ -148,6 +160,13 @@
     </div>
   </div>
 
+  {{ render_historico_os_filters(
+    filtros,
+    unidades_select,
+    url_for('main.piloto_os_historico'),
+    status_options=[('', 'Todos'), ('CONCLUIDAS', 'Concluídas')]
+  ) }}
+
   <div class="card shadow-sm rounded-4 border-0 overflow-hidden piloto-os-historico-table-wrap">
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0">
@@ -220,13 +239,13 @@
       <nav class="mt-4 pb-3">
         <ul class="pagination pagination-sm justify-content-center">
           <li class="page-item {% if not paginacao.has_prev %}disabled{% endif %}">
-            <a class="page-link shadow-sm" href="{{ url_for('main.piloto_os_historico', page=paginacao.prev_num) }}">Anterior</a>
+            <a class="page-link shadow-sm" href="{{ url_for('main.piloto_os_historico', page=paginacao.prev_num, **pagination_args) }}">Anterior</a>
           </li>
           <li class="page-item active">
             <span class="page-link shadow-sm">{{ paginacao.page }} / {{ paginacao.pages }}</span>
           </li>
           <li class="page-item {% if not paginacao.has_next %}disabled{% endif %}">
-            <a class="page-link shadow-sm" href="{{ url_for('main.piloto_os_historico', page=paginacao.next_num) }}">Próxima</a>
+            <a class="page-link shadow-sm" href="{{ url_for('main.piloto_os_historico', page=paginacao.next_num, **pagination_args) }}">Próxima</a>
           </li>
         </ul>
       </nav>

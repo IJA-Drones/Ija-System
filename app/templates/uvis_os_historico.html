@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_historico_os_filters.html" import render_historico_os_filters %}
 
 {% block extra_styles %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
@@ -207,17 +208,17 @@
           <div class="text-dark fw-bold">Tipo de OS</div>
         </div>
         <div class="uvis-os-filter-tabs">
-          <a href="{{ url_for('main.uvis_historico_os', tipo_os='todas') }}"
+          <a href="{{ url_for('main.uvis_historico_os', tipo_os='todas', **filtros_historico) }}"
              class="btn btn-sm {% if filtro_tipo_os == 'todas' %}btn-primary{% else %}btn-outline-primary{% endif %}">
             <i class="bi bi-grid-3x3-gap me-1"></i>Todas
             <span class="uvis-os-filter-count">{{ historico_totais.todas }}</span>
           </a>
-          <a href="{{ url_for('main.uvis_historico_os', tipo_os='piloto') }}"
+          <a href="{{ url_for('main.uvis_historico_os', tipo_os='piloto', **filtros_historico) }}"
              class="btn btn-sm {% if filtro_tipo_os == 'piloto' %}btn-primary{% else %}btn-outline-primary{% endif %}">
             <i class="bi bi-airplane me-1"></i>OS Piloto
             <span class="uvis-os-filter-count">{{ historico_totais.piloto }}</span>
           </a>
-          <a href="{{ url_for('main.uvis_historico_os', tipo_os='equipe_uvis') }}"
+          <a href="{{ url_for('main.uvis_historico_os', tipo_os='equipe_uvis', **filtros_historico) }}"
              class="btn btn-sm {% if filtro_tipo_os == 'equipe_uvis' %}btn-primary{% else %}btn-outline-primary{% endif %}">
             <i class="bi bi-people me-1"></i>OS Equipe UVIS
             <span class="uvis-os-filter-count">{{ historico_totais.equipe_uvis }}</span>
@@ -226,6 +227,13 @@
       </div>
     </div>
   </div>
+
+  {{ render_historico_os_filters(
+    filtros,
+    unidades_select,
+    url_for('main.uvis_historico_os', tipo_os=filtro_tipo_os),
+    extra_params={'tipo_os': filtro_tipo_os}
+  ) }}
 
   <div class="card shadow-sm rounded-4 border-0 overflow-hidden uvis-os-historico-table-wrap">
     <div class="table-responsive">

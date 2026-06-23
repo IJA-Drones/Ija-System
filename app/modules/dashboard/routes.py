@@ -46,6 +46,9 @@ def register_routes(bp):
             return redirect(url_for(exc.redirect_endpoint))
 
         context["pagination_args"] = {k: v for k, v in request.args.items() if k != "page"}
+        context["filtros_historico"] = {
+            k: v for k, v in context["pagination_args"].items() if k != "tipo_os"
+        }
         return render_template("uvis_os_historico.html", **context)
 
     @bp.route("/uvis/os/<int:os_id>/formulario", methods=["GET"], endpoint="uvis_os_formulario_view")

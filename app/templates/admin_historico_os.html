@@ -119,7 +119,7 @@
     <li class="nav-item">
       <a
         class="nav-link {% if filtro_tipo_os == 'piloto' %}active{% endif %}"
-        href="{{ url_for('main.admin_historico_os', tipo_os='piloto', status_os=filtro_status_os, unidade=request.args.get('unidade', ''), regiao=request.args.get('regiao', '')) }}"
+        href="{{ url_for('main.admin_historico_os', tipo_os='piloto', **filtros_historico) }}"
       >
         <i class="bi bi-airplane me-1"></i> OS Piloto
       </a>
@@ -127,13 +127,14 @@
     <li class="nav-item">
       <a
         class="nav-link {% if filtro_tipo_os == 'equipe_uvis' %}active{% endif %}"
-        href="{{ url_for('main.admin_historico_os', tipo_os='equipe_uvis', status_os=filtro_status_os, unidade=request.args.get('unidade', ''), regiao=request.args.get('regiao', '')) }}"
+        href="{{ url_for('main.admin_historico_os', tipo_os='equipe_uvis', **filtros_historico) }}"
       >
         <i class="bi bi-people me-1"></i> OS Equipe UVIS
       </a>
     </li>
   </ul>
 
+  {% set filtros_ativos = filtros.status or filtros.unidade or filtros.regiao or filtros.apoio_cet or filtros.tipo_visita or filtros.tipo_imovel or filtros.foco or filtros.protocolo or filtros.endereco or filtros.data_ini or filtros.data_fim %}
   <div class="card shadow-sm rounded-4 mb-4 border-0">
     <div
       class="card-header border-0 p-3 d-flex justify-content-between align-items-center"
@@ -144,14 +145,14 @@
       <div class="d-flex align-items-center gap-2">
         <i class="bi bi-funnel-fill text-primary"></i>
         <span class="text-dark fw-bold">Filtros de busca</span>
-        {% if request.args.get('status_os') or request.args.get('unidade') or request.args.get('regiao') or request.args.get('protocolo') %}
+        {% if filtros_ativos %}
           <span class="badge bg-danger rounded-circle p-1" style="width: 8px; height: 8px;"></span>
         {% endif %}
       </div>
       <i class="bi bi-chevron-down text-muted"></i>
     </div>
 
-    <div class="collapse {% if request.args.get('status_os') or request.args.get('unidade') or request.args.get('regiao') or request.args.get('protocolo') %}show{% endif %}" id="collapseFiltros">
+    <div class="collapse {% if filtros_ativos %}show{% endif %}" id="collapseFiltros">
       <div class="card-body pt-0">
         <form method="GET">
           <input type="hidden" name="tipo_os" value="{{ filtro_tipo_os }}">
@@ -189,27 +190,96 @@
             </div>
 
             <div class="col-md-3">
-              <label class="small text-muted">ID ou protocolo:</label>
+              <label class="small text-muted">Apoio CET?</label>
+              <select name="apoio_cet" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                <option value="SIM" {% if filtros.apoio_cet == 'SIM' %}selected{% endif %}>Sim</option>
+                <option value="NAO" {% if filtros.apoio_cet == 'NAO' %}selected{% endif %}>Não</option>
+              </select>
+            </div>
+
+            <div class="col-md-3">
+              <label class="small text-muted">Tipo de visita:</label>
+              <select name="tipo_visita" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for opcao in solicitacao_tipo_visita_opcoes %}
+                  <option value="{{ opcao }}" {% if filtros.tipo_visita == opcao %}selected{% endif %}>{{ opcao }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-3">
+              <label class="small text-muted">Tipo de imóvel:</label>
+              <select name="tipo_imovel" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for opcao in solicitacao_tipo_imovel_opcoes %}
+                  <option value="{{ opcao }}" {% if filtros.tipo_imovel == opcao %}selected{% endif %}>{{ opcao }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-3">
+              <label class="small text-muted">Foco:</label>
+              <select name="foco" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for opcao in solicitacao_filter_foco_opcoes %}
+                  <option value="{{ opcao }}" {% if filtros.foco == opcao %}selected{% endif %}>{{ opcao }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-3">
+              <label class="small text-muted">ID, protocolo ou identificador:</label>
               <input
-                type="text"
+                type="search"
                 name="protocolo"
                 class="form-control form-control-sm font-monospace"
-                placeholder="ID da solicitação ou protocolo"
-                value="{{ request.args.get('protocolo', '') }}"
+                placeholder="Ex.: #123, protocolo ou OS-2026"
+                value="{{ filtros.protocolo }}"
               >
             </div>
 
-            <div class="col-md-2 ms-4">
-              <label class="small text-muted d-block">&nbsp;</label>
+            <div class="col-md-3">
+              <label class="small text-muted">Endereço:</label>
+              <input
+                type="search"
+                name="endereco"
+                class="form-control form-control-sm"
+                placeholder="Rua, número, bairro ou cidade"
+                value="{{ request.args.get('endereco', '') }}"
+              >
+            </div>
+
+            <div class="col-md-3">
+              <label class="small text-muted">Agendamento de:</label>
+              <input
+                type="date"
+                name="data_ini"
+                class="form-control form-control-sm"
+                value="{{ request.args.get('data_ini', '') }}"
+              >
+            </div>
+
+            <div class="col-md-3">
+              <label class="small text-muted">Até:</label>
+              <input
+                type="date"
+                name="data_fim"
+                class="form-control form-control-sm"
+                value="{{ request.args.get('data_fim', '') }}"
+              >
+            </div>
+
+            <div class="col-md-3">
               <div class="historico-os-filter-actions">
-              <button class="btn btn-success btn-sm px-3 historico-os-filter-submit" type="submit">
-                <i class="bi bi-search"></i> Filtrar
-              </button>
-              {% if request.args.get('status_os') or request.args.get('unidade') or request.args.get('regiao') or request.args.get('protocolo') %}
-                <a href="{{ url_for('main.admin_historico_os', tipo_os=filtro_tipo_os) }}" class="btn btn-outline-secondary btn-sm px-3 historico-os-filter-clear">
-                  <i class="bi bi-x-lg"></i> Limpar
-                </a>
-              {% endif %}
+                <button class="btn btn-success btn-sm px-3 historico-os-filter-submit" type="submit">
+                  <i class="bi bi-search"></i> Filtrar
+                </button>
+                {% if filtros_ativos %}
+                  <a href="{{ url_for('main.admin_historico_os', tipo_os=filtro_tipo_os) }}" class="btn btn-outline-secondary btn-sm px-3 historico-os-filter-clear">
+                    <i class="bi bi-x-lg"></i> Limpar
+                  </a>
+                {% endif %}
               </div>
             </div>
           </div>

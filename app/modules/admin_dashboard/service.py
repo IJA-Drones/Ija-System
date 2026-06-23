@@ -12,7 +12,7 @@ from sqlalchemy.orm import joinedload
 from werkzeug.utils import secure_filename
 
 from app.extensions import db
-from app.models import Equipe, Solicitacao, Usuario
+from app.models import Equipe, OrdemServico, OrdemServicoEquipeUvis, Solicitacao, Usuario
 from app.shared.access import (
     ADMIN_PANEL_EDIT_TYPES,
     ADMIN_PANEL_VIEW_TYPES,
@@ -174,6 +174,12 @@ def build_admin_dashboard_query(
             or_(
                 id_search_clause(Solicitacao.id, filtro_protocolo, prefixes=("id", "os")),
                 Solicitacao.protocolo.ilike(f"%{filtro_protocolo}%"),
+                Solicitacao.ordem_servico.has(
+                    OrdemServico.identificador_os.ilike(f"%{filtro_protocolo}%")
+                ),
+                Solicitacao.ordem_servico_equipe_uvis.has(
+                    OrdemServicoEquipeUvis.identificador_os.ilike(f"%{filtro_protocolo}%")
+                ),
             )
         )
 

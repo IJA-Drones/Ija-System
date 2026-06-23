@@ -1,0 +1,117 @@
+{% macro render_historico_os_filters(filters, unidades_select, clear_url, status_name='status', extra_params=None, status_options=None) -%}
+  {% set filtros_ativos = filters.status or filters.unidade or filters.regiao or filters.apoio_cet or filters.tipo_visita or filters.tipo_imovel or filters.foco or filters.protocolo or filters.endereco or filters.data_ini or filters.data_fim %}
+  {% set opcoes_status = status_options or [('', 'Todos'), ('EM_ANDAMENTO', 'Em andamento'), ('CONCLUIDAS', 'Concluídas')] %}
+  <div class="card shadow-sm rounded-4 mb-4 border-0 historico-os-filters">
+    <div
+      class="card-header border-0 p-3 d-flex justify-content-between align-items-center"
+      data-bs-toggle="collapse"
+      data-bs-target="#collapseFiltrosHistoricoOs"
+      aria-expanded="{{ 'true' if filtros_ativos else 'false' }}"
+      style="cursor: pointer;"
+    >
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-funnel-fill text-primary"></i>
+        <span class="text-dark fw-bold">Filtros de busca</span>
+        {% if filtros_ativos %}
+          <span class="badge bg-danger rounded-circle p-1" style="width: 8px; height: 8px;"></span>
+        {% endif %}
+      </div>
+      <i class="bi bi-chevron-down text-muted"></i>
+    </div>
+
+    <div class="collapse {% if filtros_ativos %}show{% endif %}" id="collapseFiltrosHistoricoOs">
+      <div class="card-body pt-0 pb-4">
+        <form method="GET">
+          {% for key, value in (extra_params or {}).items() %}
+            <input type="hidden" name="{{ key }}" value="{{ value }}">
+          {% endfor %}
+          <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+              <label class="small text-muted">Status:</label>
+              <select name="{{ status_name }}" class="form-select form-select-sm">
+                {% for value, label in opcoes_status %}
+                  <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="small text-muted">Unidade:</label>
+              <select name="unidade" class="form-select form-select-sm">
+                <option value="">Todas as UVIS</option>
+                {% for unidade in unidades_select %}
+                  <option value="{{ unidade.nome_uvis }}" {% if filters.unidade == unidade.nome_uvis %}selected{% endif %}>{{ unidade.nome_uvis }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="small text-muted">Região:</label>
+              <select name="regiao" class="form-select form-select-sm">
+                <option value="">Todas</option>
+                {% for regiao in ['NORTE', 'SUL', 'LESTE', 'OESTE', 'CENTRO', 'SUDESTE', 'CENTRO-OESTE'] %}
+                  <option value="{{ regiao }}" {% if filters.regiao == regiao %}selected{% endif %}>{{ regiao }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="small text-muted">Apoio CET?</label>
+              <select name="apoio_cet" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                <option value="SIM" {% if filters.apoio_cet == 'SIM' %}selected{% endif %}>Sim</option>
+                <option value="NAO" {% if filters.apoio_cet == 'NAO' %}selected{% endif %}>Não</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="small text-muted">Tipo de visita:</label>
+              <select name="tipo_visita" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for opcao in solicitacao_tipo_visita_opcoes %}
+                  <option value="{{ opcao }}" {% if filters.tipo_visita == opcao %}selected{% endif %}>{{ opcao }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="small text-muted">Tipo de imóvel:</label>
+              <select name="tipo_imovel" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for opcao in solicitacao_tipo_imovel_opcoes %}
+                  <option value="{{ opcao }}" {% if filters.tipo_imovel == opcao %}selected{% endif %}>{{ opcao }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="small text-muted">Foco:</label>
+              <select name="foco" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for opcao in solicitacao_filter_foco_opcoes %}
+                  <option value="{{ opcao }}" {% if filters.foco == opcao %}selected{% endif %}>{{ opcao }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="small text-muted">ID ou protocolo:</label>
+              <input type="search" name="protocolo" class="form-control form-control-sm font-monospace" placeholder="ID, protocolo ou identificador" value="{{ filters.protocolo }}">
+            </div>
+            <div class="col-md-3">
+              <label class="small text-muted">Endereço:</label>
+              <input type="search" name="endereco" class="form-control form-control-sm" placeholder="Rua, número, bairro ou cidade" value="{{ filters.endereco }}">
+            </div>
+            <div class="col-md-3">
+              <label class="small text-muted">Data de agendamento:</label>
+              <input type="date" name="data_ini" class="form-control form-control-sm" value="{{ filters.data_ini }}">
+            </div>
+            <div class="col-md-3">
+              <label class="small text-muted">Data de agendamento até:</label>
+              <input type="date" name="data_fim" class="form-control form-control-sm" value="{{ filters.data_fim }}">
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+              <button class="btn btn-info text-white btn-sm flex-grow-1" type="submit"><i class="bi bi-search"></i> Filtrar</button>
+              {% if filtros_ativos %}
+                <a href="{{ clear_url }}" class="btn btn-outline-secondary btn-sm" title="Limpar filtros"><i class="bi bi-x-lg"></i></a>
+              {% endif %}
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+{%- endmacro %}

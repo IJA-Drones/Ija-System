@@ -20,6 +20,7 @@ from app.modules.admin_dashboard.service import (
     save_admin_attachment,
 )
 from app.shared.access import apply_regiao_scope, apply_solicitacao_prefeitura_scope
+from app.shared.os_history_filters import get_os_history_filters
 
 
 ADMIN_PER_PAGE_OPTIONS = (10, 25, 50, 100, 250)
@@ -315,13 +316,17 @@ def register_routes(bp):
             flash("Acesso restrito.", "danger")
             return redirect(url_for("main.dashboard"))
 
-        filtro_status_os = (request.args.get("status_os") or "").strip().upper()
+        filtros = get_os_history_filters(request.args, status_key="status_os")
+        filtro_status_os = filtros["status"]
         filtro_tipo_os = (request.args.get("tipo_os") or "piloto").strip().lower()
         if filtro_tipo_os not in {"piloto", "equipe_uvis"}:
             filtro_tipo_os = "piloto"
-        filtro_unidade = (request.args.get("unidade") or "").strip()
-        filtro_regiao = (request.args.get("regiao") or "").strip()
-        filtro_protocolo = (request.args.get("protocolo") or "").strip()
+        filtro_unidade = filtros["unidade"]
+        filtro_regiao = filtros["regiao"]
+        filtro_protocolo = filtros["protocolo"]
+        filtro_endereco = filtros["endereco"]
+        filtro_data_ini = filtros["data_ini"]
+        filtro_data_fim = filtros["data_fim"]
         page = request.args.get("page", 1, type=int)
 
         query = build_admin_dashboard_query(
@@ -329,11 +334,14 @@ def register_routes(bp):
             filtro_status="",
             filtro_unidade=filtro_unidade,
             filtro_regiao=filtro_regiao,
-            filtro_apoio_cet="",
+            filtro_apoio_cet=filtros["apoio_cet"],
             filtro_protocolo=filtro_protocolo,
-            filtro_tipo_visita="",
-            filtro_tipo_imovel="",
-            filtro_foco="",
+            filtro_endereco=filtro_endereco,
+            filtro_tipo_visita=filtros["tipo_visita"],
+            filtro_tipo_imovel=filtros["tipo_imovel"],
+            filtro_foco=filtros["foco"],
+            filtro_data_ini=filtro_data_ini,
+            filtro_data_fim=filtro_data_fim,
         )
         query = query.options(
             db.selectinload(Solicitacao.ordem_servico),
@@ -381,6 +389,12 @@ def register_routes(bp):
             unidades_select=build_uvis_select(current_user),
             filtro_status_os=filtro_status_os,
             filtro_tipo_os=filtro_tipo_os,
+            filtros=filtros,
+            filtros_historico={
+                key: value
+                for key, value in _query_args_without_page().items()
+                if key != "tipo_os"
+            },
             pagination_args=_query_args_without_page(),
         )
 

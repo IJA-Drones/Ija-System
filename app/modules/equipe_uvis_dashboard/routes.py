@@ -87,6 +87,7 @@ def register_routes(bp):
             flash(exc.message, exc.category)
             return redirect(url_for(exc.redirect_endpoint))
 
+        context["pagination_args"] = {k: v for k, v in request.args.items() if k != "page"}
         return render_template("equipe_uvis_os_historico.html", **context)
 
     @bp.route("/equipe-uvis/os/<int:os_id>/concluir", methods=["POST"], endpoint="equipe_uvis_concluir_os")
