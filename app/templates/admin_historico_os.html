@@ -28,6 +28,12 @@
     .historico-os-filter-clear {
       flex: 0 0 auto;
     }
+    .historico-os-toolbar-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
     .historico-os-subtitle {
       margin-top: 6px;
       color: #6c757d;
@@ -74,6 +80,9 @@
         flex-direction: column;
         align-items: stretch;
       }
+      .historico-os-toolbar-actions {
+        flex-direction: column;
+      }
       .historico-os-toolbar .btn {
         width: 100%;
       }
@@ -108,7 +117,19 @@
         Consulte as OS do piloto e as OS da equipe UVIS em abas separadas.
       </div>
     </div>
-    <div>
+    <div class="historico-os-toolbar-actions">
+      <a
+        href="{{ url_for('main.admin_historico_os_exportar_excel', **pagination_args) }}"
+        class="btn btn-success"
+      >
+        <i class="bi bi-file-earmark-excel-fill me-1"></i> Exportar filtro
+      </a>
+      <a
+        href="{{ url_for('main.admin_historico_os_exportar_excel', tipo_os=filtro_tipo_os, all=1) }}"
+        class="btn btn-outline-success"
+      >
+        <i class="bi bi-file-earmark-spreadsheet me-1"></i> Exportar tudo
+      </a>
       <a href="{{ url_for('main.admin_dashboard') }}" class="btn btn-outline-secondary">
         <i class="bi bi-arrow-left me-1"></i> Voltar
       </a>
@@ -134,7 +155,7 @@
     </li>
   </ul>
 
-  {% set filtros_ativos = filtros.status or filtros.unidade or filtros.regiao or filtros.apoio_cet or filtros.tipo_visita or filtros.tipo_imovel or filtros.foco or filtros.protocolo or filtros.endereco or filtros.data_ini or filtros.data_fim %}
+  {% set filtros_ativos = filtros.status or filtros.unidade or filtros.regiao or filtros.equipe or filtros.apoio_cet or filtros.tipo_visita or filtros.tipo_imovel or filtros.foco or filtros.protocolo or filtros.endereco or filtros.data_ini or filtros.data_fim %}
   <div class="card shadow-sm rounded-4 mb-4 border-0">
     <div
       class="card-header border-0 p-3 d-flex justify-content-between align-items-center"
@@ -179,7 +200,24 @@
             </div>
 
             <div class="col-md-3">
-              <label class="small text-muted">Região:</label>
+              <label class="small text-muted">{% if filtro_tipo_os == 'equipe_uvis' %}Equipe UVIS:{% else %}PLOA / equipe:{% endif %}</label>
+              <select name="equipe" class="form-select form-select-sm">
+                <option value="">Todas</option>
+                {% if filtro_tipo_os == 'equipe_uvis' %}
+                  {% for nome_equipe in equipes_uvis_select %}
+                    <option value="{{ nome_equipe }}" {% if filtros.equipe == nome_equipe %}selected{% endif %}>{{ nome_equipe }}</option>
+                  {% endfor %}
+                {% else %}
+                  {% for equipe in equipes_select %}
+                    <option value="{{ equipe.id }}" {% if filtros.equipe|string == equipe.id|string %}selected{% endif %}>
+                      {{ equipe.nome_equipe }}{% if equipe.regiao %} ({{ equipe.regiao }}){% endif %}
+                    </option>
+                  {% endfor %}
+                {% endif %}
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="small text-muted">Regiao:</label>
               {% set reg = (request.args.get('regiao', '') or '')|upper %}
               <select name="regiao" class="form-select form-select-sm">
                 <option value="">Todas</option>
@@ -306,6 +344,7 @@
             {% set status_upper = (p.status or '')|upper %}
             {% set os_em_andamento = 'CONCLU' not in status_upper %}
             {% set ordem_uvis = p.ordem_servico_equipe_uvis %}
+            {% set ordem_piloto = p.ordem_servico %}
             <tr>
               <td class="ps-4">
                 <strong>#{{ p.id }}</strong>
@@ -333,6 +372,10 @@
                 {% if filtro_tipo_os == 'equipe_uvis' and (ordem_uvis or p.equipe_uvis_nome) %}
                   <span class="badge bg-light text-dark border py-2 px-3 rounded-pill">
                     <i class="bi bi-people me-1 text-success"></i> {{ (ordem_uvis.equipe_uvis_nome if ordem_uvis else p.equipe_uvis_nome) or 'Equipe UVIS' }}
+                  </span>
+                {% elif ordem_piloto and ordem_piloto.equipe %}
+                  <span class="badge bg-light text-dark border py-2 px-3 rounded-pill">
+                    <i class="bi bi-people-fill me-1 text-primary"></i> {{ ordem_piloto.equipe.nome_equipe }}
                   </span>
                 {% elif p.equipe %}
                   <span class="badge bg-light text-dark border py-2 px-3 rounded-pill">

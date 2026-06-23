@@ -7,7 +7,7 @@ import uuid
 from flask import current_app
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
-from sqlalchemy import case, or_
+from sqlalchemy import and_, case, func, or_
 from sqlalchemy.orm import joinedload
 from werkzeug.utils import secure_filename
 
@@ -24,6 +24,15 @@ from app.shared.query_filters import id_search_clause
 from app.shared.uploads import allowed_file, get_upload_folder
 
 APPROVAL_STATUSES = {"APROVADO", "APROVADO COM RECOMENDAÇÕES"}
+HISTORICO_OS_ANDAMENTO_STATUSES = (
+    "APROVADO",
+    "APROVADA",
+    "APROVADO COM RECOMENDACOES",
+    "APROVADA COM RECOMENDACOES",
+    "APROVADO COM RECOMENDAÇÕES",
+    "APROVADA COM RECOMENDAÇÕES",
+)
+HISTORICO_OS_CONCLUIDAS_STATUSES = ("CONCLUIDO", "CONCLUÍDO")
 
 
 def _parse_filter_date(value: str):
@@ -254,31 +263,140 @@ def build_admin_canceladas_query(
     return _apply_data_agendamento_range(query, filtro_data_ini, filtro_data_fim)
 
 
-def build_admin_historico_os_query(user, filtro_unidade: str, filtro_regiao: str):
-    query = (
-        Solicitacao.query
-        .options(
-            joinedload(Solicitacao.usuario),
-            joinedload(Solicitacao.equipe),
-        )
-        .join(Usuario)
-        .filter(Solicitacao.status.in_(["CONCLUÍDO", "CONCLUIDO"]))
+def _has_equipe_uvis_os():
+    return or_(
+        Solicitacao.ordem_servico_equipe_uvis.has(),
+        and_(
+            Solicitacao.equipe_uvis_nome.isnot(None),
+            func.trim(Solicitacao.equipe_uvis_nome) != "",
+        ),
     )
-    query = apply_solicitacao_prefeitura_scope(query, user)
-    query = apply_regiao_scope(query, user, Usuario.regiao)
 
-    if filtro_unidade:
-        query = query.filter(
+
+def _apply_historico_equipe_filter(query, filtro_tipo_os: str, filtro_equipe: str):
+    filtro_equipe = (filtro_equipe or "").strip()
+    if not filtro_equipe:
+        return query
+
+    if filtro_tipo_os == "equipe_uvis":
+        return query.filter(
             or_(
-                id_search_clause(Usuario.id, filtro_unidade),
-                Usuario.nome_uvis.ilike(f"%{filtro_unidade}%"),
+                Solicitacao.equipe_uvis_nome == filtro_equipe,
+                Solicitacao.ordem_servico_equipe_uvis.has(
+                    OrdemServicoEquipeUvis.equipe_uvis_nome == filtro_equipe
+                ),
             )
         )
 
-    if filtro_regiao:
-        query = query.filter(Usuario.regiao.ilike(f"%{filtro_regiao}%"))
+    try:
+        equipe_id = int(filtro_equipe)
+    except (TypeError, ValueError):
+        return query.filter(
+            or_(
+                Solicitacao.equipe.has(Equipe.nome_equipe.ilike(f"%{filtro_equipe}%")),
+                Solicitacao.ordem_servico.has(
+                    OrdemServico.equipe.has(Equipe.nome_equipe.ilike(f"%{filtro_equipe}%"))
+                ),
+            )
+        )
 
-    return query
+    return query.filter(
+        or_(
+            Solicitacao.equipe_id == equipe_id,
+            Solicitacao.ordem_servico.has(OrdemServico.equipe_id == equipe_id),
+        )
+    )
+
+
+def build_admin_historico_os_query(user, filtros, filtro_tipo_os: str, filtro_equipe: str = ""):
+    query = build_admin_dashboard_query(
+        user,
+        filtro_status="",
+        filtro_unidade=filtros["unidade"],
+        filtro_regiao=filtros["regiao"],
+        filtro_apoio_cet=filtros["apoio_cet"],
+        filtro_protocolo=filtros["protocolo"],
+        filtro_endereco=filtros["endereco"],
+        filtro_tipo_visita=filtros["tipo_visita"],
+        filtro_tipo_imovel=filtros["tipo_imovel"],
+        filtro_foco=filtros["foco"],
+        filtro_data_ini=filtros["data_ini"],
+        filtro_data_fim=filtros["data_fim"],
+    ).options(
+        db.selectinload(Solicitacao.ordem_servico).selectinload(OrdemServico.equipe),
+        db.selectinload(Solicitacao.ordem_servico_equipe_uvis),
+    )
+
+    filtro_status_os = filtros["status"]
+    if filtro_tipo_os == "equipe_uvis":
+        query = query.filter(_has_equipe_uvis_os())
+        if filtro_status_os == "EM_ANDAMENTO":
+            query = query.filter(~Solicitacao.status.in_(HISTORICO_OS_CONCLUIDAS_STATUSES))
+        elif filtro_status_os == "CONCLUIDAS":
+            query = query.filter(Solicitacao.status.in_(HISTORICO_OS_CONCLUIDAS_STATUSES))
+    else:
+        if filtro_status_os == "EM_ANDAMENTO":
+            query = query.filter(
+                and_(
+                    Solicitacao.status.in_(HISTORICO_OS_ANDAMENTO_STATUSES),
+                    Solicitacao.equipe_id.isnot(None),
+                )
+            )
+        elif filtro_status_os == "CONCLUIDAS":
+            query = query.filter(Solicitacao.status.in_(HISTORICO_OS_CONCLUIDAS_STATUSES))
+        else:
+            query = query.filter(
+                or_(
+                    Solicitacao.status.in_(HISTORICO_OS_CONCLUIDAS_STATUSES),
+                    and_(
+                        Solicitacao.status.in_(HISTORICO_OS_ANDAMENTO_STATUSES),
+                        Solicitacao.equipe_id.isnot(None),
+                    ),
+                )
+            )
+
+    return _apply_historico_equipe_filter(query, filtro_tipo_os, filtro_equipe)
+
+
+def build_equipe_uvis_names_select(user=None):
+    base_query = (
+        Solicitacao.query
+        .join(Usuario)
+        .filter(Solicitacao.status != "CANCELADO")
+    )
+    if user is not None:
+        base_query = apply_solicitacao_prefeitura_scope(base_query, user)
+        base_query = apply_regiao_scope(base_query, user, Usuario.regiao)
+
+    names = set()
+    solicitacao_names = (
+        base_query
+        .with_entities(Solicitacao.equipe_uvis_nome)
+        .filter(
+            Solicitacao.equipe_uvis_nome.isnot(None),
+            func.trim(Solicitacao.equipe_uvis_nome) != "",
+        )
+        .distinct()
+        .all()
+    )
+    ordem_names = (
+        base_query
+        .join(OrdemServicoEquipeUvis, OrdemServicoEquipeUvis.solicitacao_id == Solicitacao.id)
+        .with_entities(OrdemServicoEquipeUvis.equipe_uvis_nome)
+        .filter(
+            OrdemServicoEquipeUvis.equipe_uvis_nome.isnot(None),
+            func.trim(OrdemServicoEquipeUvis.equipe_uvis_nome) != "",
+        )
+        .distinct()
+        .all()
+    )
+
+    for (name,) in solicitacao_names + ordem_names:
+        clean_name = (name or "").strip()
+        if clean_name:
+            names.add(clean_name)
+
+    return sorted(names, key=str.lower)
 
 
 def build_admin_export_query(
@@ -482,6 +600,187 @@ def build_admin_dashboard_export(
     wb.save(output)
     output.seek(0)
     return output
+
+
+def _format_date_br(value):
+    if not value:
+        return ""
+    if isinstance(value, (date, datetime)):
+        return value.strftime("%d/%m/%Y")
+    return str(value)
+
+
+def _format_datetime_br(value):
+    if not value:
+        return ""
+    if isinstance(value, datetime):
+        return value.strftime("%d/%m/%Y %H:%M")
+    if isinstance(value, date):
+        return value.strftime("%d/%m/%Y")
+    return str(value)
+
+
+def _format_time(value):
+    if not value:
+        return ""
+    return value.strftime("%H:%M") if hasattr(value, "strftime") else str(value)
+
+
+def _historico_os_equipe_nome(pedido, filtro_tipo_os: str):
+    if filtro_tipo_os == "equipe_uvis":
+        ordem_uvis = getattr(pedido, "ordem_servico_equipe_uvis", None)
+        if ordem_uvis and ordem_uvis.equipe_uvis_nome:
+            return ordem_uvis.equipe_uvis_nome
+        return pedido.equipe_uvis_nome or ""
+    ordem = getattr(pedido, "ordem_servico", None)
+    if ordem and getattr(ordem, "equipe", None):
+        return ordem.equipe.nome_equipe or ""
+    if getattr(pedido, "equipe", None):
+        return pedido.equipe.nome_equipe or ""
+    return ""
+
+
+def _historico_os_identificador(pedido, filtro_tipo_os: str):
+    if filtro_tipo_os == "equipe_uvis":
+        ordem_uvis = getattr(pedido, "ordem_servico_equipe_uvis", None)
+        return ordem_uvis.identificador_os if ordem_uvis else ""
+    ordem = getattr(pedido, "ordem_servico", None)
+    return ordem.identificador_os if ordem else ""
+
+
+def _historico_os_situacao(pedido, filtro_tipo_os: str):
+    ordem = (
+        getattr(pedido, "ordem_servico_equipe_uvis", None)
+        if filtro_tipo_os == "equipe_uvis"
+        else getattr(pedido, "ordem_servico", None)
+    )
+    return ordem.situacao_aplicacao if ordem else ""
+
+
+def _historico_os_respondido_por(pedido, filtro_tipo_os: str):
+    ordem = (
+        getattr(pedido, "ordem_servico_equipe_uvis", None)
+        if filtro_tipo_os == "equipe_uvis"
+        else getattr(pedido, "ordem_servico", None)
+    )
+    return ordem.respondido_por if ordem else ""
+
+
+def _historico_os_respondido_em(pedido, filtro_tipo_os: str):
+    ordem = (
+        getattr(pedido, "ordem_servico_equipe_uvis", None)
+        if filtro_tipo_os == "equipe_uvis"
+        else getattr(pedido, "ordem_servico", None)
+    )
+    return _format_datetime_br(ordem.respondido_em) if ordem else ""
+
+
+def build_admin_historico_os_export(user, filtros, filtro_tipo_os: str, filtro_equipe: str = ""):
+    pedidos = (
+        build_admin_historico_os_query(user, filtros, filtro_tipo_os, filtro_equipe)
+        .order_by(build_status_order(), Solicitacao.data_criacao.desc(), Solicitacao.id.desc())
+        .all()
+    )
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Historico OS"
+
+    headers = [
+        "ID",
+        "Tipo OS",
+        "Identificador OS",
+        "Unidade",
+        "Regiao",
+        "Equipe/PLOA",
+        "Status",
+        "Situacao",
+        "Data Agendada",
+        "Hora Agendada",
+        "Endereco Completo",
+        "Latitude",
+        "Longitude",
+        "Foco",
+        "Tipo Operacao",
+        "Tipo Visita",
+        "Tipo Imovel",
+        "Apoio CET?",
+        "Protocolo",
+        "Respondido Por",
+        "Respondido Em",
+        "Observacao",
+        "Justificativa",
+    ]
+
+    header_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
+    header_font = Font(color="FFFFFF", bold=True)
+    thin_border = Border(
+        left=Side(style="thin"),
+        right=Side(style="thin"),
+        top=Side(style="thin"),
+        bottom=Side(style="thin"),
+    )
+
+    for column, header in enumerate(headers, start=1):
+        cell = ws.cell(row=1, column=column, value=header)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+        cell.border = thin_border
+
+    tipo_label = "OS Equipe UVIS" if filtro_tipo_os == "equipe_uvis" else "OS Piloto"
+    for row_number, pedido in enumerate(pedidos, start=2):
+        usuario = getattr(pedido, "usuario", None)
+        endereco_completo = (
+            f"{pedido.logradouro or ''}, {pedido.numero or 'S/N'} - "
+            f"{pedido.bairro or ''} - "
+            f"{(pedido.cidade or '')}/{(pedido.uf or '')} - {pedido.cep or ''}"
+        )
+        if pedido.complemento:
+            endereco_completo += f" - {pedido.complemento}"
+
+        row = [
+            pedido.id,
+            tipo_label,
+            _historico_os_identificador(pedido, filtro_tipo_os),
+            usuario.nome_uvis if usuario else "",
+            usuario.regiao if usuario else "",
+            _historico_os_equipe_nome(pedido, filtro_tipo_os),
+            pedido.status or "",
+            _historico_os_situacao(pedido, filtro_tipo_os),
+            _format_date_br(pedido.data_agendamento),
+            _format_time(pedido.hora_agendamento),
+            endereco_completo,
+            pedido.latitude or "",
+            pedido.longitude or "",
+            pedido.foco or "",
+            pedido.tipo_operacao or "",
+            pedido.tipo_visita or "",
+            pedido.tipo_imovel or "",
+            "SIM" if pedido.apoio_cet else "NAO",
+            pedido.protocolo or "",
+            _historico_os_respondido_por(pedido, filtro_tipo_os),
+            _historico_os_respondido_em(pedido, filtro_tipo_os),
+            pedido.observacao or "",
+            pedido.justificativa or "",
+        ]
+
+        for column, value in enumerate(row, start=1):
+            cell = ws.cell(row=row_number, column=column, value=value)
+            cell.border = thin_border
+            cell.alignment = Alignment(vertical="center", wrap_text=True)
+
+    ws.freeze_panes = "A2"
+    for column_cells in ws.columns:
+        max_length = max(len(str(cell.value)) if cell.value else 0 for cell in column_cells)
+        ws.column_dimensions[column_cells[0].column_letter].width = min(max_length + 2, 55)
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    tipo_nome = "equipe_uvis" if filtro_tipo_os == "equipe_uvis" else "piloto"
+    filename = f"historico_os_{tipo_nome}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    return output, filename
 
 
 def apply_admin_update_fields(pedido, form, *, user=None):

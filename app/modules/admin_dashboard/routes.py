@@ -12,6 +12,9 @@ from app.modules.admin_dashboard.service import (
     build_admin_canceladas_query,
     build_admin_dashboard_export,
     build_admin_dashboard_query,
+    build_admin_historico_os_export,
+    build_admin_historico_os_query,
+    build_equipe_uvis_names_select,
     build_status_order,
     build_uvis_select,
     can_access_admin_panel,
@@ -321,60 +324,16 @@ def register_routes(bp):
         filtro_tipo_os = (request.args.get("tipo_os") or "piloto").strip().lower()
         if filtro_tipo_os not in {"piloto", "equipe_uvis"}:
             filtro_tipo_os = "piloto"
-        filtro_unidade = filtros["unidade"]
-        filtro_regiao = filtros["regiao"]
-        filtro_protocolo = filtros["protocolo"]
-        filtro_endereco = filtros["endereco"]
-        filtro_data_ini = filtros["data_ini"]
-        filtro_data_fim = filtros["data_fim"]
+        filtro_equipe = (request.args.get("equipe") or "").strip()
+        filtros["equipe"] = filtro_equipe
         page = request.args.get("page", 1, type=int)
 
-        query = build_admin_dashboard_query(
+        query = build_admin_historico_os_query(
             current_user,
-            filtro_status="",
-            filtro_unidade=filtro_unidade,
-            filtro_regiao=filtro_regiao,
-            filtro_apoio_cet=filtros["apoio_cet"],
-            filtro_protocolo=filtro_protocolo,
-            filtro_endereco=filtro_endereco,
-            filtro_tipo_visita=filtros["tipo_visita"],
-            filtro_tipo_imovel=filtros["tipo_imovel"],
-            filtro_foco=filtros["foco"],
-            filtro_data_ini=filtro_data_ini,
-            filtro_data_fim=filtro_data_fim,
+            filtros,
+            filtro_tipo_os,
+            filtro_equipe,
         )
-        query = query.options(
-            db.selectinload(Solicitacao.ordem_servico),
-            db.selectinload(Solicitacao.ordem_servico_equipe_uvis),
-        )
-
-        if filtro_tipo_os == "equipe_uvis":
-            query = query.filter(_has_equipe_uvis_os())
-
-            if filtro_status_os == "EM_ANDAMENTO":
-                query = query.filter(~Solicitacao.status.in_(HISTORICO_OS_CONCLUIDAS_STATUSES))
-            elif filtro_status_os == "CONCLUIDAS":
-                query = query.filter(Solicitacao.status.in_(HISTORICO_OS_CONCLUIDAS_STATUSES))
-        else:
-            if filtro_status_os == "EM_ANDAMENTO":
-                query = query.filter(
-                    and_(
-                        Solicitacao.status.in_(HISTORICO_OS_ANDAMENTO_STATUSES),
-                        Solicitacao.equipe_id.isnot(None),
-                    )
-                )
-            elif filtro_status_os == "CONCLUIDAS":
-                query = query.filter(Solicitacao.status.in_(HISTORICO_OS_CONCLUIDAS_STATUSES))
-            else:
-                query = query.filter(
-                    or_(
-                        Solicitacao.status.in_(HISTORICO_OS_CONCLUIDAS_STATUSES),
-                        and_(
-                            Solicitacao.status.in_(HISTORICO_OS_ANDAMENTO_STATUSES),
-                            Solicitacao.equipe_id.isnot(None),
-                        ),
-                    ),
-                )
 
         paginacao = query.order_by(
             build_status_order(),
@@ -387,6 +346,8 @@ def register_routes(bp):
             pedidos=paginacao.items,
             paginacao=paginacao,
             unidades_select=build_uvis_select(current_user),
+            equipes_select=build_active_teams(current_user),
+            equipes_uvis_select=build_equipe_uvis_names_select(current_user),
             filtro_status_os=filtro_status_os,
             filtro_tipo_os=filtro_tipo_os,
             filtros=filtros,
@@ -397,6 +358,42 @@ def register_routes(bp):
             },
             pagination_args=_query_args_without_page(),
         )
+
+    @bp.route("/admin/historico-os/exportar-excel")
+    @login_required
+    def admin_historico_os_exportar_excel():
+        if not can_access_admin_panel(current_user):
+            flash("Permissao negada para exportar.", "danger")
+            return redirect(url_for("main.dashboard"))
+
+        filtro_tipo_os = (request.args.get("tipo_os") or "piloto").strip().lower()
+        if filtro_tipo_os not in {"piloto", "equipe_uvis"}:
+            filtro_tipo_os = "piloto"
+
+        filtros = get_os_history_filters(request.args, status_key="status_os")
+        filtro_equipe = (request.args.get("equipe") or "").strip()
+        if (request.args.get("all") or "").strip().lower() in {"1", "true", "sim", "yes"}:
+            filtros = {key: "" for key in filtros}
+            filtro_equipe = ""
+
+        try:
+            output, download_name = build_admin_historico_os_export(
+                current_user,
+                filtros,
+                filtro_tipo_os,
+                filtro_equipe,
+            )
+            return send_file(
+                output,
+                download_name=download_name,
+                as_attachment=True,
+                mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        except Exception as exc:
+            db.session.rollback()
+            current_app.logger.error(f"ERRO EXPORTAR HISTORICO OS EXCEL: {exc}")
+            flash("Erro ao gerar o Excel do historico de OS.", "danger")
+            return redirect(url_for("main.admin_historico_os", tipo_os=filtro_tipo_os))
 
     @bp.route("/admin/os/<int:os_id>/equipe-uvis-formulario", methods=["GET"], endpoint="admin_equipe_uvis_os_formulario_view")
     @login_required
