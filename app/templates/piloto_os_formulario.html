@@ -1471,7 +1471,7 @@
                   {% if not modo_visualizacao %}
                   <div class="os-media-upload-box">
                     <label class="form-label-header">Enviar novo vídeo</label>
-                    <input type="file" id="video_file" class="form-control" accept="video/mp4,video/webm,video/quicktime,.mp4,.mov,.webm,.m4v" />
+                    <input type="file" id="video_file" class="form-control" accept="video/mp4,video/webm,video/quicktime,.mp4,.mov,.webm,.m4v,.lrf" />
                     <div class="d-none mt-3" id="video-upload-progress-wrap">
                       <div class="progress os-upload-progress" role="progressbar" aria-label="Progresso do upload do video" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
                         <div class="progress-bar progress-bar-striped progress-bar-animated" id="video-upload-progress-bar" style="width: 0%"></div>
@@ -1484,7 +1484,7 @@
                       </button>
                       <span class="os-media-help" id="statusUploadVideo">Aguardando seleção.</span>
                     </div>
-                    <div class="os-media-help mt-2">Formatos aceitos: MP4, MOV, WEBM e M4V. O envio é feito diretamente para o WebDAV.</div>
+                    <div class="os-media-help mt-2">Formatos aceitos: MP4, MOV, WEBM, M4V e LRF/DJI. Videos DJI em H.264 ou H.265/HEVC podem ser enviados para o WebDAV.</div>
                   </div>
                   {% endif %}
                 </div>

@@ -44,7 +44,7 @@ STATUS_OS_APROVADAS_COM_ACENTO = [
 ]
 STATUS_OS_CONCLUIDAS = ["CONCLUIDO", "CONCLU\u00cdDO"]
 OS_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png"}
-OS_VIDEO_EXTENSIONS = {"mp4", "mov", "webm", "m4v"}
+OS_VIDEO_EXTENSIONS = {"mp4", "mov", "webm", "m4v", "lrf"}
 EQUIPE_OCEANO_USER_TYPE = "equipe_oceano"
 BRAZIL_TZ = ZoneInfo("America/Sao_Paulo")
 DRONE_CATEGORY_PULVERIZACAO = "pulverizacao"
@@ -1162,7 +1162,7 @@ def _validar_arquivo_video_os(arquivo):
     ext = os.path.splitext(nome_seguro)[1].lower().lstrip(".")
     if not nome_seguro or ext not in OS_VIDEO_EXTENSIONS:
         raise PilotoOsError(
-            "Envie apenas videos nos formatos MP4, MOV, WEBM ou M4V para o levantamento.",
+            "Envie apenas videos nos formatos MP4, MOV, WEBM, M4V ou LRF/DJI para o levantamento.",
             "warning",
             redirect_endpoint="main.piloto_os_formulario_view",
         )

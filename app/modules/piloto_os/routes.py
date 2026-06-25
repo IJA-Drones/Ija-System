@@ -64,6 +64,8 @@ MEDIA_UNEXPECTED_ERROR_MESSAGE = (
     "Tente novamente em instantes."
 )
 VIDEO_BACKGROUND_UPLOAD_CHUNK_SIZE_BYTES = 1024 * 1024
+VIDEO_UPLOAD_EXTENSIONS = {"mp4", "mov", "webm", "m4v", "lrf"}
+VIDEO_UPLOAD_FORMAT_MESSAGE = "Formatos aceitos: MP4, MOV, WEBM, M4V e LRF/DJI."
 VIDEO_BACKGROUND_UPLOAD_JOBS = {}
 VIDEO_BACKGROUND_UPLOAD_LOCK = threading.Lock()
 VIDEO_BACKGROUND_UPLOAD_EXECUTOR = ThreadPoolExecutor(
@@ -201,6 +203,10 @@ def _is_webdav_path(value):
 
 
 def _media_content_type(remote_path, upstream_content_type=None):
+    extension = os.path.splitext(str(remote_path or ""))[1].lower()
+    if extension == ".lrf":
+        return "video/mp4"
+
     guessed = mimetypes.guess_type(remote_path)[0]
     upstream = (upstream_content_type or "").split(";", 1)[0].strip().lower()
     if guessed and upstream in {"", "application/octet-stream", "binary/octet-stream"}:
@@ -436,10 +442,21 @@ def _build_stream_upload_file_name(os_id, media_prefix):
     return secure_filename(f"{safe_prefix}_os_{os_id}_{stamp}{extension.lower()}")
 
 
+def _validate_video_upload_extension(file_name):
+    extension = os.path.splitext(str(file_name or ""))[1].lower().lstrip(".")
+    if not extension or extension not in VIDEO_UPLOAD_EXTENSIONS:
+        return f"Arquivo de video invalido. {VIDEO_UPLOAD_FORMAT_MESSAGE}"
+    return None
+
+
 def _upload_request_stream_to_webdav(os_id, media_prefix):
     file_name = _build_stream_upload_file_name(os_id, media_prefix)
     if not file_name:
         return None, None, jsonify({"success": False, "error": "Header X-File-Name ausente ou invalido."}), 400
+    if media_prefix == "video":
+        validation_error = _validate_video_upload_extension(file_name)
+        if validation_error:
+            return None, None, jsonify({"success": False, "error": validation_error}), 400
 
     _base_url, auth = _webdav_config()
     base_remote_path = _webdav_base_dir()
@@ -689,6 +706,10 @@ def _file_contains_bytes(path, needle, *, chunk_size=1024 * 1024):
 
 
 def _validate_uploaded_video_file(temp_path, file_name):
+    extension_error = _validate_video_upload_extension(file_name)
+    if extension_error:
+        return extension_error
+
     extension = os.path.splitext(str(file_name or ""))[1].lower()
     if extension in {".mp4", ".mov", ".m4v"} and not _file_contains_bytes(temp_path, b"moov"):
         return "O arquivo de video chegou incompleto ou corrompido. Envie novamente o video original."

@@ -126,6 +126,10 @@ def _setting(name):
 
 
 def _media_content_type(remote_path, upstream_content_type=None):
+    extension = os.path.splitext(str(remote_path or ""))[1].lower()
+    if extension == ".lrf":
+        return "video/mp4"
+
     guessed = mimetypes.guess_type(remote_path)[0]
     upstream = (upstream_content_type or "").split(";", 1)[0].strip().lower()
     if guessed and upstream in {"", "application/octet-stream", "binary/octet-stream"}:
