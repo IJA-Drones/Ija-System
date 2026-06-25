@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% from "_pagination.html" import render_pagination %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/feedback.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 feedback-page" style="max-width: 1240px;">
+  <div class="feedback-header mb-4">
+    <div>
+      <span class="feedback-kicker">Central institucional</span>
+      <h2 class="mb-1"><i class="bi bi-chat-square-heart-fill me-2 text-primary"></i>Feedback e melhorias</h2>
+      <p class="text-muted small mb-0">
+        {{ counts.total }} registros no seu escopo de acesso.
+      </p>
+    </div>
+    <a href="{{ url_for('main.feedback_novo') }}" class="btn btn-success text-white">
+      <i class="bi bi-plus-lg"></i> Novo feedback
+    </a>
+  </div>
+
+  <div class="feedback-metrics mb-4">
+    <div class="feedback-metric">
+      <span>Total</span>
+      <strong>{{ counts.total }}</strong>
+    </div>
+    <div class="feedback-metric">
+      <span>Abertos</span>
+      <strong>{{ counts.abertos }}</strong>
+    </div>
+    <div class="feedback-metric">
+      <span>Em tratativa</span>
+      <strong>{{ counts.em_analise }}</strong>
+    </div>
+    <div class="feedback-metric">
+      <span>Concluidos</span>
+      <strong>{{ counts.resolvidos }}</strong>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0 feedback-filter-card mb-4">
+    <div class="card-body">
+      <form method="GET" action="{{ url_for('main.feedback_listar') }}">
+        <div class="row g-2 align-items-end">
+          <div class="col-lg-3 col-md-6">
+            <label class="form-label small" for="feedback-q">Busca</label>
+            <input id="feedback-q" name="q" class="form-control form-control-sm" value="{{ q }}" placeholder="Titulo, descricao, UVIS ou regiao">
+          </div>
+          <div class="col-lg-2 col-md-6">
+            <label class="form-label small" for="feedback-status">Status</label>
+            <select id="feedback-status" name="status" class="form-select form-select-sm">
+              <option value="">Todos</option>
+              {% for key, label in status_options %}
+              <option value="{{ key }}" {% if status == key %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-lg-2 col-md-6">
+            <label class="form-label small" for="feedback-categoria">Categoria</label>
+            <select id="feedback-categoria" name="categoria" class="form-select form-select-sm">
+              <option value="">Todas</option>
+              {% for key, label in category_options %}
+              <option value="{{ key }}" {% if categoria == key %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-lg-2 col-md-6">
+            <label class="form-label small" for="feedback-prioridade">Prioridade</label>
+            <select id="feedback-prioridade" name="prioridade" class="form-select form-select-sm">
+              <option value="">Todas</option>
+              {% for key, label in priority_options %}
+              <option value="{{ key }}" {% if prioridade == key %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% if can_moderate and uvis_options|length > 1 %}
+          <div class="col-lg-2 col-md-6">
+            <label class="form-label small" for="feedback-uvis">UVIS</label>
+            <select id="feedback-uvis" name="uvis_id" class="form-select form-select-sm">
+              <option value="">Todas</option>
+              {% for uvis in uvis_options %}
+              <option value="{{ uvis.id }}" {% if uvis_id == uvis.id %}selected{% endif %}>{{ uvis.nome_uvis }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endif %}
+          <div class="col-lg-1 col-md-6 feedback-filter-actions">
+            <button type="submit" class="btn btn-primary btn-sm">
+              <i class="bi bi-funnel"></i> Filtrar
+            </button>
+            {% if q or status or categoria or prioridade or uvis_id %}
+            <a href="{{ url_for('main.feedback_listar') }}" class="btn btn-outline-secondary btn-sm" title="Limpar filtros">
+              <i class="bi bi-x-lg"></i>
+            </a>
+            {% endif %}
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {% if feedbacks %}
+  <div class="feedback-list">
+    {% for item in feedbacks %}
+    {% set visible_comments = item.comentarios if can_moderate else item.comentarios|selectattr('interno', 'equalto', false)|list %}
+    <a href="{{ url_for('main.feedback_detalhe', topico_id=item.id) }}" class="feedback-card">
+      <div class="feedback-card-main">
+        <div class="feedback-card-title-row">
+          <h5>{{ item.titulo }}</h5>
+          <span class="feedback-status feedback-status-{{ item.status }}">{{ status_labels.get(item.status, item.status) }}</span>
+        </div>
+        <p>{{ item.descricao|striptags|truncate(180) }}</p>
+        <div class="feedback-meta">
+          <span><i class="bi bi-building"></i>{{ item.uvis_nome }}</span>
+          <span><i class="bi bi-geo-alt"></i>{{ item.regiao or "Sem regiao" }}</span>
+          <span><i class="bi bi-clock"></i>{{ item.atualizado_em.strftime("%d/%m/%Y %H:%M") if item.atualizado_em else "" }}</span>
+        </div>
+      </div>
+      <div class="feedback-card-side">
+        <span class="feedback-pill">{{ category_labels.get(item.categoria, item.categoria) }}</span>
+        <span class="feedback-priority feedback-priority-{{ item.prioridade }}">{{ priority_labels.get(item.prioridade, item.prioridade) }}</span>
+        <span class="feedback-comments"><i class="bi bi-chat-dots"></i>{{ visible_comments|length }}</span>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+
+  {{ render_pagination('main.feedback_listar', paginacao, pagination_args, show_summary=True, summary_label='feedbacks') }}
+  {% else %}
+  <div class="feedback-empty">
+    <i class="bi bi-chat-square-text"></i>
+    <h5>Nenhum feedback encontrado</h5>
+    <p class="text-muted mb-3">Quando houver sugestoes ou melhorias dentro do seu escopo, elas aparecem aqui.</p>
+    <a href="{{ url_for('main.feedback_novo') }}" class="btn btn-success text-white">
+      <i class="bi bi-plus-lg"></i> Criar primeiro feedback
+    </a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

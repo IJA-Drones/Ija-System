@@ -114,11 +114,104 @@ class Usuario(UserMixin, db.Model):
         order_by="EquipeUvis.ordem"
     )
 
+    feedbacks_criados = db.relationship(
+        "FeedbackTopico",
+        foreign_keys="FeedbackTopico.criado_por_id",
+        back_populates="criado_por",
+        lazy="select",
+    )
+
+    feedbacks_da_uvis = db.relationship(
+        "FeedbackTopico",
+        foreign_keys="FeedbackTopico.uvis_usuario_id",
+        back_populates="uvis_usuario",
+        lazy="select",
+    )
+
     def set_senha(self, senha):
         self.senha_hash = generate_password_hash(senha)
 
     def check_senha(self, senha):
         return check_password_hash(self.senha_hash, senha)
+
+
+class FeedbackTopico(db.Model):
+    __tablename__ = "feedback_topicos"
+
+    id = db.Column(db.Integer, primary_key=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
+    uvis_usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=False, index=True)
+    uvis_nome = db.Column(db.String(100), nullable=False, index=True)
+    regiao = db.Column(db.String(50), nullable=True, index=True)
+
+    criado_por_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=False, index=True)
+    criado_por_nome = db.Column(db.String(100), nullable=False)
+    criado_por_tipo = db.Column(db.String(20), nullable=True, index=True)
+
+    titulo = db.Column(db.String(180), nullable=False, index=True)
+    descricao = db.Column(db.Text, nullable=False)
+    categoria = db.Column(db.String(30), nullable=False, default="sugestao", index=True)
+    status = db.Column(db.String(30), nullable=False, default="aberto", index=True)
+    prioridade = db.Column(db.String(20), nullable=False, default="media", index=True)
+
+    responsavel_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=True, index=True)
+    resolvido_em = db.Column(db.DateTime, nullable=True, index=True)
+    criado_em = db.Column(db.DateTime, nullable=False, default=datetime.now, index=True)
+    atualizado_em = db.Column(db.DateTime, nullable=False, default=datetime.now, onupdate=datetime.now, index=True)
+
+    prefeitura = db.relationship("Prefeitura", lazy="joined")
+    uvis_usuario = db.relationship("Usuario", foreign_keys=[uvis_usuario_id], back_populates="feedbacks_da_uvis", lazy="joined")
+    criado_por = db.relationship("Usuario", foreign_keys=[criado_por_id], back_populates="feedbacks_criados", lazy="joined")
+    responsavel = db.relationship("Usuario", foreign_keys=[responsavel_id], lazy="joined")
+    comentarios = db.relationship(
+        "FeedbackComentario",
+        back_populates="topico",
+        cascade="all, delete-orphan",
+        lazy="select",
+        order_by="FeedbackComentario.criado_em.asc()",
+    )
+
+    __table_args__ = (
+        db.Index("ix_feedback_topicos_scope", "prefeitura_id", "regiao", "uvis_usuario_id"),
+        db.Index("ix_feedback_topicos_status_updated", "status", "atualizado_em"),
+    )
+
+
+class FeedbackComentario(db.Model):
+    __tablename__ = "feedback_comentarios"
+
+    id = db.Column(db.Integer, primary_key=True)
+    topico_id = db.Column(db.Integer, db.ForeignKey("feedback_topicos.id"), nullable=False, index=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=False, index=True)
+    usuario_nome = db.Column(db.String(100), nullable=False)
+    usuario_tipo = db.Column(db.String(20), nullable=True, index=True)
+    mensagem = db.Column(db.Text, nullable=False)
+    interno = db.Column(db.Boolean, nullable=False, default=False, index=True)
+    criado_em = db.Column(db.DateTime, nullable=False, default=datetime.now, index=True)
+
+    topico = db.relationship("FeedbackTopico", back_populates="comentarios", lazy="joined")
+    usuario = db.relationship("Usuario", lazy="joined")
+    anexos = db.relationship(
+        "FeedbackComentarioAnexo",
+        back_populates="comentario",
+        cascade="all, delete-orphan",
+        lazy="select",
+        order_by="FeedbackComentarioAnexo.id.asc()",
+    )
+
+
+class FeedbackComentarioAnexo(db.Model):
+    __tablename__ = "feedback_comentario_anexos"
+
+    id = db.Column(db.Integer, primary_key=True)
+    comentario_id = db.Column(db.Integer, db.ForeignKey("feedback_comentarios.id"), nullable=False, index=True)
+    arquivo_path = db.Column(db.String(255), nullable=False)
+    arquivo_nome = db.Column(db.String(255), nullable=False)
+    mime_type = db.Column(db.String(120), nullable=True)
+    tamanho_bytes = db.Column(db.Integer, nullable=True)
+    criado_em = db.Column(db.DateTime, nullable=False, default=datetime.now, index=True)
+
+    comentario = db.relationship("FeedbackComentario", back_populates="anexos", lazy="joined")
 
 # -------------------------------------------------------------
 # EQUIPE UVIS (até 5 pessoas por UVIS)

@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/feedback.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 feedback-page" style="max-width: 1220px;">
+  <div class="feedback-header mb-4">
+    <div>
+      <span class="feedback-kicker">Feedback #{{ topico.id }}</span>
+      <h2 class="mb-1">{{ topico.titulo }}</h2>
+      <div class="feedback-meta mt-2">
+        <span><i class="bi bi-building"></i>{{ topico.uvis_nome }}</span>
+        <span><i class="bi bi-geo-alt"></i>{{ topico.regiao or "Sem regiao" }}</span>
+        <span><i class="bi bi-clock"></i>{{ topico.criado_em.strftime("%d/%m/%Y %H:%M") if topico.criado_em else "" }}</span>
+      </div>
+    </div>
+    <a href="{{ url_for('main.feedback_listar') }}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+  </div>
+
+  <div class="feedback-detail-grid">
+    <main class="feedback-thread">
+      <section class="feedback-chat-shell">
+        <div class="feedback-chat-header">
+          <div>
+            <h5><i class="bi bi-chat-dots-fill me-2"></i>Conversa</h5>
+            <span>{{ comentarios|length + 1 }} mensagens</span>
+          </div>
+          <div class="feedback-detail-badges">
+            <span class="feedback-status feedback-status-{{ topico.status }}">{{ status_labels.get(topico.status, topico.status) }}</span>
+            <span class="feedback-pill">{{ category_labels.get(topico.categoria, topico.categoria) }}</span>
+            <span class="feedback-priority feedback-priority-{{ topico.prioridade }}">{{ priority_labels.get(topico.prioridade, topico.prioridade) }}</span>
+          </div>
+        </div>
+
+        <div class="feedback-chat-stream mb-4">
+          <div class="feedback-message {% if topico.criado_por_id == current_user.id %}is-self{% else %}is-other{% endif %}">
+            <div class="feedback-message-avatar">
+              <i class="bi bi-megaphone-fill"></i>
+            </div>
+            <div class="feedback-message-bubble feedback-message-topic">
+              <div class="feedback-message-head">
+                <strong>{{ topico.criado_por_nome }}</strong>
+                <span>{{ topico.criado_em.strftime("%d/%m/%Y %H:%M") if topico.criado_em else "" }}</span>
+                <span class="feedback-message-role">Abertura</span>
+              </div>
+              <p>{{ topico.descricao }}</p>
+            </div>
+          </div>
+
+          {% for comentario in comentarios %}
+          {% set is_self = comentario.usuario_id == current_user.id %}
+          {% set can_manage_comment = can_moderate or is_self %}
+          <div class="feedback-message {% if is_self %}is-self{% else %}is-other{% endif %} {% if comentario.interno %}is-internal{% endif %}">
+            <div class="feedback-message-avatar">
+              <i class="bi {% if comentario.interno %}bi-lock-fill{% else %}bi-person-fill{% endif %}"></i>
+            </div>
+            <div class="feedback-message-bubble">
+              <div class="feedback-message-head">
+                <strong>{{ comentario.usuario_nome }}</strong>
+                <span>{{ comentario.criado_em.strftime("%d/%m/%Y %H:%M") if comentario.criado_em else "" }}</span>
+                {% if comentario.interno %}
+                <span class="feedback-internal-badge">Interno</span>
+                {% endif %}
+                {% if can_manage_comment %}
+                <div class="feedback-message-actions ms-auto">
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-light feedback-action-btn"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#feedback-edit-{{ comentario.id }}"
+                    aria-expanded="false"
+                    aria-controls="feedback-edit-{{ comentario.id }}"
+                    title="Editar comentario"
+                  >
+                    <i class="bi bi-pencil-square"></i>
+                  </button>
+                  <form method="POST" action="{{ url_for('main.feedback_comentario_apagar', topico_id=topico.id, comment_id=comentario.id) }}" class="form-deletar m-0">
+                    <button type="submit" class="btn btn-sm btn-light feedback-action-btn" title="Apagar comentario">
+                      <i class="bi bi-trash3"></i>
+                    </button>
+                  </form>
+                </div>
+                {% endif %}
+              </div>
+
+              {% if comentario.mensagem %}
+              <p>{{ comentario.mensagem }}</p>
+              {% endif %}
+
+              {% if comentario.anexos %}
+              <div class="feedback-comment-gallery">
+                {% for anexo in comentario.anexos %}
+                <a href="{{ url_for('main.feedback_anexo', anexo_id=anexo.id) }}" target="_blank" rel="noopener" class="feedback-comment-image-link">
+                  <img src="{{ url_for('main.feedback_anexo', anexo_id=anexo.id) }}" alt="{{ anexo.arquivo_nome }}" class="feedback-comment-image">
+                </a>
+                {% endfor %}
+              </div>
+              {% endif %}
+
+              {% if can_manage_comment %}
+              <div class="collapse mt-3" id="feedback-edit-{{ comentario.id }}">
+                <form method="POST" action="{{ url_for('main.feedback_comentario_editar', topico_id=topico.id, comment_id=comentario.id) }}" class="feedback-inline-edit">
+                  <textarea name="mensagem" rows="3" class="form-control mb-2" placeholder="Edite a mensagem aqui.">{{ comentario.mensagem }}</textarea>
+                  <div class="d-flex justify-content-end gap-2 flex-wrap">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" data-bs-target="#feedback-edit-{{ comentario.id }}">
+                      <i class="bi bi-x-lg"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary btn-sm">
+                      <i class="bi bi-check2"></i> Salvar
+                    </button>
+                  </div>
+                </form>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          {% else %}
+          <div class="feedback-empty compact">
+            <i class="bi bi-chat-square"></i>
+            <p class="mb-0">Nenhuma resposta ainda. A conversa comeca quando alguem comentar.</p>
+          </div>
+          {% endfor %}
+        </div>
+
+        <div class="feedback-composer card shadow-sm border-0">
+          <div class="card-body p-4">
+            <div class="feedback-composer-head">
+              <div>
+                <h5 class="mb-1">Nova mensagem</h5>
+                <span>Responda com texto, imagem ou os dois.</span>
+              </div>
+            </div>
+            <form method="POST" action="{{ url_for('main.feedback_comentar', topico_id=topico.id) }}" enctype="multipart/form-data">
+              <textarea name="mensagem" rows="4" class="form-control mb-3" placeholder="Escreva sua mensagem aqui."></textarea>
+              <div class="mb-3">
+                <label class="form-label" for="feedback-imagens">Imagens do comentario</label>
+                <input
+                  id="feedback-imagens"
+                  type="file"
+                  name="imagens"
+                  class="form-control"
+                  accept=".png,.jpg,.jpeg,image/png,image/jpeg"
+                  multiple
+                >
+                <div class="feedback-upload-hint">Voce pode enviar ate {{ max_images_per_comment }} imagens PNG ou JPG por comentario.</div>
+              </div>
+              <div class="d-flex justify-content-between gap-2 flex-wrap align-items-center">
+                {% if can_moderate %}
+                <label class="feedback-check">
+                  <input type="checkbox" name="interno" value="1">
+                  <span>Nota interna</span>
+                </label>
+                {% else %}
+                <span class="feedback-upload-hint">Mensagens visiveis no historico da UVIS.</span>
+                {% endif %}
+                <button type="submit" class="btn btn-success text-white">
+                  <i class="bi bi-send"></i> Enviar mensagem
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <aside class="feedback-side-panel">
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body p-4">
+          <h5 class="mb-3">Resumo</h5>
+          <dl class="feedback-summary">
+            <div>
+              <dt>UVIS</dt>
+              <dd>{{ topico.uvis_nome }}</dd>
+            </div>
+            <div>
+              <dt>Regiao</dt>
+              <dd>{{ topico.regiao or "-" }}</dd>
+            </div>
+            <div>
+              <dt>Criado por</dt>
+              <dd>{{ topico.criado_por_nome }}</dd>
+            </div>
+            <div>
+              <dt>Responsavel</dt>
+              <dd>{{ topico.responsavel.nome_uvis if topico.responsavel else "-" }}</dd>
+            </div>
+            <div>
+              <dt>Atualizado</dt>
+              <dd>{{ topico.atualizado_em.strftime("%d/%m/%Y %H:%M") if topico.atualizado_em else "-" }}</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+
+      {% if can_moderate %}
+      <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+          <h5 class="mb-3">Tratativa</h5>
+          <form method="POST" action="{{ url_for('main.feedback_atualizar', topico_id=topico.id) }}">
+            <div class="mb-3">
+              <label class="form-label" for="feedback-status">Status</label>
+              <select id="feedback-status" name="status" class="form-select">
+                {% for key, label in status_options %}
+                <option value="{{ key }}" {% if topico.status == key %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="feedback-prioridade">Prioridade</label>
+              <select id="feedback-prioridade" name="prioridade" class="form-select">
+                {% for key, label in priority_options %}
+                <option value="{{ key }}" {% if topico.prioridade == key %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            {% if can_view_all %}
+            <div class="mb-3">
+              <label class="form-label" for="feedback-responsavel">Responsavel</label>
+              <select id="feedback-responsavel" name="responsavel_id" class="form-select">
+                <option value="">Sem responsavel</option>
+                {% for usuario in responsaveis %}
+                <option value="{{ usuario.id }}" {% if topico.responsavel_id == usuario.id %}selected{% endif %}>{{ usuario.nome_uvis }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            {% endif %}
+            <div class="mb-3">
+              <label class="form-label" for="feedback-mensagem-status">Mensagem da atualizacao</label>
+              <textarea id="feedback-mensagem-status" name="mensagem_status" rows="4" class="form-control"></textarea>
+            </div>
+            <label class="feedback-check mb-3">
+              <input type="checkbox" name="mensagem_interna" value="1">
+              <span>Registrar como nota interna</span>
+            </label>
+            <button type="submit" class="btn btn-primary w-100 justify-content-center">
+              <i class="bi bi-check2-circle"></i> Salvar tratativa
+            </button>
+          </form>
+        </div>
+      </div>
+      {% endif %}
+    </aside>
+  </div>
+</div>
+{% endblock %}

@@ -951,6 +951,29 @@
           {% endif %}
           {% endif %}
 
+          {% if not is_agro_context and current_user.tipo_usuario in ['dev', 'admin'] %}
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint in ['main.feedback_listar', 'main.feedback_novo', 'main.feedback_detalhe'] %}active{% endif %}"
+              href="{{ url_for('main.feedback_listar') }}"
+            >
+              <i class="bi bi-chat-square-heart-fill me-2"></i><span>Feedback</span>
+            </a>
+          </li>
+          {% elif not is_agro_context and current_user.tipo_usuario in ['regional', 'uvis', 'equipe_uvis'] %}
+          <li class="nav-item">
+            <span
+              class="nav-link disabled feedback-placeholder-link"
+              aria-disabled="true"
+              title="Funcionalidade em desenvolvimento"
+            >
+              <span class="feedback-placeholder-main">
+                <i class="bi bi-chat-square-heart-fill me-2"></i><span>Feedback</span>
+              </span>
+              <small class="feedback-placeholder-note">Em desenvolvimento</small>
+            </span>
+          </li>
+          {% endif %}
           <div class="sidebar-footer mt-auto p-3 text-center">
             <div id="install-container" style="display: none">
               <button
