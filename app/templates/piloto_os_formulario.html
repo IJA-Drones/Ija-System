@@ -1869,10 +1869,40 @@ document.addEventListener("DOMContentLoaded", () => {
     if (videoInput) videoInput.disabled = false;
   });
 
+  const parseJsonSafely = (rawText) => {
+    if (!rawText) return {};
+    try {
+      return JSON.parse(rawText);
+    } catch (error) {
+      return {};
+    }
+  };
+
+  const summarizeRawHttpError = (rawText) => {
+    const normalized = String(rawText || "")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (!normalized) return "";
+    return normalized.slice(0, 220);
+  };
+
+  const buildHttpErrorMessage = ({ status, statusText, payload, rawText, fallbackMessage }) => {
+    const explicitMessage = payload?.error || payload?.message;
+    if (explicitMessage) return explicitMessage;
+
+    const statusLabel = status ? `HTTP ${status}${statusText ? ` ${statusText}` : ""}` : "";
+    const summarizedBody = summarizeRawHttpError(rawText);
+    if (statusLabel && summarizedBody) return `${fallbackMessage} (${statusLabel}). Resposta: ${summarizedBody}`;
+    if (statusLabel) return `${fallbackMessage} (${statusLabel}).`;
+    if (summarizedBody) return `${fallbackMessage}. Resposta: ${summarizedBody}`;
+    return fallbackMessage;
+  };
+
   const uploadFileWithProgress = (url, file, onProgress) => new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("PUT", url, true);
-    xhr.responseType = "json";
+    xhr.responseType = "text";
     xhr.timeout = 0;
     xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
     xhr.setRequestHeader("X-File-Name", encodeURIComponent(file.name));
@@ -1886,12 +1916,19 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     xhr.onload = () => {
-      const payload = xhr.response || {};
+      const rawText = typeof xhr.responseText === "string" ? xhr.responseText : "";
+      const payload = parseJsonSafely(rawText);
       if (xhr.status >= 200 && xhr.status < 300 && payload.success) {
         resolve(payload);
         return;
       }
-      reject(new Error(payload.error || "Falha ao enviar o video."));
+      reject(new Error(buildHttpErrorMessage({
+        status: xhr.status,
+        statusText: xhr.statusText,
+        payload,
+        rawText,
+        fallbackMessage: "Falha ao enviar o video",
+      })));
     };
 
     xhr.onerror = () => reject(new Error("Falha de conexao ao enviar o video."));
@@ -2057,8 +2094,9 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       let payload = {};
+      let rawText = "";
       try {
-        payload = await response.json();
+        payload = parseJsonSafely(await response.text());
       } catch (error) {
         payload = {};
       }
@@ -2183,14 +2221,22 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       let payload = {};
+      let rawText = "";
       try {
-        payload = await response.json();
+        rawText = await response.text();
+        payload = parseJsonSafely(rawText);
       } catch (error) {
         payload = {};
       }
 
       if (!response.ok || !payload.success) {
-        throw new Error(payload.error || "Falha ao enviar o vídeo.");
+        throw new Error(buildHttpErrorMessage({
+          status: response.status,
+          statusText: response.statusText,
+          payload,
+          rawText,
+          fallbackMessage: "Falha ao enviar o video",
+        }));
       }
 
       savedVideoCount = 1;
