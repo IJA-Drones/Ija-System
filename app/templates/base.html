@@ -1425,9 +1425,15 @@
               }
 
               videoUploadMissingPolls = 0;
-              setGlobalVideoUploadProgress(payload.progress, payload.message, payload.status, payload.media_url);
+              const displayMessage = payload.status === "error"
+                  ? (payload.error || payload.message || "Nao foi possivel concluir o upload do video.")
+                  : payload.message;
+              setGlobalVideoUploadProgress(payload.progress, displayMessage, payload.status, payload.media_url);
               if (payload.status === "success") {
                   window.dispatchEvent(new CustomEvent("ija:video-upload-complete", { detail: payload }));
+              }
+              if (payload.status === "error") {
+                  window.dispatchEvent(new CustomEvent("ija:video-upload-failed", { detail: payload }));
               }
               if (payload.status === "success" || payload.status === "error") {
                   localStorage.removeItem(videoUploadStorageKey);

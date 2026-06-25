@@ -1860,6 +1860,15 @@ document.addEventListener("DOMContentLoaded", () => {
     applySavedVideoState(payload.media_url, payload.message || "Video anexado com sucesso.", payload.file_name);
   });
 
+  window.addEventListener("ija:video-upload-failed", (event) => {
+    const payload = event.detail || {};
+    if (Number(payload.os_id) !== Number("{{ solicitacao.id }}")) return;
+    setVideoUploadProgress(payload.progress || 0, false);
+    setVideoUploadStatus(payload.error || payload.message || "Falha ao enviar o video.", "error");
+    if (videoUploadButton) videoUploadButton.disabled = false;
+    if (videoInput) videoInput.disabled = false;
+  });
+
   const uploadFileWithProgress = (url, file, onProgress) => new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("PUT", url, true);

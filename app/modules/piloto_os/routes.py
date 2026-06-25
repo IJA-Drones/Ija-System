@@ -669,11 +669,34 @@ def _create_video_upload_job(*, os_id, user_id, file_name, original_name, conten
             "status": "queued",
             "progress": 0,
             "message": "Video recebido. Aguardando envio para o Skybox.",
+            "error": None,
             "media_url": None,
             "created_at": now,
             "updated_at": now,
         }
     return job_id
+
+
+def _format_video_upload_error_message(exc):
+    if isinstance(exc, requests.Timeout):
+        return "Tempo limite ao enviar o video para o armazenamento remoto."
+    if isinstance(exc, requests.RequestException):
+        raw_message = str(exc).strip()
+        return f"Falha de conexao com o armazenamento remoto. {raw_message}" if raw_message else (
+            "Falha de conexao com o armazenamento remoto."
+        )
+    if isinstance(exc, SQLAlchemyError):
+        return "O video foi enviado, mas houve falha ao atualizar o registro da OS no banco."
+    if isinstance(exc, OSError):
+        raw_message = str(exc).strip()
+        return f"Falha ao ler o arquivo temporario do video. {raw_message}" if raw_message else (
+            "Falha ao ler o arquivo temporario do video."
+        )
+
+    raw_message = str(exc).strip()
+    if raw_message:
+        return raw_message[:500]
+    return "Nao foi possivel concluir o envio do video."
 
 
 def _save_video_request_to_temp(file_name):
@@ -771,6 +794,7 @@ def _run_video_upload_job(app, job_id):
                 status="uploading",
                 progress=1,
                 message="Enviando video para o Skybox em segundo plano.",
+                error=None,
             )
 
             _base_url, auth = _webdav_config()
@@ -820,13 +844,17 @@ def _run_video_upload_job(app, job_id):
                 timeout=_webdav_timeout(),
             )
             if response.status_code not in (200, 201, 204):
+                response_excerpt = (response.text or "").strip().replace("\n", " ")[:500]
                 current_app.logger.warning(
                     "Falha no upload de video background da OS %s: status=%s body=%s",
                     os_id,
                     response.status_code,
-                    response.text[:500],
+                    response_excerpt,
                 )
-                raise RuntimeError("Falha ao enviar video para o Skybox.")
+                detailed_message = f"Falha ao enviar video para o Skybox (HTTP {response.status_code})."
+                if response_excerpt:
+                    detailed_message = f"{detailed_message} Resposta: {response_excerpt}"
+                raise RuntimeError(detailed_message)
 
             _set_video_upload_job(job_id, progress=97, message="Atualizando registro da OS.")
             ordem, _error_response = _get_or_create_ordem_for_upload({"solicitacao": Solicitacao.query.get(os_id)}, lock=True)
@@ -840,15 +868,18 @@ def _run_video_upload_job(app, job_id):
                 status="success",
                 progress=100,
                 message="Video enviado com sucesso.",
+                error=None,
                 media_url=f"/os/{os_id}/video",
             )
-        except Exception:
+        except Exception as exc:
             db.session.rollback()
             current_app.logger.exception("Erro no upload de video em background da OS %s.", os_id)
+            error_message = _format_video_upload_error_message(exc)
             _set_video_upload_job(
                 job_id,
                 status="error",
-                message="Nao foi possivel concluir o envio do video.",
+                message=error_message,
+                error=error_message,
             )
         finally:
             try:
@@ -1323,6 +1354,7 @@ def register_routes(bp):
             "status": job["status"],
             "progress": int(job.get("progress") or 0),
             "message": job.get("message") or "",
+            "error": job.get("error"),
             "os_id": job.get("os_id"),
             "file_name": job.get("file_name"),
             "media_url": job.get("media_url"),
