@@ -1484,7 +1484,7 @@
                       </button>
                       <span class="os-media-help" id="statusUploadVideo">Aguardando seleção.</span>
                     </div>
-                    <div class="os-media-help mt-2">Formatos aceitos: MP4, MOV, WEBM, M4V e LRF/DJI. Videos DJI em H.264 ou H.265/HEVC podem ser enviados para o WebDAV.</div>
+                    <div class="os-media-help mt-2">Formatos aceitos: MP4, MOV, WEBM, M4V e LRF/DJI. O servidor converte o video para MP4 antes de enviar ao WebDAV.</div>
                   </div>
                   {% endif %}
                 </div>
@@ -1899,6 +1899,22 @@ document.addEventListener("DOMContentLoaded", () => {
     return fallbackMessage;
   };
 
+  const MAX_VIDEO_UPLOAD_BYTES = 95 * 1024 * 1024;
+
+  const formatFileSize = (bytes) => {
+    const value = Number(bytes) || 0;
+    if (value < 1024 * 1024) return `${Math.max(1, Math.round(value / 1024))} KB`;
+    return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const validateVideoFileBeforeUpload = (file) => {
+    if (!file) return "Selecione um video antes de enviar.";
+    if (file.size > MAX_VIDEO_UPLOAD_BYTES) {
+      return `O video tem ${formatFileSize(file.size)} e excede o limite de upload atual do Cloudflare. Envie um arquivo com ate ${formatFileSize(MAX_VIDEO_UPLOAD_BYTES)} ou compacte o video antes do envio.`;
+    }
+    return "";
+  };
+
   const uploadFileWithProgress = (url, file, onProgress) => new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("PUT", url, true);
@@ -2189,6 +2205,18 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
+      const validationMessage = validateVideoFileBeforeUpload(file);
+      if (validationMessage) {
+        if (videoInput) videoInput.value = "";
+        videoPending.classList.add("d-none");
+        if (videoSavedWrapper) videoSavedWrapper.classList.remove("d-none");
+        if (videoSavedActions) videoSavedActions.classList.remove("d-none");
+        if (!videoSavedWrapper && videoEmpty) videoEmpty.classList.remove("d-none");
+        setVideoUploadStatus(validationMessage, "error");
+        updateBadges();
+        return;
+      }
+
       setText(videoPreviewNome, file.name);
       setVideoUploadStatus("Arquivo pronto para envio.", "idle");
       videoPending.classList.remove("d-none");
@@ -2201,8 +2229,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const uploadVideoStream = async () => {
     const file = videoInput?.files && videoInput.files[0];
-    if (!file) {
-      setVideoUploadStatus("Selecione um vídeo antes de enviar.", "error");
+    const validationMessage = validateVideoFileBeforeUpload(file);
+    if (validationMessage) {
+      setVideoUploadStatus(validationMessage, "error");
       return;
     }
 
@@ -2262,8 +2291,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const uploadVideoStreamWithProgress = async () => {
     const file = videoInput?.files && videoInput.files[0];
-    if (!file) {
-      setVideoUploadStatus("Selecione um video antes de enviar.", "error");
+    const validationMessage = validateVideoFileBeforeUpload(file);
+    if (validationMessage) {
+      setVideoUploadStatus(validationMessage, "error");
       return;
     }
 

@@ -51,6 +51,7 @@ WEBDAV_MARKER_PREFIX = "webdav://"
 DEFAULT_WEBDAV_CONNECT_TIMEOUT_SECONDS = 30
 DEFAULT_WEBDAV_TRANSFER_TIMEOUT_SECONDS = 3600
 DEFAULT_WEBDAV_UPLOAD_CHUNK_SIZE_BYTES = 1024 * 1024
+DEFAULT_VIDEO_CONVERSION_TIMEOUT_SECONDS = 7200
 MEDIA_STORAGE_UNAVAILABLE_MESSAGE = (
     "Nao foi possivel acessar o armazenamento de midias agora. "
     "Tente novamente em instantes."
@@ -186,6 +187,13 @@ def _webdav_upload_chunk_size():
     return _setting_int(
         "WEBDAV_UPLOAD_CHUNK_SIZE_BYTES",
         DEFAULT_WEBDAV_UPLOAD_CHUNK_SIZE_BYTES,
+    )
+
+
+def _video_conversion_timeout_seconds():
+    return _setting_int(
+        "VIDEO_CONVERSION_TIMEOUT_SECONDS",
+        DEFAULT_VIDEO_CONVERSION_TIMEOUT_SECONDS,
     )
 
 
@@ -728,6 +736,76 @@ def _file_contains_bytes(path, needle, *, chunk_size=1024 * 1024):
     return False
 
 
+def _ffmpeg_path():
+    configured = (_setting("FFMPEG_PATH") or "").strip()
+    if configured:
+        return configured
+    return shutil.which("ffmpeg")
+
+
+def _converted_video_file_name(file_name):
+    base_name = os.path.splitext(str(file_name or ""))[0]
+    return f"{base_name}.mp4"
+
+
+def _convert_video_to_mp4(source_path, target_path):
+    ffmpeg_path = _ffmpeg_path()
+    if not ffmpeg_path:
+        raise RuntimeError(
+            "Conversao de video indisponivel: ffmpeg nao foi encontrado no servidor."
+        )
+
+    command = [
+        ffmpeg_path,
+        "-y",
+        "-i",
+        source_path,
+        "-c:v",
+        "libx264",
+        "-preset",
+        "veryfast",
+        "-crf",
+        "23",
+        "-pix_fmt",
+        "yuv420p",
+        "-movflags",
+        "+faststart",
+        "-c:a",
+        "aac",
+        "-b:a",
+        "128k",
+        target_path,
+    ]
+
+    try:
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            timeout=_video_conversion_timeout_seconds(),
+            check=False,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(
+            "Tempo limite ao converter o video para MP4 no servidor."
+        ) from exc
+    except OSError as exc:
+        raise RuntimeError(
+            f"Falha ao iniciar a conversao do video para MP4. {exc}"
+        ) from exc
+
+    if result.returncode != 0 or not os.path.isfile(target_path):
+        ffmpeg_output = (result.stderr or result.stdout or "").strip().replace("\n", " ")
+        if ffmpeg_output:
+            ffmpeg_output = ffmpeg_output[:500]
+            raise RuntimeError(
+                f"Falha ao converter o video para MP4. ffmpeg: {ffmpeg_output}"
+            )
+        raise RuntimeError("Falha ao converter o video para MP4.")
+
+    return target_path
+
+
 def _validate_uploaded_video_file(temp_path, file_name):
     extension_error = _validate_video_upload_extension(file_name)
     if extension_error:
@@ -783,18 +861,35 @@ def _run_video_upload_job(app, job_id):
 
         temp_path = job["temp_path"]
         os_id = job["os_id"]
-        file_name = job["file_name"]
-        file_remote_path = build_os_video_remote_path(os_id, file_name)
-        file_url = _webdav_url_for_remote_path(file_remote_path)
-        total_bytes = max(1, int(job.get("total_bytes") or os.path.getsize(temp_path) or 1))
+        original_file_name = job["file_name"]
+        converted_temp_path = os.path.join(
+            _video_upload_jobs_dir(),
+            f"{uuid.uuid4().hex}_{_converted_video_file_name(original_file_name)}",
+        )
+        upload_source_path = temp_path
+        file_name = original_file_name
 
         try:
             _set_video_upload_job(
                 job_id,
                 status="uploading",
-                progress=1,
-                message="Enviando video para o Skybox em segundo plano.",
+                progress=2,
+                message="Convertendo video para MP4 no servidor.",
                 error=None,
+            )
+
+            _convert_video_to_mp4(temp_path, converted_temp_path)
+            upload_source_path = converted_temp_path
+            file_name = _converted_video_file_name(original_file_name)
+            file_remote_path = build_os_video_remote_path(os_id, file_name)
+            file_url = _webdav_url_for_remote_path(file_remote_path)
+            total_bytes = max(1, int(os.path.getsize(upload_source_path) or 1))
+
+            _set_video_upload_job(
+                job_id,
+                progress=12,
+                message="Video convertido para MP4. Enviando para o Skybox.",
+                file_name=file_name,
             )
 
             _base_url, auth = _webdav_config()
@@ -816,13 +911,13 @@ def _run_video_upload_job(app, job_id):
             class ProgressFileStream:
                 def __iter__(self):
                     nonlocal uploaded_bytes
-                    with open(temp_path, "rb") as video_file:
+                    with open(upload_source_path, "rb") as video_file:
                         while True:
                             chunk = video_file.read(VIDEO_BACKGROUND_UPLOAD_CHUNK_SIZE_BYTES)
                             if not chunk:
                                 break
                             uploaded_bytes += len(chunk)
-                            progress = min(95, max(1, int((uploaded_bytes / total_bytes) * 95)))
+                            progress = min(95, max(12, 12 + int((uploaded_bytes / total_bytes) * 83)))
                             _set_video_upload_job(
                                 job_id,
                                 progress=progress,
@@ -887,6 +982,15 @@ def _run_video_upload_job(app, job_id):
                     os.remove(temp_path)
             except OSError:
                 current_app.logger.info("Falha ignorada ao remover temporario de video %s.", temp_path, exc_info=True)
+            try:
+                if converted_temp_path and os.path.isfile(converted_temp_path):
+                    os.remove(converted_temp_path)
+            except OSError:
+                current_app.logger.info(
+                    "Falha ignorada ao remover temporario convertido de video %s.",
+                    converted_temp_path,
+                    exc_info=True,
+                )
 
 
 def _get_or_create_ordem_for_upload(context, *, lock=False):
