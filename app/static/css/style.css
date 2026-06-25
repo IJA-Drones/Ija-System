@@ -532,6 +532,27 @@ body.dark-mode.agro-mode .admin-context-badge {
   border-left: 4px solid var(--color-accent);
 }
 
+.feedback-placeholder-link {
+  align-items: flex-start !important;
+  flex-direction: column;
+  gap: 0.15rem;
+  line-height: 1.15;
+  white-space: normal;
+}
+
+.feedback-placeholder-main {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.feedback-placeholder-note {
+  padding-left: 1.9rem;
+  color: var(--color-text-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
 /* --- Sidebar Footer & Collapsed State --- */
 body.sidebar-collapsed .sidebar-footer .sidebar-text {
   display: none;
@@ -567,6 +588,10 @@ body.sidebar-collapsed .app-sidebar .nav-link {
 }
 
 body.sidebar-collapsed .app-sidebar .nav-link span {
+  display: none;
+}
+
+body.sidebar-collapsed .app-sidebar .feedback-placeholder-note {
   display: none;
 }
 

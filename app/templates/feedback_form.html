@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/feedback.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 feedback-page" style="max-width: 980px;">
+  <div class="feedback-header mb-4">
+    <div>
+      <span class="feedback-kicker">Novo registro</span>
+      <h2 class="mb-1"><i class="bi bi-send-fill me-2 text-primary"></i>Enviar feedback</h2>
+      <p class="text-muted small mb-0">O registro fica vinculado a UVIS e a regiao do login selecionado.</p>
+    </div>
+    <a href="{{ url_for('main.feedback_listar') }}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+  </div>
+
+  <form method="POST" action="{{ url_for('main.feedback_novo') }}" class="feedback-form-shell" novalidate>
+    <div class="feedback-form-main">
+      <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+          <div class="row g-3">
+            <div class="col-12">
+              <label for="feedback-uvis" class="form-label">UVIS</label>
+              {% if owner %}
+              <input type="hidden" name="uvis_id" value="{{ owner.id }}">
+              <input id="feedback-uvis" class="form-control" value="{{ owner.nome_uvis }}{% if owner.regiao %} - {{ owner.regiao }}{% endif %}" readonly>
+              {% else %}
+              <select id="feedback-uvis" name="uvis_id" class="form-select {% if errors.get('uvis_id') %}is-invalid{% endif %}" required>
+                <option value="">Selecione</option>
+                {% for uvis in uvis_options %}
+                <option value="{{ uvis.id }}" {% if form.uvis_id == uvis.id %}selected{% endif %}>{{ uvis.nome_uvis }}{% if uvis.regiao %} - {{ uvis.regiao }}{% endif %}</option>
+                {% endfor %}
+              </select>
+              {% if errors.get('uvis_id') %}<div class="invalid-feedback">{{ errors.uvis_id }}</div>{% endif %}
+              {% endif %}
+            </div>
+
+            <div class="col-12">
+              <label for="feedback-titulo" class="form-label">Titulo</label>
+              <input id="feedback-titulo" name="titulo" class="form-control {% if errors.get('titulo') %}is-invalid{% endif %}" value="{{ form.titulo }}" maxlength="180" required>
+              {% if errors.get('titulo') %}<div class="invalid-feedback">{{ errors.titulo }}</div>{% endif %}
+            </div>
+
+            <div class="col-md-6">
+              <label for="feedback-categoria" class="form-label">Categoria</label>
+              <select id="feedback-categoria" name="categoria" class="form-select {% if errors.get('categoria') %}is-invalid{% endif %}">
+                {% for key, label in category_options %}
+                <option value="{{ key }}" {% if form.categoria == key %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+              {% if errors.get('categoria') %}<div class="invalid-feedback">{{ errors.categoria }}</div>{% endif %}
+            </div>
+
+            <div class="col-md-6">
+              <label for="feedback-prioridade" class="form-label">Prioridade percebida</label>
+              <select id="feedback-prioridade" name="prioridade" class="form-select {% if errors.get('prioridade') %}is-invalid{% endif %}">
+                {% for key, label in priority_options %}
+                <option value="{{ key }}" {% if form.prioridade == key %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+              {% if errors.get('prioridade') %}<div class="invalid-feedback">{{ errors.prioridade }}</div>{% endif %}
+            </div>
+
+            <div class="col-12">
+              <label for="feedback-descricao" class="form-label">Descricao</label>
+              <textarea id="feedback-descricao" name="descricao" rows="8" class="form-control {% if errors.get('descricao') %}is-invalid{% endif %}" required>{{ form.descricao }}</textarea>
+              {% if errors.get('descricao') %}<div class="invalid-feedback">{{ errors.descricao }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="card-footer bg-transparent border-0 p-4 pt-0 d-flex justify-content-end gap-2 flex-wrap">
+          <a href="{{ url_for('main.feedback_listar') }}" class="btn btn-outline-danger">
+            <i class="bi bi-x-lg"></i> Cancelar
+          </a>
+          <button type="submit" class="btn btn-success text-white">
+            <i class="bi bi-send"></i> Enviar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <aside class="feedback-form-aside">
+      <div class="feedback-info-panel">
+        <span class="feedback-info-icon"><i class="bi bi-shield-check"></i></span>
+        <h5>Escopo</h5>
+        <p>{% if owner %}{{ owner.nome_uvis }}{% else %}Fila regional ou administrativa{% endif %}</p>
+      </div>
+      <div class="feedback-info-panel">
+        <span class="feedback-info-icon"><i class="bi bi-clock-history"></i></span>
+        <h5>Registro</h5>
+        <p>Feedback institucional com conversa e tratativa.</p>
+      </div>
+    </aside>
+  </form>
+</div>
+{% endblock %}
