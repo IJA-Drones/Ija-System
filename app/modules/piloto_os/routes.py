@@ -431,8 +431,8 @@ def _media_error_response(message=MEDIA_UNEXPECTED_ERROR_MESSAGE, status=500):
     return jsonify({"success": False, "error": message}), status
 
 
-def _build_stream_upload_file_name(os_id, media_prefix):
-    encoded_name = (request.headers.get("X-File-Name") or "").strip()
+def _build_stream_upload_file_name(os_id, media_prefix, *, encoded_name=None, content_type=None):
+    encoded_name = (encoded_name if encoded_name is not None else request.headers.get("X-File-Name") or "").strip()
     if not encoded_name:
         return None
 
@@ -443,7 +443,7 @@ def _build_stream_upload_file_name(os_id, media_prefix):
 
     _root, extension = os.path.splitext(original_file_name)
     if not extension:
-        extension = mimetypes.guess_extension(request.headers.get("Content-Type") or "") or ""
+        extension = mimetypes.guess_extension(content_type or request.headers.get("Content-Type") or "") or ""
 
     safe_prefix = secure_filename(str(media_prefix or "arquivo")).strip("_") or "arquivo"
     stamp = datetime.now().strftime("%Y%m%d%H%M%S%f")
@@ -610,23 +610,61 @@ def _video_upload_jobs_dir():
     return path
 
 
+def _video_upload_job_meta_path(job_id):
+    return os.path.join(_video_upload_jobs_dir(), f"{job_id}.json")
+
+
+def _video_upload_sessions_dir():
+    path = os.path.join(current_app.instance_path, "video_upload_sessions")
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
+def _video_upload_session_dir(session_id):
+    path = os.path.join(_video_upload_sessions_dir(), session_id)
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
+def _video_upload_session_meta_path(session_id):
+    return os.path.join(_video_upload_session_dir(session_id), "session.json")
+
+
+def _write_json_file(path, payload):
+    temp_path = f"{path}.tmp"
+    with open(temp_path, "w", encoding="utf-8") as handle:
+        json.dump(payload, handle, ensure_ascii=True)
+    os.replace(temp_path, path)
+
+
+def _read_json_file(path):
+    if not os.path.isfile(path):
+        return None
+    with open(path, "r", encoding="utf-8") as handle:
+        return json.load(handle)
+
+
 def _now_epoch():
     return time.time()
 
 
 def _set_video_upload_job(job_id, **updates):
     with VIDEO_BACKGROUND_UPLOAD_LOCK:
-        job = VIDEO_BACKGROUND_UPLOAD_JOBS.get(job_id)
+        job = VIDEO_BACKGROUND_UPLOAD_JOBS.get(job_id) or _read_json_file(_video_upload_job_meta_path(job_id))
         if not job:
             return None
         job.update(updates)
         job["updated_at"] = _now_epoch()
+        VIDEO_BACKGROUND_UPLOAD_JOBS[job_id] = job
+        _write_json_file(_video_upload_job_meta_path(job_id), job)
         return dict(job)
 
 
 def _get_video_upload_job(job_id):
     with VIDEO_BACKGROUND_UPLOAD_LOCK:
-        job = VIDEO_BACKGROUND_UPLOAD_JOBS.get(job_id)
+        job = _read_json_file(_video_upload_job_meta_path(job_id)) or VIDEO_BACKGROUND_UPLOAD_JOBS.get(job_id)
+        if job:
+            VIDEO_BACKGROUND_UPLOAD_JOBS[job_id] = job
         return dict(job) if job else None
 
 
@@ -661,7 +699,17 @@ def _build_video_upload_status_from_os(os_id):
     }
 
 
-def _create_video_upload_job(*, os_id, user_id, file_name, original_name, content_type, temp_path, total_bytes):
+def _create_video_upload_job(
+    *,
+    os_id,
+    user_id,
+    file_name,
+    original_name,
+    content_type,
+    temp_path,
+    total_bytes,
+    source_session_id=None,
+):
     job_id = uuid.uuid4().hex
     now = _now_epoch()
     with VIDEO_BACKGROUND_UPLOAD_LOCK:
@@ -674,6 +722,7 @@ def _create_video_upload_job(*, os_id, user_id, file_name, original_name, conten
             "content_type": content_type,
             "temp_path": temp_path,
             "total_bytes": total_bytes,
+            "source_session_id": source_session_id,
             "status": "queued",
             "progress": 0,
             "message": "Video recebido. Aguardando envio para o Skybox.",
@@ -682,6 +731,7 @@ def _create_video_upload_job(*, os_id, user_id, file_name, original_name, conten
             "created_at": now,
             "updated_at": now,
         }
+        _write_json_file(_video_upload_job_meta_path(job_id), VIDEO_BACKGROUND_UPLOAD_JOBS[job_id])
     return job_id
 
 
@@ -705,6 +755,91 @@ def _format_video_upload_error_message(exc):
     if raw_message:
         return raw_message[:500]
     return "Nao foi possivel concluir o envio do video."
+
+
+def _video_upload_chunk_file_path(session_id, chunk_index):
+    return os.path.join(_video_upload_session_dir(session_id), f"chunk_{int(chunk_index):06d}.part")
+
+
+def _get_video_upload_session(session_id):
+    with VIDEO_BACKGROUND_UPLOAD_LOCK:
+        return _read_json_file(_video_upload_session_meta_path(session_id))
+
+
+def _set_video_upload_session(session_id, **updates):
+    with VIDEO_BACKGROUND_UPLOAD_LOCK:
+        session = _read_json_file(_video_upload_session_meta_path(session_id))
+        if not session:
+            return None
+        session.update(updates)
+        session["updated_at"] = _now_epoch()
+        _write_json_file(_video_upload_session_meta_path(session_id), session)
+        return dict(session)
+
+
+def _create_video_upload_session(*, os_id, user_id, file_name, original_name, content_type, total_bytes, total_chunks):
+    session_id = uuid.uuid4().hex
+    now = _now_epoch()
+    session_dir = _video_upload_session_dir(session_id)
+    payload = {
+        "id": session_id,
+        "os_id": os_id,
+        "user_id": user_id,
+        "file_name": file_name,
+        "original_name": original_name,
+        "content_type": content_type,
+        "total_bytes": int(total_bytes or 0),
+        "total_chunks": int(total_chunks or 0),
+        "uploaded_bytes": 0,
+        "received_chunks": [],
+        "chunk_sizes": {},
+        "session_dir": session_dir,
+        "status": "receiving",
+        "created_at": now,
+        "updated_at": now,
+    }
+    with VIDEO_BACKGROUND_UPLOAD_LOCK:
+        _write_json_file(_video_upload_session_meta_path(session_id), payload)
+    return payload
+
+
+def _delete_video_upload_session(session_id):
+    session_dir = os.path.join(_video_upload_sessions_dir(), session_id)
+    try:
+        if os.path.isdir(session_dir):
+            shutil.rmtree(session_dir)
+    except OSError:
+        current_app.logger.info("Falha ignorada ao remover sessao de upload de video %s.", session_id, exc_info=True)
+
+
+def _save_video_chunk_request(session_id, chunk_index):
+    chunk_path = _video_upload_chunk_file_path(session_id, chunk_index)
+    total_bytes = 0
+    chunk_size = max(64 * 1024, _webdav_upload_chunk_size())
+    with open(chunk_path, "wb") as temp_file:
+        while True:
+            chunk = request.stream.read(chunk_size)
+            if not chunk:
+                break
+            temp_file.write(chunk)
+            total_bytes += len(chunk)
+    return chunk_path, total_bytes
+
+
+def _assemble_video_upload_session(session):
+    session_id = session["id"]
+    assembled_path = os.path.join(
+        _video_upload_jobs_dir(),
+        f"{uuid.uuid4().hex}_{session['file_name']}",
+    )
+    with open(assembled_path, "wb") as destination:
+        for chunk_index in range(int(session["total_chunks"])):
+            chunk_path = _video_upload_chunk_file_path(session_id, chunk_index)
+            if not os.path.isfile(chunk_path):
+                raise RuntimeError(f"Chunk {chunk_index + 1} do video nao foi recebido.")
+            with open(chunk_path, "rb") as source:
+                shutil.copyfileobj(source, destination, length=1024 * 1024)
+    return assembled_path
 
 
 def _save_video_request_to_temp(file_name):
@@ -861,6 +996,7 @@ def _run_video_upload_job(app, job_id):
 
         temp_path = job["temp_path"]
         os_id = job["os_id"]
+        source_session_id = job.get("source_session_id")
         original_file_name = job["file_name"]
         converted_temp_path = os.path.join(
             _video_upload_jobs_dir(),
@@ -991,6 +1127,8 @@ def _run_video_upload_job(app, job_id):
                     converted_temp_path,
                     exc_info=True,
                 )
+            if source_session_id:
+                _delete_video_upload_session(source_session_id)
 
 
 def _get_or_create_ordem_for_upload(context, *, lock=False):
@@ -1429,6 +1567,197 @@ def register_routes(bp):
             db.session.rollback()
             current_app.logger.exception("Erro ao iniciar upload background de video da OS %s", os_id)
             return _media_error_response()
+
+    @bp.route("/api/os/<int:os_id>/upload-video-background/init", methods=["POST"], endpoint="os_upload_video_background_init")
+    @login_required
+    def os_upload_video_background_init(os_id):
+        try:
+            context = _build_upload_context(os_id)
+            _ordem_existente, error_response = _get_or_create_ordem_for_upload(context)
+            if error_response is not None:
+                return error_response
+            db.session.commit()
+
+            payload = request.get_json(silent=True) or {}
+            original_name = secure_filename(str(payload.get("file_name") or "").strip())
+            content_type = str(payload.get("content_type") or "").strip()
+            total_bytes = int(payload.get("total_bytes") or 0)
+            total_chunks = int(payload.get("total_chunks") or 0)
+
+            file_name = _build_stream_upload_file_name(
+                os_id,
+                "video",
+                encoded_name=quote(original_name) if original_name else "",
+                content_type=content_type,
+            )
+            if not file_name:
+                return _media_error_response("Nome do arquivo de video ausente ou invalido.", 400)
+            if total_bytes <= 0:
+                return _media_error_response("Arquivo de video vazio ou invalido.", 400)
+            if total_chunks <= 0:
+                return _media_error_response("Quantidade de partes do video invalida.", 400)
+
+            validation_error = _validate_video_upload_extension(file_name)
+            if validation_error:
+                return _media_error_response(validation_error, 400)
+
+            session = _create_video_upload_session(
+                os_id=os_id,
+                user_id=getattr(current_user, "id", None),
+                file_name=file_name,
+                original_name=original_name or file_name,
+                content_type=_media_content_type(file_name, content_type),
+                total_bytes=total_bytes,
+                total_chunks=total_chunks,
+            )
+            return jsonify({
+                "success": True,
+                "session_id": session["id"],
+                "os_id": os_id,
+                "file_name": file_name,
+                "message": "Sessao de upload de video iniciada.",
+            }), 201
+        except (TypeError, ValueError):
+            db.session.rollback()
+            return _media_error_response("Metadados do upload de video invalidos.", 400)
+        except RuntimeError:
+            db.session.rollback()
+            current_app.logger.exception("Configuracao de armazenamento indisponivel ao iniciar upload em partes da OS %s", os_id)
+            return _media_error_response(MEDIA_STORAGE_UNAVAILABLE_MESSAGE, 500)
+        except SQLAlchemyError:
+            db.session.rollback()
+            current_app.logger.exception("Erro de banco ao iniciar upload em partes da OS %s", os_id)
+            return _media_error_response(MEDIA_DATABASE_ERROR_MESSAGE, 500)
+        except HTTPException:
+            raise
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("Erro ao iniciar sessao de upload em partes da OS %s", os_id)
+            return _media_error_response()
+
+    @bp.route("/api/video-upload-sessions/<session_id>/chunks/<int:chunk_index>", methods=["PUT"], endpoint="video_upload_session_chunk")
+    @login_required
+    def video_upload_session_chunk(session_id, chunk_index):
+        session = _get_video_upload_session(session_id)
+        if not session:
+            return _media_error_response("Sessao de upload de video nao encontrada.", 404)
+
+        current_user_id = getattr(current_user, "id", None)
+        if session.get("user_id") != current_user_id and getattr(current_user, "tipo_usuario", None) not in ADMIN_PANEL_VIEW_TYPES:
+            abort(403)
+
+        total_chunks = int(session.get("total_chunks") or 0)
+        if chunk_index < 0 or chunk_index >= total_chunks:
+            return _media_error_response("Parte do video fora do intervalo esperado.", 400)
+
+        chunk_path = None
+        try:
+            chunk_path, chunk_bytes = _save_video_chunk_request(session_id, chunk_index)
+            if chunk_bytes <= 0:
+                if chunk_path and os.path.isfile(chunk_path):
+                    os.remove(chunk_path)
+                return _media_error_response("Parte do video vazia ou invalida.", 400)
+
+            expected_chunk_bytes = request.content_length
+            if expected_chunk_bytes is not None and int(expected_chunk_bytes) != int(chunk_bytes):
+                if chunk_path and os.path.isfile(chunk_path):
+                    os.remove(chunk_path)
+                return _media_error_response("O envio de uma das partes do video foi interrompido. Tente novamente.", 400)
+
+            chunk_sizes = dict(session.get("chunk_sizes") or {})
+            previously_uploaded = int(chunk_sizes.get(str(chunk_index)) or 0)
+            chunk_sizes[str(chunk_index)] = chunk_bytes
+            received_chunks = sorted({int(item) for item in (session.get("received_chunks") or [])} | {chunk_index})
+            uploaded_bytes = max(0, int(session.get("uploaded_bytes") or 0) - previously_uploaded + chunk_bytes)
+            updated_session = _set_video_upload_session(
+                session_id,
+                chunk_sizes=chunk_sizes,
+                received_chunks=received_chunks,
+                uploaded_bytes=uploaded_bytes,
+                status="receiving",
+            )
+            progress = 0
+            if updated_session and int(updated_session.get("total_bytes") or 0) > 0:
+                progress = min(100, int((uploaded_bytes / int(updated_session["total_bytes"])) * 100))
+
+            return jsonify({
+                "success": True,
+                "session_id": session_id,
+                "chunk_index": chunk_index,
+                "uploaded_bytes": uploaded_bytes,
+                "progress": progress,
+                "message": f"Parte {chunk_index + 1} de {total_chunks} recebida.",
+            })
+        except HTTPException:
+            raise
+        except Exception:
+            current_app.logger.exception("Erro ao receber chunk %s da sessao %s.", chunk_index, session_id)
+            return _media_error_response("Nao foi possivel receber uma das partes do video.", 500)
+
+    @bp.route("/api/video-upload-sessions/<session_id>/complete", methods=["POST"], endpoint="video_upload_session_complete")
+    @login_required
+    def video_upload_session_complete(session_id):
+        session = _get_video_upload_session(session_id)
+        if not session:
+            return _media_error_response("Sessao de upload de video nao encontrada.", 404)
+
+        current_user_id = getattr(current_user, "id", None)
+        if session.get("user_id") != current_user_id and getattr(current_user, "tipo_usuario", None) not in ADMIN_PANEL_VIEW_TYPES:
+            abort(403)
+
+        try:
+            expected_chunks = list(range(int(session.get("total_chunks") or 0)))
+            received_chunks = sorted(int(item) for item in (session.get("received_chunks") or []))
+            if received_chunks != expected_chunks:
+                return _media_error_response("Ainda faltam partes do video para concluir o upload.", 400)
+
+            temp_path = _assemble_video_upload_session(session)
+            total_bytes = int(os.path.getsize(temp_path) or 0)
+            if total_bytes <= 0:
+                if os.path.isfile(temp_path):
+                    os.remove(temp_path)
+                return _media_error_response("Arquivo de video montado vazio ou invalido.", 400)
+
+            validation_error = _validate_uploaded_video_file(temp_path, session["file_name"])
+            if validation_error:
+                if os.path.isfile(temp_path):
+                    os.remove(temp_path)
+                return _media_error_response(validation_error, 400)
+
+            _set_video_upload_session(session_id, status="assembled", uploaded_bytes=total_bytes)
+
+            job_id = _create_video_upload_job(
+                os_id=int(session["os_id"]),
+                user_id=session.get("user_id"),
+                file_name=session["file_name"],
+                original_name=session.get("original_name") or session["file_name"],
+                content_type=session.get("content_type"),
+                temp_path=temp_path,
+                total_bytes=total_bytes,
+                source_session_id=session_id,
+            )
+            VIDEO_BACKGROUND_UPLOAD_EXECUTOR.submit(
+                _run_video_upload_job,
+                current_app._get_current_object(),
+                job_id,
+            )
+
+            return jsonify({
+                "success": True,
+                "message": "Video recebido por partes. O processamento continuara em segundo plano.",
+                "job_id": job_id,
+                "os_id": int(session["os_id"]),
+                "file_name": session["file_name"],
+                "progress": 100,
+            }), 202
+        except RuntimeError as exc:
+            current_app.logger.exception("Erro ao finalizar upload em partes da sessao %s.", session_id)
+            return _media_error_response(str(exc) or MEDIA_UNEXPECTED_ERROR_MESSAGE, 400)
+        except HTTPException:
+            raise
+        except Exception:
+            current_app.logger.exception("Erro ao finalizar upload em partes da sessao %s.", session_id)
+            return _media_error_response("Nao foi possivel concluir a montagem do video.", 500)
 
     @bp.route("/api/video-upload-jobs/<job_id>", methods=["GET"], endpoint="video_upload_job_status")
     @login_required

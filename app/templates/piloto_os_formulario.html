@@ -1484,7 +1484,7 @@
                       </button>
                       <span class="os-media-help" id="statusUploadVideo">Aguardando seleção.</span>
                     </div>
-                    <div class="os-media-help mt-2">Formatos aceitos: MP4, MOV, WEBM, M4V e LRF/DJI. O servidor converte o video para MP4 antes de enviar ao WebDAV.</div>
+                    <div class="os-media-help mt-2">Formatos aceitos: MP4, MOV, WEBM, M4V e LRF/DJI. O upload do video e enviado em partes e o servidor converte para MP4 antes de enviar ao WebDAV.</div>
                   </div>
                   {% endif %}
                 </div>
@@ -1899,7 +1899,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return fallbackMessage;
   };
 
-  const MAX_VIDEO_UPLOAD_BYTES = 95 * 1024 * 1024;
+  const VIDEO_UPLOAD_CHUNK_BYTES = 8 * 1024 * 1024;
 
   const formatFileSize = (bytes) => {
     const value = Number(bytes) || 0;
@@ -1909,10 +1909,90 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const validateVideoFileBeforeUpload = (file) => {
     if (!file) return "Selecione um video antes de enviar.";
-    if (file.size > MAX_VIDEO_UPLOAD_BYTES) {
-      return `O video tem ${formatFileSize(file.size)} e excede o limite de upload atual do Cloudflare. Envie um arquivo com ate ${formatFileSize(MAX_VIDEO_UPLOAD_BYTES)} ou compacte o video antes do envio.`;
-    }
     return "";
+  };
+
+  const getCsrfToken = () => document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || "";
+
+  const uploadBlobChunkWithProgress = (url, blob, onProgress) => new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", url, true);
+    xhr.responseType = "text";
+    xhr.timeout = 0;
+    xhr.setRequestHeader("Content-Type", blob.type || "application/octet-stream");
+
+    const csrfToken = getCsrfToken();
+    if (csrfToken) xhr.setRequestHeader("X-CSRFToken", csrfToken);
+
+    xhr.upload.onprogress = (event) => {
+      if (!event.lengthComputable) return;
+      onProgress(event.loaded, event.total);
+    };
+
+    xhr.onload = () => {
+      const rawText = typeof xhr.responseText === "string" ? xhr.responseText : "";
+      const payload = parseJsonSafely(rawText);
+      if (xhr.status >= 200 && xhr.status < 300 && payload.success) {
+        resolve(payload);
+        return;
+      }
+      reject(new Error(buildHttpErrorMessage({
+        status: xhr.status,
+        statusText: xhr.statusText,
+        payload,
+        rawText,
+        fallbackMessage: "Falha ao enviar uma das partes do video",
+      })));
+    };
+
+    xhr.onerror = () => reject(new Error("Falha de conexao ao enviar uma das partes do video."));
+    xhr.ontimeout = () => reject(new Error("Tempo limite ao enviar uma das partes do video."));
+    xhr.send(blob);
+  });
+
+  const parseFetchResponse = async (response, fallbackMessage) => {
+    const rawText = await response.text();
+    const payload = parseJsonSafely(rawText);
+    if (!response.ok || !payload.success) {
+      throw new Error(buildHttpErrorMessage({
+        status: response.status,
+        statusText: response.statusText,
+        payload,
+        rawText,
+        fallbackMessage,
+      }));
+    }
+    return payload;
+  };
+
+  const createVideoUploadSession = async (file) => {
+    const totalChunks = Math.max(1, Math.ceil(file.size / VIDEO_UPLOAD_CHUNK_BYTES));
+    const response = await fetch("{{ url_for('main.os_upload_video_background_init', os_id=solicitacao.id) }}", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": getCsrfToken(),
+      },
+      body: JSON.stringify({
+        file_name: file.name,
+        content_type: file.type || "application/octet-stream",
+        total_bytes: file.size,
+        total_chunks: totalChunks,
+      }),
+    });
+    const payload = await parseFetchResponse(response, "Falha ao iniciar o upload do video");
+    return { ...payload, totalChunks };
+  };
+
+  const finalizeVideoUploadSession = async (sessionId) => {
+    const response = await fetch(`/api/video-upload-sessions/${encodeURIComponent(sessionId)}/complete`, {
+      method: "POST",
+      headers: {
+        "Accept": "application/json",
+        "X-CSRFToken": getCsrfToken(),
+      },
+    });
+    return parseFetchResponse(response, "Falha ao concluir o upload do video");
   };
 
   const uploadFileWithProgress = (url, file, onProgress) => new Promise((resolve, reject) => {
@@ -2300,17 +2380,38 @@ document.addEventListener("DOMContentLoaded", () => {
     if (videoUploadButton) videoUploadButton.disabled = true;
     if (videoInput) videoInput.disabled = true;
     setVideoUploadProgress(0, true);
-    setVideoUploadStatus("Enviando video... 0%", "loading");
+    setVideoUploadStatus(`Preparando upload em partes (${formatFileSize(file.size)})... 0%`, "loading");
 
     try {
-      const payload = await uploadFileWithProgress("{{ url_for('main.os_upload_video_background', os_id=solicitacao.id) }}", file, (percent) => {
-        const normalized = Math.max(0, Math.min(100, Math.round(percent || 0)));
-        setVideoUploadProgress(normalized, true);
-        setVideoUploadStatus(
-          normalized >= 100 ? "Video recebido. Iniciando envio em segundo plano..." : `Enviando video para o servidor... ${normalized}%`,
-          "loading"
+      const sessionPayload = await createVideoUploadSession(file);
+      const totalChunks = Number(sessionPayload.totalChunks || Math.ceil(file.size / VIDEO_UPLOAD_CHUNK_BYTES));
+      let uploadedBytes = 0;
+
+      for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex += 1) {
+        const start = chunkIndex * VIDEO_UPLOAD_CHUNK_BYTES;
+        const end = Math.min(file.size, start + VIDEO_UPLOAD_CHUNK_BYTES);
+        const chunkBlob = file.slice(start, end);
+        await uploadBlobChunkWithProgress(
+          `/api/video-upload-sessions/${encodeURIComponent(sessionPayload.session_id)}/chunks/${chunkIndex}`,
+          chunkBlob,
+          (loadedBytes) => {
+            const currentTotal = uploadedBytes + loadedBytes;
+            const normalized = Math.max(0, Math.min(99, Math.round((currentTotal / file.size) * 100)));
+            setVideoUploadProgress(normalized, true);
+            setVideoUploadStatus(
+              `Enviando video em partes (${chunkIndex + 1}/${totalChunks})... ${normalized}%`,
+              "loading"
+            );
+          }
         );
-      });
+        uploadedBytes += chunkBlob.size;
+        const committedPercent = Math.max(0, Math.min(99, Math.round((uploadedBytes / file.size) * 100)));
+        setVideoUploadProgress(committedPercent, true);
+      }
+
+      setVideoUploadStatus("Todas as partes foram recebidas. Montando video no servidor...", "loading");
+      setVideoUploadProgress(99, true);
+      const payload = await finalizeVideoUploadSession(sessionPayload.session_id);
 
       setVideoUploadProgress(100, true);
       setVideoUploadStatus(payload.message || "Video recebido. O envio continuara em segundo plano.", "success");
