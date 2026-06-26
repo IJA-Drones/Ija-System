@@ -15,7 +15,7 @@ concurrency:
 jobs:
   check-and-redeploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 6
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -23,8 +23,12 @@ jobs:
       - name: Check app and trigger Render deploy hook if needed
         env:
           WATCHDOG_HEALTH_URL: ${{ vars.WATCHDOG_HEALTH_URL || 'https://www.ijadrones.com.br/healthz' }}
+          WATCHDOG_EVENT_URL: ${{ vars.WATCHDOG_EVENT_URL || 'https://www.ijadrones.com.br/api/watchdog/deploy-events' }}
           RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          WATCHDOG_EVENT_TOKEN: ${{ secrets.WATCHDOG_EVENT_TOKEN }}
           WATCHDOG_RETRIES: "3"
           WATCHDOG_RETRY_DELAY_SECONDS: "20"
           WATCHDOG_TIMEOUT_SECONDS: "10"
+          WATCHDOG_RECOVERY_RETRIES: "45"
+          WATCHDOG_RECOVERY_DELAY_SECONDS: "10"
         run: python scripts/render_watchdog.py

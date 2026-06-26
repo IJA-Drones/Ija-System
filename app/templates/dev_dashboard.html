@@ -50,7 +50,7 @@
 
   .dev-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 1rem;
   }
 
@@ -364,6 +364,23 @@
         <div class="dev-metric-label">Rotas registradas</div>
         <div class="dev-metric-value" id="metricRouteCount">{{ metrics.route_count }}</div>
         <div class="small text-muted"><span id="metricServerErrors7d">{{ metrics.server_errors_7d }}</span> erro(s) 5xx / 7 dias</div>
+      </div>
+    </div>
+    <div class="card dev-metric">
+      <div class="card-body">
+        <div class="dev-metric-label">Redeploys watchdog / 7d</div>
+        <div class="dev-metric-value text-info" id="metricWatchdogDeploys7d">{{ watchdog.deploys_7d }}</div>
+        <div class="small text-muted">
+          <span id="metricWatchdogDeploys24h">{{ watchdog.deploys_24h }}</span> / 24h |
+          <span id="metricWatchdogDeploysTotal">{{ watchdog.deploys_total }}</span> total
+        </div>
+        <div class="small text-muted" id="metricWatchdogLastDeploy">
+          {% if watchdog.last_event %}
+            Ultimo: {{ brazil_datetime(watchdog.last_event.criado_em).strftime('%d/%m/%Y %H:%M') if watchdog.last_event.criado_em else '-' }}
+          {% else %}
+            Nenhum acionamento registrado
+          {% endif %}
+        </div>
       </div>
     </div>
   </section>
@@ -818,6 +835,15 @@
       setText("metricActiveUsers24h", payload.metrics.active_users_24h);
       setText("metricRouteCount", payload.metrics.route_count);
       setText("metricServerErrors7d", payload.metrics.server_errors_7d);
+      setText("metricWatchdogDeploys7d", payload.watchdog.deploys_7d);
+      setText("metricWatchdogDeploys24h", payload.watchdog.deploys_24h);
+      setText("metricWatchdogDeploysTotal", payload.watchdog.deploys_total);
+      setText(
+        "metricWatchdogLastDeploy",
+        payload.watchdog.last_event
+          ? `Ultimo: ${formatDateTime(payload.watchdog.last_event.created_at)}`
+          : "Nenhum acionamento registrado"
+      );
       setText("devGeneratedAt", formatDateTime(payload.generated_at));
       setText("devRefreshStatus", `Atualizado ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`);
 

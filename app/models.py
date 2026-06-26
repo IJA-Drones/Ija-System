@@ -250,6 +250,21 @@ class AuditoriaUsuario(db.Model):
 # - 1 linha por membro
 # - limite 5 via ordem 1..5 (CheckConstraint) + UniqueConstraint(uvis_usuario_id, ordem)
 # -------------------------------------------------------------
+class WatchdogDeployEvent(db.Model):
+    __tablename__ = "watchdog_deploy_events"
+
+    id = db.Column(db.Integer, primary_key=True)
+    event_id = db.Column(db.String(64), nullable=False, unique=True, index=True)
+    status = db.Column(db.String(30), nullable=False, default="redeploy_triggered", index=True)
+    source = db.Column(db.String(60), nullable=True, index=True)
+    health_url = db.Column(db.String(255), nullable=True)
+    failures = db.Column(db.Integer, nullable=False, default=0)
+    attempts = db.Column(db.Integer, nullable=False, default=0)
+    started_at = db.Column(db.DateTime, nullable=True, index=True)
+    recovered_at = db.Column(db.DateTime, nullable=True, index=True)
+    criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+
+
 class EquipeUvis(db.Model):
     __tablename__ = "equipe_uvis"
 

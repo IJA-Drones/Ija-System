@@ -7,7 +7,7 @@ from flask_login import current_user
 from sqlalchemy import func, text
 
 from app.extensions import db
-from app.models import AuditoriaUsuario, Usuario
+from app.models import AuditoriaUsuario, Usuario, WatchdogDeployEvent
 
 
 def _check_item(name, status, detail, severity="success"):
@@ -105,6 +105,73 @@ def _serialize_top_error(item):
     }
 
 
+def _parse_iso_datetime(value):
+    if not value:
+        return None
+    normalized = str(value).strip()
+    if normalized.endswith("Z"):
+        normalized = f"{normalized[:-1]}+00:00"
+    try:
+        parsed = datetime.fromisoformat(normalized)
+    except ValueError:
+        return None
+    if parsed.tzinfo is not None:
+        parsed = parsed.astimezone().replace(tzinfo=None)
+    return parsed
+
+
+def _serialize_watchdog_event(event):
+    if not event:
+        return None
+    return {
+        "id": event.id,
+        "event_id": event.event_id,
+        "status": event.status,
+        "source": event.source,
+        "health_url": event.health_url,
+        "failures": event.failures,
+        "attempts": event.attempts,
+        "started_at": _serialize_datetime(event.started_at),
+        "recovered_at": _serialize_datetime(event.recovered_at),
+        "created_at": _serialize_datetime(event.criado_em),
+    }
+
+
+def _watchdog_deploy_metrics(since_24h, since_7d):
+    base_query = WatchdogDeployEvent.query
+    last_event = base_query.order_by(WatchdogDeployEvent.criado_em.desc()).first()
+    return {
+        "total": base_query.count(),
+        "last_24h": base_query.filter(WatchdogDeployEvent.criado_em >= since_24h).count(),
+        "last_7d": base_query.filter(WatchdogDeployEvent.criado_em >= since_7d).count(),
+        "last_event": last_event,
+    }
+
+
+def record_watchdog_deploy_event(payload):
+    event_id = str(payload.get("event_id") or "").strip()
+    if not event_id:
+        return None, "event_id ausente."
+
+    existing = WatchdogDeployEvent.query.filter_by(event_id=event_id).first()
+    if existing:
+        return existing, None
+
+    event = WatchdogDeployEvent(
+        event_id=event_id[:64],
+        status=(str(payload.get("status") or "redeploy_triggered").strip() or "redeploy_triggered")[:30],
+        source=(str(payload.get("source") or "github-actions").strip() or None),
+        health_url=(str(payload.get("health_url") or "").strip() or None),
+        failures=max(0, int(payload.get("failures") or 0)),
+        attempts=max(0, int(payload.get("attempts") or 0)),
+        started_at=_parse_iso_datetime(payload.get("started_at")),
+        recovered_at=_parse_iso_datetime(payload.get("recovered_at")),
+    )
+    db.session.add(event)
+    db.session.commit()
+    return event, None
+
+
 def _failure_timeline(since_24h):
     logs = (
         AuditoriaUsuario.query.with_entities(AuditoriaUsuario.criado_em)
@@ -142,6 +209,7 @@ def _diagnostic_snapshot(context):
         f"Dev: {context['dev_profile']['name']} ({context['dev_profile']['type'] or '-'})",
         f"Ações 24h: {metrics['audited_24h']} | Erros 24h: {metrics['errors_24h']} ({metrics['error_rate']}%)",
         f"Erros 5xx/7d: {metrics['server_errors_7d']} | Usuários ativos/24h: {metrics['active_users_24h']}",
+        f"Redeploys watchdog: {metrics['watchdog_deploys_7d']}/7d | {metrics['watchdog_deploys_24h']}/24h | {metrics['watchdog_deploys_total']} total",
         f"Checks OK: {metrics['healthy_checks']}/{metrics['total_checks']} | Google Maps: {maps_status}",
         f"Runtime: Python {runtime['python']} | Banco {runtime['database']} | Debug {'ativo' if runtime['debug'] else 'off'}",
         f"Plataforma: {runtime['platform']}",
@@ -249,6 +317,7 @@ def _base_dev_dashboard_context():
     )
     healthy_checks = sum(1 for item in checks if item["severity"] == "success")
     current_user_activity = _current_user_activity(since_24h, since_7d)
+    watchdog_metrics = _watchdog_deploy_metrics(since_24h, since_7d)
 
     alerts = []
     if server_errors_7d:
@@ -310,6 +379,15 @@ def _base_dev_dashboard_context():
             "active_users_24h": active_users_24h,
             "healthy_checks": healthy_checks,
             "total_checks": len(checks),
+            "watchdog_deploys_total": watchdog_metrics["total"],
+            "watchdog_deploys_24h": watchdog_metrics["last_24h"],
+            "watchdog_deploys_7d": watchdog_metrics["last_7d"],
+        },
+        "watchdog": {
+            "deploys_total": watchdog_metrics["total"],
+            "deploys_24h": watchdog_metrics["last_24h"],
+            "deploys_7d": watchdog_metrics["last_7d"],
+            "last_event": watchdog_metrics["last_event"],
         },
         "runtime": {
             "python": platform.python_version(),
@@ -334,6 +412,10 @@ def build_dev_dashboard_payload():
         "checks": context["checks"],
         "alerts": context["alerts"],
         "metrics": context["metrics"],
+        "watchdog": {
+            **context["watchdog"],
+            "last_event": _serialize_watchdog_event(context["watchdog"]["last_event"]),
+        },
         "runtime": context["runtime"],
         "dev_profile": {
             **context["dev_profile"],
