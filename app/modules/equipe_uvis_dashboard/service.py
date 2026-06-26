@@ -360,6 +360,7 @@ def salvar_equipe_uvis_os_form(user, os_id, form_data):
             retorno_existente.hora_agendamento = retorno_em.time().replace(second=0, microsecond=0)
             retorno_existente.equipe_uvis_nome = solicitacao.equipe_uvis_nome
             retorno_existente.usuario_id = solicitacao.usuario_id
+            retorno_existente.prefeitura_id = solicitacao.prefeitura_id
     elif (
         retorno_existente is not None
         and retorno_existente.gerada_automaticamente
@@ -444,6 +445,7 @@ def _criar_solicitacao_retorno_monitoramento_equipe_uvis(solicitacao_original, r
         equipe_uvis_nome=solicitacao_original.equipe_uvis_nome,
         status="PENDENTE",
         usuario_id=solicitacao_original.usuario_id,
+        prefeitura_id=solicitacao_original.prefeitura_id,
         piloto_id=solicitacao_original.piloto_id,
         equipe_id=solicitacao_original.equipe_id,
         origem_retorno_id=solicitacao_original.id,

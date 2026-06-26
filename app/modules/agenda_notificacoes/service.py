@@ -22,7 +22,16 @@ from app.shared.access import (
 
 
 AGENDA_VIEW_TYPES = {"dev", "admin", "operario", "visualizar", "regional", "prefeitura_admin"}
-AGENDA_EXPORT_TYPES = {"dev", "admin", "operario", "visualizar", "regional", "prefeitura_admin", "uvis"}
+AGENDA_EXPORT_TYPES = {
+    "dev",
+    "admin",
+    "operario",
+    "visualizar",
+    "regional",
+    "prefeitura_admin",
+    "uvis",
+    "equipe_uvis",
+}
 NOTIFICATION_GLOBAL_VIEW_TYPES = {"dev", "admin", "operario", "visualizar", "prefeitura_admin"}
 AGENDA_ROUTE_STATUSES = (
     "APROVADO",
@@ -93,8 +102,22 @@ def is_equipe_oceano_agenda_user(user):
     return getattr(user, "tipo_usuario", None) == EQUIPE_OCEANO_USER_TYPE
 
 
+def is_equipe_uvis_agenda_user(user):
+    return getattr(user, "tipo_usuario", None) == "equipe_uvis"
+
+
+def is_uvis_owner_agenda_user(user):
+    return getattr(user, "tipo_usuario", None) == "uvis" or is_equipe_uvis_agenda_user(user)
+
+
 def is_operational_agenda_user(user):
     return is_piloto_agenda_user(user) or is_equipe_oceano_agenda_user(user)
+
+
+def _agenda_owner_usuario_id(user):
+    if is_equipe_uvis_agenda_user(user):
+        return getattr(user, "equipe_uvis_uvis_usuario_id", None)
+    return getattr(user, "id", None)
 
 
 def current_week_range():
@@ -128,6 +151,12 @@ def _build_piloto_equipes_query(user):
 
 
 def apply_agenda_user_scope(query, user):
+    if is_uvis_owner_agenda_user(user):
+        owner_usuario_id = _agenda_owner_usuario_id(user)
+        if not owner_usuario_id:
+            return query.filter(false())
+        return query.filter(Solicitacao.usuario_id == owner_usuario_id)
+
     query = apply_solicitacao_prefeitura_scope(query, user)
     query = apply_solicitacao_regiao_scope(query, user)
 
@@ -144,7 +173,10 @@ def apply_agenda_user_scope(query, user):
         return query.filter(Solicitacao.equipe_id == equipe_id)
 
     if not can_view_all_agenda(user):
-        return query.filter(Solicitacao.usuario_id == user.id)
+        owner_usuario_id = _agenda_owner_usuario_id(user)
+        if not owner_usuario_id:
+            return query.filter(false())
+        return query.filter(Solicitacao.usuario_id == owner_usuario_id)
 
     return query
 

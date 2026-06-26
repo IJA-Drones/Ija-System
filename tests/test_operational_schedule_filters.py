@@ -84,6 +84,16 @@ class OperationalScheduleFilterTests(unittest.TestCase):
         self.assertEqual(query_args["ano"], 2026)
         self.assertFalse(context["periodo_semanal_fixo"])
 
+    def test_equipe_uvis_agenda_uses_owner_uvis_scope(self):
+        user = SimpleNamespace(
+            id=99,
+            tipo_usuario="equipe_uvis",
+            equipe_uvis_uvis_usuario_id=42,
+        )
+
+        self.assertEqual(agenda_service._agenda_owner_usuario_id(user), 42)
+        self.assertTrue(agenda_service.can_export_agenda(user))
+
 
 if __name__ == "__main__":
     unittest.main()
