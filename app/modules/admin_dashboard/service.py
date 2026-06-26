@@ -423,6 +423,7 @@ def build_admin_export_query(
     )
     query = apply_solicitacao_prefeitura_scope(query, user)
     query = apply_regiao_scope(query, user, Usuario.regiao)
+    query = query.filter(Solicitacao.status != "CANCELADO")
 
     if filtro_status:
         query = query.filter(Solicitacao.status == filtro_status)
@@ -508,8 +509,8 @@ def build_admin_dashboard_export(
         "Data Agendada",
         "Hora",
         "Endereco Completo",
-        "Latitude",
-        "Longitude",
+        "CEP",
+        "Coordenadas",
         "Foco",
         "Tipo Operacao",
         "Tipo Visita",
@@ -551,10 +552,14 @@ def build_admin_dashboard_export(
         endereco_completo = (
             f"{pedido.logradouro or ''}, {pedido.numero or ''} - "
             f"{pedido.bairro or ''} - "
-            f"{(pedido.cidade or '')}/{(pedido.uf or '')} - {pedido.cep or ''}"
+            f"{(pedido.cidade or '')}/{(pedido.uf or '')}"
         )
         if pedido.complemento:
             endereco_completo += f" - {pedido.complemento}"
+
+        coordenadas = ""
+        if pedido.latitude or pedido.longitude:
+            coordenadas = f"{pedido.latitude or ''}, {pedido.longitude or ''}"
 
         data_formatada = ""
         if pedido.data_agendamento:
@@ -571,8 +576,8 @@ def build_admin_dashboard_export(
             data_formatada,
             str(pedido.hora_agendamento or ""),
             endereco_completo,
-            pedido.latitude or "",
-            pedido.longitude or "",
+            pedido.cep or "",
+            coordenadas,
             pedido.foco,
             pedido.tipo_operacao or "",
             pedido.tipo_visita or "",

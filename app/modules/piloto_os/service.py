@@ -715,6 +715,7 @@ def criar_solicitacao_retorno_monitoramento(solicitacao_original, ordem_atual):
         equipe_uvis_nome=solicitacao_original.equipe_uvis_nome,
         status="PENDENTE",
         usuario_id=solicitacao_original.usuario_id,
+        prefeitura_id=solicitacao_original.prefeitura_id,
         piloto_id=solicitacao_original.piloto_id,
         equipe_id=solicitacao_original.equipe_id,
         origem_retorno_id=solicitacao_original.id,
