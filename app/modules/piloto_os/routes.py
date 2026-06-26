@@ -883,6 +883,10 @@ def _converted_video_file_name(file_name):
     return f"{base_name}.mp4"
 
 
+def _video_needs_mp4_conversion(file_name):
+    return os.path.splitext(str(file_name or ""))[1].lower() != ".mp4"
+
+
 def _convert_video_to_mp4(source_path, target_path):
     ffmpeg_path = _ffmpeg_path()
     if not ffmpeg_path:
@@ -1006,17 +1010,29 @@ def _run_video_upload_job(app, job_id):
         file_name = original_file_name
 
         try:
-            _set_video_upload_job(
-                job_id,
-                status="uploading",
-                progress=2,
-                message="Convertendo video para MP4 no servidor.",
-                error=None,
-            )
+            if _video_needs_mp4_conversion(original_file_name):
+                _set_video_upload_job(
+                    job_id,
+                    status="uploading",
+                    progress=2,
+                    message="Convertendo video para MP4 no servidor.",
+                    error=None,
+                )
 
-            _convert_video_to_mp4(temp_path, converted_temp_path)
-            upload_source_path = converted_temp_path
-            file_name = _converted_video_file_name(original_file_name)
+                _convert_video_to_mp4(temp_path, converted_temp_path)
+                upload_source_path = converted_temp_path
+                file_name = _converted_video_file_name(original_file_name)
+                upload_message = "Video convertido para MP4. Enviando para o Skybox."
+            else:
+                _set_video_upload_job(
+                    job_id,
+                    status="uploading",
+                    progress=2,
+                    message="Video MP4 recebido. Enviando para o Skybox.",
+                    error=None,
+                )
+                upload_message = "Video MP4 recebido. Enviando para o Skybox."
+
             file_remote_path = build_os_video_remote_path(os_id, file_name)
             file_url = _webdav_url_for_remote_path(file_remote_path)
             total_bytes = max(1, int(os.path.getsize(upload_source_path) or 1))
@@ -1024,7 +1040,7 @@ def _run_video_upload_job(app, job_id):
             _set_video_upload_job(
                 job_id,
                 progress=12,
-                message="Video convertido para MP4. Enviando para o Skybox.",
+                message=upload_message,
                 file_name=file_name,
             )
 
