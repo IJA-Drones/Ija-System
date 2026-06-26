@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from flask import Flask, g, jsonify, render_template, request
 from flask_login import current_user
 from flask_talisman import Talisman
+from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from whitenoise import WhiteNoise
 
@@ -159,6 +160,35 @@ def create_app():
     login_manager.login_view = "auth.login"
 
     from app.models import AuditoriaUsuario, Usuario
+
+    @app.get("/healthz")
+    def healthz():
+        return jsonify({
+            "status": "ok",
+            "service": "ija-system",
+        })
+
+    @app.get("/healthz/full")
+    def healthz_full():
+        try:
+            db.session.execute(text("SELECT 1"))
+        except SQLAlchemyError:
+            app.logger.exception("Health check completo falhou no banco de dados.")
+            return jsonify({
+                "status": "error",
+                "service": "ija-system",
+                "checks": {
+                    "database": "error",
+                },
+            }), 503
+
+        return jsonify({
+            "status": "ok",
+            "service": "ija-system",
+            "checks": {
+                "database": "ok",
+            },
+        })
 
     @login_manager.user_loader
     def load_user(user_id):

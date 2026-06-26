@@ -1,0 +1,30 @@
+name: Render Watchdog
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: render-watchdog
+  cancel-in-progress: false
+
+jobs:
+  check-and-redeploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check app and trigger Render deploy hook if needed
+        env:
+          WATCHDOG_HEALTH_URL: ${{ vars.WATCHDOG_HEALTH_URL || 'https://www.ijadrones.com.br/healthz' }}
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          WATCHDOG_RETRIES: "3"
+          WATCHDOG_RETRY_DELAY_SECONDS: "20"
+          WATCHDOG_TIMEOUT_SECONDS: "10"
+        run: python scripts/render_watchdog.py
