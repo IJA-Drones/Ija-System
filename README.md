@@ -2,6 +2,8 @@
 
 Sistema web desenvolvido para apoiar a gestão operacional de serviços com drones, reunindo em uma única plataforma fluxos de solicitação, agenda, ordens de serviço, equipes, pilotos, veículos, relatórios, anexos e operações agro.
 
+O sistema é utilizado pela **Oceano Azul** e por **UVIS de São Paulo** como apoio operacional em ações de campo relacionadas ao **combate à dengue**, ajudando a organizar solicitações, agendas, equipes, registros de voo, ordens de serviço e relatórios.
+
 O projeto nasceu para resolver uma dor prática: tirar processos importantes de planilhas, mensagens soltas e controles manuais, levando tudo para um ambiente com login, histórico, filtros, permissão por perfil e dados consultáveis.
 
 > Este repositório representa um sistema real, construído e evoluído a partir de demandas operacionais. A documentação abaixo descreve o que existe no projeto e as principais decisões técnicas por trás dele.
@@ -475,7 +477,7 @@ Para além das telas, este projeto demonstra experiência prática com:
 
 ## Nota de Portfólio
 
-Este não é um projeto de estudo isolado. É um sistema operacional em evolução, com funcionalidades criadas para resolver problemas concretos de organização, rastreabilidade e produtividade.
+Este não é um projeto de estudo isolado. É um sistema operacional em evolução, utilizado em um contexto real pela Oceano Azul e por UVIS de São Paulo no apoio a rotinas de combate à dengue, com funcionalidades criadas para resolver problemas concretos de organização, rastreabilidade e produtividade.
 
 Ao mesmo tempo, ele ainda carrega características naturais de um produto interno em crescimento: alguns módulos cresceram bastante, há pontos que podem ser refinados e a arquitetura continua evoluindo conforme novas demandas aparecem. Essa também é parte importante do aprendizado técnico do projeto.
 
