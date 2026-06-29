@@ -483,4 +483,4 @@ Ao mesmo tempo, ele ainda carrega características naturais de um produto intern
 
 ## Autor
 
-Desenvolvido por Pedro Cruz, com foco em sistemas web, automação de processos operacionais, gestão de dados e ferramentas internas para equipes de campo.
+Desenvolvido por Pedro Cruz e João Pedro, com foco em sistemas web, automação de processos operacionais, gestão de dados e ferramentas internas para equipes de campo.
