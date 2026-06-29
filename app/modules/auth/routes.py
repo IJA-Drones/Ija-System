@@ -8,6 +8,7 @@ from app.modules.auth.service import (
     authenticate_uvis_operacional,
     get_authenticated_redirect_endpoint,
 )
+from app.shared.presence import record_user_presence
 
 
 bp = Blueprint("auth", __name__)
@@ -25,6 +26,7 @@ def login():
         user = authenticate_user(login_form, senha_form)
         if user:
             login_user(user)
+            record_user_presence(user, mark_login=True)
             flash(f"Bem-vindo, {user.nome_uvis}! Login realizado com sucesso.", "success")
             return redirect(url_for(get_authenticated_redirect_endpoint(user)))
 
@@ -53,6 +55,7 @@ def login_uvis_operacional():
         user = authenticate_uvis_operacional(login_form, senha_form)
         if user:
             login_user(user)
+            record_user_presence(user, mark_login=True)
             flash(f"Bem-vindo, {user.nome_uvis}! Acesso operacional UVIS liberado.", "success")
             return redirect(url_for("main.dashboard_equipe_uvis"))
 
@@ -73,6 +76,7 @@ def login_piloto_agro():
         user, error_code = authenticate_piloto_agro(login_form, senha_form)
         if user:
             login_user(user)
+            record_user_presence(user, mark_login=True)
             flash(f"Bem-vindo, {user.nome_uvis}! Login do Agro realizado com sucesso.", "success")
             return redirect(url_for("main.agro_piloto_dashboard"))
 
@@ -87,6 +91,7 @@ def login_piloto_agro():
 @bp.route("/logout")
 @login_required
 def logout():
+    record_user_presence(current_user, mark_logout=True)
     logout_user()
     session.clear()
     flash("Voce saiu do sistema.", "info")

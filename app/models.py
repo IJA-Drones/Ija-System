@@ -98,6 +98,13 @@ class Usuario(UserMixin, db.Model):
 
     # Solicitações criadas por este usuário
     solicitacoes = db.relationship("Solicitacao", back_populates="usuario", lazy="select")
+    presenca = db.relationship(
+        "UsuarioPresenca",
+        back_populates="usuario",
+        uselist=False,
+        cascade="all, delete-orphan",
+        lazy="select",
+    )
 
     vinculos_pilotos = db.relationship(
         "PilotoUvis",
@@ -263,6 +270,29 @@ class WatchdogDeployEvent(db.Model):
     started_at = db.Column(db.DateTime, nullable=True, index=True)
     recovered_at = db.Column(db.DateTime, nullable=True, index=True)
     criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+
+
+class UsuarioPresenca(db.Model):
+    __tablename__ = "usuario_presencas"
+
+    id = db.Column(db.Integer, primary_key=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=False, unique=True, index=True)
+
+    primeiro_acesso_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+    ultimo_acesso_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+    login_em = db.Column(db.DateTime, nullable=True, index=True)
+    logout_em = db.Column(db.DateTime, nullable=True, index=True)
+
+    ultimo_metodo = db.Column(db.String(10), nullable=True)
+    ultimo_endpoint = db.Column(db.String(120), nullable=True, index=True)
+    ultimo_path = db.Column(db.String(255), nullable=False, default="/", index=True)
+    ultimo_query_string = db.Column(db.Text, nullable=True)
+
+    ip = db.Column(db.String(64), nullable=True, index=True)
+    user_agent = db.Column(db.Text, nullable=True)
+    referrer = db.Column(db.String(255), nullable=True)
+
+    usuario = db.relationship("Usuario", back_populates="presenca", lazy="joined")
 
 
 class EquipeUvis(db.Model):

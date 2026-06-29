@@ -160,6 +160,7 @@ def create_app():
     login_manager.login_view = "auth.login"
 
     from app.models import AuditoriaUsuario, Usuario
+    from app.shared.presence import record_user_presence
 
     @app.get("/healthz")
     def healthz():
@@ -202,6 +203,8 @@ def create_app():
     def capture_audit_user():
         if not getattr(current_user, "is_authenticated", False):
             return
+
+        record_user_presence(current_user)
 
         g.audit_user_id = getattr(current_user, "id", None)
         g.audit_user_nome = (

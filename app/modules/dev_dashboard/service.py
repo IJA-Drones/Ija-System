@@ -1,13 +1,20 @@
 import os
 import platform
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from flask import current_app
 from flask_login import current_user
 from sqlalchemy import func, text
 
 from app.extensions import db
-from app.models import AuditoriaUsuario, Usuario, WatchdogDeployEvent
+from app.models import AuditoriaUsuario, Usuario, UsuarioPresenca, WatchdogDeployEvent
+
+
+PRESENCE_ONLINE_WINDOW = timedelta(minutes=5)
+PRESENCE_AWAY_WINDOW = timedelta(minutes=30)
+UTC_TZ = ZoneInfo("UTC")
+BRAZIL_TZ = ZoneInfo("America/Sao_Paulo")
 
 
 def _check_item(name, status, detail, severity="success"):
@@ -77,6 +84,14 @@ def _serialize_datetime(value):
     return value.isoformat()
 
 
+def _format_brazil_datetime(value):
+    if not value:
+        return "-"
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=UTC_TZ)
+    return value.astimezone(BRAZIL_TZ).strftime("%d/%m/%Y %H:%M")
+
+
 def _serialize_error_log(log):
     return {
         "id": log.id,
@@ -134,6 +149,88 @@ def _serialize_watchdog_event(event):
         "started_at": _serialize_datetime(event.started_at),
         "recovered_at": _serialize_datetime(event.recovered_at),
         "created_at": _serialize_datetime(event.criado_em),
+    }
+
+
+def _presence_status(presence, now):
+    logged_out = (
+        presence.logout_em
+        and (not presence.login_em or presence.logout_em >= presence.login_em)
+        and presence.logout_em >= (presence.ultimo_acesso_em - timedelta(seconds=1))
+    )
+    if logged_out:
+        return {
+            "key": "offline",
+            "label": "Offline",
+            "severity": "secondary",
+        }
+
+    if presence.ultimo_acesso_em >= now - PRESENCE_ONLINE_WINDOW:
+        return {
+            "key": "online",
+            "label": "Online",
+            "severity": "success",
+        }
+    if presence.ultimo_acesso_em >= now - PRESENCE_AWAY_WINDOW:
+        return {
+            "key": "away",
+            "label": "Ausente",
+            "severity": "warning",
+        }
+    return {
+        "key": "offline",
+        "label": "Offline",
+        "severity": "secondary",
+    }
+
+
+def _serialize_presence(presence, now):
+    user = presence.usuario
+    status = _presence_status(presence, now)
+    return {
+        "user_id": presence.usuario_id,
+        "name": _display_name(user),
+        "login": getattr(user, "login", None),
+        "type": getattr(user, "tipo_usuario", None),
+        "region": getattr(user, "regiao", None),
+        "prefeitura": getattr(getattr(user, "prefeitura", None), "nome", None),
+        "status": status["key"],
+        "status_label": status["label"],
+        "status_severity": status["severity"],
+        "first_seen_at": _serialize_datetime(presence.primeiro_acesso_em),
+        "last_seen_at": _serialize_datetime(presence.ultimo_acesso_em),
+        "last_seen_label": _format_brazil_datetime(presence.ultimo_acesso_em),
+        "login_at": _serialize_datetime(presence.login_em),
+        "login_label": _format_brazil_datetime(presence.login_em),
+        "logout_at": _serialize_datetime(presence.logout_em),
+        "logout_label": _format_brazil_datetime(presence.logout_em),
+        "method": presence.ultimo_metodo,
+        "endpoint": presence.ultimo_endpoint,
+        "path": presence.ultimo_path,
+        "query_string": presence.ultimo_query_string,
+        "ip": presence.ip,
+        "user_agent": presence.user_agent,
+        "referrer": presence.referrer,
+    }
+
+
+def _user_presence_summary(now):
+    presences = (
+        UsuarioPresenca.query
+        .order_by(UsuarioPresenca.ultimo_acesso_em.desc(), UsuarioPresenca.id.desc())
+        .limit(40)
+        .all()
+    )
+    users = [_serialize_presence(presence, now) for presence in presences]
+    online_count = sum(1 for item in users if item["status"] == "online")
+    away_count = sum(1 for item in users if item["status"] == "away")
+    offline_count = sum(1 for item in users if item["status"] == "offline")
+    return {
+        "users": users,
+        "online_count": online_count,
+        "away_count": away_count,
+        "offline_count": offline_count,
+        "tracked_count": len(users),
     }
 
 
@@ -318,6 +415,7 @@ def _base_dev_dashboard_context():
     healthy_checks = sum(1 for item in checks if item["severity"] == "success")
     current_user_activity = _current_user_activity(since_24h, since_7d)
     watchdog_metrics = _watchdog_deploy_metrics(since_24h, since_7d)
+    presence_summary = _user_presence_summary(now)
 
     alerts = []
     if server_errors_7d:
@@ -377,6 +475,7 @@ def _base_dev_dashboard_context():
             "route_count": route_count,
             "dev_count": dev_count,
             "active_users_24h": active_users_24h,
+            "online_users": presence_summary["online_count"],
             "healthy_checks": healthy_checks,
             "total_checks": len(checks),
             "watchdog_deploys_total": watchdog_metrics["total"],
@@ -389,6 +488,7 @@ def _base_dev_dashboard_context():
             "deploys_7d": watchdog_metrics["last_7d"],
             "last_event": watchdog_metrics["last_event"],
         },
+        "presence": presence_summary,
         "runtime": {
             "python": platform.python_version(),
             "platform": platform.platform(),
@@ -416,6 +516,7 @@ def build_dev_dashboard_payload():
             **context["watchdog"],
             "last_event": _serialize_watchdog_event(context["watchdog"]["last_event"]),
         },
+        "presence": context["presence"],
         "runtime": context["runtime"],
         "dev_profile": {
             **context["dev_profile"],

@@ -9,135 +9,157 @@
   .dev-hero {
     position: relative;
     overflow: hidden;
-    background:
-      linear-gradient(135deg, rgba(15, 23, 42, .98), rgba(17, 100, 102, .94)),
-      linear-gradient(90deg, rgba(242, 140, 40, .32), transparent);
-    color: #fff;
+    border: 1px solid rgba(34, 197, 94, .18);
     border-radius: 8px;
+    background:
+      radial-gradient(circle at 18% 18%, rgba(34, 197, 94, .18), transparent 30%),
+      radial-gradient(circle at 88% 12%, rgba(14, 165, 233, .18), transparent 34%),
+      linear-gradient(135deg, #07111f 0%, #102033 54%, #0f2e31 100%);
+    color: #f8fafc;
+    box-shadow: 0 18px 46px rgba(15, 23, 42, .18);
   }
 
-  .dev-hero-grid {
+  .dev-hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: .14;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, .16) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, .16) 1px, transparent 1px);
+    background-size: 34px 34px;
+  }
+
+  .dev-hero-content {
+    position: relative;
+    z-index: 1;
     display: grid;
-    grid-template-columns: minmax(0, 1.35fr) minmax(300px, .65fr);
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 380px);
     gap: 1.25rem;
     align-items: stretch;
   }
 
-  .dev-hero h1 {
-    font-size: clamp(1.6rem, 2.4vw, 2.45rem);
-    line-height: 1.12;
-  }
-
-  .dev-command-panel {
-    border: 1px solid rgba(255, 255, 255, .18);
-    border-radius: 8px;
-    background: rgba(255, 255, 255, .1);
-    backdrop-filter: blur(10px);
-  }
-
-  .dev-command-item {
-    display: flex;
+  .dev-kicker {
+    display: inline-flex;
     align-items: center;
+    gap: .45rem;
+    border: 1px solid rgba(34, 197, 94, .32);
+    border-radius: 999px;
+    padding: .32rem .68rem;
+    background: rgba(15, 23, 42, .36);
+    color: #bbf7d0;
+    font-size: .75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .dev-title {
+    margin: .95rem 0 .65rem;
+    font-size: clamp(1.8rem, 2.6vw, 2.75rem);
+    font-weight: 800;
+    line-height: 1.08;
+    letter-spacing: 0;
+  }
+
+  .dev-subtitle {
+    max-width: 760px;
+    margin: 0;
+    color: rgba(248, 250, 252, .72);
+  }
+
+  .dev-hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .55rem;
+    margin-top: 1.25rem;
+  }
+
+  .dev-command {
+    border: 1px solid rgba(255, 255, 255, .16);
+    border-radius: 8px;
+    background: rgba(15, 23, 42, .34);
+    backdrop-filter: blur(12px);
+  }
+
+  .dev-command-row {
+    display: flex;
     justify-content: space-between;
     gap: 1rem;
-    padding: .82rem 0;
-    border-bottom: 1px solid rgba(255, 255, 255, .14);
+    padding: .85rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, .12);
   }
 
-  .dev-command-item:last-child {
+  .dev-command-row:last-child {
     border-bottom: 0;
   }
 
   .dev-grid {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 1rem;
+    gap: .9rem;
   }
 
   .dev-card,
   .dev-metric {
     border: 1px solid rgba(15, 23, 42, .08);
     border-radius: 8px;
-    box-shadow: 0 10px 26px rgba(15, 23, 42, .08);
+    box-shadow: 0 14px 34px rgba(15, 23, 42, .07);
   }
 
   .dev-metric .card-body {
-    min-height: 132px;
+    min-height: 128px;
   }
 
-  .dev-metric-label {
+  .dev-label {
     color: #64748b;
     font-size: .72rem;
     font-weight: 800;
     text-transform: uppercase;
   }
 
-  .dev-metric-value {
+  .dev-value {
+    color: #102033;
     font-size: 2rem;
     font-weight: 800;
-    color: #0f172a;
+    line-height: 1.1;
   }
 
-  .dev-map-shell {
-    position: relative;
-    min-height: 360px;
+  .dev-tabs {
+    gap: .4rem;
+    border: 0;
+  }
+
+  .dev-tabs .nav-link {
+    border: 1px solid var(--bs-border-color);
     border-radius: 8px;
-    overflow: hidden;
-    background: #d8e7ea;
-  }
-
-  #devMap {
-    width: 100%;
-    height: 360px;
-  }
-
-  .dev-map-placeholder {
-    position: absolute;
-    inset: 0;
-    display: grid;
-    place-items: center;
-    padding: 1rem;
     color: #475569;
-    text-align: center;
-    background: repeating-linear-gradient(
-      45deg,
-      #e2edf0,
-      #e2edf0 12px,
-      #d7e5e8 12px,
-      #d7e5e8 24px
-    );
+    font-weight: 700;
   }
 
-  .dev-weather-value {
-    font-size: 2.45rem;
-    font-weight: 800;
-    color: #0f172a;
-    line-height: 1;
+  .dev-tabs .nav-link.active {
+    border-color: #0f766e;
+    background: #0f766e;
+    color: #fff;
   }
 
-  .dev-pill-grid {
+  .dev-section-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1.28fr) minmax(320px, .72fr);
+    gap: 1rem;
+  }
+
+  .dev-mini-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: .75rem;
   }
 
-  .dev-pill {
+  .dev-tile {
     border: 1px solid var(--bs-border-color);
     border-radius: 8px;
-    padding: .8rem;
-    min-height: 78px;
-  }
-
-  .dev-checks {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: .85rem;
-  }
-
-  .dev-check {
-    border: 1px solid var(--bs-border-color);
-    border-radius: 8px;
-    padding: 1rem;
+    padding: .85rem;
+    min-height: 82px;
   }
 
   .dev-path {
@@ -145,27 +167,62 @@
     overflow-wrap: anywhere;
   }
 
-  .dev-toolbar {
+  .dev-filter {
+    display: grid;
+    grid-template-columns: minmax(220px, 1fr) 155px;
+    gap: .6rem;
+  }
+
+  .dev-status-dot {
+    display: inline-block;
+    width: .58rem;
+    height: .58rem;
+    border-radius: 50%;
+    margin-right: .36rem;
+    background: #94a3b8;
+  }
+
+  .dev-status-dot.is-online {
+    background: #16a34a;
+    box-shadow: 0 0 0 4px rgba(22, 163, 74, .14);
+  }
+
+  .dev-status-dot.is-away {
+    background: #f59e0b;
+    box-shadow: 0 0 0 4px rgba(245, 158, 11, .14);
+  }
+
+  .dev-check {
     display: flex;
-    flex-wrap: wrap;
-    gap: .5rem;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: .95rem 0;
+    border-bottom: 1px solid var(--bs-border-color);
   }
 
-  .dev-toolbar .btn {
-    white-space: nowrap;
+  .dev-check:last-child {
+    border-bottom: 0;
   }
 
-  .dev-mini-status {
-    font-size: .75rem;
-    color: rgba(255, 255, 255, .72);
+  .dev-action-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: .75rem;
+  }
+
+  .dev-action {
+    min-height: 88px;
+    text-align: left;
+    border-radius: 8px;
   }
 
   .dev-timeline {
     display: grid;
     grid-template-columns: repeat(24, minmax(5px, 1fr));
     align-items: end;
-    gap: .32rem;
-    height: 130px;
+    gap: .28rem;
+    height: 132px;
     padding-top: .5rem;
   }
 
@@ -195,62 +252,69 @@
     font-size: .72rem;
   }
 
-  .dev-action-grid {
+  .dev-map-shell {
+    position: relative;
+    min-height: 320px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #dbeafe;
+  }
+
+  #devMap {
+    width: 100%;
+    height: 320px;
+  }
+
+  .dev-map-placeholder {
+    position: absolute;
+    inset: 0;
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: .75rem;
-  }
-
-  .dev-action {
-    text-align: left;
-    border-radius: 8px;
-    min-height: 92px;
-  }
-
-  .dev-operation-box {
-    border: 1px solid var(--bs-border-color);
-    border-radius: 8px;
+    place-items: center;
     padding: 1rem;
-    background: rgba(16, 185, 129, .08);
+    color: #475569;
+    text-align: center;
+    background: repeating-linear-gradient(45deg, #e2edf0, #e2edf0 12px, #d7e5e8 12px, #d7e5e8 24px);
   }
 
-  .dev-clickable-row {
+  .dev-weather-value {
+    color: #102033;
+    font-size: 2.35rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .dev-clickable {
     cursor: pointer;
   }
 
-  .dev-clickable-row:hover {
-    background: rgba(59, 130, 246, .08);
-  }
-
-  .dev-filter-row {
-    display: grid;
-    grid-template-columns: minmax(220px, 1fr) 170px;
-    gap: .75rem;
+  .dev-clickable:hover {
+    background: rgba(14, 165, 233, .08);
   }
 
   .dark-mode .dev-card,
   .dark-mode .dev-metric,
-  .dark-mode .dev-check,
-  .dark-mode .dev-pill {
+  .dark-mode .dev-tile {
     background: #152233;
     border-color: rgba(255, 255, 255, .12);
   }
 
-  .dark-mode .dev-metric-value,
+  .dark-mode .dev-title,
+  .dark-mode .dev-value,
   .dark-mode .dev-weather-value {
     color: #f8fafc;
   }
 
-  .dark-mode .dev-metric-label {
+  .dark-mode .dev-label {
     color: #94a3b8;
+  }
+
+  .dark-mode .dev-tabs .nav-link {
+    color: #cbd5e1;
+    border-color: rgba(255, 255, 255, .12);
   }
 
   .dark-mode .dev-timeline-bar.is-empty {
     background: #26364c;
-  }
-
-  .dark-mode .dev-operation-box {
-    background: rgba(16, 185, 129, .12);
   }
 
   @media (max-width: 1199.98px) {
@@ -258,30 +322,29 @@
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .dev-action-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+    .dev-section-grid {
+      grid-template-columns: 1fr;
     }
   }
 
   @media (max-width: 991.98px) {
-    .dev-hero-grid,
-    .dev-checks {
+    .dev-hero-content,
+    .dev-mini-grid,
+    .dev-action-grid {
       grid-template-columns: 1fr;
     }
   }
 
   @media (max-width: 575.98px) {
     .dev-grid,
-    .dev-pill-grid,
-    .dev-action-grid,
-    .dev-filter-row {
+    .dev-filter {
       grid-template-columns: 1fr;
     }
 
     #devMap,
     .dev-map-shell {
-      min-height: 300px;
-      height: 300px;
+      min-height: 280px;
+      height: 280px;
     }
   }
 </style>
@@ -290,48 +353,45 @@
 {% block content %}
 <div class="container-fluid dev-shell py-4">
   <section class="dev-hero p-4 p-lg-5 mb-4">
-    <div class="dev-hero-grid">
-      <div class="d-flex flex-column justify-content-between gap-4">
-        <div>
-          <span class="badge text-bg-danger mb-3">EXCLUSIVO PARA DEV</span>
-          <h1 class="fw-bold mb-3">{{ dev_profile.greeting }}, {{dev_profile.name }}</h1>
-          <p class="mb-0 text-white-50">
-            Painel de desenvolvimento com saúde da aplicação, atividade recente e contexto local para operar o sistema com mais clareza.
-          </p>
-        </div>
-        <div class="dev-toolbar">
-          <a class="btn btn-light btn-sm" href="{{ url_for('main.admin_logs_usuarios') }}">
-            <i class="bi bi-clipboard-data me-1"></i> Auditoria
-          </a>
-          <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.admin_dashboard') }}">
-            <i class="bi bi-speedometer2 me-1"></i> Admin
-          </a>
-          <button class="btn btn-outline-light btn-sm" type="button" id="devCopySnapshot">
-            <i class="bi bi-copy me-1"></i> Copiar diagnóstico
+    <div class="dev-hero-content">
+      <div>
+        <span class="dev-kicker"><i class="bi bi-terminal-fill"></i> Painel exclusivo para DEV</span>
+        <h1 class="dev-title">{{ dev_profile.greeting }}, {{ dev_profile.name }}</h1>
+        <p class="dev-subtitle">
+          Central técnica do sistema: presença em tempo real, saúde da aplicação, erros recentes, infraestrutura e contexto operacional.
+        </p>
+        <div class="dev-hero-actions">
+          <button class="btn btn-light btn-sm" type="button" id="devRefreshNow">
+            <i class="bi bi-arrow-clockwise me-1"></i> Atualizar
           </button>
           <button class="btn btn-outline-light btn-sm" type="button" id="devLiveToggle" aria-pressed="false">
             <i class="bi bi-broadcast me-1"></i> Ao vivo
           </button>
-          <span class="dev-mini-status align-self-center" id="devRefreshStatus">Atualização manual</span>
+          <button class="btn btn-outline-light btn-sm" type="button" id="devCopySnapshot">
+            <i class="bi bi-copy me-1"></i> Copiar diagnóstico
+          </button>
+          <a class="btn btn-outline-light btn-sm" href="{{ url_for('main.admin_logs_usuarios') }}">
+            <i class="bi bi-clipboard-data me-1"></i> Auditoria
+          </a>
         </div>
       </div>
 
-      <aside class="dev-command-panel p-3">
-        <div class="dev-command-item">
+      <aside class="dev-command p-3">
+        <div class="dev-command-row">
+          <span class="text-white-50">Status</span>
+          <strong id="devRefreshStatus">Atualizado {{ generated_at.strftime('%d/%m/%Y %H:%M') }}</strong>
+        </div>
+        <div class="dev-command-row">
           <span class="text-white-50">Ambiente</span>
-          <strong>{{ 'Debug ativo' if runtime.debug else 'Debug off' }}</strong>
+          <strong>{{ 'Debug ativo' if runtime.debug else 'Produção' }}</strong>
         </div>
-        <div class="dev-command-item">
-          <span class="text-white-50">Sessão dev</span>
-          <strong>{{ dev_profile.actions_24h }} ação(ões) / 24h</strong>
+        <div class="dev-command-row">
+          <span class="text-white-50">Usuários online</span>
+          <strong id="heroOnlineUsers">{{ metrics.online_users }}</strong>
         </div>
-        <div class="dev-command-item">
+        <div class="dev-command-row">
           <span class="text-white-50">Checks OK</span>
-          <strong>{{ metrics.healthy_checks }}/{{ metrics.total_checks }}</strong>
-        </div>
-        <div class="dev-command-item">
-          <span class="text-white-50">Atualizado</span>
-          <strong id="devGeneratedAt">{{ generated_at.strftime('%d/%m/%Y %H:%M') }}</strong>
+          <strong id="heroHealthyChecks">{{ metrics.healthy_checks }}/{{ metrics.total_checks }}</strong>
         </div>
       </aside>
     </div>
@@ -340,207 +400,43 @@
   <section class="dev-grid mb-4">
     <div class="card dev-metric">
       <div class="card-body">
-        <div class="dev-metric-label">Ações auditadas / 24h</div>
-        <div class="dev-metric-value" id="metricAudited24h">{{ metrics.audited_24h }}</div>
-        <div class="small text-muted">Sistema inteiro</div>
+        <div class="dev-label">Online agora</div>
+        <div class="dev-value text-success" id="metricOnlineUsers">{{ metrics.online_users }}</div>
+        <div class="small text-muted">de {{ presence.tracked_count }} presença(s) monitorada(s)</div>
       </div>
     </div>
     <div class="card dev-metric">
       <div class="card-body">
-        <div class="dev-metric-label">Erros / 24h</div>
-        <div class="dev-metric-value text-warning" id="metricErrors24h">{{ metrics.errors_24h }}</div>
-        <div class="small text-muted"><span id="metricErrorRate">{{ metrics.error_rate }}</span>% das ações</div>
+        <div class="dev-label">Ações / 24h</div>
+        <div class="dev-value" id="metricAudited24h">{{ metrics.audited_24h }}</div>
+        <div class="small text-muted"><span id="metricActiveUsers24h">{{ metrics.active_users_24h }}</span> usuário(s) ativo(s)</div>
       </div>
     </div>
     <div class="card dev-metric">
       <div class="card-body">
-        <div class="dev-metric-label">Usuários ativos / 24h</div>
-        <div class="dev-metric-value" id="metricActiveUsers24h">{{ metrics.active_users_24h }}</div>
-        <div class="small text-muted">{{ metrics.dev_count }} conta(s) dev</div>
+        <div class="dev-label">Erros / 24h</div>
+        <div class="dev-value text-warning" id="metricErrors24h">{{ metrics.errors_24h }}</div>
+        <div class="small text-muted"><span id="metricErrorRate">{{ metrics.error_rate }}</span>% das ações auditadas</div>
       </div>
     </div>
     <div class="card dev-metric">
       <div class="card-body">
-        <div class="dev-metric-label">Rotas registradas</div>
-        <div class="dev-metric-value" id="metricRouteCount">{{ metrics.route_count }}</div>
-        <div class="small text-muted"><span id="metricServerErrors7d">{{ metrics.server_errors_7d }}</span> erro(s) 5xx / 7 dias</div>
+        <div class="dev-label">Rotas registradas</div>
+        <div class="dev-value" id="metricRouteCount">{{ metrics.route_count }}</div>
+        <div class="small text-muted"><span id="metricServerErrors7d">{{ metrics.server_errors_7d }}</span> erro(s) 5xx em 7 dias</div>
       </div>
     </div>
     <div class="card dev-metric">
       <div class="card-body">
-        <div class="dev-metric-label">Redeploys watchdog / 7d</div>
-        <div class="dev-metric-value text-info" id="metricWatchdogDeploys7d">{{ watchdog.deploys_7d }}</div>
-        <div class="small text-muted">
-          <span id="metricWatchdogDeploys24h">{{ watchdog.deploys_24h }}</span> / 24h |
-          <span id="metricWatchdogDeploysTotal">{{ watchdog.deploys_total }}</span> total
-        </div>
-        <div class="small text-muted" id="metricWatchdogLastDeploy">
-          {% if watchdog.last_event %}
-            Ultimo: {{ brazil_datetime(watchdog.last_event.criado_em).strftime('%d/%m/%Y %H:%M') if watchdog.last_event.criado_em else '-' }}
-          {% else %}
-            Nenhum acionamento registrado
-          {% endif %}
-        </div>
+        <div class="dev-label">Watchdog / 7d</div>
+        <div class="dev-value text-info" id="metricWatchdogDeploys7d">{{ watchdog.deploys_7d }}</div>
+        <div class="small text-muted"><span id="metricWatchdogDeploys24h">{{ watchdog.deploys_24h }}</span> em 24h | <span id="metricWatchdogDeploysTotal">{{ watchdog.deploys_total }}</span> total</div>
       </div>
     </div>
   </section>
 
-  <div class="row g-4 mb-4">
-    <div class="col-xl-7">
-      <section class="card dev-card h-100">
-        <div class="card-body p-4">
-          <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
-            <div>
-              <h2 class="h5 fw-bold mb-1"><i class="bi bi-geo-alt-fill text-success me-2"></i>Contexto local</h2>
-              <div class="small text-muted" id="devLocationLabel">{{ local_context.default_location.label }}</div>
-            </div>
-            <button class="btn btn-outline-primary btn-sm" type="button" id="devUseLocation">
-              <i class="bi bi-crosshair me-1"></i> Minha localização
-            </button>
-          </div>
-          <div class="dev-map-shell">
-            <div id="devMap"></div>
-            <div class="dev-map-placeholder" id="devMapPlaceholder">
-              <div>
-                <i class="bi bi-map fs-2 d-block mb-2"></i>
-                <span id="devMapStatus">{{ 'Carregando Google Maps...' if maps_enabled else 'Google Maps sem chave configurada.' }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-    </div>
-
-    <div class="col-xl-5">
-      <section class="card dev-card h-100">
-        <div class="card-body p-4">
-          <div class="d-flex align-items-start justify-content-between gap-3 mb-4">
-            <div>
-              <h2 class="h5 fw-bold mb-1"><i class="bi bi-cloud-sun-fill text-warning me-2"></i>Clima</h2>
-              <div class="small text-muted" id="devWeatherSummary">Sincronizando previsão local</div>
-            </div>
-            <span class="badge text-bg-light border" id="devWeatherSource">{{ local_context.weather_provider }}</span>
-          </div>
-
-          <div class="d-flex align-items-end gap-3 mb-4">
-            <div class="dev-weather-value" id="devTemperature">--</div>
-            <div class="pb-2">
-              <div class="fw-semibold" id="devWeatherCondition">Aguardando dados</div>
-              <div class="small text-muted" id="devWeatherUpdated">--</div>
-            </div>
-          </div>
-
-          <div class="dev-pill-grid mb-4">
-            <div class="dev-pill">
-              <div class="small text-muted">Umidade</div>
-              <strong id="devHumidity">--</strong>
-            </div>
-            <div class="dev-pill">
-              <div class="small text-muted">Vento</div>
-              <strong id="devWind">--</strong>
-            </div>
-            <div class="dev-pill">
-              <div class="small text-muted">Latitude</div>
-              <strong id="devLatitude">{{ '%.4f'|format(local_context.default_location.lat) }}</strong>
-            </div>
-            <div class="dev-pill">
-              <div class="small text-muted">Longitude</div>
-              <strong id="devLongitude">{{ '%.4f'|format(local_context.default_location.lng) }}</strong>
-            </div>
-          </div>
-
-          <div class="dev-operation-box" id="devOperationBox">
-            <div class="d-flex align-items-start gap-2">
-              <i class="bi bi-compass-fill text-success mt-1"></i>
-              <div>
-                <strong id="devOperationTitle">Condição operacional</strong>
-                <div class="small text-muted" id="devOperationDetail">Aguardando leitura local de clima e vento.</div>
-              </div>
-            </div>
-          </div>
-
-          <hr>
-          <dl class="row mb-0">
-            <dt class="col-4">Dev</dt><dd class="col-8">{{ dev_profile.name }}</dd>
-            <dt class="col-4">Tipo</dt><dd class="col-8">{{ dev_profile.type or '-' }}</dd>
-            <dt class="col-4">Última ação</dt>
-            <dd class="col-8">
-              {% if dev_profile.last_event %}
-                {{ brazil_datetime(dev_profile.last_event.criado_em).strftime('%d/%m/%Y %H:%M') if dev_profile.last_event.criado_em else '-' }}
-              {% else %}
-                -
-              {% endif %}
-            </dd>
-          </dl>
-        </div>
-      </section>
-    </div>
-  </div>
-
-  <div class="row g-4 mb-4">
-    <div class="col-xl-5">
-      <section class="card dev-card h-100">
-        <div class="card-body p-4">
-          <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
-            <div>
-              <h2 class="h5 fw-bold mb-1"><i class="bi bi-tools text-primary me-2"></i>Testes manuais</h2>
-              <div class="small text-muted">Valide serviços críticos sem sair do painel.</div>
-            </div>
-            <span class="badge text-bg-secondary" id="devManualCheckStatus">Pronto</span>
-          </div>
-          <div class="dev-action-grid">
-            <button class="btn btn-outline-primary dev-action" type="button" data-dev-check="database">
-              <i class="bi bi-database-check d-block fs-4 mb-2"></i>
-              Banco
-            </button>
-            <button class="btn btn-outline-primary dev-action" type="button" data-dev-check="maps">
-              <i class="bi bi-map d-block fs-4 mb-2"></i>
-              Maps
-            </button>
-            <button class="btn btn-outline-primary dev-action" type="button" data-dev-check="uploads">
-              <i class="bi bi-folder-check d-block fs-4 mb-2"></i>
-              Uploads
-            </button>
-            <button class="btn btn-outline-primary dev-action" type="button" data-dev-check="backup">
-              <i class="bi bi-cloud-check d-block fs-4 mb-2"></i>
-              Backup
-            </button>
-          </div>
-          <div class="alert alert-info mt-3 mb-0 d-none" id="devManualCheckResult"></div>
-        </div>
-      </section>
-    </div>
-
-    <div class="col-xl-7">
-      <section class="card dev-card h-100">
-        <div class="card-body p-4">
-          <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
-            <div>
-              <h2 class="h5 fw-bold mb-1"><i class="bi bi-bar-chart-fill text-danger me-2"></i>Falhas por hora</h2>
-              <div class="small text-muted">Últimas 24 horas, considerando respostas 4xx e 5xx.</div>
-            </div>
-            <button class="btn btn-outline-secondary btn-sm" type="button" id="devRefreshNow">
-              <i class="bi bi-arrow-clockwise me-1"></i> Atualizar
-            </button>
-          </div>
-          <div class="dev-timeline" id="devFailureTimeline" aria-label="Falhas por hora nas últimas 24 horas">
-            {% set max_failures = failure_timeline|map(attribute='total')|max or 1 %}
-            {% for point in failure_timeline %}
-              {% set height = (point.total / max_failures * 100) if max_failures else 0 %}
-              <div
-                class="dev-timeline-bar {{ 'is-empty' if point.total == 0 else '' }}"
-                style="height: {{ [height, 4]|max }}%;"
-                data-label="{{ point.hour }} - {{ point.total }} falha(s)"
-                title="{{ point.hour }} - {{ point.total }} falha(s)"
-              ></div>
-            {% endfor %}
-          </div>
-        </div>
-      </section>
-    </div>
-  </div>
-
-  <section class="card dev-card mb-4 {{ 'd-none' if not alerts else '' }}" id="devAlertsSection">
+  {% if alerts %}
+  <section class="card dev-card mb-4" id="devAlertsSection">
     <div class="card-body p-4">
       <h2 class="h5 fw-bold mb-3"><i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Pontos de atenção</h2>
       <div class="d-grid gap-2" id="devAlertsList">
@@ -552,106 +448,270 @@
       </div>
     </div>
   </section>
+  {% else %}
+  <section class="card dev-card mb-4 d-none" id="devAlertsSection">
+    <div class="card-body p-4">
+      <h2 class="h5 fw-bold mb-3"><i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Pontos de atenção</h2>
+      <div class="d-grid gap-2" id="devAlertsList"></div>
+    </div>
+  </section>
+  {% endif %}
 
-  <div class="row g-4 mb-4">
-    <div class="col-xl-7">
-      <section class="card dev-card h-100">
-        <div class="card-body p-4">
-          <h2 class="h5 fw-bold mb-3"><i class="bi bi-heart-pulse-fill text-danger me-2"></i>Diagnósticos</h2>
-          <div class="dev-checks" id="devChecksList">
-            {% for check in checks %}
-            <div class="dev-check">
-              <div class="d-flex justify-content-between gap-3 mb-2">
-                <strong>{{ check.name }}</strong>
-                <span class="badge text-bg-{{ check.severity }}">{{ check.status }}</span>
+  <ul class="nav nav-pills dev-tabs mb-4" id="devDashboardTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="tab-operacao" data-bs-toggle="pill" data-bs-target="#pane-operacao" type="button" role="tab">
+        <i class="bi bi-activity me-1"></i> Operação
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="tab-presenca" data-bs-toggle="pill" data-bs-target="#pane-presenca" type="button" role="tab">
+        <i class="bi bi-person-lines-fill me-1"></i> Presença
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="tab-erros" data-bs-toggle="pill" data-bs-target="#pane-erros" type="button" role="tab">
+        <i class="bi bi-bug-fill me-1"></i> Erros
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="tab-infra" data-bs-toggle="pill" data-bs-target="#pane-infra" type="button" role="tab">
+        <i class="bi bi-cpu-fill me-1"></i> Infra
+      </button>
+    </li>
+  </ul>
+
+  <div class="tab-content">
+    <section class="tab-pane fade show active" id="pane-operacao" role="tabpanel" aria-labelledby="tab-operacao" tabindex="0">
+      <div class="dev-section-grid">
+        <div class="card dev-card">
+          <div class="card-body p-4">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+              <div>
+                <h2 class="h5 fw-bold mb-1"><i class="bi bi-bar-chart-fill text-danger me-2"></i>Falhas por hora</h2>
+                <div class="small text-muted">Últimas 24 horas, considerando respostas 4xx e 5xx.</div>
               </div>
-              <div class="small text-muted">{{ check.detail }}</div>
             </div>
-            {% endfor %}
+            <div class="dev-timeline" id="devFailureTimeline" aria-label="Falhas por hora nas últimas 24 horas">
+              {% set max_failures = failure_timeline|map(attribute='total')|max or 1 %}
+              {% for point in failure_timeline %}
+                {% set height = (point.total / max_failures * 100) if max_failures else 0 %}
+                <div
+                  class="dev-timeline-bar {{ 'is-empty' if point.total == 0 else '' }}"
+                  style="height: {{ [height, 4]|max }}%;"
+                  data-label="{{ point.hour }} - {{ point.total }} falha(s)"
+                  title="{{ point.hour }} - {{ point.total }} falha(s)"
+                ></div>
+              {% endfor %}
+            </div>
           </div>
         </div>
-      </section>
-    </div>
-    <div class="col-xl-5">
-      <section class="card dev-card h-100">
+
+        <aside class="card dev-card">
+          <div class="card-body p-4">
+            <h2 class="h5 fw-bold mb-3"><i class="bi bi-cloud-sun-fill text-warning me-2"></i>Contexto local</h2>
+            <div class="d-flex align-items-end gap-3 mb-4">
+              <div class="dev-weather-value" id="devTemperature">--</div>
+              <div class="pb-2">
+                <div class="fw-semibold" id="devWeatherCondition">Aguardando clima</div>
+                <div class="small text-muted" id="devWeatherUpdated">--</div>
+              </div>
+            </div>
+            <div class="dev-mini-grid mb-3">
+              <div class="dev-tile">
+                <div class="small text-muted">Umidade</div>
+                <strong id="devHumidity">--</strong>
+              </div>
+              <div class="dev-tile">
+                <div class="small text-muted">Vento</div>
+                <strong id="devWind">--</strong>
+              </div>
+              <div class="dev-tile">
+                <div class="small text-muted">Referência</div>
+                <strong id="devLocationLabel">{{ local_context.default_location.label }}</strong>
+              </div>
+            </div>
+            <button class="btn btn-outline-primary btn-sm" type="button" id="devUseLocation">
+              <i class="bi bi-crosshair me-1"></i> Minha localização
+            </button>
+            <div class="dev-map-shell mt-3">
+              <div id="devMap"></div>
+              <div class="dev-map-placeholder" id="devMapPlaceholder">
+                <div>
+                  <i class="bi bi-map fs-2 d-block mb-2"></i>
+                  <span id="devMapStatus">{{ 'Carregando Google Maps...' if maps_enabled else 'Google Maps sem chave configurada.' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="tab-pane fade" id="pane-presenca" role="tabpanel" aria-labelledby="tab-presenca" tabindex="0">
+      <div class="card dev-card">
         <div class="card-body p-4">
-          <h2 class="h5 fw-bold mb-3"><i class="bi bi-cpu-fill text-primary me-2"></i>Runtime</h2>
-          <dl class="row mb-0">
-            <dt class="col-4">Python</dt><dd class="col-8">{{ runtime.python }}</dd>
-            <dt class="col-4">Banco</dt><dd class="col-8">{{ runtime.database }}</dd>
-            <dt class="col-4">Debug</dt><dd class="col-8">{{ 'Ativo' if runtime.debug else 'Desativado' }}</dd>
-            <dt class="col-4">Plataforma</dt><dd class="col-8 small dev-path">{{ runtime.platform }}</dd>
-          </dl>
+          <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+            <div>
+              <h2 class="h5 fw-bold mb-1"><i class="bi bi-person-lines-fill text-success me-2"></i>Presença no sistema</h2>
+              <div class="small text-muted">Usuários vistos pelo rastreador global de sessão.</div>
+            </div>
+            <div class="dev-filter">
+              <input class="form-control form-control-sm" type="search" id="devPresenceFilter" placeholder="Filtrar usuário, perfil, rota ou IP">
+              <select class="form-select form-select-sm" id="devPresenceStatusFilter">
+                <option value="">Todos</option>
+                <option value="online">Online</option>
+                <option value="away">Ausente</option>
+                <option value="offline">Offline</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="dev-mini-grid mb-3">
+            <div class="dev-tile">
+              <div class="small text-muted">Online</div>
+              <strong id="presenceOnlineCount">{{ presence.online_count }}</strong>
+            </div>
+            <div class="dev-tile">
+              <div class="small text-muted">Ausentes</div>
+              <strong id="presenceAwayCount">{{ presence.away_count }}</strong>
+            </div>
+            <div class="dev-tile">
+              <div class="small text-muted">Offline</div>
+              <strong id="presenceOfflineCount">{{ presence.offline_count }}</strong>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table align-middle mb-0">
+              <thead><tr><th>Status</th><th>Usuário</th><th>Perfil</th><th>Último acesso</th><th>Local</th><th>IP</th></tr></thead>
+              <tbody id="devPresenceBody">
+                {% for item in presence.users %}
+                <tr data-filter-text="{{ item.name ~ ' ' ~ (item.login or '') ~ ' ' ~ (item.type or '') ~ ' ' ~ (item.endpoint or '') ~ ' ' ~ (item.path or '') ~ ' ' ~ (item.ip or '') }}" data-presence-status="{{ item.status }}">
+                  <td><span class="badge text-bg-{{ item.status_severity }}"><span class="dev-status-dot is-{{ item.status }}" aria-hidden="true"></span>{{ item.status_label }}</span></td>
+                  <td><div class="fw-semibold">{{ item.name }}</div><div class="small text-muted">{{ item.login or '-' }}</div></td>
+                  <td>{{ item.type or '-' }}{% if item.region %}<div class="small text-muted">{{ item.region }}</div>{% endif %}</td>
+                  <td>{{ item.last_seen_label }}</td>
+                  <td class="dev-path"><code>{{ item.endpoint or item.path or '-' }}</code></td>
+                  <td>{{ item.ip or '-' }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" class="text-center text-muted py-4">Nenhuma presença registrada ainda.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </section>
-    </div>
+      </div>
+    </section>
+
+    <section class="tab-pane fade" id="pane-erros" role="tabpanel" aria-labelledby="tab-erros" tabindex="0">
+      <div class="dev-section-grid">
+        <div class="card dev-card">
+          <div class="card-body p-4">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+              <h2 class="h5 fw-bold mb-0"><i class="bi bi-clock-history text-primary me-2"></i>Erros recentes</h2>
+              <div class="dev-filter">
+                <input class="form-control form-control-sm" type="search" id="devRecentFilter" placeholder="Filtrar usuário, rota ou endpoint">
+                <select class="form-select form-select-sm" id="devRecentStatusFilter">
+                  <option value="">Todos</option>
+                  <option value="4">4xx</option>
+                  <option value="5">5xx</option>
+                </select>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="table align-middle mb-0">
+                <thead><tr><th>Data</th><th>Status</th><th>Usuário</th><th>Rota</th></tr></thead>
+                <tbody id="devRecentErrorsBody">
+                  {% for log in recent_errors %}
+                  <tr class="dev-clickable" data-error-id="{{ log.id }}" data-filter-text="{{ log.usuario_nome ~ ' ' ~ (log.tipo_usuario or '') ~ ' ' ~ (log.endpoint or '') ~ ' ' ~ log.path }}" data-status-family="{{ (log.status_code|string)[0] }}">
+                    <td>{{ brazil_datetime(log.criado_em).strftime('%d/%m/%Y %H:%M') if log.criado_em else '-' }}</td>
+                    <td><span class="badge text-bg-{{ 'danger' if log.status_code >= 500 else 'warning' }}">{{ log.status_code }}</span></td>
+                    <td>{{ log.usuario_nome }} <span class="text-muted small">({{ log.tipo_usuario or '-' }})</span></td>
+                    <td class="dev-path"><code>{{ log.endpoint or log.path }}</code></td>
+                  </tr>
+                  {% else %}
+                  <tr><td colspan="4" class="text-center text-muted py-4">Nenhum erro registrado.</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <aside class="card dev-card">
+          <div class="card-body p-4">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+              <h2 class="h5 fw-bold mb-0"><i class="bi bi-activity text-danger me-2"></i>Rotas com falha</h2>
+              <select class="form-select form-select-sm w-auto" id="devRouteStatusFilter">
+                <option value="">Todos</option>
+                <option value="4">4xx</option>
+                <option value="5">5xx</option>
+              </select>
+            </div>
+            <input class="form-control form-control-sm mb-3" type="search" id="devRouteFilter" placeholder="Filtrar endpoint ou caminho">
+            <div class="table-responsive">
+              <table class="table align-middle mb-0">
+                <thead><tr><th>Rota</th><th>Falhas</th><th>Status</th></tr></thead>
+                <tbody id="devTopRoutesBody">
+                  {% for item in top_error_routes %}
+                  <tr data-filter-text="{{ (item.endpoint or '') ~ ' ' ~ item.path }}" data-status-family="{{ (item.max_status|string)[0] }}">
+                    <td class="dev-path"><code>{{ item.endpoint or item.path }}</code></td>
+                    <td>{{ item.total }}</td>
+                    <td><span class="badge text-bg-{{ 'danger' if item.max_status >= 500 else 'warning' }}">{{ item.max_status }}</span></td>
+                  </tr>
+                  {% else %}
+                  <tr><td colspan="3" class="text-center text-muted py-4">Nenhuma falha auditada no período.</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="tab-pane fade" id="pane-infra" role="tabpanel" aria-labelledby="tab-infra" tabindex="0">
+      <div class="dev-section-grid">
+        <div class="card dev-card">
+          <div class="card-body p-4">
+            <h2 class="h5 fw-bold mb-3"><i class="bi bi-heart-pulse-fill text-danger me-2"></i>Saúde da aplicação</h2>
+            <div id="devChecksList">
+              {% for check in checks %}
+              <div class="dev-check">
+                <div>
+                  <strong>{{ check.name }}</strong>
+                  <div class="small text-muted">{{ check.detail }}</div>
+                </div>
+                <span class="badge text-bg-{{ check.severity }}">{{ check.status }}</span>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <aside class="card dev-card">
+          <div class="card-body p-4">
+            <h2 class="h5 fw-bold mb-3"><i class="bi bi-tools text-primary me-2"></i>Testes rápidos</h2>
+            <div class="dev-action-grid mb-3">
+              <button class="btn btn-outline-primary dev-action" type="button" data-dev-check="database"><i class="bi bi-database-check d-block fs-4 mb-2"></i>Banco</button>
+              <button class="btn btn-outline-primary dev-action" type="button" data-dev-check="maps"><i class="bi bi-map d-block fs-4 mb-2"></i>Maps</button>
+              <button class="btn btn-outline-primary dev-action" type="button" data-dev-check="uploads"><i class="bi bi-folder-check d-block fs-4 mb-2"></i>Uploads</button>
+              <button class="btn btn-outline-primary dev-action" type="button" data-dev-check="backup"><i class="bi bi-cloud-check d-block fs-4 mb-2"></i>Backup</button>
+            </div>
+            <div class="alert alert-info d-none" id="devManualCheckResult"></div>
+            <hr>
+            <dl class="row mb-0">
+              <dt class="col-4">Python</dt><dd class="col-8">{{ runtime.python }}</dd>
+              <dt class="col-4">Banco</dt><dd class="col-8">{{ runtime.database }}</dd>
+              <dt class="col-4">Debug</dt><dd class="col-8">{{ 'Ativo' if runtime.debug else 'Desativado' }}</dd>
+              <dt class="col-4">Plataforma</dt><dd class="col-8 small dev-path">{{ runtime.platform }}</dd>
+            </dl>
+          </div>
+        </aside>
+      </div>
+    </section>
   </div>
-
-  <section class="card dev-card mb-4">
-    <div class="card-body p-4">
-      <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
-        <h2 class="h5 fw-bold mb-0"><i class="bi bi-activity text-danger me-2"></i>Rotas com falha nos últimos 7 dias</h2>
-        <div class="dev-filter-row">
-          <input class="form-control form-control-sm" type="search" id="devRouteFilter" placeholder="Filtrar endpoint ou caminho">
-          <select class="form-select form-select-sm" id="devRouteStatusFilter">
-            <option value="">Todos os status</option>
-            <option value="4">4xx</option>
-            <option value="5">5xx</option>
-          </select>
-        </div>
-      </div>
-      <div class="table-responsive">
-        <table class="table align-middle mb-0">
-          <thead><tr><th>Endpoint</th><th>Caminho</th><th>Falhas</th><th>Maior status</th></tr></thead>
-          <tbody id="devTopRoutesBody">
-            {% for item in top_error_routes %}
-            <tr data-filter-text="{{ (item.endpoint or '') ~ ' ' ~ item.path }}" data-status-family="{{ (item.max_status|string)[0] }}">
-              <td><code>{{ item.endpoint or '-' }}</code></td>
-              <td class="dev-path">{{ item.path }}</td>
-              <td>{{ item.total }}</td>
-              <td><span class="badge text-bg-{{ 'danger' if item.max_status >= 500 else 'warning' }}">{{ item.max_status }}</span></td>
-            </tr>
-            {% else %}
-            <tr><td colspan="4" class="text-center text-muted py-4">Nenhuma falha auditada no período.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </section>
-
-  <section class="card dev-card">
-    <div class="card-body p-4">
-      <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
-        <h2 class="h5 fw-bold mb-0"><i class="bi bi-clock-history text-primary me-2"></i>Erros recentes</h2>
-        <div class="dev-filter-row">
-          <input class="form-control form-control-sm" type="search" id="devRecentFilter" placeholder="Filtrar usuário, rota ou endpoint">
-          <select class="form-select form-select-sm" id="devRecentStatusFilter">
-            <option value="">Todos os status</option>
-            <option value="4">4xx</option>
-            <option value="5">5xx</option>
-          </select>
-        </div>
-      </div>
-      <div class="table-responsive">
-        <table class="table align-middle mb-0">
-          <thead><tr><th>Data</th><th>Status</th><th>Usuário</th><th>Rota</th></tr></thead>
-          <tbody id="devRecentErrorsBody">
-            {% for log in recent_errors %}
-            <tr class="dev-clickable-row" data-error-id="{{ log.id }}" data-filter-text="{{ log.usuario_nome ~ ' ' ~ (log.tipo_usuario or '') ~ ' ' ~ (log.endpoint or '') ~ ' ' ~ log.path }}" data-status-family="{{ (log.status_code|string)[0] }}">
-              <td>{{ brazil_datetime(log.criado_em).strftime('%d/%m/%Y %H:%M') if log.criado_em else '-' }}</td>
-              <td><span class="badge text-bg-{{ 'danger' if log.status_code >= 500 else 'warning' }}">{{ log.status_code }}</span></td>
-              <td>{{ log.usuario_nome }} <span class="text-muted small">({{ log.tipo_usuario or '-' }})</span></td>
-              <td class="dev-path"><code>{{ log.endpoint or log.path }}</code></td>
-            </tr>
-            {% else %}
-            <tr><td colspan="4" class="text-center text-muted py-4">Nenhum erro registrado.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </section>
 </div>
 
 <div class="modal fade" id="devErrorModal" tabindex="-1" aria-labelledby="devErrorModalTitle" aria-hidden="true">
@@ -689,12 +749,7 @@
       errorDetailBase: {{ url_for('main.dev_dashboard_error_detail', log_id=0)|tojson }},
       manualCheckBase: {{ url_for('main.dev_dashboard_manual_check', slug='__slug__')|tojson }},
     };
-    let dashboardState = {
-      diagnosticSnapshot: {{ diagnostic_snapshot|tojson }},
-      recentErrors: [],
-      topErrorRoutes: [],
-      failureTimeline: {{ failure_timeline|tojson }},
-    };
+    let diagnosticSnapshot = {{ diagnostic_snapshot|tojson }};
     let liveRefreshTimer = null;
     let lastErrorDetailText = "";
     let map = null;
@@ -750,63 +805,12 @@
       const section = document.getElementById("devAlertsSection");
       const list = document.getElementById("devAlertsList");
       if (!section || !list) return;
-
       section.classList.toggle("d-none", !alerts.length);
       list.innerHTML = alerts.map((alert) => `
         <div class="alert alert-${escapeHtml(alert.severity)} mb-0">
           <strong>${escapeHtml(alert.title)}:</strong> ${escapeHtml(alert.detail)}
         </div>
       `).join("");
-    }
-
-    function renderChecks(checks) {
-      const list = document.getElementById("devChecksList");
-      if (!list) return;
-      list.innerHTML = checks.map((check) => `
-        <div class="dev-check">
-          <div class="d-flex justify-content-between gap-3 mb-2">
-            <strong>${escapeHtml(check.name)}</strong>
-            <span class="badge text-bg-${escapeHtml(check.severity)}">${escapeHtml(check.status)}</span>
-          </div>
-          <div class="small text-muted">${escapeHtml(check.detail)}</div>
-        </div>
-      `).join("");
-    }
-
-    function renderTopRoutes(routes) {
-      const body = document.getElementById("devTopRoutesBody");
-      if (!body) return;
-      if (!routes.length) {
-        body.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">Nenhuma falha auditada no período.</td></tr>';
-        return;
-      }
-      body.innerHTML = routes.map((item) => `
-        <tr data-filter-text="${escapeHtml(`${item.endpoint || ""} ${item.path || ""}`)}" data-status-family="${String(item.max_status || "")[0] || ""}">
-          <td><code>${escapeHtml(item.endpoint || "-")}</code></td>
-          <td class="dev-path">${escapeHtml(item.path || "-")}</td>
-          <td>${escapeHtml(item.total)}</td>
-          <td>${statusBadge(item.max_status)}</td>
-        </tr>
-      `).join("");
-      applyTableFilters("devRouteFilter", "devRouteStatusFilter", "devTopRoutesBody");
-    }
-
-    function renderRecentErrors(errors) {
-      const body = document.getElementById("devRecentErrorsBody");
-      if (!body) return;
-      if (!errors.length) {
-        body.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">Nenhum erro registrado.</td></tr>';
-        return;
-      }
-      body.innerHTML = errors.map((log) => `
-        <tr class="dev-clickable-row" data-error-id="${escapeHtml(log.id)}" data-filter-text="${escapeHtml(`${log.user_name || ""} ${log.user_type || ""} ${log.endpoint || ""} ${log.path || ""}`)}" data-status-family="${String(log.status_code || "")[0] || ""}">
-          <td>${formatDateTime(log.created_at)}</td>
-          <td>${statusBadge(log.status_code)}</td>
-          <td>${escapeHtml(log.user_name || "-")} <span class="text-muted small">(${escapeHtml(log.user_type || "-")})</span></td>
-          <td class="dev-path"><code>${escapeHtml(log.endpoint || log.path || "-")}</code></td>
-        </tr>
-      `).join("");
-      applyTableFilters("devRecentFilter", "devRecentStatusFilter", "devRecentErrorsBody");
     }
 
     function renderTimeline(points) {
@@ -821,157 +825,115 @@
       }).join("");
     }
 
-    function updateDashboard(payload) {
-      dashboardState = {
-        diagnosticSnapshot: payload.diagnostic_snapshot || dashboardState.diagnosticSnapshot,
-        recentErrors: payload.recent_errors || [],
-        topErrorRoutes: payload.top_error_routes || [],
-        failureTimeline: payload.failure_timeline || [],
-      };
+    function renderPresence(presence) {
+      const body = document.getElementById("devPresenceBody");
+      if (!body) return;
+      const users = presence.users || [];
+      setText("presenceOnlineCount", presence.online_count ?? 0);
+      setText("presenceAwayCount", presence.away_count ?? 0);
+      setText("presenceOfflineCount", presence.offline_count ?? 0);
 
-      setText("metricAudited24h", payload.metrics.audited_24h);
-      setText("metricErrors24h", payload.metrics.errors_24h);
-      setText("metricErrorRate", payload.metrics.error_rate);
-      setText("metricActiveUsers24h", payload.metrics.active_users_24h);
-      setText("metricRouteCount", payload.metrics.route_count);
-      setText("metricServerErrors7d", payload.metrics.server_errors_7d);
-      setText("metricWatchdogDeploys7d", payload.watchdog.deploys_7d);
-      setText("metricWatchdogDeploys24h", payload.watchdog.deploys_24h);
-      setText("metricWatchdogDeploysTotal", payload.watchdog.deploys_total);
-      setText(
-        "metricWatchdogLastDeploy",
-        payload.watchdog.last_event
-          ? `Ultimo: ${formatDateTime(payload.watchdog.last_event.created_at)}`
-          : "Nenhum acionamento registrado"
-      );
-      setText("devGeneratedAt", formatDateTime(payload.generated_at));
+      if (!users.length) {
+        body.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Nenhuma presença registrada ainda.</td></tr>';
+        return;
+      }
+      body.innerHTML = users.map((item) => {
+        const route = item.endpoint || item.path || "-";
+        const filterText = `${item.name || ""} ${item.login || ""} ${item.type || ""} ${route} ${item.ip || ""}`;
+        return `
+          <tr data-filter-text="${escapeHtml(filterText)}" data-presence-status="${escapeHtml(item.status || "")}">
+            <td><span class="badge text-bg-${escapeHtml(item.status_severity || "secondary")}"><span class="dev-status-dot is-${escapeHtml(item.status || "offline")}" aria-hidden="true"></span>${escapeHtml(item.status_label || "Offline")}</span></td>
+            <td><div class="fw-semibold">${escapeHtml(item.name || "-")}</div><div class="small text-muted">${escapeHtml(item.login || "-")}</div></td>
+            <td>${escapeHtml(item.type || "-")}${item.region ? `<div class="small text-muted">${escapeHtml(item.region)}</div>` : ""}</td>
+            <td>${escapeHtml(item.last_seen_label || formatDateTime(item.last_seen_at))}</td>
+            <td class="dev-path"><code>${escapeHtml(route)}</code></td>
+            <td>${escapeHtml(item.ip || "-")}</td>
+          </tr>
+        `;
+      }).join("");
+      applyPresenceFilters();
+    }
+
+    function renderChecks(checks) {
+      const list = document.getElementById("devChecksList");
+      if (!list) return;
+      list.innerHTML = checks.map((check) => `
+        <div class="dev-check">
+          <div>
+            <strong>${escapeHtml(check.name)}</strong>
+            <div class="small text-muted">${escapeHtml(check.detail)}</div>
+          </div>
+          <span class="badge text-bg-${escapeHtml(check.severity)}">${escapeHtml(check.status)}</span>
+        </div>
+      `).join("");
+    }
+
+    function renderRecentErrors(errors) {
+      const body = document.getElementById("devRecentErrorsBody");
+      if (!body) return;
+      if (!errors.length) {
+        body.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">Nenhum erro registrado.</td></tr>';
+        return;
+      }
+      body.innerHTML = errors.map((log) => `
+        <tr class="dev-clickable" data-error-id="${escapeHtml(log.id)}" data-filter-text="${escapeHtml(`${log.user_name || ""} ${log.user_type || ""} ${log.endpoint || ""} ${log.path || ""}`)}" data-status-family="${String(log.status_code || "")[0] || ""}">
+          <td>${formatDateTime(log.created_at)}</td>
+          <td>${statusBadge(log.status_code)}</td>
+          <td>${escapeHtml(log.user_name || "-")} <span class="text-muted small">(${escapeHtml(log.user_type || "-")})</span></td>
+          <td class="dev-path"><code>${escapeHtml(log.endpoint || log.path || "-")}</code></td>
+        </tr>
+      `).join("");
+      applyTableFilters("devRecentFilter", "devRecentStatusFilter", "devRecentErrorsBody");
+    }
+
+    function renderTopRoutes(routes) {
+      const body = document.getElementById("devTopRoutesBody");
+      if (!body) return;
+      if (!routes.length) {
+        body.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4">Nenhuma falha auditada no período.</td></tr>';
+        return;
+      }
+      body.innerHTML = routes.map((item) => `
+        <tr data-filter-text="${escapeHtml(`${item.endpoint || ""} ${item.path || ""}`)}" data-status-family="${String(item.max_status || "")[0] || ""}">
+          <td class="dev-path"><code>${escapeHtml(item.endpoint || item.path || "-")}</code></td>
+          <td>${escapeHtml(item.total)}</td>
+          <td>${statusBadge(item.max_status)}</td>
+        </tr>
+      `).join("");
+      applyTableFilters("devRouteFilter", "devRouteStatusFilter", "devTopRoutesBody");
+    }
+
+    function updateDashboard(payload) {
+      const metrics = payload.metrics || {};
+      diagnosticSnapshot = payload.diagnostic_snapshot || diagnosticSnapshot;
+
+      setText("metricOnlineUsers", metrics.online_users ?? 0);
+      setText("heroOnlineUsers", metrics.online_users ?? 0);
+      setText("metricAudited24h", metrics.audited_24h ?? 0);
+      setText("metricActiveUsers24h", metrics.active_users_24h ?? 0);
+      setText("metricErrors24h", metrics.errors_24h ?? 0);
+      setText("metricErrorRate", metrics.error_rate ?? 0);
+      setText("metricRouteCount", metrics.route_count ?? 0);
+      setText("metricServerErrors7d", metrics.server_errors_7d ?? 0);
+      setText("metricWatchdogDeploys7d", payload.watchdog?.deploys_7d ?? 0);
+      setText("metricWatchdogDeploys24h", payload.watchdog?.deploys_24h ?? 0);
+      setText("metricWatchdogDeploysTotal", payload.watchdog?.deploys_total ?? 0);
+      setText("heroHealthyChecks", `${metrics.healthy_checks ?? 0}/${metrics.total_checks ?? 0}`);
       setText("devRefreshStatus", `Atualizado ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`);
 
       renderAlerts(payload.alerts || []);
+      renderTimeline(payload.failure_timeline || []);
+      renderPresence(payload.presence || { users: [] });
       renderChecks(payload.checks || []);
-      renderTopRoutes(dashboardState.topErrorRoutes);
-      renderRecentErrors(dashboardState.recentErrors);
-      renderTimeline(dashboardState.failureTimeline);
+      renderRecentErrors(payload.recent_errors || []);
+      renderTopRoutes(payload.top_error_routes || []);
     }
 
     async function refreshDashboard() {
       setText("devRefreshStatus", "Atualizando...");
       const response = await fetch(endpoints.data, { headers: { "Accept": "application/json" } });
       if (!response.ok) throw new Error("refresh_failed");
-      const payload = await response.json();
-      updateDashboard(payload);
-    }
-
-    function setMapStatus(message, visible = true) {
-      setText("devMapStatus", message);
-      const placeholder = document.getElementById("devMapPlaceholder");
-      if (placeholder) placeholder.classList.toggle("d-none", !visible);
-    }
-
-    function formatCoord(value) {
-      return Number(value).toFixed(4);
-    }
-
-    function applyLocation(location, label) {
-      const lat = Number(location.lat);
-      const lng = Number(location.lng);
-      setText("devLocationLabel", label || defaultLocation.label);
-      setText("devLatitude", formatCoord(lat));
-      setText("devLongitude", formatCoord(lng));
-      updateMap({ lat, lng }, label || defaultLocation.label);
-      fetchWeather(lat, lng);
-    }
-
-    function updateMap(location, label) {
-      if (!window.google || !window.google.maps || !map) return;
-
-      map.setCenter(location);
-      map.setZoom(label === defaultLocation.label ? 11 : 14);
-
-      if (!marker) {
-        marker = new google.maps.Marker({
-          map,
-          position: location,
-          title: label,
-        });
-      } else {
-        marker.setPosition(location);
-        marker.setTitle(label);
-      }
-
-      setMapStatus("", false);
-    }
-
-    function reverseGeocode(location) {
-      if (!geocoder) return;
-      geocoder.geocode({ location }, (results, status) => {
-        if (status === "OK" && results && results[0]) {
-          setText("devLocationLabel", results[0].formatted_address);
-        }
-      });
-    }
-
-    async function fetchWeather(lat, lng) {
-      setText("devWeatherSummary", "Atualizando previsão local");
-      try {
-        const params = new URLSearchParams({
-          latitude: lat,
-          longitude: lng,
-          current: "temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m",
-          timezone: "auto",
-        });
-        const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params.toString()}`);
-        if (!response.ok) throw new Error("weather_response");
-        const payload = await response.json();
-        const current = payload.current || {};
-        const temp = Math.round(Number(current.temperature_2m));
-        const humidity = Number(current.relative_humidity_2m);
-        const wind = Number(current.wind_speed_10m);
-        const code = Number(current.weather_code);
-
-        setText("devTemperature", Number.isFinite(temp) ? `${temp}°C` : "--");
-        setText("devWeatherCondition", weatherCodes[code] || "Condição variável");
-        setText("devHumidity", Number.isFinite(humidity) ? `${humidity}%` : "--");
-        setText("devWind", Number.isFinite(wind) ? `${Math.round(wind)} km/h` : "--");
-        setText("devWeatherSummary", "Clima local sincronizado");
-        setText("devWeatherUpdated", current.time ? new Date(current.time).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : "--");
-        updateOperationAdvice({ code, wind, humidity });
-      } catch (error) {
-        setText("devWeatherSummary", "Clima indisponível no momento");
-        setText("devWeatherCondition", "Sem leitura");
-      }
-    }
-
-    function updateOperationAdvice({ code, wind, humidity }) {
-      const box = document.getElementById("devOperationBox");
-      const title = document.getElementById("devOperationTitle");
-      const detail = document.getElementById("devOperationDetail");
-      if (!box || !title || !detail) return;
-
-      const rainy = [51, 53, 55, 61, 63, 65, 80, 81, 82, 95].includes(Number(code));
-      const windy = Number(wind) >= 28;
-      const humid = Number(humidity) >= 88;
-
-      box.classList.remove("border-success", "border-warning", "border-danger");
-      if (rainy || windy) {
-        box.classList.add("border-danger");
-        title.textContent = "Atenção operacional";
-        detail.textContent = windy
-          ? `Vento em ${Math.round(wind)} km/h. Vale revisar deslocamentos e janelas de voo.`
-          : "Há sinal de chuva/pancadas. Bom conferir agenda externa antes de acionar equipes.";
-        return;
-      }
-
-      if (humid) {
-        box.classList.add("border-warning");
-        title.textContent = "Condição com ressalva";
-        detail.textContent = "Umidade alta. Sem bloqueio, mas pode afetar leitura de campo e operação externa.";
-        return;
-      }
-
-      box.classList.add("border-success");
-      title.textContent = "Condição favorável";
-      detail.textContent = "Clima sem alerta forte para operação local neste momento.";
+      updateDashboard(await response.json());
     }
 
     function applyTableFilters(inputId, selectId, bodyId) {
@@ -979,7 +941,6 @@
       const select = document.getElementById(selectId);
       const body = document.getElementById(bodyId);
       if (!input || !select || !body) return;
-
       const query = input.value.trim().toLowerCase();
       const statusFamily = select.value;
       body.querySelectorAll("tr").forEach((row) => {
@@ -990,22 +951,24 @@
       });
     }
 
-    function bindTableFilters() {
-      [
-        ["devRouteFilter", "devRouteStatusFilter", "devTopRoutesBody"],
-        ["devRecentFilter", "devRecentStatusFilter", "devRecentErrorsBody"],
-      ].forEach(([inputId, selectId, bodyId]) => {
-        const input = document.getElementById(inputId);
-        const select = document.getElementById(selectId);
-        if (input) input.addEventListener("input", () => applyTableFilters(inputId, selectId, bodyId));
-        if (select) select.addEventListener("change", () => applyTableFilters(inputId, selectId, bodyId));
+    function applyPresenceFilters() {
+      const input = document.getElementById("devPresenceFilter");
+      const select = document.getElementById("devPresenceStatusFilter");
+      const body = document.getElementById("devPresenceBody");
+      if (!input || !select || !body) return;
+      const query = input.value.trim().toLowerCase();
+      const status = select.value;
+      body.querySelectorAll("tr").forEach((row) => {
+        if (!row.dataset.filterText) return;
+        const matchesText = !query || row.dataset.filterText.toLowerCase().includes(query);
+        const matchesStatus = !status || row.dataset.presenceStatus === status;
+        row.classList.toggle("d-none", !(matchesText && matchesStatus));
       });
     }
 
     async function copyText(text, statusElementId, successMessage) {
       try {
         await navigator.clipboard.writeText(text);
-        if (statusElementId) setText(statusElementId, successMessage);
       } catch (error) {
         const textArea = document.createElement("textarea");
         textArea.value = text;
@@ -1013,58 +976,30 @@
         textArea.select();
         document.execCommand("copy");
         textArea.remove();
-        if (statusElementId) setText(statusElementId, successMessage);
       }
-    }
-
-    function bindSnapshotCopy() {
-      const button = document.getElementById("devCopySnapshot");
-      if (!button) return;
-      button.addEventListener("click", async () => {
-        await copyText(dashboardState.diagnosticSnapshot || "", "devRefreshStatus", "Diagnóstico copiado");
-      });
+      if (statusElementId) setText(statusElementId, successMessage);
     }
 
     async function runManualCheck(slug, button) {
-      const status = document.getElementById("devManualCheckStatus");
       const result = document.getElementById("devManualCheckResult");
-      if (status) {
-        status.className = "badge text-bg-primary";
-        status.textContent = "Testando";
-      }
       if (button) button.disabled = true;
-
       try {
         const url = endpoints.manualCheckBase.replace("__slug__", encodeURIComponent(slug));
         const response = await fetch(url, { method: "POST", headers: { "Accept": "application/json" } });
         if (!response.ok) throw new Error("check_failed");
         const payload = await response.json();
         if (result) {
-          result.className = `alert alert-${payload.severity === "danger" ? "danger" : payload.severity === "warning" ? "warning" : "success"} mt-3 mb-0`;
+          result.className = `alert alert-${payload.severity === "danger" ? "danger" : payload.severity === "warning" ? "warning" : "success"} mb-0`;
           result.innerHTML = `<strong>${escapeHtml(payload.name)} - ${escapeHtml(payload.status)}:</strong> ${escapeHtml(payload.detail)}`;
-        }
-        if (status) {
-          status.className = `badge text-bg-${payload.severity === "danger" ? "danger" : payload.severity === "warning" ? "warning" : "success"}`;
-          status.textContent = payload.status;
         }
       } catch (error) {
         if (result) {
-          result.className = "alert alert-danger mt-3 mb-0";
-          result.textContent = "Não foi possível executar o teste manual.";
-        }
-        if (status) {
-          status.className = "badge text-bg-danger";
-          status.textContent = "Falha";
+          result.className = "alert alert-danger mb-0";
+          result.textContent = "Não foi possível executar o teste rápido.";
         }
       } finally {
         if (button) button.disabled = false;
       }
-    }
-
-    function bindManualChecks() {
-      document.querySelectorAll("[data-dev-check]").forEach((button) => {
-        button.addEventListener("click", () => runManualCheck(button.dataset.devCheck, button));
-      });
     }
 
     function renderErrorDetail(detail) {
@@ -1076,8 +1011,8 @@
       lastErrorDetailText = [
         `Erro ${detail.status_code}`,
         `Data: ${formatDateTime(detail.created_at)}`,
-        `Usuario: ${detail.user_name || "-"} (${detail.user_type || "-"})`,
-        `Metodo: ${detail.method || "-"}`,
+        `Usuário: ${detail.user_name || "-"} (${detail.user_type || "-"})`,
+        `Método: ${detail.method || "-"}`,
         `Endpoint: ${detail.endpoint || "-"}`,
         `Path: ${detail.path || "-"}`,
         `Query: ${detail.query_string || "-"}`,
@@ -1127,64 +1062,73 @@
       }
     }
 
-    function bindErrorModal() {
-      document.addEventListener("click", (event) => {
-        const row = event.target.closest("[data-error-id]");
-        if (!row) return;
-        openErrorDetail(row.dataset.errorId);
-      });
+    function setMapStatus(message, visible = true) {
+      setText("devMapStatus", message);
+      const placeholder = document.getElementById("devMapPlaceholder");
+      if (placeholder) placeholder.classList.toggle("d-none", !visible);
+    }
 
-      const copyButton = document.getElementById("devCopyErrorDetail");
-      if (copyButton) {
-        copyButton.addEventListener("click", () => copyText(lastErrorDetailText || "", "devErrorModalSubtitle", "Detalhe copiado"));
+    function updateMap(location, label) {
+      if (!window.google || !window.google.maps || !map) return;
+      map.setCenter(location);
+      map.setZoom(label === defaultLocation.label ? 11 : 14);
+      if (!marker) {
+        marker = new google.maps.Marker({ map, position: location, title: label });
+      } else {
+        marker.setPosition(location);
+        marker.setTitle(label);
+      }
+      setMapStatus("", false);
+    }
+
+    function reverseGeocode(location) {
+      if (!geocoder) return;
+      geocoder.geocode({ location }, (results, status) => {
+        if (status === "OK" && results && results[0]) {
+          setText("devLocationLabel", results[0].formatted_address);
+        }
+      });
+    }
+
+    async function fetchWeather(lat, lng) {
+      try {
+        const params = new URLSearchParams({
+          latitude: lat,
+          longitude: lng,
+          current: "temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m",
+          timezone: "auto",
+        });
+        const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params.toString()}`);
+        if (!response.ok) throw new Error("weather_response");
+        const payload = await response.json();
+        const current = payload.current || {};
+        const temp = Math.round(Number(current.temperature_2m));
+        const humidity = Number(current.relative_humidity_2m);
+        const wind = Number(current.wind_speed_10m);
+        const code = Number(current.weather_code);
+
+        setText("devTemperature", Number.isFinite(temp) ? `${temp}°C` : "--");
+        setText("devWeatherCondition", weatherCodes[code] || "Condição variável");
+        setText("devHumidity", Number.isFinite(humidity) ? `${humidity}%` : "--");
+        setText("devWind", Number.isFinite(wind) ? `${Math.round(wind)} km/h` : "--");
+        setText("devWeatherUpdated", current.time ? new Date(current.time).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : "--");
+      } catch (error) {
+        setText("devWeatherCondition", "Clima indisponível");
       }
     }
 
-    function bindRefreshControls() {
-      const refreshButton = document.getElementById("devRefreshNow");
-      if (refreshButton) {
-        refreshButton.addEventListener("click", async () => {
-          refreshButton.disabled = true;
-          try {
-            await refreshDashboard();
-          } catch (error) {
-            setText("devRefreshStatus", "Falha ao atualizar");
-          } finally {
-            refreshButton.disabled = false;
-          }
-        });
-      }
-
-      const liveButton = document.getElementById("devLiveToggle");
-      if (!liveButton) return;
-      liveButton.addEventListener("click", () => {
-        const enabled = !liveRefreshTimer;
-        liveButton.setAttribute("aria-pressed", enabled ? "true" : "false");
-        liveButton.classList.toggle("btn-light", enabled);
-        liveButton.classList.toggle("btn-outline-light", !enabled);
-        setText("devRefreshStatus", enabled ? "Ao vivo: 30s" : "Atualização manual");
-
-        if (enabled) {
-          refreshDashboard().catch(() => setText("devRefreshStatus", "Falha ao atualizar"));
-          liveRefreshTimer = window.setInterval(() => {
-            refreshDashboard().catch(() => setText("devRefreshStatus", "Falha ao atualizar"));
-          }, 30000);
-        } else {
-          window.clearInterval(liveRefreshTimer);
-          liveRefreshTimer = null;
-        }
-      });
+    function applyLocation(location, label) {
+      const lat = Number(location.lat);
+      const lng = Number(location.lng);
+      setText("devLocationLabel", label || defaultLocation.label);
+      updateMap({ lat, lng }, label || defaultLocation.label);
+      fetchWeather(lat, lng);
     }
 
     window.__initDevDashboardMap = function () {
       const canvas = document.getElementById("devMap");
       if (!canvas || !window.google || !window.google.maps) return;
-
-      const location = {
-        lat: Number(defaultLocation.lat),
-        lng: Number(defaultLocation.lng),
-      };
-
+      const location = { lat: Number(defaultLocation.lat), lng: Number(defaultLocation.lng) };
       geocoder = new google.maps.Geocoder();
       map = new google.maps.Map(canvas, {
         center: location,
@@ -1193,7 +1137,6 @@
         streetViewControl: false,
         fullscreenControl: true,
       });
-
       updateMap(location, defaultLocation.label);
     };
 
@@ -1206,7 +1149,6 @@
         window.__initDevDashboardMap();
         return;
       }
-
       const script = document.createElement("script");
       script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(mapsKey)}&callback=__initDevDashboardMap`;
       script.async = true;
@@ -1215,34 +1157,72 @@
       document.head.appendChild(script);
     }
 
-    document.addEventListener("DOMContentLoaded", () => {
-      bindSnapshotCopy();
-      bindRefreshControls();
-      bindManualChecks();
-      bindTableFilters();
-      bindErrorModal();
-      renderTimeline(dashboardState.failureTimeline);
-      applyLocation(defaultLocation, defaultLocation.label);
-      loadGoogleMaps();
+    function bindControls() {
+      document.getElementById("devRefreshNow")?.addEventListener("click", async (event) => {
+        event.currentTarget.disabled = true;
+        try {
+          await refreshDashboard();
+        } catch (error) {
+          setText("devRefreshStatus", "Falha ao atualizar");
+        } finally {
+          event.currentTarget.disabled = false;
+        }
+      });
+
+      document.getElementById("devLiveToggle")?.addEventListener("click", (event) => {
+        const button = event.currentTarget;
+        const enabled = !liveRefreshTimer;
+        button.setAttribute("aria-pressed", enabled ? "true" : "false");
+        button.classList.toggle("btn-light", enabled);
+        button.classList.toggle("btn-outline-light", !enabled);
+        setText("devRefreshStatus", enabled ? "Ao vivo: 30s" : "Atualização manual");
+        if (enabled) {
+          refreshDashboard().catch(() => setText("devRefreshStatus", "Falha ao atualizar"));
+          liveRefreshTimer = window.setInterval(() => {
+            refreshDashboard().catch(() => setText("devRefreshStatus", "Falha ao atualizar"));
+          }, 30000);
+        } else {
+          window.clearInterval(liveRefreshTimer);
+          liveRefreshTimer = null;
+        }
+      });
+
+      document.getElementById("devCopySnapshot")?.addEventListener("click", () => {
+        copyText(diagnosticSnapshot || "", "devRefreshStatus", "Diagnóstico copiado");
+      });
+
+      document.getElementById("devCopyErrorDetail")?.addEventListener("click", () => {
+        copyText(lastErrorDetailText || "", "devErrorModalSubtitle", "Detalhe copiado");
+      });
+
+      [["devRecentFilter", "devRecentStatusFilter", "devRecentErrorsBody"], ["devRouteFilter", "devRouteStatusFilter", "devTopRoutesBody"]].forEach(([inputId, selectId, bodyId]) => {
+        document.getElementById(inputId)?.addEventListener("input", () => applyTableFilters(inputId, selectId, bodyId));
+        document.getElementById(selectId)?.addEventListener("change", () => applyTableFilters(inputId, selectId, bodyId));
+      });
+
+      document.getElementById("devPresenceFilter")?.addEventListener("input", applyPresenceFilters);
+      document.getElementById("devPresenceStatusFilter")?.addEventListener("change", applyPresenceFilters);
+
+      document.querySelectorAll("[data-dev-check]").forEach((button) => {
+        button.addEventListener("click", () => runManualCheck(button.dataset.devCheck, button));
+      });
+
+      document.addEventListener("click", (event) => {
+        const row = event.target.closest("[data-error-id]");
+        if (row) openErrorDetail(row.dataset.errorId);
+      });
 
       const locationButton = document.getElementById("devUseLocation");
-      if (!locationButton) return;
-
-      locationButton.addEventListener("click", () => {
+      locationButton?.addEventListener("click", () => {
         if (!navigator.geolocation) {
           setText("devLocationLabel", "Geolocalização indisponível neste navegador");
           return;
         }
-
         locationButton.disabled = true;
         locationButton.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> Localizando';
-
         navigator.geolocation.getCurrentPosition(
           (position) => {
-            const location = {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-            };
+            const location = { lat: position.coords.latitude, lng: position.coords.longitude };
             applyLocation(location, "Minha localização");
             reverseGeocode(location);
             locationButton.disabled = false;
@@ -1256,6 +1236,13 @@
           { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }
         );
       });
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      bindControls();
+      renderTimeline({{ failure_timeline|tojson }});
+      applyLocation(defaultLocation, defaultLocation.label);
+      loadGoogleMaps();
     });
   })();
 </script>
