@@ -1,8 +1,10 @@
 import os
 import tempfile
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from io import BytesIO
 
+from flask import current_app
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
@@ -17,7 +19,15 @@ from reportlab.platypus import PageBreak, Paragraph, SimpleDocTemplate, Spacer, 
 
 from app.extensions import db
 from app.models import Solicitacao, Usuario
-from app.modules.piloto_os.exporters import _fmt_date, _try_make_local_rlimage, _try_make_logo, _try_prepare_pdf_image_for_canvas
+from app.modules.piloto_os.exporters import (
+    _download_remote_media_bytes,
+    _fmt_date,
+    _is_remote_media_path,
+    _prepare_pdf_image_source_for_canvas,
+    _try_make_local_rlimage,
+    _try_make_logo,
+    _try_prepare_pdf_image_for_canvas,
+)
 from app.modules.relatorios.service import (
     _coleta_imagens_max_export_items,
     build_relatorio_coleta_imagens_export_data,
@@ -52,6 +62,21 @@ def _env_int(name, default, minimum=None, maximum=None):
 
 
 RELATORIO_PDF_DETALHE_MAX_ROWS = _env_int("RELATORIO_PDF_DETALHE_MAX_ROWS", 300, minimum=50, maximum=2000)
+COLETA_IMAGENS_PDF_IMAGE_DPI = _env_int("RELATORIO_COLETA_IMAGENS_PDF_IMAGE_DPI", 150, minimum=120, maximum=350)
+COLETA_IMAGENS_PDF_JPEG_QUALITY = _env_int("RELATORIO_COLETA_IMAGENS_PDF_JPEG_QUALITY", 78, minimum=70, maximum=95)
+COLETA_IMAGENS_PDF_IMAGE_SPOOL_BYTES = _env_int(
+    "RELATORIO_COLETA_IMAGENS_PDF_IMAGE_SPOOL_MB",
+    1,
+    minimum=1,
+    maximum=8,
+) * 1024 * 1024
+COLETA_IMAGENS_PDF_REMOTE_PREFETCH = _env_int(
+    "RELATORIO_COLETA_IMAGENS_PDF_REMOTE_PREFETCH",
+    3,
+    minimum=0,
+    maximum=5,
+)
+COLETA_IMAGENS_PDF_PREFETCH_MISS = object()
 
 
 def _resolve_filters(user, args):
@@ -1253,7 +1278,44 @@ def _draw_coleta_pdf_logo(c, args, x, y_top):
         return
 
 
-def _draw_coleta_pdf_page(c, item, data, args, *, is_first=False):
+def _close_coleta_pdf_image_source(image_source):
+    if hasattr(image_source, "close"):
+        try:
+            image_source.close()
+        except Exception:
+            pass
+
+
+def _download_coleta_remote_media_for_pdf(app, rel_path):
+    with app.app_context():
+        return _download_remote_media_bytes(rel_path)
+
+
+def _prepare_coleta_pdf_image(rel_path, prefetched_source=None):
+    if prefetched_source is COLETA_IMAGENS_PDF_PREFETCH_MISS:
+        return None
+
+    if prefetched_source is not None:
+        return _prepare_pdf_image_source_for_canvas(
+            prefetched_source,
+            width_mm=148,
+            max_height_mm=96,
+            image_dpi=COLETA_IMAGENS_PDF_IMAGE_DPI,
+            jpeg_quality=COLETA_IMAGENS_PDF_JPEG_QUALITY,
+            spool_max_size=COLETA_IMAGENS_PDF_IMAGE_SPOOL_BYTES,
+        )
+
+    return _try_prepare_pdf_image_for_canvas(
+        rel_path,
+        width_mm=148,
+        max_height_mm=96,
+        image_dpi=COLETA_IMAGENS_PDF_IMAGE_DPI,
+        jpeg_quality=COLETA_IMAGENS_PDF_JPEG_QUALITY,
+        spool_max_size=COLETA_IMAGENS_PDF_IMAGE_SPOOL_BYTES,
+    )
+
+
+def _draw_coleta_pdf_page(c, item, data, args, *, is_first=False, prefetched_image_source=None):
     page_width, page_height = A4
     left = 21 * mm
     right = 21 * mm
@@ -1306,23 +1368,21 @@ def _draw_coleta_pdf_page(c, item, data, args, *, is_first=False):
     image_area_h = 103 * mm
     image_area_top = block_top
     image_area_bottom = block_top - image_area_h
-    image_result = _try_prepare_pdf_image_for_canvas(
+    image_result = _prepare_coleta_pdf_image(
         item.get("imagem_principal_path"),
-        width_mm=148,
-        max_height_mm=96,
+        prefetched_source=prefetched_image_source,
     )
     if image_result:
         image_source, draw_w, draw_h = image_result
         image_x = block_x + (block_width - draw_w) / 2
         image_y = image_area_bottom + (image_area_h - draw_h) / 2
+        image_reader = None
         try:
-            c.drawImage(ImageReader(image_source), image_x, image_y, width=draw_w, height=draw_h, preserveAspectRatio=True, mask="auto")
+            image_reader = ImageReader(image_source)
+            c.drawImage(image_reader, image_x, image_y, width=draw_w, height=draw_h, preserveAspectRatio=True, mask="auto")
         finally:
-            if hasattr(image_source, "close"):
-                try:
-                    image_source.close()
-                except Exception:
-                    pass
+            image_reader = None
+            _close_coleta_pdf_image_source(image_source)
     else:
         c.setFillColor(colors.HexColor("#4b5563"))
         c.setFont("Helvetica", 9.4)
@@ -1379,10 +1439,64 @@ def _build_relatorio_coleta_imagens_pdf_export_streamed(data, args):
         c.save()
         return path, "relatorio_coleta_imagens.pdf"
 
-    for index, item in enumerate(data["levantamentos"]):
-        if index:
-            c.showPage()
-        _draw_coleta_pdf_page(c, item, data, args, is_first=(index == 0))
+    levantamentos = data["levantamentos"]
+    prefetch_workers = min(COLETA_IMAGENS_PDF_REMOTE_PREFETCH, max(0, len(levantamentos) - 1))
+    prefetch_executor = None
+    prefetch_futures = {}
+
+    def schedule_prefetch(item_index):
+        if prefetch_executor is None or item_index >= len(levantamentos) or item_index in prefetch_futures:
+            return
+        rel_path = levantamentos[item_index].get("imagem_principal_path")
+        if not _is_remote_media_path(rel_path):
+            return
+        prefetch_futures[item_index] = prefetch_executor.submit(
+            _download_coleta_remote_media_for_pdf,
+            current_app._get_current_object(),
+            rel_path,
+        )
+
+    try:
+        if prefetch_workers > 0:
+            prefetch_executor = ThreadPoolExecutor(max_workers=prefetch_workers)
+            for next_index in range(1, min(len(levantamentos), 1 + prefetch_workers)):
+                schedule_prefetch(next_index)
+
+        for index, item in enumerate(levantamentos):
+            if index:
+                c.showPage()
+
+            prefetched_source = None
+            future = prefetch_futures.pop(index, None)
+            if future is not None:
+                try:
+                    prefetched_source = future.result()
+                except Exception:
+                    current_app.logger.exception("Erro ao pre-baixar imagem remota para PDF de coleta.")
+                    prefetched_source = COLETA_IMAGENS_PDF_PREFETCH_MISS
+                if prefetched_source is None:
+                    prefetched_source = COLETA_IMAGENS_PDF_PREFETCH_MISS
+
+            schedule_prefetch(index + prefetch_workers)
+            _draw_coleta_pdf_page(
+                c,
+                item,
+                data,
+                args,
+                is_first=(index == 0),
+                prefetched_image_source=prefetched_source,
+            )
+    finally:
+        for future in prefetch_futures.values():
+            if future.done():
+                try:
+                    _close_coleta_pdf_image_source(future.result())
+                except Exception:
+                    pass
+            else:
+                future.cancel()
+        if prefetch_executor is not None:
+            prefetch_executor.shutdown(wait=False, cancel_futures=True)
 
     c.save()
     return path, _coleta_imagens_pdf_name(data)

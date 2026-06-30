@@ -230,8 +230,19 @@ def _download_remote_media_bytes(marker):
         return None
 
 
-def _prepare_pdf_image_source(image_source, width_mm=165, max_height_mm=110):
+def _prepare_pdf_image_source(
+    image_source,
+    width_mm=165,
+    max_height_mm=110,
+    *,
+    image_dpi=None,
+    jpeg_quality=None,
+    spool_max_size=None,
+):
     original_source = image_source
+    image_dpi = int(image_dpi or PDF_IMAGE_DPI)
+    jpeg_quality = int(jpeg_quality or PDF_IMAGE_JPEG_QUALITY)
+    spool_max_size = int(spool_max_size or (2 * 1024 * 1024))
     try:
         with Image.open(image_source) as img:
             img = ImageOps.exif_transpose(img)
@@ -246,8 +257,8 @@ def _prepare_pdf_image_source(image_source, width_mm=165, max_height_mm=110):
                 draw_width_mm *= scale
                 draw_height_mm = float(max_height_mm)
 
-            target_width = max(1, int(round((draw_width_mm / 25.4) * PDF_IMAGE_DPI)))
-            target_height = max(1, int(round((draw_height_mm / 25.4) * PDF_IMAGE_DPI)))
+            target_width = max(1, int(round((draw_width_mm / 25.4) * image_dpi)))
+            target_height = max(1, int(round((draw_height_mm / 25.4) * image_dpi)))
 
             if source_width > target_width or source_height > target_height:
                 img.thumbnail((target_width, target_height), Image.Resampling.LANCZOS)
@@ -260,14 +271,14 @@ def _prepare_pdf_image_source(image_source, width_mm=165, max_height_mm=110):
             elif img.mode != "RGB":
                 img = img.convert("RGB")
 
-            output = tempfile.SpooledTemporaryFile(max_size=2 * 1024 * 1024, mode="w+b")
+            output = tempfile.SpooledTemporaryFile(max_size=spool_max_size, mode="w+b")
             img.save(
                 output,
                 format="JPEG",
-                quality=PDF_IMAGE_JPEG_QUALITY,
+                quality=jpeg_quality,
                 optimize=True,
                 progressive=True,
-                dpi=(PDF_IMAGE_DPI, PDF_IMAGE_DPI),
+                dpi=(image_dpi, image_dpi),
             )
             output.seek(0)
             if hasattr(original_source, "close"):
@@ -285,7 +296,15 @@ def _prepare_pdf_image_source(image_source, width_mm=165, max_height_mm=110):
         return image_source
 
 
-def _try_make_local_rlimage(rel_path, width_mm=165, max_height_mm=110):
+def _try_make_local_rlimage(
+    rel_path,
+    width_mm=165,
+    max_height_mm=110,
+    *,
+    image_dpi=None,
+    jpeg_quality=None,
+    spool_max_size=None,
+):
     if not rel_path:
         return None
 
@@ -304,7 +323,14 @@ def _try_make_local_rlimage(rel_path, width_mm=165, max_height_mm=110):
         image_source = abs_path
 
     try:
-        image_source = _prepare_pdf_image_source(image_source, width_mm=width_mm, max_height_mm=max_height_mm)
+        image_source = _prepare_pdf_image_source(
+            image_source,
+            width_mm=width_mm,
+            max_height_mm=max_height_mm,
+            image_dpi=image_dpi,
+            jpeg_quality=jpeg_quality,
+            spool_max_size=spool_max_size,
+        )
         image = RLImage(image_source)
         base_width = width_mm * mm
         img_width = float(getattr(image, "imageWidth", 0) or 1)
@@ -321,7 +347,15 @@ def _try_make_local_rlimage(rel_path, width_mm=165, max_height_mm=110):
         return None
 
 
-def _try_prepare_pdf_image_for_canvas(rel_path, width_mm=165, max_height_mm=110):
+def _try_prepare_pdf_image_for_canvas(
+    rel_path,
+    width_mm=165,
+    max_height_mm=110,
+    *,
+    image_dpi=None,
+    jpeg_quality=None,
+    spool_max_size=None,
+):
     if not rel_path:
         return None
 
@@ -340,7 +374,42 @@ def _try_prepare_pdf_image_for_canvas(rel_path, width_mm=165, max_height_mm=110)
         image_source = abs_path
 
     try:
-        prepared_source = _prepare_pdf_image_source(image_source, width_mm=width_mm, max_height_mm=max_height_mm)
+        return _prepare_pdf_image_source_for_canvas(
+            image_source,
+            width_mm=width_mm,
+            max_height_mm=max_height_mm,
+            image_dpi=image_dpi,
+            jpeg_quality=jpeg_quality,
+            spool_max_size=spool_max_size,
+        )
+    except Exception:
+        if hasattr(image_source, "close"):
+            try:
+                image_source.close()
+            except Exception:
+                pass
+        current_app.logger.exception("Erro ao preparar imagem da OS para canvas PDF.")
+        return None
+
+
+def _prepare_pdf_image_source_for_canvas(
+    image_source,
+    width_mm=165,
+    max_height_mm=110,
+    *,
+    image_dpi=None,
+    jpeg_quality=None,
+    spool_max_size=None,
+):
+    try:
+        prepared_source = _prepare_pdf_image_source(
+            image_source,
+            width_mm=width_mm,
+            max_height_mm=max_height_mm,
+            image_dpi=image_dpi,
+            jpeg_quality=jpeg_quality,
+            spool_max_size=spool_max_size,
+        )
         with Image.open(prepared_source) as img:
             img_width, img_height = img.size
 
