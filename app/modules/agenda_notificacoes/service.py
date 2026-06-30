@@ -157,6 +157,12 @@ def apply_agenda_user_scope(query, user):
             return query.filter(false())
         return query.filter(Solicitacao.usuario_id == owner_usuario_id)
 
+    if is_equipe_oceano_agenda_user(user):
+        equipe_id = _parse_equipe_oceano_id(user)
+        if not equipe_id:
+            return query.filter(false())
+        return query.filter(Solicitacao.equipe_id == equipe_id)
+
     query = apply_solicitacao_prefeitura_scope(query, user)
     query = apply_solicitacao_regiao_scope(query, user)
 
@@ -165,12 +171,6 @@ def apply_agenda_user_scope(query, user):
         if equipes_query is None:
             return query.filter(false())
         return query.filter(Solicitacao.equipe_id.in_(equipes_query))
-
-    if is_equipe_oceano_agenda_user(user):
-        equipe_id = _parse_equipe_oceano_id(user)
-        if not equipe_id:
-            return query.filter(false())
-        return query.filter(Solicitacao.equipe_id == equipe_id)
 
     if not can_view_all_agenda(user):
         owner_usuario_id = _agenda_owner_usuario_id(user)
