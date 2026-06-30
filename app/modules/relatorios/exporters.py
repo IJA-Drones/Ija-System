@@ -1,3 +1,4 @@
+import gc
 import os
 import tempfile
 from concurrent.futures import ThreadPoolExecutor
@@ -72,9 +73,9 @@ COLETA_IMAGENS_PDF_IMAGE_SPOOL_BYTES = _env_int(
 ) * 1024 * 1024
 COLETA_IMAGENS_PDF_REMOTE_PREFETCH = _env_int(
     "RELATORIO_COLETA_IMAGENS_PDF_REMOTE_PREFETCH",
-    3,
+    1,
     minimum=0,
-    maximum=5,
+    maximum=3,
 )
 COLETA_IMAGENS_PDF_PREFETCH_MISS = object()
 
@@ -1286,24 +1287,32 @@ def _close_coleta_pdf_image_source(image_source):
             pass
 
 
-def _download_coleta_remote_media_for_pdf(app, rel_path):
+def _close_coleta_pdf_image_result(image_result):
+    if image_result and isinstance(image_result, tuple):
+        _close_coleta_pdf_image_source(image_result[0])
+
+
+def _prefetch_coleta_remote_image_for_pdf(app, rel_path):
     with app.app_context():
-        return _download_remote_media_bytes(rel_path)
-
-
-def _prepare_coleta_pdf_image(rel_path, prefetched_source=None):
-    if prefetched_source is COLETA_IMAGENS_PDF_PREFETCH_MISS:
-        return None
-
-    if prefetched_source is not None:
+        image_source = _download_remote_media_bytes(rel_path)
+        if image_source is None:
+            return None
         return _prepare_pdf_image_source_for_canvas(
-            prefetched_source,
+            image_source,
             width_mm=148,
             max_height_mm=96,
             image_dpi=COLETA_IMAGENS_PDF_IMAGE_DPI,
             jpeg_quality=COLETA_IMAGENS_PDF_JPEG_QUALITY,
             spool_max_size=COLETA_IMAGENS_PDF_IMAGE_SPOOL_BYTES,
         )
+
+
+def _prepare_coleta_pdf_image(rel_path, prefetched_image_result=None):
+    if prefetched_image_result is COLETA_IMAGENS_PDF_PREFETCH_MISS:
+        return None
+
+    if prefetched_image_result is not None:
+        return prefetched_image_result
 
     return _try_prepare_pdf_image_for_canvas(
         rel_path,
@@ -1315,7 +1324,7 @@ def _prepare_coleta_pdf_image(rel_path, prefetched_source=None):
     )
 
 
-def _draw_coleta_pdf_page(c, item, data, args, *, is_first=False, prefetched_image_source=None):
+def _draw_coleta_pdf_page(c, item, data, args, *, is_first=False, prefetched_image_result=None):
     page_width, page_height = A4
     left = 21 * mm
     right = 21 * mm
@@ -1370,7 +1379,7 @@ def _draw_coleta_pdf_page(c, item, data, args, *, is_first=False, prefetched_ima
     image_area_bottom = block_top - image_area_h
     image_result = _prepare_coleta_pdf_image(
         item.get("imagem_principal_path"),
-        prefetched_source=prefetched_image_source,
+        prefetched_image_result=prefetched_image_result,
     )
     if image_result:
         image_source, draw_w, draw_h = image_result
@@ -1437,6 +1446,7 @@ def _build_relatorio_coleta_imagens_pdf_export_streamed(data, args):
         }
         _draw_coleta_pdf_page(c, item, data, args, is_first=True)
         c.save()
+        gc.collect()
         return path, "relatorio_coleta_imagens.pdf"
 
     levantamentos = data["levantamentos"]
@@ -1451,7 +1461,7 @@ def _build_relatorio_coleta_imagens_pdf_export_streamed(data, args):
         if not _is_remote_media_path(rel_path):
             return
         prefetch_futures[item_index] = prefetch_executor.submit(
-            _download_coleta_remote_media_for_pdf,
+            _prefetch_coleta_remote_image_for_pdf,
             current_app._get_current_object(),
             rel_path,
         )
@@ -1466,16 +1476,16 @@ def _build_relatorio_coleta_imagens_pdf_export_streamed(data, args):
             if index:
                 c.showPage()
 
-            prefetched_source = None
+            prefetched_image_result = None
             future = prefetch_futures.pop(index, None)
             if future is not None:
                 try:
-                    prefetched_source = future.result()
+                    prefetched_image_result = future.result()
                 except Exception:
                     current_app.logger.exception("Erro ao pre-baixar imagem remota para PDF de coleta.")
-                    prefetched_source = COLETA_IMAGENS_PDF_PREFETCH_MISS
-                if prefetched_source is None:
-                    prefetched_source = COLETA_IMAGENS_PDF_PREFETCH_MISS
+                    prefetched_image_result = COLETA_IMAGENS_PDF_PREFETCH_MISS
+                if prefetched_image_result is None:
+                    prefetched_image_result = COLETA_IMAGENS_PDF_PREFETCH_MISS
 
             schedule_prefetch(index + prefetch_workers)
             _draw_coleta_pdf_page(
@@ -1484,13 +1494,13 @@ def _build_relatorio_coleta_imagens_pdf_export_streamed(data, args):
                 data,
                 args,
                 is_first=(index == 0),
-                prefetched_image_source=prefetched_source,
+                prefetched_image_result=prefetched_image_result,
             )
     finally:
         for future in prefetch_futures.values():
             if future.done():
                 try:
-                    _close_coleta_pdf_image_source(future.result())
+                    _close_coleta_pdf_image_result(future.result())
                 except Exception:
                     pass
             else:
@@ -1499,6 +1509,7 @@ def _build_relatorio_coleta_imagens_pdf_export_streamed(data, args):
             prefetch_executor.shutdown(wait=False, cancel_futures=True)
 
     c.save()
+    gc.collect()
     return path, _coleta_imagens_pdf_name(data)
 
 

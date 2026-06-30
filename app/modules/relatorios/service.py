@@ -62,8 +62,18 @@ class SimplePagination:
             end = start + self.per_page
             self.items = items[start:end]
 
-    def iter_pages(self):
-        return range(1, self.pages + 1)
+    def iter_pages(self, left_edge=2, left_current=2, right_current=4, right_edge=2):
+        last = 0
+        for num in range(1, self.pages + 1):
+            if (
+                num <= left_edge
+                or (self.page - left_current - 1 < num < self.page + right_current)
+                or num > self.pages - right_edge
+            ):
+                if last + 1 != num:
+                    yield None
+                yield num
+                last = num
 
 
 def build_uvis_disponiveis(user, regiao: str | None = None):
