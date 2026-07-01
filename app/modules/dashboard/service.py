@@ -4,6 +4,7 @@ from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import joinedload
 
 from app.models import Drones, Equipe, Solicitacao
+from app.modules.piloto_os.service import build_os_media_context
 from app.shared.os_history_filters import apply_os_history_filters, get_os_history_filters
 from app.shared.query_filters import id_search_clause
 
@@ -257,6 +258,7 @@ def build_uvis_os_form_context(user, os_id):
             if ordem and ordem.respondido_em else ""
         ),
         "drones_equipe": drones_equipe,
+        **build_os_media_context(ordem),
     }
 
 
