@@ -8,16 +8,17 @@
 
 {% block content %}
 {% set meses = {
-    1: "Janeiro", 2: "Fevereiro", 3: "Março", 4: "Abril",
+    1: "Janeiro", 2: "Fevereiro", 3: "Mar&ccedil;o", 4: "Abril",
     5: "Maio", 6: "Junho", 7: "Julho", 8: "Agosto",
     9: "Setembro", 10: "Outubro", 11: "Novembro", 12: "Dezembro"
 } %}
+{% set filtros_ativos = filters.status or filters.tipo_visita or filters.tipo_imovel or filters.tipo_operacao or filters.foco or filters.protocolo or filtros_exportacao.data_ini or filtros_exportacao.data_fim or (uvis_id_selecionado and uvis_id_selecionado != '') %}
 
 <div class="container-fluid py-4" style="max-width: 1200px;">
   <div class="rel-header mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
     <div class="rel-title">
       <h2 class="text-dark m-0">
-        <i class="bi bi-clipboard-data-fill me-2 text-primary"></i> Relatórios de OS
+        <i class="bi bi-clipboard-data-fill me-2 text-primary"></i> Relat&oacute;rios de OS
       </h2>
     </div>
 
@@ -27,16 +28,16 @@
            class="btn btn-outline-primary d-flex align-items-center justify-content-center gap-2"
            style="height: 38px;">
           <i class="bi bi-bar-chart-fill"></i>
-          <span>Relatórios de Solicitações</span>
+          <span>Relat&oacute;rios de Solicita&ccedil;&otilde;es</span>
         </a>
       </div>
 
       <form method="GET" action="{{ url_for('main.relatorios_os_export_pdf') }}"
             class="form-exportar p-0 m-0 d-grid flex-grow-1 flex-md-grow-0"
             style="width: 180px; min-width: 150px;">
-        <input type="hidden" name="mes" value="{{ mes_selecionado }}">
-        <input type="hidden" name="ano" value="{{ ano_selecionado }}">
-        <input type="hidden" name="uvis_id" value="{{ uvis_id_selecionado }}">
+        {% for nome, valor in filtros_exportacao.items() %}
+          <input type="hidden" name="{{ nome }}" value="{{ valor }}">
+        {% endfor %}
         <button type="submit"
                 class="btn btn-danger d-flex align-items-center justify-content-center gap-2"
                 style="height: 38px;"
@@ -49,9 +50,9 @@
       <form method="GET" action="{{ url_for('main.relatorios_os_export_excel') }}"
             class="form-exportar p-0 m-0 d-grid flex-grow-1 flex-md-grow-0"
             style="width: 180px; min-width: 150px;">
-        <input type="hidden" name="mes" value="{{ mes_selecionado }}">
-        <input type="hidden" name="ano" value="{{ ano_selecionado }}">
-        <input type="hidden" name="uvis_id" value="{{ uvis_id_selecionado }}">
+        {% for nome, valor in filtros_exportacao.items() %}
+          <input type="hidden" name="{{ nome }}" value="{{ valor }}">
+        {% endfor %}
         <button type="submit"
                 class="btn btn-secondary d-flex align-items-center justify-content-center gap-2"
                 style="height: 38px;"
@@ -64,44 +65,137 @@
   </div>
 
   <div class="card shadow-sm rounded-4 mb-4 border-0">
-    <div class="card-body">
-      <form method="GET">
-        <div class="row g-2 align-items-end">
-          <div class="col-md-3">
-            <label class="small text-muted">Mês:</label>
-            <select name="mes" class="form-select form-select-sm">
-              {% for num, nome in meses.items() %}
-                <option value="{{ num }}" {% if num|int == mes_selecionado|int %}selected{% endif %}>{{ nome }}</option>
-              {% endfor %}
-            </select>
+    <div class="card-header bg-white border-0 p-3 d-flex justify-content-between align-items-center"
+         data-bs-toggle="collapse"
+         data-bs-target="#collapseFiltrosRelatorioOs"
+         role="button"
+         aria-expanded="{% if filtros_ativos %}true{% else %}false{% endif %}"
+         style="cursor: pointer;">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-funnel-fill text-primary"></i>
+        <span class="fw-bold text-dark">Filtros de Busca</span>
+        {% if filtros_ativos %}
+          <span class="badge rounded-pill bg-primary" style="font-size: 0.7rem;">Filtros Ativos</span>
+        {% endif %}
+      </div>
+      <i class="bi bi-chevron-down text-muted"></i>
+    </div>
+
+    <div class="collapse {% if filtros_ativos %}show{% endif %}" id="collapseFiltrosRelatorioOs">
+      <div class="card-body pt-0">
+        <form method="GET">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <div class="mb-3">
+                <label class="small fw-bold text-muted mb-1 text-uppercase">M&ecirc;s</label>
+                <select name="mes" class="form-select shadow-sm border-light-subtle">
+                  {% for num, nome in meses.items() %}
+                    <option value="{{ num }}" {% if num|int == mes_selecionado|int %}selected{% endif %}>{{ nome|safe }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="small fw-bold text-muted mb-1 text-uppercase">Ano</label>
+                <select name="ano" class="form-select shadow-sm border-light-subtle">
+                  {% for ano in anos_disponiveis %}
+                    <option value="{{ ano }}" {% if ano|int == ano_selecionado|int %}selected{% endif %}>{{ ano }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div>
+                <label class="small fw-bold text-muted mb-1 text-uppercase">Unidade (UVIS)</label>
+                <select name="uvis_id" class="form-select shadow-sm border-light-subtle">
+                  <option value="">Todas as Unidades</option>
+                  {% for id, nome in uvis_disponiveis %}
+                    <option value="{{ id }}" {% if id|int == uvis_id_selecionado|int %}selected{% endif %}>{{ nome }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+
+            <div class="col-md-4">
+              <div class="mb-3">
+                <label class="small fw-bold text-muted mb-1 text-uppercase">Status</label>
+                <select name="status" class="form-select shadow-sm border-light-subtle">
+                  <option value="">Todos os status</option>
+                  <option value="PENDENTE" {{ 'selected' if filters.status == 'PENDENTE' }}>Pendentes</option>
+                  <option value="EM AN&Aacute;LISE" {{ 'selected' if filters.status == 'EM ANÁLISE' or filters.status == 'EM AN&Aacute;LISE' }}>Em An&aacute;lise</option>
+                  <option value="APROVADO" {{ 'selected' if filters.status == 'APROVADO' }}>Aprovados</option>
+                  <option value="NEGADO" {{ 'selected' if filters.status == 'NEGADO' }}>Negados</option>
+                  <option value="CONCLU&Iacute;DO" {{ 'selected' if filters.status in ['CONCLUÍDO', 'CONCLUIDO', 'CONCLU&Iacute;DO'] }}>Conclu&iacute;dos</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="small fw-bold text-muted mb-1 text-uppercase">Foco da A&ccedil;&atilde;o</label>
+                <select name="foco" class="form-select shadow-sm border-light-subtle">
+                  <option value="">Todos os Focos</option>
+                  {% for opcao in solicitacao_filter_foco_opcoes %}
+                    <option value="{{ opcao }}" {{ 'selected' if filters.foco == opcao }}>{{ opcao }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div>
+                <label class="small fw-bold text-muted mb-1 text-uppercase">Tipo de Opera&ccedil;&atilde;o</label>
+                <select name="tipo_operacao" class="form-select shadow-sm border-light-subtle">
+                  <option value="">Todas as Opera&ccedil;&otilde;es</option>
+                  <option value="Monitoramento" {{ 'selected' if filters.tipo_operacao == 'Monitoramento' }}>Monitoramento</option>
+                  <option value="Tratamento" {{ 'selected' if filters.tipo_operacao == 'Tratamento' }}>Tratamento</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="col-md-4">
+              <div class="mb-3">
+                <label class="small fw-bold text-muted mb-1 text-uppercase">Tipo de Visita</label>
+                <select name="tipo_visita" class="form-select shadow-sm border-light-subtle">
+                  <option value="">Todos os tipos</option>
+                  {% for opcao in solicitacao_tipo_visita_opcoes %}
+                    <option value="{{ opcao }}" {{ 'selected' if filters.tipo_visita == opcao }}>{{ opcao }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="small fw-bold text-muted mb-1 text-uppercase">Tipo de Im&oacute;vel</label>
+                <select name="tipo_imovel" class="form-select shadow-sm border-light-subtle">
+                  <option value="">Todos os im&oacute;veis</option>
+                  {% for opcao in solicitacao_tipo_imovel_opcoes %}
+                    <option value="{{ opcao }}" {{ 'selected' if filters.tipo_imovel == opcao }}>{{ opcao }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div>
+                <label class="small fw-bold text-muted mb-1 text-uppercase">ID ou Protocolo</label>
+                <input type="text"
+                       name="protocolo"
+                       class="form-control shadow-sm border-light-subtle font-monospace"
+                       placeholder="ID da solicita&ccedil;&atilde;o ou protocolo"
+                       value="{{ filters.protocolo }}">
+              </div>
+            </div>
+
+            <div class="col-12">
+              <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                  <label class="small fw-bold text-muted mb-1 text-uppercase">Data Inicial</label>
+                  <input type="date" name="data_ini" class="form-control shadow-sm border-light-subtle" value="{{ filters.data_ini.isoformat() if filters.data_ini else '' }}">
+                </div>
+                <div class="col-md-3">
+                  <label class="small fw-bold text-muted mb-1 text-uppercase">Data Final</label>
+                  <input type="date" name="data_fim" class="form-control shadow-sm border-light-subtle" value="{{ filters.data_fim.isoformat() if filters.data_fim else '' }}">
+                </div>
+                <div class="col-md-6 d-flex gap-2">
+                  <button class="btn btn-primary w-100 fw-bold shadow-sm d-flex align-items-center justify-content-center" type="submit" style="background-color: #2c5282; border: none; height: 38px;">
+                    <i class="bi bi-search me-2"></i> Filtrar
+                  </button>
+                  <a href="{{ url_for('main.relatorios_os') }}" class="btn btn-outline-secondary px-3 shadow-sm d-flex align-items-center justify-content-center" style="height: 38px;">
+                    <i class="bi bi-x-lg me-2"></i> Limpar
+                  </a>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="col-md-3">
-            <label class="small text-muted">Ano:</label>
-            <select name="ano" class="form-select form-select-sm">
-              {% for ano in anos_disponiveis %}
-                <option value="{{ ano }}" {% if ano|int == ano_selecionado|int %}selected{% endif %}>{{ ano }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="col-md-3">
-            <label class="small text-muted">Unidade (UVIS):</label>
-            <select name="uvis_id" class="form-select form-select-sm">
-              <option value="">Todas as Unidades</option>
-              {% for id, nome in uvis_disponiveis %}
-                <option value="{{ id }}" {% if id|int == uvis_id_selecionado|int %}selected{% endif %}>{{ nome }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="col-md-3 d-flex gap-2">
-            <button class="btn btn-success btn-sm w-100" type="submit">
-              <i class="bi bi-funnel"></i> Filtrar
-            </button>
-            <a href="{{ url_for('main.relatorios_os') }}" class="btn btn-outline-secondary btn-sm w-100">
-              <i class="bi bi-x-lg"></i> Limpar
-            </a>
-          </div>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   </div>
 
@@ -117,7 +211,7 @@
     <div class="col-6 col-md-4 col-lg-2">
       <div class="card info status-completed h-100 shadow-sm rounded-4">
         <div class="card-body">
-          <h6 class="text-uppercase mb-2 text-muted">Concluídas</h6>
+          <h6 class="text-uppercase mb-2 text-muted">Conclu&iacute;das</h6>
           <h2 class="mb-0 fw-bold text-completed">{{ total_concluidas }}</h2>
         </div>
       </div>
@@ -141,7 +235,7 @@
     <div class="col-6 col-md-4 col-lg-3">
       <div class="card info h-100 shadow-sm rounded-4">
         <div class="card-body">
-          <h6 class="text-uppercase mb-2 text-muted">Não realizadas</h6>
+          <h6 class="text-uppercase mb-2 text-muted">N&atilde;o realizadas</h6>
           <h2 class="mb-0 fw-bold text-danger">{{ total_nao_realizadas }}</h2>
         </div>
       </div>
@@ -151,13 +245,13 @@
   <div class="row g-4 mb-4">
     <div class="col-lg-6">
       <div class="card shadow-sm rounded-4 p-4 h-100">
-        <h5 class="mb-3 text-dark"><i class="bi bi-pie-chart-fill me-2"></i>Situação da Aplicação</h5>
+        <h5 class="mb-3 text-dark"><i class="bi bi-pie-chart-fill me-2"></i>Situa&ccedil;&atilde;o da Aplica&ccedil;&atilde;o</h5>
         <div style="height:320px;"><canvas id="chartSituacao"></canvas></div>
       </div>
     </div>
     <div class="col-lg-6">
       <div class="card shadow-sm rounded-4 p-4 h-100">
-        <h5 class="mb-3 text-dark"><i class="bi bi-journal-text me-2"></i>Tipo de Aplicação</h5>
+        <h5 class="mb-3 text-dark"><i class="bi bi-journal-text me-2"></i>Tipo de Aplica&ccedil;&atilde;o</h5>
         <div style="height:320px;"><canvas id="chartTipo"></canvas></div>
       </div>
     </div>
@@ -172,7 +266,7 @@
     </div>
     <div class="col-lg-6">
       <div class="card shadow-sm rounded-4 p-4 h-100">
-        <h5 class="mb-3 text-dark"><i class="bi bi-graph-up me-2"></i>Histórico Mensal de OS</h5>
+        <h5 class="mb-3 text-dark"><i class="bi bi-graph-up me-2"></i>Hist&oacute;rico Mensal de OS</h5>
         <div style="height:320px;"><canvas id="chartMensal"></canvas></div>
       </div>
     </div>
@@ -229,7 +323,7 @@
     const el = document.getElementById(id);
     return el ? JSON.parse(el.textContent) : [];
   };
-  const clean = (v) => (v === null || v === undefined || v === "" ? "Não informado" : String(v));
+  const clean = (v) => (v === null || v === undefined || v === "" ? "N\u00e3o informado" : String(v));
   const palette = ["#0d6efd", "#20c997", "#ffc107", "#dc3545", "#6f42c1", "#0dcaf0", "#fd7e14", "#198754", "#adb5bd", "#343a40"];
 
   const dadosSituacao = readJson("dados-situacao-json").map(([a, b]) => [clean(a), b]);
