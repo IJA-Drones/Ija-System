@@ -73,7 +73,7 @@ COLETA_IMAGENS_PDF_IMAGE_SPOOL_BYTES = _env_int(
 ) * 1024 * 1024
 COLETA_IMAGENS_PDF_REMOTE_PREFETCH = _env_int(
     "RELATORIO_COLETA_IMAGENS_PDF_REMOTE_PREFETCH",
-    1,
+    0,
     minimum=0,
     maximum=3,
 )

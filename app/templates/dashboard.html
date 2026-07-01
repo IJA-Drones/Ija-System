@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_pagination.html" import render_pagination %}
+{% from "_retorno_ciclo_resumo.html" import render_retorno_ciclo_resumo %}
 {% block extra_styles %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
@@ -255,7 +256,7 @@
             <i class="bi bi-funnel-fill text-primary"></i>
             <span class="fw-bold text-dark">Filtros de Busca</span>
             {% if request.args.get('status') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or request.args.get('foco')
-               or request.args.get('protocolo') or request.args.get('data_ini') or request.args.get('data_fim') or filtro_tipo_operacao %}
+               or request.args.get('protocolo') or request.args.get('data_ini') or request.args.get('data_fim') or filtro_tipo_operacao or request.args.get('retorno_automatico') %}
                 <span class="badge rounded-pill bg-primary" style="font-size: 0.7rem;">Filtros Ativos</span>
             {% endif %}
         </div>
@@ -263,7 +264,7 @@
     </div>
 
     <div class="collapse {% if request.args.get('status') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or request.args.get('foco')
-         or request.args.get('protocolo') or request.args.get('data_ini') or request.args.get('data_fim') or filtro_tipo_operacao %}show{% endif %}" id="collapseFiltros">
+         or request.args.get('protocolo') or request.args.get('data_ini') or request.args.get('data_fim') or filtro_tipo_operacao or request.args.get('retorno_automatico') %}show{% endif %}" id="collapseFiltros">
           <div class="card-body pt-0">
               <form method="GET">
                   <div class="row g-3">
@@ -346,11 +347,21 @@
                                   value="{{ request.args.get('protocolo', '') }}"
                               >
                           </div>
+                          <div class="mb-3">
+                              <label class="small fw-bold text-muted mb-1 text-uppercase">Retorno automatico</label>
+                              {% set filtro_retorno = (request.args.get('retorno_automatico', '') or '')|upper %}
+                              <select name="retorno_automatico" class="form-select shadow-sm border-light-subtle">
+                                  <option value="" {% if not filtro_retorno %}selected{% endif %}>Todos</option>
+                                  <option value="RETORNO" {% if filtro_retorno in ['SIM', 'RETORNO'] %}selected{% endif %}>Somente retornos automaticos</option>
+                                  <option value="GEROU" {% if filtro_retorno == 'GEROU' %}selected{% endif %}>OS que geraram retorno</option>
+                                  <option value="CICLO" {% if filtro_retorno == 'CICLO' %}selected{% endif %}>Qualquer ciclo com retorno</option>
+                              </select>
+                          </div>
                           <div class="d-flex align-items-end gap-2" style="height: 38px;">
                               <button type="submit" class="btn btn-primary w-100 fw-bold shadow-sm d-flex align-items-center justify-content-center" style="background-color: #2c5282; border: none; height: 38px;">
                                   <i class="bi bi-search me-2"></i> Filtrar
                               </button>
-                              {% if request.args.get('status') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or filtro_tipo_operacao or request.args.get('foco') or request.args.get('protocolo') or request.args.get('data_ini') or request.args.get('data_fim') %}
+                              {% if request.args.get('status') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or filtro_tipo_operacao or request.args.get('foco') or request.args.get('protocolo') or request.args.get('data_ini') or request.args.get('data_fim') or request.args.get('retorno_automatico') %}
                                   <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary px-3 shadow-sm d-flex align-items-center justify-content-center" style="height: 38px;" title="Limpar Filtros">
                                       <i class="bi bi-x-lg"></i> Limpar
                                   </a>
@@ -378,6 +389,7 @@
           </thead>
           <tbody>
             {% for p in solicitacoes %}
+            {% set retorno_resumo = retorno_ciclos.get(p.id) if retorno_ciclos is defined else none %}
             <tr>
               <td class="ps-4">
                 <strong class="text-main">
@@ -396,6 +408,7 @@
                   <small class="text-muted">
                     {{ p.bairro }} - {{ p.cidade }}/{{ p.uf }}
                   </small>
+                  {{ render_retorno_ciclo_resumo(retorno_resumo) }}
 
                   <div class="mt-1">
                     <span class="badge bg-secondary">{{ p.foco }}</span>

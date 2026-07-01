@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_historico_os_filters.html" import render_historico_os_filters %}
+{% from "_retorno_ciclo_resumo.html" import render_retorno_ciclo_resumo %}
 
 {% block extra_styles %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
@@ -151,6 +152,7 @@
         </thead>
         <tbody>
           {% for p in pedidos %}
+            {% set retorno_resumo = retorno_ciclos.get(p.id) if retorno_ciclos is defined else none %}
             {% set ordem = p.ordem_servico_equipe_uvis %}
             <tr>
               <td class="ps-4" data-label="OS">
@@ -158,6 +160,7 @@
                 {% if ordem and ordem.identificador_os %}
                   <br><small class="text-muted">{{ ordem.identificador_os }}</small>
                 {% endif %}
+                {{ render_retorno_ciclo_resumo(retorno_resumo) }}
               </td>
 
               <td data-label="Localização">

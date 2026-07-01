@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_pagination.html" import render_pagination %}
+{% from "_retorno_ciclo_resumo.html" import render_retorno_ciclo_resumo %}
 
 {% block extra_styles %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
@@ -155,7 +156,7 @@
     </li>
   </ul>
 
-  {% set filtros_ativos = filtros.status or filtros.unidade or filtros.regiao or filtros.equipe or filtros.apoio_cet or filtros.tipo_visita or filtros.tipo_imovel or filtros.foco or filtros.protocolo or filtros.endereco or filtros.data_ini or filtros.data_fim %}
+  {% set filtros_ativos = filtros.status or filtros.unidade or filtros.regiao or filtros.equipe or filtros.apoio_cet or filtros.tipo_visita or filtros.tipo_imovel or filtros.foco or filtros.protocolo or filtros.endereco or filtros.data_ini or filtros.data_fim or filtros.retorno_automatico %}
   <div class="card shadow-sm rounded-4 mb-4 border-0">
     <div
       class="card-header border-0 p-3 d-flex justify-content-between align-items-center"
@@ -184,6 +185,16 @@
                 <option value="" {% if not filtro_status_os %}selected{% endif %}>Todas</option>
                 <option value="EM_ANDAMENTO" {% if filtro_status_os == 'EM_ANDAMENTO' %}selected{% endif %}>Em andamento</option>
                 <option value="CONCLUIDAS" {% if filtro_status_os == 'CONCLUIDAS' %}selected{% endif %}>Concluídas</option>
+              </select>
+            </div>
+
+            <div class="col-md-3">
+              <label class="small text-muted">Retorno automatico:</label>
+              <select name="retorno_automatico" class="form-select form-select-sm">
+                <option value="" {% if not filtros.retorno_automatico %}selected{% endif %}>Todos</option>
+                <option value="RETORNO" {% if filtros.retorno_automatico in ['SIM', 'RETORNO'] %}selected{% endif %}>Somente retornos automaticos</option>
+                <option value="GEROU" {% if filtros.retorno_automatico == 'GEROU' %}selected{% endif %}>OS que geraram retorno</option>
+                <option value="CICLO" {% if filtros.retorno_automatico == 'CICLO' %}selected{% endif %}>Qualquer ciclo com retorno</option>
               </select>
             </div>
 
@@ -341,6 +352,7 @@
         </thead>
         <tbody>
           {% for p in pedidos %}
+            {% set retorno_resumo = retorno_ciclos.get(p.id) if retorno_ciclos is defined else none %}
             {% set status_upper = (p.status or '')|upper %}
             {% set os_em_andamento = 'CONCLU' not in status_upper %}
             {% set ordem_uvis = p.ordem_servico_equipe_uvis %}
@@ -353,6 +365,7 @@
                 {% elif filtro_tipo_os == 'piloto' and p.ordem_servico and p.ordem_servico.identificador_os %}
                   <br><small class="text-muted">{{ p.ordem_servico.identificador_os }}</small>
                 {% endif %}
+                {{ render_retorno_ciclo_resumo(retorno_resumo) }}
               </td>
               <td>
                 <strong class="text-primary">{{ p.usuario.nome_uvis if p.usuario else '-' }}</strong><br>

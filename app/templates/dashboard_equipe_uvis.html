@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_pagination.html" import render_pagination %}
+{% from "_retorno_ciclo_resumo.html" import render_retorno_ciclo_resumo %}
 {% block extra_styles %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
@@ -257,11 +258,44 @@
               <i class="bi bi-funnel-fill text-primary"></i>
               <span class="text-dark">Filtros de Busca</span>
               {% if request.args.get('status') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or filtro_tipo_operacao or request.args.get('foco')
-                 or request.args.get('protocolo') or request.args.get('data_ini') or request.args.get('data_fim') %}
+                 or request.args.get('protocolo') or request.args.get('data_ini') or request.args.get('data_fim') or request.args.get('retorno_automatico') %}
                   <span class="badge bg-danger rounded-circle p-1" style="width: 8px; height: 8px;"></span>
               {% endif %}
           </div>
           <i class="bi bi-chevron-down text-muted"></i>
+      </div>
+
+      <div class="px-3 pt-3 pb-2 border-top">
+          <form method="GET" class="row g-2 align-items-end">
+              <input type="hidden" name="status" value="{{ request.args.get('status', '') }}">
+              <input type="hidden" name="tipo_visita" value="{{ request.args.get('tipo_visita', '') }}">
+              <input type="hidden" name="tipo_imovel" value="{{ request.args.get('tipo_imovel', '') }}">
+              <input type="hidden" name="tipo_operacao" value="{{ filtro_tipo_operacao }}">
+              <input type="hidden" name="foco" value="{{ request.args.get('foco', '') }}">
+              <input type="hidden" name="protocolo" value="{{ request.args.get('protocolo', '') }}">
+              <input type="hidden" name="data_ini" value="{{ request.args.get('data_ini', '') }}">
+              <input type="hidden" name="data_fim" value="{{ request.args.get('data_fim', '') }}">
+              <div class="col-12 col-md-5 col-lg-4">
+                  <label class="small text-muted mb-1">Ciclo / retorno automatico</label>
+                  {% set filtro_retorno_rapido = (request.args.get('retorno_automatico', '') or '')|upper %}
+                  <select name="retorno_automatico" class="form-select form-select-sm">
+                      <option value="" {% if not filtro_retorno_rapido %}selected{% endif %}>Todos os ciclos</option>
+                      <option value="RETORNO" {% if filtro_retorno_rapido in ['SIM', 'RETORNO'] %}selected{% endif %}>Somente retornos automaticos</option>
+                      <option value="GEROU" {% if filtro_retorno_rapido == 'GEROU' %}selected{% endif %}>OS que geraram retorno</option>
+                      <option value="CICLO" {% if filtro_retorno_rapido == 'CICLO' %}selected{% endif %}>Qualquer ciclo com retorno</option>
+                  </select>
+              </div>
+              <div class="col-12 col-md-auto">
+                  <button type="submit" class="btn btn-primary btn-sm w-100">
+                      <i class="bi bi-search me-1"></i> Buscar ciclos
+                  </button>
+              </div>
+              <div class="col-12 col-md-auto">
+                  <button class="btn btn-outline-secondary btn-sm w-100" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFiltros">
+                      <i class="bi bi-sliders me-1"></i> Mais filtros
+                  </button>
+              </div>
+          </form>
       </div>
 
       <div class="collapse {% if request.args.get('status') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or filtro_tipo_operacao or request.args.get('foco')
@@ -344,13 +378,24 @@
                         >
                       </div>
 
+                      <div class="col-md-3">
+                        <label class="small text-muted mb-1">Retorno automatico</label>
+                        {% set filtro_retorno = (request.args.get('retorno_automatico', '') or '')|upper %}
+                        <select name="retorno_automatico" class="form-select form-select-sm">
+                          <option value="" {% if not filtro_retorno %}selected{% endif %}>Todos</option>
+                          <option value="RETORNO" {% if filtro_retorno in ['SIM', 'RETORNO'] %}selected{% endif %}>Somente retornos automaticos</option>
+                          <option value="GEROU" {% if filtro_retorno == 'GEROU' %}selected{% endif %}>OS que geraram retorno</option>
+                          <option value="CICLO" {% if filtro_retorno == 'CICLO' %}selected{% endif %}>Qualquer ciclo com retorno</option>
+                        </select>
+                      </div>
+
                       <div class="col-md-3 d-flex gap-2">
                           <button type="submit" class="btn btn-success btn-sm w-100">
                             <i class="bi bi-funnel me-2"></i> Filtrar
                           </button>
 
                           {% if request.args.get('status') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or filtro_tipo_operacao or request.args.get('foco')
-                             or request.args.get('protocolo') or request.args.get('data_ini') or request.args.get('data_fim') %}
+                             or request.args.get('protocolo') or request.args.get('data_ini') or request.args.get('data_fim') or request.args.get('retorno_automatico') %}
                               <a href="{{ url_for('main.dashboard_equipe_uvis') }}" class="btn btn-outline-secondary btn-sm w-100">
                                   <i class="bi bi-x-lg"></i> Limpar
                               </a>
@@ -377,6 +422,7 @@
           </thead>
           <tbody>
             {% for p in solicitacoes %}
+            {% set retorno_resumo = retorno_ciclos.get(p.id) if retorno_ciclos is defined else none %}
             <tr>
               <td class="ps-4">
                 <strong class="text-main">
@@ -395,6 +441,7 @@
                   <small class="text-muted">
                     {{ p.bairro }} - {{ p.cidade }}/{{ p.uf }}
                   </small>
+                  {{ render_retorno_ciclo_resumo(retorno_resumo) }}
 
                   <div class="mt-1">
                     <span class="badge bg-secondary">{{ p.foco }}</span>

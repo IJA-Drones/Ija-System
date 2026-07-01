@@ -20,6 +20,7 @@ from app.shared.access import (
     apply_regiao_scope,
     apply_solicitacao_prefeitura_scope,
 )
+from app.shared.os_history_filters import apply_retorno_automatico_filter
 from app.shared.query_filters import id_search_clause
 from app.shared.uploads import allowed_file, get_upload_folder
 
@@ -146,6 +147,7 @@ def build_admin_dashboard_query(
     filtro_foco: str = "",
     filtro_data_ini: str = "",
     filtro_data_fim: str = "",
+    filtro_retorno_automatico: str = "",
 ):
     query = (
         Solicitacao.query
@@ -202,6 +204,8 @@ def build_admin_dashboard_query(
 
     if filtro_foco:
         query = query.filter(Solicitacao.foco == filtro_foco)
+
+    query = apply_retorno_automatico_filter(query, filtro_retorno_automatico)
 
     return _apply_data_agendamento_range(query, filtro_data_ini, filtro_data_fim)
 
@@ -322,6 +326,7 @@ def build_admin_historico_os_query(user, filtros, filtro_tipo_os: str, filtro_eq
         filtro_foco=filtros["foco"],
         filtro_data_ini=filtros["data_ini"],
         filtro_data_fim=filtros["data_fim"],
+        filtro_retorno_automatico=filtros["retorno_automatico"],
     ).options(
         db.selectinload(Solicitacao.ordem_servico).selectinload(OrdemServico.equipe),
         db.selectinload(Solicitacao.ordem_servico_equipe_uvis),
@@ -412,6 +417,7 @@ def build_admin_export_query(
     filtro_foco: str = "",
     filtro_data_ini: str = "",
     filtro_data_fim: str = "",
+    filtro_retorno_automatico: str = "",
 ):
     query = (
         Solicitacao.query
@@ -463,6 +469,8 @@ def build_admin_export_query(
     if filtro_foco:
         query = query.filter(Solicitacao.foco == filtro_foco)
 
+    query = apply_retorno_automatico_filter(query, filtro_retorno_automatico)
+
     query = _apply_data_agendamento_range(query, filtro_data_ini, filtro_data_fim)
 
     return query.order_by(Solicitacao.data_criacao.desc())
@@ -481,6 +489,7 @@ def build_admin_dashboard_export(
     filtro_foco: str = "",
     filtro_data_ini: str = "",
     filtro_data_fim: str = "",
+    filtro_retorno_automatico: str = "",
 ):
     pedidos = build_admin_export_query(
         user=user,
@@ -495,6 +504,7 @@ def build_admin_dashboard_export(
         filtro_foco=filtro_foco,
         filtro_data_ini=filtro_data_ini,
         filtro_data_fim=filtro_data_fim,
+        filtro_retorno_automatico=filtro_retorno_automatico,
     ).all()
 
     wb = Workbook()

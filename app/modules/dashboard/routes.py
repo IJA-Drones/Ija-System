@@ -65,17 +65,7 @@ def register_routes(bp):
 
         return render_template(
             "piloto_os_formulario.html",
-            solicitacao=context["solicitacao"],
-            equipe=context["equipe"],
-            ordem=context["ordem"],
-            modo_visualizacao=context["modo_visualizacao"],
-            uvis_nome=context["uvis_nome"],
-            endereco_os=context["endereco_os"],
-            piloto_padrao=context["piloto_padrao"],
-            auxiliar_padrao=context["auxiliar_padrao"],
-            respondido_por_padrao=context["respondido_por_padrao"],
-            respondido_em_value=context["respondido_em_value"],
-            drones_equipe=context["drones_equipe"],
+            **context,
             calculo_dosagem_planejado=context.get("calculo_dosagem_planejado", {}),
             url_voltar=url_voltar,
             form_action="#",

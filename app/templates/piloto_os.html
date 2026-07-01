@@ -1,5 +1,7 @@
 ﻿{% extends "base.html" %}
 
+{% from "_retorno_ciclo_resumo.html" import render_retorno_ciclo_resumo %}
+
 {% block extra_styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}" />
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}" />
@@ -31,13 +33,28 @@
     display: flex;
     align-items: center;
     gap: 12px;
+    flex-wrap: wrap;
   }
   .piloto-os-search {
-    flex: 1 1 420px;
+    flex: 1 1 520px;
+    min-width: 280px;
+  }
+  .piloto-os-filter-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
+  }
+  .piloto-os-filter-actions .form-select {
+    width: 220px;
+  }
+  .piloto-os-filter-actions .btn {
+    white-space: nowrap;
   }
   .piloto-os-week {
     flex: 0 0 auto;
     white-space: nowrap;
+    margin-left: auto;
   }
 
   .status-badge { font-weight: 600; padding: 0.45em 0.9em; }
@@ -137,10 +154,16 @@
     }
     .piloto-os-search {
       flex-basis: auto;
+      min-width: 0;
     }
     .piloto-os-filter-actions {
-      display: flex;
+      width: 100%;
       gap: 8px;
+      flex-wrap: wrap;
+    }
+    .piloto-os-filter-actions .form-select {
+      width: 100%;
+      flex: 1 1 100%;
     }
     .piloto-os-filter-actions .btn {
       flex: 1 1 0;
@@ -415,10 +438,17 @@
           >
         </div>
         <div class="piloto-os-filter-actions">
+          {% set filtro_retorno = (request.args.get('retorno_automatico', '') or '')|upper %}
+          <select name="retorno_automatico" class="form-select" aria-label="Filtrar retorno automatico">
+            <option value="" {% if not filtro_retorno %}selected{% endif %}>Todos os ciclos</option>
+            <option value="RETORNO" {% if filtro_retorno in ['SIM', 'RETORNO'] %}selected{% endif %}>Retornos automaticos</option>
+            <option value="GEROU" {% if filtro_retorno == 'GEROU' %}selected{% endif %}>OS que geraram retorno</option>
+            <option value="CICLO" {% if filtro_retorno == 'CICLO' %}selected{% endif %}>Qualquer ciclo com retorno</option>
+          </select>
           <button type="submit" class="btn btn-primary">
             <i class="bi bi-search me-1"></i> Buscar
           </button>
-          {% if busca %}
+          {% if busca or filtro_retorno %}
             <a href="{{ url_for('main.piloto_os') }}" class="btn btn-outline-secondary">
               <i class="bi bi-x-lg me-1"></i> Limpar
             </a>
@@ -448,6 +478,7 @@
         </thead>
         <tbody>
           {% for s in pedidos %}
+          {% set retorno_resumo = retorno_ciclos.get(s.id) if retorno_ciclos is defined else none %}
           <tr>
             <td class="ps-4">
               <div class="fw-bold text-dark">{{ s.data_agendamento.strftime('%d/%m/%Y') if s.data_agendamento else '-' }}</div>
@@ -470,6 +501,7 @@
                   <span class="small text-muted">
                     <i class="bi bi-geo-alt me-1"></i>{{ s.bairro or '-' }} — {{ s.cidade or '-' }}
                   </span>
+                  {{ render_retorno_ciclo_resumo(retorno_resumo) }}
 
                   {% if s.latitude and s.longitude %}
                     <div class="mt-1 mt-md-0">

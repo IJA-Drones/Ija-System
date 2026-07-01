@@ -112,6 +112,15 @@
     .media-filter-actions .btn {
       min-width: 120px;
     }
+    .media-export-status {
+      border: 1px solid #dbe4f0;
+      border-radius: 0.75rem;
+      background: #f8fbff;
+    }
+    .media-export-status .progress {
+      height: 0.45rem;
+      background: #e4edf7;
+    }
     @media (max-width: 767.98px) {
       .media-report-meta {
         grid-template-columns: 1fr;
@@ -129,6 +138,7 @@
   5: "Maio", 6: "Junho", 7: "Julho", 8: "Agosto",
   9: "Setembro", 10: "Outubro", 11: "Novembro", 12: "Dezembro"
 } %}
+{% set relatorio_pdf_job_id = request.args.get('relatorio_pdf_job_id') %}
 <div class="container-fluid py-4" style="max-width: 1280px;">
   <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
     <div>
@@ -151,6 +161,23 @@
       </form>
     </div>
   </div>
+
+  {% if relatorio_pdf_job_id %}
+    <div id="coletaPdfJobStatus" class="media-export-status p-3 mb-4" data-job-id="{{ relatorio_pdf_job_id }}">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+        <div class="fw-semibold text-dark">
+          <i class="bi bi-file-earmark-pdf-fill text-danger me-1"></i>
+          <span id="coletaPdfJobMessage">Gerando PDF do relatorio...</span>
+        </div>
+        <a id="coletaPdfJobDownload" href="#" class="btn btn-sm btn-danger d-none">
+          <i class="bi bi-download me-1"></i>Baixar PDF
+        </a>
+      </div>
+      <div class="progress" role="progressbar" aria-label="Progresso do PDF">
+        <div id="coletaPdfJobProgress" class="progress-bar bg-danger" style="width: 8%;"></div>
+      </div>
+    </div>
+  {% endif %}
 
   <div class="card media-filter-card shadow-sm rounded-4 mb-4 border-0">
     <div
@@ -499,4 +526,61 @@
     </div>
   {% endif %}
 </div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  {% set relatorio_pdf_job_id = request.args.get('relatorio_pdf_job_id') %}
+  {% if relatorio_pdf_job_id %}
+    <script>
+      (() => {
+        const statusBox = document.getElementById("coletaPdfJobStatus");
+        const message = document.getElementById("coletaPdfJobMessage");
+        const progress = document.getElementById("coletaPdfJobProgress");
+        const download = document.getElementById("coletaPdfJobDownload");
+        const jobId = statusBox?.dataset.jobId;
+        if (!jobId || !statusBox || !message || !progress || !download) return;
+
+        const statusUrl = "{{ url_for('main.relatorios_coleta_imagens_pdf_job_status', job_id='__JOB_ID__') }}".replace("__JOB_ID__", encodeURIComponent(jobId));
+        const setProgress = (value) => {
+          const normalized = Math.min(100, Math.max(5, Number(value || 0)));
+          progress.style.width = `${normalized}%`;
+        };
+
+        const poll = async () => {
+          try {
+            const response = await fetch(statusUrl, { headers: { "Accept": "application/json" } });
+            const payload = await response.json();
+            if (!response.ok || payload.success === false) {
+              throw new Error(payload.error || "Falha ao consultar o PDF.");
+            }
+
+            message.textContent = payload.message || "Gerando PDF do relatorio...";
+            setProgress(payload.progress);
+
+            if (payload.status === "success") {
+              download.href = payload.download_url;
+              download.classList.remove("d-none");
+              message.textContent = "PDF pronto para download.";
+              setProgress(100);
+              return;
+            }
+
+            if (payload.status === "error") {
+              statusBox.classList.add("border-danger");
+              message.textContent = payload.error || "Nao foi possivel gerar o PDF.";
+              return;
+            }
+
+            window.setTimeout(poll, 2500);
+          } catch (error) {
+            statusBox.classList.add("border-danger");
+            message.textContent = error.message || "Falha ao acompanhar a geracao do PDF.";
+          }
+        };
+
+        poll();
+      })();
+    </script>
+  {% endif %}
 {% endblock %}

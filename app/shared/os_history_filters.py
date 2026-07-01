@@ -1,7 +1,8 @@
 from datetime import date
 import re
 
-from sqlalchemy import or_
+from sqlalchemy import or_, select
+from sqlalchemy.orm import aliased
 
 from app.models import OrdemServico, OrdemServicoEquipeUvis, Solicitacao, Usuario
 from app.shared.query_filters import id_search_clause
@@ -19,7 +20,9 @@ HISTORY_FILTER_KEYS = (
     "endereco",
     "data_ini",
     "data_fim",
+    "retorno_automatico",
 )
+RETORNO_AUTOMATICO_FILTER_VALUES = {"SIM", "RETORNO", "GEROU", "CICLO"}
 CONCLUDED_STATUSES = ("CONCLUIDO", "CONCLUÍDO")
 
 
@@ -28,7 +31,32 @@ def get_os_history_filters(args, *, status_key="status"):
     filters["status"] = (args.get(status_key) or "").strip().upper()
     filters["regiao"] = filters["regiao"].upper()
     filters["apoio_cet"] = filters["apoio_cet"].upper()
+    filters["retorno_automatico"] = filters["retorno_automatico"].upper()
     return filters
+
+
+def apply_retorno_automatico_filter(query, value):
+    value = (value or "").strip().upper()
+    if value not in RETORNO_AUTOMATICO_FILTER_VALUES:
+        return query
+
+    retorno_child = aliased(Solicitacao)
+    is_retorno = or_(
+        Solicitacao.gerada_automaticamente.is_(True),
+        Solicitacao.origem_retorno_id.isnot(None),
+    )
+    gerou_retorno = Solicitacao.id.in_(
+        select(retorno_child.origem_retorno_id).where(
+            retorno_child.origem_retorno_id.isnot(None),
+            retorno_child.gerada_automaticamente.is_(True),
+        )
+    )
+
+    if value in {"SIM", "RETORNO"}:
+        return query.filter(is_retorno)
+    if value == "GEROU":
+        return query.filter(gerou_retorno)
+    return query.filter(or_(is_retorno, gerou_retorno))
 
 
 def apply_os_history_filters(query, filters, *, apply_status=True):
@@ -102,5 +130,7 @@ def apply_os_history_filters(query, filters, *, apply_status=True):
         query = query.filter(Solicitacao.data_agendamento >= data_ini)
     if data_fim:
         query = query.filter(Solicitacao.data_agendamento <= data_fim)
+
+    query = apply_retorno_automatico_filter(query, filters.get("retorno_automatico"))
 
     return query

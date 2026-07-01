@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_pagination.html" import render_pagination %}
+{% from "_retorno_ciclo_resumo.html" import render_retorno_ciclo_resumo %}
 
 {% block extra_styles %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
@@ -242,7 +243,7 @@
         {% endif %}
     </div>
 
-    {% set admin_has_filters = request.args.get('status') or request.args.get('unidade') or request.args.get('regiao') or request.args.get('apoio_cet') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or request.args.get('foco') or request.args.get('protocolo') or request.args.get('endereco') or request.args.get('data_ini') or request.args.get('data_fim') %}
+    {% set admin_has_filters = request.args.get('status') or request.args.get('unidade') or request.args.get('regiao') or request.args.get('apoio_cet') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or request.args.get('foco') or request.args.get('protocolo') or request.args.get('endereco') or request.args.get('data_ini') or request.args.get('data_fim') or request.args.get('retorno_automatico') %}
 
     {# --- FILTROS EM "SANFONA" (Accordion) --- #}
     <div class="card shadow-sm rounded-4 mb-4 border-0">
@@ -279,6 +280,16 @@
                                 <option value="APROVADO COM RECOMENDAÇÕES" {{ 'selected' if request.args.get('status')=='APROVADO COM RECOMENDAÇÕES' else '' }}>🟠 Aprovado c/ rec.</option>
                                 <option value="NEGADO" {{ 'selected' if request.args.get('status')=='NEGADO' else '' }}>🔴 Negado</option>
                                 <option value="CONCLUÍDO" {{ 'selected' if request.args.get('status')=='CONCLUÍDO' else '' }}>🟣 Concluído</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="small text-muted">Retorno automatico:</label>
+                            {% set filtro_retorno = (request.args.get('retorno_automatico', '') or '')|upper %}
+                            <select name="retorno_automatico" class="form-select form-select-sm">
+                                <option value="" {% if not filtro_retorno %}selected{% endif %}>Todos</option>
+                                <option value="RETORNO" {% if filtro_retorno in ['SIM', 'RETORNO'] %}selected{% endif %}>Somente retornos automaticos</option>
+                                <option value="GEROU" {% if filtro_retorno == 'GEROU' %}selected{% endif %}>OS que geraram retorno</option>
+                                <option value="CICLO" {% if filtro_retorno == 'CICLO' %}selected{% endif %}>Qualquer ciclo com retorno</option>
                             </select>
                         </div>
                         <div class="col-md-3">
@@ -411,6 +422,7 @@
 
             <tbody>
                 {% for p in pedidos %}
+                {% set retorno_resumo = retorno_ciclos.get(p.id) if retorno_ciclos is defined else none %}
 
                 {# === LINHA PRINCIPAL (CABEÇALHO DA SANFONA NO MOBILE / LINHA COMUM NO PC) === #}
                 <tr class="main-row"
@@ -484,6 +496,7 @@
                                             <span class="text-muted">Sem equipe atribuída</span>
                                         {% endif %}
                                     </div>
+                                    {{ render_retorno_ciclo_resumo(retorno_resumo) }}
                                 </div>
 
                             </div>

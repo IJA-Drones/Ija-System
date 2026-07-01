@@ -1,16 +1,37 @@
+import json
+import os
 from datetime import datetime
 
 from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import joinedload
 
 from app.models import Drones, Equipe, Solicitacao
-from app.shared.os_history_filters import apply_os_history_filters, get_os_history_filters
+from app.shared.os_history_filters import (
+    apply_os_history_filters,
+    apply_retorno_automatico_filter,
+    get_os_history_filters,
+)
 from app.shared.query_filters import id_search_clause
+from app.shared.retorno_ciclo import build_retorno_ciclo_context, build_retorno_ciclo_summaries
 
 UVIS_HISTORICO_TIPO_OS_OPTIONS = ("todas", "piloto", "equipe_uvis")
 
 
 STATUS_OS_CONCLUIDAS = ["CONCLUIDO", "CONCLU\u00cdDO"]
+
+
+def _parse_media_list(value):
+    if not value:
+        return []
+    if isinstance(value, list):
+        return [str(item).replace("\\", "/") for item in value if item]
+    try:
+        parsed = json.loads(value)
+    except Exception:
+        return []
+    if not isinstance(parsed, list):
+        return []
+    return [str(item).replace("\\", "/") for item in parsed if item]
 
 
 def _has_equipe_uvis_os():
@@ -79,6 +100,8 @@ def build_dashboard_context(user, args, google_maps_key):
             )
         )
 
+    query = apply_retorno_automatico_filter(query, args.get("retorno_automatico"))
+
     data_ini = args.get("data_ini")
     data_fim = args.get("data_fim")
 
@@ -113,6 +136,7 @@ def build_dashboard_context(user, args, google_maps_key):
         "paginacao": paginacao,
         "google_maps_key": google_maps_key,
         "equipes": equipes,
+        "retorno_ciclos": build_retorno_ciclo_summaries(user, paginacao.items),
     }
 
 
@@ -192,6 +216,7 @@ def build_uvis_historico_os_context(user, args):
         "filtro_tipo_os": filtro_tipo_os,
         "filtros": filtros,
         "unidades_select": [user],
+        "retorno_ciclos": build_retorno_ciclo_summaries(user, paginacao.items),
         "historico_totais": {
             "todas": total_todas,
             "piloto": total_piloto,
@@ -226,6 +251,9 @@ def build_uvis_os_form_context(user, os_id):
 
     equipe = solicitacao.equipe
     ordem = solicitacao.ordem_servico
+    imagem_principal_path = getattr(ordem, "imagem_principal", None) if ordem else None
+    outras_imagens_paths = _parse_media_list(getattr(ordem, "outras_imagens", None) if ordem else None)
+    video_path = getattr(ordem, "video", None) if ordem else None
     drones_equipe = []
     if solicitacao.equipe_id:
         drones_equipe = (
@@ -257,6 +285,16 @@ def build_uvis_os_form_context(user, os_id):
             if ordem and ordem.respondido_em else ""
         ),
         "drones_equipe": drones_equipe,
+        "retorno_ciclo": build_retorno_ciclo_context(user, os_id),
+        "imagem_principal_path": imagem_principal_path,
+        "outras_imagens_paths": outras_imagens_paths,
+        "video_path": video_path,
+        "video_filename": os.path.basename(str(video_path or "").replace("\\", "/")) if video_path else "",
+        "total_midias_formulario": (
+            (1 if imagem_principal_path else 0)
+            + len(outras_imagens_paths)
+            + (1 if video_path else 0)
+        ),
     }
 
 
@@ -315,4 +353,5 @@ def build_uvis_equipe_os_form_context(user, os_id):
             ordem.retorno_monitoramento_em.strftime("%Y-%m-%dT%H:%M")
             if ordem.retorno_monitoramento_em else ""
         ),
+        "retorno_ciclo": build_retorno_ciclo_context(user, os_id),
     }

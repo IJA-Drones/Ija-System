@@ -24,6 +24,7 @@ from app.modules.admin_dashboard.service import (
 )
 from app.shared.access import apply_regiao_scope, apply_solicitacao_prefeitura_scope
 from app.shared.os_history_filters import get_os_history_filters
+from app.shared.retorno_ciclo import build_retorno_ciclo_context, build_retorno_ciclo_summaries
 
 
 ADMIN_PER_PAGE_OPTIONS = (10, 25, 50, 100, 250)
@@ -103,6 +104,7 @@ def register_routes(bp):
         filtro_foco = (request.args.get("foco") or "").strip()
         filtro_data_ini = (request.args.get("data_ini") or "").strip()
         filtro_data_fim = (request.args.get("data_fim") or "").strip()
+        filtro_retorno_automatico = (request.args.get("retorno_automatico") or "").strip().upper()
 
         if filtro_status == "CANCELADO":
             return redirect(
@@ -117,6 +119,7 @@ def register_routes(bp):
                     endereco=filtro_endereco,
                     data_ini=filtro_data_ini,
                     data_fim=filtro_data_fim,
+                    retorno_automatico=filtro_retorno_automatico,
                 )
             )
 
@@ -135,6 +138,7 @@ def register_routes(bp):
             filtro_foco=filtro_foco,
             filtro_data_ini=filtro_data_ini,
             filtro_data_fim=filtro_data_fim,
+            filtro_retorno_automatico=filtro_retorno_automatico,
         )
         paginacao = query.order_by(build_status_order(), Solicitacao.data_criacao.desc()).paginate(
             page=page,
@@ -153,6 +157,7 @@ def register_routes(bp):
             google_maps_key=get_google_maps_key(),
             pagination_args=_query_args_without_page(),
             per_page_options=ADMIN_PER_PAGE_OPTIONS,
+            retorno_ciclos=build_retorno_ciclo_summaries(current_user, paginacao.items),
         )
 
     @bp.route("/admin/exportar_excel")
@@ -174,6 +179,7 @@ def register_routes(bp):
             filtro_foco = (request.args.get("foco") or "").strip()
             filtro_data_ini = (request.args.get("data_ini") or "").strip()
             filtro_data_fim = (request.args.get("data_fim") or "").strip()
+            filtro_retorno_automatico = (request.args.get("retorno_automatico") or "").strip().upper()
 
             output = build_admin_dashboard_export(
                 user=current_user,
@@ -188,6 +194,7 @@ def register_routes(bp):
                 filtro_foco=filtro_foco,
                 filtro_data_ini=filtro_data_ini,
                 filtro_data_fim=filtro_data_fim,
+                filtro_retorno_automatico=filtro_retorno_automatico,
             )
 
             return send_file(
@@ -357,6 +364,7 @@ def register_routes(bp):
                 if key != "tipo_os"
             },
             pagination_args=_query_args_without_page(),
+            retorno_ciclos=build_retorno_ciclo_summaries(current_user, paginacao.items),
         )
 
     @bp.route("/admin/historico-os/exportar-excel")
@@ -451,6 +459,7 @@ def register_routes(bp):
                 ordem.retorno_monitoramento_em.strftime("%Y-%m-%dT%H:%M")
                 if ordem.retorno_monitoramento_em else ""
             ),
+            retorno_ciclo=build_retorno_ciclo_context(current_user, os_id),
             url_voltar=url_for("main.admin_historico_os", tipo_os="equipe_uvis"),
             form_action="#",
         )

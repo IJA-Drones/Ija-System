@@ -724,9 +724,9 @@ def build_relatorio_os_export_data(user, args):
 
 def _coleta_imagens_max_export_items():
     try:
-        value = int(os.getenv("RELATORIO_COLETA_IMAGENS_MAX_EXPORT_ITEMS", "0"))
+        value = int(os.getenv("RELATORIO_COLETA_IMAGENS_MAX_EXPORT_ITEMS", "40"))
     except (TypeError, ValueError):
-        return None
+        value = 40
     return value if value > 0 else None
 
 

@@ -14,9 +14,23 @@ from werkzeug.utils import secure_filename
 
 from app.extensions import db
 from app.models import Baterias, Drones, Equipe, EquipePiloto, OrdemServico, Solicitacao, Usuario, Veiculos
-from app.shared.access import ADMIN_PANEL_EDIT_TYPES, ADMIN_PANEL_VIEW_TYPES, can_access_regiao
+from app.shared.access import (
+    ADMIN_PANEL_EDIT_TYPES,
+    ADMIN_PANEL_VIEW_TYPES,
+    apply_solicitacao_prefeitura_scope,
+    can_access_regiao,
+)
 from app.shared.query_filters import aplicar_filtros_base, id_search_clause
-from app.shared.os_history_filters import apply_os_history_filters, get_os_history_filters
+from app.shared.os_history_filters import (
+    apply_os_history_filters,
+    apply_retorno_automatico_filter,
+    get_os_history_filters,
+)
+from app.shared.retorno_ciclo import (
+    build_retorno_ciclo_context,
+    build_retorno_ciclo_summaries,
+    get_accessible_solicitacao_for_retorno_ciclo,
+)
 from app.shared.skybox import (
     SkyboxError,
     build_os_media_remote_path,
@@ -214,6 +228,8 @@ def build_piloto_os_context(user, args, google_maps_key):
         ]
         query = query.filter(or_(*criterios_busca))
 
+    query = apply_retorno_automatico_filter(query, args.get("retorno_automatico"))
+
     filtro_data = args.get("data")
     uvis_id = args.get("uvis_id")
     query = aplicar_filtros_base(query, filtro_data, uvis_id)
@@ -252,6 +268,7 @@ def build_piloto_os_context(user, args, google_maps_key):
             .order_by(Baterias.renomacao.asc())
             .all()
         ),
+        "retorno_ciclos": build_retorno_ciclo_summaries(user, paginacao.items),
         "busca": busca,
         "data_hoje": hoje,
         "veiculos_equipe": (
@@ -317,6 +334,7 @@ def build_piloto_os_historico_context(user, args):
         "filtros": filtros,
         "unidades_select": unidades_select,
         "pagination_args": {key: value for key, value in filtros.items() if value},
+        "retorno_ciclos": build_retorno_ciclo_summaries(user, paginacao.items),
     }
 
 
@@ -353,15 +371,16 @@ def build_piloto_os_form_context(user, os_id):
     if getattr(user, "tipo_usuario", None) != EQUIPE_OCEANO_USER_TYPE and not getattr(user, "piloto_id", None):
         raise PilotoOsError("Piloto sem vinculo cadastrado.", "danger", redirect_endpoint="main.piloto_os")
 
-    solicitacao = (
+    query = (
         Solicitacao.query
         .options(
             joinedload(Solicitacao.usuario),
             joinedload(Solicitacao.equipe),
             joinedload(Solicitacao.ordem_servico),
         )
-        .get_or_404(os_id)
+        .filter(Solicitacao.id == os_id)
     )
+    solicitacao = apply_solicitacao_prefeitura_scope(query, user).first_or_404()
 
     status_permitidos = set(STATUS_OS_APROVADAS_COM_ACENTO + STATUS_OS_CONCLUIDAS)
     if solicitacao.status not in status_permitidos:
@@ -430,6 +449,7 @@ def build_piloto_os_form_context(user, os_id):
         "drones_equipe": drones_equipe,
         "drones_pulverizacao": drones_pulverizacao,
         "drones_monitoramento": drones_monitoramento,
+        "retorno_ciclo": build_retorno_ciclo_context(user, os_id),
         **_build_os_media_context(ordem),
     }
 
@@ -505,15 +525,16 @@ def build_admin_os_form_context(user, os_id):
     if getattr(user, "tipo_usuario", None) not in ADMIN_PANEL_VIEW_TYPES:
         raise PilotoOsError("Acesso restrito.", "danger", redirect_endpoint="main.dashboard")
 
-    solicitacao = (
+    query = (
         Solicitacao.query
         .options(
             joinedload(Solicitacao.usuario),
             joinedload(Solicitacao.equipe),
             joinedload(Solicitacao.ordem_servico),
         )
-        .get_or_404(os_id)
+        .filter(Solicitacao.id == os_id)
     )
+    solicitacao = apply_solicitacao_prefeitura_scope(query, user).first_or_404()
     pedido_regiao = getattr(getattr(solicitacao, "usuario", None), "regiao", None)
     if not can_access_regiao(user, pedido_regiao):
         raise PilotoOsError("Voce nao tem permissao para acessar esta OS.", "danger", redirect_endpoint="main.dashboard")
@@ -576,6 +597,7 @@ def build_admin_os_form_context(user, os_id):
         "drones_equipe": drones_equipe,
         "drones_pulverizacao": drones_pulverizacao,
         "drones_monitoramento": drones_monitoramento,
+        "retorno_ciclo": build_retorno_ciclo_context(user, os_id),
         **_build_os_media_context(ordem),
     }
 
@@ -622,12 +644,8 @@ def salvar_admin_os_form(user, os_id, form_data, files_data, root_path):
 
 
 def get_os_video_path_for_user(user, os_id):
-    if getattr(user, "tipo_usuario", None) in ADMIN_PANEL_VIEW_TYPES:
-        context = build_admin_os_form_context(user, os_id)
-    else:
-        context = build_piloto_os_form_context(user, os_id)
-
-    ordem = context.get("ordem")
+    solicitacao = get_accessible_solicitacao_for_retorno_ciclo(user, os_id)
+    ordem = solicitacao.ordem_servico if solicitacao else None
     video_path = getattr(ordem, "video", None) if ordem else None
     if not video_path:
         raise PilotoOsError(
@@ -639,12 +657,8 @@ def get_os_video_path_for_user(user, os_id):
 
 
 def get_os_principal_image_path_for_user(user, os_id):
-    if getattr(user, "tipo_usuario", None) in ADMIN_PANEL_VIEW_TYPES:
-        context = build_admin_os_form_context(user, os_id)
-    else:
-        context = build_piloto_os_form_context(user, os_id)
-
-    ordem = context.get("ordem")
+    solicitacao = get_accessible_solicitacao_for_retorno_ciclo(user, os_id)
+    ordem = solicitacao.ordem_servico if solicitacao else None
     image_path = getattr(ordem, "imagem_principal", None) if ordem else None
     if not image_path:
         raise PilotoOsError(
@@ -656,12 +670,8 @@ def get_os_principal_image_path_for_user(user, os_id):
 
 
 def get_os_complementary_image_path_for_user(user, os_id, image_index):
-    if getattr(user, "tipo_usuario", None) in ADMIN_PANEL_VIEW_TYPES:
-        context = build_admin_os_form_context(user, os_id)
-    else:
-        context = build_piloto_os_form_context(user, os_id)
-
-    ordem = context.get("ordem")
+    solicitacao = get_accessible_solicitacao_for_retorno_ciclo(user, os_id)
+    ordem = solicitacao.ordem_servico if solicitacao else None
     imagens = _parse_json_list(getattr(ordem, "outras_imagens", None) if ordem else None)
     try:
         index = int(image_index) - 1

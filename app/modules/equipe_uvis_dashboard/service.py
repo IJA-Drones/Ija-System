@@ -5,8 +5,13 @@ from sqlalchemy.orm import joinedload
 
 from app.extensions import db
 from app.models import OrdemServicoEquipeUvis, Solicitacao, Usuario
-from app.shared.os_history_filters import apply_os_history_filters, get_os_history_filters
+from app.shared.os_history_filters import (
+    apply_os_history_filters,
+    apply_retorno_automatico_filter,
+    get_os_history_filters,
+)
 from app.shared.query_filters import id_search_clause
+from app.shared.retorno_ciclo import build_retorno_ciclo_context, build_retorno_ciclo_summaries
 
 
 class EquipeUvisDashboardError(Exception):
@@ -123,6 +128,8 @@ def build_dashboard_equipe_uvis_context(user, args, google_maps_key):
             )
         )
 
+    query = apply_retorno_automatico_filter(query, args.get("retorno_automatico"))
+
     data_ini = args.get("data_ini")
     data_fim = args.get("data_fim")
 
@@ -152,6 +159,7 @@ def build_dashboard_equipe_uvis_context(user, args, google_maps_key):
         "paginacao": paginacao,
         "google_maps_key": google_maps_key,
         "nome_equipe": nome_equipe,
+        "retorno_ciclos": build_retorno_ciclo_summaries(user, paginacao.items),
     }
 
 
@@ -184,6 +192,7 @@ def build_equipe_uvis_os_historico_context(user, args):
         "nome_equipe": nome_equipe,
         "filtros": filtros,
         "unidades_select": Usuario.query.filter(Usuario.id == uvis_id).all(),
+        "retorno_ciclos": build_retorno_ciclo_summaries(user, paginacao.items),
     }
 
 
@@ -287,6 +296,7 @@ def build_equipe_uvis_os_form_context(user, os_id):
         "respondido_em_value": respondido_em_value,
         "retorno_existente": retorno_existente,
         "retorno_monitoramento_value": retorno_monitoramento_value,
+        "retorno_ciclo": build_retorno_ciclo_context(user, os_id),
     }
 
 

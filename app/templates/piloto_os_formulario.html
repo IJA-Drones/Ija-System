@@ -657,6 +657,8 @@
       </div>
       {% endif %}
 
+      {% include "_retorno_ciclo.html" %}
+
       <form method="post" action="{{ form_action or url_for('main.piloto_os_formulario_view', os_id=solicitacao.id) }}" enctype="multipart/form-data" novalidate id="os-form-main">
         <ul class="nav nav-tabs os-form-tabs mb-4" id="osFormTabs" role="tablist">
           <li class="nav-item" role="presentation">

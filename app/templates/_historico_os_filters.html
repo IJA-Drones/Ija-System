@@ -1,5 +1,5 @@
 {% macro render_historico_os_filters(filters, unidades_select, clear_url, status_name='status', extra_params=None, status_options=None) -%}
-  {% set filtros_ativos = filters.status or filters.unidade or filters.regiao or filters.apoio_cet or filters.tipo_visita or filters.tipo_imovel or filters.foco or filters.protocolo or filters.endereco or filters.data_ini or filters.data_fim %}
+  {% set filtros_ativos = filters.status or filters.unidade or filters.regiao or filters.apoio_cet or filters.tipo_visita or filters.tipo_imovel or filters.foco or filters.protocolo or filters.endereco or filters.data_ini or filters.data_fim or filters.retorno_automatico %}
   {% set opcoes_status = status_options or [('', 'Todos'), ('EM_ANDAMENTO', 'Em andamento'), ('CONCLUIDAS', 'Concluídas')] %}
   <div class="card shadow-sm rounded-4 mb-4 border-0 historico-os-filters">
     <div
@@ -32,6 +32,15 @@
                 {% for value, label in opcoes_status %}
                   <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
                 {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="small text-muted">Retorno automatico:</label>
+              <select name="retorno_automatico" class="form-select form-select-sm">
+                <option value="" {% if not filters.retorno_automatico %}selected{% endif %}>Todos</option>
+                <option value="RETORNO" {% if filters.retorno_automatico in ['SIM', 'RETORNO'] %}selected{% endif %}>Somente retornos automaticos</option>
+                <option value="GEROU" {% if filters.retorno_automatico == 'GEROU' %}selected{% endif %}>OS que geraram retorno</option>
+                <option value="CICLO" {% if filters.retorno_automatico == 'CICLO' %}selected{% endif %}>Qualquer ciclo com retorno</option>
               </select>
             </div>
             <div class="col-md-3">

@@ -1,0 +1,297 @@
+{% if retorno_ciclo and retorno_ciclo.nodes and retorno_ciclo.has_cycle %}
+<style>
+  .return-cycle-shell {
+    border: 1px solid #dbe4f0;
+    border-radius: 1rem;
+    background: #f8fbff;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+  }
+  .return-cycle-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+  .return-cycle-title {
+    margin: 0;
+    color: #143d66;
+    font-weight: 800;
+  }
+  .return-cycle-subtitle {
+    margin: 0.25rem 0 0;
+    color: #65758a;
+    font-size: 0.9rem;
+  }
+  .return-cycle-metric {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    border: 1px solid #cfe0f2;
+    border-radius: 999px;
+    background: #fff;
+    color: #245178;
+    padding: 0.45rem 0.8rem;
+    font-size: 0.78rem;
+    font-weight: 800;
+  }
+  .return-cycle-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+    gap: 1rem;
+    align-items: start;
+  }
+  .return-cycle-timeline {
+    position: relative;
+    display: grid;
+    gap: 0.9rem;
+  }
+  .return-cycle-timeline::before {
+    content: "";
+    position: absolute;
+    left: 19px;
+    top: 10px;
+    bottom: 10px;
+    width: 2px;
+    background: #d3e1f0;
+  }
+  .return-cycle-item {
+    position: relative;
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr);
+    gap: 0.75rem;
+  }
+  .return-cycle-dot {
+    position: relative;
+    z-index: 1;
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    border: 2px solid #cbdced;
+    color: #315d86;
+  }
+  .return-cycle-card {
+    border: 1px solid #dbe4f0;
+    border-radius: 0.95rem;
+    background: #fff;
+    padding: 1rem;
+  }
+  .return-cycle-card.is-current {
+    border-color: #1d6eb3;
+    box-shadow: 0 0 0 3px rgba(29, 110, 179, 0.12);
+  }
+  .return-cycle-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.65rem;
+    margin-top: 0.8rem;
+  }
+  .return-cycle-meta-item {
+    border: 1px solid #e1ebf5;
+    border-radius: 0.75rem;
+    background: #fbfdff;
+    padding: 0.65rem;
+  }
+  .return-cycle-label {
+    display: block;
+    color: #718197;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 0.25rem;
+  }
+  .return-cycle-value {
+    color: #173f66;
+    font-size: 0.88rem;
+    font-weight: 700;
+    line-height: 1.4;
+    word-break: break-word;
+  }
+  .return-cycle-media-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+    gap: 0.5rem;
+    margin-top: 0.8rem;
+  }
+  .return-cycle-media {
+    display: block;
+    border: 1px solid #dbe4f0;
+    border-radius: 0.65rem;
+    overflow: hidden;
+    background: #f1f6fb;
+    text-decoration: none;
+  }
+  .return-cycle-media img {
+    display: block;
+    width: 100%;
+    height: 82px;
+    object-fit: cover;
+  }
+  .return-cycle-media span {
+    display: block;
+    padding: 0.35rem 0.45rem;
+    color: #335b82;
+    font-size: 0.72rem;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .return-cycle-tree {
+    border: 1px solid #dbe4f0;
+    border-radius: 0.95rem;
+    background: #fff;
+    padding: 0.9rem;
+  }
+  .return-cycle-tree-node {
+    border-left: 3px solid #cdddeb;
+    padding: 0.55rem 0 0.55rem 0.7rem;
+    margin-bottom: 0.35rem;
+  }
+  .return-cycle-tree-node.is-current {
+    border-left-color: #1d6eb3;
+    background: #f4f9ff;
+  }
+  @media (max-width: 991.98px) {
+    .return-cycle-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<div class="return-cycle-shell p-3 p-lg-4 mb-4">
+  <div class="return-cycle-head">
+    <div>
+      <h5 class="return-cycle-title">
+        <i class="bi bi-diagram-3-fill me-2 text-primary"></i>Ciclo de retornos da OS
+      </h5>
+      <p class="return-cycle-subtitle">Linha do tempo completa com retornos automaticos, preenchimentos e midias vinculadas.</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <span class="return-cycle-metric"><i class="bi bi-arrow-repeat"></i>{{ retorno_ciclo.total_retornos }} retorno(s)</span>
+      <span class="return-cycle-metric"><i class="bi bi-images"></i>{{ retorno_ciclo.total_midias }} midia(s)</span>
+    </div>
+  </div>
+
+  <div class="return-cycle-grid">
+    <div class="return-cycle-timeline">
+      {% for node in retorno_ciclo.nodes %}
+      <div class="return-cycle-item">
+        <div class="return-cycle-dot text-{{ node.color }} border-{{ node.color }}">
+          <i class="bi {{ node.icon }}"></i>
+        </div>
+        <div class="return-cycle-card {% if node.is_current %}is-current{% endif %}">
+          <div class="d-flex justify-content-between gap-2 flex-wrap mb-2">
+            <div>
+              <div class="small text-muted fw-bold">Etapa {{ node.index }}{% if node.is_current %} &middot; OS atual{% endif %}</div>
+              <h6 class="mb-1 text-dark fw-bold">{{ node.title }}</h6>
+              <div class="small text-muted">{{ node.endereco }}</div>
+            </div>
+            {% if node.detail_url %}
+              <a href="{{ node.detail_url }}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-eye me-1"></i>Abrir OS
+              </a>
+            {% else %}
+              <span class="badge text-bg-light border text-muted align-self-start">Aguardando liberacao</span>
+            {% endif %}
+          </div>
+
+          <div class="d-flex gap-2 flex-wrap">
+            {% for badge in node.badges %}
+              <span class="badge text-bg-{{ badge.color }}">{{ badge.label }}</span>
+            {% endfor %}
+          </div>
+
+          <div class="return-cycle-meta">
+            <div class="return-cycle-meta-item">
+              <span class="return-cycle-label">UVIS / Regiao</span>
+              <div class="return-cycle-value">{{ node.uvis_nome }} &middot; {{ node.regiao_nome }}</div>
+            </div>
+            <div class="return-cycle-meta-item">
+              <span class="return-cycle-label">Status</span>
+              <div class="return-cycle-value">{{ node.status }}</div>
+            </div>
+            <div class="return-cycle-meta-item">
+              <span class="return-cycle-label">Agendamento</span>
+              <div class="return-cycle-value">{{ node.agendamento_label }}</div>
+            </div>
+            <div class="return-cycle-meta-item">
+              <span class="return-cycle-label">Execucao</span>
+              <div class="return-cycle-value">{{ node.execucao_label }}</div>
+            </div>
+            <div class="return-cycle-meta-item">
+              <span class="return-cycle-label">Situacao</span>
+              <div class="return-cycle-value">{{ node.situacao or '-' }}</div>
+            </div>
+            <div class="return-cycle-meta-item">
+              <span class="return-cycle-label">Larva</span>
+              <div class="return-cycle-value">{{ node.larva }}</div>
+            </div>
+            <div class="return-cycle-meta-item">
+              <span class="return-cycle-label">Retornar</span>
+              <div class="return-cycle-value">{{ node.retorno_flag }}</div>
+            </div>
+            <div class="return-cycle-meta-item">
+              <span class="return-cycle-label">Respondido por</span>
+              <div class="return-cycle-value">{{ node.respondido_por or '-' }}</div>
+            </div>
+          </div>
+
+          {% if node.observacoes or node.motivo_nao_realizacao or node.quantos_quais %}
+            <div class="mt-3 small text-muted">
+              {% if node.observacoes %}<div><strong>Observacao:</strong> {{ node.observacoes }}</div>{% endif %}
+              {% if node.motivo_nao_realizacao %}<div><strong>Motivo:</strong> {{ node.motivo_nao_realizacao }}</div>{% endif %}
+              {% if node.quantos_quais %}<div><strong>Outros enderecos:</strong> {{ node.quantos_quais }}</div>{% endif %}
+            </div>
+          {% endif %}
+
+          {% if node.media.total %}
+            <div class="return-cycle-media-grid">
+              {% if node.media.principal_url %}
+                <a href="{{ node.media.principal_url }}" target="_blank" class="return-cycle-media">
+                  <img src="{{ node.media.principal_url }}" alt="Foto principal da OS {{ node.id }}">
+                  <span>Foto principal</span>
+                </a>
+              {% endif %}
+              {% for imagem in node.media.complementares %}
+                <a href="{{ imagem.url }}" target="_blank" class="return-cycle-media">
+                  <img src="{{ imagem.url }}" alt="{{ imagem.label }} da OS {{ node.id }}">
+                  <span>{{ imagem.label }}</span>
+                </a>
+              {% endfor %}
+              {% if node.media.video_url %}
+                <a href="{{ node.media.video_url }}" target="_blank" class="return-cycle-media">
+                  <span><i class="bi bi-play-circle me-1"></i>{{ node.media.video_nome or 'Video' }}</span>
+                </a>
+              {% endif %}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="return-cycle-tree">
+      <div class="fw-bold text-primary mb-2"><i class="bi bi-diagram-2 me-1"></i>Arvore da cadeia</div>
+      {% for node in retorno_ciclo.nodes %}
+        <div class="return-cycle-tree-node {% if node.is_current %}is-current{% endif %}" style="margin-left: {{ node.depth * 18 }}px;">
+          <div class="fw-bold small">OS #{{ node.id }}</div>
+          <div class="small text-muted">{{ 'Retorno automatico' if node.is_retorno else 'Visita inicial' }}</div>
+          {% if node.larva == 'SIM' %}
+            <span class="badge text-bg-danger mt-1">Larva</span>
+          {% endif %}
+          {% if node.media.total %}
+            <span class="badge text-bg-light border text-dark mt-1">{{ node.media.total }} midia(s)</span>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
