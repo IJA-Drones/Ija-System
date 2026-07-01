@@ -67,7 +67,6 @@ def register_routes(bp):
         return render_template(
             "piloto_os_formulario.html",
             **context,
-            calculo_dosagem_planejado=context.get("calculo_dosagem_planejado", {}),
             url_voltar=url_voltar,
             form_action="#",
         )
