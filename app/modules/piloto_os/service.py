@@ -60,6 +60,7 @@ STATUS_OS_CONCLUIDAS = ["CONCLUIDO", "CONCLU\u00cdDO"]
 OS_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png"}
 OS_VIDEO_EXTENSIONS = {"mp4", "mov", "webm", "m4v", "lrf"}
 EQUIPE_OCEANO_USER_TYPE = "equipe_oceano"
+UVIS_MEDIA_VIEW_TYPES = {"uvis", "equipe_uvis"}
 BRAZIL_TZ = ZoneInfo("America/Sao_Paulo")
 DRONE_CATEGORY_PULVERIZACAO = "pulverizacao"
 DRONE_CATEGORY_MONITORAMENTO = "monitoramento"
@@ -645,6 +646,8 @@ def salvar_admin_os_form(user, os_id, form_data, files_data, root_path):
 
 def get_os_video_path_for_user(user, os_id):
     solicitacao = get_accessible_solicitacao_for_retorno_ciclo(user, os_id)
+    if getattr(user, "tipo_usuario", None) in UVIS_MEDIA_VIEW_TYPES:
+        context = build_uvis_os_media_context(user, os_id)
     ordem = solicitacao.ordem_servico if solicitacao else None
     video_path = getattr(ordem, "video", None) if ordem else None
     if not video_path:
@@ -658,6 +661,8 @@ def get_os_video_path_for_user(user, os_id):
 
 def get_os_principal_image_path_for_user(user, os_id):
     solicitacao = get_accessible_solicitacao_for_retorno_ciclo(user, os_id)
+    if getattr(user, "tipo_usuario", None) in UVIS_MEDIA_VIEW_TYPES:
+        context = build_uvis_os_media_context(user, os_id)
     ordem = solicitacao.ordem_servico if solicitacao else None
     image_path = getattr(ordem, "imagem_principal", None) if ordem else None
     if not image_path:
@@ -671,6 +676,8 @@ def get_os_principal_image_path_for_user(user, os_id):
 
 def get_os_complementary_image_path_for_user(user, os_id, image_index):
     solicitacao = get_accessible_solicitacao_for_retorno_ciclo(user, os_id)
+    if getattr(user, "tipo_usuario", None) in UVIS_MEDIA_VIEW_TYPES:
+        context = build_uvis_os_media_context(user, os_id)
     ordem = solicitacao.ordem_servico if solicitacao else None
     imagens = _parse_json_list(getattr(ordem, "outras_imagens", None) if ordem else None)
     try:
@@ -1008,6 +1015,52 @@ def _build_os_media_context(ordem):
             + len(outras_imagens_paths)
             + (1 if video_path else 0)
         ),
+    }
+
+
+def build_os_media_context(ordem):
+    return _build_os_media_context(ordem)
+
+
+def _uvis_owner_id_for_media(user):
+    tipo_usuario = getattr(user, "tipo_usuario", None)
+    if tipo_usuario == "uvis":
+        return getattr(user, "id", None)
+    if tipo_usuario == "equipe_uvis":
+        return getattr(user, "equipe_uvis_uvis_usuario_id", None)
+    return None
+
+
+def build_uvis_os_media_context(user, os_id):
+    owner_id = _uvis_owner_id_for_media(user)
+    if not owner_id:
+        raise PilotoOsError("Acesso restrito.", "danger", redirect_endpoint="main.dashboard")
+
+    solicitacao = (
+        Solicitacao.query
+        .options(
+            joinedload(Solicitacao.usuario),
+            joinedload(Solicitacao.equipe),
+            joinedload(Solicitacao.ordem_servico),
+        )
+        .get_or_404(os_id)
+    )
+
+    if solicitacao.usuario_id != owner_id:
+        raise PilotoOsError("Voce nao tem permissao para acessar esta OS.", "danger", redirect_endpoint="main.dashboard")
+
+    if (solicitacao.status or "").strip().upper() not in set(STATUS_OS_CONCLUIDAS):
+        raise PilotoOsError(
+            "Esta OS ainda nao esta liberada para consulta de midias.",
+            "warning",
+            redirect_endpoint="main.uvis_historico_os",
+        )
+
+    return {
+        "solicitacao": solicitacao,
+        "equipe": solicitacao.equipe,
+        "ordem": solicitacao.ordem_servico,
+        **_build_os_media_context(solicitacao.ordem_servico),
     }
 
 

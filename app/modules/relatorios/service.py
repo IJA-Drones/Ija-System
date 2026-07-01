@@ -16,11 +16,12 @@ from app.shared.access import (
     is_regional_user,
     normalize_regiao,
 )
-from app.shared.query_filters import aplicar_filtros_base
+from app.shared.query_filters import aplicar_filtros_base, id_search_clause
 
 
 RELATORIOS_MENU_TYPES = ADMIN_PANEL_VIEW_TYPES
 RELATORIOS_COLETA_IMAGENS_TYPES = RELATORIOS_MENU_TYPES | {"uvis"}
+STATUS_OS_CONCLUIDAS = ("CONCLUIDO", "CONCLUÍDO")
 COLETA_IMAGENS_MONTH_NAMES = {
     1: "Janeiro",
     2: "Fevereiro",
@@ -35,6 +36,99 @@ COLETA_IMAGENS_MONTH_NAMES = {
     11: "Novembro",
     12: "Dezembro",
 }
+
+
+def _parse_relatorio_os_date_filter(args, name):
+    value = (args.get(name) or "").strip()
+    if not value:
+        return None
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").date()
+    except ValueError:
+        return None
+
+
+def _relatorio_os_data_expr():
+    return func.coalesce(
+        OrdemServico.data_aplicacao,
+        func.date(OrdemServico.respondido_em),
+        Solicitacao.data_agendamento,
+    )
+
+
+def _resolve_relatorio_os_filters(user, args):
+    return {
+        "mes": args.get("mes", datetime.now().month, type=int),
+        "ano": args.get("ano", datetime.now().year, type=int),
+        "uvis_id": args.get("uvis_id", type=int) if getattr(user, "tipo_usuario", None) != "uvis" else user.id,
+        "status": (args.get("status") or "").strip(),
+        "tipo_visita": (args.get("tipo_visita") or "").strip(),
+        "tipo_imovel": (args.get("tipo_imovel") or "").strip(),
+        "tipo_operacao": ((args.get("tipo_operacao") or args.get("operacao") or "").strip()),
+        "foco": (args.get("foco") or "").strip(),
+        "protocolo": (args.get("protocolo") or "").strip(),
+        "data_ini": _parse_relatorio_os_date_filter(args, "data_ini"),
+        "data_fim": _parse_relatorio_os_date_filter(args, "data_fim"),
+    }
+
+
+def _apply_relatorio_os_filters(query, filtros, *, monthly=False):
+    data_ref = _relatorio_os_data_expr()
+    status = filtros["status"]
+    if status:
+        if status in STATUS_OS_CONCLUIDAS:
+            query = query.filter(Solicitacao.status.in_(STATUS_OS_CONCLUIDAS))
+        else:
+            query = query.filter(Solicitacao.status == status)
+
+    if filtros["tipo_visita"]:
+        query = query.filter(Solicitacao.tipo_visita == filtros["tipo_visita"])
+
+    if filtros["tipo_imovel"]:
+        query = query.filter(Solicitacao.tipo_imovel == filtros["tipo_imovel"])
+
+    if filtros["tipo_operacao"]:
+        query = query.filter(Solicitacao.tipo_operacao == filtros["tipo_operacao"])
+
+    if filtros["foco"]:
+        query = query.filter(Solicitacao.foco == filtros["foco"])
+
+    if filtros["protocolo"]:
+        like = f"%{filtros['protocolo']}%"
+        query = query.filter(
+            or_(
+                id_search_clause(Solicitacao.id, filtros["protocolo"], prefixes=("id", "os")),
+                func.coalesce(Solicitacao.protocolo, "").ilike(like),
+            )
+        )
+
+    if filtros["data_ini"]:
+        query = query.filter(data_ref >= filtros["data_ini"])
+
+    if filtros["data_fim"]:
+        query = query.filter(data_ref <= filtros["data_fim"])
+
+    if monthly:
+        return query
+
+    if not filtros["data_ini"] and not filtros["data_fim"]:
+        query = query.filter(
+            or_(
+                and_(
+                    OrdemServico.respondido_em.isnot(None),
+                    extract("year", OrdemServico.respondido_em) == filtros["ano"],
+                    extract("month", OrdemServico.respondido_em) == filtros["mes"],
+                ),
+                and_(
+                    OrdemServico.respondido_em.is_(None),
+                    OrdemServico.data_aplicacao.isnot(None),
+                    extract("year", OrdemServico.data_aplicacao) == filtros["ano"],
+                    extract("month", OrdemServico.data_aplicacao) == filtros["mes"],
+                ),
+            )
+        )
+
+    return query
 
 
 def can_access_relatorios_menu(user) -> bool:
@@ -468,10 +562,7 @@ def build_relatorios_solicitacoes_context(user, args):
 
 def build_relatorios_os_context(user, args):
     uvis_disponiveis = build_uvis_disponiveis(user)
-
-    mes_atual = args.get("mes", datetime.now().month, type=int)
-    ano_atual = args.get("ano", datetime.now().year, type=int)
-    uvis_id = args.get("uvis_id", type=int) if getattr(user, "tipo_usuario", None) != "uvis" else user.id
+    filtros = _resolve_relatorio_os_filters(user, args)
 
     base_query = (
         db.session.query(OrdemServico)
@@ -480,25 +571,9 @@ def build_relatorios_os_context(user, args):
     )
     base_query = apply_solicitacao_prefeitura_scope(base_query, user)
     base_query = apply_regiao_scope(base_query, user, Usuario.regiao)
-
-    base_query = base_query.filter(
-        or_(
-            and_(
-                OrdemServico.respondido_em.isnot(None),
-                extract("year", OrdemServico.respondido_em) == ano_atual,
-                extract("month", OrdemServico.respondido_em) == mes_atual,
-            ),
-            and_(
-                OrdemServico.respondido_em.is_(None),
-                OrdemServico.data_aplicacao.isnot(None),
-                extract("year", OrdemServico.data_aplicacao) == ano_atual,
-                extract("month", OrdemServico.data_aplicacao) == mes_atual,
-            ),
-        )
-    )
-
-    if uvis_id:
-        base_query = base_query.filter(Solicitacao.usuario_id == uvis_id)
+    if filtros["uvis_id"]:
+        base_query = base_query.filter(Solicitacao.usuario_id == filtros["uvis_id"])
+    base_query = _apply_relatorio_os_filters(base_query, filtros)
 
     def agrupar_por(campo):
         return [
@@ -531,8 +606,9 @@ def build_relatorios_os_context(user, args):
     mensal_query = apply_solicitacao_prefeitura_scope(mensal_query, user)
     mensal_query = apply_regiao_scope(mensal_query, user, Usuario.regiao)
 
-    if uvis_id:
-        mensal_query = mensal_query.filter(Solicitacao.usuario_id == uvis_id)
+    if filtros["uvis_id"]:
+        mensal_query = mensal_query.filter(Solicitacao.usuario_id == filtros["uvis_id"])
+    mensal_query = _apply_relatorio_os_filters(mensal_query, filtros, monthly=True)
 
     for ano_h, mes_h, total in (
         mensal_query
@@ -549,11 +625,11 @@ def build_relatorios_os_context(user, args):
         if ano_h and mes_h:
             dados_mensais.append((f"{int(ano_h):04d}-{int(mes_h):02d}", total))
 
-    anos_disponiveis = sorted({mes.split("-")[0] for mes, _ in dados_mensais}, reverse=True) if dados_mensais else [ano_atual]
+    anos_disponiveis = sorted({mes.split("-")[0] for mes, _ in dados_mensais}, reverse=True) if dados_mensais else [filtros["ano"]]
 
     return {
         "total_os": base_query.count(),
-        "total_concluidas": base_query.filter(Solicitacao.status.in_(["CONCLUÍDO", "CONCLUIDO"])).count(),
+        "total_concluidas": base_query.filter(Solicitacao.status.in_(STATUS_OS_CONCLUIDAS)).count(),
         "total_larva_sim": base_query.filter(func.upper(func.coalesce(OrdemServico.larva_visualizada, "")) == "SIM").count(),
         "total_tratamento_adicional": base_query.filter(func.upper(func.coalesce(OrdemServico.tratamento_adicional_realizado, "")) == "SIM").count(),
         "total_nao_realizadas": base_query.filter(func.length(func.trim(func.coalesce(OrdemServico.motivo_nao_realizacao, ""))) > 0).count(),
@@ -572,18 +648,30 @@ def build_relatorios_os_context(user, args):
             )
         ],
         "dados_mensais": dados_mensais,
-        "mes_selecionado": mes_atual,
-        "ano_selecionado": ano_atual,
+        "mes_selecionado": filtros["mes"],
+        "ano_selecionado": filtros["ano"],
         "anos_disponiveis": anos_disponiveis,
-        "uvis_id_selecionado": uvis_id,
+        "uvis_id_selecionado": filtros["uvis_id"],
         "uvis_disponiveis": uvis_disponiveis,
+        "filters": filtros,
+        "filtros_exportacao": {
+            "mes": filtros["mes"],
+            "ano": filtros["ano"],
+            "uvis_id": filtros["uvis_id"] or "",
+            "status": filtros["status"],
+            "tipo_visita": filtros["tipo_visita"],
+            "tipo_imovel": filtros["tipo_imovel"],
+            "tipo_operacao": filtros["tipo_operacao"],
+            "foco": filtros["foco"],
+            "protocolo": filtros["protocolo"],
+            "data_ini": filtros["data_ini"].isoformat() if filtros["data_ini"] else "",
+            "data_fim": filtros["data_fim"].isoformat() if filtros["data_fim"] else "",
+        },
     }
 
 
-def build_relatorio_os_export_data(user, args):
-    mes_atual = args.get("mes", datetime.now().month, type=int)
-    ano_atual = args.get("ano", datetime.now().year, type=int)
-    uvis_id = args.get("uvis_id", type=int) if getattr(user, "tipo_usuario", None) != "uvis" else user.id
+def build_relatorio_os_export_data(user, args, *, include_ordens=False, only_concluidas=False):
+    filtros = _resolve_relatorio_os_filters(user, args)
 
     base_query = (
         db.session.query(OrdemServico)
@@ -592,28 +680,14 @@ def build_relatorio_os_export_data(user, args):
     )
     base_query = apply_solicitacao_prefeitura_scope(base_query, user)
     base_query = apply_regiao_scope(base_query, user, Usuario.regiao)
-
-    base_query = base_query.filter(
-        or_(
-            and_(
-                OrdemServico.respondido_em.isnot(None),
-                extract("year", OrdemServico.respondido_em) == ano_atual,
-                extract("month", OrdemServico.respondido_em) == mes_atual,
-            ),
-            and_(
-                OrdemServico.respondido_em.is_(None),
-                OrdemServico.data_aplicacao.isnot(None),
-                extract("year", OrdemServico.data_aplicacao) == ano_atual,
-                extract("month", OrdemServico.data_aplicacao) == mes_atual,
-            ),
-        )
-    )
-
-    if uvis_id:
-        base_query = base_query.filter(Solicitacao.usuario_id == uvis_id)
+    if filtros["uvis_id"]:
+        base_query = base_query.filter(Solicitacao.usuario_id == filtros["uvis_id"])
+    base_query = _apply_relatorio_os_filters(base_query, filtros)
+    if only_concluidas:
+        base_query = base_query.filter(Solicitacao.status.in_(STATUS_OS_CONCLUIDAS))
 
     total_os = base_query.count()
-    total_concluidas = base_query.filter(Solicitacao.status.in_(["CONCLUÃDO", "CONCLUIDO"])).count()
+    total_concluidas = base_query.filter(Solicitacao.status.in_(STATUS_OS_CONCLUIDAS)).count()
     total_larva_sim = base_query.filter(func.upper(func.coalesce(OrdemServico.larva_visualizada, "")) == "SIM").count()
     total_tratamento_adicional = base_query.filter(
         func.upper(func.coalesce(OrdemServico.tratamento_adicional_realizado, "")) == "SIM"
@@ -668,8 +742,12 @@ def build_relatorio_os_export_data(user, args):
     mensal_query = apply_solicitacao_prefeitura_scope(mensal_query, user)
     mensal_query = apply_regiao_scope(mensal_query, user, Usuario.regiao)
 
-    if uvis_id:
-        mensal_query = mensal_query.filter(Solicitacao.usuario_id == uvis_id)
+    if filtros["uvis_id"]:
+        mensal_query = mensal_query.filter(Solicitacao.usuario_id == filtros["uvis_id"])
+    mensal_query = _apply_relatorio_os_filters(mensal_query, filtros, monthly=True)
+
+    if only_concluidas:
+        mensal_query = mensal_query.filter(Solicitacao.status.in_(STATUS_OS_CONCLUIDAS))
 
     dados_mensais = [
         (f"{int(ano_h):04d}-{int(mes_h):02d}", total)
@@ -689,11 +767,11 @@ def build_relatorio_os_export_data(user, args):
     ]
 
     nome_uvis = None
-    if uvis_id:
+    if filtros["uvis_id"]:
         nome_uvis = (
             apply_regiao_scope(
                 apply_prefeitura_scope(
-                    db.session.query(Usuario.nome_uvis).filter(Usuario.id == uvis_id),
+                    db.session.query(Usuario.nome_uvis).filter(Usuario.id == filtros["uvis_id"]),
                     user,
                     Usuario.prefeitura_id,
                 ),
@@ -703,10 +781,28 @@ def build_relatorio_os_export_data(user, args):
             .scalar()
         )
 
+    ordens = []
+    if include_ordens:
+        ordens = (
+            base_query
+            .options(
+                db.joinedload(OrdemServico.solicitacao).joinedload(Solicitacao.usuario),
+                db.joinedload(OrdemServico.solicitacao).joinedload(Solicitacao.prefeitura),
+                db.joinedload(OrdemServico.solicitacao).joinedload(Solicitacao.equipe),
+                db.joinedload(OrdemServico.equipe),
+            )
+            .order_by(
+                OrdemServico.respondido_em.desc(),
+                OrdemServico.data_aplicacao.desc(),
+                OrdemServico.id.desc(),
+            )
+            .all()
+        )
+
     return {
-        "mes": mes_atual,
-        "ano": ano_atual,
-        "uvis_id": uvis_id,
+        "mes": filtros["mes"],
+        "ano": filtros["ano"],
+        "uvis_id": filtros["uvis_id"],
         "uvis_nome": nome_uvis or "Todas as Unidades",
         "total_os": total_os,
         "total_concluidas": total_concluidas,
@@ -719,6 +815,7 @@ def build_relatorio_os_export_data(user, args):
         "dados_piloto": dados_piloto,
         "dados_unidade": dados_unidade,
         "dados_mensais": dados_mensais,
+        "ordens": ordens,
     }
 
 

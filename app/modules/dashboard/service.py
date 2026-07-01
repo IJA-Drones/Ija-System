@@ -6,6 +6,7 @@ from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import joinedload
 
 from app.models import Drones, Equipe, Solicitacao
+from app.modules.piloto_os.service import build_os_media_context
 from app.shared.os_history_filters import (
     apply_os_history_filters,
     apply_retorno_automatico_filter,
@@ -295,6 +296,7 @@ def build_uvis_os_form_context(user, os_id):
             + len(outras_imagens_paths)
             + (1 if video_path else 0)
         ),
+        **build_os_media_context(ordem),
     }
 
 

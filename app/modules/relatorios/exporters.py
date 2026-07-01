@@ -841,6 +841,16 @@ OS_FONT_HEADER = Font(bold=True, color="FFFFFF")
 OS_FONT_TITLE = Font(bold=True, size=16, color="0D6EFD")
 OS_FONT_SUBTITLE = Font(size=10, color="555555")
 OS_FONT_SECTION = Font(bold=True, color="0D6EFD")
+FIELD_CONTROL_HEADER_FILL = PatternFill("solid", fgColor="D9E2F3")
+FIELD_CONTROL_HEADER_FONT = Font(name="Calibri", size=11, color="1F1F1F", bold=True)
+FIELD_CONTROL_BORDER_SIDE = Side(style="thin", color="D9D9D9")
+FIELD_CONTROL_BORDER = Border(
+    left=FIELD_CONTROL_BORDER_SIDE,
+    right=FIELD_CONTROL_BORDER_SIDE,
+    top=FIELD_CONTROL_BORDER_SIDE,
+    bottom=FIELD_CONTROL_BORDER_SIDE,
+)
+FIELD_CONTROL_BODY_FONT = Font(name="Calibri", size=10, color="1F2937")
 
 
 def _os_fmt_dt(value):
@@ -943,6 +953,395 @@ def _os_excel_auto_width(ws, max_col=2, min_w=12, max_w=60):
         ws.column_dimensions[letter].width = max(min_w, min(max_w, best + 2))
 
 
+def _os_fmt_date(value):
+    if not value:
+        return ""
+    try:
+        return value.strftime("%d/%m/%Y")
+    except Exception:
+        return str(value)
+
+
+def _os_fmt_time(value):
+    if not value:
+        return ""
+    try:
+        return value.strftime("%H:%M")
+    except Exception:
+        return str(value)
+
+
+def _os_fmt_dt_seconds(value):
+    if not value:
+        return ""
+    try:
+        return value.strftime("%d/%m/%Y %H:%M:%S")
+    except Exception:
+        return str(value)
+
+
+def _os_yes_registered(value):
+    return "REGISTRADA" if value else ""
+
+
+def _os_cliente_nome(solicitacao):
+    prefeitura = getattr(solicitacao, "prefeitura", None)
+    return getattr(prefeitura, "nome", None) or "PMSP"
+
+
+def _os_localizacao_nome(solicitacao):
+    usuario = getattr(solicitacao, "usuario", None)
+    equipe = getattr(solicitacao, "equipe", None)
+    return (
+        getattr(usuario, "nome_uvis", None)
+        or getattr(equipe, "nome_equipe", None)
+        or getattr(solicitacao, "equipe_uvis_nome", None)
+        or ""
+    )
+
+
+def _os_endereco_completo(solicitacao):
+    parts = []
+    if getattr(solicitacao, "logradouro", None):
+        numero = getattr(solicitacao, "numero", None) or "S/N"
+        parts.append(f"{solicitacao.logradouro}, {numero}")
+    if getattr(solicitacao, "bairro", None):
+        parts.append(solicitacao.bairro)
+    cidade_uf = " - ".join(part for part in [getattr(solicitacao, "cidade", None), getattr(solicitacao, "uf", None)] if part)
+    if cidade_uf:
+        parts.append(cidade_uf)
+    if getattr(solicitacao, "cep", None):
+        parts.append(solicitacao.cep)
+    if getattr(solicitacao, "complemento", None):
+        parts.append(solicitacao.complemento)
+    return " - ".join(parts)
+
+
+def _os_status_export(solicitacao, ordem):
+    status = (getattr(solicitacao, "status", None) or "").strip()
+    if status.upper() in {"CONCLUIDO", "CONCLUÍDO"} or getattr(ordem, "respondido_em", None):
+        return "Concluído"
+    return status
+
+
+def _os_duration_text(start_time, end_time):
+    if not start_time or not end_time:
+        return ""
+    try:
+        start_minutes = (start_time.hour * 60) + start_time.minute
+        end_minutes = (end_time.hour * 60) + end_time.minute
+        if end_minutes < start_minutes:
+            end_minutes += 24 * 60
+        minutes = max(0, end_minutes - start_minutes)
+        return f"{minutes // 60:02d}:{minutes % 60:02d}"
+    except Exception:
+        return ""
+
+
+def _os_midias_text(ordem):
+    imagens = getattr(ordem, "quantidade_imagens_registradas", None)
+    videos = getattr(ordem, "quantidade_videos_registradas", None)
+    parts = []
+    if imagens not in (None, ""):
+        parts.append(f"{imagens} FOTO{'S' if int(imagens or 0) != 1 else ''}")
+    if videos not in (None, ""):
+        parts.append(f"{videos} VIDEO{'S' if int(videos or 0) != 1 else ''}")
+    return "; ".join(parts)
+
+
+def _os_equipamentos_text(ordem):
+    equipamentos = [
+        getattr(ordem, "prefixo_aeronave_pulverizacao", None),
+        getattr(ordem, "prefixo_aeronave_monitoramento", None),
+    ]
+    return "; ".join(item for item in equipamentos if item)
+
+
+def _setup_field_control_sheet(ws, headers, widths):
+    ws.append(headers)
+    ws.freeze_panes = "A2"
+    ws.row_dimensions[1].height = 28
+
+    for col, header in enumerate(headers, start=1):
+        cell = ws.cell(row=1, column=col)
+        cell.value = header
+        cell.fill = FIELD_CONTROL_HEADER_FILL
+        cell.font = FIELD_CONTROL_HEADER_FONT
+        cell.border = FIELD_CONTROL_BORDER
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        ws.column_dimensions[get_column_letter(col)].width = widths.get(col, 16)
+
+
+def _finalize_field_control_sheet(ws):
+    ws.auto_filter.ref = ws.dimensions
+    for col in range(1, ws.max_column + 1):
+        ws.cell(row=1, column=col).border = FIELD_CONTROL_BORDER
+
+
+ATIVIDADES_HEADERS = [
+    "Identificador da OS",
+    "Etiqueta da Tarefa",
+    "Etiqueta do Cliente",
+    "Data do deslocamento",
+    "Hora do deslocamento",
+    "Duração do deslocamento",
+    "Data agendada",
+    "Hora",
+    "Prazo",
+    "Data/Hora limite da resposta",
+    "Data/hora da conclusão da resposta",
+    "Situação do prazo de resposta",
+    "Data/Hora da solução",
+    "Data/Hora da conclusão da solução",
+    "Situação do prazo de solução",
+    "Nome do cliente",
+    "Nome da Localização",
+    "Cidade",
+    "Estado",
+    "Endereço Completo",
+    "Descrição",
+    "Descrição da Tarefa",
+    "Status",
+    "Data de início",
+    "Hora de início",
+    "Data de finalização",
+    "Hora de finalização",
+    "Duração",
+    "Duração estimada",
+    "Descrição fechamento",
+    "Avaliação",
+    "Comentário da avaliação",
+    "Tipo de OS",
+    "Criador",
+    "Tipo do criador",
+    "Colaborador",
+    "Colaboradores secundários",
+    "Equipamentos",
+    "Data de criação",
+    "Hora de criação",
+    "Criado em",
+    "Link do relatório",
+    "Latitude do colaborador no início da atividade",
+    "Longitude do colaborador no início da atividade",
+    "Latitude do colaborador na finalização da atividade",
+    "Longitude do colaborador na finalização da atividade",
+    "Data de criação da solicitação",
+    "ID",
+    "Duração precisa",
+    "Data de abertura da solicitação",
+    "Contrato de prazo",
+    "Arquivado",
+    "Última atualização da OS",
+    "Descrição da Localização",
+    "Identificador de importação",
+    "Link do relatório estendido",
+]
+
+
+FORMULARIO_RD_HEADERS = [
+    "Nome do Formulário",
+    "Situação",
+    "Ordem de Serviço",
+    "Nome do cliente",
+    "Nome da Localização",
+    "Respondido em",
+    "Respondido por",
+    "SITUAÇÃO DA APLICAÇÃO",
+    "LARVA VISUALIZADA",
+    "RETORNAR NA PROXIMA SEMANA PARA MONITORAR LARVAS?",
+    "DA",
+    "NOME E RF DO ACE RESPONSAVEL PELA OS",
+    "CRIADOURO DA OS (TIPO E VOLUME)",
+    "DATA DA APLICAÇÃO",
+    "HORA DO INICIO DA APLICAÇÃO",
+    "HORA DO TERMINO DA APLICAÇÃO",
+    "TRATAMENTO ADICIONAL REALIZADO?",
+    "QUANTOS? QUAIS?",
+    "DESCRIÇÃO DO PRODUTO",
+    "FORMULAÇÃO DO PRODUTO",
+    "DOSAGEM (g/10L)",
+    "TIPO DE APLICAÇÃO",
+    "QUANTIDADE DE PRODUTO ADMNISTRADA (ML)",
+    "PULVERIZAÇÃO DE AREA - liq - (l/ha)",
+    "PULVERIZAÇÃO DE FOCO-  liq - (TEMPO ESTIMADO DE APLICAÇÃO)(SEGUNDOS)",
+    "PULVERIZAÇÃO DE FOCO - liq - (l/min)",
+    "PREFIXO AERONAVE DE PULVERIZAÇÃO",
+    "PREFIXO DA AERONAVE DE MONITORAMENTO",
+    "QUANTIDADE DE IMAGENS REGISTRADAS",
+    "PONTA DE PULVERIZAÇÃO",
+    "TEMPERATURA (°C)",
+    "UMIDADE RELATIVA (%)",
+    "VELOCIDADE DO VENTO (km/h)",
+    "MOTIVO DE NAO REALIZAÇÃO",
+    "OBSERVAÇÕES",
+    "PILOTO",
+    "ASSINATURA PILOTO",
+    "AUXILIAR",
+    "PROPRIETÁRIO OU PREPOSTO",
+    "ASSINATURA PROPRIETÁRIO OU PREPOSTO",
+]
+
+
+ATIVIDADES_WIDTHS = {
+    1: 20,
+    17: 40,
+    18: 20,
+    20: 100,
+    21: 20,
+    48: 39,
+    49: 20,
+}
+
+
+FORMULARIO_RD_WIDTHS = {
+    1: 20,
+    5: 40,
+    6: 20,
+    8: 58,
+    9: 20,
+    12: 21,
+    13: 35,
+    14: 20,
+    18: 85,
+    19: 20,
+    20: 22,
+    21: 20,
+    22: 30,
+    23: 20,
+    28: 26,
+    29: 20,
+    34: 50,
+    35: 100,
+    36: 29,
+    37: 100,
+    38: 26,
+    39: 21,
+    40: 100,
+}
+
+
+def _build_atividades_row(ordem):
+    solicitacao = ordem.solicitacao
+    duracao = _os_duration_text(
+        getattr(ordem, "hora_inicio_aplicacao", None),
+        getattr(ordem, "hora_termino_aplicacao", None),
+    )
+    usuario = getattr(solicitacao, "usuario", None)
+    identificador = getattr(ordem, "identificador_os", None) or str(getattr(solicitacao, "id", ""))
+    data_final = getattr(ordem, "data_aplicacao", None)
+    hora_final = getattr(ordem, "hora_termino_aplicacao", None)
+    if getattr(ordem, "respondido_em", None):
+        data_final = data_final or ordem.respondido_em
+        hora_final = hora_final or ordem.respondido_em
+
+    return [
+        identificador,
+        "",
+        "",
+        "",
+        "",
+        "",
+        _os_fmt_date(getattr(solicitacao, "data_agendamento", None)),
+        _os_fmt_time(getattr(solicitacao, "hora_agendamento", None)),
+        "",
+        "",
+        _os_fmt_dt_seconds(getattr(ordem, "respondido_em", None)),
+        "",
+        "",
+        _os_fmt_dt_seconds(getattr(ordem, "respondido_em", None)),
+        "",
+        _os_cliente_nome(solicitacao),
+        _os_localizacao_nome(solicitacao),
+        getattr(solicitacao, "cidade", None) or "",
+        getattr(solicitacao, "uf", None) or "",
+        _os_endereco_completo(solicitacao),
+        getattr(solicitacao, "observacao", None) or "",
+        getattr(solicitacao, "foco", None) or "",
+        _os_status_export(solicitacao, ordem),
+        _os_fmt_date(getattr(ordem, "data_aplicacao", None)),
+        _os_fmt_time(getattr(ordem, "hora_inicio_aplicacao", None)),
+        _os_fmt_date(data_final),
+        _os_fmt_time(hora_final),
+        duracao,
+        "",
+        getattr(ordem, "observacoes", None) or getattr(ordem, "motivo_nao_realizacao", None) or "",
+        "",
+        "",
+        getattr(solicitacao, "tipo_operacao", None) or "",
+        getattr(usuario, "login", None) or getattr(usuario, "nome_uvis", None) or "",
+        getattr(usuario, "tipo_usuario", None) or "",
+        getattr(ordem, "piloto", None) or "",
+        getattr(ordem, "auxiliar", None) or "",
+        _os_equipamentos_text(ordem),
+        _os_fmt_date(getattr(solicitacao, "data_criacao", None)),
+        _os_fmt_time(getattr(solicitacao, "data_criacao", None)),
+        _os_fmt_dt_seconds(getattr(solicitacao, "data_criacao", None)),
+        "",
+        "",
+        "",
+        "",
+        "",
+        _os_fmt_date(getattr(solicitacao, "data_criacao", None)),
+        getattr(solicitacao, "id", None) or "",
+        duracao,
+        _os_fmt_date(getattr(solicitacao, "data_criacao", None)),
+        "",
+        "",
+        _os_fmt_dt_seconds(getattr(ordem, "respondido_em", None)),
+        getattr(solicitacao, "complemento", None) or getattr(solicitacao, "bairro", None) or "",
+        getattr(solicitacao, "protocolo", None) or "",
+        "",
+    ]
+
+
+def _build_formulario_rd_row(ordem):
+    solicitacao = ordem.solicitacao
+    identificador = getattr(ordem, "identificador_os", None) or str(getattr(solicitacao, "id", ""))
+
+    return [
+        "RD - PROJETO SP",
+        _os_status_export(solicitacao, ordem),
+        identificador,
+        _os_cliente_nome(solicitacao),
+        _os_localizacao_nome(solicitacao),
+        _os_fmt_dt_seconds(getattr(ordem, "respondido_em", None)),
+        getattr(ordem, "respondido_por", None) or "",
+        getattr(ordem, "situacao_aplicacao", None) or "",
+        getattr(ordem, "larva_visualizada", None) or "",
+        getattr(ordem, "retornar_proxima_semana_monitorar_larvas", None) or "",
+        getattr(ordem, "distrito_administrativo", None) or "",
+        getattr(ordem, "nome_rf_ace_responsavel_os", None) or "",
+        getattr(ordem, "criadouro_os_tipo_volume", None) or "",
+        _os_fmt_date(getattr(ordem, "data_aplicacao", None)),
+        _os_fmt_time(getattr(ordem, "hora_inicio_aplicacao", None)),
+        _os_fmt_time(getattr(ordem, "hora_termino_aplicacao", None)),
+        getattr(ordem, "tratamento_adicional_realizado", None) or "",
+        getattr(ordem, "quantos_quais", None) or "",
+        getattr(ordem, "descricao_produto", None) or "",
+        getattr(ordem, "formulacao_produto", None) or "",
+        getattr(ordem, "dosagem_g_10l", None) or "",
+        getattr(ordem, "tipo_aplicacao", None) or "",
+        getattr(ordem, "quantidade_produto_administrada_ml", None) or "",
+        getattr(ordem, "pulverizacao_area_l_ha", None) or "",
+        getattr(ordem, "pulverizacao_foco_tempo_estimado_segundos", None) or "",
+        getattr(ordem, "pulverizacao_foco_l_min", None) or "",
+        getattr(ordem, "prefixo_aeronave_pulverizacao", None) or "",
+        getattr(ordem, "prefixo_aeronave_monitoramento", None) or "",
+        _os_midias_text(ordem),
+        getattr(ordem, "ponta_pulverizacao", None) or "",
+        getattr(ordem, "temperatura_c", None) or "",
+        getattr(ordem, "umidade_relativa_pct", None) or "",
+        getattr(ordem, "velocidade_vento_kmh", None) or "",
+        getattr(ordem, "motivo_nao_realizacao", None) or "",
+        getattr(ordem, "observacoes", None) or "",
+        getattr(ordem, "piloto", None) or "",
+        _os_yes_registered(getattr(ordem, "assinatura_piloto", None)),
+        getattr(ordem, "auxiliar", None) or "",
+        getattr(ordem, "proprietario_ou_preposto", None) or "",
+        _os_yes_registered(getattr(ordem, "assinatura_proprietario_ou_preposto", None)),
+    ]
+
+
 def _os_pdf_header_footer_factory(title: str):
     def _hf(canvas, doc):
         canvas.saveState()
@@ -988,72 +1387,28 @@ def _os_pdf_table(title: str, rows: list[list[str]], styles, col_widths=None):
 
 
 def build_relatorio_os_excel_export(user, args):
-    data = build_relatorio_os_export_data(user, args)
+    data = build_relatorio_os_export_data(user, args, include_ordens=True, only_concluidas=True)
 
     workbook = Workbook()
-    ws = workbook.active
-    ws.title = "Resumo"
+    ws_atividades = workbook.active
+    ws_atividades.title = "atividades"
+    _setup_field_control_sheet(ws_atividades, ATIVIDADES_HEADERS, ATIVIDADES_WIDTHS)
 
-    _os_excel_add_title(
-        ws,
-        "Relatorio Geral de OS",
-        f"Filtro: {data['mes']:02d}/{data['ano']} | Unidade: {data['uvis_nome']} | Gerado em {_os_fmt_dt(datetime.now())}",
-    )
+    ws_form = workbook.create_sheet("formulário-rd_-_projeto_sp")
+    _setup_field_control_sheet(ws_form, FORMULARIO_RD_HEADERS, FORMULARIO_RD_WIDTHS)
 
-    row = 4
-    _os_excel_add_section(ws, row, "Indicadores")
-    row += 1
-    row = _os_excel_write_kv(ws, row, [
-        ("Total OS", data["total_os"]),
-        ("Concluidas", data["total_concluidas"]),
-        ("Larva (SIM)", data["total_larva_sim"]),
-        ("Tratamento adicional", data["total_tratamento_adicional"]),
-        ("Nao realizadas", data["total_nao_realizadas"]),
-    ])
+    for ordem in data["ordens"]:
+        ws_atividades.append(_build_atividades_row(ordem))
+        ws_form.append(_build_formulario_rd_row(ordem))
 
-    ws.freeze_panes = "A5"
-    _os_excel_auto_width(ws, max_col=2, min_w=18, max_w=70)
-
-    ws2 = workbook.create_sheet("Detalhamento")
-    _os_excel_add_title(ws2, "Detalhamento do Relatorio", "Agrupamentos por campos")
-
-    row = 4
-    _os_excel_add_section(ws2, row, "Situacao da Aplicacao")
-    row += 1
-    row = _os_excel_write_table(ws2, row, ["Situacao", "Total"], data["dados_situacao_aplicacao"], col_widths=[45, 12])
-
-    row += 1
-    _os_excel_add_section(ws2, row, "Tipo de Aplicacao")
-    row += 1
-    row = _os_excel_write_table(ws2, row, ["Tipo", "Total"], data["dados_tipo_aplicacao"], col_widths=[45, 12])
-
-    row += 1
-    _os_excel_add_section(ws2, row, "Larva Visualizada")
-    row += 1
-    row = _os_excel_write_table(ws2, row, ["Resposta", "Total"], data["dados_larva"], col_widths=[45, 12])
-
-    row += 1
-    _os_excel_add_section(ws2, row, "Pilotos (Top 10)")
-    row += 1
-    row = _os_excel_write_table(ws2, row, ["Piloto", "Total"], data["dados_piloto"][:10], col_widths=[45, 12])
-
-    row += 1
-    _os_excel_add_section(ws2, row, "OS por Unidade")
-    row += 1
-    row = _os_excel_write_table(ws2, row, ["Unidade (UVIS)", "Total"], data["dados_unidade"], col_widths=[45, 12])
-
-    row += 1
-    _os_excel_add_section(ws2, row, "Historico Mensal")
-    row += 1
-    _os_excel_write_table(ws2, row, ["Mes", "Total"], data["dados_mensais"], col_widths=[18, 12])
-
-    ws2.freeze_panes = "A5"
+    _finalize_field_control_sheet(ws_atividades)
+    _finalize_field_control_sheet(ws_form)
 
     output = BytesIO()
     workbook.save(output)
     output.seek(0)
 
-    nome = f"relatorio_os_{data['ano']}_{data['mes']:02d}"
+    nome = f"atividades_os_{data['ano']}_{data['mes']:02d}"
     if data["uvis_id"]:
         nome += f"_uvis_{data['uvis_id']}"
     nome += ".xlsx"

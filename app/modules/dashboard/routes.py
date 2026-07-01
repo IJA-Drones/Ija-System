@@ -62,6 +62,7 @@ def register_routes(bp):
 
         filtro_tipo_os = (request.args.get("tipo_os") or "").strip()
         url_voltar = url_for("main.uvis_historico_os", tipo_os=filtro_tipo_os) if filtro_tipo_os else url_for("main.uvis_historico_os")
+        context.setdefault("calculo_dosagem_planejado", {})
 
         return render_template(
             "piloto_os_formulario.html",
