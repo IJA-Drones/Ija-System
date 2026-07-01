@@ -62,21 +62,11 @@ def register_routes(bp):
 
         filtro_tipo_os = (request.args.get("tipo_os") or "").strip()
         url_voltar = url_for("main.uvis_historico_os", tipo_os=filtro_tipo_os) if filtro_tipo_os else url_for("main.uvis_historico_os")
+        context.setdefault("calculo_dosagem_planejado", {})
 
         return render_template(
             "piloto_os_formulario.html",
-            solicitacao=context["solicitacao"],
-            equipe=context["equipe"],
-            ordem=context["ordem"],
-            modo_visualizacao=context["modo_visualizacao"],
-            uvis_nome=context["uvis_nome"],
-            endereco_os=context["endereco_os"],
-            piloto_padrao=context["piloto_padrao"],
-            auxiliar_padrao=context["auxiliar_padrao"],
-            respondido_por_padrao=context["respondido_por_padrao"],
-            respondido_em_value=context["respondido_em_value"],
-            drones_equipe=context["drones_equipe"],
-            calculo_dosagem_planejado=context.get("calculo_dosagem_planejado", {}),
+            **context,
             url_voltar=url_voltar,
             form_action="#",
         )
