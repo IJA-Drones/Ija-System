@@ -5,7 +5,7 @@ from datetime import datetime
 from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import joinedload
 
-from app.models import Drones, Equipe, Solicitacao
+from app.models import Drones, Equipe, OrdemServicoEquipeUvis, Solicitacao
 from app.modules.piloto_os.service import build_os_media_context
 from app.shared.os_history_filters import (
     apply_os_history_filters,
@@ -19,6 +19,7 @@ UVIS_HISTORICO_TIPO_OS_OPTIONS = ("todas", "piloto", "equipe_uvis")
 
 
 STATUS_OS_CONCLUIDAS = ["CONCLUIDO", "CONCLU\u00cdDO"]
+STATUS_EQUIPE_UVIS_CONCLUIDAS = ["CONCLUIDO", "CONCLU\u00cdDO"]
 
 
 def _parse_media_list(value):
@@ -174,7 +175,25 @@ def build_uvis_historico_os_context(user, args):
         )
 
     filtros = get_os_history_filters(args)
-    query = apply_os_history_filters(query, filtros)
+    if filtro_tipo_os == "equipe_uvis":
+        query = apply_os_history_filters(query, filtros, apply_status=False)
+        if filtros["status"] == "CONCLUIDAS":
+            query = query.filter(
+                Solicitacao.ordem_servico_equipe_uvis.has(
+                    OrdemServicoEquipeUvis.status.in_(STATUS_EQUIPE_UVIS_CONCLUIDAS)
+                )
+            )
+        elif filtros["status"] == "EM_ANDAMENTO":
+            query = query.filter(
+                or_(
+                    ~Solicitacao.ordem_servico_equipe_uvis.has(),
+                    Solicitacao.ordem_servico_equipe_uvis.has(
+                        ~OrdemServicoEquipeUvis.status.in_(STATUS_EQUIPE_UVIS_CONCLUIDAS)
+                    ),
+                )
+            )
+    else:
+        query = apply_os_history_filters(query, filtros)
 
     total_todas = (
         Solicitacao.query

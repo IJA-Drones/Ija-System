@@ -255,6 +255,7 @@
           {% set retorno_resumo = retorno_ciclos.get(p.id) if retorno_ciclos is defined else none %}
           {% set ordem_uvis = p.ordem_servico_equipe_uvis %}
           {% set status_upper = (p.status or '')|upper %}
+          {% set ordem_uvis_status_upper = (ordem_uvis.status if ordem_uvis else '')|upper %}
           <tr>
             <td class="ps-4" data-label="OS">
               <strong>#{{ p.id }}</strong>
@@ -305,7 +306,7 @@
             </td>
 
             <td class="text-center" data-label="Status">
-              {% if filtro_tipo_os == 'equipe_uvis' and 'CONCLU' in status_upper %}
+              {% if filtro_tipo_os == 'equipe_uvis' and 'CONCLU' in ordem_uvis_status_upper %}
                 <span class="badge bg-completed rounded-pill px-3">CONCLUIDO</span>
               {% elif filtro_tipo_os == 'equipe_uvis' and ordem_uvis %}
                 <span class="badge bg-success rounded-pill px-3">PREENCHIDA</span>

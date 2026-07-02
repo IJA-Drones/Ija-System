@@ -34,6 +34,7 @@ HISTORICO_OS_ANDAMENTO_STATUSES = (
     "APROVADA COM RECOMENDAÇÕES",
 )
 HISTORICO_OS_CONCLUIDAS_STATUSES = ("CONCLUIDO", "CONCLUÍDO")
+HISTORICO_EQUIPE_UVIS_CONCLUIDAS_STATUSES = ("CONCLUIDO", "CONCLUÍDO")
 
 
 def _parse_filter_date(value: str):
@@ -336,9 +337,20 @@ def build_admin_historico_os_query(user, filtros, filtro_tipo_os: str, filtro_eq
     if filtro_tipo_os == "equipe_uvis":
         query = query.filter(_has_equipe_uvis_os())
         if filtro_status_os == "EM_ANDAMENTO":
-            query = query.filter(~Solicitacao.status.in_(HISTORICO_OS_CONCLUIDAS_STATUSES))
+            query = query.filter(
+                or_(
+                    ~Solicitacao.ordem_servico_equipe_uvis.has(),
+                    Solicitacao.ordem_servico_equipe_uvis.has(
+                        ~OrdemServicoEquipeUvis.status.in_(HISTORICO_EQUIPE_UVIS_CONCLUIDAS_STATUSES)
+                    ),
+                )
+            )
         elif filtro_status_os == "CONCLUIDAS":
-            query = query.filter(Solicitacao.status.in_(HISTORICO_OS_CONCLUIDAS_STATUSES))
+            query = query.filter(
+                Solicitacao.ordem_servico_equipe_uvis.has(
+                    OrdemServicoEquipeUvis.status.in_(HISTORICO_EQUIPE_UVIS_CONCLUIDAS_STATUSES)
+                )
+            )
     else:
         if filtro_status_os == "EM_ANDAMENTO":
             query = query.filter(
@@ -672,6 +684,15 @@ def _historico_os_situacao(pedido, filtro_tipo_os: str):
     return ordem.situacao_aplicacao if ordem else ""
 
 
+def _historico_os_status(pedido, filtro_tipo_os: str):
+    if filtro_tipo_os == "equipe_uvis":
+        ordem_uvis = getattr(pedido, "ordem_servico_equipe_uvis", None)
+        if not ordem_uvis:
+            return "PENDENTE"
+        return ordem_uvis.status or "EM_ANDAMENTO"
+    return pedido.status or ""
+
+
 def _historico_os_respondido_por(pedido, filtro_tipo_os: str):
     ordem = (
         getattr(pedido, "ordem_servico_equipe_uvis", None)
@@ -761,7 +782,7 @@ def build_admin_historico_os_export(user, filtros, filtro_tipo_os: str, filtro_e
             usuario.nome_uvis if usuario else "",
             usuario.regiao if usuario else "",
             _historico_os_equipe_nome(pedido, filtro_tipo_os),
-            pedido.status or "",
+            _historico_os_status(pedido, filtro_tipo_os),
             _historico_os_situacao(pedido, filtro_tipo_os),
             _format_date_br(pedido.data_agendamento),
             _format_time(pedido.hora_agendamento),

@@ -357,6 +357,7 @@
             {% set os_em_andamento = 'CONCLU' not in status_upper %}
             {% set ordem_uvis = p.ordem_servico_equipe_uvis %}
             {% set ordem_piloto = p.ordem_servico %}
+            {% set ordem_uvis_status_upper = (ordem_uvis.status if ordem_uvis else '')|upper %}
             <tr>
               <td class="ps-4">
                 <strong>#{{ p.id }}</strong>
@@ -399,7 +400,7 @@
                 {% endif %}
               </td>
               <td class="text-center">
-                {% if filtro_tipo_os == 'equipe_uvis' and 'CONCLU' in status_upper %}
+                {% if filtro_tipo_os == 'equipe_uvis' and 'CONCLU' in ordem_uvis_status_upper %}
                   <span class="badge bg-completed">CONCLUIDA</span>
                   {% if ordem_uvis %}
                     <div class="small text-muted mt-1">{{ ordem_uvis.situacao_aplicacao or p.status or '-' }}</div>

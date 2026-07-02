@@ -423,6 +423,8 @@
           <tbody>
             {% for p in solicitacoes %}
             {% set retorno_resumo = retorno_ciclos.get(p.id) if retorno_ciclos is defined else none %}
+            {% set ordem_uvis = p.ordem_servico_equipe_uvis %}
+            {% set ordem_uvis_concluida = ordem_uvis and 'CONCLU' in (ordem_uvis.status or '') %}
             <tr>
               <td class="ps-4">
                 <strong class="text-main">
@@ -505,11 +507,11 @@
 
                   <a class="btn btn-sm btn-primary" href="{{ url_for('main.equipe_uvis_os_formulario_view', os_id=p.id) }}">
                     <i class="bi bi-clipboard2-check me-1"></i>
-                    {% if 'CONCLU' in (p.status or '') %}Ver OS{% else %}Preencher OS{% endif %}
+                    {% if ordem_uvis_concluida %}Ver OS{% else %}Preencher OS{% endif %}
                   </a>
 
-                  {% if 'CONCLU' not in (p.status or '') %}
-                    {% if p.ordem_servico_equipe_uvis %}
+                  {% if not ordem_uvis_concluida %}
+                    {% if ordem_uvis %}
                       <form method="POST" action="{{ url_for('main.equipe_uvis_concluir_os', os_id=p.id) }}" class="m-0 form-concluir-equipe-uvis">
                         <button type="submit" class="btn btn-sm btn-success">
                           <i class="bi bi-check2-circle me-1"></i> Concluir

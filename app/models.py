@@ -673,6 +673,7 @@ class OrdemServicoEquipeUvis(db.Model):
     identificador_os = db.Column(db.String(100), index=True)
     respondido_por = db.Column(db.String(150), index=True)
     respondido_em = db.Column(db.DateTime, index=True)
+    status = db.Column(db.String(30), nullable=False, default="EM_ANDAMENTO", index=True)
 
     situacao_aplicacao = db.Column(db.String(100), index=True)
     tratamento_adicional_realizado = db.Column(db.String(20))

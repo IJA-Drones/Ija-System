@@ -23,6 +23,8 @@ class EquipeUvisDashboardError(Exception):
 
 
 STATUS_OS_CONCLUIDAS = {"CONCLUIDO", "CONCLUÍDO"}
+STATUS_EQUIPE_UVIS_EM_ANDAMENTO = "EM_ANDAMENTO"
+STATUS_EQUIPE_UVIS_CONCLUIDA = "CONCLUIDO"
 STATUS_SOLICITACOES_APROVADAS_EQUIPE_UVIS = {
     "APROVADO",
     "APROVADO COM RECOMENDACOES",
@@ -85,6 +87,10 @@ def _is_concluded(solicitacao):
     return "CONCLU" in _status_key(getattr(solicitacao, "status", None))
 
 
+def _is_equipe_uvis_os_concluded(ordem):
+    return "CONCLU" in _status_key(getattr(ordem, "status", None))
+
+
 def build_dashboard_equipe_uvis_context(user, args, google_maps_key):
     uvis_id, nome_equipe = _resolve_uvis_operational_access(user)
 
@@ -95,7 +101,17 @@ def build_dashboard_equipe_uvis_context(user, args, google_maps_key):
             joinedload(Solicitacao.ordem_servico_equipe_uvis),
         )
         .filter(Solicitacao.usuario_id == uvis_id)
-        .filter(Solicitacao.status.in_(STATUS_SOLICITACOES_APROVADAS_EQUIPE_UVIS))
+        .filter(
+            or_(
+                Solicitacao.status.in_(STATUS_SOLICITACOES_APROVADAS_EQUIPE_UVIS),
+                Solicitacao.status.in_(STATUS_OS_CONCLUIDAS),
+            )
+        )
+        .filter(
+            ~Solicitacao.ordem_servico_equipe_uvis.has(
+                OrdemServicoEquipeUvis.status.in_(STATUS_OS_CONCLUIDAS)
+            )
+        )
     )
 
     filtro_status = args.get("status")
@@ -173,12 +189,15 @@ def build_equipe_uvis_os_historico_context(user, args):
             joinedload(Solicitacao.ordem_servico_equipe_uvis),
         )
         .filter(Solicitacao.usuario_id == uvis_id)
-        .filter(Solicitacao.ordem_servico_equipe_uvis.has())
-        .filter(Solicitacao.status.in_(STATUS_OS_CONCLUIDAS))
+        .filter(
+            Solicitacao.ordem_servico_equipe_uvis.has(
+                OrdemServicoEquipeUvis.status.in_(STATUS_OS_CONCLUIDAS)
+            )
+        )
     )
 
     filtros = get_os_history_filters(args)
-    query = apply_os_history_filters(query, filtros)
+    query = apply_os_history_filters(query, filtros, apply_status=False)
 
     page = args.get("page", 1, type=int)
     paginacao = (
@@ -201,9 +220,9 @@ def concluir_os_equipe_uvis(user, os_id):
     solicitacao = context["solicitacao"]
     ordem = context["ordem"]
 
-    if _is_concluded(solicitacao):
+    if _is_equipe_uvis_os_concluded(ordem):
         raise EquipeUvisDashboardError(
-            "Esta solicitacao ja esta concluida.",
+            "Esta OS da equipe UVIS ja esta concluida.",
             category="warning",
             redirect_endpoint="main.dashboard_equipe_uvis",
         )
@@ -222,7 +241,7 @@ def concluir_os_equipe_uvis(user, os_id):
             redirect_endpoint="main.dashboard_equipe_uvis",
         )
 
-    solicitacao.status = "CONCLUÍDO"
+    ordem.status = STATUS_EQUIPE_UVIS_CONCLUIDA
     db.session.commit()
     return f"OS #{solicitacao.id} concluida pela equipe UVIS."
 
@@ -285,7 +304,7 @@ def build_equipe_uvis_os_form_context(user, os_id):
     return {
         "solicitacao": solicitacao,
         "ordem": ordem,
-        "modo_visualizacao": _is_concluded(solicitacao),
+        "modo_visualizacao": _is_equipe_uvis_os_concluded(ordem),
         "nome_equipe": nome_equipe,
         "uvis_nome": getattr(getattr(solicitacao, "usuario", None), "nome_uvis", "") or "",
         "endereco_os": (
@@ -304,14 +323,14 @@ def salvar_equipe_uvis_os_form(user, os_id, form_data):
     context = build_equipe_uvis_os_form_context(user, os_id)
     if context["modo_visualizacao"]:
         raise EquipeUvisDashboardError(
-            "Esta solicitacao ja foi concluida e esta em modo de visualizacao.",
+            "Esta OS da equipe UVIS ja foi concluida e esta em modo de visualizacao.",
             category="warning",
         )
 
     solicitacao = context["solicitacao"]
-    if not _is_approved_for_equipe_uvis(solicitacao):
+    if not _is_approved_for_equipe_uvis(solicitacao) and not _is_concluded(solicitacao):
         raise EquipeUvisDashboardError(
-            "Somente solicitacoes aprovadas podem ser preenchidas pela UVIS operacional.",
+            "Somente solicitacoes aprovadas ou ja concluidas pelo piloto podem ser preenchidas pela UVIS operacional.",
             category="warning",
         )
 
@@ -321,11 +340,13 @@ def salvar_equipe_uvis_os_form(user, os_id, form_data):
             solicitacao_id=solicitacao.id,
             equipe_uvis_nome=solicitacao.equipe_uvis_nome or context["nome_equipe"],
             equipe_id=solicitacao.equipe_id,
+            status=STATUS_EQUIPE_UVIS_EM_ANDAMENTO,
         )
         db.session.add(ordem)
     else:
         ordem.equipe_uvis_nome = solicitacao.equipe_uvis_nome or context["nome_equipe"]
         ordem.equipe_id = solicitacao.equipe_id
+        ordem.status = ordem.status or STATUS_EQUIPE_UVIS_EM_ANDAMENTO
 
     status_execucao = _normalize_upper(form_data.get("situacao_aplicacao"))
     if status_execucao not in STATUS_PREENCHIMENTO_EQUIPE_UVIS:
