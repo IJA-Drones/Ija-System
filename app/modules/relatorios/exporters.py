@@ -4,6 +4,7 @@ import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from io import BytesIO
+from zoneinfo import ZoneInfo
 
 from flask import current_app
 from openpyxl import Workbook
@@ -854,6 +855,7 @@ FIELD_CONTROL_BORDER = Border(
     bottom=FIELD_CONTROL_BORDER_SIDE,
 )
 FIELD_CONTROL_BODY_FONT = Font(name="Calibri", size=10, color="1F2937")
+BRAZIL_TZ = ZoneInfo("America/Sao_Paulo")
 
 
 def _os_fmt_dt(value):
@@ -863,6 +865,10 @@ def _os_fmt_dt(value):
         return value.strftime("%d/%m/%Y %H:%M")
     except Exception:
         return str(value)
+
+
+def _os_now_brazil():
+    return datetime.now(BRAZIL_TZ)
 
 
 def _os_safe(value):
@@ -1632,7 +1638,7 @@ def build_relatorio_os_pdf_export(user, args):
     story = [
         Paragraph("Relatório Geral de OS", title_style),
         Paragraph(
-            f"Filtro: {data['mes']:02d}/{data['ano']} | Unidade: {data['uvis_nome']} | Gerado em {_os_fmt_dt(datetime.now())}",
+            f"Filtro: {data['mes']:02d}/{data['ano']} | Unidade: {data['uvis_nome']} | Gerado em {_os_fmt_dt(_os_now_brazil())}",
             subtitle_style,
         ),
     ]
