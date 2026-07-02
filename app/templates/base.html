@@ -951,7 +951,7 @@
           {% endif %}
           {% endif %}
 
-          {% if not is_agro_context and (current_user.tipo_usuario in ['dev', 'admin', 'regional', 'uvis', 'equipe_uvis'] or current_user.suporte_operacional or current_user.suporte_tecnico) %}
+          {% if not is_agro_context and (current_user.tipo_usuario in ['dev', 'admin'] or current_user.suporte_operacional or current_user.suporte_tecnico) %}
           <li class="nav-item">
             <a
               class="nav-link {% if request.endpoint in ['main.feedback_listar', 'main.feedback_novo', 'main.feedback_detalhe'] %}active{% endif %}"
