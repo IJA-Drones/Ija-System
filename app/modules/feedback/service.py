@@ -39,6 +39,11 @@ FEEDBACK_CATEGORY_OPTIONS = (
     ("outro", "Outro"),
 )
 
+SUPPORT_SECTOR_OPTIONS = (
+    ("operacional", "Duvidas operacionais"),
+    ("tecnico", "Problemas no sistema"),
+)
+
 FEEDBACK_PRIORITY_OPTIONS = (
     ("baixa", "Baixa"),
     ("media", "Media"),
@@ -56,6 +61,7 @@ FEEDBACK_MAX_IMAGES_PER_COMMENT = 6
 
 STATUS_LABELS = dict(FEEDBACK_STATUS_OPTIONS)
 CATEGORY_LABELS = dict(FEEDBACK_CATEGORY_OPTIONS)
+SUPPORT_SECTOR_LABELS = dict(SUPPORT_SECTOR_OPTIONS)
 PRIORITY_LABELS = dict(FEEDBACK_PRIORITY_OPTIONS)
 
 
@@ -63,12 +69,35 @@ def user_role(user) -> str:
     return normalize_role(getattr(user, "tipo_usuario", None))
 
 
+def get_user_support_sectors(user) -> tuple[str, ...]:
+    setores = []
+    if getattr(user, "suporte_operacional", False):
+        setores.append("operacional")
+    if getattr(user, "suporte_tecnico", False):
+        setores.append("tecnico")
+    return tuple(setores)
+
+
+def can_attend_support(user) -> bool:
+    return bool(get_user_support_sectors(user))
+
+
+def can_open_support_ticket(user) -> bool:
+    return is_admin_global_user(user) or is_regional_user(user) or get_feedback_owner_uvis(user) is not None
+
+
 def can_access_feedback(user) -> bool:
-    return user_role(user) in FEEDBACK_ACCESS_TYPES
+    return is_admin_global_user(user) or can_attend_support(user) or can_open_support_ticket(user)
 
 
 def can_moderate_feedback(user) -> bool:
-    return user_role(user) in FEEDBACK_MODERATOR_TYPES
+    return is_admin_global_user(user) or can_attend_support(user)
+
+
+def can_moderate_feedback_topic(user, topico) -> bool:
+    if is_admin_global_user(user):
+        return True
+    return getattr(topico, "setor_suporte", None) in get_user_support_sectors(user)
 
 
 def can_view_all_feedback(user) -> bool:
@@ -127,6 +156,9 @@ def user_can_use_uvis(user, uvis_usuario) -> bool:
     if is_admin_global_user(user):
         return True
 
+    if can_moderate_feedback(user):
+        return True
+
     if is_regional_user(user):
         return (
             build_accessible_uvis_query(user)
@@ -149,23 +181,23 @@ def build_feedback_query(user):
     if is_admin_global_user(user):
         return query
 
-    if is_regional_user(user):
-        regiao = get_user_regiao(user)
-        if not regiao:
-            return query.filter(false())
+    visibility_rules = [FeedbackTopico.criado_por_id == getattr(user, "id", None)]
 
-        query = query.filter(func.upper(func.coalesce(FeedbackTopico.regiao, "")) == regiao)
-        query = apply_prefeitura_scope(query, user, FeedbackTopico.prefeitura_id)
-        return query
+    support_sectors = get_user_support_sectors(user)
+    if support_sectors:
+        visibility_rules.append(FeedbackTopico.setor_suporte.in_(support_sectors))
 
     owner = get_feedback_owner_uvis(user)
     if owner:
-        return query.filter(FeedbackTopico.uvis_usuario_id == owner.id)
+        visibility_rules.append(FeedbackTopico.uvis_usuario_id == owner.id)
 
-    return query.filter(false())
+    if len(visibility_rules) == 1 and getattr(user, "id", None) is None:
+        return query.filter(false())
+
+    return query.filter(or_(*visibility_rules))
 
 
-def apply_feedback_filters(query, *, q="", status="", categoria="", prioridade="", uvis_id=None):
+def apply_feedback_filters(query, *, q="", status="", categoria="", prioridade="", setor_suporte="", uvis_id=None):
     termo = (q or "").strip()
     if termo:
         like = f"%{termo}%"
@@ -186,6 +218,9 @@ def apply_feedback_filters(query, *, q="", status="", categoria="", prioridade="
 
     if prioridade in PRIORITY_LABELS:
         query = query.filter(FeedbackTopico.prioridade == prioridade)
+
+    if setor_suporte in SUPPORT_SECTOR_LABELS:
+        query = query.filter(FeedbackTopico.setor_suporte == setor_suporte)
 
     if uvis_id:
         query = query.filter(FeedbackTopico.uvis_usuario_id == uvis_id)
@@ -215,13 +250,13 @@ def get_feedback_or_404(user, topico_id):
 
 def get_visible_comments(topico, user):
     comments = list(topico.comentarios)
-    if can_moderate_feedback(user):
+    if can_moderate_feedback_topic(user, topico):
         return comments
     return [comment for comment in comments if not comment.interno]
 
 
 def can_view_feedback_comment(comment, user) -> bool:
-    if comment.interno and not can_moderate_feedback(user):
+    if comment.interno and not can_moderate_feedback_topic(user, getattr(comment, "topico", None)):
         return False
 
     query = build_feedback_query(user).filter(FeedbackTopico.id == comment.topico_id)
@@ -238,7 +273,7 @@ def can_view_feedback_attachment(user, anexo) -> bool:
 def can_manage_feedback_comment(user, comment) -> bool:
     if not can_view_feedback_comment(comment, user):
         return False
-    return can_moderate_feedback(user) or getattr(comment, "usuario_id", None) == getattr(user, "id", None)
+    return can_moderate_feedback_topic(user, getattr(comment, "topico", None)) or getattr(comment, "usuario_id", None) == getattr(user, "id", None)
 
 
 def user_display_name(user) -> str:
@@ -249,7 +284,7 @@ def user_display_name(user) -> str:
     )
 
 
-def create_feedback_topic(user, *, uvis_usuario, titulo, descricao, categoria, prioridade):
+def create_feedback_topic(user, *, uvis_usuario, titulo, descricao, categoria, prioridade, setor_suporte):
     now = datetime.now()
     topico = FeedbackTopico(
         prefeitura_id=getattr(uvis_usuario, "prefeitura_id", None),
@@ -262,6 +297,7 @@ def create_feedback_topic(user, *, uvis_usuario, titulo, descricao, categoria, p
         titulo=titulo,
         descricao=descricao,
         categoria=categoria if categoria in CATEGORY_LABELS else "sugestao",
+        setor_suporte=setor_suporte if setor_suporte in SUPPORT_SECTOR_LABELS else "operacional",
         prioridade=prioridade if prioridade in PRIORITY_LABELS else "media",
         status="aberto",
         criado_em=now,
@@ -278,7 +314,7 @@ def add_feedback_comment(user, topico, mensagem, interno=False):
         usuario_nome=user_display_name(user),
         usuario_tipo=user_role(user),
         mensagem=mensagem or "",
-        interno=bool(interno and can_moderate_feedback(user)),
+        interno=bool(interno and can_moderate_feedback_topic(user, topico)),
         criado_em=datetime.now(),
     )
     topico.atualizado_em = datetime.now()
@@ -404,8 +440,19 @@ def update_feedback_status(user, topico, *, status, prioridade, responsavel_id=N
     if prioridade in PRIORITY_LABELS:
         topico.prioridade = prioridade
 
-    if is_admin_global_user(user):
+    if can_moderate_feedback(user):
         topico.responsavel_id = responsavel_id or None
 
     topico.atualizado_em = datetime.now()
     return topico
+
+
+def build_support_responsaveis_query(setor_suporte):
+    query = Usuario.query
+    if setor_suporte == "operacional":
+        query = query.filter(Usuario.suporte_operacional.is_(True))
+    elif setor_suporte == "tecnico":
+        query = query.filter(Usuario.suporte_tecnico.is_(True))
+    else:
+        query = query.filter(false())
+    return query.order_by(Usuario.nome_uvis.asc())

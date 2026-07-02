@@ -10,9 +10,10 @@
 <div class="container-fluid py-4 feedback-page" style="max-width: 1220px;">
   <div class="feedback-header mb-4">
     <div>
-      <span class="feedback-kicker">Feedback #{{ topico.id }}</span>
+      <span class="feedback-kicker">Chamado #{{ topico.id }}</span>
       <h2 class="mb-1">{{ topico.titulo }}</h2>
       <div class="feedback-meta mt-2">
+        <span><i class="bi bi-headset"></i>{{ support_sector_labels.get(topico.setor_suporte, "Sem setor") }}</span>
         <span><i class="bi bi-building"></i>{{ topico.uvis_nome }}</span>
         <span><i class="bi bi-geo-alt"></i>{{ topico.regiao or "Sem regiao" }}</span>
         <span><i class="bi bi-clock"></i>{{ topico.criado_em.strftime("%d/%m/%Y %H:%M") if topico.criado_em else "" }}</span>
@@ -33,6 +34,7 @@
           </div>
           <div class="feedback-detail-badges">
             <span class="feedback-status feedback-status-{{ topico.status }}">{{ status_labels.get(topico.status, topico.status) }}</span>
+            <span class="feedback-pill">{{ support_sector_labels.get(topico.setor_suporte, "Sem setor") }}</span>
             <span class="feedback-pill">{{ category_labels.get(topico.categoria, topico.categoria) }}</span>
             <span class="feedback-priority feedback-priority-{{ topico.prioridade }}">{{ priority_labels.get(topico.prioridade, topico.prioridade) }}</span>
           </div>
@@ -175,6 +177,10 @@
           <h5 class="mb-3">Resumo</h5>
           <dl class="feedback-summary">
             <div>
+              <dt>Atendimento</dt>
+              <dd>{{ support_sector_labels.get(topico.setor_suporte, "Sem setor") }}</dd>
+            </div>
+            <div>
               <dt>UVIS</dt>
               <dd>{{ topico.uvis_nome }}</dd>
             </div>
@@ -219,7 +225,6 @@
                 {% endfor %}
               </select>
             </div>
-            {% if can_view_all %}
             <div class="mb-3">
               <label class="form-label" for="feedback-responsavel">Responsavel</label>
               <select id="feedback-responsavel" name="responsavel_id" class="form-select">
@@ -229,7 +234,6 @@
                 {% endfor %}
               </select>
             </div>
-            {% endif %}
             <div class="mb-3">
               <label class="form-label" for="feedback-mensagem-status">Mensagem da atualizacao</label>
               <textarea id="feedback-mensagem-status" name="mensagem_status" rows="4" class="form-control"></textarea>

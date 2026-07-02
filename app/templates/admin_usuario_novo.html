@@ -130,6 +130,46 @@
         <hr class="text-muted opacity-25 my-4" />
 
         <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-headset text-primary me-2 fs-5"></i>
+          <h5 class="m-0 text-primary fw-bold">Atendimento de suporte</h5>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <label class="form-check border rounded-3 p-3 h-100 d-flex align-items-start gap-2">
+              <input
+                class="form-check-input mt-1"
+                type="checkbox"
+                name="suporte_operacional"
+                value="1"
+                {% if form.get('suporte_operacional') == '1' %}checked{% endif %}
+              />
+              <span>
+                <strong class="d-block">Duvidas operacionais</strong>
+                <small class="text-muted">Vera chamados direcionados para o suporte operacional.</small>
+              </span>
+            </label>
+          </div>
+          <div class="col-md-6">
+            <label class="form-check border rounded-3 p-3 h-100 d-flex align-items-start gap-2">
+              <input
+                class="form-check-input mt-1"
+                type="checkbox"
+                name="suporte_tecnico"
+                value="1"
+                {% if form.get('suporte_tecnico') == '1' %}checked{% endif %}
+              />
+              <span>
+                <strong class="d-block">Problemas no sistema</strong>
+                <small class="text-muted">Vera chamados tecnicos enviados para desenvolvimento.</small>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <hr class="text-muted opacity-25 my-4" />
+
+        <div class="d-flex align-items-center mb-3">
           <i class="bi bi-key-fill text-primary me-2 fs-5"></i>
           <h5 class="m-0 text-primary fw-bold">Senha</h5>
         </div>
