@@ -297,6 +297,25 @@
     flex-wrap: wrap;
     gap: 0.65rem;
   }
+  .os-kml-route-list {
+    display: grid;
+    gap: 0.75rem;
+  }
+  .os-kml-route-item {
+    border: 1px solid #dbe4f0;
+    border-radius: 0.9rem;
+    background: #fff;
+    padding: 0.9rem;
+  }
+  .os-kml-route-title {
+    color: #173b62;
+    font-weight: 800;
+    word-break: break-word;
+  }
+  .os-kml-route-meta {
+    color: #627287;
+    font-size: 0.84rem;
+  }
   .os-media-gallery-label {
     margin: 0 0 0.75rem;
     font-size: 0.73rem;
@@ -1485,6 +1504,78 @@
                       <span class="os-media-help" id="statusUploadVideo">Aguardando seleção.</span>
                     </div>
                     <div class="os-media-help mt-2">Formatos aceitos: MP4, MOV, WEBM, M4V e LRF/DJI. O upload do video e enviado em partes e o servidor converte para MP4 antes de enviar ao WebDAV.</div>
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <div class="row g-4">
+              <div class="col-12">
+                <div class="os-image-card os-media-card p-3 p-lg-4">
+                  <div class="os-media-card-header">
+                    <div>
+                      <div class="os-media-card-kicker">TraÃ§ado operacional</div>
+                      <h6 class="os-media-card-title">Rotas KML da OS</h6>
+                      <p class="os-media-card-description">Arquivos de rota vinculados a esta OS para consulta em mapa e download do traÃ§ado original.</p>
+                    </div>
+                    <span class="os-media-pill">{{ total_rotas_kml_os }} rota(s)</span>
+                  </div>
+
+                  <div class="os-media-preview-frame mb-3">
+                    {% if rotas_kml_os %}
+                    <div class="os-kml-route-list">
+                      {% for rota in rotas_kml_os %}
+                      <div class="os-kml-route-item">
+                        <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
+                          <div class="min-w-0">
+                            <div class="os-kml-route-title">{{ rota.aircraft_name or rota.original_filename }}</div>
+                            <div class="os-kml-route-meta">
+                              CÃ³digo {{ rota.route_code }}
+                              {% if rota.route_timestamp %} | {{ rota.route_timestamp.strftime("%d/%m/%Y %H:%M") }}{% endif %}
+                              | {{ rota.point_count }} ponto(s)
+                            </div>
+                            <div class="os-kml-route-meta">{{ rota.original_filename }}</div>
+                          </div>
+                          <div class="os-media-actions">
+                            <a href="{{ url_for('main.os_rota_kml', os_id=solicitacao.id, route_id=rota.id) }}" class="btn btn-sm btn-outline-primary" target="_blank" rel="noopener">
+                              <i class="bi bi-map me-1"></i>Ver mapa
+                            </a>
+                            <a href="{{ url_for('main.os_rota_kml_download', os_id=solicitacao.id, route_id=rota.id) }}" class="btn btn-sm btn-outline-dark">
+                              <i class="bi bi-download me-1"></i>Baixar KML
+                            </a>
+                            {% if not modo_visualizacao %}
+                            <button
+                              type="submit"
+                              class="btn btn-sm btn-outline-danger"
+                              formaction="{{ url_for('main.os_rota_kml_remover', os_id=solicitacao.id, route_id=rota.id) }}"
+                              formmethod="post"
+                              formnovalidate
+                            >
+                              <i class="bi bi-trash me-1"></i>Remover
+                            </button>
+                            {% endif %}
+                          </div>
+                        </div>
+                      </div>
+                      {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="os-image-empty">
+                      <div>
+                        <i class="bi bi-map fs-1 d-block mb-2 text-primary"></i>
+                        <span class="os-empty-title">Nenhuma rota KML vinculada</span>
+                        <div class="os-empty-subtitle">Anexe o arquivo KML da operaÃ§Ã£o para manter o traÃ§ado junto da OS.</div>
+                      </div>
+                    </div>
+                    {% endif %}
+                  </div>
+
+                  {% if not modo_visualizacao %}
+                  <div class="os-media-upload-box">
+                    <label class="form-label-header">Adicionar rotas KML</label>
+                    <input type="file" name="rotas_kml_files" class="form-control" accept=".kml,application/vnd.google-earth.kml+xml" multiple />
+                    <div class="os-media-help mt-2">Selecione um ou mais arquivos .kml e clique em salvar formulÃ¡rio para vincular as rotas a esta OS.</div>
                   </div>
                   {% endif %}
                 </div>
