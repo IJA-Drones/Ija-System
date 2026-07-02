@@ -4,6 +4,7 @@ import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from io import BytesIO
+from zoneinfo import ZoneInfo
 
 from flask import current_app
 from openpyxl import Workbook
@@ -43,6 +44,9 @@ from app.shared.access import (
 from app.shared.query_filters import aplicar_filtros_base
 
 try:
+    import matplotlib
+
+    matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
     MATPLOTLIB_AVAILABLE = True
@@ -851,6 +855,7 @@ FIELD_CONTROL_BORDER = Border(
     bottom=FIELD_CONTROL_BORDER_SIDE,
 )
 FIELD_CONTROL_BODY_FONT = Font(name="Calibri", size=10, color="1F2937")
+BRAZIL_TZ = ZoneInfo("America/Sao_Paulo")
 
 
 def _os_fmt_dt(value):
@@ -860,6 +865,10 @@ def _os_fmt_dt(value):
         return value.strftime("%d/%m/%Y %H:%M")
     except Exception:
         return str(value)
+
+
+def _os_now_brazil():
+    return datetime.now(BRAZIL_TZ)
 
 
 def _os_safe(value):
@@ -1342,16 +1351,31 @@ def _build_formulario_rd_row(ordem):
     ]
 
 
-def _os_pdf_header_footer_factory(title: str):
+def _os_pdf_header_footer_factory(title: str, args=None):
     def _hf(canvas, doc):
         canvas.saveState()
-        _, height = doc.pagesize
+        page_width, height = doc.pagesize
+
+        logo = _try_make_logo(args or {}, width_mm=30)
+        if logo:
+            try:
+                logo.drawOn(canvas, doc.leftMargin, height - 7 * mm - logo.drawHeight)
+            except Exception:
+                pass
+
         canvas.setFillColor(colors.HexColor("#0d6efd"))
-        canvas.rect(doc.leftMargin, height - 12 * mm, doc.width, 3, fill=1, stroke=0)
+        canvas.rect(doc.leftMargin, height - 28 * mm, doc.width, 2, fill=1, stroke=0)
         canvas.setFont("Helvetica", 8)
         canvas.setFillColor(colors.HexColor("#666"))
-        canvas.drawString(doc.leftMargin, 9 * mm, title)
-        canvas.drawRightString(doc.leftMargin + doc.width, 9 * mm, f"Pagina {canvas.getPageNumber()}")
+        canvas.drawRightString(doc.leftMargin + doc.width, height - 13 * mm, f"Página {canvas.getPageNumber()}")
+
+        canvas.setFillColor(colors.HexColor("#4f81c7"))
+        canvas.setFont("Helvetica-Bold", 7.2)
+        canvas.drawCentredString(page_width / 2, 17 * mm, "OCEANO AZUL COMERCIO INTERNACIONAL LTDA")
+        canvas.setFillColor(colors.HexColor("#a0a7b3"))
+        canvas.setFont("Helvetica", 5.8)
+        canvas.drawCentredString(page_width / 2, 13.5 * mm, "Alameda Rio Negro, 503 - sala 2401")
+        canvas.drawCentredString(page_width / 2, 10.5 * mm, "Alphaville Centro Industrial e Empresarial - Barueri SP")
         canvas.restoreState()
 
     return _hf
@@ -1383,6 +1407,166 @@ def _os_pdf_table(title: str, rows: list[list[str]], styles, col_widths=None):
     ]))
     story.append(table)
     story.append(Spacer(1, 8))
+    return story
+
+
+def _os_display_text(value):
+    text = str(value or "Não informado").strip() or "Não informado"
+    replacements = {
+        "Nao informado": "Não informado",
+        "nao informado": "Não informado",
+        "NAO INFORMADO": "Não informado",
+    }
+    return replacements.get(text, text)
+
+
+def _os_chart_rows(rows, limit=None):
+    cleaned = []
+    for label, total in rows or []:
+        label = _os_display_text(label)
+        try:
+            value = int(total or 0)
+        except (TypeError, ValueError):
+            value = 0
+        cleaned.append((label, value))
+    return cleaned[:limit] if limit else cleaned
+
+
+def _os_short_label(value, max_chars=32):
+    value = _os_display_text(value)
+    return value if len(value) <= max_chars else f"{value[:max_chars - 3]}..."
+
+
+def _os_chart_image(fig, *, width_mm=170):
+    bio = BytesIO()
+    fig.tight_layout()
+    fig.savefig(bio, format="png", dpi=220, bbox_inches="tight", facecolor="white")
+    plt.close(fig)
+    bio.seek(0)
+    image_width, image_height = ImageReader(bio).getSize()
+    bio.seek(0)
+    draw_width = width_mm * mm
+    draw_height = draw_width * (image_height / image_width) if image_width else 90 * mm
+    return RLImage(bio, width=draw_width, height=draw_height)
+
+
+def _os_no_data_chart(title):
+    fig, ax = plt.subplots(figsize=(7.0, 2.6))
+    ax.set_title(title, fontsize=11, pad=10)
+    ax.text(0.5, 0.5, "Sem dados para o gráfico", ha="center", va="center", fontsize=10, color="#6c757d")
+    ax.axis("off")
+    return fig
+
+
+def _os_pdf_chart_section(data, styles):
+    section = ParagraphStyle(
+        "os_charts_sec",
+        parent=styles["Heading2"],
+        fontSize=12,
+        leading=16,
+        textColor=colors.HexColor("#0d6efd"),
+        spaceBefore=10,
+        spaceAfter=6,
+    )
+    note = ParagraphStyle(
+        "os_charts_note",
+        parent=styles["Normal"],
+        fontSize=9.5,
+        leading=13,
+        textColor=colors.HexColor("#555"),
+        spaceAfter=8,
+    )
+
+    story = [
+        PageBreak(),
+        Paragraph("Gráficos", section),
+        Paragraph("Visualização dos mesmos indicadores apresentados na tela do relatório de OS.", note),
+    ]
+
+    if not MATPLOTLIB_AVAILABLE:
+        story.append(Paragraph("Matplotlib não disponível; gráficos foram omitidos.", note))
+        return story
+
+    palette = ["#0d6efd", "#20c997", "#ffc107", "#dc3545", "#6f42c1", "#0dcaf0", "#fd7e14", "#198754", "#adb5bd", "#343a40"]
+
+    def append_chart(fig, width_mm=170):
+        story.append(_os_chart_image(fig, width_mm=width_mm))
+        story.append(Spacer(1, 10))
+
+    try:
+        situacao = _os_chart_rows(data["dados_situacao_aplicacao"])
+        labels = [label for label, _ in situacao]
+        values = [value for _, value in situacao]
+        if sum(values) > 0:
+            fig1, ax1 = plt.subplots(figsize=(6.8, 3.2))
+
+            def autopct(percent):
+                return f"{percent:.0f}%" if percent >= 6 else ""
+
+            wedges, *_ = ax1.pie(
+                values,
+                labels=None,
+                colors=[palette[i % len(palette)] for i in range(len(values))],
+                autopct=autopct,
+                startangle=90,
+                pctdistance=0.78,
+                textprops={"fontsize": 9},
+            )
+            ax1.add_artist(plt.Circle((0, 0), 0.58, fc="white"))
+            ax1.legend(
+                wedges,
+                [_os_short_label(label, 38) for label in labels],
+                loc="center left",
+                bbox_to_anchor=(1.02, 0.5),
+                fontsize=8.5,
+                frameon=False,
+            )
+            ax1.set_title("Situação da Aplicação", fontsize=11, pad=10)
+            ax1.axis("equal")
+            append_chart(fig1)
+        else:
+            append_chart(_os_no_data_chart("Situação da Aplicação"))
+
+        tipo = _os_chart_rows(data["dados_tipo_aplicacao"], limit=15)
+        tipo_labels = [_os_short_label(label, 36) for label, _ in tipo]
+        tipo_values = [value for _, value in tipo]
+        fig2, ax2 = plt.subplots(figsize=(7.4, 3.6))
+        ax2.barh((tipo_labels or ["Sem dados"])[::-1], (tipo_values or [0])[::-1], color="#6f42c1")
+        ax2.set_xlabel("Total", fontsize=9)
+        ax2.set_title("Tipo de Aplicação", fontsize=11, pad=10)
+        ax2.tick_params(axis="both", labelsize=8.5)
+        ax2.grid(axis="x", linestyle=":", linewidth=0.6, alpha=0.6)
+        append_chart(fig2)
+
+        unidade = _os_chart_rows(data["dados_unidade"], limit=10)
+        unidade_labels = [_os_short_label(label, 36) for label, _ in unidade]
+        unidade_values = [value for _, value in unidade]
+        fig3, ax3 = plt.subplots(figsize=(7.4, 3.3))
+        ax3.barh((unidade_labels or ["Sem dados"])[::-1], (unidade_values or [0])[::-1], color="#20c997")
+        ax3.set_xlabel("Total", fontsize=9)
+        ax3.set_title("OS por Unidade", fontsize=11, pad=10)
+        ax3.tick_params(axis="both", labelsize=8.5)
+        ax3.grid(axis="x", linestyle=":", linewidth=0.6, alpha=0.6)
+        append_chart(fig3)
+
+        mensal = _os_chart_rows(data["dados_mensais"])
+        meses = [label for label, _ in mensal]
+        totais = [value for _, value in mensal]
+        fig4, ax4 = plt.subplots(figsize=(7.4, 3.2))
+        if meses:
+            ax4.plot(range(len(meses)), totais, marker="o", linewidth=1.8, color="#0d6efd")
+            ax4.fill_between(range(len(meses)), totais, color="#0d6efd", alpha=0.15)
+            ax4.set_xticks(range(len(meses)))
+            ax4.set_xticklabels(meses, rotation=45, ha="right", fontsize=8.5)
+        else:
+            ax4.plot([], [])
+        ax4.set_title("Histórico Mensal de OS", fontsize=11, pad=10)
+        ax4.tick_params(axis="y", labelsize=8.5)
+        ax4.grid(axis="y", linestyle=":", linewidth=0.6, alpha=0.6)
+        append_chart(fig4)
+    except Exception:
+        story.append(Paragraph("Gráficos indisponíveis por erro ao gerar as imagens.", note))
+
     return story
 
 
@@ -1427,8 +1611,8 @@ def build_relatorio_os_pdf_export(user, args):
         pagesize=A4,
         leftMargin=14 * mm,
         rightMargin=14 * mm,
-        topMargin=16 * mm,
-        bottomMargin=16 * mm,
+        topMargin=34 * mm,
+        bottomMargin=26 * mm,
     )
     styles = getSampleStyleSheet()
 
@@ -1452,9 +1636,9 @@ def build_relatorio_os_pdf_export(user, args):
     )
 
     story = [
-        Paragraph("Relatorio Geral de OS", title_style),
+        Paragraph("Relatório Geral de OS", title_style),
         Paragraph(
-            f"Filtro: {data['mes']:02d}/{data['ano']} | Unidade: {data['uvis_nome']} | Gerado em {_os_fmt_dt(datetime.now())}",
+            f"Filtro: {data['mes']:02d}/{data['ano']} | Unidade: {data['uvis_nome']} | Gerado em {_os_fmt_dt(_os_now_brazil())}",
             subtitle_style,
         ),
     ]
@@ -1464,56 +1648,57 @@ def build_relatorio_os_pdf_export(user, args):
         rows=[
             ["Indicador", "Total"],
             ["Total OS", str(data["total_os"])],
-            ["Concluidas", str(data["total_concluidas"])],
+            ["Concluídas", str(data["total_concluidas"])],
             ["Larva (SIM)", str(data["total_larva_sim"])],
             ["Tratamento adicional", str(data["total_tratamento_adicional"])],
-            ["Nao realizadas", str(data["total_nao_realizadas"])],
+            ["Não realizadas", str(data["total_nao_realizadas"])],
         ],
         styles=styles,
         col_widths=[120 * mm, 50 * mm],
     )
     story += _os_pdf_table(
-        "Situacao da Aplicacao",
-        rows=[["Situacao", "Total"]] + [[a, str(b)] for a, b in data["dados_situacao_aplicacao"]],
+        "Situação da Aplicação",
+        rows=[["Situação", "Total"]] + [[_os_display_text(a), str(b)] for a, b in data["dados_situacao_aplicacao"]],
         styles=styles,
         col_widths=[120 * mm, 50 * mm],
     )
     story += _os_pdf_table(
-        "Tipo de Aplicacao",
-        rows=[["Tipo", "Total"]] + [[a, str(b)] for a, b in data["dados_tipo_aplicacao"]],
+        "Tipo de Aplicação",
+        rows=[["Tipo", "Total"]] + [[_os_display_text(a), str(b)] for a, b in data["dados_tipo_aplicacao"]],
         styles=styles,
         col_widths=[120 * mm, 50 * mm],
     )
     story += _os_pdf_table(
         "Larva Visualizada",
-        rows=[["Resposta", "Total"]] + [[a, str(b)] for a, b in data["dados_larva"]],
+        rows=[["Resposta", "Total"]] + [[_os_display_text(a), str(b)] for a, b in data["dados_larva"]],
         styles=styles,
         col_widths=[120 * mm, 50 * mm],
     )
     story += _os_pdf_table(
         "Pilotos (Top 10)",
-        rows=[["Piloto", "Total"]] + [[a, str(b)] for a, b in data["dados_piloto"][:10]],
+        rows=[["Piloto", "Total"]] + [[_os_display_text(a), str(b)] for a, b in data["dados_piloto"][:10]],
         styles=styles,
         col_widths=[120 * mm, 50 * mm],
     )
     story += _os_pdf_table(
         "OS por Unidade",
-        rows=[["Unidade (UVIS)", "Total"]] + [[a, str(b)] for a, b in data["dados_unidade"]],
+        rows=[["Unidade (UVIS)", "Total"]] + [[_os_display_text(a), str(b)] for a, b in data["dados_unidade"]],
         styles=styles,
         col_widths=[120 * mm, 50 * mm],
     )
     story += _os_pdf_table(
-        "Historico Mensal",
-        rows=[["Mes", "Total"]] + [[a, str(b)] for a, b in data["dados_mensais"]],
+        "Histórico Mensal",
+        rows=[["Mês", "Total"]] + [[_os_display_text(a), str(b)] for a, b in data["dados_mensais"]],
         styles=styles,
         col_widths=[60 * mm, 110 * mm],
     )
+    story += _os_pdf_chart_section(data, styles)
 
-    header_title = f"Relatorio OS - {data['mes']:02d}/{data['ano']}"
+    header_title = f"Relatório OS - {data['mes']:02d}/{data['ano']}"
     doc.build(
         story,
-        onFirstPage=_os_pdf_header_footer_factory(header_title),
-        onLaterPages=_os_pdf_header_footer_factory(header_title),
+        onFirstPage=_os_pdf_header_footer_factory(header_title, args),
+        onLaterPages=_os_pdf_header_footer_factory(header_title, args),
     )
 
     nome = f"relatorio_os_{data['ano']}_{data['mes']:02d}"
