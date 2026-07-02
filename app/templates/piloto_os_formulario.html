@@ -1032,14 +1032,12 @@
           </div>
           <div class="dosagem-field-card">
               <label class="form-label-header">Tipo aplicação</label>
-              <input type="text" name="tipo_aplicacao" list="lista_tipos_aplicacao" class="form-control" 
-                    value="{{ ordem.tipo_aplicacao if (ordem and ordem.tipo_aplicacao) else '' }}" 
-                    placeholder="Selecione ou digite..." />
-              
-              <datalist id="lista_tipos_aplicacao">
-                  <option value="Pulverização de área (liq)">
-                  <option value="Pulverização de foco (liq)">
-              </datalist>
+              <select name="tipo_aplicacao" class="form-select">
+                {% set tipo_aplicacao_atual = ordem.tipo_aplicacao if (ordem and ordem.tipo_aplicacao) else '' %}
+                <option value="" {% if not tipo_aplicacao_atual %}selected{% endif %}>Selecione...</option>
+                <option value="Pulverização de área (liq)" {% if tipo_aplicacao_atual == 'Pulverização de área (liq)' %}selected{% endif %}>Pulverização de área (liq)</option>
+                <option value="Pulverização de foco (liq)" {% if tipo_aplicacao_atual == 'Pulverização de foco (liq)' %}selected{% endif %}>Pulverização de foco (liq)</option>
+              </select>
           </div>
           <div class="dosagem-field-card">
             <label class="form-label-header">Qtd Administrada (ml)</label>
@@ -2747,7 +2745,7 @@ document.addEventListener("DOMContentLoaded", () => {
     descricao_produto: document.querySelector('input[name="descricao_produto"]'),
     formulacao_produto: document.querySelector('input[name="formulacao_produto"]'),
     dosagem_g_10l: document.querySelector('input[name="dosagem_g_10l"]'),
-    tipo_aplicacao: document.querySelector('input[name="tipo_aplicacao"]'),
+    tipo_aplicacao: document.querySelector('[name="tipo_aplicacao"]'),
     quantidade_produto_administrada_ml: document.querySelector('input[name="quantidade_produto_administrada_ml"]'),
     pulverizacao_area_l_ha: document.querySelector('input[name="pulverizacao_area_l_ha"]'),
     ponta_pulverizacao: document.querySelector('input[name="ponta_pulverizacao"]'),
