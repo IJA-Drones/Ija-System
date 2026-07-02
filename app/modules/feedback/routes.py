@@ -11,16 +11,20 @@ from app.modules.feedback.service import (
     FEEDBACK_PRIORITY_OPTIONS,
     FEEDBACK_STATUS_OPTIONS,
     PRIORITY_LABELS,
+    SUPPORT_SECTOR_LABELS,
+    SUPPORT_SECTOR_OPTIONS,
     STATUS_LABELS,
     add_feedback_comment,
     apply_feedback_filters,
     build_accessible_uvis_query,
     build_feedback_counts,
     build_feedback_query,
+    build_support_responsaveis_query,
     can_access_feedback,
     can_manage_feedback_comment,
     can_view_feedback_attachment,
     can_moderate_feedback,
+    can_moderate_feedback_topic,
     can_view_all_feedback,
     create_feedback_topic,
     delete_feedback_comment,
@@ -42,10 +46,10 @@ FEEDBACK_FEATURE_ENABLED = True
 
 def _require_feedback_access():
     if not FEEDBACK_FEATURE_ENABLED:
-        flash("Feedback esta em desenvolvimento e ainda nao foi liberado para uso.", "warning")
+        flash("Suporte esta em desenvolvimento e ainda nao foi liberado para uso.", "warning")
         return False
     if not can_access_feedback(current_user):
-        flash("Feedback esta em desenvolvimento e ainda nao foi liberado para seu perfil.", "warning")
+        flash("Suporte ainda nao foi liberado para seu perfil.", "warning")
         return False
     return True
 
@@ -81,10 +85,16 @@ def register_routes(bp):
         status = (request.args.get("status") or "").strip()
         categoria = (request.args.get("categoria") or "").strip()
         prioridade = (request.args.get("prioridade") or "").strip()
+        setor_suporte = (request.args.get("setor_suporte") or "").strip()
         uvis_id = request.args.get("uvis_id", type=int)
         page = request.args.get("page", 1, type=int)
+        can_moderate = can_moderate_feedback(current_user)
 
-        if uvis_id and not build_accessible_uvis_query(current_user).filter(Usuario.id == uvis_id).first():
+        if (
+            uvis_id
+            and not can_moderate
+            and not build_accessible_uvis_query(current_user).filter(Usuario.id == uvis_id).first()
+        ):
             uvis_id = None
 
         query = build_feedback_query(current_user)
@@ -94,6 +104,7 @@ def register_routes(bp):
             status=status,
             categoria=categoria,
             prioridade=prioridade,
+            setor_suporte=setor_suporte,
             uvis_id=uvis_id,
         )
         paginacao = query.order_by(
@@ -113,6 +124,11 @@ def register_routes(bp):
             ),
             FeedbackTopico.atualizado_em.desc(),
         ).paginate(page=page, per_page=FEEDBACK_PER_PAGE, error_out=False)
+        uvis_options = (
+            Usuario.query.filter(Usuario.tipo_usuario == "uvis").order_by(Usuario.nome_uvis.asc()).all()
+            if can_moderate
+            else get_accessible_uvis(current_user)
+        )
 
         return render_template(
             "feedback_listar.html",
@@ -123,15 +139,18 @@ def register_routes(bp):
             status=status,
             categoria=categoria,
             prioridade=prioridade,
+            setor_suporte=setor_suporte,
             uvis_id=uvis_id,
-            uvis_options=get_accessible_uvis(current_user),
+            uvis_options=uvis_options,
             status_options=FEEDBACK_STATUS_OPTIONS,
             category_options=FEEDBACK_CATEGORY_OPTIONS,
+            support_sector_options=SUPPORT_SECTOR_OPTIONS,
             priority_options=FEEDBACK_PRIORITY_OPTIONS,
             status_labels=STATUS_LABELS,
             category_labels=CATEGORY_LABELS,
+            support_sector_labels=SUPPORT_SECTOR_LABELS,
             priority_labels=PRIORITY_LABELS,
-            can_moderate=can_moderate_feedback(current_user),
+            can_moderate=can_moderate,
             can_view_all=can_view_all_feedback(current_user),
             pagination_args=_query_args_without_page(),
         )
@@ -143,12 +162,17 @@ def register_routes(bp):
             return redirect(request.referrer or url_for("main.dashboard"))
 
         owner = get_feedback_owner_uvis(current_user)
-        uvis_options = get_accessible_uvis(current_user)
+        uvis_options = (
+            Usuario.query.filter(Usuario.tipo_usuario == "uvis").order_by(Usuario.nome_uvis.asc()).all()
+            if can_moderate_feedback(current_user)
+            else get_accessible_uvis(current_user)
+        )
         form = {
             "uvis_id": owner.id if owner else request.form.get("uvis_id", type=int),
             "titulo": "",
             "descricao": "",
-            "categoria": "sugestao",
+            "categoria": "duvida",
+            "setor_suporte": "operacional",
             "prioridade": "media",
         }
         errors = {}
@@ -160,6 +184,7 @@ def register_routes(bp):
                     "titulo": _clean_text("titulo", 180),
                     "descricao": _clean_text("descricao"),
                     "categoria": _clean_text("categoria", 30),
+                    "setor_suporte": _clean_text("setor_suporte", 30),
                     "prioridade": _clean_text("prioridade", 20),
                 }
             )
@@ -169,9 +194,11 @@ def register_routes(bp):
             if len(form["titulo"]) > 180:
                 errors["titulo"] = "Use no maximo 180 caracteres."
             if not form["descricao"]:
-                errors["descricao"] = "Descreva a sugestao ou feedback."
+                errors["descricao"] = "Descreva a duvida ou problema."
             if form["categoria"] not in CATEGORY_LABELS:
                 errors["categoria"] = "Categoria invalida."
+            if form["setor_suporte"] not in SUPPORT_SECTOR_LABELS:
+                errors["setor_suporte"] = "Selecione o tipo de suporte."
             if form["prioridade"] not in PRIORITY_LABELS:
                 errors["prioridade"] = "Prioridade invalida."
 
@@ -182,17 +209,18 @@ def register_routes(bp):
                 errors["uvis_id"] = "Selecione uma UVIS permitida para seu acesso."
 
             if not errors:
-                create_feedback_topic(
+                topico = create_feedback_topic(
                     current_user,
                     uvis_usuario=uvis_usuario,
                     titulo=form["titulo"],
                     descricao=form["descricao"],
                     categoria=form["categoria"],
+                    setor_suporte=form["setor_suporte"],
                     prioridade=form["prioridade"],
                 )
                 db.session.commit()
-                flash("Feedback enviado com sucesso.", "success")
-                return redirect(url_for("main.feedback_listar"))
+                flash("Chamado aberto com sucesso.", "success")
+                return redirect(url_for("main.feedback_detalhe", topico_id=topico.id))
 
             flash("Revise os campos destacados.", "warning")
 
@@ -203,6 +231,7 @@ def register_routes(bp):
             uvis_options=uvis_options,
             owner=owner,
             category_options=FEEDBACK_CATEGORY_OPTIONS,
+            support_sector_options=SUPPORT_SECTOR_OPTIONS,
             priority_options=FEEDBACK_PRIORITY_OPTIONS,
         )
 
@@ -212,6 +241,7 @@ def register_routes(bp):
         if not _require_feedback_access():
             return redirect(request.referrer or url_for("main.dashboard"))
         topico = get_feedback_or_404(current_user, topico_id)
+        can_moderate_topico = can_moderate_feedback_topic(current_user, topico)
 
         return render_template(
             "feedback_detalhe.html",
@@ -222,11 +252,12 @@ def register_routes(bp):
             priority_options=FEEDBACK_PRIORITY_OPTIONS,
             status_labels=STATUS_LABELS,
             category_labels=CATEGORY_LABELS,
+            support_sector_labels=SUPPORT_SECTOR_LABELS,
             priority_labels=PRIORITY_LABELS,
-            can_moderate=can_moderate_feedback(current_user),
+            can_moderate=can_moderate_topico,
             can_view_all=can_view_all_feedback(current_user),
-            responsaveis=Usuario.query.filter(Usuario.tipo_usuario.in_(["dev", "admin"])).order_by(Usuario.nome_uvis.asc()).all()
-            if can_view_all_feedback(current_user)
+            responsaveis=build_support_responsaveis_query(topico.setor_suporte).all()
+            if can_moderate_topico
             else [],
         )
 
@@ -317,10 +348,10 @@ def register_routes(bp):
     def feedback_atualizar(topico_id):
         if not _require_feedback_access():
             return redirect(request.referrer or url_for("main.dashboard"))
-        if not can_moderate_feedback(current_user):
+        topico = get_feedback_or_404(current_user, topico_id)
+        if not can_moderate_feedback_topic(current_user, topico):
             abort(403)
 
-        topico = get_feedback_or_404(current_user, topico_id)
         status = _clean_text("status", 30)
         prioridade = _clean_text("prioridade", 20)
         responsavel_id = request.form.get("responsavel_id", type=int)
@@ -331,12 +362,19 @@ def register_routes(bp):
             flash("Status ou prioridade invalida.", "warning")
             return redirect(url_for("main.feedback_detalhe", topico_id=topico.id))
 
+        responsavel = None
+        if responsavel_id:
+            responsavel = build_support_responsaveis_query(topico.setor_suporte).filter(Usuario.id == responsavel_id).first()
+            if responsavel is None:
+                flash("Responsavel invalido para este setor de suporte.", "warning")
+                return redirect(url_for("main.feedback_detalhe", topico_id=topico.id))
+
         update_feedback_status(
             current_user,
             topico,
             status=status,
             prioridade=prioridade,
-            responsavel_id=responsavel_id,
+            responsavel_id=responsavel.id if responsavel else None,
         )
         if mensagem_status:
             add_feedback_comment(current_user, topico, mensagem_status, interno=interno)

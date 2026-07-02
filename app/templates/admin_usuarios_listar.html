@@ -134,8 +134,9 @@
     .usuarios-table-wrap table.table tbody td:nth-child(2)::before { content: "Nome"; }
     .usuarios-table-wrap table.table tbody td:nth-child(3)::before { content: "Tipo"; }
     .usuarios-table-wrap table.table tbody td:nth-child(4)::before { content: "Regiao"; }
-    .usuarios-table-wrap table.table tbody td:nth-child(5)::before { content: "Login"; }
-    .usuarios-table-wrap table.table tbody td:nth-child(6)::before { content: "Acoes"; }
+    .usuarios-table-wrap table.table tbody td:nth-child(5)::before { content: "Suporte"; }
+    .usuarios-table-wrap table.table tbody td:nth-child(6)::before { content: "Login"; }
+    .usuarios-table-wrap table.table tbody td:nth-child(7)::before { content: "Acoes"; }
     .usuarios-table-wrap table.table tbody td > * {
       flex: 1 1 auto;
       min-width: 0;
@@ -302,6 +303,7 @@
             <th>Nome</th>
             <th style="width: 180px">Tipo</th>
             <th style="width: 140px">Região</th>
+            <th style="width: 190px">Suporte</th>
             <th>Login</th>
             <th class="col-acoes">Ações</th>
           </tr>
@@ -344,6 +346,18 @@
                   {{ u.regiao or '-' }}
                   {% if u.prefeitura %}
                     <div class="small text-muted">{{ u.prefeitura.nome }}</div>
+                  {% endif %}
+                </td>
+
+                <td>
+                  {% if u.suporte_operacional %}
+                    <span class="badge bg-info text-dark mb-1">Operacional</span>
+                  {% endif %}
+                  {% if u.suporte_tecnico %}
+                    <span class="badge bg-primary mb-1">Tecnico</span>
+                  {% endif %}
+                  {% if not u.suporte_operacional and not u.suporte_tecnico %}
+                    <span class="text-muted">-</span>
                   {% endif %}
                 </td>
 
