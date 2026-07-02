@@ -8,6 +8,13 @@
 
 {% block content %}
 <div class="container-fluid py-4 feedback-page" style="max-width: 1220px;">
+  <div
+    id="feedback-live-state"
+    data-status-url="{{ url_for('main.feedback_status', topico_id=topico.id) }}"
+    data-updated-at="{{ topico.atualizado_em.isoformat() if topico.atualizado_em else '' }}"
+    data-comment-count="{{ comentarios|length + 1 }}"
+  ></div>
+
   <div class="feedback-header mb-4">
     <div>
       <span class="feedback-kicker">Chamado #{{ topico.id }}</span>
@@ -129,6 +136,11 @@
           </div>
           {% endfor %}
         </div>
+
+        <button type="button" id="feedback-refresh-notice" class="feedback-refresh-notice d-none">
+          <i class="bi bi-arrow-clockwise"></i>
+          <span>Novas mensagens chegaram. Atualizar conversa</span>
+        </button>
 
         <div class="feedback-composer card shadow-sm border-0">
           <div class="card-body p-4">
@@ -252,4 +264,66 @@
     </aside>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const state = document.getElementById("feedback-live-state");
+    if (!state) return;
+
+    const statusUrl = state.dataset.statusUrl;
+    let currentUpdatedAt = state.dataset.updatedAt || "";
+    let currentCommentCount = Number(state.dataset.commentCount || 0);
+    const notice = document.getElementById("feedback-refresh-notice");
+    const composer = document.querySelector(".feedback-composer form");
+
+    function hasDraft() {
+      if (!composer) return false;
+      const textareas = Array.from(composer.querySelectorAll("textarea"));
+      const inputs = Array.from(composer.querySelectorAll('input[type="file"]'));
+      return textareas.some((item) => (item.value || "").trim().length > 0)
+        || inputs.some((item) => item.files && item.files.length > 0);
+    }
+
+    function refreshConversation() {
+      window.location.reload();
+    }
+
+    function handleChangedConversation() {
+      if (hasDraft()) {
+        notice?.classList.remove("d-none");
+        return;
+      }
+      refreshConversation();
+    }
+
+    async function pollConversationStatus() {
+      if (!statusUrl || document.hidden) return;
+      try {
+        const response = await fetch(statusUrl, {
+          headers: { "Accept": "application/json" },
+          cache: "no-store",
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || !payload.success) return;
+
+        const updatedAt = payload.updated_at || "";
+        const commentCount = Number(payload.comment_count || 0);
+        const changed = updatedAt !== currentUpdatedAt || commentCount !== currentCommentCount;
+
+        if (changed) {
+          currentUpdatedAt = updatedAt;
+          currentCommentCount = commentCount;
+          handleChangedConversation();
+        }
+      } catch (error) {
+        // ignore transient polling errors
+      }
+    }
+
+    notice?.addEventListener("click", refreshConversation);
+    window.setInterval(pollConversationStatus, 5000);
+  });
+</script>
 {% endblock %}

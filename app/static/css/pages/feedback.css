@@ -104,18 +104,77 @@
   gap: 12px;
 }
 
+.feedback-card-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.feedback-ticket-id {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  color: #075985;
+  background: rgba(14, 165, 233, 0.13);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.feedback-card-status-stack {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .feedback-card h5 {
   color: var(--color-text-main);
   margin: 0;
   font-size: 1rem;
   letter-spacing: 0;
+  overflow-wrap: anywhere;
 }
 
-.feedback-card p {
+.feedback-card-description {
   color: var(--color-text-muted);
   margin: 8px 0 12px;
   font-size: 0.9rem;
   line-height: 1.45;
+}
+
+.feedback-card-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px 14px;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+.feedback-card-facts span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.feedback-card-facts strong {
+  color: var(--color-text-main);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.feedback-card-facts .bi {
+  flex: 0 0 auto;
+  color: var(--color-accent);
 }
 
 .feedback-meta {
@@ -331,6 +390,27 @@
 .feedback-chat-stream {
   display: grid;
   gap: 14px;
+}
+
+.feedback-refresh-notice {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: -2px 0 14px;
+  padding: 11px 14px;
+  border: 1px solid rgba(0, 163, 196, 0.26);
+  border-radius: 8px;
+  color: #075985;
+  background: rgba(0, 163, 196, 0.1);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.feedback-refresh-notice:hover {
+  border-color: rgba(0, 163, 196, 0.42);
+  background: rgba(0, 163, 196, 0.16);
 }
 
 .feedback-message {
@@ -673,6 +753,17 @@ body.dark-mode .feedback-comments {
     grid-template-columns: 1fr;
   }
 
+  .feedback-card-title-row,
+  .feedback-card-heading,
+  .feedback-card-status-stack {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .feedback-card-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .feedback-card-side {
     align-items: flex-start;
     flex-direction: row;
@@ -698,6 +789,10 @@ body.dark-mode .feedback-comments {
   .feedback-chat-header {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .feedback-card-facts {
+    grid-template-columns: 1fr;
   }
 
   .feedback-message {

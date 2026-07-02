@@ -1,4 +1,4 @@
-from flask import abort, flash, redirect, render_template, request, send_from_directory, url_for
+from flask import abort, flash, jsonify, redirect, render_template, request, send_from_directory, url_for
 from flask_login import current_user, login_required
 from sqlalchemy import case
 
@@ -19,6 +19,7 @@ from app.modules.feedback.service import (
     build_accessible_uvis_query,
     build_feedback_counts,
     build_feedback_query,
+    build_support_notification_snapshot,
     build_support_responsaveis_query,
     can_access_feedback,
     can_manage_feedback_comment,
@@ -75,6 +76,14 @@ def _get_feedback_comment_or_404(topico, comment_id):
 
 
 def register_routes(bp):
+    @bp.route("/feedback/notificacoes/status", methods=["GET"], endpoint="feedback_notificacoes_status")
+    @login_required
+    def feedback_notificacoes_status():
+        if not can_access_feedback(current_user):
+            return jsonify({"success": False, "count": 0, "latest_id": 0}), 403
+        snapshot = build_support_notification_snapshot(current_user)
+        return jsonify({"success": True, **snapshot})
+
     @bp.route("/feedback", methods=["GET"], endpoint="feedback_listar")
     @login_required
     def feedback_listar():
@@ -259,6 +268,24 @@ def register_routes(bp):
             responsaveis=build_support_responsaveis_query(topico.setor_suporte).all()
             if can_moderate_topico
             else [],
+        )
+
+    @bp.route("/feedback/<int:topico_id>/status", methods=["GET"], endpoint="feedback_status")
+    @login_required
+    def feedback_status(topico_id):
+        if not can_access_feedback(current_user):
+            return jsonify({"success": False}), 403
+
+        topico = get_feedback_or_404(current_user, topico_id)
+        comentarios = get_visible_comments(topico, current_user)
+        return jsonify(
+            {
+                "success": True,
+                "topico_id": topico.id,
+                "updated_at": topico.atualizado_em.isoformat() if topico.atualizado_em else "",
+                "comment_count": len(comentarios) + 1,
+                "status": topico.status,
+            }
         )
 
     @bp.route("/feedback/<int:topico_id>/comentar", methods=["POST"], endpoint="feedback_comentar")

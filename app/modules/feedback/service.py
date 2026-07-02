@@ -52,6 +52,7 @@ FEEDBACK_PRIORITY_OPTIONS = (
 )
 
 FEEDBACK_FINAL_STATUSES = {"concluido", "arquivado"}
+FEEDBACK_ACTIVE_STATUSES = tuple(status for status, _label in FEEDBACK_STATUS_OPTIONS if status not in FEEDBACK_FINAL_STATUSES)
 FEEDBACK_ACCESS_TYPES = {"dev", "admin"}
 FEEDBACK_MODERATOR_TYPES = {"dev", "admin"}
 FEEDBACK_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg"}
@@ -95,9 +96,10 @@ def can_moderate_feedback(user) -> bool:
 
 
 def can_moderate_feedback_topic(user, topico) -> bool:
-    if is_admin_global_user(user):
-        return True
-    return getattr(topico, "setor_suporte", None) in get_user_support_sectors(user)
+    support_sectors = get_user_support_sectors(user)
+    if support_sectors:
+        return getattr(topico, "setor_suporte", None) in support_sectors
+    return is_admin_global_user(user)
 
 
 def can_view_all_feedback(user) -> bool:
@@ -178,14 +180,14 @@ def build_feedback_query(user):
         joinedload(FeedbackTopico.responsavel),
     )
 
+    support_sectors = get_user_support_sectors(user)
+    if support_sectors:
+        return query.filter(FeedbackTopico.setor_suporte.in_(support_sectors))
+
     if is_admin_global_user(user):
         return query
 
     visibility_rules = [FeedbackTopico.criado_por_id == getattr(user, "id", None)]
-
-    support_sectors = get_user_support_sectors(user)
-    if support_sectors:
-        visibility_rules.append(FeedbackTopico.setor_suporte.in_(support_sectors))
 
     owner = get_feedback_owner_uvis(user)
     if owner:
@@ -241,6 +243,16 @@ def build_feedback_counts(user):
         "abertos": counts.get("aberto", 0),
         "em_analise": counts.get("em_analise", 0) + counts.get("aguardando_info", 0),
         "resolvidos": counts.get("concluido", 0),
+    }
+
+
+def build_support_notification_snapshot(user):
+    query = build_feedback_query(user).filter(FeedbackTopico.status.in_(FEEDBACK_ACTIVE_STATUSES))
+    count = query.with_entities(func.count(FeedbackTopico.id)).scalar() or 0
+    latest_id = query.with_entities(func.max(FeedbackTopico.id)).scalar() or 0
+    return {
+        "count": int(count),
+        "latest_id": int(latest_id or 0),
     }
 
 
@@ -440,7 +452,7 @@ def update_feedback_status(user, topico, *, status, prioridade, responsavel_id=N
     if prioridade in PRIORITY_LABELS:
         topico.prioridade = prioridade
 
-    if can_moderate_feedback(user):
+    if can_moderate_feedback_topic(user, topico):
         topico.responsavel_id = responsavel_id or None
 
     topico.atualizado_em = datetime.now()
