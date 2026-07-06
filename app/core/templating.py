@@ -7,6 +7,7 @@ from werkzeug.routing import BuildError
 from app import db
 from app.models import Notificacao
 from app.modules.agenda_notificacoes.service import can_view_all_notifications
+from app.modules.feedback.service import build_support_notification_snapshot, can_access_feedback
 from app.shared.access import is_admin_global_user, is_dev_user
 from app.shared.formatters import format_currency_br, format_phone_br
 from app.shared.solicitacao_focos import build_focus_catalog
@@ -34,8 +35,16 @@ def register_template_helpers(bp):
                 if not can_view_all_notifications(current_user):
                     query = query.filter(Notificacao.usuario_id == current_user.id)
 
+                support_snapshot = (
+                    build_support_notification_snapshot(current_user)
+                    if can_access_feedback(current_user)
+                    else {"count": 0, "latest_id": 0}
+                )
+
                 return {
                     "notif_count": query.scalar() or 0,
+                    "support_nav_count": support_snapshot["count"],
+                    "support_nav_latest_id": support_snapshot["latest_id"],
                     "safe_url_for": safe_url_for,
                     "is_admin_global_user": is_admin_global_user,
                     "is_dev_user": is_dev_user,
@@ -48,6 +57,8 @@ def register_template_helpers(bp):
                 db.session.rollback()
                 return {
                     "notif_count": 0,
+                    "support_nav_count": 0,
+                    "support_nav_latest_id": 0,
                     "safe_url_for": safe_url_for,
                     "is_admin_global_user": is_admin_global_user,
                     "is_dev_user": is_dev_user,
@@ -59,6 +70,8 @@ def register_template_helpers(bp):
 
         return {
             "notif_count": 0,
+            "support_nav_count": 0,
+            "support_nav_latest_id": 0,
             "safe_url_for": safe_url_for,
             "is_admin_global_user": is_admin_global_user,
             "is_dev_user": is_dev_user,

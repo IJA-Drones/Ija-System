@@ -57,6 +57,8 @@ class Usuario(UserMixin, db.Model):
     # + incluir "equipe_uvis" e "regional"
     # tipos esperados: "dev", "admin", "uvis", "operario", "visualizador", "regional", "piloto", "equipe_uvis", "equipe_oceano"
     tipo_usuario = db.Column(db.String(20), default="uvis", index=True)
+    suporte_operacional = db.Column(db.Boolean, nullable=False, default=False, index=True)
+    suporte_tecnico = db.Column(db.Boolean, nullable=False, default=False, index=True)
 
     # ----------------------------
     # Piloto (já existe)
@@ -158,6 +160,7 @@ class FeedbackTopico(db.Model):
     titulo = db.Column(db.String(180), nullable=False, index=True)
     descricao = db.Column(db.Text, nullable=False)
     categoria = db.Column(db.String(30), nullable=False, default="sugestao", index=True)
+    setor_suporte = db.Column(db.String(30), nullable=True, index=True)
     status = db.Column(db.String(30), nullable=False, default="aberto", index=True)
     prioridade = db.Column(db.String(20), nullable=False, default="media", index=True)
 

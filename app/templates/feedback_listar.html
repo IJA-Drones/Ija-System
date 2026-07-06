@@ -11,14 +11,14 @@
 <div class="container-fluid py-4 feedback-page" style="max-width: 1240px;">
   <div class="feedback-header mb-4">
     <div>
-      <span class="feedback-kicker">Central institucional</span>
-      <h2 class="mb-1"><i class="bi bi-chat-square-heart-fill me-2 text-primary"></i>Feedback e melhorias</h2>
+      <span class="feedback-kicker">Central de suporte</span>
+      <h2 class="mb-1"><i class="bi bi-headset me-2 text-primary"></i>Suporte tecnico</h2>
       <p class="text-muted small mb-0">
-        {{ counts.total }} registros no seu escopo de acesso.
+        {{ counts.total }} chamados no seu escopo de acesso.
       </p>
     </div>
     <a href="{{ url_for('main.feedback_novo') }}" class="btn btn-success text-white">
-      <i class="bi bi-plus-lg"></i> Novo feedback
+      <i class="bi bi-plus-lg"></i> Novo chamado
     </a>
   </div>
 
@@ -47,7 +47,7 @@
         <div class="row g-2 align-items-end">
           <div class="col-lg-3 col-md-6">
             <label class="form-label small" for="feedback-q">Busca</label>
-            <input id="feedback-q" name="q" class="form-control form-control-sm" value="{{ q }}" placeholder="Titulo, descricao, UVIS ou regiao">
+            <input id="feedback-q" name="q" class="form-control form-control-sm" value="{{ q }}" placeholder="Assunto, mensagem, UVIS ou regiao">
           </div>
           <div class="col-lg-2 col-md-6">
             <label class="form-label small" for="feedback-status">Status</label>
@@ -64,6 +64,15 @@
               <option value="">Todas</option>
               {% for key, label in category_options %}
               <option value="{{ key }}" {% if categoria == key %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-lg-2 col-md-6">
+            <label class="form-label small" for="feedback-setor">Atendimento</label>
+            <select id="feedback-setor" name="setor_suporte" class="form-select form-select-sm">
+              <option value="">Todos</option>
+              {% for key, label in support_sector_options %}
+              <option value="{{ key }}" {% if setor_suporte == key %}selected{% endif %}>{{ label }}</option>
               {% endfor %}
             </select>
           </div>
@@ -91,7 +100,7 @@
             <button type="submit" class="btn btn-primary btn-sm">
               <i class="bi bi-funnel"></i> Filtrar
             </button>
-            {% if q or status or categoria or prioridade or uvis_id %}
+            {% if q or status or categoria or prioridade or setor_suporte or uvis_id %}
             <a href="{{ url_for('main.feedback_listar') }}" class="btn btn-outline-secondary btn-sm" title="Limpar filtros">
               <i class="bi bi-x-lg"></i>
             </a>
@@ -109,20 +118,28 @@
     <a href="{{ url_for('main.feedback_detalhe', topico_id=item.id) }}" class="feedback-card">
       <div class="feedback-card-main">
         <div class="feedback-card-title-row">
-          <h5>{{ item.titulo }}</h5>
-          <span class="feedback-status feedback-status-{{ item.status }}">{{ status_labels.get(item.status, item.status) }}</span>
+          <div class="feedback-card-heading">
+            <span class="feedback-ticket-id">#{{ item.id }}</span>
+            <h5>{{ item.titulo }}</h5>
+          </div>
+          <div class="feedback-card-status-stack">
+            <span class="feedback-status feedback-status-{{ item.status }}">{{ status_labels.get(item.status, item.status) }}</span>
+            <span class="feedback-priority feedback-priority-{{ item.prioridade }}">{{ priority_labels.get(item.prioridade, item.prioridade) }}</span>
+          </div>
         </div>
-        <p>{{ item.descricao|striptags|truncate(180) }}</p>
-        <div class="feedback-meta">
-          <span><i class="bi bi-building"></i>{{ item.uvis_nome }}</span>
-          <span><i class="bi bi-geo-alt"></i>{{ item.regiao or "Sem regiao" }}</span>
-          <span><i class="bi bi-clock"></i>{{ item.atualizado_em.strftime("%d/%m/%Y %H:%M") if item.atualizado_em else "" }}</span>
+        <p class="feedback-card-description">{{ item.descricao|striptags|truncate(140) }}</p>
+        <div class="feedback-card-facts">
+          <span><i class="bi bi-person-circle"></i><strong>Aberto por</strong>{{ item.criado_por_nome }}</span>
+          <span><i class="bi bi-building"></i><strong>UVIS</strong>{{ item.uvis_nome }}</span>
+          <span><i class="bi bi-geo-alt"></i><strong>Regiao</strong>{{ item.regiao or "Sem regiao" }}</span>
+          <span><i class="bi bi-headset"></i><strong>Fila</strong>{{ support_sector_labels.get(item.setor_suporte, "Sem setor") }}</span>
+          <span><i class="bi bi-person-check"></i><strong>Responsavel</strong>{{ item.responsavel.nome_uvis if item.responsavel else "Sem responsavel" }}</span>
+          <span><i class="bi bi-clock"></i><strong>Atualizado</strong>{{ item.atualizado_em.strftime("%d/%m/%Y %H:%M") if item.atualizado_em else "-" }}</span>
         </div>
       </div>
       <div class="feedback-card-side">
         <span class="feedback-pill">{{ category_labels.get(item.categoria, item.categoria) }}</span>
-        <span class="feedback-priority feedback-priority-{{ item.prioridade }}">{{ priority_labels.get(item.prioridade, item.prioridade) }}</span>
-        <span class="feedback-comments"><i class="bi bi-chat-dots"></i>{{ visible_comments|length }}</span>
+        <span class="feedback-comments"><i class="bi bi-chat-dots"></i>{{ visible_comments|length + 1 }} mensagens</span>
       </div>
     </a>
     {% endfor %}
@@ -132,10 +149,10 @@
   {% else %}
   <div class="feedback-empty">
     <i class="bi bi-chat-square-text"></i>
-    <h5>Nenhum feedback encontrado</h5>
-    <p class="text-muted mb-3">Quando houver sugestoes ou melhorias dentro do seu escopo, elas aparecem aqui.</p>
+    <h5>Nenhum chamado encontrado</h5>
+    <p class="text-muted mb-3">Quando houver atendimentos dentro do seu escopo, eles aparecem aqui.</p>
     <a href="{{ url_for('main.feedback_novo') }}" class="btn btn-success text-white">
-      <i class="bi bi-plus-lg"></i> Criar primeiro feedback
+      <i class="bi bi-plus-lg"></i> Abrir primeiro chamado
     </a>
   </div>
   {% endif %}

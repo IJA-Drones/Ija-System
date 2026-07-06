@@ -8,11 +8,19 @@
 
 {% block content %}
 <div class="container-fluid py-4 feedback-page" style="max-width: 1220px;">
+  <div
+    id="feedback-live-state"
+    data-status-url="{{ url_for('main.feedback_status', topico_id=topico.id) }}"
+    data-updated-at="{{ topico.atualizado_em.isoformat() if topico.atualizado_em else '' }}"
+    data-comment-count="{{ comentarios|length + 1 }}"
+  ></div>
+
   <div class="feedback-header mb-4">
     <div>
-      <span class="feedback-kicker">Feedback #{{ topico.id }}</span>
+      <span class="feedback-kicker">Chamado #{{ topico.id }}</span>
       <h2 class="mb-1">{{ topico.titulo }}</h2>
       <div class="feedback-meta mt-2">
+        <span><i class="bi bi-headset"></i>{{ support_sector_labels.get(topico.setor_suporte, "Sem setor") }}</span>
         <span><i class="bi bi-building"></i>{{ topico.uvis_nome }}</span>
         <span><i class="bi bi-geo-alt"></i>{{ topico.regiao or "Sem regiao" }}</span>
         <span><i class="bi bi-clock"></i>{{ topico.criado_em.strftime("%d/%m/%Y %H:%M") if topico.criado_em else "" }}</span>
@@ -33,6 +41,7 @@
           </div>
           <div class="feedback-detail-badges">
             <span class="feedback-status feedback-status-{{ topico.status }}">{{ status_labels.get(topico.status, topico.status) }}</span>
+            <span class="feedback-pill">{{ support_sector_labels.get(topico.setor_suporte, "Sem setor") }}</span>
             <span class="feedback-pill">{{ category_labels.get(topico.categoria, topico.categoria) }}</span>
             <span class="feedback-priority feedback-priority-{{ topico.prioridade }}">{{ priority_labels.get(topico.prioridade, topico.prioridade) }}</span>
           </div>
@@ -128,6 +137,11 @@
           {% endfor %}
         </div>
 
+        <button type="button" id="feedback-refresh-notice" class="feedback-refresh-notice d-none">
+          <i class="bi bi-arrow-clockwise"></i>
+          <span>Novas mensagens chegaram. Atualizar conversa</span>
+        </button>
+
         <div class="feedback-composer card shadow-sm border-0">
           <div class="card-body p-4">
             <div class="feedback-composer-head">
@@ -175,6 +189,10 @@
           <h5 class="mb-3">Resumo</h5>
           <dl class="feedback-summary">
             <div>
+              <dt>Atendimento</dt>
+              <dd>{{ support_sector_labels.get(topico.setor_suporte, "Sem setor") }}</dd>
+            </div>
+            <div>
               <dt>UVIS</dt>
               <dd>{{ topico.uvis_nome }}</dd>
             </div>
@@ -219,7 +237,6 @@
                 {% endfor %}
               </select>
             </div>
-            {% if can_view_all %}
             <div class="mb-3">
               <label class="form-label" for="feedback-responsavel">Responsavel</label>
               <select id="feedback-responsavel" name="responsavel_id" class="form-select">
@@ -229,7 +246,6 @@
                 {% endfor %}
               </select>
             </div>
-            {% endif %}
             <div class="mb-3">
               <label class="form-label" for="feedback-mensagem-status">Mensagem da atualizacao</label>
               <textarea id="feedback-mensagem-status" name="mensagem_status" rows="4" class="form-control"></textarea>
@@ -248,4 +264,66 @@
     </aside>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const state = document.getElementById("feedback-live-state");
+    if (!state) return;
+
+    const statusUrl = state.dataset.statusUrl;
+    let currentUpdatedAt = state.dataset.updatedAt || "";
+    let currentCommentCount = Number(state.dataset.commentCount || 0);
+    const notice = document.getElementById("feedback-refresh-notice");
+    const composer = document.querySelector(".feedback-composer form");
+
+    function hasDraft() {
+      if (!composer) return false;
+      const textareas = Array.from(composer.querySelectorAll("textarea"));
+      const inputs = Array.from(composer.querySelectorAll('input[type="file"]'));
+      return textareas.some((item) => (item.value || "").trim().length > 0)
+        || inputs.some((item) => item.files && item.files.length > 0);
+    }
+
+    function refreshConversation() {
+      window.location.reload();
+    }
+
+    function handleChangedConversation() {
+      if (hasDraft()) {
+        notice?.classList.remove("d-none");
+        return;
+      }
+      refreshConversation();
+    }
+
+    async function pollConversationStatus() {
+      if (!statusUrl || document.hidden) return;
+      try {
+        const response = await fetch(statusUrl, {
+          headers: { "Accept": "application/json" },
+          cache: "no-store",
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || !payload.success) return;
+
+        const updatedAt = payload.updated_at || "";
+        const commentCount = Number(payload.comment_count || 0);
+        const changed = updatedAt !== currentUpdatedAt || commentCount !== currentCommentCount;
+
+        if (changed) {
+          currentUpdatedAt = updatedAt;
+          currentCommentCount = commentCount;
+          handleChangedConversation();
+        }
+      } catch (error) {
+        // ignore transient polling errors
+      }
+    }
+
+    notice?.addEventListener("click", refreshConversation);
+    window.setInterval(pollConversationStatus, 5000);
+  });
+</script>
 {% endblock %}
