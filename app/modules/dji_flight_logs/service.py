@@ -3,6 +3,7 @@ import json
 import math
 import os
 import re
+import unicodedata
 import xml.etree.ElementTree as ET
 from collections import defaultdict
 from datetime import datetime, timedelta
@@ -12,12 +13,12 @@ from openpyxl import load_workbook
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.orm import joinedload
 from werkzeug.utils import secure_filename
 
 from app.extensions import db
-from app.models import DjiFlightKmlRoute, DjiFlightLogImport, DjiFlightRecord
+from app.models import DjiFlightKmlRoute, DjiFlightLogImport, DjiFlightRecord, OrdemServico, Solicitacao
 from app.shared.uploads import get_upload_folder
 
 
@@ -221,10 +222,12 @@ def build_dji_logs_context(args):
     )
     kml_rotas_recentes = (
         DjiFlightKmlRoute.query
+        .options(joinedload(DjiFlightKmlRoute.flight_record))
         .order_by(DjiFlightKmlRoute.imported_at.desc(), DjiFlightKmlRoute.id.desc())
         .limit(10)
         .all()
     )
+    kml_os_por_rota = _build_kml_os_map(kml_rotas_recentes)
 
     return {
         "registros": paginacao.items,
@@ -242,6 +245,7 @@ def build_dji_logs_context(args):
         "equipes_disponiveis": equipes_disponiveis,
         "importacoes_recentes": importacoes_recentes,
         "kml_rotas_recentes": kml_rotas_recentes,
+        "kml_os_por_rota": kml_os_por_rota,
         "total_importacoes": DjiFlightLogImport.query.count(),
         "total_rotas_kml": DjiFlightKmlRoute.query.count(),
         "total_voos": total_voos or 0,
@@ -268,6 +272,7 @@ def import_dji_kml_files(files, user):
     imported = 0
     skipped = 0
     linked = 0
+    os_linked = 0
 
     for file_storage in valid_files:
         original_filename = (file_storage.filename or "").strip()
@@ -318,21 +323,253 @@ def import_dji_kml_files(files, user):
             points_json=json.dumps(parsed["points"], ensure_ascii=False),
         )
         db.session.add(route)
+        db.session.flush()
+
         imported += 1
         if matched_record:
             linked += 1
+        if _auto_link_kml_route_to_os(route, parsed["points"]):
+            os_linked += 1
 
     db.session.commit()
     return {
         "imported": imported,
         "skipped": skipped,
         "linked": linked,
+        "os_linked": os_linked,
         "unlinked": imported - linked,
     }
 
 
+def _auto_link_kml_route_to_os(route, points):
+    match = _find_best_os_match_for_kml_route(route, points)
+    if not match:
+        return None
+    ordem, _score, _details = match
+    ordem.dji_kml_route_id = route.id
+    return ordem
+
+
+def _find_best_os_match_for_kml_route(route, points):
+    candidates = _candidate_ordens_for_kml_route(route)
+    scored = []
+    for ordem in candidates:
+        score, details = _score_os_kml_match(ordem, route, points)
+        if _is_confident_os_kml_match(score, details):
+            scored.append((ordem, score, details))
+
+    if not scored:
+        return None
+
+    scored.sort(key=lambda item: item[1], reverse=True)
+    best = scored[0]
+    if len(scored) > 1 and (best[1] - scored[1][1]) < 15:
+        return None
+    return best
+
+
+def _candidate_ordens_for_kml_route(route):
+    query = (
+        OrdemServico.query
+        .join(Solicitacao, Solicitacao.id == OrdemServico.solicitacao_id)
+        .options(joinedload(OrdemServico.solicitacao))
+        .filter(OrdemServico.dji_kml_route_id.is_(None))
+    )
+
+    if route.route_timestamp:
+        start_date = (route.route_timestamp - timedelta(days=2)).date()
+        end_date = (route.route_timestamp + timedelta(days=2)).date()
+        query = query.filter(
+            or_(
+                OrdemServico.data_aplicacao.between(start_date, end_date),
+                Solicitacao.data_agendamento.between(start_date, end_date),
+                func.date(OrdemServico.respondido_em).between(start_date, end_date),
+            )
+        )
+
+    return (
+        query
+        .order_by(OrdemServico.respondido_em.desc(), OrdemServico.id.desc())
+        .limit(300)
+        .all()
+    )
+
+
+def _score_os_kml_match(ordem, route, points):
+    time_score = _score_kml_os_time_match(ordem, route.route_timestamp)
+    aircraft_score = _score_kml_os_aircraft_match(ordem, route.aircraft_name)
+    pilot_score = _score_kml_os_pilot_match(ordem, route.pilot_name)
+    distance_meters = _kml_distance_to_solicitacao_meters(points, getattr(ordem, "solicitacao", None))
+    geo_score = _score_kml_os_geo_match(distance_meters)
+
+    score = time_score + aircraft_score + pilot_score + geo_score
+    return score, {
+        "time": time_score,
+        "aircraft": aircraft_score,
+        "pilot": pilot_score,
+        "geo": geo_score,
+        "distance_meters": distance_meters,
+    }
+
+
+def _is_confident_os_kml_match(score, details):
+    if score < 70:
+        return False
+    has_time_and_identity = details["time"] >= 20 and (details["aircraft"] >= 25 or details["geo"] >= 22)
+    has_aircraft_and_location = details["aircraft"] >= 25 and details["geo"] >= 22
+    return has_time_and_identity or has_aircraft_and_location
+
+
+def _score_kml_os_time_match(ordem, route_timestamp):
+    if not route_timestamp:
+        return 0
+
+    windows = _ordem_time_windows(ordem)
+    if not windows:
+        return 0
+
+    best = 0
+    for start_dt, end_dt in windows:
+        if start_dt <= route_timestamp <= end_dt:
+            best = max(best, 40)
+            continue
+        delta_seconds = min(
+            abs((route_timestamp - start_dt).total_seconds()),
+            abs((route_timestamp - end_dt).total_seconds()),
+        )
+        delta_minutes = delta_seconds / 60
+        if delta_minutes <= 60:
+            best = max(best, 30)
+        elif delta_minutes <= 120:
+            best = max(best, 20)
+        elif route_timestamp.date() == start_dt.date() or route_timestamp.date() == end_dt.date():
+            best = max(best, 12)
+    return best
+
+
+def _ordem_time_windows(ordem):
+    windows = []
+    if ordem.data_aplicacao:
+        if ordem.hora_inicio_aplicacao and ordem.hora_termino_aplicacao:
+            start_dt = datetime.combine(ordem.data_aplicacao, ordem.hora_inicio_aplicacao)
+            end_dt = datetime.combine(ordem.data_aplicacao, ordem.hora_termino_aplicacao)
+            if end_dt < start_dt:
+                end_dt += timedelta(days=1)
+            windows.append((start_dt - timedelta(minutes=30), end_dt + timedelta(minutes=30)))
+        else:
+            windows.append((
+                datetime.combine(ordem.data_aplicacao, datetime.min.time()),
+                datetime.combine(ordem.data_aplicacao, datetime.max.time()),
+            ))
+
+    if ordem.respondido_em:
+        windows.append((ordem.respondido_em - timedelta(hours=4), ordem.respondido_em + timedelta(hours=4)))
+
+    solicitacao = getattr(ordem, "solicitacao", None)
+    if solicitacao and solicitacao.data_agendamento:
+        if solicitacao.hora_agendamento:
+            scheduled_at = datetime.combine(solicitacao.data_agendamento, solicitacao.hora_agendamento)
+            windows.append((scheduled_at - timedelta(hours=2), scheduled_at + timedelta(hours=8)))
+        else:
+            windows.append((
+                datetime.combine(solicitacao.data_agendamento, datetime.min.time()),
+                datetime.combine(solicitacao.data_agendamento, datetime.max.time()),
+            ))
+    return windows
+
+
+def _score_kml_os_aircraft_match(ordem, aircraft_name):
+    route_aircraft = _normalize_match_text(aircraft_name)
+    if not route_aircraft:
+        return 0
+
+    candidates = [
+        ordem.prefixo_aeronave_pulverizacao,
+        ordem.prefixo_aeronave_monitoramento,
+        ordem.drone_denominacao,
+        ordem.drone_monitoramento_denominacao,
+        ordem.drone_numero_serie,
+        ordem.drone_monitoramento_numero_serie,
+    ]
+    return max((_text_match_score(route_aircraft, candidate) for candidate in candidates), default=0)
+
+
+def _score_kml_os_pilot_match(ordem, pilot_name):
+    route_pilot = _normalize_match_text(pilot_name)
+    if not route_pilot:
+        return 0
+    return max(
+        _text_match_score(route_pilot, ordem.piloto, exact_score=15, contains_score=10),
+        _text_match_score(route_pilot, ordem.auxiliar, exact_score=8, contains_score=5),
+    )
+
+
+def _text_match_score(normalized_left, raw_right, *, exact_score=35, contains_score=25):
+    normalized_right = _normalize_match_text(raw_right)
+    if not normalized_left or not normalized_right:
+        return 0
+    if normalized_left == normalized_right:
+        return exact_score
+    if normalized_left in normalized_right or normalized_right in normalized_left:
+        return contains_score
+    return 0
+
+
+def _normalize_match_text(value):
+    value = str(value or "").strip()
+    if not value:
+        return ""
+    normalized = unicodedata.normalize("NFKD", value)
+    normalized = "".join(char for char in normalized if not unicodedata.combining(char))
+    return re.sub(r"[^a-z0-9]+", "", normalized.lower())
+
+
+def _kml_distance_to_solicitacao_meters(points, solicitacao):
+    if not solicitacao:
+        return None
+    os_lat = _parse_coordinate(getattr(solicitacao, "latitude", None))
+    os_lng = _parse_coordinate(getattr(solicitacao, "longitude", None))
+    if os_lat is None or os_lng is None:
+        return None
+
+    distances = []
+    for point in points or []:
+        point_lat = point.get("lat")
+        point_lng = point.get("lng")
+        if point_lat is None or point_lng is None:
+            continue
+        distances.append(_haversine_distance_meters(os_lat, os_lng, point_lat, point_lng))
+    return min(distances) if distances else None
+
+
+def _parse_coordinate(value):
+    if value is None:
+        return None
+    try:
+        return float(str(value).strip().replace(",", "."))
+    except (TypeError, ValueError):
+        return None
+
+
+def _score_kml_os_geo_match(distance_meters):
+    if distance_meters is None:
+        return 0
+    if distance_meters <= 150:
+        return 35
+    if distance_meters <= 300:
+        return 30
+    if distance_meters <= 750:
+        return 22
+    if distance_meters <= 1500:
+        return 12
+    if distance_meters <= 3000:
+        return 5
+    return 0
+
+
 def get_dji_route_payload(route_id):
     route = DjiFlightKmlRoute.query.get_or_404(route_id)
+    linked_os = _get_linked_os_for_kml_route(route.id)
     points = json.loads(route.points_json or "[]")
     center_point = points[0] if points else None
     start_point = points[0] if points else None
@@ -363,7 +600,58 @@ def get_dji_route_payload(route_id):
         "altitude_min": altitude_min,
         "altitude_max": altitude_max,
         "altitude_label": _format_altitude_range_label(altitude_min, altitude_max),
+        "linked_os": _build_linked_os_payload(linked_os),
         "points": points,
+    }
+
+
+def _build_kml_os_map(routes):
+    route_ids = [route.id for route in routes or []]
+    if not route_ids:
+        return {}
+
+    ordens = (
+        OrdemServico.query
+        .options(joinedload(OrdemServico.solicitacao))
+        .filter(OrdemServico.dji_kml_route_id.in_(route_ids))
+        .order_by(OrdemServico.respondido_em.desc(), OrdemServico.id.desc())
+        .all()
+    )
+    os_por_rota = {}
+    for ordem in ordens:
+        os_por_rota.setdefault(ordem.dji_kml_route_id, ordem)
+    return os_por_rota
+
+
+def _get_linked_os_for_kml_route(route_id):
+    return (
+        OrdemServico.query
+        .options(joinedload(OrdemServico.solicitacao))
+        .filter(OrdemServico.dji_kml_route_id == route_id)
+        .order_by(OrdemServico.respondido_em.desc(), OrdemServico.id.desc())
+        .first()
+    )
+
+
+def _build_linked_os_payload(ordem):
+    if not ordem:
+        return None
+
+    solicitacao = getattr(ordem, "solicitacao", None)
+    solicitacao_id = getattr(ordem, "solicitacao_id", None)
+    identificador = (getattr(ordem, "identificador_os", None) or "").strip()
+    label = identificador or (f"OS #{solicitacao_id}" if solicitacao_id else f"OS interna #{ordem.id}")
+    data_aplicacao = getattr(ordem, "data_aplicacao", None)
+
+    return {
+        "ordem_id": ordem.id,
+        "solicitacao_id": solicitacao_id,
+        "identificador_os": identificador,
+        "label": label,
+        "protocolo": getattr(solicitacao, "protocolo", None) or "",
+        "status": getattr(solicitacao, "status", None) or "",
+        "data_aplicacao": data_aplicacao.strftime("%d/%m/%Y") if data_aplicacao else "",
+        "piloto": getattr(ordem, "piloto", None) or "",
     }
 
 

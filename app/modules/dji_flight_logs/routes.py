@@ -105,6 +105,7 @@ def register_routes(bp):
                     "Importacao de KML concluida: "
                     f"{result['imported']} novas, "
                     f"{result['linked']} vinculadas a voos, "
+                    f"{result['os_linked']} vinculadas automaticamente a OS, "
                     f"{result['unlinked']} sem voo correspondente e "
                     f"{result['skipped']} ignoradas."
                 ),

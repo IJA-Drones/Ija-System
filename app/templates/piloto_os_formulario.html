@@ -841,6 +841,43 @@
           </div>
         </div>
 
+        <div class="row g-3 mt-1 mb-4">
+          <div class="col-lg-8">
+            <label class="form-label-header">Rota KML vinculada a OS</label>
+            <select name="dji_kml_route_id" class="form-select shadow-sm">
+              <option value="">Sem rota KML vinculada</option>
+              {% for rota in dji_kml_routes or [] %}
+                {% set voo = rota.flight_record %}
+                <option value="{{ rota.id }}" {% if ordem and ordem.dji_kml_route_id == rota.id %}selected{% endif %}>
+                  {{ rota.route_timestamp.strftime('%d/%m/%Y %H:%M') if rota.route_timestamp else (voo.flight_start.strftime('%d/%m/%Y %H:%M') if voo and voo.flight_start else 'Data nao informada') }}
+                  | {{ rota.aircraft_name or (voo.aircraft_name if voo else '') or 'Aeronave nao informada' }}
+                  | {{ rota.route_code }}
+                  | {{ rota.pilot_name or (voo.pilot_name if voo else '') or 'Piloto nao informado' }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-lg-4 d-flex align-items-end">
+            {% if selected_dji_route and current_user.tipo_usuario in ['admin', 'dev'] %}
+              <a href="{{ url_for('main.visualizar_dji_kml_route', route_id=selected_dji_route.id) }}"
+                 class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center gap-2"
+                 target="_blank"
+                 rel="noopener">
+                <i class="bi bi-map-fill"></i>
+                <span>Visualizar rota KML</span>
+              </a>
+            {% elif selected_dji_route %}
+              <button type="button" class="btn btn-outline-success w-100" disabled>
+                <i class="bi bi-check2-circle me-1"></i> KML vinculado
+              </button>
+            {% else %}
+              <button type="button" class="btn btn-outline-secondary w-100" disabled>
+                <i class="bi bi-map me-1"></i> Nenhum KML vinculado
+              </button>
+            {% endif %}
+          </div>
+        </div>
+
         {# ===================== APLICAÇÃO ===================== #}
         <div class="section-title">
           <h5 class="m-0 text-primary fw-bold">Aplicação</h5>

@@ -693,6 +693,99 @@
     </div>
   </div>
 
+  <div class="card section-card mb-4">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h5 class="mb-1">Rotas KML recentes</h5>
+          <p class="text-muted small mb-0">Ultimos KMLs importados com acesso rapido a rota e a OS vinculada.</p>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Rota</th>
+              <th>Data da rota</th>
+              <th>Aeronave / piloto</th>
+              <th>Voo DJI</th>
+              <th>OS vinculada</th>
+              <th class="text-end">Acoes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in kml_rotas_recentes %}
+              {% set linked_os = kml_os_por_rota.get(item.id) %}
+              <tr>
+                <td>
+                  <div class="fw-semibold">{{ item.route_code }}</div>
+                  <div class="small text-muted">{{ item.original_filename }}</div>
+                </td>
+                <td>
+                  {% if item.route_timestamp %}
+                    {{ item.route_timestamp.strftime("%d/%m/%Y %H:%M") }}
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+                <td>
+                  <div class="fw-semibold">{{ item.aircraft_name or "-" }}</div>
+                  <div class="small text-muted">{{ item.pilot_name or "Piloto nao informado" }}</div>
+                </td>
+                <td>
+                  {% if item.flight_record %}
+                    <span class="badge text-bg-success">Vinculado</span>
+                    <div class="small text-muted">{{ item.flight_record.flight_start.strftime("%d/%m/%Y %H:%M") if item.flight_record.flight_start else "-" }}</div>
+                  {% else %}
+                    <span class="badge text-bg-light">Sem voo DJI</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if linked_os %}
+                    <a
+                      href="{{ url_for('main.admin_os_formulario_view', os_id=linked_os.solicitacao_id) }}"
+                      class="btn btn-sm btn-outline-success"
+                    >
+                      <i class="bi bi-clipboard-check me-1"></i>
+                      {{ linked_os.identificador_os or ("OS #" ~ linked_os.solicitacao_id) }}
+                    </a>
+                    <div class="small text-muted mt-1">
+                      {{ linked_os.solicitacao.protocolo if linked_os.solicitacao else "" }}
+                      {% if linked_os.solicitacao and linked_os.solicitacao.status %}
+                        | {{ linked_os.solicitacao.status }}
+                      {% endif %}
+                    </div>
+                  {% else %}
+                    <span class="badge text-bg-warning">Sem OS</span>
+                  {% endif %}
+                </td>
+                <td class="text-end">
+                  <div class="d-flex justify-content-end gap-2 flex-wrap">
+                    <a
+                      href="{{ url_for('main.visualizar_dji_kml_route', route_id=item.id) }}"
+                      class="btn btn-sm btn-outline-primary"
+                    >
+                      <i class="bi bi-map me-1"></i> Ver mapa
+                    </a>
+                    <a
+                      href="{{ url_for('main.baixar_dji_kml_route', route_id=item.id) }}"
+                      class="btn btn-sm btn-outline-dark"
+                    >
+                      <i class="bi bi-download me-1"></i> KML
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            {% else %}
+              <tr><td colspan="6" class="text-center text-muted py-4">Nenhuma rota KML importada ainda.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <div class="card section-card">
     <div class="card-body">
       <div class="d-flex justify-content-between align-items-center mb-3">
@@ -834,6 +927,22 @@
             <div class="route-detail-panel">
               <div class="route-detail-label">Fim da rota</div>
               <div class="route-detail-text" id="rotaKmlFim">-</div>
+            </div>
+          </div>
+        </div>
+        <div class="row g-3 mb-3">
+          <div class="col-12">
+            <div class="route-detail-panel">
+              <div class="route-detail-label">OS vinculada</div>
+              <div class="d-flex flex-column flex-md-row justify-content-between gap-2 align-items-md-center">
+                <div>
+                  <div class="route-detail-text" id="rotaKmlOsLabel">Sem OS vinculada</div>
+                  <div class="small text-muted" id="rotaKmlOsMeta"></div>
+                </div>
+                <a id="rotaKmlOsLink" class="btn btn-sm btn-outline-success d-none" target="_blank" rel="noopener">
+                  <i class="bi bi-box-arrow-up-right me-1"></i> Abrir OS
+                </a>
+              </div>
             </div>
           </div>
         </div>
@@ -1089,6 +1198,24 @@
       document.getElementById("rotaKmlInicio").textContent = route.start_label || "-";
       document.getElementById("rotaKmlFim").textContent = route.end_label || "-";
       document.getElementById("rotaKmlDownloadLink").href = `/relatorios/dji-logs/rota/${routeId}/kml`;
+
+      const linkedOs = route.linked_os || null;
+      const osLabelElement = document.getElementById("rotaKmlOsLabel");
+      const osMetaElement = document.getElementById("rotaKmlOsMeta");
+      const osLinkElement = document.getElementById("rotaKmlOsLink");
+      if (linkedOs && linkedOs.solicitacao_id) {
+        osLabelElement.textContent = linkedOs.label || `OS #${linkedOs.solicitacao_id}`;
+        osMetaElement.textContent = [linkedOs.protocolo, linkedOs.status, linkedOs.data_aplicacao]
+          .filter(Boolean)
+          .join(" | ");
+        osLinkElement.href = `/admin/os/${linkedOs.solicitacao_id}/formulario`;
+        osLinkElement.classList.remove("d-none");
+      } else {
+        osLabelElement.textContent = "Sem OS vinculada";
+        osMetaElement.textContent = "";
+        osLinkElement.removeAttribute("href");
+        osLinkElement.classList.add("d-none");
+      }
 
       const centerPoint = points[0];
 

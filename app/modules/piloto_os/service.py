@@ -13,7 +13,17 @@ from sqlalchemy.orm import joinedload, lazyload
 from werkzeug.utils import secure_filename
 
 from app.extensions import db
-from app.models import Baterias, Drones, Equipe, EquipePiloto, OrdemServico, Solicitacao, Usuario, Veiculos
+from app.models import (
+    Baterias,
+    DjiFlightKmlRoute,
+    Drones,
+    Equipe,
+    EquipePiloto,
+    OrdemServico,
+    Solicitacao,
+    Usuario,
+    Veiculos,
+)
 from app.shared.access import (
     ADMIN_PANEL_EDIT_TYPES,
     ADMIN_PANEL_VIEW_TYPES,
@@ -90,6 +100,81 @@ def _split_drones_by_category(drones):
         elif category == DRONE_CATEGORY_MONITORAMENTO:
             monitoramento.append(drone)
     return pulverizacao, monitoramento
+
+
+def _dji_kml_date_window(solicitacao, ordem):
+    reference_date = (
+        getattr(ordem, "data_aplicacao", None)
+        or getattr(solicitacao, "data_agendamento", None)
+    )
+    if not reference_date and getattr(ordem, "respondido_em", None):
+        reference_date = ordem.respondido_em.date()
+    if not reference_date:
+        return None, None
+
+    start_dt = datetime.combine(reference_date, datetime.min.time()) - timedelta(days=7)
+    end_dt = datetime.combine(reference_date, datetime.max.time()) + timedelta(days=7)
+    return start_dt, end_dt
+
+
+def _build_dji_kml_route_options(solicitacao, ordem):
+    query = (
+        DjiFlightKmlRoute.query
+        .options(joinedload(DjiFlightKmlRoute.flight_record))
+    )
+
+    start_dt, end_dt = _dji_kml_date_window(solicitacao, ordem)
+    if start_dt and end_dt:
+        query = query.filter(
+            or_(
+                DjiFlightKmlRoute.route_timestamp.is_(None),
+                DjiFlightKmlRoute.route_timestamp.between(start_dt, end_dt),
+            )
+        )
+
+    routes = (
+        query
+        .order_by(
+            DjiFlightKmlRoute.route_timestamp.is_(None).asc(),
+            DjiFlightKmlRoute.route_timestamp.desc(),
+            DjiFlightKmlRoute.id.desc(),
+        )
+        .limit(120)
+        .all()
+    )
+
+    selected_id = getattr(ordem, "dji_kml_route_id", None) if ordem else None
+    if selected_id and all(route.id != selected_id for route in routes):
+        selected = (
+            DjiFlightKmlRoute.query
+            .options(joinedload(DjiFlightKmlRoute.flight_record))
+            .get(selected_id)
+        )
+        if selected:
+            routes.insert(0, selected)
+
+    return routes
+
+
+def _get_selected_dji_route(ordem):
+    return getattr(ordem, "dji_kml_route", None) if ordem else None
+
+
+def _get_valid_dji_kml_route(user, route_id):
+    if not route_id:
+        return None
+    route = (
+        DjiFlightKmlRoute.query
+        .options(joinedload(DjiFlightKmlRoute.flight_record))
+        .get(route_id)
+    )
+    if not route:
+        raise PilotoOsError(
+            "Selecione uma rota KML importada valida para vincular a OS.",
+            "danger",
+            redirect_endpoint=_drone_form_error_redirect(user),
+        )
+    return route
 
 
 def _drone_form_error_redirect(user):
@@ -408,6 +493,8 @@ def build_piloto_os_form_context(user, os_id):
         .all()
     )
     drones_pulverizacao, drones_monitoramento = _split_drones_by_category(drones_equipe)
+    dji_kml_routes = _build_dji_kml_route_options(solicitacao, ordem)
+    selected_dji_route = _get_selected_dji_route(ordem)
 
     respondido_por_padrao = ""
     if getattr(user, "piloto", None):
@@ -450,6 +537,8 @@ def build_piloto_os_form_context(user, os_id):
         "drones_equipe": drones_equipe,
         "drones_pulverizacao": drones_pulverizacao,
         "drones_monitoramento": drones_monitoramento,
+        "dji_kml_routes": dji_kml_routes,
+        "selected_dji_route": selected_dji_route,
         "retorno_ciclo": build_retorno_ciclo_context(user, os_id),
         **_build_os_media_context(ordem),
     }
@@ -558,6 +647,8 @@ def build_admin_os_form_context(user, os_id):
             .all()
         )
     drones_pulverizacao, drones_monitoramento = _split_drones_by_category(drones_equipe)
+    dji_kml_routes = _build_dji_kml_route_options(solicitacao, ordem)
+    selected_dji_route = _get_selected_dji_route(ordem)
 
     return {
         "solicitacao": solicitacao,
@@ -598,6 +689,8 @@ def build_admin_os_form_context(user, os_id):
         "drones_equipe": drones_equipe,
         "drones_pulverizacao": drones_pulverizacao,
         "drones_monitoramento": drones_monitoramento,
+        "dji_kml_routes": dji_kml_routes,
+        "selected_dji_route": selected_dji_route,
         "retorno_ciclo": build_retorno_ciclo_context(user, os_id),
         **_build_os_media_context(ordem),
     }
@@ -866,6 +959,10 @@ def _aplicar_campos_formulario(
         ordem.drone_monitoramento_registro_anatel = ""
         ordem.drone_monitoramento_registro_anac = ""
         ordem.prefixo_aeronave_monitoramento = _clean_str(form_data.get("prefixo_aeronave_monitoramento"))
+
+    dji_kml_route_id = _to_int(form_data.get("dji_kml_route_id"))
+    dji_kml_route = _get_valid_dji_kml_route(user, dji_kml_route_id)
+    ordem.dji_kml_route_id = dji_kml_route.id if dji_kml_route else None
 
     ordem.identificador_os = _clean_str(form_data.get("identificador_os"))
     ordem.respondido_por = _clean_str(form_data.get("respondido_por")) or respondido_por_padrao
