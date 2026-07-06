@@ -33,6 +33,10 @@ O IJA System organiza esse fluxo em uma aplicação única, com dados estruturad
 
 ## Principais Funcionalidades
 
+### Documentação específica
+
+- [Documentação da funcionalidade de visualização do retorno automático](docs/README-retorno-automatico.md)
+
 ### Autenticação e Perfis de Acesso
 
 O sistema possui login com redirecionamento conforme o perfil do usuário. Entre os perfis tratados no código estão:
