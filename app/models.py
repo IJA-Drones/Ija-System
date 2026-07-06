@@ -630,6 +630,18 @@ class OrdemServico(db.Model):
         lazy="joined"
     )
 
+    dji_kml_route_id = db.Column(
+        db.Integer,
+        db.ForeignKey("dji_flight_kml_routes.id"),
+        nullable=True,
+        index=True,
+    )
+    dji_kml_route = db.relationship(
+        "DjiFlightKmlRoute",
+        foreign_keys=[dji_kml_route_id],
+        lazy="joined",
+    )
+
     # Snapshots do primeiro drone
     drone_denominacao = db.Column(db.String(100)) # 'renomacao'
     drone_modelo = db.Column(db.String(100))

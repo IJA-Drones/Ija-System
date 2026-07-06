@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml>
+  <Document>
+    <Placemark>
+      <name>R1012307467</name>
+      <ExtendedData>
+        
+          <Data name="Aircraft Name">
+            <value>PLOA-21</value>
+          </Data>
+          <Data name="Flight Controller ID">
+            <value>3TNDL7S002K858</value>
+          </Data>
+          <Data name="Pilot Name">
+            <value>Welington Soares</value>
+          </Data>
+          <Data name="Flight Time">
+            <value> 181000</value>
+          </Data>
+          <Data name="Mode Selection">
+            <value>M/M+</value>
+          </Data>
+          <Data name="Height">
+            <value></value>
+          </Data>
+          <Data name="Route Spacing">
+            <value></value>
+          </Data>
+          <Data name="Task Flight Speed">
+            <value></value>
+          </Data>
+          <Data name="Task Area">
+            <value>0.012666666730000001</value>
+          </Data>
+          <Data name="Spray amount">
+            <value>897</value>
+          </Data>
+        
+      </ExtendedData>
+      <Style>
+        <LineStyle>
+          <color>#FF0000FF</color>
+          <width>1</width>
+          </LineStyle>
+      </Style>
+      <LineString>
+        <coordinates>-46.55739425817951,-23.591126972245114,0 -46.55738502089806,-23.591140035541436,0 -46.55736951435914,-23.59100504788448,0 -46.55742681706568,-23.590962105777198,0 -46.55740177086675,-23.59092782790391,0 -46.557411398067195,-23.590902162427984,0 -46.557431412042924,-23.590879132269492,0 -46.55744826567444,-23.590889114409723,0 -46.55741594883505,-23.590934470118533,0 -46.5574158237766,-23.590934546551182,0 -46.557353697200384,-23.590889226863553,0 -46.55734690598636,-23.59084201041647,0 -46.55711411787961,-23.590694799000982,0 -46.55710897937727,-23.590699675708734,0 -46.55713872617799,-23.59077248560241,0 -46.55729548937423,-23.591048066242024,0 -46.557371496927075,-23.591139923015955,0 -46.55740378543291,-23.59113786242526,0</coordinates>
+      </LineString>
+    </Placemark>
+  </Document>
+</kml>

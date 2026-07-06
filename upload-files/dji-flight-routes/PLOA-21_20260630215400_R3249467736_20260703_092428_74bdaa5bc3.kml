@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml>
+  <Document>
+    <Placemark>
+      <name>R3249467736</name>
+      <ExtendedData>
+        
+          <Data name="Aircraft Name">
+            <value>PLOA-21</value>
+          </Data>
+          <Data name="Flight Controller ID">
+            <value>3TNDL7S002K858</value>
+          </Data>
+          <Data name="Pilot Name">
+            <value>Welington Soares</value>
+          </Data>
+          <Data name="Flight Time">
+            <value> 134000</value>
+          </Data>
+          <Data name="Mode Selection">
+            <value>M/M+</value>
+          </Data>
+          <Data name="Height">
+            <value></value>
+          </Data>
+          <Data name="Route Spacing">
+            <value></value>
+          </Data>
+          <Data name="Task Flight Speed">
+            <value></value>
+          </Data>
+          <Data name="Task Area">
+            <value>0.02333333345</value>
+          </Data>
+          <Data name="Spray amount">
+            <value>1454</value>
+          </Data>
+        
+      </ExtendedData>
+      <Style>
+        <LineStyle>
+          <color>#FF0000FF</color>
+          <width>1</width>
+          </LineStyle>
+      </Style>
+      <LineString>
+        <coordinates>-46.544151112816074,-23.5796475427968,0 -46.54418296281783,-23.579636621507316,0 -46.54429058243761,-23.57966269900807,0 -46.54431740217488,-23.57969295411987,0 -46.544427877375675,-23.579745919768943,0 -46.5444549091901,-23.579714886668025,0 -46.5444048209963,-23.579710167404752,0 -46.54438768058935,-23.579769811283118,0 -46.54442793113566,-23.579781947125216,0 -46.544449351555286,-23.57973141195486,0 -46.5441661300424,-23.579654092677476,0</coordinates>
+      </LineString>
+    </Placemark>
+  </Document>
+</kml>

@@ -2,6 +2,7 @@
 
 {% block extra_styles %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <style>
     .route-hero {
       position: relative;
@@ -178,6 +179,14 @@
           <a href="{{ url_for('main.relatorios_dji_logs') }}" class="btn btn-light">
             <i class="bi bi-arrow-left me-1"></i> Voltar aos logs
           </a>
+          {% if route.linked_os and route.linked_os.solicitacao_id %}
+            <a
+              href="{{ url_for('main.admin_os_formulario_view', os_id=route.linked_os.solicitacao_id) }}"
+              class="btn btn-light"
+            >
+              <i class="bi bi-clipboard-check me-1"></i> Voltar para o formulario
+            </a>
+          {% endif %}
           <a
             href="{{ url_for('main.baixar_dji_kml_route', route_id=route.id) }}"
             class="btn btn-outline-light"
@@ -237,6 +246,30 @@
           <div class="route-info-value">{{ route.pilot_name or "-" }}</div>
         </div>
         <div class="route-info-card">
+          <div class="route-info-label">OS vinculada</div>
+          {% if route.linked_os %}
+            <div class="route-info-value">{{ route.linked_os.label }}</div>
+            <div class="small text-muted mt-1">
+              {{ route.linked_os.protocolo or "" }}
+              {% if route.linked_os.status %}
+                | {{ route.linked_os.status }}
+              {% endif %}
+              {% if route.linked_os.data_aplicacao %}
+                | {{ route.linked_os.data_aplicacao }}
+              {% endif %}
+            </div>
+            <a
+              href="{{ url_for('main.admin_os_formulario_view', os_id=route.linked_os.solicitacao_id) }}"
+              class="btn btn-sm btn-outline-success mt-2"
+            >
+              <i class="bi bi-box-arrow-up-right me-1"></i> Abrir OS
+            </a>
+          {% else %}
+            <div class="route-info-value">Sem OS vinculada</div>
+            <div class="small text-muted mt-1">Esta rota ainda nao foi ligada a uma ordem de servico.</div>
+          {% endif %}
+        </div>
+        <div class="route-info-card">
           <div class="route-info-label">Controlador de voo</div>
           <div class="route-info-value">{{ route.flight_controller_id or "-" }}</div>
         </div>
@@ -294,81 +327,169 @@
 
 {% block scripts %}
   {{ super() }}
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     const routePayload = {{ route | tojson }};
     let routeMapInstance = null;
     let routePolyline = null;
+    let routeMarkers = [];
+    let routeMapBackend = null;
+    let fallbackLayer = null;
 
     function setMapType(mapType) {
-      if (routeMapInstance) {
+      if (routeMapBackend === "google" && routeMapInstance) {
         routeMapInstance.setMapTypeId(mapType);
+        return;
+      }
+      if (routeMapBackend === "leaflet" && routeMapInstance && window.L) {
+        if (fallbackLayer) {
+          routeMapInstance.removeLayer(fallbackLayer);
+        }
+        if (mapType === "satellite") {
+          fallbackLayer = L.tileLayer(
+            "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+            { maxNativeZoom: 19, maxZoom: 22, attribution: "Tiles &copy; Esri" }
+          );
+        } else {
+          fallbackLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxNativeZoom: 19,
+            maxZoom: 22,
+            attribution: '&copy; OpenStreetMap contributors',
+          });
+        }
+        fallbackLayer.addTo(routeMapInstance);
       }
     }
 
-    function initRouteMapPage() {
-      if (!(window.google && window.google.maps)) return;
+    function routePoints() {
+      return (routePayload.points || [])
+        .filter((item) => item && item.lat !== undefined && item.lng !== undefined)
+        .map((item) => ({ lat: Number(item.lat), lng: Number(item.lng) }));
+    }
+
+    function initRouteMapPageWithGoogle() {
       const mapCanvas = document.getElementById("routeMapCanvas");
       if (!mapCanvas) return;
+      if (!(window.google && window.google.maps)) {
+        initRouteMapPageWithFallback("Google Maps indisponivel no momento.");
+        return;
+      }
 
-      const points = (routePayload.points || []).map((item) => ({ lat: item.lat, lng: item.lng }));
-      if (!points.length) return;
+      const points = routePoints();
+      if (!points.length) {
+        mapCanvas.innerHTML = '<div class="d-flex align-items-center justify-content-center h-100 text-muted fw-bold">Esta rota nao possui pontos para exibicao.</div>';
+        return;
+      }
 
       routeMapInstance = new google.maps.Map(mapCanvas, {
         center: points[0],
-        zoom: 20,
-        mapTypeId: "satellite",
+        zoom: 16,
+        mapTypeId: "hybrid",
         tilt: 0,
         streetViewControl: false,
         fullscreenControl: true,
         mapTypeControl: false,
       });
+      routeMapBackend = "google";
 
       routePolyline = new google.maps.Polyline({
         path: points,
         geodesic: true,
         strokeColor: routePayload.route_color_css || "#ff3b30",
         strokeOpacity: 0.95,
-        strokeWeight: Number(routePayload.route_width || 2),
+        strokeWeight: Math.max(2, Number(routePayload.route_width || 2)),
         map: routeMapInstance,
       });
 
-      new google.maps.Marker({
-        position: points[0],
-        map: routeMapInstance,
-        title: "Inicio da rota",
-        icon: {
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: 6,
-          fillColor: "#16a34a",
-          fillOpacity: 1,
-          strokeColor: "#ffffff",
-          strokeWeight: 2,
-        }
-      });
+      routeMarkers.push(
+        new google.maps.Marker({
+          position: points[0],
+          map: routeMapInstance,
+          label: "I",
+          title: "Inicio da rota",
+        })
+      );
 
-      new google.maps.Marker({
-        position: points[points.length - 1],
-        map: routeMapInstance,
-        title: "Fim da rota",
-        icon: {
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: 6,
-          fillColor: "#dc2626",
-          fillOpacity: 1,
-          strokeColor: "#ffffff",
-          strokeWeight: 2,
-        }
-      });
+      routeMarkers.push(
+        new google.maps.Marker({
+          position: points[points.length - 1],
+          map: routeMapInstance,
+          label: "F",
+          title: "Fim da rota",
+        })
+      );
 
       const bounds = new google.maps.LatLngBounds();
       points.forEach((point) => bounds.extend(point));
       routeMapInstance.fitBounds(bounds, 40);
     }
 
+    function initRouteMapPageWithFallback(reason) {
+      if (routeMapBackend === "google") return;
+      const mapCanvas = document.getElementById("routeMapCanvas");
+      if (!mapCanvas || !window.L) {
+        if (mapCanvas) {
+          mapCanvas.innerHTML = `<div class="d-flex align-items-center justify-content-center h-100 text-muted fw-bold">${reason || "Mapa indisponivel no momento."}</div>`;
+        }
+        return;
+      }
+
+      const points = routePoints().map((point) => [point.lat, point.lng]);
+      if (!points.length) {
+        mapCanvas.innerHTML = '<div class="d-flex align-items-center justify-content-center h-100 text-muted fw-bold">Esta rota nao possui pontos para exibicao.</div>';
+        return;
+      }
+
+      mapCanvas.innerHTML = "";
+      routeMapBackend = "leaflet";
+      routeMapInstance = L.map(mapCanvas, { center: points[0], zoom: 18 });
+      fallbackLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxNativeZoom: 19,
+        maxZoom: 22,
+        attribution: '&copy; OpenStreetMap contributors',
+      }).addTo(routeMapInstance);
+
+      routePolyline = L.polyline(points, {
+        color: routePayload.route_color_css || "#ff3b30",
+        opacity: 0.95,
+        weight: Math.max(2, Number(routePayload.route_width || 2)),
+      }).addTo(routeMapInstance);
+
+      L.circleMarker(points[0], {
+        radius: 7,
+        color: "#ffffff",
+        weight: 2,
+        fillColor: "#16a34a",
+        fillOpacity: 1,
+      }).addTo(routeMapInstance).bindTooltip("Inicio da rota");
+
+      L.circleMarker(points[points.length - 1], {
+        radius: 7,
+        color: "#ffffff",
+        weight: 2,
+        fillColor: "#dc2626",
+        fillOpacity: 1,
+      }).addTo(routeMapInstance).bindTooltip("Fim da rota");
+
+      routeMapInstance.fitBounds(routePolyline.getBounds(), { padding: [32, 32] });
+    }
+
     if (window.__GOOGLE_MAPS_READY__) {
-      initRouteMapPage();
+      initRouteMapPageWithGoogle();
     } else {
-      document.addEventListener("googlemaps:ready", initRouteMapPage, { once: true });
+      document.addEventListener("googlemaps:ready", initRouteMapPageWithGoogle, { once: true });
+      document.addEventListener("googlemaps:auth-failed", () => {
+        initRouteMapPageWithFallback("Chave do Google Maps invalida.");
+      }, { once: true });
+      document.addEventListener("DOMContentLoaded", () => {
+        setTimeout(() => {
+          if (window.__GOOGLE_MAPS_AUTH_FAILED__) {
+            initRouteMapPageWithFallback("Chave do Google Maps invalida.");
+          } else if (!routeMapInstance) {
+            initRouteMapPageWithGoogle();
+          }
+        }, 2500);
+      });
     }
   </script>
 {% endblock %}

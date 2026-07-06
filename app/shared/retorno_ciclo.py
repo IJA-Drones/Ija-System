@@ -203,6 +203,8 @@ def _detail_url_for(user, solicitacao, os_kind):
             return url_for("main.admin_equipe_uvis_os_formulario_view", os_id=solicitacao.id)
         if not (is_aprovada or is_concluida):
             return ""
+        if tipo == "equipe_oceano":
+            return url_for("main.piloto_os_formulario_view", os_id=solicitacao.id)
         return url_for("main.equipe_uvis_os_formulario_view", os_id=solicitacao.id, voltar="historico")
 
     if tipo in ADMIN_PANEL_VIEW_TYPES:
@@ -211,6 +213,10 @@ def _detail_url_for(user, solicitacao, os_kind):
         if not is_concluida:
             return ""
         return url_for("main.uvis_os_formulario_view", os_id=solicitacao.id)
+    if tipo == "equipe_oceano":
+        if not (is_aprovada or is_concluida):
+            return ""
+        return url_for("main.piloto_os_formulario_view", os_id=solicitacao.id)
     if not (is_aprovada or is_concluida):
         return ""
     return url_for("main.piloto_os_formulario_view", os_id=solicitacao.id)

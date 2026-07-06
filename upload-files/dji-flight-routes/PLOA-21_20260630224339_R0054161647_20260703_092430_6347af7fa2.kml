@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml>
+  <Document>
+    <Placemark>
+      <name>R0054161647</name>
+      <ExtendedData>
+        
+          <Data name="Aircraft Name">
+            <value>PLOA-21</value>
+          </Data>
+          <Data name="Flight Controller ID">
+            <value>3TNDL7S002K858</value>
+          </Data>
+          <Data name="Pilot Name">
+            <value>Welington Soares</value>
+          </Data>
+          <Data name="Flight Time">
+            <value> 135100</value>
+          </Data>
+          <Data name="Mode Selection">
+            <value>M/M+</value>
+          </Data>
+          <Data name="Height">
+            <value></value>
+          </Data>
+          <Data name="Route Spacing">
+            <value></value>
+          </Data>
+          <Data name="Task Flight Speed">
+            <value></value>
+          </Data>
+          <Data name="Task Area">
+            <value>0.00800000004</value>
+          </Data>
+          <Data name="Spray amount">
+            <value>902</value>
+          </Data>
+        
+      </ExtendedData>
+      <Style>
+        <LineStyle>
+          <color>#FF0000FF</color>
+          <width>1</width>
+          </LineStyle>
+      </Style>
+      <LineString>
+        <coordinates>-46.54944540983815,-23.60023792791502,0 -46.54965897074765,-23.60042073946918,0 -46.549706154455215,-23.600441427534374,0 -46.549726666916776,-23.60047902534901,0 -46.54974568910892,-23.60047105913125,0 -46.549718798151375,-23.60045653777503,0 -46.549461761089724,-23.60021955866105,0</coordinates>
+      </LineString>
+    </Placemark>
+  </Document>
+</kml>

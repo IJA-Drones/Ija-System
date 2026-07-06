@@ -1046,6 +1046,10 @@
           try { window.onGoogleMapsReady(); } catch (e) { console.error(e); }
         }
       };
+      window.gm_authFailure = function () {
+        window.__GOOGLE_MAPS_AUTH_FAILED__ = true;
+        document.dispatchEvent(new Event("googlemaps:auth-failed"));
+      };
     </script>
 
     <script

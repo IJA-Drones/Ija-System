@@ -1144,6 +1144,10 @@ ATIVIDADES_HEADERS = [
     "Descrição da Localização",
     "Identificador de importação",
     "Link do relatório estendido",
+    "Voo DJI vinculado",
+    "Rota KML",
+    "Arquivo KML",
+    "Link da rota KML",
 ]
 
 
@@ -1188,6 +1192,10 @@ FORMULARIO_RD_HEADERS = [
     "AUXILIAR",
     "PROPRIETÁRIO OU PREPOSTO",
     "ASSINATURA PROPRIETÁRIO OU PREPOSTO",
+    "VOO DJI VINCULADO",
+    "ROTA KML",
+    "ARQUIVO KML",
+    "LINK DA ROTA KML",
 ]
 
 
@@ -1199,6 +1207,10 @@ ATIVIDADES_WIDTHS = {
     21: 20,
     48: 39,
     49: 20,
+    57: 28,
+    58: 24,
+    59: 32,
+    60: 30,
 }
 
 
@@ -1226,7 +1238,49 @@ FORMULARIO_RD_WIDTHS = {
     38: 26,
     39: 21,
     40: 100,
+    41: 28,
+    42: 24,
+    43: 32,
+    44: 30,
 }
+
+
+def _os_dji_record(ordem):
+    route = _os_dji_route(ordem)
+    return getattr(route, "flight_record", None) if route else None
+
+
+def _os_dji_route(ordem):
+    return getattr(ordem, "dji_kml_route", None)
+
+
+def _os_dji_record_text(ordem):
+    record = _os_dji_record(ordem)
+    if not record:
+        return ""
+    parts = [
+        _os_fmt_dt_seconds(getattr(record, "flight_start", None)),
+        getattr(record, "aircraft_name", None) or "",
+        getattr(record, "pilot_name", None) or "",
+    ]
+    return " | ".join([part for part in parts if part])
+
+
+def _os_kml_route_code(ordem):
+    route = _os_dji_route(ordem)
+    return getattr(route, "route_code", None) or ""
+
+
+def _os_kml_filename(ordem):
+    route = _os_dji_route(ordem)
+    return getattr(route, "original_filename", None) or ""
+
+
+def _os_kml_route_link(ordem):
+    route = _os_dji_route(ordem)
+    if not route:
+        return ""
+    return f"/relatorios/dji-logs/rota/{route.id}"
 
 
 def _build_atividades_row(ordem):
@@ -1300,6 +1354,10 @@ def _build_atividades_row(ordem):
         getattr(solicitacao, "complemento", None) or getattr(solicitacao, "bairro", None) or "",
         getattr(solicitacao, "protocolo", None) or "",
         "",
+        _os_dji_record_text(ordem),
+        _os_kml_route_code(ordem),
+        _os_kml_filename(ordem),
+        _os_kml_route_link(ordem),
     ]
 
 
@@ -1348,6 +1406,10 @@ def _build_formulario_rd_row(ordem):
         getattr(ordem, "auxiliar", None) or "",
         getattr(ordem, "proprietario_ou_preposto", None) or "",
         _os_yes_registered(getattr(ordem, "assinatura_proprietario_ou_preposto", None)),
+        _os_dji_record_text(ordem),
+        _os_kml_route_code(ordem),
+        _os_kml_filename(ordem),
+        _os_kml_route_link(ordem),
     ]
 
 
@@ -1652,6 +1714,7 @@ def build_relatorio_os_pdf_export(user, args):
             ["Larva (SIM)", str(data["total_larva_sim"])],
             ["Tratamento adicional", str(data["total_tratamento_adicional"])],
             ["Não realizadas", str(data["total_nao_realizadas"])],
+            ["Com KML", str(data["total_com_kml"])],
         ],
         styles=styles,
         col_widths=[120 * mm, 50 * mm],

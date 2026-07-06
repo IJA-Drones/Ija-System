@@ -6,7 +6,7 @@ from math import ceil
 from sqlalchemy import and_, extract, func, or_
 
 from app.extensions import db
-from app.models import OrdemServico, Solicitacao, Usuario
+from app.models import DjiFlightKmlRoute, OrdemServico, Solicitacao, Usuario
 from app.shared.access import (
     ADMIN_PANEL_VIEW_TYPES,
     apply_prefeitura_scope,
@@ -633,6 +633,7 @@ def build_relatorios_os_context(user, args):
         "total_larva_sim": base_query.filter(func.upper(func.coalesce(OrdemServico.larva_visualizada, "")) == "SIM").count(),
         "total_tratamento_adicional": base_query.filter(func.upper(func.coalesce(OrdemServico.tratamento_adicional_realizado, "")) == "SIM").count(),
         "total_nao_realizadas": base_query.filter(func.length(func.trim(func.coalesce(OrdemServico.motivo_nao_realizacao, ""))) > 0).count(),
+        "total_com_kml": base_query.filter(OrdemServico.dji_kml_route_id.isnot(None)).count(),
         "dados_situacao_aplicacao": agrupar_por(OrdemServico.situacao_aplicacao),
         "dados_tipo_aplicacao": agrupar_por(OrdemServico.tipo_aplicacao),
         "dados_larva": agrupar_por(OrdemServico.larva_visualizada),
@@ -695,6 +696,7 @@ def build_relatorio_os_export_data(user, args, *, include_ordens=False, only_con
     total_nao_realizadas = base_query.filter(
         func.length(func.trim(func.coalesce(OrdemServico.motivo_nao_realizacao, ""))) > 0
     ).count()
+    total_com_kml = base_query.filter(OrdemServico.dji_kml_route_id.isnot(None)).count()
 
     def agrupar_por(campo):
         return [
@@ -790,6 +792,8 @@ def build_relatorio_os_export_data(user, args, *, include_ordens=False, only_con
                 db.joinedload(OrdemServico.solicitacao).joinedload(Solicitacao.prefeitura),
                 db.joinedload(OrdemServico.solicitacao).joinedload(Solicitacao.equipe),
                 db.joinedload(OrdemServico.equipe),
+                db.joinedload(OrdemServico.dji_kml_route),
+                db.joinedload(OrdemServico.dji_kml_route).joinedload(DjiFlightKmlRoute.flight_record),
             )
             .order_by(
                 OrdemServico.respondido_em.desc(),
@@ -809,6 +813,7 @@ def build_relatorio_os_export_data(user, args, *, include_ordens=False, only_con
         "total_larva_sim": total_larva_sim,
         "total_tratamento_adicional": total_tratamento_adicional,
         "total_nao_realizadas": total_nao_realizadas,
+        "total_com_kml": total_com_kml,
         "dados_situacao_aplicacao": dados_situacao_aplicacao,
         "dados_tipo_aplicacao": dados_tipo_aplicacao,
         "dados_larva": dados_larva,
