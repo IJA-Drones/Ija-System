@@ -1089,26 +1089,45 @@
         {% if flashed %}
         {% for category, message in flashed %}
             const isDarkMode = document.body.classList.contains('dark-mode');
+            const flashCategory = {{ category|tojson }};
+            const flashMessage = {{ message|tojson }};
 
-            let iconType =
-            "{{ 'success' if category == 'success'
-            else 'error' if category in ['danger','error']
-            else 'info' }}";
+            if (flashCategory === 'conclusao_bloqueada') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'OS ainda não pode ser concluída',
+                    text: flashMessage,
+                    confirmButtonText: 'Entendi',
+                    confirmButtonColor: '#0d6efd',
+                    background: isDarkMode ? '#152233' : '#ffffff',
+                    color: isDarkMode ? '#ffffff' : '#545454',
+                    customClass: {
+                        popup: isDarkMode ? 'swal2-dark-mode' : ''
+                    }
+                });
+            } else {
 
-            Swal.fire({
-            toast: true,
-            position: 'top-end',
-            icon: iconType,
-            title: {{ message|tojson }},
-            showConfirmButton: false,
-            timer: 1600,
-            timerProgressBar: true,
-            background: isDarkMode ? '#152233' : '#ffffff',
-            color: isDarkMode ? '#ffffff' : '#545454',
-            customClass: {
-                popup: isDarkMode ? 'swal2-dark-mode' : ''
+                let iconType =
+                "{{ 'success' if category == 'success'
+                else 'error' if category in ['danger','error']
+                else 'warning' if category == 'warning'
+                else 'info' }}";
+
+                Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: iconType,
+                title: flashMessage,
+                showConfirmButton: false,
+                timer: 1600,
+                timerProgressBar: true,
+                background: isDarkMode ? '#152233' : '#ffffff',
+                color: isDarkMode ? '#ffffff' : '#545454',
+                customClass: {
+                    popup: isDarkMode ? 'swal2-dark-mode' : ''
+                }
+                });
             }
-            });
         {% endfor %}
         {% endif %}
 

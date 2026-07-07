@@ -12,6 +12,7 @@
   }
   .section-title { border-left: 4px solid var(--bs-primary); padding-left: 15px; margin-bottom: 20px; margin-top: 30px; }
   .form-label-header { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: #6c757d; font-weight: 700; }
+  .form-label-header.unit-case { text-transform: none; }
   .bg-snapshot { background-color: #f8f9fa; border: 1px solid #e9ecef; }
   .readonly-form .signature-pad { pointer-events: none; }
   .os-form-tabs {
@@ -880,8 +881,8 @@
 
         <div class="row g-3 mb-4">
           <div class="col-md-4">
-              <label class="form-label-header">Situação da aplicação</label>
-              <select name="situacao_aplicacao" class="form-select">
+              <label class="form-label-header">Situação da aplicação *</label>
+              <select name="situacao_aplicacao" class="form-select" required>
                   <option value="">Selecione...</option>
                   <option value="MONITORADO E LARVICIDA APLICADO" {% if ordem and ordem.situacao_aplicacao == 'MONITORADO E LARVICIDA APLICADO' %}selected{% endif %}>MONITORADO E LARVICIDA APLICADO</option>
                   <option value="APENAS MONITORADO" {% if ordem and ordem.situacao_aplicacao == 'APENAS MONITORADO' %}selected{% endif %}>APENAS MONITORADO</option>
@@ -890,40 +891,40 @@
               </select>
           </div>
           <div class="col-md-4">
-            <label class="form-label-header">Larva visualizada</label>
-            <select name="larva_visualizada" class="form-select">
+            <label class="form-label-header">Larva visualizada *</label>
+            <select name="larva_visualizada" class="form-select" required>
               <option value="">Selecione...</option>
               <option value="SIM" {% if ordem and ordem.larva_visualizada == 'SIM' %}selected{% endif %}>SIM</option>
               <option value="NAO" {% if ordem and ordem.larva_visualizada == 'NAO' %}selected{% endif %}>NÃO</option>
             </select>
           </div>
           <div class="col-md-3">
-            <label class="form-label-header">DA (Distrito)</label>
-            <input type="text" name="da" class="form-control" value="{{ ordem.distrito_administrativo if ordem else '' }}" />
+            <label class="form-label-header">DA (Distrito) *</label>
+            <input type="text" name="da" class="form-control" value="{{ ordem.distrito_administrativo if ordem else '' }}" required />
           </div>
           <div class="col-md-5">
-            <label class="form-label-header">Nome/RF do ACE responsável</label>
-            <input type="text" name="nome_rf_ace_responsavel_os" class="form-control" value="{{ ordem.nome_rf_ace_responsavel_os if ordem else '' }}" />
+            <label class="form-label-header">Nome/RF do ACE responsável *</label>
+            <input type="text" name="nome_rf_ace_responsavel_os" class="form-control" value="{{ ordem.nome_rf_ace_responsavel_os if ordem else '' }}" required />
           </div>
           <div class="col-md-4">
-            <label class="form-label-header">Criadouro OS (tipo/volume)</label>
-            <input type="text" name="criadouro_os_tipo_volume" class="form-control" value="{{ ordem.criadouro_os_tipo_volume if (ordem and ordem.criadouro_os_tipo_volume) else (solicitacao.foco if solicitacao else '') }}" />
+            <label class="form-label-header">Criadouro OS (tipo/volume) *</label>
+            <input type="text" name="criadouro_os_tipo_volume" class="form-control" value="{{ ordem.criadouro_os_tipo_volume if (ordem and ordem.criadouro_os_tipo_volume) else (solicitacao.foco if solicitacao else '') }}" required />
           </div>
           <div class="col-md-4">
-            <label class="form-label-header">Data aplicação</label>
-            <input type="date" name="data_aplicacao" class="form-control" value="{{ ordem.data_aplicacao.strftime('%Y-%m-%d') if ordem and ordem.data_aplicacao else '' }}" />
+            <label class="form-label-header">Data aplicação *</label>
+            <input type="date" name="data_aplicacao" class="form-control" value="{{ ordem.data_aplicacao.strftime('%Y-%m-%d') if ordem and ordem.data_aplicacao else '' }}" required />
           </div>
           <div class="col-md-4">
-            <label class="form-label-header">Hora Início</label>
-            <input type="time" name="hora_inicio_aplicacao" class="form-control" value="{{ ordem.hora_inicio_aplicacao.strftime('%H:%M') if ordem and ordem.hora_inicio_aplicacao else '' }}" />
+            <label class="form-label-header">Hora Início *</label>
+            <input type="time" name="hora_inicio_aplicacao" class="form-control" value="{{ ordem.hora_inicio_aplicacao.strftime('%H:%M') if ordem and ordem.hora_inicio_aplicacao else '' }}" required />
           </div>
           <div class="col-md-4">
-            <label class="form-label-header">Hora Término</label>
-            <input type="time" name="hora_termino_aplicacao" class="form-control" value="{{ ordem.hora_termino_aplicacao.strftime('%H:%M') if ordem and ordem.hora_termino_aplicacao else '' }}" />
+            <label class="form-label-header">Hora Término *</label>
+            <input type="time" name="hora_termino_aplicacao" class="form-control" value="{{ ordem.hora_termino_aplicacao.strftime('%H:%M') if ordem and ordem.hora_termino_aplicacao else '' }}" required />
           </div>
           <div class="col-md-4">
-            <label class="form-label-header">Tratamento adicional?</label>
-            <select name="tratamento_adicional_realizado" class="form-select">
+            <label class="form-label-header">Tratamento adicional? *</label>
+            <select name="tratamento_adicional_realizado" class="form-select" required>
               <option value="">Selecione...</option>
               <option value="SIM" {% if ordem and ordem.tratamento_adicional_realizado == 'SIM' %}selected{% endif %}>SIM</option>
               <option value="NAO" {% if ordem and ordem.tratamento_adicional_realizado == 'NAO' %}selected{% endif %}>NÃO</option>
@@ -948,7 +949,7 @@
               <div class="form-label-header text-primary">Leitura rápida</div>
               <h6 class="mb-1 text-primary fw-bold">Planejamento salvo e registro do que foi realmente aplicado</h6>
               <p>
-                A base da planilha continua a mesma: <strong>500 g de BTI WDG para 10 L de água</strong>, equivalente a <strong>50 g por litro de calda</strong>. Nesta área você confere o planejamento, informa o realizado e usa a comparação automática como conferência final.
+                A base da planilha continua a mesma: <strong>500 g de Bti WDG para 10 L de água</strong>, equivalente a <strong>50 g por litro de calda</strong>. Nesta área você confere o planejamento, informa o realizado e usa a comparação automática como conferência final.
               </p>
             </div>
             {% if current_user.tipo_usuario in ['piloto', 'equipe_oceano'] %}
@@ -972,7 +973,7 @@
             <div class="dosagem-helper-card">
               <span class="dosagem-helper-title">Fórmula do comparativo</span>
               <div class="dosagem-helper-value">dosagem x calda / 10.000</div>
-              <div class="dosagem-helper-note">Assim o sistema estima a carga real de BTI e compara com o planejamento salvo.</div>
+              <div class="dosagem-helper-note">Assim o sistema estima a carga real de Bti e compara com o planejamento salvo.</div>
             </div>
           </div>
 
@@ -1050,21 +1051,21 @@
 
         <div class="dosagem-field-grid mb-4">
           <div class="dosagem-field-card">
-            <label class="form-label-header">Descrição produto</label>
-            <input type="text" name="descricao_produto" class="form-control" value="{{ ordem.descricao_produto if ordem else 'BTI' }}" />
+            <label class="form-label-header">Descrição produto *</label>
+            <input type="text" name="descricao_produto" class="form-control" value="{{ ordem.descricao_produto if (ordem and ordem.descricao_produto) else 'Bti' }}" required />
           </div>
           <div class="dosagem-field-card">
-            <label class="form-label-header">Formulação</label>
-            <input type="text" name="formulacao_produto" class="form-control" value="{{ ordem.formulacao_produto if ordem else 'Grânulo dispersível' }}" />
+            <label class="form-label-header">Formulação *</label>
+            <input type="text" name="formulacao_produto" class="form-control" value="{{ ordem.formulacao_produto if (ordem and ordem.formulacao_produto) else 'Grânulo dispersível' }}" required />
           </div>
           <div class="dosagem-field-card">
-            <label class="form-label-header">Dosagem (g/10L)</label>
-            <input type="text" name="dosagem_g_10l" class="form-control" value="{{ ordem.dosagem_g_10l if ordem else '' }}" />
-            <div class="dosagem-field-hint">Exemplo: 500 significa 500 g de BTI para cada 10 L de calda.</div>
+            <label class="form-label-header unit-case">Dosagem (g/10L) *</label>
+            <input type="text" name="dosagem_g_10l" class="form-control" value="{{ ordem.dosagem_g_10l if ordem else '' }}" required />
+            <div class="dosagem-field-hint">Exemplo: 500 significa 500 g de Bti para cada 10 L de calda.</div>
           </div>
           <div class="dosagem-field-card">
-              <label class="form-label-header">Tipo aplicação</label>
-              <select name="tipo_aplicacao" class="form-select">
+              <label class="form-label-header">Tipo aplicação *</label>
+              <select name="tipo_aplicacao" class="form-select" required>
                 {% set tipo_aplicacao_atual = ordem.tipo_aplicacao if (ordem and ordem.tipo_aplicacao) else '' %}
                 <option value="" {% if not tipo_aplicacao_atual %}selected{% endif %}>Selecione...</option>
                 <option value="Pulverização de área (liq)" {% if tipo_aplicacao_atual == 'Pulverização de área (liq)' %}selected{% endif %}>Pulverização de área (liq)</option>
@@ -1072,20 +1073,20 @@
               </select>
           </div>
           <div class="dosagem-field-card">
-            <label class="form-label-header">Qtd Administrada (ml)</label>
-            <input type="number" step="0.01" name="quantidade_produto_administrada_ml" class="form-control" value="{{ ordem.quantidade_produto_administrada_ml if ordem else '' }}" />
+            <label class="form-label-header">Qtd Administrada (ml) *</label>
+            <input type="number" step="0.01" name="quantidade_produto_administrada_ml" class="form-control" value="{{ ordem.quantidade_produto_administrada_ml if (ordem and ordem.quantidade_produto_administrada_ml is not none) else '' }}" required />
             <div class="dosagem-field-hint">Informe o volume real de calda ou produto aplicado na execução.</div>
           </div>
           <div class="dosagem-field-card">
-            <label class="form-label-header">Pulverização Área (l/ha)</label>
-            <input type="number" step="0.01" name="pulverizacao_area_l_ha" class="form-control" value="{{ ordem.pulverizacao_area_l_ha if ordem else '10' }}" />
+            <label class="form-label-header">Pulverização Área (l/ha) *</label>
+            <input type="number" step="0.01" name="pulverizacao_area_l_ha" class="form-control" value="{{ ordem.pulverizacao_area_l_ha if (ordem and ordem.pulverizacao_area_l_ha is not none) else '10' }}" required />
             <div class="dosagem-field-hint">Quando o cenário for de foco, este campo não entra no comparativo de área.</div>
           </div>
           <div class="dosagem-field-card field-span-2">
-              <label class="form-label-header">Ponta de Pulverização</label>
+              <label class="form-label-header">Ponta de Pulverização *</label>
               <input type="text" name="ponta_pulverizacao" list="lista_pontas" class="form-control" 
                     value="{{ ordem.ponta_pulverizacao if (ordem and ordem.ponta_pulverizacao) else '' }}" 
-                    placeholder="Selecione ou digite a ponta...">
+                    placeholder="Selecione ou digite a ponta..." required>
               
               <datalist id="lista_pontas">
                   <option value="TXA8001">
@@ -1107,7 +1108,7 @@
           <div class="row g-3">
             <div class="col-md-4">
               <div class="dosagem-compare-card">
-                <span class="dosagem-compare-label">Carga BTI (g)</span>
+                <span class="dosagem-compare-label">Carga Bti (g)</span>
                 <div class="dosagem-compare-planned" id="compare_carga_planejada">Planejado: -</div>
                 <div class="dosagem-compare-actual" id="compare_carga_real">Real estimado: -</div>
                 <div class="dosagem-compare-diff is-neutral" id="compare_carga_diff">Diferença: -</div>
@@ -1612,9 +1613,21 @@
     responded.value = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
   }
 
+  const tratamentoAdicional = document.querySelector('[name="tratamento_adicional_realizado"]');
+  const quantosQuais = document.querySelector('[name="quantos_quais"]');
+  const syncTratamentoAdicional = () => {
+    if (!tratamentoAdicional || !quantosQuais) return;
+    quantosQuais.required = tratamentoAdicional.value === "SIM";
+  };
+  if (tratamentoAdicional) {
+    tratamentoAdicional.addEventListener("change", syncTratamentoAdicional);
+    syncTratamentoAdicional();
+  }
+
   window.addEventListener("DOMContentLoaded", () => {
     if (selPulv && selPulv.value) loadDroneData(selPulv, "pulv");
     if (selMonit && selMonit.value) loadDroneData(selMonit, "monit");
+    syncTratamentoAdicional();
   });
 })();
 
