@@ -8,6 +8,7 @@ from app.models import DjiFlightKmlRoute
 from app.modules.dji_flight_logs.service import (
     build_dji_logs_context,
     build_dji_logs_excel_export,
+    can_access_dji_kml_route,
     can_access_dji_logs,
     can_import_dji_logs,
     delete_kml_route,
@@ -125,7 +126,7 @@ def register_routes(bp):
     @bp.route("/api/dji-kml-route/<int:route_id>", methods=["GET"], endpoint="api_dji_kml_route")
     @login_required
     def api_dji_kml_route(route_id):
-        if not can_access_dji_logs(current_user):
+        if not can_access_dji_kml_route(current_user, route_id):
             return jsonify({"ok": False, "message": "Acesso restrito."}), 403
         payload = get_dji_route_payload(route_id)
         return jsonify({"ok": True, "route": payload}), 200
@@ -184,7 +185,7 @@ def register_routes(bp):
     @bp.route("/relatorios/dji-logs/rota/<int:route_id>", methods=["GET"], endpoint="visualizar_dji_kml_route")
     @login_required
     def visualizar_dji_kml_route(route_id):
-        if not can_access_dji_logs(current_user):
+        if not can_access_dji_kml_route(current_user, route_id):
             flash("Acesso restrito.", "danger")
             return redirect(url_for("main.dashboard"))
 
@@ -202,7 +203,7 @@ def register_routes(bp):
     @bp.route("/relatorios/dji-logs/rota/<int:route_id>/kml", methods=["GET"], endpoint="baixar_dji_kml_route")
     @login_required
     def baixar_dji_kml_route(route_id):
-        if not can_access_dji_logs(current_user):
+        if not can_access_dji_kml_route(current_user, route_id):
             flash("Acesso restrito.", "danger")
             return redirect(url_for("main.dashboard"))
 

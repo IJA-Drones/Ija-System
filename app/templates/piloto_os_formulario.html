@@ -843,22 +843,25 @@
 
         <div class="row g-3 mt-1 mb-4">
           <div class="col-lg-8">
-            <label class="form-label-header">Rota KML vinculada a OS</label>
-            <select name="dji_kml_route_id" class="form-select shadow-sm">
-              <option value="">Sem rota KML vinculada</option>
-              {% for rota in dji_kml_routes or [] %}
-                {% set voo = rota.flight_record %}
-                <option value="{{ rota.id }}" {% if ordem and ordem.dji_kml_route_id == rota.id %}selected{% endif %}>
-                  {{ rota.route_timestamp.strftime('%d/%m/%Y %H:%M') if rota.route_timestamp else (voo.flight_start.strftime('%d/%m/%Y %H:%M') if voo and voo.flight_start else 'Data nao informada') }}
-                  | {{ rota.aircraft_name or (voo.aircraft_name if voo else '') or 'Aeronave nao informada' }}
-                  | {{ rota.route_code }}
-                  | {{ rota.pilot_name or (voo.pilot_name if voo else '') or 'Piloto nao informado' }}
-                </option>
-              {% endfor %}
-            </select>
+            <label class="form-label-header">Rota KML da OS</label>
+            {% if selected_dji_route %}
+              {% set selected_voo = selected_dji_route.flight_record %}
+              <div class="bg-snapshot rounded-3 p-3">
+                <div class="fw-bold text-primary">{{ selected_dji_route.route_code }}</div>
+                <div class="small text-muted">
+                  {{ selected_dji_route.route_timestamp.strftime('%d/%m/%Y %H:%M') if selected_dji_route.route_timestamp else (selected_voo.flight_start.strftime('%d/%m/%Y %H:%M') if selected_voo and selected_voo.flight_start else 'Data nao informada') }}
+                  | {{ selected_dji_route.aircraft_name or (selected_voo.aircraft_name if selected_voo else '') or 'Aeronave nao informada' }}
+                  | {{ selected_dji_route.pilot_name or (selected_voo.pilot_name if selected_voo else '') or 'Piloto nao informado' }}
+                </div>
+              </div>
+            {% else %}
+              <div class="text-muted small">
+                O KML sera vinculado depois da importacao dos logs/rotas do drone.
+              </div>
+            {% endif %}
           </div>
           <div class="col-lg-4 d-flex align-items-end">
-            {% if selected_dji_route and current_user.tipo_usuario in ['admin', 'dev'] %}
+            {% if selected_dji_route %}
               <a href="{{ url_for('main.visualizar_dji_kml_route', route_id=selected_dji_route.id) }}"
                  class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center gap-2"
                  target="_blank"
@@ -866,14 +869,6 @@
                 <i class="bi bi-map-fill"></i>
                 <span>Visualizar rota KML</span>
               </a>
-            {% elif selected_dji_route %}
-              <button type="button" class="btn btn-outline-success w-100" disabled>
-                <i class="bi bi-check2-circle me-1"></i> KML vinculado
-              </button>
-            {% else %}
-              <button type="button" class="btn btn-outline-secondary w-100" disabled>
-                <i class="bi bi-map me-1"></i> Nenhum KML vinculado
-              </button>
             {% endif %}
           </div>
         </div>
