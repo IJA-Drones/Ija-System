@@ -4,6 +4,40 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <style>
+    .rel-chart-expandable {
+      cursor: zoom-in;
+      transition: transform 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .rel-chart-expandable:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 34px rgba(15, 23, 42, 0.12) !important;
+    }
+
+    .rel-chart-expandable .chart-expand-hint {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #2c5282;
+      background: rgba(13, 110, 253, 0.08);
+      border-radius: 999px;
+      padding: 0.24rem 0.55rem;
+      white-space: nowrap;
+    }
+
+    .rel-chart-modal-wrap {
+      height: min(72vh, 720px);
+      min-height: 380px;
+      position: relative;
+    }
+
+    @media (max-width: 767.98px) {
+      .rel-chart-modal-wrap {
+        height: 68vh;
+        min-height: 340px;
+      }
+    }
+  </style>
 {% endblock %}
 
 {% block content %}
@@ -252,14 +286,20 @@
 
   <div class="row g-4 mb-4">
     <div class="col-lg-6">
-      <div class="card shadow-sm rounded-4 p-4 h-100">
-        <h5 class="mb-3 text-dark"><i class="bi bi-pie-chart-fill me-2"></i>Situa&ccedil;&atilde;o da Aplica&ccedil;&atilde;o</h5>
+      <div class="card shadow-sm rounded-4 p-4 h-100 rel-chart-expandable" data-chart-open="situacao" role="button" tabindex="0">
+        <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+          <h5 class="mb-0 text-dark"><i class="bi bi-pie-chart-fill me-2"></i>Situa&ccedil;&atilde;o da Aplica&ccedil;&atilde;o</h5>
+          <span class="chart-expand-hint"><i class="bi bi-arrows-fullscreen me-1"></i>Expandir</span>
+        </div>
         <div style="height:320px;"><canvas id="chartSituacao"></canvas></div>
       </div>
     </div>
     <div class="col-lg-6">
-      <div class="card shadow-sm rounded-4 p-4 h-100">
-        <h5 class="mb-3 text-dark"><i class="bi bi-journal-text me-2"></i>Tipo de Aplica&ccedil;&atilde;o</h5>
+      <div class="card shadow-sm rounded-4 p-4 h-100 rel-chart-expandable" data-chart-open="tipo" role="button" tabindex="0">
+        <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+          <h5 class="mb-0 text-dark"><i class="bi bi-journal-text me-2"></i>Tipo de Aplica&ccedil;&atilde;o</h5>
+          <span class="chart-expand-hint"><i class="bi bi-arrows-fullscreen me-1"></i>Expandir</span>
+        </div>
         <div style="height:320px;"><canvas id="chartTipo"></canvas></div>
       </div>
     </div>
@@ -267,14 +307,20 @@
 
   <div class="row g-4 mb-4">
     <div class="col-lg-6">
-      <div class="card shadow-sm rounded-4 p-4 h-100">
-        <h5 class="mb-3 text-dark"><i class="bi bi-building-check me-2"></i>OS por Unidade</h5>
+      <div class="card shadow-sm rounded-4 p-4 h-100 rel-chart-expandable" data-chart-open="unidade" role="button" tabindex="0">
+        <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+          <h5 class="mb-0 text-dark"><i class="bi bi-building-check me-2"></i>OS por Unidade</h5>
+          <span class="chart-expand-hint"><i class="bi bi-arrows-fullscreen me-1"></i>Expandir</span>
+        </div>
         <div style="height:320px;"><canvas id="chartUnidade"></canvas></div>
       </div>
     </div>
     <div class="col-lg-6">
-      <div class="card shadow-sm rounded-4 p-4 h-100">
-        <h5 class="mb-3 text-dark"><i class="bi bi-graph-up me-2"></i>Hist&oacute;rico Mensal de OS</h5>
+      <div class="card shadow-sm rounded-4 p-4 h-100 rel-chart-expandable" data-chart-open="mensal" role="button" tabindex="0">
+        <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+          <h5 class="mb-0 text-dark"><i class="bi bi-graph-up me-2"></i>Hist&oacute;rico Mensal de OS</h5>
+          <span class="chart-expand-hint"><i class="bi bi-arrows-fullscreen me-1"></i>Expandir</span>
+        </div>
         <div style="height:320px;"><canvas id="chartMensal"></canvas></div>
       </div>
     </div>
@@ -317,6 +363,25 @@
     </div>
   </div>
 </div>
+
+<div class="modal fade" id="chartExpandModal" tabindex="-1" aria-labelledby="chartExpandTitle" aria-hidden="true">
+  <div class="modal-dialog modal-fullscreen-lg-down modal-xl modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title fw-bold" id="chartExpandTitle">Gr&aacute;fico</h5>
+          <div class="text-muted small" id="chartExpandSubtitle">Visualiza&ccedil;&atilde;o ampliada com percentuais.</div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="rel-chart-modal-wrap">
+          <canvas id="chartExpandCanvas"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -336,8 +401,99 @@
 
   const dadosSituacao = readJson("dados-situacao-json").map(([a, b]) => [clean(a), b]);
   const dadosTipo = readJson("dados-tipo-json").map(([a, b]) => [clean(a), b]);
-  const dadosUnidade = readJson("dados-unidade-json").map(([a, b]) => [clean(a), b]).slice(0, 10);
+  const dadosUnidadeCompleto = readJson("dados-unidade-json").map(([a, b]) => [clean(a), b]);
+  const dadosUnidade = dadosUnidadeCompleto.slice(0, 10);
   const dadosMensais = readJson("dados-mensais-json");
+  const percent = (value, total) => total ? `${((Number(value || 0) / total) * 100).toFixed(1).replace(".", ",")}%` : "0%";
+  const sumRows = (rows) => rows.reduce((acc, item) => acc + Number(item[1] || 0), 0);
+  let expandedChart = null;
+
+  const percentTooltip = {
+    callbacks: {
+      label: (ctx) => {
+        const parsed = ctx.parsed;
+        const value = Number(typeof parsed === "number" ? parsed : (ctx.chart.options.indexAxis === "y" ? parsed?.x : parsed?.y));
+        const values = ctx.dataset.data || [];
+        const total = values.reduce((acc, item) => acc + Number(item || 0), 0);
+        return `${ctx.label || ctx.dataset.label}: ${value} (${percent(value, total)})`;
+      }
+    }
+  };
+
+  const percentLabelsPlugin = {
+    id: "percentLabels",
+    afterDatasetsDraw(chart, _args, opts) {
+      if (!opts?.enabled) return;
+      const { ctx } = chart;
+      const dataset = chart.data.datasets[0];
+      const values = dataset?.data || [];
+      const total = values.reduce((acc, item) => acc + Number(item || 0), 0);
+      ctx.save();
+      ctx.font = "700 12px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+      ctx.fillStyle = opts.color || "#1f2937";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      chart.getDatasetMeta(0).data.forEach((element, index) => {
+        const value = Number(values[index] || 0);
+        if (!value) return;
+        const label = `${value} (${percent(value, total)})`;
+        const pos = element.tooltipPosition();
+        if (chart.config.type === "doughnut") {
+          ctx.fillStyle = "#fff";
+          ctx.fillText(label, pos.x, pos.y);
+        } else if (chart.options.indexAxis === "y") {
+          ctx.fillStyle = opts.color || "#1f2937";
+          ctx.textAlign = "left";
+          ctx.fillText(label, pos.x + 10, pos.y);
+        } else {
+          ctx.fillStyle = opts.color || "#1f2937";
+          ctx.textAlign = "center";
+          ctx.fillText(label, pos.x, pos.y - 12);
+        }
+      });
+      ctx.restore();
+    }
+  };
+
+  Chart.register(percentLabelsPlugin);
+
+  const chartConfigs = {
+    situacao: {
+      title: "Situação da Aplicação",
+      subtitle: "Distribuição completa por situação, com percentual sobre o total.",
+      type: "doughnut",
+      rows: dadosSituacao,
+      options: { cutout: "58%", plugins: { legend: { position: "right" } } }
+    },
+    tipo: {
+      title: "Tipo de Aplicação",
+      subtitle: "Todos os tipos encontrados no período filtrado.",
+      type: "bar",
+      rows: dadosTipo,
+      options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { ticks: { maxRotation: 45 } } } }
+    },
+    unidade: {
+      title: "OS por Unidade",
+      subtitle: "Visualização completa, sem limite de Top 10.",
+      type: "bar",
+      rows: dadosUnidadeCompleto,
+      options: { indexAxis: "y", plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } }, y: { ticks: { autoSkip: false } } } }
+    },
+    mensal: {
+      title: "Histórico Mensal de OS",
+      subtitle: "Participação mensal sobre o total do histórico exibido.",
+      type: "line",
+      rows: dadosMensais.map(([label, value]) => [String(label), value]),
+      options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+    }
+  };
+
+  const makeCountDataset = (rows, color, label = "Total") => ({
+    label,
+    data: rows.map(x => Number(x[1] || 0)),
+    backgroundColor: color,
+    borderRadius: 10
+  });
 
   new Chart(document.getElementById("chartSituacao"), {
     type: "doughnut",
@@ -345,7 +501,7 @@
       labels: dadosSituacao.map(x => x[0]),
       datasets: [{ data: dadosSituacao.map(x => x[1]), backgroundColor: dadosSituacao.map((_, i) => palette[i % palette.length]) }]
     },
-    options: { cutout: "65%", plugins: { legend: { position: "bottom" } }, maintainAspectRatio: false }
+    options: { cutout: "65%", plugins: { legend: { position: "bottom" }, tooltip: percentTooltip }, maintainAspectRatio: false }
   });
 
   new Chart(document.getElementById("chartTipo"), {
@@ -354,7 +510,7 @@
       labels: dadosTipo.map(x => x[0]),
       datasets: [{ label: "Total", data: dadosTipo.map(x => x[1]), backgroundColor: "#6f42c1", borderRadius: 10 }]
     },
-    options: { plugins: { legend: { display: false } }, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+    options: { plugins: { legend: { display: false }, tooltip: percentTooltip }, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
   });
 
   new Chart(document.getElementById("chartUnidade"), {
@@ -363,7 +519,7 @@
       labels: dadosUnidade.map(x => x[0]),
       datasets: [{ label: "Total", data: dadosUnidade.map(x => x[1]), backgroundColor: "#20c997", borderRadius: 10 }]
     },
-    options: { plugins: { legend: { display: false } }, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+    options: { plugins: { legend: { display: false }, tooltip: percentTooltip }, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
   });
 
   const labelsMensais = dadosMensais.map(item => item[0]);
@@ -381,7 +537,57 @@
         tension: 0.35
       }]
     },
-    options: { plugins: { legend: { display: false } }, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+    options: { plugins: { legend: { display: false }, tooltip: percentTooltip }, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+  });
+
+  const openExpandedChart = (key) => {
+    const config = chartConfigs[key];
+    if (!config) return;
+    const rows = config.rows || [];
+    const modalEl = document.getElementById("chartExpandModal");
+    const canvas = document.getElementById("chartExpandCanvas");
+    document.getElementById("chartExpandTitle").textContent = config.title;
+    document.getElementById("chartExpandSubtitle").textContent = `${config.subtitle} Total: ${sumRows(rows)}.`;
+    if (expandedChart) expandedChart.destroy();
+    const data = {
+      labels: rows.map(x => x[0]),
+      datasets: config.type === "doughnut"
+        ? [{ data: rows.map(x => Number(x[1] || 0)), backgroundColor: rows.map((_, i) => palette[i % palette.length]), borderWidth: 0, hoverOffset: 8 }]
+        : [makeCountDataset(rows, config.type === "line" ? "rgba(13, 110, 253, 0.15)" : "#0d6efd", config.title)]
+    };
+    if (config.type === "line") {
+      data.datasets[0].borderColor = "#0d6efd";
+      data.datasets[0].borderWidth = 3;
+      data.datasets[0].fill = true;
+      data.datasets[0].tension = 0.32;
+      data.datasets[0].pointRadius = 4;
+    }
+    expandedChart = new Chart(canvas, {
+      type: config.type,
+      data,
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        ...config.options,
+        plugins: {
+          ...(config.options?.plugins || {}),
+          tooltip: percentTooltip,
+          percentLabels: { enabled: true, color: "#1f2937" }
+        }
+      }
+    });
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+  };
+
+  document.querySelectorAll("[data-chart-open]").forEach((card) => {
+    const open = () => openExpandedChart(card.dataset.chartOpen);
+    card.addEventListener("click", open);
+    card.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        open();
+      }
+    });
   });
 </script>
 

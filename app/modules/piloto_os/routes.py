@@ -1315,6 +1315,7 @@ def register_routes(bp):
             flash(concluir_os_piloto(current_user, os_id), "success")
         except PilotoOsError as exc:
             flash(str(exc), exc.category)
+            return _redirect_from_piloto_os_error(exc, os_id=os_id)
 
         return _safe_local_redirect("main.piloto_os")
 

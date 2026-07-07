@@ -78,6 +78,26 @@ WEBDAV_MARKER_PREFIX = "webdav://"
 WEBDAV_DELETE_TIMEOUT = (30, 300)
 
 
+OS_APLICACAO_REQUIRED_FIELDS = (
+    ("situacao_aplicacao", "Situacao da aplicacao"),
+    ("larva_visualizada", "Larva visualizada"),
+    ("distrito_administrativo", "DA (Distrito)"),
+    ("nome_rf_ace_responsavel_os", "Nome/RF do ACE responsavel"),
+    ("criadouro_os_tipo_volume", "Criadouro OS (tipo/volume)"),
+    ("data_aplicacao", "Data aplicacao"),
+    ("hora_inicio_aplicacao", "Hora inicio"),
+    ("hora_termino_aplicacao", "Hora termino"),
+    ("tratamento_adicional_realizado", "Tratamento adicional"),
+    ("descricao_produto", "Descricao produto"),
+    ("formulacao_produto", "Formulacao"),
+    ("dosagem_g_10l", "Dosagem (g/10L)"),
+    ("tipo_aplicacao", "Tipo aplicacao"),
+    ("quantidade_produto_administrada_ml", "Qtd administrada (ml)"),
+    ("pulverizacao_area_l_ha", "Pulverizacao area (l/ha)"),
+    ("ponta_pulverizacao", "Ponta de pulverizacao"),
+)
+
+
 class PilotoOsError(Exception):
     def __init__(self, message, category="warning", *, redirect_endpoint="main.piloto_os"):
         super().__init__(message)
@@ -100,6 +120,45 @@ def _split_drones_by_category(drones):
         elif category == DRONE_CATEGORY_MONITORAMENTO:
             monitoramento.append(drone)
     return pulverizacao, monitoramento
+
+
+def _is_blank_os_value(value):
+    if value is None:
+        return True
+    if isinstance(value, str):
+        return value.strip() == ""
+    return False
+
+
+def _validar_campos_aplicacao_para_conclusao(ordem):
+    if ordem is None:
+        raise PilotoOsError(
+            "Preencha e salve o formulario antes de concluir a OS.",
+            "conclusao_bloqueada",
+            redirect_endpoint="main.piloto_os_formulario_view",
+        )
+
+    campos_faltando = [
+        label
+        for field_name, label in OS_APLICACAO_REQUIRED_FIELDS
+        if _is_blank_os_value(getattr(ordem, field_name, None))
+    ]
+
+    if (
+        (ordem.tratamento_adicional_realizado or "").strip().upper() == "SIM"
+        and _is_blank_os_value(ordem.quantos_quais)
+    ):
+        campos_faltando.append("Quantos? Quais?")
+
+    if campos_faltando:
+        preview = ", ".join(campos_faltando[:6])
+        if len(campos_faltando) > 6:
+            preview = f"{preview} e mais {len(campos_faltando) - 6} campo(s)"
+        raise PilotoOsError(
+            f"Para concluir a OS, preencha e salve os campos de aplicacao pendentes: {preview}.",
+            "conclusao_bloqueada",
+            redirect_endpoint="main.piloto_os_formulario_view",
+        )
 
 
 def _dji_kml_date_window(solicitacao, ordem):
@@ -439,6 +498,8 @@ def concluir_os_piloto(user, os_id):
     equipe = _buscar_equipe_do_usuario_na_os(user, solicitacao.equipe_id)
     if not equipe:
         raise PilotoOsError("Voce nao faz parte da equipe atribuida a esta OS.", "danger")
+
+    _validar_campos_aplicacao_para_conclusao(solicitacao.ordem_servico)
 
     solicitacao.status = "CONCLU\u00cdDO"
     db.session.commit()
@@ -979,6 +1040,8 @@ def _aplicar_campos_formulario(
     ordem.tratamento_adicional_realizado = _clean_str(form_data.get("tratamento_adicional_realizado"))
     ordem.quantos_quais = _clean_str(form_data.get("quantos_quais"))
     ordem.descricao_produto = _clean_str(form_data.get("descricao_produto"))
+    if ordem.descricao_produto == "BTI":
+        ordem.descricao_produto = "Bti"
     ordem.formulacao_produto = _clean_str(form_data.get("formulacao_produto"))
     ordem.dosagem_g_10l = _clean_str(form_data.get("dosagem_g_10l"))
     ordem.tipo_aplicacao = _clean_str(form_data.get("tipo_aplicacao"))

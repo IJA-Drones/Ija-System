@@ -535,7 +535,7 @@
     <div class="dosagem-help-banner mb-3">
       <div>
         <strong>Leitura direta da planilha</strong>
-        <p>Concentracao fixa: 500 g de BTI em 10 L de agua. Para lotes menores, a mesma proporcao vale para 250 g em 5 L.</p>
+        <p>Concentracao fixa: 500 g de Bti em 10 L de agua. Para lotes menores, a mesma proporcao vale para 250 g em 5 L.</p>
       </div>
       <span class="dosagem-help-chip">
         <i class="bi bi-droplet-half"></i> 50 g/L de calda
@@ -716,13 +716,13 @@
                 <thead>
                   <tr>
                     <th>{{ item.medida_label }}</th>
-                    <th>Carga BTI (g)</th>
+                    <th>Carga Bti (g)</th>
                     <th>Calda</th>
                     <th>Tempo</th>
                     <th>Ponta</th>
                     <th>Bicos</th>
                     <th>Vazao (mL/min)</th>
-                    <th>Dose BTI (g/min)</th>
+                    <th>Dose Bti (g/min)</th>
                     <th>Pressao (bar)</th>
                     <th>Faixa (m)</th>
                     <th>DMV</th>
@@ -1050,7 +1050,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const hardware = config.hardware(baseValue);
     const tempoSegundos = (caldaTotalMl / hardware.vazao_ml_min) * 60;
     const result = {
-      descricao_produto: "BTI",
+      descricao_produto: "Bti",
       formulacao_produto: "Granulo dispersivel",
       dosagem_g_10l: "500",
       tipo_aplicacao: config.tipoAplicacao,
@@ -1073,7 +1073,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     resultEls.medida.textContent = `${formatNumber(baseValue, 2)} ${config.unit}`;
     resultEls.resumo.textContent = currentPayload.medicao.resumo;
-    resultEls.carga.textContent = `${formatNumber(result.carga_bti_g, 2)} g de BTI`;
+    resultEls.carga.textContent = `${formatNumber(result.carga_bti_g, 2)} g de Bti`;
     resultEls.calda.textContent = `Calda recomendada: ${result.calda_total_label}`;
     resultEls.tempo.textContent = result.tempo_aplicacao_label;
     resultEls.tipo.textContent = `Tipo de aplicacao: ${result.tipo_aplicacao}`;

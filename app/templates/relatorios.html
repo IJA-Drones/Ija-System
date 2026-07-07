@@ -11,6 +11,32 @@
       box-shadow: 0 10px 28px rgba(15, 23, 42, 0.07);
     }
 
+    .rel-chart-card {
+      cursor: zoom-in;
+      transition: transform 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .rel-chart-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 34px rgba(15, 23, 42, 0.12);
+    }
+
+    .chart-expand-hint {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #2c5282;
+      background: rgba(13, 110, 253, 0.08);
+      border-radius: 999px;
+      padding: 0.24rem 0.55rem;
+      white-space: nowrap;
+    }
+
+    .rel-chart-modal-wrap {
+      height: min(72vh, 720px);
+      min-height: 380px;
+      position: relative;
+    }
+
     .rel-chart-card .chart-wrap {
       height: 320px;
     }
@@ -67,6 +93,11 @@
       .rel-chart-card .chart-wrap,
       .rel-chart-card .chart-wrap.chart-wrap-sm {
         height: 280px;
+      }
+
+      .rel-chart-modal-wrap {
+        height: 68vh;
+        min-height: 340px;
       }
     }
   </style>
@@ -654,6 +685,25 @@
 
 </div>
 
+<div class="modal fade" id="chartExpandModal" tabindex="-1" aria-labelledby="chartExpandTitle" aria-hidden="true">
+  <div class="modal-dialog modal-fullscreen-lg-down modal-xl modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title fw-bold" id="chartExpandTitle">Gr&aacute;fico</h5>
+          <div class="text-muted small" id="chartExpandSubtitle">Visualiza&ccedil;&atilde;o ampliada com percentuais.</div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="rel-chart-modal-wrap">
+          <canvas id="chartExpandCanvas"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 {# =========================
     JSONs para gráficos
     ========================= #}
@@ -1001,6 +1051,210 @@
             }
         });
     }
+
+    const percent = (value, total) => total ? `${((Number(value || 0) / total) * 100).toFixed(1).replace(".", ",")}%` : "0%";
+    const sumRows = (rows) => rows.reduce((acc, item) => acc + Number(item[1] || 0), 0);
+    const dadosUnidadeCompleto = readJson("dados-unidade-json").map(([u, c]) => [cleanLabel(u), c]);
+    let expandedChart = null;
+
+    const percentTooltip = {
+        callbacks: {
+            label: (ctx) => {
+                const parsed = ctx.parsed;
+                const value = Number(typeof parsed === "number" ? parsed : (ctx.chart.options.indexAxis === "y" ? parsed?.x : parsed?.y));
+                const values = ctx.dataset.data || [];
+                const total = values.reduce((acc, item) => acc + Number(item || 0), 0);
+                return `${ctx.label || ctx.dataset.label}: ${value} (${percent(value, total)})`;
+            }
+        }
+    };
+
+    const percentLabelsPlugin = {
+        id: "percentLabelsSolicitacoes",
+        afterDatasetsDraw(chart, _args, opts) {
+            if (!opts?.enabled) return;
+            const { ctx } = chart;
+            const dataset = chart.data.datasets[0];
+            const values = dataset?.data || [];
+            const total = values.reduce((acc, item) => acc + Number(item || 0), 0);
+            ctx.save();
+            ctx.font = "700 12px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+            ctx.fillStyle = opts.color || "#1f2937";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            chart.getDatasetMeta(0).data.forEach((element, index) => {
+                const value = Number(values[index] || 0);
+                if (!value) return;
+                const label = `${value} (${percent(value, total)})`;
+                const pos = element.tooltipPosition();
+                if (chart.config.type === "doughnut") {
+                    ctx.fillStyle = "#fff";
+                    ctx.fillText(label, pos.x, pos.y);
+                } else if (chart.options.indexAxis === "y") {
+                    ctx.fillStyle = opts.color || "#1f2937";
+                    ctx.textAlign = "left";
+                    ctx.fillText(label, pos.x + 10, pos.y);
+                } else {
+                    ctx.fillStyle = opts.color || "#1f2937";
+                    ctx.textAlign = "center";
+                    ctx.fillText(label, pos.x, pos.y - 12);
+                }
+            });
+            ctx.restore();
+        }
+    };
+
+    Chart.register(percentLabelsPlugin);
+
+    const expandedChartConfigs = {
+        status: {
+            canvasId: "chartStatus",
+            title: "Status",
+            subtitle: "Distribuição completa por status no período filtrado.",
+            type: "doughnut",
+            rows: dadosStatus,
+            options: { cutout: "58%", plugins: { legend: { position: "right" } } },
+            colors: (rows) => rows.map(item => statusColorsMap[item[0]] || "#adb5bd")
+        },
+        regiao: {
+            canvasId: "chartRegiao",
+            title: "Solicitações por Região",
+            subtitle: "Todas as regiões encontradas no período filtrado.",
+            type: "bar",
+            rows: dadosRegiao,
+            options: { indexAxis: "y", plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } }, y: { ticks: { autoSkip: false } } } }
+        },
+        tipoOperacao: {
+            canvasId: "chartTipoOperacao",
+            title: "Tipo de Operação",
+            subtitle: "Distribuição por tipo de operação.",
+            type: "doughnut",
+            rows: dadosTipoOperacao,
+            options: { cutout: "58%", plugins: { legend: { position: "right" } } }
+        },
+        unidade: {
+            canvasId: "chartUnidade",
+            title: "Unidades (UVIS)",
+            subtitle: "Visualização completa, sem limite de Top 10.",
+            type: "bar",
+            rows: dadosUnidadeCompleto,
+            options: { indexAxis: "y", plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } }, y: { ticks: { autoSkip: false } } } }
+        },
+        foco: {
+            canvasId: "chartFoco",
+            title: "Foco",
+            subtitle: "Todos os focos encontrados no período filtrado.",
+            type: "bar",
+            rows: dadosFoco,
+            options: { indexAxis: "y", plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } }, y: { ticks: { autoSkip: false } } } }
+        },
+        tipoVisita: {
+            canvasId: "chartTipoVisita",
+            title: "Tipo de Visita",
+            subtitle: "Distribuição por tipo de visita.",
+            type: "doughnut",
+            rows: dadosTipo,
+            options: { cutout: "58%", plugins: { legend: { position: "right" } } }
+        },
+        tipoImovel: {
+            canvasId: "chartTipoImovel",
+            title: "Tipo de Imóvel",
+            subtitle: "Distribuição por tipo de imóvel.",
+            type: "doughnut",
+            rows: dadosTipoImovel,
+            options: { cutout: "58%", plugins: { legend: { position: "right" } } }
+        },
+        altura: {
+            canvasId: "chartAltura",
+            title: "Altura de Voo",
+            subtitle: "Distribuição por altura de voo.",
+            type: "bar",
+            rows: dadosAltura,
+            options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { ticks: { maxRotation: 45 } } } }
+        },
+        mensal: {
+            canvasId: "chartMensal",
+            title: "Solicitações por Mês",
+            subtitle: "Participação mensal sobre o total do histórico exibido.",
+            type: "line",
+            rows: labelsMensaisFmt.map((label, index) => [label, countsMensais[index] || 0]),
+            options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+        }
+    };
+
+    const openExpandedChart = (key) => {
+        const config = expandedChartConfigs[key];
+        if (!config) return;
+        const rows = config.rows || [];
+        const modalEl = document.getElementById("chartExpandModal");
+        const canvas = document.getElementById("chartExpandCanvas");
+        document.getElementById("chartExpandTitle").textContent = config.title;
+        document.getElementById("chartExpandSubtitle").textContent = `${config.subtitle} Total: ${sumRows(rows)}.`;
+        if (expandedChart) expandedChart.destroy();
+        const colors = config.colors ? config.colors(rows) : rows.map((_, i) => palette[i % palette.length]);
+        const data = {
+            labels: rows.map(x => x[0]),
+            datasets: config.type === "doughnut"
+                ? [{ data: rows.map(x => Number(x[1] || 0)), backgroundColor: colors, borderWidth: 0, hoverOffset: 8 }]
+                : [{
+                    label: config.title,
+                    data: rows.map(x => Number(x[1] || 0)),
+                    backgroundColor: config.type === "line" ? "rgba(13, 110, 253, 0.15)" : "#0d6efd",
+                    borderColor: "#0d6efd",
+                    borderRadius: 10,
+                    borderWidth: config.type === "line" ? 3 : 0,
+                    fill: config.type === "line",
+                    tension: 0.32,
+                    pointRadius: config.type === "line" ? 4 : 0
+                }]
+        };
+        expandedChart = new Chart(canvas, {
+            type: config.type,
+            data,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                ...config.options,
+                plugins: {
+                    ...(config.options?.plugins || {}),
+                    tooltip: percentTooltip,
+                    percentLabelsSolicitacoes: { enabled: true, color: "#1f2937" }
+                }
+            }
+        });
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    };
+
+    Object.entries(expandedChartConfigs).forEach(([key, config]) => {
+        const canvas = document.getElementById(config.canvasId);
+        const card = canvas?.closest(".card");
+        if (!card) return;
+        card.classList.add("rel-chart-card");
+        card.dataset.chartOpen = key;
+        card.setAttribute("role", "button");
+        card.setAttribute("tabindex", "0");
+        const header = card.querySelector(".rel-section-title");
+        const heading = card.querySelector("h4, h5");
+        if (header && !header.querySelector(".chart-expand-hint")) {
+            const hint = document.createElement("span");
+            hint.className = "chart-expand-hint";
+            hint.innerHTML = '<i class="bi bi-arrows-fullscreen me-1"></i>Expandir';
+            header.appendChild(hint);
+        } else if (heading && !heading.parentElement.querySelector(".chart-expand-hint")) {
+            const hint = document.createElement("span");
+            hint.className = "chart-expand-hint d-inline-flex ms-2 align-middle";
+            hint.innerHTML = '<i class="bi bi-arrows-fullscreen me-1"></i>Expandir';
+            heading.appendChild(hint);
+        }
+        const open = () => openExpandedChart(key);
+        card.addEventListener("click", open);
+        card.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                open();
+            }
+        });
+    });
 </script>
 
 
