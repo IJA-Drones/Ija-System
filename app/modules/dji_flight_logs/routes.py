@@ -10,9 +10,11 @@ from app.modules.dji_flight_logs.service import (
     build_dji_logs_excel_export,
     can_access_dji_logs,
     can_import_dji_logs,
+    delete_kml_route,
     get_dji_route_payload,
     import_dji_log_excel,
     import_dji_kml_files,
+    link_kml_route_to_os_by_solicitacao_id,
 )
 from app.shared.uploads import get_upload_folder
 
@@ -127,6 +129,57 @@ def register_routes(bp):
             return jsonify({"ok": False, "message": "Acesso restrito."}), 403
         payload = get_dji_route_payload(route_id)
         return jsonify({"ok": True, "route": payload}), 200
+
+    @bp.route("/relatorios/dji-logs/rota/<int:route_id>/vincular-os", methods=["POST"], endpoint="vincular_dji_kml_route_os")
+    @login_required
+    def vincular_dji_kml_route_os(route_id):
+        if not can_import_dji_logs(current_user):
+            flash("Apenas administradores podem vincular rotas KML a OS.", "danger")
+            return redirect(url_for("main.relatorios_dji_logs"))
+
+        solicitacao_id = request.form.get("solicitacao_id", type=int)
+        if not solicitacao_id:
+            flash("Informe o ID visual da OS/solicitacao para vincular o KML.", "warning")
+            return redirect(url_for("main.relatorios_dji_logs"))
+
+        try:
+            ordem = link_kml_route_to_os_by_solicitacao_id(route_id, solicitacao_id)
+            flash(
+                f"Rota KML vinculada a OS #{ordem.solicitacao_id}.",
+                "success",
+            )
+        except ValueError as exc:
+            db.session.rollback()
+            flash(str(exc), "warning")
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("Erro ao vincular rota KML %s a OS %s.", route_id, solicitacao_id)
+            flash("Erro interno ao vincular a rota KML a OS.", "danger")
+
+        return redirect(url_for("main.relatorios_dji_logs"))
+
+    @bp.route("/relatorios/dji-logs/rota/<int:route_id>/excluir", methods=["POST"], endpoint="excluir_dji_kml_route")
+    @login_required
+    def excluir_dji_kml_route(route_id):
+        if not can_import_dji_logs(current_user):
+            flash("Apenas administradores podem excluir rotas KML.", "danger")
+            return redirect(url_for("main.relatorios_dji_logs"))
+
+        try:
+            result = delete_kml_route(route_id)
+            mensagem = f"Rota KML excluida: {result['original_filename'] or route_id}."
+            if result["linked_count"]:
+                mensagem += f" Vinculo removido de {result['linked_count']} OS."
+            flash(mensagem, "success")
+        except ValueError as exc:
+            db.session.rollback()
+            flash(str(exc), "warning")
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("Erro ao excluir rota KML %s.", route_id)
+            flash("Erro interno ao excluir a rota KML.", "danger")
+
+        return redirect(url_for("main.relatorios_dji_logs"))
 
     @bp.route("/relatorios/dji-logs/rota/<int:route_id>", methods=["GET"], endpoint="visualizar_dji_kml_route")
     @login_required
