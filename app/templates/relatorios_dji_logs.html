@@ -32,6 +32,59 @@
     .table-sm th {
       vertical-align: middle;
     }
+    .kml-routes-table td {
+      padding-top: 0.65rem;
+      padding-bottom: 0.65rem;
+    }
+    .kml-routes-table .route-file-name {
+      max-width: 260px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .kml-routes-responsive {
+      overflow-x: auto;
+      overflow-y: visible;
+      padding-bottom: 0.5rem;
+    }
+    .kml-actions-menu {
+      min-width: 230px;
+      max-width: min(280px, calc(100vw - 2rem));
+    }
+    .kml-actions-menu .dropdown-item {
+      font-size: 0.9rem;
+    }
+    .kml-routes-table .dropdown {
+      position: static;
+    }
+    .linked-route-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      border: 1px solid rgba(13, 110, 253, 0.18);
+      border-radius: 999px;
+      background: #f4f8ff;
+      color: #0d6efd;
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 0.18rem 0.55rem;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .linked-route-pill:hover {
+      background: #e9f2ff;
+      color: #0a58ca;
+    }
+    .linked-route-muted {
+      color: #64748b;
+      font-size: 0.78rem;
+    }
+    .kml-link-form {
+      padding: 0.75rem 1rem;
+    }
+    .kml-link-form .form-control {
+      min-width: 0;
+    }
     .analytics-card {
       border: 0;
       border-radius: 22px;
@@ -268,7 +321,7 @@
           <p class="text-muted small mb-0">Aplique recortes por período, piloto, aeronave e equipe.</p>
         </div>
         <a
-          href="{{ url_for('main.exportar_dji_logs_excel', data_inicio=filtros.data_inicio, data_fim=filtros.data_fim, piloto=filtros.piloto, aeronave=filtros.aeronave, equipe=filtros.equipe) }}"
+          href="{{ url_for('main.exportar_dji_logs_excel', data_inicio=filtros.data_inicio, data_fim=filtros.data_fim, piloto=filtros.piloto, aeronave=filtros.aeronave, equipe=filtros.equipe, q=filtros.q, endereco=filtros.endereco, voo_id=filtros.voo_id, status_rota=filtros.status_rota) }}"
           class="btn btn-success"
         >
           <i class="bi bi-file-earmark-excel-fill me-1"></i> Exportar Excel
@@ -276,6 +329,28 @@
       </div>
 
           <form method="GET" class="row g-3 align-items-end">
+            <input type="hidden" name="kml_page" value="{{ kml_paginacao.page if kml_paginacao else 1 }}">
+            <input type="hidden" name="kml_q" value="{{ kml_filtros.q }}">
+            <input type="hidden" name="kml_data_inicio" value="{{ kml_filtros.data_inicio }}">
+            <input type="hidden" name="kml_data_fim" value="{{ kml_filtros.data_fim }}">
+            <input type="hidden" name="kml_endereco" value="{{ kml_filtros.endereco }}">
+            <input type="hidden" name="kml_piloto" value="{{ kml_filtros.piloto }}">
+            <input type="hidden" name="kml_aeronave" value="{{ kml_filtros.aeronave }}">
+            <input type="hidden" name="kml_status_os" value="{{ kml_filtros.status_os }}">
+            <input type="hidden" name="kml_status_voo" value="{{ kml_filtros.status_voo }}">
+            <input type="hidden" name="kml_voo_id" value="{{ kml_filtros.voo_id }}">
+            <div class="col-md-6 col-xl-4">
+              <label class="form-label small text-muted">Busca do voo</label>
+              <input type="search" name="q" class="form-control" placeholder="Serial, piloto, local..." value="{{ filtros.q }}">
+            </div>
+            <div class="col-md-6 col-xl-2">
+              <label class="form-label small text-muted">ID do voo</label>
+              <input type="number" name="voo_id" class="form-control" min="1" placeholder="Ex: 153" value="{{ filtros.voo_id }}">
+            </div>
+            <div class="col-md-6 col-xl-4">
+              <label class="form-label small text-muted">Endereco/local</label>
+              <input type="search" name="endereco" class="form-control" placeholder="Filtrar apenas por endereco" value="{{ filtros.endereco }}">
+            </div>
             <div class="col-md-6 col-xl-3">
               <label class="form-label small text-muted">Data inicial</label>
               <input type="date" name="data_inicio" class="form-control" value="{{ filtros.data_inicio }}">
@@ -283,6 +358,14 @@
             <div class="col-md-6 col-xl-3">
               <label class="form-label small text-muted">Data final</label>
               <input type="date" name="data_fim" class="form-control" value="{{ filtros.data_fim }}">
+            </div>
+            <div class="col-md-6 col-xl-2">
+              <label class="form-label small text-muted">Rota KML</label>
+              <select name="status_rota" class="form-select">
+                <option value="">Todas</option>
+                <option value="com_kml" {% if filtros.status_rota == "com_kml" %}selected{% endif %}>Com KML</option>
+                <option value="sem_kml" {% if filtros.status_rota == "sem_kml" %}selected{% endif %}>Sem KML</option>
+              </select>
             </div>
             <div class="col-md-6 col-xl-2">
               <label class="form-label small text-muted">Piloto</label>
@@ -693,24 +776,130 @@
     </div>
   </div>
 
-  <div class="card section-card mb-4">
+  <div class="card section-card mb-4" id="rotas-kml">
     <div class="card-body">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-          <h5 class="mb-1">Rotas KML recentes</h5>
-          <p class="text-muted small mb-0">Ultimos KMLs importados com acesso rapido a rota e a OS vinculada.</p>
+          <h5 class="mb-1">Todas as rotas KML</h5>
+          <p class="text-muted small mb-0">
+            {{ total_rotas_kml }} rota(s) importada(s),
+            {{ total_rotas_kml_vinculadas }} vinculada(s) a OS e
+            {{ total_rotas_kml_sem_os }} sem vinculo de OS.
+          </p>
         </div>
       </div>
 
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
+      {% set kml_filtros_ativos = kml_filtros.q or kml_filtros.voo_id or kml_filtros.endereco or kml_filtros.data_inicio or kml_filtros.data_fim or kml_filtros.piloto or kml_filtros.aeronave or kml_filtros.status_os or kml_filtros.status_voo %}
+      <div class="border rounded-4 mb-3 overflow-hidden">
+        <button
+          class="btn w-100 d-flex align-items-center justify-content-between px-3 py-2 bg-light border-0"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#collapseFiltrosKml"
+          aria-expanded="{{ 'true' if kml_filtros_ativos else 'false' }}"
+          aria-controls="collapseFiltrosKml"
+        >
+          <span class="fw-bold text-dark">
+            <i class="bi bi-funnel me-2 text-primary"></i>Filtros das rotas KML
+          </span>
+          <span class="small text-muted">
+            {% if kml_filtros_ativos %}Filtros ativos{% else %}Mostrar filtros{% endif %}
+            <i class="bi bi-chevron-down ms-1"></i>
+          </span>
+        </button>
+        <div class="collapse {% if kml_filtros_ativos %}show{% endif %}" id="collapseFiltrosKml">
+          <div class="p-3 border-top">
+            <form method="GET" class="row g-3 align-items-end">
+              <input type="hidden" name="page" value="{{ paginacao.page }}">
+              <input type="hidden" name="kml_page" value="1">
+              <input type="hidden" name="data_inicio" value="{{ filtros.data_inicio }}">
+              <input type="hidden" name="data_fim" value="{{ filtros.data_fim }}">
+              <input type="hidden" name="piloto" value="{{ filtros.piloto }}">
+              <input type="hidden" name="aeronave" value="{{ filtros.aeronave }}">
+              <input type="hidden" name="equipe" value="{{ filtros.equipe }}">
+              <input type="hidden" name="q" value="{{ filtros.q }}">
+              <input type="hidden" name="endereco" value="{{ filtros.endereco }}">
+              <input type="hidden" name="voo_id" value="{{ filtros.voo_id }}">
+              <input type="hidden" name="status_rota" value="{{ filtros.status_rota }}">
+              <div class="col-md-6 col-xl-3">
+                <label class="form-label small text-muted">Busca KML</label>
+                <input type="search" name="kml_q" class="form-control" placeholder="Rota, arquivo, piloto..." value="{{ kml_filtros.q }}">
+              </div>
+              <div class="col-md-6 col-xl-2">
+                <label class="form-label small text-muted">ID do voo</label>
+                <input type="number" name="kml_voo_id" class="form-control" min="1" placeholder="Ex: 153" value="{{ kml_filtros.voo_id }}">
+              </div>
+              <div class="col-md-6 col-xl-3">
+                <label class="form-label small text-muted">Endereco/local</label>
+                <input type="search" name="kml_endereco" class="form-control" placeholder="Endereco do voo vinculado" value="{{ kml_filtros.endereco }}">
+              </div>
+              <div class="col-md-6 col-xl-2">
+                <label class="form-label small text-muted">Data inicial</label>
+                <input type="date" name="kml_data_inicio" class="form-control" value="{{ kml_filtros.data_inicio }}">
+              </div>
+              <div class="col-md-6 col-xl-2">
+                <label class="form-label small text-muted">Data final</label>
+                <input type="date" name="kml_data_fim" class="form-control" value="{{ kml_filtros.data_fim }}">
+              </div>
+              <div class="col-md-6 col-xl-2">
+                <label class="form-label small text-muted">Piloto KML</label>
+                <select name="kml_piloto" class="form-select">
+                  <option value="">Todos</option>
+                  {% for item in kml_pilotos_disponiveis %}
+                    <option value="{{ item }}" {% if kml_filtros.piloto == item %}selected{% endif %}>{{ item }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-6 col-xl-3">
+                <label class="form-label small text-muted">Aeronave KML</label>
+                <select name="kml_aeronave" class="form-select">
+                  <option value="">Todas</option>
+                  {% for item in kml_aeronaves_disponiveis %}
+                    <option value="{{ item }}" {% if kml_filtros.aeronave == item %}selected{% endif %}>{{ item }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-6 col-xl-2">
+                <label class="form-label small text-muted">Vinculo OS</label>
+                <select name="kml_status_os" class="form-select">
+                  <option value="">Todos</option>
+                  <option value="com_os" {% if kml_filtros.status_os == "com_os" %}selected{% endif %}>Com OS</option>
+                  <option value="sem_os" {% if kml_filtros.status_os == "sem_os" %}selected{% endif %}>Sem OS</option>
+                </select>
+              </div>
+              <div class="col-md-6 col-xl-2">
+                <label class="form-label small text-muted">Voo DJI</label>
+                <select name="kml_status_voo" class="form-select">
+                  <option value="">Todos</option>
+                  <option value="com_voo" {% if kml_filtros.status_voo == "com_voo" %}selected{% endif %}>Com voo</option>
+                  <option value="sem_voo" {% if kml_filtros.status_voo == "sem_voo" %}selected{% endif %}>Sem voo DJI</option>
+                </select>
+              </div>
+              <div class="col-md-12 col-xl-8 d-flex flex-wrap gap-2">
+                <button type="submit" class="btn btn-primary">
+                  <i class="bi bi-search me-1"></i> Filtrar KML
+                </button>
+                <a
+                  href="{{ url_for('main.relatorios_dji_logs', page=paginacao.page, data_inicio=filtros.data_inicio, data_fim=filtros.data_fim, piloto=filtros.piloto, aeronave=filtros.aeronave, equipe=filtros.equipe, q=filtros.q, endereco=filtros.endereco, voo_id=filtros.voo_id, status_rota=filtros.status_rota, _anchor='rotas-kml') }}"
+                  class="btn btn-outline-secondary"
+                >
+                  <i class="bi bi-x-lg me-1"></i> Limpar KML
+                </a>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-responsive kml-routes-responsive">
+        <table class="table table-sm table-hover align-middle mb-0 kml-routes-table">
           <thead>
             <tr>
               <th>Rota</th>
               <th>Data da rota</th>
               <th>Aeronave / piloto</th>
               <th>Voo DJI</th>
-              <th>OS vinculada</th>
+              <th>Status / OS vinculada</th>
               <th class="text-end">Acoes</th>
             </tr>
           </thead>
@@ -720,7 +909,7 @@
               <tr>
                 <td>
                   <div class="fw-semibold">{{ item.route_code }}</div>
-                  <div class="small text-muted">{{ item.original_filename }}</div>
+                  <div class="small text-muted route-file-name" title="{{ item.original_filename }}">{{ item.original_filename }}</div>
                 </td>
                 <td>
                   {% if item.route_timestamp %}
@@ -735,22 +924,31 @@
                 </td>
                 <td>
                   {% if item.flight_record %}
-                    <span class="badge text-bg-success">Vinculado</span>
-                    <div class="small text-muted">{{ item.flight_record.flight_start.strftime("%d/%m/%Y %H:%M") if item.flight_record.flight_start else "-" }}</div>
+                    <a
+                      href="{{ url_for('main.relatorios_dji_logs', page=1, kml_page=kml_paginacao.page, data_inicio='', data_fim='', piloto='', aeronave='', equipe='', q='', endereco='', voo_id=item.flight_record.id, status_rota='com_kml', kml_q=kml_filtros.q, kml_data_inicio=kml_filtros.data_inicio, kml_data_fim=kml_filtros.data_fim, kml_endereco=kml_filtros.endereco, kml_piloto=kml_filtros.piloto, kml_aeronave=kml_filtros.aeronave, kml_status_os=kml_filtros.status_os, kml_status_voo=kml_filtros.status_voo, kml_voo_id=kml_filtros.voo_id, _anchor='voos-processados') }}"
+                      class="linked-route-pill"
+                    >
+                      <i class="bi bi-arrow-left-right"></i> Voo #{{ item.flight_record.id }}
+                    </a>
+                    <div class="linked-route-muted mt-1">{{ item.flight_record.flight_start.strftime("%d/%m/%Y %H:%M") if item.flight_record.flight_start else "-" }}</div>
+                    <div class="small text-muted">{{ item.flight_record.pilot_name or "-" }} | {{ item.flight_record.aircraft_name or "-" }}</div>
                   {% else %}
                     <span class="badge text-bg-light">Sem voo DJI</span>
                   {% endif %}
                 </td>
                 <td>
                   {% if linked_os %}
-                    <a
-                      href="{{ url_for('main.admin_os_formulario_view', os_id=linked_os.solicitacao_id) }}"
-                      class="btn btn-sm btn-outline-success"
-                    >
-                      <i class="bi bi-clipboard-check me-1"></i>
-                      {{ linked_os.identificador_os or ("OS #" ~ linked_os.solicitacao_id) }}
-                    </a>
-                    <div class="small text-muted mt-1">
+                    <span class="badge text-bg-success mb-1">Com OS</span>
+                    <div>
+                      <a
+                        href="{{ url_for('main.admin_os_formulario_view', os_id=linked_os.solicitacao_id) }}"
+                        class="fw-semibold text-success text-decoration-none"
+                      >
+                        <i class="bi bi-clipboard-check me-1"></i>
+                        {{ linked_os.identificador_os or ("OS #" ~ linked_os.solicitacao_id) }}
+                      </a>
+                    </div>
+                    <div class="small text-muted">
                       {{ linked_os.solicitacao.protocolo if linked_os.solicitacao else "" }}
                       {% if linked_os.solicitacao and linked_os.solicitacao.status %}
                         | {{ linked_os.solicitacao.status }}
@@ -761,19 +959,64 @@
                   {% endif %}
                 </td>
                 <td class="text-end">
-                  <div class="d-flex justify-content-end gap-2 flex-wrap">
-                    <a
-                      href="{{ url_for('main.visualizar_dji_kml_route', route_id=item.id) }}"
-                      class="btn btn-sm btn-outline-primary"
+                  <div class="dropdown">
+                    <button
+                      class="btn btn-sm btn-outline-secondary"
+                      type="button"
+                      data-bs-toggle="dropdown"
+                      data-bs-auto-close="outside"
+                      aria-expanded="false"
+                      title="Acoes da rota"
                     >
-                      <i class="bi bi-map me-1"></i> Ver mapa
-                    </a>
-                    <a
-                      href="{{ url_for('main.baixar_dji_kml_route', route_id=item.id) }}"
-                      class="btn btn-sm btn-outline-dark"
-                    >
-                      <i class="bi bi-download me-1"></i> KML
-                    </a>
+                      <i class="bi bi-three-dots-vertical"></i>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-end shadow-sm kml-actions-menu">
+                      <a
+                        href="{{ url_for('main.visualizar_dji_kml_route', route_id=item.id) }}"
+                        class="dropdown-item"
+                      >
+                        <i class="bi bi-map me-2"></i> Ver mapa
+                      </a>
+                      <a
+                        href="{{ url_for('main.baixar_dji_kml_route', route_id=item.id) }}"
+                        class="dropdown-item"
+                      >
+                        <i class="bi bi-download me-2"></i> Baixar KML
+                      </a>
+                    {% if can_import %}
+                      <div class="dropdown-divider"></div>
+                      <form
+                        method="POST"
+                        action="{{ url_for('main.vincular_dji_kml_route_os', route_id=item.id) }}"
+                        class="kml-link-form"
+                      >
+                        <label class="form-label small text-muted mb-1">ID visual da OS</label>
+                        <div class="input-group input-group-sm">
+                          <input
+                            type="number"
+                            name="solicitacao_id"
+                            class="form-control"
+                            min="1"
+                            placeholder="Ex: 2677"
+                            required
+                          >
+                          <button type="submit" class="btn btn-outline-primary">
+                            {{ "Trocar" if linked_os else "Vincular" }}
+                          </button>
+                        </div>
+                      </form>
+                      <form
+                        method="POST"
+                        action="{{ url_for('main.excluir_dji_kml_route', route_id=item.id) }}"
+                        class="m-0"
+                        onsubmit="return confirm('Excluir esta rota KML? Se ela estiver vinculada a uma OS, o vinculo sera removido.');"
+                      >
+                        <button type="submit" class="dropdown-item text-danger">
+                          <i class="bi bi-trash me-2"></i> Excluir rota
+                        </button>
+                      </form>
+                    {% endif %}
+                    </div>
                   </div>
                 </td>
               </tr>
@@ -783,15 +1026,152 @@
           </tbody>
         </table>
       </div>
+
+      {% if kml_paginacao %}
+        {% set kml_start = ((kml_paginacao.page - 1) * kml_paginacao.per_page) + 1 if kml_paginacao.total else 0 %}
+        {% set kml_end = kml_paginacao.page * kml_paginacao.per_page %}
+        {% if kml_end > kml_paginacao.total %}
+          {% set kml_end = kml_paginacao.total %}
+        {% endif %}
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mt-3">
+          <div class="small text-muted">
+            Mostrando <strong>{{ kml_start }}-{{ kml_end }}</strong> de <strong>{{ kml_paginacao.total }}</strong> rotas KML
+          </div>
+          {% if kml_paginacao.pages > 1 %}
+            <nav aria-label="Paginacao das rotas KML">
+              <ul class="pagination pagination-sm justify-content-end flex-wrap mb-0">
+                <li class="page-item {% if not kml_paginacao.has_prev %}disabled{% endif %}">
+                  <a
+                    class="page-link"
+                    href="{{ url_for('main.relatorios_dji_logs', page=paginacao.page, kml_page=kml_paginacao.prev_num, data_inicio=filtros.data_inicio, data_fim=filtros.data_fim, piloto=filtros.piloto, aeronave=filtros.aeronave, equipe=filtros.equipe, q=filtros.q, endereco=filtros.endereco, voo_id=filtros.voo_id, status_rota=filtros.status_rota, kml_q=kml_filtros.q, kml_data_inicio=kml_filtros.data_inicio, kml_data_fim=kml_filtros.data_fim, kml_endereco=kml_filtros.endereco, kml_piloto=kml_filtros.piloto, kml_aeronave=kml_filtros.aeronave, kml_status_os=kml_filtros.status_os, kml_status_voo=kml_filtros.status_voo, kml_voo_id=kml_filtros.voo_id, _anchor='rotas-kml') }}"
+                  >Anterior</a>
+                </li>
+                <li class="page-item disabled">
+                  <span class="page-link">{{ kml_paginacao.page }} / {{ kml_paginacao.pages }}</span>
+                </li>
+                <li class="page-item {% if not kml_paginacao.has_next %}disabled{% endif %}">
+                  <a
+                    class="page-link"
+                    href="{{ url_for('main.relatorios_dji_logs', page=paginacao.page, kml_page=kml_paginacao.next_num, data_inicio=filtros.data_inicio, data_fim=filtros.data_fim, piloto=filtros.piloto, aeronave=filtros.aeronave, equipe=filtros.equipe, q=filtros.q, endereco=filtros.endereco, voo_id=filtros.voo_id, status_rota=filtros.status_rota, kml_q=kml_filtros.q, kml_data_inicio=kml_filtros.data_inicio, kml_data_fim=kml_filtros.data_fim, kml_endereco=kml_filtros.endereco, kml_piloto=kml_filtros.piloto, kml_aeronave=kml_filtros.aeronave, kml_status_os=kml_filtros.status_os, kml_status_voo=kml_filtros.status_voo, kml_voo_id=kml_filtros.voo_id, _anchor='rotas-kml') }}"
+                  >Proxima</a>
+                </li>
+              </ul>
+            </nav>
+          {% endif %}
+        </div>
+      {% endif %}
     </div>
   </div>
 
-  <div class="card section-card">
+  <div class="card section-card" id="voos-processados">
     <div class="card-body">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
           <h5 class="mb-1">Voos processados</h5>
-          <p class="text-muted small mb-0">Detalhamento individual de cada linha importada do Excel da DJI.</p>
+          <p class="text-muted small mb-0">Detalhamento individual de cada linha importada do Excel da DJI, com a rota KML ligada quando houver.</p>
+        </div>
+      </div>
+
+      {% set filtros_voo_ativos = filtros.q or filtros.endereco or filtros.voo_id or filtros.data_inicio or filtros.data_fim or filtros.piloto or filtros.aeronave or filtros.equipe or filtros.status_rota %}
+      <div class="border rounded-4 mb-3 overflow-hidden">
+        <button
+          class="btn w-100 d-flex align-items-center justify-content-between px-3 py-2 bg-light border-0"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#collapseFiltrosVoos"
+          aria-expanded="{{ 'true' if filtros_voo_ativos else 'false' }}"
+          aria-controls="collapseFiltrosVoos"
+        >
+          <span class="fw-bold text-dark">
+            <i class="bi bi-funnel me-2 text-primary"></i>Filtros dos voos processados
+          </span>
+          <span class="small text-muted">
+            {% if filtros_voo_ativos %}Filtros ativos{% else %}Mostrar filtros{% endif %}
+            <i class="bi bi-chevron-down ms-1"></i>
+          </span>
+        </button>
+        <div class="collapse {% if filtros_voo_ativos %}show{% endif %}" id="collapseFiltrosVoos">
+          <div class="p-3 border-top">
+            <form method="GET" class="row g-3 align-items-end">
+              <input type="hidden" name="page" value="1">
+              <input type="hidden" name="kml_page" value="{{ kml_paginacao.page if kml_paginacao else 1 }}">
+              <input type="hidden" name="kml_q" value="{{ kml_filtros.q }}">
+              <input type="hidden" name="kml_data_inicio" value="{{ kml_filtros.data_inicio }}">
+              <input type="hidden" name="kml_data_fim" value="{{ kml_filtros.data_fim }}">
+              <input type="hidden" name="kml_endereco" value="{{ kml_filtros.endereco }}">
+              <input type="hidden" name="kml_piloto" value="{{ kml_filtros.piloto }}">
+              <input type="hidden" name="kml_aeronave" value="{{ kml_filtros.aeronave }}">
+              <input type="hidden" name="kml_status_os" value="{{ kml_filtros.status_os }}">
+              <input type="hidden" name="kml_status_voo" value="{{ kml_filtros.status_voo }}">
+              <input type="hidden" name="kml_voo_id" value="{{ kml_filtros.voo_id }}">
+              <div class="col-md-6 col-xl-3">
+                <label class="form-label small text-muted">Busca do voo</label>
+                <input type="search" name="q" class="form-control" placeholder="Serial, piloto, local..." value="{{ filtros.q }}">
+              </div>
+              <div class="col-md-6 col-xl-2">
+                <label class="form-label small text-muted">ID do voo</label>
+                <input type="number" name="voo_id" class="form-control" min="1" placeholder="Ex: 153" value="{{ filtros.voo_id }}">
+              </div>
+              <div class="col-md-6 col-xl-3">
+                <label class="form-label small text-muted">Endereco/local</label>
+                <input type="search" name="endereco" class="form-control" placeholder="Filtrar apenas por endereco" value="{{ filtros.endereco }}">
+              </div>
+              <div class="col-md-6 col-xl-2">
+                <label class="form-label small text-muted">Data inicial</label>
+                <input type="date" name="data_inicio" class="form-control" value="{{ filtros.data_inicio }}">
+              </div>
+              <div class="col-md-6 col-xl-2">
+                <label class="form-label small text-muted">Data final</label>
+                <input type="date" name="data_fim" class="form-control" value="{{ filtros.data_fim }}">
+              </div>
+              <div class="col-md-6 col-xl-2">
+                <label class="form-label small text-muted">Piloto</label>
+                <select name="piloto" class="form-select">
+                  <option value="">Todos</option>
+                  {% for item in pilotos_disponiveis %}
+                    <option value="{{ item }}" {% if filtros.piloto == item %}selected{% endif %}>{{ item }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-6 col-xl-3">
+                <label class="form-label small text-muted">Aeronave</label>
+                <select name="aeronave" class="form-select">
+                  <option value="">Todas</option>
+                  {% for item in aeronaves_disponiveis %}
+                    <option value="{{ item }}" {% if filtros.aeronave == item %}selected{% endif %}>{{ item }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-6 col-xl-3">
+                <label class="form-label small text-muted">Equipe</label>
+                <select name="equipe" class="form-select">
+                  <option value="">Todas</option>
+                  {% for item in equipes_disponiveis %}
+                    <option value="{{ item }}" {% if filtros.equipe == item %}selected{% endif %}>{{ item }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-6 col-xl-2">
+                <label class="form-label small text-muted">Rota KML</label>
+                <select name="status_rota" class="form-select">
+                  <option value="">Todas</option>
+                  <option value="com_kml" {% if filtros.status_rota == "com_kml" %}selected{% endif %}>Com KML</option>
+                  <option value="sem_kml" {% if filtros.status_rota == "sem_kml" %}selected{% endif %}>Sem KML</option>
+                </select>
+              </div>
+              <div class="col-md-12 col-xl-7 d-flex flex-wrap gap-2">
+                <button type="submit" class="btn btn-primary">
+                  <i class="bi bi-search me-1"></i> Filtrar voos
+                </button>
+                <a
+                  href="{{ url_for('main.relatorios_dji_logs', kml_page=kml_paginacao.page, kml_q=kml_filtros.q, kml_data_inicio=kml_filtros.data_inicio, kml_data_fim=kml_filtros.data_fim, kml_endereco=kml_filtros.endereco, kml_piloto=kml_filtros.piloto, kml_aeronave=kml_filtros.aeronave, kml_status_os=kml_filtros.status_os, kml_status_voo=kml_filtros.status_voo, kml_voo_id=kml_filtros.voo_id, _anchor='voos-processados') }}"
+                  class="btn btn-outline-secondary"
+                >
+                  <i class="bi bi-x-lg me-1"></i> Limpar voos
+                </a>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
 
@@ -800,6 +1180,7 @@
           <thead>
             <tr>
               <th>Período</th>
+              <th>ID</th>
               <th>Piloto</th>
               <th>Aeronave</th>
               <th>Equipe</th>
@@ -817,6 +1198,9 @@
               <td>
                 <div class="fw-semibold">{{ registro.flight_start.strftime("%d/%m/%Y %H:%M") }}</div>
                 <div class="small text-muted">{{ registro.flight_end.strftime("%H:%M") }}</div>
+              </td>
+              <td>
+                <span class="badge text-bg-light">#{{ registro.id }}</span>
               </td>
               <td>{{ registro.pilot_name or "-" }}</td>
               <td>
@@ -837,20 +1221,39 @@
               </td>
               <td class="text-center">
                 {% if registro.route_kml %}
-                  <button
-                    type="button"
-                    class="btn btn-sm btn-outline-primary"
-                    onclick="abrirRotaKml({{ registro.route_kml.id }})"
-                  >
-                    <i class="bi bi-map me-1"></i> Ver rota
-                  </button>
+                  {% set registro_linked_os = registro_kml_os_por_rota.get(registro.route_kml.id) %}
+                  <div class="d-flex flex-column align-items-center gap-1">
+                    <a
+                      href="{{ url_for('main.relatorios_dji_logs', page=paginacao.page, kml_page=1, data_inicio=filtros.data_inicio, data_fim=filtros.data_fim, piloto=filtros.piloto, aeronave=filtros.aeronave, equipe=filtros.equipe, q=filtros.q, endereco=filtros.endereco, voo_id=filtros.voo_id, status_rota=filtros.status_rota, kml_q=registro.route_kml.route_code, kml_endereco='', kml_status_voo='com_voo', kml_voo_id='', _anchor='rotas-kml') }}"
+                      class="linked-route-pill"
+                    >
+                      <i class="bi bi-diagram-3"></i> {{ registro.route_kml.route_code }}
+                    </a>
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline-primary"
+                      onclick="abrirRotaKml({{ registro.route_kml.id }})"
+                    >
+                      <i class="bi bi-map me-1"></i> Mapa
+                    </button>
+                    {% if registro_linked_os %}
+                      <a
+                        href="{{ url_for('main.admin_os_formulario_view', os_id=registro_linked_os.solicitacao_id) }}"
+                        class="small text-success fw-semibold text-decoration-none"
+                      >
+                        OS #{{ registro_linked_os.solicitacao_id }}
+                      </a>
+                    {% else %}
+                      <span class="linked-route-muted">Sem OS</span>
+                    {% endif %}
+                  </div>
                 {% else %}
                   <span class="badge text-bg-light">Sem KML</span>
                 {% endif %}
               </td>
             </tr>
             {% else %}
-            <tr><td colspan="10" class="text-center text-muted py-5">Nenhum voo encontrado para os filtros atuais.</td></tr>
+            <tr><td colspan="11" class="text-center text-muted py-5">Nenhum voo encontrado para os filtros atuais.</td></tr>
             {% endfor %}
           </tbody>
         </table>
@@ -860,13 +1263,13 @@
       <nav class="mt-4">
         <ul class="pagination justify-content-center flex-wrap">
           <li class="page-item {% if not paginacao.has_prev %}disabled{% endif %}">
-            <a class="page-link" href="{{ url_for('main.relatorios_dji_logs', page=paginacao.prev_num, data_inicio=filtros.data_inicio, data_fim=filtros.data_fim, piloto=filtros.piloto, aeronave=filtros.aeronave, equipe=filtros.equipe) }}">Anterior</a>
+            <a class="page-link" href="{{ url_for('main.relatorios_dji_logs', page=paginacao.prev_num, kml_page=kml_paginacao.page, data_inicio=filtros.data_inicio, data_fim=filtros.data_fim, piloto=filtros.piloto, aeronave=filtros.aeronave, equipe=filtros.equipe, q=filtros.q, endereco=filtros.endereco, voo_id=filtros.voo_id, status_rota=filtros.status_rota, kml_q=kml_filtros.q, kml_data_inicio=kml_filtros.data_inicio, kml_data_fim=kml_filtros.data_fim, kml_endereco=kml_filtros.endereco, kml_piloto=kml_filtros.piloto, kml_aeronave=kml_filtros.aeronave, kml_status_os=kml_filtros.status_os, kml_status_voo=kml_filtros.status_voo, kml_voo_id=kml_filtros.voo_id, _anchor='voos-processados') }}">Anterior</a>
           </li>
           <li class="page-item disabled">
             <span class="page-link">{{ paginacao.page }} / {{ paginacao.pages }}</span>
           </li>
           <li class="page-item {% if not paginacao.has_next %}disabled{% endif %}">
-            <a class="page-link" href="{{ url_for('main.relatorios_dji_logs', page=paginacao.next_num, data_inicio=filtros.data_inicio, data_fim=filtros.data_fim, piloto=filtros.piloto, aeronave=filtros.aeronave, equipe=filtros.equipe) }}">Próxima</a>
+            <a class="page-link" href="{{ url_for('main.relatorios_dji_logs', page=paginacao.next_num, kml_page=kml_paginacao.page, data_inicio=filtros.data_inicio, data_fim=filtros.data_fim, piloto=filtros.piloto, aeronave=filtros.aeronave, equipe=filtros.equipe, q=filtros.q, endereco=filtros.endereco, voo_id=filtros.voo_id, status_rota=filtros.status_rota, kml_q=kml_filtros.q, kml_data_inicio=kml_filtros.data_inicio, kml_data_fim=kml_filtros.data_fim, kml_endereco=kml_filtros.endereco, kml_piloto=kml_filtros.piloto, kml_aeronave=kml_filtros.aeronave, kml_status_os=kml_filtros.status_os, kml_status_voo=kml_filtros.status_voo, kml_voo_id=kml_filtros.voo_id, _anchor='voos-processados') }}">Proxima</a>
           </li>
         </ul>
       </nav>

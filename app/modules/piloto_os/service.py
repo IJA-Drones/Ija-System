@@ -236,6 +236,35 @@ def _get_valid_dji_kml_route(user, route_id):
     return route
 
 
+def _get_valid_dji_kml_route_by_code(user, route_code):
+    route_code = _clean_str(route_code).upper()
+    if not route_code:
+        return None
+
+    route = (
+        DjiFlightKmlRoute.query
+        .options(joinedload(DjiFlightKmlRoute.flight_record))
+        .filter(DjiFlightKmlRoute.route_code.ilike(route_code))
+        .first()
+    )
+    if not route:
+        raise PilotoOsError(
+            f"Nenhuma rota KML importada foi encontrada com o registro {route_code}.",
+            "warning",
+            redirect_endpoint=_drone_form_error_redirect(user),
+        )
+    return route
+
+
+def _resolve_dji_kml_route_from_form(user, form_data):
+    route_code = _clean_str(form_data.get("dji_kml_route_code"))
+    if route_code:
+        return _get_valid_dji_kml_route_by_code(user, route_code)
+
+    route_id = _to_int(form_data.get("dji_kml_route_id"))
+    return _get_valid_dji_kml_route(user, route_id)
+
+
 def _drone_form_error_redirect(user):
     if getattr(user, "tipo_usuario", None) in ADMIN_PANEL_VIEW_TYPES:
         return "main.admin_os_formulario_view"
@@ -1021,9 +1050,9 @@ def _aplicar_campos_formulario(
         ordem.drone_monitoramento_registro_anac = ""
         ordem.prefixo_aeronave_monitoramento = _clean_str(form_data.get("prefixo_aeronave_monitoramento"))
 
-    dji_kml_route_id = _to_int(form_data.get("dji_kml_route_id"))
-    dji_kml_route = _get_valid_dji_kml_route(user, dji_kml_route_id)
-    ordem.dji_kml_route_id = dji_kml_route.id if dji_kml_route else None
+    if "dji_kml_route_code" in form_data or "dji_kml_route_id" in form_data:
+        dji_kml_route = _resolve_dji_kml_route_from_form(user, form_data)
+        ordem.dji_kml_route_id = dji_kml_route.id if dji_kml_route else None
 
     ordem.identificador_os = _clean_str(form_data.get("identificador_os"))
     ordem.respondido_por = _clean_str(form_data.get("respondido_por")) or respondido_por_padrao

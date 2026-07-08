@@ -18,7 +18,8 @@ from sqlalchemy.orm import joinedload
 from werkzeug.utils import secure_filename
 
 from app.extensions import db
-from app.models import DjiFlightKmlRoute, DjiFlightLogImport, DjiFlightRecord, OrdemServico, Solicitacao
+from app.models import DjiFlightKmlRoute, DjiFlightLogImport, DjiFlightRecord, EquipePiloto, OrdemServico, Solicitacao
+from app.shared.access import ADMIN_PANEL_VIEW_TYPES, can_access_regiao
 from app.shared.uploads import get_upload_folder
 
 
@@ -54,6 +55,42 @@ def can_access_dji_logs(user) -> bool:
 
 def can_import_dji_logs(user) -> bool:
     return getattr(user, "tipo_usuario", None) in DJI_LOG_ALLOWED_IMPORT_TYPES
+
+
+def can_access_dji_kml_route(user, route_id) -> bool:
+    if can_access_dji_logs(user):
+        return True
+
+    ordem = _get_linked_os_for_kml_route(route_id)
+    if not ordem or not ordem.solicitacao:
+        return False
+
+    solicitacao = ordem.solicitacao
+    tipo_usuario = getattr(user, "tipo_usuario", None)
+
+    if tipo_usuario in ADMIN_PANEL_VIEW_TYPES:
+        pedido_regiao = getattr(getattr(solicitacao, "usuario", None), "regiao", None)
+        return can_access_regiao(user, pedido_regiao)
+
+    if tipo_usuario == "equipe_oceano":
+        try:
+            equipe_id = int((getattr(user, "codigo_setor", None) or "").strip())
+        except (TypeError, ValueError):
+            return False
+        return equipe_id == getattr(solicitacao, "equipe_id", None)
+
+    if tipo_usuario == "piloto" and getattr(user, "piloto_id", None):
+        return (
+            EquipePiloto.query
+            .filter(
+                EquipePiloto.equipe_id == getattr(solicitacao, "equipe_id", None),
+                EquipePiloto.piloto_id == user.piloto_id,
+            )
+            .first()
+            is not None
+        )
+
+    return False
 
 
 def import_dji_log_excel(file_storage, user):
@@ -162,7 +199,21 @@ def build_dji_logs_context(args):
     piloto = (args.get("piloto") or "").strip()
     aeronave = (args.get("aeronave") or "").strip()
     equipe = (args.get("equipe") or "").strip()
+    q = (args.get("q") or "").strip()
+    endereco = (args.get("endereco") or "").strip()
+    voo_id = (args.get("voo_id") or "").strip()
+    status_rota = (args.get("status_rota") or "").strip()
+    kml_q = (args.get("kml_q") or "").strip()
+    kml_data_inicio = (args.get("kml_data_inicio") or "").strip()
+    kml_data_fim = (args.get("kml_data_fim") or "").strip()
+    kml_endereco = (args.get("kml_endereco") or "").strip()
+    kml_piloto = (args.get("kml_piloto") or "").strip()
+    kml_aeronave = (args.get("kml_aeronave") or "").strip()
+    kml_status_os = (args.get("kml_status_os") or "").strip()
+    kml_status_voo = (args.get("kml_status_voo") or "").strip()
+    kml_voo_id = (args.get("kml_voo_id") or "").strip()
     page = args.get("page", 1, type=int)
+    kml_page = args.get("kml_page", 1, type=int)
 
     filtered_query = _build_filtered_query(
         data_inicio=data_inicio,
@@ -170,12 +221,20 @@ def build_dji_logs_context(args):
         piloto=piloto,
         aeronave=aeronave,
         equipe=equipe,
+        q=q,
+        endereco=endereco,
+        voo_id=voo_id,
+        status_rota=status_rota,
     )
 
     paginacao = (
         filtered_query
         .order_by(DjiFlightRecord.flight_start.desc(), DjiFlightRecord.id.desc())
         .paginate(page=page, per_page=20, error_out=False)
+    )
+    registros = paginacao.items
+    registro_kml_os_por_rota = _build_kml_os_map(
+        [registro.route_kml for registro in registros if registro.route_kml]
     )
 
     totals = filtered_query.with_entities(
@@ -191,6 +250,8 @@ def build_dji_logs_context(args):
     pilotos_disponiveis = _distinct_non_empty_values(DjiFlightRecord.pilot_name)
     aeronaves_disponiveis = _distinct_non_empty_values(DjiFlightRecord.aircraft_name)
     equipes_disponiveis = _distinct_non_empty_values(DjiFlightRecord.team_name)
+    kml_pilotos_disponiveis = _distinct_non_empty_values(DjiFlightKmlRoute.pilot_name)
+    kml_aeronaves_disponiveis = _distinct_non_empty_values(DjiFlightKmlRoute.aircraft_name)
 
     total_pilotos = filtered_query.with_entities(
         func.count(func.distinct(func.nullif(DjiFlightRecord.pilot_name, "")))
@@ -220,34 +281,72 @@ def build_dji_logs_context(args):
         .limit(10)
         .all()
     )
-    kml_rotas_recentes = (
-        DjiFlightKmlRoute.query
-        .options(joinedload(DjiFlightKmlRoute.flight_record))
-        .order_by(DjiFlightKmlRoute.imported_at.desc(), DjiFlightKmlRoute.id.desc())
-        .limit(10)
-        .all()
+    total_rotas_kml = DjiFlightKmlRoute.query.count()
+    total_rotas_kml_vinculadas = (
+        db.session.query(func.count(func.distinct(OrdemServico.dji_kml_route_id)))
+        .filter(OrdemServico.dji_kml_route_id.isnot(None))
+        .scalar()
+        or 0
     )
+    kml_query = _build_filtered_kml_query(
+        q=kml_q,
+        data_inicio=kml_data_inicio,
+        data_fim=kml_data_fim,
+        endereco=kml_endereco,
+        piloto=kml_piloto,
+        aeronave=kml_aeronave,
+        status_os=kml_status_os,
+        status_voo=kml_status_voo,
+        voo_id=kml_voo_id,
+    )
+    kml_paginacao = (
+        kml_query
+        .order_by(DjiFlightKmlRoute.imported_at.desc(), DjiFlightKmlRoute.id.desc())
+        .paginate(page=kml_page, per_page=25, error_out=False)
+    )
+    kml_rotas_recentes = kml_paginacao.items
     kml_os_por_rota = _build_kml_os_map(kml_rotas_recentes)
 
     return {
-        "registros": paginacao.items,
+        "registros": registros,
         "paginacao": paginacao,
+        "registro_kml_os_por_rota": registro_kml_os_por_rota,
         "filtros": {
             "data_inicio": data_inicio,
             "data_fim": data_fim,
             "piloto": piloto,
             "aeronave": aeronave,
             "equipe": equipe,
+            "q": q,
+            "endereco": endereco,
+            "voo_id": voo_id,
+            "status_rota": status_rota,
             "total": total_voos or 0,
         },
         "pilotos_disponiveis": pilotos_disponiveis,
         "aeronaves_disponiveis": aeronaves_disponiveis,
         "equipes_disponiveis": equipes_disponiveis,
+        "kml_pilotos_disponiveis": kml_pilotos_disponiveis,
+        "kml_aeronaves_disponiveis": kml_aeronaves_disponiveis,
+        "kml_filtros": {
+            "q": kml_q,
+            "data_inicio": kml_data_inicio,
+            "data_fim": kml_data_fim,
+            "endereco": kml_endereco,
+            "piloto": kml_piloto,
+            "aeronave": kml_aeronave,
+            "status_os": kml_status_os,
+            "status_voo": kml_status_voo,
+            "voo_id": kml_voo_id,
+        },
         "importacoes_recentes": importacoes_recentes,
         "kml_rotas_recentes": kml_rotas_recentes,
+        "kml_paginacao": kml_paginacao,
         "kml_os_por_rota": kml_os_por_rota,
         "total_importacoes": DjiFlightLogImport.query.count(),
-        "total_rotas_kml": DjiFlightKmlRoute.query.count(),
+        "total_rotas_kml": total_rotas_kml,
+        "total_rotas_kml_vinculadas": total_rotas_kml_vinculadas,
+        "total_rotas_kml_sem_os": total_rotas_kml - total_rotas_kml_vinculadas,
         "total_voos": total_voos or 0,
         "total_area": float(total_area or 0),
         "total_volume": float(total_volume or 0),
@@ -348,6 +447,161 @@ def _auto_link_kml_route_to_os(route, points):
     ordem, _score, _details = match
     ordem.dji_kml_route_id = route.id
     return ordem
+
+
+def link_kml_route_to_os_by_solicitacao_id(route_id, solicitacao_id):
+    route = DjiFlightKmlRoute.query.get(route_id)
+    if not route:
+        raise ValueError("Rota KML nao encontrada.")
+
+    ordem = (
+        OrdemServico.query
+        .options(joinedload(OrdemServico.solicitacao))
+        .filter(OrdemServico.solicitacao_id == solicitacao_id)
+        .first()
+    )
+    if not ordem:
+        raise ValueError("Nao existe OS de piloto para essa solicitacao.")
+
+    if ordem.dji_kml_route_id and ordem.dji_kml_route_id != route.id:
+        raise ValueError("Essa OS ja possui outra rota KML vinculada.")
+
+    current_linked = (
+        OrdemServico.query
+        .filter(
+            OrdemServico.dji_kml_route_id == route.id,
+            OrdemServico.id != ordem.id,
+        )
+        .all()
+    )
+    for linked_ordem in current_linked:
+        linked_ordem.dji_kml_route_id = None
+
+    ordem.dji_kml_route_id = route.id
+    db.session.commit()
+    return ordem
+
+
+def delete_kml_route(route_id):
+    route = DjiFlightKmlRoute.query.get(route_id)
+    if not route:
+        raise ValueError("Rota KML nao encontrada.")
+
+    stored_path = route.stored_path
+    original_filename = route.original_filename
+    linked_count = (
+        OrdemServico.query
+        .filter(OrdemServico.dji_kml_route_id == route.id)
+        .update({OrdemServico.dji_kml_route_id: None}, synchronize_session=False)
+    )
+
+    db.session.delete(route)
+    db.session.commit()
+
+    file_removed = False
+    if stored_path:
+        absolute_path = os.path.join(get_upload_folder(), stored_path)
+        if os.path.exists(absolute_path):
+            try:
+                os.remove(absolute_path)
+                file_removed = True
+            except OSError:
+                file_removed = False
+
+    return {
+        "original_filename": original_filename,
+        "linked_count": linked_count or 0,
+        "file_removed": file_removed,
+    }
+
+
+def _extract_scalar_query_value(row):
+    try:
+        value = row[0]
+    except (TypeError, KeyError, IndexError):
+        value = row
+    if isinstance(value, tuple):
+        return value[0] if value else None
+    return value
+
+
+def auto_link_existing_kml_routes_to_os(
+    *,
+    limit=None,
+    route_id_min=None,
+    route_id_max=None,
+    commit=True,
+    progress_callback=None,
+):
+    linked_route_rows = (
+        db.session.query(OrdemServico.dji_kml_route_id)
+        .filter(OrdemServico.dji_kml_route_id.isnot(None))
+        .all()
+    )
+    linked_route_ids = {
+        route_id
+        for route_id in (_extract_scalar_query_value(row) for row in linked_route_rows)
+        if route_id is not None
+    }
+    query = (
+        db.session.query(DjiFlightKmlRoute)
+        .order_by(DjiFlightKmlRoute.route_timestamp.desc().nullslast(), DjiFlightKmlRoute.id.desc())
+    )
+    if linked_route_ids:
+        query = query.filter(~DjiFlightKmlRoute.id.in_(linked_route_ids))
+    if route_id_min is not None:
+        query = query.filter(DjiFlightKmlRoute.id >= route_id_min)
+    if route_id_max is not None:
+        query = query.filter(DjiFlightKmlRoute.id <= route_id_max)
+    if limit:
+        query = query.limit(limit)
+
+    result = {
+        "scanned": 0,
+        "linked": 0,
+        "no_match": 0,
+        "errors": 0,
+        "matches": [],
+    }
+
+    for route in query.all():
+        result["scanned"] += 1
+        try:
+            points = json.loads(route.points_json or "[]")
+        except (TypeError, ValueError, json.JSONDecodeError):
+            result["errors"] += 1
+            if progress_callback:
+                progress_callback("error", route, None, None, None)
+            continue
+
+        match = _find_best_os_match_for_kml_route(route, points)
+        if not match:
+            result["no_match"] += 1
+            if progress_callback:
+                progress_callback("no_match", route, None, None, None)
+            continue
+
+        ordem, score, details = match
+        if commit:
+            ordem.dji_kml_route_id = route.id
+        result["linked"] += 1
+        result["matches"].append(
+            {
+                "route_id": route.id,
+                "route_code": route.route_code,
+                "ordem_id": ordem.id,
+                "identificador_os": ordem.identificador_os,
+                "score": score,
+                "details": details,
+            }
+        )
+        if progress_callback:
+            progress_callback("linked", route, ordem, score, details)
+
+    if commit:
+        db.session.commit()
+
+    return result
 
 
 def _find_best_os_match_for_kml_route(route, points):
@@ -661,6 +915,10 @@ def build_dji_logs_excel_export(args):
     piloto = (args.get("piloto") or "").strip()
     aeronave = (args.get("aeronave") or "").strip()
     equipe = (args.get("equipe") or "").strip()
+    q = (args.get("q") or "").strip()
+    endereco = (args.get("endereco") or "").strip()
+    voo_id = (args.get("voo_id") or "").strip()
+    status_rota = (args.get("status_rota") or "").strip()
 
     filtered_query = _build_filtered_query(
         data_inicio=data_inicio,
@@ -668,6 +926,10 @@ def build_dji_logs_excel_export(args):
         piloto=piloto,
         aeronave=aeronave,
         equipe=equipe,
+        q=q,
+        endereco=endereco,
+        voo_id=voo_id,
+        status_rota=status_rota,
     )
     registros = filtered_query.order_by(
         DjiFlightRecord.flight_start.desc(),
@@ -1148,7 +1410,18 @@ def _save_uploaded_kml(original_filename, file_bytes):
     return stored_filename, relative_path
 
 
-def _build_filtered_query(*, data_inicio="", data_fim="", piloto="", aeronave="", equipe=""):
+def _build_filtered_query(
+    *,
+    data_inicio="",
+    data_fim="",
+    piloto="",
+    aeronave="",
+    equipe="",
+    q="",
+    endereco="",
+    voo_id="",
+    status_rota="",
+):
     return _apply_dji_filters(
         DjiFlightRecord.query.options(joinedload(DjiFlightRecord.route_kml)),
         data_inicio=data_inicio,
@@ -1156,10 +1429,127 @@ def _build_filtered_query(*, data_inicio="", data_fim="", piloto="", aeronave=""
         piloto=piloto,
         aeronave=aeronave,
         equipe=equipe,
+        q=q,
+        endereco=endereco,
+        voo_id=voo_id,
+        status_rota=status_rota,
     )
 
 
-def _apply_dji_filters(query, *, data_inicio="", data_fim="", piloto="", aeronave="", equipe=""):
+def _build_filtered_kml_query(
+    *,
+    q="",
+    data_inicio="",
+    data_fim="",
+    endereco="",
+    piloto="",
+    aeronave="",
+    status_os="",
+    status_voo="",
+    voo_id="",
+):
+    query = DjiFlightKmlRoute.query.options(joinedload(DjiFlightKmlRoute.flight_record))
+
+    if voo_id:
+        try:
+            query = query.filter(DjiFlightKmlRoute.flight_record_id == int(voo_id))
+        except (TypeError, ValueError):
+            pass
+
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            or_(
+                DjiFlightKmlRoute.route_code.ilike(like),
+                DjiFlightKmlRoute.original_filename.ilike(like),
+                DjiFlightKmlRoute.aircraft_name.ilike(like),
+                DjiFlightKmlRoute.pilot_name.ilike(like),
+                DjiFlightKmlRoute.flight_controller_id.ilike(like),
+            )
+        )
+
+    if endereco:
+        query = query.filter(
+            DjiFlightKmlRoute.flight_record.has(
+                DjiFlightRecord.location.ilike(f"%{endereco}%")
+            )
+        )
+
+    if data_inicio:
+        try:
+            start_dt = datetime.strptime(data_inicio, "%Y-%m-%d")
+            query = query.filter(DjiFlightKmlRoute.route_timestamp >= start_dt)
+        except ValueError:
+            pass
+
+    if data_fim:
+        try:
+            end_dt = datetime.strptime(data_fim, "%Y-%m-%d") + timedelta(days=1)
+            query = query.filter(DjiFlightKmlRoute.route_timestamp < end_dt)
+        except ValueError:
+            pass
+
+    if piloto:
+        query = query.filter(DjiFlightKmlRoute.pilot_name == piloto)
+
+    if aeronave:
+        query = query.filter(DjiFlightKmlRoute.aircraft_name == aeronave)
+
+    if status_voo == "com_voo":
+        query = query.filter(DjiFlightKmlRoute.flight_record_id.isnot(None))
+    elif status_voo == "sem_voo":
+        query = query.filter(DjiFlightKmlRoute.flight_record_id.is_(None))
+
+    linked_route_ids = db.session.query(OrdemServico.dji_kml_route_id).filter(
+        OrdemServico.dji_kml_route_id.isnot(None)
+    )
+    if status_os == "com_os":
+        query = query.filter(DjiFlightKmlRoute.id.in_(linked_route_ids))
+    elif status_os == "sem_os":
+        query = query.filter(~DjiFlightKmlRoute.id.in_(linked_route_ids))
+
+    return query
+
+
+def _apply_dji_filters(
+    query,
+    *,
+    data_inicio="",
+    data_fim="",
+    piloto="",
+    aeronave="",
+    equipe="",
+    q="",
+    endereco="",
+    voo_id="",
+    status_rota="",
+):
+    if voo_id:
+        try:
+            query = query.filter(DjiFlightRecord.id == int(voo_id))
+        except (TypeError, ValueError):
+            pass
+
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            or_(
+                DjiFlightRecord.flight_window.ilike(like),
+                DjiFlightRecord.location.ilike(like),
+                DjiFlightRecord.aircraft_name.ilike(like),
+                DjiFlightRecord.task_type.ilike(like),
+                DjiFlightRecord.crop.ilike(like),
+                DjiFlightRecord.pilot_name.ilike(like),
+                DjiFlightRecord.team_name.ilike(like),
+                DjiFlightRecord.field_name.ilike(like),
+                DjiFlightRecord.serial_number.ilike(like),
+                DjiFlightRecord.battery_sn.ilike(like),
+            )
+        )
+
+    if endereco:
+        query = query.filter(DjiFlightRecord.location.ilike(f"%{endereco}%"))
+
     if data_inicio:
         try:
             start_dt = datetime.strptime(data_inicio, "%Y-%m-%d")
@@ -1182,6 +1572,14 @@ def _apply_dji_filters(query, *, data_inicio="", data_fim="", piloto="", aeronav
 
     if equipe:
         query = query.filter(DjiFlightRecord.team_name == equipe)
+
+    linked_record_ids = db.session.query(DjiFlightKmlRoute.flight_record_id).filter(
+        DjiFlightKmlRoute.flight_record_id.isnot(None)
+    )
+    if status_rota == "com_kml":
+        query = query.filter(DjiFlightRecord.id.in_(linked_record_ids))
+    elif status_rota == "sem_kml":
+        query = query.filter(~DjiFlightRecord.id.in_(linked_record_ids))
 
     return query
 
