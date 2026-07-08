@@ -309,12 +309,22 @@
                 </td>
                 <td><span class="badge bg-light text-dark border">{{ v.operacao }}</span></td>
                 <td class="fw-bold">{{ '%.0f'|format(v.km_atual or 0) }}</td>
-                <td class="fw-bold">{{ '%.0f'|format(v.km_prox_revisao or 0) }}</td>
+                <td class="fw-bold">
+                  {% if v.km_prox_revisao is not none %}
+                    {{ '%.0f'|format(v.km_prox_revisao) }}
+                  {% else %}
+                    <span class="text-muted small">--</span>
+                  {% endif %}
+                </td>
                 <td>
                   {% set falt = v.km_restante_revisao %}
-                  <span class="stat-pill {% if falt < 0 %}pill-bad{% elif falt <= 2000 %}pill-warn{% else %}pill-ok{% endif %}">
-                    {{ '%.0f'|format(falt or 0) }} km
-                  </span>
+                  {% if falt is not none %}
+                    <span class="stat-pill {% if falt < 0 %}pill-bad{% elif falt <= 2000 %}pill-warn{% else %}pill-ok{% endif %}">
+                      {{ '%.0f'|format(falt) }} km
+                    </span>
+                  {% else %}
+                    <span class="stat-pill pill-ok text-muted">--</span>
+                  {% endif %}
                 </td>
                 <td>
                   {% if turno_aberto %}
@@ -448,6 +458,11 @@
                     <input type="number" step="0.01" min="0" name="valor_abastecimento" class="form-control" placeholder="0,00" required>
                   </div>
                   <div class="col-12">
+                    <label class="form-label small fw-bold">Foto do Painel no Abastecimento</label>
+                    <input type="file" accept="image/*" capture="environment" name="foto_painel_abastecimento" class="form-control" required>
+                    <div class="hint-line mt-1">Registre o KM exibido no painel no momento do abastecimento.</div>
+                  </div>
+                  <div class="col-12">
                     <label class="form-label small fw-bold">Foto da Nota Fiscal</label>
                     <input type="file" accept="image/*" capture="environment" name="foto_nf" class="form-control" required>
                     <div class="hint-line mt-1">Cada abastecimento gera um registro independente dentro do turno.</div>
@@ -467,7 +482,7 @@
       <div class="modal fade" id="modalEncerramento{{ v.id }}" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content border-0 shadow-lg rounded-4">
-            <form method="POST" action="{{ url_for('main.piloto_encerrar_turno', veiculo_id=v.id) }}">
+            <form method="POST" action="{{ url_for('main.piloto_encerrar_turno', veiculo_id=v.id) }}" enctype="multipart/form-data">
               <div class="modal-header border-0 bg-light rounded-top-4">
                 <h5 class="fw-bold m-0 text-dark"><i class="bi bi-flag-fill text-warning me-2"></i>Finalizar Turno - {{ v.placa }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -494,9 +509,14 @@
                   <input type="number" name="qtd_fazendas_enderecos" class="form-control" min="0" value="" placeholder="Quantas fazendas ou endereços foram atendidos no dia?" required>
                   <div class="hint-line mt-1">Informe quantas fazendas ou endereços foram atendidos durante o turno.</div>
                 </div>
-                <div class="mb-0">
+                <div class="mb-3">
                   <label class="form-label small fw-bold">Observações do Dia</label>
                   <textarea name="observacao" class="form-control" rows="2" placeholder="Relate qualquer problema com o veículos..."></textarea>
+                </div>
+                <div class="mb-0">
+                  <label class="form-label small fw-bold">Foto do Painel no Fechamento</label>
+                  <input type="file" accept="image/*" capture="environment" name="foto_painel_final" class="form-control" required>
+                  <div class="hint-line mt-1">Comprove o KM final exibido no painel antes de encerrar o turno.</div>
                 </div>
               </div>
               <div class="modal-footer border-0 bg-light rounded-bottom-4">

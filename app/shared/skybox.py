@@ -42,21 +42,43 @@ def upload_file_to_skybox(file_storage, remote_path):
     _ensure_parent_collections(remote_path)
 
     stream = file_storage.stream
+    content_length = _stream_content_length(stream)
     try:
         stream.seek(0)
     except Exception:
         pass
 
+    headers = {"Content-Type": file_storage.mimetype or "application/octet-stream"}
+    if content_length is not None:
+        headers["Content-Length"] = str(content_length)
+
     response = _request(
         "PUT",
         remote_path,
         data=stream,
-        headers={"Content-Type": file_storage.mimetype or "application/octet-stream"},
+        headers=headers,
     )
     if response.status_code not in (200, 201, 204):
+        current_app.logger.warning(
+            "Falha no upload do Skybox para %s: status=%s body=%s",
+            remote_path,
+            response.status_code,
+            (response.text or "")[:500],
+        )
         raise SkyboxError(f"Falha no upload do Skybox ({response.status_code}).")
 
     return build_skybox_marker(remote_path)
+
+
+def _stream_content_length(stream):
+    try:
+        current_position = stream.tell()
+        stream.seek(0, os.SEEK_END)
+        end_position = stream.tell()
+        stream.seek(current_position)
+        return max(0, int(end_position))
+    except Exception:
+        return None
 
 
 def delete_skybox_file(value):
@@ -274,3 +296,34 @@ def build_os_media_remote_path(os_id, filename):
 
 def build_os_video_remote_path(os_id, filename):
     return build_os_media_remote_path(os_id, filename)
+
+
+def build_veiculo_media_remote_path(placa, subfolder, filename, day=None):
+    remote_subfolder = _veiculo_media_subfolder(subfolder)
+    parts = [
+        "registros abastecimento",
+        _clean_remote_path(placa),
+    ]
+    if day:
+        parts.append(_clean_remote_path(str(day)))
+    parts.extend([
+        remote_subfolder,
+        filename,
+    ])
+    return "/".join([
+        part for part in parts
+        if part
+    ])
+
+
+def _veiculo_media_subfolder(subfolder):
+    normalized = _clean_remote_path(subfolder).lower()
+    mapping = {
+        "paineis": "foto do painel",
+        "painel": "foto do painel",
+        "foto do painel": "foto do painel",
+        "notas": "nota fiscal",
+        "nota": "nota fiscal",
+        "nota fiscal": "nota fiscal",
+    }
+    return mapping.get(normalized, _clean_remote_path(subfolder))

@@ -2130,6 +2130,7 @@ class LogVeiculo(db.Model):
     check_diario = db.Column(db.Boolean, default=False) # Define se este registro é o checklist do dia 
     qtd_fazendas_enderecos = db.Column(db.Integer) #Quantos endereços fez no dia (final)
     foto_painel_path = db.Column(db.String(255), nullable=True) # Foto comprovando Nível de Combustível/KM [cite: 62]
+    foto_painel_final_path = db.Column(db.String(255), nullable=True)
     
     # Validação e Assinatura
     assinatura_piloto = db.Column(db.Text) # Armazena o Base64 do seu Canvas 
@@ -2228,6 +2229,7 @@ class Abastecimento(db.Model):
     
     # Caminho da foto da NF capturada NA HORA (capture="environment")
     foto_nf_path = db.Column(db.String(255), nullable=False)
+    foto_painel_path = db.Column(db.String(255), nullable=True)
     
     # Relacionamento
     log_pai = db.relationship("LogVeiculo", back_populates="abastecimentos_detalhados")

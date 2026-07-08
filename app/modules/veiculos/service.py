@@ -1,8 +1,9 @@
 import os
+import re
 from datetime import datetime
 from io import BytesIO
 
-from flask import make_response, send_file
+from flask import current_app, make_response, send_file
 from openpyxl import Workbook
 from openpyxl.formatting.rule import FormulaRule
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
@@ -14,6 +15,13 @@ from app.extensions import db
 from app.models import Abastecimento, Equipe, EquipePiloto, LogVeiculo, Pilotos, Veiculos
 from app.shared.access import apply_prefeitura_scope, normalize_role
 from app.shared.query_filters import id_search_clause
+from app.shared.skybox import (
+    SkyboxError,
+    build_veiculo_media_remote_path,
+    is_skybox_path,
+    skybox_enabled,
+    upload_file_to_skybox,
+)
 
 
 EQUIPE_OCEANO_USER_TYPE = "equipe_oceano"
@@ -450,8 +458,9 @@ def iniciar_turno_piloto(user, veiculo_id, form_data, files_data, root_path):
         foto_painel,
         root_path,
         "paineis",
-        "painel",
+        "painel_inicial",
         veiculo.placa,
+        copiar_skybox=True,
     )
 
     db.session.add(novo_log)
@@ -491,6 +500,7 @@ def registrar_abastecimento_turno_piloto(user, veiculo_id, form_data, files_data
 
     tipo_abastecimento = (form_data.get("tipo_abastecimento") or "").strip()
     foto_nf = files_data.get("foto_nf")
+    foto_painel = files_data.get("foto_painel_abastecimento")
 
     if (
         km_registro is None
@@ -499,9 +509,11 @@ def registrar_abastecimento_turno_piloto(user, veiculo_id, form_data, files_data
         or not tipo_abastecimento
         or not foto_nf
         or not foto_nf.filename
+        or not foto_painel
+        or not foto_painel.filename
     ):
         raise VeiculoTurnoError(
-            "KM, tipo, litros, valor total e foto da nota sao obrigatorios no abastecimento.",
+            "KM, tipo, litros, valor total, foto do painel e foto da nota sao obrigatorios no abastecimento.",
             "warning",
         )
 
@@ -531,6 +543,15 @@ def registrar_abastecimento_turno_piloto(user, veiculo_id, form_data, files_data
             "notas",
             "nf",
             veiculo.placa,
+            copiar_skybox=True,
+        ),
+        foto_painel_path=_salvar_upload_veiculo(
+            foto_painel,
+            root_path,
+            "paineis",
+            "painel_abastecimento",
+            veiculo.placa,
+            copiar_skybox=True,
         ),
     )
 
@@ -540,8 +561,8 @@ def registrar_abastecimento_turno_piloto(user, veiculo_id, form_data, files_data
     return "Abastecimento registrado com sucesso!"
 
 
-def encerrar_turno_piloto(user, veiculo_id, form_data):
-    _veiculo_do_operacional_logado(veiculo_id, user=user)
+def encerrar_turno_piloto(user, veiculo_id, form_data, files_data=None, root_path=None):
+    veiculo = _veiculo_do_operacional_logado(veiculo_id, user=user)
 
     try:
         km_final = _parse_decimal_form(form_data.get("km_final"))
@@ -550,10 +571,18 @@ def encerrar_turno_piloto(user, veiculo_id, form_data):
 
     qtd_fazendas_enderecos = _parse_optional_int(form_data.get("qtd_fazendas_enderecos"))
     observacao = (form_data.get("observacao") or "").strip() or None
+    files_data = files_data or {}
+    foto_painel_final = files_data.get("foto_painel_final") if hasattr(files_data, "get") else None
 
     if km_final is None:
         raise VeiculoTurnoError(
             "Informe a kilometragem final para encerrar o turno.",
+            "warning",
+        )
+
+    if not foto_painel_final or not foto_painel_final.filename:
+        raise VeiculoTurnoError(
+            "A foto do painel no fechamento do turno e obrigatoria.",
             "warning",
         )
 
@@ -571,6 +600,14 @@ def encerrar_turno_piloto(user, veiculo_id, form_data):
     log.qtd_fazendas_enderecos = qtd_fazendas_enderecos
     log.km_final = km_final
     log.observacao = observacao
+    log.foto_painel_final_path = _salvar_upload_veiculo(
+        foto_painel_final,
+        root_path,
+        "paineis",
+        "painel_fechamento",
+        veiculo.placa,
+        copiar_skybox=True,
+    )
     if log.veiculo:
         log.veiculo.km_atual = km_final
 
@@ -729,7 +766,73 @@ def _buscar_turno_aberto_usuario(veiculo_id, user, incluir_abastecimentos=False)
     return query.order_by(LogVeiculo.data_registro.desc()).first()
 
 
-def _salvar_upload_veiculo(arquivo, root_path, subpasta, prefixo, placa):
+def _upload_veiculo_media_para_skybox(arquivo, placa, subpasta, nome, *, tipo="arquivo", dia=None):
+    remote_path = build_veiculo_media_remote_path(placa, subpasta, nome, day=dia)
+    try:
+        marker = upload_file_to_skybox(arquivo, remote_path)
+        current_app.logger.info(
+            "Foto de veiculo enviada ao Skybox: placa=%s tipo=%s caminho=%s",
+            placa,
+            tipo,
+            remote_path,
+        )
+        return marker
+    except SkyboxError as exc:
+        raise VeiculoTurnoError(
+            f"Falha ao enviar {tipo} para o Skybox: {exc}",
+            "danger",
+        ) from exc
+
+
+def build_veiculo_media_skybox_path(media_path, placa):
+    if not media_path:
+        return None
+    if is_skybox_path(media_path):
+        return media_path
+
+    placa = (placa or "").strip()
+    if not placa:
+        return None
+
+    parts = [part for part in str(media_path or "").replace("\\", "/").split("/") if part]
+    if len(parts) < 4 or parts[-4] != "uploads" or parts[-3] != "veiculos":
+        return None
+
+    return build_veiculo_media_remote_path(placa, parts[-2], parts[-1], day=_dia_media_veiculo(parts[-1]))
+
+
+def _dia_media_veiculo(filename):
+    match = re.search(r"_(\d{4}-\d{2}-\d{2})_\d{2}-\d{2}-\d{2}-\d{3}\.", str(filename or ""))
+    if match:
+        return match.group(1)
+    return None
+
+
+def get_veiculo_log_for_media(user, log_id):
+    tipo_usuario = normalize_role(getattr(user, "tipo_usuario", None))
+    if tipo_usuario not in VEICULOS_LOGS_ALLOWED_TYPES:
+        raise PermissionError
+
+    return _build_veiculos_logs_query(user=user).filter(LogVeiculo.id == log_id).first()
+
+
+def get_abastecimento_for_media(user, abastecimento_id):
+    abastecimento = (
+        Abastecimento.query
+        .options(joinedload(Abastecimento.log_pai).joinedload(LogVeiculo.veiculo))
+        .filter(Abastecimento.id == abastecimento_id)
+        .first()
+    )
+    if not abastecimento:
+        return None
+
+    if not get_veiculo_log_for_media(user, abastecimento.log_veiculo_id):
+        return None
+
+    return abastecimento
+
+
+def _salvar_upload_veiculo(arquivo, root_path, subpasta, prefixo, placa, *, copiar_skybox=False):
     if not arquivo or not arquivo.filename:
         return None
 
@@ -738,9 +841,13 @@ def _salvar_upload_veiculo(arquivo, root_path, subpasta, prefixo, placa):
     os.makedirs(pasta_destino, exist_ok=True)
 
     ext = os.path.splitext(secure_filename(arquivo.filename))[1] or ".jpg"
-    stamp = datetime.now().strftime("%Y%m%d%H%M%S%f")
+    agora = datetime.now()
+    stamp = f"{agora:%Y-%m-%d_%H-%M-%S}-{agora.microsecond // 1000:03d}"
     nome = secure_filename(f"{prefixo}_{placa}_{stamp}{ext}")
     arquivo.save(os.path.join(pasta_destino, nome))
+
+    if copiar_skybox and skybox_enabled():
+        _upload_veiculo_media_para_skybox(arquivo, placa, subpasta, nome, tipo="imagem", dia=f"{agora:%Y-%m-%d}")
 
     return f"uploads/veiculos/{subpasta}/{nome}"
 

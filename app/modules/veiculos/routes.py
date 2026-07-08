@@ -1,4 +1,7 @@
-from flask import abort, current_app, flash, redirect, render_template, request, url_for
+import mimetypes
+import os
+
+from flask import abort, current_app, flash, redirect, render_template, request, send_file, url_for
 from flask_login import current_user, login_required
 
 from app.extensions import db
@@ -9,6 +12,7 @@ from app.modules.veiculos.service import (
     VeiculoTurnoError,
     build_veiculo_form,
     build_piloto_veiculos_context,
+    build_veiculo_media_skybox_path,
     build_veiculos_export_response,
     build_veiculos_logs_export,
     create_veiculo,
@@ -16,6 +20,8 @@ from app.modules.veiculos.service import (
     encerrar_turno_piloto,
     EQUIPE_OCEANO_USER_TYPE,
     iniciar_turno_piloto,
+    get_abastecimento_for_media,
+    get_veiculo_log_for_media,
     list_equipes_choices,
     list_veiculos,
     list_veiculos_logs,
@@ -25,6 +31,7 @@ from app.modules.veiculos.service import (
     validate_veiculo_form,
 )
 from app.shared.access import apply_prefeitura_scope, normalize_role
+from app.shared.skybox import SkyboxError, stream_skybox_file
 
 
 def _require_admin_or_operario():
@@ -40,6 +47,38 @@ def _require_piloto():
 def _get_scoped_veiculo_or_404(veiculo_id: int):
     query = apply_prefeitura_scope(Veiculos.query, current_user, Veiculos.prefeitura_id)
     return query.filter(Veiculos.id == veiculo_id).first_or_404()
+
+
+def _send_local_veiculo_media(media_path):
+    static_root = os.path.abspath(os.path.join(current_app.root_path, "static"))
+    abs_path = os.path.abspath(os.path.join(static_root, str(media_path or "").replace("/", os.sep)))
+    if os.path.commonpath([static_root, abs_path]) != static_root:
+        abort(404)
+    if not os.path.isfile(abs_path):
+        abort(404)
+
+    return send_file(
+        abs_path,
+        mimetype=mimetypes.guess_type(abs_path)[0] or "application/octet-stream",
+        as_attachment=False,
+        download_name=os.path.basename(abs_path),
+        conditional=True,
+    )
+
+
+def _send_veiculo_media_from_skybox(media_path, placa):
+    skybox_path = build_veiculo_media_skybox_path(media_path, placa)
+    if not skybox_path:
+        abort(404)
+
+    try:
+        return stream_skybox_file(skybox_path, request.headers.get("Range"))
+    except SkyboxError:
+        current_app.logger.info(
+            "Falha ao servir midia de veiculo pelo Skybox. Usando arquivo local se existir.",
+            exc_info=True,
+        )
+        return _send_local_veiculo_media(media_path)
 
 
 def register_routes(bp):
@@ -87,6 +126,53 @@ def register_routes(bp):
             return build_veiculos_logs_export(tipo, request.args, user=current_user)
         except PermissionError:
             abort(403)
+
+    @bp.route("/veiculos/logs/<int:log_id>/midia/<tipo>", methods=["GET"], endpoint="veiculo_log_midia_skybox")
+    @login_required
+    def veiculo_log_midia_skybox(log_id, tipo):
+        try:
+            log = get_veiculo_log_for_media(current_user, log_id)
+        except PermissionError:
+            abort(403)
+        if not log:
+            abort(404)
+
+        media_map = {
+            "painel-inicial": log.foto_painel_path,
+            "painel-final": getattr(log, "foto_painel_final_path", None),
+        }
+        media_path = media_map.get(tipo)
+        if not media_path:
+            abort(404)
+
+        placa = log.veiculo.placa if log.veiculo else None
+        return _send_veiculo_media_from_skybox(media_path, placa)
+
+    @bp.route(
+        "/veiculos/abastecimentos/<int:abastecimento_id>/midia/<tipo>",
+        methods=["GET"],
+        endpoint="veiculo_abastecimento_midia_skybox",
+    )
+    @login_required
+    def veiculo_abastecimento_midia_skybox(abastecimento_id, tipo):
+        try:
+            abastecimento = get_abastecimento_for_media(current_user, abastecimento_id)
+        except PermissionError:
+            abort(403)
+        if not abastecimento:
+            abort(404)
+
+        media_map = {
+            "painel": getattr(abastecimento, "foto_painel_path", None),
+            "nota": abastecimento.foto_nf_path,
+        }
+        media_path = media_map.get(tipo)
+        if not media_path:
+            abort(404)
+
+        log = abastecimento.log_pai
+        placa = log.veiculo.placa if log and log.veiculo else None
+        return _send_veiculo_media_from_skybox(media_path, placa)
 
     @bp.route("/veiculos/cadastrar", methods=["GET", "POST"], endpoint="cadastrar_veiculo")
     @login_required
@@ -289,7 +375,16 @@ def register_routes(bp):
         _require_piloto()
 
         try:
-            flash(encerrar_turno_piloto(current_user, veiculo_id, request.form), "success")
+            flash(
+                encerrar_turno_piloto(
+                    current_user,
+                    veiculo_id,
+                    request.form,
+                    request.files,
+                    current_app.root_path,
+                ),
+                "success",
+            )
         except PermissionError:
             abort(403)
         except VeiculoTurnoError as exc:
