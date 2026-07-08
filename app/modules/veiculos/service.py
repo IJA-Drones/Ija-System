@@ -2,6 +2,7 @@ import os
 import re
 from datetime import datetime
 from io import BytesIO
+from zoneinfo import ZoneInfo
 
 from flask import current_app, make_response, send_file
 from openpyxl import Workbook
@@ -25,6 +26,7 @@ from app.shared.skybox import (
 
 
 EQUIPE_OCEANO_USER_TYPE = "equipe_oceano"
+BRAZIL_TZ = ZoneInfo("America/Sao_Paulo")
 VEICULOS_ALLOWED_TYPES = (
     "dev",
     "admin",
@@ -36,6 +38,10 @@ VEICULOS_ALLOWED_TYPES = (
     EQUIPE_OCEANO_USER_TYPE,
     "prefeitura_admin",
 )
+
+
+def _now_brazil():
+    return datetime.now(BRAZIL_TZ).replace(tzinfo=None)
 VEICULOS_LOGS_ALLOWED_TYPES = (
     "dev",
     "admin",
@@ -452,7 +458,7 @@ def iniciar_turno_piloto(user, veiculo_id, form_data, files_data, root_path):
         km_final=None,
         check_diario=True,
         assinatura_piloto=assinatura_b64,
-        data_registro=datetime.now(),
+        data_registro=_now_brazil(),
     )
     novo_log.foto_painel_path = _salvar_upload_veiculo(
         foto_painel,
@@ -532,7 +538,7 @@ def registrar_abastecimento_turno_piloto(user, veiculo_id, form_data, files_data
 
     novo_abastecimento = Abastecimento(
         log_veiculo_id=log.id,
-        data_hora=datetime.now(),
+        data_hora=_now_brazil(),
         km_registro=km_registro,
         tipo_abastecimento=tipo_abastecimento,
         litros=litros,
@@ -841,7 +847,7 @@ def _salvar_upload_veiculo(arquivo, root_path, subpasta, prefixo, placa, *, copi
     os.makedirs(pasta_destino, exist_ok=True)
 
     ext = os.path.splitext(secure_filename(arquivo.filename))[1] or ".jpg"
-    agora = datetime.now()
+    agora = _now_brazil()
     stamp = f"{agora:%Y-%m-%d_%H-%M-%S}-{agora.microsecond // 1000:03d}"
     nome = secure_filename(f"{prefixo}_{placa}_{stamp}{ext}")
     arquivo.save(os.path.join(pasta_destino, nome))
@@ -995,7 +1001,7 @@ def build_veiculos_export_response(tipo_usuario, args, user=None):
     response = make_response(file_stream.getvalue())
     response.headers["Content-Type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     response.headers["Content-Disposition"] = (
-        f'attachment; filename="veiculos_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx"'
+        f'attachment; filename="veiculos_{_now_brazil().strftime("%Y%m%d_%H%M%S")}.xlsx"'
     )
     return response
 
@@ -1415,7 +1421,7 @@ def build_veiculos_logs_export(tipo_usuario, args, user=None):
     return send_file(
         output,
         as_attachment=True,
-        download_name=f"logs_veiculos_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
+        download_name=f"logs_veiculos_{_now_brazil().strftime('%Y%m%d_%H%M%S')}.xlsx",
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
 
