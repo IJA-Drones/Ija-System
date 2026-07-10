@@ -676,11 +676,26 @@
                                     {% endif %}
                                 </td>
                                 <td class="pe-4" data-label="Detalhes">
-                                    <button class="btn btn-sm btn-outline-primary rounded-pill px-3" type="button"
-                                            data-bs-toggle="collapse" data-bs-target="#detalhes-log-{{ log.id }}"
-                                            aria-expanded="false" aria-controls="detalhes-log-{{ log.id }}">
-                                        <i class="bi bi-card-list me-1"></i> Ver dados
-                                    </button>
+                                    <div class="d-flex flex-wrap gap-2 justify-content-center justify-content-md-end">
+                                        <button class="btn btn-sm btn-outline-primary rounded-pill px-3" type="button"
+                                                data-bs-toggle="collapse" data-bs-target="#detalhes-log-{{ log.id }}"
+                                                aria-expanded="false" aria-controls="detalhes-log-{{ log.id }}">
+                                            <i class="bi bi-card-list me-1"></i> Ver dados
+                                        </button>
+                                        {% if current_user.tipo_usuario|lower == 'dev' %}
+                                            <form method="POST"
+                                                  action="{{ url_for('main.deletar_log_veiculo', log_id=log.id) }}"
+                                                  onsubmit="return confirm('Deseja excluir este log de veiculo e os abastecimentos vinculados? Esta acao nao podera ser desfeita.');">
+                                                <input type="hidden" name="q" value="{{ filters.q }}">
+                                                <input type="hidden" name="data_inicio" value="{{ filters.data_inicio }}">
+                                                <input type="hidden" name="data_fim" value="{{ filters.data_fim }}">
+                                                <input type="hidden" name="page" value="{{ paginacao.page if paginacao else 1 }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">
+                                                    <i class="bi bi-trash me-1"></i> Excluir
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                    </div>
                                 </td>
                             </tr>
                             <tr class="collapse-row">

@@ -67,8 +67,17 @@
     bottom: 25px;
     left: 20px;
     z-index: 1000;
-    width: 170px;
     padding: 12px;
+  }
+
+  .map-legend-overlay {
+    width: 170px;
+  }
+
+  .map-category-legend {
+    width: min(340px, calc(100% - 40px));
+    max-height: min(48vh, 420px);
+    overflow-y: auto;
   }
 
   .legend-item {
@@ -94,6 +103,18 @@
     border-radius: 50%;
     border: 1.5px solid #fff;
     flex-shrink: 0;
+  }
+
+  .legend-label {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .legend-count {
+    color: var(--accent-color) !important;
+    font-size: 0.68rem;
+    font-weight: 800;
+    opacity: 0.95;
   }
 
   #mapTabs {
@@ -178,7 +199,7 @@
             <label class="small text-muted mb-1 fw-bold">Mês de Referência</label>
             <select id="mesFilter" class="form-select form-select-sm" onchange="atualizarMapas()">
               {% for val in range(1, 13) %}
-              <option value="{{ val }}" {% if val == 2 %}selected{% endif %}>
+              <option value="{{ val }}" {% if val == mes_atual %}selected{% endif %}>
                 {{ ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][val-1] }}
               </option>
               {% endfor %}
@@ -266,25 +287,13 @@
         <div class="tab-pane fade" id="tabArea">
           <div id="mapPolygons" class="map-container"></div>
 
-          <!-- Legenda controlável por JS (ids por categoria) -->
+          <!-- Legenda preenchida pelo JS com os tipos de foco visiveis no mapa. -->
           <div class="map-category-legend glass-panel p-3 border-0" style="bottom: 20px; left: 20px;">
-            <h6 class="fw-bold text-muted small mb-3 text-uppercase">Legenda</h6>
-
-            <div class="legend-item is-active" id="legend-piscina">
-              <div class="legend-color" style="background: #0000ff;"></div><span>Água (Piscina / Caixa d'água / Acúmulo)</span>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h6 class="fw-bold text-muted small mb-0 text-uppercase">Tipos de foco</h6>
+              <span class="legend-count" id="areaLegendTotal">0</span>
             </div>
-
-            <div class="legend-item is-active" id="legend-abandonado">
-              <div class="legend-color" style="background: #ff3c0b;"></div><span>Imóveis Abandonados</span>
-            </div>
-
-            <div class="legend-item is-active" id="legend-terreno">
-              <div class="legend-color" style="background: #006400;"></div><span>Terreno / Inservíveis / Reciclagem</span>
-            </div>
-
-            <div class="legend-item is-active" id="legend-outros">
-              <div class="legend-color" style="background: #ffa500;"></div><span>Outros</span>
-            </div>
+            <div id="areaLegendItems"></div>
           </div>
         </div>
 
@@ -318,9 +327,19 @@
   let mapHeat, mapArea, mapLogistics, heatmap;
   let markers = [];
   let circles = [];
+  const ANO_RELATORIO_ATUAL = {{ ano_atual|tojson }};
+  const MAPA_FOCOS_CENTER = { lat: -23.5505, lng: -46.6333 };
+  const MAPA_FOCOS_ZOOM = 11;
+  const FOCO_FILTER_OPTIONS = {{ solicitacao_filter_foco_opcoes|tojson }};
+  const AREA_FOCUS_PALETTE = [
+    "#2563eb", "#dc2626", "#16a34a", "#f59e0b", "#7c3aed", "#0891b2",
+    "#db2777", "#65a30d", "#ea580c", "#4f46e5", "#0f766e", "#be123c",
+    "#9333ea", "#0284c7", "#ca8a04", "#15803d", "#c2410c", "#4338ca",
+    "#0d9488", "#b91c1c", "#6d28d9", "#0369a1", "#a16207", "#047857",
+  ];
 
   function initMap() {
-    const center = { lat: -22.4279, lng: -45.4584 };
+    const center = MAPA_FOCOS_CENTER;
 
     const elHeat = document.getElementById("mapHeatmap");
     const elPoly = document.getElementById("mapPolygons");
@@ -332,15 +351,15 @@
     }
 
     if (elHeat) {
-      mapHeat = new google.maps.Map(elHeat, { zoom: 13, center, mapTypeId: "hybrid" });
+      mapHeat = new google.maps.Map(elHeat, { zoom: MAPA_FOCOS_ZOOM, center, mapTypeId: "hybrid" });
     }
 
     if (elPoly) {
-      mapArea = new google.maps.Map(elPoly, { zoom: 13, center, mapTypeId: "hybrid" });
+      mapArea = new google.maps.Map(elPoly, { zoom: MAPA_FOCOS_ZOOM, center, mapTypeId: "hybrid" });
     }
 
     if (elLogi) {
-      mapLogistics = new google.maps.Map(elLogi, { zoom: 13, center });
+      mapLogistics = new google.maps.Map(elLogi, { zoom: MAPA_FOCOS_ZOOM, center });
     }
 
     document.querySelectorAll('a[data-bs-toggle="tab"]').forEach((tab) => {
@@ -402,6 +421,44 @@
       .toLowerCase();
   }
 
+  function hashFoco(str) {
+    return normalizarFoco(str).split("").reduce((hash, char) => {
+      return ((hash << 5) - hash + char.charCodeAt(0)) | 0;
+    }, 0);
+  }
+
+  function getFocoLabel(foco) {
+    const raw = (foco || "").toString().trim();
+    const normalized = normalizarFoco(raw);
+    if (!normalized) return "Outros";
+
+    const found = FOCO_FILTER_OPTIONS.find(option => normalizarFoco(option) === normalized);
+    return found || raw;
+  }
+
+  function getFocoStyle(foco) {
+    const label = getFocoLabel(foco);
+    const index = FOCO_FILTER_OPTIONS.findIndex(option => normalizarFoco(option) === normalizarFoco(label));
+    const paletteIndex = index >= 0
+      ? index % AREA_FOCUS_PALETTE.length
+      : Math.abs(hashFoco(label)) % AREA_FOCUS_PALETTE.length;
+
+    return {
+      id: normalizarFoco(label).replace(/[^a-z0-9]+/g, "-") || "outros",
+      label,
+      color: AREA_FOCUS_PALETTE[paletteIndex],
+    };
+  }
+
+  function escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
   function getCategoriaPorFoco(foco) {
     const f = normalizarFoco(foco);
 
@@ -435,54 +492,224 @@
   }
 
   function getCorPorFoco(foco) {
-    const categoria = getCategoriaPorFoco(foco);
-    if (categoria === "piscina") return "#0000ff";
-    if (categoria === "abandonado") return "#ff3c0b";
-    if (categoria === "terreno") return "#006400";
-    if (categoria === "Acumulador") return "#006400";
-    return "#ffa500";
+    return getFocoStyle(foco).color;
   }
 
-  // legenda do mapa "Áreas" acompanha o filtro
-  function atualizarLegendaCategorias() {
-    const focoFiltro = document.getElementById("focoFilter")?.value || "todos";
-    const categoria = (focoFiltro === "todos") ? "todos" : getCategoriaPorFoco(focoFiltro);
+  function atualizarLegendaCategorias(pontos = []) {
+    const list = document.getElementById("areaLegendItems");
+    const total = document.getElementById("areaLegendTotal");
+    if (!list || !total) return;
 
-    const ids = ["piscina", "abandonado", "terreno", "outros"];
-    ids.forEach((id) => {
-      const el = document.getElementById(`legend-${id}`);
-      if (!el) return;
-      el.classList.remove("is-active");
-      // mantém tudo visível, só destaca a categoria
-      el.style.display = "flex";
-      el.style.opacity = "0.65";
+    const grouped = new Map();
+    pontos.forEach((ponto) => {
+      const style = getFocoStyle(ponto.foco);
+      const current = grouped.get(style.id) || { ...style, count: 0 };
+      current.count += 1;
+      grouped.set(style.id, current);
     });
 
-    if (categoria !== "todos") {
-      const elAtivo = document.getElementById(`legend-${categoria}`);
-      if (elAtivo) {
-        elAtivo.classList.add("is-active");
-        elAtivo.style.opacity = "1";
-      }
-    } else {
-      // todos => tudo ativo
-      ids.forEach((id) => {
-        const el = document.getElementById(`legend-${id}`);
-        if (!el) return;
-        el.classList.add("is-active");
-        el.style.opacity = "1";
-      });
+    const items = Array.from(grouped.values()).sort((a, b) => {
+      if (b.count !== a.count) return b.count - a.count;
+      return a.label.localeCompare(b.label, "pt-BR");
+    });
+
+    total.textContent = `${pontos.length} foco${pontos.length === 1 ? "" : "s"}`;
+
+    if (!items.length) {
+      list.innerHTML = `<div class="legend-item is-active mb-0"><span class="legend-label">Sem focos no filtro atual</span></div>`;
+      return;
     }
+
+    list.innerHTML = items.map((item) => `
+      <div class="legend-item is-active" title="${escapeHtml(item.label)}">
+        <div class="legend-color" style="background: ${item.color};"></div>
+        <span class="legend-label text-truncate">${escapeHtml(item.label)}</span>
+        <span class="legend-count">${item.count}</span>
+      </div>
+    `).join("");
+  }
+
+  let CanvasHeatmapOverlay = null;
+
+  function ensureCanvasHeatmapOverlay() {
+    if (CanvasHeatmapOverlay) return CanvasHeatmapOverlay;
+
+    CanvasHeatmapOverlay = class extends google.maps.OverlayView {
+    constructor({ map, data, radius = 40, opacity = 0.8, gradient = [] }) {
+      super();
+      this.data = data || [];
+      this.radius = radius;
+      this.opacity = opacity;
+      this.gradient = gradient;
+      this.canvas = null;
+      this.setMap(map);
+    }
+
+    onAdd() {
+      this.canvas = document.createElement("canvas");
+      this.canvas.style.position = "absolute";
+      this.canvas.style.pointerEvents = "none";
+      this.getPanes().overlayLayer.appendChild(this.canvas);
+    }
+
+    draw() {
+      if (!this.canvas || !this.getProjection()) return;
+
+      const map = this.getMap();
+      const bounds = map?.getBounds();
+      if (!map || !bounds) return;
+
+      const projection = this.getProjection();
+      const ne = projection.fromLatLngToDivPixel(bounds.getNorthEast());
+      const sw = projection.fromLatLngToDivPixel(bounds.getSouthWest());
+      const width = Math.max(1, Math.ceil(ne.x - sw.x));
+      const height = Math.max(1, Math.ceil(sw.y - ne.y));
+      const ratio = window.devicePixelRatio || 1;
+
+      this.canvas.style.left = `${sw.x}px`;
+      this.canvas.style.top = `${ne.y}px`;
+      this.canvas.style.width = `${width}px`;
+      this.canvas.style.height = `${height}px`;
+      this.canvas.width = Math.ceil(width * ratio);
+      this.canvas.height = Math.ceil(height * ratio);
+
+      const ctx = this.canvas.getContext("2d", { willReadFrequently: true });
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      ctx.clearRect(0, 0, width, height);
+
+      if (!this.data.length) return;
+
+      this.data.forEach((point) => {
+        const pixel = projection.fromLatLngToDivPixel(point);
+        const x = pixel.x - sw.x;
+        const y = pixel.y - ne.y;
+
+        if (x < -this.radius || y < -this.radius || x > width + this.radius || y > height + this.radius) {
+          return;
+        }
+
+        const radial = ctx.createRadialGradient(x, y, 0, x, y, this.radius);
+        radial.addColorStop(0, "rgba(0, 0, 0, 0.75)");
+        radial.addColorStop(1, "rgba(0, 0, 0, 0)");
+
+        ctx.fillStyle = radial;
+        ctx.beginPath();
+        ctx.arc(x, y, this.radius, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      const image = ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+      const ramp = this.buildColorRamp();
+
+      for (let i = 0; i < image.data.length; i += 4) {
+        const alpha = image.data[i + 3];
+        if (!alpha) continue;
+
+        const intensity = Math.min(1, Math.sqrt(alpha / 255));
+        const color = this.colorAt(intensity, ramp);
+        image.data[i] = color.r;
+        image.data[i + 1] = color.g;
+        image.data[i + 2] = color.b;
+        image.data[i + 3] = Math.min(255, alpha * this.opacity);
+      }
+
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.putImageData(image, 0, 0);
+    }
+
+    onRemove() {
+      if (this.canvas?.parentNode) {
+        this.canvas.parentNode.removeChild(this.canvas);
+      }
+      this.canvas = null;
+    }
+
+    buildColorRamp() {
+      const fallback = [
+        "rgba(0, 255, 255, 0)",
+        "rgba(0, 255, 0, 1)",
+        "rgba(255, 255, 0, 1)",
+        "rgba(255, 0, 0, 1)",
+      ];
+      return (this.gradient.length ? this.gradient : fallback).map((color) => this.parseColor(color));
+    }
+
+    parseColor(color) {
+      const rgba = String(color).match(/rgba?\(([^)]+)\)/i);
+      if (rgba) {
+        const parts = rgba[1].split(",").map((part) => Number(part.trim()));
+        return { r: parts[0] || 0, g: parts[1] || 0, b: parts[2] || 0 };
+      }
+
+      const hex = String(color).replace("#", "").trim();
+      if (hex.length === 6) {
+        return {
+          r: parseInt(hex.slice(0, 2), 16),
+          g: parseInt(hex.slice(2, 4), 16),
+          b: parseInt(hex.slice(4, 6), 16),
+        };
+      }
+
+      return { r: 255, g: 0, b: 0 };
+    }
+
+    colorAt(value, ramp) {
+      if (ramp.length === 1) return ramp[0];
+
+      const scaled = Math.max(0, Math.min(1, value)) * (ramp.length - 1);
+      const index = Math.min(ramp.length - 2, Math.floor(scaled));
+      const fraction = scaled - index;
+      const from = ramp[index];
+      const to = ramp[index + 1];
+
+      return {
+        r: Math.round(from.r + (to.r - from.r) * fraction),
+        g: Math.round(from.g + (to.g - from.g) * fraction),
+        b: Math.round(from.b + (to.b - from.b) * fraction),
+      };
+    }
+  };
+
+    return CanvasHeatmapOverlay;
+  }
+
+  function heatmapDataUrl() {
+    const uvisId = document.getElementById("uvisFilter")?.value || "";
+    const mes = document.getElementById("mesFilter").value;
+    const params = new URLSearchParams({
+      uvis_id: uvisId,
+      mes,
+      ano: String(ANO_RELATORIO_ATUAL),
+    });
+    return `/api/heatmap-data?${params.toString()}`;
+  }
+
+  function ajustarMapaAosPontos(map, pontos) {
+    if (!map) return;
+
+    if (!pontos.length) {
+      map.setCenter(MAPA_FOCOS_CENTER);
+      map.setZoom(MAPA_FOCOS_ZOOM);
+      return;
+    }
+
+    if (pontos.length === 1) {
+      map.setCenter(pontos[0]);
+      map.setZoom(15);
+      return;
+    }
+
+    const bounds = new google.maps.LatLngBounds();
+    pontos.forEach(p => bounds.extend(p));
+    map.fitBounds(bounds);
   }
 
   async function carregarDadosCalor() {
     if (!mapHeat) return;
     try {
-      const uvisId = document.getElementById("uvisFilter")?.value || "";
-      const mes = document.getElementById("mesFilter").value;
       const focoFiltro = document.getElementById("focoFilter")?.value || "todos";
 
-      const response = await fetch(`/api/heatmap-data?uvis_id=${uvisId}&mes=${mes}&ano=2026`);
+      const response = await fetch(heatmapDataUrl());
       let pontos = await response.json();
 
       // filtro por foco EXATO (quando não for "todos")
@@ -536,7 +763,8 @@
       const barra = document.querySelector('.gradient-bar');
       if (barra) barra.style.setProperty('--legenda-gradiente', gradienteCSS);
 
-      heatmap = new google.maps.visualization.HeatmapLayer({
+      const HeatmapOverlay = ensureCanvasHeatmapOverlay();
+      heatmap = new HeatmapOverlay({
         data: heatData,
         map: mapHeat,
         radius: 40,
@@ -544,11 +772,7 @@
         gradient: gradienteMapa
       });
 
-      if (heatData.length > 0) {
-        const bounds = new google.maps.LatLngBounds();
-        heatData.forEach(p => bounds.extend(p));
-        mapHeat.fitBounds(bounds);
-      }
+      ajustarMapaAosPontos(mapHeat, heatData);
     } catch (error) {
       console.error(error);
     }
@@ -557,11 +781,9 @@
   async function carregarDadosOperacionais() {
     if (!mapArea) return;
     try {
-      const uvisId = document.getElementById("uvisFilter")?.value || "";
-      const mes = document.getElementById("mesFilter").value;
       const focoFiltro = document.getElementById("focoFilter")?.value || "todos";
 
-      const response = await fetch(`/api/heatmap-data?uvis_id=${uvisId}&mes=${mes}&ano=2026`);
+      const response = await fetch(heatmapDataUrl());
       let pontos = await response.json();
 
       // filtro por foco EXATO (quando não for "todos")
@@ -569,6 +791,8 @@
         const alvo = normalizarFoco(focoFiltro);
         pontos = pontos.filter(p => normalizarFoco(p.foco) === alvo);
       }
+
+      atualizarLegendaCategorias(pontos);
 
       markers.forEach(m => m.setMap(null));
       circles.forEach(c => c.setMap(null));
@@ -605,11 +829,7 @@
         circles.push(circle);
       });
 
-      if (pontos.length > 0) {
-        const bounds = new google.maps.LatLngBounds();
-        pontos.forEach(p => bounds.extend({ lat: p.lat, lng: p.lng }));
-        mapArea.fitBounds(bounds);
-      }
+      ajustarMapaAosPontos(mapArea, pontos.map(p => ({ lat: p.lat, lng: p.lng })));
     } catch (error) {
       console.error(error);
     }

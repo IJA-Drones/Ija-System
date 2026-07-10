@@ -42,6 +42,8 @@ VEICULOS_ALLOWED_TYPES = (
 
 def _now_brazil():
     return datetime.now(BRAZIL_TZ).replace(tzinfo=None)
+
+
 VEICULOS_LOGS_ALLOWED_TYPES = (
     "dev",
     "admin",
@@ -326,6 +328,24 @@ def update_veiculo(veiculo, cleaned):
 def delete_veiculo(veiculo):
     db.session.delete(veiculo)
     db.session.commit()
+
+
+def delete_veiculo_log(log_id, user):
+    if normalize_role(getattr(user, "tipo_usuario", None)) != "dev":
+        raise PermissionError
+
+    log = (
+        LogVeiculo.query
+        .options(selectinload(LogVeiculo.abastecimentos_detalhados))
+        .filter(LogVeiculo.id == log_id)
+        .first()
+    )
+    if not log:
+        return False
+
+    db.session.delete(log)
+    db.session.commit()
+    return True
 
 
 def build_veiculo_form(veiculo):

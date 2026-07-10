@@ -16,6 +16,7 @@ from app.modules.veiculos.service import (
     build_veiculos_export_response,
     build_veiculos_logs_export,
     create_veiculo,
+    delete_veiculo_log,
     delete_veiculo,
     encerrar_turno_piloto,
     EQUIPE_OCEANO_USER_TYPE,
@@ -126,6 +127,30 @@ def register_routes(bp):
             return build_veiculos_logs_export(tipo, request.args, user=current_user)
         except PermissionError:
             abort(403)
+
+    @bp.route("/veiculos/logs/<int:log_id>/deletar", methods=["POST"], endpoint="deletar_log_veiculo")
+    @login_required
+    def deletar_log_veiculo(log_id):
+        try:
+            deleted = delete_veiculo_log(log_id, current_user)
+            if deleted:
+                flash("Log de veiculo removido com sucesso.", "success")
+            else:
+                flash("Log de veiculo nao encontrado.", "warning")
+        except PermissionError:
+            abort(403)
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("Erro ao remover log de veiculo %s.", log_id)
+            flash("Erro interno ao remover o log de veiculo.", "danger")
+
+        return redirect(url_for(
+            "main.veiculos_logs",
+            q=request.form.get("q") or None,
+            data_inicio=request.form.get("data_inicio") or None,
+            data_fim=request.form.get("data_fim") or None,
+            page=request.form.get("page") or None,
+        ))
 
     @bp.route("/veiculos/logs/<int:log_id>/midia/<tipo>", methods=["GET"], endpoint="veiculo_log_midia_skybox")
     @login_required

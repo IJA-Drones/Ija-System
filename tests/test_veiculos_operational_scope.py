@@ -13,6 +13,7 @@ from app.modules.veiculos import service as veiculos_service
 from app.modules.veiculos.service import (
     build_veiculo_media_skybox_path,
     build_piloto_veiculos_context,
+    delete_veiculo_log,
     encerrar_turno_piloto,
     registrar_abastecimento_turno_piloto,
     update_veiculo,
@@ -154,6 +155,52 @@ class VeiculosOperationalScopeTests(unittest.TestCase):
             r"^registros abastecimento/ABC1D23/\d{4}-\d{2}-\d{2}/foto do painel/painel_inicial_ABC1D23_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}-\d{3}\.jpg$",
         )
         self.assertEqual(captured[0][1], b"foto-painel")
+
+    def test_dev_can_delete_vehicle_log_with_fuel_records(self):
+        veiculo = self._novo_veiculo()
+        log = LogVeiculo(
+            veiculo_id=veiculo.id,
+            equipe_id=self.equipe.id,
+            km_inicial=1000,
+            km_final=1020,
+            check_diario=True,
+        )
+        db.session.add(log)
+        db.session.flush()
+        db.session.add(
+            Abastecimento(
+                log_veiculo_id=log.id,
+                km_registro=1010,
+                tipo_abastecimento="Veiculo",
+                litros=20,
+                valor_total=100,
+                foto_nf_path="uploads/veiculos/notas/nf.png",
+            )
+        )
+        db.session.commit()
+
+        deleted = delete_veiculo_log(log.id, SimpleNamespace(tipo_usuario="dev"))
+
+        self.assertTrue(deleted)
+        self.assertIsNone(db.session.get(LogVeiculo, log.id))
+        self.assertEqual(Abastecimento.query.count(), 0)
+        self.assertIsNotNone(db.session.get(Veiculos, veiculo.id))
+
+    def test_only_dev_can_delete_vehicle_log(self):
+        veiculo = self._novo_veiculo()
+        log = LogVeiculo(
+            veiculo_id=veiculo.id,
+            equipe_id=self.equipe.id,
+            km_inicial=1000,
+            check_diario=True,
+        )
+        db.session.add(log)
+        db.session.commit()
+
+        with self.assertRaises(PermissionError):
+            delete_veiculo_log(log.id, SimpleNamespace(tipo_usuario="admin"))
+
+        self.assertIsNotNone(db.session.get(LogVeiculo, log.id))
 
     def test_fuel_record_requires_and_saves_panel_photo(self):
         veiculo = self._novo_veiculo()

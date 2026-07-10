@@ -1,3 +1,6 @@
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
 from flask import current_app, jsonify, render_template, request
 from flask_login import current_user, login_required
 
@@ -8,6 +11,8 @@ from app.modules.mapas.service import (
     get_consulta_geolocalizacao_key,
     get_mapa_relatorio_key,
 )
+
+BRAZIL_TZ = ZoneInfo("America/Sao_Paulo")
 
 
 def register_routes(bp):
@@ -59,6 +64,7 @@ def register_routes(bp):
     @login_required
     def mapa_relatorio():
         google_maps_key = get_mapa_relatorio_key()
+        hoje_brasil = datetime.now(BRAZIL_TZ)
         if not google_maps_key:
             current_app.logger.warning(
                 "Google Maps API Key nao encontrada (Maps_KEY_FRONT / KEY_API_GOOGLE_MAPS)."
@@ -68,6 +74,8 @@ def register_routes(bp):
             "mapa_relatorio.html",
             uvis_disponiveis=build_uvis_disponiveis(current_user),
             google_maps_key=google_maps_key,
+            mes_atual=hoje_brasil.month,
+            ano_atual=hoje_brasil.year,
         )
 
     @bp.route(
