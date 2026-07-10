@@ -139,6 +139,9 @@
                     <span class="badge {% if contrato.equipe %}bg-primary-subtle text-primary border border-primary-subtle{% else %}bg-light text-dark border{% endif %}">
                       {{ contrato.equipe.nome if contrato.equipe else 'Sem equipe' }}
                     </span>
+                    <span class="badge {% if contrato.comprovante_pagamento_path %}bg-info-subtle text-info border border-info-subtle{% else %}bg-light text-dark border{% endif %}">
+                      {% if contrato.comprovante_pagamento_path %}Comprovante enviado{% else %}Sem comprovante{% endif %}
+                    </span>
                   </div>
                 </td>
 
@@ -199,6 +202,33 @@
                           <i class="bi bi-filetype-pdf text-danger me-2"></i> PDF do contrato
                         </a>
                       </li>
+                      {% if contrato.comprovante_pagamento_path %}
+                        <li>
+                          <a href="{{ url_for('main.agro_contrato_comprovante_pagamento', contrato_id=contrato.id) }}" target="_blank" class="dropdown-item py-2">
+                            <i class="bi bi-receipt text-primary me-2"></i> Ver comprovante
+                          </a>
+                        </li>
+                      {% endif %}
+                      {% if can_edit_payment_receipts %}
+                        <li>
+                          <form class="m-0" method="POST" action="{{ url_for('main.agro_contrato_comprovante_pagamento_upload', contrato_id=contrato.id) }}" enctype="multipart/form-data">
+                            <label class="dropdown-item py-2 mb-0" for="comprovantePagamentoListar{{ contrato.id }}">
+                              <i class="bi bi-upload text-warning me-2"></i>
+                              {% if contrato.comprovante_pagamento_path %}Trocar comprovante{% else %}Enviar comprovante{% endif %}
+                            </label>
+                            <input id="comprovantePagamentoListar{{ contrato.id }}" class="d-none" type="file" name="comprovante_pagamento" accept="application/pdf,image/jpeg,.pdf,.jpg,.jpeg,.jfif" onchange="this.form.submit()">
+                          </form>
+                        </li>
+                        {% if contrato.comprovante_pagamento_path %}
+                          <li>
+                            <form class="m-0" method="POST" action="{{ url_for('main.agro_contrato_comprovante_pagamento_remover', contrato_id=contrato.id) }}" onsubmit="return confirm('Remover o comprovante de pagamento deste contrato?');">
+                              <button type="submit" class="dropdown-item py-2 text-danger">
+                                <i class="bi bi-x-circle me-2"></i> Remover comprovante
+                              </button>
+                            </form>
+                          </li>
+                        {% endif %}
+                      {% endif %}
                       {% if is_editable %}
                         <li>
                           <a href="{{ url_for('main.agro_financeiro_novo', contrato_id=contrato.id) }}" class="dropdown-item py-2">
@@ -326,6 +356,16 @@
                 <div>
                   <dt>Assinatura</dt>
                   <dd>{{ contrato.data_assinatura.strftime('%d/%m/%Y') if contrato.data_assinatura else '-' }}</dd>
+                </div>
+                <div>
+                  <dt>Comprovante</dt>
+                  <dd>
+                    {% if contrato.comprovante_pagamento_path %}
+                      <a href="{{ url_for('main.agro_contrato_comprovante_pagamento', contrato_id=contrato.id) }}" target="_blank">{{ contrato.comprovante_pagamento_nome or 'Comprovante de pagamento' }}</a>
+                    {% else %}
+                      Pendente
+                    {% endif %}
+                  </dd>
                 </div>
               </dl>
             </section>
@@ -455,6 +495,11 @@
                 <a href="{{ url_for('main.agro_contrato_pdf', orcamento_id=contrato.orcamento.id) }}" target="_blank" class="btn btn-outline-secondary btn-sm">
                   <i class="bi bi-filetype-pdf"></i> PDF do contrato
                 </a>
+                {% if contrato.comprovante_pagamento_path %}
+                  <a href="{{ url_for('main.agro_contrato_comprovante_pagamento', contrato_id=contrato.id) }}" target="_blank" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-receipt"></i> Comprovante
+                  </a>
+                {% endif %}
                 {% if is_editable %}
                   <a href="{{ url_for('main.agro_contrato_editar', orcamento_id=contrato.orcamento.id) }}" class="btn btn-outline-secondary btn-sm">
                     <i class="bi bi-pencil-square"></i> Editar contrato

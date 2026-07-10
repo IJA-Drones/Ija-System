@@ -5,7 +5,7 @@ import uuid
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
-from flask import abort, flash, redirect, render_template, request, send_file, send_from_directory, url_for
+from flask import abort, current_app, flash, redirect, render_template, request, send_file, send_from_directory, url_for
 from flask_login import current_user, login_required
 from sqlalchemy import or_
 from sqlalchemy.orm import joinedload, selectinload
@@ -51,6 +51,7 @@ from app.modules.agro.service import (
     build_agro_finance_competencia_settings,
     build_bancos_agro_query,
     build_contrato_agro_defaults,
+    build_contratos_agro_comprovantes_query,
     build_contratos_agro_query,
     build_contratos_agro_aprovados_query,
     build_clientes_agro_query,
@@ -74,8 +75,11 @@ from app.modules.agro.service import (
     get_agro_finance_competencia_controle,
     is_financeiro_agro_only_user,
     recalculate_bancos_agro,
+    remove_contrato_payment_receipt,
     remove_orcamento_attachment,
+    resolve_contrato_payment_receipt,
     resolve_orcamento_attachment,
+    save_contrato_payment_receipt,
     save_orcamento_attachment,
     build_rd_mapeamento_agro_defaults,
     serialize_contrato_agro_form,
@@ -89,6 +93,7 @@ from app.modules.agro.service import (
 from app.shared.access import apply_prefeitura_scope, is_admin_global_user
 from app.shared.formatters import format_cep, format_currency_br, format_documento, format_phone_br, only_digits, parse_currency_br
 from app.shared.query_filters import id_search_clause
+from app.shared.skybox import SkyboxError, stream_skybox_file
 from app.shared.validators import validate_documento
 
 
@@ -265,6 +270,11 @@ def _require_agro_edit():
 
 def _require_agro_finance_edit():
     if not can_edit_agro_finance_panel(current_user):
+        abort(403)
+
+
+def _require_agro_payment_receipt_edit():
+    if not (can_edit_agro_panel(current_user) or can_edit_agro_finance_panel(current_user)):
         abort(403)
 
 
@@ -5208,8 +5218,40 @@ def register_routes(bp):
             pagination_args=_query_args_without_page(),
             status_options=AGRO_CONTRATO_STATUS_OPTIONS,
             is_editable=can_edit_agro_panel(current_user),
+            can_edit_payment_receipts=can_edit_agro_panel(current_user) or can_edit_agro_finance_panel(current_user),
             is_admin_agro=is_admin_global_user(current_user),
             build_endereco_agro=build_endereco_agro,
+        )
+
+    @bp.route("/agro/contratos/comprovantes", methods=["GET"], endpoint="agro_contratos_comprovantes")
+    @login_required
+    def agro_contratos_comprovantes():
+        _require_agro_access()
+
+        q = (request.args.get("q") or "").strip()
+        equipe_id = request.args.get("equipe_id", type=int)
+        page = request.args.get("page", 1, type=int)
+        per_page = 12
+
+        query = build_contratos_agro_comprovantes_query(current_user, q=q, equipe_id=equipe_id)
+        total = query.count()
+        total_pages = max(1, math.ceil(total / per_page))
+        page = min(max(1, page), total_pages)
+        contratos = query.offset((page - 1) * per_page).limit(per_page).all()
+
+        return render_template(
+            "agro_contratos_comprovantes.html",
+            contratos=contratos,
+            equipes_ativas=_build_agro_equipes_ativas(),
+            filters={
+                "q": q,
+                "equipe_id": equipe_id,
+                "page": page,
+                "total": total,
+                "total_pages": total_pages,
+            },
+            pagination_args=_query_args_without_page(),
+            can_edit_payment_receipts=can_edit_agro_panel(current_user) or can_edit_agro_finance_panel(current_user),
         )
 
     @bp.route("/agro/financeiro/contas", methods=["GET"], endpoint="agro_financeiro_contas")
@@ -6505,6 +6547,7 @@ def register_routes(bp):
             equipes_ativas=equipes_ativas,
             filters={"q": q, "equipe_id": equipe_id, "total": len(contratos)},
             status_options=AGRO_CONTRATO_STATUS_OPTIONS,
+            can_edit_payment_receipts=can_edit_agro_panel(current_user) or can_edit_agro_finance_panel(current_user),
         )
 
     @bp.route("/agro/contratos/<int:contrato_id>/template", methods=["POST"], endpoint="agro_contrato_template_salvar")
@@ -6538,9 +6581,61 @@ def register_routes(bp):
             flash("Este contrato possui OS Agro vinculada(s). Exclua primeiro as OS para remover o contrato.", "warning")
             return _redirect_back_to_agro("main.agro_contratos_template")
 
+        remove_contrato_payment_receipt(contrato, commit=False)
         db.session.delete(contrato)
         db.session.commit()
         flash("Contrato agro removido com sucesso.", "success")
+        return _redirect_back_to_agro("main.agro_contratos_template")
+
+    @bp.route("/agro/contratos/<int:contrato_id>/comprovante-pagamento", methods=["POST"], endpoint="agro_contrato_comprovante_pagamento_upload")
+    @login_required
+    def agro_contrato_comprovante_pagamento_upload(contrato_id):
+        _require_agro_payment_receipt_edit()
+        contrato = _get_contrato_agro_or_404(contrato_id)
+        uploaded_file = request.files.get("comprovante_pagamento")
+
+        try:
+            saved_name = save_contrato_payment_receipt(contrato, uploaded_file)
+        except ValueError as exc:
+            flash(str(exc), "warning")
+            return _redirect_back_to_agro("main.agro_contratos_template")
+
+        if not saved_name:
+            flash("Selecione um comprovante de pagamento em PDF, JPG, JPEG ou JFIF.", "warning")
+            return _redirect_back_to_agro("main.agro_contratos_template")
+
+        db.session.commit()
+        flash("Comprovante de pagamento enviado com sucesso.", "success")
+        return _redirect_back_to_agro("main.agro_contratos_template")
+
+    @bp.route("/agro/contratos/<int:contrato_id>/comprovante-pagamento", methods=["GET"], endpoint="agro_contrato_comprovante_pagamento")
+    @login_required
+    def agro_contrato_comprovante_pagamento(contrato_id):
+        _require_agro_access()
+        contrato = _get_contrato_agro_or_404(contrato_id)
+        try:
+            upload_folder, rel, download_name = resolve_contrato_payment_receipt(contrato)
+        except FileNotFoundError:
+            abort(404)
+        if upload_folder is None:
+            try:
+                return stream_skybox_file(rel, request.headers.get("Range"), as_attachment=False)
+            except SkyboxError:
+                current_app.logger.exception("Erro ao servir comprovante do contrato Agro pelo Skybox.")
+                abort(404)
+        return send_from_directory(upload_folder, rel, as_attachment=False, download_name=download_name)
+
+    @bp.route("/agro/contratos/<int:contrato_id>/comprovante-pagamento/remover", methods=["POST"], endpoint="agro_contrato_comprovante_pagamento_remover")
+    @login_required
+    def agro_contrato_comprovante_pagamento_remover(contrato_id):
+        _require_agro_payment_receipt_edit()
+        contrato = _get_contrato_agro_or_404(contrato_id)
+        if not contrato.comprovante_pagamento_path:
+            flash("Este contrato ainda nao possui comprovante de pagamento.", "info")
+            return _redirect_back_to_agro("main.agro_contratos_template")
+
+        remove_contrato_payment_receipt(contrato, commit=True)
+        flash("Comprovante de pagamento removido com sucesso.", "success")
         return _redirect_back_to_agro("main.agro_contratos_template")
 
     @bp.route("/agro/orcamentos/<int:orcamento_id>/anexo", endpoint="agro_orcamento_anexo")

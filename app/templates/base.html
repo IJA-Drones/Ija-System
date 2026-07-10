@@ -610,6 +610,16 @@
             </a>
           </li>
           {% endif %}
+          {% if is_global_admin or is_financeiro_agro_user %}
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint == 'main.agro_contratos_comprovantes' %}active{% endif %}"
+              href="{{ url_for('main.agro_contratos_comprovantes') }}"
+            >
+              <i class="bi bi-receipt-cutoff me-2"></i><span>Comprovantes</span>
+            </a>
+          </li>
+          {% endif %}
           <li class="nav-item">
             <a
               class="nav-link {% if request.endpoint in ['main.agro_os_listar', 'main.agro_os_nova', 'main.agro_os_editar'] %}active{% endif %}"

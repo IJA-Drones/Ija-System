@@ -1084,6 +1084,9 @@ class ContratoAgro(db.Model):
     foro_cidade = db.Column(db.String(100), nullable=False, default="São Paulo")
     data_assinatura = db.Column(db.Date)
     observacoes_adicionais = db.Column(db.Text)
+    comprovante_pagamento_path = db.Column(db.String(255))
+    comprovante_pagamento_nome = db.Column(db.String(255))
+    comprovante_pagamento_enviado_em = db.Column(db.DateTime, index=True)
 
     criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
     atualizado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True, onupdate=datetime.now)
