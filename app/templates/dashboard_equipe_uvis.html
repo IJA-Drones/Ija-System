@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% from "_pagination.html" import render_pagination %}
 {% from "_retorno_ciclo_resumo.html" import render_retorno_ciclo_resumo %}
+{% from "_result_summary.html" import render_result_summary %}
 {% block extra_styles %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
@@ -236,10 +237,13 @@
   {% set filtro_tipo_operacao = request.args.get('tipo_operacao') or request.args.get('operacao') %}
 
 <div class="d-flex justify-content-between align-items-center mb-4 dashboard-header">
-  <h2 class="text-dark m-0">
-    <i class="bi bi-list-task me-2 text-primary"></i>
-    Demandas aprovadas da UVIS: <span class="fw-bold">{{ nome_equipe }}</span>
-  </h2>
+  <div>
+    <h2 class="text-dark m-0">
+      <i class="bi bi-list-task me-2 text-primary"></i>
+      Demandas aprovadas da UVIS: <span class="fw-bold">{{ nome_equipe }}</span>
+    </h2>
+    {{ render_result_summary(paginacao.total, 'Solicitações filtradas') }}
+  </div>
   <div class="header-actions">
     <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-dark shadow-sm btn-canceladas">
       <i class="bi bi-arrow-left"></i> Voltar

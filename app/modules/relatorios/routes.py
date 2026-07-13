@@ -25,6 +25,7 @@ from app.modules.relatorios.service import (
     can_access_relatorio_coleta_imagens,
     can_access_relatorios_menu,
 )
+from app.shared.query_filters import query_args_without_page
 
 
 def _env_int(name, default, minimum=0):
@@ -126,7 +127,7 @@ def _create_coleta_pdf_job(user, args):
     now = _now_epoch()
     args_payload = {
         key: value
-        for key, value in args.to_dict(flat=True).items()
+        for key, value in query_args_without_page(args).items()
         if key not in {"page", "relatorio_pdf_job_id"}
     }
     job = {
@@ -212,7 +213,7 @@ def _run_coleta_pdf_job(app, job_id):
 def _redirect_to_coleta_imagens_with_job(job_id):
     params = {
         key: value
-        for key, value in request.args.to_dict(flat=True).items()
+        for key, value in query_args_without_page(request.args).items()
         if key not in {"page", "relatorio_pdf_job_id"}
     }
     params["relatorio_pdf_job_id"] = job_id

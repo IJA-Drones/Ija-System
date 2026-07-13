@@ -17,6 +17,11 @@ from app.shared.access import (
     normalize_regiao,
 )
 from app.shared.query_filters import aplicar_filtros_base, id_search_clause
+from app.shared.query_filters import (
+    get_multi_int_values,
+    get_multi_values,
+    multi_value_to_query,
+)
 
 
 RELATORIOS_MENU_TYPES = ADMIN_PANEL_VIEW_TYPES
@@ -57,15 +62,23 @@ def _relatorio_os_data_expr():
 
 
 def _resolve_relatorio_os_filters(user, args):
+    if getattr(user, "tipo_usuario", None) == "uvis":
+        uvis_ids = [user.id]
+    else:
+        uvis_ids = get_multi_int_values(args, "uvis_id")
+    foco_values = get_multi_values(args, "foco")
+
     return {
         "mes": args.get("mes", datetime.now().month, type=int),
         "ano": args.get("ano", datetime.now().year, type=int),
-        "uvis_id": args.get("uvis_id", type=int) if getattr(user, "tipo_usuario", None) != "uvis" else user.id,
+        "uvis_id": uvis_ids[0] if uvis_ids else None,
+        "uvis_ids": uvis_ids,
         "status": (args.get("status") or "").strip(),
         "tipo_visita": (args.get("tipo_visita") or "").strip(),
         "tipo_imovel": (args.get("tipo_imovel") or "").strip(),
         "tipo_operacao": ((args.get("tipo_operacao") or args.get("operacao") or "").strip()),
-        "foco": (args.get("foco") or "").strip(),
+        "foco": foco_values[0] if foco_values else "",
+        "foco_values": foco_values,
         "protocolo": (args.get("protocolo") or "").strip(),
         "data_ini": _parse_relatorio_os_date_filter(args, "data_ini"),
         "data_fim": _parse_relatorio_os_date_filter(args, "data_fim"),
@@ -90,8 +103,8 @@ def _apply_relatorio_os_filters(query, filtros, *, monthly=False):
     if filtros["tipo_operacao"]:
         query = query.filter(Solicitacao.tipo_operacao == filtros["tipo_operacao"])
 
-    if filtros["foco"]:
-        query = query.filter(Solicitacao.foco == filtros["foco"])
+    if filtros["foco_values"]:
+        query = query.filter(Solicitacao.foco.in_(filtros["foco_values"]))
 
     if filtros["protocolo"]:
         like = f"%{filtros['protocolo']}%"
@@ -327,6 +340,7 @@ def _serialize_coleta_imagem_row(ordem, solicitacao, usuario):
 
 def _resolve_coleta_imagens_filters(user, args):
     user_type = getattr(user, "tipo_usuario", None)
+    foco_values = get_multi_values(args, "foco")
     filters = {
         "mes": args.get("mes", type=int),
         "ano": args.get("ano", type=int),
@@ -334,7 +348,8 @@ def _resolve_coleta_imagens_filters(user, args):
         "data_inicio": _parse_coleta_date_filter(args, "data_inicio"),
         "data_fim": _parse_coleta_date_filter(args, "data_fim"),
         "busca": (args.get("busca") or "").strip(),
-        "foco": (args.get("foco") or "").strip(),
+        "foco": foco_values[0] if foco_values else "",
+        "foco_values": foco_values,
         "midia": (args.get("midia") or "").strip(),
         "ordenar": (args.get("ordenar") or "uvis_data").strip(),
     }
@@ -349,14 +364,17 @@ def _resolve_coleta_imagens_filters(user, args):
     if user_type == "uvis":
         filters["regiao"] = (getattr(user, "regiao", None) or "").strip()
         filters["uvis_id"] = user.id
+        filters["uvis_ids"] = [user.id]
         return filters
     if is_regional_user(user):
         filters["regiao"] = (getattr(user, "regiao", None) or "").strip()
-        filters["uvis_id"] = args.get("uvis_id", type=int)
+        filters["uvis_ids"] = get_multi_int_values(args, "uvis_id")
+        filters["uvis_id"] = filters["uvis_ids"][0] if filters["uvis_ids"] else None
         return filters
 
     filters["regiao"] = (args.get("regiao") or "").strip()
-    filters["uvis_id"] = args.get("uvis_id", type=int)
+    filters["uvis_ids"] = get_multi_int_values(args, "uvis_id")
+    filters["uvis_id"] = filters["uvis_ids"][0] if filters["uvis_ids"] else None
     return filters
 
 
@@ -365,6 +383,7 @@ def _build_coleta_imagens_query(
     *,
     regiao="",
     uvis_id=None,
+    uvis_ids=None,
     mes=None,
     ano=None,
     os_id=None,
@@ -372,6 +391,7 @@ def _build_coleta_imagens_query(
     data_fim=None,
     busca="",
     foco="",
+    foco_values=None,
     midia="",
 ):
     query = (
@@ -385,8 +405,9 @@ def _build_coleta_imagens_query(
 
     if regiao:
         query = query.filter(func.upper(func.coalesce(Usuario.regiao, "")) == normalize_regiao(regiao))
-    if uvis_id:
-        query = query.filter(Solicitacao.usuario_id == uvis_id)
+    uvis_ids = list(uvis_ids or ([] if uvis_id in (None, "") else [uvis_id]))
+    if uvis_ids:
+        query = query.filter(Solicitacao.usuario_id.in_(uvis_ids))
     if ano or mes:
         ano_ref, mes_ref = _coleta_period_exprs()
         if ano:
@@ -401,8 +422,9 @@ def _build_coleta_imagens_query(
             query = query.filter(data_ref >= data_inicio)
         if data_fim:
             query = query.filter(data_ref <= data_fim)
-    if foco:
-        query = query.filter(Solicitacao.foco == foco)
+    foco_values = list(foco_values or ([] if not foco else [foco]))
+    if foco_values:
+        query = query.filter(Solicitacao.foco.in_(foco_values))
     if busca:
         like = f"%{busca}%"
         query = query.filter(or_(
@@ -464,12 +486,16 @@ def build_relatorios_solicitacoes_context(user, args):
 
     mes_atual = args.get("mes", datetime.now().month, type=int)
     ano_atual = args.get("ano", datetime.now().year, type=int)
-    uvis_id = args.get("uvis_id", type=int) if getattr(user, "tipo_usuario", None) != "uvis" else user.id
+    uvis_ids = [user.id] if getattr(user, "tipo_usuario", None) == "uvis" else get_multi_int_values(args, "uvis_id")
+    uvis_id = uvis_ids[0] if uvis_ids else None
+    foco_values = get_multi_values(args, "foco")
     filtro_data = f"{ano_atual}-{mes_atual:02d}"
 
-    base_query = aplicar_filtros_base(db.session.query(Solicitacao), filtro_data, uvis_id)
+    base_query = aplicar_filtros_base(db.session.query(Solicitacao), filtro_data, uvis_ids)
     base_query = apply_solicitacao_prefeitura_scope(base_query, user)
     base_query = apply_solicitacao_regiao_scope(base_query, user)
+    if foco_values:
+        base_query = base_query.filter(Solicitacao.foco.in_(foco_values))
     print("SQL EXECUTADO:", str(base_query.statement.compile(dialect=db.engine.dialect)))
 
     status_counts = {
@@ -555,8 +581,17 @@ def build_relatorios_solicitacoes_context(user, args):
         "ano_selecionado": ano_atual,
         "anos_disponiveis": anos_disponiveis,
         "uvis_id_selecionado": uvis_id,
+        "uvis_ids_selecionados": uvis_ids,
         "uvis_disponiveis": uvis_disponiveis,
-        "filtros": {"total": sum(status_counts.values())},
+        "foco_selecionado": foco_values[0] if foco_values else "",
+        "foco_values_selecionados": foco_values,
+        "filtros_exportacao": {
+            "mes": mes_atual,
+            "ano": ano_atual,
+            "uvis_id": multi_value_to_query(uvis_ids),
+            "foco": multi_value_to_query(foco_values),
+        },
+        "filtros": {"total": sum(status_counts.values()), "foco_values": foco_values},
     }
 
 
@@ -571,8 +606,8 @@ def build_relatorios_os_context(user, args):
     )
     base_query = apply_solicitacao_prefeitura_scope(base_query, user)
     base_query = apply_regiao_scope(base_query, user, Usuario.regiao)
-    if filtros["uvis_id"]:
-        base_query = base_query.filter(Solicitacao.usuario_id == filtros["uvis_id"])
+    if filtros["uvis_ids"]:
+        base_query = base_query.filter(Solicitacao.usuario_id.in_(filtros["uvis_ids"]))
     base_query = _apply_relatorio_os_filters(base_query, filtros)
 
     def agrupar_por(campo):
@@ -606,8 +641,8 @@ def build_relatorios_os_context(user, args):
     mensal_query = apply_solicitacao_prefeitura_scope(mensal_query, user)
     mensal_query = apply_regiao_scope(mensal_query, user, Usuario.regiao)
 
-    if filtros["uvis_id"]:
-        mensal_query = mensal_query.filter(Solicitacao.usuario_id == filtros["uvis_id"])
+    if filtros["uvis_ids"]:
+        mensal_query = mensal_query.filter(Solicitacao.usuario_id.in_(filtros["uvis_ids"]))
     mensal_query = _apply_relatorio_os_filters(mensal_query, filtros, monthly=True)
 
     for ano_h, mes_h, total in (
@@ -653,17 +688,18 @@ def build_relatorios_os_context(user, args):
         "ano_selecionado": filtros["ano"],
         "anos_disponiveis": anos_disponiveis,
         "uvis_id_selecionado": filtros["uvis_id"],
+        "uvis_ids_selecionados": filtros["uvis_ids"],
         "uvis_disponiveis": uvis_disponiveis,
         "filters": filtros,
         "filtros_exportacao": {
             "mes": filtros["mes"],
             "ano": filtros["ano"],
-            "uvis_id": filtros["uvis_id"] or "",
+            "uvis_id": multi_value_to_query(filtros["uvis_ids"]),
             "status": filtros["status"],
             "tipo_visita": filtros["tipo_visita"],
             "tipo_imovel": filtros["tipo_imovel"],
             "tipo_operacao": filtros["tipo_operacao"],
-            "foco": filtros["foco"],
+            "foco": multi_value_to_query(filtros["foco_values"]),
             "protocolo": filtros["protocolo"],
             "data_ini": filtros["data_ini"].isoformat() if filtros["data_ini"] else "",
             "data_fim": filtros["data_fim"].isoformat() if filtros["data_fim"] else "",
@@ -681,8 +717,8 @@ def build_relatorio_os_export_data(user, args, *, include_ordens=False, only_con
     )
     base_query = apply_solicitacao_prefeitura_scope(base_query, user)
     base_query = apply_regiao_scope(base_query, user, Usuario.regiao)
-    if filtros["uvis_id"]:
-        base_query = base_query.filter(Solicitacao.usuario_id == filtros["uvis_id"])
+    if filtros["uvis_ids"]:
+        base_query = base_query.filter(Solicitacao.usuario_id.in_(filtros["uvis_ids"]))
     base_query = _apply_relatorio_os_filters(base_query, filtros)
     if only_concluidas:
         base_query = base_query.filter(Solicitacao.status.in_(STATUS_OS_CONCLUIDAS))
@@ -744,8 +780,8 @@ def build_relatorio_os_export_data(user, args, *, include_ordens=False, only_con
     mensal_query = apply_solicitacao_prefeitura_scope(mensal_query, user)
     mensal_query = apply_regiao_scope(mensal_query, user, Usuario.regiao)
 
-    if filtros["uvis_id"]:
-        mensal_query = mensal_query.filter(Solicitacao.usuario_id == filtros["uvis_id"])
+    if filtros["uvis_ids"]:
+        mensal_query = mensal_query.filter(Solicitacao.usuario_id.in_(filtros["uvis_ids"]))
     mensal_query = _apply_relatorio_os_filters(mensal_query, filtros, monthly=True)
 
     if only_concluidas:
@@ -769,11 +805,11 @@ def build_relatorio_os_export_data(user, args, *, include_ordens=False, only_con
     ]
 
     nome_uvis = None
-    if filtros["uvis_id"]:
+    if len(filtros["uvis_ids"]) == 1:
         nome_uvis = (
             apply_regiao_scope(
                 apply_prefeitura_scope(
-                    db.session.query(Usuario.nome_uvis).filter(Usuario.id == filtros["uvis_id"]),
+                    db.session.query(Usuario.nome_uvis).filter(Usuario.id == filtros["uvis_ids"][0]),
                     user,
                     Usuario.prefeitura_id,
                 ),
@@ -782,6 +818,8 @@ def build_relatorio_os_export_data(user, args, *, include_ordens=False, only_con
             )
             .scalar()
         )
+    elif len(filtros["uvis_ids"]) > 1:
+        nome_uvis = f"{len(filtros['uvis_ids'])} Unidades selecionadas"
 
     ordens = []
     if include_ordens:
@@ -807,6 +845,7 @@ def build_relatorio_os_export_data(user, args, *, include_ordens=False, only_con
         "mes": filtros["mes"],
         "ano": filtros["ano"],
         "uvis_id": filtros["uvis_id"],
+        "uvis_ids": filtros["uvis_ids"],
         "uvis_nome": nome_uvis or "Todas as Unidades",
         "total_os": total_os,
         "total_concluidas": total_concluidas,
@@ -861,6 +900,7 @@ def build_relatorio_coleta_imagens_export_data(user, args, *, page=None, per_pag
     filtros = _resolve_coleta_imagens_filters(user, args)
     regiao_selecionada = filtros["regiao"]
     uvis_id = filtros["uvis_id"]
+    uvis_ids = filtros["uvis_ids"]
     mes_selecionado = filtros["mes"]
     ano_selecionado = filtros["ano"]
     os_id_selecionado = filtros["os_id"]
@@ -868,21 +908,22 @@ def build_relatorio_coleta_imagens_export_data(user, args, *, page=None, per_pag
     data_fim_selecionada = filtros["data_fim"]
     busca_selecionada = filtros["busca"]
     foco_selecionado = filtros["foco"]
+    foco_values_selecionados = filtros["foco_values"]
     midia_selecionada = filtros["midia"]
     ordenar_selecionado = filtros["ordenar"]
 
-    periodos_query = _build_coleta_imagens_query(user, regiao=regiao_selecionada, uvis_id=uvis_id)
+    periodos_query = _build_coleta_imagens_query(user, regiao=regiao_selecionada, uvis_ids=uvis_ids)
     base_query = _build_coleta_imagens_query(
         user,
         regiao=regiao_selecionada,
-        uvis_id=uvis_id,
+        uvis_ids=uvis_ids,
         mes=mes_selecionado,
         ano=ano_selecionado,
         os_id=os_id_selecionado,
         data_inicio=data_inicio_selecionada,
         data_fim=data_fim_selecionada,
         busca=busca_selecionada,
-        foco=foco_selecionado,
+        foco_values=foco_values_selecionados,
         midia=midia_selecionada,
     )
 
@@ -940,15 +981,17 @@ def build_relatorio_coleta_imagens_export_data(user, args, *, page=None, per_pag
     anos_disponiveis = sorted({int(periodo.split("-")[0]) for periodo, _ in dados_mensais}, reverse=True) if dados_mensais else [datetime.now().year]
 
     nome_uvis = None
-    if uvis_id:
+    if len(uvis_ids) == 1:
         nome_uvis = (
             apply_regiao_scope(
-                db.session.query(Usuario.nome_uvis).filter(Usuario.id == uvis_id),
+                db.session.query(Usuario.nome_uvis).filter(Usuario.id == uvis_ids[0]),
                 user,
                 Usuario.regiao,
             )
             .scalar()
         )
+    elif len(uvis_ids) > 1:
+        nome_uvis = f"{len(uvis_ids)} UVIS selecionadas"
     if is_uvis and not nome_uvis:
         nome_uvis = getattr(user, "nome_uvis", None)
 
@@ -974,13 +1017,13 @@ def build_relatorio_coleta_imagens_export_data(user, args, *, page=None, per_pag
     filtros_exportacao = {
         "mes": mes_selecionado,
         "ano": ano_selecionado,
-        "uvis_id": uvis_id,
+        "uvis_id": multi_value_to_query(uvis_ids),
         "regiao": regiao_selecionada,
         "os_id": os_id_selecionado,
         "data_inicio": data_inicio_selecionada.isoformat() if data_inicio_selecionada else "",
         "data_fim": data_fim_selecionada.isoformat() if data_fim_selecionada else "",
         "busca": busca_selecionada,
-        "foco": foco_selecionado,
+        "foco": multi_value_to_query(foco_values_selecionados),
         "midia": midia_selecionada,
         "ordenar": ordenar_selecionado,
     }
@@ -998,11 +1041,11 @@ def build_relatorio_coleta_imagens_export_data(user, args, *, page=None, per_pag
         data_inicio_selecionada,
         data_fim_selecionada,
         busca_selecionada,
-        foco_selecionado,
+        foco_values_selecionados,
         midia_selecionada,
         ordenar_selecionado != "uvis_data",
         bool(regiao_selecionada) and pode_filtrar_regiao,
-        bool(uvis_id) and not is_uvis,
+        bool(uvis_ids) and not is_uvis,
     ])
 
     return {
@@ -1022,6 +1065,7 @@ def build_relatorio_coleta_imagens_export_data(user, args, *, page=None, per_pag
         "regioes_disponiveis": regioes_disponiveis,
         "focos_disponiveis": focos_disponiveis,
         "uvis_id_selecionado": uvis_id,
+        "uvis_ids_selecionados": uvis_ids,
         "regiao_selecionada": regiao_selecionada,
         "mes_selecionado": mes_selecionado,
         "ano_selecionado": ano_selecionado,
@@ -1030,6 +1074,7 @@ def build_relatorio_coleta_imagens_export_data(user, args, *, page=None, per_pag
         "data_fim_selecionada": data_fim_selecionada.isoformat() if data_fim_selecionada else "",
         "busca_selecionada": busca_selecionada,
         "foco_selecionado": foco_selecionado,
+        "foco_values_selecionados": foco_values_selecionados,
         "midia_selecionada": midia_selecionada,
         "ordenar_selecionado": ordenar_selecionado,
         "anos_disponiveis": anos_disponiveis,

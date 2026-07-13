@@ -1,0 +1,49 @@
+{% macro render_chip_select_values(name, options, selected_values, placeholder='Selecione...', select_class='form-select form-select-sm') -%}
+  <div class="chip-multi-select" data-chip-multi-select data-name="{{ name }}">
+    <select class="{{ select_class }}" data-chip-select>
+      <option value="">{{ placeholder }}</option>
+      {% for option in options %}
+        <option value="{{ option }}" {% if option in selected_values %}disabled{% endif %}>{{ option }}</option>
+      {% endfor %}
+    </select>
+    <div class="chip-multi-values" data-chip-values>
+      {% for value in selected_values %}
+        <span class="chip-multi-item" data-chip-value="{{ value }}">
+          <span class="chip-multi-check"><i class="bi bi-check"></i></span>
+          <span class="chip-multi-label">{{ value }}</span>
+          <button type="button" class="chip-multi-remove" data-chip-remove aria-label="Remover {{ value }}">
+            <i class="bi bi-x"></i>
+          </button>
+          <input type="hidden" name="{{ name }}" value="{{ value }}">
+        </span>
+      {% endfor %}
+    </div>
+  </div>
+{%- endmacro %}
+
+{% macro render_chip_select_pairs(name, options, selected_values, placeholder='Selecione...', select_class='form-select form-select-sm') -%}
+  <div class="chip-multi-select" data-chip-multi-select data-name="{{ name }}">
+    <select class="{{ select_class }}" data-chip-select>
+      <option value="">{{ placeholder }}</option>
+      {% for value, label in options %}
+        <option value="{{ value }}" data-chip-label="{{ label }}" {% if value|int in selected_values %}disabled{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <div class="chip-multi-values" data-chip-values>
+      {% for selected in selected_values %}
+        {% for value, label in options %}
+          {% if value|int == selected|int %}
+            <span class="chip-multi-item" data-chip-value="{{ value }}">
+              <span class="chip-multi-check"><i class="bi bi-check"></i></span>
+              <span class="chip-multi-label">{{ label }}</span>
+              <button type="button" class="chip-multi-remove" data-chip-remove aria-label="Remover {{ label }}">
+                <i class="bi bi-x"></i>
+              </button>
+              <input type="hidden" name="{{ name }}" value="{{ value }}">
+            </span>
+          {% endif %}
+        {% endfor %}
+      {% endfor %}
+    </div>
+  </div>
+{%- endmacro %}

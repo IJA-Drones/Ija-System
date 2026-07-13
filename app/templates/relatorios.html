@@ -1,4 +1,6 @@
 {% extends "base.html" %}
+{% from "_multi_select_chips.html" import render_chip_select_values, render_chip_select_pairs %}
+{% from "_result_summary.html" import render_result_summary %}
 
 {% block extra_styles %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
@@ -128,9 +130,10 @@
 
     <div class="rel-header mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
         <div class="rel-title">
-            <h2 class="text-dark">
+            <h2 class="text-dark mb-0">
                 <i class="bi bi-bar-chart-fill me-2 text-primary"></i> Relatórios
             </h2>
+            {{ render_result_summary(total_solicitacoes, 'Solicitações filtradas') }}
         </div>
 
         <div class="rel-actions d-flex gap-2 flex-wrap align-items-center justify-content-md-end">
@@ -143,9 +146,9 @@
 
             <form method="GET" action="{{ url_for('main.exportar_relatorio_pdf') }}" 
                 class="form-exportar p-0 m-0 d-grid flex-grow-1 flex-md-grow-0" style="width: 180px; min-width: 150px;">
-                <input type="hidden" name="mes" value="{{ mes_selecionado }}">
-                <input type="hidden" name="ano" value="{{ ano_selecionado }}">
-                <input type="hidden" name="uvis_id" value="{{ uvis_id_selecionado }}">
+                {% for nome, valor in filtros_exportacao.items() %}
+                    <input type="hidden" name="{{ nome }}" value="{{ valor or '' }}">
+                {% endfor %}
                 <button type="submit" class="btn btn-danger d-flex align-items-center justify-content-center gap-2" style="height: 38px;" title="Exportar PDF">
                     <i class="bi bi-file-earmark-pdf-fill"></i>
                     <span>Exportar PDF</span>
@@ -154,9 +157,9 @@
 
             <form method="GET" action="{{ url_for('main.exportar_relatorio_excel') }}" 
                 class="form-exportar p-0 m-0 d-grid flex-grow-1 flex-md-grow-0" style="width: 180px; min-width: 150px;">
-                <input type="hidden" name="mes" value="{{ mes_selecionado }}">
-                <input type="hidden" name="ano" value="{{ ano_selecionado }}">
-                <input type="hidden" name="uvis_id" value="{{ uvis_id_selecionado }}">
+                {% for nome, valor in filtros_exportacao.items() %}
+                    <input type="hidden" name="{{ nome }}" value="{{ valor or '' }}">
+                {% endfor %}
                 <button type="submit" class="btn btn-secondary d-flex align-items-center justify-content-center gap-2" style="height: 38px;" title="Exportar Excel">
                     <i class="bi bi-file-earmark-excel-fill"></i>
                     <span>Exportar Excel</span>
@@ -180,7 +183,7 @@
             <span class="text-dark">Filtros de busca</span>
 
             {# bolinha vermelha se houver filtros ativos #}
-            {% if mes_selecionado or ano_selecionado or uvis_id_selecionado %}
+            {% if mes_selecionado or ano_selecionado or uvis_ids_selecionados or foco_values_selecionados %}
                 <span class="badge bg-danger rounded-circle p-1"
                       style="width: 8px; height: 8px;"></span>
             {% endif %}
@@ -195,7 +198,7 @@
 
         <div class="card-body pt-0">
             <form method="GET">
-                <div class="row g-2 align-items-end">
+                <div class="row g-2 filter-chip-row">
 
                     <div class="col-md-3">
                         <label class="small text-muted">Mês:</label>
@@ -223,15 +226,12 @@
 
                     <div class="col-md-3">
                         <label class="small text-muted">Unidade (UVIS):</label>
-                        <select name="uvis_id" class="form-select form-select-sm">
-                            <option value="">Todas as Unidades</option>
-                            {% for id, nome in uvis_disponiveis %}
-                                <option value="{{ id }}"
-                                    {% if id|int == uvis_id_selecionado|int %}selected{% endif %}>
-                                    {{ nome }}
-                                </option>
-                            {% endfor %}
-                        </select>
+                        {{ render_chip_select_pairs('uvis_id', uvis_disponiveis, uvis_ids_selecionados, 'Adicionar UVIS') }}
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="small text-muted">Foco:</label>
+                        {{ render_chip_select_values('foco', solicitacao_filter_foco_opcoes, foco_values_selecionados, 'Adicionar foco') }}
                     </div>
 
                     <div class="col-md-3 d-flex gap-2">
@@ -239,7 +239,7 @@
                             <i class="bi bi-funnel"></i> Filtrar
                         </button>
 
-                        {% if mes_selecionado or ano_selecionado or uvis_id_selecionado %}
+                        {% if mes_selecionado or ano_selecionado or uvis_ids_selecionados or foco_values_selecionados %}
                             <a href="{{ url_for(request.endpoint) }}"
                                class="btn btn-outline-secondary btn-sm w-100">
                                 <i class="bi bi-x-lg"></i> Limpar
@@ -258,9 +258,9 @@
 
     <h4 class="mb-4 text-primary">
         Dados de {{ meses[mes_selecionado|int] }} / {{ ano_selecionado }}
-        {% if uvis_id_selecionado %}
+        {% if uvis_ids_selecionados %}
             <small class="text-muted fst-italic">— Filtrado por:
-                {{ uvis_disponiveis | selectattr(0, 'equalto', uvis_id_selecionado|int) | map(attribute=1) | first }}
+                {% if uvis_ids_selecionados|length == 1 %}{{ uvis_disponiveis | selectattr(0, 'equalto', uvis_id_selecionado|int) | map(attribute=1) | first }}{% else %}{{ uvis_ids_selecionados|length }} UVIS{% endif %}
             </small>
         {% endif %}
     </h4>

@@ -1,5 +1,6 @@
+{% from "_multi_select_chips.html" import render_chip_select_values %}
 {% macro render_historico_os_filters(filters, unidades_select, clear_url, status_name='status', extra_params=None, status_options=None) -%}
-  {% set filtros_ativos = filters.status or filters.unidade or filters.regiao or filters.apoio_cet or filters.tipo_visita or filters.tipo_imovel or filters.foco or filters.protocolo or filters.endereco or filters.data_ini or filters.data_fim or filters.retorno_automatico %}
+  {% set filtros_ativos = filters.status or filters.unidade_values or filters.regiao or filters.apoio_cet or filters.tipo_visita or filters.tipo_imovel or filters.foco_values or filters.protocolo or filters.endereco or filters.data_ini or filters.data_fim or filters.retorno_automatico %}
   {% set opcoes_status = status_options or [('', 'Todos'), ('EM_ANDAMENTO', 'Em andamento'), ('CONCLUIDAS', 'Concluídas')] %}
   <div class="card shadow-sm rounded-4 mb-4 border-0 historico-os-filters">
     <div
@@ -25,7 +26,7 @@
           {% for key, value in (extra_params or {}).items() %}
             <input type="hidden" name="{{ key }}" value="{{ value }}">
           {% endfor %}
-          <div class="row g-2 align-items-end">
+          <div class="row g-2 filter-chip-row">
             <div class="col-md-3">
               <label class="small text-muted">Status:</label>
               <select name="{{ status_name }}" class="form-select form-select-sm">
@@ -45,12 +46,7 @@
             </div>
             <div class="col-md-3">
               <label class="small text-muted">Unidade:</label>
-              <select name="unidade" class="form-select form-select-sm">
-                <option value="">Todas as UVIS</option>
-                {% for unidade in unidades_select %}
-                  <option value="{{ unidade.nome_uvis }}" {% if filters.unidade == unidade.nome_uvis %}selected{% endif %}>{{ unidade.nome_uvis }}</option>
-                {% endfor %}
-              </select>
+              {{ render_chip_select_values('unidade', unidades_select|map(attribute='nome_uvis')|list, filters.unidade_values, 'Adicionar UVIS') }}
             </div>
             <div class="col-md-3">
               <label class="small text-muted">Região:</label>
@@ -89,12 +85,7 @@
             </div>
             <div class="col-md-3">
               <label class="small text-muted">Foco:</label>
-              <select name="foco" class="form-select form-select-sm">
-                <option value="">Todos</option>
-                {% for opcao in solicitacao_filter_foco_opcoes %}
-                  <option value="{{ opcao }}" {% if filters.foco == opcao %}selected{% endif %}>{{ opcao }}</option>
-                {% endfor %}
-              </select>
+              {{ render_chip_select_values('foco', solicitacao_filter_foco_opcoes, filters.foco_values, 'Adicionar foco') }}
             </div>
             <div class="col-md-3">
               <label class="small text-muted">ID ou protocolo:</label>

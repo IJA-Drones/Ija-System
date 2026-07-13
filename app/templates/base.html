@@ -1689,6 +1689,100 @@
       }
   });
 
+  document.addEventListener("DOMContentLoaded", () => {
+      document.querySelectorAll("[data-chip-multi-select]").forEach((root) => {
+          const select = root.querySelector("[data-chip-select]");
+          const valuesBox = root.querySelector("[data-chip-values]");
+          const inputName = root.dataset.name;
+          if (!select || !valuesBox || !inputName) return;
+          const placeholderOption = select.querySelector('option[value=""]');
+          const placeholderText = placeholderOption ? placeholderOption.textContent : "";
+
+          const getSummaryText = (count) => {
+              if (!count) return placeholderText;
+              if (inputName === "unidade" || inputName === "uvis_id") {
+                  return count === 1 ? "1 UVIS selecionada" : `${count} UVIS selecionadas`;
+              }
+              if (inputName === "foco") {
+                  return count === 1 ? "1 foco selecionado" : `${count} focos selecionados`;
+              }
+              return count === 1 ? "1 selecionado" : `${count} selecionados`;
+          };
+
+          const updateSummary = () => {
+              if (!placeholderOption) return;
+              const count = valuesBox.querySelectorAll("[data-chip-value]").length;
+              placeholderOption.textContent = getSummaryText(count);
+          };
+
+          const enableOption = (value) => {
+              const option = Array.from(select.options).find((item) => item.value === value);
+              if (option) option.disabled = false;
+          };
+
+          const disableOption = (value) => {
+              const option = Array.from(select.options).find((item) => item.value === value);
+              if (option) option.disabled = true;
+          };
+
+          const hasValue = (value) => Array.from(valuesBox.querySelectorAll("[data-chip-value]"))
+              .some((chip) => chip.dataset.chipValue === value);
+
+          const addChip = (value, label) => {
+              if (!value || hasValue(value)) return;
+
+              const chip = document.createElement("span");
+              chip.className = "chip-multi-item";
+              chip.dataset.chipValue = value;
+
+              const check = document.createElement("span");
+              check.className = "chip-multi-check";
+              check.innerHTML = '<i class="bi bi-check"></i>';
+
+              const text = document.createElement("span");
+              text.className = "chip-multi-label";
+              text.textContent = label || value;
+
+              const remove = document.createElement("button");
+              remove.type = "button";
+              remove.className = "chip-multi-remove";
+              remove.dataset.chipRemove = "";
+              remove.setAttribute("aria-label", `Remover ${label || value}`);
+              remove.innerHTML = '<i class="bi bi-x"></i>';
+
+              const hidden = document.createElement("input");
+              hidden.type = "hidden";
+              hidden.name = inputName;
+              hidden.value = value;
+
+              chip.append(check, text, remove, hidden);
+              valuesBox.appendChild(chip);
+              disableOption(value);
+              updateSummary();
+          };
+
+          select.addEventListener("change", () => {
+              const option = select.selectedOptions[0];
+              if (!option || !option.value) return;
+              addChip(option.value, option.dataset.chipLabel || option.textContent.trim());
+              select.value = "";
+          });
+
+          valuesBox.addEventListener("click", (event) => {
+              const button = event.target.closest("[data-chip-remove]");
+              if (!button) return;
+              const chip = button.closest("[data-chip-value]");
+              if (!chip) return;
+              const value = chip.dataset.chipValue;
+              chip.remove();
+              enableOption(value);
+              updateSummary();
+          });
+
+          updateSummary();
+      });
+  });
+
   if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}");
   }

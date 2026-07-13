@@ -1,0 +1,5 @@
+{% macro render_result_summary(total, label='Solicitacoes filtradas') -%}
+  <div class="filter-result-summary">
+    {{ label }}: <strong>{{ total|default(0, true) }}</strong>
+  </div>
+{%- endmacro %}

@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% from "_pagination.html" import render_pagination %}
 {% from "_retorno_ciclo_resumo.html" import render_retorno_ciclo_resumo %}
+{% from "_multi_select_chips.html" import render_chip_select_values %}
+{% from "_result_summary.html" import render_result_summary %}
 
 {% block extra_styles %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
@@ -117,6 +119,7 @@
       <div class="historico-os-subtitle">
         Consulte as OS do piloto e as OS da equipe UVIS em abas separadas.
       </div>
+      {{ render_result_summary(paginacao.total, 'OS filtradas') }}
     </div>
     <div class="historico-os-toolbar-actions">
       <a
@@ -156,7 +159,7 @@
     </li>
   </ul>
 
-  {% set filtros_ativos = filtros.status or filtros.unidade or filtros.regiao or filtros.equipe or filtros.apoio_cet or filtros.tipo_visita or filtros.tipo_imovel or filtros.foco or filtros.protocolo or filtros.endereco or filtros.data_ini or filtros.data_fim or filtros.retorno_automatico %}
+  {% set filtros_ativos = filtros.status or filtros.unidade_values or filtros.regiao or filtros.equipe or filtros.apoio_cet or filtros.tipo_visita or filtros.tipo_imovel or filtros.foco_values or filtros.protocolo or filtros.endereco or filtros.data_ini or filtros.data_fim or filtros.retorno_automatico %}
   <div class="card shadow-sm rounded-4 mb-4 border-0">
     <div
       class="card-header border-0 p-3 d-flex justify-content-between align-items-center"
@@ -178,7 +181,7 @@
       <div class="card-body pt-0">
         <form method="GET">
           <input type="hidden" name="tipo_os" value="{{ filtro_tipo_os }}">
-          <div class="row g-2 align-items-end">
+          <div class="row g-2 filter-chip-row">
             <div class="col-md-3">
               <label class="small text-muted">Status da OS:</label>
               <select name="status_os" class="form-select form-select-sm">
@@ -200,14 +203,7 @@
 
             <div class="col-md-3">
               <label class="small text-muted">Unidade:</label>
-              <select name="unidade" class="form-select form-select-sm">
-                <option value="">Todas as UVIS</option>
-                {% for u in unidades_select %}
-                  <option value="{{ u.nome_uvis }}" {% if request.args.get('unidade') == u.nome_uvis %}selected{% endif %}>
-                    {{ u.nome_uvis }}
-                  </option>
-                {% endfor %}
-              </select>
+              {{ render_chip_select_values('unidade', unidades_select|map(attribute='nome_uvis')|list, filtros.unidade_values, 'Adicionar UVIS') }}
             </div>
 
             <div class="col-md-3">
@@ -269,12 +265,7 @@
 
             <div class="col-md-3">
               <label class="small text-muted">Foco:</label>
-              <select name="foco" class="form-select form-select-sm">
-                <option value="">Todos</option>
-                {% for opcao in solicitacao_filter_foco_opcoes %}
-                  <option value="{{ opcao }}" {% if filtros.foco == opcao %}selected{% endif %}>{{ opcao }}</option>
-                {% endfor %}
-              </select>
+              {{ render_chip_select_values('foco', solicitacao_filter_foco_opcoes, filtros.foco_values, 'Adicionar foco') }}
             </div>
 
             <div class="col-md-3">

@@ -13,6 +13,7 @@ from app.shared.os_history_filters import (
     get_os_history_filters,
 )
 from app.shared.query_filters import id_search_clause
+from app.shared.query_filters import get_multi_values
 from app.shared.retorno_ciclo import build_retorno_ciclo_context, build_retorno_ciclo_summaries
 
 UVIS_HISTORICO_TIPO_OS_OPTIONS = ("todas", "piloto", "equipe_uvis")
@@ -89,9 +90,9 @@ def build_dashboard_context(user, args, google_maps_key):
     if filtro_tipo_operacao:
         query = query.filter(Solicitacao.tipo_operacao == filtro_tipo_operacao)
 
-    filtro_foco = args.get("foco")
+    filtro_foco = get_multi_values(args, "foco")
     if filtro_foco:
-        query = query.filter(Solicitacao.foco == filtro_foco)
+        query = query.filter(Solicitacao.foco.in_(filtro_foco))
 
     filtro_protocolo = (args.get("protocolo") or "").strip()
     if filtro_protocolo:
@@ -139,6 +140,9 @@ def build_dashboard_context(user, args, google_maps_key):
         "google_maps_key": google_maps_key,
         "equipes": equipes,
         "retorno_ciclos": build_retorno_ciclo_summaries(user, paginacao.items),
+        "filtros_multi": {
+            "foco": filtro_foco,
+        },
     }
 
 

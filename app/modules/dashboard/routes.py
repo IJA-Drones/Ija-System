@@ -9,6 +9,7 @@ from app.modules.dashboard.service import (
     build_uvis_os_form_context,
 )
 from app.shared.access import ADMIN_PANEL_VIEW_TYPES, is_agro_finance_user
+from app.shared.query_filters import query_args_without_page
 
 
 def register_routes(bp):
@@ -33,7 +34,7 @@ def register_routes(bp):
             return redirect(url_for("main.admin_dashboard"))
 
         context = build_dashboard_context(current_user, request.args, google_maps_key)
-        context["pagination_args"] = {k: v for k, v in request.args.items() if k != "page"}
+        context["pagination_args"] = query_args_without_page(request.args)
         return render_template("dashboard.html", **context)
 
     @bp.route("/uvis/historico-os", methods=["GET"], endpoint="uvis_historico_os")
@@ -45,7 +46,7 @@ def register_routes(bp):
             flash(exc.message, exc.category)
             return redirect(url_for(exc.redirect_endpoint))
 
-        context["pagination_args"] = {k: v for k, v in request.args.items() if k != "page"}
+        context["pagination_args"] = query_args_without_page(request.args)
         context["filtros_historico"] = {
             k: v for k, v in context["pagination_args"].items() if k != "tipo_os"
         }

@@ -24,6 +24,7 @@ from app.modules.admin_dashboard.service import (
 )
 from app.shared.access import apply_regiao_scope, apply_solicitacao_prefeitura_scope
 from app.shared.os_history_filters import get_os_history_filters
+from app.shared.query_filters import get_multi_values, multi_value_to_query, query_args_without_page
 from app.shared.retorno_ciclo import build_retorno_ciclo_context, build_retorno_ciclo_summaries
 
 
@@ -39,9 +40,7 @@ def _redirect_back_to_admin():
 
 
 def _query_args_without_page():
-    args = request.args.to_dict(flat=True)
-    args.pop("page", None)
-    return args
+    return query_args_without_page(request.args)
 
 
 def _get_admin_per_page():
@@ -94,14 +93,14 @@ def register_routes(bp):
             return redirect(url_for("main.dashboard"))
 
         filtro_status = (request.args.get("status") or "").strip()
-        filtro_unidade = (request.args.get("unidade") or "").strip()
+        filtro_unidade = get_multi_values(request.args, "unidade")
         filtro_regiao = (request.args.get("regiao") or "").strip()
         filtro_apoio_cet = (request.args.get("apoio_cet") or "").strip().upper()
         filtro_protocolo = (request.args.get("protocolo") or "").strip()
         filtro_endereco = (request.args.get("endereco") or "").strip()
         filtro_tipo_visita = (request.args.get("tipo_visita") or "").strip()
         filtro_tipo_imovel = (request.args.get("tipo_imovel") or "").strip()
-        filtro_foco = (request.args.get("foco") or "").strip()
+        filtro_foco = get_multi_values(request.args, "foco")
         filtro_data_ini = (request.args.get("data_ini") or "").strip()
         filtro_data_fim = (request.args.get("data_fim") or "").strip()
         filtro_retorno_automatico = (request.args.get("retorno_automatico") or "").strip().upper()
@@ -110,11 +109,11 @@ def register_routes(bp):
             return redirect(
                 url_for(
                     "main.admin_canceladas",
-                    unidade=filtro_unidade,
+                    unidade=multi_value_to_query(filtro_unidade),
                     regiao=filtro_regiao,
                     tipo_visita=filtro_tipo_visita,
                     tipo_imovel=filtro_tipo_imovel,
-                    foco=filtro_foco,
+                    foco=multi_value_to_query(filtro_foco),
                     protocolo=filtro_protocolo,
                     endereco=filtro_endereco,
                     data_ini=filtro_data_ini,
@@ -158,6 +157,10 @@ def register_routes(bp):
             pagination_args=_query_args_without_page(),
             per_page_options=ADMIN_PER_PAGE_OPTIONS,
             retorno_ciclos=build_retorno_ciclo_summaries(current_user, paginacao.items),
+            filtros_multi={
+                "unidade": filtro_unidade,
+                "foco": filtro_foco,
+            },
         )
 
     @bp.route("/admin/exportar_excel")
@@ -169,14 +172,14 @@ def register_routes(bp):
 
         try:
             filtro_status = (request.args.get("status") or "").strip()
-            filtro_unidade = (request.args.get("unidade") or "").strip()
+            filtro_unidade = get_multi_values(request.args, "unidade")
             filtro_regiao = (request.args.get("regiao") or "").strip()
             filtro_apoio_cet = (request.args.get("apoio_cet") or "").strip().upper()
             filtro_protocolo = (request.args.get("protocolo") or "").strip()
             filtro_endereco = (request.args.get("endereco") or "").strip()
             filtro_tipo_visita = (request.args.get("tipo_visita") or "").strip()
             filtro_tipo_imovel = (request.args.get("tipo_imovel") or "").strip()
-            filtro_foco = (request.args.get("foco") or "").strip()
+            filtro_foco = get_multi_values(request.args, "foco")
             filtro_data_ini = (request.args.get("data_ini") or "").strip()
             filtro_data_fim = (request.args.get("data_fim") or "").strip()
             filtro_retorno_automatico = (request.args.get("retorno_automatico") or "").strip().upper()
@@ -279,9 +282,9 @@ def register_routes(bp):
             flash("Acesso restrito.", "danger")
             return redirect(url_for("main.dashboard"))
 
-        filtro_unidade = (request.args.get("unidade") or "").strip()
+        filtro_unidade = get_multi_values(request.args, "unidade")
         filtro_regiao = (request.args.get("regiao") or "").strip()
-        filtro_foco = (request.args.get("foco") or "").strip()
+        filtro_foco = get_multi_values(request.args, "foco")
         filtro_tipo_visita = (request.args.get("tipo_visita") or "").strip()
         filtro_tipo_imovel = (request.args.get("tipo_imovel") or "").strip()
         filtro_protocolo = (request.args.get("protocolo") or "").strip()
@@ -317,6 +320,10 @@ def register_routes(bp):
             google_maps_key=get_google_maps_key(),
             foco_selecionado=filtro_foco,
             pagination_args=_query_args_without_page(),
+            filtros_multi={
+                "unidade": filtro_unidade,
+                "foco": filtro_foco,
+            },
         )
 
     @bp.route("/admin/historico-os")

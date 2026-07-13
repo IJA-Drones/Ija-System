@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 {% from "_pagination.html" import render_pagination %}
+{% from "_multi_select_chips.html" import render_chip_select_values %}
+{% from "_result_summary.html" import render_result_summary %}
 
 {% block extra_styles %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
@@ -143,9 +145,12 @@
 <div class="container-fluid py-4 canceladas-page" style="max-width: 1200px;">
 
   <div class="canceladas-toolbar mb-4">
-    <h2 class="text-dark">
-      <i class="bi bi-x-circle me-2 text-danger"></i> Solicitações Canceladas (Geral)
-    </h2>
+    <div>
+      <h2 class="text-dark mb-0">
+        <i class="bi bi-x-circle me-2 text-danger"></i> Solicitações Canceladas (Geral)
+      </h2>
+      {{ render_result_summary(paginacao.total, 'Solicitações canceladas filtradas') }}
+    </div>
 
     <a href="{{ url_for('main.admin_dashboard') }}" class="btn btn-outline-secondary shadow-sm">
       <i class="bi bi-arrow-left"></i> Voltar
@@ -158,17 +163,10 @@
   <div class="card shadow-sm rounded-4 mb-4 border-0 canceladas-filters">
     <div class="card-body">
       <form method="GET">
-        <div class="row g-2 align-items-end">
+        <div class="row g-2 filter-chip-row">
           <div class="col-md-4">
             <label class="small text-muted">Unidade:</label>
-            <select name="unidade" class="form-select form-select-sm">
-              <option value="">Todas as UVIS</option>
-              {% for u in unidades_select %}
-                <option value="{{ u.nome_uvis }}" {% if request.args.get('unidade') == u.nome_uvis %}selected{% endif %}>
-                  {{ u.nome_uvis }}
-                </option>
-              {% endfor %}
-            </select>
+            {{ render_chip_select_values('unidade', unidades_select|map(attribute='nome_uvis')|list, filtros_multi.unidade, 'Adicionar UVIS') }}
           </div>
 
           <div class="col-md-4">
@@ -208,14 +206,7 @@
 
           <div class="col-md-4">
             <label class="small text-muted mb-1">Filtrar por Foco da Ação</label>
-            <select name="foco" class="form-select form-select-sm">
-              <option value="">Todos os Focos</option>
-              {% for opcao in solicitacao_filter_foco_opcoes %}
-                <option value="{{ opcao }}" {{ 'selected' if request.args.get('foco') == opcao else '' }}>
-                  {{ opcao }}
-                </option>
-              {% endfor %}
-            </select>
+            {{ render_chip_select_values('foco', solicitacao_filter_foco_opcoes, filtros_multi.foco, 'Adicionar foco') }}
           </div>
 
           <div class="col-md-4">
