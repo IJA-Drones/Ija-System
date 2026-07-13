@@ -1431,6 +1431,39 @@
                 });
             });
 
+            document.querySelectorAll('button.btn-deletar').forEach(button => {
+                button.addEventListener('click', function (e) {
+                    const form = button.form || button.closest('form');
+                    if (!form || form.classList.contains('form-deletar')) return;
+
+                    e.preventDefault();
+
+                    const isDarkMode = document.body.classList.contains('dark-mode');
+                    Swal.fire({
+                        title: 'Tem certeza?',
+                        text: button.dataset.deleteText || 'Este registro será removido permanentemente.',
+                        icon: 'warning',
+                        customClass: {
+                            popup: isDarkMode ? 'swal2-dark-mode' : ''
+                        },
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: 'Sim, remover!',
+                        cancelButtonText: 'Cancelar'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            showLoadingState(button);
+                            if (typeof form.requestSubmit === 'function') {
+                                form.requestSubmit(button);
+                            } else {
+                                form.submit();
+                            }
+                        }
+                    });
+                });
+            });
+
             // 2. LOADING UNIVERSAL (Melhorado para evitar conflitos)
             document.querySelectorAll('form:not(.form-deletar):not(.form-exportar):not(.form-no-loading)').forEach(form => {
                 form.addEventListener('submit', function (e) {

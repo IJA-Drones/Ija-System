@@ -218,8 +218,7 @@
           <div class="card-body p-4">
             <h5 class="text-danger mb-2">Excluir candidato</h5>
             <p class="small text-muted">Remove o perfil e o PDF armazenado no Dropbox.</p>
-            <form method="POST" action="{{ url_for('main.agro_talento_deletar', curriculo_id=curriculo.id) }}"
-                  onsubmit="return confirm('Excluir permanentemente este candidato e o PDF?');">
+            <form class="form-deletar" method="POST" action="{{ url_for('main.agro_talento_deletar', curriculo_id=curriculo.id) }}">
               <button class="btn btn-outline-danger w-100"><i class="bi bi-trash-fill me-1"></i> Excluir</button>
             </form>
           </div>

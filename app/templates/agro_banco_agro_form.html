@@ -189,11 +189,10 @@
           {% if modo == 'editar' and banco %}
             <button
               type="submit"
-              class="btn btn-outline-danger d-flex align-items-center gap-2"
+              class="btn btn-outline-danger btn-deletar d-flex align-items-center gap-2"
               formaction="{{ url_for('main.agro_banco_deletar', banco_id=banco.id) }}"
               formmethod="POST"
               formnovalidate
-              onclick="return confirm('Deseja excluir este banco agro?');"
             >
               <i class="bi bi-trash"></i> Excluir
             </button>

@@ -236,7 +236,7 @@
                         </li>
                         {% if contrato.comprovante_pagamento_path %}
                           <li>
-                            <form class="m-0" method="POST" action="{{ url_for('main.agro_contrato_comprovante_pagamento_remover', contrato_id=contrato.id) }}" onsubmit="return confirm('Remover o comprovante de pagamento deste contrato?');">
+                            <form class="form-deletar m-0" method="POST" action="{{ url_for('main.agro_contrato_comprovante_pagamento_remover', contrato_id=contrato.id) }}">
                               <button type="submit" class="dropdown-item py-2 text-danger">
                                 <i class="bi bi-x-circle me-2"></i> Remover comprovante
                               </button>
@@ -246,7 +246,7 @@
                       {% endif %}
                       <li><hr class="dropdown-divider"></li>
                       <li>
-                        <form class="m-0" method="POST" action="{{ url_for('main.agro_contrato_deletar', contrato_id=contrato.id) }}" onsubmit="return confirm('Tem certeza que deseja excluir este contrato agro? Exclua antes as OS vinculadas, se houver.');">
+                        <form class="form-deletar m-0" method="POST" action="{{ url_for('main.agro_contrato_deletar', contrato_id=contrato.id) }}">
                           <button type="submit" class="dropdown-item py-2 text-danger">
                             <i class="bi bi-trash me-2"></i> Excluir contrato
                           </button>

@@ -604,6 +604,217 @@
   color: currentColor;
 }
 
+body.agro-mode .listing-page {
+  max-width: 1360px;
+}
+
+body.agro-mode .listing-header {
+  align-items: center;
+  margin-bottom: 1rem !important;
+}
+
+body.agro-mode .listing-header h2 {
+  font-size: clamp(1.35rem, 1.7vw, 1.8rem);
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+body.agro-mode .listing-header p {
+  margin-top: 0.3rem;
+  line-height: 1.4;
+}
+
+body.agro-mode .listing-actions {
+  justify-content: flex-end;
+  align-items: center;
+}
+
+body.agro-mode .listing-actions .btn,
+body.agro-mode .listing-filter-actions .btn {
+  min-height: 36px;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+html.agro-mode .listing-actions .btn-success,
+html.agro-mode .listing-filter-actions .btn-success,
+html.agro-mode .listing-cell-actions .btn-success,
+body.agro-mode .listing-actions .btn-success,
+body.agro-mode .listing-filter-actions .btn-success,
+body.agro-mode .listing-cell-actions .btn-success {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff !important;
+}
+
+html.agro-mode .listing-actions .btn-success:hover,
+html.agro-mode .listing-filter-actions .btn-success:hover,
+html.agro-mode .listing-cell-actions .btn-success:hover,
+body.agro-mode .listing-actions .btn-success:hover,
+body.agro-mode .listing-filter-actions .btn-success:hover,
+body.agro-mode .listing-cell-actions .btn-success:hover {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+  color: #fff !important;
+}
+
+body.agro-mode .listing-page > .card {
+  border-radius: 14px !important;
+}
+
+body.agro-mode .listing-filter-header {
+  min-height: 52px;
+  font-weight: 800;
+}
+
+html.agro-mode .listing-filter-header .text-dark,
+html.agro-mode .listing-filter-header .bi-funnel-fill,
+body.agro-mode .listing-filter-header .text-dark,
+body.agro-mode .listing-filter-header .bi-funnel-fill {
+  color: var(--color-primary-dark) !important;
+}
+
+body.agro-mode .listing-filter-body {
+  padding-bottom: 1rem;
+}
+
+body.agro-mode .listing-filter-body label {
+  font-weight: 800;
+}
+
+body.agro-mode .listing-filter-body .form-control,
+body.agro-mode .listing-filter-body .form-select {
+  min-height: 38px;
+  border-radius: 10px;
+}
+
+body.agro-mode .listing-table-wrap {
+  border-radius: 14px !important;
+}
+
+body.agro-mode .agro-actions-table-wrap,
+body.agro-mode .agro-actions-table-wrap .card-body,
+body.agro-mode .agro-actions-table-wrap .table-responsive {
+  overflow: visible !important;
+}
+
+body.agro-mode .listing-table {
+  font-size: 0.92rem;
+}
+
+html.agro-mode .listing-table thead th,
+body.agro-mode .listing-table thead th {
+  padding: 0.95rem 1rem;
+  background: var(--color-primary-dark) !important;
+  color: #fff !important;
+  border-bottom: 0;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+html.agro-mode .listing-table thead th:first-child,
+body.agro-mode .listing-table thead th:first-child {
+  border-top-left-radius: 14px;
+}
+
+html.agro-mode .listing-table thead th:last-child,
+body.agro-mode .listing-table thead th:last-child {
+  border-top-right-radius: 14px;
+}
+
+body.agro-mode .listing-table tbody td {
+  padding: 0.9rem 0.95rem;
+  border-top-color: #edf2f7;
+  vertical-align: middle;
+}
+
+body.agro-mode .listing-table tbody tr {
+  transition: background-color 0.16s ease;
+}
+
+body.agro-mode .listing-table tbody tr:hover > * {
+  background: #f7fbf8;
+}
+
+body.agro-mode .listing-table .fw-bold,
+body.agro-mode .listing-table .fw-semibold {
+  color: var(--color-primary-dark);
+}
+
+body.agro-mode .listing-table .small,
+body.agro-mode .listing-table .text-muted {
+  line-height: 1.45;
+}
+
+body.agro-mode .listing-page .badge:not(.listing-filter-dot) {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 100%;
+  border-radius: 999px;
+  padding: 0.42rem 0.68rem;
+  font-size: 0.76rem;
+  font-weight: 800;
+  line-height: 1.1;
+  text-align: left;
+  white-space: normal;
+  vertical-align: middle;
+}
+
+body.agro-mode .listing-page .badge.bg-light:not(.listing-filter-dot),
+body.agro-mode .listing-page .badge.bg-white:not(.listing-filter-dot) {
+  background: #f8fafc !important;
+  color: #334155 !important;
+  border-color: #e2e8f0 !important;
+}
+
+body.agro-mode .listing-filter-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  min-width: 0.45rem;
+  min-height: 0.45rem;
+  padding: 0 !important;
+}
+
+body.agro-mode .listing-cell-actions {
+  text-align: center;
+}
+
+body.agro-mode .agro-actions-dropdown {
+  display: flex;
+  justify-content: center;
+}
+
+body.agro-mode .agro-actions-trigger {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+}
+
+body.agro-mode .agro-actions-trigger::after {
+  display: none;
+}
+
+body.agro-mode .agro-actions-dropdown .dropdown-menu {
+  min-width: 210px;
+  margin-bottom: 0.45rem;
+  padding: 0.35rem;
+  border-radius: 12px;
+}
+
+body.agro-mode .agro-actions-dropdown .dropdown-item,
+body.agro-mode .agro-actions-dropdown .dropdown-item-text {
+  border-radius: 9px;
+  font-size: 0.9rem;
+}
+
 body.dark-mode.agro-mode {
   --color-primary-dark: #d9f7e4;
   --color-primary: #63d08a;

@@ -83,7 +83,7 @@
     </div>
   </div>
 
-  <div class="card shadow-sm rounded-4 border-0 overflow-hidden listing-table-wrap">
+  <div class="card shadow-sm rounded-4 border-0 overflow-hidden listing-table-wrap agro-actions-table-wrap">
     <div class="card-body p-0">
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0 listing-table">
@@ -113,18 +113,25 @@
 
                 {% if is_editable %}
                   <td data-label="Acoes" class="listing-cell-actions">
-                    <div class="listing-actions-group">
-                      <a href="{{ url_for('main.agro_fornecedor_editar', fornecedor_id=fornecedor.id) }}"
-                         class="btn btn-sm btn-success text-white shadow-sm"
-                         title="Editar">
-                        <i class="bi bi-pencil-square"></i> Editar
-                      </a>
-
-                      <form class="form-deletar m-0" method="POST" action="{{ url_for('main.agro_fornecedor_deletar', fornecedor_id=fornecedor.id) }}">
-                        <button type="submit" class="btn btn-sm btn-danger shadow-sm" title="Excluir">
-                          <i class="bi bi-trash"></i> Excluir
-                        </button>
-                      </form>
+                    <div class="dropup agro-actions-dropdown">
+                      <button class="btn btn-outline-secondary agro-actions-trigger" type="button" data-bs-toggle="dropdown" data-bs-offset="0,8" aria-expanded="false" title="Acoes">
+                        <i class="bi bi-three-dots-vertical"></i>
+                      </button>
+                      <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                        <li>
+                          <a href="{{ url_for('main.agro_fornecedor_editar', fornecedor_id=fornecedor.id) }}" class="dropdown-item py-2">
+                            <i class="bi bi-pencil-square text-success me-2"></i> Editar
+                          </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                          <form class="form-deletar m-0" method="POST" action="{{ url_for('main.agro_fornecedor_deletar', fornecedor_id=fornecedor.id) }}">
+                            <button type="submit" class="dropdown-item py-2 text-danger">
+                              <i class="bi bi-trash me-2"></i> Excluir
+                            </button>
+                          </form>
+                        </li>
+                      </ul>
                     </div>
                   </td>
                 {% endif %}

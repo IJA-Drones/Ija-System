@@ -250,11 +250,10 @@
           {% if modo == 'editar' and lancamento %}
             <button
               type="submit"
-              class="btn btn-outline-danger d-flex align-items-center gap-2"
+              class="btn btn-outline-danger btn-deletar d-flex align-items-center gap-2"
               formaction="{{ url_for('main.agro_financeiro_deletar', lancamento_id=lancamento.id) }}"
               formmethod="POST"
               formnovalidate
-              onclick="return confirm('Tem certeza de que deseja excluir este lancamento financeiro agro?');"
             >
               <i class="bi bi-trash"></i> Excluir
             </button>

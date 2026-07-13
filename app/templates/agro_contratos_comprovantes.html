@@ -190,7 +190,7 @@
                         </label>
                         <input id="comprovantePagamentoTela{{ contrato.id }}" class="d-none" type="file" name="comprovante_pagamento" accept="application/pdf,image/jpeg,.pdf,.jpg,.jpeg,.jfif" onchange="this.form.submit()">
                       </form>
-                      <form class="m-0" method="POST" action="{{ url_for('main.agro_contrato_comprovante_pagamento_remover', contrato_id=contrato.id) }}" onsubmit="return confirm('Remover o comprovante de pagamento deste contrato?');">
+                      <form class="form-deletar m-0" method="POST" action="{{ url_for('main.agro_contrato_comprovante_pagamento_remover', contrato_id=contrato.id) }}">
                         <button type="submit" class="btn btn-outline-danger btn-sm">
                           <i class="bi bi-trash"></i> Remover
                         </button>

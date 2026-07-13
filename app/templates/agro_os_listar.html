@@ -91,7 +91,7 @@
     </div>
   </div>
 
-  <div class="card shadow-sm rounded-4 border-0 overflow-hidden listing-table-wrap">
+  <div class="card shadow-sm rounded-4 border-0 overflow-hidden listing-table-wrap agro-actions-table-wrap">
     <div class="card-body p-0">
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0 listing-table">
@@ -110,7 +110,19 @@
               <tr>
                 <td data-label="OS">
                   <div class="fw-bold">{{ os_agro.identificador_os }}</div>
-                  <div class="text-muted small">{{ os_agro.status }}</div>
+                  {% set os_status_norm = (os_agro.status or '')|lower %}
+                  {% if os_status_norm in ['concluida', 'finalizada'] %}
+                    {% set os_status_badge_class = 'bg-success-subtle text-success border border-success-subtle' %}
+                  {% elif 'andamento' in os_status_norm or 'execucao' in os_status_norm or 'iniciada' in os_status_norm %}
+                    {% set os_status_badge_class = 'bg-primary-subtle text-primary border border-primary-subtle' %}
+                  {% elif 'cancelada' in os_status_norm %}
+                    {% set os_status_badge_class = 'bg-danger-subtle text-danger border border-danger-subtle' %}
+                  {% else %}
+                    {% set os_status_badge_class = 'bg-secondary-subtle text-secondary border border-secondary-subtle' %}
+                  {% endif %}
+                  <div class="mt-1">
+                    <span class="badge {{ os_status_badge_class }}">{{ os_agro.status }}</span>
+                  </div>
                 </td>
                 <td data-label="Contrato">
                   <div class="fw-semibold">#{{ os_agro.contrato.id }} • {{ os_agro.cliente_nome }}</div>
@@ -147,22 +159,34 @@
                 </td>
                 {% if is_editable %}
                   <td data-label="Acoes" class="listing-cell-actions">
-                    <div class="listing-actions-group">
-                      {% if os_agro.status == 'CONCLUIDA' %}
-                        <a href="{{ url_for('main.agro_os_relatorio_pdf', os_id=os_agro.id) }}" class="btn btn-sm btn-outline-danger shadow-sm">
-                          <i class="bi bi-file-earmark-pdf"></i> Relatorio
-                        </a>
-                      {% endif %}
-                      <a href="{{ url_for('main.agro_os_editar', os_id=os_agro.id) }}" class="btn btn-sm btn-success text-white shadow-sm">
-                        <i class="bi bi-pencil-square"></i> Editar
-                      </a>
-                      {% if is_admin_agro %}
-                        <form method="POST" action="{{ url_for('main.agro_os_deletar', os_id=os_agro.id) }}" onsubmit="return confirm('Tem certeza que deseja excluir esta OS Agro? Esta ação não poderá ser desfeita.');">
-                          <button type="submit" class="btn btn-sm btn-outline-danger shadow-sm">
-                            <i class="bi bi-trash"></i> Excluir
-                          </button>
-                        </form>
-                      {% endif %}
+                    <div class="dropup agro-actions-dropdown">
+                      <button class="btn btn-outline-secondary agro-actions-trigger" type="button" data-bs-toggle="dropdown" data-bs-offset="0,8" aria-expanded="false" title="Acoes">
+                        <i class="bi bi-three-dots-vertical"></i>
+                      </button>
+                      <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                        {% if os_agro.status == 'CONCLUIDA' %}
+                          <li>
+                            <a href="{{ url_for('main.agro_os_relatorio_pdf', os_id=os_agro.id) }}" class="dropdown-item py-2">
+                              <i class="bi bi-file-earmark-pdf text-danger me-2"></i> Relatorio
+                            </a>
+                          </li>
+                        {% endif %}
+                        <li>
+                          <a href="{{ url_for('main.agro_os_editar', os_id=os_agro.id) }}" class="dropdown-item py-2">
+                            <i class="bi bi-pencil-square text-success me-2"></i> Editar
+                          </a>
+                        </li>
+                        {% if is_admin_agro %}
+                          <li><hr class="dropdown-divider"></li>
+                          <li>
+                            <form class="form-deletar m-0" method="POST" action="{{ url_for('main.agro_os_deletar', os_id=os_agro.id) }}">
+                              <button type="submit" class="dropdown-item py-2 text-danger">
+                                <i class="bi bi-trash me-2"></i> Excluir
+                              </button>
+                            </form>
+                          </li>
+                        {% endif %}
+                      </ul>
                     </div>
                   </td>
                 {% endif %}
