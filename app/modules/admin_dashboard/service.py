@@ -768,7 +768,7 @@ def build_admin_historico_os_export(user, filtros, filtro_tipo_os: str, filtro_e
         cell.alignment = Alignment(horizontal="center", vertical="center")
         cell.border = thin_border
 
-    tipo_label = "OS Equipe UVIS" if filtro_tipo_os == "equipe_uvis" else "OS Piloto"
+    tipo_label = "OS"
     for row_number, pedido in enumerate(pedidos, start=2):
         usuario = getattr(pedido, "usuario", None)
         endereco_completo = (

@@ -553,6 +553,7 @@ def build_piloto_os_form_context(user, os_id):
             joinedload(Solicitacao.usuario),
             joinedload(Solicitacao.equipe),
             joinedload(Solicitacao.ordem_servico),
+            joinedload(Solicitacao.ordem_servico_equipe_uvis),
         )
         .filter(Solicitacao.id == os_id)
     )
@@ -570,6 +571,7 @@ def build_piloto_os_form_context(user, os_id):
         raise PilotoOsError("Voce nao tem permissao para acessar esta OS.", "danger")
 
     ordem = solicitacao.ordem_servico
+    ordem_uvis = solicitacao.ordem_servico_equipe_uvis
     calculo_dosagem_planejado = _parse_json_object(
         getattr(ordem, "calculo_dosagem_planejado", None) if ordem else None
     )
@@ -596,6 +598,8 @@ def build_piloto_os_form_context(user, os_id):
         "solicitacao": solicitacao,
         "equipe": equipe,
         "ordem": ordem,
+        "ordem_uvis": ordem_uvis,
+        "can_edit_uvis_tab": False,
         "modo_visualizacao": (solicitacao.status or "").strip().upper() in {"CONCLUIDO", "CONCLU\u00cdDO"},
         "uvis_nome": solicitacao.usuario.nome_uvis if solicitacao.usuario else "",
         "regiao_nome": (
@@ -711,6 +715,7 @@ def build_admin_os_form_context(user, os_id):
             joinedload(Solicitacao.usuario),
             joinedload(Solicitacao.equipe),
             joinedload(Solicitacao.ordem_servico),
+            joinedload(Solicitacao.ordem_servico_equipe_uvis),
         )
         .filter(Solicitacao.id == os_id)
     )
@@ -722,6 +727,7 @@ def build_admin_os_form_context(user, os_id):
     pode_editar_formulario = _admin_can_edit_os_form(user, solicitacao)
     equipe = solicitacao.equipe
     ordem = solicitacao.ordem_servico
+    ordem_uvis = solicitacao.ordem_servico_equipe_uvis
     calculo_dosagem_planejado = _parse_json_object(
         getattr(ordem, "calculo_dosagem_planejado", None) if ordem else None
     )
@@ -744,6 +750,8 @@ def build_admin_os_form_context(user, os_id):
         "solicitacao": solicitacao,
         "equipe": equipe,
         "ordem": ordem,
+        "ordem_uvis": ordem_uvis,
+        "can_edit_uvis_tab": False,
         "modo_visualizacao": not pode_editar_formulario,
         "alerta_edicao_concluida": (
             pode_editar_formulario

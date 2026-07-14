@@ -16,7 +16,7 @@ from app.shared.query_filters import id_search_clause
 from app.shared.query_filters import get_multi_values
 from app.shared.retorno_ciclo import build_retorno_ciclo_context, build_retorno_ciclo_summaries
 
-UVIS_HISTORICO_TIPO_OS_OPTIONS = ("todas", "piloto", "equipe_uvis")
+UVIS_HISTORICO_TIPO_OS_OPTIONS = ("piloto",)
 
 
 STATUS_OS_CONCLUIDAS = ["CONCLUIDO", "CONCLU\u00cdDO"]
@@ -150,9 +150,9 @@ def build_uvis_historico_os_context(user, args):
     if getattr(user, "tipo_usuario", None) != "uvis":
         raise DashboardError("Acesso restrito.", category="danger")
 
-    filtro_tipo_os = (args.get("tipo_os") or "todas").strip().lower()
+    filtro_tipo_os = (args.get("tipo_os") or "piloto").strip().lower()
     if filtro_tipo_os not in UVIS_HISTORICO_TIPO_OS_OPTIONS:
-        filtro_tipo_os = "todas"
+        filtro_tipo_os = "piloto"
 
     query = (
         Solicitacao.query.options(
@@ -166,51 +166,11 @@ def build_uvis_historico_os_context(user, args):
         .filter(Solicitacao.status != "CANCELADO")
     )
 
-    if filtro_tipo_os == "piloto":
-        query = query.filter(Solicitacao.status.in_(STATUS_OS_CONCLUIDAS))
-    elif filtro_tipo_os == "equipe_uvis":
-        query = query.filter(_has_equipe_uvis_os())
-    else:
-        query = query.filter(
-            or_(
-                Solicitacao.status.in_(STATUS_OS_CONCLUIDAS),
-                _has_equipe_uvis_os(),
-            )
-        )
+    query = query.filter(Solicitacao.status.in_(STATUS_OS_CONCLUIDAS))
 
     filtros = get_os_history_filters(args)
-    if filtro_tipo_os == "equipe_uvis":
-        query = apply_os_history_filters(query, filtros, apply_status=False)
-        if filtros["status"] == "CONCLUIDAS":
-            query = query.filter(
-                Solicitacao.ordem_servico_equipe_uvis.has(
-                    OrdemServicoEquipeUvis.status.in_(STATUS_EQUIPE_UVIS_CONCLUIDAS)
-                )
-            )
-        elif filtros["status"] == "EM_ANDAMENTO":
-            query = query.filter(
-                or_(
-                    ~Solicitacao.ordem_servico_equipe_uvis.has(),
-                    Solicitacao.ordem_servico_equipe_uvis.has(
-                        ~OrdemServicoEquipeUvis.status.in_(STATUS_EQUIPE_UVIS_CONCLUIDAS)
-                    ),
-                )
-            )
-    else:
-        query = apply_os_history_filters(query, filtros)
+    query = apply_os_history_filters(query, filtros)
 
-    total_todas = (
-        Solicitacao.query
-        .filter(Solicitacao.usuario_id == user.id)
-        .filter(Solicitacao.status != "CANCELADO")
-        .filter(
-            or_(
-                Solicitacao.status.in_(STATUS_OS_CONCLUIDAS),
-                _has_equipe_uvis_os(),
-            )
-        )
-        .count()
-    )
     total_piloto = (
         Solicitacao.query
         .filter(
@@ -218,13 +178,6 @@ def build_uvis_historico_os_context(user, args):
             Solicitacao.status.in_(STATUS_OS_CONCLUIDAS),
         )
         .filter(Solicitacao.status != "CANCELADO")
-        .count()
-    )
-    total_equipe_uvis = (
-        Solicitacao.query
-        .filter(Solicitacao.usuario_id == user.id)
-        .filter(Solicitacao.status != "CANCELADO")
-        .filter(_has_equipe_uvis_os())
         .count()
     )
 
@@ -242,9 +195,9 @@ def build_uvis_historico_os_context(user, args):
         "unidades_select": [user],
         "retorno_ciclos": build_retorno_ciclo_summaries(user, paginacao.items),
         "historico_totais": {
-            "todas": total_todas,
+            "todas": total_piloto,
             "piloto": total_piloto,
-            "equipe_uvis": total_equipe_uvis,
+            "equipe_uvis": 0,
         },
     }
 
@@ -259,6 +212,7 @@ def build_uvis_os_form_context(user, os_id):
             joinedload(Solicitacao.usuario),
             joinedload(Solicitacao.equipe),
             joinedload(Solicitacao.ordem_servico),
+            joinedload(Solicitacao.ordem_servico_equipe_uvis),
         )
         .get_or_404(os_id)
     )
@@ -275,6 +229,7 @@ def build_uvis_os_form_context(user, os_id):
 
     equipe = solicitacao.equipe
     ordem = solicitacao.ordem_servico
+    ordem_uvis = solicitacao.ordem_servico_equipe_uvis
     imagem_principal_path = getattr(ordem, "imagem_principal", None) if ordem else None
     outras_imagens_paths = _parse_media_list(getattr(ordem, "outras_imagens", None) if ordem else None)
     video_path = getattr(ordem, "video", None) if ordem else None
@@ -291,6 +246,8 @@ def build_uvis_os_form_context(user, os_id):
         "solicitacao": solicitacao,
         "equipe": equipe,
         "ordem": ordem,
+        "ordem_uvis": ordem_uvis,
+        "can_edit_uvis_tab": False,
         "modo_visualizacao": True,
         "uvis_nome": solicitacao.usuario.nome_uvis if solicitacao.usuario else "",
         "endereco_os": (

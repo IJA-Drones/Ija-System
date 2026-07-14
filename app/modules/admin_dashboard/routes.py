@@ -335,9 +335,7 @@ def register_routes(bp):
 
         filtros = get_os_history_filters(request.args, status_key="status_os")
         filtro_status_os = filtros["status"]
-        filtro_tipo_os = (request.args.get("tipo_os") or "piloto").strip().lower()
-        if filtro_tipo_os not in {"piloto", "equipe_uvis"}:
-            filtro_tipo_os = "piloto"
+        filtro_tipo_os = "piloto"
         filtro_equipe = (request.args.get("equipe") or "").strip()
         filtros["equipe"] = filtro_equipe
         page = request.args.get("page", 1, type=int)
@@ -381,9 +379,7 @@ def register_routes(bp):
             flash("Permissao negada para exportar.", "danger")
             return redirect(url_for("main.dashboard"))
 
-        filtro_tipo_os = (request.args.get("tipo_os") or "piloto").strip().lower()
-        if filtro_tipo_os not in {"piloto", "equipe_uvis"}:
-            filtro_tipo_os = "piloto"
+        filtro_tipo_os = "piloto"
 
         filtros = get_os_history_filters(request.args, status_key="status_os")
         filtro_equipe = (request.args.get("equipe") or "").strip()

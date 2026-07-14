@@ -12,6 +12,7 @@ from app.shared.os_history_filters import (
 )
 from app.shared.query_filters import id_search_clause
 from app.shared.retorno_ciclo import build_retorno_ciclo_context, build_retorno_ciclo_summaries
+from app.modules.piloto_os.service import build_os_media_context
 
 
 class EquipeUvisDashboardError(Exception):
@@ -91,6 +92,93 @@ def _is_equipe_uvis_os_concluded(ordem):
     return "CONCLU" in _status_key(getattr(ordem, "status", None))
 
 
+def _load_solicitacao_para_equipe_uvis(user, os_id):
+    if getattr(user, "tipo_usuario", None) not in {"equipe_uvis", "uvis"}:
+        raise EquipeUvisDashboardError("Acesso restrito.")
+
+    uvis_id, nome_equipe = _resolve_uvis_operational_access(user)
+
+    solicitacao = (
+        Solicitacao.query.options(
+            joinedload(Solicitacao.usuario),
+            joinedload(Solicitacao.equipe),
+            joinedload(Solicitacao.ordem_servico),
+            joinedload(Solicitacao.ordem_servico_equipe_uvis),
+        )
+        .get_or_404(os_id)
+    )
+
+    if solicitacao.usuario_id != uvis_id:
+        raise EquipeUvisDashboardError("Voce nao tem permissao para acessar esta solicitacao.")
+
+    if (solicitacao.status or "").strip().upper() == "CANCELADO":
+        raise EquipeUvisDashboardError(
+            "Esta solicitacao foi cancelada.",
+            category="warning",
+            redirect_endpoint="main.dashboard_equipe_uvis",
+        )
+
+    if not _is_approved_for_equipe_uvis(solicitacao) and not _is_concluded(solicitacao):
+        raise EquipeUvisDashboardError(
+            "Esta solicitacao ainda nao esta aprovada para a UVIS operacional.",
+            category="warning",
+            redirect_endpoint="main.dashboard_equipe_uvis",
+        )
+
+    return solicitacao, nome_equipe
+
+
+def _get_retorno_existente_equipe_uvis(solicitacao_id):
+    return (
+        Solicitacao.query
+        .filter(
+            Solicitacao.origem_retorno_id == solicitacao_id,
+            Solicitacao.gerada_automaticamente.is_(True),
+        )
+        .order_by(Solicitacao.id.desc())
+        .first()
+    )
+
+
+def _retorno_monitoramento_value(ordem_uvis, retorno_existente):
+    if ordem_uvis and ordem_uvis.retorno_monitoramento_em:
+        return ordem_uvis.retorno_monitoramento_em.strftime("%Y-%m-%dT%H:%M")
+    if retorno_existente and retorno_existente.data_agendamento and retorno_existente.hora_agendamento:
+        return datetime.combine(
+            retorno_existente.data_agendamento,
+            retorno_existente.hora_agendamento,
+        ).strftime("%Y-%m-%dT%H:%M")
+    return ""
+
+
+def _data_coleta_imagem_label(solicitacao, ordem):
+    if ordem and ordem.data_aplicacao:
+        return ordem.data_aplicacao.strftime("%d/%m/%Y")
+    if ordem and ordem.respondido_em:
+        return ordem.respondido_em.strftime("%d/%m/%Y")
+    if solicitacao and solicitacao.data_agendamento:
+        return solicitacao.data_agendamento.strftime("%d/%m/%Y")
+    return ""
+
+
+def _sync_retorno_monitoramento_equipe_uvis(solicitacao, retorno_existente, retorno_flag, retorno_em):
+    if retorno_flag == "SIM":
+        if retorno_existente is None:
+            _criar_solicitacao_retorno_monitoramento_equipe_uvis(solicitacao, retorno_em)
+        else:
+            retorno_existente.data_agendamento = retorno_em.date()
+            retorno_existente.hora_agendamento = retorno_em.time().replace(second=0, microsecond=0)
+            retorno_existente.equipe_uvis_nome = solicitacao.equipe_uvis_nome
+            retorno_existente.usuario_id = solicitacao.usuario_id
+            retorno_existente.prefeitura_id = solicitacao.prefeitura_id
+    elif (
+        retorno_existente is not None
+        and retorno_existente.gerada_automaticamente
+        and (retorno_existente.status or "").strip().upper() == "PENDENTE"
+    ):
+        db.session.delete(retorno_existente)
+
+
 def build_dashboard_equipe_uvis_context(user, args, google_maps_key):
     uvis_id, nome_equipe = _resolve_uvis_operational_access(user)
 
@@ -101,12 +189,7 @@ def build_dashboard_equipe_uvis_context(user, args, google_maps_key):
             joinedload(Solicitacao.ordem_servico_equipe_uvis),
         )
         .filter(Solicitacao.usuario_id == uvis_id)
-        .filter(
-            or_(
-                Solicitacao.status.in_(STATUS_SOLICITACOES_APROVADAS_EQUIPE_UVIS),
-                Solicitacao.status.in_(STATUS_OS_CONCLUIDAS),
-            )
-        )
+        .filter(Solicitacao.status.in_(STATUS_SOLICITACOES_APROVADAS_EQUIPE_UVIS))
         .filter(
             ~Solicitacao.ordem_servico_equipe_uvis.has(
                 OrdemServicoEquipeUvis.status.in_(STATUS_OS_CONCLUIDAS)
@@ -190,8 +273,11 @@ def build_equipe_uvis_os_historico_context(user, args):
         )
         .filter(Solicitacao.usuario_id == uvis_id)
         .filter(
-            Solicitacao.ordem_servico_equipe_uvis.has(
-                OrdemServicoEquipeUvis.status.in_(STATUS_OS_CONCLUIDAS)
+            or_(
+                Solicitacao.status.in_(STATUS_OS_CONCLUIDAS),
+                Solicitacao.ordem_servico_equipe_uvis.has(
+                    OrdemServicoEquipeUvis.status.in_(STATUS_OS_CONCLUIDAS)
+                ),
             )
         )
     )
@@ -317,6 +403,111 @@ def build_equipe_uvis_os_form_context(user, os_id):
         "retorno_monitoramento_value": retorno_monitoramento_value,
         "retorno_ciclo": build_retorno_ciclo_context(user, os_id),
     }
+
+
+def build_equipe_uvis_os_unificado_context(user, os_id):
+    solicitacao, nome_equipe = _load_solicitacao_para_equipe_uvis(user, os_id)
+    ordem = solicitacao.ordem_servico
+    ordem_uvis = solicitacao.ordem_servico_equipe_uvis
+    retorno_existente = _get_retorno_existente_equipe_uvis(solicitacao.id)
+
+    return {
+        "solicitacao": solicitacao,
+        "equipe": solicitacao.equipe,
+        "ordem": ordem,
+        "ordem_uvis": ordem_uvis,
+        "can_edit_uvis_tab": True,
+        "modo_visualizacao": True,
+        "alerta_edicao_concluida": False,
+        "active_os_tab": "uvis",
+        "nome_equipe": nome_equipe,
+        "uvis_nome": getattr(getattr(solicitacao, "usuario", None), "nome_uvis", "") or "",
+        "regiao_nome": (
+            getattr(getattr(solicitacao, "usuario", None), "regiao", None)
+            or getattr(getattr(solicitacao, "equipe", None), "regiao", None)
+            or ""
+        ),
+        "endereco_os": (
+            f"{solicitacao.logradouro or ''}, {solicitacao.numero or 'S/N'} - "
+            f"{solicitacao.bairro or ''} - {solicitacao.cidade or ''}/{solicitacao.uf or ''}"
+        ),
+        "data_coleta_imagem_label": _data_coleta_imagem_label(solicitacao, ordem),
+        "piloto_padrao": (
+            solicitacao.equipe.piloto_titular.nome_piloto
+            if solicitacao.equipe and solicitacao.equipe.piloto_titular else ""
+        ),
+        "auxiliar_padrao": (
+            solicitacao.equipe.piloto_auxiliar.nome_piloto
+            if solicitacao.equipe and solicitacao.equipe.piloto_auxiliar else ""
+        ),
+        "respondido_por_padrao": getattr(user, "nome_uvis", "") or nome_equipe,
+        "respondido_em_value": (
+            ordem.respondido_em.strftime("%Y-%m-%dT%H:%M")
+            if ordem and ordem.respondido_em else datetime.now().strftime("%Y-%m-%dT%H:%M")
+        ),
+        "retorno_existente": retorno_existente,
+        "retorno_monitoramento_value": _retorno_monitoramento_value(ordem_uvis, retorno_existente),
+        "calculo_dosagem_planejado": {},
+        "calculo_dosagem_planejado_json": "",
+        "drones_equipe": [],
+        "drones_pulverizacao": [],
+        "drones_monitoramento": [],
+        "dji_kml_routes": [],
+        "selected_dji_route": getattr(ordem, "dji_kml_route", None) if ordem else None,
+        "retorno_ciclo": build_retorno_ciclo_context(user, os_id),
+        **build_os_media_context(ordem),
+    }
+
+
+def salvar_equipe_uvis_complemento_form(user, os_id, form_data):
+    context = build_equipe_uvis_os_unificado_context(user, os_id)
+    if not context["can_edit_uvis_tab"]:
+        raise EquipeUvisDashboardError(
+            "Esta OS da equipe UVIS ja foi concluida e esta em modo de visualizacao.",
+            category="warning",
+        )
+
+    solicitacao = context["solicitacao"]
+    ordem = context["ordem_uvis"]
+    if ordem is None:
+        ordem = OrdemServicoEquipeUvis(
+            solicitacao_id=solicitacao.id,
+            equipe_uvis_nome=solicitacao.equipe_uvis_nome or context["nome_equipe"],
+            equipe_id=solicitacao.equipe_id,
+            status=STATUS_EQUIPE_UVIS_EM_ANDAMENTO,
+        )
+        db.session.add(ordem)
+    else:
+        ordem.equipe_uvis_nome = solicitacao.equipe_uvis_nome or context["nome_equipe"]
+        ordem.equipe_id = solicitacao.equipe_id
+        ordem.status = ordem.status or STATUS_EQUIPE_UVIS_EM_ANDAMENTO
+
+    retorno_flag = _normalize_upper(form_data.get("uvis_retornar_proxima_semana_monitorar_larvas"))
+    if retorno_flag not in {"SIM", "NAO"}:
+        retorno_flag = "NAO"
+
+    retorno_em = None
+    if retorno_flag == "SIM":
+        retorno_em = _to_datetime_local(form_data.get("uvis_retorno_monitoramento_em"))
+        if retorno_em is None:
+            raise EquipeUvisDashboardError(
+                "Informe a data e hora para o retorno de monitoramento.",
+                category="warning",
+            )
+
+    ordem.retornar_proxima_semana_monitorar_larvas = retorno_flag
+    ordem.retorno_monitoramento_em = retorno_em if retorno_flag == "SIM" else None
+    ordem.observacoes = _clean_str(form_data.get("uvis_observacoes"))
+
+    _sync_retorno_monitoramento_equipe_uvis(
+        solicitacao,
+        context["retorno_existente"],
+        retorno_flag,
+        retorno_em,
+    )
+
+    db.session.commit()
+    return "Complemento da UVIS salvo com sucesso!"
 
 
 def salvar_equipe_uvis_os_form(user, os_id, form_data):
