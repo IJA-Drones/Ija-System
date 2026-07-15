@@ -424,6 +424,7 @@ class Solicitacao(db.Model):
     tipo_visita = db.Column(db.String(50), index=True)
     tipo_imovel = db.Column(db.String(30), index=True)
     altura_voo = db.Column(db.String(20), index=True)
+    distrito_administrativo = db.Column(db.String(100))
 
     criadouro = db.Column(db.Boolean, default=False)
     apoio_cet = db.Column(db.Boolean, default=False)
