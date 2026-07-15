@@ -911,7 +911,14 @@
           </div>
           <div class="col-md-3">
             <label class="form-label-header">DA (Distrito) *</label>
-            <input type="text" name="da" class="form-control" value="{{ ordem.distrito_administrativo if ordem else '' }}" required />
+            <input
+              type="text"
+              name="da"
+              class="form-control{% if solicitacao and solicitacao.distrito_administrativo %} bg-light{% endif %}"
+              value="{{ solicitacao.distrito_administrativo if solicitacao and solicitacao.distrito_administrativo else (ordem.distrito_administrativo if ordem else '') }}"
+              {% if solicitacao and solicitacao.distrito_administrativo %}readonly{% endif %}
+              required
+            />
           </div>
           <div class="col-md-5">
             <label class="form-label-header">Nome/RF do ACE responsável *</label>

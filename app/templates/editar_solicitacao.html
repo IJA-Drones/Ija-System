@@ -102,6 +102,18 @@
                             {% endfor %}
                         </select>
                     </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-muted">DA (Distrito)</label>
+                        <input
+                            type="text"
+                            name="distrito_administrativo"
+                            class="form-control"
+                            value="{{ pedido.distrito_administrativo or '' }}"
+                            maxlength="100"
+                            required
+                        >
+                    </div>
                 </div>
 
                 <div class="row g-3 mb-3">

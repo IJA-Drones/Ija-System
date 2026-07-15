@@ -901,6 +901,7 @@ def criar_solicitacao_retorno_monitoramento(solicitacao_original, ordem_atual):
         tipo_operacao=solicitacao_original.tipo_operacao,
         tipo_visita=solicitacao_original.tipo_visita,
         altura_voo=solicitacao_original.altura_voo,
+        distrito_administrativo=solicitacao_original.distrito_administrativo,
         criadouro=solicitacao_original.criadouro,
         apoio_cet=solicitacao_original.apoio_cet,
         observacao=nova_observacao,
@@ -1068,7 +1069,11 @@ def _aplicar_campos_formulario(
     ordem.situacao_aplicacao = _clean_str(form_data.get("situacao_aplicacao"))
     ordem.larva_visualizada = _clean_str(form_data.get("larva_visualizada"))
     ordem.retornar_proxima_semana_monitorar_larvas = _clean_str(form_data.get("retornar_proxima_semana_monitorar_larvas"))
-    ordem.distrito_administrativo = _clean_str(form_data.get("da")) or _clean_str(form_data.get("distrito_administrativo"))
+    ordem.distrito_administrativo = (
+        _clean_str(getattr(solicitacao, "distrito_administrativo", None))
+        or _clean_str(form_data.get("da"))
+        or _clean_str(form_data.get("distrito_administrativo"))
+    )
     ordem.nome_rf_ace_responsavel_os = _clean_str(form_data.get("nome_rf_ace_responsavel_os"))
     ordem.criadouro_os_tipo_volume = _clean_str(form_data.get("criadouro_os_tipo_volume"))
     ordem.data_aplicacao = _to_date(form_data.get("data_aplicacao"))

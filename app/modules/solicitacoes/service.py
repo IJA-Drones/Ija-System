@@ -89,6 +89,7 @@ def build_novo_cadastro_context_with_form(user, google_maps_key, form_source):
         "foco": (form_source.get("foco") or "").strip(),
         "tipo_operacao": (form_source.get("tipo_operacao") or "").strip(),
         "altura_voo": (form_source.get("altura_voo") or "").strip(),
+        "distrito_administrativo": (form_source.get("distrito_administrativo") or "").strip(),
         "apoio_cet": (form_source.get("apoio_cet") or "").strip(),
         "observacao": (form_source.get("observacao") or "").strip(),
     }
@@ -100,6 +101,10 @@ def create_nova_solicitacao(user, form_data):
     hora_str = form_data.get("hora")
     data_obj = datetime.strptime(data_str, "%Y-%m-%d").date() if data_str else None
     hora_obj = datetime.strptime(hora_str, "%H:%M").time() if hora_str else None
+    distrito_administrativo = (form_data.get("distrito_administrativo") or "").strip()
+
+    if not distrito_administrativo:
+        raise NovoCadastroValidationError("Por favor, informe o DA (Distrito).")
 
     if user.tipo_usuario in ["dev", "admin", "visualizar", "prefeitura_admin"]:
         uvis_id_final = form_data.get("uvis_responsavel_id")
@@ -146,6 +151,7 @@ def create_nova_solicitacao(user, form_data):
         tipo_imovel=tipo_imovel,
         tipo_operacao=form_data.get("tipo_operacao"),
         altura_voo=form_data.get("altura_voo"),
+        distrito_administrativo=distrito_administrativo,
         apoio_cet=form_data.get("apoio_cet") == "sim",
         observacao=form_data.get("observacao"),
         latitude=latitude,
@@ -255,6 +261,12 @@ def atualizar_solicitacao(user, solicitacao_id, form_data):
     pedido.tipo_imovel = tipo_imovel
     pedido.tipo_operacao = form_data.get("tipo_operacao") or pedido.tipo_operacao
     pedido.altura_voo = form_data.get("altura_voo") or pedido.altura_voo
+    pedido.distrito_administrativo = (
+        (form_data.get("distrito_administrativo") or "").strip()
+        or pedido.distrito_administrativo
+    )
+    if pedido.ordem_servico and pedido.distrito_administrativo:
+        pedido.ordem_servico.distrito_administrativo = pedido.distrito_administrativo
     pedido.apoio_cet = (form_data.get("apoio_cet", "n\u00e3o") or "").lower() == "sim"
     pedido.observacao = form_data.get("observacao") or pedido.observacao
 

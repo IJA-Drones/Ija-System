@@ -645,6 +645,7 @@ def _criar_solicitacao_retorno_monitoramento_equipe_uvis(solicitacao_original, r
         tipo_operacao=solicitacao_original.tipo_operacao,
         tipo_visita=solicitacao_original.tipo_visita,
         altura_voo=solicitacao_original.altura_voo,
+        distrito_administrativo=solicitacao_original.distrito_administrativo,
         criadouro=solicitacao_original.criadouro,
         apoio_cet=solicitacao_original.apoio_cet,
         observacao=nova_observacao,

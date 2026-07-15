@@ -549,7 +549,7 @@ def _build_ordem_servico_upload_stub(solicitacao):
         situacao_aplicacao="",
         larva_visualizada="",
         retornar_proxima_semana_monitorar_larvas="NAO",
-        distrito_administrativo="",
+        distrito_administrativo=getattr(solicitacao, "distrito_administrativo", None) or "",
         nome_rf_ace_responsavel_os="",
         criadouro_os_tipo_volume="",
         data_aplicacao=None,
