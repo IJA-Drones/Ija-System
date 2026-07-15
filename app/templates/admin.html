@@ -604,6 +604,7 @@
                         {% if is_editable %}
                             {# --- FORMULÁRIO DESKTOP (ADMIN/OPERÁRIO) --- #}
                             <form action="{{ url_for('main.atualizar', id=p.id) }}" method="POST" enctype="multipart/form-data">
+                                <input type="hidden" name="next" value="{{ admin_return_url }}">
                                 <div class="row g-1 mb-2">
                                     <div class="col-6"><input name="latitude" class="form-control form-control-sm" value="{{ p.latitude or '' }}" placeholder="Lat"></div>
                                     <div class="col-6"><input name="longitude" class="form-control form-control-sm" value="{{ p.longitude or '' }}" placeholder="Long"></div>
@@ -791,6 +792,7 @@
                                     <h6 class="small fw-bold text-primary mb-3 text-uppercase">Tomar Decisão</h6>
 
                                     <form action="{{ url_for('main.atualizar', id=p.id) }}" method="POST" enctype="multipart/form-data">
+                                        <input type="hidden" name="next" value="{{ admin_return_url }}">
                                         <div class="d-none">
                                             <input name="latitude" value="{{ p.latitude }}">
                                             <input name="longitude" value="{{ p.longitude }}">
@@ -862,7 +864,9 @@
                                     <form action="{{ url_for('main.remover_anexo', id=p.id) }}"
                                           method="POST"
                                           class="form-deletar d-none"
-                                          id="formRemoverAnexo{{ p.id }}_mob"></form>
+                                          id="formRemoverAnexo{{ p.id }}_mob">
+                                        <input type="hidden" name="next" value="{{ admin_return_url }}">
+                                    </form>
                                     {% endif %}
 
                                     {% if current_user.tipo_usuario in ['dev', 'admin'] %}

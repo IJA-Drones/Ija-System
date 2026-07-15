@@ -25,6 +25,7 @@ from app.modules.admin_dashboard.service import (
 from app.shared.access import apply_regiao_scope, apply_solicitacao_prefeitura_scope
 from app.shared.os_history_filters import get_os_history_filters
 from app.shared.query_filters import get_multi_values, multi_value_to_query, query_args_without_page
+from app.shared.redirects import redirect_back
 from app.shared.retorno_ciclo import build_retorno_ciclo_context, build_retorno_ciclo_summaries
 
 
@@ -36,7 +37,7 @@ def _prefers_html_response():
 
 
 def _redirect_back_to_admin():
-    return redirect(request.referrer or url_for("main.admin_dashboard"))
+    return redirect_back("main.admin_dashboard")
 
 
 def _query_args_without_page():
@@ -155,6 +156,7 @@ def register_routes(bp):
             unidades_select=build_uvis_select(current_user),
             google_maps_key=get_google_maps_key(),
             pagination_args=_query_args_without_page(),
+            admin_return_url=request.full_path.rstrip("?"),
             per_page_options=ADMIN_PER_PAGE_OPTIONS,
             retorno_ciclos=build_retorno_ciclo_summaries(current_user, paginacao.items),
             filtros_multi={
