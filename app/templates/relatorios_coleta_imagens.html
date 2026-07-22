@@ -15,6 +15,7 @@
       background: #fff;
       box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
       height: 100%;
+      position: relative;
     }
     .media-report-thumb {
       width: 100%;
@@ -123,12 +124,90 @@
       height: 0.45rem;
       background: #e4edf7;
     }
+    .media-report-uvis-review {
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.62rem 0.82rem;
+      border-bottom: 1px solid #dbe4f0;
+      background: #f8fbff;
+    }
+    .media-report-uvis-review.is-ok {
+      background: #f3fbf6;
+      border-bottom-color: #cbeed6;
+    }
+    .media-report-uvis-review-copy {
+      min-width: 0;
+    }
+    .media-report-uvis-review-label {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      color: #193b62;
+      font-size: 0.78rem;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+    .media-report-uvis-review.is-ok .media-report-uvis-review-label {
+      color: #0f7a34;
+    }
+    .media-report-uvis-review-detail {
+      color: #7a8798;
+      font-size: 0.68rem;
+      font-weight: 600;
+      line-height: 1.35;
+      margin-top: 0.12rem;
+    }
+    .media-report-ok-form {
+      flex: 0 0 auto;
+      margin: 0;
+    }
+    .media-report-ok-button {
+      min-height: 31px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      padding: 0.32rem 0.68rem;
+      font-size: 0.72rem;
+      font-weight: 800;
+      line-height: 1;
+      white-space: nowrap;
+      border: 1px solid #1f5b94;
+      background: #fff;
+      color: #1f5b94;
+    }
+    .media-report-ok-button:hover,
+    .media-report-ok-button:focus {
+      background: #1f5b94;
+      color: #fff;
+    }
+    .media-report-actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .media-report-action-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .media-report-ok-button i {
+      font-size: 0.86rem;
+    }
     @media (max-width: 767.98px) {
       .media-report-meta {
         grid-template-columns: 1fr;
       }
       .media-filter-actions .btn {
         width: 100%;
+      }
+      .media-report-action-buttons {
+        flex: 1 1 auto;
       }
     }
   </style>
@@ -290,6 +369,15 @@
               </select>
             </div>
 
+            <div class="col-md-6 col-xl-2">
+              <label class="small text-muted">OK UVIS</label>
+              <select name="ok_uvis" class="form-select form-select-sm">
+                <option value="" {% if not ok_uvis_selecionado %}selected{% endif %}>Todos</option>
+                <option value="ok" {% if ok_uvis_selecionado == 'ok' %}selected{% endif %}>Com OK</option>
+                <option value="pendente" {% if ok_uvis_selecionado == 'pendente' %}selected{% endif %}>Pendentes</option>
+              </select>
+            </div>
+
             <div class="col-md-12 col-xl-2">
               <label class="small text-muted">Busca</label>
               <input type="search" name="busca" class="form-control form-control-sm" value="{{ busca_selecionada }}" placeholder="Endereco, CEP, UVIS, foco...">
@@ -319,6 +407,9 @@
       {% endif %}
       {% if busca_selecionada %}
         <span class="ms-2">Busca: <strong>{{ busca_selecionada }}</strong></span>
+      {% endif %}
+      {% if ok_uvis_selecionado %}
+        <span class="ms-2">OK UVIS: <strong>{{ 'Com OK' if ok_uvis_selecionado == 'ok' else 'Pendentes' }}</strong></span>
       {% endif %}
     </div>
   </div>
@@ -451,6 +542,39 @@
                 </div>
               </div>
             {% endif %}
+            <div class="media-report-uvis-review {% if item.uvis_visualizado %}is-ok{% endif %}">
+              <div class="media-report-uvis-review-copy">
+                {% if item.uvis_visualizado %}
+                  <div class="media-report-uvis-review-label">
+                    <i class="bi bi-check-circle-fill"></i>
+                    Visualizado pela UVIS
+                  </div>
+                  {% if item.uvis_visualizado_em %}
+                    <div class="media-report-uvis-review-detail">
+                      {{ brazil_datetime(item.uvis_visualizado_em).strftime('%d/%m/%Y %H:%M') }}
+                    </div>
+                  {% endif %}
+                {% else %}
+                  <div class="media-report-uvis-review-label">
+                    <i class="bi bi-hourglass-split"></i>
+                    Aguardando UVIS
+                  </div>
+                  <div class="media-report-uvis-review-detail">Sem confirmacao de leitura</div>
+                {% endif %}
+              </div>
+              {% if not item.uvis_visualizado and current_user.tipo_usuario == 'uvis' %}
+                <form
+                  method="POST"
+                  action="{{ url_for('main.relatorios_coleta_imagens_ok_uvis', os_id=item.solicitacao_id) }}"
+                  class="media-report-ok-form form-no-loading"
+                >
+                  <input type="hidden" name="next" value="{{ request.full_path }}">
+                  <button type="submit" class="media-report-ok-button" title="Registrar visualizacao pela UVIS" aria-label="Registrar visualizacao pela UVIS">
+                    <i class="bi bi-check2"></i>Marcar visualizado
+                  </button>
+                </form>
+              {% endif %}
+            </div>
 
             <div class="p-3">
               <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
@@ -488,15 +612,17 @@
                 </div>
               </div>
 
-              <div class="d-flex gap-2 flex-wrap">
-                <a href="{{ url_for(os_detail_endpoint, os_id=item.solicitacao_id) }}" class="btn btn-sm btn-primary">
-                  <i class="bi bi-eye me-1"></i>Abrir OS
-                </a>
-                {% if item.imagem_principal_path %}
-                  <a href="{{ imagem_principal_url }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                    <i class="bi bi-arrows-fullscreen me-1"></i>Abrir imagem
+              <div class="media-report-actions">
+                <div class="media-report-action-buttons">
+                  <a href="{{ url_for(os_detail_endpoint, os_id=item.solicitacao_id) }}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-eye me-1"></i>Abrir OS
                   </a>
-                {% endif %}
+                  {% if item.imagem_principal_path %}
+                    <a href="{{ imagem_principal_url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                      <i class="bi bi-arrows-fullscreen me-1"></i>Abrir imagem
+                    </a>
+                  {% endif %}
+                </div>
               </div>
             </div>
           </div>
