@@ -15,6 +15,7 @@
       background: #fff;
       box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
       height: 100%;
+      position: relative;
     }
     .media-report-thumb {
       width: 100%;
@@ -123,45 +124,80 @@
       height: 0.45rem;
       background: #e4edf7;
     }
+    .media-report-uvis-review {
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.62rem 0.82rem;
+      border-bottom: 1px solid #dbe4f0;
+      background: #f8fbff;
+    }
+    .media-report-uvis-review.is-ok {
+      background: #f3fbf6;
+      border-bottom-color: #cbeed6;
+    }
+    .media-report-uvis-review-copy {
+      min-width: 0;
+    }
+    .media-report-uvis-review-label {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      color: #193b62;
+      font-size: 0.78rem;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+    .media-report-uvis-review.is-ok .media-report-uvis-review-label {
+      color: #0f7a34;
+    }
+    .media-report-uvis-review-detail {
+      color: #7a8798;
+      font-size: 0.68rem;
+      font-weight: 600;
+      line-height: 1.35;
+      margin-top: 0.12rem;
+    }
+    .media-report-ok-form {
+      flex: 0 0 auto;
+      margin: 0;
+    }
+    .media-report-ok-button {
+      min-height: 31px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      padding: 0.32rem 0.68rem;
+      font-size: 0.72rem;
+      font-weight: 800;
+      line-height: 1;
+      white-space: nowrap;
+      border: 1px solid #1f5b94;
+      background: #fff;
+      color: #1f5b94;
+    }
+    .media-report-ok-button:hover,
+    .media-report-ok-button:focus {
+      background: #1f5b94;
+      color: #fff;
+    }
     .media-report-actions {
       display: flex;
       align-items: center;
       flex-wrap: wrap;
       gap: 0.5rem;
     }
-    .media-report-ok-form {
-      margin-left: auto;
+    .media-report-action-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
     }
-    .media-report-ok-button,
-    .media-report-ok-done {
-      width: 46px;
-      height: 46px;
-      border-radius: 0.85rem;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.65rem;
-      line-height: 1;
-      box-shadow: 0 8px 18px rgba(22, 163, 74, 0.22);
-    }
-    .media-report-ok-button {
-      border: 1px solid #17a34a;
-      background: linear-gradient(180deg, #32d45c 0%, #08a832 100%);
-      color: #fff;
-    }
-    .media-report-ok-button:hover,
-    .media-report-ok-button:focus {
-      background: linear-gradient(180deg, #3de768 0%, #07912d 100%);
-      color: #fff;
-    }
-    .media-report-ok-done {
-      border: 1px solid #0f8a32;
-      background: #12b33f;
-      color: #fff;
-    }
-    .media-report-pending {
-      color: #7a8798;
-      border-color: #dbe4f0 !important;
+    .media-report-ok-button i {
+      font-size: 0.86rem;
     }
     @media (max-width: 767.98px) {
       .media-report-meta {
@@ -170,9 +206,8 @@
       .media-filter-actions .btn {
         width: 100%;
       }
-      .media-report-ok-form,
-      .media-report-ok-status {
-        margin-left: auto;
+      .media-report-action-buttons {
+        flex: 1 1 auto;
       }
     }
   </style>
@@ -428,14 +463,6 @@
         </div>
       </div>
     </div>
-    <div class="col-6 col-md-4 col-xl">
-      <div class="card media-summary-card">
-        <div class="card-body">
-          <div class="media-summary-label">OK UVIS</div>
-          <div class="media-summary-value">{{ total_ok_uvis }}</div>
-        </div>
-      </div>
-    </div>
   </div>
 
   <div class="row g-4 mb-4">
@@ -515,6 +542,39 @@
                 </div>
               </div>
             {% endif %}
+            <div class="media-report-uvis-review {% if item.uvis_visualizado %}is-ok{% endif %}">
+              <div class="media-report-uvis-review-copy">
+                {% if item.uvis_visualizado %}
+                  <div class="media-report-uvis-review-label">
+                    <i class="bi bi-check-circle-fill"></i>
+                    Visualizado pela UVIS
+                  </div>
+                  {% if item.uvis_visualizado_em %}
+                    <div class="media-report-uvis-review-detail">
+                      {{ brazil_datetime(item.uvis_visualizado_em).strftime('%d/%m/%Y %H:%M') }}
+                    </div>
+                  {% endif %}
+                {% else %}
+                  <div class="media-report-uvis-review-label">
+                    <i class="bi bi-hourglass-split"></i>
+                    Aguardando UVIS
+                  </div>
+                  <div class="media-report-uvis-review-detail">Sem confirmacao de leitura</div>
+                {% endif %}
+              </div>
+              {% if not item.uvis_visualizado and current_user.tipo_usuario == 'uvis' %}
+                <form
+                  method="POST"
+                  action="{{ url_for('main.relatorios_coleta_imagens_ok_uvis', os_id=item.solicitacao_id) }}"
+                  class="media-report-ok-form form-no-loading"
+                >
+                  <input type="hidden" name="next" value="{{ request.full_path }}">
+                  <button type="submit" class="media-report-ok-button" title="Registrar visualizacao pela UVIS" aria-label="Registrar visualizacao pela UVIS">
+                    <i class="bi bi-check2"></i>Marcar visualizado
+                  </button>
+                </form>
+              {% endif %}
+            </div>
 
             <div class="p-3">
               <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
@@ -530,11 +590,6 @@
                 <span class="badge bg-light text-dark border">{{ item.outras_imagens_count }} imagem(ns) extra(s)</span>
                 {% if item.tem_video %}
                   <span class="badge bg-light text-dark border">Video anexado</span>
-                {% endif %}
-                {% if item.uvis_visualizado %}
-                  <span class="badge bg-success-subtle text-success border border-success-subtle">OK UVIS</span>
-                {% else %}
-                  <span class="badge bg-light media-report-pending border">Pendente UVIS</span>
                 {% endif %}
               </div>
 
@@ -558,34 +613,16 @@
               </div>
 
               <div class="media-report-actions">
-                <a href="{{ url_for(os_detail_endpoint, os_id=item.solicitacao_id) }}" class="btn btn-sm btn-primary">
-                  <i class="bi bi-eye me-1"></i>Abrir OS
-                </a>
-                {% if item.imagem_principal_path %}
-                  <a href="{{ imagem_principal_url }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                    <i class="bi bi-arrows-fullscreen me-1"></i>Abrir imagem
+                <div class="media-report-action-buttons">
+                  <a href="{{ url_for(os_detail_endpoint, os_id=item.solicitacao_id) }}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-eye me-1"></i>Abrir OS
                   </a>
-                {% endif %}
-                {% if item.uvis_visualizado %}
-                  <span
-                    class="media-report-ok-done media-report-ok-status"
-                    title="Visualizado pela UVIS{% if item.uvis_visualizado_em %} em {{ brazil_datetime(item.uvis_visualizado_em).strftime('%d/%m/%Y %H:%M') }}{% endif %}"
-                    aria-label="Visualizado pela UVIS"
-                  >
-                    <i class="bi bi-check-lg"></i>
-                  </span>
-                {% elif current_user.tipo_usuario == 'uvis' %}
-                  <form
-                    method="POST"
-                    action="{{ url_for('main.relatorios_coleta_imagens_ok_uvis', os_id=item.solicitacao_id) }}"
-                    class="media-report-ok-form form-no-loading"
-                  >
-                    <input type="hidden" name="next" value="{{ request.full_path }}">
-                    <button type="submit" class="media-report-ok-button" title="Registrar visualizacao pela UVIS" aria-label="Registrar visualizacao pela UVIS">
-                      <i class="bi bi-check-lg"></i>
-                    </button>
-                  </form>
-                {% endif %}
+                  {% if item.imagem_principal_path %}
+                    <a href="{{ imagem_principal_url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                      <i class="bi bi-arrows-fullscreen me-1"></i>Abrir imagem
+                    </a>
+                  {% endif %}
+                </div>
               </div>
             </div>
           </div>
