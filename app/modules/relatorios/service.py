@@ -152,6 +152,31 @@ def can_access_relatorio_coleta_imagens(user) -> bool:
     return getattr(user, "tipo_usuario", None) in RELATORIOS_COLETA_IMAGENS_TYPES
 
 
+def registrar_visualizacao_coleta_imagens(user, os_id):
+    if getattr(user, "tipo_usuario", None) != "uvis":
+        raise PermissionError("Apenas usuarios UVIS podem registrar o OK de visualizacao.")
+
+    ordem = (
+        db.session.query(OrdemServico)
+        .join(Solicitacao, Solicitacao.id == OrdemServico.solicitacao_id)
+        .filter(
+            Solicitacao.id == os_id,
+            Solicitacao.usuario_id == user.id,
+        )
+        .first()
+    )
+    if not ordem:
+        raise ValueError("OS nao encontrada para esta UVIS.")
+
+    if not ordem.uvis_visualizado:
+        ordem.uvis_visualizado = True
+        ordem.uvis_visualizado_em = datetime.now()
+        ordem.uvis_visualizado_por_id = user.id
+        db.session.commit()
+
+    return ordem
+
+
 class SimplePagination:
     def __init__(self, items, page, per_page, total=None, already_sliced=False):
         self.total = len(items) if total is None else int(total or 0)
@@ -332,6 +357,13 @@ def _serialize_coleta_imagem_row(ordem, solicitacao, usuario):
         "outras_imagens_count": len(outras_imagens),
         "video_path": getattr(ordem, "video", None),
         "tem_video": bool(getattr(ordem, "video", None)),
+        "uvis_visualizado": bool(getattr(ordem, "uvis_visualizado", False)),
+        "uvis_visualizado_em": getattr(ordem, "uvis_visualizado_em", None),
+        "uvis_visualizado_por_nome": (
+            getattr(getattr(ordem, "uvis_visualizado_por", None), "nome_uvis", None)
+            or getattr(getattr(ordem, "uvis_visualizado_por", None), "login", None)
+            or ""
+        ),
         "total_midias": 1 + len(outras_imagens) + (1 if getattr(ordem, "video", None) else 0),
         "quantidade_imagens_registradas": getattr(ordem, "quantidade_imagens_registradas", None),
         "quantidade_videos_registradas": getattr(ordem, "quantidade_videos_registradas", None),
@@ -351,10 +383,13 @@ def _resolve_coleta_imagens_filters(user, args):
         "foco": foco_values[0] if foco_values else "",
         "foco_values": foco_values,
         "midia": (args.get("midia") or "").strip(),
+        "ok_uvis": (args.get("ok_uvis") or "").strip(),
         "ordenar": (args.get("ordenar") or "uvis_data").strip(),
     }
     if filters["midia"] not in {"com_video", "sem_video", "com_complementares", "sem_complementares"}:
         filters["midia"] = ""
+    if filters["ok_uvis"] not in {"ok", "pendente"}:
+        filters["ok_uvis"] = ""
     if filters["ordenar"] not in {"uvis_data", "data_desc", "data_asc", "os_desc", "os_asc"}:
         filters["ordenar"] = "uvis_data"
     if filters["data_inicio"] or filters["data_fim"]:
@@ -393,6 +428,7 @@ def _build_coleta_imagens_query(
     foco="",
     foco_values=None,
     midia="",
+    ok_uvis="",
 ):
     query = (
         db.session.query(OrdemServico, Solicitacao, Usuario)
@@ -448,6 +484,10 @@ def _build_coleta_imagens_query(
         query = query.filter(func.length(func.trim(func.coalesce(OrdemServico.outras_imagens, ""))) > 2)
     elif midia == "sem_complementares":
         query = query.filter(func.length(func.trim(func.coalesce(OrdemServico.outras_imagens, ""))) <= 2)
+    if ok_uvis == "ok":
+        query = query.filter(OrdemServico.uvis_visualizado.is_(True))
+    elif ok_uvis == "pendente":
+        query = query.filter(OrdemServico.uvis_visualizado.is_(False))
 
     return query
 
@@ -910,6 +950,7 @@ def build_relatorio_coleta_imagens_export_data(user, args, *, page=None, per_pag
     foco_selecionado = filtros["foco"]
     foco_values_selecionados = filtros["foco_values"]
     midia_selecionada = filtros["midia"]
+    ok_uvis_selecionado = filtros["ok_uvis"]
     ordenar_selecionado = filtros["ordenar"]
 
     periodos_query = _build_coleta_imagens_query(user, regiao=regiao_selecionada, uvis_ids=uvis_ids)
@@ -925,6 +966,7 @@ def build_relatorio_coleta_imagens_export_data(user, args, *, page=None, per_pag
         busca=busca_selecionada,
         foco_values=foco_values_selecionados,
         midia=midia_selecionada,
+        ok_uvis=ok_uvis_selecionado,
     )
 
     total_levantamentos = base_query.count()
@@ -947,6 +989,7 @@ def build_relatorio_coleta_imagens_export_data(user, args, *, page=None, per_pag
 
     total_imagens_complementares = _coleta_imagens_complementares_count(base_query)
     total_videos = base_query.filter(func.length(func.trim(func.coalesce(OrdemServico.video, ""))) > 0).count()
+    total_ok_uvis = base_query.filter(OrdemServico.uvis_visualizado.is_(True)).count()
     total_midias = total_levantamentos + total_imagens_complementares + total_videos
     total_uvis = len([nome for nome, _ in dados_unidade if nome and nome != "Nao informado"])
     total_regioes = len([nome for nome, _ in dados_regiao if nome and nome != "Nao informado"])
@@ -1025,6 +1068,7 @@ def build_relatorio_coleta_imagens_export_data(user, args, *, page=None, per_pag
         "busca": busca_selecionada,
         "foco": multi_value_to_query(foco_values_selecionados),
         "midia": midia_selecionada,
+        "ok_uvis": ok_uvis_selecionado,
         "ordenar": ordenar_selecionado,
     }
     pagination_args = {
@@ -1043,6 +1087,7 @@ def build_relatorio_coleta_imagens_export_data(user, args, *, page=None, per_pag
         busca_selecionada,
         foco_values_selecionados,
         midia_selecionada,
+        ok_uvis_selecionado,
         ordenar_selecionado != "uvis_data",
         bool(regiao_selecionada) and pode_filtrar_regiao,
         bool(uvis_ids) and not is_uvis,
@@ -1058,6 +1103,7 @@ def build_relatorio_coleta_imagens_export_data(user, args, *, page=None, per_pag
         "total_regioes_com_registro": total_regioes,
         "total_imagens_complementares": total_imagens_complementares,
         "total_videos": total_videos,
+        "total_ok_uvis": total_ok_uvis,
         "total_midias": total_midias,
         "dados_unidade": dados_unidade,
         "dados_regiao": dados_regiao,
@@ -1076,6 +1122,7 @@ def build_relatorio_coleta_imagens_export_data(user, args, *, page=None, per_pag
         "foco_selecionado": foco_selecionado,
         "foco_values_selecionados": foco_values_selecionados,
         "midia_selecionada": midia_selecionada,
+        "ok_uvis_selecionado": ok_uvis_selecionado,
         "ordenar_selecionado": ordenar_selecionado,
         "anos_disponiveis": anos_disponiveis,
         "dados_mensais": dados_mensais,

@@ -595,6 +595,10 @@ class OrdemServico(db.Model):
     imagem_principal = db.Column(db.String(255))
     outras_imagens = db.Column(db.Text)  # JSON array de paths
     video = db.Column(db.String(255))
+    uvis_visualizado = db.Column(db.Boolean, default=False, nullable=False, index=True)
+    uvis_visualizado_em = db.Column(db.DateTime, nullable=True, index=True)
+    uvis_visualizado_por_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=True, index=True)
+    uvis_visualizado_por = db.relationship("Usuario", foreign_keys=[uvis_visualizado_por_id], lazy="joined")
 
     ponta_pulverizacao = db.Column(db.String(100))
 

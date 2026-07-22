@@ -24,6 +24,7 @@ from app.modules.relatorios.service import (
     build_relatorios_solicitacoes_context,
     can_access_relatorio_coleta_imagens,
     can_access_relatorios_menu,
+    registrar_visualizacao_coleta_imagens,
 )
 from app.shared.query_filters import query_args_without_page
 
@@ -220,6 +221,14 @@ def _redirect_to_coleta_imagens_with_job(job_id):
     return redirect(url_for("main.relatorios_coleta_imagens", **params))
 
 
+def _redirect_to_coleta_imagens_after_post():
+    next_url = (request.form.get("next") or "").strip()
+    base_path = url_for("main.relatorios_coleta_imagens")
+    if next_url.startswith(base_path):
+        return redirect(next_url)
+    return redirect(url_for("main.relatorios_coleta_imagens"))
+
+
 def register_routes(bp):
     @bp.route("/relatorios/solicitacoes", methods=["GET"], endpoint="relatorios_solicitacoes")
     @login_required
@@ -288,6 +297,28 @@ def register_routes(bp):
                 titulo="Erro no Relatorio de Coleta de Imagens",
                 mensagem="Houve um erro tecnico ao processar os dados do levantamento de midias.",
             )
+
+    @bp.route(
+        "/relatorios-coleta-imagens/os/<int:os_id>/ok-uvis",
+        methods=["POST"],
+        endpoint="relatorios_coleta_imagens_ok_uvis",
+    )
+    @login_required
+    def relatorios_coleta_imagens_ok_uvis(os_id):
+        try:
+            registrar_visualizacao_coleta_imagens(current_user, os_id)
+        except PermissionError as exc:
+            db.session.rollback()
+            flash(str(exc), "danger")
+        except ValueError as exc:
+            db.session.rollback()
+            flash(str(exc), "warning")
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("Erro ao registrar OK UVIS na coleta de imagens da OS %s", os_id)
+            flash("Nao foi possivel registrar o OK da UVIS.", "danger")
+
+        return _redirect_to_coleta_imagens_after_post()
 
     @bp.route("/admin/exportar_relatorio_pdf", endpoint="exportar_relatorio_pdf")
     @login_required
