@@ -416,7 +416,8 @@ def build_equipe_uvis_os_unificado_context(user, os_id):
         "equipe": solicitacao.equipe,
         "ordem": ordem,
         "ordem_uvis": ordem_uvis,
-        "can_edit_uvis_tab": True,
+        "can_edit_uvis_tab": getattr(user, "tipo_usuario", None) == "uvis",
+        "can_edit_uvis_observacoes": False,
         "modo_visualizacao": True,
         "alerta_edicao_concluida": False,
         "active_os_tab": "uvis",
@@ -510,6 +511,53 @@ def salvar_equipe_uvis_complemento_form(user, os_id, form_data):
     return "Complemento da UVIS salvo com sucesso!"
 
 
+def salvar_uvis_retorno_automatico_form(user, os_id, form_data):
+    context = build_equipe_uvis_os_unificado_context(user, os_id)
+    if getattr(user, "tipo_usuario", None) != "uvis":
+        raise EquipeUvisDashboardError("Apenas a UVIS solicitante pode preencher o retorno automatico.")
+
+    solicitacao = context["solicitacao"]
+    ordem = context["ordem_uvis"]
+    if ordem is None:
+        ordem = OrdemServicoEquipeUvis(
+            solicitacao_id=solicitacao.id,
+            equipe_uvis_nome=solicitacao.equipe_uvis_nome or context["nome_equipe"],
+            equipe_id=solicitacao.equipe_id,
+            status=STATUS_EQUIPE_UVIS_EM_ANDAMENTO,
+        )
+        db.session.add(ordem)
+    else:
+        ordem.equipe_uvis_nome = solicitacao.equipe_uvis_nome or context["nome_equipe"]
+        ordem.equipe_id = solicitacao.equipe_id
+        ordem.status = ordem.status or STATUS_EQUIPE_UVIS_EM_ANDAMENTO
+
+    retorno_flag = _normalize_upper(form_data.get("uvis_retornar_proxima_semana_monitorar_larvas"))
+    if retorno_flag not in {"SIM", "NAO"}:
+        retorno_flag = "NAO"
+
+    retorno_em = None
+    if retorno_flag == "SIM":
+        retorno_em = _to_datetime_local(form_data.get("uvis_retorno_monitoramento_em"))
+        if retorno_em is None:
+            raise EquipeUvisDashboardError(
+                "Informe a data e hora para o retorno de monitoramento.",
+                category="warning",
+            )
+
+    ordem.retornar_proxima_semana_monitorar_larvas = retorno_flag
+    ordem.retorno_monitoramento_em = retorno_em if retorno_flag == "SIM" else None
+
+    _sync_retorno_monitoramento_equipe_uvis(
+        solicitacao,
+        context["retorno_existente"],
+        retorno_flag,
+        retorno_em,
+    )
+
+    db.session.commit()
+    return "Retorno automatico salvo com sucesso!"
+
+
 def salvar_equipe_uvis_os_form(user, os_id, form_data):
     context = build_equipe_uvis_os_form_context(user, os_id)
     if context["modo_visualizacao"]:
@@ -560,7 +608,7 @@ def salvar_equipe_uvis_os_form(user, os_id, form_data):
             category="warning",
         )
 
-    ordem.identificador_os = _clean_str(form_data.get("identificador_os"))
+    ordem.identificador_os = _clean_os_text_marker(form_data.get("identificador_os"))
     ordem.respondido_por = _clean_str(form_data.get("respondido_por")) or context["respondido_por_padrao"]
     ordem.respondido_em = _to_datetime_local(form_data.get("respondido_em")) or datetime.now()
     ordem.situacao_aplicacao = status_execucao
@@ -605,6 +653,11 @@ def _clean_str(value):
     if value is None:
         return ""
     return str(value).strip()
+
+
+def _clean_os_text_marker(value):
+    value = _clean_str(value)
+    return "" if value == "//" else value
 
 
 def _normalize_upper(value):

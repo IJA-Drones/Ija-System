@@ -1,6 +1,6 @@
 {% from "_multi_select_chips.html" import render_chip_select_values %}
-{% macro render_historico_os_filters(filters, unidades_select, clear_url, status_name='status', extra_params=None, status_options=None) -%}
-  {% set filtros_ativos = filters.status or filters.unidade_values or filters.regiao or filters.apoio_cet or filters.tipo_visita or filters.tipo_imovel or filters.foco_values or filters.protocolo or filters.endereco or filters.data_ini or filters.data_fim or filters.retorno_automatico %}
+{% macro render_historico_os_filters(filters, unidades_select, clear_url, status_name='status', extra_params=None, status_options=None, equipes_select=None) -%}
+  {% set filtros_ativos = filters.status or filters.unidade_values or filters.regiao or filters.equipe or filters.apoio_cet or filters.tipo_visita or filters.tipo_imovel or filters.foco_values or filters.protocolo or filters.endereco or filters.data_ini or filters.data_fim or filters.retorno_automatico %}
   {% set opcoes_status = status_options or [('', 'Todos'), ('EM_ANDAMENTO', 'Em andamento'), ('CONCLUIDAS', 'Concluídas')] %}
   <div class="card shadow-sm rounded-4 mb-4 border-0 historico-os-filters">
     <div
@@ -48,6 +48,19 @@
               <label class="small text-muted">Unidade:</label>
               {{ render_chip_select_values('unidade', unidades_select|map(attribute='nome_uvis')|list, filters.unidade_values, 'Adicionar UVIS') }}
             </div>
+            {% if equipes_select is not none %}
+            <div class="col-md-3">
+              <label class="small text-muted">PLOA / equipe:</label>
+              <select name="equipe" class="form-select form-select-sm">
+                <option value="">Todas</option>
+                {% for equipe in equipes_select %}
+                  <option value="{{ equipe.id }}" {% if filters.equipe|string == equipe.id|string %}selected{% endif %}>
+                    {{ equipe.nome_equipe }}{% if equipe.regiao %} ({{ equipe.regiao }}){% endif %}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+            {% endif %}
             <div class="col-md-3">
               <label class="small text-muted">Região:</label>
               <select name="regiao" class="form-select form-select-sm">

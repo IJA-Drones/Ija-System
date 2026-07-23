@@ -51,6 +51,11 @@ def can_use_custom_visit_other(user) -> bool:
     return tipo_usuario in {"dev", "admin"} or (tipo_usuario != "uvis" and regiao == "COVISA")
 
 
+def _clean_empty_marker(value):
+    value = (value or "").strip()
+    return "" if value == "//" else value
+
+
 def build_novo_cadastro_context(user, google_maps_key):
     uvis_lista = []
     if user.tipo_usuario in ["dev", "admin", "visualizar", "prefeitura_admin"]:
@@ -89,7 +94,7 @@ def build_novo_cadastro_context_with_form(user, google_maps_key, form_source):
         "foco": (form_source.get("foco") or "").strip(),
         "tipo_operacao": (form_source.get("tipo_operacao") or "").strip(),
         "altura_voo": (form_source.get("altura_voo") or "").strip(),
-        "distrito_administrativo": (form_source.get("distrito_administrativo") or "").strip(),
+        "distrito_administrativo": _clean_empty_marker(form_source.get("distrito_administrativo")),
         "apoio_cet": (form_source.get("apoio_cet") or "").strip(),
         "observacao": (form_source.get("observacao") or "").strip(),
     }
@@ -101,7 +106,7 @@ def create_nova_solicitacao(user, form_data):
     hora_str = form_data.get("hora")
     data_obj = datetime.strptime(data_str, "%Y-%m-%d").date() if data_str else None
     hora_obj = datetime.strptime(hora_str, "%H:%M").time() if hora_str else None
-    distrito_administrativo = (form_data.get("distrito_administrativo") or "").strip()
+    distrito_administrativo = _clean_empty_marker(form_data.get("distrito_administrativo"))
 
     if not distrito_administrativo:
         raise NovoCadastroValidationError("Por favor, informe o DA (Distrito).")
@@ -262,7 +267,7 @@ def atualizar_solicitacao(user, solicitacao_id, form_data):
     pedido.tipo_operacao = form_data.get("tipo_operacao") or pedido.tipo_operacao
     pedido.altura_voo = form_data.get("altura_voo") or pedido.altura_voo
     pedido.distrito_administrativo = (
-        (form_data.get("distrito_administrativo") or "").strip()
+        _clean_empty_marker(form_data.get("distrito_administrativo"))
         or pedido.distrito_administrativo
     )
     if pedido.ordem_servico and pedido.distrito_administrativo:

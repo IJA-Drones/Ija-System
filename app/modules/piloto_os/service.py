@@ -1063,16 +1063,16 @@ def _aplicar_campos_formulario(
         dji_kml_route = _resolve_dji_kml_route_from_form(user, form_data)
         ordem.dji_kml_route_id = dji_kml_route.id if dji_kml_route else None
 
-    ordem.identificador_os = _clean_str(form_data.get("identificador_os"))
+    ordem.identificador_os = _clean_os_text_marker(form_data.get("identificador_os"))
     ordem.respondido_por = _clean_str(form_data.get("respondido_por")) or respondido_por_padrao
     ordem.respondido_em = _to_datetime_local(form_data.get("respondido_em")) or datetime.now()
     ordem.situacao_aplicacao = _clean_str(form_data.get("situacao_aplicacao"))
     ordem.larva_visualizada = _clean_str(form_data.get("larva_visualizada"))
     ordem.retornar_proxima_semana_monitorar_larvas = _clean_str(form_data.get("retornar_proxima_semana_monitorar_larvas"))
     ordem.distrito_administrativo = (
-        _clean_str(getattr(solicitacao, "distrito_administrativo", None))
-        or _clean_str(form_data.get("da"))
-        or _clean_str(form_data.get("distrito_administrativo"))
+        _clean_os_text_marker(getattr(solicitacao, "distrito_administrativo", None))
+        or _clean_os_text_marker(form_data.get("da"))
+        or _clean_os_text_marker(form_data.get("distrito_administrativo"))
     )
     ordem.nome_rf_ace_responsavel_os = _clean_str(form_data.get("nome_rf_ace_responsavel_os"))
     ordem.criadouro_os_tipo_volume = _clean_str(form_data.get("criadouro_os_tipo_volume"))
@@ -1130,6 +1130,11 @@ def _clean_str(value):
     if value is None:
         return ""
     return str(value).strip()
+
+
+def _clean_os_text_marker(value):
+    value = _clean_str(value)
+    return "" if value == "//" else value
 
 
 def _to_int(value):

@@ -328,7 +328,7 @@
               class="nav-link {% if request.endpoint == 'main.equipe_uvis_os_historico' or (request.endpoint == 'main.equipe_uvis_os_formulario_view' and request.args.get('voltar') == 'historico') %}active{% endif %}"
               href="{{ url_for('main.equipe_uvis_os_historico') }}"
             >
-              <i class="bi bi-clock-history me-2"></i><span>Histórico OS</span>
+              <i class="bi bi-clock-history me-2"></i><span>Histórico Operacional</span>
             </a>
           </li>
           {% elif current_user.tipo_usuario in ['piloto', 'equipe_oceano'] %}
@@ -905,24 +905,6 @@
               href="{{ url_for('main.uvis_acesso_operacional') }}"
             >
               <i class="bi bi-person-workspace me-2"></i><span>Acesso Operacional</span>
-            </a>
-          </li>
-
-          <li class="nav-item">
-            <a
-              class="nav-link {% if request.endpoint == 'main.dashboard_equipe_uvis' %}active{% endif %}"
-              href="{{ url_for('main.dashboard_equipe_uvis') }}"
-            >
-              <i class="bi bi-clipboard2-check-fill me-2"></i><span>Demandas Aprovadas</span>
-            </a>
-          </li>
-
-          <li class="nav-item">
-            <a
-              class="nav-link {% if request.endpoint == 'main.equipe_uvis_os_historico' %}active{% endif %}"
-              href="{{ url_for('main.equipe_uvis_os_historico') }}"
-            >
-              <i class="bi bi-clock-history me-2"></i><span>Historico Operacional</span>
             </a>
           </li>
 

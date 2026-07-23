@@ -656,7 +656,7 @@
       <div class="alert alert-info border-0 shadow-sm">
         <i class="bi bi-eye me-1"></i>
         {% if can_edit_uvis_tab %}
-          Dados oficiais em modo visualizacao. O complemento da UVIS pode ser editado na aba OS UVIS.
+          Dados oficiais em modo visualizacao. O retorno automatico pode ser preenchido na aba OS UVIS.
         {% else %}
           Formulário em modo visualização.
         {% endif %}
@@ -704,7 +704,8 @@
           </div>
           <div class="col-md-3">
             <label class="form-label-header">Identificador OS</label>
-            <input type="text" name="identificador_os" class="form-control" value="{{ ordem.identificador_os if ordem else '' }}" />
+            {% set identificador_os_value = ordem.identificador_os if ordem and ordem.identificador_os and ordem.identificador_os != '//' else '' %}
+            <input type="text" name="identificador_os" class="form-control" value="{{ identificador_os_value }}" />
           </div>
         </div>
 
@@ -911,12 +912,14 @@
           </div>
           <div class="col-md-3">
             <label class="form-label-header">DA (Distrito) *</label>
+            {% set solicitacao_da_value = solicitacao.distrito_administrativo if solicitacao and solicitacao.distrito_administrativo and solicitacao.distrito_administrativo != '//' else '' %}
+            {% set ordem_da_value = ordem.distrito_administrativo if ordem and ordem.distrito_administrativo and ordem.distrito_administrativo != '//' else '' %}
             <input
               type="text"
               name="da"
-              class="form-control{% if solicitacao and solicitacao.distrito_administrativo %} bg-light{% endif %}"
-              value="{{ solicitacao.distrito_administrativo if solicitacao and solicitacao.distrito_administrativo else (ordem.distrito_administrativo if ordem else '') }}"
-              {% if solicitacao and solicitacao.distrito_administrativo %}readonly{% endif %}
+              class="form-control{% if solicitacao_da_value %} bg-light{% endif %}"
+              value="{{ solicitacao_da_value or ordem_da_value }}"
+              {% if solicitacao_da_value %}readonly{% endif %}
               required
             />
           </div>
@@ -1336,15 +1339,16 @@
             <div class="alert {% if can_edit_uvis_tab %}alert-info{% else %}alert-warning{% endif %} border-0 rounded-4 shadow-sm">
               <i class="bi {% if can_edit_uvis_tab %}bi-info-circle{% else %}bi-exclamation-triangle{% endif %} me-1"></i>
               {% if can_edit_uvis_tab %}
-                Ainda nao existe complemento salvo para esta OS. Preencha abaixo para registrar.
+                Ainda nao existe complemento salvo para esta OS. Defina o retorno automatico abaixo.
               {% else %}
                 A UVIS ainda nao registrou complemento para esta OS.
               {% endif %}
             </div>
           {% endif %}
 
-          {% set uvis_retorno_flag = ordem_uvis.retornar_proxima_semana_monitorar_larvas if ordem_uvis else 'NAO' %}
+          {% set uvis_retorno_flag = ordem_uvis.retornar_proxima_semana_monitorar_larvas if ordem_uvis else ('SIM' if retorno_existente else 'NAO') %}
           {% set uvis_retorno_em_value = retorno_monitoramento_value if retorno_monitoramento_value is defined else (ordem_uvis.retorno_monitoramento_em.strftime('%Y-%m-%dT%H:%M') if ordem_uvis and ordem_uvis.retorno_monitoramento_em else '') %}
+          {% set can_edit_uvis_observacoes_flag = can_edit_uvis_observacoes|default(true) %}
           <div class="row g-3 mb-4">
             <div class="col-md-4">
               <label class="form-label-header">Retornar para monitorar</label>
@@ -1367,7 +1371,7 @@
             </div>
             <div class="col-md-12">
               <label class="form-label-header">Observacao da UVIS</label>
-              {% if can_edit_uvis_tab %}
+              {% if can_edit_uvis_tab and can_edit_uvis_observacoes_flag %}
                 <textarea name="uvis_observacoes" class="form-control" rows="4" data-uvis-editable="true">{{ ordem_uvis.observacoes if ordem_uvis else '' }}</textarea>
               {% else %}
                 <textarea class="form-control bg-light" rows="4" readonly>{{ ordem_uvis.observacoes if ordem_uvis else '' }}</textarea>
@@ -1376,7 +1380,7 @@
             {% if can_edit_uvis_tab %}
             <div class="col-12 d-flex justify-content-end">
               <button type="submit" name="save_scope" value="uvis" class="btn btn-primary btn-sm px-4" data-uvis-editable="true">
-                <i class="bi bi-check-lg me-1"></i> Salvar complemento UVIS
+                <i class="bi bi-arrow-repeat me-1"></i> Salvar retorno automatico
               </button>
             </div>
             {% endif %}

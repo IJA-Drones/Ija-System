@@ -191,9 +191,9 @@
   <div class="uvis-os-historico-toolbar mb-4">
     <div>
       <h2 class="text-dark m-0">
-        <i class="bi bi-clock-history me-2 text-primary"></i> Hist&oacute;rico de OS
+        <i class="bi bi-clock-history me-2 text-primary"></i> Hist&oacute;rico OS
       </h2>
-      <small class="text-muted">Consulte o historico das ordens de servico.</small>
+      <small class="text-muted">Consulte as OS e preencha o complemento de retorno quando necess&aacute;rio.</small>
       {{ render_result_summary(paginacao.total, 'OS filtradas') }}
     </div>
     <div>
@@ -207,7 +207,9 @@
     filtros,
     unidades_select,
     url_for('main.uvis_historico_os', tipo_os='piloto'),
-    extra_params={'tipo_os': 'piloto'}
+    status_name='status_os',
+    extra_params={'tipo_os': 'piloto'},
+    equipes_select=equipes_select
   ) }}
 
   <div class="card shadow-sm rounded-4 border-0 overflow-hidden uvis-os-historico-table-wrap">
@@ -227,6 +229,7 @@
           {% for p in pedidos %}
           {% set retorno_resumo = retorno_ciclos.get(p.id) if retorno_ciclos is defined else none %}
           {% set status_upper = (p.status or '')|upper %}
+          {% set os_em_andamento = 'CONCLU' not in status_upper %}
           <tr>
             <td class="ps-4" data-label="OS">
               <strong>#{{ p.id }}</strong>
@@ -262,20 +265,22 @@
             </td>
 
             <td class="text-center" data-label="Status">
-              {% if 'CONCLU' in status_upper %}
-                <span class="badge bg-completed rounded-pill px-3">CONCLUIDO</span>
+              {% if os_em_andamento %}
+                <span class="badge bg-warning text-dark">EM ANDAMENTO</span>
+                <div class="small text-muted mt-1">{{ p.status or '-' }}</div>
               {% else %}
-                <span class="badge bg-light text-dark border rounded-pill px-3">{{ p.status or '-' }}</span>
+                <span class="badge bg-completed">{{ p.status }}</span>
               {% endif %}
             </td>
 
             <td class="text-center pe-4" data-label="Acao">
               <div class="d-flex justify-content-center gap-2 flex-wrap">
-                {% if 'CONCLU' in (p.status or '') %}
-                <a href="{{ url_for('main.uvis_os_formulario_view', os_id=p.id, tipo_os='piloto') }}" class="btn btn-sm btn-outline-primary">
-                  <i class="bi bi-clipboard2-check me-1"></i> Ver OS
+                <a href="{{ url_for('main.uvis_os_formulario_view', os_id=p.id, tipo_os='piloto', aba='dados') }}" class="btn btn-sm btn-outline-primary">
+                  <i class="bi bi-clipboard2-check me-1"></i> Abrir OS
                 </a>
-                {% endif %}
+                <a href="{{ url_for('main.uvis_os_formulario_view', os_id=p.id, tipo_os='piloto', aba='uvis') }}" class="btn btn-sm btn-outline-success">
+                  <i class="bi bi-arrow-repeat me-1"></i> Preencher complemento
+                </a>
               </div>
             </td>
           </tr>

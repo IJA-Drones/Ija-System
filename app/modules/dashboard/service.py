@@ -5,7 +5,7 @@ from datetime import datetime
 from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import joinedload
 
-from app.models import Drones, Equipe, OrdemServicoEquipeUvis, Solicitacao
+from app.models import Drones, Equipe, OrdemServico, OrdemServicoEquipeUvis, Solicitacao
 from app.modules.piloto_os.service import build_os_media_context
 from app.shared.os_history_filters import (
     apply_os_history_filters,
@@ -21,6 +21,14 @@ UVIS_HISTORICO_TIPO_OS_OPTIONS = ("piloto",)
 
 STATUS_OS_CONCLUIDAS = ["CONCLUIDO", "CONCLU\u00cdDO"]
 STATUS_EQUIPE_UVIS_CONCLUIDAS = ["CONCLUIDO", "CONCLU\u00cdDO"]
+STATUS_OS_ANDAMENTO = [
+    "APROVADO",
+    "APROVADA",
+    "APROVADO COM RECOMENDACOES",
+    "APROVADA COM RECOMENDACOES",
+    "APROVADO COM RECOMENDA\u00c7\u00d5ES",
+    "APROVADA COM RECOMENDA\u00c7\u00d5ES",
+]
 
 
 def _parse_media_list(value):
@@ -166,16 +174,26 @@ def build_uvis_historico_os_context(user, args):
         .filter(Solicitacao.status != "CANCELADO")
     )
 
-    query = query.filter(Solicitacao.status.in_(STATUS_OS_CONCLUIDAS))
+    query = query.filter(
+        or_(
+            Solicitacao.status.in_(STATUS_OS_CONCLUIDAS),
+            and_(
+                Solicitacao.status.in_(STATUS_OS_ANDAMENTO),
+                Solicitacao.equipe_id.isnot(None),
+            ),
+        )
+    )
 
-    filtros = get_os_history_filters(args)
+    filtros = get_os_history_filters(args, status_key="status_os")
+    filtro_equipe = (args.get("equipe") or "").strip()
+    filtros["equipe"] = filtro_equipe
     query = apply_os_history_filters(query, filtros)
+    query = _apply_uvis_historico_equipe_filter(query, filtro_equipe)
 
     total_piloto = (
         Solicitacao.query
         .filter(
             Solicitacao.usuario_id == user.id,
-            Solicitacao.status.in_(STATUS_OS_CONCLUIDAS),
         )
         .filter(Solicitacao.status != "CANCELADO")
         .count()
@@ -193,6 +211,7 @@ def build_uvis_historico_os_context(user, args):
         "filtro_tipo_os": filtro_tipo_os,
         "filtros": filtros,
         "unidades_select": [user],
+        "equipes_select": _build_uvis_historico_equipes_select(user),
         "retorno_ciclos": build_retorno_ciclo_summaries(user, paginacao.items),
         "historico_totais": {
             "todas": total_piloto,
@@ -200,6 +219,37 @@ def build_uvis_historico_os_context(user, args):
             "equipe_uvis": 0,
         },
     }
+
+
+def _apply_uvis_historico_equipe_filter(query, filtro_equipe):
+    if not filtro_equipe:
+        return query
+
+    try:
+        equipe_id = int(filtro_equipe)
+    except (TypeError, ValueError):
+        return query.filter(
+            or_(
+                Solicitacao.equipe.has(Equipe.nome_equipe.ilike(f"%{filtro_equipe}%")),
+                Solicitacao.ordem_servico.has(
+                    OrdemServico.equipe.has(Equipe.nome_equipe.ilike(f"%{filtro_equipe}%"))
+                ),
+            )
+        )
+
+    return query.filter(
+        or_(
+            Solicitacao.equipe_id == equipe_id,
+            Solicitacao.ordem_servico.has(OrdemServico.equipe_id == equipe_id),
+        )
+    )
+
+
+def _build_uvis_historico_equipes_select(user):
+    query = Equipe.query.filter_by(ativa=True)
+    if getattr(user, "regiao", None):
+        query = query.filter(Equipe.regiao == user.regiao)
+    return query.order_by(Equipe.nome_equipe.asc()).all()
 
 
 def build_uvis_os_form_context(user, os_id):
@@ -220,16 +270,18 @@ def build_uvis_os_form_context(user, os_id):
     if solicitacao.usuario_id != user.id:
         raise DashboardError("Voce nao tem permissao para acessar esta OS.", category="danger")
 
-    if (solicitacao.status or "").strip().upper() not in STATUS_OS_CONCLUIDAS:
-        raise DashboardError(
-            "Esta OS ainda nao esta concluida.",
-            category="warning",
-            redirect_endpoint="main.uvis_historico_os",
-        )
-
     equipe = solicitacao.equipe
     ordem = solicitacao.ordem_servico
     ordem_uvis = solicitacao.ordem_servico_equipe_uvis
+    retorno_existente = (
+        Solicitacao.query
+        .filter(
+            Solicitacao.origem_retorno_id == solicitacao.id,
+            Solicitacao.gerada_automaticamente.is_(True),
+        )
+        .order_by(Solicitacao.id.desc())
+        .first()
+    )
     imagem_principal_path = getattr(ordem, "imagem_principal", None) if ordem else None
     outras_imagens_paths = _parse_media_list(getattr(ordem, "outras_imagens", None) if ordem else None)
     video_path = getattr(ordem, "video", None) if ordem else None
@@ -247,8 +299,10 @@ def build_uvis_os_form_context(user, os_id):
         "equipe": equipe,
         "ordem": ordem,
         "ordem_uvis": ordem_uvis,
-        "can_edit_uvis_tab": False,
+        "can_edit_uvis_tab": True,
+        "can_edit_uvis_observacoes": False,
         "modo_visualizacao": True,
+        "active_os_tab": "uvis",
         "uvis_nome": solicitacao.usuario.nome_uvis if solicitacao.usuario else "",
         "endereco_os": (
             f"{solicitacao.logradouro or ''}, {solicitacao.numero or 'S/N'} - "
@@ -266,6 +320,19 @@ def build_uvis_os_form_context(user, os_id):
             if ordem and ordem.respondido_em else ""
         ),
         "drones_equipe": drones_equipe,
+        "retorno_existente": retorno_existente,
+        "retorno_monitoramento_value": (
+            ordem_uvis.retorno_monitoramento_em.strftime("%Y-%m-%dT%H:%M")
+            if ordem_uvis and ordem_uvis.retorno_monitoramento_em
+            else (
+                datetime.combine(
+                    retorno_existente.data_agendamento,
+                    retorno_existente.hora_agendamento,
+                ).strftime("%Y-%m-%dT%H:%M")
+                if retorno_existente and retorno_existente.data_agendamento and retorno_existente.hora_agendamento
+                else ""
+            )
+        ),
         "retorno_ciclo": build_retorno_ciclo_context(user, os_id),
         "imagem_principal_path": imagem_principal_path,
         "outras_imagens_paths": outras_imagens_paths,

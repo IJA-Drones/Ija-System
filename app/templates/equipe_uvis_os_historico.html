@@ -120,10 +120,10 @@
   <div class="equipe-uvis-historico-toolbar mb-4">
     <div>
       <h2 class="text-dark m-0">
-        <i class="bi bi-clock-history me-2 text-primary"></i> Histórico de OS Concluídas
+        <i class="bi bi-clock-history me-2 text-primary"></i> Hist&oacute;rico Operacional
       </h2>
-      <small class="text-muted">{{ nome_equipe }}</small>
-      {{ render_result_summary(paginacao.total, 'OS filtradas') }}
+      <small class="text-muted">Consulta das OS preenchidas pelo acesso operacional da UVIS.</small>
+      {{ render_result_summary(paginacao.total, 'registros operacionais') }}
     </div>
     <div>
       <a href="{{ url_for('main.dashboard_equipe_uvis') }}" class="btn btn-outline-secondary shadow-sm">

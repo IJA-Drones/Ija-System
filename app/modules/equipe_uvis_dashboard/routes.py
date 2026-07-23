@@ -8,7 +8,7 @@ from app.modules.equipe_uvis_dashboard.service import (
     build_equipe_uvis_os_historico_context,
     build_equipe_uvis_os_unificado_context,
     concluir_os_equipe_uvis,
-    salvar_equipe_uvis_complemento_form,
+    salvar_uvis_retorno_automatico_form,
 )
 
 
@@ -52,7 +52,7 @@ def register_routes(bp):
 
         if request.method == "POST":
             try:
-                flash(salvar_equipe_uvis_complemento_form(current_user, os_id, request.form), "success")
+                flash(salvar_uvis_retorno_automatico_form(current_user, os_id, request.form), "success")
                 redirect_args = {"os_id": os_id, "aba": "uvis"}
                 if (request.args.get("voltar") or "").strip().lower() == "historico":
                     redirect_args["voltar"] = "historico"

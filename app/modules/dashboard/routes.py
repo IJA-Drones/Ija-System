@@ -1,12 +1,17 @@
 from flask import current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
+from app.extensions import db
 from app.modules.dashboard.service import (
     DashboardError,
     build_dashboard_context,
     build_uvis_equipe_os_form_context,
     build_uvis_historico_os_context,
     build_uvis_os_form_context,
+)
+from app.modules.equipe_uvis_dashboard.service import (
+    EquipeUvisDashboardError,
+    salvar_uvis_retorno_automatico_form,
 )
 from app.shared.access import ADMIN_PANEL_VIEW_TYPES, is_agro_finance_user
 from app.shared.query_filters import query_args_without_page
@@ -52,7 +57,7 @@ def register_routes(bp):
         }
         return render_template("uvis_os_historico.html", **context)
 
-    @bp.route("/uvis/os/<int:os_id>/formulario", methods=["GET"], endpoint="uvis_os_formulario_view")
+    @bp.route("/uvis/os/<int:os_id>/formulario", methods=["GET", "POST"], endpoint="uvis_os_formulario_view")
     @login_required
     def uvis_os_formulario_view(os_id):
         try:
@@ -62,14 +67,37 @@ def register_routes(bp):
             return redirect(url_for(exc.redirect_endpoint))
 
         filtro_tipo_os = (request.args.get("tipo_os") or "").strip()
+        aba = (request.args.get("aba") or "").strip().lower()
+        if aba not in {"dados", "uvis", "imagens"}:
+            aba = "dados"
         url_voltar = url_for("main.uvis_historico_os", tipo_os=filtro_tipo_os) if filtro_tipo_os else url_for("main.uvis_historico_os")
+        form_action = (
+            url_for("main.uvis_os_formulario_view", os_id=os_id, tipo_os=filtro_tipo_os, aba=aba)
+            if filtro_tipo_os else url_for("main.uvis_os_formulario_view", os_id=os_id, aba=aba)
+        )
+
+        if request.method == "POST":
+            try:
+                flash(salvar_uvis_retorno_automatico_form(current_user, os_id, request.form), "success")
+                return redirect(form_action)
+            except EquipeUvisDashboardError as exc:
+                db.session.rollback()
+                flash(exc.message, exc.category)
+            except Exception:
+                db.session.rollback()
+                current_app.logger.exception("Erro ao salvar retorno automatico pela tela historica da OS %s", os_id)
+                flash("Erro ao salvar o retorno automatico.", "danger")
+
+            context = build_uvis_os_form_context(current_user, os_id)
+
         context.setdefault("calculo_dosagem_planejado", {})
+        context["active_os_tab"] = aba
 
         return render_template(
             "piloto_os_formulario.html",
             **context,
             url_voltar=url_voltar,
-            form_action="#",
+            form_action=form_action,
         )
 
     @bp.route("/uvis/os/<int:os_id>/equipe-formulario", methods=["GET"], endpoint="uvis_equipe_os_formulario_view")
