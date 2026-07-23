@@ -562,6 +562,10 @@
                                         <td>{{ p.tipo_imovel or '--' }}</td>
                                     </tr>
                                     <tr>
+                                        <th>D.A</th>
+                                        <td>{{ p.distrito_administrativo or '--' }}</td>
+                                    </tr>
+                                    <tr>
                                         <th>Altura</th>
                                         <td>{{ p.altura_voo or '--' }}</td>
                                     </tr>
@@ -761,6 +765,7 @@
                                         <div class="col-6"><strong>Operação:</strong> {{ p.tipo_operacao if p.tipo_operacao and p.tipo_operacao != 'None' else '--' }}</div>
                                         <div class="col-6"><strong>Visita:</strong> {{ p.tipo_visita }}</div>
                                         <div class="col-6"><strong>Imovel:</strong> {{ p.tipo_imovel or '--' }}</div>
+                                        <div class="col-6"><strong>D.A:</strong> {{ p.distrito_administrativo or '--' }}</div>
                                         <div class="col-6"><strong>Alt:</strong> {{ p.altura_voo }}</div>
                                         <div class="col-6"><strong>Foco:</strong> {{ p.foco }}</div>
                                         <div class="col-6">
