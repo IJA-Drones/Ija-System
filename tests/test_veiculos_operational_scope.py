@@ -13,6 +13,7 @@ from app.modules.veiculos import service as veiculos_service
 from app.modules.veiculos.service import (
     build_veiculo_media_skybox_path,
     build_piloto_veiculos_context,
+    delete_veiculo_log,
     encerrar_turno_piloto,
     iniciar_turno_piloto,
     registrar_abastecimento_turno_piloto,
@@ -207,6 +208,47 @@ class VeiculosOperationalScopeTests(unittest.TestCase):
         self.assertEqual(log.km_inicial, 32457)
         self.assertEqual(log.km_final, 32457)
         self.assertEqual(veiculo.km_atual, 32457)
+
+    def test_delete_vehicle_log_removes_fuel_records_and_recalculates_vehicle_current_km(self):
+        veiculo = self._novo_veiculo(km_atual=1200, prefeitura_id=1)
+        log_antigo = LogVeiculo(
+            veiculo_id=veiculo.id,
+            equipe_id=self.equipe.id,
+            km_inicial=900,
+            km_final=1000,
+            check_diario=True,
+        )
+        log_recente = LogVeiculo(
+            veiculo_id=veiculo.id,
+            equipe_id=self.equipe.id,
+            km_inicial=1000,
+            km_final=1200,
+            check_diario=True,
+        )
+        db.session.add_all([log_antigo, log_recente])
+        db.session.flush()
+        abastecimento = Abastecimento(
+            log_veiculo_id=log_recente.id,
+            km_registro=1100,
+            tipo_abastecimento="Veiculo",
+            litros=20,
+            valor_total=100,
+            foto_nf_path="uploads/veiculos/notas/nf_teste.png",
+            foto_painel_path="uploads/veiculos/paineis/painel_teste.png",
+        )
+        db.session.add(abastecimento)
+        db.session.commit()
+        user = SimpleNamespace(tipo_usuario="admin", prefeitura_id=1)
+        deleted_log_id = log_recente.id
+        deleted_abastecimento_id = abastecimento.id
+
+        message = delete_veiculo_log(user, deleted_log_id)
+
+        db.session.refresh(veiculo)
+        self.assertEqual(message, f"Log #{deleted_log_id} excluido com sucesso.")
+        self.assertIsNone(db.session.get(LogVeiculo, deleted_log_id))
+        self.assertIsNone(db.session.get(Abastecimento, deleted_abastecimento_id))
+        self.assertEqual(veiculo.km_atual, 1000)
 
     def test_vehicle_km_parser_accepts_thousand_separator_but_rejects_decimal_km(self):
         self.assertEqual(veiculos_service._parse_km_form("32,000"), 32000)

@@ -1429,6 +1429,27 @@ def update_veiculo_log_km(user, log_id, form_data):
     return f"Log #{log.id} corrigido com sucesso."
 
 
+def delete_veiculo_log(user, log_id):
+    tipo_usuario = normalize_role(getattr(user, "tipo_usuario", None))
+    if tipo_usuario not in {"dev", "admin", "operario", "operador", "prefeitura_admin"}:
+        raise PermissionError
+
+    log = (
+        _build_veiculos_logs_query(user=user)
+        .filter(LogVeiculo.id == log_id)
+        .first()
+    )
+    if log is None:
+        raise PermissionError
+
+    veiculo_id = log.veiculo_id
+    db.session.delete(log)
+    db.session.flush()
+    _recalcular_km_atual_veiculo(veiculo_id)
+    db.session.commit()
+    return f"Log #{log_id} excluido com sucesso."
+
+
 def _parse_log_km_field(form_data, field_name, label, *, required=False):
     raw_value = (form_data.get(field_name) or "").strip()
     if not raw_value:

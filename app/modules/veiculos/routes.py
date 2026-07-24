@@ -16,6 +16,7 @@ from app.modules.veiculos.service import (
     build_veiculo_media_skybox_path,
     build_veiculos_export_response,
     build_veiculos_logs_export,
+    delete_veiculo_log,
     create_veiculo,
     delete_veiculo,
     encerrar_turno_piloto,
@@ -164,6 +165,38 @@ def register_routes(bp):
             db.session.rollback()
             current_app.logger.exception("Erro ao corrigir KM do log de veiculo %s.", log_id)
             flash("Erro interno ao corrigir o log de veiculo. Tente novamente.", "danger")
+
+        if return_to == "veiculo" and veiculo_id:
+            return redirect(
+                url_for(
+                    "main.veiculo_logs_detalhe",
+                    veiculo_id=veiculo_id,
+                    data_inicio=redirect_args.get("data_inicio"),
+                    data_fim=redirect_args.get("data_fim"),
+                )
+            )
+        return redirect(url_for("main.veiculos_logs", **redirect_args))
+
+    @bp.route("/veiculos/logs/<int:log_id>/excluir", methods=["POST"], endpoint="excluir_log_veiculo")
+    @login_required
+    def excluir_log_veiculo(log_id):
+        _require_admin_or_operario()
+
+        redirect_args = {
+            key: value
+            for key, value in request.args.items()
+            if key in {"page", "q", "data_inicio", "data_fim"}
+        }
+        return_to = (request.args.get("return_to") or "").strip()
+        veiculo_id = request.args.get("veiculo_id", type=int)
+        try:
+            flash(delete_veiculo_log(current_user, log_id), "success")
+        except PermissionError:
+            abort(403)
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("Erro ao excluir log de veiculo %s.", log_id)
+            flash("Erro interno ao excluir o log de veiculo. Tente novamente.", "danger")
 
         if return_to == "veiculo" and veiculo_id:
             return redirect(

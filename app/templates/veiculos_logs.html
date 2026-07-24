@@ -940,6 +940,13 @@
                                                     data-bs-toggle="modal" data-bs-target="#modalCorrigirKmLog{{ log.id }}">
                                                 <i class="bi bi-pencil-square me-1"></i> Corrigir KM
                                             </button>
+                                            <form method="POST"
+                                                  action="{{ url_for('main.excluir_log_veiculo', log_id=log.id, page=paginacao.page, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}"
+                                                  onsubmit="return confirm('Excluir definitivamente o log #{{ log.id }}? Esta acao tambem remove os abastecimentos vinculados.');">
+                                                <button class="btn btn-sm btn-outline-danger rounded-pill px-3" type="submit">
+                                                    <i class="bi bi-trash me-1"></i> Excluir
+                                                </button>
+                                            </form>
                                         {% endif %}
                                     </div>
                                 </td>

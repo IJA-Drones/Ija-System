@@ -202,6 +202,8 @@
         background: #fff;
         border-top: 1px solid #e2e8f0;
         display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
         justify-content: flex-end;
         padding: 0 1rem 0.85rem;
     }
@@ -443,9 +445,18 @@
                                 <td><span class="km-status km-status-{{ linha.status }}">{{ linha.status_label }}</span></td>
                                 {% if can_edit_logs %}
                                     <td>
-                                        <button class="btn btn-sm btn-outline-warning rounded-pill px-3" type="button" data-bs-toggle="modal" data-bs-target="#modalCorrigirKmLog{{ linha.id }}">
-                                            <i class="bi bi-pencil-square me-1"></i> Corrigir
-                                        </button>
+                                        <div class="d-flex flex-wrap gap-2 justify-content-center">
+                                            <button class="btn btn-sm btn-outline-warning rounded-pill px-3" type="button" data-bs-toggle="modal" data-bs-target="#modalCorrigirKmLog{{ linha.id }}">
+                                                <i class="bi bi-pencil-square me-1"></i> Corrigir
+                                            </button>
+                                            <form method="POST"
+                                                  action="{{ url_for('main.excluir_log_veiculo', log_id=linha.id, return_to='veiculo', veiculo_id=veiculo.id, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}"
+                                                  onsubmit="return confirm('Excluir definitivamente o turno #{{ linha.id }}? Esta acao tambem remove os abastecimentos vinculados.');">
+                                                <button class="btn btn-sm btn-outline-danger rounded-pill px-3" type="submit">
+                                                    <i class="bi bi-trash me-1"></i> Excluir
+                                                </button>
+                                            </form>
+                                        </div>
                                     </td>
                                 {% endif %}
                             </tr>
@@ -502,6 +513,13 @@
                                     <button class="btn btn-sm btn-outline-warning rounded-pill px-3" type="button" data-bs-toggle="modal" data-bs-target="#modalCorrigirKmLog{{ turno.id }}">
                                         <i class="bi bi-pencil-square me-1"></i> Corrigir KM
                                     </button>
+                                    <form method="POST"
+                                          action="{{ url_for('main.excluir_log_veiculo', log_id=turno.id, return_to='veiculo', veiculo_id=veiculo.id, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}"
+                                          onsubmit="return confirm('Excluir definitivamente o turno #{{ turno.id }}? Esta acao tambem remove os abastecimentos vinculados.');">
+                                        <button class="btn btn-sm btn-outline-danger rounded-pill px-3" type="submit">
+                                            <i class="bi bi-trash me-1"></i> Excluir
+                                        </button>
+                                    </form>
                                 </div>
                             {% endif %}
                             <div class="collapse {% if loop.first %}show{% endif %}" id="turno{{ turno.id }}">
