@@ -532,6 +532,40 @@ body.dark-mode.agro-mode .admin-context-badge {
   border-left: 4px solid var(--color-accent);
 }
 
+.app-sidebar .nav-link-toggle {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  justify-content: space-between;
+}
+
+.app-sidebar .nav-link-toggle > span {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.app-sidebar .nav-link-toggle .chevron {
+  margin-left: auto;
+  font-size: 0.75rem;
+  transition: transform 0.2s ease;
+}
+
+.app-sidebar .nav-link-toggle[aria-expanded="true"] .chevron {
+  transform: rotate(180deg);
+}
+
+.app-sidebar .sub-nav {
+  padding: 0.2rem 0 0.35rem 0.75rem;
+  margin: 0.15rem 0 0.25rem;
+}
+
+.app-sidebar .sub-link {
+  font-size: 0.92rem;
+  padding: 0.55rem 0.85rem;
+}
+
 .feedback-placeholder-link {
   align-items: flex-start !important;
   flex-direction: column;
@@ -598,6 +632,11 @@ body.sidebar-collapsed .app-sidebar .feedback-placeholder-note {
 body.sidebar-collapsed .app-sidebar .nav-link .me-2 {
   margin-right: 0;
   font-size: 1.2rem;
+}
+
+body.sidebar-collapsed .app-sidebar .sub-nav,
+body.sidebar-collapsed .app-sidebar .nav-link-toggle .chevron {
+  display: none;
 }
 
 body.sidebar-collapsed .app-content {
