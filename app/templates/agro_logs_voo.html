@@ -1,0 +1,490 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <style>
+    .agro-flight-page { max-width: 1280px; }
+    .agro-flight-metric {
+      border: 0;
+      border-radius: 1rem;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+    }
+    .agro-flight-label {
+      color: #64748b;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .agro-flight-value {
+      color: #0f172a;
+      font-size: 1.7rem;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+    .agro-route-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      border: 1px solid rgba(25, 135, 84, 0.18);
+      border-radius: 999px;
+      background: #f2fbf6;
+      color: #198754;
+      font-size: 0.78rem;
+      font-weight: 800;
+      padding: 0.2rem 0.55rem;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .agro-route-map {
+      width: 100%;
+      height: 420px;
+      border-radius: 1rem;
+      background: #f8fafc;
+    }
+    .agro-route-file {
+      max-width: 260px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 agro-flight-page">
+  <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-4">
+    <div>
+      <h2 class="text-dark mb-1">
+        <i class="bi bi-airplane-engines-fill me-2 text-success"></i> Logs de voo Agro
+      </h2>
+      <p class="text-muted small mb-0">
+        Leitura do Excel DJI, rotas KML e vinculo operacional com as OS Agro.
+      </p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('main.admin_agro') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+      <a href="{{ url_for('main.agro_logs_voo_exportar', data_inicio=filtros.data_inicio, data_fim=filtros.data_fim, piloto=filtros.piloto, aeronave=filtros.aeronave, equipe=filtros.equipe, q=filtros.q, endereco=filtros.endereco, voo_id=filtros.voo_id, status_rota=filtros.status_rota) }}" class="btn btn-success d-flex align-items-center gap-2">
+        <i class="bi bi-file-earmark-excel-fill"></i> Exportar Excel
+      </a>
+    </div>
+  </div>
+
+  {% if can_import %}
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+      <div class="card-body">
+        <div class="row g-4">
+          <div class="col-lg-6">
+            <h5 class="fw-bold mb-1">Importar Excel DJI</h5>
+            <p class="text-muted small mb-3">O sistema ignora linhas repetidas e mantem o vinculo pelo serial/codigo do voo.</p>
+            <form method="POST" action="{{ url_for('main.agro_logs_voo_importar_excel') }}" enctype="multipart/form-data" class="row g-2 align-items-end">
+              <div class="col-md-8">
+                <label class="form-label small text-muted">Arquivo .xlsx</label>
+                <input type="file" name="arquivo" class="form-control" accept=".xlsx" required>
+              </div>
+              <div class="col-md-4">
+                <button class="btn btn-primary w-100" type="submit">
+                  <i class="bi bi-upload me-1"></i> Importar
+                </button>
+              </div>
+            </form>
+          </div>
+          <div class="col-lg-6">
+            <h5 class="fw-bold mb-1">Importar rotas KML</h5>
+            <p class="text-muted small mb-3">Ao importar, o sistema tenta vincular cada rota a uma OS Agro pela data, drone, piloto e area.</p>
+            <form method="POST" action="{{ url_for('main.agro_logs_voo_importar_kml') }}" enctype="multipart/form-data" class="row g-2 align-items-end">
+              <div class="col-md-8">
+                <label class="form-label small text-muted">Arquivos .kml</label>
+                <input type="file" name="arquivos" class="form-control" accept=".kml" multiple required>
+              </div>
+              <div class="col-md-4">
+                <button class="btn btn-outline-primary w-100" type="submit">
+                  <i class="bi bi-diagram-3-fill me-1"></i> Importar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-6 col-xl-3">
+      <div class="card agro-flight-metric h-100"><div class="card-body">
+        <div class="agro-flight-label">Voos importados</div>
+        <div class="agro-flight-value mt-2">{{ total_voos }}</div>
+        <div class="text-muted small mt-2">{{ total_importacoes }} lote(s) Excel</div>
+      </div></div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+      <div class="card agro-flight-metric h-100"><div class="card-body">
+        <div class="agro-flight-label">Area aplicada</div>
+        <div class="agro-flight-value mt-2">{{ "{:,.3f}".format(total_area or 0).replace(",", "_").replace(".", ",").replace("_", ".") }}</div>
+        <div class="text-muted small mt-2">hectares no filtro atual</div>
+      </div></div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+      <div class="card agro-flight-metric h-100"><div class="card-body">
+        <div class="agro-flight-label">Produto aplicado</div>
+        <div class="agro-flight-value mt-2">{{ "{:,.2f}".format(total_volume or 0).replace(",", "_").replace(".", ",").replace("_", ".") }}</div>
+        <div class="text-muted small mt-2">L/Kg acumulados</div>
+      </div></div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+      <div class="card agro-flight-metric h-100"><div class="card-body">
+        <div class="agro-flight-label">Rotas KML Agro</div>
+        <div class="agro-flight-value mt-2">{{ total_rotas_kml_vinculadas }}/{{ total_rotas_kml }}</div>
+        <div class="text-muted small mt-2">{{ total_rotas_kml_sem_os }} sem OS Agro vinculada</div>
+      </div></div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm rounded-4 mb-4">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-3">
+        <div>
+          <h5 class="fw-bold mb-1">Filtros dos voos</h5>
+          <p class="text-muted small mb-0">{{ filtros.total }} voo(s) no recorte atual.</p>
+        </div>
+      </div>
+      <form method="GET" action="{{ url_for('main.agro_logs_voo') }}" class="row g-2 align-items-end">
+        <input type="hidden" name="kml_page" value="{{ kml_paginacao.page if kml_paginacao else 1 }}">
+        <input type="hidden" name="kml_q" value="{{ kml_filtros.q }}">
+        <input type="hidden" name="kml_data_inicio" value="{{ kml_filtros.data_inicio }}">
+        <input type="hidden" name="kml_data_fim" value="{{ kml_filtros.data_fim }}">
+        <input type="hidden" name="kml_piloto" value="{{ kml_filtros.piloto }}">
+        <input type="hidden" name="kml_aeronave" value="{{ kml_filtros.aeronave }}">
+        <input type="hidden" name="kml_status_os" value="{{ kml_filtros.status_os }}">
+        <input type="hidden" name="kml_status_voo" value="{{ kml_filtros.status_voo }}">
+        <input type="hidden" name="kml_voo_id" value="{{ kml_filtros.voo_id }}">
+        <div class="col-md-3">
+          <label class="form-label small text-muted">Busca</label>
+          <input type="search" name="q" class="form-control form-control-sm" value="{{ filtros.q }}" placeholder="Serial, piloto, local...">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small text-muted">Inicio</label>
+          <input type="date" name="data_inicio" class="form-control form-control-sm" value="{{ filtros.data_inicio }}">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small text-muted">Fim</label>
+          <input type="date" name="data_fim" class="form-control form-control-sm" value="{{ filtros.data_fim }}">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small text-muted">Piloto</label>
+          <select name="piloto" class="form-select form-select-sm">
+            <option value="">Todos</option>
+            {% for item in pilotos_disponiveis %}
+              <option value="{{ item }}" {% if filtros.piloto == item %}selected{% endif %}>{{ item }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small text-muted">Aeronave</label>
+          <select name="aeronave" class="form-select form-select-sm">
+            <option value="">Todas</option>
+            {% for item in aeronaves_disponiveis %}
+              <option value="{{ item }}" {% if filtros.aeronave == item %}selected{% endif %}>{{ item }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-1 d-grid">
+          <button class="btn btn-primary btn-sm" type="submit"><i class="bi bi-search"></i></button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm rounded-4 mb-4" id="rotas-kml">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-3">
+        <div>
+          <h5 class="fw-bold mb-1">Rotas KML</h5>
+          <p class="text-muted small mb-0">Rotas importadas e vinculo com OS Agro.</p>
+        </div>
+      </div>
+
+      <form method="GET" action="{{ url_for('main.agro_logs_voo') }}" class="row g-2 align-items-end mb-3">
+        <input type="hidden" name="page" value="{{ paginacao.page if paginacao else 1 }}">
+        <input type="hidden" name="data_inicio" value="{{ filtros.data_inicio }}">
+        <input type="hidden" name="data_fim" value="{{ filtros.data_fim }}">
+        <input type="hidden" name="piloto" value="{{ filtros.piloto }}">
+        <input type="hidden" name="aeronave" value="{{ filtros.aeronave }}">
+        <input type="hidden" name="equipe" value="{{ filtros.equipe }}">
+        <input type="hidden" name="q" value="{{ filtros.q }}">
+        <input type="hidden" name="endereco" value="{{ filtros.endereco }}">
+        <input type="hidden" name="voo_id" value="{{ filtros.voo_id }}">
+        <input type="hidden" name="status_rota" value="{{ filtros.status_rota }}">
+        <div class="col-md-3">
+          <label class="form-label small text-muted">Busca KML</label>
+          <input type="search" name="kml_q" class="form-control form-control-sm" value="{{ kml_filtros.q }}" placeholder="Rota, arquivo, piloto...">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small text-muted">Inicio</label>
+          <input type="date" name="kml_data_inicio" class="form-control form-control-sm" value="{{ kml_filtros.data_inicio }}">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small text-muted">Fim</label>
+          <input type="date" name="kml_data_fim" class="form-control form-control-sm" value="{{ kml_filtros.data_fim }}">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small text-muted">OS Agro</label>
+          <select name="kml_status_os" class="form-select form-select-sm">
+            <option value="">Todas</option>
+            <option value="com_os" {% if kml_filtros.status_os == "com_os" %}selected{% endif %}>Com OS</option>
+            <option value="sem_os" {% if kml_filtros.status_os == "sem_os" %}selected{% endif %}>Sem OS</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small text-muted">Voo DJI</label>
+          <select name="kml_status_voo" class="form-select form-select-sm">
+            <option value="">Todos</option>
+            <option value="com_voo" {% if kml_filtros.status_voo == "com_voo" %}selected{% endif %}>Com voo</option>
+            <option value="sem_voo" {% if kml_filtros.status_voo == "sem_voo" %}selected{% endif %}>Sem voo</option>
+          </select>
+        </div>
+        <div class="col-md-1 d-grid">
+          <button class="btn btn-outline-primary btn-sm" type="submit"><i class="bi bi-search"></i></button>
+        </div>
+      </form>
+
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Rota</th>
+              <th>Voo DJI</th>
+              <th>OS Agro</th>
+              <th>Arquivo</th>
+              <th class="text-end">Acoes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in kml_rotas %}
+              {% set linked_os = kml_os_por_rota.get(item.id) %}
+              <tr>
+                <td>
+                  <div class="fw-bold">{{ item.route_code }}</div>
+                  <div class="text-muted small">{{ item.route_timestamp.strftime("%d/%m/%Y %H:%M") if item.route_timestamp else "Sem data" }}</div>
+                  <div class="text-muted small">{{ item.pilot_name or "-" }} | {{ item.aircraft_name or "-" }}</div>
+                </td>
+                <td>
+                  {% if item.flight_record %}
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Voo #{{ item.flight_record.id }}</span>
+                    <div class="text-muted small mt-1">{{ item.flight_record.flight_start.strftime("%d/%m/%Y %H:%M") if item.flight_record.flight_start else "-" }}</div>
+                  {% else %}
+                    <span class="badge bg-light text-dark border">Sem voo</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if linked_os %}
+                    <a href="{{ url_for('main.agro_os_editar', os_id=linked_os.id) }}" class="text-success fw-semibold text-decoration-none">
+                      {{ linked_os.identificador_os }}
+                    </a>
+                    <div class="text-muted small">{{ linked_os.cliente_nome }} | {{ linked_os.propriedade_nome }}</div>
+                  {% else %}
+                    <span class="text-muted">Sem OS Agro</span>
+                  {% endif %}
+                </td>
+                <td><div class="agro-route-file text-muted small">{{ item.original_filename }}</div></td>
+                <td class="text-end">
+                  <div class="btn-group">
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="abrirRotaAgro({{ item.id }})">
+                      <i class="bi bi-map"></i>
+                    </button>
+                    <a href="{{ url_for('main.agro_logs_voo_baixar_kml', route_id=item.id) }}" class="btn btn-sm btn-outline-secondary">
+                      <i class="bi bi-download"></i>
+                    </a>
+                  </div>
+                  {% if can_import %}
+                    <form method="POST" action="{{ url_for('main.agro_logs_voo_vincular_os', route_id=item.id) }}" class="d-flex gap-1 justify-content-end mt-2">
+                      <input type="text" name="os_ref" class="form-control form-control-sm" style="max-width: 140px;" placeholder="OS Agro">
+                      <button class="btn btn-sm btn-success" type="submit"><i class="bi bi-link-45deg"></i></button>
+                    </form>
+                    {% if linked_os %}
+                      <form method="POST" action="{{ url_for('main.agro_logs_voo_desvincular_os', route_id=item.id) }}" class="mt-1">
+                        <button class="btn btn-sm btn-outline-danger" type="submit">Desvincular</button>
+                      </form>
+                    {% endif %}
+                  {% endif %}
+                </td>
+              </tr>
+            {% else %}
+              <tr><td colspan="5" class="text-center text-muted py-4">Nenhuma rota KML encontrada.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm rounded-4" id="voos-processados">
+    <div class="card-body">
+      <h5 class="fw-bold mb-3">Voos processados do Excel</h5>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Inicio</th>
+              <th>Piloto / Aeronave</th>
+              <th>Equipe</th>
+              <th>Local</th>
+              <th class="text-end">Area ha</th>
+              <th class="text-end">Volume</th>
+              <th>KML / OS Agro</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for registro in registros %}
+              <tr>
+                <td>
+                  <div class="fw-semibold">{{ registro.flight_start.strftime("%d/%m/%Y %H:%M") }}</div>
+                  <div class="text-muted small">{{ registro.duration_display }}</div>
+                </td>
+                <td>
+                  <div class="fw-semibold">{{ registro.pilot_name or "-" }}</div>
+                  <div class="text-muted small">{{ registro.aircraft_name or "-" }} | {{ registro.serial_number or "-" }}</div>
+                </td>
+                <td>{{ registro.team_name or "-" }}</td>
+                <td>{{ registro.location_short }}</td>
+                <td class="text-end">{{ "%.3f"|format(registro.sprayed_area_ha or 0) }}</td>
+                <td class="text-end">{{ "%.2f"|format(registro.total_amount_l_kg or 0) }}</td>
+                <td>
+                  {% if registro.route_kml %}
+                    {% set linked_os = registro_kml_os_por_rota.get(registro.route_kml.id) %}
+                    <button type="button" class="agro-route-pill border-0" onclick="abrirRotaAgro({{ registro.route_kml.id }})">
+                      <i class="bi bi-diagram-3"></i> {{ registro.route_kml.route_code }}
+                    </button>
+                    {% if linked_os %}
+                      <div class="mt-1">
+                        <a href="{{ url_for('main.agro_os_editar', os_id=linked_os.id) }}" class="small text-success fw-semibold text-decoration-none">
+                          {{ linked_os.identificador_os }}
+                        </a>
+                      </div>
+                    {% else %}
+                      <div class="text-muted small mt-1">Sem OS Agro</div>
+                    {% endif %}
+                  {% else %}
+                    <span class="badge bg-light text-dark border">Sem KML</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% else %}
+              <tr><td colspan="7" class="text-center text-muted py-4">Nenhum voo encontrado.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="rotaAgroModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content border-0 rounded-4 overflow-hidden">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title" id="rotaAgroTitulo">Rota do drone</h5>
+          <div class="small text-muted" id="rotaAgroSubtitulo"></div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3 mb-3">
+          <div class="col-md-3"><div class="border rounded-4 p-3 h-100"><div class="agro-flight-label">Aeronave</div><div class="fw-bold fs-5" id="rotaAgroAeronave">-</div></div></div>
+          <div class="col-md-3"><div class="border rounded-4 p-3 h-100"><div class="agro-flight-label">Piloto</div><div class="fw-bold fs-5" id="rotaAgroPiloto">-</div></div></div>
+          <div class="col-md-3"><div class="border rounded-4 p-3 h-100"><div class="agro-flight-label">Trajeto</div><div class="fw-bold fs-5" id="rotaAgroDistancia">-</div></div></div>
+          <div class="col-md-3"><div class="border rounded-4 p-3 h-100"><div class="agro-flight-label">Area</div><div class="fw-bold fs-5" id="rotaAgroArea">-</div></div></div>
+        </div>
+        <div class="border rounded-4 p-3 mb-3">
+          <div class="agro-flight-label">OS Agro vinculada</div>
+          <div class="fw-bold" id="rotaAgroOsLabel">Sem OS Agro vinculada</div>
+          <div class="text-muted small" id="rotaAgroOsMeta"></div>
+        </div>
+        <div id="rotaAgroMap" class="agro-route-map"></div>
+      </div>
+      <div class="modal-footer">
+        <a id="rotaAgroDownloadLink" class="btn btn-outline-dark" target="_blank" rel="noopener">
+          <i class="bi bi-download me-1"></i> Baixar KML
+        </a>
+        <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  {% if google_maps_key %}
+    <script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_key }}"></script>
+  {% endif %}
+  <script>
+    let rotaAgroMap = null;
+    let rotaAgroPolyline = null;
+    let rotaAgroMarkers = [];
+
+    function limparRotaAgro() {
+      if (rotaAgroPolyline) {
+        rotaAgroPolyline.setMap(null);
+        rotaAgroPolyline = null;
+      }
+      rotaAgroMarkers.forEach((marker) => marker.setMap(null));
+      rotaAgroMarkers = [];
+    }
+
+    async function abrirRotaAgro(routeId) {
+      const response = await fetch(`/api/agro/kml-route/${routeId}`);
+      const payload = await response.json();
+      if (!payload.ok) return;
+
+      const route = payload.route || {};
+      const points = (route.points || []).map((item) => ({ lat: item.lat, lng: item.lng }));
+      document.getElementById("rotaAgroTitulo").textContent = `Rota ${route.route_code || ""}`.trim();
+      document.getElementById("rotaAgroSubtitulo").textContent = route.route_timestamp || "Sem data de rota";
+      document.getElementById("rotaAgroAeronave").textContent = route.aircraft_name || "-";
+      document.getElementById("rotaAgroPiloto").textContent = route.pilot_name || "-";
+      document.getElementById("rotaAgroDistancia").textContent = route.distance_label || "-";
+      document.getElementById("rotaAgroArea").textContent = route.task_area != null ? `${Number(route.task_area).toFixed(3)} ha` : "-";
+      document.getElementById("rotaAgroDownloadLink").href = `/agro/logs-voo/rota/${routeId}/kml`;
+
+      const linkedOs = route.linked_os || null;
+      document.getElementById("rotaAgroOsLabel").textContent = linkedOs ? linkedOs.label : "Sem OS Agro vinculada";
+      document.getElementById("rotaAgroOsMeta").textContent = linkedOs ? [linkedOs.cliente, linkedOs.propriedade, linkedOs.status, linkedOs.data_aplicacao].filter(Boolean).join(" | ") : "";
+
+      const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById("rotaAgroModal"));
+      modal.show();
+
+      if (!points.length || !(window.google && window.google.maps)) return;
+
+      setTimeout(() => {
+        const centerPoint = points[0];
+        if (!rotaAgroMap) {
+          rotaAgroMap = new google.maps.Map(document.getElementById("rotaAgroMap"), {
+            zoom: 16,
+            center: centerPoint,
+            mapTypeId: "hybrid",
+          });
+        }
+        limparRotaAgro();
+        rotaAgroPolyline = new google.maps.Polyline({
+          path: points,
+          geodesic: true,
+          strokeColor: route.route_color_css || "#198754",
+          strokeOpacity: 0.95,
+          strokeWeight: Number(route.route_width || 2),
+          map: rotaAgroMap,
+        });
+        rotaAgroMarkers.push(new google.maps.Marker({ position: points[0], map: rotaAgroMap, label: "I" }));
+        rotaAgroMarkers.push(new google.maps.Marker({ position: points[points.length - 1], map: rotaAgroMap, label: "F" }));
+        const bounds = new google.maps.LatLngBounds();
+        points.forEach((point) => bounds.extend(point));
+        rotaAgroMap.fitBounds(bounds);
+      }, 180);
+    }
+  </script>
+{% endblock %}

@@ -630,6 +630,14 @@
           </li>
           <li class="nav-item">
             <a
+              class="nav-link {% if request.endpoint in ['main.agro_logs_voo', 'main.agro_logs_voo_exportar'] %}active{% endif %}"
+              href="{{ url_for('main.agro_logs_voo') }}"
+            >
+              <i class="bi bi-airplane-engines-fill me-2"></i><span>Logs de Voo</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a
               class="nav-link {% if request.endpoint in ['main.agro_equipes_listar', 'main.agro_equipe_nova', 'main.agro_equipe_editar'] %}active{% endif %}"
               href="{{ url_for('main.agro_equipes_listar') }}"
             >
