@@ -319,14 +319,204 @@
         margin: 0;
     }
 
+    .logs-view-tabs {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 999px;
+        display: none !important;
+        gap: 0.35rem;
+        padding: 0.35rem;
+    }
+
+    .logs-view-tabs .nav-link {
+        border: 0;
+        border-radius: 999px;
+        color: #475569;
+        font-weight: 800;
+        padding: 0.55rem 1rem;
+    }
+
+    .logs-view-tabs .nav-link.active {
+        background: #0d6efd;
+        color: #fff;
+    }
+
+    .vehicle-history-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 1rem;
+        overflow: hidden;
+    }
+
+    .vehicle-history-card + .vehicle-history-card {
+        margin-top: 1rem;
+    }
+
+    .vehicle-history-card-header {
+        align-items: flex-start;
+        background: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        gap: 1rem;
+        justify-content: space-between;
+        padding: 1rem;
+    }
+
+    .vehicle-history-summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+        justify-content: flex-end;
+    }
+
+    .vehicle-day-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 0.85rem;
+        margin: 1rem;
+        overflow: hidden;
+    }
+
+    .vehicle-day-header {
+        align-items: center;
+        background: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        gap: 1rem;
+        justify-content: space-between;
+        padding: 0.85rem 1rem;
+    }
+
+    .vehicle-day-body {
+        padding: 1rem;
+    }
+
+    .vehicle-turno-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.85rem;
+        overflow: hidden;
+    }
+
+    .vehicle-turno-card + .vehicle-turno-card {
+        margin-top: 0.9rem;
+    }
+
+    .vehicle-turno-toggle {
+        align-items: center;
+        background: #fff;
+        border: 0;
+        display: flex;
+        gap: 1rem;
+        justify-content: space-between;
+        padding: 0.9rem 1rem;
+        text-align: left;
+        width: 100%;
+    }
+
+    .vehicle-turno-body {
+        border-top: 1px solid #e2e8f0;
+        padding: 1rem;
+    }
+
+    .vehicle-cards-grid {
+        display: grid;
+        gap: 0.85rem;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
+    .vehicle-summary-card {
+        --vehicle-accent: #0d6efd;
+        --vehicle-icon: #2fb7d0;
+        background: #fff;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        border-left: 4px solid var(--vehicle-accent);
+        border-radius: 1rem;
+        color: inherit;
+        display: grid;
+        min-height: 172px;
+        padding: 1.1rem;
+        position: relative;
+        text-decoration: none;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+    }
+
+    .vehicle-summary-card:hover {
+        border-color: var(--vehicle-accent);
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+        color: inherit;
+        transform: translateY(-1px);
+    }
+
+    .vehicle-summary-card:nth-child(5n + 1) { --vehicle-accent: #0d6efd; --vehicle-icon: #2fb7d0; }
+    .vehicle-summary-card:nth-child(5n + 2) { --vehicle-accent: #ffc107; --vehicle-icon: #ffc107; }
+    .vehicle-summary-card:nth-child(5n + 3) { --vehicle-accent: #dc3545; --vehicle-icon: #2fb7d0; }
+    .vehicle-summary-card:nth-child(5n + 4) { --vehicle-accent: #198754; --vehicle-icon: #198754; }
+    .vehicle-summary-card:nth-child(5n + 5) { --vehicle-accent: #6f42c1; --vehicle-icon: #6f42c1; }
+
+    .vehicle-summary-eyebrow {
+        color: #64748b;
+        font-size: 0.75rem;
+        font-weight: 900;
+        text-transform: uppercase;
+    }
+
+    .vehicle-summary-main {
+        color: #184d86;
+        font-size: 1.45rem;
+        font-weight: 900;
+        line-height: 1;
+        margin-top: 0.25rem;
+    }
+
+    .vehicle-summary-subtitle {
+        color: #64748b;
+        font-size: 0.84rem;
+        margin-top: 0.35rem;
+    }
+
+    .vehicle-summary-icon {
+        color: var(--vehicle-icon);
+        font-size: 2.15rem;
+        line-height: 1;
+        opacity: 0.95;
+        position: absolute;
+        right: 0.9rem;
+        top: 1rem;
+    }
+
+    .vehicle-summary-footer {
+        align-items: center;
+        color: #184d86;
+        display: flex;
+        font-weight: 900;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+
     .veiculos-logs-pagination .pagination {
         margin-bottom: 0;
+    }
+
+    @media (max-width: 1400px) {
+        .vehicle-cards-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 992px) {
+        .vehicle-cards-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
     }
 
     @media (max-width: 768px) {
         .veiculos-logs-page {
             padding-left: 0.75rem;
             padding-right: 0.75rem;
+        }
+
+        .vehicle-cards-grid {
+            grid-template-columns: 1fr;
         }
 
         .dashboard-header {
@@ -430,6 +620,10 @@
         }
 
         .vehicle-timeline-header,
+        .vehicle-history-card-header,
+        .vehicle-day-header,
+        .vehicle-turno-toggle,
+        .vehicle-summary-card,
         .timeline-event-header {
             display: block;
         }
@@ -437,6 +631,12 @@
         .vehicle-timeline-summary {
             justify-content: flex-start;
             margin-top: 0.75rem;
+        }
+
+        .logs-view-tabs {
+            border-radius: 1rem;
+            display: grid;
+            width: 100%;
         }
 
         .timeline-time {
@@ -561,7 +761,7 @@
         </div>
         <div class="col-6 col-md-3">
             <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-success border-4 bg-white">
-                <small class="text-muted fw-bold text-uppercase" style="font-size: 0.65rem;">Abastecimento (Página)</small>
+                <small class="text-muted fw-bold text-uppercase" style="font-size: 0.65rem;">Abastecimento filtrado</small>
                 <h3 class="fw-bold mb-0 text-success">R$ {{ '%.2f'|format(total_abastecido or 0) }}</h3>
             </div>
         </div>
@@ -609,6 +809,48 @@
         </div>
     </div>
 
+    {% if veiculos_timeline %}
+    <div class="vehicle-cards-grid mb-4">
+        {% for item in veiculos_timeline %}
+            {% set v = item.veiculo %}
+            {% if v %}
+                <a class="vehicle-summary-card" href="{{ url_for('main.veiculo_logs_detalhe', veiculo_id=v.id, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}">
+                    <div>
+                        <div class="vehicle-summary-eyebrow">{{ v.modelo }}</div>
+                        <div class="vehicle-summary-main">{{ (item.total_km or 0)|round|int }} km</div>
+                        <div class="vehicle-summary-subtitle">
+                            {{ item.total_logs }} turno(s) | R$ {{ '%.2f'|format(item.total_gasto or 0) }} | {{ item.total_abastecimentos }} abastecimento(s)
+                        </div>
+                        <div class="vehicle-summary-subtitle">
+                            Placa: {{ v.placa }}{% if v.equipe %} | {{ v.equipe.nome_equipe }}{% endif %}
+                        </div>
+                        <div class="vehicle-summary-footer">
+                            <span>Abrir historico</span>
+                            <i class="bi bi-arrow-right"></i>
+                        </div>
+                    </div>
+                    <i class="bi bi-truck-front-fill vehicle-summary-icon"></i>
+                </a>
+            {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <ul class="nav logs-view-tabs mb-4" id="veiculosLogsTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="tabLogsTabelaBtn" data-bs-toggle="tab" data-bs-target="#tabLogsTabela" type="button" role="tab" aria-controls="tabLogsTabela" aria-selected="true">
+                <i class="bi bi-table me-1"></i> Logs
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tabLogsVeiculosBtn" data-bs-toggle="tab" data-bs-target="#tabLogsVeiculos" type="button" role="tab" aria-controls="tabLogsVeiculos" aria-selected="false">
+                <i class="bi bi-truck-front-fill me-1"></i> VeÃ­culos
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="veiculosLogsTabsContent">
+    <div class="tab-pane fade show active" id="tabLogsTabela" role="tabpanel" aria-labelledby="tabLogsTabelaBtn" tabindex="0">
     <div class="card shadow-sm border-0 rounded-4 overflow-hidden veiculos-logs-table-wrap">
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -620,6 +862,7 @@
                             <th>Operador / Equipe</th>
                             <th>KM Inicial</th>
                             <th>KM Final</th>
+                            <th>KM Abastecimento</th>
                             <th>Abastecimento (R$)</th>
                             <th class="pe-4">Detalhes</th>
                         </tr>
@@ -662,6 +905,16 @@
                                         <div class="small text-muted">{{ (log.ultimo_km_registrado or 0)|round|int }} km registrados</div>
                                     {% endif %}
                                 </td>
+                                <td data-label="KM Abastecimento">
+                                    {% if log.abastecimentos_ordenados %}
+                                        {% for abastecimento in log.abastecimentos_ordenados %}
+                                            <div class="fw-semibold text-dark">{{ (abastecimento.km_registro or 0)|round|int }} km</div>
+                                            {% if not loop.last %}<hr class="my-1">{% endif %}
+                                        {% endfor %}
+                                    {% else %}
+                                        <span class="text-muted small">-</span>
+                                    {% endif %}
+                                </td>
                                 <td data-label="Abastecimento (R$)">
                                     {% if log.teve_abastecimento %}
                                         <span class="badge bg-success-light text-success rounded-pill px-3">
@@ -676,15 +929,23 @@
                                     {% endif %}
                                 </td>
                                 <td class="pe-4" data-label="Detalhes">
-                                    <button class="btn btn-sm btn-outline-primary rounded-pill px-3" type="button"
-                                            data-bs-toggle="collapse" data-bs-target="#detalhes-log-{{ log.id }}"
-                                            aria-expanded="false" aria-controls="detalhes-log-{{ log.id }}">
-                                        <i class="bi bi-card-list me-1"></i> Ver dados
-                                    </button>
+                                    <div class="d-flex gap-2 justify-content-center flex-wrap">
+                                        <button class="btn btn-sm btn-outline-primary rounded-pill px-3" type="button"
+                                                data-bs-toggle="collapse" data-bs-target="#detalhes-log-{{ log.id }}"
+                                                aria-expanded="false" aria-controls="detalhes-log-{{ log.id }}">
+                                            <i class="bi bi-card-list me-1"></i> Ver dados
+                                        </button>
+                                        {% if can_edit_logs %}
+                                            <button class="btn btn-sm btn-outline-warning rounded-pill px-3" type="button"
+                                                    data-bs-toggle="modal" data-bs-target="#modalCorrigirKmLog{{ log.id }}">
+                                                <i class="bi bi-pencil-square me-1"></i> Corrigir KM
+                                            </button>
+                                        {% endif %}
+                                    </div>
                                 </td>
                             </tr>
                             <tr class="collapse-row">
-                                <td colspan="7" class="p-0 border-0">
+                                <td colspan="8" class="p-0 border-0">
                                     <div class="collapse" id="detalhes-log-{{ log.id }}">
                                         <div class="p-3 p-md-4 bg-light border-top">
                                             <div class="vehicle-timeline-shell text-start">
@@ -769,7 +1030,7 @@
                                                                     <div class="timeline-event-header">
                                                                         <div>
                                                                             <div class="timeline-kicker">Abastecimento</div>
-                                                                            <div class="timeline-title">{{ abastecimento.tipo_abastecimento or 'Registro de abastecimento' }}</div>
+                                                                            <div class="timeline-title">Abastecimento</div>
                                                                         </div>
                                                                         <div class="timeline-time">{{ abastecimento.data_hora.strftime('%d/%m/%Y %H:%M') if abastecimento.data_hora else '-' }}</div>
                                                                     </div>
@@ -903,7 +1164,7 @@
                             </tr>
                         {% else %}
                             <tr>
-                                <td colspan="7" class="py-4 text-muted">Nenhum log encontrado para os filtros aplicados.</td>
+                                <td colspan="8" class="py-4 text-muted">Nenhum log encontrado para os filtros aplicados.</td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -911,6 +1172,75 @@
             </div>
         </div>
     </div>
+
+    {% if can_edit_logs %}
+        {% for log in logs %}
+            <div class="modal fade" id="modalCorrigirKmLog{{ log.id }}" tabindex="-1" aria-labelledby="modalCorrigirKmLog{{ log.id }}Label" aria-hidden="true">
+                <div class="modal-dialog modal-lg modal-dialog-centered">
+                    <div class="modal-content border-0 shadow rounded-4">
+                        <form method="POST" action="{{ url_for('main.corrigir_log_veiculo', log_id=log.id, page=paginacao.page, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}">
+                            <div class="modal-header border-0 pb-0">
+                                <div>
+                                    <h5 class="modal-title fw-bold" id="modalCorrigirKmLog{{ log.id }}Label">Corrigir KM do log #{{ log.id }}</h5>
+                                    <div class="small text-muted">
+                                        {{ log.veiculo.modelo if log.veiculo else 'Veiculo' }}{% if log.veiculo and log.veiculo.placa %} - {{ log.veiculo.placa }}{% endif %}
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="alert alert-warning small">
+                                    Ajuste apenas quando houver erro de preenchimento. O KM atual do veiculo sera recalculado com base nos logs salvos.
+                                </div>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold text-muted">KM inicial</label>
+                                        <input type="number" step="1" min="0" name="km_inicial" class="form-control" value="{{ log.km_inicial if log.km_inicial is not none else '' }}" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold text-muted">KM final</label>
+                                        <input type="number" step="1" min="0" name="km_final" class="form-control" value="{{ log.km_final if log.km_final is not none else '' }}" placeholder="Deixe vazio se o turno estiver aberto">
+                                    </div>
+                                    {% if log.abastecimentos_ordenados %}
+                                        <div class="col-12">
+                                            <hr class="my-2">
+                                            <div class="small fw-bold text-muted mb-2">Abastecimentos do turno</div>
+                                        </div>
+                                        {% for abastecimento in log.abastecimentos_ordenados %}
+                                            <div class="col-md-6">
+                                                <label class="form-label small fw-bold text-muted">
+                                                    KM abastecimento #{{ abastecimento.id }}
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    step="1"
+                                                    min="0"
+                                                    name="abastecimento_{{ abastecimento.id }}_km"
+                                                    class="form-control"
+                                                    value="{{ abastecimento.km_registro if abastecimento.km_registro is not none else '' }}"
+                                                    required
+                                                >
+                                                <div class="form-text">
+                                                    {{ abastecimento.data_hora.strftime('%d/%m/%Y %H:%M') if abastecimento.data_hora else '-' }}
+                                                    {% if abastecimento.tipo_abastecimento %} | {{ abastecimento.tipo_abastecimento }}{% endif %}
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="modal-footer border-0">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="bi bi-save me-1"></i> Salvar correção
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% endif %}
 
     {% if paginacao and paginacao.pages > 1 %}
     <nav class="mt-4 veiculos-logs-pagination">
@@ -935,5 +1265,233 @@
         </ul>
     </nav>
     {% endif %}
+    </div>
+
+    {% if false %}
+    <div class="tab-pane fade" id="tabLogsVeiculos" role="tabpanel" aria-labelledby="tabLogsVeiculosBtn" tabindex="0">
+        {% if veiculos_timeline %}
+            {% for item in veiculos_timeline %}
+                {% set v = item.veiculo %}
+                {% set vehicle_dom_id = v.id if v else loop.index %}
+                <div class="vehicle-history-card">
+                    <div class="vehicle-history-card-header">
+                        <div>
+                            <h5 class="vehicle-timeline-title mb-1">
+                                <i class="bi bi-truck-front-fill text-primary me-2"></i>{{ v.modelo if v else 'Veiculo' }}
+                            </h5>
+                            <div class="vehicle-timeline-meta">
+                                <span>Placa: {{ v.placa if v else '-' }}</span>
+                                {% if v and v.responsavel %}<span>Responsavel: {{ v.responsavel }}</span>{% endif %}
+                                {% if v and v.equipe %}<span>Equipe: {{ v.equipe.nome_equipe }}</span>{% endif %}
+                            </div>
+                        </div>
+                        <div class="vehicle-history-summary">
+                            <span class="timeline-chip">{{ item.total_logs }} turno(s)</span>
+                            <span class="timeline-chip">{{ (item.total_km or 0)|round|int }} km</span>
+                            <span class="timeline-chip">R$ {{ '%.2f'|format(item.total_gasto or 0) }}</span>
+                            <span class="timeline-chip">{{ item.total_abastecimentos }} abastecimento(s)</span>
+                            <button class="btn btn-sm btn-outline-primary rounded-pill px-3" type="button" data-bs-toggle="collapse" data-bs-target="#historicoVeiculo{{ vehicle_dom_id }}" aria-expanded="false" aria-controls="historicoVeiculo{{ vehicle_dom_id }}">
+                                <i class="bi bi-clock-history me-1"></i> Abrir historico
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="collapse" id="historicoVeiculo{{ vehicle_dom_id }}">
+                    {% for dia in item.dias %}
+                        <div class="vehicle-day-card">
+                            <div class="vehicle-day-header">
+                                <div>
+                                    <div class="fw-bold text-dark">{{ dia.dia.strftime('%d/%m/%Y') }}</div>
+                                    <div class="small text-muted">{{ dia.logs }} turno(s) neste dia</div>
+                                </div>
+                                <div class="vehicle-history-summary">
+                                    <span class="timeline-chip">{{ (dia.km_rodado or 0)|round|int }} km rodados</span>
+                                    <span class="timeline-chip">R$ {{ '%.2f'|format(dia.gasto or 0) }}</span>
+                                    <span class="timeline-chip">{{ dia.abastecimentos }} abastecimento(s)</span>
+                                </div>
+                            </div>
+                            <div class="vehicle-day-body">
+                                {% for turno in dia.turnos %}
+                                    <div class="vehicle-turno-card">
+                                        <button class="vehicle-turno-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#timelineVeiculo{{ vehicle_dom_id }}Turno{{ turno.id }}" aria-expanded="{{ 'true' if loop.first else 'false' }}" aria-controls="timelineVeiculo{{ vehicle_dom_id }}Turno{{ turno.id }}">
+                                            <div>
+                                                <div class="fw-bold text-dark">Turno #{{ turno.id }} | {{ turno.operador }}</div>
+                                                <div class="small text-muted">
+                                                    {{ turno.data_inicio.strftime('%H:%M') if turno.data_inicio else '-' }}
+                                                    | {{ (turno.km_inicial or 0)|round|int }} -> {{ (turno.km_final or 0)|round|int }} km
+                                                </div>
+                                            </div>
+                                            <div class="vehicle-history-summary">
+                                                <span class="timeline-chip">{{ turno.status }}</span>
+                                                <span class="timeline-chip">{{ (turno.km_rodado or 0)|round|int }} km</span>
+                                                <span class="timeline-chip">R$ {{ '%.2f'|format(turno.gasto or 0) }}</span>
+                                            </div>
+                                        </button>
+                                        <div class="collapse {% if loop.first %}show{% endif %}" id="timelineVeiculo{{ vehicle_dom_id }}Turno{{ turno.id }}">
+                                            <div class="vehicle-turno-body">
+                                                <div class="vehicle-timeline">
+                                                    <div class="timeline-event">
+                                                        <div class="timeline-marker"><i class="bi bi-flag-fill"></i></div>
+                                                        <div class="timeline-card">
+                                                            <div class="timeline-event-header mb-0">
+                                                                <div>
+                                                                    <div class="timeline-kicker">Inicio</div>
+                                                                    <div class="timeline-title">Inicio do turno</div>
+                                                                </div>
+                                                                <div class="timeline-time">{{ turno.data_inicio.strftime('%d/%m/%Y %H:%M') if turno.data_inicio else '-' }}</div>
+                                                            </div>
+                                                            <div class="timeline-metrics mt-3 mb-0">
+                                                                <div class="timeline-metric">
+                                                                    <span class="timeline-label">KM inicial</span>
+                                                                    <span class="timeline-value">{{ (turno.km_inicial or 0)|round|int }} km</span>
+                                                                </div>
+                                                            </div>
+                                                            {% if turno.foto_painel_path %}
+                                                                {% set timeline_painel_inicial_url = url_for('main.veiculo_log_midia_skybox', log_id=turno.id, tipo='painel-inicial') %}
+                                                                <div class="timeline-media-grid mt-3">
+                                                                    <div class="timeline-media">
+                                                                        <div class="timeline-media-title">
+                                                                            <span>Painel inicial</span>
+                                                                            <a href="{{ timeline_painel_inicial_url }}" target="_blank">Abrir</a>
+                                                                        </div>
+                                                                        <img src="{{ timeline_painel_inicial_url }}" alt="Foto do painel inicial">
+                                                                    </div>
+                                                                </div>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+
+                                                    {% for abastecimento in turno.eventos_abastecimento %}
+                                                        <div class="timeline-event">
+                                                            <div class="timeline-marker timeline-marker-success"><i class="bi bi-fuel-pump-fill"></i></div>
+                                                            <div class="timeline-card">
+                                                                <div class="timeline-event-header">
+                                                                    <div>
+                                                                        <div class="timeline-kicker">Abastecimento</div>
+                                                                        <div class="timeline-title">Abastecimento</div>
+                                                                    </div>
+                                                                    <div class="timeline-time">{{ abastecimento.data.strftime('%d/%m/%Y %H:%M') if abastecimento.data else '-' }}</div>
+                                                                </div>
+                                                                <div class="timeline-metrics mb-0">
+                                                                    <div class="timeline-metric">
+                                                                        <span class="timeline-label">KM</span>
+                                                                        <span class="timeline-value">{{ (abastecimento.km or 0)|round|int }} km</span>
+                                                                    </div>
+                                                                    <div class="timeline-metric">
+                                                                        <span class="timeline-label">Litros</span>
+                                                                        <span class="timeline-value">{{ '%.2f'|format(abastecimento.litros or 0) }}</span>
+                                                                    </div>
+                                                                    <div class="timeline-metric">
+                                                                        <span class="timeline-label">Valor</span>
+                                                                        <span class="timeline-value">R$ {{ '%.2f'|format(abastecimento.valor or 0) }}</span>
+                                                                    </div>
+                                                                </div>
+                                                                {% if abastecimento.foto_painel_path or abastecimento.foto_nf_path %}
+                                                                    <div class="timeline-media-grid mt-3">
+                                                                        {% if abastecimento.foto_painel_path %}
+                                                                            {% set timeline_painel_abastecimento_url = url_for('main.veiculo_abastecimento_midia_skybox', abastecimento_id=abastecimento.id, tipo='painel') %}
+                                                                            <div class="timeline-media">
+                                                                                <div class="timeline-media-title">
+                                                                                    <span>Painel no abastecimento</span>
+                                                                                    <a href="{{ timeline_painel_abastecimento_url }}" target="_blank">Abrir</a>
+                                                                                </div>
+                                                                                <img src="{{ timeline_painel_abastecimento_url }}" alt="Foto do painel no abastecimento">
+                                                                            </div>
+                                                                        {% endif %}
+                                                                        {% if abastecimento.foto_nf_path %}
+                                                                            {% set timeline_nota_url = url_for('main.veiculo_abastecimento_midia_skybox', abastecimento_id=abastecimento.id, tipo='nota') %}
+                                                                            <div class="timeline-media">
+                                                                                <div class="timeline-media-title">
+                                                                                    <span>Nota fiscal</span>
+                                                                                    <a href="{{ timeline_nota_url }}" target="_blank">Abrir</a>
+                                                                                </div>
+                                                                                <img src="{{ timeline_nota_url }}" alt="Foto da nota fiscal">
+                                                                            </div>
+                                                                        {% endif %}
+                                                                    </div>
+                                                                {% endif %}
+                                                            </div>
+                                                        </div>
+                                                    {% else %}
+                                                        <div class="timeline-event">
+                                                            <div class="timeline-marker timeline-marker-success"><i class="bi bi-fuel-pump"></i></div>
+                                                            <div class="timeline-card">
+                                                                <div class="timeline-title">Sem abastecimentos neste turno</div>
+                                                            </div>
+                                                        </div>
+                                                    {% endfor %}
+
+                                                    <div class="timeline-event">
+                                                        <div class="timeline-marker timeline-marker-dark"><i class="bi bi-check2-circle"></i></div>
+                                                        <div class="timeline-card">
+                                                            <div class="timeline-event-header">
+                                                                <div>
+                                                                    <div class="timeline-kicker">Fechamento</div>
+                                                                    <div class="timeline-title">{{ 'Turno ainda em aberto' if turno.status == 'Aberto' else 'Fechamento do turno' }}</div>
+                                                                </div>
+                                                                <div class="timeline-time">{{ turno.data.strftime('%d/%m/%Y %H:%M') if turno.data else '-' }}</div>
+                                                            </div>
+                                                            <div class="timeline-metrics">
+                                                                <div class="timeline-metric">
+                                                                    <span class="timeline-label">KM final</span>
+                                                                    <span class="timeline-value">{{ (turno.km_final or 0)|round|int }} km</span>
+                                                                </div>
+                                                                <div class="timeline-metric">
+                                                                    <span class="timeline-label">Rodado</span>
+                                                                    <span class="timeline-value">{{ (turno.km_rodado or 0)|round|int }} km</span>
+                                                                </div>
+                                                                <div class="timeline-metric">
+                                                                    <span class="timeline-label">Atendimentos</span>
+                                                                    <span class="timeline-value">{{ turno.qtd_fazendas_enderecos or 0 }}</span>
+                                                                </div>
+                                                            </div>
+                                                            <div class="timeline-notes mb-0">
+                                                                <strong>Observacoes:</strong> {{ turno.observacao or 'Sem observacoes.' }}
+                                                            </div>
+                                                            {% if turno.foto_painel_final_path or turno.assinatura_piloto %}
+                                                                <div class="timeline-media-grid mt-3">
+                                                                    {% if turno.foto_painel_final_path %}
+                                                                        {% set timeline_painel_final_url = url_for('main.veiculo_log_midia_skybox', log_id=turno.id, tipo='painel-final') %}
+                                                                        <div class="timeline-media">
+                                                                            <div class="timeline-media-title">
+                                                                                <span>Painel final</span>
+                                                                                <a href="{{ timeline_painel_final_url }}" target="_blank">Abrir</a>
+                                                                            </div>
+                                                                            <img src="{{ timeline_painel_final_url }}" alt="Foto do painel final">
+                                                                        </div>
+                                                                    {% endif %}
+                                                                    {% if turno.assinatura_piloto %}
+                                                                        <div class="timeline-media timeline-signature">
+                                                                            <div class="timeline-media-title">
+                                                                                <span>Assinatura</span>
+                                                                            </div>
+                                                                            <img src="{{ turno.assinatura_piloto }}" alt="Assinatura do piloto">
+                                                                        </div>
+                                                                    {% endif %}
+                                                                </div>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body text-center text-muted py-5">
+                    Nenhum veiculo com logs encontrado para os filtros aplicados.
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    {% endif %}
+    </div>
 </div>
 {% endblock %}
