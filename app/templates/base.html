@@ -1061,29 +1061,6 @@
           {% endif %}
           {% endif %}
 
-          {% if not is_agro_context and current_user.tipo_usuario in ['dev', 'admin'] %}
-          <li class="nav-item">
-            <a
-              id="supportNavLink"
-              class="nav-link {% if request.endpoint in ['main.feedback_listar', 'main.feedback_novo', 'main.feedback_detalhe'] %}active{% endif %}"
-              href="{{ url_for('main.feedback_listar') }}"
-            >
-              <i class="bi bi-headset me-2"></i><span>Suporte</span>
-              <span
-                id="supportNavBadge"
-                class="badge rounded-pill bg-danger ms-auto support-alert-badge {% if not support_nav_count %}d-none{% endif %}"
-                data-notifications-enabled="{{ '1' if feedback_notifications_enabled else '0' }}"
-                {% if feedback_notifications_enabled %}
-                data-status-url="{{ url_for('main.feedback_notificacoes_status') }}"
-                {% endif %}
-                data-initial-count="{{ support_nav_count or 0 }}"
-                data-initial-latest-id="{{ support_nav_latest_id or 0 }}"
-                data-user-key="{{ current_user.id }}"
-                aria-label="{{ support_nav_count or 0 }} chamados ativos"
-              >{{ '99+' if support_nav_count and support_nav_count > 99 else (support_nav_count or 0) }}</span>
-            </a>
-          </li>
-          {% elif not is_agro_context and current_user.tipo_usuario in ['regional', 'uvis', 'equipe_uvis'] %}
           <li class="nav-item">
             <span
               class="nav-link disabled feedback-placeholder-link"
@@ -1096,7 +1073,6 @@
               <small class="feedback-placeholder-note">Em Desenvolvimento</small>
             </span>
           </li>
-          {% endif %}
           <div class="sidebar-footer mt-auto p-3 text-center">
             <div id="install-container" style="display: none">
               <button
@@ -1254,130 +1230,10 @@
             const contextButtons = document.querySelectorAll("[data-admin-context]");
             const contextStorageKey = "oa_admin_context_mode";
             const serverContextMode = "{{ 'agro' if is_agro_context else 'uvis_prefeitura' }}";
-            const supportNavBadge = document.getElementById("supportNavBadge");
             const contextLabels = {
                 uvis_prefeitura: "UVIS/PREFEITURA",
                 agro: "AGRO",
             };
-
-            function setupSupportNotifications() {
-                if (!supportNavBadge) return;
-                if (supportNavBadge.dataset.notificationsEnabled !== "1") return;
-
-                const statusUrl = supportNavBadge.dataset.statusUrl;
-                const userKey = supportNavBadge.dataset.userKey || "anon";
-                const storageKey = `ijaSupportLatest:${userKey}`;
-                let latestKnown = Math.max(
-                    Number(localStorage.getItem(storageKey) || 0),
-                    Number(supportNavBadge.dataset.initialLatestId || 0)
-                );
-                let audioContext = null;
-                let audioUnlocked = false;
-
-                try {
-                    localStorage.setItem(storageKey, String(latestKnown));
-                } catch (error) {
-                    // ignore
-                }
-
-                function formatCount(count) {
-                    const normalized = Math.max(0, Number(count) || 0);
-                    return normalized > 99 ? "99+" : String(normalized);
-                }
-
-                function updateSupportBadge(count) {
-                    const normalized = Math.max(0, Number(count) || 0);
-                    supportNavBadge.textContent = formatCount(normalized);
-                    supportNavBadge.setAttribute("aria-label", `${normalized} chamados ativos`);
-                    supportNavBadge.classList.toggle("d-none", normalized <= 0);
-                }
-
-                function unlockSupportAudio() {
-                    if (audioUnlocked) return;
-                    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-                    if (!AudioContextClass) return;
-
-                    try {
-                        audioContext = audioContext || new AudioContextClass();
-                        if (audioContext.state === "suspended") {
-                            audioContext.resume().catch(() => {});
-                        }
-                        audioUnlocked = true;
-                    } catch (error) {
-                        audioUnlocked = false;
-                    }
-                }
-
-                function playSupportTone() {
-                    if (!audioUnlocked) return;
-                    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-                    if (!AudioContextClass) return;
-
-                    try {
-                        const ctx = audioContext || new AudioContextClass();
-                        audioContext = ctx;
-                        const now = ctx.currentTime;
-                        const gain = ctx.createGain();
-                        const oscillator = ctx.createOscillator();
-
-                        oscillator.type = "sine";
-                        oscillator.frequency.setValueAtTime(880, now);
-                        oscillator.frequency.exponentialRampToValueAtTime(660, now + 0.22);
-                        gain.gain.setValueAtTime(0.0001, now);
-                        gain.gain.exponentialRampToValueAtTime(0.16, now + 0.03);
-                        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
-                        oscillator.connect(gain);
-                        gain.connect(ctx.destination);
-                        oscillator.start(now);
-                        oscillator.stop(now + 0.3);
-                    } catch (error) {
-                        // ignore
-                    }
-                }
-
-                function handleSupportSnapshot(payload, shouldNotify) {
-                    const count = Number(payload?.count || 0);
-                    const latestId = Number(payload?.latest_id || 0);
-                    const hasNewTicket = latestId > latestKnown;
-
-                    updateSupportBadge(count);
-
-                    if (hasNewTicket) {
-                        latestKnown = latestId;
-                        try {
-                            localStorage.setItem(storageKey, String(latestKnown));
-                        } catch (error) {
-                            // ignore
-                        }
-                        if (shouldNotify) {
-                            playSupportTone();
-                        }
-                    }
-                }
-
-                async function pollSupportNotifications() {
-                    if (!statusUrl) return;
-                    try {
-                        const response = await fetch(statusUrl, {
-                            headers: { "Accept": "application/json" },
-                            cache: "no-store",
-                        });
-                        const payload = await response.json().catch(() => ({}));
-                        if (!response.ok || !payload.success) return;
-                        handleSupportSnapshot(payload, true);
-                    } catch (error) {
-                        // ignore
-                    }
-                }
-
-                ["click", "keydown", "touchstart"].forEach((eventName) => {
-                    document.addEventListener(eventName, unlockSupportAudio, { once: true, passive: true });
-                });
-
-                updateSupportBadge(Number(supportNavBadge.dataset.initialCount || 0));
-                window.setTimeout(pollSupportNotifications, 3500);
-                window.setInterval(pollSupportNotifications, 15000);
-            }
 
             function readContextMode() {
                 return serverContextMode === "agro" ? "agro" : "uvis_prefeitura";
@@ -1466,7 +1322,6 @@
 
             applyContextMode(readContextMode(), false);
             writeContextMode(serverContextMode);
-            setupSupportNotifications();
             contextButtons.forEach((button) => {
                 button.addEventListener("click", () => {
                     const mode = button.dataset.adminContext || "uvis_prefeitura";
