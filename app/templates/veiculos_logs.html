@@ -193,6 +193,11 @@
         box-shadow: 0 0 0 1px #bbf7d0;
     }
 
+    .timeline-marker-info {
+        background: #0dcaf0;
+        box-shadow: 0 0 0 1px #bae6fd;
+    }
+
     .timeline-marker-dark {
         background: #334155;
         box-shadow: 0 0 0 1px #cbd5e1;
@@ -988,6 +993,8 @@
                                                     <div class="vehicle-timeline-summary">
                                                         <span class="timeline-chip">{{ log.qtd_abastecimentos }} abastecimento(s)</span>
                                                         <span class="timeline-chip">R$ {{ '%.2f'|format(log.total_valor_abastecido) if log.teve_abastecimento else '0.00' }}</span>
+                                                        <span class="timeline-chip">{{ log.qtd_limpezas }} limpeza(s)</span>
+                                                        <span class="timeline-chip">Limpeza R$ {{ '%.2f'|format(log.total_valor_limpeza) if log.teve_limpeza else '0.00' }}</span>
                                                         {% if log.km_final is none %}
                                                             <span class="timeline-chip text-warning">Turno aberto</span>
                                                         {% else %}
@@ -1105,6 +1112,45 @@
                                                                 </div>
                                                             </div>
                                                         </div>
+                                                    {% endif %}
+
+                                                    {% if log.limpezas_ordenadas %}
+                                                        {% for limpeza in log.limpezas_ordenadas %}
+                                                            <div class="timeline-event">
+                                                                <div class="timeline-marker timeline-marker-info"><i class="bi bi-droplet-half"></i></div>
+                                                                <div class="timeline-card">
+                                                                    <div class="timeline-event-header">
+                                                                        <div>
+                                                                            <div class="timeline-kicker">Limpeza</div>
+                                                                            <div class="timeline-title">
+                                                                                {{ 'Limpeza realizada' if limpeza.limpeza_realizada else 'Limpeza nao realizada' }}
+                                                                            </div>
+                                                                        </div>
+                                                                        <div class="timeline-time">Limpeza em {{ limpeza.data_hora.strftime('%d/%m/%Y %H:%M') if limpeza.data_hora else '-' }}</div>
+                                                                    </div>
+                                                                    <div class="timeline-metrics">
+                                                                        <div class="timeline-metric">
+                                                                            <span class="timeline-label">Registrado em</span>
+                                                                            <span class="timeline-value">{{ limpeza.data_registro.strftime('%d/%m/%Y %H:%M') if limpeza.data_registro else '-' }}</span>
+                                                                        </div>
+                                                                        <div class="timeline-metric">
+                                                                            <span class="timeline-label">Tipo</span>
+                                                                            <span class="timeline-value">{{ 'Completa' if limpeza.tipo_limpeza == 'completa' else 'Apenas ducha' }}</span>
+                                                                        </div>
+                                                                        <div class="timeline-metric">
+                                                                            <span class="timeline-label">Valor</span>
+                                                                            <span class="timeline-value">R$ {{ '%.2f'|format(limpeza.valor_total or 0) }}</span>
+                                                                        </div>
+                                                                        {% if limpeza.observacao %}
+                                                                        <div class="timeline-metric">
+                                                                            <span class="timeline-label">Obs.</span>
+                                                                            <span class="timeline-value">{{ limpeza.observacao }}</span>
+                                                                        </div>
+                                                                        {% endif %}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        {% endfor %}
                                                     {% endif %}
 
                                                     <div class="timeline-event">
@@ -1482,6 +1528,41 @@
                                                             <div class="timeline-marker timeline-marker-success"><i class="bi bi-fuel-pump"></i></div>
                                                             <div class="timeline-card">
                                                                 <div class="timeline-title">Sem abastecimentos neste turno</div>
+                                                            </div>
+                                                        </div>
+                                                    {% endfor %}
+
+                                                    {% for limpeza in turno.eventos_limpeza %}
+                                                        <div class="timeline-event">
+                                                            <div class="timeline-marker timeline-marker-info"><i class="bi bi-droplet-half"></i></div>
+                                                            <div class="timeline-card">
+                                                                <div class="timeline-event-header">
+                                                                    <div>
+                                                                        <div class="timeline-kicker">Limpeza</div>
+                                                                        <div class="timeline-title">{{ 'Limpeza realizada' if limpeza.realizada else 'Limpeza nao realizada' }}</div>
+                                                                    </div>
+                                                                    <div class="timeline-time">Limpeza em {{ limpeza.data.strftime('%d/%m/%Y %H:%M') if limpeza.data else '-' }}</div>
+                                                                </div>
+                                                                <div class="timeline-metrics">
+                                                                    <div class="timeline-metric">
+                                                                        <span class="timeline-label">Registrado em</span>
+                                                                        <span class="timeline-value">{{ limpeza.data_registro.strftime('%d/%m/%Y %H:%M') if limpeza.data_registro else '-' }}</span>
+                                                                    </div>
+                                                                    <div class="timeline-metric">
+                                                                        <span class="timeline-label">Tipo</span>
+                                                                        <span class="timeline-value">{{ limpeza.tipo_label }}</span>
+                                                                    </div>
+                                                                    <div class="timeline-metric">
+                                                                        <span class="timeline-label">Valor</span>
+                                                                        <span class="timeline-value">R$ {{ '%.2f'|format(limpeza.valor or 0) }}</span>
+                                                                    </div>
+                                                                    {% if limpeza.observacao %}
+                                                                    <div class="timeline-metric">
+                                                                        <span class="timeline-label">Obs.</span>
+                                                                        <span class="timeline-value">{{ limpeza.observacao }}</span>
+                                                                    </div>
+                                                                    {% endif %}
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     {% endfor %}

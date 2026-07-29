@@ -415,11 +415,6 @@
         </div>
       </div>
 
-      <div class="topic-divider">Limpeza</div>
-      <div class="check-grid">
-        {{ bool_choice('limpeza_veiculo_realizada', 'Limpeza do veiculo realizada', 'group_limpeza_veiculo', 'REALIZADA', 'NAO REALIZADA') }}
-      </div>
-
       <div class="topic-divider">Luzes direcao / iluminacao</div>
       <div class="check-grid">
         {{ bool_choice('farois_funcionando', 'Farois', 'group_luzes') }}
@@ -572,11 +567,6 @@
         </div>
       </div>
 
-      <div class="topic-divider">Limpeza semanal</div>
-      <div class="check-grid">
-        {{ bool_choice('limpeza_equipamento_realizada', 'Limpeza do equipamento realizada', 'group_limpeza_drone', 'REALIZADA', 'NAO REALIZADA') }}
-      </div>
-
       <div class="topic-divider">Helices</div>
       <div class="check-grid">
         {{ bool_choice('helices_status', 'Helices', 'group_helices') }}
@@ -666,7 +656,6 @@
   const dronePrefill = {{ drone_prefill|tojson }};
 
   const veiculoBoolFields = {{ [
-    'limpeza_veiculo_realizada',
     'farois_funcionando', 'setas_funcionando', 'lanternas_funcionando', 'piscaalerta_funcionando',
     'luz_painel', 'limpador_parabrisa', 'agua_radiador', 'fluido_freio', 'oleo_motor',
     'vidros', 'retrovisores', 'pneus', 'estepe', 'macaco', 'triangulo', 'chave_roda',
@@ -684,7 +673,6 @@
   ]|tojson }};
 
   const droneBoolFields = {{ [
-    'limpeza_equipamento_realizada',
     'helices_status', 'tanque', 'trem_pouso', 'cameras',
     'carregador_controle', 'baterias', 'cabos_carregador', 'correia_pescoco'
   ]|tojson }};
@@ -695,7 +683,6 @@
   ]|tojson }};
 
   const groupIds = [
-    'group_limpeza_veiculo',
     'group_luzes',
     'group_painel',
     'group_manutencao',
@@ -707,7 +694,6 @@
     'group_lataria',
     'group_portas',
     'group_externo',
-    'group_limpeza_drone',
     'group_helices',
     'group_estrutura',
     'group_carga',
