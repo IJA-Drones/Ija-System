@@ -2262,6 +2262,7 @@ class ChecklistSemanalVeiculo(db.Model):
     equipe_id = db.Column(db.Integer, db.ForeignKey("equipes.id"), nullable=True, index=True)
     data_registro = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
     km_leitura = db.Column(db.Float, nullable=False)
+    limpeza_veiculo_realizada = db.Column(db.Boolean, default=True)
 
     # Luzes direção / iluminação
     farois_funcionando = db.Column(db.Boolean, default=True)
@@ -2343,6 +2344,7 @@ class ChecklistSemanalDrone(db.Model):
     piloto_id = db.Column(db.Integer, db.ForeignKey("pilotos.id"), nullable=True, index=True)
     equipe_id = db.Column(db.Integer, db.ForeignKey("equipes.id"), nullable=True, index=True)
     data_registro = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+    limpeza_equipamento_realizada = db.Column(db.Boolean, default=True)
 
     # Itens do Drone
     helices_status = db.Column(db.Boolean, default=True) # CW e CCW funcional/defeituoso
