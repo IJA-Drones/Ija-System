@@ -58,6 +58,7 @@ FEEDBACK_MODERATOR_TYPES = {"dev", "admin"}
 FEEDBACK_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg"}
 FEEDBACK_IMAGE_CONTENT_TYPES = {"image/png", "image/jpeg"}
 FEEDBACK_MAX_IMAGES_PER_COMMENT = 6
+FEEDBACK_NOTIFICATIONS_ENABLED = False
 
 
 STATUS_LABELS = dict(FEEDBACK_STATUS_OPTIONS)
@@ -247,6 +248,12 @@ def build_feedback_counts(user):
 
 
 def build_support_notification_snapshot(user):
+    if not FEEDBACK_NOTIFICATIONS_ENABLED:
+        return {
+            "count": 0,
+            "latest_id": 0,
+        }
+
     query = build_feedback_query(user).filter(FeedbackTopico.status.in_(FEEDBACK_ACTIVE_STATUSES))
     count = query.with_entities(func.count(FeedbackTopico.id)).scalar() or 0
     latest_id = query.with_entities(func.max(FeedbackTopico.id)).scalar() or 0

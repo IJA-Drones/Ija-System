@@ -4,6 +4,7 @@ from sqlalchemy.orm import joinedload
 
 from app.extensions import db
 from app.models import ChecklistSemanalDrone, ChecklistSemanalVeiculo, Drones, Equipe, Pilotos, Veiculos
+from app.modules.agenda_notificacoes import agora_brasilia_naive
 from app.shared.query_filters import id_search_clause
 
 
@@ -389,7 +390,7 @@ def build_admin_checklists_weekly_groups(q: str, data_inicio: str, data_fim: str
 
 
 def build_admin_checklists_totals(groups):
-    today = datetime.now().date()
+    today = agora_brasilia_naive().date()
     week_start = today - timedelta(days=today.weekday())
 
     return {

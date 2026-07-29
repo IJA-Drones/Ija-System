@@ -2157,6 +2157,11 @@ class LogVeiculo(db.Model):
         back_populates="log_pai", 
         cascade="all, delete-orphan"
     )
+    limpezas_detalhadas = db.relationship(
+        "LimpezaVeiculo",
+        back_populates="log_pai",
+        cascade="all, delete-orphan",
+    )
     
     # Relacionamentos
     veiculo = db.relationship(
@@ -2203,11 +2208,35 @@ class LogVeiculo(db.Model):
         return sum((item.valor_total or 0) for item in (self.abastecimentos_detalhados or []))
 
     @property
+    def limpezas_ordenadas(self):
+        return sorted(
+            self.limpezas_detalhadas or [],
+            key=lambda item: item.data_hora or self.data_registro or datetime.min
+        )
+
+    @property
+    def teve_limpeza(self):
+        return bool(self.limpezas_detalhadas)
+
+    @property
+    def qtd_limpezas(self):
+        return len(self.limpezas_detalhadas or [])
+
+    @property
+    def total_valor_limpeza(self):
+        return sum((float(item.valor_total or 0)) for item in (self.limpezas_detalhadas or []))
+
+    @property
     def ultima_movimentacao_em(self):
         datas = [self.data_registro] if self.data_registro else []
         datas.extend(
             item.data_hora
             for item in (self.abastecimentos_detalhados or [])
+            if item.data_hora is not None
+        )
+        datas.extend(
+            item.data_hora
+            for item in (self.limpezas_detalhadas or [])
             if item.data_hora is not None
         )
         return max(datas) if datas else None
@@ -2248,6 +2277,32 @@ class Abastecimento(db.Model):
     
     # Relacionamento
     log_pai = db.relationship("LogVeiculo", back_populates="abastecimentos_detalhados")
+
+
+# -------------------------------------------------------------
+# LIMPEZAS DE VEICULO (registradas dentro do turno)
+# -------------------------------------------------------------
+class LimpezaVeiculo(db.Model):
+    __tablename__ = "limpezas_veiculo"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    log_veiculo_id = db.Column(db.Integer, db.ForeignKey("logs_veiculo.id"), nullable=False, index=True)
+    veiculo_id = db.Column(db.Integer, db.ForeignKey("veiculos.id"), nullable=False, index=True)
+    piloto_id = db.Column(db.Integer, db.ForeignKey("pilotos.id"), nullable=True, index=True)
+    equipe_id = db.Column(db.Integer, db.ForeignKey("equipes.id"), nullable=True, index=True)
+
+    data_registro = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+    data_hora = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+    limpeza_realizada = db.Column(db.Boolean, default=True, nullable=False)
+    tipo_limpeza = db.Column(db.String(30), nullable=False)
+    valor_total = db.Column(db.Numeric(10, 2), nullable=True)
+    observacao = db.Column(db.Text)
+
+    log_pai = db.relationship("LogVeiculo", back_populates="limpezas_detalhadas")
+    veiculo = db.relationship("Veiculos", backref=db.backref("limpezas", lazy="select"))
+    piloto = db.relationship("Pilotos", backref=db.backref("limpezas_veiculo", lazy="select"))
+    equipe = db.relationship("Equipe", backref=db.backref("limpezas_veiculo", lazy="select"))
 # -------------------------------------------------------------
 # CHECKLIST SEMANAL DE VEÍCULO
 # -------------------------------------------------------------

@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 
 from flask import url_for
 from sqlalchemy.orm import joinedload
@@ -130,7 +130,7 @@ def build_piloto_checklist_context(user, args):
         "drone_prefill": state["drone_prefill"],
         "semana_inicio": week_bounds["inicio"].strftime("%d/%m/%Y"),
         "semana_fim": week_bounds["fim"].strftime("%d/%m/%Y"),
-        "agora": datetime.now().strftime("%d/%m/%Y %H:%M"),
+        "agora": agora_brasilia_naive().strftime("%d/%m/%Y %H:%M"),
     }
 
 
@@ -364,7 +364,7 @@ def _save_vehicle_checklist(user, veiculo_id, veiculos_equipe, form_data, assina
         )
         db.session.add(checklist)
 
-    checklist.data_registro = datetime.now()
+    checklist.data_registro = agora_brasilia_naive()
     checklist.km_leitura = float(veiculo.km_atual or 0)
 
     for field in CHECKLIST_VEICULO_BOOL_FIELDS:
@@ -394,7 +394,7 @@ def _save_drone_checklist(user, drone_id, baterias_por_drone, form_data, assinat
         )
         db.session.add(checklist)
 
-    checklist.data_registro = datetime.now()
+    checklist.data_registro = agora_brasilia_naive()
 
     for field in CHECKLIST_DRONE_BOOL_FIELDS:
         setattr(checklist, field, _bool_from_form(form_data.get(field), default=True))
@@ -671,7 +671,7 @@ def _to_int(value):
 
 
 def _week_bounds():
-    hoje = date.today()
+    hoje = agora_brasilia_naive().date()
     inicio = hoje - timedelta(days=hoje.weekday())
     fim = inicio + timedelta(days=6)
     inicio_dt = datetime.combine(inicio, datetime.min.time())

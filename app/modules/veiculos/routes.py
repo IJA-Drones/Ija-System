@@ -30,6 +30,7 @@ from app.modules.veiculos.service import (
     list_veiculos_logs,
     list_responsaveis_choices,
     registrar_abastecimento_turno_piloto,
+    registrar_limpeza_turno_piloto,
     update_veiculo_log_km,
     update_veiculo,
     validate_veiculo_form,
@@ -188,7 +189,18 @@ def register_routes(bp):
         redirect_args = {
             key: value
             for key, value in request.args.items()
-            if key in {"page", "q", "data_inicio", "data_fim"}
+            if key in {
+                "page",
+                "q",
+                "data_inicio",
+                "data_fim",
+                "limpeza_realizada",
+                "tipo_limpeza",
+                "data_limpeza_inicio",
+                "data_limpeza_fim",
+                "valor_limpeza_min",
+                "valor_limpeza_max",
+            }
         }
         return_to = (request.args.get("return_to") or "").strip()
         veiculo_id = request.args.get("veiculo_id", type=int)
@@ -223,7 +235,18 @@ def register_routes(bp):
         redirect_args = {
             key: value
             for key, value in request.args.items()
-            if key in {"page", "q", "data_inicio", "data_fim"}
+            if key in {
+                "page",
+                "q",
+                "data_inicio",
+                "data_fim",
+                "limpeza_realizada",
+                "tipo_limpeza",
+                "data_limpeza_inicio",
+                "data_limpeza_fim",
+                "valor_limpeza_min",
+                "valor_limpeza_max",
+            }
         }
         try:
             flash(
@@ -434,6 +457,7 @@ def register_routes(bp):
             veiculos=context["veiculos"],
             turnos_abertos=context["turnos_abertos"],
             km_inicial_referencias=context["km_inicial_referencias"],
+            agora_brasilia=context["agora_brasilia"],
         )
 
     @bp.route("/piloto/veiculos/<int:veiculo_id>/km", methods=["POST"], endpoint="piloto_atualizar_km_veiculo")
@@ -491,6 +515,35 @@ def register_routes(bp):
             db.session.rollback()
             current_app.logger.exception("Erro tecnico ao registrar abastecimento do turno.")
             flash("Erro tecnico ao registrar abastecimento.", "danger")
+
+        return redirect(url_for("main.piloto_veiculos"))
+
+    @bp.route(
+        "/piloto/veiculos/<int:veiculo_id>/limpeza",
+        methods=["POST"],
+        endpoint="piloto_registrar_limpeza_turno",
+    )
+    @login_required
+    def piloto_registrar_limpeza_turno(veiculo_id):
+        _require_piloto()
+
+        try:
+            flash(
+                registrar_limpeza_turno_piloto(
+                    current_user,
+                    veiculo_id,
+                    request.form,
+                ),
+                "success",
+            )
+        except PermissionError:
+            abort(403)
+        except VeiculoTurnoError as exc:
+            flash(str(exc), exc.category)
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("Erro tecnico ao registrar limpeza do turno.")
+            flash("Erro tecnico ao registrar limpeza.", "danger")
 
         return redirect(url_for("main.piloto_veiculos"))
 

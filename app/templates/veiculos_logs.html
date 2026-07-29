@@ -193,6 +193,11 @@
         box-shadow: 0 0 0 1px #bbf7d0;
     }
 
+    .timeline-marker-info {
+        background: #0dcaf0;
+        box-shadow: 0 0 0 1px #bae6fd;
+    }
+
     .timeline-marker-dark {
         background: #334155;
         box-shadow: 0 0 0 1px #cbd5e1;
@@ -730,6 +735,7 @@
 
 {% block content %}
 <div class="container-fluid py-4 veiculos-logs-page">
+    {% set limpeza_filters_active = filters.limpeza_realizada or filters.tipo_limpeza or filters.data_limpeza_inicio or filters.data_limpeza_fim or filters.valor_limpeza_min or filters.valor_limpeza_max %}
     <div class="dashboard-header mb-4">
         <div style="margin-right: auto !important;">
             <h2 class="text-dark mb-1">
@@ -750,7 +756,13 @@
             <a href="{{ url_for('main.exportar_logs_veiculos_xlsx',
                                 q=filters.q,
                                 data_inicio=filters.data_inicio,
-                                data_fim=filters.data_fim) }}"
+                                data_fim=filters.data_fim,
+                                limpeza_realizada=filters.limpeza_realizada,
+                                tipo_limpeza=filters.tipo_limpeza,
+                                data_limpeza_inicio=filters.data_limpeza_inicio,
+                                data_limpeza_fim=filters.data_limpeza_fim,
+                                valor_limpeza_min=filters.valor_limpeza_min,
+                                valor_limpeza_max=filters.valor_limpeza_max) }}"
             class="btn btn-pill btn-secondary shadow-sm">
                 <i class="bi bi-file-earmark-excel-fill"></i> Exportar Excel
             </a>
@@ -770,6 +782,13 @@
                 <h3 class="fw-bold mb-0 text-success">R$ {{ '%.2f'|format(total_abastecido or 0) }}</h3>
             </div>
         </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-info border-4 bg-white">
+                <small class="text-muted fw-bold text-uppercase" style="font-size: 0.65rem;">Limpezas realizadas</small>
+                <h3 class="fw-bold mb-0 text-info">{{ total_limpezas_realizadas.quantidade or 0 }}</h3>
+                <div class="small text-muted">R$ {{ '%.2f'|format(total_limpezas_realizadas.valor_total or 0) }}</div>
+            </div>
+        </div>
     </div>
 
     <div class="card shadow-sm rounded-4 mb-4 border-0">
@@ -782,27 +801,59 @@
             <i class="bi bi-chevron-down text-muted"></i>
         </div>
 
-        <div class="collapse {% if filters.q or filters.data_inicio or filters.data_fim %}show{% endif %}" id="collapseFiltrosLogs">
+        <div class="collapse {% if filters.q or filters.data_inicio or filters.data_fim or limpeza_filters_active %}show{% endif %}" id="collapseFiltrosLogs">
             <div class="card-body pt-0 pb-4">
                 <form method="GET" class="row g-2 align-items-end">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="small text-muted">Veículo / Placa / Operador:</label>
                         <input type="text" name="q" value="{{ filters.q or '' }}" class="form-control" placeholder="Modelo, placa, responsável...">
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label class="small text-muted">Data inicial:</label>
                         <input type="date" name="data_inicio" value="{{ filters.data_inicio or '' }}" class="form-control">
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label class="small text-muted">Data final:</label>
                         <input type="date" name="data_fim" value="{{ filters.data_fim or '' }}" class="form-control">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="small text-muted">Status limpeza:</label>
+                        <select name="limpeza_realizada" class="form-select">
+                            <option value="">Todas</option>
+                            <option value="1" {% if filters.limpeza_realizada in ['1', 'com_limpeza'] %}selected{% endif %}>Limpeza realizada</option>
+                            <option value="0" {% if filters.limpeza_realizada in ['0', 'sem_limpeza'] %}selected{% endif %}>Limpeza nao realizada</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="small text-muted">Tipo limpeza:</label>
+                        <select name="tipo_limpeza" class="form-select">
+                            <option value="">Todos</option>
+                            <option value="completa" {% if filters.tipo_limpeza == 'completa' %}selected{% endif %}>Completa</option>
+                            <option value="ducha" {% if filters.tipo_limpeza == 'ducha' %}selected{% endif %}>Apenas ducha</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="small text-muted">Limpeza de:</label>
+                        <input type="date" name="data_limpeza_inicio" value="{{ filters.data_limpeza_inicio or '' }}" class="form-control">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="small text-muted">Limpeza ate:</label>
+                        <input type="date" name="data_limpeza_fim" value="{{ filters.data_limpeza_fim or '' }}" class="form-control">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="small text-muted">Valor min. limpeza:</label>
+                        <input type="text" inputmode="decimal" name="valor_limpeza_min" value="{{ filters.valor_limpeza_min or '' }}" class="form-control" placeholder="0,00">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="small text-muted">Valor max. limpeza:</label>
+                        <input type="text" inputmode="decimal" name="valor_limpeza_max" value="{{ filters.valor_limpeza_max or '' }}" class="form-control" placeholder="0,00">
                     </div>
                     <div class="col-md-2 d-flex gap-2 veiculos-logs-filter-actions">
                         <button class="btn btn-success w-100" type="submit">
                             <i class="bi bi-search"></i> Filtrar
                         </button>
                     </div>
-                    {% if filters.q or filters.data_inicio or filters.data_fim %}
+                    {% if filters.q or filters.data_inicio or filters.data_fim or limpeza_filters_active %}
                     <div class="col-md-2 d-flex gap-2 veiculos-logs-filter-actions">
                         <a href="{{ url_for('main.veiculos_logs') }}" class="btn btn-outline-secondary w-100">
                             <i class="bi bi-x-lg"></i> Limpar
@@ -988,6 +1039,8 @@
                                                     <div class="vehicle-timeline-summary">
                                                         <span class="timeline-chip">{{ log.qtd_abastecimentos }} abastecimento(s)</span>
                                                         <span class="timeline-chip">R$ {{ '%.2f'|format(log.total_valor_abastecido) if log.teve_abastecimento else '0.00' }}</span>
+                                                        <span class="timeline-chip">{{ log.qtd_limpezas }} limpeza(s)</span>
+                                                        <span class="timeline-chip">Limpeza R$ {{ '%.2f'|format(log.total_valor_limpeza) if log.teve_limpeza else '0.00' }}</span>
                                                         {% if log.km_final is none %}
                                                             <span class="timeline-chip text-warning">Turno aberto</span>
                                                         {% else %}
@@ -1107,6 +1160,45 @@
                                                         </div>
                                                     {% endif %}
 
+                                                    {% if log.limpezas_ordenadas %}
+                                                        {% for limpeza in log.limpezas_ordenadas %}
+                                                            <div class="timeline-event">
+                                                                <div class="timeline-marker timeline-marker-info"><i class="bi bi-droplet-half"></i></div>
+                                                                <div class="timeline-card">
+                                                                    <div class="timeline-event-header">
+                                                                        <div>
+                                                                            <div class="timeline-kicker">Limpeza</div>
+                                                                            <div class="timeline-title">
+                                                                                {{ 'Limpeza realizada' if limpeza.limpeza_realizada else 'Limpeza nao realizada' }}
+                                                                            </div>
+                                                                        </div>
+                                                                        <div class="timeline-time">Limpeza em {{ limpeza.data_hora.strftime('%d/%m/%Y %H:%M') if limpeza.data_hora else '-' }}</div>
+                                                                    </div>
+                                                                    <div class="timeline-metrics">
+                                                                        <div class="timeline-metric">
+                                                                            <span class="timeline-label">Registrado em</span>
+                                                                            <span class="timeline-value">{{ limpeza.data_registro.strftime('%d/%m/%Y %H:%M') if limpeza.data_registro else '-' }}</span>
+                                                                        </div>
+                                                                        <div class="timeline-metric">
+                                                                            <span class="timeline-label">Tipo</span>
+                                                                            <span class="timeline-value">{{ 'Completa' if limpeza.tipo_limpeza == 'completa' else 'Apenas ducha' }}</span>
+                                                                        </div>
+                                                                        <div class="timeline-metric">
+                                                                            <span class="timeline-label">Valor</span>
+                                                                            <span class="timeline-value">R$ {{ '%.2f'|format(limpeza.valor_total or 0) }}</span>
+                                                                        </div>
+                                                                        {% if limpeza.observacao %}
+                                                                        <div class="timeline-metric">
+                                                                            <span class="timeline-label">Obs.</span>
+                                                                            <span class="timeline-value">{{ limpeza.observacao }}</span>
+                                                                        </div>
+                                                                        {% endif %}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        {% endfor %}
+                                                    {% endif %}
+
                                                     <div class="timeline-event">
                                                         <div class="timeline-marker timeline-marker-dark"><i class="bi bi-check2-circle"></i></div>
                                                         <div class="timeline-card">
@@ -1194,7 +1286,7 @@
             <div class="modal fade" id="modalCorrigirKmLog{{ log.id }}" tabindex="-1" aria-labelledby="modalCorrigirKmLog{{ log.id }}Label" aria-hidden="true">
                 <div class="modal-dialog modal-lg modal-dialog-centered">
                     <div class="modal-content border-0 shadow rounded-4">
-                        <form method="POST" action="{{ url_for('main.corrigir_log_veiculo', log_id=log.id, page=paginacao.page, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}">
+                        <form method="POST" action="{{ url_for('main.corrigir_log_veiculo', log_id=log.id, page=paginacao.page, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim, limpeza_realizada=filters.limpeza_realizada, tipo_limpeza=filters.tipo_limpeza, data_limpeza_inicio=filters.data_limpeza_inicio, data_limpeza_fim=filters.data_limpeza_fim, valor_limpeza_min=filters.valor_limpeza_min, valor_limpeza_max=filters.valor_limpeza_max) }}">
                             <div class="modal-header border-0 pb-0">
                                 <div>
                                     <h5 class="modal-title fw-bold" id="modalCorrigirKmLog{{ log.id }}Label">Corrigir log #{{ log.id }}</h5>
@@ -1273,7 +1365,7 @@
                 <div class="modal fade" id="modalDeletarLog{{ log.id }}" tabindex="-1" aria-labelledby="modalDeletarLog{{ log.id }}Label" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered">
                         <div class="modal-content border-0 shadow rounded-4">
-                            <form method="POST" action="{{ url_for('main.deletar_log_veiculo', log_id=log.id, page=paginacao.page, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}">
+                            <form method="POST" action="{{ url_for('main.deletar_log_veiculo', log_id=log.id, page=paginacao.page, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim, limpeza_realizada=filters.limpeza_realizada, tipo_limpeza=filters.tipo_limpeza, data_limpeza_inicio=filters.data_limpeza_inicio, data_limpeza_fim=filters.data_limpeza_fim, valor_limpeza_min=filters.valor_limpeza_min, valor_limpeza_max=filters.valor_limpeza_max) }}">
                                 <div class="modal-header border-0 pb-0">
                                     <div>
                                         <h5 class="modal-title fw-bold text-danger" id="modalDeletarLog{{ log.id }}Label">Apagar log #{{ log.id }}</h5>
@@ -1306,13 +1398,13 @@
     <nav class="mt-4 veiculos-logs-pagination">
         <ul class="pagination justify-content-center">
             <li class="page-item {{ 'disabled' if not paginacao.has_prev }}">
-                <a class="page-link" href="{{ url_for('main.veiculos_logs', page=paginacao.prev_num if paginacao.has_prev else 1, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}">Anterior</a>
+                <a class="page-link" href="{{ url_for('main.veiculos_logs', page=paginacao.prev_num if paginacao.has_prev else 1, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim, limpeza_realizada=filters.limpeza_realizada, tipo_limpeza=filters.tipo_limpeza, data_limpeza_inicio=filters.data_limpeza_inicio, data_limpeza_fim=filters.data_limpeza_fim, valor_limpeza_min=filters.valor_limpeza_min, valor_limpeza_max=filters.valor_limpeza_max) }}">Anterior</a>
             </li>
 
             {% for p in paginacao.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=1) %}
                 {% if p %}
                     <li class="page-item {{ 'active' if p == paginacao.page else '' }}">
-                        <a class="page-link" href="{{ url_for('main.veiculos_logs', page=p, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}">{{ p }}</a>
+                        <a class="page-link" href="{{ url_for('main.veiculos_logs', page=p, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim, limpeza_realizada=filters.limpeza_realizada, tipo_limpeza=filters.tipo_limpeza, data_limpeza_inicio=filters.data_limpeza_inicio, data_limpeza_fim=filters.data_limpeza_fim, valor_limpeza_min=filters.valor_limpeza_min, valor_limpeza_max=filters.valor_limpeza_max) }}">{{ p }}</a>
                     </li>
                 {% else %}
                     <li class="page-item disabled"><span class="page-link">…</span></li>
@@ -1320,7 +1412,7 @@
             {% endfor %}
 
             <li class="page-item {{ 'disabled' if not paginacao.has_next }}">
-                <a class="page-link" href="{{ url_for('main.veiculos_logs', page=paginacao.next_num if paginacao.has_next else paginacao.pages, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}">Próxima</a>
+                <a class="page-link" href="{{ url_for('main.veiculos_logs', page=paginacao.next_num if paginacao.has_next else paginacao.pages, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim, limpeza_realizada=filters.limpeza_realizada, tipo_limpeza=filters.tipo_limpeza, data_limpeza_inicio=filters.data_limpeza_inicio, data_limpeza_fim=filters.data_limpeza_fim, valor_limpeza_min=filters.valor_limpeza_min, valor_limpeza_max=filters.valor_limpeza_max) }}">Próxima</a>
             </li>
         </ul>
     </nav>
@@ -1483,6 +1575,41 @@
                                                             <div class="timeline-marker timeline-marker-success"><i class="bi bi-fuel-pump"></i></div>
                                                             <div class="timeline-card">
                                                                 <div class="timeline-title">Sem abastecimentos neste turno</div>
+                                                            </div>
+                                                        </div>
+                                                    {% endfor %}
+
+                                                    {% for limpeza in turno.eventos_limpeza %}
+                                                        <div class="timeline-event">
+                                                            <div class="timeline-marker timeline-marker-info"><i class="bi bi-droplet-half"></i></div>
+                                                            <div class="timeline-card">
+                                                                <div class="timeline-event-header">
+                                                                    <div>
+                                                                        <div class="timeline-kicker">Limpeza</div>
+                                                                        <div class="timeline-title">{{ 'Limpeza realizada' if limpeza.realizada else 'Limpeza nao realizada' }}</div>
+                                                                    </div>
+                                                                    <div class="timeline-time">Limpeza em {{ limpeza.data.strftime('%d/%m/%Y %H:%M') if limpeza.data else '-' }}</div>
+                                                                </div>
+                                                                <div class="timeline-metrics">
+                                                                    <div class="timeline-metric">
+                                                                        <span class="timeline-label">Registrado em</span>
+                                                                        <span class="timeline-value">{{ limpeza.data_registro.strftime('%d/%m/%Y %H:%M') if limpeza.data_registro else '-' }}</span>
+                                                                    </div>
+                                                                    <div class="timeline-metric">
+                                                                        <span class="timeline-label">Tipo</span>
+                                                                        <span class="timeline-value">{{ limpeza.tipo_label }}</span>
+                                                                    </div>
+                                                                    <div class="timeline-metric">
+                                                                        <span class="timeline-label">Valor</span>
+                                                                        <span class="timeline-value">R$ {{ '%.2f'|format(limpeza.valor or 0) }}</span>
+                                                                    </div>
+                                                                    {% if limpeza.observacao %}
+                                                                    <div class="timeline-metric">
+                                                                        <span class="timeline-label">Obs.</span>
+                                                                        <span class="timeline-value">{{ limpeza.observacao }}</span>
+                                                                    </div>
+                                                                    {% endif %}
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     {% endfor %}

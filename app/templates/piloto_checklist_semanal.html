@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% macro bool_choice(name, label, group_field_id) %}
+{% macro bool_choice(name, label, group_field_id, ok_label='FUNCIONAL', bad_label='DEFEITUOSO') %}
 <div class="check-row-container">
   <div class="check-row shadow-sm">
     <div class="check-row-title">
@@ -17,7 +17,7 @@
         data-group="{{ group_field_id }}"
         onchange="checkGroupStatus('{{ group_field_id }}')"
       >
-      <label class="btn btn-outline-primary border-2 fw-bold" for="{{ name }}_ok">FUNCIONAL</label>
+      <label class="btn btn-outline-primary border-2 fw-bold" for="{{ name }}_ok">{{ ok_label }}</label>
 
       <input
         class="btn-check group-monitor"
@@ -28,7 +28,7 @@
         data-group="{{ group_field_id }}"
         onchange="checkGroupStatus('{{ group_field_id }}')"
       >
-      <label class="btn btn-outline-primary border-2 fw-bold" for="{{ name }}_na">DEFEITUOSO</label>
+      <label class="btn btn-outline-primary border-2 fw-bold" for="{{ name }}_na">{{ bad_label }}</label>
     </div>
   </div>
 </div>

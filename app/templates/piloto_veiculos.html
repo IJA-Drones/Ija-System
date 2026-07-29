@@ -351,10 +351,17 @@
                       <div class="small text-muted turno-actions-meta">
                         {{ turno_aberto.qtd_abastecimentos }} abast. • R$ {{ '%.2f'|format(turno_aberto.total_valor_abastecido or 0) }}
                       </div>
+                      <div class="small text-muted turno-actions-meta">
+                        {{ turno_aberto.qtd_limpezas }} limpeza(s) • R$ {{ '%.2f'|format(turno_aberto.total_valor_limpeza or 0) }}
+                      </div>
                       <div class="d-flex flex-wrap justify-content-center gap-2 turno-actions-buttons">
                         <button class="btn btn-sm btn-outline-success rounded-pill px-3 shadow-sm"
                                 data-bs-toggle="modal" data-bs-target="#modalAbastecimento{{ v.id }}">
                           <i class="bi bi-fuel-pump-fill me-1"></i> Abastecimento
+                        </button>
+                        <button class="btn btn-sm btn-outline-info rounded-pill px-3 shadow-sm"
+                                data-bs-toggle="modal" data-bs-target="#modalLimpeza{{ v.id }}">
+                          <i class="bi bi-droplet-half me-1"></i> Limpeza
                         </button>
                         <button class="btn btn-sm btn-warning rounded-pill px-3 shadow-sm"
                                 data-bs-toggle="modal" data-bs-target="#modalEncerramento{{ v.id }}">
@@ -509,6 +516,76 @@
           </div>
         </div>
       </div>
+
+      <div class="modal fade" id="modalLimpeza{{ v.id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content border-0 shadow-lg rounded-4">
+            <form method="POST" action="{{ url_for('main.piloto_registrar_limpeza_turno', veiculo_id=v.id) }}">
+              <div class="modal-header border-0 bg-light rounded-top-4">
+                <h5 class="fw-bold m-0 text-info"><i class="bi bi-droplet-half me-2"></i>Registrar Limpeza - {{ v.placa }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body p-4">
+                <div class="modal-soft-card mb-3">
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label class="form-label small fw-bold">Data/hora do registro</label>
+                      <input type="datetime-local"
+                             class="form-control bg-light fw-bold"
+                             value="{{ agora_brasilia.strftime('%Y-%m-%dT%H:%M') if agora_brasilia else '' }}"
+                             disabled
+                             aria-disabled="true">
+                      <div class="hint-line mt-2">Gerada automaticamente pelo sistema.</div>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label small fw-bold">Data/hora da limpeza</label>
+                      <input type="datetime-local"
+                             name="data_hora_limpeza"
+                             class="form-control"
+                             value="{{ agora_brasilia.strftime('%Y-%m-%dT%H:%M') if agora_brasilia else '' }}"
+                             required>
+                      <div class="hint-line mt-2">Preencha quando a limpeza foi realizada.</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="row g-3">
+                  <div class="col-12">
+                    <label class="form-label small fw-bold">Limpeza realizada?</label>
+                    <div class="btn-group w-100" role="group" aria-label="Limpeza realizada">
+                      <input class="btn-check" type="radio" name="limpeza_realizada" id="limpeza_realizada_sim_{{ v.id }}" value="1" checked>
+                      <label class="btn btn-outline-info fw-bold" for="limpeza_realizada_sim_{{ v.id }}">REALIZADA</label>
+
+                      <input class="btn-check" type="radio" name="limpeza_realizada" id="limpeza_realizada_nao_{{ v.id }}" value="0">
+                      <label class="btn btn-outline-info fw-bold" for="limpeza_realizada_nao_{{ v.id }}">NAO REALIZADA</label>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label small fw-bold">Tipo de Limpeza</label>
+                    <select name="tipo_limpeza" class="form-select" required>
+                      <option value="" selected disabled>Selecione</option>
+                      <option value="completa">Completa</option>
+                      <option value="ducha">Apenas ducha</option>
+                    </select>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label small fw-bold">Valor da Limpeza (R$)</label>
+                    <input type="text" inputmode="numeric" name="valor_limpeza" class="form-control js-money-centavos" placeholder="0,00" autocomplete="off" required>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label small fw-bold">Observacoes</label>
+                    <textarea name="observacao_limpeza" class="form-control" rows="2" placeholder="Ex.: local da lavagem, recibo, observacao do servico..."></textarea>
+                  </div>
+                </div>
+              </div>
+              <div class="modal-footer border-0 bg-light rounded-bottom-4">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-info text-white px-4 shadow">Salvar Limpeza</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
       {% endif %}
 
       <div class="modal fade" id="modalEncerramento{{ v.id }}" tabindex="-1" aria-hidden="true">
@@ -635,7 +712,8 @@ document.querySelectorAll('.modal').forEach(modal => {
         const id = this.id
             .replace('modalChecklist', '')
             .replace('modalEncerramento', '')
-            .replace('modalAbastecimento', '');
+            .replace('modalAbastecimento', '')
+            .replace('modalLimpeza', '');
         
         if (this.id.startsWith('modalChecklist')) {
             const signature = setupSignature('sig-canvas-' + id, 'sig-input-' + id);
