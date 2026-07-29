@@ -8,6 +8,7 @@ from app.modules.feedback.service import (
     CATEGORY_LABELS,
     FEEDBACK_CATEGORY_OPTIONS,
     FEEDBACK_MAX_IMAGES_PER_COMMENT,
+    FEEDBACK_NOTIFICATIONS_ENABLED,
     FEEDBACK_PRIORITY_OPTIONS,
     FEEDBACK_STATUS_OPTIONS,
     PRIORITY_LABELS,
@@ -79,6 +80,8 @@ def register_routes(bp):
     @bp.route("/feedback/notificacoes/status", methods=["GET"], endpoint="feedback_notificacoes_status")
     @login_required
     def feedback_notificacoes_status():
+        if not FEEDBACK_NOTIFICATIONS_ENABLED:
+            return jsonify({"success": True, "count": 0, "latest_id": 0, "enabled": False})
         if not can_access_feedback(current_user):
             return jsonify({"success": False, "count": 0, "latest_id": 0}), 403
         snapshot = build_support_notification_snapshot(current_user)

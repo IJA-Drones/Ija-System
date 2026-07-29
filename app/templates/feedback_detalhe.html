@@ -10,7 +10,10 @@
 <div class="container-fluid py-4 feedback-page" style="max-width: 1220px;">
   <div
     id="feedback-live-state"
+    data-live-refresh-enabled="{{ '1' if feedback_notifications_enabled else '0' }}"
+    {% if feedback_notifications_enabled %}
     data-status-url="{{ url_for('main.feedback_status', topico_id=topico.id) }}"
+    {% endif %}
     data-updated-at="{{ topico.atualizado_em.isoformat() if topico.atualizado_em else '' }}"
     data-comment-count="{{ comentarios|length + 1 }}"
   ></div>
@@ -271,6 +274,7 @@
   document.addEventListener("DOMContentLoaded", () => {
     const state = document.getElementById("feedback-live-state");
     if (!state) return;
+    if (state.dataset.liveRefreshEnabled !== "1") return;
 
     const statusUrl = state.dataset.statusUrl;
     let currentUpdatedAt = state.dataset.updatedAt || "";

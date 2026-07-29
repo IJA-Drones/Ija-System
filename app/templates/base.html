@@ -1072,7 +1072,10 @@
               <span
                 id="supportNavBadge"
                 class="badge rounded-pill bg-danger ms-auto support-alert-badge {% if not support_nav_count %}d-none{% endif %}"
+                data-notifications-enabled="{{ '1' if feedback_notifications_enabled else '0' }}"
+                {% if feedback_notifications_enabled %}
                 data-status-url="{{ url_for('main.feedback_notificacoes_status') }}"
+                {% endif %}
                 data-initial-count="{{ support_nav_count or 0 }}"
                 data-initial-latest-id="{{ support_nav_latest_id or 0 }}"
                 data-user-key="{{ current_user.id }}"
@@ -1259,6 +1262,7 @@
 
             function setupSupportNotifications() {
                 if (!supportNavBadge) return;
+                if (supportNavBadge.dataset.notificationsEnabled !== "1") return;
 
                 const statusUrl = supportNavBadge.dataset.statusUrl;
                 const userKey = supportNavBadge.dataset.userKey || "anon";
