@@ -376,8 +376,14 @@
             <strong>{{ (timeline.total_km or 0)|round|int }} km</strong>
         </div>
         <div class="summary-card">
-            <span>Abastecimento</span>
+            <span>Abastecimento total</span>
             <strong>R$ {{ '%.2f'|format(timeline.total_gasto or 0) }}</strong>
+            {% if timeline.total_gasto_gerador or timeline.total_gasto_veiculo %}
+                <div class="small text-muted mt-1">
+                    Veiculo R$ {{ '%.2f'|format(timeline.total_gasto_veiculo or 0) }}
+                    {% if timeline.total_gasto_gerador %} | Gerador R$ {{ '%.2f'|format(timeline.total_gasto_gerador or 0) }}{% endif %}
+                </div>
+            {% endif %}
         </div>
         <div class="summary-card">
             <span>Registros</span>
@@ -471,6 +477,10 @@
                 <div class="vehicle-history-summary">
                     <span class="timeline-chip">{{ (dia.km_rodado or 0)|round|int }} km rodados</span>
                     <span class="timeline-chip">R$ {{ '%.2f'|format(dia.gasto or 0) }}</span>
+                    {% if dia.gasto_gerador %}
+                        <span class="timeline-chip">Veiculo R$ {{ '%.2f'|format(dia.gasto_veiculo or 0) }}</span>
+                        <span class="timeline-chip">Gerador R$ {{ '%.2f'|format(dia.gasto_gerador or 0) }}</span>
+                    {% endif %}
                     <span class="timeline-chip">{{ dia.abastecimentos }} abastecimento(s)</span>
                     <span class="timeline-chip vehicle-day-action-chip">
                         <i class="bi bi-chevron-down"></i>
@@ -495,12 +505,16 @@
                                     <span class="timeline-chip">{{ turno.status }}</span>
                                     <span class="timeline-chip">{{ (turno.km_rodado or 0)|round|int }} km</span>
                                     <span class="timeline-chip">R$ {{ '%.2f'|format(turno.gasto or 0) }}</span>
+                                    {% if turno.gasto_gerador %}
+                                        <span class="timeline-chip">Veiculo R$ {{ '%.2f'|format(turno.gasto_veiculo or 0) }}</span>
+                                        <span class="timeline-chip">Gerador R$ {{ '%.2f'|format(turno.gasto_gerador or 0) }}</span>
+                                    {% endif %}
                                 </div>
                             </button>
                             {% if can_edit_logs %}
                                 <div class="vehicle-turno-actions">
                                     <button class="btn btn-sm btn-outline-warning rounded-pill px-3" type="button" data-bs-toggle="modal" data-bs-target="#modalCorrigirKmLog{{ turno.id }}">
-                                        <i class="bi bi-pencil-square me-1"></i> Corrigir KM
+                                        <i class="bi bi-pencil-square me-1"></i> Corrigir log
                                     </button>
                                 </div>
                             {% endif %}
@@ -545,7 +559,12 @@
                                                     <div class="timeline-event-header">
                                                         <div>
                                                             <div class="timeline-kicker">Abastecimento</div>
-                                                            <div class="timeline-title">Abastecimento</div>
+                                                            <div class="timeline-title">
+                                                                Abastecimento - {{ abastecimento.tipo or 'Tipo nao informado' }}
+                                                                <span class="badge {{ 'bg-warning text-dark' if abastecimento.tipo_key == 'gerador' else 'bg-success' }} ms-1">
+                                                                    {{ 'Gerador' if abastecimento.tipo_key == 'gerador' else 'Veiculo' }}
+                                                                </span>
+                                                            </div>
                                                         </div>
                                                         <div class="timeline-time">{{ abastecimento.data.strftime('%d/%m/%Y %H:%M') if abastecimento.data else '-' }}</div>
                                                     </div>
@@ -671,7 +690,7 @@
                         <form method="POST" action="{{ url_for('main.corrigir_log_veiculo', log_id=turno.id, return_to='veiculo', veiculo_id=veiculo.id, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}">
                             <div class="modal-header border-0 pb-0">
                                 <div>
-                                    <h5 class="modal-title fw-bold" id="modalCorrigirKmLog{{ turno.id }}Label">Corrigir KM do turno #{{ turno.id }}</h5>
+                                    <h5 class="modal-title fw-bold" id="modalCorrigirKmLog{{ turno.id }}Label">Corrigir log do turno #{{ turno.id }}</h5>
                                     <div class="small text-muted">
                                         {{ veiculo.modelo }}{% if veiculo.placa %} - {{ veiculo.placa }}{% endif %}
                                     </div>
@@ -714,6 +733,19 @@
                                                     {{ abastecimento.data.strftime('%d/%m/%Y %H:%M') if abastecimento.data else '-' }}
                                                     {% if abastecimento.tipo %} | {{ abastecimento.tipo }}{% endif %}
                                                 </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label small fw-bold text-muted">
+                                                    Valor abastecimento #{{ abastecimento.id }}
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    inputmode="decimal"
+                                                    name="abastecimento_{{ abastecimento.id }}_valor"
+                                                    class="form-control"
+                                                    value="{{ '%.2f'|format(abastecimento.valor or 0) }}"
+                                                    required
+                                                >
                                             </div>
                                         {% endfor %}
                                     {% endif %}

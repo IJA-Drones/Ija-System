@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+<style>
+    .deleted-vehicle-logs-page {
+        max-width: 1280px;
+    }
+
+    .deleted-log-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 1rem;
+        overflow: hidden;
+    }
+
+    .deleted-log-card + .deleted-log-card {
+        margin-top: 1rem;
+    }
+
+    .deleted-log-header {
+        align-items: flex-start;
+        background: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        gap: 1rem;
+        justify-content: space-between;
+        padding: 1rem;
+    }
+
+    .deleted-log-title {
+        color: #0f172a;
+        font-size: 1rem;
+        font-weight: 800;
+        margin: 0;
+    }
+
+    .deleted-log-meta,
+    .deleted-log-submeta {
+        color: #64748b;
+        display: flex;
+        flex-wrap: wrap;
+        font-size: 0.82rem;
+        gap: 0.45rem 0.85rem;
+        margin-top: 0.35rem;
+    }
+
+    .deleted-log-body {
+        padding: 1rem;
+    }
+
+    .deleted-log-grid {
+        display: grid;
+        gap: 0.85rem;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+
+    .deleted-log-metric {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.75rem;
+        padding: 0.75rem;
+    }
+
+    .deleted-log-label {
+        color: #64748b;
+        display: block;
+        font-size: 0.72rem;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .deleted-log-value {
+        color: #0f172a;
+        display: block;
+        font-weight: 800;
+        margin-top: 0.2rem;
+    }
+
+    .deleted-log-abastecimentos {
+        margin-top: 1rem;
+    }
+
+    @media (max-width: 768px) {
+        .deleted-log-header {
+            display: block;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 deleted-vehicle-logs-page">
+    <div class="dashboard-header mb-4">
+        <div style="margin-right: auto !important;">
+            <h2 class="text-dark mb-1">
+                <i class="bi bi-shield-lock-fill me-2 text-danger"></i> Historico de Logs Apagados
+            </h2>
+            <div class="small text-muted">Consulta restrita ao perfil dev para auditoria de exclusoes de logs de veiculos.</div>
+        </div>
+
+        <div class="header-actions">
+            <a href="{{ url_for('main.veiculos_logs') }}" class="btn btn-outline-secondary d-flex align-items-center">
+                <i class="bi bi-arrow-left"></i> Voltar para logs
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm rounded-4 mb-4 border-0">
+        <div class="card-body">
+            <form method="GET" class="row g-2 align-items-end">
+                <div class="col-lg-5">
+                    <label class="form-label small fw-bold text-muted">Buscar</label>
+                    <input type="text" name="q" value="{{ filters.q or '' }}" class="form-control" placeholder="Placa, modelo, log, usuario, equipe ou piloto">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold text-muted">Data inicial</label>
+                    <input type="date" name="data_inicio" value="{{ filters.data_inicio or '' }}" class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold text-muted">Data final</label>
+                    <input type="date" name="data_fim" value="{{ filters.data_fim or '' }}" class="form-control">
+                </div>
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Filtrar
+                    </button>
+                    {% if filters.q or filters.data_inicio or filters.data_fim %}
+                        <a href="{{ url_for('main.veiculos_logs_excluidos') }}" class="btn btn-outline-secondary" title="Limpar filtros">
+                            <i class="bi bi-x-lg"></i>
+                        </a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="small text-muted">Total: <strong>{{ paginacao.total }}</strong> exclusao(oes)</div>
+    </div>
+
+    {% if logs_excluidos %}
+        {% for item in logs_excluidos %}
+            {% set audit = item.audit_log %}
+            {% set veiculo = item.veiculo %}
+            {% set operador = item.operador %}
+            {% set turno = item.turno %}
+            {% set totais = item.totais %}
+            {% set apagado_em = brazil_datetime(audit.criado_em) %}
+            <div class="deleted-log-card">
+                <div class="deleted-log-header">
+                    <div>
+                        <h5 class="deleted-log-title">
+                            Log #{{ item.snapshot.log_id or '-' }} | {{ veiculo.modelo or 'Veiculo' }}{% if veiculo.placa %} - {{ veiculo.placa }}{% endif %}
+                        </h5>
+                        <div class="deleted-log-meta">
+                            <span>Apagado em: {{ apagado_em.strftime('%d/%m/%Y %H:%M:%S') if apagado_em else '-' }}</span>
+                            <span>Por: {{ audit.usuario_nome or '-' }}{% if audit.usuario_login %} ({{ audit.usuario_login }}){% endif %}</span>
+                            {% if audit.ip %}<span>IP: {{ audit.ip }}</span>{% endif %}
+                        </div>
+                        <div class="deleted-log-submeta">
+                            {% if operador.piloto_nome %}<span>Piloto: {{ operador.piloto_nome }}</span>{% endif %}
+                            {% if operador.equipe_nome %}<span>Equipe: {{ operador.equipe_nome }}</span>{% endif %}
+                            {% if veiculo.responsavel %}<span>Responsavel: {{ veiculo.responsavel }}</span>{% endif %}
+                        </div>
+                    </div>
+                    <span class="badge bg-danger rounded-pill">EXCLUIDO</span>
+                </div>
+
+                <div class="deleted-log-body">
+                    <div class="deleted-log-grid">
+                        <div class="deleted-log-metric">
+                            <span class="deleted-log-label">Inicio do turno</span>
+                            <span class="deleted-log-value">{{ turno.data_registro or '-' }}</span>
+                        </div>
+                        <div class="deleted-log-metric">
+                            <span class="deleted-log-label">KM inicial</span>
+                            <span class="deleted-log-value">{{ (turno.km_inicial or 0)|round|int }} km</span>
+                        </div>
+                        <div class="deleted-log-metric">
+                            <span class="deleted-log-label">KM final</span>
+                            <span class="deleted-log-value">
+                                {% if turno.km_final is not none %}
+                                    {{ (turno.km_final or 0)|round|int }} km
+                                {% else %}
+                                    Turno aberto
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="deleted-log-metric">
+                            <span class="deleted-log-label">KM rodado</span>
+                            <span class="deleted-log-value">{{ (turno.km_rodado or 0)|round|int }} km</span>
+                        </div>
+                        <div class="deleted-log-metric">
+                            <span class="deleted-log-label">Abastecimento</span>
+                            <span class="deleted-log-value">R$ {{ '%.2f'|format(totais.total_valor_abastecido or 0) }}</span>
+                        </div>
+                        <div class="deleted-log-metric">
+                            <span class="deleted-log-label">Registros</span>
+                            <span class="deleted-log-value">{{ totais.qtd_abastecimentos or 0 }} abastecimento(s)</span>
+                        </div>
+                    </div>
+
+                    {% if item.abastecimentos %}
+                        <div class="deleted-log-abastecimentos table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Abastecimento</th>
+                                        <th>Data</th>
+                                        <th>KM</th>
+                                        <th>Litros</th>
+                                        <th>Valor</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for abastecimento in item.abastecimentos %}
+                                        <tr>
+                                            <td>#{{ abastecimento.id }}</td>
+                                            <td>{{ abastecimento.data_hora or '-' }}</td>
+                                            <td>{{ (abastecimento.km_registro or 0)|round|int }} km</td>
+                                            <td>{{ '%.2f'|format(abastecimento.litros or 0) }}</td>
+                                            <td>R$ {{ '%.2f'|format(abastecimento.valor_total or 0) }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-body text-center text-muted py-5">
+                Nenhum log apagado encontrado.
+            </div>
+        </div>
+    {% endif %}
+
+    {% if paginacao and paginacao.pages > 1 %}
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center flex-wrap">
+            <li class="page-item {{ 'disabled' if not paginacao.has_prev }}">
+                <a class="page-link" href="{{ url_for('main.veiculos_logs_excluidos', page=paginacao.prev_num if paginacao.has_prev else 1, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}">Anterior</a>
+            </li>
+            {% for p in paginacao.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=1) %}
+                {% if p %}
+                    <li class="page-item {{ 'active' if p == paginacao.page else '' }}">
+                        <a class="page-link" href="{{ url_for('main.veiculos_logs_excluidos', page=p, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}">{{ p }}</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                {% endif %}
+            {% endfor %}
+            <li class="page-item {{ 'disabled' if not paginacao.has_next }}">
+                <a class="page-link" href="{{ url_for('main.veiculos_logs_excluidos', page=paginacao.next_num if paginacao.has_next else paginacao.pages, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}">Proxima</a>
+            </li>
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}

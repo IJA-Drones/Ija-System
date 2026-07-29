@@ -742,6 +742,11 @@
             <a href="{{ url_for('main.veiculos_menu') }}" class="btn btn-outline-secondary d-flex align-items-center">
                 <i class="bi bi-arrow-left"></i> Voltar para central
             </a>
+            {% if can_view_deleted_logs %}
+                <a href="{{ url_for('main.veiculos_logs_excluidos') }}" class="btn btn-outline-danger d-flex align-items-center">
+                    <i class="bi bi-shield-lock me-1"></i> Historico de apagados
+                </a>
+            {% endif %}
             <a href="{{ url_for('main.exportar_logs_veiculos_xlsx',
                                 q=filters.q,
                                 data_inicio=filters.data_inicio,
@@ -821,6 +826,11 @@
                         <div class="vehicle-summary-subtitle">
                             {{ item.total_logs }} turno(s) | R$ {{ '%.2f'|format(item.total_gasto or 0) }} | {{ item.total_abastecimentos }} abastecimento(s)
                         </div>
+                        {% if item.total_gasto_gerador %}
+                            <div class="vehicle-summary-subtitle">
+                                Veiculo R$ {{ '%.2f'|format(item.total_gasto_veiculo or 0) }} | Gerador R$ {{ '%.2f'|format(item.total_gasto_gerador or 0) }}
+                            </div>
+                        {% endif %}
                         <div class="vehicle-summary-subtitle">
                             Placa: {{ v.placa }}{% if v.equipe %} | {{ v.equipe.nome_equipe }}{% endif %}
                         </div>
@@ -938,7 +948,13 @@
                                         {% if can_edit_logs %}
                                             <button class="btn btn-sm btn-outline-warning rounded-pill px-3" type="button"
                                                     data-bs-toggle="modal" data-bs-target="#modalCorrigirKmLog{{ log.id }}">
-                                                <i class="bi bi-pencil-square me-1"></i> Corrigir KM
+                                                <i class="bi bi-pencil-square me-1"></i> Corrigir log
+                                            </button>
+                                        {% endif %}
+                                        {% if can_delete_logs %}
+                                            <button class="btn btn-sm btn-outline-danger rounded-pill px-3" type="button"
+                                                    data-bs-toggle="modal" data-bs-target="#modalDeletarLog{{ log.id }}">
+                                                <i class="bi bi-trash me-1"></i> Apagar
                                             </button>
                                         {% endif %}
                                     </div>
@@ -1181,7 +1197,7 @@
                         <form method="POST" action="{{ url_for('main.corrigir_log_veiculo', log_id=log.id, page=paginacao.page, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}">
                             <div class="modal-header border-0 pb-0">
                                 <div>
-                                    <h5 class="modal-title fw-bold" id="modalCorrigirKmLog{{ log.id }}Label">Corrigir KM do log #{{ log.id }}</h5>
+                                    <h5 class="modal-title fw-bold" id="modalCorrigirKmLog{{ log.id }}Label">Corrigir log #{{ log.id }}</h5>
                                     <div class="small text-muted">
                                         {{ log.veiculo.modelo if log.veiculo else 'Veiculo' }}{% if log.veiculo and log.veiculo.placa %} - {{ log.veiculo.placa }}{% endif %}
                                     </div>
@@ -1225,6 +1241,19 @@
                                                     {% if abastecimento.tipo_abastecimento %} | {{ abastecimento.tipo_abastecimento }}{% endif %}
                                                 </div>
                                             </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label small fw-bold text-muted">
+                                                    Valor abastecimento #{{ abastecimento.id }}
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    inputmode="decimal"
+                                                    name="abastecimento_{{ abastecimento.id }}_valor"
+                                                    class="form-control"
+                                                    value="{{ '%.2f'|format(abastecimento.valor_total or 0) }}"
+                                                    required
+                                                >
+                                            </div>
                                         {% endfor %}
                                     {% endif %}
                                 </div>
@@ -1239,6 +1268,36 @@
                     </div>
                 </div>
             </div>
+            {% if can_delete_logs %}
+                <div class="modal fade" id="modalDeletarLog{{ log.id }}" tabindex="-1" aria-labelledby="modalDeletarLog{{ log.id }}Label" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content border-0 shadow rounded-4">
+                            <form method="POST" action="{{ url_for('main.deletar_log_veiculo', log_id=log.id, page=paginacao.page, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}">
+                                <div class="modal-header border-0 pb-0">
+                                    <div>
+                                        <h5 class="modal-title fw-bold text-danger" id="modalDeletarLog{{ log.id }}Label">Apagar log #{{ log.id }}</h5>
+                                        <div class="small text-muted">
+                                            {{ log.veiculo.modelo if log.veiculo else 'Veiculo' }}{% if log.veiculo and log.veiculo.placa %} - {{ log.veiculo.placa }}{% endif %}
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="alert alert-danger small mb-0">
+                                        Esta acao remove o turno e seus abastecimentos vinculados. O KM atual do veiculo sera recalculado com base nos logs restantes.
+                                    </div>
+                                </div>
+                                <div class="modal-footer border-0">
+                                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                    <button type="submit" class="btn btn-danger">
+                                        <i class="bi bi-trash me-1"></i> Apagar log
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
         {% endfor %}
     {% endif %}
 
@@ -1368,7 +1427,13 @@
                                                                 <div class="timeline-event-header">
                                                                     <div>
                                                                         <div class="timeline-kicker">Abastecimento</div>
-                                                                        <div class="timeline-title">Abastecimento</div>
+                                                                        <div class="timeline-title">
+                                                                            Abastecimento - {{ abastecimento.tipo_abastecimento or 'Tipo nao informado' }}
+                                                                            {% set tipo_abastecimento_lower = (abastecimento.tipo_abastecimento or '')|lower %}
+                                                                            <span class="badge {{ 'bg-warning text-dark' if 'gerador' in tipo_abastecimento_lower else 'bg-success' }} ms-1">
+                                                                                {{ 'Gerador' if 'gerador' in tipo_abastecimento_lower else 'Veiculo' }}
+                                                                            </span>
+                                                                        </div>
                                                                     </div>
                                                                     <div class="timeline-time">{{ abastecimento.data.strftime('%d/%m/%Y %H:%M') if abastecimento.data else '-' }}</div>
                                                                 </div>

@@ -13,10 +13,12 @@ from app.modules.veiculos.service import (
     build_veiculo_form,
     build_veiculo_logs_detalhe_context,
     build_piloto_veiculos_context,
+    build_veiculos_deleted_logs_context,
     build_veiculo_media_skybox_path,
     build_veiculos_export_response,
     build_veiculos_logs_export,
     create_veiculo,
+    delete_veiculo_log,
     delete_veiculo,
     encerrar_turno_piloto,
     EQUIPE_OCEANO_USER_TYPE,
@@ -41,6 +43,16 @@ def _require_admin_or_operario():
         abort(403)
 
 
+def _require_admin():
+    if normalize_role(getattr(current_user, "tipo_usuario", None)) != "admin":
+        abort(403)
+
+
+def _require_dev():
+    if normalize_role(getattr(current_user, "tipo_usuario", None)) != "dev":
+        abort(403)
+
+
 def _require_piloto():
     if getattr(current_user, "tipo_usuario", None) not in {"piloto", EQUIPE_OCEANO_USER_TYPE}:
         abort(403)
@@ -49,6 +61,18 @@ def _require_piloto():
 def _get_scoped_veiculo_or_404(veiculo_id: int):
     query = apply_prefeitura_scope(Veiculos.query, current_user, Veiculos.prefeitura_id)
     return query.filter(Veiculos.id == veiculo_id).first_or_404()
+
+
+def _resolve_request_ip():
+    forwarded_for = (request.headers.get("X-Forwarded-For") or "").split(",")[0].strip()
+    if forwarded_for:
+        return forwarded_for
+
+    real_ip = (request.headers.get("X-Real-IP") or "").strip()
+    if real_ip:
+        return real_ip
+
+    return request.remote_addr or None
 
 
 def _send_local_veiculo_media(media_path):
@@ -141,6 +165,21 @@ def register_routes(bp):
         except PermissionError:
             abort(403)
 
+    @bp.route("/admin/veiculos/logs-excluidos", methods=["GET"], endpoint="veiculos_logs_excluidos")
+    @login_required
+    def veiculos_logs_excluidos():
+        _require_dev()
+        try:
+            return render_template(
+                "veiculos_logs_excluidos.html",
+                **build_veiculos_deleted_logs_context(
+                    getattr(current_user, "tipo_usuario", None),
+                    request.args,
+                ),
+            )
+        except PermissionError:
+            abort(403)
+
     @bp.route("/veiculos/logs/<int:log_id>/corrigir-km", methods=["POST"], endpoint="corrigir_log_veiculo")
     @login_required
     def corrigir_log_veiculo(log_id):
@@ -174,6 +213,42 @@ def register_routes(bp):
                     data_fim=redirect_args.get("data_fim"),
                 )
             )
+        return redirect(url_for("main.veiculos_logs", **redirect_args))
+
+    @bp.route("/veiculos/logs/<int:log_id>/deletar", methods=["POST"], endpoint="deletar_log_veiculo")
+    @login_required
+    def deletar_log_veiculo(log_id):
+        _require_admin()
+
+        redirect_args = {
+            key: value
+            for key, value in request.args.items()
+            if key in {"page", "q", "data_inicio", "data_fim"}
+        }
+        try:
+            flash(
+                delete_veiculo_log(
+                    current_user,
+                    log_id,
+                    request_info={
+                        "path": request.path,
+                        "ip": _resolve_request_ip(),
+                        "user_agent": (request.headers.get("User-Agent") or "").strip() or None,
+                        "referrer": (request.referrer or "").strip() or None,
+                    },
+                ),
+                "success",
+            )
+        except PermissionError:
+            abort(403)
+        except VeiculoTurnoError as exc:
+            db.session.rollback()
+            flash(str(exc), exc.category)
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("Erro ao deletar log de veiculo %s.", log_id)
+            flash("Erro interno ao deletar o log de veiculo. Tente novamente.", "danger")
+
         return redirect(url_for("main.veiculos_logs", **redirect_args))
 
     @bp.route("/veiculos/logs/<int:log_id>/midia/<tipo>", methods=["GET"], endpoint="veiculo_log_midia_skybox")

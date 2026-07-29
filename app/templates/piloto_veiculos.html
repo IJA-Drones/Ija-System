@@ -483,11 +483,11 @@
                   </div>
                   <div class="col-md-3">
                     <label class="form-label small fw-bold">Litros</label>
-                    <input type="number" step="0.01" min="0" name="litros" class="form-control" placeholder="0.00" required>
+                    <input type="text" inputmode="decimal" name="litros" class="form-control" placeholder="0,00" required>
                   </div>
                   <div class="col-md-3">
                     <label class="form-label small fw-bold">Valor Total (R$)</label>
-                    <input type="number" step="0.01" min="0" name="valor_abastecimento" class="form-control" placeholder="0,00" required>
+                    <input type="text" inputmode="numeric" name="valor_abastecimento" class="form-control js-money-centavos" placeholder="0,00" autocomplete="off" required>
                   </div>
                   <div class="col-12">
                     <label class="form-label small fw-bold">Foto do Painel no Abastecimento</label>
@@ -658,6 +658,26 @@ document.querySelectorAll('.check-form').forEach(form => {
             return false;
         }
     });
+});
+
+const formatCentavos = (rawValue) => {
+    const digits = String(rawValue || "").replace(/\D/g, "");
+    if (!digits) return "";
+
+    const cents = digits.padStart(3, "0");
+    const integerPart = cents.slice(0, -2).replace(/^0+(?=\d)/, "");
+    const decimalPart = cents.slice(-2);
+    return `${integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".")},${decimalPart}`;
+};
+
+document.querySelectorAll('.js-money-centavos').forEach(input => {
+    const applyMask = () => {
+        input.value = formatCentavos(input.value);
+    };
+
+    input.addEventListener('input', applyMask);
+    input.addEventListener('blur', applyMask);
+    input.form?.addEventListener('submit', applyMask);
 });
 </script>
 {% endblock %}

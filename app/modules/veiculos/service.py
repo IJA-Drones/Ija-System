@@ -1,3 +1,4 @@
+import json
 import os
 import re
 from collections import defaultdict
@@ -10,11 +11,12 @@ from openpyxl import Workbook
 from openpyxl.formatting.rule import FormulaRule
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
+from sqlalchemy import case
 from sqlalchemy.orm import joinedload, selectinload
 from werkzeug.utils import secure_filename
 
 from app.extensions import db
-from app.models import Abastecimento, Equipe, EquipePiloto, LogVeiculo, Pilotos, Veiculos
+from app.models import Abastecimento, AuditoriaUsuario, Equipe, EquipePiloto, LogVeiculo, Pilotos, Veiculos
 from app.shared.access import apply_prefeitura_scope, normalize_role
 from app.shared.query_filters import id_search_clause
 from app.shared.skybox import (
@@ -27,8 +29,10 @@ from app.shared.skybox import (
 
 
 EQUIPE_OCEANO_USER_TYPE = "equipe_oceano"
+UTC_TZ = ZoneInfo("UTC")
 BRAZIL_TZ = ZoneInfo("America/Sao_Paulo")
 MAX_KM_POR_TURNO = 500
+VEICULO_LOG_DELETE_AUDIT_ENDPOINT = "main.deletar_log_veiculo.snapshot"
 VEICULOS_ALLOWED_TYPES = (
     "dev",
     "admin",
@@ -44,6 +48,10 @@ VEICULOS_ALLOWED_TYPES = (
 
 def _now_brazil():
     return datetime.now(BRAZIL_TZ).replace(tzinfo=None)
+
+
+def _now_utc():
+    return datetime.now(UTC_TZ).replace(tzinfo=None)
 VEICULOS_LOGS_ALLOWED_TYPES = (
     "dev",
     "admin",
@@ -1153,7 +1161,11 @@ def _build_veiculos_timeline_from_logs(logs):
                 "total_logs": 0,
                 "total_km": 0,
                 "total_gasto": 0,
+                "total_gasto_veiculo": 0,
+                "total_gasto_gerador": 0,
                 "total_abastecimentos": 0,
+                "total_abastecimentos_veiculo": 0,
+                "total_abastecimentos_gerador": 0,
             },
         )
         if item["veiculo"] is None and veiculo is not None:
@@ -1161,6 +1173,7 @@ def _build_veiculos_timeline_from_logs(logs):
 
         km_rodado = _km_rodado_log_veiculo(log)
         gasto = log.total_valor_abastecido or 0
+        gasto_por_tipo = _sum_abastecimentos_por_tipo(log)
         data_inicio = log.data_registro
         movimentacao = log.ultima_movimentacao_em or data_inicio
         dia = data_inicio.date() if data_inicio else (movimentacao.date() if movimentacao else None)
@@ -1173,8 +1186,12 @@ def _build_veiculos_timeline_from_logs(logs):
             "km_final": log.km_final if log.km_final is not None else log.ultimo_km_registrado,
             "km_rodado": km_rodado,
             "gasto": gasto,
+            "gasto_veiculo": gasto_por_tipo["veiculo"],
+            "gasto_gerador": gasto_por_tipo["gerador"],
             "status": "Aberto" if log.km_final is None else "Encerrado",
             "abastecimentos": log.qtd_abastecimentos,
+            "abastecimentos_veiculo": gasto_por_tipo["qtd_veiculo"],
+            "abastecimentos_gerador": gasto_por_tipo["qtd_gerador"],
             "qtd_fazendas_enderecos": log.qtd_fazendas_enderecos,
             "observacao": log.observacao,
             "foto_painel_path": log.foto_painel_path,
@@ -1187,17 +1204,36 @@ def _build_veiculos_timeline_from_logs(logs):
         item["total_logs"] += 1
         item["total_km"] += km_rodado
         item["total_gasto"] += gasto
+        item["total_gasto_veiculo"] += gasto_por_tipo["veiculo"]
+        item["total_gasto_gerador"] += gasto_por_tipo["gerador"]
         item["total_abastecimentos"] += log.qtd_abastecimentos
+        item["total_abastecimentos_veiculo"] += gasto_por_tipo["qtd_veiculo"]
+        item["total_abastecimentos_gerador"] += gasto_por_tipo["qtd_gerador"]
 
         if dia is not None:
             dia_item = dias_por_veiculo[log.veiculo_id].setdefault(
                 dia,
-                {"dia": dia, "km_rodado": 0, "gasto": 0, "logs": 0, "abastecimentos": 0, "turnos": []},
+                {
+                    "dia": dia,
+                    "km_rodado": 0,
+                    "gasto": 0,
+                    "gasto_veiculo": 0,
+                    "gasto_gerador": 0,
+                    "logs": 0,
+                    "abastecimentos": 0,
+                    "abastecimentos_veiculo": 0,
+                    "abastecimentos_gerador": 0,
+                    "turnos": [],
+                },
             )
             dia_item["km_rodado"] += km_rodado
             dia_item["gasto"] += gasto
+            dia_item["gasto_veiculo"] += gasto_por_tipo["veiculo"]
+            dia_item["gasto_gerador"] += gasto_por_tipo["gerador"]
             dia_item["logs"] += 1
             dia_item["abastecimentos"] += log.qtd_abastecimentos
+            dia_item["abastecimentos_veiculo"] += gasto_por_tipo["qtd_veiculo"]
+            dia_item["abastecimentos_gerador"] += gasto_por_tipo["qtd_gerador"]
             dia_item["turnos"].append(log_info)
 
     for veiculo_id, dias in dias_por_veiculo.items():
@@ -1208,6 +1244,131 @@ def _build_veiculos_timeline_from_logs(logs):
 
     return sorted(
         historico.values(),
+        key=lambda item: (
+            (getattr(item["veiculo"], "modelo", "") or "").upper(),
+            (getattr(item["veiculo"], "placa", "") or "").upper(),
+        ),
+    )
+
+
+def _abastecimento_tipo_key(tipo_abastecimento):
+    tipo = (tipo_abastecimento or "").strip().lower()
+    return "gerador" if "gerador" in tipo else "veiculo"
+
+
+def _sum_abastecimentos_por_tipo(log):
+    resumo = {
+        "veiculo": 0,
+        "gerador": 0,
+        "qtd_veiculo": 0,
+        "qtd_gerador": 0,
+    }
+    for abastecimento in log.abastecimentos_detalhados or []:
+        tipo_key = _abastecimento_tipo_key(abastecimento.tipo_abastecimento)
+        resumo[tipo_key] += abastecimento.valor_total or 0
+        resumo[f"qtd_{tipo_key}"] += 1
+    return resumo
+
+
+def _build_veiculos_summary_from_logs_query(*, user=None, q="", data_inicio="", data_fim=""):
+    log_ids = (
+        _build_veiculos_logs_query(
+            user=user,
+            q=q,
+            data_inicio=data_inicio,
+            data_fim=data_fim,
+            include_options=False,
+            include_order=False,
+        )
+        .with_entities(LogVeiculo.id)
+        .subquery()
+    )
+    tipo_lower = db.func.lower(db.func.coalesce(Abastecimento.tipo_abastecimento, ""))
+    is_abastecimento = Abastecimento.id.isnot(None)
+    is_gerador = db.and_(is_abastecimento, tipo_lower.like("%gerador%"))
+    is_veiculo = db.and_(is_abastecimento, db.not_(tipo_lower.like("%gerador%")))
+    log_summary = (
+        db.session.query(
+            LogVeiculo.id.label("log_id"),
+            LogVeiculo.veiculo_id.label("veiculo_id"),
+            LogVeiculo.km_inicial.label("km_inicial"),
+            db.func.coalesce(
+                LogVeiculo.km_final,
+                db.func.max(Abastecimento.km_registro),
+                LogVeiculo.km_inicial,
+            ).label("km_referencia"),
+            db.func.count(Abastecimento.id).label("qtd_abastecimentos"),
+            db.func.coalesce(db.func.sum(Abastecimento.valor_total), 0).label("total_gasto"),
+            db.func.coalesce(
+                db.func.sum(case((is_veiculo, Abastecimento.valor_total), else_=0)),
+                0,
+            ).label("total_gasto_veiculo"),
+            db.func.coalesce(
+                db.func.sum(case((is_gerador, Abastecimento.valor_total), else_=0)),
+                0,
+            ).label("total_gasto_gerador"),
+            db.func.coalesce(db.func.sum(case((is_veiculo, 1), else_=0)), 0).label("qtd_abastecimentos_veiculo"),
+            db.func.coalesce(db.func.sum(case((is_gerador, 1), else_=0)), 0).label("qtd_abastecimentos_gerador"),
+        )
+        .join(log_ids, log_ids.c.id == LogVeiculo.id)
+        .outerjoin(Abastecimento, Abastecimento.log_veiculo_id == LogVeiculo.id)
+        .group_by(LogVeiculo.id, LogVeiculo.veiculo_id, LogVeiculo.km_inicial, LogVeiculo.km_final)
+        .subquery()
+    )
+    km_rodado = case(
+        (log_summary.c.km_referencia < log_summary.c.km_inicial, 0),
+        else_=log_summary.c.km_referencia - log_summary.c.km_inicial,
+    )
+    summary_rows = (
+        db.session.query(
+            log_summary.c.veiculo_id,
+            db.func.count(log_summary.c.log_id).label("total_logs"),
+            db.func.coalesce(db.func.sum(km_rodado), 0).label("total_km"),
+            db.func.coalesce(db.func.sum(log_summary.c.total_gasto), 0).label("total_gasto"),
+            db.func.coalesce(db.func.sum(log_summary.c.total_gasto_veiculo), 0).label("total_gasto_veiculo"),
+            db.func.coalesce(db.func.sum(log_summary.c.total_gasto_gerador), 0).label("total_gasto_gerador"),
+            db.func.coalesce(db.func.sum(log_summary.c.qtd_abastecimentos), 0).label("total_abastecimentos"),
+            db.func.coalesce(db.func.sum(log_summary.c.qtd_abastecimentos_veiculo), 0).label("total_abastecimentos_veiculo"),
+            db.func.coalesce(db.func.sum(log_summary.c.qtd_abastecimentos_gerador), 0).label("total_abastecimentos_gerador"),
+        )
+        .group_by(log_summary.c.veiculo_id)
+        .all()
+    )
+
+    if not summary_rows:
+        return []
+
+    veiculo_ids = [row.veiculo_id for row in summary_rows]
+    veiculos = {
+        veiculo.id: veiculo
+        for veiculo in (
+            Veiculos.query
+            .options(joinedload(Veiculos.equipe))
+            .filter(Veiculos.id.in_(veiculo_ids))
+            .all()
+        )
+    }
+    items = []
+    for row in summary_rows:
+        veiculo = veiculos.get(row.veiculo_id)
+        items.append(
+            {
+                "veiculo": veiculo,
+                "logs": [],
+                "dias": [],
+                "total_logs": int(row.total_logs or 0),
+                "total_km": row.total_km or 0,
+                "total_gasto": row.total_gasto or 0,
+                "total_gasto_veiculo": row.total_gasto_veiculo or 0,
+                "total_gasto_gerador": row.total_gasto_gerador or 0,
+                "total_abastecimentos": int(row.total_abastecimentos or 0),
+                "total_abastecimentos_veiculo": int(row.total_abastecimentos_veiculo or 0),
+                "total_abastecimentos_gerador": int(row.total_abastecimentos_gerador or 0),
+            }
+        )
+
+    return sorted(
+        items,
         key=lambda item: (
             (getattr(item["veiculo"], "modelo", "") or "").upper(),
             (getattr(item["veiculo"], "placa", "") or "").upper(),
@@ -1289,6 +1450,7 @@ def _eventos_abastecimento_log_veiculo(log):
                 "data": abastecimento.data_hora,
                 "km": abastecimento.km_registro or 0,
                 "tipo": abastecimento.tipo_abastecimento or "Abastecimento",
+                "tipo_key": _abastecimento_tipo_key(abastecimento.tipo_abastecimento),
                 "litros": abastecimento.litros or 0,
                 "valor": abastecimento.valor_total or 0,
                 "foto_painel_path": abastecimento.foto_painel_path,
@@ -1320,18 +1482,37 @@ def list_veiculos_logs(tipo_usuario, args, user=None):
     page = args.get("page", 1, type=int)
 
     query = _build_veiculos_logs_query(user=user, q=q, data_inicio=data_inicio, data_fim=data_fim)
-    logs_timeline = query.all()
+    total_logs = _build_veiculos_logs_query(
+        user=user,
+        q=q,
+        data_inicio=data_inicio,
+        data_fim=data_fim,
+        include_options=False,
+        include_order=False,
+    ).count()
     paginacao = query.paginate(page=page, per_page=20, error_out=False)
     logs = paginacao.items
 
     return {
         "logs": logs,
         "paginacao": paginacao,
-        "total_logs": query.count(),
-        "total_abastecido": sum((log.total_valor_abastecido or 0) for log in logs_timeline),
+        "total_logs": total_logs,
+        "total_abastecido": _sum_veiculos_logs_abastecido(
+            user=user,
+            q=q,
+            data_inicio=data_inicio,
+            data_fim=data_fim,
+        ),
         "filters": {"q": q, "data_inicio": data_inicio, "data_fim": data_fim},
         "can_edit_logs": tipo_usuario in {"dev", "admin", "operario", "operador", "prefeitura_admin"},
-        "veiculos_timeline": _build_veiculos_timeline_from_logs(logs_timeline),
+        "can_delete_logs": tipo_usuario == "admin",
+        "can_view_deleted_logs": tipo_usuario == "dev",
+        "veiculos_timeline": _build_veiculos_summary_from_logs_query(
+            user=user,
+            q=q,
+            data_inicio=data_inicio,
+            data_fim=data_fim,
+        ),
     }
 
 
@@ -1357,7 +1538,11 @@ def build_veiculo_logs_detalhe_context(tipo_usuario, veiculo_id, args, user=None
         "total_logs": 0,
         "total_km": 0,
         "total_gasto": 0,
+        "total_gasto_veiculo": 0,
+        "total_gasto_gerador": 0,
         "total_abastecimentos": 0,
+        "total_abastecimentos_veiculo": 0,
+        "total_abastecimentos_gerador": 0,
     }
 
     return {
@@ -1366,6 +1551,79 @@ def build_veiculo_logs_detalhe_context(tipo_usuario, veiculo_id, args, user=None
         "km_conferencia": _build_veiculo_km_conferencia(logs),
         "filters": {"data_inicio": data_inicio, "data_fim": data_fim},
         "can_edit_logs": tipo_usuario in {"dev", "admin", "operario", "operador", "prefeitura_admin"},
+        "can_delete_logs": tipo_usuario == "admin",
+        "can_view_deleted_logs": tipo_usuario == "dev",
+    }
+
+
+def build_veiculos_deleted_logs_context(tipo_usuario, args):
+    tipo_usuario = normalize_role(tipo_usuario)
+    if tipo_usuario != "dev":
+        raise PermissionError
+
+    q = (args.get("q") or "").strip()
+    data_inicio = (args.get("data_inicio") or "").strip()
+    data_fim = (args.get("data_fim") or "").strip()
+    page = args.get("page", 1, type=int)
+
+    query = AuditoriaUsuario.query.filter(
+        AuditoriaUsuario.endpoint == VEICULO_LOG_DELETE_AUDIT_ENDPOINT,
+        AuditoriaUsuario.tipo_evento == "EXCLUSAO",
+    )
+
+    if q:
+        like = f"%{q.lower()}%"
+        query = query.filter(
+            db.or_(
+                id_search_clause(AuditoriaUsuario.id, q),
+                id_search_clause(AuditoriaUsuario.usuario_id, q),
+                db.func.lower(db.func.coalesce(AuditoriaUsuario.usuario_nome, "")).like(like),
+                db.func.lower(db.func.coalesce(AuditoriaUsuario.usuario_login, "")).like(like),
+                db.func.lower(db.func.coalesce(AuditoriaUsuario.query_string, "")).like(like),
+            )
+        )
+
+    if data_inicio:
+        try:
+            query = query.filter(AuditoriaUsuario.criado_em >= datetime.strptime(data_inicio, "%Y-%m-%d"))
+        except ValueError:
+            pass
+
+    if data_fim:
+        try:
+            query = query.filter(
+                AuditoriaUsuario.criado_em <= datetime.strptime(data_fim, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+            )
+        except ValueError:
+            pass
+
+    paginacao = query.order_by(AuditoriaUsuario.criado_em.desc(), AuditoriaUsuario.id.desc()).paginate(
+        page=page,
+        per_page=25,
+        error_out=False,
+    )
+
+    return {
+        "logs_excluidos": [_build_deleted_log_history_item(log) for log in paginacao.items],
+        "paginacao": paginacao,
+        "filters": {"q": q, "data_inicio": data_inicio, "data_fim": data_fim},
+    }
+
+
+def _build_deleted_log_history_item(audit_log):
+    try:
+        snapshot = json.loads(audit_log.query_string or "{}")
+    except (TypeError, ValueError):
+        snapshot = {}
+
+    return {
+        "audit_log": audit_log,
+        "snapshot": snapshot,
+        "veiculo": snapshot.get("veiculo") or {},
+        "turno": snapshot.get("turno") or {},
+        "operador": snapshot.get("operador") or {},
+        "abastecimentos": snapshot.get("abastecimentos") or [],
+        "totais": snapshot.get("totais") or {},
     }
 
 
@@ -1404,29 +1662,146 @@ def update_veiculo_log_km(user, log_id, form_data):
         raise VeiculoTurnoError("KM final nao pode ser menor que o KM inicial.")
 
     abastecimentos = list(log.abastecimentos_detalhados or [])
-    abastecimento_kms = []
+    abastecimento_updates = []
     for abastecimento in abastecimentos:
-        field_name = f"abastecimento_{abastecimento.id}_km"
+        km_field_name = f"abastecimento_{abastecimento.id}_km"
         km_registro = _parse_log_km_field(
             form_data,
-            field_name,
+            km_field_name,
             f"KM do abastecimento #{abastecimento.id}",
             required=True,
         )
-        abastecimento_kms.append((abastecimento, km_registro))
+        valor_field_name = f"abastecimento_{abastecimento.id}_valor"
+        valor_total = abastecimento.valor_total
+        if valor_field_name in form_data:
+            valor_total = _parse_log_decimal_field(
+                form_data,
+                valor_field_name,
+                f"Valor do abastecimento #{abastecimento.id}",
+                required=True,
+            )
+        abastecimento_updates.append((abastecimento, km_registro, valor_total))
 
-    maior_km_abastecimento = max([km for _item, km in abastecimento_kms], default=None)
+    maior_km_abastecimento = max([km for _item, km, _valor in abastecimento_updates], default=None)
     if km_final is not None and maior_km_abastecimento is not None and km_final < maior_km_abastecimento:
         raise VeiculoTurnoError("KM final nao pode ser menor que o maior KM de abastecimento.")
 
     log.km_inicial = km_inicial
     log.km_final = km_final
-    for abastecimento, km_registro in abastecimento_kms:
+    for abastecimento, km_registro, valor_total in abastecimento_updates:
         abastecimento.km_registro = km_registro
+        abastecimento.valor_total = valor_total
 
     _recalcular_km_atual_veiculo(log.veiculo_id)
     db.session.commit()
     return f"Log #{log.id} corrigido com sucesso."
+
+
+def delete_veiculo_log(user, log_id, request_info=None):
+    tipo_usuario = normalize_role(getattr(user, "tipo_usuario", None))
+    if tipo_usuario != "admin":
+        raise PermissionError
+
+    log = (
+        _build_veiculos_logs_query(user=user)
+        .filter(LogVeiculo.id == log_id)
+        .first()
+    )
+    if log is None:
+        raise PermissionError
+
+    veiculo_id = log.veiculo_id
+    _record_veiculo_log_delete_audit(user, log, request_info=request_info)
+    db.session.delete(log)
+    db.session.flush()
+    _recalcular_km_atual_veiculo(veiculo_id)
+    db.session.commit()
+    return f"Log #{log_id} removido com sucesso."
+
+
+def _serialize_datetime(value):
+    return value.isoformat() if value else None
+
+
+def _build_veiculo_log_delete_snapshot(log):
+    abastecimentos = []
+    for item in log.abastecimentos_ordenados:
+        abastecimentos.append(
+            {
+                "id": item.id,
+                "data_hora": _serialize_datetime(item.data_hora),
+                "km_registro": item.km_registro,
+                "tipo_abastecimento": item.tipo_abastecimento,
+                "litros": item.litros,
+                "valor_total": item.valor_total,
+                "foto_nf_path": item.foto_nf_path,
+                "foto_painel_path": item.foto_painel_path,
+            }
+        )
+
+    return {
+        "log_id": log.id,
+        "veiculo": {
+            "id": log.veiculo.id if log.veiculo else log.veiculo_id,
+            "modelo": log.veiculo.modelo if log.veiculo else None,
+            "placa": log.veiculo.placa if log.veiculo else None,
+            "responsavel": log.veiculo.responsavel if log.veiculo else None,
+            "prefeitura_id": getattr(log.veiculo, "prefeitura_id", None) if log.veiculo else None,
+        },
+        "operador": {
+            "piloto_id": log.piloto_id,
+            "piloto_nome": log.piloto.nome_piloto if log.piloto else None,
+            "equipe_id": log.equipe_id,
+            "equipe_nome": log.equipe.nome_equipe if log.equipe else None,
+        },
+        "turno": {
+            "data_registro": _serialize_datetime(log.data_registro),
+            "km_inicial": log.km_inicial,
+            "km_final": log.km_final,
+            "ultimo_km_registrado": log.ultimo_km_registrado,
+            "km_rodado": _km_rodado_log_veiculo(log),
+            "check_diario": bool(log.check_diario),
+            "qtd_fazendas_enderecos": log.qtd_fazendas_enderecos,
+            "observacao": log.observacao,
+            "foto_painel_path": log.foto_painel_path,
+            "foto_painel_final_path": log.foto_painel_final_path,
+            "assinatura_presente": bool(log.assinatura_piloto),
+        },
+        "totais": {
+            "qtd_abastecimentos": log.qtd_abastecimentos,
+            "total_litros_abastecidos": log.total_litros_abastecidos,
+            "total_valor_abastecido": log.total_valor_abastecido,
+        },
+        "abastecimentos": abastecimentos,
+    }
+
+
+def _record_veiculo_log_delete_audit(user, log, request_info=None):
+    request_info = request_info or {}
+    snapshot = _build_veiculo_log_delete_snapshot(log)
+    usuario_nome = (
+        getattr(user, "nome_uvis", None)
+        or getattr(user, "login", None)
+        or "Usuario sem nome"
+    )
+    db.session.add(
+        AuditoriaUsuario(
+            usuario_id=getattr(user, "id", None),
+            usuario_nome=usuario_nome[:100],
+            usuario_login=getattr(user, "login", None),
+            tipo_usuario=getattr(user, "tipo_usuario", None),
+            metodo="POST",
+            tipo_evento="EXCLUSAO",
+            endpoint=VEICULO_LOG_DELETE_AUDIT_ENDPOINT,
+            path=(request_info.get("path") or f"/veiculos/logs/{log.id}/deletar")[:255],
+            query_string=json.dumps(snapshot, ensure_ascii=False, default=str),
+            status_code=200,
+            ip=request_info.get("ip"),
+            user_agent=request_info.get("user_agent"),
+            referrer=(request_info.get("referrer") or None),
+            criado_em=_now_utc(),
+        )
+    )
 
 
 def _parse_log_km_field(form_data, field_name, label, *, required=False):
@@ -1440,6 +1815,27 @@ def _parse_log_km_field(form_data, field_name, label, *, required=False):
         value = _parse_km_form(raw_value, label)
     except (TypeError, ValueError):
         raise VeiculoTurnoError(f"{label} deve ser informado em KM inteiro, sem virgula decimal.")
+
+    if value is None:
+        if required:
+            raise VeiculoTurnoError(f"Informe {label}.")
+        return None
+    if value < 0:
+        raise VeiculoTurnoError(f"{label} nao pode ser negativo.")
+    return value
+
+
+def _parse_log_decimal_field(form_data, field_name, label, *, required=False):
+    raw_value = (form_data.get(field_name) or "").strip()
+    if not raw_value:
+        if required:
+            raise VeiculoTurnoError(f"Informe {label}.")
+        return None
+
+    try:
+        value = _parse_decimal_form(raw_value)
+    except (TypeError, ValueError):
+        raise VeiculoTurnoError(f"{label} deve ser informado com valor numerico valido.")
 
     if value is None:
         if required:
@@ -1842,7 +2238,28 @@ def build_veiculos_logs_export(tipo_usuario, args, user=None):
     )
 
 
-def _build_veiculos_logs_query(*, user=None, q="", data_inicio="", data_fim=""):
+def _sum_veiculos_logs_abastecido(*, user=None, q="", data_inicio="", data_fim=""):
+    log_ids = (
+        _build_veiculos_logs_query(
+            user=user,
+            q=q,
+            data_inicio=data_inicio,
+            data_fim=data_fim,
+            include_options=False,
+            include_order=False,
+        )
+        .with_entities(LogVeiculo.id)
+        .subquery()
+    )
+    total = (
+        db.session.query(db.func.coalesce(db.func.sum(Abastecimento.valor_total), 0))
+        .join(log_ids, log_ids.c.id == Abastecimento.log_veiculo_id)
+        .scalar()
+    )
+    return total or 0
+
+
+def _build_veiculos_logs_query(*, user=None, q="", data_inicio="", data_fim="", include_options=True, include_order=True):
     ultima_movimentacao_subq = _ultima_movimentacao_log_subquery()
     ultima_movimentacao_expr = db.func.coalesce(
         ultima_movimentacao_subq.c.ultima_movimentacao_em,
@@ -1851,17 +2268,18 @@ def _build_veiculos_logs_query(*, user=None, q="", data_inicio="", data_fim=""):
 
     query = (
         LogVeiculo.query
-        .options(
-            joinedload(LogVeiculo.veiculo),
-            joinedload(LogVeiculo.piloto),
-            joinedload(LogVeiculo.equipe),
-            selectinload(LogVeiculo.abastecimentos_detalhados),
-        )
         .outerjoin(ultima_movimentacao_subq, ultima_movimentacao_subq.c.log_id == LogVeiculo.id)
         .join(Veiculos, LogVeiculo.veiculo_id == Veiculos.id)
         .outerjoin(Pilotos, LogVeiculo.piloto_id == Pilotos.id)
         .outerjoin(Equipe, LogVeiculo.equipe_id == Equipe.id)
     )
+    if include_options:
+        query = query.options(
+            joinedload(LogVeiculo.veiculo),
+            joinedload(LogVeiculo.piloto),
+            joinedload(LogVeiculo.equipe),
+            selectinload(LogVeiculo.abastecimentos_detalhados),
+        )
     if user is not None:
         if getattr(user, "tipo_usuario", None) == EQUIPE_OCEANO_USER_TYPE:
             equipe = _equipe_oceano_logada(user)
@@ -1907,4 +2325,7 @@ def _build_veiculos_logs_query(*, user=None, q="", data_inicio="", data_fim=""):
         except ValueError:
             pass
 
-    return query.order_by(ultima_movimentacao_expr.desc(), LogVeiculo.id.desc())
+    if include_order:
+        query = query.order_by(ultima_movimentacao_expr.desc(), LogVeiculo.id.desc())
+
+    return query

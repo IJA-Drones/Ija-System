@@ -1,18 +1,21 @@
 import unittest
 import os
+from datetime import datetime, timedelta
 from io import BytesIO
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 
-from flask import Flask
+from flask import Flask, request
 from werkzeug.datastructures import FileStorage
 
 from app.extensions import db
-from app.models import Abastecimento, Equipe, LogVeiculo, Prefeitura, Veiculos
+from app.models import Abastecimento, AuditoriaUsuario, Equipe, LogVeiculo, Prefeitura, Veiculos
 from app.modules.veiculos import service as veiculos_service
 from app.modules.veiculos.service import (
     build_veiculo_media_skybox_path,
     build_piloto_veiculos_context,
+    build_veiculos_deleted_logs_context,
+    delete_veiculo_log,
     encerrar_turno_piloto,
     iniciar_turno_piloto,
     registrar_abastecimento_turno_piloto,
@@ -240,6 +243,145 @@ class VeiculosOperationalScopeTests(unittest.TestCase):
         db.session.refresh(log)
         self.assertEqual(log.km_final, 32340)
 
+    def test_update_vehicle_log_km_can_correct_fuel_amount_with_decimal_comma(self):
+        veiculo = self._novo_veiculo(km_atual=1030, prefeitura_id=1)
+        log = LogVeiculo(
+            veiculo_id=veiculo.id,
+            equipe_id=self.equipe.id,
+            km_inicial=1000,
+            km_final=1030,
+            check_diario=True,
+        )
+        db.session.add(log)
+        db.session.flush()
+        abastecimento = Abastecimento(
+            log_veiculo_id=log.id,
+            data_hora=datetime(2026, 7, 2, 9, 0),
+            km_registro=1020,
+            tipo_abastecimento="Veiculo",
+            litros=10,
+            valor_total=14024,
+            foto_nf_path="uploads/veiculos/notas/teste.png",
+        )
+        db.session.add(abastecimento)
+        db.session.commit()
+        user = SimpleNamespace(tipo_usuario="admin", prefeitura_id=1)
+
+        message = update_veiculo_log_km(
+            user,
+            log.id,
+            {
+                "km_inicial": "1000",
+                "km_final": "1030",
+                f"abastecimento_{abastecimento.id}_km": "1020",
+                f"abastecimento_{abastecimento.id}_valor": "140,24",
+            },
+        )
+
+        db.session.refresh(abastecimento)
+        self.assertEqual(message, f"Log #{log.id} corrigido com sucesso.")
+        self.assertEqual(abastecimento.valor_total, 140.24)
+
+    def test_admin_can_delete_vehicle_log_and_recalculate_current_km(self):
+        veiculo = self._novo_veiculo(km_atual=1030, prefeitura_id=1)
+        older_log = LogVeiculo(
+            veiculo_id=veiculo.id,
+            equipe_id=self.equipe.id,
+            km_inicial=1000,
+            km_final=1010,
+            check_diario=True,
+            data_registro=datetime(2026, 7, 1, 8, 0),
+        )
+        newer_log = LogVeiculo(
+            veiculo_id=veiculo.id,
+            equipe_id=self.equipe.id,
+            km_inicial=1010,
+            km_final=1030,
+            check_diario=True,
+            data_registro=datetime(2026, 7, 2, 8, 0),
+        )
+        db.session.add_all([older_log, newer_log])
+        db.session.flush()
+        db.session.add(
+            Abastecimento(
+                log_veiculo_id=newer_log.id,
+                data_hora=datetime(2026, 7, 2, 9, 0),
+                km_registro=1020,
+                tipo_abastecimento="Veiculo",
+                litros=10,
+                valor_total=100,
+                foto_nf_path="uploads/veiculos/notas/teste.png",
+            )
+        )
+        db.session.commit()
+        user = SimpleNamespace(tipo_usuario="admin", prefeitura_id=1)
+
+        message = delete_veiculo_log(user, newer_log.id)
+
+        db.session.refresh(veiculo)
+        self.assertEqual(message, f"Log #{newer_log.id} removido com sucesso.")
+        self.assertIsNone(db.session.get(LogVeiculo, newer_log.id))
+        self.assertEqual(Abastecimento.query.count(), 0)
+        self.assertEqual(veiculo.km_atual, 1010)
+        audit_log = AuditoriaUsuario.query.filter_by(endpoint="main.deletar_log_veiculo.snapshot").one()
+        self.assertIn(f'"log_id": {newer_log.id}', audit_log.query_string)
+        self.assertIn('"placa": "ABC1D23"', audit_log.query_string)
+        self.assertIn('"total_valor_abastecido": 100', audit_log.query_string)
+
+    def test_non_admin_cannot_delete_vehicle_log(self):
+        veiculo = self._novo_veiculo(km_atual=1030, prefeitura_id=1)
+        log = LogVeiculo(
+            veiculo_id=veiculo.id,
+            equipe_id=self.equipe.id,
+            km_inicial=1000,
+            km_final=1030,
+            check_diario=True,
+        )
+        db.session.add(log)
+        db.session.commit()
+        user = SimpleNamespace(tipo_usuario="operario", prefeitura_id=1)
+
+        with self.assertRaises(PermissionError):
+            delete_veiculo_log(user, log.id)
+
+        db.session.rollback()
+        self.assertIsNotNone(db.session.get(LogVeiculo, log.id))
+        self.assertEqual(AuditoriaUsuario.query.count(), 0)
+
+    def test_dev_can_view_deleted_vehicle_log_history_from_existing_audit_table(self):
+        db.session.add(
+            AuditoriaUsuario(
+                usuario_nome="Admin",
+                usuario_login="admin",
+                tipo_usuario="admin",
+                metodo="POST",
+                tipo_evento="EXCLUSAO",
+                endpoint="main.deletar_log_veiculo.snapshot",
+                path="/veiculos/logs/10/deletar",
+                query_string=(
+                    '{"log_id": 10, "veiculo": {"placa": "ABC1D23", "modelo": "FIORINO"}, '
+                    '"operador": {"equipe_nome": "PLOA 01"}, '
+                    '"turno": {"km_inicial": 1000, "km_final": 1010, "km_rodado": 10}, '
+                    '"totais": {"qtd_abastecimentos": 1, "total_valor_abastecido": 100}, '
+                    '"abastecimentos": []}'
+                ),
+                status_code=200,
+            )
+        )
+        db.session.commit()
+
+        with self.app.test_request_context("/admin/veiculos/logs-excluidos?q=ABC1D23"):
+            context = build_veiculos_deleted_logs_context("dev", request.args)
+
+        self.assertEqual(context["paginacao"].total, 1)
+        self.assertEqual(context["logs_excluidos"][0]["snapshot"]["log_id"], 10)
+        self.assertEqual(context["logs_excluidos"][0]["veiculo"]["placa"], "ABC1D23")
+
+    def test_non_dev_cannot_view_deleted_vehicle_log_history(self):
+        with self.app.test_request_context("/admin/veiculos/logs-excluidos"):
+            with self.assertRaises(PermissionError):
+                build_veiculos_deleted_logs_context("admin", request.args)
+
     def test_closing_shift_rejects_more_than_500_km_in_turn(self):
         veiculo = self._novo_veiculo(km_atual=1000)
         user = SimpleNamespace(
@@ -326,6 +468,48 @@ class VeiculosOperationalScopeTests(unittest.TestCase):
         )
         self.assertEqual(captured[0][1], b"foto-painel")
 
+    def test_vehicle_logs_list_keeps_cards_aggregated_while_table_is_paginated(self):
+        veiculo = self._novo_veiculo(prefeitura_id=1)
+        for index in range(25):
+            log = LogVeiculo(
+                veiculo_id=veiculo.id,
+                equipe_id=self.equipe.id,
+                km_inicial=1000 + index,
+                km_final=1001 + index,
+                check_diario=True,
+                data_registro=datetime(2026, 7, 1, 8, 0) + timedelta(days=index),
+            )
+            db.session.add(log)
+            db.session.flush()
+            db.session.add(
+                Abastecimento(
+                    log_veiculo_id=log.id,
+                    data_hora=log.data_registro,
+                    km_registro=1001 + index,
+                    tipo_abastecimento="Gerador" if index == 0 else "Veiculo",
+                    litros=1,
+                    valor_total=10,
+                    foto_nf_path="uploads/veiculos/notas/teste.png",
+                )
+            )
+        db.session.commit()
+        user = SimpleNamespace(tipo_usuario="admin", prefeitura_id=1)
+
+        with self.app.test_request_context("/veiculos/logs?page=1"):
+            context = veiculos_service.list_veiculos_logs("admin", request.args, user=user)
+
+        self.assertEqual(context["total_logs"], 25)
+        self.assertEqual(context["total_abastecido"], 250)
+        self.assertEqual(len(context["logs"]), 20)
+        self.assertEqual(context["veiculos_timeline"][0]["total_logs"], 25)
+        self.assertEqual(context["veiculos_timeline"][0]["total_km"], 25)
+        self.assertEqual(context["veiculos_timeline"][0]["total_gasto"], 250)
+        self.assertEqual(context["veiculos_timeline"][0]["total_gasto_veiculo"], 240)
+        self.assertEqual(context["veiculos_timeline"][0]["total_gasto_gerador"], 10)
+        self.assertEqual(context["veiculos_timeline"][0]["total_abastecimentos"], 25)
+        self.assertEqual(context["veiculos_timeline"][0]["total_abastecimentos_veiculo"], 24)
+        self.assertEqual(context["veiculos_timeline"][0]["total_abastecimentos_gerador"], 1)
+
     def test_fuel_record_requires_and_saves_panel_photo(self):
         veiculo = self._novo_veiculo()
         user = SimpleNamespace(
@@ -372,6 +556,44 @@ class VeiculosOperationalScopeTests(unittest.TestCase):
             )
             db.session.refresh(veiculo)
             self.assertEqual(veiculo.km_atual, 1000)
+
+    def test_fuel_record_accepts_brazilian_decimal_comma(self):
+        veiculo = self._novo_veiculo()
+        user = SimpleNamespace(
+            tipo_usuario="equipe_oceano",
+            codigo_setor=str(self.equipe.id),
+            prefeitura_id=1,
+        )
+        log = LogVeiculo(
+            veiculo_id=veiculo.id,
+            equipe_id=self.equipe.id,
+            km_inicial=1000,
+            km_final=None,
+            check_diario=True,
+        )
+        db.session.add(log)
+        db.session.commit()
+
+        with TemporaryDirectory() as tmp_dir:
+            registrar_abastecimento_turno_piloto(
+                user,
+                veiculo.id,
+                {
+                    "km_abastecimento": "1010",
+                    "litros": "40,5",
+                    "valor_abastecimento": "1.402,40",
+                    "tipo_abastecimento": "Veiculo",
+                },
+                {
+                    "foto_nf": FileStorage(stream=BytesIO(b"nf"), filename="nf.png", content_type="image/png"),
+                    "foto_painel_abastecimento": FileStorage(stream=BytesIO(b"painel"), filename="painel.png", content_type="image/png"),
+                },
+                tmp_dir,
+            )
+
+        abastecimento = Abastecimento.query.one()
+        self.assertEqual(abastecimento.litros, 40.5)
+        self.assertEqual(abastecimento.valor_total, 1402.40)
 
     def test_fuel_record_rejects_more_than_500_km_from_shift_initial(self):
         veiculo = self._novo_veiculo()
