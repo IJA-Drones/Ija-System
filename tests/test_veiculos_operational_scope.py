@@ -211,15 +211,18 @@ class VeiculosOperationalScopeTests(unittest.TestCase):
         self.assertEqual(log.km_final, 32457)
         self.assertEqual(veiculo.km_atual, 32457)
 
-    def test_vehicle_km_parser_accepts_thousand_separator_but_rejects_decimal_km(self):
+    def test_vehicle_km_parser_accepts_thousand_separator_and_decimal_km(self):
         self.assertEqual(veiculos_service._parse_km_form("32,000"), 32000)
         self.assertEqual(veiculos_service._parse_km_form("32.000"), 32000)
         self.assertEqual(veiculos_service._parse_km_form("32000,0"), 32000)
+        self.assertEqual(veiculos_service._parse_km_form("32000,5"), 32000.5)
+        self.assertEqual(veiculos_service._parse_km_form("32.000,5"), 32000.5)
+        self.assertEqual(veiculos_service._parse_km_form("32,000.5"), 32000.5)
 
         with self.assertRaises(ValueError):
-            veiculos_service._parse_km_form("32000,5")
+            veiculos_service._parse_km_form("32a000")
 
-    def test_update_vehicle_log_km_rejects_decimal_km(self):
+    def test_update_vehicle_log_km_accepts_decimal_km(self):
         veiculo = self._novo_veiculo(km_atual=32337, prefeitura_id=1)
         log = LogVeiculo(
             veiculo_id=veiculo.id,
@@ -232,16 +235,17 @@ class VeiculosOperationalScopeTests(unittest.TestCase):
         db.session.commit()
         user = SimpleNamespace(tipo_usuario="admin", prefeitura_id=1)
 
-        with self.assertRaisesRegex(veiculos_service.VeiculoTurnoError, "KM final.*inteiro"):
-            update_veiculo_log_km(
-                user,
-                log.id,
-                {"km_inicial": "32337", "km_final": "32337,6"},
-            )
+        message = update_veiculo_log_km(
+            user,
+            log.id,
+            {"km_inicial": "32337", "km_final": "32337,6"},
+        )
 
-        db.session.rollback()
         db.session.refresh(log)
-        self.assertEqual(log.km_final, 32340)
+        db.session.refresh(veiculo)
+        self.assertEqual(message, f"Log #{log.id} corrigido com sucesso.")
+        self.assertEqual(log.km_final, 32337.6)
+        self.assertEqual(veiculo.km_atual, 32337.6)
 
     def test_update_vehicle_log_km_can_correct_fuel_amount_with_decimal_comma(self):
         veiculo = self._novo_veiculo(km_atual=1030, prefeitura_id=1)
@@ -532,7 +536,7 @@ class VeiculosOperationalScopeTests(unittest.TestCase):
                 user,
                 veiculo.id,
                 {
-                    "km_abastecimento": "1010",
+                    "km_abastecimento": "1010,3",
                     "litros": "20",
                     "valor_abastecimento": "100",
                     "tipo_abastecimento": "Veiculo",
@@ -579,7 +583,7 @@ class VeiculosOperationalScopeTests(unittest.TestCase):
                 user,
                 veiculo.id,
                 {
-                    "km_abastecimento": "1010",
+                    "km_abastecimento": "1010,3",
                     "litros": "40,5",
                     "valor_abastecimento": "1.402,40",
                     "tipo_abastecimento": "Veiculo",
@@ -592,6 +596,7 @@ class VeiculosOperationalScopeTests(unittest.TestCase):
             )
 
         abastecimento = Abastecimento.query.one()
+        self.assertEqual(abastecimento.km_registro, 1010.3)
         self.assertEqual(abastecimento.litros, 40.5)
         self.assertEqual(abastecimento.valor_total, 1402.40)
 

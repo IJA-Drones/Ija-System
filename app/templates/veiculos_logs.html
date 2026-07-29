@@ -1029,7 +1029,7 @@
                                                                             <span>Painel inicial</span>
                                                                             <a href="{{ painel_inicial_url }}" target="_blank">Abrir</a>
                                                                         </div>
-                                                                        <img src="{{ painel_inicial_url }}" alt="Foto do painel inicial">
+                                                                        <img data-lazy-src="{{ painel_inicial_url }}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" loading="lazy" decoding="async" alt="Foto do painel inicial">
                                                                     </div>
                                                                 </div>
                                                             {% else %}
@@ -1073,7 +1073,7 @@
                                                                                         <span>Painel no abastecimento</span>
                                                                                         <a href="{{ painel_abastecimento_url }}" target="_blank">Abrir</a>
                                                                                     </div>
-                                                                                    <img src="{{ painel_abastecimento_url }}" alt="Foto do painel no abastecimento">
+                                                                                    <img data-lazy-src="{{ painel_abastecimento_url }}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" loading="lazy" decoding="async" alt="Foto do painel no abastecimento">
                                                                                 </div>
                                                                             {% endif %}
                                                                             {% if abastecimento.foto_nf_path %}
@@ -1083,7 +1083,7 @@
                                                                                         <span>Nota fiscal</span>
                                                                                         <a href="{{ nota_url }}" target="_blank">Abrir</a>
                                                                                     </div>
-                                                                                    <img src="{{ nota_url }}" alt="Foto da nota fiscal">
+                                                                                    <img data-lazy-src="{{ nota_url }}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" loading="lazy" decoding="async" alt="Foto da nota fiscal">
                                                                                 </div>
                                                                             {% endif %}
                                                                         </div>
@@ -1155,7 +1155,7 @@
                                                                                 <span>Painel final</span>
                                                                                 <a href="{{ painel_final_url }}" target="_blank">Abrir</a>
                                                                             </div>
-                                                                            <img src="{{ painel_final_url }}" alt="Foto do painel final">
+                                                                            <img data-lazy-src="{{ painel_final_url }}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" loading="lazy" decoding="async" alt="Foto do painel final">
                                                                         </div>
                                                                     {% endif %}
                                                                     {% if log.assinatura_piloto %}
@@ -1163,7 +1163,7 @@
                                                                             <div class="timeline-media-title">
                                                                                 <span>Assinatura</span>
                                                                             </div>
-                                                                            <img src="{{ log.assinatura_piloto }}" alt="Assinatura do piloto">
+                                                                            <img data-lazy-src="{{ log.assinatura_piloto }}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" loading="lazy" decoding="async" alt="Assinatura do piloto">
                                                                         </div>
                                                                     {% endif %}
                                                                 </div>
@@ -1211,11 +1211,11 @@
                                 <div class="row g-3">
                                     <div class="col-md-6">
                                         <label class="form-label small fw-bold text-muted">KM inicial</label>
-                                        <input type="number" step="1" min="0" name="km_inicial" class="form-control" value="{{ log.km_inicial if log.km_inicial is not none else '' }}" required>
+                                        <input type="number" step="any" inputmode="decimal" min="0" name="km_inicial" class="form-control" value="{{ log.km_inicial if log.km_inicial is not none else '' }}" required>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label small fw-bold text-muted">KM final</label>
-                                        <input type="number" step="1" min="0" name="km_final" class="form-control" value="{{ log.km_final if log.km_final is not none else '' }}" placeholder="Deixe vazio se o turno estiver aberto">
+                                        <input type="number" step="any" inputmode="decimal" min="0" name="km_final" class="form-control" value="{{ log.km_final if log.km_final is not none else '' }}" placeholder="Deixe vazio se o turno estiver aberto">
                                     </div>
                                     {% if log.abastecimentos_ordenados %}
                                         <div class="col-12">
@@ -1229,7 +1229,8 @@
                                                 </label>
                                                 <input
                                                     type="number"
-                                                    step="1"
+                                                    step="any"
+                                                    inputmode="decimal"
                                                     min="0"
                                                     name="abastecimento_{{ abastecimento.id }}_km"
                                                     class="form-control"
@@ -1413,7 +1414,7 @@
                                                                             <span>Painel inicial</span>
                                                                             <a href="{{ timeline_painel_inicial_url }}" target="_blank">Abrir</a>
                                                                         </div>
-                                                                        <img src="{{ timeline_painel_inicial_url }}" alt="Foto do painel inicial">
+                                                                        <img data-lazy-src="{{ timeline_painel_inicial_url }}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" loading="lazy" decoding="async" alt="Foto do painel inicial">
                                                                     </div>
                                                                 </div>
                                                             {% endif %}
@@ -1460,7 +1461,7 @@
                                                                                     <span>Painel no abastecimento</span>
                                                                                     <a href="{{ timeline_painel_abastecimento_url }}" target="_blank">Abrir</a>
                                                                                 </div>
-                                                                                <img src="{{ timeline_painel_abastecimento_url }}" alt="Foto do painel no abastecimento">
+                                                                                <img data-lazy-src="{{ timeline_painel_abastecimento_url }}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" loading="lazy" decoding="async" alt="Foto do painel no abastecimento">
                                                                             </div>
                                                                         {% endif %}
                                                                         {% if abastecimento.foto_nf_path %}
@@ -1470,7 +1471,7 @@
                                                                                     <span>Nota fiscal</span>
                                                                                     <a href="{{ timeline_nota_url }}" target="_blank">Abrir</a>
                                                                                 </div>
-                                                                                <img src="{{ timeline_nota_url }}" alt="Foto da nota fiscal">
+                                                                                <img data-lazy-src="{{ timeline_nota_url }}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" loading="lazy" decoding="async" alt="Foto da nota fiscal">
                                                                             </div>
                                                                         {% endif %}
                                                                     </div>
@@ -1522,7 +1523,7 @@
                                                                                 <span>Painel final</span>
                                                                                 <a href="{{ timeline_painel_final_url }}" target="_blank">Abrir</a>
                                                                             </div>
-                                                                            <img src="{{ timeline_painel_final_url }}" alt="Foto do painel final">
+                                                                            <img data-lazy-src="{{ timeline_painel_final_url }}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" loading="lazy" decoding="async" alt="Foto do painel final">
                                                                         </div>
                                                                     {% endif %}
                                                                     {% if turno.assinatura_piloto %}
@@ -1530,7 +1531,7 @@
                                                                             <div class="timeline-media-title">
                                                                                 <span>Assinatura</span>
                                                                             </div>
-                                                                            <img src="{{ turno.assinatura_piloto }}" alt="Assinatura do piloto">
+                                                                            <img data-lazy-src="{{ turno.assinatura_piloto }}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" loading="lazy" decoding="async" alt="Assinatura do piloto">
                                                                         </div>
                                                                     {% endif %}
                                                                 </div>
@@ -1559,4 +1560,24 @@
     {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(() => {
+    const loadLazyVehicleMedia = (root) => {
+        root.querySelectorAll('img[data-lazy-src]').forEach((img) => {
+            if (!img.getClientRects().length) return;
+            const source = img.dataset.lazySrc;
+            if (!source) return;
+            img.src = source;
+            img.removeAttribute('data-lazy-src');
+        });
+    };
+
+    document.addEventListener('shown.bs.collapse', (event) => {
+        loadLazyVehicleMedia(event.target);
+    });
+})();
+</script>
 {% endblock %}

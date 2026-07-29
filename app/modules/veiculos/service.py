@@ -812,22 +812,24 @@ def _parse_km_form(raw_value, label="KM"):
     br_milhares = re.fullmatch(r"(\d{1,3}(?:\.\d{3})+)(?:,(\d+))?", raw_value)
     if br_milhares:
         decimal = br_milhares.group(2)
-        if decimal and decimal.strip("0"):
-            raise ValueError(f"{label} deve ser informado sem casas decimais.")
-        return float(br_milhares.group(1).replace(".", ""))
+        normalized = br_milhares.group(1).replace(".", "")
+        if decimal:
+            normalized = f"{normalized}.{decimal}"
+        return float(normalized)
 
     us_milhares = re.fullmatch(r"(\d{1,3}(?:,\d{3})+)(?:\.(\d+))?", raw_value)
     if us_milhares:
         decimal = us_milhares.group(2)
-        if decimal and decimal.strip("0"):
-            raise ValueError(f"{label} deve ser informado sem casas decimais.")
-        return float(us_milhares.group(1).replace(",", ""))
+        normalized = us_milhares.group(1).replace(",", "")
+        if decimal:
+            normalized = f"{normalized}.{decimal}"
+        return float(normalized)
 
     decimal_simples = re.fullmatch(r"(\d+)[,.](\d+)", raw_value)
-    if decimal_simples and not decimal_simples.group(2).strip("0"):
-        return float(decimal_simples.group(1))
+    if decimal_simples:
+        return float(f"{decimal_simples.group(1)}.{decimal_simples.group(2)}")
 
-    raise ValueError(f"{label} deve ser informado em KM inteiro, sem virgula decimal.")
+    raise ValueError(f"{label} deve ser informado como numero valido.")
 
 
 def _validar_limite_km_turno(km_referencia, km_informado, label):

@@ -478,12 +478,12 @@
                   </div>
                   <div class="col-md-3">
                     <label class="form-label small fw-bold">KM no Abastecimento</label>
-                    <input type="number" step="1" name="km_abastecimento" class="form-control" min="0" max="{{ (turno_aberto.km_inicial or 0) + 500 }}" value="{{ turno_aberto.ultimo_km_registrado or v.km_atual or '' }}" required>
+                    <input type="number" step="any" inputmode="decimal" name="km_abastecimento" class="form-control" min="0" max="{{ (turno_aberto.km_inicial or 0) + 500 }}" value="{{ turno_aberto.ultimo_km_registrado or v.km_atual or '' }}" required>
                     <div class="hint-line mt-1">Usado para auditoria e relatórios do abastecimento.</div>
                   </div>
                   <div class="col-md-3">
                     <label class="form-label small fw-bold">Litros</label>
-                    <input type="text" inputmode="decimal" name="litros" class="form-control" placeholder="0,00" required>
+                    <input type="text" inputmode="numeric" name="litros" class="form-control js-decimal-centavos" placeholder="0,00" autocomplete="off" required>
                   </div>
                   <div class="col-md-3">
                     <label class="form-label small fw-bold">Valor Total (R$)</label>
@@ -533,7 +533,7 @@
 
                 <div class="mb-3">
                   <label class="form-label small fw-bold">Kilometragem Final (Painel)</label>
-                  <input type="number" step="1" name="km_final" class="form-control" min="{{ km_fechamento_min or 0 }}" max="{{ ((turno_aberto.km_inicial if turno_aberto else v.km_atual) or 0) + 500 }}" value="" placeholder="KM mostrado no fim do dia" required>
+                  <input type="number" step="any" inputmode="decimal" name="km_final" class="form-control" min="{{ km_fechamento_min or 0 }}" max="{{ ((turno_aberto.km_inicial if turno_aberto else v.km_atual) or 0) + 500 }}" value="" placeholder="KM mostrado no fim do dia" required>
                   <div class="hint-line mt-1">Não pode ser menor que o KM inicial nem que o KM registrado no abastecimento.</div>
                 </div>
                 <div class="mb-3">
@@ -670,7 +670,7 @@ const formatCentavos = (rawValue) => {
     return `${integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".")},${decimalPart}`;
 };
 
-document.querySelectorAll('.js-money-centavos').forEach(input => {
+document.querySelectorAll('.js-money-centavos, .js-decimal-centavos').forEach(input => {
     const applyMask = () => {
         input.value = formatCentavos(input.value);
     };
