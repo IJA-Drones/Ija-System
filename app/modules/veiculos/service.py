@@ -16,7 +16,7 @@ from sqlalchemy.orm import joinedload, selectinload
 from werkzeug.utils import secure_filename
 
 from app.extensions import db
-from app.models import Abastecimento, AuditoriaUsuario, Equipe, EquipePiloto, LogVeiculo, Pilotos, Veiculos
+from app.models import Abastecimento, AuditoriaUsuario, Equipe, EquipePiloto, LimpezaVeiculo, LogVeiculo, Pilotos, Veiculos
 from app.shared.access import apply_prefeitura_scope, normalize_role
 from app.shared.query_filters import id_search_clause
 from app.shared.skybox import (
@@ -367,6 +367,7 @@ def build_piloto_veiculos_context(user):
                 "veiculos": [],
                 "turnos_abertos": {},
                 "km_inicial_referencias": {},
+                "agora_brasilia": _now_brazil(),
             }
 
         veiculos = (
@@ -380,6 +381,7 @@ def build_piloto_veiculos_context(user):
             "veiculos": veiculos,
             "turnos_abertos": _build_turnos_abertos_veiculos(veiculos, user),
             "km_inicial_referencias": _build_km_inicial_referencias(veiculos),
+            "agora_brasilia": _now_brazil(),
         }
 
     nome_piloto = _piloto_nome_logado(user)
@@ -390,6 +392,7 @@ def build_piloto_veiculos_context(user):
             "veiculos": [],
             "turnos_abertos": {},
             "km_inicial_referencias": {},
+            "agora_brasilia": _now_brazil(),
         }
 
     equipe_ids = _equipe_ids_do_piloto(user)
@@ -409,6 +412,7 @@ def build_piloto_veiculos_context(user):
         "veiculos": veiculos,
         "turnos_abertos": _build_turnos_abertos_veiculos(veiculos, user),
         "km_inicial_referencias": _build_km_inicial_referencias(veiculos),
+        "agora_brasilia": _now_brazil(),
     }
 
 
@@ -419,7 +423,10 @@ def _build_turnos_abertos_veiculos(veiculos, user):
     if veiculo_ids:
         query = (
             LogVeiculo.query
-            .options(selectinload(LogVeiculo.abastecimentos_detalhados))
+            .options(
+                selectinload(LogVeiculo.abastecimentos_detalhados),
+                selectinload(LogVeiculo.limpezas_detalhadas),
+            )
             .filter(LogVeiculo.veiculo_id.in_(veiculo_ids), LogVeiculo.km_final.is_(None))
         )
         query = _apply_log_actor_scope(query, user)
@@ -629,6 +636,57 @@ def registrar_abastecimento_turno_piloto(user, veiculo_id, form_data, files_data
     return "Abastecimento registrado com sucesso!"
 
 
+def registrar_limpeza_turno_piloto(user, veiculo_id, form_data):
+    veiculo = _veiculo_do_operacional_logado(veiculo_id, user=user)
+    log = _buscar_turno_aberto_usuario(veiculo.id, user, incluir_abastecimentos=True)
+
+    if not log:
+        raise VeiculoTurnoError(
+            "Nenhum turno aberto encontrado para registrar limpeza.",
+            "warning",
+        )
+
+    limpeza_realizada = _bool_from_form(form_data.get("limpeza_realizada"), default=True)
+    tipo_limpeza = (form_data.get("tipo_limpeza") or "").strip().lower()
+    observacao = (form_data.get("observacao_limpeza") or "").strip() or None
+    data_hora_limpeza = _parse_datetime_local_form(form_data.get("data_hora_limpeza"))
+
+    try:
+        valor_total = _parse_decimal_form(form_data.get("valor_limpeza"))
+    except ValueError as exc:
+        raise VeiculoTurnoError("Valor da limpeza invalido.", "warning") from exc
+
+    tipos_validos = {"completa", "ducha"}
+    if tipo_limpeza not in tipos_validos:
+        raise VeiculoTurnoError("Selecione se a limpeza foi completa ou apenas ducha.", "warning")
+
+    if data_hora_limpeza is None:
+        raise VeiculoTurnoError("Informe a data e hora da limpeza.", "warning")
+
+    if valor_total is None:
+        raise VeiculoTurnoError("Informe o valor da limpeza.", "warning")
+
+    if valor_total < 0:
+        raise VeiculoTurnoError("Valor da limpeza nao pode ser negativo.", "warning")
+
+    nova_limpeza = LimpezaVeiculo(
+        log_veiculo_id=log.id,
+        veiculo_id=veiculo.id,
+        piloto_id=log.piloto_id,
+        equipe_id=log.equipe_id,
+        data_registro=_now_brazil(),
+        data_hora=data_hora_limpeza,
+        limpeza_realizada=limpeza_realizada,
+        tipo_limpeza=tipo_limpeza,
+        valor_total=valor_total,
+        observacao=observacao,
+    )
+
+    db.session.add(nova_limpeza)
+    db.session.commit()
+    return "Limpeza registrada com sucesso!"
+
+
 def encerrar_turno_piloto(user, veiculo_id, form_data, files_data=None, root_path=None):
     veiculo = _veiculo_do_operacional_logado(veiculo_id, user=user)
 
@@ -801,6 +859,25 @@ def _parse_decimal_form(raw_value):
     return float(raw_value)
 
 
+def _parse_datetime_local_form(raw_value):
+    raw_value = (raw_value or "").strip()
+    if not raw_value:
+        return None
+
+    for fmt in ("%Y-%m-%dT%H:%M", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M"):
+        try:
+            return datetime.strptime(raw_value, fmt)
+        except ValueError:
+            continue
+    return None
+
+
+def _bool_from_form(value, default=True):
+    if value is None:
+        return default
+    return str(value).strip().lower() in {"1", "true", "on", "sim", "ok", "realizada"}
+
+
 def _parse_km_form(raw_value, label="KM"):
     raw_value = (raw_value or "").strip().replace(" ", "")
     if not raw_value:
@@ -889,7 +966,10 @@ def _buscar_turno_aberto_usuario(veiculo_id, user, incluir_abastecimentos=False)
     query = LogVeiculo.query.filter(LogVeiculo.veiculo_id == veiculo_id, LogVeiculo.km_final.is_(None))
     query = _apply_log_actor_scope(query, user)
     if incluir_abastecimentos:
-        query = query.options(selectinload(LogVeiculo.abastecimentos_detalhados))
+        query = query.options(
+            selectinload(LogVeiculo.abastecimentos_detalhados),
+            selectinload(LogVeiculo.limpezas_detalhadas),
+        )
     return query.order_by(LogVeiculo.data_registro.desc()).first()
 
 
@@ -1135,7 +1215,10 @@ def _build_ultimos_logs(veiculos):
     veiculo_ids = [veiculo.id for veiculo in veiculos]
     logs = (
         LogVeiculo.query
-        .options(selectinload(LogVeiculo.abastecimentos_detalhados))
+        .options(
+            selectinload(LogVeiculo.abastecimentos_detalhados),
+            selectinload(LogVeiculo.limpezas_detalhadas),
+        )
         .filter(LogVeiculo.veiculo_id.in_(veiculo_ids))
         .order_by(LogVeiculo.veiculo_id.asc(), LogVeiculo.data_registro.desc())
         .all()
@@ -1163,9 +1246,11 @@ def _build_veiculos_timeline_from_logs(logs):
                 "total_gasto": 0,
                 "total_gasto_veiculo": 0,
                 "total_gasto_gerador": 0,
+                "total_limpeza": 0,
                 "total_abastecimentos": 0,
                 "total_abastecimentos_veiculo": 0,
                 "total_abastecimentos_gerador": 0,
+                "total_limpezas": 0,
             },
         )
         if item["veiculo"] is None and veiculo is not None:
@@ -1173,6 +1258,7 @@ def _build_veiculos_timeline_from_logs(logs):
 
         km_rodado = _km_rodado_log_veiculo(log)
         gasto = log.total_valor_abastecido or 0
+        gasto_limpeza = log.total_valor_limpeza or 0
         gasto_por_tipo = _sum_abastecimentos_por_tipo(log)
         data_inicio = log.data_registro
         movimentacao = log.ultima_movimentacao_em or data_inicio
@@ -1188,16 +1274,19 @@ def _build_veiculos_timeline_from_logs(logs):
             "gasto": gasto,
             "gasto_veiculo": gasto_por_tipo["veiculo"],
             "gasto_gerador": gasto_por_tipo["gerador"],
+            "gasto_limpeza": gasto_limpeza,
             "status": "Aberto" if log.km_final is None else "Encerrado",
             "abastecimentos": log.qtd_abastecimentos,
             "abastecimentos_veiculo": gasto_por_tipo["qtd_veiculo"],
             "abastecimentos_gerador": gasto_por_tipo["qtd_gerador"],
+            "limpezas": log.qtd_limpezas,
             "qtd_fazendas_enderecos": log.qtd_fazendas_enderecos,
             "observacao": log.observacao,
             "foto_painel_path": log.foto_painel_path,
             "foto_painel_final_path": log.foto_painel_final_path,
             "assinatura_piloto": log.assinatura_piloto,
             "eventos_abastecimento": _eventos_abastecimento_log_veiculo(log),
+            "eventos_limpeza": _eventos_limpeza_log_veiculo(log),
         }
 
         item["logs"].append(log_info)
@@ -1206,9 +1295,11 @@ def _build_veiculos_timeline_from_logs(logs):
         item["total_gasto"] += gasto
         item["total_gasto_veiculo"] += gasto_por_tipo["veiculo"]
         item["total_gasto_gerador"] += gasto_por_tipo["gerador"]
+        item["total_limpeza"] += gasto_limpeza
         item["total_abastecimentos"] += log.qtd_abastecimentos
         item["total_abastecimentos_veiculo"] += gasto_por_tipo["qtd_veiculo"]
         item["total_abastecimentos_gerador"] += gasto_por_tipo["qtd_gerador"]
+        item["total_limpezas"] += log.qtd_limpezas
 
         if dia is not None:
             dia_item = dias_por_veiculo[log.veiculo_id].setdefault(
@@ -1219,10 +1310,12 @@ def _build_veiculos_timeline_from_logs(logs):
                     "gasto": 0,
                     "gasto_veiculo": 0,
                     "gasto_gerador": 0,
+                    "gasto_limpeza": 0,
                     "logs": 0,
                     "abastecimentos": 0,
                     "abastecimentos_veiculo": 0,
                     "abastecimentos_gerador": 0,
+                    "limpezas": 0,
                     "turnos": [],
                 },
             )
@@ -1230,10 +1323,12 @@ def _build_veiculos_timeline_from_logs(logs):
             dia_item["gasto"] += gasto
             dia_item["gasto_veiculo"] += gasto_por_tipo["veiculo"]
             dia_item["gasto_gerador"] += gasto_por_tipo["gerador"]
+            dia_item["gasto_limpeza"] += gasto_limpeza
             dia_item["logs"] += 1
             dia_item["abastecimentos"] += log.qtd_abastecimentos
             dia_item["abastecimentos_veiculo"] += gasto_por_tipo["qtd_veiculo"]
             dia_item["abastecimentos_gerador"] += gasto_por_tipo["qtd_gerador"]
+            dia_item["limpezas"] += log.qtd_limpezas
             dia_item["turnos"].append(log_info)
 
     for veiculo_id, dias in dias_por_veiculo.items():
@@ -1335,6 +1430,25 @@ def _build_veiculos_summary_from_logs_query(*, user=None, q="", data_inicio="", 
         .all()
     )
 
+    limpeza_rows = (
+        db.session.query(
+            LogVeiculo.veiculo_id.label("veiculo_id"),
+            db.func.coalesce(db.func.sum(LimpezaVeiculo.valor_total), 0).label("total_limpeza"),
+            db.func.count(LimpezaVeiculo.id).label("total_limpezas"),
+        )
+        .join(log_ids, log_ids.c.id == LogVeiculo.id)
+        .join(LimpezaVeiculo, LimpezaVeiculo.log_veiculo_id == LogVeiculo.id)
+        .group_by(LogVeiculo.veiculo_id)
+        .all()
+    )
+    limpezas_por_veiculo = {
+        row.veiculo_id: {
+            "total_limpeza": row.total_limpeza or 0,
+            "total_limpezas": int(row.total_limpezas or 0),
+        }
+        for row in limpeza_rows
+    }
+
     if not summary_rows:
         return []
 
@@ -1351,6 +1465,7 @@ def _build_veiculos_summary_from_logs_query(*, user=None, q="", data_inicio="", 
     items = []
     for row in summary_rows:
         veiculo = veiculos.get(row.veiculo_id)
+        limpeza_summary = limpezas_por_veiculo.get(row.veiculo_id, {})
         items.append(
             {
                 "veiculo": veiculo,
@@ -1361,9 +1476,11 @@ def _build_veiculos_summary_from_logs_query(*, user=None, q="", data_inicio="", 
                 "total_gasto": row.total_gasto or 0,
                 "total_gasto_veiculo": row.total_gasto_veiculo or 0,
                 "total_gasto_gerador": row.total_gasto_gerador or 0,
+                "total_limpeza": limpeza_summary.get("total_limpeza", 0),
                 "total_abastecimentos": int(row.total_abastecimentos or 0),
                 "total_abastecimentos_veiculo": int(row.total_abastecimentos_veiculo or 0),
                 "total_abastecimentos_gerador": int(row.total_abastecimentos_gerador or 0),
+                "total_limpezas": limpeza_summary.get("total_limpezas", 0),
             }
         )
 
@@ -1460,13 +1577,79 @@ def _eventos_abastecimento_log_veiculo(log):
     return eventos
 
 
+def _eventos_limpeza_log_veiculo(log):
+    eventos = []
+    for limpeza in log.limpezas_ordenadas:
+        eventos.append(
+            {
+                "id": limpeza.id,
+                "data": limpeza.data_hora,
+                "data_registro": limpeza.data_registro,
+                "realizada": bool(limpeza.limpeza_realizada),
+                "tipo": limpeza.tipo_limpeza or "",
+                "tipo_label": _limpeza_tipo_label(limpeza.tipo_limpeza),
+                "valor": float(limpeza.valor_total or 0),
+                "observacao": limpeza.observacao or "",
+            }
+        )
+    return eventos
+
+
+def _limpeza_tipo_label(tipo_limpeza):
+    tipo = (tipo_limpeza or "").strip().lower()
+    if tipo == "completa":
+        return "Completa"
+    if tipo == "ducha":
+        return "Apenas ducha"
+    return "Nao informado"
+
+
+def _limpezas_tipos_resumo(log):
+    tipos = []
+    for item in log.limpezas_ordenadas:
+        label = _limpeza_tipo_label(item.tipo_limpeza)
+        if label and label not in tipos:
+            tipos.append(label)
+    return ", ".join(tipos)
+
+
+def _limpezas_registros_resumo(log):
+    return " | ".join(
+        item.data_registro.strftime("%d/%m/%Y %H:%M")
+        for item in log.limpezas_ordenadas
+        if item.data_registro
+    )
+
+
+def _limpezas_datas_resumo(log):
+    return " | ".join(
+        item.data_hora.strftime("%d/%m/%Y %H:%M")
+        for item in log.limpezas_ordenadas
+        if item.data_hora
+    )
+
+
 def _ultima_movimentacao_log_subquery():
-    return (
+    movimentos = (
         db.session.query(
             Abastecimento.log_veiculo_id.label("log_id"),
-            db.func.max(Abastecimento.data_hora).label("ultima_movimentacao_em"),
+            Abastecimento.data_hora.label("data_hora"),
         )
-        .group_by(Abastecimento.log_veiculo_id)
+        .union_all(
+            db.session.query(
+                LimpezaVeiculo.log_veiculo_id.label("log_id"),
+                LimpezaVeiculo.data_hora.label("data_hora"),
+            )
+        )
+        .subquery()
+    )
+
+    return (
+        db.session.query(
+            movimentos.c.log_id,
+            db.func.max(movimentos.c.data_hora).label("ultima_movimentacao_em"),
+        )
+        .group_by(movimentos.c.log_id)
         .subquery()
     )
 
@@ -1540,9 +1723,11 @@ def build_veiculo_logs_detalhe_context(tipo_usuario, veiculo_id, args, user=None
         "total_gasto": 0,
         "total_gasto_veiculo": 0,
         "total_gasto_gerador": 0,
+        "total_limpeza": 0,
         "total_abastecimentos": 0,
         "total_abastecimentos_veiculo": 0,
         "total_abastecimentos_gerador": 0,
+        "total_limpezas": 0,
     }
 
     return {
@@ -1739,6 +1924,20 @@ def _build_veiculo_log_delete_snapshot(log):
             }
         )
 
+    limpezas = []
+    for item in log.limpezas_ordenadas:
+        limpezas.append(
+            {
+                "id": item.id,
+                "data_registro": _serialize_datetime(item.data_registro),
+                "data_hora": _serialize_datetime(item.data_hora),
+                "limpeza_realizada": bool(item.limpeza_realizada),
+                "tipo_limpeza": item.tipo_limpeza,
+                "valor_total": float(item.valor_total or 0),
+                "observacao": item.observacao,
+            }
+        )
+
     return {
         "log_id": log.id,
         "veiculo": {
@@ -1771,8 +1970,11 @@ def _build_veiculo_log_delete_snapshot(log):
             "qtd_abastecimentos": log.qtd_abastecimentos,
             "total_litros_abastecidos": log.total_litros_abastecidos,
             "total_valor_abastecido": log.total_valor_abastecido,
+            "qtd_limpezas": log.qtd_limpezas,
+            "total_valor_limpeza": log.total_valor_limpeza,
         },
         "abastecimentos": abastecimentos,
+        "limpezas": limpezas,
     }
 
 
@@ -1936,6 +2138,12 @@ def build_veiculos_logs_export(tipo_usuario, args, user=None):
         "Valor Abastecimento (R$)",
         "Valor por Litro (R$)",
         "Custo por KM (R$)",
+        "Limpeza Realizada",
+        "Qtd. Limpezas",
+        "Data(s) Registro Limpeza",
+        "Data(s) Limpeza",
+        "Tipo(s) Limpeza",
+        "Valor Limpeza (R$)",
         "Assinatura",
         "Observacao",
     ]
@@ -1963,6 +2171,12 @@ def build_veiculos_logs_export(tipo_usuario, args, user=None):
             float(log.total_valor_abastecido or 0),
             None,
             None,
+            "SIM" if log.teve_limpeza else "N\u00c3O",
+            int(log.qtd_limpezas or 0),
+            _limpezas_registros_resumo(log),
+            _limpezas_datas_resumo(log),
+            _limpezas_tipos_resumo(log),
+            float(log.total_valor_limpeza or 0),
             "SIM" if log.assinatura_piloto else "N\u00c3O",
             log.observacao or "",
         ])
@@ -1982,7 +2196,10 @@ def build_veiculos_logs_export(tipo_usuario, args, user=None):
     col_valor = 14
     col_val_litro = 15
     col_custo_km = 16
-    col_ass = 17
+    col_limpeza = 17
+    col_qtd_limpeza = 18
+    col_valor_limpeza = 22
+    col_ass = 23
 
     for row in range(2, last_row + 1):
         ws.cell(row, col_km_rod).value = (
@@ -2006,18 +2223,20 @@ def build_veiculos_logs_export(tipo_usuario, args, user=None):
         ws.cell(row, col_valor).number_format = '"R$" #,##0.00'
         ws.cell(row, col_val_litro).number_format = '"R$" #,##0.00'
         ws.cell(row, col_custo_km).number_format = '"R$" #,##0.00'
+        ws.cell(row, col_qtd_limpeza).number_format = "0"
+        ws.cell(row, col_valor_limpeza).number_format = '"R$" #,##0.00'
 
         for col in range(1, last_col + 1):
             current = ws.cell(row, col)
             current.border = border
             current.alignment = Alignment(vertical="center", wrap_text=True)
 
-    center_cols(ws, cols=[col_data, col_check, col_abast, col_ass], start_row=2, end_row=last_row)
+    center_cols(ws, cols=[col_data, col_check, col_abast, col_limpeza, col_ass], start_row=2, end_row=last_row)
 
     stripe_fill = PatternFill("solid", fgColor="F2F2F2")
     white_fill = PatternFill("solid", fgColor="FFFFFF")
     highlight_fill = PatternFill("solid", fgColor="FFF2CC")
-    highlight_cols = {col_litros, col_valor, col_val_litro, col_custo_km}
+    highlight_cols = {col_litros, col_valor, col_val_litro, col_custo_km, col_valor_limpeza}
 
     for row in range(2, last_row + 1):
         row_fill = stripe_fill if (row % 2 == 0) else white_fill
@@ -2032,7 +2251,7 @@ def build_veiculos_logs_export(tipo_usuario, args, user=None):
     red_fill = PatternFill("solid", fgColor="FFC7CE")
     red_font = Font(color="9C0006", bold=True)
 
-    for col in (col_check, col_abast, col_ass):
+    for col in (col_check, col_abast, col_limpeza, col_ass):
         col_letter = get_column_letter(col)
         cell_range = f"{col_letter}2:{col_letter}{last_row}"
         ws.conditional_formatting.add(
@@ -2066,6 +2285,7 @@ def build_veiculos_logs_export(tipo_usuario, args, user=None):
     rng_vl = f"Detalhamento!{get_column_letter(col_val_litro)}2:{get_column_letter(col_val_litro)}{last_row}"
     rng_ckm = f"Detalhamento!{get_column_letter(col_custo_km)}2:{get_column_letter(col_custo_km)}{last_row}"
     rng_qtd_ab = f"Detalhamento!{get_column_letter(col_qtd_ab)}2:{get_column_letter(col_qtd_ab)}{last_row}"
+    rng_valor_limpeza = f"Detalhamento!{get_column_letter(col_valor_limpeza)}2:{get_column_letter(col_valor_limpeza)}{last_row}"
 
     ws2.merge_cells("A1:H1")
     ws2["A1"] = "RESUMO - M\u00c9DIAS E INDICADORES (FROTA)"
@@ -2144,6 +2364,7 @@ def build_veiculos_logs_export(tipo_usuario, args, user=None):
         ("M\u00e9dia Valor por Litro (R$)", f'=AVERAGEIF({rng_vl},">0")', "Pre\u00e7o m\u00e9dio pago por litro."),
         ("M\u00e9dia Custo por KM (R$)", f'=AVERAGEIF({rng_ckm},">0")', "Custo m\u00e9dio por km."),
         ("Qtd. de Abastecimentos", f"=SUM({rng_qtd_ab})", "Quantidade total registrada."),
+        ("Total Limpeza (R$)", f"=SUM({rng_valor_limpeza})", "Valor total registrado em limpezas."),
     ]
 
     base_row = 10
@@ -2171,6 +2392,7 @@ def build_veiculos_logs_export(tipo_usuario, args, user=None):
         ws2[f"D{base_row + 2}"].number_format = '"R$" #,##0.00'
         ws2[f"D{base_row + 3}"].number_format = '"R$" #,##0.00'
         ws2[f"D{base_row + 4}"].number_format = "0"
+        ws2[f"D{base_row + 5}"].number_format = '"R$" #,##0.00'
 
     warn_fill = PatternFill("solid", fgColor="FFF2CC")
     ok_fill = PatternFill("solid", fgColor="C6EFCE")
@@ -2279,6 +2501,7 @@ def _build_veiculos_logs_query(*, user=None, q="", data_inicio="", data_fim="", 
             joinedload(LogVeiculo.piloto),
             joinedload(LogVeiculo.equipe),
             selectinload(LogVeiculo.abastecimentos_detalhados),
+            selectinload(LogVeiculo.limpezas_detalhadas),
         )
     if user is not None:
         if getattr(user, "tipo_usuario", None) == EQUIPE_OCEANO_USER_TYPE:

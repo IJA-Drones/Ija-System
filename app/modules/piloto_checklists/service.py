@@ -21,7 +21,6 @@ from app.modules.agenda_notificacoes import agora_brasilia_naive, criar_notifica
 EQUIPE_OCEANO_USER_TYPE = "equipe_oceano"
 
 CHECKLIST_VEICULO_BOOL_LABELS = [
-    ("limpeza_veiculo_realizada", "Limpeza do veiculo realizada"),
     ("farois_funcionando", "Farois"),
     ("setas_funcionando", "Setas"),
     ("lanternas_funcionando", "Lanternas"),
@@ -71,7 +70,6 @@ CHECKLIST_VEICULO_TEXT_LABELS = [
 ]
 
 CHECKLIST_DRONE_BOOL_LABELS = [
-    ("limpeza_equipamento_realizada", "Limpeza do equipamento realizada"),
     ("helices_status", "Helices"),
     ("tanque", "Tanque"),
     ("trem_pouso", "Trem de pouso"),
