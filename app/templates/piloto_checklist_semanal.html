@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% macro bool_choice(name, label, group_field_id) %}
+{% macro bool_choice(name, label, group_field_id, ok_label='FUNCIONAL', bad_label='DEFEITUOSO') %}
 <div class="check-row-container">
   <div class="check-row shadow-sm">
     <div class="check-row-title">
@@ -17,7 +17,7 @@
         data-group="{{ group_field_id }}"
         onchange="checkGroupStatus('{{ group_field_id }}')"
       >
-      <label class="btn btn-outline-primary border-2 fw-bold" for="{{ name }}_ok">FUNCIONAL</label>
+      <label class="btn btn-outline-primary border-2 fw-bold" for="{{ name }}_ok">{{ ok_label }}</label>
 
       <input
         class="btn-check group-monitor"
@@ -28,7 +28,7 @@
         data-group="{{ group_field_id }}"
         onchange="checkGroupStatus('{{ group_field_id }}')"
       >
-      <label class="btn btn-outline-primary border-2 fw-bold" for="{{ name }}_na">DEFEITUOSO</label>
+      <label class="btn btn-outline-primary border-2 fw-bold" for="{{ name }}_na">{{ bad_label }}</label>
     </div>
   </div>
 </div>
@@ -415,6 +415,11 @@
         </div>
       </div>
 
+      <div class="topic-divider">Limpeza semanal</div>
+      <div class="check-grid">
+        {{ bool_choice('limpeza_veiculo_realizada', 'Limpeza do veiculo realizada', 'group_limpeza_veiculo', 'REALIZADA', 'NAO REALIZADA') }}
+      </div>
+
       <div class="topic-divider">Luzes direcao / iluminacao</div>
       <div class="check-grid">
         {{ bool_choice('farois_funcionando', 'Farois', 'group_luzes') }}
@@ -567,6 +572,11 @@
         </div>
       </div>
 
+      <div class="topic-divider">Limpeza semanal</div>
+      <div class="check-grid">
+        {{ bool_choice('limpeza_equipamento_realizada', 'Limpeza do equipamento realizada', 'group_limpeza_drone', 'REALIZADA', 'NAO REALIZADA') }}
+      </div>
+
       <div class="topic-divider">Helices</div>
       <div class="check-grid">
         {{ bool_choice('helices_status', 'Helices', 'group_helices') }}
@@ -656,6 +666,7 @@
   const dronePrefill = {{ drone_prefill|tojson }};
 
   const veiculoBoolFields = {{ [
+    'limpeza_veiculo_realizada',
     'farois_funcionando', 'setas_funcionando', 'lanternas_funcionando', 'piscaalerta_funcionando',
     'luz_painel', 'limpador_parabrisa', 'agua_radiador', 'fluido_freio', 'oleo_motor',
     'vidros', 'retrovisores', 'pneus', 'estepe', 'macaco', 'triangulo', 'chave_roda',
@@ -673,6 +684,7 @@
   ]|tojson }};
 
   const droneBoolFields = {{ [
+    'limpeza_equipamento_realizada',
     'helices_status', 'tanque', 'trem_pouso', 'cameras',
     'carregador_controle', 'baterias', 'cabos_carregador', 'correia_pescoco'
   ]|tojson }};
@@ -683,6 +695,7 @@
   ]|tojson }};
 
   const groupIds = [
+    'group_limpeza_veiculo',
     'group_luzes',
     'group_painel',
     'group_manutencao',
@@ -694,6 +707,7 @@
     'group_lataria',
     'group_portas',
     'group_externo',
+    'group_limpeza_drone',
     'group_helices',
     'group_estrutura',
     'group_carga',
