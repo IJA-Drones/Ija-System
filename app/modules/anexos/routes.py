@@ -1,4 +1,4 @@
-from flask import abort, flash, redirect, send_from_directory, url_for
+from flask import abort, flash, send_from_directory
 from flask_login import current_user, login_required
 
 from app.models import Solicitacao
@@ -8,6 +8,7 @@ from app.modules.anexos.service import (
     remove_attachment,
     resolve_attachment_file,
 )
+from app.shared.redirects import redirect_back
 
 
 def register_routes(bp):
@@ -41,4 +42,4 @@ def register_routes(bp):
 
         remove_attachment(pedido)
         flash("PDF removido com sucesso!", "success")
-        return redirect(url_for("main.dashboard"))
+        return redirect_back("main.admin_dashboard")

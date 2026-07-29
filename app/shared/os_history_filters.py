@@ -5,7 +5,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.orm import aliased
 
 from app.models import OrdemServico, OrdemServicoEquipeUvis, Solicitacao, Usuario
-from app.shared.query_filters import id_search_clause
+from app.shared.query_filters import get_multi_values, id_search_clause
 
 
 HISTORY_FILTER_KEYS = (
@@ -32,6 +32,10 @@ def get_os_history_filters(args, *, status_key="status"):
     filters["regiao"] = filters["regiao"].upper()
     filters["apoio_cet"] = filters["apoio_cet"].upper()
     filters["retorno_automatico"] = filters["retorno_automatico"].upper()
+    filters["unidade_values"] = get_multi_values(args, "unidade")
+    filters["foco_values"] = get_multi_values(args, "foco")
+    filters["unidade"] = filters["unidade_values"][0] if filters["unidade_values"] else ""
+    filters["foco"] = filters["foco_values"][0] if filters["foco_values"] else ""
     return filters
 
 
@@ -69,9 +73,16 @@ def apply_os_history_filters(query, filters, *, apply_status=True):
         elif status:
             query = query.filter(Solicitacao.status == status)
 
-    if filters["unidade"]:
+    if filters["unidade_values"]:
         query = query.filter(
-            Solicitacao.usuario.has(Usuario.nome_uvis.ilike(f"%{filters['unidade']}%"))
+            Solicitacao.usuario.has(
+                or_(
+                    *[
+                        Usuario.nome_uvis.ilike(f"%{unidade}%")
+                        for unidade in filters["unidade_values"]
+                    ]
+                )
+            )
         )
 
     if filters["regiao"]:
@@ -82,9 +93,12 @@ def apply_os_history_filters(query, filters, *, apply_status=True):
     elif filters["apoio_cet"] == "NAO":
         query = query.filter(Solicitacao.apoio_cet.is_(False))
 
-    for field in ("tipo_visita", "tipo_imovel", "foco"):
+    for field in ("tipo_visita", "tipo_imovel"):
         if filters[field]:
             query = query.filter(getattr(Solicitacao, field) == filters[field])
+
+    if filters["foco_values"]:
+        query = query.filter(Solicitacao.foco.in_(filters["foco_values"]))
 
     if filters["protocolo"]:
         termo = filters["protocolo"]

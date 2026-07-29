@@ -38,6 +38,15 @@ AGENDA_ROUTE_STATUSES = (
     "APROVADO COM RECOMENDACOES",
     "APROVADO COM RECOMENDAÇÕES",
 )
+AGENDA_VISIBLE_STATUSES = (
+    "APROVADO",
+    "APROVADO COM RECOMENDACOES",
+    "APROVADO COM RECOMENDAÇÕES",
+    "CONCLUIDO",
+    "CONCLUÍDO",
+    "CONCLUIDA",
+    "CONCLUÍDA",
+)
 EQUIPE_OCEANO_USER_TYPE = "equipe_oceano"
 TZ_BR = ZoneInfo("America/Sao_Paulo")
 AUTO_ALERT_PREVIEW_LIMIT = 4
@@ -201,7 +210,7 @@ def build_agenda_query(
     query = (
         Solicitacao.query
         .options(joinedload(Solicitacao.usuario))
-        .filter(Solicitacao.status != "CANCELADO")
+        .filter(Solicitacao.status.in_(AGENDA_VISIBLE_STATUSES))
     )
     query = apply_agenda_user_scope(query, user)
 
@@ -397,11 +406,8 @@ def build_agenda_context(user, args):
             "ano": ano,
         },
         "status_opcoes": [
-            "PENDENTE",
-            "EM ANÁLISE",
             "APROVADO",
             "APROVADO COM RECOMENDAÇÕES",
-            "NEGADO",
             "CONCLUÍDO",
         ],
         "uvis_disponiveis": build_agenda_uvis_disponiveis(user),
@@ -498,29 +504,18 @@ def build_agenda_export(user, args):
     mes = None if export_all else args.get("mes", type=int)
     ano = None if export_all else args.get("ano", type=int)
 
-    # A exportação precisa seguir o mesmo escopo da tela da agenda.
-    query = apply_agenda_user_scope(
-        Solicitacao.query.options(joinedload(Solicitacao.usuario)),
+    query = build_agenda_query(
         user,
+        filtro_status=filtro_status,
+        filtro_uvis_id=filtro_uvis_id,
+        filtro_tipo_visita=filtro_tipo_visita,
+        filtro_tipo_imovel=filtro_tipo_imovel,
+        filtro_foco=filtro_foco,
+        data_ini=filtro_data_ini,
+        data_fim=filtro_data_fim,
+        mes=mes,
+        ano=ano,
     )
-
-    if filtro_uvis_id and can_view_all_agenda(user):
-        query = query.filter(Solicitacao.usuario_id == filtro_uvis_id)
-    if filtro_status:
-        query = query.filter(Solicitacao.status == filtro_status)
-    if filtro_tipo_visita:
-        query = query.filter(Solicitacao.tipo_visita == filtro_tipo_visita)
-    if filtro_tipo_imovel:
-        query = query.filter(Solicitacao.tipo_imovel == filtro_tipo_imovel)
-    if filtro_foco:
-        query = query.filter(Solicitacao.foco == filtro_foco)
-    query = _apply_agenda_date_range(query, filtro_data_ini, filtro_data_fim)
-    if mes and ano and not _has_agenda_date_range(filtro_data_ini, filtro_data_fim):
-        filtro_mesano = f"{ano}-{mes:02d}"
-        if db.engine.name == "postgresql":
-            query = query.filter(db.func.to_char(Solicitacao.data_agendamento, "YYYY-MM") == filtro_mesano)
-        else:
-            query = query.filter(db.func.strftime("%Y-%m", Solicitacao.data_agendamento) == filtro_mesano)
 
     eventos = query.order_by(
         Solicitacao.data_agendamento.desc(),

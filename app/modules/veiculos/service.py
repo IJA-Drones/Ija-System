@@ -1,5 +1,6 @@
 import os
 import re
+from collections import defaultdict
 from datetime import datetime
 from io import BytesIO
 from zoneinfo import ZoneInfo
@@ -27,6 +28,7 @@ from app.shared.skybox import (
 
 EQUIPE_OCEANO_USER_TYPE = "equipe_oceano"
 BRAZIL_TZ = ZoneInfo("America/Sao_Paulo")
+MAX_KM_POR_TURNO = 500
 VEICULOS_ALLOWED_TYPES = (
     "dev",
     "admin",
@@ -224,7 +226,7 @@ def validate_veiculo_form(form_data, *, responsaveis, equipes=None, existing_vei
     km_atual = (existing_veiculo.km_atual if existing_veiculo is not None else 0) or 0
     if km_atual_raw:
         try:
-            km_atual = float(km_atual_raw.replace(",", "."))
+            km_atual = _parse_km_form(km_atual_raw, "KM atual")
             if km_atual < 0:
                 errors["km_atual"] = (
                     "KM atual não pode ser negativo."
@@ -376,6 +378,7 @@ def build_piloto_veiculos_context(user):
                 "piloto_vinculado": False,
                 "veiculos": [],
                 "turnos_abertos": {},
+                "km_inicial_referencias": {},
             }
 
         veiculos = (
@@ -388,6 +391,7 @@ def build_piloto_veiculos_context(user):
             "piloto_vinculado": True,
             "veiculos": veiculos,
             "turnos_abertos": _build_turnos_abertos_veiculos(veiculos, user),
+            "km_inicial_referencias": _build_km_inicial_referencias(veiculos),
         }
 
     nome_piloto = _piloto_nome_logado(user)
@@ -397,6 +401,7 @@ def build_piloto_veiculos_context(user):
             "piloto_vinculado": False,
             "veiculos": [],
             "turnos_abertos": {},
+            "km_inicial_referencias": {},
         }
 
     equipe_ids = _equipe_ids_do_piloto(user)
@@ -415,6 +420,7 @@ def build_piloto_veiculos_context(user):
         "piloto_vinculado": True,
         "veiculos": veiculos,
         "turnos_abertos": _build_turnos_abertos_veiculos(veiculos, user),
+        "km_inicial_referencias": _build_km_inicial_referencias(veiculos),
     }
 
 
@@ -437,31 +443,85 @@ def _build_turnos_abertos_veiculos(veiculos, user):
     return turnos_abertos
 
 
+def _build_km_inicial_referencias(veiculos):
+    referencias = {}
+    if not veiculos:
+        return referencias
+
+    veiculo_ids = [veiculo.id for veiculo in veiculos]
+    logs_fechados = (
+        LogVeiculo.query
+        .filter(LogVeiculo.veiculo_id.in_(veiculo_ids), LogVeiculo.km_final.isnot(None))
+        .order_by(LogVeiculo.veiculo_id.asc(), LogVeiculo.data_registro.desc(), LogVeiculo.id.desc())
+        .all()
+    )
+    for log in logs_fechados:
+        if log.veiculo_id not in referencias:
+            referencias[log.veiculo_id] = {
+                "km": log.km_final,
+                "origem": "ultimo_fechamento",
+                "data": log.data_registro,
+                "log_id": log.id,
+            }
+
+    for veiculo in veiculos:
+        referencias.setdefault(
+            veiculo.id,
+            {
+                "km": veiculo.km_atual or 0,
+                "origem": "km_atual",
+                "data": None,
+                "log_id": None,
+            },
+        )
+
+    return referencias
+
+
+def _buscar_ultimo_fechamento_veiculo(veiculo_id):
+    return (
+        LogVeiculo.query
+        .filter(LogVeiculo.veiculo_id == veiculo_id, LogVeiculo.km_final.isnot(None))
+        .order_by(LogVeiculo.data_registro.desc(), LogVeiculo.id.desc())
+        .first()
+    )
+
+
 def iniciar_turno_piloto(user, veiculo_id, form_data, files_data, root_path):
     veiculo = _veiculo_do_operacional_logado(veiculo_id, user=user)
     piloto_id = getattr(user, "piloto_id", None) if getattr(user, "tipo_usuario", None) != EQUIPE_OCEANO_USER_TYPE else None
     equipe_id = veiculo.equipe_id if getattr(user, "tipo_usuario", None) != EQUIPE_OCEANO_USER_TYPE else _parse_equipe_oceano_id(user)
+    ultimo_fechamento = _buscar_ultimo_fechamento_veiculo(veiculo.id)
 
     try:
-        km_inicial = _parse_decimal_form(form_data.get("km_inicial"))
+        km_inicial_enviado = _parse_km_form(form_data.get("km_inicial"), "Kilometragem inicial")
     except ValueError as exc:
         raise VeiculoTurnoError("Kilometragem inicial invalida.", "warning") from exc
 
     assinatura_b64 = form_data.get("assinatura_b64")
     foto_painel = files_data.get("foto_painel")
+    km_inicial = ultimo_fechamento.km_final if ultimo_fechamento is not None else (veiculo.km_atual or 0)
+
+    if km_inicial_enviado is not None and abs(km_inicial_enviado - km_inicial) > 0.0001:
+        origem_km_inicial = (
+            "o ultimo KM final registrado para este veiculo"
+            if ultimo_fechamento is not None
+            else "o KM atual cadastrado para este veiculo"
+        )
+        raise VeiculoTurnoError(
+            f"KM inicial travado em {km_inicial:.0f} km, conforme {origem_km_inicial}.",
+            "danger",
+        )
 
     if km_inicial is None or not assinatura_b64 or not foto_painel or not foto_painel.filename:
         raise VeiculoTurnoError(
-            "Kilometragem inicial, foto do painel e assinatura sao obrigatorias.",
+            "Foto do painel e assinatura sao obrigatorias.",
             "warning",
         )
 
     km_atual_veiculo = veiculo.km_atual or 0
-    if km_inicial < km_atual_veiculo:
-        raise VeiculoTurnoError(
-            f"KM inicial ({km_inicial:.0f}) menor que o KM atual do veiculo.",
-            "danger",
-        )
+    if ultimo_fechamento is None and km_atual_veiculo > 0 and abs(km_inicial - km_atual_veiculo) > 0.0001:
+        raise VeiculoTurnoError("KM inicial deve ser igual ao KM atual do veiculo.", "danger")
 
     turno_aberto = _buscar_turno_aberto_usuario(veiculo.id, user)
     if turno_aberto:
@@ -518,7 +578,7 @@ def registrar_abastecimento_turno_piloto(user, veiculo_id, form_data, files_data
         )
 
     try:
-        km_registro = _parse_decimal_form(form_data.get("km_abastecimento"))
+        km_registro = _parse_km_form(form_data.get("km_abastecimento"), "KM do abastecimento")
         litros = _parse_decimal_form(form_data.get("litros"))
         valor_total = _parse_decimal_form(form_data.get("valor_abastecimento"))
     except ValueError as exc:
@@ -549,12 +609,7 @@ def registrar_abastecimento_turno_piloto(user, veiculo_id, form_data, files_data
             "warning",
         )
 
-    ultimo_km_turno = log.ultimo_km_registrado or 0
-    if km_registro < ultimo_km_turno:
-        raise VeiculoTurnoError(
-            f"O KM do abastecimento nao pode ser menor que o ultimo KM do turno ({ultimo_km_turno:.0f}).",
-            "danger",
-        )
+    _validar_limite_km_turno(log.km_inicial or 0, km_registro, "KM do abastecimento")
 
     novo_abastecimento = Abastecimento(
         log_veiculo_id=log.id,
@@ -582,7 +637,6 @@ def registrar_abastecimento_turno_piloto(user, veiculo_id, form_data, files_data
     )
 
     db.session.add(novo_abastecimento)
-    veiculo.km_atual = max(veiculo.km_atual or 0, km_registro)
     db.session.commit()
     return "Abastecimento registrado com sucesso!"
 
@@ -591,7 +645,7 @@ def encerrar_turno_piloto(user, veiculo_id, form_data, files_data=None, root_pat
     veiculo = _veiculo_do_operacional_logado(veiculo_id, user=user)
 
     try:
-        km_final = _parse_decimal_form(form_data.get("km_final"))
+        km_final = _parse_km_form(form_data.get("km_final"), "Kilometragem final")
     except ValueError as exc:
         raise VeiculoTurnoError("Kilometragem final invalida.", "warning") from exc
 
@@ -616,12 +670,26 @@ def encerrar_turno_piloto(user, veiculo_id, form_data, files_data=None, root_pat
     if not log:
         raise VeiculoTurnoError("Nenhum turno aberto encontrado.", "warning")
 
-    ultimo_km_turno = log.ultimo_km_registrado or 0
-    if km_final < ultimo_km_turno:
+    km_inicial_turno = log.km_inicial or 0
+    if km_final < km_inicial_turno:
         raise VeiculoTurnoError(
-            f"KM final nao pode ser menor que o ultimo KM registrado no turno ({ultimo_km_turno:.0f}).",
+            f"KM final nao pode ser menor que o KM inicial do turno ({km_inicial_turno:.0f}).",
             "danger",
         )
+    maior_km_abastecimento = max(
+        [
+            abastecimento.km_registro
+            for abastecimento in (log.abastecimentos_detalhados or [])
+            if abastecimento.km_registro is not None
+        ],
+        default=None,
+    )
+    if maior_km_abastecimento is not None and km_final < maior_km_abastecimento:
+        raise VeiculoTurnoError(
+            f"KM final nao pode ser menor que o KM do abastecimento ({maior_km_abastecimento:.0f}).",
+            "danger",
+        )
+    _validar_limite_km_turno(km_inicial_turno, km_final, "KM final")
 
     log.qtd_fazendas_enderecos = qtd_fazendas_enderecos
     log.km_final = km_final
@@ -743,6 +811,51 @@ def _parse_decimal_form(raw_value):
         raw_value = raw_value.replace(",", ".")
 
     return float(raw_value)
+
+
+def _parse_km_form(raw_value, label="KM"):
+    raw_value = (raw_value or "").strip().replace(" ", "")
+    if not raw_value:
+        return None
+
+    if re.fullmatch(r"\d+", raw_value):
+        return float(raw_value)
+
+    br_milhares = re.fullmatch(r"(\d{1,3}(?:\.\d{3})+)(?:,(\d+))?", raw_value)
+    if br_milhares:
+        decimal = br_milhares.group(2)
+        if decimal and decimal.strip("0"):
+            raise ValueError(f"{label} deve ser informado sem casas decimais.")
+        return float(br_milhares.group(1).replace(".", ""))
+
+    us_milhares = re.fullmatch(r"(\d{1,3}(?:,\d{3})+)(?:\.(\d+))?", raw_value)
+    if us_milhares:
+        decimal = us_milhares.group(2)
+        if decimal and decimal.strip("0"):
+            raise ValueError(f"{label} deve ser informado sem casas decimais.")
+        return float(us_milhares.group(1).replace(",", ""))
+
+    decimal_simples = re.fullmatch(r"(\d+)[,.](\d+)", raw_value)
+    if decimal_simples and not decimal_simples.group(2).strip("0"):
+        return float(decimal_simples.group(1))
+
+    raise ValueError(f"{label} deve ser informado em KM inteiro, sem virgula decimal.")
+
+
+def _validar_limite_km_turno(km_referencia, km_informado, label):
+    km_referencia = km_referencia or 0
+    if km_informado is None:
+        return
+
+    km_rodado = km_informado - km_referencia
+    if km_rodado > MAX_KM_POR_TURNO:
+        raise VeiculoTurnoError(
+            (
+                f"{label} ultrapassa o limite de {MAX_KM_POR_TURNO} km por turno. "
+                f"Conferir o painel: referencia {km_referencia:.0f} km, informado {km_informado:.0f} km."
+            ),
+            "danger",
+        )
 
 
 def _parse_optional_int(raw_value):
@@ -1045,6 +1158,262 @@ def _build_ultimos_logs(veiculos):
     return ultimos_logs
 
 
+def _build_veiculos_timeline_from_logs(logs):
+    historico = {}
+    dias_por_veiculo = defaultdict(dict)
+
+    for log in logs:
+        veiculo = log.veiculo
+        item = historico.setdefault(
+            log.veiculo_id,
+            {
+                "veiculo": veiculo,
+                "logs": [],
+                "dias": [],
+                "total_logs": 0,
+                "total_km": 0,
+                "total_gasto": 0,
+                "total_abastecimentos": 0,
+            },
+        )
+        if item["veiculo"] is None and veiculo is not None:
+            item["veiculo"] = veiculo
+
+        km_rodado = _km_rodado_log_veiculo(log)
+        gasto = log.total_valor_abastecido or 0
+        data_inicio = log.data_registro
+        movimentacao = log.ultima_movimentacao_em or data_inicio
+        dia = data_inicio.date() if data_inicio else (movimentacao.date() if movimentacao else None)
+        log_info = {
+            "id": log.id,
+            "data": movimentacao,
+            "data_inicio": data_inicio,
+            "operador": _operador_log_veiculo(log),
+            "km_inicial": log.km_inicial or 0,
+            "km_final": log.km_final if log.km_final is not None else log.ultimo_km_registrado,
+            "km_rodado": km_rodado,
+            "gasto": gasto,
+            "status": "Aberto" if log.km_final is None else "Encerrado",
+            "abastecimentos": log.qtd_abastecimentos,
+            "qtd_fazendas_enderecos": log.qtd_fazendas_enderecos,
+            "observacao": log.observacao,
+            "foto_painel_path": log.foto_painel_path,
+            "foto_painel_final_path": log.foto_painel_final_path,
+            "assinatura_piloto": log.assinatura_piloto,
+            "eventos_abastecimento": _eventos_abastecimento_log_veiculo(log),
+        }
+
+        item["logs"].append(log_info)
+        item["total_logs"] += 1
+        item["total_km"] += km_rodado
+        item["total_gasto"] += gasto
+        item["total_abastecimentos"] += log.qtd_abastecimentos
+
+        if dia is not None:
+            dia_item = dias_por_veiculo[log.veiculo_id].setdefault(
+                dia,
+                {"dia": dia, "km_rodado": 0, "gasto": 0, "logs": 0, "abastecimentos": 0, "turnos": []},
+            )
+            dia_item["km_rodado"] += km_rodado
+            dia_item["gasto"] += gasto
+            dia_item["logs"] += 1
+            dia_item["abastecimentos"] += log.qtd_abastecimentos
+            dia_item["turnos"].append(log_info)
+
+    for veiculo_id, dias in dias_por_veiculo.items():
+        historico[veiculo_id]["dias"] = [
+            dias[dia]
+            for dia in sorted(dias.keys(), reverse=True)
+        ]
+
+    return sorted(
+        historico.values(),
+        key=lambda item: (
+            (getattr(item["veiculo"], "modelo", "") or "").upper(),
+            (getattr(item["veiculo"], "placa", "") or "").upper(),
+        ),
+    )
+
+
+def _float_value(value):
+    try:
+        return float(value or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _build_logistica_dias_from_logs(logs):
+    dias = defaultdict(
+        lambda: {
+            "date": "",
+            "label": "",
+            "total_veiculos": 0,
+            "total_turnos": 0,
+            "total_km": 0.0,
+            "total_gasto": 0.0,
+            "total_abastecimentos": 0,
+            "vehicles": {},
+        }
+    )
+
+    for log in logs:
+        data_ref = log.data_registro or log.ultima_movimentacao_em
+        if not data_ref:
+            continue
+
+        dia = data_ref.date()
+        dia_key = dia.isoformat()
+        dia_item = dias[dia_key]
+        dia_item["date"] = dia_key
+        dia_item["label"] = dia.strftime("%d/%m/%Y")
+
+        veiculo = log.veiculo
+        veiculo_key = str(log.veiculo_id or f"log-{log.id}")
+        veiculo_item = dia_item["vehicles"].setdefault(
+            veiculo_key,
+            {
+                "id": getattr(veiculo, "id", None),
+                "label": (
+                    f"{getattr(veiculo, 'modelo', '') or 'Veiculo'}"
+                    f"{' - ' + veiculo.placa if veiculo and getattr(veiculo, 'placa', None) else ''}"
+                ),
+                "placa": getattr(veiculo, "placa", "") if veiculo else "",
+                "equipe": getattr(getattr(veiculo, "equipe", None), "nome_equipe", "") if veiculo else "",
+                "operadores": [],
+                "turnos": 0,
+                "km": 0.0,
+                "gasto": 0.0,
+                "abastecimentos": 0,
+                "custo_km": 0.0,
+            },
+        )
+
+        operador = _operador_log_veiculo(log)
+        if operador and operador != "-" and operador not in veiculo_item["operadores"]:
+            veiculo_item["operadores"].append(operador)
+
+        km_rodado = _float_value(_km_rodado_log_veiculo(log))
+        gasto = _float_value(log.total_valor_abastecido)
+        abastecimentos = int(log.qtd_abastecimentos or 0)
+
+        veiculo_item["turnos"] += 1
+        veiculo_item["km"] += km_rodado
+        veiculo_item["gasto"] += gasto
+        veiculo_item["abastecimentos"] += abastecimentos
+
+        dia_item["total_turnos"] += 1
+        dia_item["total_km"] += km_rodado
+        dia_item["total_gasto"] += gasto
+        dia_item["total_abastecimentos"] += abastecimentos
+
+    resultado = []
+    for dia_key in sorted(dias.keys(), reverse=True):
+        dia_item = dias[dia_key]
+        vehicles = []
+        for vehicle in dia_item["vehicles"].values():
+            vehicle["km"] = round(vehicle["km"], 2)
+            vehicle["gasto"] = round(vehicle["gasto"], 2)
+            vehicle["custo_km"] = round(vehicle["gasto"] / vehicle["km"], 2) if vehicle["km"] else 0.0
+            vehicles.append(vehicle)
+
+        vehicles.sort(key=lambda item: (item["gasto"], item["km"]), reverse=True)
+        dia_item["vehicles"] = vehicles
+        dia_item["total_veiculos"] = len(vehicles)
+        dia_item["total_km"] = round(dia_item["total_km"], 2)
+        dia_item["total_gasto"] = round(dia_item["total_gasto"], 2)
+        dia_item["custo_km"] = (
+            round(dia_item["total_gasto"] / dia_item["total_km"], 2)
+            if dia_item["total_km"]
+            else 0.0
+        )
+        resultado.append(dia_item)
+
+    return resultado
+
+
+def _build_veiculo_km_conferencia(logs):
+    logs_ordenados = sorted(
+        logs,
+        key=lambda log: (
+            log.data_registro or datetime.min,
+            log.id or 0,
+        ),
+    )
+    linhas = []
+    anterior = None
+
+    for log in logs_ordenados:
+        diferenca_anterior = None
+        status = "primeiro"
+        status_label = "Primeiro turno"
+
+        if anterior is not None:
+            if anterior.km_final is None:
+                status = "anterior_aberto"
+                status_label = "Anterior aberto"
+            else:
+                diferenca_anterior = (log.km_inicial or 0) - (anterior.km_final or 0)
+                if abs(diferenca_anterior) < 0.0001:
+                    status = "ok"
+                    status_label = "OK"
+                elif diferenca_anterior > 0:
+                    status = "perdido"
+                    status_label = "KM perdido"
+                else:
+                    status = "sobreposto"
+                    status_label = "KM sobreposto"
+
+        linhas.append(
+            {
+                "id": log.id,
+                "data_inicio": log.data_registro,
+                "operador": _operador_log_veiculo(log),
+                "km_inicial": log.km_inicial or 0,
+                "km_final": log.km_final,
+                "ultimo_km_registrado": log.ultimo_km_registrado,
+                "diferenca_anterior": diferenca_anterior,
+                "status": status,
+                "status_label": status_label,
+                "log_anterior_id": anterior.id if anterior is not None else None,
+            }
+        )
+        anterior = log
+
+    return linhas
+
+
+def _km_rodado_log_veiculo(log):
+    km_inicial = log.km_inicial or 0
+    km_final = log.km_final if log.km_final is not None else log.ultimo_km_registrado
+    return max((km_final or 0) - km_inicial, 0)
+
+
+def _operador_log_veiculo(log):
+    if log.piloto:
+        return log.piloto.nome_piloto
+    if log.equipe:
+        return log.equipe.nome_equipe
+    return "-"
+
+
+def _eventos_abastecimento_log_veiculo(log):
+    eventos = []
+    for abastecimento in log.abastecimentos_ordenados:
+        eventos.append(
+            {
+                "id": abastecimento.id,
+                "data": abastecimento.data_hora,
+                "km": abastecimento.km_registro or 0,
+                "tipo": abastecimento.tipo_abastecimento or "Abastecimento",
+                "litros": abastecimento.litros or 0,
+                "valor": abastecimento.valor_total or 0,
+                "foto_painel_path": abastecimento.foto_painel_path,
+                "foto_nf_path": abastecimento.foto_nf_path,
+            }
+        )
+    return eventos
+
+
 def _ultima_movimentacao_log_subquery():
     return (
         db.session.query(
@@ -1067,6 +1436,7 @@ def list_veiculos_logs(tipo_usuario, args, user=None):
     page = args.get("page", 1, type=int)
 
     query = _build_veiculos_logs_query(user=user, q=q, data_inicio=data_inicio, data_fim=data_fim)
+    logs_timeline = query.all()
     paginacao = query.paginate(page=page, per_page=20, error_out=False)
     logs = paginacao.items
 
@@ -1074,9 +1444,152 @@ def list_veiculos_logs(tipo_usuario, args, user=None):
         "logs": logs,
         "paginacao": paginacao,
         "total_logs": query.count(),
-        "total_abastecido": sum((log.total_valor_abastecido or 0) for log in logs),
+        "total_abastecido": sum((log.total_valor_abastecido or 0) for log in logs_timeline),
         "filters": {"q": q, "data_inicio": data_inicio, "data_fim": data_fim},
+        "can_edit_logs": tipo_usuario in {"dev", "admin", "operario", "operador", "prefeitura_admin"},
+        "veiculos_timeline": _build_veiculos_timeline_from_logs(logs_timeline),
+        "logistica_dias": _build_logistica_dias_from_logs(logs_timeline),
     }
+
+
+def build_veiculo_logs_detalhe_context(tipo_usuario, veiculo_id, args, user=None):
+    tipo_usuario = normalize_role(tipo_usuario)
+    if tipo_usuario not in VEICULOS_LOGS_ALLOWED_TYPES:
+        raise PermissionError
+
+    data_inicio = (args.get("data_inicio") or "").strip()
+    data_fim = (args.get("data_fim") or "").strip()
+
+    veiculo = _get_veiculo_logs_scoped(veiculo_id, user)
+    logs = (
+        _build_veiculos_logs_query(user=user, data_inicio=data_inicio, data_fim=data_fim)
+        .filter(LogVeiculo.veiculo_id == veiculo_id)
+        .all()
+    )
+    timeline_items = _build_veiculos_timeline_from_logs(logs)
+    timeline = timeline_items[0] if timeline_items else {
+        "veiculo": veiculo,
+        "logs": [],
+        "dias": [],
+        "total_logs": 0,
+        "total_km": 0,
+        "total_gasto": 0,
+        "total_abastecimentos": 0,
+    }
+
+    return {
+        "veiculo": veiculo,
+        "timeline": timeline,
+        "km_conferencia": _build_veiculo_km_conferencia(logs),
+        "filters": {"data_inicio": data_inicio, "data_fim": data_fim},
+        "can_edit_logs": tipo_usuario in {"dev", "admin", "operario", "operador", "prefeitura_admin"},
+    }
+
+
+def _get_veiculo_logs_scoped(veiculo_id, user):
+    query = Veiculos.query.filter(Veiculos.id == veiculo_id)
+    if user is not None and getattr(user, "tipo_usuario", None) == EQUIPE_OCEANO_USER_TYPE:
+        equipe = _equipe_oceano_logada(user)
+        if not equipe:
+            raise PermissionError
+        query = query.filter(_veiculo_equipe_operacional_filter(equipe, user))
+    elif user is not None:
+        query = apply_prefeitura_scope(query, user, Veiculos.prefeitura_id)
+
+    veiculo = query.first()
+    if veiculo is None:
+        raise PermissionError
+    return veiculo
+
+
+def update_veiculo_log_km(user, log_id, form_data):
+    tipo_usuario = normalize_role(getattr(user, "tipo_usuario", None))
+    if tipo_usuario not in {"dev", "admin", "operario", "operador", "prefeitura_admin"}:
+        raise PermissionError
+
+    log = (
+        _build_veiculos_logs_query(user=user)
+        .filter(LogVeiculo.id == log_id)
+        .first()
+    )
+    if log is None:
+        raise PermissionError
+
+    km_inicial = _parse_log_km_field(form_data, "km_inicial", "KM inicial", required=True)
+    km_final = _parse_log_km_field(form_data, "km_final", "KM final")
+    if km_final is not None and km_final < km_inicial:
+        raise VeiculoTurnoError("KM final nao pode ser menor que o KM inicial.")
+
+    abastecimentos = list(log.abastecimentos_detalhados or [])
+    abastecimento_kms = []
+    for abastecimento in abastecimentos:
+        field_name = f"abastecimento_{abastecimento.id}_km"
+        km_registro = _parse_log_km_field(
+            form_data,
+            field_name,
+            f"KM do abastecimento #{abastecimento.id}",
+            required=True,
+        )
+        abastecimento_kms.append((abastecimento, km_registro))
+
+    maior_km_abastecimento = max([km for _item, km in abastecimento_kms], default=None)
+    if km_final is not None and maior_km_abastecimento is not None and km_final < maior_km_abastecimento:
+        raise VeiculoTurnoError("KM final nao pode ser menor que o maior KM de abastecimento.")
+
+    log.km_inicial = km_inicial
+    log.km_final = km_final
+    for abastecimento, km_registro in abastecimento_kms:
+        abastecimento.km_registro = km_registro
+
+    _recalcular_km_atual_veiculo(log.veiculo_id)
+    db.session.commit()
+    return f"Log #{log.id} corrigido com sucesso."
+
+
+def _parse_log_km_field(form_data, field_name, label, *, required=False):
+    raw_value = (form_data.get(field_name) or "").strip()
+    if not raw_value:
+        if required:
+            raise VeiculoTurnoError(f"Informe {label}.")
+        return None
+
+    try:
+        value = _parse_km_form(raw_value, label)
+    except (TypeError, ValueError):
+        raise VeiculoTurnoError(f"{label} deve ser informado em KM inteiro, sem virgula decimal.")
+
+    if value is None:
+        if required:
+            raise VeiculoTurnoError(f"Informe {label}.")
+        return None
+    if value < 0:
+        raise VeiculoTurnoError(f"{label} nao pode ser negativo.")
+    return value
+
+
+def _recalcular_km_atual_veiculo(veiculo_id):
+    veiculo = db.session.get(Veiculos, veiculo_id)
+    if veiculo is None:
+        return None
+
+    ultimo_log_fechado = (
+        LogVeiculo.query
+        .filter(LogVeiculo.veiculo_id == veiculo_id, LogVeiculo.km_final.isnot(None))
+        .order_by(LogVeiculo.data_registro.desc(), LogVeiculo.id.desc())
+        .first()
+    )
+    if ultimo_log_fechado is not None:
+        veiculo.km_atual = ultimo_log_fechado.km_final or 0
+        return veiculo.km_atual
+
+    ultimo_log = (
+        LogVeiculo.query
+        .filter(LogVeiculo.veiculo_id == veiculo_id)
+        .order_by(LogVeiculo.data_registro.desc(), LogVeiculo.id.desc())
+        .first()
+    )
+    veiculo.km_atual = (ultimo_log.km_inicial if ultimo_log is not None else 0) or 0
+    return veiculo.km_atual
 
 
 def build_veiculos_logs_export(tipo_usuario, args, user=None):

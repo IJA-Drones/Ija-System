@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% from "_pagination.html" import render_pagination %}
 {% from "_retorno_ciclo_resumo.html" import render_retorno_ciclo_resumo %}
+{% from "_multi_select_chips.html" import render_chip_select_values %}
+{% from "_result_summary.html" import render_result_summary %}
 
 {% block extra_styles %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
@@ -115,8 +117,9 @@
         <i class="bi bi-clock-history me-2 text-primary"></i> Histórico de OS
       </h2>
       <div class="historico-os-subtitle">
-        Consulte as OS do piloto e as OS da equipe UVIS em abas separadas.
+        Consulte o historico das ordens de servico.
       </div>
+      {{ render_result_summary(paginacao.total, 'OS filtradas') }}
     </div>
     <div class="historico-os-toolbar-actions">
       <a
@@ -126,7 +129,7 @@
         <i class="bi bi-file-earmark-excel-fill me-1"></i> Exportar filtro
       </a>
       <a
-        href="{{ url_for('main.admin_historico_os_exportar_excel', tipo_os=filtro_tipo_os, all=1) }}"
+        href="{{ url_for('main.admin_historico_os_exportar_excel', tipo_os='piloto', all=1) }}"
         class="btn btn-outline-success"
       >
         <i class="bi bi-file-earmark-spreadsheet me-1"></i> Exportar tudo
@@ -137,26 +140,7 @@
     </div>
   </div>
 
-  <ul class="nav nav-pills historico-os-tabs">
-    <li class="nav-item">
-      <a
-        class="nav-link {% if filtro_tipo_os == 'piloto' %}active{% endif %}"
-        href="{{ url_for('main.admin_historico_os', tipo_os='piloto', **filtros_historico) }}"
-      >
-        <i class="bi bi-airplane me-1"></i> OS Piloto
-      </a>
-    </li>
-    <li class="nav-item">
-      <a
-        class="nav-link {% if filtro_tipo_os == 'equipe_uvis' %}active{% endif %}"
-        href="{{ url_for('main.admin_historico_os', tipo_os='equipe_uvis', **filtros_historico) }}"
-      >
-        <i class="bi bi-people me-1"></i> OS Equipe UVIS
-      </a>
-    </li>
-  </ul>
-
-  {% set filtros_ativos = filtros.status or filtros.unidade or filtros.regiao or filtros.equipe or filtros.apoio_cet or filtros.tipo_visita or filtros.tipo_imovel or filtros.foco or filtros.protocolo or filtros.endereco or filtros.data_ini or filtros.data_fim or filtros.retorno_automatico %}
+  {% set filtros_ativos = filtros.status or filtros.unidade_values or filtros.regiao or filtros.equipe or filtros.apoio_cet or filtros.tipo_visita or filtros.tipo_imovel or filtros.foco_values or filtros.protocolo or filtros.endereco or filtros.data_ini or filtros.data_fim or filtros.retorno_automatico %}
   <div class="card shadow-sm rounded-4 mb-4 border-0">
     <div
       class="card-header border-0 p-3 d-flex justify-content-between align-items-center"
@@ -177,8 +161,8 @@
     <div class="collapse {% if filtros_ativos %}show{% endif %}" id="collapseFiltros">
       <div class="card-body pt-0">
         <form method="GET">
-          <input type="hidden" name="tipo_os" value="{{ filtro_tipo_os }}">
-          <div class="row g-2 align-items-end">
+          <input type="hidden" name="tipo_os" value="piloto">
+          <div class="row g-2 filter-chip-row">
             <div class="col-md-3">
               <label class="small text-muted">Status da OS:</label>
               <select name="status_os" class="form-select form-select-sm">
@@ -200,31 +184,18 @@
 
             <div class="col-md-3">
               <label class="small text-muted">Unidade:</label>
-              <select name="unidade" class="form-select form-select-sm">
-                <option value="">Todas as UVIS</option>
-                {% for u in unidades_select %}
-                  <option value="{{ u.nome_uvis }}" {% if request.args.get('unidade') == u.nome_uvis %}selected{% endif %}>
-                    {{ u.nome_uvis }}
-                  </option>
-                {% endfor %}
-              </select>
+              {{ render_chip_select_values('unidade', unidades_select|map(attribute='nome_uvis')|list, filtros.unidade_values, 'Adicionar UVIS') }}
             </div>
 
             <div class="col-md-3">
-              <label class="small text-muted">{% if filtro_tipo_os == 'equipe_uvis' %}Equipe UVIS:{% else %}PLOA / equipe:{% endif %}</label>
+              <label class="small text-muted">PLOA / equipe:</label>
               <select name="equipe" class="form-select form-select-sm">
                 <option value="">Todas</option>
-                {% if filtro_tipo_os == 'equipe_uvis' %}
-                  {% for nome_equipe in equipes_uvis_select %}
-                    <option value="{{ nome_equipe }}" {% if filtros.equipe == nome_equipe %}selected{% endif %}>{{ nome_equipe }}</option>
-                  {% endfor %}
-                {% else %}
-                  {% for equipe in equipes_select %}
-                    <option value="{{ equipe.id }}" {% if filtros.equipe|string == equipe.id|string %}selected{% endif %}>
-                      {{ equipe.nome_equipe }}{% if equipe.regiao %} ({{ equipe.regiao }}){% endif %}
-                    </option>
-                  {% endfor %}
-                {% endif %}
+                {% for equipe in equipes_select %}
+                  <option value="{{ equipe.id }}" {% if filtros.equipe|string == equipe.id|string %}selected{% endif %}>
+                    {{ equipe.nome_equipe }}{% if equipe.regiao %} ({{ equipe.regiao }}){% endif %}
+                  </option>
+                {% endfor %}
               </select>
             </div>
             <div class="col-md-3">
@@ -269,12 +240,7 @@
 
             <div class="col-md-3">
               <label class="small text-muted">Foco:</label>
-              <select name="foco" class="form-select form-select-sm">
-                <option value="">Todos</option>
-                {% for opcao in solicitacao_filter_foco_opcoes %}
-                  <option value="{{ opcao }}" {% if filtros.foco == opcao %}selected{% endif %}>{{ opcao }}</option>
-                {% endfor %}
-              </select>
+              {{ render_chip_select_values('foco', solicitacao_filter_foco_opcoes, filtros.foco_values, 'Adicionar foco') }}
             </div>
 
             <div class="col-md-3">
@@ -325,7 +291,7 @@
                   <i class="bi bi-search"></i> Filtrar
                 </button>
                 {% if filtros_ativos %}
-                  <a href="{{ url_for('main.admin_historico_os', tipo_os=filtro_tipo_os) }}" class="btn btn-outline-secondary btn-sm px-3 historico-os-filter-clear">
+                  <a href="{{ url_for('main.admin_historico_os', tipo_os='piloto') }}" class="btn btn-outline-secondary btn-sm px-3 historico-os-filter-clear">
                     <i class="bi bi-x-lg"></i> Limpar
                   </a>
                 {% endif %}
@@ -355,15 +321,11 @@
             {% set retorno_resumo = retorno_ciclos.get(p.id) if retorno_ciclos is defined else none %}
             {% set status_upper = (p.status or '')|upper %}
             {% set os_em_andamento = 'CONCLU' not in status_upper %}
-            {% set ordem_uvis = p.ordem_servico_equipe_uvis %}
             {% set ordem_piloto = p.ordem_servico %}
-            {% set ordem_uvis_status_upper = (ordem_uvis.status if ordem_uvis else '')|upper %}
             <tr>
               <td class="ps-4">
                 <strong>#{{ p.id }}</strong>
-                {% if filtro_tipo_os == 'equipe_uvis' and ordem_uvis and ordem_uvis.identificador_os %}
-                  <br><small class="text-muted">{{ ordem_uvis.identificador_os }}</small>
-                {% elif filtro_tipo_os == 'piloto' and p.ordem_servico and p.ordem_servico.identificador_os %}
+                {% if p.ordem_servico and p.ordem_servico.identificador_os %}
                   <br><small class="text-muted">{{ p.ordem_servico.identificador_os }}</small>
                 {% endif %}
                 {{ render_retorno_ciclo_resumo(retorno_resumo) }}
@@ -383,11 +345,7 @@
                 </div>
               </td>
               <td>
-                {% if filtro_tipo_os == 'equipe_uvis' and (ordem_uvis or p.equipe_uvis_nome) %}
-                  <span class="badge bg-light text-dark border py-2 px-3 rounded-pill">
-                    <i class="bi bi-people me-1 text-success"></i> {{ (ordem_uvis.equipe_uvis_nome if ordem_uvis else p.equipe_uvis_nome) or 'Equipe UVIS' }}
-                  </span>
-                {% elif ordem_piloto and ordem_piloto.equipe %}
+                {% if ordem_piloto and ordem_piloto.equipe %}
                   <span class="badge bg-light text-dark border py-2 px-3 rounded-pill">
                     <i class="bi bi-people-fill me-1 text-primary"></i> {{ ordem_piloto.equipe.nome_equipe }}
                   </span>
@@ -400,18 +358,7 @@
                 {% endif %}
               </td>
               <td class="text-center">
-                {% if filtro_tipo_os == 'equipe_uvis' and 'CONCLU' in ordem_uvis_status_upper %}
-                  <span class="badge bg-completed">CONCLUIDA</span>
-                  {% if ordem_uvis %}
-                    <div class="small text-muted mt-1">{{ ordem_uvis.situacao_aplicacao or p.status or '-' }}</div>
-                  {% endif %}
-                {% elif filtro_tipo_os == 'equipe_uvis' and ordem_uvis %}
-                  <span class="badge bg-success">PREENCHIDA</span>
-                  <div class="small text-muted mt-1">{{ ordem_uvis.situacao_aplicacao or p.status or '-' }}</div>
-                {% elif filtro_tipo_os == 'equipe_uvis' %}
-                  <span class="badge bg-warning text-dark">PENDENTE</span>
-                  <div class="small text-muted mt-1">{{ p.status or '-' }}</div>
-                {% elif os_em_andamento %}
+                {% if os_em_andamento %}
                   <span class="badge bg-warning text-dark">EM ANDAMENTO</span>
                   <div class="small text-muted mt-1">{{ p.status or '-' }}</div>
                 {% else %}
@@ -420,17 +367,6 @@
               </td>
               <td class="text-center pe-4">
                 <div class="d-flex gap-2 justify-content-center flex-wrap">
-                  {% if filtro_tipo_os == 'equipe_uvis' %}
-                    {% if ordem_uvis %}
-                      <a href="{{ url_for('main.admin_equipe_uvis_os_formulario_view', os_id=p.id) }}" class="btn btn-sm btn-outline-success shadow-sm" title="Ver OS da equipe UVIS">
-                        <i class="bi bi-people"></i>
-                      </a>
-                    {% else %}
-                      <button type="button" class="btn btn-sm btn-outline-secondary shadow-sm" disabled title="A equipe UVIS ainda nao preencheu esta OS">
-                        <i class="bi bi-hourglass-split"></i>
-                      </button>
-                    {% endif %}
-                  {% else %}
                   <a href="{{ url_for('main.admin_os_formulario_view', os_id=p.id) }}" class="btn btn-sm btn-outline-primary shadow-sm" title="Ver formulario">
                     <i class="bi bi-clipboard2-check"></i>
                   </a>
@@ -440,18 +376,13 @@
                   <a href="{{ url_for('main.admin_export_os_excel_v2', os_id=p.id) }}" class="btn btn-sm btn-secondary shadow-sm" title="Exportar Excel">
                     <i class="bi bi-file-earmark-excel"></i>
                   </a>
-                  {% endif %}
                 </div>
               </td>
             </tr>
           {% else %}
             <tr>
               <td colspan="6" class="text-center py-5 text-muted">
-                {% if filtro_tipo_os == 'equipe_uvis' %}
-                  Nenhuma OS da equipe UVIS encontrada.
-                {% else %}
-                  Nenhuma OS concluída ou em andamento encontrada.
-                {% endif %}
+                Nenhuma OS concluida ou em andamento encontrada.
               </td>
             </tr>
           {% endfor %}

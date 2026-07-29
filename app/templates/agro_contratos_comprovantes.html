@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/listing_pattern.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 listing-page">
+  <div class="listing-header mb-4">
+    <div>
+      <h2 class="text-dark m-0">
+        <i class="bi bi-receipt-cutoff me-2 text-primary"></i> Comprovantes Agro
+      </h2>
+      <p class="text-muted small mb-0">
+        Comprovantes de pagamento vinculados aos contratos Agro.
+        Total: <strong>{{ filters.total }}</strong>
+        {% if filters.q or filters.equipe_id %}
+          <span class="badge bg-filter-custom ms-2">Filtrado</span>
+        {% endif %}
+      </p>
+    </div>
+
+    <div class="listing-actions">
+      <a href="{{ url_for('main.admin_agro') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+      {% if is_global_admin %}
+        <a href="{{ url_for('main.agro_contratos_template') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
+          <i class="bi bi-diagram-3-fill"></i> Contratos Aprovados
+        </a>
+      {% endif %}
+      <a href="{{ url_for('main.agro_financeiro_listar') }}" class="btn btn-outline-success d-flex align-items-center gap-2">
+        <i class="bi bi-cash-coin"></i> Financeiro
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-6">
+      <div class="card info status-primary shadow-sm rounded-4 border-0 h-100">
+        <div class="card-body">
+          <span class="text-muted small d-block">Comprovantes enviados</span>
+          <h4 class="text-dark mt-2 mb-0">{{ filters.total }}</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card info status-success shadow-sm rounded-4 border-0 h-100">
+        <div class="card-body">
+          <span class="text-muted small d-block">Origem dos arquivos</span>
+          <h4 class="text-dark mt-2 mb-0">Skybox / Local</h4>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm rounded-4 mb-4 border-0">
+    <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center listing-filter-header"
+         data-bs-toggle="collapse"
+         data-bs-target="#collapseFiltrosComprovantesAgro"
+         aria-expanded="{{ 'true' if (filters.q or filters.equipe_id) else 'false' }}">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-funnel-fill text-primary"></i>
+        <span class="text-dark">Filtros</span>
+        {% if filters.q or filters.equipe_id %}
+          <span class="badge bg-danger rounded-circle p-1 listing-filter-dot"></span>
+        {% endif %}
+      </div>
+      <i class="bi bi-chevron-down text-muted"></i>
+    </div>
+
+    <div class="collapse {% if filters.q or filters.equipe_id %}show{% endif %}" id="collapseFiltrosComprovantesAgro">
+      <div class="card-body pt-0 listing-filter-body">
+        <form method="GET" action="{{ url_for('main.agro_contratos_comprovantes') }}">
+          <div class="row g-2 align-items-end">
+            <div class="col-md-7">
+              <label class="small text-muted mb-1">Busca geral:</label>
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                name="q"
+                value="{{ filters.q }}"
+                placeholder="Cliente, contrato, fazenda, contratante ou protocolo..."
+              >
+            </div>
+
+            <div class="col-md-3">
+              <label class="small text-muted mb-1">Equipe:</label>
+              <select name="equipe_id" class="form-select form-select-sm">
+                <option value="">Todas</option>
+                {% for equipe in equipes_ativas %}
+                  <option value="{{ equipe.id }}" {% if filters.equipe_id == equipe.id %}selected{% endif %}>{{ equipe.nome }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-2 listing-filter-actions">
+              <button type="submit" class="btn btn-success btn-sm">
+                <i class="bi bi-funnel"></i> Filtrar
+              </button>
+              {% if filters.q or filters.equipe_id %}
+                <a href="{{ url_for('main.agro_contratos_comprovantes') }}" class="btn btn-outline-secondary btn-sm">
+                  <i class="bi bi-x-lg"></i> Limpar
+                </a>
+              {% endif %}
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm rounded-4 border-0 overflow-hidden listing-table-wrap">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 listing-table">
+          <thead class="table-light">
+            <tr>
+              <th>Comprovante</th>
+              <th>Contrato</th>
+              <th>Cliente / Fazenda</th>
+              <th>Valores</th>
+              <th>Operacional</th>
+              <th>Acoes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for contrato in contratos %}
+              {% set comprovante_nome = contrato.comprovante_pagamento_nome or 'Comprovante de pagamento' %}
+              <tr>
+                <td data-label="Comprovante">
+                  <div class="fw-bold">{{ comprovante_nome }}</div>
+                  <div class="text-muted small">
+                    Enviado em {{ contrato.comprovante_pagamento_enviado_em.strftime('%d/%m/%Y %H:%M') if contrato.comprovante_pagamento_enviado_em else '-' }}
+                  </div>
+                  <div class="text-muted small">
+                    {% if contrato.comprovante_pagamento_path and contrato.comprovante_pagamento_path.startswith('skybox://') %}
+                      Skybox - Comprovantes Agro
+                    {% else %}
+                      Armazenamento local
+                    {% endif %}
+                  </div>
+                </td>
+
+                <td data-label="Contrato">
+                  <div class="fw-bold">#{{ contrato.id }}</div>
+                  <div class="text-muted small">{{ contrato.contratante_nome }}</div>
+                  <div class="text-muted small">
+                    Protocolo: {{ contrato.orcamento.protocolo or 'Nao informado' }}
+                  </div>
+                </td>
+
+                <td data-label="Cliente / Fazenda">
+                  <div class="fw-semibold">{{ contrato.orcamento.cliente_nome }}</div>
+                  <div class="text-muted small">{{ contrato.propriedade_nome or contrato.orcamento.nome_fazenda or '-' }}</div>
+                  <div class="text-muted small">{{ contrato.descricao_servico or '-' }}</div>
+                </td>
+
+                <td data-label="Valores">
+                  <div class="fw-bold">{{ contrato.valor_total|currencybr or '-' }}</div>
+                  <div class="text-muted small">Assinatura: {{ contrato.data_assinatura.strftime('%d/%m/%Y') if contrato.data_assinatura else '-' }}</div>
+                  <div class="text-muted small">Culturas: {{ contrato.culturas_formatadas or 'Nao informadas' }}</div>
+                </td>
+
+                <td data-label="Operacional">
+                  <span class="badge {% if contrato.equipe %}bg-primary-subtle text-primary border border-primary-subtle{% else %}bg-light text-dark border{% endif %}">
+                    {{ contrato.equipe.nome if contrato.equipe else 'Sem equipe' }}
+                  </span>
+                  <div class="text-muted small mt-2">
+                    {{ contrato.ordens_servico|length }} OS vinculada(s)
+                  </div>
+                </td>
+
+                <td data-label="Acoes" class="listing-cell-actions">
+                  <div class="d-flex flex-wrap gap-2">
+                    <a href="{{ url_for('main.agro_contrato_comprovante_pagamento', contrato_id=contrato.id) }}" target="_blank" class="btn btn-outline-primary btn-sm">
+                      <i class="bi bi-box-arrow-up-right"></i> Abrir
+                    </a>
+                    <a href="{{ url_for('main.agro_contrato_pdf', orcamento_id=contrato.orcamento.id) }}" target="_blank" class="btn btn-outline-secondary btn-sm">
+                      <i class="bi bi-filetype-pdf"></i> Contrato
+                    </a>
+                    {% if can_edit_payment_receipts %}
+                      <form class="m-0" method="POST" action="{{ url_for('main.agro_contrato_comprovante_pagamento_upload', contrato_id=contrato.id) }}" enctype="multipart/form-data">
+                        <label class="btn btn-outline-warning btn-sm mb-0" for="comprovantePagamentoTela{{ contrato.id }}">
+                          <i class="bi bi-upload"></i> Trocar
+                        </label>
+                        <input id="comprovantePagamentoTela{{ contrato.id }}" class="d-none" type="file" name="comprovante_pagamento" accept="application/pdf,image/jpeg,.pdf,.jpg,.jpeg,.jfif" onchange="this.form.submit()">
+                      </form>
+                      <form class="form-deletar m-0" method="POST" action="{{ url_for('main.agro_contrato_comprovante_pagamento_remover', contrato_id=contrato.id) }}">
+                        <button type="submit" class="btn btn-outline-danger btn-sm">
+                          <i class="bi bi-trash"></i> Remover
+                        </button>
+                      </form>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="6" class="text-center py-5 text-muted">
+                  Nenhum comprovante encontrado com os filtros aplicados.
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {% if filters.total_pages > 1 %}
+      <div class="card-footer bg-transparent py-3 border-top">
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="small text-muted">Pagina <strong>{{ filters.page }}</strong> de {{ filters.total_pages }}</span>
+          <nav>
+            <ul class="pagination pagination-sm mb-0 listing-pagination">
+              <li class="page-item {% if filters.page <= 1 %}disabled{% endif %}">
+                <a class="page-link shadow-none" href="{{ url_for('main.agro_contratos_comprovantes', page=filters.page-1, **pagination_args) }}">Anterior</a>
+              </li>
+              <li class="page-item active"><span class="page-link shadow-none">{{ filters.page }}</span></li>
+              <li class="page-item {% if filters.page >= filters.total_pages %}disabled{% endif %}">
+                <a class="page-link shadow-none" href="{{ url_for('main.agro_contratos_comprovantes', page=filters.page+1, **pagination_args) }}">Proxima</a>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -3,6 +3,7 @@ import unittest
 from datetime import date, time
 
 from flask import Flask
+from werkzeug.datastructures import MultiDict
 
 from app.extensions import db
 from app.models import Equipe, OrdemServico, Prefeitura, Solicitacao, Usuario
@@ -13,6 +14,10 @@ from app.modules.piloto_os.service import (
     get_os_principal_image_path_for_user,
     get_os_video_path_for_user,
 )
+from app.modules.relatorios.service import (
+    build_relatorio_coleta_imagens_export_data,
+    registrar_visualizacao_coleta_imagens,
+)
 
 
 class UvisOsMediaAccessTests(unittest.TestCase):
@@ -22,6 +27,27 @@ class UvisOsMediaAccessTests(unittest.TestCase):
             TESTING=True,
             SQLALCHEMY_DATABASE_URI="sqlite:///:memory:",
             SQLALCHEMY_TRACK_MODIFICATIONS=False,
+            SERVER_NAME="localhost",
+        )
+        self.app.add_url_rule(
+            "/uvis/os/<int:os_id>",
+            endpoint="main.uvis_os_formulario_view",
+            view_func=lambda os_id: "",
+        )
+        self.app.add_url_rule(
+            "/os/<int:os_id>/imagem-principal",
+            endpoint="main.os_imagem_principal",
+            view_func=lambda os_id: "",
+        )
+        self.app.add_url_rule(
+            "/os/<int:os_id>/imagem-complementar/<int:image_index>",
+            endpoint="main.os_imagem_complementar",
+            view_func=lambda os_id, image_index: "",
+        )
+        self.app.add_url_rule(
+            "/os/<int:os_id>/video",
+            endpoint="main.os_video",
+            view_func=lambda os_id: "",
         )
         db.init_app(self.app)
         self.ctx = self.app.app_context()
@@ -124,6 +150,50 @@ class UvisOsMediaAccessTests(unittest.TestCase):
         self.assertEqual(context["outras_imagens_paths"], ["webdav://os/1/extra-1.jpg"])
         self.assertEqual(context["video_path"], "webdav://os/1/video.mp4")
         self.assertEqual(context["total_midias_formulario"], 3)
+
+    def test_uvis_can_register_media_report_visualization(self):
+        registrar_visualizacao_coleta_imagens(self.uvis, self.solicitacao.id)
+
+        db.session.refresh(self.ordem)
+        self.assertTrue(self.ordem.uvis_visualizado)
+        self.assertIsNotNone(self.ordem.uvis_visualizado_em)
+        self.assertEqual(self.ordem.uvis_visualizado_por_id, self.uvis.id)
+
+    def test_other_uvis_cannot_register_media_report_visualization(self):
+        with self.assertRaises(ValueError):
+            registrar_visualizacao_coleta_imagens(self.outra_uvis, self.solicitacao.id)
+
+        db.session.refresh(self.ordem)
+        self.assertFalse(self.ordem.uvis_visualizado)
+
+    def test_media_report_filters_by_uvis_visualization_status(self):
+        pendentes = build_relatorio_coleta_imagens_export_data(
+            self.uvis,
+            MultiDict({"ok_uvis": "pendente"}),
+        )
+        com_ok_antes = build_relatorio_coleta_imagens_export_data(
+            self.uvis,
+            MultiDict({"ok_uvis": "ok"}),
+        )
+
+        self.assertEqual(pendentes["total_levantamentos"], 1)
+        self.assertEqual(com_ok_antes["total_levantamentos"], 0)
+
+        registrar_visualizacao_coleta_imagens(self.uvis, self.solicitacao.id)
+
+        com_ok_depois = build_relatorio_coleta_imagens_export_data(
+            self.uvis,
+            MultiDict({"ok_uvis": "ok"}),
+        )
+        pendentes_depois = build_relatorio_coleta_imagens_export_data(
+            self.uvis,
+            MultiDict({"ok_uvis": "pendente"}),
+        )
+
+        self.assertEqual(com_ok_depois["total_levantamentos"], 1)
+        self.assertTrue(com_ok_depois["levantamentos"][0]["uvis_visualizado"])
+        self.assertEqual(com_ok_depois["total_ok_uvis"], 1)
+        self.assertEqual(pendentes_depois["total_levantamentos"], 0)
 
 
 if __name__ == "__main__":

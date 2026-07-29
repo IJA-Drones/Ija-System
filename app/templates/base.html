@@ -328,7 +328,7 @@
               class="nav-link {% if request.endpoint == 'main.equipe_uvis_os_historico' or (request.endpoint == 'main.equipe_uvis_os_formulario_view' and request.args.get('voltar') == 'historico') %}active{% endif %}"
               href="{{ url_for('main.equipe_uvis_os_historico') }}"
             >
-              <i class="bi bi-clock-history me-2"></i><span>Histórico OS</span>
+              <i class="bi bi-clock-history me-2"></i><span>Histórico Operacional</span>
             </a>
           </li>
           {% elif current_user.tipo_usuario in ['piloto', 'equipe_oceano'] %}
@@ -422,6 +422,7 @@
             'main.agro_caixa_diario',
             'main.agro_financeiro_contas',
             'main.agro_relatorio_contas_geral',
+            'main.agro_contratos_comprovantes',
             'main.agro_contas_receber_listar',
             'main.agro_contas_pagar_listar',
             'main.agro_financeiro_listar',
@@ -442,45 +443,134 @@
             'main.agro_financeiro_saida_novo',
             'main.agro_financeiro_saida_editar'
           ] %}
+          {% set agro_relacionamentos_menu_active = request.endpoint in [
+            'main.agro_clientes_menu',
+            'main.agro_clientes_listar',
+            'main.agro_cliente_novo',
+            'main.agro_cliente_editar',
+            'main.agro_fornecedores_listar',
+            'main.agro_fornecedor_novo',
+            'main.agro_fornecedor_editar'
+          ] %}
+          {% set agro_comercial_menu_active = request.endpoint in [
+            'main.agro_orcamentos_listar',
+            'main.agro_orcamento_novo',
+            'main.agro_orcamento_editar',
+            'main.agro_orcamentos_template_mapeamento',
+            'main.agro_rd_mapeamento_editar',
+            'main.agro_contratos_listar',
+            'main.agro_contrato_editar'
+          ] %}
+          {% set agro_operacional_menu_active = request.endpoint in [
+            'main.agro_contratos_template',
+            'main.agro_os_listar',
+            'main.agro_os_nova',
+            'main.agro_os_editar',
+            'main.agro_logs_voo',
+            'main.agro_logs_voo_exportar',
+            'main.agro_equipes_listar',
+            'main.agro_equipe_nova',
+            'main.agro_equipe_editar',
+            'main.agro_pilotos_listar',
+            'main.agro_piloto_novo',
+            'main.agro_piloto_editar',
+            'main.agro_talentos_listar',
+            'main.agro_talento_novo',
+            'main.agro_talento_detalhe',
+            'main.agro_talento_pdf',
+            'main.agro_equipamentos_listar',
+            'main.agro_equipamento_novo',
+            'main.agro_equipamento_editar',
+            'main.agro_importar_planilha_drones'
+          ] %}
           <li class="nav-item">
-            <a
-              class="nav-link {% if request.endpoint in ['main.agro_clientes_listar', 'main.agro_cliente_novo', 'main.agro_cliente_editar'] %}active{% endif %}"
-              href="{{ url_for('main.agro_clientes_listar') }}"
+            <button
+              type="button"
+              class="nav-link nav-link-toggle {% if agro_relacionamentos_menu_active %}active{% endif %}"
+              data-bs-toggle="collapse"
+              data-bs-target="#menuRelacionamentosAgro"
+              aria-expanded="{{ 'true' if agro_relacionamentos_menu_active else 'false' }}"
             >
-              <i class="bi bi-people-fill me-2"></i><span>Clientes</span>
-            </a>
+              <span>
+                <i class="bi bi-people-fill me-2"></i>
+                <span>Clientes e Fornecedores</span>
+              </span>
+              <i class="bi bi-chevron-down chevron"></i>
+            </button>
+
+            <div class="collapse {% if agro_relacionamentos_menu_active %}show{% endif %}" id="menuRelacionamentosAgro">
+              <ul class="nav flex-column sub-nav">
+                <li class="nav-item">
+                  <a
+                    class="nav-link sub-link {% if request.endpoint == 'main.agro_clientes_menu' %}active{% endif %}"
+                    href="{{ url_for('main.agro_clientes_menu') }}"
+                  >
+                    <i class="bi bi-grid-1x2-fill me-2"></i><span>Visão Geral</span>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a
+                    class="nav-link sub-link {% if request.endpoint in ['main.agro_clientes_listar', 'main.agro_cliente_novo', 'main.agro_cliente_editar'] %}active{% endif %}"
+                    href="{{ url_for('main.agro_clientes_listar') }}"
+                  >
+                    <i class="bi bi-people-fill me-2"></i><span>Clientes</span>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a
+                    class="nav-link sub-link {% if request.endpoint in ['main.agro_fornecedores_listar', 'main.agro_fornecedor_novo', 'main.agro_fornecedor_editar'] %}active{% endif %}"
+                    href="{{ url_for('main.agro_fornecedores_listar') }}"
+                  >
+                    <i class="bi bi-buildings-fill me-2"></i><span>Fornecedores</span>
+                  </a>
+                </li>
+              </ul>
+            </div>
           </li>
+
           <li class="nav-item">
-            <a
-              class="nav-link {% if request.endpoint in ['main.agro_fornecedores_listar', 'main.agro_fornecedor_novo', 'main.agro_fornecedor_editar'] %}active{% endif %}"
-              href="{{ url_for('main.agro_fornecedores_listar') }}"
+            <button
+              type="button"
+              class="nav-link nav-link-toggle {% if agro_comercial_menu_active %}active{% endif %}"
+              data-bs-toggle="collapse"
+              data-bs-target="#menuComercialAgro"
+              aria-expanded="{{ 'true' if agro_comercial_menu_active else 'false' }}"
             >
-              <i class="bi bi-buildings-fill me-2"></i><span>Fornecedores</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a
-              class="nav-link {% if request.endpoint in ['main.agro_orcamentos_listar', 'main.agro_orcamento_novo', 'main.agro_orcamento_editar'] %}active{% endif %}"
-              href="{{ url_for('main.agro_orcamentos_listar') }}"
-            >
-              <i class="bi bi-file-earmark-text-fill me-2"></i><span>Orçamentos</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a
-              class="nav-link {% if request.endpoint in ['main.agro_orcamentos_template_mapeamento', 'main.agro_rd_mapeamento_editar'] %}active{% endif %}"
-              href="{{ url_for('main.agro_orcamentos_template_mapeamento') }}"
-            >
-              <i class="bi bi-map-fill me-2"></i><span>Listar Mapeamentos</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a
-              class="nav-link {% if request.endpoint in ['main.agro_contratos_listar', 'main.agro_contrato_editar'] %}active{% endif %}"
-              href="{{ url_for('main.agro_contratos_listar') }}"
-            >
-              <i class="bi bi-file-earmark-text-fill me-2"></i><span>Contratos</span>
-            </a>
+              <span>
+                <i class="bi bi-briefcase-fill me-2"></i>
+                <span>Comercial</span>
+              </span>
+              <i class="bi bi-chevron-down chevron"></i>
+            </button>
+
+            <div class="collapse {% if agro_comercial_menu_active %}show{% endif %}" id="menuComercialAgro">
+              <ul class="nav flex-column sub-nav">
+                <li class="nav-item">
+                  <a
+                    class="nav-link sub-link {% if request.endpoint in ['main.agro_orcamentos_listar', 'main.agro_orcamento_novo', 'main.agro_orcamento_editar'] %}active{% endif %}"
+                    href="{{ url_for('main.agro_orcamentos_listar') }}"
+                  >
+                    <i class="bi bi-file-earmark-text-fill me-2"></i><span>Orçamentos</span>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a
+                    class="nav-link sub-link {% if request.endpoint in ['main.agro_orcamentos_template_mapeamento', 'main.agro_rd_mapeamento_editar'] %}active{% endif %}"
+                    href="{{ url_for('main.agro_orcamentos_template_mapeamento') }}"
+                  >
+                    <i class="bi bi-map-fill me-2"></i><span>Mapeamentos</span>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a
+                    class="nav-link sub-link {% if request.endpoint in ['main.agro_contratos_listar', 'main.agro_contrato_editar'] %}active{% endif %}"
+                    href="{{ url_for('main.agro_contratos_listar') }}"
+                  >
+                    <i class="bi bi-file-earmark-text-fill me-2"></i><span>Contratos</span>
+                  </a>
+                </li>
+              </ul>
+            </div>
           </li>
           <li class="nav-item">
             <button
@@ -515,6 +605,16 @@
                     <i class="bi bi-clipboard-data me-2"></i><span>Relatorio Geral</span>
                   </a>
                 </li>
+                {% if is_global_admin or is_financeiro_agro_user %}
+                <li class="nav-item">
+                  <a
+                    class="nav-link sub-link {% if request.endpoint == 'main.agro_contratos_comprovantes' %}active{% endif %}"
+                    href="{{ url_for('main.agro_contratos_comprovantes') }}"
+                  >
+                    <i class="bi bi-receipt-cutoff me-2"></i><span>Comprovantes</span>
+                  </a>
+                </li>
+                {% endif %}
                 <li class="nav-item">
                   <a
                     class="nav-link sub-link {% if request.endpoint in ['main.agro_caixa_diario'] %}active{% endif %}"
@@ -600,57 +700,85 @@
               </ul>
             </div>
           </li>
-          {% if is_global_admin %}
           <li class="nav-item">
-            <a
-              class="nav-link {% if request.endpoint == 'main.agro_contratos_template' %}active{% endif %}"
-              href="{{ url_for('main.agro_contratos_template') }}"
+            <button
+              type="button"
+              class="nav-link nav-link-toggle {% if agro_operacional_menu_active %}active{% endif %}"
+              data-bs-toggle="collapse"
+              data-bs-target="#menuOperacionalAgro"
+              aria-expanded="{{ 'true' if agro_operacional_menu_active else 'false' }}"
             >
-              <i class="bi bi-diagram-3-fill me-2"></i><span>Contratos Aprovados</span>
-            </a>
-          </li>
-          {% endif %}
-          <li class="nav-item">
-            <a
-              class="nav-link {% if request.endpoint in ['main.agro_os_listar', 'main.agro_os_nova', 'main.agro_os_editar'] %}active{% endif %}"
-              href="{{ url_for('main.agro_os_listar') }}"
-            >
-              <i class="bi bi-clipboard2-data-fill me-2"></i><span>Ordens de Servico</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a
-              class="nav-link {% if request.endpoint in ['main.agro_equipes_listar', 'main.agro_equipe_nova', 'main.agro_equipe_editar'] %}active{% endif %}"
-              href="{{ url_for('main.agro_equipes_listar') }}"
-            >
-              <i class="bi bi-diagram-3-fill me-2"></i><span>Equipes Operacionais</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a
-              class="nav-link {% if request.endpoint in ['main.agro_pilotos_listar', 'main.agro_piloto_novo', 'main.agro_piloto_editar'] %}active{% endif %}"
-              href="{{ url_for('main.agro_pilotos_listar') }}"
-            >
-              <i class="bi bi-person-badge-fill me-2"></i><span>Pilotos Operacionais</span>
-            </a>
-          </li>
-          {% if is_admin_panel_user %}
-          <li class="nav-item">
-            <a
-              class="nav-link {% if request.endpoint in ['main.agro_talentos_listar', 'main.agro_talento_novo', 'main.agro_talento_detalhe', 'main.agro_talento_pdf'] %}active{% endif %}"
-              href="{{ url_for('main.agro_talentos_listar') }}"
-            >
-              <i class="bi bi-person-vcard-fill me-2"></i><span>Banco de Talentos</span>
-            </a>
-          </li>
-          {% endif %}
-          <li class="nav-item">
-            <a
-              class="nav-link {% if request.endpoint in ['main.agro_equipamentos_listar', 'main.agro_equipamento_novo', 'main.agro_equipamento_editar', 'main.agro_importar_planilha_drones'] %}active{% endif %}"
-              href="{{ url_for('main.agro_equipamentos_listar') }}"
-            >
-              <i class="bi bi-cpu-fill me-2"></i><span>Equipamentos Operacionais</span>
-            </a>
+              <span>
+                <i class="bi bi-gear-fill me-2"></i>
+                <span>Operacional</span>
+              </span>
+              <i class="bi bi-chevron-down chevron"></i>
+            </button>
+
+            <div class="collapse {% if agro_operacional_menu_active %}show{% endif %}" id="menuOperacionalAgro">
+              <ul class="nav flex-column sub-nav">
+                {% if is_global_admin %}
+                <li class="nav-item">
+                  <a
+                    class="nav-link sub-link {% if request.endpoint == 'main.agro_contratos_template' %}active{% endif %}"
+                    href="{{ url_for('main.agro_contratos_template') }}"
+                  >
+                    <i class="bi bi-diagram-3-fill me-2"></i><span>Contratos Aprovados</span>
+                  </a>
+                </li>
+                {% endif %}
+                <li class="nav-item">
+                  <a
+                    class="nav-link sub-link {% if request.endpoint in ['main.agro_os_listar', 'main.agro_os_nova', 'main.agro_os_editar'] %}active{% endif %}"
+                    href="{{ url_for('main.agro_os_listar') }}"
+                  >
+                    <i class="bi bi-clipboard2-data-fill me-2"></i><span>Ordens de Servico</span>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a
+                    class="nav-link sub-link {% if request.endpoint in ['main.agro_logs_voo', 'main.agro_logs_voo_exportar'] %}active{% endif %}"
+                    href="{{ url_for('main.agro_logs_voo') }}"
+                  >
+                    <i class="bi bi-airplane-engines-fill me-2"></i><span>Logs de Voo</span>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a
+                    class="nav-link sub-link {% if request.endpoint in ['main.agro_equipes_listar', 'main.agro_equipe_nova', 'main.agro_equipe_editar'] %}active{% endif %}"
+                    href="{{ url_for('main.agro_equipes_listar') }}"
+                  >
+                    <i class="bi bi-diagram-3-fill me-2"></i><span>Equipes</span>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a
+                    class="nav-link sub-link {% if request.endpoint in ['main.agro_pilotos_listar', 'main.agro_piloto_novo', 'main.agro_piloto_editar'] %}active{% endif %}"
+                    href="{{ url_for('main.agro_pilotos_listar') }}"
+                  >
+                    <i class="bi bi-person-badge-fill me-2"></i><span>Pilotos</span>
+                  </a>
+                </li>
+                {% if is_admin_panel_user %}
+                <li class="nav-item">
+                  <a
+                    class="nav-link sub-link {% if request.endpoint in ['main.agro_talentos_listar', 'main.agro_talento_novo', 'main.agro_talento_detalhe', 'main.agro_talento_pdf'] %}active{% endif %}"
+                    href="{{ url_for('main.agro_talentos_listar') }}"
+                  >
+                    <i class="bi bi-person-vcard-fill me-2"></i><span>Banco de Talentos</span>
+                  </a>
+                </li>
+                {% endif %}
+                <li class="nav-item">
+                  <a
+                    class="nav-link sub-link {% if request.endpoint in ['main.agro_equipamentos_listar', 'main.agro_equipamento_novo', 'main.agro_equipamento_editar', 'main.agro_importar_planilha_drones'] %}active{% endif %}"
+                    href="{{ url_for('main.agro_equipamentos_listar') }}"
+                  >
+                    <i class="bi bi-cpu-fill me-2"></i><span>Equipamentos</span>
+                  </a>
+                </li>
+              </ul>
+            </div>
           </li>
           {% endif %}
 
@@ -895,24 +1023,6 @@
               href="{{ url_for('main.uvis_acesso_operacional') }}"
             >
               <i class="bi bi-person-workspace me-2"></i><span>Acesso Operacional</span>
-            </a>
-          </li>
-
-          <li class="nav-item">
-            <a
-              class="nav-link {% if request.endpoint == 'main.dashboard_equipe_uvis' %}active{% endif %}"
-              href="{{ url_for('main.dashboard_equipe_uvis') }}"
-            >
-              <i class="bi bi-clipboard2-check-fill me-2"></i><span>Demandas Aprovadas</span>
-            </a>
-          </li>
-
-          <li class="nav-item">
-            <a
-              class="nav-link {% if request.endpoint == 'main.equipe_uvis_os_historico' %}active{% endif %}"
-              href="{{ url_for('main.equipe_uvis_os_historico') }}"
-            >
-              <i class="bi bi-clock-history me-2"></i><span>Historico Operacional</span>
             </a>
           </li>
 
@@ -1421,6 +1531,39 @@
                 });
             });
 
+            document.querySelectorAll('button.btn-deletar').forEach(button => {
+                button.addEventListener('click', function (e) {
+                    const form = button.form || button.closest('form');
+                    if (!form || form.classList.contains('form-deletar')) return;
+
+                    e.preventDefault();
+
+                    const isDarkMode = document.body.classList.contains('dark-mode');
+                    Swal.fire({
+                        title: 'Tem certeza?',
+                        text: button.dataset.deleteText || 'Este registro será removido permanentemente.',
+                        icon: 'warning',
+                        customClass: {
+                            popup: isDarkMode ? 'swal2-dark-mode' : ''
+                        },
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: 'Sim, remover!',
+                        cancelButtonText: 'Cancelar'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            showLoadingState(button);
+                            if (typeof form.requestSubmit === 'function') {
+                                form.requestSubmit(button);
+                            } else {
+                                form.submit();
+                            }
+                        }
+                    });
+                });
+            });
+
             // 2. LOADING UNIVERSAL (Melhorado para evitar conflitos)
             document.querySelectorAll('form:not(.form-deletar):not(.form-exportar):not(.form-no-loading)').forEach(form => {
                 form.addEventListener('submit', function (e) {
@@ -1644,6 +1787,100 @@
           pollGlobalVideoUploadJob();
           videoUploadPollTimer = setInterval(pollGlobalVideoUploadJob, 2500);
       }
+  });
+
+  document.addEventListener("DOMContentLoaded", () => {
+      document.querySelectorAll("[data-chip-multi-select]").forEach((root) => {
+          const select = root.querySelector("[data-chip-select]");
+          const valuesBox = root.querySelector("[data-chip-values]");
+          const inputName = root.dataset.name;
+          if (!select || !valuesBox || !inputName) return;
+          const placeholderOption = select.querySelector('option[value=""]');
+          const placeholderText = placeholderOption ? placeholderOption.textContent : "";
+
+          const getSummaryText = (count) => {
+              if (!count) return placeholderText;
+              if (inputName === "unidade" || inputName === "uvis_id") {
+                  return count === 1 ? "1 UVIS selecionada" : `${count} UVIS selecionadas`;
+              }
+              if (inputName === "foco") {
+                  return count === 1 ? "1 foco selecionado" : `${count} focos selecionados`;
+              }
+              return count === 1 ? "1 selecionado" : `${count} selecionados`;
+          };
+
+          const updateSummary = () => {
+              if (!placeholderOption) return;
+              const count = valuesBox.querySelectorAll("[data-chip-value]").length;
+              placeholderOption.textContent = getSummaryText(count);
+          };
+
+          const enableOption = (value) => {
+              const option = Array.from(select.options).find((item) => item.value === value);
+              if (option) option.disabled = false;
+          };
+
+          const disableOption = (value) => {
+              const option = Array.from(select.options).find((item) => item.value === value);
+              if (option) option.disabled = true;
+          };
+
+          const hasValue = (value) => Array.from(valuesBox.querySelectorAll("[data-chip-value]"))
+              .some((chip) => chip.dataset.chipValue === value);
+
+          const addChip = (value, label) => {
+              if (!value || hasValue(value)) return;
+
+              const chip = document.createElement("span");
+              chip.className = "chip-multi-item";
+              chip.dataset.chipValue = value;
+
+              const check = document.createElement("span");
+              check.className = "chip-multi-check";
+              check.innerHTML = '<i class="bi bi-check"></i>';
+
+              const text = document.createElement("span");
+              text.className = "chip-multi-label";
+              text.textContent = label || value;
+
+              const remove = document.createElement("button");
+              remove.type = "button";
+              remove.className = "chip-multi-remove";
+              remove.dataset.chipRemove = "";
+              remove.setAttribute("aria-label", `Remover ${label || value}`);
+              remove.innerHTML = '<i class="bi bi-x"></i>';
+
+              const hidden = document.createElement("input");
+              hidden.type = "hidden";
+              hidden.name = inputName;
+              hidden.value = value;
+
+              chip.append(check, text, remove, hidden);
+              valuesBox.appendChild(chip);
+              disableOption(value);
+              updateSummary();
+          };
+
+          select.addEventListener("change", () => {
+              const option = select.selectedOptions[0];
+              if (!option || !option.value) return;
+              addChip(option.value, option.dataset.chipLabel || option.textContent.trim());
+              select.value = "";
+          });
+
+          valuesBox.addEventListener("click", (event) => {
+              const button = event.target.closest("[data-chip-remove]");
+              if (!button) return;
+              const chip = button.closest("[data-chip-value]");
+              if (!chip) return;
+              const value = chip.dataset.chipValue;
+              chip.remove();
+              enableOption(value);
+              updateSummary();
+          });
+
+          updateSummary();
+      });
   });
 
   if ('serviceWorker' in navigator) {

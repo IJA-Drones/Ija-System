@@ -165,7 +165,7 @@
                   <div class="d-flex gap-2">
                     {% if is_editable %}
                       <a href="{{ url_for('main.agro_financeiro_entrada_editar', lancamento_id=item.id) }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-pencil-square"></i></a>
-                      <form method="POST" action="{{ url_for('main.agro_financeiro_entrada_deletar', lancamento_id=item.id) }}" onsubmit="return confirm('Deseja excluir esta entrada manual?');">
+                      <form class="form-deletar" method="POST" action="{{ url_for('main.agro_financeiro_entrada_deletar', lancamento_id=item.id) }}">
                         <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i></button>
                       </form>
                     {% endif %}

@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% from "_pagination.html" import render_pagination %}
 {% from "_retorno_ciclo_resumo.html" import render_retorno_ciclo_resumo %}
+{% from "_multi_select_chips.html" import render_chip_select_values %}
+{% from "_result_summary.html" import render_result_summary %}
 
 {% block extra_styles %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
@@ -199,7 +201,10 @@
 <div class="container-fluid py-4 admin-page" style="max-width: 1200px;">
 
     <div class="admin-toolbar mb-4">
-        <h2 class="text-dark"><i class="bi bi-shield-lock-fill me-2 text-primary"></i> Painel de Gestão</h2>
+        <div>
+            <h2 class="text-dark mb-0"><i class="bi bi-shield-lock-fill me-2 text-primary"></i> Painel de Gestão</h2>
+            {{ render_result_summary(paginacao.total, 'Solicitações filtradas') }}
+        </div>
 
         {% if current_user.tipo_usuario in ['dev', 'admin', 'operario', 'visualizar', 'regional'] %}
         {# 'flex-wrap' aqui garante que os botões se organizem entre si se a tela for muito estreita #}
@@ -217,12 +222,16 @@
 
             <form method="GET" action="{{ url_for('main.exportar_excel') }}" class="p-0 m-0 flex-grow-1 flex-md-grow-0 admin-toolbar-slot">
                 <input type="hidden" name="status" value="{{ request.args.get('status', '') }}">
-                <input type="hidden" name="unidade" value="{{ request.args.get('unidade', '') }}">
+                {% for unidade in filtros_multi.unidade %}
+                    <input type="hidden" name="unidade" value="{{ unidade }}">
+                {% endfor %}
                 <input type="hidden" name="regiao" value="{{ request.args.get('regiao', '') }}">
                 <input type="hidden" name="apoio_cet" value="{{ request.args.get('apoio_cet', '') }}">
                 <input type="hidden" name="tipo_visita" value="{{ request.args.get('tipo_visita', '') }}">
                 <input type="hidden" name="tipo_imovel" value="{{ request.args.get('tipo_imovel', '') }}">
-                <input type="hidden" name="foco" value="{{ request.args.get('foco', '') }}">
+                {% for foco in filtros_multi.foco %}
+                    <input type="hidden" name="foco" value="{{ foco }}">
+                {% endfor %}
                 <input type="hidden" name="protocolo" value="{{ request.args.get('protocolo', '') }}">
                 <input type="hidden" name="endereco" value="{{ request.args.get('endereco', '') }}">
                 <input type="hidden" name="data_ini" value="{{ request.args.get('data_ini', '') }}">
@@ -269,7 +278,7 @@
         <div class="collapse {% if admin_has_filters %}show{% endif %}" id="collapseFiltros">
             <div class="card-body pt-0 pb-4">
                 <form method="GET">
-                    <div class="row g-2 align-items-end">
+                    <div class="row g-2 filter-chip-row">
                         <div class="col-md-3">
                             <label class="small text-muted">Status:</label>
                             <select name="status" class="form-select form-select-sm">
@@ -294,15 +303,7 @@
                         </div>
                         <div class="col-md-3">
                             <label class="small text-muted">Unidade:</label>
-                            <select name="unidade" class="form-select form-select-sm">
-                                <option value="">Todas as UVIS</option>
-                                {% for u in unidades_select %}
-                                    <option value="{{ u.nome_uvis }}" 
-                                        {% if request.args.get('unidade') == u.nome_uvis %}selected{% endif %}>
-                                        {{ u.nome_uvis }}
-                                    </option>
-                                {% endfor %}
-                            </select>
+                            {{ render_chip_select_values('unidade', unidades_select|map(attribute='nome_uvis')|list, filtros_multi.unidade, 'Adicionar UVIS') }}
                         </div>
                         <div class="col-md-3">
                         <label class="small text-muted">Região:</label>
@@ -348,12 +349,7 @@
                         </div>
                         <div class="col-md-3">
                             <label class="small text-muted">Foco:</label>
-                            <select name="foco" class="form-select form-select-sm">
-                                <option value="">Todos</option>
-                                {% for opcao in solicitacao_filter_foco_opcoes %}
-                                    <option value="{{ opcao }}" {% if request.args.get('foco') == opcao %}selected{% endif %}>{{ opcao }}</option>
-                                {% endfor %}
-                            </select>
+                            {{ render_chip_select_values('foco', solicitacao_filter_foco_opcoes, filtros_multi.foco, 'Adicionar foco') }}
                         </div>
                         <div class="col-md-3">
                             <label class="small text-muted">ID ou protocolo:</label>
@@ -566,6 +562,10 @@
                                         <td>{{ p.tipo_imovel or '--' }}</td>
                                     </tr>
                                     <tr>
+                                        <th>D.A</th>
+                                        <td>{{ p.distrito_administrativo or '--' }}</td>
+                                    </tr>
+                                    <tr>
                                         <th>Altura</th>
                                         <td>{{ p.altura_voo or '--' }}</td>
                                     </tr>
@@ -608,6 +608,7 @@
                         {% if is_editable %}
                             {# --- FORMULÁRIO DESKTOP (ADMIN/OPERÁRIO) --- #}
                             <form action="{{ url_for('main.atualizar', id=p.id) }}" method="POST" enctype="multipart/form-data">
+                                <input type="hidden" name="next" value="{{ admin_return_url }}">
                                 <div class="row g-1 mb-2">
                                     <div class="col-6"><input name="latitude" class="form-control form-control-sm" value="{{ p.latitude or '' }}" placeholder="Lat"></div>
                                     <div class="col-6"><input name="longitude" class="form-control form-control-sm" value="{{ p.longitude or '' }}" placeholder="Long"></div>
@@ -764,6 +765,7 @@
                                         <div class="col-6"><strong>Operação:</strong> {{ p.tipo_operacao if p.tipo_operacao and p.tipo_operacao != 'None' else '--' }}</div>
                                         <div class="col-6"><strong>Visita:</strong> {{ p.tipo_visita }}</div>
                                         <div class="col-6"><strong>Imovel:</strong> {{ p.tipo_imovel or '--' }}</div>
+                                        <div class="col-6"><strong>D.A:</strong> {{ p.distrito_administrativo or '--' }}</div>
                                         <div class="col-6"><strong>Alt:</strong> {{ p.altura_voo }}</div>
                                         <div class="col-6"><strong>Foco:</strong> {{ p.foco }}</div>
                                         <div class="col-6">
@@ -795,6 +797,7 @@
                                     <h6 class="small fw-bold text-primary mb-3 text-uppercase">Tomar Decisão</h6>
 
                                     <form action="{{ url_for('main.atualizar', id=p.id) }}" method="POST" enctype="multipart/form-data">
+                                        <input type="hidden" name="next" value="{{ admin_return_url }}">
                                         <div class="d-none">
                                             <input name="latitude" value="{{ p.latitude }}">
                                             <input name="longitude" value="{{ p.longitude }}">
@@ -866,7 +869,9 @@
                                     <form action="{{ url_for('main.remover_anexo', id=p.id) }}"
                                           method="POST"
                                           class="form-deletar d-none"
-                                          id="formRemoverAnexo{{ p.id }}_mob"></form>
+                                          id="formRemoverAnexo{{ p.id }}_mob">
+                                        <input type="hidden" name="next" value="{{ admin_return_url }}">
+                                    </form>
                                     {% endif %}
 
                                     {% if current_user.tipo_usuario in ['dev', 'admin'] %}

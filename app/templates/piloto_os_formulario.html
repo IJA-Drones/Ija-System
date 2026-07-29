@@ -654,28 +654,39 @@
       {% endif %}
       {% if modo_visualizacao %}
       <div class="alert alert-info border-0 shadow-sm">
-        <i class="bi bi-eye me-1"></i> Formulário em modo visualização.
+        <i class="bi bi-eye me-1"></i>
+        {% if can_edit_uvis_tab %}
+          Dados oficiais em modo visualizacao. O retorno automatico pode ser preenchido na aba OS UVIS.
+        {% else %}
+          Formulário em modo visualização.
+        {% endif %}
       </div>
       {% endif %}
 
       {% include "_retorno_ciclo.html" %}
 
+      {% set current_os_tab = active_os_tab|default('dados') %}
       <form method="post" action="{{ form_action or url_for('main.piloto_os_formulario_view', os_id=solicitacao.id) }}" enctype="multipart/form-data" novalidate id="os-form-main">
         <ul class="nav nav-tabs os-form-tabs mb-4" id="osFormTabs" role="tablist">
           <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="os-dados-tab" data-bs-toggle="tab" data-bs-target="#os-dados-pane" type="button" role="tab" aria-controls="os-dados-pane" aria-selected="true">
+            <button class="nav-link {% if current_os_tab == 'dados' %}active{% endif %}" id="os-dados-tab" data-bs-toggle="tab" data-bs-target="#os-dados-pane" type="button" role="tab" aria-controls="os-dados-pane" aria-selected="{{ 'true' if current_os_tab == 'dados' else 'false' }}">
               <i class="bi bi-clipboard-data me-2"></i>Formulário da OS
             </button>
           </li>
           <li class="nav-item" role="presentation">
-            <button class="nav-link" id="os-imagens-tab" data-bs-toggle="tab" data-bs-target="#os-imagens-pane" type="button" role="tab" aria-controls="os-imagens-pane" aria-selected="false">
+            <button class="nav-link {% if current_os_tab == 'uvis' %}active{% endif %}" id="os-uvis-tab" data-bs-toggle="tab" data-bs-target="#os-uvis-pane" type="button" role="tab" aria-controls="os-uvis-pane" aria-selected="{{ 'true' if current_os_tab == 'uvis' else 'false' }}">
+              <i class="bi bi-people me-2"></i>OS UVIS
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link {% if current_os_tab == 'imagens' %}active{% endif %}" id="os-imagens-tab" data-bs-toggle="tab" data-bs-target="#os-imagens-pane" type="button" role="tab" aria-controls="os-imagens-pane" aria-selected="{{ 'true' if current_os_tab == 'imagens' else 'false' }}">
               <i class="bi bi-images me-2"></i>Levantamento de Mídias{% if total_midias_formulario %} ({{ total_midias_formulario }}){% endif %}
             </button>
           </li>
         </ul>
 
         <div class="tab-content">
-        <div class="tab-pane fade show active os-tab-pane" id="os-dados-pane" role="tabpanel" aria-labelledby="os-dados-tab">
+        <div class="tab-pane fade {% if current_os_tab == 'dados' %}show active{% endif %} os-tab-pane" id="os-dados-pane" role="tabpanel" aria-labelledby="os-dados-tab">
 
         {# ===================== IDENTIFICAÇÃO ===================== #}
         <div class="section-title mt-0">
@@ -693,7 +704,8 @@
           </div>
           <div class="col-md-3">
             <label class="form-label-header">Identificador OS</label>
-            <input type="text" name="identificador_os" class="form-control" value="{{ ordem.identificador_os if ordem else '' }}" />
+            {% set identificador_os_value = ordem.identificador_os if ordem and ordem.identificador_os and ordem.identificador_os != '//' else '' %}
+            <input type="text" name="identificador_os" class="form-control" value="{{ identificador_os_value }}" />
           </div>
         </div>
 
@@ -900,7 +912,16 @@
           </div>
           <div class="col-md-3">
             <label class="form-label-header">DA (Distrito) *</label>
-            <input type="text" name="da" class="form-control" value="{{ ordem.distrito_administrativo if ordem else '' }}" required />
+            {% set solicitacao_da_value = solicitacao.distrito_administrativo if solicitacao and solicitacao.distrito_administrativo and solicitacao.distrito_administrativo != '//' else '' %}
+            {% set ordem_da_value = ordem.distrito_administrativo if ordem and ordem.distrito_administrativo and ordem.distrito_administrativo != '//' else '' %}
+            <input
+              type="text"
+              name="da"
+              class="form-control{% if solicitacao_da_value %} bg-light{% endif %}"
+              value="{{ solicitacao_da_value or ordem_da_value }}"
+              {% if solicitacao_da_value %}readonly{% endif %}
+              required
+            />
           </div>
           <div class="col-md-5">
             <label class="form-label-header">Nome/RF do ACE responsável *</label>
@@ -1259,7 +1280,113 @@
         </div>
 
         </div>
-        <div class="tab-pane fade os-tab-pane" id="os-imagens-pane" role="tabpanel" aria-labelledby="os-imagens-tab">
+        <div class="tab-pane fade {% if current_os_tab == 'uvis' %}show active{% endif %} os-tab-pane" id="os-uvis-pane" role="tabpanel" aria-labelledby="os-uvis-tab">
+          <div class="section-title mt-0">
+            <h5 class="m-0 text-primary fw-bold">OS UVIS</h5>
+          </div>
+
+          <div class="alert alert-light border rounded-4 shadow-sm">
+            <i class="bi bi-info-circle me-1 text-primary"></i>
+            Esta aba concentra a leitura da OS oficial preenchida pelo piloto e o complemento da UVIS para auditoria.
+          </div>
+
+          <div class="section-title">
+            <h5 class="m-0 text-primary fw-bold">Dados oficiais da OS</h5>
+          </div>
+
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <label class="form-label-header">Situacao da aplicacao</label>
+              <input type="text" class="form-control bg-light" value="{{ ordem.situacao_aplicacao if ordem else '' }}" readonly />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label-header">Larva visualizada</label>
+              <input type="text" class="form-control bg-light" value="{{ ordem.larva_visualizada if ordem else '' }}" readonly />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label-header">Tratamento adicional</label>
+              <input type="text" class="form-control bg-light" value="{{ ordem.tratamento_adicional_realizado if ordem else '' }}" readonly />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label-header">Qtd administrada (ml)</label>
+              <input type="text" class="form-control bg-light" value="{{ ordem.quantidade_produto_administrada_ml if ordem and ordem.quantidade_produto_administrada_ml is not none else '' }}" readonly />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label-header">Data aplicacao</label>
+              <input type="text" class="form-control bg-light" value="{{ ordem.data_aplicacao.strftime('%d/%m/%Y') if ordem and ordem.data_aplicacao else '' }}" readonly />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label-header">Respondido por</label>
+              <input type="text" class="form-control bg-light" value="{{ ordem.respondido_por if ordem else '' }}" readonly />
+            </div>
+            <div class="col-md-12">
+              <label class="form-label-header">Motivo nao realizacao</label>
+              <textarea class="form-control bg-light" rows="2" readonly>{{ ordem.motivo_nao_realizacao if ordem else '' }}</textarea>
+            </div>
+            <div class="col-md-12">
+              <label class="form-label-header">Observacoes do piloto</label>
+              <textarea class="form-control bg-light" rows="3" readonly>{{ ordem.observacoes if ordem else '' }}</textarea>
+            </div>
+          </div>
+
+          <hr class="opacity-25 my-4" />
+
+          <div class="section-title">
+            <h5 class="m-0 text-primary fw-bold">Complemento UVIS</h5>
+          </div>
+
+          {% if not ordem_uvis %}
+            <div class="alert {% if can_edit_uvis_tab %}alert-info{% else %}alert-warning{% endif %} border-0 rounded-4 shadow-sm">
+              <i class="bi {% if can_edit_uvis_tab %}bi-info-circle{% else %}bi-exclamation-triangle{% endif %} me-1"></i>
+              {% if can_edit_uvis_tab %}
+                Ainda nao existe complemento salvo para esta OS. Defina o retorno automatico abaixo.
+              {% else %}
+                A UVIS ainda nao registrou complemento para esta OS.
+              {% endif %}
+            </div>
+          {% endif %}
+
+          {% set uvis_retorno_flag = ordem_uvis.retornar_proxima_semana_monitorar_larvas if ordem_uvis else ('SIM' if retorno_existente else 'NAO') %}
+          {% set uvis_retorno_em_value = retorno_monitoramento_value if retorno_monitoramento_value is defined else (ordem_uvis.retorno_monitoramento_em.strftime('%Y-%m-%dT%H:%M') if ordem_uvis and ordem_uvis.retorno_monitoramento_em else '') %}
+          {% set can_edit_uvis_observacoes_flag = can_edit_uvis_observacoes|default(true) %}
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <label class="form-label-header">Retornar para monitorar</label>
+              {% if can_edit_uvis_tab %}
+                <select name="uvis_retornar_proxima_semana_monitorar_larvas" id="uvis_retornar_monitorar" class="form-select" data-uvis-editable="true">
+                  <option value="NAO" {% if uvis_retorno_flag != 'SIM' %}selected{% endif %}>NAO</option>
+                  <option value="SIM" {% if uvis_retorno_flag == 'SIM' %}selected{% endif %}>SIM</option>
+                </select>
+              {% else %}
+                <input type="text" class="form-control bg-light" value="{{ uvis_retorno_flag if ordem_uvis else '' }}" readonly />
+              {% endif %}
+            </div>
+            <div class="col-md-4" id="uvis_retorno_data_wrapper">
+              <label class="form-label-header">Retornar em</label>
+              {% if can_edit_uvis_tab %}
+                <input type="datetime-local" name="uvis_retorno_monitoramento_em" id="uvis_retorno_data" class="form-control" value="{{ uvis_retorno_em_value }}" data-uvis-editable="true" />
+              {% else %}
+                <input type="text" class="form-control bg-light" value="{{ ordem_uvis.retorno_monitoramento_em.strftime('%d/%m/%Y %H:%M') if ordem_uvis and ordem_uvis.retorno_monitoramento_em else '' }}" readonly />
+              {% endif %}
+            </div>
+            <div class="col-md-12">
+              <label class="form-label-header">Observacao da UVIS</label>
+              {% if can_edit_uvis_tab and can_edit_uvis_observacoes_flag %}
+                <textarea name="uvis_observacoes" class="form-control" rows="4" data-uvis-editable="true">{{ ordem_uvis.observacoes if ordem_uvis else '' }}</textarea>
+              {% else %}
+                <textarea class="form-control bg-light" rows="4" readonly>{{ ordem_uvis.observacoes if ordem_uvis else '' }}</textarea>
+              {% endif %}
+            </div>
+            {% if can_edit_uvis_tab %}
+            <div class="col-12 d-flex justify-content-end">
+              <button type="submit" name="save_scope" value="uvis" class="btn btn-primary btn-sm px-4" data-uvis-editable="true">
+                <i class="bi bi-arrow-repeat me-1"></i> Salvar retorno automatico
+              </button>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        <div class="tab-pane fade {% if current_os_tab == 'imagens' %}show active{% endif %} os-tab-pane" id="os-imagens-pane" role="tabpanel" aria-labelledby="os-imagens-tab">
           <div class="os-media-shell">
             <div class="os-media-hero">
               <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
@@ -1716,12 +1843,31 @@ function clearSignature(tipo) {
 
 document.addEventListener("DOMContentLoaded", () => {
   const modoVisualizacao = {{ "true" if modo_visualizacao else "false" }};
+  const canEditUvisTab = {{ "true" if can_edit_uvis_tab else "false" }};
   if (!modoVisualizacao) return;
 
   document.querySelectorAll("form input, form select, form textarea, form button").forEach((el) => {
     if (el.type === "hidden" || el.dataset.bsToggle === "tab") return;
+    if (canEditUvisTab && el.dataset.uvisEditable === "true") return;
     el.setAttribute("disabled", "disabled");
   });
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  const retornoSelect = document.getElementById("uvis_retornar_monitorar");
+  const retornoWrapper = document.getElementById("uvis_retorno_data_wrapper");
+  const retornoInput = document.getElementById("uvis_retorno_data");
+  if (!retornoSelect || !retornoWrapper || !retornoInput) return;
+
+  const syncRetornoUvis = () => {
+    const deveRetornar = retornoSelect.value === "SIM";
+    retornoWrapper.classList.toggle("d-none", !deveRetornar);
+    retornoInput.required = deveRetornar;
+    if (!deveRetornar) retornoInput.value = "";
+  };
+
+  retornoSelect.addEventListener("change", syncRetornoUvis);
+  syncRetornoUvis();
 });
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -1772,12 +1918,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const storageKey = 'os-form-tab-{{ solicitacao.id }}';
   const savedTab = sessionStorage.getItem(storageKey);
+  const serverTab = "{{ current_os_tab }}";
+  const serverTarget = serverTab === "uvis"
+    ? "#os-uvis-pane"
+    : (serverTab === "imagens" ? "#os-imagens-pane" : "#os-dados-pane");
 
   tabButtons.forEach((button) => {
     button.addEventListener('shown.bs.tab', () => {
       sessionStorage.setItem(storageKey, button.getAttribute('data-bs-target') || '');
     });
   });
+
+  if (serverTab !== "dados") {
+    const serverButton = document.querySelector(`#osFormTabs button[data-bs-target="${serverTarget}"]`);
+    if (serverButton) {
+      sessionStorage.setItem(storageKey, serverTarget);
+      bootstrap.Tab.getOrCreateInstance(serverButton).show();
+      return;
+    }
+  }
 
   if (savedTab) {
     const targetButton = document.querySelector(`#osFormTabs button[data-bs-target="${savedTab}"]`);

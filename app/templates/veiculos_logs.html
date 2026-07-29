@@ -319,14 +319,351 @@
         margin: 0;
     }
 
+    .logs-view-tabs {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 999px;
+        display: none !important;
+        gap: 0.35rem;
+        padding: 0.35rem;
+    }
+
+    .logs-view-tabs .nav-link {
+        border: 0;
+        border-radius: 999px;
+        color: #475569;
+        font-weight: 800;
+        padding: 0.55rem 1rem;
+    }
+
+    .logs-view-tabs .nav-link.active {
+        background: #0d6efd;
+        color: #fff;
+    }
+
+    .vehicle-history-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 1rem;
+        overflow: hidden;
+    }
+
+    .vehicle-history-card + .vehicle-history-card {
+        margin-top: 1rem;
+    }
+
+    .vehicle-history-card-header {
+        align-items: flex-start;
+        background: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        gap: 1rem;
+        justify-content: space-between;
+        padding: 1rem;
+    }
+
+    .vehicle-history-summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+        justify-content: flex-end;
+    }
+
+    .vehicle-day-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 0.85rem;
+        margin: 1rem;
+        overflow: hidden;
+    }
+
+    .vehicle-day-header {
+        align-items: center;
+        background: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        gap: 1rem;
+        justify-content: space-between;
+        padding: 0.85rem 1rem;
+    }
+
+    .vehicle-day-body {
+        padding: 1rem;
+    }
+
+    .vehicle-turno-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.85rem;
+        overflow: hidden;
+    }
+
+    .vehicle-turno-card + .vehicle-turno-card {
+        margin-top: 0.9rem;
+    }
+
+    .vehicle-turno-toggle {
+        align-items: center;
+        background: #fff;
+        border: 0;
+        display: flex;
+        gap: 1rem;
+        justify-content: space-between;
+        padding: 0.9rem 1rem;
+        text-align: left;
+        width: 100%;
+    }
+
+    .vehicle-turno-body {
+        border-top: 1px solid #e2e8f0;
+        padding: 1rem;
+    }
+
+    .vehicle-cards-grid {
+        display: grid;
+        gap: 0.85rem;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
+    .vehicle-summary-card {
+        --vehicle-accent: #0d6efd;
+        --vehicle-icon: #2fb7d0;
+        background: #fff;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        border-left: 4px solid var(--vehicle-accent);
+        border-radius: 1rem;
+        color: inherit;
+        display: grid;
+        min-height: 172px;
+        padding: 1.1rem;
+        position: relative;
+        text-decoration: none;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+    }
+
+    .vehicle-summary-card:hover {
+        border-color: var(--vehicle-accent);
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+        color: inherit;
+        transform: translateY(-1px);
+    }
+
+    .vehicle-summary-card:nth-child(5n + 1) { --vehicle-accent: #0d6efd; --vehicle-icon: #2fb7d0; }
+    .vehicle-summary-card:nth-child(5n + 2) { --vehicle-accent: #ffc107; --vehicle-icon: #ffc107; }
+    .vehicle-summary-card:nth-child(5n + 3) { --vehicle-accent: #dc3545; --vehicle-icon: #2fb7d0; }
+    .vehicle-summary-card:nth-child(5n + 4) { --vehicle-accent: #198754; --vehicle-icon: #198754; }
+    .vehicle-summary-card:nth-child(5n + 5) { --vehicle-accent: #6f42c1; --vehicle-icon: #6f42c1; }
+
+    .vehicle-summary-eyebrow {
+        color: #64748b;
+        font-size: 0.75rem;
+        font-weight: 900;
+        text-transform: uppercase;
+    }
+
+    .vehicle-summary-main {
+        color: #184d86;
+        font-size: 1.45rem;
+        font-weight: 900;
+        line-height: 1;
+        margin-top: 0.25rem;
+    }
+
+    .vehicle-summary-subtitle {
+        color: #64748b;
+        font-size: 0.84rem;
+        margin-top: 0.35rem;
+    }
+
+    .vehicle-summary-icon {
+        color: var(--vehicle-icon);
+        font-size: 2.15rem;
+        line-height: 1;
+        opacity: 0.95;
+        position: absolute;
+        right: 0.9rem;
+        top: 1rem;
+    }
+
+    .vehicle-summary-footer {
+        align-items: center;
+        color: #184d86;
+        display: flex;
+        font-weight: 900;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+
+    .logistics-cockpit {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 1rem;
+        overflow: hidden;
+    }
+
+    .logistics-cockpit-header {
+        align-items: center;
+        background: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        gap: 1rem;
+        justify-content: space-between;
+        padding: 1rem;
+    }
+
+    .logistics-cockpit-title {
+        color: #0f172a;
+        font-size: 1rem;
+        font-weight: 900;
+        margin: 0;
+    }
+
+    .logistics-cockpit-subtitle {
+        color: #64748b;
+        font-size: 0.82rem;
+        margin-top: 0.2rem;
+    }
+
+    .logistics-day-select {
+        min-width: 180px;
+    }
+
+    .logistics-map-grid {
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: minmax(0, 1.6fr) minmax(280px, 0.8fr);
+        padding: 1rem;
+    }
+
+    .logistics-map-shell {
+        border: 1px solid #e2e8f0;
+        border-radius: 0.9rem;
+        min-height: 440px;
+        overflow: hidden;
+        position: relative;
+    }
+
+    #logisticaMap {
+        height: 100%;
+        min-height: 440px;
+        width: 100%;
+    }
+
+    .logistics-map-status {
+        background: rgba(255, 255, 255, 0.94);
+        border: 1px solid #e2e8f0;
+        border-radius: 999px;
+        color: #334155;
+        font-size: 0.78rem;
+        font-weight: 800;
+        left: 1rem;
+        padding: 0.45rem 0.75rem;
+        position: absolute;
+        top: 1rem;
+        z-index: 2;
+    }
+
+    .logistics-panel {
+        display: grid;
+        gap: 0.85rem;
+    }
+
+    .logistics-metrics {
+        display: grid;
+        gap: 0.65rem;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .logistics-metric {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.75rem;
+        padding: 0.85rem;
+    }
+
+    .logistics-metric-label {
+        color: #64748b;
+        display: block;
+        font-size: 0.68rem;
+        font-weight: 900;
+        text-transform: uppercase;
+    }
+
+    .logistics-metric-value {
+        color: #0f172a;
+        display: block;
+        font-size: 1.05rem;
+        font-weight: 900;
+        margin-top: 0.15rem;
+    }
+
+    .logistics-vehicle-list {
+        display: grid;
+        gap: 0.6rem;
+        max-height: 330px;
+        overflow: auto;
+        padding-right: 0.25rem;
+    }
+
+    .logistics-vehicle-item {
+        border: 1px solid #e2e8f0;
+        border-left: 4px solid #0d6efd;
+        border-radius: 0.75rem;
+        padding: 0.75rem;
+    }
+
+    .logistics-vehicle-title {
+        color: #0f172a;
+        font-size: 0.88rem;
+        font-weight: 900;
+    }
+
+    .logistics-vehicle-meta {
+        color: #64748b;
+        font-size: 0.75rem;
+        margin-top: 0.2rem;
+    }
+
+    .logistics-vehicle-kpis {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+        margin-top: 0.55rem;
+    }
+
+    .logistics-route-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
     .veiculos-logs-pagination .pagination {
         margin-bottom: 0;
+    }
+
+    @media (max-width: 1400px) {
+        .vehicle-cards-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 992px) {
+        .vehicle-cards-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .logistics-map-grid {
+            grid-template-columns: 1fr;
+        }
     }
 
     @media (max-width: 768px) {
         .veiculos-logs-page {
             padding-left: 0.75rem;
             padding-right: 0.75rem;
+        }
+
+        .vehicle-cards-grid {
+            grid-template-columns: 1fr;
         }
 
         .dashboard-header {
@@ -430,6 +767,10 @@
         }
 
         .vehicle-timeline-header,
+        .vehicle-history-card-header,
+        .vehicle-day-header,
+        .vehicle-turno-toggle,
+        .vehicle-summary-card,
         .timeline-event-header {
             display: block;
         }
@@ -439,12 +780,27 @@
             margin-top: 0.75rem;
         }
 
+        .logs-view-tabs {
+            border-radius: 1rem;
+            display: grid;
+            width: 100%;
+        }
+
         .timeline-time {
             margin-top: 0.3rem;
             text-align: left;
         }
 
         .timeline-media-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .logistics-cockpit-header {
+            align-items: stretch;
+            display: grid;
+        }
+
+        .logistics-metrics {
             grid-template-columns: 1fr;
         }
 
@@ -487,18 +843,27 @@
 
     .dark-mode .vehicle-timeline-shell,
     .dark-mode .timeline-media,
-    .dark-mode .timeline-metric {
+    .dark-mode .timeline-metric,
+    .dark-mode .logistics-cockpit,
+    .dark-mode .logistics-map-shell,
+    .dark-mode .logistics-metric,
+    .dark-mode .logistics-vehicle-item {
         background: #162133;
         border-color: rgba(255, 255, 255, 0.08);
     }
 
-    .dark-mode .vehicle-timeline-header {
+    .dark-mode .vehicle-timeline-header,
+    .dark-mode .logistics-cockpit-header {
+        background: #122033;
         border-color: rgba(255, 255, 255, 0.08);
     }
 
     .dark-mode .vehicle-timeline-title,
     .dark-mode .timeline-title,
-    .dark-mode .timeline-value {
+    .dark-mode .timeline-value,
+    .dark-mode .logistics-cockpit-title,
+    .dark-mode .logistics-metric-value,
+    .dark-mode .logistics-vehicle-title {
         color: #e2e8f0;
     }
 
@@ -507,7 +872,10 @@
     .dark-mode .timeline-time,
     .dark-mode .timeline-label,
     .dark-mode .timeline-notes,
-    .dark-mode .timeline-empty {
+    .dark-mode .timeline-empty,
+    .dark-mode .logistics-cockpit-subtitle,
+    .dark-mode .logistics-metric-label,
+    .dark-mode .logistics-vehicle-meta {
         color: rgba(255, 255, 255, 0.65);
     }
 
@@ -561,7 +929,7 @@
         </div>
         <div class="col-6 col-md-3">
             <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-success border-4 bg-white">
-                <small class="text-muted fw-bold text-uppercase" style="font-size: 0.65rem;">Abastecimento (Página)</small>
+                <small class="text-muted fw-bold text-uppercase" style="font-size: 0.65rem;">Abastecimento filtrado</small>
                 <h3 class="fw-bold mb-0 text-success">R$ {{ '%.2f'|format(total_abastecido or 0) }}</h3>
             </div>
         </div>
@@ -609,6 +977,112 @@
         </div>
     </div>
 
+    <section class="logistics-cockpit shadow-sm mb-4" aria-label="Mapa de logistica operacional">
+        <div class="logistics-cockpit-header">
+            <div>
+                <h3 class="logistics-cockpit-title">
+                    <i class="bi bi-geo-alt-fill me-2 text-primary"></i> Mapa de Logistica
+                </h3>
+                <div class="logistics-cockpit-subtitle">
+                    Cruza rota diaria da agenda com km, abastecimentos e custos registrados nos logs.
+                </div>
+            </div>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <select id="logisticaDiaSelect" class="form-select logistics-day-select" {% if not logistica_dias %}disabled{% endif %}>
+                    {% if logistica_dias %}
+                        {% for dia in logistica_dias %}
+                            <option value="{{ dia.date }}">{{ dia.label }}</option>
+                        {% endfor %}
+                    {% else %}
+                        <option value="">Sem dias nos filtros</option>
+                    {% endif %}
+                </select>
+                <a id="logisticaGoogleMapsLink" href="#" target="_blank" rel="noopener" class="btn btn-outline-primary btn-sm rounded-pill disabled" aria-disabled="true">
+                    <i class="bi bi-sign-turn-right me-1"></i> Abrir rota
+                </a>
+            </div>
+        </div>
+
+        <div class="logistics-map-grid">
+            <div class="logistics-map-shell">
+                <div id="logisticaMap"></div>
+                <div id="logisticaMapStatus" class="logistics-map-status">Carregando mapa...</div>
+            </div>
+            <aside class="logistics-panel">
+                <div class="logistics-metrics">
+                    <div class="logistics-metric">
+                        <span class="logistics-metric-label">Veiculos</span>
+                        <span class="logistics-metric-value" id="logisticaTotalVeiculos">0</span>
+                    </div>
+                    <div class="logistics-metric">
+                        <span class="logistics-metric-label">KM rodado</span>
+                        <span class="logistics-metric-value" id="logisticaTotalKm">0 km</span>
+                    </div>
+                    <div class="logistics-metric">
+                        <span class="logistics-metric-label">Custo</span>
+                        <span class="logistics-metric-value" id="logisticaTotalGasto">R$ 0,00</span>
+                    </div>
+                    <div class="logistics-metric">
+                        <span class="logistics-metric-label">Custo/km</span>
+                        <span class="logistics-metric-value" id="logisticaCustoKm">R$ 0,00</span>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+                        <strong class="small text-uppercase text-muted">Veiculos do dia</strong>
+                        <span class="badge rounded-pill bg-primary" id="logisticaTotalPontos">0 ponto(s)</span>
+                    </div>
+                    <div id="logisticaVehicleList" class="logistics-vehicle-list">
+                        <div class="text-muted small">Selecione um dia para ver os custos.</div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </section>
+
+    {% if veiculos_timeline %}
+    <div class="vehicle-cards-grid mb-4">
+        {% for item in veiculos_timeline %}
+            {% set v = item.veiculo %}
+            {% if v %}
+                <a class="vehicle-summary-card" href="{{ url_for('main.veiculo_logs_detalhe', veiculo_id=v.id, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}">
+                    <div>
+                        <div class="vehicle-summary-eyebrow">{{ v.modelo }}</div>
+                        <div class="vehicle-summary-main">{{ (item.total_km or 0)|round|int }} km</div>
+                        <div class="vehicle-summary-subtitle">
+                            {{ item.total_logs }} turno(s) | R$ {{ '%.2f'|format(item.total_gasto or 0) }} | {{ item.total_abastecimentos }} abastecimento(s)
+                        </div>
+                        <div class="vehicle-summary-subtitle">
+                            Placa: {{ v.placa }}{% if v.equipe %} | {{ v.equipe.nome_equipe }}{% endif %}
+                        </div>
+                        <div class="vehicle-summary-footer">
+                            <span>Abrir historico</span>
+                            <i class="bi bi-arrow-right"></i>
+                        </div>
+                    </div>
+                    <i class="bi bi-truck-front-fill vehicle-summary-icon"></i>
+                </a>
+            {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <ul class="nav logs-view-tabs mb-4" id="veiculosLogsTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="tabLogsTabelaBtn" data-bs-toggle="tab" data-bs-target="#tabLogsTabela" type="button" role="tab" aria-controls="tabLogsTabela" aria-selected="true">
+                <i class="bi bi-table me-1"></i> Logs
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tabLogsVeiculosBtn" data-bs-toggle="tab" data-bs-target="#tabLogsVeiculos" type="button" role="tab" aria-controls="tabLogsVeiculos" aria-selected="false">
+                <i class="bi bi-truck-front-fill me-1"></i> VeÃ­culos
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="veiculosLogsTabsContent">
+    <div class="tab-pane fade show active" id="tabLogsTabela" role="tabpanel" aria-labelledby="tabLogsTabelaBtn" tabindex="0">
     <div class="card shadow-sm border-0 rounded-4 overflow-hidden veiculos-logs-table-wrap">
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -620,6 +1094,7 @@
                             <th>Operador / Equipe</th>
                             <th>KM Inicial</th>
                             <th>KM Final</th>
+                            <th>KM Abastecimento</th>
                             <th>Abastecimento (R$)</th>
                             <th class="pe-4">Detalhes</th>
                         </tr>
@@ -662,6 +1137,16 @@
                                         <div class="small text-muted">{{ (log.ultimo_km_registrado or 0)|round|int }} km registrados</div>
                                     {% endif %}
                                 </td>
+                                <td data-label="KM Abastecimento">
+                                    {% if log.abastecimentos_ordenados %}
+                                        {% for abastecimento in log.abastecimentos_ordenados %}
+                                            <div class="fw-semibold text-dark">{{ (abastecimento.km_registro or 0)|round|int }} km</div>
+                                            {% if not loop.last %}<hr class="my-1">{% endif %}
+                                        {% endfor %}
+                                    {% else %}
+                                        <span class="text-muted small">-</span>
+                                    {% endif %}
+                                </td>
                                 <td data-label="Abastecimento (R$)">
                                     {% if log.teve_abastecimento %}
                                         <span class="badge bg-success-light text-success rounded-pill px-3">
@@ -682,6 +1167,12 @@
                                                 aria-expanded="false" aria-controls="detalhes-log-{{ log.id }}">
                                             <i class="bi bi-card-list me-1"></i> Ver dados
                                         </button>
+                                        {% if can_edit_logs %}
+                                            <button class="btn btn-sm btn-outline-warning rounded-pill px-3" type="button"
+                                                    data-bs-toggle="modal" data-bs-target="#modalCorrigirKmLog{{ log.id }}">
+                                                <i class="bi bi-pencil-square me-1"></i> Corrigir KM
+                                            </button>
+                                        {% endif %}
                                         {% if current_user.tipo_usuario|lower == 'dev' %}
                                             <form method="POST"
                                                   action="{{ url_for('main.deletar_log_veiculo', log_id=log.id) }}"
@@ -699,7 +1190,7 @@
                                 </td>
                             </tr>
                             <tr class="collapse-row">
-                                <td colspan="7" class="p-0 border-0">
+                                <td colspan="8" class="p-0 border-0">
                                     <div class="collapse" id="detalhes-log-{{ log.id }}">
                                         <div class="p-3 p-md-4 bg-light border-top">
                                             <div class="vehicle-timeline-shell text-start">
@@ -784,7 +1275,7 @@
                                                                     <div class="timeline-event-header">
                                                                         <div>
                                                                             <div class="timeline-kicker">Abastecimento</div>
-                                                                            <div class="timeline-title">{{ abastecimento.tipo_abastecimento or 'Registro de abastecimento' }}</div>
+                                                                            <div class="timeline-title">Abastecimento</div>
                                                                         </div>
                                                                         <div class="timeline-time">{{ abastecimento.data_hora.strftime('%d/%m/%Y %H:%M') if abastecimento.data_hora else '-' }}</div>
                                                                     </div>
@@ -918,7 +1409,7 @@
                             </tr>
                         {% else %}
                             <tr>
-                                <td colspan="7" class="py-4 text-muted">Nenhum log encontrado para os filtros aplicados.</td>
+                                <td colspan="8" class="py-4 text-muted">Nenhum log encontrado para os filtros aplicados.</td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -926,6 +1417,75 @@
             </div>
         </div>
     </div>
+
+    {% if can_edit_logs %}
+        {% for log in logs %}
+            <div class="modal fade" id="modalCorrigirKmLog{{ log.id }}" tabindex="-1" aria-labelledby="modalCorrigirKmLog{{ log.id }}Label" aria-hidden="true">
+                <div class="modal-dialog modal-lg modal-dialog-centered">
+                    <div class="modal-content border-0 shadow rounded-4">
+                        <form method="POST" action="{{ url_for('main.corrigir_log_veiculo', log_id=log.id, page=paginacao.page, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}">
+                            <div class="modal-header border-0 pb-0">
+                                <div>
+                                    <h5 class="modal-title fw-bold" id="modalCorrigirKmLog{{ log.id }}Label">Corrigir KM do log #{{ log.id }}</h5>
+                                    <div class="small text-muted">
+                                        {{ log.veiculo.modelo if log.veiculo else 'Veiculo' }}{% if log.veiculo and log.veiculo.placa %} - {{ log.veiculo.placa }}{% endif %}
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="alert alert-warning small">
+                                    Ajuste apenas quando houver erro de preenchimento. O KM atual do veiculo sera recalculado com base nos logs salvos.
+                                </div>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold text-muted">KM inicial</label>
+                                        <input type="number" step="1" min="0" name="km_inicial" class="form-control" value="{{ log.km_inicial if log.km_inicial is not none else '' }}" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold text-muted">KM final</label>
+                                        <input type="number" step="1" min="0" name="km_final" class="form-control" value="{{ log.km_final if log.km_final is not none else '' }}" placeholder="Deixe vazio se o turno estiver aberto">
+                                    </div>
+                                    {% if log.abastecimentos_ordenados %}
+                                        <div class="col-12">
+                                            <hr class="my-2">
+                                            <div class="small fw-bold text-muted mb-2">Abastecimentos do turno</div>
+                                        </div>
+                                        {% for abastecimento in log.abastecimentos_ordenados %}
+                                            <div class="col-md-6">
+                                                <label class="form-label small fw-bold text-muted">
+                                                    KM abastecimento #{{ abastecimento.id }}
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    step="1"
+                                                    min="0"
+                                                    name="abastecimento_{{ abastecimento.id }}_km"
+                                                    class="form-control"
+                                                    value="{{ abastecimento.km_registro if abastecimento.km_registro is not none else '' }}"
+                                                    required
+                                                >
+                                                <div class="form-text">
+                                                    {{ abastecimento.data_hora.strftime('%d/%m/%Y %H:%M') if abastecimento.data_hora else '-' }}
+                                                    {% if abastecimento.tipo_abastecimento %} | {{ abastecimento.tipo_abastecimento }}{% endif %}
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="modal-footer border-0">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="bi bi-save me-1"></i> Salvar correção
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% endif %}
 
     {% if paginacao and paginacao.pages > 1 %}
     <nav class="mt-4 veiculos-logs-pagination">
@@ -950,5 +1510,517 @@
         </ul>
     </nav>
     {% endif %}
+    </div>
+
+    {% if false %}
+    <div class="tab-pane fade" id="tabLogsVeiculos" role="tabpanel" aria-labelledby="tabLogsVeiculosBtn" tabindex="0">
+        {% if veiculos_timeline %}
+            {% for item in veiculos_timeline %}
+                {% set v = item.veiculo %}
+                {% set vehicle_dom_id = v.id if v else loop.index %}
+                <div class="vehicle-history-card">
+                    <div class="vehicle-history-card-header">
+                        <div>
+                            <h5 class="vehicle-timeline-title mb-1">
+                                <i class="bi bi-truck-front-fill text-primary me-2"></i>{{ v.modelo if v else 'Veiculo' }}
+                            </h5>
+                            <div class="vehicle-timeline-meta">
+                                <span>Placa: {{ v.placa if v else '-' }}</span>
+                                {% if v and v.responsavel %}<span>Responsavel: {{ v.responsavel }}</span>{% endif %}
+                                {% if v and v.equipe %}<span>Equipe: {{ v.equipe.nome_equipe }}</span>{% endif %}
+                            </div>
+                        </div>
+                        <div class="vehicle-history-summary">
+                            <span class="timeline-chip">{{ item.total_logs }} turno(s)</span>
+                            <span class="timeline-chip">{{ (item.total_km or 0)|round|int }} km</span>
+                            <span class="timeline-chip">R$ {{ '%.2f'|format(item.total_gasto or 0) }}</span>
+                            <span class="timeline-chip">{{ item.total_abastecimentos }} abastecimento(s)</span>
+                            <button class="btn btn-sm btn-outline-primary rounded-pill px-3" type="button" data-bs-toggle="collapse" data-bs-target="#historicoVeiculo{{ vehicle_dom_id }}" aria-expanded="false" aria-controls="historicoVeiculo{{ vehicle_dom_id }}">
+                                <i class="bi bi-clock-history me-1"></i> Abrir historico
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="collapse" id="historicoVeiculo{{ vehicle_dom_id }}">
+                    {% for dia in item.dias %}
+                        <div class="vehicle-day-card">
+                            <div class="vehicle-day-header">
+                                <div>
+                                    <div class="fw-bold text-dark">{{ dia.dia.strftime('%d/%m/%Y') }}</div>
+                                    <div class="small text-muted">{{ dia.logs }} turno(s) neste dia</div>
+                                </div>
+                                <div class="vehicle-history-summary">
+                                    <span class="timeline-chip">{{ (dia.km_rodado or 0)|round|int }} km rodados</span>
+                                    <span class="timeline-chip">R$ {{ '%.2f'|format(dia.gasto or 0) }}</span>
+                                    <span class="timeline-chip">{{ dia.abastecimentos }} abastecimento(s)</span>
+                                </div>
+                            </div>
+                            <div class="vehicle-day-body">
+                                {% for turno in dia.turnos %}
+                                    <div class="vehicle-turno-card">
+                                        <button class="vehicle-turno-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#timelineVeiculo{{ vehicle_dom_id }}Turno{{ turno.id }}" aria-expanded="{{ 'true' if loop.first else 'false' }}" aria-controls="timelineVeiculo{{ vehicle_dom_id }}Turno{{ turno.id }}">
+                                            <div>
+                                                <div class="fw-bold text-dark">Turno #{{ turno.id }} | {{ turno.operador }}</div>
+                                                <div class="small text-muted">
+                                                    {{ turno.data_inicio.strftime('%H:%M') if turno.data_inicio else '-' }}
+                                                    | {{ (turno.km_inicial or 0)|round|int }} -> {{ (turno.km_final or 0)|round|int }} km
+                                                </div>
+                                            </div>
+                                            <div class="vehicle-history-summary">
+                                                <span class="timeline-chip">{{ turno.status }}</span>
+                                                <span class="timeline-chip">{{ (turno.km_rodado or 0)|round|int }} km</span>
+                                                <span class="timeline-chip">R$ {{ '%.2f'|format(turno.gasto or 0) }}</span>
+                                            </div>
+                                        </button>
+                                        <div class="collapse {% if loop.first %}show{% endif %}" id="timelineVeiculo{{ vehicle_dom_id }}Turno{{ turno.id }}">
+                                            <div class="vehicle-turno-body">
+                                                <div class="vehicle-timeline">
+                                                    <div class="timeline-event">
+                                                        <div class="timeline-marker"><i class="bi bi-flag-fill"></i></div>
+                                                        <div class="timeline-card">
+                                                            <div class="timeline-event-header mb-0">
+                                                                <div>
+                                                                    <div class="timeline-kicker">Inicio</div>
+                                                                    <div class="timeline-title">Inicio do turno</div>
+                                                                </div>
+                                                                <div class="timeline-time">{{ turno.data_inicio.strftime('%d/%m/%Y %H:%M') if turno.data_inicio else '-' }}</div>
+                                                            </div>
+                                                            <div class="timeline-metrics mt-3 mb-0">
+                                                                <div class="timeline-metric">
+                                                                    <span class="timeline-label">KM inicial</span>
+                                                                    <span class="timeline-value">{{ (turno.km_inicial or 0)|round|int }} km</span>
+                                                                </div>
+                                                            </div>
+                                                            {% if turno.foto_painel_path %}
+                                                                {% set timeline_painel_inicial_url = url_for('main.veiculo_log_midia_skybox', log_id=turno.id, tipo='painel-inicial') %}
+                                                                <div class="timeline-media-grid mt-3">
+                                                                    <div class="timeline-media">
+                                                                        <div class="timeline-media-title">
+                                                                            <span>Painel inicial</span>
+                                                                            <a href="{{ timeline_painel_inicial_url }}" target="_blank">Abrir</a>
+                                                                        </div>
+                                                                        <img src="{{ timeline_painel_inicial_url }}" alt="Foto do painel inicial">
+                                                                    </div>
+                                                                </div>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+
+                                                    {% for abastecimento in turno.eventos_abastecimento %}
+                                                        <div class="timeline-event">
+                                                            <div class="timeline-marker timeline-marker-success"><i class="bi bi-fuel-pump-fill"></i></div>
+                                                            <div class="timeline-card">
+                                                                <div class="timeline-event-header">
+                                                                    <div>
+                                                                        <div class="timeline-kicker">Abastecimento</div>
+                                                                        <div class="timeline-title">Abastecimento</div>
+                                                                    </div>
+                                                                    <div class="timeline-time">{{ abastecimento.data.strftime('%d/%m/%Y %H:%M') if abastecimento.data else '-' }}</div>
+                                                                </div>
+                                                                <div class="timeline-metrics mb-0">
+                                                                    <div class="timeline-metric">
+                                                                        <span class="timeline-label">KM</span>
+                                                                        <span class="timeline-value">{{ (abastecimento.km or 0)|round|int }} km</span>
+                                                                    </div>
+                                                                    <div class="timeline-metric">
+                                                                        <span class="timeline-label">Litros</span>
+                                                                        <span class="timeline-value">{{ '%.2f'|format(abastecimento.litros or 0) }}</span>
+                                                                    </div>
+                                                                    <div class="timeline-metric">
+                                                                        <span class="timeline-label">Valor</span>
+                                                                        <span class="timeline-value">R$ {{ '%.2f'|format(abastecimento.valor or 0) }}</span>
+                                                                    </div>
+                                                                </div>
+                                                                {% if abastecimento.foto_painel_path or abastecimento.foto_nf_path %}
+                                                                    <div class="timeline-media-grid mt-3">
+                                                                        {% if abastecimento.foto_painel_path %}
+                                                                            {% set timeline_painel_abastecimento_url = url_for('main.veiculo_abastecimento_midia_skybox', abastecimento_id=abastecimento.id, tipo='painel') %}
+                                                                            <div class="timeline-media">
+                                                                                <div class="timeline-media-title">
+                                                                                    <span>Painel no abastecimento</span>
+                                                                                    <a href="{{ timeline_painel_abastecimento_url }}" target="_blank">Abrir</a>
+                                                                                </div>
+                                                                                <img src="{{ timeline_painel_abastecimento_url }}" alt="Foto do painel no abastecimento">
+                                                                            </div>
+                                                                        {% endif %}
+                                                                        {% if abastecimento.foto_nf_path %}
+                                                                            {% set timeline_nota_url = url_for('main.veiculo_abastecimento_midia_skybox', abastecimento_id=abastecimento.id, tipo='nota') %}
+                                                                            <div class="timeline-media">
+                                                                                <div class="timeline-media-title">
+                                                                                    <span>Nota fiscal</span>
+                                                                                    <a href="{{ timeline_nota_url }}" target="_blank">Abrir</a>
+                                                                                </div>
+                                                                                <img src="{{ timeline_nota_url }}" alt="Foto da nota fiscal">
+                                                                            </div>
+                                                                        {% endif %}
+                                                                    </div>
+                                                                {% endif %}
+                                                            </div>
+                                                        </div>
+                                                    {% else %}
+                                                        <div class="timeline-event">
+                                                            <div class="timeline-marker timeline-marker-success"><i class="bi bi-fuel-pump"></i></div>
+                                                            <div class="timeline-card">
+                                                                <div class="timeline-title">Sem abastecimentos neste turno</div>
+                                                            </div>
+                                                        </div>
+                                                    {% endfor %}
+
+                                                    <div class="timeline-event">
+                                                        <div class="timeline-marker timeline-marker-dark"><i class="bi bi-check2-circle"></i></div>
+                                                        <div class="timeline-card">
+                                                            <div class="timeline-event-header">
+                                                                <div>
+                                                                    <div class="timeline-kicker">Fechamento</div>
+                                                                    <div class="timeline-title">{{ 'Turno ainda em aberto' if turno.status == 'Aberto' else 'Fechamento do turno' }}</div>
+                                                                </div>
+                                                                <div class="timeline-time">{{ turno.data.strftime('%d/%m/%Y %H:%M') if turno.data else '-' }}</div>
+                                                            </div>
+                                                            <div class="timeline-metrics">
+                                                                <div class="timeline-metric">
+                                                                    <span class="timeline-label">KM final</span>
+                                                                    <span class="timeline-value">{{ (turno.km_final or 0)|round|int }} km</span>
+                                                                </div>
+                                                                <div class="timeline-metric">
+                                                                    <span class="timeline-label">Rodado</span>
+                                                                    <span class="timeline-value">{{ (turno.km_rodado or 0)|round|int }} km</span>
+                                                                </div>
+                                                                <div class="timeline-metric">
+                                                                    <span class="timeline-label">Atendimentos</span>
+                                                                    <span class="timeline-value">{{ turno.qtd_fazendas_enderecos or 0 }}</span>
+                                                                </div>
+                                                            </div>
+                                                            <div class="timeline-notes mb-0">
+                                                                <strong>Observacoes:</strong> {{ turno.observacao or 'Sem observacoes.' }}
+                                                            </div>
+                                                            {% if turno.foto_painel_final_path or turno.assinatura_piloto %}
+                                                                <div class="timeline-media-grid mt-3">
+                                                                    {% if turno.foto_painel_final_path %}
+                                                                        {% set timeline_painel_final_url = url_for('main.veiculo_log_midia_skybox', log_id=turno.id, tipo='painel-final') %}
+                                                                        <div class="timeline-media">
+                                                                            <div class="timeline-media-title">
+                                                                                <span>Painel final</span>
+                                                                                <a href="{{ timeline_painel_final_url }}" target="_blank">Abrir</a>
+                                                                            </div>
+                                                                            <img src="{{ timeline_painel_final_url }}" alt="Foto do painel final">
+                                                                        </div>
+                                                                    {% endif %}
+                                                                    {% if turno.assinatura_piloto %}
+                                                                        <div class="timeline-media timeline-signature">
+                                                                            <div class="timeline-media-title">
+                                                                                <span>Assinatura</span>
+                                                                            </div>
+                                                                            <img src="{{ turno.assinatura_piloto }}" alt="Assinatura do piloto">
+                                                                        </div>
+                                                                    {% endif %}
+                                                                </div>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body text-center text-muted py-5">
+                    Nenhum veiculo com logs encontrado para os filtros aplicados.
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    {% endif %}
+    </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script id="logistica-dias-data" type="application/json">{{ logistica_dias|tojson }}</script>
+<script>
+(function () {
+    const dataEl = document.getElementById("logistica-dias-data");
+    const selectEl = document.getElementById("logisticaDiaSelect");
+    const mapEl = document.getElementById("logisticaMap");
+    const statusEl = document.getElementById("logisticaMapStatus");
+    const routeLinkEl = document.getElementById("logisticaGoogleMapsLink");
+    const vehicleListEl = document.getElementById("logisticaVehicleList");
+    const totalVeiculosEl = document.getElementById("logisticaTotalVeiculos");
+    const totalKmEl = document.getElementById("logisticaTotalKm");
+    const totalGastoEl = document.getElementById("logisticaTotalGasto");
+    const custoKmEl = document.getElementById("logisticaCustoKm");
+    const totalPontosEl = document.getElementById("logisticaTotalPontos");
+    const rotasDiaUrl = "{{ url_for('main.agenda_rotas_dia') }}";
+
+    if (!dataEl || !selectEl || !mapEl) return;
+
+    let dias = [];
+    try {
+        dias = JSON.parse(dataEl.textContent || "[]");
+    } catch (_err) {
+        dias = [];
+    }
+
+    let map = null;
+    let routeLine = null;
+    let markers = [];
+
+    function escapeHtml(value) {
+        return String(value || "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function money(value) {
+        return Number(value || 0).toLocaleString("pt-BR", {
+            style: "currency",
+            currency: "BRL",
+        });
+    }
+
+    function km(value) {
+        return `${Number(value || 0).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} km`;
+    }
+
+    function selectedDay() {
+        return dias.find((item) => item.date === selectEl.value) || dias[0] || null;
+    }
+
+    function setStatus(message) {
+        if (statusEl) statusEl.textContent = message;
+    }
+
+    function waitForGoogleMaps() {
+        return new Promise((resolve, reject) => {
+            if (window.google && window.google.maps) {
+                resolve();
+                return;
+            }
+            if (window.__GOOGLE_MAPS_AUTH_FAILED__) {
+                reject(new Error("Google Maps nao autorizado."));
+                return;
+            }
+
+            const onReady = () => {
+                cleanup();
+                resolve();
+            };
+            const onAuthFailed = () => {
+                cleanup();
+                reject(new Error("Google Maps nao autorizado."));
+            };
+            const cleanup = () => {
+                document.removeEventListener("googlemaps:ready", onReady);
+                document.removeEventListener("googlemaps:auth-failed", onAuthFailed);
+                clearTimeout(timer);
+            };
+            const timer = setTimeout(() => {
+                cleanup();
+                reject(new Error("Google Maps demorou para carregar."));
+            }, 12000);
+
+            document.addEventListener("googlemaps:ready", onReady);
+            document.addEventListener("googlemaps:auth-failed", onAuthFailed);
+        });
+    }
+
+    function initMap() {
+        if (map) return map;
+        map = new google.maps.Map(mapEl, {
+            center: { lat: -23.55052, lng: -46.633308 },
+            zoom: 11,
+            mapTypeControl: false,
+            streetViewControl: false,
+            fullscreenControl: true,
+        });
+        return map;
+    }
+
+    function clearMap() {
+        markers.forEach((marker) => marker.setMap(null));
+        markers = [];
+        if (routeLine) {
+            routeLine.setMap(null);
+            routeLine = null;
+        }
+    }
+
+    function buildGoogleMapsRouteUrl(points) {
+        if (!points.length) return "";
+        if (points.length === 1) {
+            const point = points[0];
+            return `https://www.google.com/maps/search/?api=1&query=${point.lat},${point.lng}`;
+        }
+
+        const first = points[0];
+        const last = points[points.length - 1];
+        const middle = points.slice(1, -1).slice(0, 21);
+        const params = new URLSearchParams({
+            api: "1",
+            origin: `${first.lat},${first.lng}`,
+            destination: `${last.lat},${last.lng}`,
+            travelmode: "driving",
+        });
+        if (middle.length) {
+            params.set("waypoints", middle.map((point) => `${point.lat},${point.lng}`).join("|"));
+        }
+        return `https://www.google.com/maps/dir/?${params.toString()}`;
+    }
+
+    function updateRouteLink(points) {
+        const url = buildGoogleMapsRouteUrl(points);
+        if (!url) {
+            routeLinkEl?.classList.add("disabled");
+            routeLinkEl?.setAttribute("aria-disabled", "true");
+            if (routeLinkEl) routeLinkEl.href = "#";
+            return;
+        }
+        routeLinkEl?.classList.remove("disabled");
+        routeLinkEl?.setAttribute("aria-disabled", "false");
+        if (routeLinkEl) routeLinkEl.href = url;
+    }
+
+    function renderVehiclePanel(day) {
+        if (!day) {
+            totalVeiculosEl.textContent = "0";
+            totalKmEl.textContent = "0 km";
+            totalGastoEl.textContent = money(0);
+            custoKmEl.textContent = money(0);
+            vehicleListEl.innerHTML = '<div class="text-muted small">Sem logs nos filtros atuais.</div>';
+            return;
+        }
+
+        totalVeiculosEl.textContent = day.total_veiculos || 0;
+        totalKmEl.textContent = km(day.total_km);
+        totalGastoEl.textContent = money(day.total_gasto);
+        custoKmEl.textContent = money(day.custo_km);
+
+        const vehicles = day.vehicles || [];
+        if (!vehicles.length) {
+            vehicleListEl.innerHTML = '<div class="text-muted small">Nenhum veiculo com log neste dia.</div>';
+            return;
+        }
+
+        vehicleListEl.innerHTML = vehicles.map((vehicle) => {
+            const operadores = (vehicle.operadores || []).join(", ") || "Sem operador";
+            const equipe = vehicle.equipe ? ` | ${escapeHtml(vehicle.equipe)}` : "";
+            return `
+                <div class="logistics-vehicle-item">
+                    <div class="logistics-vehicle-title">${escapeHtml(vehicle.label)}</div>
+                    <div class="logistics-vehicle-meta">${escapeHtml(operadores)}${equipe}</div>
+                    <div class="logistics-vehicle-kpis">
+                        <span class="timeline-chip">${km(vehicle.km)}</span>
+                        <span class="timeline-chip">${money(vehicle.gasto)}</span>
+                        <span class="timeline-chip">${money(vehicle.custo_km)}/km</span>
+                        <span class="timeline-chip">${vehicle.abastecimentos || 0} abastecimento(s)</span>
+                    </div>
+                </div>
+            `;
+        }).join("");
+    }
+
+    function renderMapPoints(points) {
+        const currentMap = initMap();
+        clearMap();
+        updateRouteLink(points);
+
+        if (!points.length) {
+            currentMap.setCenter({ lat: -23.55052, lng: -46.633308 });
+            currentMap.setZoom(11);
+            setStatus("Sem pontos da agenda para este dia.");
+            return;
+        }
+
+        const bounds = new google.maps.LatLngBounds();
+        points.forEach((point, index) => {
+            const position = { lat: Number(point.lat), lng: Number(point.lng) };
+            bounds.extend(position);
+            const marker = new google.maps.Marker({
+                map: currentMap,
+                position,
+                label: String(index + 1),
+                title: `${point.hora || ""} - ${point.endereco || ""}`,
+            });
+            const info = new google.maps.InfoWindow({
+                content: `
+                    <strong>${escapeHtml(point.hora || "")} - OS #${escapeHtml(point.id || "")}</strong><br>
+                    ${escapeHtml(point.endereco || "")}<br>
+                    <span>${escapeHtml(point.uvis || "")}</span><br>
+                    <span>${escapeHtml(point.foco || "")}</span>
+                `,
+            });
+            marker.addListener("click", () => info.open({ anchor: marker, map: currentMap }));
+            markers.push(marker);
+        });
+
+        if (points.length > 1) {
+            routeLine = new google.maps.Polyline({
+                map: currentMap,
+                path: points.map((point) => ({ lat: Number(point.lat), lng: Number(point.lng) })),
+                geodesic: true,
+                strokeColor: "#0d6efd",
+                strokeOpacity: 0.88,
+                strokeWeight: 4,
+            });
+        }
+
+        currentMap.fitBounds(bounds);
+        setStatus(`${points.length} ponto(s) da agenda carregado(s).`);
+    }
+
+    async function loadAgendaRoute(day) {
+        if (!day) {
+            setStatus("Sem dia selecionado.");
+            totalPontosEl.textContent = "0 ponto(s)";
+            updateRouteLink([]);
+            return;
+        }
+
+        setStatus("Buscando pontos da rota diaria...");
+        totalPontosEl.textContent = "0 ponto(s)";
+
+        try {
+            await waitForGoogleMaps();
+            const response = await fetch(`${rotasDiaUrl}?dia=${encodeURIComponent(day.date)}`, {
+                headers: { "Accept": "application/json" },
+            });
+            const payload = await response.json();
+            if (!response.ok || !payload.ok) {
+                throw new Error(payload.error || "Nao foi possivel montar a rota.");
+            }
+            const points = payload.pontos || [];
+            totalPontosEl.textContent = `${points.length} ponto(s)`;
+            renderMapPoints(points);
+        } catch (error) {
+            clearMap();
+            updateRouteLink([]);
+            setStatus(error.message || "Erro ao carregar mapa.");
+        }
+    }
+
+    function refreshLogistica() {
+        const day = selectedDay();
+        renderVehiclePanel(day);
+        loadAgendaRoute(day);
+    }
+
+    if (!dias.length) {
+        renderVehiclePanel(null);
+        setStatus("Sem logs para montar a logistica.");
+        return;
+    }
+
+    selectEl.addEventListener("change", refreshLogistica);
+    refreshLogistica();
+})();
+</script>
 {% endblock %}

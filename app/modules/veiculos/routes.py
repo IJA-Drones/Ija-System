@@ -11,6 +11,7 @@ from app.modules.veiculos.service import (
     VEICULOS_LOGS_ALLOWED_TYPES,
     VeiculoTurnoError,
     build_veiculo_form,
+    build_veiculo_logs_detalhe_context,
     build_piloto_veiculos_context,
     build_veiculo_media_skybox_path,
     build_veiculos_export_response,
@@ -28,6 +29,7 @@ from app.modules.veiculos.service import (
     list_veiculos_logs,
     list_responsaveis_choices,
     registrar_abastecimento_turno_piloto,
+    update_veiculo_log_km,
     update_veiculo,
     validate_veiculo_form,
 )
@@ -119,6 +121,18 @@ def register_routes(bp):
         except PermissionError:
             abort(403)
 
+    @bp.route("/veiculos/logs/veiculo/<int:veiculo_id>", methods=["GET"], endpoint="veiculo_logs_detalhe")
+    @login_required
+    def veiculo_logs_detalhe(veiculo_id):
+        tipo = getattr(current_user, "tipo_usuario", None)
+        try:
+            return render_template(
+                "veiculo_logs_detalhe.html",
+                **build_veiculo_logs_detalhe_context(tipo, veiculo_id, request.args, user=current_user),
+            )
+        except PermissionError:
+            abort(403)
+
     @bp.route("/veiculos/logs/exportar", methods=["GET"], endpoint="exportar_logs_veiculos_xlsx")
     @login_required
     def exportar_logs_veiculos_xlsx():
@@ -151,6 +165,41 @@ def register_routes(bp):
             data_fim=request.form.get("data_fim") or None,
             page=request.form.get("page") or None,
         ))
+
+    @bp.route("/veiculos/logs/<int:log_id>/corrigir-km", methods=["POST"], endpoint="corrigir_log_veiculo")
+    @login_required
+    def corrigir_log_veiculo(log_id):
+        _require_admin_or_operario()
+
+        redirect_args = {
+            key: value
+            for key, value in request.args.items()
+            if key in {"page", "q", "data_inicio", "data_fim"}
+        }
+        return_to = (request.args.get("return_to") or "").strip()
+        veiculo_id = request.args.get("veiculo_id", type=int)
+        try:
+            flash(update_veiculo_log_km(current_user, log_id, request.form), "success")
+        except PermissionError:
+            abort(403)
+        except VeiculoTurnoError as exc:
+            db.session.rollback()
+            flash(str(exc), exc.category)
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("Erro ao corrigir KM do log de veiculo %s.", log_id)
+            flash("Erro interno ao corrigir o log de veiculo. Tente novamente.", "danger")
+
+        if return_to == "veiculo" and veiculo_id:
+            return redirect(
+                url_for(
+                    "main.veiculo_logs_detalhe",
+                    veiculo_id=veiculo_id,
+                    data_inicio=redirect_args.get("data_inicio"),
+                    data_fim=redirect_args.get("data_fim"),
+                )
+            )
+        return redirect(url_for("main.veiculos_logs", **redirect_args))
 
     @bp.route("/veiculos/logs/<int:log_id>/midia/<tipo>", methods=["GET"], endpoint="veiculo_log_midia_skybox")
     @login_required
@@ -334,6 +383,7 @@ def register_routes(bp):
             "piloto_veiculos.html",
             veiculos=context["veiculos"],
             turnos_abertos=context["turnos_abertos"],
+            km_inicial_referencias=context["km_inicial_referencias"],
         )
 
     @bp.route("/piloto/veiculos/<int:veiculo_id>/km", methods=["POST"], endpoint="piloto_atualizar_km_veiculo")

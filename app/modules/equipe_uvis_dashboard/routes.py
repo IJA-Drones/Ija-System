@@ -6,9 +6,9 @@ from app.modules.equipe_uvis_dashboard.service import (
     EquipeUvisDashboardError,
     build_dashboard_equipe_uvis_context,
     build_equipe_uvis_os_historico_context,
-    build_equipe_uvis_os_form_context,
+    build_equipe_uvis_os_unificado_context,
     concluir_os_equipe_uvis,
-    salvar_equipe_uvis_os_form,
+    salvar_uvis_retorno_automatico_form,
 )
 
 
@@ -45,15 +45,18 @@ def register_routes(bp):
             return redirect(url_for("main.dashboard"))
 
         try:
-            context = build_equipe_uvis_os_form_context(current_user, os_id)
+            context = build_equipe_uvis_os_unificado_context(current_user, os_id)
         except EquipeUvisDashboardError as exc:
             flash(exc.message, exc.category)
             return redirect(url_for(exc.redirect_endpoint))
 
         if request.method == "POST":
             try:
-                flash(salvar_equipe_uvis_os_form(current_user, os_id, request.form), "success")
-                return redirect(url_for("main.dashboard_equipe_uvis"))
+                flash(salvar_uvis_retorno_automatico_form(current_user, os_id, request.form), "success")
+                redirect_args = {"os_id": os_id, "aba": "uvis"}
+                if (request.args.get("voltar") or "").strip().lower() == "historico":
+                    redirect_args["voltar"] = "historico"
+                return redirect(url_for("main.equipe_uvis_os_formulario_view", **redirect_args))
             except EquipeUvisDashboardError as exc:
                 db.session.rollback()
                 flash(exc.message, exc.category)
@@ -62,16 +65,18 @@ def register_routes(bp):
                 current_app.logger.exception("Erro ao salvar OS da equipe UVIS %s", os_id)
                 flash("Erro ao salvar o formulario da equipe UVIS.", "danger")
 
-            context = build_equipe_uvis_os_form_context(current_user, os_id)
+            context = build_equipe_uvis_os_unificado_context(current_user, os_id)
 
         url_voltar = url_for("main.dashboard_equipe_uvis")
+        form_action_args = {"os_id": os_id}
         if (request.args.get("voltar") or "").strip().lower() == "historico":
             url_voltar = url_for("main.equipe_uvis_os_historico")
+            form_action_args["voltar"] = "historico"
 
         return render_template(
-            "equipe_uvis_os_formulario.html",
+            "piloto_os_formulario.html",
             **context,
-            form_action=url_for("main.equipe_uvis_os_formulario_view", os_id=os_id),
+            form_action=url_for("main.equipe_uvis_os_formulario_view", **form_action_args),
             url_voltar=url_voltar,
         )
 

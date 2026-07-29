@@ -41,7 +41,7 @@ from app.shared.access import (
     apply_solicitacao_prefeitura_scope,
     apply_solicitacao_regiao_scope,
 )
-from app.shared.query_filters import aplicar_filtros_base
+from app.shared.query_filters import aplicar_filtros_base, get_multi_int_values, get_multi_values, multi_value_to_query
 
 try:
     import matplotlib
@@ -90,32 +90,40 @@ def _resolve_filters(user, args):
     filtro_data = f"{ano}-{mes:02d}"
 
     if getattr(user, "tipo_usuario", None) == "uvis":
-        uvis_id = user.id
+        uvis_ids = [user.id]
     else:
-        uvis_id = args.get("uvis_id", type=int)
+        uvis_ids = get_multi_int_values(args, "uvis_id")
 
-    return mes, ano, filtro_data, uvis_id
+    return mes, ano, filtro_data, uvis_ids, get_multi_values(args, "foco")
+
+
+def _apply_foco_filter(query, foco_values):
+    if foco_values:
+        return query.filter(Solicitacao.foco.in_(foco_values))
+    return query
 
 
 def _build_pdf_export_data(user, args):
-    mes, ano, filtro_data, uvis_id = _resolve_filters(user, args)
+    mes, ano, filtro_data, uvis_ids, foco_values = _resolve_filters(user, args)
     orient = args.get("orient", default="portrait")
 
     base_query = aplicar_filtros_base(
         db.session.query(Solicitacao),
         filtro_data,
-        uvis_id,
+        uvis_ids,
     )
     base_query = apply_solicitacao_prefeitura_scope(base_query, user)
     base_query = apply_solicitacao_regiao_scope(base_query, user)
+    base_query = _apply_foco_filter(base_query, foco_values)
 
     query_detalhe = aplicar_filtros_base(
         db.session.query(Solicitacao, Usuario).join(Usuario, Usuario.id == Solicitacao.usuario_id),
         filtro_data,
-        uvis_id,
+        uvis_ids,
     )
     query_detalhe = apply_solicitacao_prefeitura_scope(query_detalhe, user)
     query_detalhe = apply_regiao_scope(query_detalhe, user, Usuario.regiao)
+    query_detalhe = _apply_foco_filter(query_detalhe, foco_values)
 
     query_results_total = query_detalhe.count()
     query_results = (
@@ -142,7 +150,7 @@ def _build_pdf_export_data(user, args):
                     aplicar_filtros_base(
                         db.session.query(Usuario.regiao, db.func.count(Solicitacao.id)).join(Usuario),
                         filtro_data,
-                        uvis_id,
+                        uvis_ids,
                     ),
                     user,
                 ),
@@ -224,7 +232,7 @@ def _build_pdf_export_data(user, args):
                         .join(Usuario)
                         .filter(Usuario.tipo_usuario == "uvis"),
                         filtro_data,
-                        uvis_id,
+                        uvis_ids,
                     ),
                     user,
                 ),
@@ -235,6 +243,29 @@ def _build_pdf_export_data(user, args):
             .all()
         )
     ]
+
+    if foco_values:
+        dados_regiao = [
+            (regiao or "Nao informado", total)
+            for regiao, total in (
+                base_query
+                .join(Usuario, Usuario.id == Solicitacao.usuario_id)
+                .with_entities(Usuario.regiao, db.func.count(Solicitacao.id))
+                .group_by(Usuario.regiao)
+                .all()
+            )
+        ]
+        dados_unidade = [
+            (uvis_nome or "Nao informado", total)
+            for uvis_nome, total in (
+                base_query
+                .join(Usuario, Usuario.id == Solicitacao.usuario_id)
+                .filter(Usuario.tipo_usuario == "uvis")
+                .with_entities(Usuario.nome_uvis, db.func.count(Solicitacao.id))
+                .group_by(Usuario.nome_uvis)
+                .all()
+            )
+        ]
 
     if db.engine.name == "postgresql":
         func_mes = db.func.to_char(Solicitacao.data_agendamento, "YYYY-MM")
@@ -264,7 +295,9 @@ def _build_pdf_export_data(user, args):
         "ano": ano,
         "orient": orient,
         "filtro_data": filtro_data,
-        "uvis_id": uvis_id,
+        "uvis_id": uvis_ids[0] if uvis_ids else None,
+        "uvis_ids": uvis_ids,
+        "foco_values": foco_values,
         "query_results": query_results,
         "query_results_total": query_results_total,
         "query_results_limit": RELATORIO_PDF_DETALHE_MAX_ROWS,
@@ -363,10 +396,12 @@ def build_relatorio_pdf_export(user, args):
     story.append(Paragraph(f"Relatório Mensal — {data['mes']:02d}/{data['ano']}", title_style))
 
     filtro_txt = f"Filtro: {data['filtro_data']}"
-    if data["uvis_id"]:
-        filtro_txt += f" | UVIS ID: {data['uvis_id']}"
+    if data["uvis_ids"]:
+        filtro_txt += f" | UVIS IDs: {multi_value_to_query(data['uvis_ids'])}"
     else:
         filtro_txt += " | UVIS: Todas"
+    if data["foco_values"]:
+        filtro_txt += f" | Focos: {', '.join(data['foco_values'])}"
     story.append(Paragraph(filtro_txt, subtitle_style))
 
     def resumo_cards():
@@ -646,8 +681,8 @@ def build_relatorio_pdf_export(user, args):
     doc.build(story, onFirstPage=_header_footer, onLaterPages=_header_footer)
 
     nome_arquivo = f"relatorio_OceanoAzul_{data['ano']}_{data['mes']:02d}"
-    if data["uvis_id"]:
-        nome_arquivo += f"_UVIS_{data['uvis_id']}"
+    if data["uvis_ids"]:
+        nome_arquivo += f"_UVIS_{multi_value_to_query(data['uvis_ids']).replace(',', '_')}"
 
     return caminho_pdf, f"{nome_arquivo}.pdf"
 
@@ -675,7 +710,7 @@ def _montar_endereco(row):
 
 
 def build_relatorio_excel_export(user, args):
-    mes, ano, filtro_data, uvis_id = _resolve_filters(user, args)
+    mes, ano, filtro_data, uvis_ids, foco_values = _resolve_filters(user, args)
 
     query_dados = db.session.query(
         Solicitacao.id,
@@ -712,8 +747,9 @@ def build_relatorio_excel_export(user, args):
             db.func.strftime("%Y-%m", Solicitacao.data_agendamento) == filtro_data,
         )
 
-    if uvis_id:
-        query_dados = query_dados.filter(Solicitacao.usuario_id == uvis_id)
+    if uvis_ids:
+        query_dados = query_dados.filter(Solicitacao.usuario_id.in_(uvis_ids))
+    query_dados = _apply_foco_filter(query_dados, foco_values)
 
     dados = query_dados.order_by(
         Solicitacao.data_agendamento.desc(),
@@ -721,11 +757,11 @@ def build_relatorio_excel_export(user, args):
     ).all()
 
     nome_uvis_filtro = None
-    if uvis_id:
+    if len(uvis_ids) == 1:
         nome_uvis_filtro = (
             apply_regiao_scope(
                 apply_prefeitura_scope(
-                    db.session.query(Usuario.nome_uvis).filter(Usuario.id == uvis_id),
+                    db.session.query(Usuario.nome_uvis).filter(Usuario.id == uvis_ids[0]),
                     user,
                     Usuario.prefeitura_id,
                 ),
@@ -734,6 +770,8 @@ def build_relatorio_excel_export(user, args):
             )
             .scalar()
         )
+    elif len(uvis_ids) > 1:
+        nome_uvis_filtro = "UVIS_multiplas"
 
     wb = Workbook()
     ws = wb.active
@@ -829,8 +867,8 @@ def build_relatorio_excel_export(user, args):
     output.seek(0)
 
     nome_arquivo = f"relatorio_OceanoAzul_{ano}_{mes:02d}"
-    if uvis_id:
-        safe_nome = (nome_uvis_filtro or f"ID_{uvis_id}").replace(" ", "_")
+    if uvis_ids:
+        safe_nome = (nome_uvis_filtro or f"IDs_{multi_value_to_query(uvis_ids)}").replace(" ", "_").replace(",", "_")
         nome_arquivo += f"_UVIS_{safe_nome}"
 
     return output, f"{nome_arquivo}.xlsx"
@@ -1811,7 +1849,10 @@ def _coleta_imagens_pdf_name(data):
     if data.get("regiao_selecionada"):
         nome += f"_regiao_{_slug_filename(data['regiao_selecionada'])}"
 
-    if data.get("uvis_id_selecionado"):
+    uvis_ids = data.get("uvis_ids_selecionados") or ([] if not data.get("uvis_id_selecionado") else [data.get("uvis_id_selecionado")])
+    if len(uvis_ids) > 1:
+        nome += f"_{len(uvis_ids)}_uvis"
+    elif data.get("uvis_id_selecionado"):
         uvis_nome = data.get("uvis_nome_selecionado") or f"uvis_{data['uvis_id_selecionado']}"
         uvis_slug = _slug_filename(uvis_nome)
 
@@ -2413,7 +2454,10 @@ def build_relatorio_coleta_imagens_pdf_export(user, args):
         nome += f"_{int(data['mes_selecionado']):02d}"
     if data["regiao_selecionada"]:
         nome += f"_regiao_{data['regiao_selecionada'].replace(' ', '_').lower()}"
-    if data["uvis_id_selecionado"]:
+    uvis_ids = data.get("uvis_ids_selecionados") or ([] if not data.get("uvis_id_selecionado") else [data.get("uvis_id_selecionado")])
+    if len(uvis_ids) > 1:
+        nome += f"_{len(uvis_ids)}_uvis"
+    elif data["uvis_id_selecionado"]:
         nome += f"_uvis_{data['uvis_id_selecionado']}"
     nome += ".pdf"
     return path, nome

@@ -27,6 +27,9 @@
       <a href="{{ url_for('main.admin_agro') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
+      <a href="{{ url_for('main.agro_contratos_comprovantes') }}" class="btn btn-outline-success btn-sm d-flex align-items-center gap-2">
+        <i class="bi bi-receipt-cutoff"></i> Comprovantes
+      </a>
       <div class="dropdown">
         <button class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2 dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
           <i class="bi bi-box-arrow-up-right"></i> Ir para
@@ -139,6 +142,14 @@
                   <div class="fw-bold">{{ contrato.valor_total|currencybr or '-' }}</div>
                   <div class="text-muted small">Assinatura: {{ contrato.data_assinatura.strftime('%d/%m/%Y') if contrato.data_assinatura else '-' }}</div>
                   <div class="text-muted small">Culturas: {{ contrato.culturas_formatadas or 'Nao informadas' }}</div>
+                  <div class="text-muted small">
+                    Comprovante:
+                    {% if contrato.comprovante_pagamento_path %}
+                      <a href="{{ url_for('main.agro_contrato_comprovante_pagamento', contrato_id=contrato.id) }}" target="_blank">enviado</a>
+                    {% else %}
+                      pendente
+                    {% endif %}
+                  </div>
                 </td>
 
                 <td data-label="Planejamento operacional">
@@ -206,9 +217,36 @@
                           <i class="bi bi-filetype-pdf text-danger me-2"></i> PDF do contrato
                         </a>
                       </li>
+                      {% if contrato.comprovante_pagamento_path %}
+                        <li>
+                          <a href="{{ url_for('main.agro_contrato_comprovante_pagamento', contrato_id=contrato.id) }}" target="_blank" class="dropdown-item py-2">
+                            <i class="bi bi-receipt text-primary me-2"></i> Ver comprovante
+                          </a>
+                        </li>
+                      {% endif %}
+                      {% if can_edit_payment_receipts %}
+                        <li>
+                          <form class="m-0" method="POST" action="{{ url_for('main.agro_contrato_comprovante_pagamento_upload', contrato_id=contrato.id) }}" enctype="multipart/form-data">
+                            <label class="dropdown-item py-2 mb-0" for="comprovantePagamentoTemplate{{ contrato.id }}">
+                              <i class="bi bi-upload text-warning me-2"></i>
+                              {% if contrato.comprovante_pagamento_path %}Trocar comprovante{% else %}Enviar comprovante{% endif %}
+                            </label>
+                            <input id="comprovantePagamentoTemplate{{ contrato.id }}" class="d-none" type="file" name="comprovante_pagamento" accept="application/pdf,image/jpeg,.pdf,.jpg,.jpeg,.jfif" onchange="this.form.submit()">
+                          </form>
+                        </li>
+                        {% if contrato.comprovante_pagamento_path %}
+                          <li>
+                            <form class="form-deletar m-0" method="POST" action="{{ url_for('main.agro_contrato_comprovante_pagamento_remover', contrato_id=contrato.id) }}">
+                              <button type="submit" class="dropdown-item py-2 text-danger">
+                                <i class="bi bi-x-circle me-2"></i> Remover comprovante
+                              </button>
+                            </form>
+                          </li>
+                        {% endif %}
+                      {% endif %}
                       <li><hr class="dropdown-divider"></li>
                       <li>
-                        <form class="m-0" method="POST" action="{{ url_for('main.agro_contrato_deletar', contrato_id=contrato.id) }}" onsubmit="return confirm('Tem certeza que deseja excluir este contrato agro? Exclua antes as OS vinculadas, se houver.');">
+                        <form class="form-deletar m-0" method="POST" action="{{ url_for('main.agro_contrato_deletar', contrato_id=contrato.id) }}">
                           <button type="submit" class="dropdown-item py-2 text-danger">
                             <i class="bi bi-trash me-2"></i> Excluir contrato
                           </button>

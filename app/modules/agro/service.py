@@ -39,7 +39,18 @@ from app.shared.access import (
 )
 from app.shared.formatters import format_cep, format_currency_br, format_documento, only_digits
 from app.shared.query_filters import id_search_clause
+from app.shared.skybox import (
+    SkyboxError,
+    delete_skybox_file,
+    is_skybox_path,
+    skybox_enabled,
+    upload_file_to_skybox,
+)
 from app.shared.uploads import get_upload_folder
+
+
+AGRO_CONTRATO_PAYMENT_RECEIPT_EXTENSIONS = {"pdf", "jpg", "jpeg", "jfif"}
+AGRO_CONTRATO_PAYMENT_RECEIPT_SKYBOX_DIR = "Comprovantes Agro"
 
 
 AGRO_REPORT_MONTHS = (
@@ -365,6 +376,19 @@ def build_contratos_agro_aprovados_query(user, q: str = "", equipe_id: int | Non
         q=q,
         status=ContratoAgro.STATUS_APROVADO,
         equipe_id=equipe_id,
+    )
+
+
+def build_contratos_agro_comprovantes_query(user, q: str = "", equipe_id: int | None = None):
+    query = build_contratos_agro_query(user, q=q, equipe_id=equipe_id).order_by(None)
+    query = query.filter(
+        ContratoAgro.comprovante_pagamento_path.isnot(None),
+        ContratoAgro.comprovante_pagamento_path != "",
+    )
+    return query.order_by(
+        ContratoAgro.comprovante_pagamento_enviado_em.desc().nullslast(),
+        ContratoAgro.atualizado_em.desc(),
+        ContratoAgro.id.desc(),
     )
 
 
@@ -1780,6 +1804,94 @@ def get_os_agro_attachment_folder() -> str:
     folder = os.path.join(get_upload_folder(), "agro", "os")
     os.makedirs(folder, exist_ok=True)
     return folder
+
+
+def get_contrato_payment_receipt_folder() -> str:
+    folder = os.path.join(get_upload_folder(), "agro", "contratos")
+    os.makedirs(folder, exist_ok=True)
+    return folder
+
+
+def build_contrato_payment_receipt_skybox_path(filename: str) -> str:
+    return "/".join([AGRO_CONTRATO_PAYMENT_RECEIPT_SKYBOX_DIR, secure_filename(filename)])
+
+
+def save_contrato_payment_receipt(contrato: ContratoAgro, uploaded_file):
+    if not uploaded_file or not uploaded_file.filename:
+        return None
+
+    original_filename = secure_filename(uploaded_file.filename)
+    if "." not in original_filename:
+        raise ValueError("O comprovante de pagamento deve ser PDF, JPG, JPEG ou JFIF.")
+
+    extension = original_filename.rsplit(".", 1)[1].lower()
+    if extension not in AGRO_CONTRATO_PAYMENT_RECEIPT_EXTENSIONS:
+        raise ValueError("O comprovante de pagamento deve ser PDF, JPG, JPEG ou JFIF.")
+
+    stored_filename = f"contrato_agro_{contrato.id}_comprovante_{uuid.uuid4().hex}.{extension}"
+
+    if skybox_enabled():
+        try:
+            stored_path = upload_file_to_skybox(
+                uploaded_file,
+                build_contrato_payment_receipt_skybox_path(stored_filename),
+            )
+        except SkyboxError as exc:
+            raise ValueError(f"Falha ao enviar comprovante para o Skybox: {exc}") from exc
+    else:
+        folder = get_contrato_payment_receipt_folder()
+        absolute_path = os.path.join(folder, stored_filename)
+        uploaded_file.save(absolute_path)
+        stored_path = os.path.join("agro", "contratos", stored_filename).replace("\\", "/")
+
+    if contrato.comprovante_pagamento_path:
+        remove_contrato_payment_receipt(contrato, commit=False)
+
+    contrato.comprovante_pagamento_path = stored_path
+    contrato.comprovante_pagamento_nome = original_filename
+    contrato.comprovante_pagamento_enviado_em = datetime.now()
+    return original_filename
+
+
+def remove_contrato_payment_receipt(contrato: ContratoAgro, *, commit: bool = False):
+    relative_path = (contrato.comprovante_pagamento_path or "").strip()
+    if relative_path:
+        if is_skybox_path(relative_path):
+            try:
+                delete_skybox_file(relative_path)
+            except SkyboxError:
+                current_app.logger.warning("Falha ao remover comprovante de pagamento do contrato agro %s no Skybox", contrato.id)
+        else:
+            absolute_path = os.path.join(get_upload_folder(), relative_path.replace("/", os.sep))
+            if os.path.exists(absolute_path):
+                try:
+                    os.remove(absolute_path)
+                except OSError:
+                    current_app.logger.warning("Falha ao remover comprovante de pagamento do contrato agro %s", contrato.id)
+
+    contrato.comprovante_pagamento_path = None
+    contrato.comprovante_pagamento_nome = None
+    contrato.comprovante_pagamento_enviado_em = None
+
+    if commit:
+        from app.extensions import db
+
+        db.session.commit()
+
+
+def resolve_contrato_payment_receipt(contrato: ContratoAgro):
+    relative_path = (contrato.comprovante_pagamento_path or "").strip()
+    if not relative_path:
+        raise FileNotFoundError("Contrato sem comprovante de pagamento.")
+    if is_skybox_path(relative_path):
+        return None, relative_path, contrato.comprovante_pagamento_nome or os.path.basename(relative_path)
+
+    upload_folder = get_upload_folder()
+    absolute_path = os.path.join(upload_folder, relative_path.replace("/", os.sep))
+    if not os.path.exists(absolute_path):
+        raise FileNotFoundError("Arquivo nao encontrado.")
+
+    return upload_folder, relative_path.replace("\\", "/"), contrato.comprovante_pagamento_nome or os.path.basename(relative_path)
 
 
 def save_orcamento_attachment(orcamento: OrcamentoAgro, uploaded_file):

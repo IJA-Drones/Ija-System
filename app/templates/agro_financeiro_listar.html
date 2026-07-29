@@ -255,7 +255,7 @@
                       </a>
                     {% endif %}
                     {% if is_editable %}
-                      <form method="POST" action="{{ url_for('main.agro_financeiro_deletar', lancamento_id=item.id) }}" onsubmit="return confirm('Tem certeza de que deseja excluir este lançamento financeiro agro?');">
+                      <form class="form-deletar" method="POST" action="{{ url_for('main.agro_financeiro_deletar', lancamento_id=item.id) }}">
                         <button type="submit" class="btn btn-outline-danger btn-sm">
                           <i class="bi bi-trash"></i>
                         </button>

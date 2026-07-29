@@ -553,6 +553,7 @@ def build_piloto_os_form_context(user, os_id):
             joinedload(Solicitacao.usuario),
             joinedload(Solicitacao.equipe),
             joinedload(Solicitacao.ordem_servico),
+            joinedload(Solicitacao.ordem_servico_equipe_uvis),
         )
         .filter(Solicitacao.id == os_id)
     )
@@ -570,6 +571,7 @@ def build_piloto_os_form_context(user, os_id):
         raise PilotoOsError("Voce nao tem permissao para acessar esta OS.", "danger")
 
     ordem = solicitacao.ordem_servico
+    ordem_uvis = solicitacao.ordem_servico_equipe_uvis
     calculo_dosagem_planejado = _parse_json_object(
         getattr(ordem, "calculo_dosagem_planejado", None) if ordem else None
     )
@@ -596,6 +598,8 @@ def build_piloto_os_form_context(user, os_id):
         "solicitacao": solicitacao,
         "equipe": equipe,
         "ordem": ordem,
+        "ordem_uvis": ordem_uvis,
+        "can_edit_uvis_tab": False,
         "modo_visualizacao": (solicitacao.status or "").strip().upper() in {"CONCLUIDO", "CONCLU\u00cdDO"},
         "uvis_nome": solicitacao.usuario.nome_uvis if solicitacao.usuario else "",
         "regiao_nome": (
@@ -711,6 +715,7 @@ def build_admin_os_form_context(user, os_id):
             joinedload(Solicitacao.usuario),
             joinedload(Solicitacao.equipe),
             joinedload(Solicitacao.ordem_servico),
+            joinedload(Solicitacao.ordem_servico_equipe_uvis),
         )
         .filter(Solicitacao.id == os_id)
     )
@@ -722,6 +727,7 @@ def build_admin_os_form_context(user, os_id):
     pode_editar_formulario = _admin_can_edit_os_form(user, solicitacao)
     equipe = solicitacao.equipe
     ordem = solicitacao.ordem_servico
+    ordem_uvis = solicitacao.ordem_servico_equipe_uvis
     calculo_dosagem_planejado = _parse_json_object(
         getattr(ordem, "calculo_dosagem_planejado", None) if ordem else None
     )
@@ -744,6 +750,8 @@ def build_admin_os_form_context(user, os_id):
         "solicitacao": solicitacao,
         "equipe": equipe,
         "ordem": ordem,
+        "ordem_uvis": ordem_uvis,
+        "can_edit_uvis_tab": False,
         "modo_visualizacao": not pode_editar_formulario,
         "alerta_edicao_concluida": (
             pode_editar_formulario
@@ -893,6 +901,7 @@ def criar_solicitacao_retorno_monitoramento(solicitacao_original, ordem_atual):
         tipo_operacao=solicitacao_original.tipo_operacao,
         tipo_visita=solicitacao_original.tipo_visita,
         altura_voo=solicitacao_original.altura_voo,
+        distrito_administrativo=solicitacao_original.distrito_administrativo,
         criadouro=solicitacao_original.criadouro,
         apoio_cet=solicitacao_original.apoio_cet,
         observacao=nova_observacao,
@@ -1054,13 +1063,17 @@ def _aplicar_campos_formulario(
         dji_kml_route = _resolve_dji_kml_route_from_form(user, form_data)
         ordem.dji_kml_route_id = dji_kml_route.id if dji_kml_route else None
 
-    ordem.identificador_os = _clean_str(form_data.get("identificador_os"))
+    ordem.identificador_os = _clean_os_text_marker(form_data.get("identificador_os"))
     ordem.respondido_por = _clean_str(form_data.get("respondido_por")) or respondido_por_padrao
     ordem.respondido_em = _to_datetime_local(form_data.get("respondido_em")) or datetime.now()
     ordem.situacao_aplicacao = _clean_str(form_data.get("situacao_aplicacao"))
     ordem.larva_visualizada = _clean_str(form_data.get("larva_visualizada"))
     ordem.retornar_proxima_semana_monitorar_larvas = _clean_str(form_data.get("retornar_proxima_semana_monitorar_larvas"))
-    ordem.distrito_administrativo = _clean_str(form_data.get("da")) or _clean_str(form_data.get("distrito_administrativo"))
+    ordem.distrito_administrativo = (
+        _clean_os_text_marker(getattr(solicitacao, "distrito_administrativo", None))
+        or _clean_os_text_marker(form_data.get("da"))
+        or _clean_os_text_marker(form_data.get("distrito_administrativo"))
+    )
     ordem.nome_rf_ace_responsavel_os = _clean_str(form_data.get("nome_rf_ace_responsavel_os"))
     ordem.criadouro_os_tipo_volume = _clean_str(form_data.get("criadouro_os_tipo_volume"))
     ordem.data_aplicacao = _to_date(form_data.get("data_aplicacao"))
@@ -1117,6 +1130,11 @@ def _clean_str(value):
     if value is None:
         return ""
     return str(value).strip()
+
+
+def _clean_os_text_marker(value):
+    value = _clean_str(value)
+    return "" if value == "//" else value
 
 
 def _to_int(value):

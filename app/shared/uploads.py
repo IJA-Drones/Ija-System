@@ -3,7 +3,7 @@ import os
 from flask import current_app
 
 
-ALLOWED_UPLOAD_EXTENSIONS = {"pdf", "png", "jpg", "jpeg", "doc", "docx", "xls", "xlsx"}
+ALLOWED_UPLOAD_EXTENSIONS = {"pdf", "png", "jpg", "jpeg", "jfif", "doc", "docx", "xls", "xlsx"}
 
 
 def get_upload_folder():

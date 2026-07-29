@@ -19,12 +19,12 @@
     width: 100%;
     table-layout: fixed;
   }
-  .table-frota col:nth-child(1) { width: 28%; }
-  .table-frota col:nth-child(2) { width: 16%; }
-  .table-frota col:nth-child(3) { width: 14%; }
-  .table-frota col:nth-child(4) { width: 14%; }
-  .table-frota col:nth-child(5) { width: 12%; }
-  .table-frota col:nth-child(6) { width: 16%; }
+  .table-frota col:nth-child(1) { width: 27%; }
+  .table-frota col:nth-child(2) { width: 14%; }
+  .table-frota col:nth-child(3) { width: 12%; }
+  .table-frota col:nth-child(4) { width: 13%; }
+  .table-frota col:nth-child(5) { width: 10%; }
+  .table-frota col:nth-child(6) { width: 24%; }
 
   .table-frota thead th {
     vertical-align: middle;
@@ -58,6 +58,21 @@
   .table-frota thead th:nth-child(6),
   .table-frota tbody td:nth-child(6) {
     text-align: center;
+    white-space: normal;
+  }
+  .turno-actions-cell {
+    min-width: 0;
+  }
+  .turno-actions-meta {
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+  .turno-actions-buttons .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 154px;
     white-space: nowrap;
   }
 
@@ -257,7 +272,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4 piloto-frota-page" style="max-width: 1200px">
+<div class="container-fluid py-4 piloto-frota-page" style="max-width: 1440px">
   <div class="piloto-frota-header mb-3">
     <div>
       <h2 class="text-dark m-0">
@@ -302,13 +317,14 @@
           <tbody>
             {% for v in veiculos %}
               {% set turno_aberto = turnos_abertos.get(v.id) %}
+              {% set km_atual_visual = turno_aberto.ultimo_km_registrado if turno_aberto else v.km_atual %}
               <tr>
                 <td>
                   <div class="fw-bold">{{ v.modelo }}</div>
                   <div class="text-muted small">{{ v.placa }}</div>
                 </td>
                 <td><span class="badge bg-light text-dark border">{{ v.operacao }}</span></td>
-                <td class="fw-bold">{{ '%.0f'|format(v.km_atual or 0) }}</td>
+                <td class="fw-bold">{{ '%.0f'|format(km_atual_visual or 0) }}</td>
                 <td class="fw-bold">
                   {% if v.km_prox_revisao is not none %}
                     {{ '%.0f'|format(v.km_prox_revisao) }}
@@ -326,16 +342,16 @@
                     <span class="stat-pill pill-ok text-muted">--</span>
                   {% endif %}
                 </td>
-                <td>
+                <td class="turno-actions-cell">
                   {% if turno_aberto %}
                     <div class="d-flex flex-column align-items-center gap-2">
-                      <div class="small text-muted">
+                      <div class="small text-muted turno-actions-meta">
                         Aberto em {{ turno_aberto.data_registro.strftime('%d/%m/%Y %H:%M') if turno_aberto.data_registro else '-' }}
                       </div>
-                      <div class="small text-muted">
+                      <div class="small text-muted turno-actions-meta">
                         {{ turno_aberto.qtd_abastecimentos }} abast. • R$ {{ '%.2f'|format(turno_aberto.total_valor_abastecido or 0) }}
                       </div>
-                      <div class="d-flex flex-wrap justify-content-center gap-2">
+                      <div class="d-flex flex-wrap justify-content-center gap-2 turno-actions-buttons">
                         <button class="btn btn-sm btn-outline-success rounded-pill px-3 shadow-sm"
                                 data-bs-toggle="modal" data-bs-target="#modalAbastecimento{{ v.id }}">
                           <i class="bi bi-fuel-pump-fill me-1"></i> Abastecimento
@@ -362,6 +378,9 @@
 
     {% for v in veiculos %}
       {% set turno_aberto = turnos_abertos.get(v.id) %}
+      {% set km_ref = km_inicial_referencias.get(v.id) if km_inicial_referencias else none %}
+      {% set km_inicio_valor = km_ref.km if km_ref else v.km_atual %}
+      {% set km_fechamento_min = turno_aberto.ultimo_km_registrado if turno_aberto else v.km_atual %}
       <div class="modal fade" id="modalChecklist{{ v.id }}" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
           <div class="modal-content border-0 shadow-lg rounded-4">
@@ -384,8 +403,20 @@
                 <div class="row g-3">
                   <div class="col-md-6">
                     <label class="form-label small fw-bold">Kilometragem de Início</label>
-                    <input type="number" name="km_inicial" class="form-control" value="{{ v.km_atual }}" min="{{ v.km_atual or 0 }}" required>
-                    <div class="hint-line mt-1">Informe exatamente o KM mostrado no painel.</div>
+                    <input type="hidden" name="km_inicial" value="{{ '%.0f'|format(km_inicio_valor or 0) }}">
+                    <input type="number"
+                           step="1"
+                           class="form-control bg-light fw-bold"
+                           value="{{ '%.0f'|format(km_inicio_valor or 0) }}"
+                           min="{{ '%.0f'|format(km_inicio_valor or 0) }}"
+                           max="{{ '%.0f'|format(km_inicio_valor or 0) }}"
+                           disabled
+                           aria-disabled="true">
+                    {% if km_ref and km_ref.origem == 'ultimo_fechamento' %}
+                      <div class="hint-line mt-1">Travado pelo KM final do ultimo fechamento deste veiculo.</div>
+                    {% else %}
+                      <div class="hint-line mt-1">Travado pelo KM atual cadastrado deste veiculo.</div>
+                    {% endif %}
                   </div>
                   <div class="col-md-6">
                     <label class="form-label small fw-bold">Foto do Painel</label>
@@ -432,7 +463,7 @@
                 <div class="modal-soft-card mb-3">
                   <div class="small text-muted">Turno aberto desde</div>
                   <div class="fw-bold">{{ turno_aberto.data_registro.strftime('%d/%m/%Y %H:%M') if turno_aberto.data_registro else '-' }}</div>
-                  <div class="hint-line mt-2">Último KM registrado no turno: {{ '%.0f'|format(turno_aberto.ultimo_km_registrado or 0) }} km</div>
+                  <div class="hint-line mt-2">KM inicial do turno: {{ '%.0f'|format(turno_aberto.km_inicial or 0) }} km</div>
                 </div>
 
                 <div class="row g-3">
@@ -447,7 +478,8 @@
                   </div>
                   <div class="col-md-3">
                     <label class="form-label small fw-bold">KM no Abastecimento</label>
-                    <input type="number" name="km_abastecimento" class="form-control" min="{{ turno_aberto.ultimo_km_registrado or 0 }}" value="{{ turno_aberto.ultimo_km_registrado or '' }}" required>
+                    <input type="number" step="1" name="km_abastecimento" class="form-control" min="0" max="{{ (turno_aberto.km_inicial or 0) + 500 }}" value="{{ turno_aberto.ultimo_km_registrado or v.km_atual or '' }}" required>
+                    <div class="hint-line mt-1">Usado para auditoria e relatórios do abastecimento.</div>
                   </div>
                   <div class="col-md-3">
                     <label class="form-label small fw-bold">Litros</label>
@@ -491,8 +523,8 @@
                 <div class="modal-soft-card mb-3">
                   <div class="small text-muted">Referência de encerramento</div>
                   <div class="d-flex justify-content-between align-items-center mt-1">
-                    <span class="small">Último KM registrado</span>
-                    <span class="modal-km-highlight">{{ '%.0f'|format((turno_aberto.ultimo_km_registrado if turno_aberto else v.km_atual) or 0) }} km</span>
+                    <span class="small">KM inicial do turno</span>
+                    <span class="modal-km-highlight">{{ '%.0f'|format((turno_aberto.km_inicial if turno_aberto else v.km_atual) or 0) }} km</span>
                   </div>
                   {% if turno_aberto %}
                     <div class="hint-line mt-2">{{ turno_aberto.qtd_abastecimentos }} abastecimento(s) registrados • Total R$ {{ '%.2f'|format(turno_aberto.total_valor_abastecido or 0) }}</div>
@@ -501,8 +533,8 @@
 
                 <div class="mb-3">
                   <label class="form-label small fw-bold">Kilometragem Final (Painel)</label>
-                  <input type="number" name="km_final" class="form-control" min="{{ (turno_aberto.ultimo_km_registrado if turno_aberto else v.km_atual) or 0 }}" value="{{ (turno_aberto.ultimo_km_registrado if turno_aberto else v.km_atual) or '' }}" placeholder="KM mostrado no fim do dia" required>
-                  <div class="hint-line mt-1">O KM final não pode ser menor que o último KM registrado no turno.</div>
+                  <input type="number" step="1" name="km_final" class="form-control" min="{{ km_fechamento_min or 0 }}" max="{{ ((turno_aberto.km_inicial if turno_aberto else v.km_atual) or 0) + 500 }}" value="" placeholder="KM mostrado no fim do dia" required>
+                  <div class="hint-line mt-1">Não pode ser menor que o KM inicial nem que o KM registrado no abastecimento.</div>
                 </div>
                 <div class="mb-3">
                   <label class="form-label small fw-bold">Quantidade de Fazendas/Endereços Atendidos</label>

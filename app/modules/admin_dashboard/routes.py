@@ -24,6 +24,8 @@ from app.modules.admin_dashboard.service import (
 )
 from app.shared.access import apply_regiao_scope, apply_solicitacao_prefeitura_scope
 from app.shared.os_history_filters import get_os_history_filters
+from app.shared.query_filters import get_multi_values, multi_value_to_query, query_args_without_page
+from app.shared.redirects import redirect_back
 from app.shared.retorno_ciclo import build_retorno_ciclo_context, build_retorno_ciclo_summaries
 
 
@@ -35,13 +37,11 @@ def _prefers_html_response():
 
 
 def _redirect_back_to_admin():
-    return redirect(request.referrer or url_for("main.admin_dashboard"))
+    return redirect_back("main.admin_dashboard")
 
 
 def _query_args_without_page():
-    args = request.args.to_dict(flat=True)
-    args.pop("page", None)
-    return args
+    return query_args_without_page(request.args)
 
 
 def _get_admin_per_page():
@@ -94,14 +94,14 @@ def register_routes(bp):
             return redirect(url_for("main.dashboard"))
 
         filtro_status = (request.args.get("status") or "").strip()
-        filtro_unidade = (request.args.get("unidade") or "").strip()
+        filtro_unidade = get_multi_values(request.args, "unidade")
         filtro_regiao = (request.args.get("regiao") or "").strip()
         filtro_apoio_cet = (request.args.get("apoio_cet") or "").strip().upper()
         filtro_protocolo = (request.args.get("protocolo") or "").strip()
         filtro_endereco = (request.args.get("endereco") or "").strip()
         filtro_tipo_visita = (request.args.get("tipo_visita") or "").strip()
         filtro_tipo_imovel = (request.args.get("tipo_imovel") or "").strip()
-        filtro_foco = (request.args.get("foco") or "").strip()
+        filtro_foco = get_multi_values(request.args, "foco")
         filtro_data_ini = (request.args.get("data_ini") or "").strip()
         filtro_data_fim = (request.args.get("data_fim") or "").strip()
         filtro_retorno_automatico = (request.args.get("retorno_automatico") or "").strip().upper()
@@ -110,11 +110,11 @@ def register_routes(bp):
             return redirect(
                 url_for(
                     "main.admin_canceladas",
-                    unidade=filtro_unidade,
+                    unidade=multi_value_to_query(filtro_unidade),
                     regiao=filtro_regiao,
                     tipo_visita=filtro_tipo_visita,
                     tipo_imovel=filtro_tipo_imovel,
-                    foco=filtro_foco,
+                    foco=multi_value_to_query(filtro_foco),
                     protocolo=filtro_protocolo,
                     endereco=filtro_endereco,
                     data_ini=filtro_data_ini,
@@ -156,8 +156,13 @@ def register_routes(bp):
             unidades_select=build_uvis_select(current_user),
             google_maps_key=get_google_maps_key(),
             pagination_args=_query_args_without_page(),
+            admin_return_url=request.full_path.rstrip("?"),
             per_page_options=ADMIN_PER_PAGE_OPTIONS,
             retorno_ciclos=build_retorno_ciclo_summaries(current_user, paginacao.items),
+            filtros_multi={
+                "unidade": filtro_unidade,
+                "foco": filtro_foco,
+            },
         )
 
     @bp.route("/admin/exportar_excel")
@@ -169,14 +174,14 @@ def register_routes(bp):
 
         try:
             filtro_status = (request.args.get("status") or "").strip()
-            filtro_unidade = (request.args.get("unidade") or "").strip()
+            filtro_unidade = get_multi_values(request.args, "unidade")
             filtro_regiao = (request.args.get("regiao") or "").strip()
             filtro_apoio_cet = (request.args.get("apoio_cet") or "").strip().upper()
             filtro_protocolo = (request.args.get("protocolo") or "").strip()
             filtro_endereco = (request.args.get("endereco") or "").strip()
             filtro_tipo_visita = (request.args.get("tipo_visita") or "").strip()
             filtro_tipo_imovel = (request.args.get("tipo_imovel") or "").strip()
-            filtro_foco = (request.args.get("foco") or "").strip()
+            filtro_foco = get_multi_values(request.args, "foco")
             filtro_data_ini = (request.args.get("data_ini") or "").strip()
             filtro_data_fim = (request.args.get("data_fim") or "").strip()
             filtro_retorno_automatico = (request.args.get("retorno_automatico") or "").strip().upper()
@@ -279,9 +284,9 @@ def register_routes(bp):
             flash("Acesso restrito.", "danger")
             return redirect(url_for("main.dashboard"))
 
-        filtro_unidade = (request.args.get("unidade") or "").strip()
+        filtro_unidade = get_multi_values(request.args, "unidade")
         filtro_regiao = (request.args.get("regiao") or "").strip()
-        filtro_foco = (request.args.get("foco") or "").strip()
+        filtro_foco = get_multi_values(request.args, "foco")
         filtro_tipo_visita = (request.args.get("tipo_visita") or "").strip()
         filtro_tipo_imovel = (request.args.get("tipo_imovel") or "").strip()
         filtro_protocolo = (request.args.get("protocolo") or "").strip()
@@ -317,6 +322,10 @@ def register_routes(bp):
             google_maps_key=get_google_maps_key(),
             foco_selecionado=filtro_foco,
             pagination_args=_query_args_without_page(),
+            filtros_multi={
+                "unidade": filtro_unidade,
+                "foco": filtro_foco,
+            },
         )
 
     @bp.route("/admin/historico-os")
@@ -328,9 +337,7 @@ def register_routes(bp):
 
         filtros = get_os_history_filters(request.args, status_key="status_os")
         filtro_status_os = filtros["status"]
-        filtro_tipo_os = (request.args.get("tipo_os") or "piloto").strip().lower()
-        if filtro_tipo_os not in {"piloto", "equipe_uvis"}:
-            filtro_tipo_os = "piloto"
+        filtro_tipo_os = "piloto"
         filtro_equipe = (request.args.get("equipe") or "").strip()
         filtros["equipe"] = filtro_equipe
         page = request.args.get("page", 1, type=int)
@@ -374,9 +381,7 @@ def register_routes(bp):
             flash("Permissao negada para exportar.", "danger")
             return redirect(url_for("main.dashboard"))
 
-        filtro_tipo_os = (request.args.get("tipo_os") or "piloto").strip().lower()
-        if filtro_tipo_os not in {"piloto", "equipe_uvis"}:
-            filtro_tipo_os = "piloto"
+        filtro_tipo_os = "piloto"
 
         filtros = get_os_history_filters(request.args, status_key="status_os")
         filtro_equipe = (request.args.get("equipe") or "").strip()

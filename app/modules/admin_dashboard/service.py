@@ -21,7 +21,7 @@ from app.shared.access import (
     apply_solicitacao_prefeitura_scope,
 )
 from app.shared.os_history_filters import apply_retorno_automatico_filter
-from app.shared.query_filters import id_search_clause
+from app.shared.query_filters import id_search_clause, normalize_multi_values
 from app.shared.uploads import allowed_file, get_upload_folder
 
 APPROVAL_STATUSES = {"APROVADO", "APROVADO COM RECOMENDAÇÕES"}
@@ -87,6 +87,31 @@ def _apply_endereco_filter(query, filtro_endereco: str = ""):
         )
 
     return query
+
+
+def _apply_unidade_filter(query, filtro_unidade):
+    unidades = normalize_multi_values(filtro_unidade)
+    if not unidades:
+        return query
+
+    return query.filter(
+        or_(
+            *[
+                or_(
+                    id_search_clause(Usuario.id, unidade),
+                    Usuario.nome_uvis.ilike(f"%{unidade}%"),
+                )
+                for unidade in unidades
+            ]
+        )
+    )
+
+
+def _apply_foco_filter(query, filtro_foco):
+    focos = normalize_multi_values(filtro_foco)
+    if not focos:
+        return query
+    return query.filter(Solicitacao.foco.in_(focos))
 
 
 def can_access_admin_panel(user) -> bool:
@@ -165,13 +190,7 @@ def build_admin_dashboard_query(
     if filtro_status:
         query = query.filter(Solicitacao.status == filtro_status)
 
-    if filtro_unidade:
-        query = query.filter(
-            or_(
-                id_search_clause(Usuario.id, filtro_unidade),
-                Usuario.nome_uvis.ilike(f"%{filtro_unidade}%"),
-            )
-        )
+    query = _apply_unidade_filter(query, filtro_unidade)
 
     if filtro_regiao:
         query = query.filter(Usuario.regiao.ilike(f"%{filtro_regiao}%"))
@@ -203,8 +222,7 @@ def build_admin_dashboard_query(
     if filtro_tipo_imovel:
         query = query.filter(Solicitacao.tipo_imovel == filtro_tipo_imovel)
 
-    if filtro_foco:
-        query = query.filter(Solicitacao.foco == filtro_foco)
+    query = _apply_foco_filter(query, filtro_foco)
 
     query = apply_retorno_automatico_filter(query, filtro_retorno_automatico)
 
@@ -235,19 +253,12 @@ def build_admin_canceladas_query(
     query = apply_solicitacao_prefeitura_scope(query, user)
     query = apply_regiao_scope(query, user, Usuario.regiao)
 
-    if filtro_unidade:
-        query = query.filter(
-            or_(
-                id_search_clause(Usuario.id, filtro_unidade),
-                Usuario.nome_uvis.ilike(f"%{filtro_unidade}%"),
-            )
-        )
+    query = _apply_unidade_filter(query, filtro_unidade)
 
     if filtro_regiao:
         query = query.filter(Usuario.regiao.ilike(f"%{filtro_regiao}%"))
 
-    if filtro_foco:
-        query = query.filter(Solicitacao.foco == filtro_foco)
+    query = _apply_foco_filter(query, filtro_foco)
 
     if filtro_tipo_visita:
         query = query.filter(Solicitacao.tipo_visita == filtro_tipo_visita)
@@ -317,14 +328,14 @@ def build_admin_historico_os_query(user, filtros, filtro_tipo_os: str, filtro_eq
     query = build_admin_dashboard_query(
         user,
         filtro_status="",
-        filtro_unidade=filtros["unidade"],
+        filtro_unidade=filtros.get("unidade_values") or filtros["unidade"],
         filtro_regiao=filtros["regiao"],
         filtro_apoio_cet=filtros["apoio_cet"],
         filtro_protocolo=filtros["protocolo"],
         filtro_endereco=filtros["endereco"],
         filtro_tipo_visita=filtros["tipo_visita"],
         filtro_tipo_imovel=filtros["tipo_imovel"],
-        filtro_foco=filtros["foco"],
+        filtro_foco=filtros.get("foco_values") or filtros["foco"],
         filtro_data_ini=filtros["data_ini"],
         filtro_data_fim=filtros["data_fim"],
         filtro_retorno_automatico=filtros["retorno_automatico"],
@@ -446,13 +457,7 @@ def build_admin_export_query(
     if filtro_status:
         query = query.filter(Solicitacao.status == filtro_status)
 
-    if filtro_unidade:
-        query = query.filter(
-            or_(
-                id_search_clause(Usuario.id, filtro_unidade),
-                Usuario.nome_uvis.ilike(f"%{filtro_unidade}%"),
-            )
-        )
+    query = _apply_unidade_filter(query, filtro_unidade)
 
     if filtro_regiao:
         query = query.filter(Usuario.regiao.ilike(f"%{filtro_regiao}%"))
@@ -478,8 +483,7 @@ def build_admin_export_query(
     if filtro_tipo_imovel:
         query = query.filter(Solicitacao.tipo_imovel == filtro_tipo_imovel)
 
-    if filtro_foco:
-        query = query.filter(Solicitacao.foco == filtro_foco)
+    query = _apply_foco_filter(query, filtro_foco)
 
     query = apply_retorno_automatico_filter(query, filtro_retorno_automatico)
 
@@ -537,6 +541,7 @@ def build_admin_dashboard_export(
         "Tipo Operacao",
         "Tipo Visita",
         "Tipo Imovel",
+        "D.A",
         "Altura",
         "Apoio CET?",
         "Observacao",
@@ -604,6 +609,7 @@ def build_admin_dashboard_export(
             pedido.tipo_operacao or "",
             pedido.tipo_visita or "",
             pedido.tipo_imovel or "",
+            pedido.distrito_administrativo or "",
             pedido.altura_voo or "",
             "SIM" if pedido.apoio_cet else "NAO",
             pedido.observacao or "",
@@ -740,6 +746,7 @@ def build_admin_historico_os_export(user, filtros, filtro_tipo_os: str, filtro_e
         "Tipo Operacao",
         "Tipo Visita",
         "Tipo Imovel",
+        "D.A",
         "Apoio CET?",
         "Protocolo",
         "Respondido Por",
@@ -764,7 +771,7 @@ def build_admin_historico_os_export(user, filtros, filtro_tipo_os: str, filtro_e
         cell.alignment = Alignment(horizontal="center", vertical="center")
         cell.border = thin_border
 
-    tipo_label = "OS Equipe UVIS" if filtro_tipo_os == "equipe_uvis" else "OS Piloto"
+    tipo_label = "OS"
     for row_number, pedido in enumerate(pedidos, start=2):
         usuario = getattr(pedido, "usuario", None)
         endereco_completo = (
@@ -793,6 +800,7 @@ def build_admin_historico_os_export(user, filtros, filtro_tipo_os: str, filtro_e
             pedido.tipo_operacao or "",
             pedido.tipo_visita or "",
             pedido.tipo_imovel or "",
+            pedido.distrito_administrativo or "",
             "SIM" if pedido.apoio_cet else "NAO",
             pedido.protocolo or "",
             _historico_os_respondido_por(pedido, filtro_tipo_os),

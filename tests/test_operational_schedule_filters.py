@@ -1,10 +1,13 @@
 import unittest
-from datetime import datetime
+from datetime import date, datetime, time
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from flask import Flask
 from werkzeug.datastructures import MultiDict
 
+from app.extensions import db
+from app.models import Solicitacao, Usuario
 from app.modules.agenda_notificacoes import service as agenda_service
 from app.modules.piloto_os import service as piloto_os_service
 
@@ -93,6 +96,69 @@ class OperationalScheduleFilterTests(unittest.TestCase):
 
         self.assertEqual(agenda_service._agenda_owner_usuario_id(user), 42)
         self.assertTrue(agenda_service.can_export_agenda(user))
+
+
+class AgendaVisibleStatusTests(unittest.TestCase):
+    def setUp(self):
+        self.app = Flask(__name__)
+        self.app.config.update(
+            TESTING=True,
+            SQLALCHEMY_DATABASE_URI="sqlite:///:memory:",
+            SQLALCHEMY_TRACK_MODIFICATIONS=False,
+        )
+        db.init_app(self.app)
+        self.ctx = self.app.app_context()
+        self.ctx.push()
+        db.create_all()
+
+        self.uvis = Usuario(
+            nome_uvis="UVIS Teste",
+            regiao="OESTE",
+            login="uvis_agenda",
+            senha_hash="hash",
+            tipo_usuario="uvis",
+        )
+        db.session.add(self.uvis)
+        db.session.commit()
+
+    def tearDown(self):
+        db.session.remove()
+        db.drop_all()
+        self.ctx.pop()
+
+    def _nova_solicitacao(self, status):
+        solicitacao = Solicitacao(
+            data_agendamento=date(2026, 7, 20),
+            hora_agendamento=time(17, 0),
+            foco="Edificacao Abandonada com Inserviveis",
+            cep="02131-040",
+            logradouro="Rua Hiroshima",
+            bairro="Vila Maria Alta",
+            cidade="Sao Paulo",
+            uf="SP",
+            status=status,
+            usuario_id=self.uvis.id,
+        )
+        db.session.add(solicitacao)
+        return solicitacao
+
+    def test_agenda_only_lists_approved_recommended_and_completed_statuses(self):
+        aprovado = self._nova_solicitacao("APROVADO")
+        recomendado = self._nova_solicitacao("APROVADO COM RECOMENDAÇÕES")
+        concluido = self._nova_solicitacao("CONCLUÍDO")
+        self._nova_solicitacao("NEGADO")
+        self._nova_solicitacao("PENDENTE")
+        self._nova_solicitacao("EM ANÁLISE")
+        db.session.commit()
+
+        user = SimpleNamespace(tipo_usuario="admin")
+        resultados = agenda_service.build_agenda_query(
+            user,
+            mes=7,
+            ano=2026,
+        ).order_by(Solicitacao.id.asc()).all()
+
+        self.assertEqual([item.id for item in resultados], [aprovado.id, recomendado.id, concluido.id])
 
 
 if __name__ == "__main__":
