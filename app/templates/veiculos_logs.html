@@ -755,7 +755,8 @@
             <a href="{{ url_for('main.exportar_logs_veiculos_xlsx',
                                 q=filters.q,
                                 data_inicio=filters.data_inicio,
-                                data_fim=filters.data_fim) }}"
+                                data_fim=filters.data_fim,
+                                limpeza_realizada=filters.limpeza_realizada) }}"
             class="btn btn-pill btn-secondary shadow-sm">
                 <i class="bi bi-file-earmark-excel-fill"></i> Exportar Excel
             </a>
@@ -787,10 +788,10 @@
             <i class="bi bi-chevron-down text-muted"></i>
         </div>
 
-        <div class="collapse {% if filters.q or filters.data_inicio or filters.data_fim %}show{% endif %}" id="collapseFiltrosLogs">
+        <div class="collapse {% if filters.q or filters.data_inicio or filters.data_fim or filters.limpeza_realizada %}show{% endif %}" id="collapseFiltrosLogs">
             <div class="card-body pt-0 pb-4">
                 <form method="GET" class="row g-2 align-items-end">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="small text-muted">Veículo / Placa / Operador:</label>
                         <input type="text" name="q" value="{{ filters.q or '' }}" class="form-control" placeholder="Modelo, placa, responsável...">
                     </div>
@@ -802,12 +803,19 @@
                         <label class="small text-muted">Data final:</label>
                         <input type="date" name="data_fim" value="{{ filters.data_fim or '' }}" class="form-control">
                     </div>
+                    <div class="col-md-2">
+                        <label class="small text-muted">Limpeza:</label>
+                        <select name="limpeza_realizada" class="form-select">
+                            <option value="">Todas</option>
+                            <option value="1" {% if filters.limpeza_realizada == '1' %}selected{% endif %}>Limpeza realizada</option>
+                        </select>
+                    </div>
                     <div class="col-md-2 d-flex gap-2 veiculos-logs-filter-actions">
                         <button class="btn btn-success w-100" type="submit">
                             <i class="bi bi-search"></i> Filtrar
                         </button>
                     </div>
-                    {% if filters.q or filters.data_inicio or filters.data_fim %}
+                    {% if filters.q or filters.data_inicio or filters.data_fim or filters.limpeza_realizada %}
                     <div class="col-md-2 d-flex gap-2 veiculos-logs-filter-actions">
                         <a href="{{ url_for('main.veiculos_logs') }}" class="btn btn-outline-secondary w-100">
                             <i class="bi bi-x-lg"></i> Limpar
@@ -1240,7 +1248,7 @@
             <div class="modal fade" id="modalCorrigirKmLog{{ log.id }}" tabindex="-1" aria-labelledby="modalCorrigirKmLog{{ log.id }}Label" aria-hidden="true">
                 <div class="modal-dialog modal-lg modal-dialog-centered">
                     <div class="modal-content border-0 shadow rounded-4">
-                        <form method="POST" action="{{ url_for('main.corrigir_log_veiculo', log_id=log.id, page=paginacao.page, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}">
+                        <form method="POST" action="{{ url_for('main.corrigir_log_veiculo', log_id=log.id, page=paginacao.page, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim, limpeza_realizada=filters.limpeza_realizada) }}">
                             <div class="modal-header border-0 pb-0">
                                 <div>
                                     <h5 class="modal-title fw-bold" id="modalCorrigirKmLog{{ log.id }}Label">Corrigir log #{{ log.id }}</h5>
@@ -1318,7 +1326,7 @@
                 <div class="modal fade" id="modalDeletarLog{{ log.id }}" tabindex="-1" aria-labelledby="modalDeletarLog{{ log.id }}Label" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered">
                         <div class="modal-content border-0 shadow rounded-4">
-                            <form method="POST" action="{{ url_for('main.deletar_log_veiculo', log_id=log.id, page=paginacao.page, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}">
+                            <form method="POST" action="{{ url_for('main.deletar_log_veiculo', log_id=log.id, page=paginacao.page, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim, limpeza_realizada=filters.limpeza_realizada) }}">
                                 <div class="modal-header border-0 pb-0">
                                     <div>
                                         <h5 class="modal-title fw-bold text-danger" id="modalDeletarLog{{ log.id }}Label">Apagar log #{{ log.id }}</h5>
@@ -1351,13 +1359,13 @@
     <nav class="mt-4 veiculos-logs-pagination">
         <ul class="pagination justify-content-center">
             <li class="page-item {{ 'disabled' if not paginacao.has_prev }}">
-                <a class="page-link" href="{{ url_for('main.veiculos_logs', page=paginacao.prev_num if paginacao.has_prev else 1, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}">Anterior</a>
+                <a class="page-link" href="{{ url_for('main.veiculos_logs', page=paginacao.prev_num if paginacao.has_prev else 1, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim, limpeza_realizada=filters.limpeza_realizada) }}">Anterior</a>
             </li>
 
             {% for p in paginacao.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=1) %}
                 {% if p %}
                     <li class="page-item {{ 'active' if p == paginacao.page else '' }}">
-                        <a class="page-link" href="{{ url_for('main.veiculos_logs', page=p, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}">{{ p }}</a>
+                        <a class="page-link" href="{{ url_for('main.veiculos_logs', page=p, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim, limpeza_realizada=filters.limpeza_realizada) }}">{{ p }}</a>
                     </li>
                 {% else %}
                     <li class="page-item disabled"><span class="page-link">…</span></li>
@@ -1365,7 +1373,7 @@
             {% endfor %}
 
             <li class="page-item {{ 'disabled' if not paginacao.has_next }}">
-                <a class="page-link" href="{{ url_for('main.veiculos_logs', page=paginacao.next_num if paginacao.has_next else paginacao.pages, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}">Próxima</a>
+                <a class="page-link" href="{{ url_for('main.veiculos_logs', page=paginacao.next_num if paginacao.has_next else paginacao.pages, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim, limpeza_realizada=filters.limpeza_realizada) }}">Próxima</a>
             </li>
         </ul>
     </nav>

@@ -1365,13 +1365,14 @@ def _sum_abastecimentos_por_tipo(log):
     return resumo
 
 
-def _build_veiculos_summary_from_logs_query(*, user=None, q="", data_inicio="", data_fim=""):
+def _build_veiculos_summary_from_logs_query(*, user=None, q="", data_inicio="", data_fim="", limpeza_realizada=""):
     log_ids = (
         _build_veiculos_logs_query(
             user=user,
             q=q,
             data_inicio=data_inicio,
             data_fim=data_fim,
+            limpeza_realizada=limpeza_realizada,
             include_options=False,
             include_order=False,
         )
@@ -1662,14 +1663,22 @@ def list_veiculos_logs(tipo_usuario, args, user=None):
     q = (args.get("q") or "").strip()
     data_inicio = (args.get("data_inicio") or "").strip()
     data_fim = (args.get("data_fim") or "").strip()
+    limpeza_realizada = (args.get("limpeza_realizada") or "").strip()
     page = args.get("page", 1, type=int)
 
-    query = _build_veiculos_logs_query(user=user, q=q, data_inicio=data_inicio, data_fim=data_fim)
+    query = _build_veiculos_logs_query(
+        user=user,
+        q=q,
+        data_inicio=data_inicio,
+        data_fim=data_fim,
+        limpeza_realizada=limpeza_realizada,
+    )
     total_logs = _build_veiculos_logs_query(
         user=user,
         q=q,
         data_inicio=data_inicio,
         data_fim=data_fim,
+        limpeza_realizada=limpeza_realizada,
         include_options=False,
         include_order=False,
     ).count()
@@ -1685,8 +1694,14 @@ def list_veiculos_logs(tipo_usuario, args, user=None):
             q=q,
             data_inicio=data_inicio,
             data_fim=data_fim,
+            limpeza_realizada=limpeza_realizada,
         ),
-        "filters": {"q": q, "data_inicio": data_inicio, "data_fim": data_fim},
+        "filters": {
+            "q": q,
+            "data_inicio": data_inicio,
+            "data_fim": data_fim,
+            "limpeza_realizada": limpeza_realizada,
+        },
         "can_edit_logs": tipo_usuario in {"dev", "admin", "operario", "operador", "prefeitura_admin"},
         "can_delete_logs": tipo_usuario == "admin",
         "can_view_deleted_logs": tipo_usuario == "dev",
@@ -1695,6 +1710,7 @@ def list_veiculos_logs(tipo_usuario, args, user=None):
             q=q,
             data_inicio=data_inicio,
             data_fim=data_fim,
+            limpeza_realizada=limpeza_realizada,
         ),
     }
 
@@ -2081,8 +2097,15 @@ def build_veiculos_logs_export(tipo_usuario, args, user=None):
     q = (args.get("q") or "").strip()
     data_inicio = (args.get("data_inicio") or "").strip()
     data_fim = (args.get("data_fim") or "").strip()
+    limpeza_realizada = (args.get("limpeza_realizada") or "").strip()
 
-    logs = _build_veiculos_logs_query(user=user, q=q, data_inicio=data_inicio, data_fim=data_fim).all()
+    logs = _build_veiculos_logs_query(
+        user=user,
+        q=q,
+        data_inicio=data_inicio,
+        data_fim=data_fim,
+        limpeza_realizada=limpeza_realizada,
+    ).all()
 
     header_fill = PatternFill("solid", fgColor="1F4E79")
     header_font = Font(color="FFFFFF", bold=True)
@@ -2460,13 +2483,14 @@ def build_veiculos_logs_export(tipo_usuario, args, user=None):
     )
 
 
-def _sum_veiculos_logs_abastecido(*, user=None, q="", data_inicio="", data_fim=""):
+def _sum_veiculos_logs_abastecido(*, user=None, q="", data_inicio="", data_fim="", limpeza_realizada=""):
     log_ids = (
         _build_veiculos_logs_query(
             user=user,
             q=q,
             data_inicio=data_inicio,
             data_fim=data_fim,
+            limpeza_realizada=limpeza_realizada,
             include_options=False,
             include_order=False,
         )
@@ -2481,7 +2505,16 @@ def _sum_veiculos_logs_abastecido(*, user=None, q="", data_inicio="", data_fim="
     return total or 0
 
 
-def _build_veiculos_logs_query(*, user=None, q="", data_inicio="", data_fim="", include_options=True, include_order=True):
+def _build_veiculos_logs_query(
+    *,
+    user=None,
+    q="",
+    data_inicio="",
+    data_fim="",
+    limpeza_realizada="",
+    include_options=True,
+    include_order=True,
+):
     ultima_movimentacao_subq = _ultima_movimentacao_log_subquery()
     ultima_movimentacao_expr = db.func.coalesce(
         ultima_movimentacao_subq.c.ultima_movimentacao_em,
@@ -2547,6 +2580,16 @@ def _build_veiculos_logs_query(*, user=None, q="", data_inicio="", data_fim="", 
             query = query.filter(ultima_movimentacao_expr <= dt_fim)
         except ValueError:
             pass
+
+    if limpeza_realizada == "1":
+        query = query.filter(
+            db.session.query(LimpezaVeiculo.id)
+            .filter(
+                LimpezaVeiculo.log_veiculo_id == LogVeiculo.id,
+                LimpezaVeiculo.limpeza_realizada.is_(True),
+            )
+            .exists()
+        )
 
     if include_order:
         query = query.order_by(ultima_movimentacao_expr.desc(), LogVeiculo.id.desc())

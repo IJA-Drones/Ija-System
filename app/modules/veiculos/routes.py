@@ -189,7 +189,7 @@ def register_routes(bp):
         redirect_args = {
             key: value
             for key, value in request.args.items()
-            if key in {"page", "q", "data_inicio", "data_fim"}
+            if key in {"page", "q", "data_inicio", "data_fim", "limpeza_realizada"}
         }
         return_to = (request.args.get("return_to") or "").strip()
         veiculo_id = request.args.get("veiculo_id", type=int)
@@ -224,7 +224,7 @@ def register_routes(bp):
         redirect_args = {
             key: value
             for key, value in request.args.items()
-            if key in {"page", "q", "data_inicio", "data_fim"}
+            if key in {"page", "q", "data_inicio", "data_fim", "limpeza_realizada"}
         }
         try:
             flash(
