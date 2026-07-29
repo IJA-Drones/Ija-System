@@ -1365,7 +1365,19 @@ def _sum_abastecimentos_por_tipo(log):
     return resumo
 
 
-def _build_veiculos_summary_from_logs_query(*, user=None, q="", data_inicio="", data_fim="", limpeza_realizada=""):
+def _build_veiculos_summary_from_logs_query(
+    *,
+    user=None,
+    q="",
+    data_inicio="",
+    data_fim="",
+    limpeza_realizada="",
+    tipo_limpeza="",
+    data_limpeza_inicio="",
+    data_limpeza_fim="",
+    valor_limpeza_min="",
+    valor_limpeza_max="",
+):
     log_ids = (
         _build_veiculos_logs_query(
             user=user,
@@ -1373,6 +1385,11 @@ def _build_veiculos_summary_from_logs_query(*, user=None, q="", data_inicio="", 
             data_inicio=data_inicio,
             data_fim=data_fim,
             limpeza_realizada=limpeza_realizada,
+            tipo_limpeza=tipo_limpeza,
+            data_limpeza_inicio=data_limpeza_inicio,
+            data_limpeza_fim=data_limpeza_fim,
+            valor_limpeza_min=valor_limpeza_min,
+            valor_limpeza_max=valor_limpeza_max,
             include_options=False,
             include_order=False,
         )
@@ -1431,7 +1448,15 @@ def _build_veiculos_summary_from_logs_query(*, user=None, q="", data_inicio="", 
         .all()
     )
 
-    limpeza_rows = (
+    limpeza_summary_conditions = _limpeza_filter_conditions(
+        limpeza_realizada=limpeza_realizada,
+        tipo_limpeza=tipo_limpeza,
+        data_limpeza_inicio=data_limpeza_inicio,
+        data_limpeza_fim=data_limpeza_fim,
+        valor_limpeza_min=valor_limpeza_min,
+        valor_limpeza_max=valor_limpeza_max,
+    )
+    limpeza_rows_query = (
         db.session.query(
             LogVeiculo.veiculo_id.label("veiculo_id"),
             db.func.coalesce(db.func.sum(LimpezaVeiculo.valor_total), 0).label("total_limpeza"),
@@ -1439,6 +1464,11 @@ def _build_veiculos_summary_from_logs_query(*, user=None, q="", data_inicio="", 
         )
         .join(log_ids, log_ids.c.id == LogVeiculo.id)
         .join(LimpezaVeiculo, LimpezaVeiculo.log_veiculo_id == LogVeiculo.id)
+    )
+    if limpeza_summary_conditions:
+        limpeza_rows_query = limpeza_rows_query.filter(*limpeza_summary_conditions)
+    limpeza_rows = (
+        limpeza_rows_query
         .group_by(LogVeiculo.veiculo_id)
         .all()
     )
@@ -1664,6 +1694,11 @@ def list_veiculos_logs(tipo_usuario, args, user=None):
     data_inicio = (args.get("data_inicio") or "").strip()
     data_fim = (args.get("data_fim") or "").strip()
     limpeza_realizada = (args.get("limpeza_realizada") or "").strip()
+    tipo_limpeza = (args.get("tipo_limpeza") or "").strip().lower()
+    data_limpeza_inicio = (args.get("data_limpeza_inicio") or "").strip()
+    data_limpeza_fim = (args.get("data_limpeza_fim") or "").strip()
+    valor_limpeza_min = (args.get("valor_limpeza_min") or "").strip()
+    valor_limpeza_max = (args.get("valor_limpeza_max") or "").strip()
     page = args.get("page", 1, type=int)
 
     query = _build_veiculos_logs_query(
@@ -1672,6 +1707,11 @@ def list_veiculos_logs(tipo_usuario, args, user=None):
         data_inicio=data_inicio,
         data_fim=data_fim,
         limpeza_realizada=limpeza_realizada,
+        tipo_limpeza=tipo_limpeza,
+        data_limpeza_inicio=data_limpeza_inicio,
+        data_limpeza_fim=data_limpeza_fim,
+        valor_limpeza_min=valor_limpeza_min,
+        valor_limpeza_max=valor_limpeza_max,
     )
     total_logs = _build_veiculos_logs_query(
         user=user,
@@ -1679,6 +1719,11 @@ def list_veiculos_logs(tipo_usuario, args, user=None):
         data_inicio=data_inicio,
         data_fim=data_fim,
         limpeza_realizada=limpeza_realizada,
+        tipo_limpeza=tipo_limpeza,
+        data_limpeza_inicio=data_limpeza_inicio,
+        data_limpeza_fim=data_limpeza_fim,
+        valor_limpeza_min=valor_limpeza_min,
+        valor_limpeza_max=valor_limpeza_max,
         include_options=False,
         include_order=False,
     ).count()
@@ -1695,12 +1740,34 @@ def list_veiculos_logs(tipo_usuario, args, user=None):
             data_inicio=data_inicio,
             data_fim=data_fim,
             limpeza_realizada=limpeza_realizada,
+            tipo_limpeza=tipo_limpeza,
+            data_limpeza_inicio=data_limpeza_inicio,
+            data_limpeza_fim=data_limpeza_fim,
+            valor_limpeza_min=valor_limpeza_min,
+            valor_limpeza_max=valor_limpeza_max,
+        ),
+        "total_limpezas_realizadas": _sum_veiculos_logs_limpezas_realizadas(
+            user=user,
+            q=q,
+            data_inicio=data_inicio,
+            data_fim=data_fim,
+            limpeza_realizada=limpeza_realizada,
+            tipo_limpeza=tipo_limpeza,
+            data_limpeza_inicio=data_limpeza_inicio,
+            data_limpeza_fim=data_limpeza_fim,
+            valor_limpeza_min=valor_limpeza_min,
+            valor_limpeza_max=valor_limpeza_max,
         ),
         "filters": {
             "q": q,
             "data_inicio": data_inicio,
             "data_fim": data_fim,
             "limpeza_realizada": limpeza_realizada,
+            "tipo_limpeza": tipo_limpeza,
+            "data_limpeza_inicio": data_limpeza_inicio,
+            "data_limpeza_fim": data_limpeza_fim,
+            "valor_limpeza_min": valor_limpeza_min,
+            "valor_limpeza_max": valor_limpeza_max,
         },
         "can_edit_logs": tipo_usuario in {"dev", "admin", "operario", "operador", "prefeitura_admin"},
         "can_delete_logs": tipo_usuario == "admin",
@@ -1711,6 +1778,11 @@ def list_veiculos_logs(tipo_usuario, args, user=None):
             data_inicio=data_inicio,
             data_fim=data_fim,
             limpeza_realizada=limpeza_realizada,
+            tipo_limpeza=tipo_limpeza,
+            data_limpeza_inicio=data_limpeza_inicio,
+            data_limpeza_fim=data_limpeza_fim,
+            valor_limpeza_min=valor_limpeza_min,
+            valor_limpeza_max=valor_limpeza_max,
         ),
     }
 
@@ -2098,6 +2170,11 @@ def build_veiculos_logs_export(tipo_usuario, args, user=None):
     data_inicio = (args.get("data_inicio") or "").strip()
     data_fim = (args.get("data_fim") or "").strip()
     limpeza_realizada = (args.get("limpeza_realizada") or "").strip()
+    tipo_limpeza = (args.get("tipo_limpeza") or "").strip().lower()
+    data_limpeza_inicio = (args.get("data_limpeza_inicio") or "").strip()
+    data_limpeza_fim = (args.get("data_limpeza_fim") or "").strip()
+    valor_limpeza_min = (args.get("valor_limpeza_min") or "").strip()
+    valor_limpeza_max = (args.get("valor_limpeza_max") or "").strip()
 
     logs = _build_veiculos_logs_query(
         user=user,
@@ -2105,6 +2182,11 @@ def build_veiculos_logs_export(tipo_usuario, args, user=None):
         data_inicio=data_inicio,
         data_fim=data_fim,
         limpeza_realizada=limpeza_realizada,
+        tipo_limpeza=tipo_limpeza,
+        data_limpeza_inicio=data_limpeza_inicio,
+        data_limpeza_fim=data_limpeza_fim,
+        valor_limpeza_min=valor_limpeza_min,
+        valor_limpeza_max=valor_limpeza_max,
     ).all()
 
     header_fill = PatternFill("solid", fgColor="1F4E79")
@@ -2483,7 +2565,116 @@ def build_veiculos_logs_export(tipo_usuario, args, user=None):
     )
 
 
-def _sum_veiculos_logs_abastecido(*, user=None, q="", data_inicio="", data_fim="", limpeza_realizada=""):
+def _parse_date_filter(raw_value, *, end_of_day=False):
+    raw_value = (raw_value or "").strip()
+    if not raw_value:
+        return None
+
+    try:
+        parsed = datetime.strptime(raw_value, "%Y-%m-%d")
+    except ValueError:
+        return None
+
+    if end_of_day:
+        parsed = parsed.replace(hour=23, minute=59, second=59, microsecond=999999)
+    return parsed
+
+
+def _parse_decimal_filter(raw_value):
+    try:
+        return _parse_decimal_form(raw_value)
+    except ValueError:
+        return None
+
+
+def _limpeza_filter_conditions(
+    *,
+    limpeza_realizada="",
+    tipo_limpeza="",
+    data_limpeza_inicio="",
+    data_limpeza_fim="",
+    valor_limpeza_min="",
+    valor_limpeza_max="",
+    force_realizada=None,
+):
+    conditions = []
+    status = (limpeza_realizada or "").strip()
+    tipo = (tipo_limpeza or "").strip().lower()
+
+    if force_realizada is not None:
+        conditions.append(LimpezaVeiculo.limpeza_realizada.is_(force_realizada))
+    elif status in {"1", "com_limpeza"}:
+        conditions.append(LimpezaVeiculo.limpeza_realizada.is_(True))
+    elif status == "0":
+        conditions.append(LimpezaVeiculo.limpeza_realizada.is_(False))
+
+    if tipo in {"completa", "ducha"}:
+        conditions.append(LimpezaVeiculo.tipo_limpeza == tipo)
+
+    dt_inicio = _parse_date_filter(data_limpeza_inicio)
+    if dt_inicio is not None:
+        conditions.append(LimpezaVeiculo.data_hora >= dt_inicio)
+
+    dt_fim = _parse_date_filter(data_limpeza_fim, end_of_day=True)
+    if dt_fim is not None:
+        conditions.append(LimpezaVeiculo.data_hora <= dt_fim)
+
+    valor_min = _parse_decimal_filter(valor_limpeza_min)
+    if valor_min is not None:
+        conditions.append(LimpezaVeiculo.valor_total >= valor_min)
+
+    valor_max = _parse_decimal_filter(valor_limpeza_max)
+    if valor_max is not None:
+        conditions.append(LimpezaVeiculo.valor_total <= valor_max)
+
+    return conditions
+
+
+def _has_limpeza_filters(
+    *,
+    limpeza_realizada="",
+    tipo_limpeza="",
+    data_limpeza_inicio="",
+    data_limpeza_fim="",
+    valor_limpeza_min="",
+    valor_limpeza_max="",
+):
+    status = (limpeza_realizada or "").strip()
+    tipo = (tipo_limpeza or "").strip().lower()
+    return (
+        status in {"com_limpeza", "1", "0", "sem_limpeza"}
+        or tipo in {"completa", "ducha"}
+        or bool((data_limpeza_inicio or "").strip())
+        or bool((data_limpeza_fim or "").strip())
+        or bool((valor_limpeza_min or "").strip())
+        or bool((valor_limpeza_max or "").strip())
+    )
+
+
+def _limpeza_exists_expression(*, conditions=None):
+    return (
+        db.session.query(LimpezaVeiculo.id)
+        .filter(
+            LimpezaVeiculo.log_veiculo_id == LogVeiculo.id,
+            *(conditions or []),
+        )
+        .exists()
+    )
+
+
+def _sum_veiculos_logs_abastecido(
+    *,
+    user=None,
+    q="",
+    data_inicio="",
+    data_fim="",
+    limpeza_realizada="",
+    tipo_limpeza="",
+    data_limpeza_inicio="",
+    data_limpeza_fim="",
+    valor_limpeza_min="",
+    valor_limpeza_max="",
+):
     log_ids = (
         _build_veiculos_logs_query(
             user=user,
@@ -2491,6 +2682,11 @@ def _sum_veiculos_logs_abastecido(*, user=None, q="", data_inicio="", data_fim="
             data_inicio=data_inicio,
             data_fim=data_fim,
             limpeza_realizada=limpeza_realizada,
+            tipo_limpeza=tipo_limpeza,
+            data_limpeza_inicio=data_limpeza_inicio,
+            data_limpeza_fim=data_limpeza_fim,
+            valor_limpeza_min=valor_limpeza_min,
+            valor_limpeza_max=valor_limpeza_max,
             include_options=False,
             include_order=False,
         )
@@ -2505,6 +2701,64 @@ def _sum_veiculos_logs_abastecido(*, user=None, q="", data_inicio="", data_fim="
     return total or 0
 
 
+def _sum_veiculos_logs_limpezas_realizadas(
+    *,
+    user=None,
+    q="",
+    data_inicio="",
+    data_fim="",
+    limpeza_realizada="",
+    tipo_limpeza="",
+    data_limpeza_inicio="",
+    data_limpeza_fim="",
+    valor_limpeza_min="",
+    valor_limpeza_max="",
+):
+    status = (limpeza_realizada or "").strip()
+    if status in {"0", "sem_limpeza"}:
+        return {"quantidade": 0, "valor_total": 0}
+
+    log_ids = (
+        _build_veiculos_logs_query(
+            user=user,
+            q=q,
+            data_inicio=data_inicio,
+            data_fim=data_fim,
+            limpeza_realizada=limpeza_realizada,
+            tipo_limpeza=tipo_limpeza,
+            data_limpeza_inicio=data_limpeza_inicio,
+            data_limpeza_fim=data_limpeza_fim,
+            valor_limpeza_min=valor_limpeza_min,
+            valor_limpeza_max=valor_limpeza_max,
+            include_options=False,
+            include_order=False,
+        )
+        .with_entities(LogVeiculo.id)
+        .subquery()
+    )
+    conditions = _limpeza_filter_conditions(
+        tipo_limpeza=tipo_limpeza,
+        data_limpeza_inicio=data_limpeza_inicio,
+        data_limpeza_fim=data_limpeza_fim,
+        valor_limpeza_min=valor_limpeza_min,
+        valor_limpeza_max=valor_limpeza_max,
+        force_realizada=True,
+    )
+    row = (
+        db.session.query(
+            db.func.count(LimpezaVeiculo.id).label("quantidade"),
+            db.func.coalesce(db.func.sum(LimpezaVeiculo.valor_total), 0).label("valor_total"),
+        )
+        .join(log_ids, log_ids.c.id == LimpezaVeiculo.log_veiculo_id)
+        .filter(*conditions)
+        .first()
+    )
+    return {
+        "quantidade": int((row.quantidade if row else 0) or 0),
+        "valor_total": (row.valor_total if row else 0) or 0,
+    }
+
+
 def _build_veiculos_logs_query(
     *,
     user=None,
@@ -2512,6 +2766,11 @@ def _build_veiculos_logs_query(
     data_inicio="",
     data_fim="",
     limpeza_realizada="",
+    tipo_limpeza="",
+    data_limpeza_inicio="",
+    data_limpeza_fim="",
+    valor_limpeza_min="",
+    valor_limpeza_max="",
     include_options=True,
     include_order=True,
 ):
@@ -2581,14 +2840,38 @@ def _build_veiculos_logs_query(
         except ValueError:
             pass
 
-    if limpeza_realizada == "1":
+    if limpeza_realizada in {"0", "sem_limpeza"}:
         query = query.filter(
-            db.session.query(LimpezaVeiculo.id)
-            .filter(
-                LimpezaVeiculo.log_veiculo_id == LogVeiculo.id,
-                LimpezaVeiculo.limpeza_realizada.is_(True),
+            ~_limpeza_exists_expression(
+                conditions=_limpeza_filter_conditions(
+                    tipo_limpeza=tipo_limpeza,
+                    data_limpeza_inicio=data_limpeza_inicio,
+                    data_limpeza_fim=data_limpeza_fim,
+                    valor_limpeza_min=valor_limpeza_min,
+                    valor_limpeza_max=valor_limpeza_max,
+                    force_realizada=True,
+                )
             )
-            .exists()
+        )
+    elif _has_limpeza_filters(
+        limpeza_realizada=limpeza_realizada,
+        tipo_limpeza=tipo_limpeza,
+        data_limpeza_inicio=data_limpeza_inicio,
+        data_limpeza_fim=data_limpeza_fim,
+        valor_limpeza_min=valor_limpeza_min,
+        valor_limpeza_max=valor_limpeza_max,
+    ):
+        query = query.filter(
+            _limpeza_exists_expression(
+                conditions=_limpeza_filter_conditions(
+                    limpeza_realizada=limpeza_realizada,
+                    tipo_limpeza=tipo_limpeza,
+                    data_limpeza_inicio=data_limpeza_inicio,
+                    data_limpeza_fim=data_limpeza_fim,
+                    valor_limpeza_min=valor_limpeza_min,
+                    valor_limpeza_max=valor_limpeza_max,
+                )
+            )
         )
 
     if include_order:
