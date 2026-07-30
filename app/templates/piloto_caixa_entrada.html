@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}" />
+<style>
+  .inbox-shell { max-width: 1080px; }
+  .alert-card {
+    border: 0;
+    border-left: 5px solid #ffc107;
+    border-radius: 14px;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+  }
+  .alert-card.is-ack {
+    border-left-color: #198754;
+  }
+  .alert-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .alert-meta .badge {
+    border-radius: 999px;
+    padding: 0.45rem 0.7rem;
+  }
+  @media (max-width: 576px) {
+    .inbox-actions {
+      width: 100%;
+    }
+    .inbox-actions .btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 inbox-shell">
+  <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap mb-4">
+    <div>
+      <h2 class="text-dark mb-1">
+        <i class="bi bi-inbox-fill me-2 text-primary"></i>Caixa de Entrada
+      </h2>
+      <div class="text-muted small">
+        Alertas de limpeza dos veiculos da equipe.
+      </div>
+    </div>
+    <a href="{{ url_for('main.piloto_veiculos') }}" class="btn btn-outline-secondary">
+      <i class="bi bi-truck-front-fill me-1"></i> Veiculos
+    </a>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-4">
+      <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-warning border-4">
+        <small class="text-muted fw-bold text-uppercase" style="font-size: 0.68rem;">Pendentes</small>
+        <h3 class="fw-bold mb-0 text-warning">{{ total_pendentes }}</h3>
+      </div>
+    </div>
+    <div class="col-6 col-md-4">
+      <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-primary border-4">
+        <small class="text-muted fw-bold text-uppercase" style="font-size: 0.68rem;">Prazo</small>
+        <h3 class="fw-bold mb-0 text-primary">{{ prazo_dias }} dias</h3>
+      </div>
+    </div>
+  </div>
+
+  {% if not alertas %}
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body text-center text-muted py-5">
+        <i class="bi bi-check-circle fs-1 d-block mb-2 text-success"></i>
+        Nenhum alerta de limpeza pendente.
+      </div>
+    </div>
+  {% else %}
+    <div class="d-flex flex-column gap-3">
+      {% for alerta in alertas %}
+      <div class="card alert-card {% if alerta.ciencia %}is-ack{% endif %}">
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+            <div>
+              <div class="d-flex align-items-center gap-2 mb-1">
+                <i class="bi {% if alerta.ciencia %}bi-check-circle-fill text-success{% else %}bi-exclamation-triangle-fill text-warning{% endif %} fs-5"></i>
+                <h5 class="fw-bold text-dark mb-0">{{ alerta.veiculo.modelo }} - {{ alerta.veiculo.placa }}</h5>
+              </div>
+              <div class="text-muted small">
+                {{ alerta.veiculo.operacao }}{% if alerta.veiculo.equipe %} | {{ alerta.veiculo.equipe.nome_equipe }}{% endif %}
+              </div>
+            </div>
+            <div class="inbox-actions">
+              {% if alerta.ciencia %}
+                <span class="badge bg-success-subtle text-success-emphasis border rounded-pill px-3 py-2">
+                  Ciente em {{ alerta.ciencia.reconhecido_em.strftime('%d/%m/%Y %H:%M') if alerta.ciencia.reconhecido_em else '-' }}
+                </span>
+              {% else %}
+                <form method="POST" action="{{ url_for('main.piloto_confirmar_alerta_limpeza', veiculo_id=alerta.veiculo.id) }}" class="form-no-loading">
+                  <button type="submit" class="btn btn-warning fw-bold rounded-pill px-4">
+                    <i class="bi bi-check2-circle me-1"></i> Confirmar ciencia
+                  </button>
+                </form>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="alert-meta mt-3">
+            <span class="badge bg-warning-subtle text-warning-emphasis border">
+              {{ alerta.dias_desde }} dias sem limpeza
+            </span>
+            <span class="badge bg-light text-dark border">
+              Vencido em {{ alerta.vencido_em.strftime('%d/%m/%Y') }}
+            </span>
+            {% if alerta.ultima_limpeza_em %}
+              <span class="badge bg-light text-dark border">
+                Ultima limpeza {{ alerta.ultima_limpeza_em.strftime('%d/%m/%Y %H:%M') }}
+              </span>
+            {% else %}
+              <span class="badge bg-light text-dark border">
+                Sem limpeza registrada desde o cadastro
+              </span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

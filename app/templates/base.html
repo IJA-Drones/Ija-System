@@ -340,6 +340,21 @@
               <i class="bi bi-clock-history me-2"></i><span>Histórico OS</span>
             </a>
           </li>
+          {% if current_user.trabalha_oceano_azul %}
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint == 'main.piloto_caixa_entrada' %}active{% endif %}"
+              href="{{ url_for('main.piloto_caixa_entrada') }}"
+            >
+              <i class="bi bi-inbox-fill me-2"></i><span>Caixa de Entrada</span>
+              {% if limpeza_alertas_operacionais_count and limpeza_alertas_operacionais_count > 0 %}
+              <span class="badge bg-danger ms-auto" style="border-radius: 999px">
+                {{ limpeza_alertas_operacionais_count }}
+              </span>
+              {% endif %}
+            </a>
+          </li>
+          {% endif %}
           <li class="nav-item">
             <a
               class="nav-link {% if request.endpoint == 'main.agenda' %}active{% endif %}"
@@ -927,14 +942,32 @@
           {% if is_global_admin or current_user.tipo_usuario|lower in ['operario', 'operador', 'prefeitura_admin'] %}
           {# ===================== VEÍCULOS ===================== #}
           <li class="nav-item">
-            <a class="nav-link {% if request.endpoint in ['main.veiculos_menu', 'main.listar_veiculos', 'main.veiculos_logs', 'main.exportar_logs_veiculos_xlsx', 'main.admin_checklists_semanais', 'main.editar_veiculo', 'main.cadastrar_veiculo'] %}active{% endif %}"
+            <a class="nav-link {% if request.endpoint in ['main.veiculos_menu', 'main.listar_veiculos', 'main.veiculos_logs', 'main.exportar_logs_veiculos_xlsx', 'main.admin_checklists_semanais', 'main.editar_veiculo', 'main.cadastrar_veiculo', 'main.veiculos_alertas_limpeza'] %}active{% endif %}"
                href="{{ url_for('main.veiculos_menu') }}">
               <span>
                 <i class="bi bi-truck-front-fill me-2"></i>
                 <span>Veículos</span>
               </span>
+              {% if limpeza_alertas_admin_count and limpeza_alertas_admin_count > 0 %}
+              <span class="badge bg-danger ms-auto" style="border-radius: 999px">
+                {{ limpeza_alertas_admin_count }}
+              </span>
+              {% endif %}
             </a>
           </li>
+          {% if current_user.trabalha_oceano_azul %}
+          <li class="nav-item">
+            <a class="nav-link {% if request.endpoint == 'main.veiculos_alertas_limpeza' %}active{% endif %}"
+               href="{{ url_for('main.veiculos_alertas_limpeza') }}">
+              <i class="bi bi-droplet-half me-2"></i><span>Alertas Limpeza</span>
+              {% if limpeza_alertas_admin_count and limpeza_alertas_admin_count > 0 %}
+              <span class="badge bg-danger ms-auto" style="border-radius: 999px">
+                {{ limpeza_alertas_admin_count }}
+              </span>
+              {% endif %}
+            </a>
+          </li>
+          {% endif %}
         {% endif %}
 
           {% endif %} {# ===================== EQUIPES (ADMIN COMPLETO / UVIS SÓ LISTAR) ===================== #} 

@@ -2,7 +2,7 @@ import json
 import os
 import re
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 from io import BytesIO
 from zoneinfo import ZoneInfo
 
@@ -16,7 +16,18 @@ from sqlalchemy.orm import joinedload, selectinload
 from werkzeug.utils import secure_filename
 
 from app.extensions import db
-from app.models import Abastecimento, AuditoriaUsuario, Equipe, EquipePiloto, LimpezaVeiculo, LogVeiculo, Pilotos, Veiculos
+from app.models import (
+    Abastecimento,
+    AuditoriaUsuario,
+    Equipe,
+    EquipePiloto,
+    LimpezaVeiculo,
+    LimpezaVeiculoAlertaCiencia,
+    LogVeiculo,
+    Pilotos,
+    Usuario,
+    Veiculos,
+)
 from app.shared.access import apply_prefeitura_scope, normalize_role
 from app.shared.query_filters import id_search_clause
 from app.shared.skybox import (
@@ -32,6 +43,8 @@ EQUIPE_OCEANO_USER_TYPE = "equipe_oceano"
 UTC_TZ = ZoneInfo("UTC")
 BRAZIL_TZ = ZoneInfo("America/Sao_Paulo")
 MAX_KM_POR_TURNO = 500
+LIMPEZA_ALERTA_OPERACIONAL_DIAS = 14
+LIMPEZA_ALERTA_ADMIN_DIAS = 21
 VEICULO_LOG_DELETE_AUDIT_ENDPOINT = "main.deletar_log_veiculo.snapshot"
 VEICULOS_ALLOWED_TYPES = (
     "dev",
@@ -413,6 +426,120 @@ def build_piloto_veiculos_context(user):
         "turnos_abertos": _build_turnos_abertos_veiculos(veiculos, user),
         "km_inicial_referencias": _build_km_inicial_referencias(veiculos),
         "agora_brasilia": _now_brazil(),
+    }
+
+
+def can_access_limpeza_alertas_operacionais(user):
+    return (
+        getattr(user, "tipo_usuario", None) in {"piloto", EQUIPE_OCEANO_USER_TYPE}
+        and bool(getattr(user, "trabalha_oceano_azul", False))
+    )
+
+
+def can_access_limpeza_alertas_admin(user):
+    tipo_usuario = normalize_role(getattr(user, "tipo_usuario", None))
+    return (
+        tipo_usuario in {"dev", "admin", "operario", "operador", "visualizar", "prefeitura_admin"}
+        and bool(getattr(user, "trabalha_oceano_azul", False))
+    )
+
+
+def count_limpeza_alertas_operacionais(user):
+    if not can_access_limpeza_alertas_operacionais(user):
+        return 0
+    return sum(1 for alerta in build_limpeza_alertas_operacionais_context(user)["alertas"] if not alerta["ciencia"])
+
+
+def count_limpeza_alertas_admin(user):
+    if not can_access_limpeza_alertas_admin(user):
+        return 0
+    return len(build_limpeza_alertas_admin_context(user)["alertas"])
+
+
+def build_limpeza_alertas_operacionais_context(user):
+    if not can_access_limpeza_alertas_operacionais(user):
+        raise PermissionError
+
+    veiculos = _veiculos_operacionais_do_usuario(user)
+    alertas = _build_alertas_limpeza_veiculos(
+        veiculos,
+        prazo_dias=LIMPEZA_ALERTA_OPERACIONAL_DIAS,
+        usuario=user,
+    )
+
+    return {
+        "alertas": alertas,
+        "total_pendentes": sum(1 for alerta in alertas if not alerta["ciencia"]),
+        "prazo_dias": LIMPEZA_ALERTA_OPERACIONAL_DIAS,
+    }
+
+
+def confirmar_alerta_limpeza_operacional(user, veiculo_id):
+    if not can_access_limpeza_alertas_operacionais(user):
+        raise PermissionError
+
+    alertas = _build_alertas_limpeza_veiculos(
+        _veiculos_operacionais_do_usuario(user),
+        prazo_dias=LIMPEZA_ALERTA_OPERACIONAL_DIAS,
+        usuario=user,
+    )
+    alerta = next((item for item in alertas if item["veiculo"].id == veiculo_id), None)
+    if not alerta:
+        raise VeiculoTurnoError("Este alerta nao esta mais ativo para o seu usuario.", "warning")
+
+    agora = _now_brazil()
+    ciencia = alerta["ciencia"]
+    if ciencia is None:
+        ciencia = LimpezaVeiculoAlertaCiencia(
+            veiculo_id=veiculo_id,
+            usuario_id=getattr(user, "id", None),
+            piloto_id=getattr(user, "piloto_id", None),
+            equipe_id=_actor_equipe_id_from_user(user),
+            referencia_limpeza_em=alerta["referencia_em"],
+            prazo_dias=LIMPEZA_ALERTA_OPERACIONAL_DIAS,
+            criado_em=agora,
+            atualizado_em=agora,
+        )
+        db.session.add(ciencia)
+
+    ciencia.reconhecido_em = agora
+    ciencia.atualizado_em = agora
+    db.session.commit()
+    return "Ciencia do alerta de limpeza registrada."
+
+
+def build_limpeza_alertas_admin_context(user):
+    if not can_access_limpeza_alertas_admin(user):
+        raise PermissionError
+
+    query = Veiculos.query.options(joinedload(Veiculos.equipe)).filter(
+        db.func.lower(db.func.coalesce(Veiculos.status, "")) == "ativo",
+        db.func.upper(db.func.coalesce(Veiculos.operacao, "")) != "AGRO",
+    )
+    query = apply_prefeitura_scope(query, user, Veiculos.prefeitura_id)
+    veiculos = query.order_by(Veiculos.operacao.asc(), Veiculos.placa.asc(), Veiculos.id.asc()).all()
+
+    alertas = _build_alertas_limpeza_veiculos(
+        veiculos,
+        prazo_dias=LIMPEZA_ALERTA_ADMIN_DIAS,
+    )
+    _attach_ciencias_operacionais(alertas)
+
+    total_atores = sum(len(alerta["atores"]) for alerta in alertas)
+    total_cientes = sum(
+        1
+        for alerta in alertas
+        for ator in alerta["atores"]
+        if ator.get("ciencia") is not None
+    )
+
+    return {
+        "alertas": alertas,
+        "total_alertas": len(alertas),
+        "total_atores": total_atores,
+        "total_cientes": total_cientes,
+        "prazo_dias": LIMPEZA_ALERTA_ADMIN_DIAS,
+        "prazo_operacional_dias": LIMPEZA_ALERTA_OPERACIONAL_DIAS,
     }
 
 
@@ -844,6 +971,292 @@ def _equipe_ids_do_piloto(user):
 
     rows = query.all()
     return [row.equipe_id for row in rows if row.equipe_id]
+
+
+def _veiculos_operacionais_do_usuario(user):
+    if getattr(user, "tipo_usuario", None) == EQUIPE_OCEANO_USER_TYPE:
+        equipe = _equipe_oceano_logada(user)
+        if not equipe:
+            return []
+        return (
+            Veiculos.query
+            .options(joinedload(Veiculos.equipe))
+            .filter(
+                db.func.lower(db.func.coalesce(Veiculos.status, "")) == "ativo",
+                _veiculo_equipe_operacional_filter(equipe, user),
+            )
+            .order_by(Veiculos.operacao.asc(), Veiculos.modelo.asc(), Veiculos.id.asc())
+            .all()
+        )
+
+    nome_piloto = _piloto_nome_logado(user)
+    if not nome_piloto or not getattr(user, "piloto_id", None):
+        return []
+
+    equipe_ids = _equipe_ids_do_piloto(user)
+    filtros = [_veiculo_responsavel_filter(nome_piloto, user)]
+    if equipe_ids:
+        filtros.append(Veiculos.equipe_id.in_(equipe_ids))
+
+    return (
+        Veiculos.query
+        .options(joinedload(Veiculos.equipe))
+        .filter(
+            db.func.lower(db.func.coalesce(Veiculos.status, "")) == "ativo",
+            db.or_(*filtros),
+        )
+        .order_by(Veiculos.operacao.asc(), Veiculos.modelo.asc(), Veiculos.id.asc())
+        .all()
+    )
+
+
+def _actor_equipe_id_from_user(user):
+    if getattr(user, "tipo_usuario", None) == EQUIPE_OCEANO_USER_TYPE:
+        return _parse_equipe_oceano_id(user)
+    return None
+
+
+def _build_alertas_limpeza_veiculos(veiculos, *, prazo_dias, usuario=None):
+    veiculos = list(veiculos or [])
+    if not veiculos:
+        return []
+
+    hoje = _now_brazil()
+    veiculo_ids = [veiculo.id for veiculo in veiculos]
+    referencias = _latest_limpeza_realizada_por_veiculo(veiculo_ids)
+    ciencias = {}
+
+    if usuario is not None:
+        referencias_validas = [
+            _referencia_limpeza_alerta(veiculo, referencias.get(veiculo.id))
+            for veiculo in veiculos
+        ]
+        referencias_validas = [ref for ref in referencias_validas if ref is not None]
+        if referencias_validas:
+            rows = (
+                LimpezaVeiculoAlertaCiencia.query
+                .filter(
+                    LimpezaVeiculoAlertaCiencia.usuario_id == getattr(usuario, "id", None),
+                    LimpezaVeiculoAlertaCiencia.veiculo_id.in_(veiculo_ids),
+                    LimpezaVeiculoAlertaCiencia.prazo_dias == prazo_dias,
+                    LimpezaVeiculoAlertaCiencia.referencia_limpeza_em.in_(referencias_validas),
+                )
+                .all()
+            )
+            ciencias = {
+                (row.veiculo_id, row.referencia_limpeza_em): row
+                for row in rows
+            }
+
+    alertas = []
+    for veiculo in veiculos:
+        ultima_limpeza = referencias.get(veiculo.id)
+        referencia_em = _referencia_limpeza_alerta(veiculo, ultima_limpeza)
+        if referencia_em is None:
+            continue
+
+        dias_desde = max((hoje.date() - referencia_em.date()).days, 0)
+        if dias_desde < prazo_dias:
+            continue
+
+        alertas.append(
+            {
+                "veiculo": veiculo,
+                "ultima_limpeza_em": ultima_limpeza,
+                "referencia_em": referencia_em,
+                "referencia_tipo": "limpeza" if ultima_limpeza is not None else "cadastro",
+                "dias_desde": dias_desde,
+                "vencido_em": referencia_em + timedelta(days=prazo_dias),
+                "prazo_dias": prazo_dias,
+                "ciencia": ciencias.get((veiculo.id, referencia_em)),
+                "atores": [],
+            }
+        )
+
+    return sorted(alertas, key=lambda item: (-item["dias_desde"], item["veiculo"].placa or ""))
+
+
+def _latest_limpeza_realizada_por_veiculo(veiculo_ids):
+    if not veiculo_ids:
+        return {}
+
+    rows = (
+        db.session.query(
+            LimpezaVeiculo.veiculo_id,
+            db.func.max(LimpezaVeiculo.data_hora).label("ultima_limpeza_em"),
+        )
+        .filter(
+            LimpezaVeiculo.veiculo_id.in_(veiculo_ids),
+            LimpezaVeiculo.limpeza_realizada.is_(True),
+        )
+        .group_by(LimpezaVeiculo.veiculo_id)
+        .all()
+    )
+    return {row.veiculo_id: row.ultima_limpeza_em for row in rows}
+
+
+def _referencia_limpeza_alerta(veiculo, ultima_limpeza):
+    return ultima_limpeza or getattr(veiculo, "criado_em", None)
+
+
+def _attach_ciencias_operacionais(alertas):
+    if not alertas:
+        return
+
+    veiculo_ids = [alerta["veiculo"].id for alerta in alertas]
+    atores_por_veiculo = _build_limpeza_alerta_atores_por_veiculo(veiculo_ids)
+    usuario_ids = {
+        ator["usuario"].id
+        for atores in atores_por_veiculo.values()
+        for ator in atores
+        if ator.get("usuario") is not None
+    }
+    refs = [alerta["referencia_em"] for alerta in alertas if alerta.get("referencia_em") is not None]
+
+    ciencias = {}
+    if usuario_ids and refs:
+        rows = (
+            LimpezaVeiculoAlertaCiencia.query
+            .options(joinedload(LimpezaVeiculoAlertaCiencia.usuario))
+            .filter(
+                LimpezaVeiculoAlertaCiencia.veiculo_id.in_(veiculo_ids),
+                LimpezaVeiculoAlertaCiencia.usuario_id.in_(usuario_ids),
+                LimpezaVeiculoAlertaCiencia.prazo_dias == LIMPEZA_ALERTA_OPERACIONAL_DIAS,
+                LimpezaVeiculoAlertaCiencia.referencia_limpeza_em.in_(refs),
+            )
+            .all()
+        )
+        ciencias = {
+            (row.veiculo_id, row.usuario_id, row.referencia_limpeza_em): row
+            for row in rows
+        }
+
+    for alerta in alertas:
+        veiculo = alerta["veiculo"]
+        atores = []
+        for ator in atores_por_veiculo.get(veiculo.id, []):
+            usuario = ator.get("usuario")
+            ciencia = None
+            if usuario is not None:
+                ciencia = ciencias.get((veiculo.id, usuario.id, alerta["referencia_em"]))
+            item = dict(ator)
+            item["ciencia"] = ciencia
+            atores.append(item)
+        alerta["atores"] = atores
+
+
+def _build_limpeza_alerta_atores_por_veiculo(veiculo_ids):
+    veiculos = (
+        Veiculos.query
+        .options(joinedload(Veiculos.equipe))
+        .filter(Veiculos.id.in_(veiculo_ids))
+        .all()
+    )
+    por_veiculo = {veiculo_id: [] for veiculo_id in veiculo_ids}
+    piloto_ids_por_veiculo = defaultdict(set)
+    equipe_ids = {veiculo.equipe_id for veiculo in veiculos if veiculo.equipe_id}
+
+    if equipe_ids:
+        membros = (
+            EquipePiloto.query
+            .filter(EquipePiloto.equipe_id.in_(equipe_ids))
+            .all()
+        )
+        for membro in membros:
+            for veiculo in veiculos:
+                if veiculo.equipe_id == membro.equipe_id and membro.piloto_id:
+                    piloto_ids_por_veiculo[veiculo.id].add(membro.piloto_id)
+
+    responsaveis = {
+        (veiculo.responsavel or "").strip().lower()
+        for veiculo in veiculos
+        if (veiculo.responsavel or "").strip()
+    }
+    pilotos_por_nome = {}
+    if responsaveis:
+        pilotos = Pilotos.query.filter(db.func.lower(Pilotos.nome_piloto).in_(responsaveis)).all()
+        pilotos_por_nome = {
+            (piloto.nome_piloto or "").strip().lower(): piloto
+            for piloto in pilotos
+        }
+
+    for veiculo in veiculos:
+        piloto_responsavel = pilotos_por_nome.get((veiculo.responsavel or "").strip().lower())
+        if piloto_responsavel:
+            piloto_ids_por_veiculo[veiculo.id].add(piloto_responsavel.id)
+
+    all_piloto_ids = {
+        piloto_id
+        for ids in piloto_ids_por_veiculo.values()
+        for piloto_id in ids
+        if piloto_id
+    }
+    usuarios_por_piloto = defaultdict(list)
+    if all_piloto_ids:
+        usuarios_pilotos = (
+            Usuario.query
+            .filter(
+                Usuario.piloto_id.in_(all_piloto_ids),
+                Usuario.trabalha_oceano_azul.is_(True),
+            )
+            .all()
+        )
+        for usuario in usuarios_pilotos:
+            usuarios_por_piloto[usuario.piloto_id].append(usuario)
+
+    usuarios_equipe = []
+    if equipe_ids:
+        usuarios_equipe = (
+            Usuario.query
+            .filter(
+                Usuario.tipo_usuario == EQUIPE_OCEANO_USER_TYPE,
+                Usuario.trabalha_oceano_azul.is_(True),
+            )
+            .all()
+        )
+    usuarios_equipe_por_id = defaultdict(list)
+    for usuario in usuarios_equipe:
+        equipe_id = None
+        try:
+            equipe_id = int((usuario.codigo_setor or "").strip())
+        except (TypeError, ValueError):
+            equipe_id = None
+        if equipe_id in equipe_ids:
+            usuarios_equipe_por_id[equipe_id].append(usuario)
+
+    for veiculo in veiculos:
+        seen = set()
+        atores = []
+
+        if veiculo.equipe_id:
+            for usuario in usuarios_equipe_por_id.get(veiculo.equipe_id, []):
+                if usuario.id in seen:
+                    continue
+                seen.add(usuario.id)
+                atores.append(
+                    {
+                        "usuario": usuario,
+                        "tipo": "Equipe",
+                        "nome": getattr(veiculo.equipe, "nome_equipe", None) or usuario.nome_uvis or usuario.login,
+                    }
+                )
+
+        for piloto_id in sorted(piloto_ids_por_veiculo.get(veiculo.id, set())):
+            for usuario in usuarios_por_piloto.get(piloto_id, []):
+                if usuario.id in seen:
+                    continue
+                seen.add(usuario.id)
+                atores.append(
+                    {
+                        "usuario": usuario,
+                        "tipo": "Piloto",
+                        "nome": usuario.nome_uvis or usuario.login,
+                    }
+                )
+
+        por_veiculo[veiculo.id] = atores
+
+    return por_veiculo
 
 
 def _parse_decimal_form(raw_value):

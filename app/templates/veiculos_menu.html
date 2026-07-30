@@ -144,6 +144,34 @@
       </a>
     </div>
     {% endif %}
+
+    {% if current_user.trabalha_oceano_azul %}
+    <div class="col-md-6 col-xl-4">
+      <a href="{{ url_for('main.veiculos_alertas_limpeza') }}" class="text-decoration-none">
+        <div class="card veiculos-menu-card border-start border-danger border-4">
+          <div class="d-flex justify-content-between align-items-center gap-3">
+            <div>
+              <h6 class="mb-2 text-muted fw-bold">Limpeza</h6>
+              <h3 class="mb-0 text-dark fw-bold">Alertas</h3>
+            </div>
+            <div class="veiculos-menu-icon text-danger">
+              <i class="bi bi-droplet-half"></i>
+            </div>
+          </div>
+          <div class="mt-3 small text-muted">
+            Acompanhe veiculos com mais de 21 dias sem limpeza e a ciencia registrada por piloto/equipe.
+          </div>
+          <div class="mt-3 d-flex align-items-center text-danger small fw-bold">
+            <span>Abrir alertas de limpeza</span>
+            {% if limpeza_alertas_admin_count and limpeza_alertas_admin_count > 0 %}
+              <span class="badge bg-danger ms-2 rounded-pill">{{ limpeza_alertas_admin_count }}</span>
+            {% endif %}
+            <i class="bi bi-arrow-right ms-2"></i>
+          </div>
+        </div>
+      </a>
+    </div>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

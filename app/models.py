@@ -2308,6 +2308,37 @@ class LimpezaVeiculo(db.Model):
 # -------------------------------------------------------------
 # CHECKLIST SEMANAL DE VEÍCULO
 # -------------------------------------------------------------
+class LimpezaVeiculoAlertaCiencia(db.Model):
+    __tablename__ = "limpezas_veiculo_alertas_ciencia"
+
+    id = db.Column(db.Integer, primary_key=True)
+    veiculo_id = db.Column(db.Integer, db.ForeignKey("veiculos.id"), nullable=False, index=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=False, index=True)
+    piloto_id = db.Column(db.Integer, db.ForeignKey("pilotos.id"), nullable=True, index=True)
+    equipe_id = db.Column(db.Integer, db.ForeignKey("equipes.id"), nullable=True, index=True)
+    referencia_limpeza_em = db.Column(db.DateTime, nullable=False, index=True)
+    prazo_dias = db.Column(db.Integer, nullable=False, default=14, index=True)
+    reconhecido_em = db.Column(db.DateTime, nullable=True, index=True)
+    criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+    atualizado_em = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
+
+    veiculo = db.relationship("Veiculos", backref=db.backref("limpezas_alertas_ciencia", lazy="select"))
+    usuario = db.relationship("Usuario", backref=db.backref("limpezas_alertas_ciencia", lazy="select"))
+    piloto = db.relationship("Pilotos", backref=db.backref("limpezas_alertas_ciencia", lazy="select"))
+    equipe = db.relationship("Equipe", backref=db.backref("limpezas_alertas_ciencia", lazy="select"))
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "veiculo_id",
+            "usuario_id",
+            "referencia_limpeza_em",
+            "prazo_dias",
+            name="uq_limpeza_alerta_ciencia_ref_usuario",
+        ),
+        db.Index("ix_limpeza_alerta_ciencia_veic_ref", "veiculo_id", "referencia_limpeza_em"),
+    )
+
+
 class ChecklistSemanalVeiculo(db.Model):
     __tablename__ = "checklists_semanais_veiculo"
 

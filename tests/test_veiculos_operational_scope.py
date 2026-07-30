@@ -9,7 +9,17 @@ from flask import Flask, request
 from werkzeug.datastructures import FileStorage
 
 from app.extensions import db
-from app.models import Abastecimento, AuditoriaUsuario, Equipe, LogVeiculo, Prefeitura, Veiculos
+from app.models import (
+    Abastecimento,
+    AuditoriaUsuario,
+    Equipe,
+    LimpezaVeiculo,
+    LimpezaVeiculoAlertaCiencia,
+    LogVeiculo,
+    Prefeitura,
+    Usuario,
+    Veiculos,
+)
 from app.modules.veiculos import service as veiculos_service
 from app.modules.veiculos.service import (
     build_veiculo_media_skybox_path,
@@ -19,6 +29,9 @@ from app.modules.veiculos.service import (
     encerrar_turno_piloto,
     iniciar_turno_piloto,
     registrar_abastecimento_turno_piloto,
+    build_limpeza_alertas_admin_context,
+    build_limpeza_alertas_operacionais_context,
+    confirmar_alerta_limpeza_operacional,
     update_veiculo,
     update_veiculo_log_km,
 )
@@ -126,6 +139,124 @@ class VeiculosOperationalScopeTests(unittest.TestCase):
         self.assertEqual(referencia["km"], 1234)
         self.assertEqual(referencia["origem"], "ultimo_fechamento")
         self.assertEqual(referencia["log_id"], log.id)
+
+    def test_cleaning_alert_reaches_operational_inbox_after_14_days(self):
+        veiculo = self._novo_veiculo(criado_em=datetime.now() - timedelta(days=30))
+        log = LogVeiculo(
+            veiculo_id=veiculo.id,
+            equipe_id=self.equipe.id,
+            km_inicial=1000,
+            km_final=1010,
+            check_diario=True,
+        )
+        db.session.add(log)
+        db.session.flush()
+        db.session.add(
+            LimpezaVeiculo(
+                log_veiculo_id=log.id,
+                veiculo_id=veiculo.id,
+                equipe_id=self.equipe.id,
+                data_hora=datetime.now() - timedelta(days=15),
+                limpeza_realizada=True,
+                tipo_limpeza="completa",
+                valor_total=80,
+            )
+        )
+        usuario = Usuario(
+            nome_uvis="Equipe PLOA 23",
+            login="equipe-alerta",
+            senha_hash="x",
+            tipo_usuario="equipe_oceano",
+            codigo_setor=str(self.equipe.id),
+            prefeitura_id=1,
+            trabalha_oceano_azul=True,
+        )
+        db.session.add(usuario)
+        db.session.commit()
+
+        context = build_limpeza_alertas_operacionais_context(usuario)
+
+        self.assertEqual(len(context["alertas"]), 1)
+        self.assertEqual(context["alertas"][0]["veiculo"].id, veiculo.id)
+        self.assertEqual(context["total_pendentes"], 1)
+
+    def test_operational_user_can_confirm_cleaning_alert(self):
+        veiculo = self._novo_veiculo(criado_em=datetime.now() - timedelta(days=16))
+        usuario = Usuario(
+            nome_uvis="Equipe PLOA 23",
+            login="equipe-confirma",
+            senha_hash="x",
+            tipo_usuario="equipe_oceano",
+            codigo_setor=str(self.equipe.id),
+            prefeitura_id=1,
+            trabalha_oceano_azul=True,
+        )
+        db.session.add(usuario)
+        db.session.commit()
+
+        message = confirmar_alerta_limpeza_operacional(usuario, veiculo.id)
+
+        ciencia = LimpezaVeiculoAlertaCiencia.query.one()
+        self.assertEqual(message, "Ciencia do alerta de limpeza registrada.")
+        self.assertEqual(ciencia.usuario_id, usuario.id)
+        self.assertEqual(ciencia.veiculo_id, veiculo.id)
+        self.assertEqual(ciencia.prazo_dias, 14)
+        self.assertIsNotNone(ciencia.reconhecido_em)
+
+    def test_admin_cleaning_alert_after_21_days_shows_operational_ack(self):
+        veiculo = self._novo_veiculo(criado_em=datetime.now() - timedelta(days=30))
+        usuario_equipe = Usuario(
+            nome_uvis="Equipe PLOA 23",
+            login="equipe-admin-ciencia",
+            senha_hash="x",
+            tipo_usuario="equipe_oceano",
+            codigo_setor=str(self.equipe.id),
+            prefeitura_id=1,
+            trabalha_oceano_azul=True,
+        )
+        usuario_admin = Usuario(
+            nome_uvis="Admin OA",
+            login="admin-oa",
+            senha_hash="x",
+            tipo_usuario="admin",
+            prefeitura_id=1,
+            trabalha_oceano_azul=True,
+        )
+        db.session.add_all([usuario_equipe, usuario_admin])
+        db.session.commit()
+        confirmar_alerta_limpeza_operacional(usuario_equipe, veiculo.id)
+
+        context = build_limpeza_alertas_admin_context(usuario_admin)
+
+        self.assertEqual(context["total_alertas"], 1)
+        self.assertEqual(context["alertas"][0]["veiculo"].id, veiculo.id)
+        self.assertEqual(context["total_atores"], 1)
+        self.assertEqual(context["total_cientes"], 1)
+        self.assertEqual(context["alertas"][0]["atores"][0]["usuario"].id, usuario_equipe.id)
+        self.assertIsNotNone(context["alertas"][0]["atores"][0]["ciencia"])
+
+    def test_admin_cleaning_alert_excludes_agro_vehicles(self):
+        self._novo_veiculo(
+            placa="AGR1A21",
+            renomacao="AGR1A21",
+            operacao="AGRO",
+            criado_em=datetime.now() - timedelta(days=45),
+            prefeitura_id=1,
+        )
+        usuario_admin = Usuario(
+            nome_uvis="Admin OA",
+            login="admin-oa-agro-filter",
+            senha_hash="x",
+            tipo_usuario="admin",
+            prefeitura_id=1,
+            trabalha_oceano_azul=True,
+        )
+        db.session.add(usuario_admin)
+        db.session.commit()
+
+        context = build_limpeza_alertas_admin_context(usuario_admin)
+
+        self.assertEqual(context["total_alertas"], 0)
 
     def test_start_shift_rejects_initial_km_different_from_last_closed_shift(self):
         veiculo = self._novo_veiculo(km_atual=1300)
