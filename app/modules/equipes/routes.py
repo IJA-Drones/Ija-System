@@ -41,6 +41,7 @@ def register_routes(bp):
             nome_equipe = (request.form.get("nome_equipe") or "").strip()
             descricao = (request.form.get("descricao") or "").strip()
             regiao = (request.form.get("regiao") or "").strip().upper()
+            trabalha_oceano_azul = request.form.get("trabalha_oceano_azul") == "1"
             piloto_id = (request.form.get("piloto_id") or "").strip()
             auxiliar_id = (request.form.get("auxiliar_id") or "").strip()
 
@@ -48,6 +49,7 @@ def register_routes(bp):
                 "nome_equipe": nome_equipe,
                 "descricao": descricao,
                 "regiao": regiao,
+                "trabalha_oceano_azul": "1" if trabalha_oceano_azul else "",
                 "piloto_id": piloto_id,
                 "auxiliar_id": auxiliar_id,
             }
@@ -128,6 +130,7 @@ def register_routes(bp):
                 descricao=descricao or None,
                 regiao=regiao or None,
                 ativa=True,
+                trabalha_oceano_azul=trabalha_oceano_azul,
                 prefeitura_id=getattr(current_user, "prefeitura_id", None),
             )
             db.session.add(equipe)
@@ -291,9 +294,11 @@ def register_routes(bp):
             nome_equipe = (request.form.get("nome_equipe") or "").strip()
             regiao = (request.form.get("regiao") or "").strip().upper()
             ativa_raw = (request.form.get("ativa") or "").strip()
+            trabalha_oceano_azul = request.form.get("trabalha_oceano_azul") == "1"
             descricao = (request.form.get("descricao") or "").strip()
             piloto_id_raw = (request.form.get("piloto_id") or "").strip()
             auxiliar_id_raw = (request.form.get("auxiliar_id") or "").strip()
+            form["trabalha_oceano_azul"] = "1" if trabalha_oceano_azul else ""
 
             if not nome_equipe:
                 errors["nome_equipe"] = "Informe o nome da equipe."
@@ -358,7 +363,11 @@ def register_routes(bp):
                 equipe.nome_equipe = nome_equipe
                 equipe.regiao = regiao or None
                 equipe.ativa = ativa
+                equipe.trabalha_oceano_azul = trabalha_oceano_azul
                 equipe.descricao = descricao or None
+                account = get_equipe_account(equipe.id)
+                if account:
+                    account.trabalha_oceano_azul = trabalha_oceano_azul
 
                 membro_piloto = next((membro for membro in equipe.membros if membro.papel == "piloto"), None)
                 if piloto_id:

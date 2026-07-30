@@ -428,6 +428,11 @@
 
                   <td>
                     <div class="fw-bold">{{ e.nome_equipe }}</div>
+                    {% if e.trabalha_oceano_azul %}
+                      <div class="mt-1">
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Oceano Azul</span>
+                      </div>
+                    {% endif %}
                     {% if e.descricao %}
                       <div class="text-muted small text-truncate" style="max-width: 520px;">
                         {{ e.descricao }}

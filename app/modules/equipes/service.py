@@ -132,6 +132,7 @@ def upsert_equipe_account(equipe, login: str, senha: str):
     account.codigo_setor = str(equipe.id)
     account.login = login
     account.tipo_usuario = EQUIPE_OCEANO_USER_TYPE
+    account.trabalha_oceano_azul = bool(getattr(equipe, "trabalha_oceano_azul", True))
     account.piloto_id = None
     if senha:
         account.set_senha(senha)
@@ -321,7 +322,7 @@ def build_equipes_export(rows):
     sheet["A2"].font = Font(color="6B7280")
 
     start_row = 4
-    headers = ["ID", "Equipe", "Regiao", "Ativa", "Piloto Titular", "Auxiliar", "Drones", "Criada em", "Descricao"]
+    headers = ["ID", "Equipe", "Regiao", "Ativa", "Oceano Azul", "Piloto Titular", "Auxiliar", "Drones", "Criada em", "Descricao"]
 
     for col_idx, header in enumerate(headers, start=1):
         cell = sheet.cell(row=start_row, column=col_idx, value=header)
@@ -336,6 +337,7 @@ def build_equipes_export(rows):
             equipe.nome_equipe,
             equipe.regiao or "",
             "SIM" if equipe.ativa else "NAO",
+            "SIM" if equipe.trabalha_oceano_azul else "NAO",
             equipe.piloto_titular.nome_piloto if equipe.piloto_titular else "",
             equipe.piloto_auxiliar.nome_piloto if equipe.piloto_auxiliar else "",
             _format_drones(equipe),
@@ -346,7 +348,7 @@ def build_equipes_export(rows):
         for col_idx, value in enumerate(values, start=1):
             cell = sheet.cell(row=row_idx, column=col_idx, value=value)
             cell.border = border
-            cell.alignment = center_align if col_idx in (1, 4) else text_align
+            cell.alignment = center_align if col_idx in (1, 4, 5) else text_align
 
     last_row = start_row + len(rows)
     last_col = len(headers)
@@ -354,7 +356,7 @@ def build_equipes_export(rows):
     sheet.auto_filter.ref = f"A{start_row}:{get_column_letter(last_col)}{max(last_row, start_row)}"
     sheet.row_dimensions[start_row].height = 22
 
-    max_widths = {1: 8, 2: 28, 3: 14, 4: 10, 5: 26, 6: 26, 7: 60, 8: 18, 9: 50}
+    max_widths = {1: 8, 2: 28, 3: 14, 4: 10, 5: 14, 6: 26, 7: 26, 8: 60, 9: 18, 10: 50}
     for col_idx in range(1, last_col + 1):
         max_len = len(headers[col_idx - 1])
         for row_idx in range(start_row + 1, last_row + 1):

@@ -1923,6 +1923,7 @@ class Equipe(db.Model):
 
     regiao = db.Column(db.String(20), index=True)
     ativa = db.Column(db.Boolean, default=True, nullable=False, index=True)
+    trabalha_oceano_azul = db.Column(db.Boolean, default=True, nullable=False, index=True)
 
     criada_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
 
