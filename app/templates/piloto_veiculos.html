@@ -485,7 +485,7 @@
                   </div>
                   <div class="col-md-3">
                     <label class="form-label small fw-bold">KM no Abastecimento</label>
-                    <input type="number" step="any" inputmode="decimal" name="km_abastecimento" class="form-control" min="0" max="{{ (turno_aberto.km_inicial or 0) + 500 }}" value="{{ turno_aberto.ultimo_km_registrado or v.km_atual or '' }}" required>
+                    <input type="text" inputmode="numeric" name="km_abastecimento" class="form-control js-decimal-centavos" value="{{ '%.2f'|format(turno_aberto.ultimo_km_registrado or v.km_atual or 0)|replace('.', ',') }}" placeholder="0,00" autocomplete="off" required>
                     <div class="hint-line mt-1">Usado para auditoria e relatórios do abastecimento.</div>
                   </div>
                   <div class="col-md-3">
@@ -610,7 +610,7 @@
 
                 <div class="mb-3">
                   <label class="form-label small fw-bold">Kilometragem Final (Painel)</label>
-                  <input type="number" step="any" inputmode="decimal" name="km_final" class="form-control" min="{{ km_fechamento_min or 0 }}" max="{{ ((turno_aberto.km_inicial if turno_aberto else v.km_atual) or 0) + 500 }}" value="" placeholder="KM mostrado no fim do dia" required>
+                  <input type="text" inputmode="numeric" name="km_final" class="form-control js-decimal-centavos" value="" placeholder="0,00" autocomplete="off" required>
                   <div class="hint-line mt-1">Não pode ser menor que o KM inicial nem que o KM registrado no abastecimento.</div>
                 </div>
                 <div class="mb-3">
