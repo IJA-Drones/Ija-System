@@ -1045,18 +1045,25 @@ def _salvar_upload_veiculo(arquivo, root_path, subpasta, prefixo, placa, *, copi
     if not arquivo or not arquivo.filename:
         return None
 
-    pasta_base = os.path.join(root_path, "static", "uploads", "veiculos")
-    pasta_destino = os.path.join(pasta_base, subpasta)
-    os.makedirs(pasta_destino, exist_ok=True)
-
     ext = os.path.splitext(secure_filename(arquivo.filename))[1] or ".jpg"
     agora = _now_brazil()
     stamp = f"{agora:%Y-%m-%d_%H-%M-%S}-{agora.microsecond // 1000:03d}"
     nome = secure_filename(f"{prefixo}_{placa}_{stamp}{ext}")
-    arquivo.save(os.path.join(pasta_destino, nome))
 
     if copiar_skybox and skybox_enabled():
-        _upload_veiculo_media_para_skybox(arquivo, placa, subpasta, nome, tipo="imagem", dia=f"{agora:%Y-%m-%d}")
+        return _upload_veiculo_media_para_skybox(
+            arquivo,
+            placa,
+            subpasta,
+            nome,
+            tipo="imagem",
+            dia=f"{agora:%Y-%m-%d}",
+        )
+
+    pasta_base = os.path.join(root_path, "static", "uploads", "veiculos")
+    pasta_destino = os.path.join(pasta_base, subpasta)
+    os.makedirs(pasta_destino, exist_ok=True)
+    arquivo.save(os.path.join(pasta_destino, nome))
 
     return f"uploads/veiculos/{subpasta}/{nome}"
 

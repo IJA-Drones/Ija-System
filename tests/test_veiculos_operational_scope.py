@@ -424,7 +424,7 @@ class VeiculosOperationalScopeTests(unittest.TestCase):
             "registros abastecimento/ABC1D23/2026-07-08/foto do painel/painel_inicial_ABC1D23_2026-07-08_09-23-31-123.jpg",
         )
 
-    def test_vehicle_photo_upload_is_copied_to_skybox_when_enabled(self):
+    def test_vehicle_photo_upload_uses_skybox_only_when_enabled(self):
         self.app.config.update(
             SKYBOX_WEBDAV_URL="https://skybox.example/remote.php/dav/files/user",
             SKYBOX_USERNAME="user",
@@ -448,7 +448,7 @@ class VeiculosOperationalScopeTests(unittest.TestCase):
                     content_type="image/jpeg",
                 )
 
-                rel_path = veiculos_service._salvar_upload_veiculo(
+                media_path = veiculos_service._salvar_upload_veiculo(
                     storage,
                     tmp_dir,
                     "paineis",
@@ -458,10 +458,10 @@ class VeiculosOperationalScopeTests(unittest.TestCase):
                 )
 
                 self.assertRegex(
-                    rel_path,
-                    r"^uploads/veiculos/paineis/painel_inicial_ABC1D23_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}-\d{3}\.jpg$",
+                    media_path,
+                    r"^skybox://registros abastecimento/ABC1D23/\d{4}-\d{2}-\d{2}/foto do painel/painel_inicial_ABC1D23_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}-\d{3}\.jpg$",
                 )
-                self.assertTrue(os.path.isfile(os.path.join(tmp_dir, "static", rel_path.replace("/", os.sep))))
+                self.assertFalse(os.path.exists(os.path.join(tmp_dir, "static", "uploads", "veiculos", "paineis")))
         finally:
             veiculos_service.upload_file_to_skybox = original_upload
 
