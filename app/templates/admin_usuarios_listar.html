@@ -320,6 +320,11 @@
                   {% if u.id == current_user.id %}
                     <span class="badge bg-info text-dark ms-2">Você</span>
                   {% endif %}
+                  {% if u.trabalha_oceano_azul %}
+                    <div class="mt-1">
+                      <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Oceano Azul</span>
+                    </div>
+                  {% endif %}
                 </td>
 
                 <td>

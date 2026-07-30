@@ -148,6 +148,24 @@
           </div>
         </div>
 
+        <div class="row g-3 mb-4">
+          <div class="col-12">
+            <label class="form-check border rounded-3 p-3 h-100 d-flex align-items-start gap-2">
+              <input
+                class="form-check-input mt-1"
+                type="checkbox"
+                name="trabalha_oceano_azul"
+                value="1"
+                {% if form.get('trabalha_oceano_azul') == '1' %}checked{% endif %}
+              />
+              <span>
+                <strong class="d-block">Trabalha na Oceano Azul</strong>
+                <small class="text-muted">Marca este usuario como membro da Oceano Azul para regras futuras do sistema.</small>
+              </span>
+            </label>
+          </div>
+        </div>
+
         <hr class="text-muted opacity-25 my-4" />
 
         <div class="d-flex align-items-center mb-3">

@@ -57,6 +57,7 @@ class Usuario(UserMixin, db.Model):
     # + incluir "equipe_uvis" e "regional"
     # tipos esperados: "dev", "admin", "uvis", "operario", "visualizador", "regional", "piloto", "equipe_uvis", "equipe_oceano"
     tipo_usuario = db.Column(db.String(20), default="uvis", index=True)
+    trabalha_oceano_azul = db.Column(db.Boolean, nullable=False, default=False, index=True)
     suporte_operacional = db.Column(db.Boolean, nullable=False, default=False, index=True)
     suporte_tecnico = db.Column(db.Boolean, nullable=False, default=False, index=True)
 

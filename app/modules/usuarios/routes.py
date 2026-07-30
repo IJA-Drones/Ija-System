@@ -302,6 +302,7 @@ def register_routes(bp):
             )
             prefeitura_id = request.form.get("prefeitura_id", type=int)
             codigo_setor = (request.form.get("codigo_setor") or "").strip() or None
+            trabalha_oceano_azul = request.form.get("trabalha_oceano_azul") == "1"
             suporte_operacional = request.form.get("suporte_operacional") == "1"
             suporte_tecnico = request.form.get("suporte_tecnico") == "1"
             senha = (request.form.get("senha") or "").strip()
@@ -314,6 +315,7 @@ def register_routes(bp):
                 "regiao": regiao or "",
                 "prefeitura_id": prefeitura_id or "",
                 "codigo_setor": codigo_setor or "",
+                "trabalha_oceano_azul": "1" if trabalha_oceano_azul else "",
                 "suporte_operacional": "1" if suporte_operacional else "",
                 "suporte_tecnico": "1" if suporte_tecnico else "",
                 "senha": senha,
@@ -357,6 +359,7 @@ def register_routes(bp):
                 codigo_setor=codigo_setor,
                 login=login,
                 tipo_usuario=tipo_usuario,
+                trabalha_oceano_azul=trabalha_oceano_azul,
                 suporte_operacional=suporte_operacional,
                 suporte_tecnico=suporte_tecnico,
             )
@@ -427,6 +430,7 @@ def register_routes(bp):
             login = (request.form.get("login") or "").strip()
             prefeitura_id = request.form.get("prefeitura_id", type=int)
             codigo_setor = (request.form.get("codigo_setor") or "").strip() or None
+            trabalha_oceano_azul = request.form.get("trabalha_oceano_azul") == "1"
             suporte_operacional = request.form.get("suporte_operacional") == "1"
             suporte_tecnico = request.form.get("suporte_tecnico") == "1"
 
@@ -452,6 +456,7 @@ def register_routes(bp):
                 "regiao": regiao or "",
                 "prefeitura_id": prefeitura_id or "",
                 "codigo_setor": codigo_setor or "",
+                "trabalha_oceano_azul": "1" if trabalha_oceano_azul else "",
                 "suporte_operacional": "1" if suporte_operacional else "",
                 "suporte_tecnico": "1" if suporte_tecnico else "",
                 "tipo_usuario": tipo_usuario_form,
@@ -483,6 +488,7 @@ def register_routes(bp):
             usuario.prefeitura_id = prefeitura_id
             usuario.codigo_setor = codigo_setor
             usuario.tipo_usuario = tipo_usuario
+            usuario.trabalha_oceano_azul = trabalha_oceano_azul
             usuario.suporte_operacional = suporte_operacional
             usuario.suporte_tecnico = suporte_tecnico
 
@@ -516,6 +522,7 @@ def register_routes(bp):
             "regiao": usuario.regiao or "",
             "prefeitura_id": usuario.prefeitura_id or "",
             "codigo_setor": usuario.codigo_setor or "",
+            "trabalha_oceano_azul": "1" if usuario.trabalha_oceano_azul else "",
             "suporte_operacional": "1" if usuario.suporte_operacional else "",
             "suporte_tecnico": "1" if usuario.suporte_tecnico else "",
             "tipo_usuario": get_admin_user_type_form_value(usuario) or "operario",
