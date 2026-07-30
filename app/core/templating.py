@@ -7,6 +7,7 @@ from werkzeug.routing import BuildError
 from app import db
 from app.models import Notificacao
 from app.modules.agenda_notificacoes.service import can_view_all_notifications
+from app.modules.veiculos.service import count_limpeza_alertas_admin, count_limpeza_alertas_operacionais
 from app.modules.feedback.service import (
     FEEDBACK_NOTIFICATIONS_ENABLED,
     build_support_notification_snapshot,
@@ -45,6 +46,8 @@ def register_template_helpers(bp):
 
                 return {
                     "notif_count": query.scalar() or 0,
+                    "limpeza_alertas_operacionais_count": count_limpeza_alertas_operacionais(current_user),
+                    "limpeza_alertas_admin_count": count_limpeza_alertas_admin(current_user),
                     "support_nav_count": support_snapshot["count"],
                     "support_nav_latest_id": support_snapshot["latest_id"],
                     "feedback_notifications_enabled": FEEDBACK_NOTIFICATIONS_ENABLED,
@@ -60,6 +63,8 @@ def register_template_helpers(bp):
                 db.session.rollback()
                 return {
                     "notif_count": 0,
+                    "limpeza_alertas_operacionais_count": 0,
+                    "limpeza_alertas_admin_count": 0,
                     "support_nav_count": 0,
                     "support_nav_latest_id": 0,
                     "feedback_notifications_enabled": FEEDBACK_NOTIFICATIONS_ENABLED,
@@ -74,6 +79,8 @@ def register_template_helpers(bp):
 
         return {
             "notif_count": 0,
+            "limpeza_alertas_operacionais_count": 0,
+            "limpeza_alertas_admin_count": 0,
             "support_nav_count": 0,
             "support_nav_latest_id": 0,
             "feedback_notifications_enabled": FEEDBACK_NOTIFICATIONS_ENABLED,

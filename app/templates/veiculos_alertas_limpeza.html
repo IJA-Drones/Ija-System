@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}" />
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}" />
+<style>
+  .limpeza-alertas-page { max-width: 1280px; }
+  .table-alertas th,
+  .table-alertas td { vertical-align: middle; }
+  .actor-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .actor-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 10px;
+    padding: 8px 10px;
+    background: #f8fafc;
+  }
+  .actor-name { min-width: 0; }
+  .actor-name strong,
+  .actor-name span {
+    display: block;
+    overflow-wrap: anywhere;
+  }
+  @media (max-width: 768px) {
+    .table-responsive { overflow-x: visible !important; }
+    .table-alertas,
+    .table-alertas tbody,
+    .table-alertas tr,
+    .table-alertas td {
+      display: block;
+      width: 100%;
+    }
+    .table-alertas thead { display: none; }
+    .table-alertas tbody { display: flex; flex-direction: column; gap: 14px; }
+    .table-alertas tbody tr {
+      border: 1px solid rgba(0,0,0,.1);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 10px 22px rgba(0,0,0,.06);
+      background: #fff;
+    }
+    .table-alertas tbody td {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 10px;
+      border: 0 !important;
+      border-bottom: 1px solid rgba(0,0,0,.06) !important;
+      text-align: right;
+    }
+    .table-alertas tbody td::before {
+      font-weight: 800;
+      color: rgba(0,0,0,.55);
+      text-align: left;
+    }
+    .table-alertas tbody td:nth-child(1)::before { content: "Veiculo"; }
+    .table-alertas tbody td:nth-child(2)::before { content: "Ultima limpeza"; }
+    .table-alertas tbody td:nth-child(3)::before { content: "Atraso"; }
+    .table-alertas tbody td:nth-child(4)::before { content: "Ciencia"; }
+    .actor-row {
+      flex-direction: column;
+      align-items: stretch;
+      text-align: left;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 limpeza-alertas-page">
+  <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap mb-4">
+    <div>
+      <h2 class="text-dark mb-1">
+        <i class="bi bi-droplet-half me-2 text-primary"></i>Alertas de Limpeza
+      </h2>
+      <div class="text-muted small">
+        Veiculos sem nova limpeza registrada dentro de {{ prazo_dias }} dias.
+      </div>
+    </div>
+    <a href="{{ url_for('main.veiculos_menu') }}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i> Voltar
+    </a>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-danger border-4">
+        <small class="text-muted fw-bold text-uppercase" style="font-size: 0.68rem;">Alertas</small>
+        <h3 class="fw-bold mb-0 text-danger">{{ total_alertas }}</h3>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-success border-4">
+        <small class="text-muted fw-bold text-uppercase" style="font-size: 0.68rem;">Ciencias</small>
+        <h3 class="fw-bold mb-0 text-success">{{ total_cientes }}/{{ total_atores }}</h3>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-warning border-4">
+        <small class="text-muted fw-bold text-uppercase" style="font-size: 0.68rem;">Piloto/equipe</small>
+        <h3 class="fw-bold mb-0 text-warning">{{ prazo_operacional_dias }} dias</h3>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-primary border-4">
+        <small class="text-muted fw-bold text-uppercase" style="font-size: 0.68rem;">Administracao</small>
+        <h3 class="fw-bold mb-0 text-primary">{{ prazo_dias }} dias</h3>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+    <div class="card-body p-0">
+      {% if not alertas %}
+      <div class="text-muted p-5 text-center">
+        <i class="bi bi-check-circle fs-1 d-block mb-2 text-success"></i>
+        Nenhum veiculo ultrapassou o prazo administrativo de limpeza.
+      </div>
+      {% else %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 table-alertas">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-4">Veiculo</th>
+              <th>Ultima limpeza</th>
+              <th>Atraso</th>
+              <th style="width: 38%;">Ciencia piloto/equipe</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for alerta in alertas %}
+            <tr>
+              <td class="ps-4">
+                <div class="fw-bold text-dark">{{ alerta.veiculo.modelo }}</div>
+                <div class="text-muted small">{{ alerta.veiculo.placa }} | {{ alerta.veiculo.operacao }}</div>
+                {% if alerta.veiculo.equipe %}
+                  <div class="text-primary small fw-semibold mt-1">
+                    <i class="bi bi-people-fill me-1"></i>{{ alerta.veiculo.equipe.nome_equipe }}
+                  </div>
+                {% endif %}
+              </td>
+              <td>
+                {% if alerta.ultima_limpeza_em %}
+                  <div class="fw-semibold text-dark">{{ alerta.ultima_limpeza_em.strftime('%d/%m/%Y') }}</div>
+                  <div class="text-muted small">{{ alerta.ultima_limpeza_em.strftime('%H:%M') }}</div>
+                {% else %}
+                  <span class="badge bg-light text-dark border rounded-pill">Sem limpeza registrada</span>
+                  <div class="text-muted small mt-1">Referencia: cadastro em {{ alerta.referencia_em.strftime('%d/%m/%Y') }}</div>
+                {% endif %}
+              </td>
+              <td>
+                <span class="badge bg-danger-subtle text-danger-emphasis border rounded-pill px-3">
+                  {{ alerta.dias_desde }} dias
+                </span>
+                <div class="text-muted small mt-1">Vencido em {{ alerta.vencido_em.strftime('%d/%m/%Y') }}</div>
+              </td>
+              <td>
+                {% if alerta.atores %}
+                  <div class="actor-list">
+                    {% for ator in alerta.atores %}
+                    <div class="actor-row">
+                      <div class="actor-name">
+                        <strong class="text-dark">{{ ator.nome }}</strong>
+                        <span class="text-muted small">{{ ator.tipo }}</span>
+                      </div>
+                      {% if ator.ciencia %}
+                        <span class="badge bg-success-subtle text-success-emphasis border rounded-pill">
+                          Ciente {{ ator.ciencia.reconhecido_em.strftime('%d/%m/%Y %H:%M') if ator.ciencia.reconhecido_em else '-' }}
+                        </span>
+                      {% else %}
+                        <span class="badge bg-warning-subtle text-warning-emphasis border rounded-pill">
+                          Nao confirmado
+                        </span>
+                      {% endif %}
+                    </div>
+                    {% endfor %}
+                  </div>
+                {% else %}
+                  <span class="text-muted small">Nenhum usuario operacional OA vinculado.</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

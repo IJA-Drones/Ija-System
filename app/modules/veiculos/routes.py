@@ -12,12 +12,15 @@ from app.modules.veiculos.service import (
     VeiculoTurnoError,
     build_veiculo_form,
     build_veiculo_logs_detalhe_context,
+    build_limpeza_alertas_admin_context,
+    build_limpeza_alertas_operacionais_context,
     build_piloto_veiculos_context,
     build_veiculos_deleted_logs_context,
     build_veiculo_media_skybox_path,
     build_veiculos_export_response,
     build_veiculos_logs_export,
     create_veiculo,
+    confirmar_alerta_limpeza_operacional,
     delete_veiculo_log,
     delete_veiculo,
     encerrar_turno_piloto,
@@ -142,6 +145,17 @@ def register_routes(bp):
         tipo = getattr(current_user, "tipo_usuario", None)
         try:
             return render_template("veiculos_logs.html", **list_veiculos_logs(tipo, request.args, user=current_user))
+        except PermissionError:
+            abort(403)
+
+    @bp.route("/veiculos/limpeza/alertas", methods=["GET"], endpoint="veiculos_alertas_limpeza")
+    @login_required
+    def veiculos_alertas_limpeza():
+        try:
+            return render_template(
+                "veiculos_alertas_limpeza.html",
+                **build_limpeza_alertas_admin_context(current_user),
+            )
         except PermissionError:
             abort(403)
 
@@ -460,6 +474,42 @@ def register_routes(bp):
             agora_brasilia=context["agora_brasilia"],
         )
 
+    @bp.route("/piloto/caixa-entrada", methods=["GET"], endpoint="piloto_caixa_entrada")
+    @login_required
+    def piloto_caixa_entrada():
+        _require_piloto()
+
+        try:
+            return render_template(
+                "piloto_caixa_entrada.html",
+                **build_limpeza_alertas_operacionais_context(current_user),
+            )
+        except PermissionError:
+            abort(403)
+
+    @bp.route(
+        "/piloto/caixa-entrada/limpeza/<int:veiculo_id>/confirmar",
+        methods=["POST"],
+        endpoint="piloto_confirmar_alerta_limpeza",
+    )
+    @login_required
+    def piloto_confirmar_alerta_limpeza(veiculo_id):
+        _require_piloto()
+
+        try:
+            flash(confirmar_alerta_limpeza_operacional(current_user, veiculo_id), "success")
+        except PermissionError:
+            abort(403)
+        except VeiculoTurnoError as exc:
+            db.session.rollback()
+            flash(str(exc), exc.category)
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("Erro ao confirmar ciencia de alerta de limpeza.")
+            flash("Erro tecnico ao confirmar ciencia.", "danger")
+
+        return redirect(url_for("main.piloto_caixa_entrada"))
+
     @bp.route("/piloto/veiculos/<int:veiculo_id>/km", methods=["POST"], endpoint="piloto_atualizar_km_veiculo")
     @login_required
     def piloto_atualizar_km_veiculo(veiculo_id):
@@ -571,5 +621,4 @@ def register_routes(bp):
             db.session.rollback()
             current_app.logger.exception("Erro tecnico ao encerrar turno de veiculo.")
             flash("Erro tecnico ao salvar.", "danger")
-
         return redirect(url_for("main.piloto_veiculos"))
