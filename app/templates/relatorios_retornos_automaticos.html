@@ -66,30 +66,45 @@
     }
 
     .retornos-team-metrics {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
 
     .retornos-team-metric {
       background: #f8fafc;
       border: 1px solid #e9eef5;
       border-radius: 8px;
-      padding: 8px 10px;
+      padding: 9px 10px;
     }
 
-    .retornos-team-metric strong {
+    .retornos-month-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .retornos-month-label {
       color: #123f69;
-      display: block;
-      font-size: 1rem;
-      line-height: 1.1;
+      font-weight: 800;
+      line-height: 1.2;
     }
 
-    .retornos-team-metric span {
+    .retornos-month-total {
+      color: #123f69;
+      font-size: 1rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .retornos-month-flags {
       color: #6c757d;
-      display: block;
       font-size: 0.72rem;
       margin-top: 2px;
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
     }
 
     .retornos-address {
@@ -128,7 +143,7 @@
 {% endblock %}
 
 {% block content %}
-{% set filtros_ativos = filters.equipe_id or filters.unidade_values or filters.regiao or filters.status or filters.apoio_cet or filters.tipo_visita or filters.tipo_imovel or filters.tipo_operacao or filters.foco_values or filters.protocolo or filters.endereco or filters.data_ini or filters.data_fim %}
+{% set filtros_ativos = filters.equipe_id or filters.unidade_values or filters.regiao or filters.status or filters.situacao_operacional or filters.apoio_cet or filters.tipo_visita or filters.tipo_imovel or filters.tipo_operacao or filters.foco_values or filters.protocolo or filters.endereco or filters.data_ini or filters.data_fim %}
 
 <div class="container-fluid py-4 retornos-page" style="max-width: 1200px;">
   <div class="retornos-toolbar mb-4">
@@ -189,6 +204,19 @@
                 {% for status in status_disponiveis %}
                   <option value="{{ status }}" {% if filters.status == status %}selected{% endif %}>{{ status }}</option>
                 {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-3">
+              <label class="small text-muted">Situacao operacional:</label>
+              <select name="situacao_operacional" class="form-select form-select-sm">
+                <option value="">Todas</option>
+                <option value="CONCLUIDO" {% if filters.situacao_operacional == 'CONCLUIDO' %}selected{% endif %}>Concluido</option>
+                <option value="PENDENTE_FUTURO" {% if filters.situacao_operacional == 'PENDENTE_FUTURO' %}selected{% endif %}>Pendente futuro</option>
+                <option value="HOJE" {% if filters.situacao_operacional == 'HOJE' %}selected{% endif %}>Hoje</option>
+                <option value="SEM_FECHAMENTO" {% if filters.situacao_operacional == 'SEM_FECHAMENTO' %}selected{% endif %}>Sem fechamento no sistema</option>
+                <option value="DATA_VENCIDA" {% if filters.situacao_operacional == 'DATA_VENCIDA' %}selected{% endif %}>Data vencida</option>
+                <option value="CANCELADO" {% if filters.situacao_operacional == 'CANCELADO' %}selected{% endif %}>Cancelado</option>
               </select>
             </div>
 
@@ -299,7 +327,7 @@
   </div>
 
   <div class="row g-3 mb-4">
-    <div class="col-md-6 col-xl">
+    <div class="col-md-6 col-xl-2">
       <div class="card retornos-kpi-card rounded-4 h-100">
         <div class="card-body">
           <div class="retornos-kpi-label">Retornos</div>
@@ -307,7 +335,7 @@
         </div>
       </div>
     </div>
-    <div class="col-md-6 col-xl">
+    <div class="col-md-6 col-xl-2">
       <div class="card retornos-kpi-card rounded-4 h-100">
         <div class="card-body">
           <div class="retornos-kpi-label">Equipes com agenda</div>
@@ -315,7 +343,7 @@
         </div>
       </div>
     </div>
-    <div class="col-md-6 col-xl">
+    <div class="col-md-6 col-xl-2">
       <div class="card retornos-kpi-card rounded-4 h-100">
         <div class="card-body">
           <div class="retornos-kpi-label">Proximos 7 dias</div>
@@ -323,19 +351,27 @@
         </div>
       </div>
     </div>
-    <div class="col-md-6 col-xl">
+    <div class="col-md-6 col-xl-2">
       <div class="card retornos-kpi-card rounded-4 h-100">
         <div class="card-body">
-          <div class="retornos-kpi-label">Datas vencidas</div>
-          <div class="retornos-kpi-value text-danger">{{ total_atrasados }}</div>
+          <div class="retornos-kpi-label">Sem fechamento</div>
+          <div class="retornos-kpi-value text-warning">{{ total_sem_fechamento }}</div>
         </div>
       </div>
     </div>
-    <div class="col-md-6 col-xl">
+    <div class="col-md-6 col-xl-2">
       <div class="card retornos-kpi-card rounded-4 h-100">
         <div class="card-body">
-          <div class="retornos-kpi-label">Sem equipe</div>
-          <div class="retornos-kpi-value">{{ total_sem_equipe }}</div>
+          <div class="retornos-kpi-label">Data vencida</div>
+          <div class="retornos-kpi-value text-danger">{{ total_data_vencida }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 col-xl-2">
+      <div class="card retornos-kpi-card rounded-4 h-100">
+        <div class="card-body">
+          <div class="retornos-kpi-label">Concluidos</div>
+          <div class="retornos-kpi-value text-success">{{ total_concluidos }}</div>
         </div>
       </div>
     </div>
@@ -360,7 +396,7 @@
                   </div>
                   {% if equipe.id %}
                     <a
-                      href="{{ url_for('main.relatorios_retornos_automaticos', data_ini=filtros_exportacao.data_ini, data_fim=filtros_exportacao.data_fim, equipe_id=equipe.id, unidade=filtros_exportacao.unidade, regiao=filtros_exportacao.regiao, status=filtros_exportacao.status, apoio_cet=filtros_exportacao.apoio_cet, tipo_visita=filtros_exportacao.tipo_visita, tipo_imovel=filtros_exportacao.tipo_imovel, tipo_operacao=filtros_exportacao.tipo_operacao, foco=filtros_exportacao.foco, protocolo=filtros_exportacao.protocolo, endereco=filtros_exportacao.endereco) }}"
+                      href="{{ url_for('main.relatorios_retornos_automaticos', data_ini=filtros_exportacao.data_ini, data_fim=filtros_exportacao.data_fim, equipe_id=equipe.id, unidade=filtros_exportacao.unidade, regiao=filtros_exportacao.regiao, status=filtros_exportacao.status, situacao_operacional=filtros_exportacao.situacao_operacional, apoio_cet=filtros_exportacao.apoio_cet, tipo_visita=filtros_exportacao.tipo_visita, tipo_imovel=filtros_exportacao.tipo_imovel, tipo_operacao=filtros_exportacao.tipo_operacao, foco=filtros_exportacao.foco, protocolo=filtros_exportacao.protocolo, endereco=filtros_exportacao.endereco) }}"
                       class="btn btn-outline-primary btn-sm"
                       title="Filtrar esta equipe"
                     >
@@ -370,21 +406,27 @@
                 </div>
 
                 <div class="retornos-team-metrics">
-                  <div class="retornos-team-metric">
-                    <strong>{{ equipe.proximos_7 }}</strong>
-                    <span>7 dias</span>
-                  </div>
-                  <div class="retornos-team-metric">
-                    <strong class="{% if equipe.atrasados %}text-danger{% endif %}">{{ equipe.atrasados }}</strong>
-                    <span>Datas vencidas</span>
-                  </div>
-                </div>
-
-                <div class="mt-3">
-                  {% for item in equipe.itens[:3] %}
-                    <div class="d-flex justify-content-between gap-2 small py-1 border-top">
-                      <span class="text-muted">{{ item.data_agendamento.strftime('%d/%m') if item.data_agendamento else '-' }}</span>
-                      <span class="text-truncate fw-semibold" title="{{ item.endereco }}">{{ item.bairro or item.endereco }}</span>
+                  {% for mes in equipe.meses[:5] %}
+                    <div class="retornos-team-metric">
+                      <div class="retornos-month-row">
+                        <span class="retornos-month-label">{{ mes.label }}</span>
+                        <span class="retornos-month-total">{{ mes.total }}</span>
+                      </div>
+                      <div class="retornos-month-flags">
+                        {% if mes.sem_fechamento %}
+                          <span class="text-warning fw-semibold">{{ mes.sem_fechamento }} sem fechamento</span>
+                        {% endif %}
+                        {% if mes.data_vencida %}
+                          <span class="text-danger fw-semibold">{{ mes.data_vencida }} data vencida</span>
+                        {% endif %}
+                        {% if mes.concluidos %}
+                          <span class="text-success fw-semibold">{{ mes.concluidos }} concluidos</span>
+                        {% endif %}
+                      </div>
+                    </div>
+                  {% else %}
+                    <div class="retornos-team-metric text-muted small">
+                      Nenhum retorno no filtro atual.
                     </div>
                   {% endfor %}
                 </div>
@@ -430,11 +472,7 @@
               <td>
                 <div class="fw-bold">{{ item.data_agendamento.strftime('%d/%m/%Y') if item.data_agendamento else '-' }}</div>
                 <div class="small text-muted">{{ item.hora_agendamento.strftime('%H:%M') if item.hora_agendamento else '-' }}</div>
-                {% if item.atrasado %}
-                  <span class="badge rounded-pill bg-danger-subtle text-danger border border-danger-subtle">Data vencida</span>
-                {% elif item.dias_ate == 0 %}
-                  <span class="badge rounded-pill bg-warning-subtle text-dark border border-warning-subtle">Hoje</span>
-                {% elif item.dias_ate is not none and item.dias_ate <= 7 %}
+                {% if item.dias_ate is not none and item.dias_ate > 0 and item.dias_ate <= 7 %}
                   <span class="badge rounded-pill bg-info-subtle text-primary border border-info-subtle">{{ item.dias_ate }} dias</span>
                 {% endif %}
               </td>
@@ -462,7 +500,10 @@
                 {% endif %}
               </td>
               <td>
-                <span class="badge rounded-pill bg-light text-dark border">{{ item.status or '-' }}</span>
+                <span class="badge rounded-pill {{ item.situacao_operacional.classe }}">{{ item.situacao_operacional.label }}</span>
+                {% if item.status %}
+                  <div class="small text-muted mt-1">{{ item.status }}</div>
+                {% endif %}
               </td>
               <td class="text-end">
                 <a href="{{ url_for('main.admin_os_formulario_view', os_id=item.id) }}" class="btn btn-sm btn-outline-primary shadow-sm" title="Ver formulario">

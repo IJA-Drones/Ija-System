@@ -42,6 +42,7 @@ COLETA_IMAGENS_MONTH_NAMES = {
     11: "Novembro",
     12: "Dezembro",
 }
+RETORNOS_AUTOMATICOS_MONTH_NAMES = COLETA_IMAGENS_MONTH_NAMES
 
 
 def _parse_relatorio_os_date_filter(args, name):
@@ -761,6 +762,7 @@ def _resolve_retornos_automaticos_filters(args):
         "unidade_values": get_multi_values(args, "unidade"),
         "regiao": (args.get("regiao") or "").strip().upper(),
         "status": (args.get("status") or "").strip(),
+        "situacao_operacional": (args.get("situacao_operacional") or "").strip().upper(),
         "apoio_cet": (args.get("apoio_cet") or "").strip().upper(),
         "tipo_visita": (args.get("tipo_visita") or "").strip(),
         "tipo_imovel": (args.get("tipo_imovel") or "").strip(),
@@ -903,11 +905,65 @@ def _format_retorno_automatico_endereco(solicitacao):
     return endereco
 
 
+def _retorno_automatico_situacao_operacional(solicitacao, hoje, dias_ate):
+    ordem = solicitacao.ordem_servico
+    status = (solicitacao.status or "").strip().upper()
+
+    if "CANCEL" in status:
+        return {
+            "key": "CANCELADO",
+            "label": "Cancelado",
+            "classe": "bg-dark-subtle text-dark border border-dark-subtle",
+        }
+
+    if "CONCLU" in status or (ordem and ordem.respondido_em):
+        return {
+            "key": "CONCLUIDO",
+            "label": "Concluido",
+            "classe": "bg-success-subtle text-success border border-success-subtle",
+        }
+
+    if dias_ate is None:
+        return {
+            "key": "SEM_DATA",
+            "label": "Sem data",
+            "classe": "bg-light text-dark border",
+        }
+
+    if dias_ate < 0 and ordem and not ordem.respondido_em:
+        return {
+            "key": "SEM_FECHAMENTO",
+            "label": "Sem fechamento no sistema",
+            "classe": "bg-warning-subtle text-dark border border-warning-subtle",
+        }
+
+    if dias_ate < 0:
+        return {
+            "key": "DATA_VENCIDA",
+            "label": "Data vencida",
+            "classe": "bg-danger-subtle text-danger border border-danger-subtle",
+        }
+
+    if dias_ate == 0:
+        return {
+            "key": "HOJE",
+            "label": "Hoje",
+            "classe": "bg-info-subtle text-primary border border-info-subtle",
+        }
+
+    return {
+        "key": "PENDENTE_FUTURO",
+        "label": "Pendente futuro",
+        "classe": "bg-light text-dark border",
+    }
+
+
 def _serialize_retorno_automatico_relatorio(solicitacao, hoje):
     ordem = solicitacao.ordem_servico
     equipe = _retorno_automatico_equipe(solicitacao)
     data_agendamento = solicitacao.data_agendamento
     dias_ate = (data_agendamento - hoje).days if data_agendamento else None
+    situacao_operacional = _retorno_automatico_situacao_operacional(solicitacao, hoje, dias_ate)
 
     drone = ""
     drone_monitoramento = ""
@@ -934,7 +990,8 @@ def _serialize_retorno_automatico_relatorio(solicitacao, hoje):
         "data_agendamento": data_agendamento,
         "hora_agendamento": solicitacao.hora_agendamento,
         "dias_ate": dias_ate,
-        "atrasado": dias_ate is not None and dias_ate < 0,
+        "atrasado": situacao_operacional["key"] in {"SEM_FECHAMENTO", "DATA_VENCIDA"},
+        "situacao_operacional": situacao_operacional,
         "endereco": _format_retorno_automatico_endereco(solicitacao),
         "bairro": solicitacao.bairro or "",
         "foco": solicitacao.foco or "",
@@ -971,6 +1028,13 @@ def _retorno_automatico_sort_key(item):
     )
 
 
+def _retorno_automatico_month_key(item):
+    data = item["data_agendamento"]
+    if not data:
+        return "sem-data", "Sem data"
+    return f"{data.year:04d}-{data.month:02d}", f"{RETORNOS_AUTOMATICOS_MONTH_NAMES[data.month]}/{data.year}"
+
+
 def build_retornos_automaticos_context(user, args):
     filtros = _resolve_retornos_automaticos_filters(args)
     hoje = datetime.now().date()
@@ -986,6 +1050,12 @@ def build_retornos_automaticos_context(user, args):
         .all()
     )
     itens = [_serialize_retorno_automatico_relatorio(solicitacao, hoje) for solicitacao in solicitacoes]
+    if filtros["situacao_operacional"]:
+        itens = [
+            item
+            for item in itens
+            if item["situacao_operacional"]["key"] == filtros["situacao_operacional"]
+        ]
     itens.sort(key=_retorno_automatico_sort_key)
 
     equipes_map = {}
@@ -999,6 +1069,11 @@ def build_retornos_automaticos_context(user, args):
             "total": 0,
             "atrasados": 0,
             "proximos_7": 0,
+            "sem_fechamento": 0,
+            "data_vencida": 0,
+            "concluidos": 0,
+            "pendentes_futuros": 0,
+            "meses_map": {},
             "itens": [],
         }
 
@@ -1012,13 +1087,43 @@ def build_retornos_automaticos_context(user, args):
                 "total": 0,
                 "atrasados": 0,
                 "proximos_7": 0,
+                "sem_fechamento": 0,
+                "data_vencida": 0,
+                "concluidos": 0,
+                "pendentes_futuros": 0,
+                "meses_map": {},
                 "itens": [],
             },
         )
         equipe_item["total"] += 1
         equipe_item["atrasados"] += 1 if item["atrasado"] else 0
         equipe_item["proximos_7"] += 1 if item["dias_ate"] is not None and 0 <= item["dias_ate"] <= 7 else 0
+        situacao_key = item["situacao_operacional"]["key"]
+        equipe_item["sem_fechamento"] += 1 if situacao_key == "SEM_FECHAMENTO" else 0
+        equipe_item["data_vencida"] += 1 if situacao_key == "DATA_VENCIDA" else 0
+        equipe_item["concluidos"] += 1 if situacao_key == "CONCLUIDO" else 0
+        equipe_item["pendentes_futuros"] += 1 if situacao_key == "PENDENTE_FUTURO" else 0
+        mes_key, mes_label = _retorno_automatico_month_key(item)
+        mes_item = equipe_item["meses_map"].setdefault(
+            mes_key,
+            {
+                "key": mes_key,
+                "label": mes_label,
+                "total": 0,
+                "sem_fechamento": 0,
+                "data_vencida": 0,
+                "concluidos": 0,
+            },
+        )
+        mes_item["total"] += 1
+        mes_item["sem_fechamento"] += 1 if situacao_key == "SEM_FECHAMENTO" else 0
+        mes_item["data_vencida"] += 1 if situacao_key == "DATA_VENCIDA" else 0
+        mes_item["concluidos"] += 1 if situacao_key == "CONCLUIDO" else 0
         equipe_item["itens"].append(item)
+
+    for equipe_item in equipes_map.values():
+        equipe_item["meses"] = list(equipe_item["meses_map"].values())
+        equipe_item.pop("meses_map", None)
 
     equipes_cards = sorted(
         equipes_map.values(),
@@ -1059,6 +1164,7 @@ def build_retornos_automaticos_context(user, args):
             "unidade": multi_value_to_query(filtros["unidade_values"]),
             "regiao": filtros["regiao"],
             "status": filtros["status"],
+            "situacao_operacional": filtros["situacao_operacional"],
             "apoio_cet": filtros["apoio_cet"],
             "tipo_visita": filtros["tipo_visita"],
             "tipo_imovel": filtros["tipo_imovel"],
@@ -1077,6 +1183,10 @@ def build_retornos_automaticos_context(user, args):
         "total_equipes": len([equipe for equipe in equipes_cards if equipe["id"] and equipe["total"]]),
         "total_sem_equipe": sum(1 for item in itens if not item["equipe_id"]),
         "total_atrasados": sum(1 for item in itens if item["atrasado"]),
+        "total_sem_fechamento": sum(1 for item in itens if item["situacao_operacional"]["key"] == "SEM_FECHAMENTO"),
+        "total_data_vencida": sum(1 for item in itens if item["situacao_operacional"]["key"] == "DATA_VENCIDA"),
+        "total_concluidos": sum(1 for item in itens if item["situacao_operacional"]["key"] == "CONCLUIDO"),
+        "total_pendentes_futuros": sum(1 for item in itens if item["situacao_operacional"]["key"] == "PENDENTE_FUTURO"),
         "total_proximos_7": sum(
             1 for item in itens if item["dias_ate"] is not None and 0 <= item["dias_ate"] <= 7
         ),

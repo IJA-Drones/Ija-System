@@ -90,6 +90,8 @@ class RelatoriosRetornosAutomaticosTests(unittest.TestCase):
         cards = {card["nome"]: card for card in context["equipes_cards"]}
         self.assertEqual(cards["PLOA 24"]["total"], 1)
         self.assertEqual(cards["Sem equipe"]["total"], 1)
+        self.assertEqual(cards["PLOA 24"]["meses"][0]["label"], "Agosto/2026")
+        self.assertEqual(cards["PLOA 24"]["meses"][0]["total"], 1)
 
     def test_build_context_without_date_filters_does_not_limit_period(self):
         self._solicitacao(
@@ -138,6 +140,77 @@ class RelatoriosRetornosAutomaticosTests(unittest.TestCase):
         self.assertIn("Rua Futura Maior", enderecos[0])
         self.assertIn("Rua Futura Menor", enderecos[1])
         self.assertIn("Rua Vencida", enderecos[-1])
+
+    def test_build_context_classifies_operational_status(self):
+        sem_fechamento = self._solicitacao(
+            data_agendamento=date(2000, 1, 10),
+            gerada_automaticamente=True,
+            logradouro="Rua Sem Fechamento",
+        )
+        db.session.add(
+            OrdemServico(
+                solicitacao_id=sem_fechamento.id,
+                equipe_id=self.equipe.id,
+                identificador_os="OS-SEM-FECHAMENTO",
+                respondido_em=None,
+            )
+        )
+        data_vencida = self._solicitacao(
+            data_agendamento=date(2000, 1, 11),
+            gerada_automaticamente=True,
+            logradouro="Rua Data Vencida",
+        )
+        concluido = self._solicitacao(
+            data_agendamento=date(2000, 1, 12),
+            gerada_automaticamente=True,
+            logradouro="Rua Concluida",
+            status="CONCLUIDO",
+        )
+        db.session.commit()
+
+        user = SimpleNamespace(tipo_usuario="admin", prefeitura_id=1)
+
+        context = build_retornos_automaticos_context(user, MultiDict())
+        situacoes = {
+            item["id"]: item["situacao_operacional"]["key"]
+            for item in context["retornos"]
+        }
+
+        self.assertEqual(situacoes[sem_fechamento.id], "SEM_FECHAMENTO")
+        self.assertEqual(situacoes[data_vencida.id], "DATA_VENCIDA")
+        self.assertEqual(situacoes[concluido.id], "CONCLUIDO")
+        self.assertEqual(context["total_sem_fechamento"], 1)
+        self.assertEqual(context["total_data_vencida"], 1)
+        self.assertEqual(context["total_concluidos"], 1)
+
+    def test_build_context_filters_by_operational_status(self):
+        sem_fechamento = self._solicitacao(
+            data_agendamento=date(2000, 1, 10),
+            gerada_automaticamente=True,
+            logradouro="Rua Sem Fechamento",
+        )
+        db.session.add(
+            OrdemServico(
+                solicitacao_id=sem_fechamento.id,
+                equipe_id=self.equipe.id,
+                identificador_os="OS-SEM-FECHAMENTO",
+                respondido_em=None,
+            )
+        )
+        self._solicitacao(
+            data_agendamento=date(2000, 1, 11),
+            gerada_automaticamente=True,
+            logradouro="Rua Data Vencida",
+        )
+        db.session.commit()
+
+        user = SimpleNamespace(tipo_usuario="admin", prefeitura_id=1)
+        args = MultiDict({"situacao_operacional": "SEM_FECHAMENTO"})
+
+        context = build_retornos_automaticos_context(user, args)
+
+        self.assertEqual(context["total_retornos"], 1)
+        self.assertEqual(context["retornos"][0]["id"], sem_fechamento.id)
 
     def test_build_context_includes_active_team_cards_even_without_returns(self):
         equipe_sem_retorno = Equipe(nome_equipe="PLOA 20", regiao="SUL", ativa=True, prefeitura_id=1)
