@@ -24,7 +24,9 @@ from app.models import (
     LimpezaVeiculo,
     LimpezaVeiculoAlertaCiencia,
     LogVeiculo,
+    OrdemServico,
     Pilotos,
+    Solicitacao,
     Usuario,
     Veiculos,
 )
@@ -74,8 +76,6 @@ VEICULOS_LOGS_ALLOWED_TYPES = (
     "prefeitura_admin",
     EQUIPE_OCEANO_USER_TYPE,
 )
-
-
 class VeiculoTurnoError(Exception):
     def __init__(self, message, category="warning"):
         super().__init__(message)
@@ -1768,6 +1768,113 @@ def _build_veiculos_timeline_from_logs(logs):
     )
 
 
+def _can_view_retorno_automatico_audit(tipo_usuario, user=None):
+    return normalize_role(tipo_usuario) in VEICULOS_LOGS_ALLOWED_TYPES
+
+
+def _attach_retornos_automaticos_turnos(timeline, logs, *, user=None):
+    logs_fechados = [
+        log
+        for log in (logs or [])
+        if log.km_final is not None and log.equipe_id and log.data_registro
+    ]
+    if not logs_fechados:
+        return
+
+    equipe_ids = {log.equipe_id for log in logs_fechados if log.equipe_id}
+    dias = {log.data_registro.date() for log in logs_fechados if log.data_registro}
+    if not equipe_ids or not dias:
+        return
+
+    query = (
+        Solicitacao.query
+        .options(
+            joinedload(Solicitacao.usuario),
+            joinedload(Solicitacao.equipe),
+            joinedload(Solicitacao.ordem_servico).joinedload(OrdemServico.equipe),
+        )
+        .outerjoin(OrdemServico, OrdemServico.solicitacao_id == Solicitacao.id)
+        .filter(
+            db.or_(
+                Solicitacao.gerada_automaticamente.is_(True),
+                Solicitacao.origem_retorno_id.isnot(None),
+            ),
+            db.or_(
+                Solicitacao.equipe_id.in_(equipe_ids),
+                OrdemServico.equipe_id.in_(equipe_ids),
+            ),
+            db.or_(
+                Solicitacao.data_agendamento.in_(dias),
+                OrdemServico.data_aplicacao.in_(dias),
+            ),
+        )
+    )
+    query = apply_prefeitura_scope(query, user, Solicitacao.prefeitura_id)
+
+    retornos_por_equipe_dia = defaultdict(list)
+    for solicitacao in query.order_by(Solicitacao.data_agendamento.asc(), Solicitacao.id.asc()).all():
+        ordem = solicitacao.ordem_servico
+        equipe_id = (ordem.equipe_id if ordem else None) or solicitacao.equipe_id
+        data_ref = (ordem.data_aplicacao if ordem else None) or solicitacao.data_agendamento
+        if not equipe_id or not data_ref:
+            continue
+
+        data_ref_dia = data_ref.date() if hasattr(data_ref, "date") else data_ref
+        if equipe_id not in equipe_ids or data_ref_dia not in dias:
+            continue
+
+        retornos_por_equipe_dia[(equipe_id, data_ref_dia)].append(
+            _serialize_retorno_automatico_solicitacao(solicitacao)
+        )
+
+    if not retornos_por_equipe_dia:
+        return
+
+    retornos_por_log = {
+        log.id: retornos_por_equipe_dia.get((log.equipe_id, log.data_registro.date()), [])
+        for log in logs_fechados
+    }
+
+    for turno in timeline.get("logs", []):
+        retornos = retornos_por_log.get(turno.get("id"), [])
+        turno["retornos_automaticos"] = retornos
+        turno["retornos_automaticos_count"] = len(retornos)
+
+    for dia in timeline.get("dias", []):
+        total = 0
+        for turno in dia.get("turnos", []):
+            retornos = retornos_por_log.get(turno.get("id"), [])
+            turno["retornos_automaticos"] = retornos
+            turno["retornos_automaticos_count"] = len(retornos)
+            total += len(retornos)
+        dia["retornos_automaticos_count"] = total
+
+
+def _serialize_retorno_automatico_solicitacao(solicitacao):
+    ordem = solicitacao.ordem_servico
+    equipe = (ordem.equipe if ordem else None) or solicitacao.equipe
+    data_ref = (ordem.data_aplicacao if ordem else None) or solicitacao.data_agendamento
+    endereco = (
+        f"{solicitacao.logradouro or ''}, {solicitacao.numero or 'S/N'} - "
+        f"{solicitacao.bairro or ''} - {solicitacao.cidade or ''}/{solicitacao.uf or ''}"
+    )
+    if solicitacao.complemento:
+        endereco = f"{endereco} - {solicitacao.complemento}"
+
+    return {
+        "id": solicitacao.id,
+        "origem_id": solicitacao.origem_retorno_id,
+        "protocolo": solicitacao.protocolo or "",
+        "identificador_os": (ordem.identificador_os if ordem else "") or "",
+        "status": solicitacao.status or "",
+        "data": data_ref,
+        "endereco": endereco,
+        "bairro": solicitacao.bairro or "",
+        "uvis": (solicitacao.usuario.nome_uvis if solicitacao.usuario else "") or "-",
+        "equipe_nome": (equipe.nome_equipe if equipe else "") or "-",
+    }
+
+
 def _abastecimento_tipo_key(tipo_abastecimento):
     tipo = (tipo_abastecimento or "").strip().lower()
     return "gerador" if "gerador" in tipo else "veiculo"
@@ -2239,6 +2346,9 @@ def build_veiculo_logs_detalhe_context(tipo_usuario, veiculo_id, args, user=None
         "total_abastecimentos_gerador": 0,
         "total_limpezas": 0,
     }
+    can_view_retorno_automatico_audit = _can_view_retorno_automatico_audit(tipo_usuario, user)
+    if can_view_retorno_automatico_audit:
+        _attach_retornos_automaticos_turnos(timeline, logs, user=user)
 
     return {
         "veiculo": veiculo,
@@ -2248,6 +2358,7 @@ def build_veiculo_logs_detalhe_context(tipo_usuario, veiculo_id, args, user=None
         "can_edit_logs": tipo_usuario in {"dev", "admin", "operario", "operador", "prefeitura_admin"},
         "can_delete_logs": tipo_usuario == "admin",
         "can_view_deleted_logs": tipo_usuario == "dev",
+        "can_view_retorno_automatico_audit": can_view_retorno_automatico_audit,
     }
 
 

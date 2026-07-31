@@ -4,9 +4,10 @@ from datetime import datetime
 from math import ceil
 
 from sqlalchemy import and_, extract, func, or_
+from sqlalchemy.orm import aliased, joinedload
 
 from app.extensions import db
-from app.models import DjiFlightKmlRoute, OrdemServico, Solicitacao, Usuario
+from app.models import DjiFlightKmlRoute, Equipe, OrdemServico, Solicitacao, Usuario
 from app.shared.access import (
     ADMIN_PANEL_VIEW_TYPES,
     apply_prefeitura_scope,
@@ -744,6 +745,341 @@ def build_relatorios_os_context(user, args):
             "data_ini": filtros["data_ini"].isoformat() if filtros["data_ini"] else "",
             "data_fim": filtros["data_fim"].isoformat() if filtros["data_fim"] else "",
         },
+    }
+
+
+def _resolve_retornos_automaticos_filters(args):
+    data_ini = _parse_relatorio_os_date_filter(args, "data_ini")
+    data_fim = _parse_relatorio_os_date_filter(args, "data_fim")
+    if data_ini and data_fim and data_fim < data_ini:
+        data_ini, data_fim = data_fim, data_ini
+
+    return {
+        "data_ini": data_ini,
+        "data_fim": data_fim,
+        "equipe_id": get_multi_int_values(args, "equipe_id"),
+        "unidade_values": get_multi_values(args, "unidade"),
+        "regiao": (args.get("regiao") or "").strip().upper(),
+        "status": (args.get("status") or "").strip(),
+        "apoio_cet": (args.get("apoio_cet") or "").strip().upper(),
+        "tipo_visita": (args.get("tipo_visita") or "").strip(),
+        "tipo_imovel": (args.get("tipo_imovel") or "").strip(),
+        "tipo_operacao": ((args.get("tipo_operacao") or args.get("operacao") or "").strip()),
+        "foco_values": get_multi_values(args, "foco"),
+        "protocolo": (args.get("protocolo") or "").strip(),
+        "endereco": (args.get("endereco") or "").strip(),
+    }
+
+
+def _retorno_automatico_base_filter():
+    return or_(
+        Solicitacao.gerada_automaticamente.is_(True),
+        Solicitacao.origem_retorno_id.isnot(None),
+    )
+
+
+def _build_retornos_automaticos_query(user, filtros):
+    origem_solicitacao = aliased(Solicitacao)
+    origem_ordem = aliased(OrdemServico)
+    query = (
+        Solicitacao.query
+        .options(
+            joinedload(Solicitacao.usuario),
+            joinedload(Solicitacao.equipe),
+            joinedload(Solicitacao.origem_retorno).joinedload(Solicitacao.equipe),
+            joinedload(Solicitacao.origem_retorno).joinedload(Solicitacao.ordem_servico).joinedload(OrdemServico.equipe),
+            joinedload(Solicitacao.ordem_servico).joinedload(OrdemServico.equipe),
+            joinedload(Solicitacao.ordem_servico).joinedload(OrdemServico.drone),
+            joinedload(Solicitacao.ordem_servico).joinedload(OrdemServico.drone_monitoramento),
+        )
+        .outerjoin(OrdemServico, OrdemServico.solicitacao_id == Solicitacao.id)
+        .outerjoin(origem_solicitacao, origem_solicitacao.id == Solicitacao.origem_retorno_id)
+        .outerjoin(origem_ordem, origem_ordem.solicitacao_id == origem_solicitacao.id)
+        .join(Usuario, Usuario.id == Solicitacao.usuario_id)
+        .filter(_retorno_automatico_base_filter())
+    )
+    query = apply_solicitacao_prefeitura_scope(query, user)
+    query = apply_regiao_scope(query, user, Usuario.regiao)
+
+    if filtros["data_ini"]:
+        query = query.filter(Solicitacao.data_agendamento >= filtros["data_ini"])
+
+    if filtros["data_fim"]:
+        query = query.filter(Solicitacao.data_agendamento <= filtros["data_fim"])
+
+    if filtros["equipe_id"]:
+        query = query.filter(
+            or_(
+                Solicitacao.equipe_id.in_(filtros["equipe_id"]),
+                OrdemServico.equipe_id.in_(filtros["equipe_id"]),
+                origem_solicitacao.equipe_id.in_(filtros["equipe_id"]),
+                origem_ordem.equipe_id.in_(filtros["equipe_id"]),
+            )
+        )
+
+    if filtros["unidade_values"]:
+        query = query.filter(Usuario.nome_uvis.in_(filtros["unidade_values"]))
+
+    if filtros["regiao"]:
+        query = query.filter(func.upper(func.coalesce(Usuario.regiao, "")) == filtros["regiao"])
+
+    if filtros["status"]:
+        status = filtros["status"]
+        if status in STATUS_OS_CONCLUIDAS:
+            query = query.filter(Solicitacao.status.in_(STATUS_OS_CONCLUIDAS))
+        else:
+            query = query.filter(Solicitacao.status == status)
+
+    if filtros["apoio_cet"] == "SIM":
+        query = query.filter(Solicitacao.apoio_cet.is_(True))
+    elif filtros["apoio_cet"] == "NAO":
+        query = query.filter(or_(Solicitacao.apoio_cet.is_(False), Solicitacao.apoio_cet.is_(None)))
+
+    if filtros["tipo_visita"]:
+        query = query.filter(Solicitacao.tipo_visita == filtros["tipo_visita"])
+
+    if filtros["tipo_imovel"]:
+        query = query.filter(Solicitacao.tipo_imovel == filtros["tipo_imovel"])
+
+    if filtros["tipo_operacao"]:
+        query = query.filter(Solicitacao.tipo_operacao == filtros["tipo_operacao"])
+
+    if filtros["foco_values"]:
+        query = query.filter(Solicitacao.foco.in_(filtros["foco_values"]))
+
+    if filtros["protocolo"]:
+        like = f"%{filtros['protocolo']}%"
+        query = query.filter(
+            or_(
+                id_search_clause(Solicitacao.id, filtros["protocolo"], prefixes=("id", "os")),
+                id_search_clause(Solicitacao.origem_retorno_id, filtros["protocolo"], prefixes=("origem", "id", "os")),
+                func.coalesce(Solicitacao.protocolo, "").ilike(like),
+                func.coalesce(OrdemServico.identificador_os, "").ilike(like),
+                func.coalesce(origem_solicitacao.protocolo, "").ilike(like),
+                func.coalesce(origem_ordem.identificador_os, "").ilike(like),
+            )
+        )
+
+    if filtros["endereco"]:
+        like = f"%{filtros['endereco']}%"
+        query = query.filter(
+            or_(
+                func.coalesce(Solicitacao.logradouro, "").ilike(like),
+                func.coalesce(Solicitacao.numero, "").ilike(like),
+                func.coalesce(Solicitacao.bairro, "").ilike(like),
+                func.coalesce(Solicitacao.cidade, "").ilike(like),
+                func.coalesce(Solicitacao.cep, "").ilike(like),
+                func.coalesce(Solicitacao.complemento, "").ilike(like),
+            )
+        )
+
+    return query
+
+
+def _retorno_automatico_equipe(solicitacao):
+    ordem = solicitacao.ordem_servico
+    origem = solicitacao.origem_retorno
+    origem_ordem = origem.ordem_servico if origem else None
+    return (
+        (ordem.equipe if ordem else None)
+        or solicitacao.equipe
+        or (origem_ordem.equipe if origem_ordem else None)
+        or (origem.equipe if origem else None)
+    )
+
+
+def _format_retorno_automatico_endereco(solicitacao):
+    partes = []
+    if solicitacao.logradouro:
+        partes.append(f"{solicitacao.logradouro}, {solicitacao.numero or 'S/N'}")
+    if solicitacao.bairro:
+        partes.append(solicitacao.bairro)
+    cidade_uf = "/".join(item for item in [solicitacao.cidade, solicitacao.uf] if item)
+    if cidade_uf:
+        partes.append(cidade_uf)
+    endereco = " - ".join(partes) or "Endereco nao informado"
+    if solicitacao.complemento:
+        endereco = f"{endereco} - {solicitacao.complemento}"
+    return endereco
+
+
+def _serialize_retorno_automatico_relatorio(solicitacao, hoje):
+    ordem = solicitacao.ordem_servico
+    equipe = _retorno_automatico_equipe(solicitacao)
+    data_agendamento = solicitacao.data_agendamento
+    dias_ate = (data_agendamento - hoje).days if data_agendamento else None
+
+    drone = ""
+    drone_monitoramento = ""
+    if ordem:
+        drone = (
+            ordem.drone_denominacao
+            or (ordem.drone.renomacao if ordem.drone else "")
+            or ordem.prefixo_aeronave_pulverizacao
+            or ""
+        )
+        drone_monitoramento = (
+            ordem.drone_monitoramento_denominacao
+            or (ordem.drone_monitoramento.renomacao if ordem.drone_monitoramento else "")
+            or ordem.prefixo_aeronave_monitoramento
+            or ""
+        )
+
+    return {
+        "id": solicitacao.id,
+        "origem_id": solicitacao.origem_retorno_id,
+        "protocolo": solicitacao.protocolo or "",
+        "identificador_os": (ordem.identificador_os if ordem else "") or "",
+        "status": solicitacao.status or "",
+        "data_agendamento": data_agendamento,
+        "hora_agendamento": solicitacao.hora_agendamento,
+        "dias_ate": dias_ate,
+        "atrasado": dias_ate is not None and dias_ate < 0,
+        "endereco": _format_retorno_automatico_endereco(solicitacao),
+        "bairro": solicitacao.bairro or "",
+        "foco": solicitacao.foco or "",
+        "tipo_operacao": solicitacao.tipo_operacao or "",
+        "uvis": (solicitacao.usuario.nome_uvis if solicitacao.usuario else "") or "-",
+        "equipe_id": equipe.id if equipe else None,
+        "equipe_nome": (equipe.nome_equipe if equipe else "") or "Sem equipe",
+        "piloto": (ordem.piloto if ordem else "") or "",
+        "auxiliar": (ordem.auxiliar if ordem else "") or "",
+        "drone": drone,
+        "drone_monitoramento": drone_monitoramento,
+    }
+
+
+def _build_retornos_equipes_disponiveis(user):
+    query = Equipe.query.filter(Equipe.ativa.is_(True))
+    query = apply_prefeitura_scope(query, user, Equipe.prefeitura_id)
+    if is_regional_user(user):
+        regiao = normalize_regiao(getattr(user, "regiao", None))
+        if regiao:
+            query = query.filter(func.upper(func.coalesce(Equipe.regiao, "")) == regiao)
+    return query.order_by(Equipe.nome_equipe.asc()).all()
+
+
+def _retorno_automatico_sort_key(item):
+    data_ordem = item["data_agendamento"].toordinal() if item["data_agendamento"] else 0
+    hora = item["hora_agendamento"]
+    hora_ordem = (hora.hour * 3600 + hora.minute * 60 + hora.second) if hora else 0
+    return (
+        1 if item["atrasado"] else 0,
+        -data_ordem,
+        -hora_ordem,
+        int(item["id"] or 0),
+    )
+
+
+def build_retornos_automaticos_context(user, args):
+    filtros = _resolve_retornos_automaticos_filters(args)
+    hoje = datetime.now().date()
+    equipes_disponiveis = _build_retornos_equipes_disponiveis(user)
+    query = _build_retornos_automaticos_query(user, filtros)
+    solicitacoes = (
+        query
+        .order_by(
+            Solicitacao.data_agendamento.asc(),
+            Solicitacao.hora_agendamento.asc(),
+            Solicitacao.id.asc(),
+        )
+        .all()
+    )
+    itens = [_serialize_retorno_automatico_relatorio(solicitacao, hoje) for solicitacao in solicitacoes]
+    itens.sort(key=_retorno_automatico_sort_key)
+
+    equipes_map = {}
+    equipes_filtradas = set(filtros["equipe_id"])
+    for equipe in equipes_disponiveis:
+        if equipes_filtradas and equipe.id not in equipes_filtradas:
+            continue
+        equipes_map[equipe.id] = {
+            "id": equipe.id,
+            "nome": equipe.nome_equipe or f"PLOA {equipe.id}",
+            "total": 0,
+            "atrasados": 0,
+            "proximos_7": 0,
+            "itens": [],
+        }
+
+    for item in itens:
+        key = item["equipe_id"] or "sem-equipe"
+        equipe_item = equipes_map.setdefault(
+            key,
+            {
+                "id": item["equipe_id"],
+                "nome": item["equipe_nome"],
+                "total": 0,
+                "atrasados": 0,
+                "proximos_7": 0,
+                "itens": [],
+            },
+        )
+        equipe_item["total"] += 1
+        equipe_item["atrasados"] += 1 if item["atrasado"] else 0
+        equipe_item["proximos_7"] += 1 if item["dias_ate"] is not None and 0 <= item["dias_ate"] <= 7 else 0
+        equipe_item["itens"].append(item)
+
+    equipes_cards = sorted(
+        equipes_map.values(),
+        key=lambda equipe: (
+            equipe["nome"] == "Sem equipe",
+            equipe["total"] == 0,
+            equipe["nome"].upper(),
+        ),
+    )
+
+    status_query = (
+        Solicitacao.query
+        .join(Usuario, Usuario.id == Solicitacao.usuario_id)
+        .filter(_retorno_automatico_base_filter())
+    )
+    status_query = apply_solicitacao_prefeitura_scope(status_query, user)
+    status_query = apply_regiao_scope(status_query, user, Usuario.regiao)
+    status_disponiveis = [
+        status
+        for (status,) in (
+            status_query
+            .with_entities(Solicitacao.status)
+            .distinct()
+            .order_by(Solicitacao.status.asc())
+            .all()
+        )
+        if status
+    ]
+    if filtros["status"] and filtros["status"] not in status_disponiveis:
+        status_disponiveis.append(filtros["status"])
+
+    return {
+        "filters": filtros,
+        "filtros_exportacao": {
+            "data_ini": filtros["data_ini"].isoformat() if filtros["data_ini"] else "",
+            "data_fim": filtros["data_fim"].isoformat() if filtros["data_fim"] else "",
+            "equipe_id": multi_value_to_query(filtros["equipe_id"]),
+            "unidade": multi_value_to_query(filtros["unidade_values"]),
+            "regiao": filtros["regiao"],
+            "status": filtros["status"],
+            "apoio_cet": filtros["apoio_cet"],
+            "tipo_visita": filtros["tipo_visita"],
+            "tipo_imovel": filtros["tipo_imovel"],
+            "tipo_operacao": filtros["tipo_operacao"],
+            "foco": multi_value_to_query(filtros["foco_values"]),
+            "protocolo": filtros["protocolo"],
+            "endereco": filtros["endereco"],
+        },
+        "hoje": hoje,
+        "retornos": itens,
+        "equipes_cards": equipes_cards,
+        "equipes_disponiveis": equipes_disponiveis,
+        "uvis_disponiveis": build_uvis_disponiveis(user, filtros["regiao"]),
+        "status_disponiveis": status_disponiveis,
+        "total_retornos": len(itens),
+        "total_equipes": len([equipe for equipe in equipes_cards if equipe["id"] and equipe["total"]]),
+        "total_sem_equipe": sum(1 for item in itens if not item["equipe_id"]),
+        "total_atrasados": sum(1 for item in itens if item["atrasado"]),
+        "total_proximos_7": sum(
+            1 for item in itens if item["dias_ate"] is not None and 0 <= item["dias_ate"] <= 7
+        ),
     }
 
 

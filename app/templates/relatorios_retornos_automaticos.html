@@ -1,0 +1,483 @@
+{% extends "base.html" %}
+{% from "_multi_select_chips.html" import render_chip_select_values %}
+{% from "_result_summary.html" import render_result_summary %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <style>
+    .retornos-page {
+      width: 100%;
+    }
+
+    .retornos-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .retornos-toolbar-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .retornos-subtitle {
+      margin-top: 6px;
+      color: #6c757d;
+      font-size: 0.95rem;
+    }
+
+    .retornos-kpi-card,
+    .retornos-team-card,
+    .retornos-table-card {
+      border: 0;
+      box-shadow: 0 10px 28px rgba(15, 23, 42, 0.07);
+    }
+
+    .retornos-kpi-card {
+      border-left: 4px solid var(--color-primary, #2c5282);
+    }
+
+    .retornos-kpi-label {
+      color: #6c757d;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .retornos-kpi-value {
+      color: #123f69;
+      font-size: 1.55rem;
+      font-weight: 800;
+      line-height: 1.15;
+    }
+
+    .retornos-team-card {
+      border-left: 4px solid #0ea5e9;
+    }
+
+    .retornos-team-card.sem-equipe {
+      border-left-color: #dc3545;
+    }
+
+    .retornos-team-metrics {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .retornos-team-metric {
+      background: #f8fafc;
+      border: 1px solid #e9eef5;
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+
+    .retornos-team-metric strong {
+      color: #123f69;
+      display: block;
+      font-size: 1rem;
+      line-height: 1.1;
+    }
+
+    .retornos-team-metric span {
+      color: #6c757d;
+      display: block;
+      font-size: 0.72rem;
+      margin-top: 2px;
+    }
+
+    .retornos-address {
+      min-width: 280px;
+      white-space: normal;
+    }
+
+    .retornos-table-card .table {
+      margin-bottom: 0;
+    }
+
+    .retornos-table-card th {
+      white-space: nowrap;
+    }
+
+    @media (max-width: 991.98px) {
+      .retornos-page.container-fluid.py-4 {
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+      }
+
+      .retornos-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .retornos-toolbar-actions {
+        flex-direction: column;
+      }
+
+      .retornos-toolbar-actions .btn {
+        width: 100%;
+      }
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+{% set filtros_ativos = filters.equipe_id or filters.unidade_values or filters.regiao or filters.status or filters.apoio_cet or filters.tipo_visita or filters.tipo_imovel or filters.tipo_operacao or filters.foco_values or filters.protocolo or filters.endereco or filters.data_ini or filters.data_fim %}
+
+<div class="container-fluid py-4 retornos-page" style="max-width: 1200px;">
+  <div class="retornos-toolbar mb-4">
+    <div>
+      <h2 class="text-dark m-0">
+        <i class="bi bi-arrow-repeat me-2 text-primary"></i> Central de Retornos Automaticos
+      </h2>
+      <div class="retornos-subtitle">
+        {% if filters.data_ini and filters.data_fim %}
+          Retornos agendados de {{ filters.data_ini.strftime('%d/%m/%Y') }} ate {{ filters.data_fim.strftime('%d/%m/%Y') }}.
+        {% elif filters.data_ini %}
+          Retornos agendados a partir de {{ filters.data_ini.strftime('%d/%m/%Y') }}.
+        {% elif filters.data_fim %}
+          Retornos agendados ate {{ filters.data_fim.strftime('%d/%m/%Y') }}.
+        {% else %}
+          Todos os retornos automaticos dentro do seu acesso.
+        {% endif %}
+      </div>
+      {{ render_result_summary(total_retornos, 'retornos filtrados') }}
+    </div>
+
+    <div class="retornos-toolbar-actions">
+      <a href="{{ url_for('main.admin_historico_os', retorno_automatico='RETORNO') }}" class="btn btn-outline-primary">
+        <i class="bi bi-clock-history me-1"></i> Historico OS
+      </a>
+      <a href="{{ url_for('main.relatorios') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  <div class="card shadow-sm rounded-4 mb-4 border-0">
+    <div
+      class="card-header border-0 p-3 d-flex justify-content-between align-items-center"
+      data-bs-toggle="collapse"
+      data-bs-target="#collapseFiltrosRetornos"
+      aria-expanded="{{ 'true' if filtros_ativos else 'false' }}"
+      style="cursor: pointer;"
+    >
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-funnel-fill text-primary"></i>
+        <span class="text-dark fw-bold">Filtros de busca</span>
+        {% if filtros_ativos %}
+          <span class="badge bg-danger rounded-circle p-1" style="width: 8px; height: 8px;"></span>
+        {% endif %}
+      </div>
+      <i class="bi bi-chevron-down text-muted"></i>
+    </div>
+
+    <div class="collapse {% if filtros_ativos %}show{% endif %}" id="collapseFiltrosRetornos">
+      <div class="card-body pt-0 pb-4">
+        <form method="GET">
+          <div class="row g-2 filter-chip-row">
+            <div class="col-md-3">
+              <label class="small text-muted">Status:</label>
+              <select name="status" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for status in status_disponiveis %}
+                  <option value="{{ status }}" {% if filters.status == status %}selected{% endif %}>{{ status }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-3">
+              <label class="small text-muted">Unidade:</label>
+              {{ render_chip_select_values('unidade', uvis_disponiveis|map(attribute='nome_uvis')|list, filters.unidade_values, 'Adicionar UVIS') }}
+            </div>
+
+            <div class="col-md-3">
+              <label class="small text-muted">PLOA / equipe:</label>
+              <select name="equipe_id" class="form-select form-select-sm">
+                <option value="">Todas</option>
+                {% for equipe in equipes_disponiveis %}
+                  <option value="{{ equipe.id }}" {% if equipe.id in filters.equipe_id %}selected{% endif %}>
+                    {{ equipe.nome_equipe }}{% if equipe.regiao %} ({{ equipe.regiao }}){% endif %}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-3">
+              <label class="small text-muted">Regiao:</label>
+              <select name="regiao" class="form-select form-select-sm">
+                <option value="">Todas</option>
+                {% for regiao in ['NORTE', 'SUL', 'LESTE', 'OESTE', 'CENTRO', 'SUDESTE', 'CENTRO-OESTE'] %}
+                  <option value="{{ regiao }}" {% if filters.regiao == regiao %}selected{% endif %}>{{ regiao }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-3">
+              <label class="small text-muted">Apoio CET?</label>
+              <select name="apoio_cet" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                <option value="SIM" {% if filters.apoio_cet == 'SIM' %}selected{% endif %}>Sim</option>
+                <option value="NAO" {% if filters.apoio_cet == 'NAO' %}selected{% endif %}>Nao</option>
+              </select>
+            </div>
+
+            <div class="col-md-3">
+              <label class="small text-muted">Tipo de visita:</label>
+              <select name="tipo_visita" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for opcao in solicitacao_tipo_visita_opcoes %}
+                  <option value="{{ opcao }}" {% if filters.tipo_visita == opcao %}selected{% endif %}>{{ opcao }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-3">
+              <label class="small text-muted">Tipo de imovel:</label>
+              <select name="tipo_imovel" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for opcao in solicitacao_tipo_imovel_opcoes %}
+                  <option value="{{ opcao }}" {% if filters.tipo_imovel == opcao %}selected{% endif %}>{{ opcao }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-3">
+              <label class="small text-muted">Tipo de operacao:</label>
+              <select name="tipo_operacao" class="form-select form-select-sm">
+                <option value="">Todas</option>
+                <option value="Monitoramento" {% if filters.tipo_operacao == 'Monitoramento' %}selected{% endif %}>Monitoramento</option>
+                <option value="Tratamento" {% if filters.tipo_operacao == 'Tratamento' %}selected{% endif %}>Tratamento</option>
+              </select>
+            </div>
+
+            <div class="col-md-3">
+              <label class="small text-muted">Foco:</label>
+              {{ render_chip_select_values('foco', solicitacao_filter_foco_opcoes, filters.foco_values, 'Adicionar foco') }}
+            </div>
+
+            <div class="col-md-3">
+              <label class="small text-muted">ID ou protocolo:</label>
+              <input type="search" name="protocolo" class="form-control form-control-sm font-monospace" placeholder="ID, protocolo ou identificador" value="{{ filters.protocolo }}">
+            </div>
+
+            <div class="col-md-3">
+              <label class="small text-muted">Endereco:</label>
+              <input type="search" name="endereco" class="form-control form-control-sm" placeholder="Rua, numero, bairro ou cidade" value="{{ filters.endereco }}">
+            </div>
+
+            <div class="col-md-3">
+              <label class="small text-muted">Data de agendamento:</label>
+              <input type="date" name="data_ini" class="form-control form-control-sm" value="{{ filters.data_ini.isoformat() if filters.data_ini else '' }}">
+            </div>
+
+            <div class="col-md-3">
+              <label class="small text-muted">Data de agendamento ate:</label>
+              <input type="date" name="data_fim" class="form-control form-control-sm" value="{{ filters.data_fim.isoformat() if filters.data_fim else '' }}">
+            </div>
+
+            <div class="col-md-3 d-flex gap-2 align-items-end">
+              <button class="btn btn-info text-white btn-sm flex-grow-1" type="submit">
+                <i class="bi bi-search"></i> Filtrar
+              </button>
+              {% if filtros_ativos %}
+                <a href="{{ url_for('main.relatorios_retornos_automaticos') }}" class="btn btn-outline-secondary btn-sm" title="Limpar filtros">
+                  <i class="bi bi-x-lg"></i>
+                </a>
+              {% endif %}
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-6 col-xl">
+      <div class="card retornos-kpi-card rounded-4 h-100">
+        <div class="card-body">
+          <div class="retornos-kpi-label">Retornos</div>
+          <div class="retornos-kpi-value">{{ total_retornos }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 col-xl">
+      <div class="card retornos-kpi-card rounded-4 h-100">
+        <div class="card-body">
+          <div class="retornos-kpi-label">Equipes com agenda</div>
+          <div class="retornos-kpi-value">{{ total_equipes }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 col-xl">
+      <div class="card retornos-kpi-card rounded-4 h-100">
+        <div class="card-body">
+          <div class="retornos-kpi-label">Proximos 7 dias</div>
+          <div class="retornos-kpi-value">{{ total_proximos_7 }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 col-xl">
+      <div class="card retornos-kpi-card rounded-4 h-100">
+        <div class="card-body">
+          <div class="retornos-kpi-label">Datas vencidas</div>
+          <div class="retornos-kpi-value text-danger">{{ total_atrasados }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 col-xl">
+      <div class="card retornos-kpi-card rounded-4 h-100">
+        <div class="card-body">
+          <div class="retornos-kpi-label">Sem equipe</div>
+          <div class="retornos-kpi-value">{{ total_sem_equipe }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+      <h5 class="text-dark fw-bold mb-0">PLOAs</h5>
+      <span class="small text-muted">Agrupado pela equipe vinculada a solicitacao ou OS.</span>
+    </div>
+
+    {% if equipes_cards %}
+      <div class="row g-3">
+        {% for equipe in equipes_cards %}
+          <div class="col-md-6 col-xl-4">
+            <div class="card retornos-team-card rounded-4 h-100 {% if not equipe.id %}sem-equipe{% endif %}">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                  <div>
+                    <h5 class="fw-bold text-dark mb-1">{{ equipe.nome }}</h5>
+                    <div class="small text-muted">{{ equipe.total }} retorno{{ 's' if equipe.total != 1 else '' }}</div>
+                  </div>
+                  {% if equipe.id %}
+                    <a
+                      href="{{ url_for('main.relatorios_retornos_automaticos', data_ini=filtros_exportacao.data_ini, data_fim=filtros_exportacao.data_fim, equipe_id=equipe.id, unidade=filtros_exportacao.unidade, regiao=filtros_exportacao.regiao, status=filtros_exportacao.status, apoio_cet=filtros_exportacao.apoio_cet, tipo_visita=filtros_exportacao.tipo_visita, tipo_imovel=filtros_exportacao.tipo_imovel, tipo_operacao=filtros_exportacao.tipo_operacao, foco=filtros_exportacao.foco, protocolo=filtros_exportacao.protocolo, endereco=filtros_exportacao.endereco) }}"
+                      class="btn btn-outline-primary btn-sm"
+                      title="Filtrar esta equipe"
+                    >
+                      <i class="bi bi-funnel"></i>
+                    </a>
+                  {% endif %}
+                </div>
+
+                <div class="retornos-team-metrics">
+                  <div class="retornos-team-metric">
+                    <strong>{{ equipe.proximos_7 }}</strong>
+                    <span>7 dias</span>
+                  </div>
+                  <div class="retornos-team-metric">
+                    <strong class="{% if equipe.atrasados %}text-danger{% endif %}">{{ equipe.atrasados }}</strong>
+                    <span>Datas vencidas</span>
+                  </div>
+                </div>
+
+                <div class="mt-3">
+                  {% for item in equipe.itens[:3] %}
+                    <div class="d-flex justify-content-between gap-2 small py-1 border-top">
+                      <span class="text-muted">{{ item.data_agendamento.strftime('%d/%m') if item.data_agendamento else '-' }}</span>
+                      <span class="text-truncate fw-semibold" title="{{ item.endereco }}">{{ item.bairro or item.endereco }}</span>
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="alert alert-light border d-flex align-items-center gap-2">
+        <i class="bi bi-info-circle text-primary"></i>
+        <span>Nenhum retorno automatico encontrado para os filtros atuais.</span>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="card retornos-table-card rounded-4">
+    <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div>
+        <h5 class="fw-bold text-dark mb-0">Visao geral</h5>
+        <div class="small text-muted">Enderecos agendados para retorno automatico.</div>
+      </div>
+      <span class="badge rounded-pill bg-light text-dark border">{{ total_retornos }} registros</span>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Data</th>
+            <th>OS</th>
+            <th>Equipe</th>
+            <th>Endereco</th>
+            <th>UVIS</th>
+            <th>Operacao</th>
+            <th>Status</th>
+            <th class="text-end">Acao</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in retornos %}
+            <tr>
+              <td>
+                <div class="fw-bold">{{ item.data_agendamento.strftime('%d/%m/%Y') if item.data_agendamento else '-' }}</div>
+                <div class="small text-muted">{{ item.hora_agendamento.strftime('%H:%M') if item.hora_agendamento else '-' }}</div>
+                {% if item.atrasado %}
+                  <span class="badge rounded-pill bg-danger-subtle text-danger border border-danger-subtle">Data vencida</span>
+                {% elif item.dias_ate == 0 %}
+                  <span class="badge rounded-pill bg-warning-subtle text-dark border border-warning-subtle">Hoje</span>
+                {% elif item.dias_ate is not none and item.dias_ate <= 7 %}
+                  <span class="badge rounded-pill bg-info-subtle text-primary border border-info-subtle">{{ item.dias_ate }} dias</span>
+                {% endif %}
+              </td>
+              <td>
+                <div class="fw-bold text-dark">#{{ item.id }}</div>
+                {% if item.identificador_os %}
+                  <div class="small text-muted">{{ item.identificador_os }}</div>
+                {% endif %}
+                {% if item.origem_id %}
+                  <div class="small text-muted">Origem #{{ item.origem_id }}</div>
+                {% endif %}
+              </td>
+              <td class="fw-semibold">{{ item.equipe_nome }}</td>
+              <td class="retornos-address">
+                <div class="fw-semibold">{{ item.endereco }}</div>
+                {% if item.bairro %}
+                  <div class="small text-muted">{{ item.bairro }}</div>
+                {% endif %}
+              </td>
+              <td>{{ item.uvis }}</td>
+              <td>
+                <div>{{ item.tipo_operacao or '-' }}</div>
+                {% if item.foco %}
+                  <div class="small text-muted">{{ item.foco }}</div>
+                {% endif %}
+              </td>
+              <td>
+                <span class="badge rounded-pill bg-light text-dark border">{{ item.status or '-' }}</span>
+              </td>
+              <td class="text-end">
+                <a href="{{ url_for('main.admin_os_formulario_view', os_id=item.id) }}" class="btn btn-sm btn-outline-primary shadow-sm" title="Ver formulario">
+                  <i class="bi bi-eye"></i>
+                </a>
+              </td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="8" class="text-center text-muted py-4">Nenhum retorno automatico encontrado.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

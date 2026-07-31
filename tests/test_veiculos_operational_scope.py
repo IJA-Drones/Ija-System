@@ -1,6 +1,6 @@
-import unittest
 import os
-from datetime import datetime, timedelta
+import unittest
+from datetime import datetime, time, timedelta
 from io import BytesIO
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
@@ -16,7 +16,9 @@ from app.models import (
     LimpezaVeiculo,
     LimpezaVeiculoAlertaCiencia,
     LogVeiculo,
+    OrdemServico,
     Prefeitura,
+    Solicitacao,
     Usuario,
     Veiculos,
 )
@@ -644,6 +646,63 @@ class VeiculosOperationalScopeTests(unittest.TestCase):
         self.assertEqual(context["veiculos_timeline"][0]["total_abastecimentos"], 25)
         self.assertEqual(context["veiculos_timeline"][0]["total_abastecimentos_veiculo"], 24)
         self.assertEqual(context["veiculos_timeline"][0]["total_abastecimentos_gerador"], 1)
+
+    def test_vehicle_log_detail_shows_automatic_returns_for_audit_profiles(self):
+        veiculo = self._novo_veiculo(prefeitura_id=1)
+        log = LogVeiculo(
+            veiculo_id=veiculo.id,
+            equipe_id=self.equipe.id,
+            km_inicial=1000,
+            km_final=1010,
+            check_diario=True,
+            data_registro=datetime(2026, 7, 31, 8, 0),
+        )
+        uvis = Usuario(
+            nome_uvis="UVIS Teste",
+            login="uvis-teste",
+            senha_hash="x",
+            tipo_usuario="uvis",
+            prefeitura_id=1,
+        )
+        db.session.add_all([log, uvis])
+        db.session.flush()
+        solicitacao = Solicitacao(
+            prefeitura_id=1,
+            data_agendamento=datetime(2026, 7, 31).date(),
+            hora_agendamento=time(9, 0),
+            foco="Aedes",
+            cep="00000-000",
+            logradouro="Rua Teste",
+            numero="123",
+            bairro="Centro",
+            cidade="Sao Paulo",
+            uf="SP",
+            usuario_id=uvis.id,
+            equipe_id=self.equipe.id,
+            status="CONCLUIDO",
+            gerada_automaticamente=True,
+        )
+        db.session.add(solicitacao)
+        db.session.flush()
+        db.session.add(
+            OrdemServico(
+                solicitacao_id=solicitacao.id,
+                equipe_id=self.equipe.id,
+                identificador_os="OS-RET-1",
+                data_aplicacao=datetime(2026, 7, 31).date(),
+            )
+        )
+        db.session.commit()
+        user = SimpleNamespace(tipo_usuario="visualizar", prefeitura_id=1)
+
+        with self.app.test_request_context(f"/veiculos/logs/veiculo/{veiculo.id}"):
+            context = veiculos_service.build_veiculo_logs_detalhe_context("visualizar", veiculo.id, request.args, user=user)
+
+        turno = context["timeline"]["dias"][0]["turnos"][0]
+        self.assertTrue(context["can_view_retorno_automatico_audit"])
+        self.assertEqual(turno["retornos_automaticos_count"], 1)
+        self.assertEqual(turno["retornos_automaticos"][0]["id"], solicitacao.id)
+        self.assertIn("Rua Teste", turno["retornos_automaticos"][0]["endereco"])
 
     def test_fuel_record_requires_and_saves_panel_photo(self):
         veiculo = self._novo_veiculo()

@@ -19,6 +19,7 @@ from app.modules.relatorios.exporters import (
     build_relatorio_pdf_export,
 )
 from app.modules.relatorios.service import (
+    build_retornos_automaticos_context,
     build_relatorios_coleta_imagens_context,
     build_relatorios_os_context,
     build_relatorios_solicitacoes_context,
@@ -276,6 +277,26 @@ def register_routes(bp):
                 codigo=500,
                 titulo="Erro nos Relatorios de OS",
                 mensagem="Houve um erro tecnico ao processar os dados das ordens de servico.",
+            )
+
+    @bp.route("/relatorios/retornos-automaticos", methods=["GET"], endpoint="relatorios_retornos_automaticos")
+    @login_required
+    def relatorios_retornos_automaticos():
+        if not can_access_relatorios_menu(current_user):
+            flash("Acesso restrito.", "danger")
+            return redirect(url_for("main.dashboard"))
+
+        try:
+            context = build_retornos_automaticos_context(current_user, request.args)
+            return render_template("relatorios_retornos_automaticos.html", **context)
+        except Exception as exc:
+            db.session.rollback()
+            print(f"ERRO NA CENTRAL DE RETORNOS AUTOMATICOS: {exc}")
+            return render_template(
+                "erro.html",
+                codigo=500,
+                titulo="Erro na Central de Retornos Automaticos",
+                mensagem="Houve um erro tecnico ao processar os dados dos retornos automaticos.",
             )
 
     @bp.route("/relatorios-coleta-imagens", methods=["GET"], endpoint="relatorios_coleta_imagens")
