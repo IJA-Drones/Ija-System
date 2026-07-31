@@ -155,7 +155,7 @@
     </div>
   </div>
 
-  {% set agenda_has_filters = filtros.uvis_id or filtros.status or filtros.tipo_visita or filtros.tipo_imovel or filtros.foco or (not periodo_semanal_fixo and (filtros.data_ini or filtros.data_fim)) %}
+  {% set agenda_has_filters = filtros.uvis_id or filtros.status or filtros.tipo_agenda or filtros.tipo_visita or filtros.tipo_imovel or filtros.foco or (not periodo_semanal_fixo and (filtros.data_ini or filtros.data_fim)) %}
 
   {% if periodo_semanal_fixo %}
   <div class="alert alert-primary border-0 shadow-sm rounded-4 mb-4">
@@ -228,6 +228,27 @@
                 {% endfor %}
               </select>
             </div>
+
+            {% if pode_ver_retornos_automaticos %}
+            <div class="col-md-3">
+              <label class="small text-muted">Tipo na agenda:</label>
+              <select class="form-select form-select-sm" name="tipo_agenda">
+                <option value="">Todos</option>
+                <option
+                  value="{{ agenda_tipo_normal }}"
+                  {% if filtros.tipo_agenda == agenda_tipo_normal %}selected{% endif %}
+                >
+                  Agendamentos normais
+                </option>
+                <option
+                  value="{{ agenda_tipo_auto }}"
+                  {% if filtros.tipo_agenda == agenda_tipo_auto %}selected{% endif %}
+                >
+                  Retornos automaticos
+                </option>
+              </select>
+            </div>
+            {% endif %}
 
             <div class="col-md-3">
               <label class="small text-muted">Tipo de visita:</label>
@@ -423,6 +444,10 @@
               </div>
 
               <div class="agenda-modal-meta-grid mb-3">
+                <div class="agenda-modal-meta-item">
+                  <span class="agenda-modal-meta-label">Tipo na Agenda</span>
+                  <div id="m-tipo-agenda" class="agenda-modal-meta-value">-</div>
+                </div>
                 <div class="agenda-modal-meta-item">
                   <span class="agenda-modal-meta-label">Tipo de Visita</span>
                   <div id="m-tipo-visita" class="agenda-modal-meta-value">—</div>
@@ -723,6 +748,7 @@
     const tipoVisita = props.tipo_visita || "—";
     const tipoImovel = props.tipo_imovel || "—";
     const tipoOperacao = props.tipo_operacao || "—";
+    const tipoAgenda = props.tipo_agenda_label || "Agendamento";
     const altura = props.altura_voo || "—";
     const apoioCet = props.apoio_cet || "—";
     const solicitacaoId = fcEvent.id || "—";
@@ -754,6 +780,7 @@
     const elTipoVisita = document.getElementById("m-tipo-visita");
     const elTipoImovel = document.getElementById("m-tipo-imovel");
     const elTipoOperacao = document.getElementById("m-tipo-operacao");
+    const elTipoAgenda = document.getElementById("m-tipo-agenda");
     const elAltura = document.getElementById("m-altura");
     const elApoioCet = document.getElementById("m-apoio-cet");
     const elSolicitacaoId = document.getElementById("m-solicitacao-id");
@@ -769,6 +796,7 @@
     if (elTipoVisita) elTipoVisita.textContent = tipoVisita;
     if (elTipoImovel) elTipoImovel.textContent = tipoImovel;
     if (elTipoOperacao) elTipoOperacao.textContent = tipoOperacao;
+    if (elTipoAgenda) elTipoAgenda.textContent = tipoAgenda;
     if (elAltura) elAltura.textContent = altura;
     if (elApoioCet) elApoioCet.textContent = apoioCet;
     if (elSolicitacaoId) elSolicitacaoId.textContent = solicitacaoId;
@@ -954,12 +982,39 @@
         const status = (info.event.extendedProps?.status || "")
           .trim()
           .toUpperCase();
+        const classNames = [];
 
-        if (status.includes("CONCLU")) {
-          return ["agenda-event-completed"];
+        if (info.event.extendedProps?.is_retorno_automatico) {
+          classNames.push("agenda-event-retorno");
         }
 
-        return [];
+        if (status.includes("CONCLU")) {
+          classNames.push("agenda-event-completed");
+        }
+
+        return classNames;
+      },
+      eventContent: function (info) {
+        const props = info.event.extendedProps || {};
+        const title = info.event.title || "";
+        const titleEl = document.createElement("span");
+        titleEl.className = "agenda-event-title";
+
+        if (!props.is_retorno_automatico) {
+          titleEl.textContent = title;
+          return { domNodes: [titleEl] };
+        }
+
+        const badge = document.createElement("span");
+        badge.className = "agenda-event-retorno-badge";
+        badge.title = "Retorno automatico";
+        badge.setAttribute("aria-label", "Retorno automatico");
+        const icon = document.createElement("i");
+        icon.className = "bi bi-arrow-repeat";
+        badge.appendChild(icon);
+        titleEl.textContent = title;
+
+        return { domNodes: [badge, titleEl] };
       },
 
       headerToolbar: {

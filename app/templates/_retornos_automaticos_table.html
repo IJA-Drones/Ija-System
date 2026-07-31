@@ -1,0 +1,90 @@
+{% from "_pagination.html" import render_pagination %}
+
+<div class="card retornos-table-card rounded-4">
+  <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+      <h5 class="fw-bold text-dark mb-0">{{ retornos_table_title or 'Logs gerais' }}</h5>
+      <div class="small text-muted">{{ retornos_table_subtitle or 'Enderecos agendados para retorno automatico.' }}</div>
+    </div>
+    <span class="badge rounded-pill bg-light text-dark border">{{ total_retornos }} registros</span>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Data</th>
+          <th>OS</th>
+          <th>Equipe</th>
+          <th>Endereco</th>
+          <th>UVIS</th>
+          <th>Operacao</th>
+          <th>Status</th>
+          <th class="text-end">Acao</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in retornos %}
+          <tr>
+            <td>
+              <div class="fw-bold">{{ item.data_agendamento.strftime('%d/%m/%Y') if item.data_agendamento else '-' }}</div>
+              <div class="small text-muted">{{ item.hora_agendamento.strftime('%H:%M') if item.hora_agendamento else '-' }}</div>
+              {% if item.dias_ate is not none and item.dias_ate > 0 and item.dias_ate <= 7 %}
+                <span class="badge rounded-pill bg-info-subtle text-primary border border-info-subtle">{{ item.dias_ate }} dias</span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="fw-bold text-dark">#{{ item.id }}</div>
+              {% if item.identificador_os %}
+                <div class="small text-muted">{{ item.identificador_os }}</div>
+              {% endif %}
+              {% if item.origem_id %}
+                <div class="small text-muted">Origem #{{ item.origem_id }}</div>
+              {% endif %}
+            </td>
+            <td class="fw-semibold">{{ item.equipe_nome }}</td>
+            <td class="retornos-address">
+              <div class="fw-semibold">{{ item.endereco }}</div>
+              {% if item.bairro %}
+                <div class="small text-muted">{{ item.bairro }}</div>
+              {% endif %}
+            </td>
+            <td>{{ item.uvis }}</td>
+            <td>
+              <div>{{ item.tipo_operacao or '-' }}</div>
+              {% if item.foco %}
+                <div class="small text-muted">{{ item.foco }}</div>
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge rounded-pill {{ item.situacao_operacional.classe }}">{{ item.situacao_operacional.label }}</span>
+              {% if item.status %}
+                <div class="small text-muted mt-1">{{ item.status }}</div>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              <a href="{{ url_for('main.admin_os_formulario_view', os_id=item.id) }}" class="btn btn-sm btn-outline-primary shadow-sm" title="Ver formulario">
+                <i class="bi bi-eye"></i>
+              </a>
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="8" class="text-center text-muted py-4">Nenhum retorno automatico encontrado.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {{ render_pagination(
+      retornos_pagination_endpoint,
+      retornos_paginacao,
+      pagination_args,
+      nav_class='mt-0 p-3',
+      show_summary=True,
+      summary_label='retornos',
+      page_size_options=[25, 50, 100],
+      page_size_label='Itens por pagina'
+  ) }}
+</div>

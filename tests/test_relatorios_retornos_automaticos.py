@@ -225,6 +225,53 @@ class RelatoriosRetornosAutomaticosTests(unittest.TestCase):
         self.assertIn("PLOA 20", cards)
         self.assertEqual(cards["PLOA 20"]["total"], 0)
 
+    def test_build_context_paginates_general_logs(self):
+        for index in range(30):
+            self._solicitacao(
+                data_agendamento=date(2099, 1, 1),
+                hora_agendamento=time(8, index % 60),
+                gerada_automaticamente=True,
+                logradouro=f"Rua Pagina {index}",
+            )
+        db.session.commit()
+
+        user = SimpleNamespace(tipo_usuario="admin", prefeitura_id=1)
+
+        context = build_retornos_automaticos_context(
+            user,
+            MultiDict({"page": "2", "per_page": "10"}),
+        )
+
+        self.assertEqual(context["total_retornos"], 30)
+        self.assertEqual(context["retornos_paginacao"].page, 2)
+        self.assertEqual(context["retornos_paginacao"].per_page, 10)
+        self.assertEqual(len(context["retornos"]), 10)
+
+    def test_build_context_team_detail_filters_items_to_selected_team(self):
+        outra_equipe = Equipe(nome_equipe="PLOA 30", regiao="SUL", ativa=True, prefeitura_id=1)
+        db.session.add(outra_equipe)
+        db.session.flush()
+        retorno_equipe = self._solicitacao(equipe_id=self.equipe.id, gerada_automaticamente=True)
+        self._solicitacao(
+            equipe_id=outra_equipe.id,
+            gerada_automaticamente=True,
+            logradouro="Rua Outra Equipe",
+        )
+        db.session.commit()
+
+        user = SimpleNamespace(tipo_usuario="admin", prefeitura_id=1)
+
+        context = build_retornos_automaticos_context(
+            user,
+            MultiDict(),
+            equipe_detalhe_id=self.equipe.id,
+        )
+
+        self.assertEqual(context["total_retornos"], 1)
+        self.assertEqual(context["retornos"][0]["id"], retorno_equipe.id)
+        self.assertEqual(context["equipe_card_detalhe"]["nome"], "PLOA 24")
+        self.assertEqual(context["pagination_args"]["equipe_id"], self.equipe.id)
+
     def test_build_context_filters_by_complete_search_fields(self):
         self._solicitacao(
             equipe_id=self.equipe.id,

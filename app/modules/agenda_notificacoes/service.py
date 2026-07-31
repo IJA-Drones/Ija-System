@@ -4,7 +4,7 @@ from datetime import date, datetime, timedelta
 from io import BytesIO
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import false
+from sqlalchemy import false, not_
 from flask import current_app, url_for
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
@@ -48,6 +48,8 @@ AGENDA_VISIBLE_STATUSES = (
     "CONCLUÍDA",
 )
 EQUIPE_OCEANO_USER_TYPE = "equipe_oceano"
+AGENDA_TIPO_AUTO = "RETORNO_AUTOMATICO"
+AGENDA_TIPO_NORMAL = "NORMAL"
 TZ_BR = ZoneInfo("America/Sao_Paulo")
 AUTO_ALERT_PREVIEW_LIMIT = 4
 AUTO_ALERT_BATTERY_WARNING_CYCLES = 200
@@ -121,6 +123,17 @@ def is_uvis_owner_agenda_user(user):
 
 def is_operational_agenda_user(user):
     return is_piloto_agenda_user(user) or is_equipe_oceano_agenda_user(user)
+
+
+def can_view_agenda_retornos_automaticos(user):
+    return can_view_all_agenda(user)
+
+
+def _retorno_automatico_clause():
+    return db.or_(
+        Solicitacao.gerada_automaticamente.is_(True),
+        Solicitacao.origem_retorno_id.isnot(None),
+    )
 
 
 def _agenda_owner_usuario_id(user):
@@ -202,16 +215,24 @@ def build_agenda_query(
     filtro_tipo_visita=None,
     filtro_tipo_imovel=None,
     filtro_foco=None,
+    filtro_tipo_agenda=None,
     data_ini=None,
     data_fim=None,
     mes=None,
     ano=None,
 ):
+    retorno_automatico_clause = _retorno_automatico_clause()
+    visible_clause = Solicitacao.status.in_(AGENDA_VISIBLE_STATUSES)
+
     query = (
         Solicitacao.query
         .options(joinedload(Solicitacao.usuario))
-        .filter(Solicitacao.status.in_(AGENDA_VISIBLE_STATUSES))
     )
+    if can_view_agenda_retornos_automaticos(user):
+        query = query.filter(db.or_(visible_clause, retorno_automatico_clause))
+    else:
+        query = query.filter(visible_clause)
+
     query = apply_agenda_user_scope(query, user)
 
     if is_operational_agenda_user(user):
@@ -233,14 +254,31 @@ def build_agenda_query(
     if filtro_foco:
         query = query.filter(Solicitacao.foco == filtro_foco)
 
+    if filtro_tipo_agenda == AGENDA_TIPO_AUTO:
+        if can_view_agenda_retornos_automaticos(user):
+            query = query.filter(retorno_automatico_clause)
+        else:
+            query = query.filter(false())
+    elif filtro_tipo_agenda == AGENDA_TIPO_NORMAL:
+        query = query.filter(not_(retorno_automatico_clause))
+
     query = _apply_agenda_date_range(query, data_ini, data_fim)
 
     if mes and ano and not _has_agenda_date_range(data_ini, data_fim):
         filtro_mesano = f"{ano}-{mes:02d}"
         if db.engine.name == "postgresql":
-            query = query.filter(db.func.to_char(Solicitacao.data_agendamento, "YYYY-MM") == filtro_mesano)
+            month_clause = db.func.to_char(Solicitacao.data_agendamento, "YYYY-MM") == filtro_mesano
         else:
-            query = query.filter(db.func.strftime("%Y-%m", Solicitacao.data_agendamento) == filtro_mesano)
+            month_clause = db.func.strftime("%Y-%m", Solicitacao.data_agendamento) == filtro_mesano
+
+        if can_view_agenda_retornos_automaticos(user) and filtro_tipo_agenda != AGENDA_TIPO_NORMAL:
+            future_return_clause = db.and_(
+                retorno_automatico_clause,
+                Solicitacao.data_agendamento >= datetime.now(TZ_BR).date(),
+            )
+            query = query.filter(db.or_(month_clause, future_return_clause))
+        else:
+            query = query.filter(month_clause)
 
     return query
 
@@ -290,12 +328,20 @@ def build_agenda_eventos(solicitacoes):
         if cep:
             endereco_txt = (endereco_txt + f" (CEP {cep})").strip()
 
+        is_retorno_automatico = bool(solicitacao.gerada_automaticamente or solicitacao.origem_retorno_id)
+        titulo_base = endereco_txt or solicitacao.foco or "Local nao informado"
+        title = f"{titulo_base} - {uvis_nome}"
+
         agenda_eventos.append(
             {
                 "id": str(solicitacao.id),
-                "title": f"{endereco_txt or solicitacao.foco or 'Local não informado'} - {uvis_nome}",
+                "title": title,
                 "start": f"{data}T{hora}",
+                "classNames": ["agenda-event-retorno"] if is_retorno_automatico else [],
                 "extendedProps": {
+                    "is_retorno_automatico": is_retorno_automatico,
+                    "origem_retorno_id": solicitacao.origem_retorno_id,
+                    "tipo_agenda_label": "Retorno automatico" if is_retorno_automatico else "Agendamento",
                     "foco": solicitacao.foco,
                     "tipo_visita": solicitacao.tipo_visita,
                     "tipo_imovel": solicitacao.tipo_imovel,
@@ -361,6 +407,9 @@ def build_agenda_context(user, args):
     filtro_tipo_visita = (args.get("tipo_visita") or "").strip() or None
     filtro_tipo_imovel = (args.get("tipo_imovel") or "").strip() or None
     filtro_foco = (args.get("foco") or "").strip() or None
+    filtro_tipo_agenda = (args.get("tipo_agenda") or "").strip() or None
+    if filtro_tipo_agenda not in {AGENDA_TIPO_AUTO, AGENDA_TIPO_NORMAL}:
+        filtro_tipo_agenda = None
     filtro_data_ini = (args.get("data_ini") or "").strip() or None
     filtro_data_fim = (args.get("data_fim") or "").strip() or None
     mes = args.get("mes", datetime.now().month, type=int)
@@ -386,6 +435,7 @@ def build_agenda_context(user, args):
         filtro_tipo_visita=filtro_tipo_visita,
         filtro_tipo_imovel=filtro_tipo_imovel,
         filtro_foco=filtro_foco,
+        filtro_tipo_agenda=filtro_tipo_agenda,
         data_ini=filtro_data_ini,
         data_fim=filtro_data_fim,
         mes=mes,
@@ -400,12 +450,14 @@ def build_agenda_context(user, args):
             "tipo_visita": filtro_tipo_visita,
             "tipo_imovel": filtro_tipo_imovel,
             "foco": filtro_foco,
+            "tipo_agenda": filtro_tipo_agenda,
             "data_ini": filtro_data_ini,
             "data_fim": filtro_data_fim,
             "mes": mes,
             "ano": ano,
         },
         "status_opcoes": [
+            "PENDENTE",
             "APROVADO",
             "APROVADO COM RECOMENDAÇÕES",
             "CONCLUÍDO",
@@ -414,6 +466,9 @@ def build_agenda_context(user, args):
         "anos_disponiveis": build_agenda_anos_disponiveis(user),
         "initial_date": initial_date,
         "pode_filtrar_uvis": can_view_all_agenda(user),
+        "pode_ver_retornos_automaticos": can_view_agenda_retornos_automaticos(user),
+        "agenda_tipo_auto": AGENDA_TIPO_AUTO,
+        "agenda_tipo_normal": AGENDA_TIPO_NORMAL,
         "google_maps_key": get_agenda_google_maps_key(),
         "periodo_semanal_fixo": periodo_semanal_fixo,
         "semana_inicio": semana_inicio,
@@ -499,6 +554,9 @@ def build_agenda_export(user, args):
     filtro_tipo_visita = None if export_all else (args.get("tipo_visita") or None)
     filtro_tipo_imovel = None if export_all else (args.get("tipo_imovel") or None)
     filtro_foco = None if export_all else (args.get("foco") or None)
+    filtro_tipo_agenda = None if export_all else (args.get("tipo_agenda") or None)
+    if filtro_tipo_agenda not in {AGENDA_TIPO_AUTO, AGENDA_TIPO_NORMAL}:
+        filtro_tipo_agenda = None
     filtro_data_ini = None if export_all else (args.get("data_ini") or None)
     filtro_data_fim = None if export_all else (args.get("data_fim") or None)
     mes = None if export_all else args.get("mes", type=int)
@@ -511,6 +569,7 @@ def build_agenda_export(user, args):
         filtro_tipo_visita=filtro_tipo_visita,
         filtro_tipo_imovel=filtro_tipo_imovel,
         filtro_foco=filtro_foco,
+        filtro_tipo_agenda=filtro_tipo_agenda,
         data_ini=filtro_data_ini,
         data_fim=filtro_data_fim,
         mes=mes,
@@ -540,6 +599,7 @@ def build_agenda_export(user, args):
         "COORDENADA GEOGRÁFICA",
         "Altura dos Voos",
         "Protocolo DECA",
+        "Tipo na Agenda",
         "Status",
     ]
     ws.append(headers)
@@ -563,6 +623,7 @@ def build_agenda_export(user, args):
         lon = getattr(evento, "longitude", "") or ""
         coordenada = f"{lat},{lon}" if (lat or lon) else ""
         protocolo_deca = getattr(evento, "protocolo_deca", None) or getattr(evento, "protocolo", "") or ""
+        tipo_agenda = "Retorno automatico" if (evento.gerada_automaticamente or evento.origem_retorno_id) else "Agendamento"
 
         ws.append(
             [
@@ -579,6 +640,7 @@ def build_agenda_export(user, args):
                 coordenada,
                 getattr(evento, "altura_voo", "") or "",
                 protocolo_deca,
+                tipo_agenda,
                 getattr(evento, "status", "") or "",
             ]
         )

@@ -299,6 +299,62 @@ def register_routes(bp):
                 mensagem="Houve um erro tecnico ao processar os dados dos retornos automaticos.",
             )
 
+    @bp.route(
+        "/relatorios/retornos-automaticos/equipe/<int:equipe_id>",
+        methods=["GET"],
+        endpoint="relatorios_retornos_automaticos_equipe",
+    )
+    @login_required
+    def relatorios_retornos_automaticos_equipe(equipe_id):
+        if not can_access_relatorios_menu(current_user):
+            flash("Acesso restrito.", "danger")
+            return redirect(url_for("main.dashboard"))
+
+        try:
+            context = build_retornos_automaticos_context(
+                current_user,
+                request.args,
+                equipe_detalhe_id=equipe_id,
+            )
+            return render_template("relatorios_retornos_automaticos_equipe.html", **context)
+        except PermissionError as exc:
+            db.session.rollback()
+            flash(str(exc), "warning")
+            return redirect(url_for("main.relatorios_retornos_automaticos"))
+        except Exception as exc:
+            db.session.rollback()
+            print(f"ERRO NOS RETORNOS AUTOMATICOS DA EQUIPE: {exc}")
+            return render_template(
+                "erro.html",
+                codigo=500,
+                titulo="Erro nos Retornos Automaticos da Equipe",
+                mensagem="Houve um erro tecnico ao processar os retornos automaticos da equipe.",
+            )
+
+    @bp.route(
+        "/relatorios/retornos-automaticos/sem-equipe",
+        methods=["GET"],
+        endpoint="relatorios_retornos_automaticos_sem_equipe",
+    )
+    @login_required
+    def relatorios_retornos_automaticos_sem_equipe():
+        if not can_access_relatorios_menu(current_user):
+            flash("Acesso restrito.", "danger")
+            return redirect(url_for("main.dashboard"))
+
+        try:
+            context = build_retornos_automaticos_context(current_user, request.args, sem_equipe=True)
+            return render_template("relatorios_retornos_automaticos_equipe.html", **context)
+        except Exception as exc:
+            db.session.rollback()
+            print(f"ERRO NOS RETORNOS AUTOMATICOS SEM EQUIPE: {exc}")
+            return render_template(
+                "erro.html",
+                codigo=500,
+                titulo="Erro nos Retornos Automaticos Sem Equipe",
+                mensagem="Houve um erro tecnico ao processar os retornos automaticos sem equipe.",
+            )
+
     @bp.route("/relatorios-coleta-imagens", methods=["GET"], endpoint="relatorios_coleta_imagens")
     @login_required
     def relatorios_coleta_imagens():

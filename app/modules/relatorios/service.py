@@ -17,7 +17,7 @@ from app.shared.access import (
     is_regional_user,
     normalize_regiao,
 )
-from app.shared.query_filters import aplicar_filtros_base, id_search_clause
+from app.shared.query_filters import aplicar_filtros_base, id_search_clause, query_args_without_page
 from app.shared.query_filters import (
     get_multi_int_values,
     get_multi_values,
@@ -1035,10 +1035,34 @@ def _retorno_automatico_month_key(item):
     return f"{data.year:04d}-{data.month:02d}", f"{RETORNOS_AUTOMATICOS_MONTH_NAMES[data.month]}/{data.year}"
 
 
-def build_retornos_automaticos_context(user, args):
+def _get_retornos_page_arg(args, name, default, minimum=1, maximum=None):
+    try:
+        value = args.get(name, default, type=int)
+    except TypeError:
+        try:
+            value = int(args.get(name, default))
+        except (TypeError, ValueError):
+            value = default
+    except ValueError:
+        value = default
+
+    value = max(minimum, value)
+    if maximum is not None:
+        value = min(maximum, value)
+    return value
+
+
+def build_retornos_automaticos_context(user, args, *, equipe_detalhe_id=None, sem_equipe=False):
     filtros = _resolve_retornos_automaticos_filters(args)
     hoje = datetime.now().date()
     equipes_disponiveis = _build_retornos_equipes_disponiveis(user)
+    equipe_detalhe = None
+    if equipe_detalhe_id is not None:
+        equipe_detalhe = next((equipe for equipe in equipes_disponiveis if equipe.id == equipe_detalhe_id), None)
+        if not equipe_detalhe:
+            raise PermissionError("Equipe nao encontrada ou fora do seu acesso.")
+        filtros["equipe_id"] = [equipe_detalhe_id]
+
     query = _build_retornos_automaticos_query(user, filtros)
     solicitacoes = (
         query
@@ -1056,26 +1080,30 @@ def build_retornos_automaticos_context(user, args):
             for item in itens
             if item["situacao_operacional"]["key"] == filtros["situacao_operacional"]
         ]
+    if sem_equipe:
+        itens = [item for item in itens if not item["equipe_id"]]
     itens.sort(key=_retorno_automatico_sort_key)
+    total_itens = len(itens)
 
     equipes_map = {}
     equipes_filtradas = set(filtros["equipe_id"])
-    for equipe in equipes_disponiveis:
-        if equipes_filtradas and equipe.id not in equipes_filtradas:
-            continue
-        equipes_map[equipe.id] = {
-            "id": equipe.id,
-            "nome": equipe.nome_equipe or f"PLOA {equipe.id}",
-            "total": 0,
-            "atrasados": 0,
-            "proximos_7": 0,
-            "sem_fechamento": 0,
-            "data_vencida": 0,
-            "concluidos": 0,
-            "pendentes_futuros": 0,
-            "meses_map": {},
-            "itens": [],
-        }
+    if not sem_equipe:
+        for equipe in equipes_disponiveis:
+            if equipes_filtradas and equipe.id not in equipes_filtradas:
+                continue
+            equipes_map[equipe.id] = {
+                "id": equipe.id,
+                "nome": equipe.nome_equipe or f"PLOA {equipe.id}",
+                "total": 0,
+                "atrasados": 0,
+                "proximos_7": 0,
+                "sem_fechamento": 0,
+                "data_vencida": 0,
+                "concluidos": 0,
+                "pendentes_futuros": 0,
+                "meses_map": {},
+                "itens": [],
+            }
 
     for item in itens:
         key = item["equipe_id"] or "sem-equipe"
@@ -1133,6 +1161,25 @@ def build_retornos_automaticos_context(user, args):
             equipe["nome"].upper(),
         ),
     )
+    equipe_card_detalhe = None
+    if equipe_detalhe_id is not None:
+        equipe_card_detalhe = equipes_map.get(equipe_detalhe_id)
+    elif sem_equipe:
+        equipe_card_detalhe = equipes_map.get("sem-equipe")
+        if not equipe_card_detalhe:
+            equipe_card_detalhe = {
+                "id": None,
+                "nome": "Sem equipe",
+                "total": 0,
+                "atrasados": 0,
+                "proximos_7": 0,
+                "sem_fechamento": 0,
+                "data_vencida": 0,
+                "concluidos": 0,
+                "pendentes_futuros": 0,
+                "meses": [],
+                "itens": [],
+            }
 
     status_query = (
         Solicitacao.query
@@ -1155,31 +1202,45 @@ def build_retornos_automaticos_context(user, args):
     if filtros["status"] and filtros["status"] not in status_disponiveis:
         status_disponiveis.append(filtros["status"])
 
+    page = _get_retornos_page_arg(args, "page", 1)
+    per_page = _get_retornos_page_arg(args, "per_page", 25, minimum=10, maximum=100)
+    retornos_paginacao = SimplePagination(itens, page, per_page)
+    pagination_args = query_args_without_page(args)
+    if equipe_detalhe_id is not None:
+        pagination_args["equipe_id"] = equipe_detalhe_id
+    filtros_exportacao = {
+        "data_ini": filtros["data_ini"].isoformat() if filtros["data_ini"] else "",
+        "data_fim": filtros["data_fim"].isoformat() if filtros["data_fim"] else "",
+        "equipe_id": multi_value_to_query(filtros["equipe_id"]),
+        "unidade": multi_value_to_query(filtros["unidade_values"]),
+        "regiao": filtros["regiao"],
+        "status": filtros["status"],
+        "situacao_operacional": filtros["situacao_operacional"],
+        "apoio_cet": filtros["apoio_cet"],
+        "tipo_visita": filtros["tipo_visita"],
+        "tipo_imovel": filtros["tipo_imovel"],
+        "tipo_operacao": filtros["tipo_operacao"],
+        "foco": multi_value_to_query(filtros["foco_values"]),
+        "protocolo": filtros["protocolo"],
+        "endereco": filtros["endereco"],
+    }
+    central_return_args = dict(filtros_exportacao)
+    if equipe_detalhe_id is not None or sem_equipe:
+        central_return_args.pop("equipe_id", None)
+
     return {
         "filters": filtros,
-        "filtros_exportacao": {
-            "data_ini": filtros["data_ini"].isoformat() if filtros["data_ini"] else "",
-            "data_fim": filtros["data_fim"].isoformat() if filtros["data_fim"] else "",
-            "equipe_id": multi_value_to_query(filtros["equipe_id"]),
-            "unidade": multi_value_to_query(filtros["unidade_values"]),
-            "regiao": filtros["regiao"],
-            "status": filtros["status"],
-            "situacao_operacional": filtros["situacao_operacional"],
-            "apoio_cet": filtros["apoio_cet"],
-            "tipo_visita": filtros["tipo_visita"],
-            "tipo_imovel": filtros["tipo_imovel"],
-            "tipo_operacao": filtros["tipo_operacao"],
-            "foco": multi_value_to_query(filtros["foco_values"]),
-            "protocolo": filtros["protocolo"],
-            "endereco": filtros["endereco"],
-        },
+        "filtros_exportacao": filtros_exportacao,
+        "central_return_args": central_return_args,
         "hoje": hoje,
-        "retornos": itens,
+        "retornos": retornos_paginacao.items,
+        "retornos_paginacao": retornos_paginacao,
+        "pagination_args": pagination_args,
         "equipes_cards": equipes_cards,
         "equipes_disponiveis": equipes_disponiveis,
         "uvis_disponiveis": build_uvis_disponiveis(user, filtros["regiao"]),
         "status_disponiveis": status_disponiveis,
-        "total_retornos": len(itens),
+        "total_retornos": total_itens,
         "total_equipes": len([equipe for equipe in equipes_cards if equipe["id"] and equipe["total"]]),
         "total_sem_equipe": sum(1 for item in itens if not item["equipe_id"]),
         "total_atrasados": sum(1 for item in itens if item["atrasado"]),
@@ -1190,6 +1251,9 @@ def build_retornos_automaticos_context(user, args):
         "total_proximos_7": sum(
             1 for item in itens if item["dias_ate"] is not None and 0 <= item["dias_ate"] <= 7
         ),
+        "equipe_detalhe": equipe_detalhe,
+        "equipe_card_detalhe": equipe_card_detalhe,
+        "sem_equipe_detalhe": sem_equipe,
     }
 
 

@@ -59,52 +59,27 @@
 
     .retornos-team-card {
       border-left: 4px solid #0ea5e9;
+      color: inherit;
+      display: block;
+      text-decoration: none;
+      transition: transform 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .retornos-team-card:hover {
+      color: inherit;
+      transform: translateY(-2px);
+      box-shadow: 0 14px 34px rgba(15, 23, 42, 0.12);
     }
 
     .retornos-team-card.sem-equipe {
       border-left-color: #dc3545;
     }
 
-    .retornos-team-metrics {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .retornos-team-metric {
-      background: #f8fafc;
-      border: 1px solid #e9eef5;
-      border-radius: 8px;
-      padding: 9px 10px;
-    }
-
-    .retornos-month-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-    }
-
-    .retornos-month-label {
+    .retornos-team-total {
       color: #123f69;
+      font-size: 1.65rem;
       font-weight: 800;
-      line-height: 1.2;
-    }
-
-    .retornos-month-total {
-      color: #123f69;
-      font-size: 1rem;
-      font-weight: 800;
-      white-space: nowrap;
-    }
-
-    .retornos-month-flags {
-      color: #6c757d;
-      font-size: 0.72rem;
-      margin-top: 2px;
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
+      line-height: 1.1;
     }
 
     .retornos-address {
@@ -387,51 +362,25 @@
       <div class="row g-3">
         {% for equipe in equipes_cards %}
           <div class="col-md-6 col-xl-4">
-            <div class="card retornos-team-card rounded-4 h-100 {% if not equipe.id %}sem-equipe{% endif %}">
+            {% if equipe.id %}
+              {% set detalhe_url = url_for('main.relatorios_retornos_automaticos_equipe', equipe_id=equipe.id, data_ini=filtros_exportacao.data_ini, data_fim=filtros_exportacao.data_fim, unidade=filtros_exportacao.unidade, regiao=filtros_exportacao.regiao, status=filtros_exportacao.status, situacao_operacional=filtros_exportacao.situacao_operacional, apoio_cet=filtros_exportacao.apoio_cet, tipo_visita=filtros_exportacao.tipo_visita, tipo_imovel=filtros_exportacao.tipo_imovel, tipo_operacao=filtros_exportacao.tipo_operacao, foco=filtros_exportacao.foco, protocolo=filtros_exportacao.protocolo, endereco=filtros_exportacao.endereco) %}
+            {% else %}
+              {% set detalhe_url = url_for('main.relatorios_retornos_automaticos_sem_equipe', data_ini=filtros_exportacao.data_ini, data_fim=filtros_exportacao.data_fim, unidade=filtros_exportacao.unidade, regiao=filtros_exportacao.regiao, status=filtros_exportacao.status, situacao_operacional=filtros_exportacao.situacao_operacional, apoio_cet=filtros_exportacao.apoio_cet, tipo_visita=filtros_exportacao.tipo_visita, tipo_imovel=filtros_exportacao.tipo_imovel, tipo_operacao=filtros_exportacao.tipo_operacao, foco=filtros_exportacao.foco, protocolo=filtros_exportacao.protocolo, endereco=filtros_exportacao.endereco) %}
+            {% endif %}
+            <a href="{{ detalhe_url }}" class="card retornos-team-card rounded-4 h-100 {% if not equipe.id %}sem-equipe{% endif %}">
               <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                <div class="d-flex justify-content-between align-items-start gap-3">
                   <div>
                     <h5 class="fw-bold text-dark mb-1">{{ equipe.nome }}</h5>
-                    <div class="small text-muted">{{ equipe.total }} retorno{{ 's' if equipe.total != 1 else '' }}</div>
+                    <div class="small text-muted">Retornos automaticos</div>
                   </div>
-                  {% if equipe.id %}
-                    <a
-                      href="{{ url_for('main.relatorios_retornos_automaticos', data_ini=filtros_exportacao.data_ini, data_fim=filtros_exportacao.data_fim, equipe_id=equipe.id, unidade=filtros_exportacao.unidade, regiao=filtros_exportacao.regiao, status=filtros_exportacao.status, situacao_operacional=filtros_exportacao.situacao_operacional, apoio_cet=filtros_exportacao.apoio_cet, tipo_visita=filtros_exportacao.tipo_visita, tipo_imovel=filtros_exportacao.tipo_imovel, tipo_operacao=filtros_exportacao.tipo_operacao, foco=filtros_exportacao.foco, protocolo=filtros_exportacao.protocolo, endereco=filtros_exportacao.endereco) }}"
-                      class="btn btn-outline-primary btn-sm"
-                      title="Filtrar esta equipe"
-                    >
-                      <i class="bi bi-funnel"></i>
-                    </a>
-                  {% endif %}
+                  <div class="btn btn-outline-primary btn-sm" title="Abrir detalhes">
+                    <i class="bi bi-box-arrow-up-right"></i>
+                  </div>
                 </div>
-
-                <div class="retornos-team-metrics">
-                  {% for mes in equipe.meses[:5] %}
-                    <div class="retornos-team-metric">
-                      <div class="retornos-month-row">
-                        <span class="retornos-month-label">{{ mes.label }}</span>
-                        <span class="retornos-month-total">{{ mes.total }}</span>
-                      </div>
-                      <div class="retornos-month-flags">
-                        {% if mes.sem_fechamento %}
-                          <span class="text-warning fw-semibold">{{ mes.sem_fechamento }} sem fechamento</span>
-                        {% endif %}
-                        {% if mes.data_vencida %}
-                          <span class="text-danger fw-semibold">{{ mes.data_vencida }} data vencida</span>
-                        {% endif %}
-                        {% if mes.concluidos %}
-                          <span class="text-success fw-semibold">{{ mes.concluidos }} concluidos</span>
-                        {% endif %}
-                      </div>
-                    </div>
-                  {% else %}
-                    <div class="retornos-team-metric text-muted small">
-                      Nenhum retorno no filtro atual.
-                    </div>
-                  {% endfor %}
-                </div>
+                <div class="retornos-team-total mt-3">{{ equipe.total }}</div>
               </div>
-            </div>
+            </a>
           </div>
         {% endfor %}
       </div>
@@ -443,82 +392,9 @@
     {% endif %}
   </div>
 
-  <div class="card retornos-table-card rounded-4">
-    <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-      <div>
-        <h5 class="fw-bold text-dark mb-0">Visao geral</h5>
-        <div class="small text-muted">Enderecos agendados para retorno automatico.</div>
-      </div>
-      <span class="badge rounded-pill bg-light text-dark border">{{ total_retornos }} registros</span>
-    </div>
-
-    <div class="table-responsive">
-      <table class="table align-middle">
-        <thead class="table-light">
-          <tr>
-            <th>Data</th>
-            <th>OS</th>
-            <th>Equipe</th>
-            <th>Endereco</th>
-            <th>UVIS</th>
-            <th>Operacao</th>
-            <th>Status</th>
-            <th class="text-end">Acao</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for item in retornos %}
-            <tr>
-              <td>
-                <div class="fw-bold">{{ item.data_agendamento.strftime('%d/%m/%Y') if item.data_agendamento else '-' }}</div>
-                <div class="small text-muted">{{ item.hora_agendamento.strftime('%H:%M') if item.hora_agendamento else '-' }}</div>
-                {% if item.dias_ate is not none and item.dias_ate > 0 and item.dias_ate <= 7 %}
-                  <span class="badge rounded-pill bg-info-subtle text-primary border border-info-subtle">{{ item.dias_ate }} dias</span>
-                {% endif %}
-              </td>
-              <td>
-                <div class="fw-bold text-dark">#{{ item.id }}</div>
-                {% if item.identificador_os %}
-                  <div class="small text-muted">{{ item.identificador_os }}</div>
-                {% endif %}
-                {% if item.origem_id %}
-                  <div class="small text-muted">Origem #{{ item.origem_id }}</div>
-                {% endif %}
-              </td>
-              <td class="fw-semibold">{{ item.equipe_nome }}</td>
-              <td class="retornos-address">
-                <div class="fw-semibold">{{ item.endereco }}</div>
-                {% if item.bairro %}
-                  <div class="small text-muted">{{ item.bairro }}</div>
-                {% endif %}
-              </td>
-              <td>{{ item.uvis }}</td>
-              <td>
-                <div>{{ item.tipo_operacao or '-' }}</div>
-                {% if item.foco %}
-                  <div class="small text-muted">{{ item.foco }}</div>
-                {% endif %}
-              </td>
-              <td>
-                <span class="badge rounded-pill {{ item.situacao_operacional.classe }}">{{ item.situacao_operacional.label }}</span>
-                {% if item.status %}
-                  <div class="small text-muted mt-1">{{ item.status }}</div>
-                {% endif %}
-              </td>
-              <td class="text-end">
-                <a href="{{ url_for('main.admin_os_formulario_view', os_id=item.id) }}" class="btn btn-sm btn-outline-primary shadow-sm" title="Ver formulario">
-                  <i class="bi bi-eye"></i>
-                </a>
-              </td>
-            </tr>
-          {% else %}
-            <tr>
-              <td colspan="8" class="text-center text-muted py-4">Nenhum retorno automatico encontrado.</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
+  {% set retornos_table_title = 'Logs gerais' %}
+  {% set retornos_table_subtitle = 'Todos os retornos automaticos filtrados na central.' %}
+  {% set retornos_pagination_endpoint = 'main.relatorios_retornos_automaticos' %}
+  {% include "_retornos_automaticos_table.html" %}
 </div>
 {% endblock %}
