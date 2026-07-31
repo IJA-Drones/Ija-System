@@ -118,6 +118,29 @@
         </div>
       </a>
     </div>
+
+    <div class="col-md-6 col-xl-4">
+      <a href="{{ url_for('main.veiculos_limpezas') }}" class="text-decoration-none">
+        <div class="card veiculos-menu-card border-start border-info border-4">
+          <div class="d-flex justify-content-between align-items-center gap-3">
+            <div>
+              <h6 class="mb-2 text-muted fw-bold">Limpeza</h6>
+              <h3 class="mb-0 text-dark fw-bold">Logs de Limpezas</h3>
+            </div>
+            <div class="veiculos-menu-icon text-info">
+              <i class="bi bi-droplet-half"></i>
+            </div>
+          </div>
+          <div class="mt-3 small text-muted">
+            Consulte cada limpeza registrada, filtre por veiculo, equipe, periodo, status e tipo.
+          </div>
+          <div class="mt-3 d-flex align-items-center text-info small fw-bold">
+            <span>Abrir logs de limpezas</span>
+            <i class="bi bi-arrow-right ms-2"></i>
+          </div>
+        </div>
+      </a>
+    </div>
     {% endif %}
 
     {% if can_view_checklist %}

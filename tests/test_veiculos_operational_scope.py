@@ -25,6 +25,7 @@ from app.modules.veiculos.service import (
     build_veiculo_media_skybox_path,
     build_piloto_veiculos_context,
     build_veiculos_deleted_logs_context,
+    list_veiculos_limpezas,
     delete_veiculo_log,
     encerrar_turno_piloto,
     iniciar_turno_piloto,
@@ -257,6 +258,66 @@ class VeiculosOperationalScopeTests(unittest.TestCase):
         context = build_limpeza_alertas_admin_context(usuario_admin)
 
         self.assertEqual(context["total_alertas"], 0)
+
+    def test_vehicle_cleaning_logs_list_filters_and_summarizes_cleanings(self):
+        veiculo = self._novo_veiculo(prefeitura_id=1)
+        agro = self._novo_veiculo(
+            placa="AGR1B22",
+            renomacao="AGR1B22",
+            operacao="AGRO",
+            prefeitura_id=1,
+        )
+        log = LogVeiculo(
+            veiculo_id=veiculo.id,
+            equipe_id=self.equipe.id,
+            km_inicial=1000,
+            km_final=1010,
+            check_diario=True,
+            data_registro=datetime(2026, 7, 1, 8, 0),
+        )
+        agro_log = LogVeiculo(
+            veiculo_id=agro.id,
+            equipe_id=self.equipe.id,
+            km_inicial=2000,
+            km_final=2010,
+            check_diario=True,
+            data_registro=datetime(2026, 7, 1, 8, 0),
+        )
+        db.session.add_all([log, agro_log])
+        db.session.flush()
+        db.session.add_all(
+            [
+                LimpezaVeiculo(
+                    log_veiculo_id=log.id,
+                    veiculo_id=veiculo.id,
+                    equipe_id=self.equipe.id,
+                    data_hora=datetime(2026, 7, 2, 9, 0),
+                    limpeza_realizada=True,
+                    tipo_limpeza="completa",
+                    valor_total=80,
+                ),
+                LimpezaVeiculo(
+                    log_veiculo_id=agro_log.id,
+                    veiculo_id=agro.id,
+                    equipe_id=self.equipe.id,
+                    data_hora=datetime(2026, 7, 3, 9, 0),
+                    limpeza_realizada=False,
+                    tipo_limpeza="ducha",
+                    valor_total=10,
+                ),
+            ]
+        )
+        db.session.commit()
+        user = SimpleNamespace(tipo_usuario="admin", prefeitura_id=1)
+
+        with self.app.test_request_context("/veiculos/limpezas?operacao=PMSP&tipo_limpeza=completa&limpeza_realizada=1"):
+            context = list_veiculos_limpezas("admin", request.args, user=user)
+
+        self.assertEqual(context["resumo"]["total"], 1)
+        self.assertEqual(context["resumo"]["realizadas"], 1)
+        self.assertEqual(context["resumo"]["nao_realizadas"], 0)
+        self.assertEqual(context["resumo"]["valor_total"], 80)
+        self.assertEqual([item.veiculo_id for item in context["limpezas"]], [veiculo.id])
 
     def test_start_shift_rejects_initial_km_different_from_last_closed_shift(self):
         veiculo = self._novo_veiculo(km_atual=1300)

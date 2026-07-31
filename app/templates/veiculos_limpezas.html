@@ -1,0 +1,343 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+
+<style>
+  .limpezas-page { max-width: 1220px; }
+  .limpezas-header {
+    align-items: flex-start;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+  .limpezas-actions {
+    display: flex;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+  }
+  .limpezas-table th,
+  .limpezas-table td {
+    vertical-align: middle;
+  }
+  .limpezas-table .observacao-cell {
+    max-width: 260px;
+    overflow-wrap: anywhere;
+  }
+  .summary-card {
+    border: 0;
+    border-radius: 1rem;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+    height: 100%;
+    padding: 1rem;
+  }
+  .summary-label {
+    color: #64748b;
+    font-size: 0.68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+  .summary-value {
+    font-size: 1.65rem;
+    font-weight: 900;
+    line-height: 1.05;
+    margin-top: 0.25rem;
+  }
+  @media (max-width: 768px) {
+    .limpezas-page {
+      padding-left: 0.75rem;
+      padding-right: 0.75rem;
+    }
+    .limpezas-actions,
+    .limpezas-actions .btn {
+      width: 100%;
+      justify-content: center;
+    }
+    .limpezas-table,
+    .limpezas-table thead,
+    .limpezas-table tbody,
+    .limpezas-table tr,
+    .limpezas-table th,
+    .limpezas-table td {
+      display: block;
+      width: 100%;
+    }
+    .limpezas-table thead { display: none; }
+    .limpezas-table tbody {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      padding: 0.85rem;
+    }
+    .limpezas-table tbody tr {
+      background: #fff;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      border-radius: 1rem;
+      box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
+      overflow: hidden;
+    }
+    .limpezas-table tbody td {
+      border: 0 !important;
+      padding: 0.75rem 1rem !important;
+      text-align: left !important;
+    }
+    .limpezas-table tbody td + td {
+      border-top: 1px solid rgba(15, 23, 42, 0.06) !important;
+    }
+    .limpezas-table tbody td::before {
+      color: #64748b;
+      content: attr(data-label);
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 800;
+      margin-bottom: 0.35rem;
+      text-transform: uppercase;
+    }
+    .limpezas-table .observacao-cell {
+      max-width: none;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 limpezas-page">
+  {% set filters_active = filters.q or filters.limpeza_realizada or filters.tipo_limpeza or filters.operacao or filters.data_limpeza_inicio or filters.data_limpeza_fim or filters.data_registro_inicio or filters.data_registro_fim %}
+
+  <div class="limpezas-header mb-4">
+    <div>
+      <h2 class="text-dark mb-1">
+        <i class="bi bi-droplet-half me-2 text-primary"></i> Logs de Limpezas
+      </h2>
+      <div class="text-muted small">
+        Historico individual das limpezas registradas nos turnos dos veiculos.
+      </div>
+    </div>
+    <div class="limpezas-actions">
+      <a href="{{ url_for('main.veiculos_menu') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+        <i class="bi bi-arrow-left"></i> Voltar para central
+      </a>
+      <a href="{{ url_for('main.veiculos_logs') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
+        <i class="bi bi-journal-text"></i> Logs de veiculos
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+      <div class="summary-card border-start border-primary border-4">
+        <div class="summary-label">Registros</div>
+        <div class="summary-value text-primary">{{ resumo.total }}</div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="summary-card border-start border-success border-4">
+        <div class="summary-label">Realizadas</div>
+        <div class="summary-value text-success">{{ resumo.realizadas }}</div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="summary-card border-start border-warning border-4">
+        <div class="summary-label">Nao realizadas</div>
+        <div class="summary-value text-warning">{{ resumo.nao_realizadas }}</div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="summary-card border-start border-info border-4">
+        <div class="summary-label">Valor total</div>
+        <div class="summary-value text-info">R$ {{ '%.2f'|format(resumo.valor_total or 0) }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm rounded-4 mb-4 border-0">
+    <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center"
+         data-bs-toggle="collapse" data-bs-target="#collapseFiltrosLimpeza" style="cursor: pointer; background: none;">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-funnel-fill text-primary"></i>
+        <span class="text-dark fw-bold">Filtros de Busca</span>
+      </div>
+      <i class="bi bi-chevron-down text-muted"></i>
+    </div>
+    <div class="collapse {% if filters_active %}show{% endif %}" id="collapseFiltrosLimpeza">
+      <div class="card-body pt-0 pb-4">
+        <form method="GET">
+          <div class="row g-2 align-items-end">
+            <div class="col-md-4">
+              <label class="small text-muted">Busca rapida</label>
+              <input type="text" name="q" value="{{ filters.q or '' }}" class="form-control" placeholder="Placa, veiculo, equipe, piloto, obs...">
+            </div>
+            <div class="col-md-2">
+              <label class="small text-muted">Status</label>
+              <select name="limpeza_realizada" class="form-select">
+                <option value="">Todos</option>
+                <option value="1" {{ 'selected' if filters.limpeza_realizada == '1' }}>Realizada</option>
+                <option value="0" {{ 'selected' if filters.limpeza_realizada == '0' }}>Nao realizada</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <label class="small text-muted">Tipo</label>
+              <select name="tipo_limpeza" class="form-select">
+                <option value="">Todos</option>
+                <option value="completa" {{ 'selected' if filters.tipo_limpeza == 'completa' }}>Completa</option>
+                <option value="ducha" {{ 'selected' if filters.tipo_limpeza == 'ducha' }}>Apenas ducha</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <label class="small text-muted">Operacao</label>
+              <select name="operacao" class="form-select">
+                <option value="">Todas</option>
+                <option value="PMSP" {{ 'selected' if filters.operacao == 'PMSP' }}>PMSP</option>
+                <option value="AGRO" {{ 'selected' if filters.operacao == 'AGRO' }}>AGRO</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <label class="small text-muted">Limpeza de</label>
+              <input type="date" name="data_limpeza_inicio" value="{{ filters.data_limpeza_inicio or '' }}" class="form-control">
+            </div>
+            <div class="col-md-2">
+              <label class="small text-muted">Limpeza ate</label>
+              <input type="date" name="data_limpeza_fim" value="{{ filters.data_limpeza_fim or '' }}" class="form-control">
+            </div>
+            <div class="col-md-2">
+              <label class="small text-muted">Registro de</label>
+              <input type="date" name="data_registro_inicio" value="{{ filters.data_registro_inicio or '' }}" class="form-control">
+            </div>
+            <div class="col-md-2">
+              <label class="small text-muted">Registro ate</label>
+              <input type="date" name="data_registro_fim" value="{{ filters.data_registro_fim or '' }}" class="form-control">
+            </div>
+            <div class="col-md-4 d-flex gap-2">
+              <button class="btn btn-success w-100 d-flex gap-1 justify-content-center align-items-center" type="submit">
+                <i class="bi bi-search"></i> Filtrar
+              </button>
+              {% if filters_active %}
+                <a href="{{ url_for('main.veiculos_limpezas') }}" class="btn btn-outline-secondary w-100 d-flex gap-1 justify-content-center align-items-center">
+                  <i class="bi bi-x-lg"></i> Limpar
+                </a>
+              {% endif %}
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+    <div class="card-body p-0">
+      {% if not limpezas %}
+        <div class="text-muted text-center py-5">
+          <i class="bi bi-droplet-half fs-1 d-block mb-2 opacity-50"></i>
+          Nenhuma limpeza encontrada para os filtros aplicados.
+        </div>
+      {% else %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 limpezas-table">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-4">Veiculo</th>
+              <th>Operador</th>
+              <th>Data da limpeza</th>
+              <th>Registro</th>
+              <th>Status</th>
+              <th>Tipo</th>
+              <th>Valor</th>
+              <th>Observacao</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for limpeza in limpezas %}
+            <tr>
+              <td class="ps-4" data-label="Veiculo">
+                <div class="fw-bold text-dark">{{ limpeza.veiculo.modelo if limpeza.veiculo else 'Veiculo removido' }}</div>
+                <div class="text-muted small">{{ limpeza.veiculo.placa if limpeza.veiculo else '-' }}</div>
+                {% if limpeza.veiculo %}
+                  <div class="text-muted small">{{ limpeza.veiculo.operacao or '-' }}</div>
+                {% endif %}
+              </td>
+              <td data-label="Operador">
+                <div class="small fw-semibold text-dark">
+                  {% if limpeza.piloto %}
+                    {{ limpeza.piloto.nome_piloto }}
+                  {% elif limpeza.equipe %}
+                    {{ limpeza.equipe.nome_equipe }}
+                  {% else %}
+                    -
+                  {% endif %}
+                </div>
+                {% if limpeza.equipe and limpeza.piloto %}
+                  <div class="text-muted small">{{ limpeza.equipe.nome_equipe }}</div>
+                {% endif %}
+              </td>
+              <td data-label="Data da limpeza">
+                <div class="fw-semibold">{{ limpeza.data_hora.strftime('%d/%m/%Y') if limpeza.data_hora else '-' }}</div>
+                <div class="text-muted small">{{ limpeza.data_hora.strftime('%H:%M') if limpeza.data_hora else '' }}</div>
+              </td>
+              <td data-label="Registro">
+                <div class="fw-semibold">{{ limpeza.data_registro.strftime('%d/%m/%Y') if limpeza.data_registro else '-' }}</div>
+                <div class="text-muted small">{{ limpeza.data_registro.strftime('%H:%M') if limpeza.data_registro else '' }}</div>
+              </td>
+              <td data-label="Status">
+                {% if limpeza.limpeza_realizada %}
+                  <span class="badge bg-success-subtle text-success-emphasis border rounded-pill px-3">Realizada</span>
+                {% else %}
+                  <span class="badge bg-warning-subtle text-warning-emphasis border rounded-pill px-3">Nao realizada</span>
+                {% endif %}
+              </td>
+              <td data-label="Tipo">
+                {% if limpeza.tipo_limpeza == 'completa' %}
+                  <span class="badge bg-primary-subtle text-primary-emphasis border rounded-pill px-3">Completa</span>
+                {% elif limpeza.tipo_limpeza == 'ducha' %}
+                  <span class="badge bg-info-subtle text-info-emphasis border rounded-pill px-3">Apenas ducha</span>
+                {% else %}
+                  <span class="text-muted small">Nao informado</span>
+                {% endif %}
+              </td>
+              <td data-label="Valor">
+                <span class="fw-bold text-dark">R$ {{ '%.2f'|format(limpeza.valor_total or 0) }}</span>
+              </td>
+              <td class="observacao-cell" data-label="Observacao">
+                <span class="small text-muted">{{ limpeza.observacao or '-' }}</span>
+                {% if limpeza.log_veiculo_id %}
+                  <div class="small mt-1">
+                    <a href="{{ url_for('main.veiculo_logs_detalhe', veiculo_id=limpeza.veiculo_id) }}" class="text-decoration-none">
+                      Abrir historico do veiculo
+                    </a>
+                  </div>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if paginacao.pages > 1 %}
+  <nav class="mt-4" aria-label="Paginacao das limpezas">
+    <ul class="pagination justify-content-center flex-wrap gap-1">
+      <li class="page-item {% if not paginacao.has_prev %}disabled{% endif %}">
+        <a class="page-link" href="{{ url_for('main.veiculos_limpezas', page=paginacao.prev_num, **filters) if paginacao.has_prev else '#' }}">Anterior</a>
+      </li>
+      {% for page_num in paginacao.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+        {% if page_num %}
+          <li class="page-item {% if page_num == paginacao.page %}active{% endif %}">
+            <a class="page-link" href="{{ url_for('main.veiculos_limpezas', page=page_num, **filters) }}">{{ page_num }}</a>
+          </li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">...</span></li>
+        {% endif %}
+      {% endfor %}
+      <li class="page-item {% if not paginacao.has_next %}disabled{% endif %}">
+        <a class="page-link" href="{{ url_for('main.veiculos_limpezas', page=paginacao.next_num, **filters) if paginacao.has_next else '#' }}">Proxima</a>
+      </li>
+    </ul>
+  </nav>
+  {% endif %}
+</div>
+{% endblock %}
