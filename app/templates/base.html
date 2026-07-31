@@ -942,7 +942,7 @@
           {% if is_global_admin or current_user.tipo_usuario|lower in ['operario', 'operador', 'prefeitura_admin'] %}
           {# ===================== VEÍCULOS ===================== #}
           <li class="nav-item">
-            <a class="nav-link {% if request.endpoint in ['main.veiculos_menu', 'main.listar_veiculos', 'main.veiculos_logs', 'main.exportar_logs_veiculos_xlsx', 'main.admin_checklists_semanais', 'main.editar_veiculo', 'main.cadastrar_veiculo', 'main.veiculos_alertas_limpeza'] %}active{% endif %}"
+            <a class="nav-link {% if request.endpoint in ['main.veiculos_menu', 'main.listar_veiculos', 'main.veiculos_logs', 'main.veiculos_limpezas', 'main.exportar_logs_veiculos_xlsx', 'main.admin_checklists_semanais', 'main.editar_veiculo', 'main.cadastrar_veiculo', 'main.veiculos_alertas_limpeza'] %}active{% endif %}"
                href="{{ url_for('main.veiculos_menu') }}">
               <span>
                 <i class="bi bi-truck-front-fill me-2"></i>

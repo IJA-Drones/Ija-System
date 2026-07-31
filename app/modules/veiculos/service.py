@@ -2316,6 +2316,65 @@ def list_veiculos_logs(tipo_usuario, args, user=None):
     }
 
 
+def list_veiculos_limpezas(tipo_usuario, args, user=None):
+    tipo_usuario = normalize_role(tipo_usuario)
+    if tipo_usuario not in VEICULOS_LOGS_ALLOWED_TYPES:
+        raise PermissionError
+
+    q = (args.get("q") or "").strip()
+    limpeza_realizada = (args.get("limpeza_realizada") or "").strip()
+    tipo_limpeza = (args.get("tipo_limpeza") or "").strip().lower()
+    operacao = (args.get("operacao") or "").strip().upper()
+    data_limpeza_inicio = (args.get("data_limpeza_inicio") or "").strip()
+    data_limpeza_fim = (args.get("data_limpeza_fim") or "").strip()
+    data_registro_inicio = (args.get("data_registro_inicio") or "").strip()
+    data_registro_fim = (args.get("data_registro_fim") or "").strip()
+    page = args.get("page", 1, type=int)
+
+    query = _build_veiculos_limpezas_query(
+        user=user,
+        q=q,
+        limpeza_realizada=limpeza_realizada,
+        tipo_limpeza=tipo_limpeza,
+        operacao=operacao,
+        data_limpeza_inicio=data_limpeza_inicio,
+        data_limpeza_fim=data_limpeza_fim,
+        data_registro_inicio=data_registro_inicio,
+        data_registro_fim=data_registro_fim,
+    )
+    total_query = _build_veiculos_limpezas_query(
+        user=user,
+        q=q,
+        limpeza_realizada=limpeza_realizada,
+        tipo_limpeza=tipo_limpeza,
+        operacao=operacao,
+        data_limpeza_inicio=data_limpeza_inicio,
+        data_limpeza_fim=data_limpeza_fim,
+        data_registro_inicio=data_registro_inicio,
+        data_registro_fim=data_registro_fim,
+        include_options=False,
+        include_order=False,
+    )
+    resumo = _build_veiculos_limpezas_resumo(total_query)
+    paginacao = query.paginate(page=page, per_page=25, error_out=False)
+
+    return {
+        "limpezas": paginacao.items,
+        "paginacao": paginacao,
+        "resumo": resumo,
+        "filters": {
+            "q": q,
+            "limpeza_realizada": limpeza_realizada,
+            "tipo_limpeza": tipo_limpeza,
+            "operacao": operacao,
+            "data_limpeza_inicio": data_limpeza_inicio,
+            "data_limpeza_fim": data_limpeza_fim,
+            "data_registro_inicio": data_registro_inicio,
+            "data_registro_fim": data_registro_fim,
+        },
+    }
+
+
 def build_veiculo_logs_detalhe_context(tipo_usuario, veiculo_id, args, user=None):
     tipo_usuario = normalize_role(tipo_usuario)
     if tipo_usuario not in VEICULOS_LOGS_ALLOWED_TYPES:
@@ -3411,3 +3470,122 @@ def _build_veiculos_logs_query(
         query = query.order_by(ultima_movimentacao_expr.desc(), LogVeiculo.id.desc())
 
     return query
+
+
+def _build_veiculos_limpezas_query(
+    *,
+    user=None,
+    q="",
+    limpeza_realizada="",
+    tipo_limpeza="",
+    operacao="",
+    data_limpeza_inicio="",
+    data_limpeza_fim="",
+    data_registro_inicio="",
+    data_registro_fim="",
+    include_options=True,
+    include_order=True,
+):
+    query = (
+        LimpezaVeiculo.query
+        .join(Veiculos, LimpezaVeiculo.veiculo_id == Veiculos.id)
+        .outerjoin(LogVeiculo, LimpezaVeiculo.log_veiculo_id == LogVeiculo.id)
+        .outerjoin(Pilotos, LimpezaVeiculo.piloto_id == Pilotos.id)
+        .outerjoin(Equipe, LimpezaVeiculo.equipe_id == Equipe.id)
+    )
+    if include_options:
+        query = query.options(
+            joinedload(LimpezaVeiculo.veiculo).joinedload(Veiculos.equipe),
+            joinedload(LimpezaVeiculo.log_pai),
+            joinedload(LimpezaVeiculo.piloto),
+            joinedload(LimpezaVeiculo.equipe),
+        )
+
+    if user is not None:
+        if getattr(user, "tipo_usuario", None) == EQUIPE_OCEANO_USER_TYPE:
+            equipe = _equipe_oceano_logada(user)
+            if not equipe:
+                query = query.filter(db.false())
+            else:
+                query = query.filter(
+                    db.or_(
+                        LimpezaVeiculo.equipe_id == equipe.id,
+                        _veiculo_equipe_operacional_filter(equipe, user),
+                    )
+                )
+        else:
+            query = apply_prefeitura_scope(query, user, Veiculos.prefeitura_id)
+
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            db.or_(
+                id_search_clause(LimpezaVeiculo.id, q),
+                id_search_clause(Veiculos.id, q),
+                id_search_clause(LogVeiculo.id, q),
+                id_search_clause(Pilotos.id, q),
+                id_search_clause(Equipe.id, q),
+                Veiculos.modelo.ilike(like),
+                Veiculos.placa.ilike(like),
+                Veiculos.responsavel.ilike(like),
+                Pilotos.nome_piloto.ilike(like),
+                Equipe.nome_equipe.ilike(like),
+                LimpezaVeiculo.observacao.ilike(like),
+            )
+        )
+
+    if limpeza_realizada in {"1", "realizada", "sim"}:
+        query = query.filter(LimpezaVeiculo.limpeza_realizada.is_(True))
+    elif limpeza_realizada in {"0", "nao_realizada", "nao"}:
+        query = query.filter(LimpezaVeiculo.limpeza_realizada.is_(False))
+
+    if tipo_limpeza in {"completa", "ducha"}:
+        query = query.filter(LimpezaVeiculo.tipo_limpeza == tipo_limpeza)
+
+    if operacao:
+        query = query.filter(db.func.upper(db.func.coalesce(Veiculos.operacao, "")) == operacao)
+
+    dt_limpeza_inicio = _parse_date_filter(data_limpeza_inicio)
+    if dt_limpeza_inicio is not None:
+        query = query.filter(LimpezaVeiculo.data_hora >= dt_limpeza_inicio)
+
+    dt_limpeza_fim = _parse_date_filter(data_limpeza_fim, end_of_day=True)
+    if dt_limpeza_fim is not None:
+        query = query.filter(LimpezaVeiculo.data_hora <= dt_limpeza_fim)
+
+    dt_registro_inicio = _parse_date_filter(data_registro_inicio)
+    if dt_registro_inicio is not None:
+        query = query.filter(LimpezaVeiculo.data_registro >= dt_registro_inicio)
+
+    dt_registro_fim = _parse_date_filter(data_registro_fim, end_of_day=True)
+    if dt_registro_fim is not None:
+        query = query.filter(LimpezaVeiculo.data_registro <= dt_registro_fim)
+
+    if include_order:
+        query = query.order_by(
+            LimpezaVeiculo.data_hora.desc(),
+            LimpezaVeiculo.data_registro.desc(),
+            LimpezaVeiculo.id.desc(),
+        )
+
+    return query
+
+
+def _build_veiculos_limpezas_resumo(query):
+    subq = query.with_entities(LimpezaVeiculo.id).subquery()
+    row = (
+        db.session.query(
+            db.func.count(LimpezaVeiculo.id).label("total"),
+            db.func.coalesce(db.func.sum(LimpezaVeiculo.valor_total), 0).label("valor_total"),
+            db.func.coalesce(db.func.sum(case((LimpezaVeiculo.limpeza_realizada.is_(True), 1), else_=0)), 0).label("realizadas"),
+            db.func.coalesce(db.func.sum(case((LimpezaVeiculo.limpeza_realizada.is_(False), 1), else_=0)), 0).label("nao_realizadas"),
+        )
+        .join(subq, subq.c.id == LimpezaVeiculo.id)
+        .first()
+    )
+    return {
+        "total": int((row.total if row else 0) or 0),
+        "valor_total": (row.valor_total if row else 0) or 0,
+        "realizadas": int((row.realizadas if row else 0) or 0),
+        "nao_realizadas": int((row.nao_realizadas if row else 0) or 0),
+    }

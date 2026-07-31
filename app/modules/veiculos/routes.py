@@ -30,6 +30,7 @@ from app.modules.veiculos.service import (
     get_veiculo_log_for_media,
     list_equipes_choices,
     list_veiculos,
+    list_veiculos_limpezas,
     list_veiculos_logs,
     list_responsaveis_choices,
     registrar_abastecimento_turno_piloto,
@@ -145,6 +146,15 @@ def register_routes(bp):
         tipo = getattr(current_user, "tipo_usuario", None)
         try:
             return render_template("veiculos_logs.html", **list_veiculos_logs(tipo, request.args, user=current_user))
+        except PermissionError:
+            abort(403)
+
+    @bp.route("/veiculos/limpezas", methods=["GET"], endpoint="veiculos_limpezas")
+    @login_required
+    def veiculos_limpezas():
+        tipo = getattr(current_user, "tipo_usuario", None)
+        try:
+            return render_template("veiculos_limpezas.html", **list_veiculos_limpezas(tipo, request.args, user=current_user))
         except PermissionError:
             abort(403)
 
