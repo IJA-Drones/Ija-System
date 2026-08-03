@@ -33,11 +33,242 @@
       position: relative;
     }
 
+    .rel-os-filter-card {
+      border-radius: 18px;
+      box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08) !important;
+      overflow: hidden;
+    }
+
+    .rel-os-filter-header {
+      min-height: 56px;
+      padding: 1rem 1.15rem;
+      cursor: pointer;
+    }
+
+    .rel-os-filter-header-title {
+      color: #1f4f82;
+      font-size: 0.92rem;
+    }
+
+    .rel-os-filter-body {
+      padding: 0 1.15rem 1.15rem;
+    }
+
+    .rel-os-filter-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1rem 0.95rem;
+      align-items: end;
+    }
+
+    .rel-os-filter-body > form > .row {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1rem 0.95rem;
+      align-items: end;
+      margin: 0;
+    }
+
+    .rel-os-filter-body > form > .row > .col-md-4 {
+      display: contents;
+    }
+
+    .rel-os-filter-body > form > .row > .col-md-4 > div {
+      min-width: 0;
+      margin: 0 !important;
+    }
+
+    .rel-os-filter-body > form > .row > .col-md-4:nth-of-type(3) > div:last-child {
+      grid-column: span 2;
+    }
+
+    .rel-os-filter-body > form > .row > .col-12 {
+      grid-column: 1 / -1;
+      padding: 0;
+    }
+
+    .rel-os-filter-body > form > .row > .col-12 > .row {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1rem 0.95rem;
+      align-items: end;
+      margin: 0;
+    }
+
+    .rel-os-filter-body > form > .row > .col-12 > .row > [class*="col-"] {
+      width: auto;
+      max-width: none;
+      padding: 0;
+    }
+
+    .rel-os-filter-body > form > .row > .col-12 > .row > .col-md-6 {
+      grid-column: span 2;
+    }
+
+    .rel-os-filter-field {
+      min-width: 0;
+    }
+
+    .rel-os-filter-field.is-wide {
+      grid-column: span 2;
+    }
+
+    .rel-os-filter-field label,
+    .rel-os-filter-body label {
+      margin-bottom: 0.38rem;
+      color: #697991;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    .rel-os-filter-field .form-control,
+    .rel-os-filter-field .form-select,
+    .rel-os-filter-body .form-control,
+    .rel-os-filter-body .form-select {
+      min-height: 42px;
+      border-color: #e5ebf2;
+      border-radius: 12px;
+      color: #34445c;
+      font-size: 0.9rem;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+    }
+
+    .rel-os-filter-field .form-control:focus,
+    .rel-os-filter-field .form-select:focus,
+    .rel-os-filter-body .form-control:focus,
+    .rel-os-filter-body .form-select:focus {
+      border-color: #4f81c7;
+      box-shadow: 0 0 0 0.18rem rgba(79, 129, 199, 0.18);
+    }
+
+    .rel-os-filter-field .chip-multi-select,
+    .rel-os-filter-body .chip-multi-select {
+      min-width: 0;
+    }
+
+    .rel-os-filter-body .col-md-6.d-flex {
+      display: grid !important;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 0.65rem !important;
+    }
+
+    .rel-os-filter-actions {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 0.65rem;
+      align-items: end;
+    }
+
+    .rel-os-filter-actions .btn,
+    .rel-os-filter-body .col-md-6.d-flex .btn {
+      min-height: 42px;
+      border-radius: 12px;
+      font-weight: 800;
+      box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
+      white-space: nowrap;
+    }
+
+    .rel-os-filter-actions .btn-primary,
+    .rel-os-filter-body .col-md-6.d-flex .btn-primary {
+      background: #2c5282;
+      border-color: #2c5282;
+      height: 42px !important;
+    }
+
+    .rel-os-filter-actions .btn-primary:hover,
+    .rel-os-filter-actions .btn-primary:focus,
+    .rel-os-filter-body .col-md-6.d-flex .btn-primary:hover,
+    .rel-os-filter-body .col-md-6.d-flex .btn-primary:focus {
+      background: #24466f;
+      border-color: #24466f;
+    }
+
+    .rel-os-filter-body .col-md-6.d-flex .btn-outline-secondary {
+      height: 42px !important;
+    }
+
     @media (max-width: 767.98px) {
       .rel-chart-modal-wrap {
         height: 68vh;
         min-height: 340px;
       }
+    }
+
+    @media (max-width: 991.98px) {
+      .rel-os-filter-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .rel-os-filter-body > form > .row,
+      .rel-os-filter-body > form > .row > .col-12 > .row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .rel-os-filter-field.is-wide {
+        grid-column: span 2;
+      }
+
+      .rel-os-filter-body > form > .row > .col-md-4:nth-of-type(3) > div:last-child {
+        grid-column: span 2;
+      }
+    }
+
+    @media (max-width: 575.98px) {
+      .rel-os-filter-card {
+        border-radius: 14px;
+      }
+
+      .rel-os-filter-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .rel-os-filter-body > form > .row,
+      .rel-os-filter-body > form > .row > .col-12 > .row {
+        grid-template-columns: 1fr;
+      }
+
+      .rel-os-filter-field.is-wide {
+        grid-column: span 1;
+      }
+
+      .rel-os-filter-body > form > .row > .col-md-4:nth-of-type(3) > div:last-child {
+        grid-column: span 1;
+      }
+
+      .rel-os-filter-actions,
+      .rel-os-filter-body .col-md-6.d-flex {
+        grid-template-columns: 1fr;
+      }
+
+      .rel-os-filter-actions .btn,
+      .rel-os-filter-body .col-md-6.d-flex .btn {
+        width: 100%;
+      }
+    }
+
+    body.dark-mode .rel-os-filter-card,
+    body.dark-mode .rel-os-filter-header {
+      background: #162234 !important;
+    }
+
+    body.dark-mode .rel-os-filter-header-title {
+      color: #dbeafe;
+    }
+
+    body.dark-mode .rel-os-filter-field label {
+      color: #aab8cc;
+    }
+
+    body.dark-mode .rel-os-filter-field .form-control,
+    body.dark-mode .rel-os-filter-field .form-select,
+    body.dark-mode .rel-os-filter-body .form-control,
+    body.dark-mode .rel-os-filter-body .form-select {
+      background-color: #101827;
+      border-color: #2b3a50;
+      color: #e5edf8;
+      box-shadow: none;
     }
   </style>
 {% endblock %}
@@ -48,7 +279,7 @@
     5: "Maio", 6: "Junho", 7: "Julho", 8: "Agosto",
     9: "Setembro", 10: "Outubro", 11: "Novembro", 12: "Dezembro"
 } %}
-{% set filtros_ativos = filters.status or filters.tipo_visita or filters.tipo_imovel or filters.tipo_operacao or filters.foco_values or filters.protocolo or filtros_exportacao.data_ini or filtros_exportacao.data_fim or uvis_ids_selecionados %}
+{% set filtros_ativos = filters.status or filters.tipo_visita or filters.tipo_imovel or filters.tipo_operacao or filters.foco_values or filters.protocolo or filtros_exportacao.data_ini or filtros_exportacao.data_fim or uvis_ids_selecionados or filters.regiao or filters.equipe_id %}
 
 <div class="container-fluid py-4" style="max-width: 1200px;">
   <div class="rel-header mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
@@ -101,16 +332,16 @@
     </div>
   </div>
 
-  <div class="card shadow-sm rounded-4 mb-4 border-0">
-    <div class="card-header bg-white border-0 p-3 d-flex justify-content-between align-items-center"
+  <div class="card rel-os-filter-card mb-4 border-0">
+    <div class="card-header bg-white border-0 rel-os-filter-header d-flex justify-content-between align-items-center"
          data-bs-toggle="collapse"
          data-bs-target="#collapseFiltrosRelatorioOs"
          role="button"
          aria-expanded="{% if filtros_ativos %}true{% else %}false{% endif %}"
-         style="cursor: pointer;">
+    >
       <div class="d-flex align-items-center gap-2">
         <i class="bi bi-funnel-fill text-primary"></i>
-        <span class="fw-bold text-dark">Filtros de Busca</span>
+        <span class="fw-bold rel-os-filter-header-title">Filtros de Busca</span>
         {% if filtros_ativos %}
           <span class="badge rounded-pill bg-primary" style="font-size: 0.7rem;">Filtros Ativos</span>
         {% endif %}
@@ -119,7 +350,7 @@
     </div>
 
     <div class="collapse {% if filtros_ativos %}show{% endif %}" id="collapseFiltrosRelatorioOs">
-      <div class="card-body pt-0">
+      <div class="card-body rel-os-filter-body">
         <form method="GET">
           <div class="row g-3">
             <div class="col-md-4">
@@ -142,6 +373,30 @@
               <div>
                 <label class="small fw-bold text-muted mb-1 text-uppercase">Unidade (UVIS)</label>
                 {{ render_chip_select_pairs('uvis_id', uvis_disponiveis, uvis_ids_selecionados, 'Adicionar UVIS', 'form-select shadow-sm border-light-subtle') }}
+              </div>
+              <div class="mt-3">
+                <label class="small fw-bold text-muted mb-1 text-uppercase">Regi&atilde;o</label>
+                {% if pode_filtrar_regiao %}
+                  <select name="regiao" class="form-select shadow-sm border-light-subtle">
+                    <option value="">Todas as regi&otilde;es</option>
+                    {% for regiao in regioes_disponiveis %}
+                      <option value="{{ regiao }}" {{ 'selected' if regiao == regiao_selecionada }}>{{ regiao }}</option>
+                    {% endfor %}
+                  </select>
+                {% else %}
+                  <input type="text" class="form-control shadow-sm border-light-subtle" value="{{ regiao_selecionada or 'Todas as regi&otilde;es' }}" disabled>
+                {% endif %}
+              </div>
+              <div class="mt-3">
+                <label class="small fw-bold text-muted mb-1 text-uppercase">Equipe</label>
+                <select name="equipe_id" class="form-select shadow-sm border-light-subtle">
+                  <option value="">Todas as equipes</option>
+                  {% for equipe in equipes_disponiveis %}
+                    <option value="{{ equipe.id }}" {{ 'selected' if equipe_id_selecionado|string == equipe.id|string }}>
+                      {{ equipe.nome_equipe }}{% if equipe.regiao %} ({{ equipe.regiao }}){% endif %}
+                    </option>
+                  {% endfor %}
+                </select>
               </div>
             </div>
 

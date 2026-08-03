@@ -31,6 +31,8 @@ from app.modules.piloto_os.exporters import (
     _try_prepare_pdf_image_for_canvas,
 )
 from app.modules.relatorios.service import (
+    _apply_relatorio_solicitacoes_filters,
+    _resolve_relatorio_solicitacoes_filters,
     _coleta_imagens_max_export_items,
     build_relatorio_coleta_imagens_export_data,
     build_relatorio_os_export_data,
@@ -39,9 +41,8 @@ from app.shared.access import (
     apply_prefeitura_scope,
     apply_regiao_scope,
     apply_solicitacao_prefeitura_scope,
-    apply_solicitacao_regiao_scope,
 )
-from app.shared.query_filters import aplicar_filtros_base, get_multi_int_values, get_multi_values, multi_value_to_query
+from app.shared.query_filters import multi_value_to_query
 
 try:
     import matplotlib
@@ -85,45 +86,30 @@ COLETA_IMAGENS_PDF_PREFETCH_MISS = object()
 
 
 def _resolve_filters(user, args):
-    mes = args.get("mes", datetime.now().month, type=int)
-    ano = args.get("ano", datetime.now().year, type=int)
-    filtro_data = f"{ano}-{mes:02d}"
-
-    if getattr(user, "tipo_usuario", None) == "uvis":
-        uvis_ids = [user.id]
-    else:
-        uvis_ids = get_multi_int_values(args, "uvis_id")
-
-    return mes, ano, filtro_data, uvis_ids, get_multi_values(args, "foco")
-
-
-def _apply_foco_filter(query, foco_values):
-    if foco_values:
-        return query.filter(Solicitacao.foco.in_(foco_values))
-    return query
+    filtros = _resolve_relatorio_solicitacoes_filters(user, args)
+    return (
+        filtros["mes"],
+        filtros["ano"],
+        filtros["filtro_data"],
+        filtros["uvis_ids"],
+        filtros["foco_values"],
+        filtros["regiao"],
+        filtros["equipe_id"],
+        filtros,
+    )
 
 
 def _build_pdf_export_data(user, args):
-    mes, ano, filtro_data, uvis_ids, foco_values = _resolve_filters(user, args)
+    mes, ano, filtro_data, uvis_ids, foco_values, regiao, equipe_id, filtros = _resolve_filters(user, args)
     orient = args.get("orient", default="portrait")
 
-    base_query = aplicar_filtros_base(
-        db.session.query(Solicitacao),
-        filtro_data,
-        uvis_ids,
-    )
-    base_query = apply_solicitacao_prefeitura_scope(base_query, user)
-    base_query = apply_solicitacao_regiao_scope(base_query, user)
-    base_query = _apply_foco_filter(base_query, foco_values)
+    base_query = _apply_relatorio_solicitacoes_filters(db.session.query(Solicitacao), user, filtros)
 
-    query_detalhe = aplicar_filtros_base(
+    query_detalhe = _apply_relatorio_solicitacoes_filters(
         db.session.query(Solicitacao, Usuario).join(Usuario, Usuario.id == Solicitacao.usuario_id),
-        filtro_data,
-        uvis_ids,
+        user,
+        filtros,
     )
-    query_detalhe = apply_solicitacao_prefeitura_scope(query_detalhe, user)
-    query_detalhe = apply_regiao_scope(query_detalhe, user, Usuario.regiao)
-    query_detalhe = _apply_foco_filter(query_detalhe, foco_values)
 
     query_results_total = query_detalhe.count()
     query_results = (
@@ -145,17 +131,10 @@ def _build_pdf_export_data(user, args):
     dados_regiao = [
         (regiao or "Não informado", total)
         for regiao, total in (
-            apply_regiao_scope(
-                apply_solicitacao_prefeitura_scope(
-                    aplicar_filtros_base(
-                        db.session.query(Usuario.regiao, db.func.count(Solicitacao.id)).join(Usuario),
-                        filtro_data,
-                        uvis_ids,
-                    ),
-                    user,
-                ),
+            _apply_relatorio_solicitacoes_filters(
+                db.session.query(Usuario.regiao, db.func.count(Solicitacao.id)).join(Usuario),
                 user,
-                Usuario.regiao,
+                filtros,
             )
             .group_by(Usuario.regiao)
             .all()
@@ -225,19 +204,12 @@ def _build_pdf_export_data(user, args):
     dados_unidade = [
         (uvis_nome or "Não informado", total)
         for uvis_nome, total in (
-            apply_regiao_scope(
-                apply_solicitacao_prefeitura_scope(
-                    aplicar_filtros_base(
-                        db.session.query(Usuario.nome_uvis, db.func.count(Solicitacao.id))
-                        .join(Usuario)
-                        .filter(Usuario.tipo_usuario == "uvis"),
-                        filtro_data,
-                        uvis_ids,
-                    ),
-                    user,
-                ),
+            _apply_relatorio_solicitacoes_filters(
+                db.session.query(Usuario.nome_uvis, db.func.count(Solicitacao.id))
+                .join(Usuario)
+                .filter(Usuario.tipo_usuario == "uvis"),
                 user,
-                Usuario.regiao,
+                filtros,
             )
             .group_by(Usuario.nome_uvis)
             .all()
@@ -275,14 +247,13 @@ def _build_pdf_export_data(user, args):
     dados_mensais = [
         tuple(row)
         for row in (
-            apply_solicitacao_regiao_scope(
-                apply_solicitacao_prefeitura_scope(
-                    db.session.query(func_mes.label("mes"), db.func.count(Solicitacao.id)).filter(
-                        Solicitacao.data_agendamento.isnot(None)
-                    ),
-                    user,
+            _apply_relatorio_solicitacoes_filters(
+                db.session.query(func_mes.label("mes"), db.func.count(Solicitacao.id)).filter(
+                    Solicitacao.data_agendamento.isnot(None)
                 ),
                 user,
+                filtros,
+                include_month=False,
             )
             .group_by("mes")
             .order_by("mes")
@@ -298,6 +269,8 @@ def _build_pdf_export_data(user, args):
         "uvis_id": uvis_ids[0] if uvis_ids else None,
         "uvis_ids": uvis_ids,
         "foco_values": foco_values,
+        "regiao": regiao,
+        "equipe_id": equipe_id,
         "query_results": query_results,
         "query_results_total": query_results_total,
         "query_results_limit": RELATORIO_PDF_DETALHE_MAX_ROWS,
@@ -400,6 +373,10 @@ def build_relatorio_pdf_export(user, args):
         filtro_txt += f" | UVIS IDs: {multi_value_to_query(data['uvis_ids'])}"
     else:
         filtro_txt += " | UVIS: Todas"
+    if data["regiao"]:
+        filtro_txt += f" | Regiao: {data['regiao']}"
+    if data["equipe_id"]:
+        filtro_txt += f" | Equipe ID: {data['equipe_id']}"
     if data["foco_values"]:
         filtro_txt += f" | Focos: {', '.join(data['foco_values'])}"
     story.append(Paragraph(filtro_txt, subtitle_style))
@@ -710,7 +687,7 @@ def _montar_endereco(row):
 
 
 def build_relatorio_excel_export(user, args):
-    mes, ano, filtro_data, uvis_ids, foco_values = _resolve_filters(user, args)
+    mes, ano, filtro_data, uvis_ids, foco_values, regiao, equipe_id, filtros = _resolve_filters(user, args)
 
     query_dados = db.session.query(
         Solicitacao.id,
@@ -733,23 +710,7 @@ def build_relatorio_excel_export(user, args):
         Usuario.nome_uvis,
         Usuario.regiao,
     ).join(Usuario, Usuario.id == Solicitacao.usuario_id)
-    query_dados = apply_solicitacao_prefeitura_scope(query_dados, user)
-    query_dados = apply_regiao_scope(query_dados, user, Usuario.regiao)
-
-    if db.engine.name == "postgresql":
-        query_dados = query_dados.filter(
-            Solicitacao.data_agendamento.isnot(None),
-            db.func.to_char(Solicitacao.data_agendamento, "YYYY-MM") == filtro_data,
-        )
-    else:
-        query_dados = query_dados.filter(
-            Solicitacao.data_agendamento.isnot(None),
-            db.func.strftime("%Y-%m", Solicitacao.data_agendamento) == filtro_data,
-        )
-
-    if uvis_ids:
-        query_dados = query_dados.filter(Solicitacao.usuario_id.in_(uvis_ids))
-    query_dados = _apply_foco_filter(query_dados, foco_values)
+    query_dados = _apply_relatorio_solicitacoes_filters(query_dados, user, filtros)
 
     dados = query_dados.order_by(
         Solicitacao.data_agendamento.desc(),
@@ -870,6 +831,10 @@ def build_relatorio_excel_export(user, args):
     if uvis_ids:
         safe_nome = (nome_uvis_filtro or f"IDs_{multi_value_to_query(uvis_ids)}").replace(" ", "_").replace(",", "_")
         nome_arquivo += f"_UVIS_{safe_nome}"
+    if regiao:
+        nome_arquivo += f"_regiao_{str(regiao).replace(' ', '_').lower()}"
+    if equipe_id:
+        nome_arquivo += f"_equipe_{equipe_id}"
 
     return output, f"{nome_arquivo}.xlsx"
 
@@ -1695,6 +1660,10 @@ def build_relatorio_os_excel_export(user, args):
     nome = f"atividades_os_{data['ano']}_{data['mes']:02d}"
     if data["uvis_id"]:
         nome += f"_uvis_{data['uvis_id']}"
+    if data["regiao"]:
+        nome += f"_regiao_{str(data['regiao']).replace(' ', '_').lower()}"
+    if data["equipe_id"]:
+        nome += f"_equipe_{data['equipe_id']}"
     nome += ".xlsx"
     return output, nome
 
@@ -1735,10 +1704,18 @@ def build_relatorio_os_pdf_export(user, args):
         spaceAfter=12,
     )
 
+    filtro_partes = [
+        f"Filtro: {data['mes']:02d}/{data['ano']}",
+        f"Unidade: {data['uvis_nome']}",
+        f"Regiao: {data['regiao_nome']}",
+        f"Equipe: {data['equipe_nome']}",
+        f"Gerado em {_os_fmt_dt(_os_now_brazil())}",
+    ]
+
     story = [
         Paragraph("Relatório Geral de OS", title_style),
         Paragraph(
-            f"Filtro: {data['mes']:02d}/{data['ano']} | Unidade: {data['uvis_nome']} | Gerado em {_os_fmt_dt(_os_now_brazil())}",
+            " | ".join(filtro_partes),
             subtitle_style,
         ),
     ]
@@ -1805,6 +1782,10 @@ def build_relatorio_os_pdf_export(user, args):
     nome = f"relatorio_os_{data['ano']}_{data['mes']:02d}"
     if data["uvis_id"]:
         nome += f"_uvis_{data['uvis_id']}"
+    if data["regiao"]:
+        nome += f"_regiao_{str(data['regiao']).replace(' ', '_').lower()}"
+    if data["equipe_id"]:
+        nome += f"_equipe_{data['equipe_id']}"
     nome += ".pdf"
     return path, nome
 
@@ -1848,6 +1829,9 @@ def _coleta_imagens_pdf_name(data):
 
     if data.get("regiao_selecionada"):
         nome += f"_regiao_{_slug_filename(data['regiao_selecionada'])}"
+
+    if data.get("equipe_id_selecionado"):
+        nome += f"_equipe_{data['equipe_id_selecionado']}"
 
     uvis_ids = data.get("uvis_ids_selecionados") or ([] if not data.get("uvis_id_selecionado") else [data.get("uvis_id_selecionado")])
     if len(uvis_ids) > 1:

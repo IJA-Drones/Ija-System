@@ -353,6 +353,18 @@
             </div>
             {% endif %}
 
+            <div class="col-md-6 col-xl-3">
+              <label class="small text-muted">Equipe</label>
+              <select name="equipe_id" class="form-select form-select-sm">
+                <option value="">Todas as equipes</option>
+                {% for equipe in equipes_disponiveis %}
+                  <option value="{{ equipe.id }}" {% if equipe_id_selecionado|string == equipe.id|string %}selected{% endif %}>
+                    {{ equipe.nome_equipe }}{% if equipe.regiao %} ({{ equipe.regiao }}){% endif %}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+
             <div class="col-md-6 col-xl-2">
               <label class="small text-muted">Foco</label>
               {{ render_chip_select_values('foco', focos_disponiveis, foco_values_selecionados, 'Adicionar foco') }}
