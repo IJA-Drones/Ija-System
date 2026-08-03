@@ -6,6 +6,7 @@ from werkzeug.datastructures import MultiDict
 
 from app import db
 from app.models import Equipe, OrdemServico, Prefeitura, Solicitacao, Usuario
+from app.modules.relatorios.exporters import _build_pdf_export_data, _pdf_solicitacoes_status_label
 from app.modules.relatorios.service import (
     build_relatorio_os_export_data,
     build_relatorios_coleta_imagens_context,
@@ -141,6 +142,62 @@ def test_relatorios_solicitacoes_filters_by_region_and_team():
         assert context["equipe_id_selecionado"] == equipe_norte.id
         assert context["filtros_exportacao"]["equipe_id"] == equipe_norte.id
         assert equipe_sul.id not in [equipe.id for equipe in context["equipes_disponiveis"]]
+
+        db.session.remove()
+        db.drop_all()
+
+
+def test_relatorio_solicitacoes_pdf_merges_approved_and_completed_statuses():
+    app = _make_app()
+    with app.app_context():
+        db.create_all()
+        admin, equipe_norte, _equipe_sul = _seed_relatorio_rows()
+        uvis_norte = Usuario.query.filter_by(login="uvis_norte_rel").one()
+
+        db.session.add_all(
+            [
+                Solicitacao(
+                    data_agendamento=date(2026, 7, 12),
+                    hora_agendamento=time(10, 0),
+                    foco="Foco B",
+                    cep="03000-000",
+                    logradouro="Rua Aprovada",
+                    bairro="Centro",
+                    cidade="Sao Paulo",
+                    uf="SP",
+                    status="APROVADO",
+                    usuario_id=uvis_norte.id,
+                    prefeitura_id=admin.prefeitura_id,
+                    equipe_id=equipe_norte.id,
+                ),
+                Solicitacao(
+                    data_agendamento=date(2026, 7, 13),
+                    hora_agendamento=time(11, 0),
+                    foco="Foco C",
+                    cep="04000-000",
+                    logradouro="Rua Pendente",
+                    bairro="Centro",
+                    cidade="Sao Paulo",
+                    uf="SP",
+                    status="PENDENTE",
+                    usuario_id=uvis_norte.id,
+                    prefeitura_id=admin.prefeitura_id,
+                    equipe_id=equipe_norte.id,
+                ),
+            ]
+        )
+        db.session.commit()
+
+        data = _build_pdf_export_data(admin, MultiDict({"mes": "7", "ano": "2026"}))
+        dados_status = dict(data["dados_status"])
+
+        assert data["total_aprovadas"] == 3
+        assert dados_status["Aprovadas/Concluidas"] == 3
+        assert "APROVADO" not in dados_status
+        assert "CONCLUIDO" not in dados_status
+        assert dados_status["PENDENTE"] == 1
+        assert _pdf_solicitacoes_status_label("APROVADO") == "Aprovadas/Concluidas"
+        assert _pdf_solicitacoes_status_label("CONCLUÍDO") == "Aprovadas/Concluidas"
 
         db.session.remove()
         db.drop_all()

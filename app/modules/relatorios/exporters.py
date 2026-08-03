@@ -1,6 +1,7 @@
 import gc
 import os
 import tempfile
+import unicodedata
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from io import BytesIO
@@ -83,6 +84,35 @@ COLETA_IMAGENS_PDF_REMOTE_PREFETCH = _env_int(
     maximum=3,
 )
 COLETA_IMAGENS_PDF_PREFETCH_MISS = object()
+PDF_SOLICITACOES_STATUS_APROVADAS_CONCLUIDAS_LABEL = "Aprovadas/Concluidas"
+PDF_SOLICITACOES_STATUS_APROVADAS_CONCLUIDAS = {"APROVADO", "CONCLUIDO"}
+
+
+def _normalize_pdf_solicitacoes_status(value):
+    text = str(value or "").strip().upper()
+    return "".join(
+        char
+        for char in unicodedata.normalize("NFD", text)
+        if unicodedata.category(char) != "Mn"
+    )
+
+
+def _pdf_solicitacoes_status_label(status):
+    if _normalize_pdf_solicitacoes_status(status) in PDF_SOLICITACOES_STATUS_APROVADAS_CONCLUIDAS:
+        return PDF_SOLICITACOES_STATUS_APROVADAS_CONCLUIDAS_LABEL
+    return status or "Nao informado"
+
+
+def _merge_pdf_solicitacoes_status_counts(rows):
+    totals = {}
+    order = []
+    for status, total in rows:
+        label = _pdf_solicitacoes_status_label(status)
+        if label not in totals:
+            totals[label] = 0
+            order.append(label)
+        totals[label] += total or 0
+    return [(label, totals[label]) for label in order]
 
 
 def _resolve_filters(user, args):
@@ -120,7 +150,17 @@ def _build_pdf_export_data(user, args):
     )
 
     total_solicitacoes = base_query.count()
-    total_aprovadas = base_query.filter(Solicitacao.status == "APROVADO").count()
+    status_count_rows = (
+        base_query
+        .with_entities(Solicitacao.status, db.func.count(Solicitacao.id))
+        .group_by(Solicitacao.status)
+        .all()
+    )
+    total_aprovadas = sum(
+        total or 0
+        for status, total in status_count_rows
+        if _normalize_pdf_solicitacoes_status(status) in PDF_SOLICITACOES_STATUS_APROVADAS_CONCLUIDAS
+    )
     total_aprovadas_com_recomendacoes = base_query.filter(
         Solicitacao.status == "APROVADO COM RECOMENDAÇÕES"
     ).count()
@@ -141,15 +181,7 @@ def _build_pdf_export_data(user, args):
         )
     ]
 
-    dados_status = [
-        (status or "Não informado", total)
-        for status, total in (
-            base_query
-            .with_entities(Solicitacao.status, db.func.count(Solicitacao.id))
-            .group_by(Solicitacao.status)
-            .all()
-        )
-    ]
+    dados_status = _merge_pdf_solicitacoes_status_counts(status_count_rows)
 
     dados_foco = [
         (foco or "Não informado", total)
@@ -297,6 +329,7 @@ def build_relatorio_pdf_export(user, args):
     data = _build_pdf_export_data(user, args)
 
     status_colors = {
+        PDF_SOLICITACOES_STATUS_APROVADAS_CONCLUIDAS_LABEL: "#198754",
         "APROVADO": "#2f855a",
         "APROVADO COM RECOMENDAÇÕES": "#F7630C",
         "EM ANÁLISE": "#f3e526",
@@ -384,7 +417,7 @@ def build_relatorio_pdf_export(user, args):
     def resumo_cards():
         cards = [
             ("Total", data["total_solicitacoes"], "#0d6efd"),
-            ("Aprovadas", data["total_aprovadas"], "#198754"),
+            ("Aprovadas/Concluidas", data["total_aprovadas"], "#198754"),
             ("Aprov. c/ Recom.", data["total_aprovadas_com_recomendacoes"], "#F7630C"),
             ("Negadas", data["total_recusadas"], "#dc3545"),
             ("Em Análise", data["total_analise"], "#ffc107"),
@@ -592,7 +625,7 @@ def build_relatorio_pdf_export(user, args):
         unidade = getattr(usuario, "nome_uvis", "") or "Não informado"
         regiao = getattr(usuario, "regiao", "") or "Não informado"
         protocolo = getattr(solicitacao, "protocolo", "") or ""
-        status = getattr(solicitacao, "status", "") or ""
+        status = _pdf_solicitacoes_status_label(getattr(solicitacao, "status", "") or "")
         foco = getattr(solicitacao, "foco", "") or ""
         tipo_operacao = getattr(solicitacao, "tipo_operacao", "") or ""
         tipo_visita = getattr(solicitacao, "tipo_visita", "") or ""
