@@ -706,6 +706,57 @@ class VeiculosOperationalScopeTests(unittest.TestCase):
         self.assertEqual(context["veiculos_timeline"][0]["total_abastecimentos_veiculo"], 24)
         self.assertEqual(context["veiculos_timeline"][0]["total_abastecimentos_gerador"], 1)
 
+    def test_vehicle_logs_detail_summarizes_completed_cleanings(self):
+        veiculo = self._novo_veiculo(prefeitura_id=1)
+        log = LogVeiculo(
+            veiculo_id=veiculo.id,
+            equipe_id=self.equipe.id,
+            km_inicial=1000,
+            km_final=1010,
+            check_diario=True,
+            data_registro=datetime(2026, 7, 1, 8, 0),
+        )
+        db.session.add(log)
+        db.session.flush()
+        db.session.add_all(
+            [
+                LimpezaVeiculo(
+                    log_veiculo_id=log.id,
+                    veiculo_id=veiculo.id,
+                    equipe_id=self.equipe.id,
+                    data_hora=datetime(2026, 7, 1, 9, 0),
+                    limpeza_realizada=True,
+                    tipo_limpeza="completa",
+                    valor_total=167,
+                ),
+                LimpezaVeiculo(
+                    log_veiculo_id=log.id,
+                    veiculo_id=veiculo.id,
+                    equipe_id=self.equipe.id,
+                    data_hora=datetime(2026, 7, 1, 10, 0),
+                    limpeza_realizada=False,
+                    tipo_limpeza="ducha",
+                    valor_total=99,
+                ),
+            ]
+        )
+        db.session.commit()
+        user = SimpleNamespace(tipo_usuario="admin", prefeitura_id=1)
+
+        with self.app.test_request_context(f"/veiculos/logs/veiculo/{veiculo.id}"):
+            context = veiculos_service.build_veiculo_logs_detalhe_context(
+                "admin",
+                veiculo.id,
+                request.args,
+                user=user,
+            )
+
+        self.assertEqual(context["timeline"]["total_limpezas"], 2)
+        self.assertEqual(context["timeline"]["total_limpezas_realizadas"]["quantidade"], 1)
+        self.assertEqual(context["timeline"]["total_limpezas_realizadas"]["valor_total"], 167)
+        self.assertEqual(context["timeline"]["dias"][0]["limpezas_realizadas"], 1)
+        self.assertEqual(context["timeline"]["dias"][0]["valor_limpezas_realizadas"], 167)
+
     def test_fuel_record_requires_and_saves_panel_photo(self):
         veiculo = self._novo_veiculo()
         user = SimpleNamespace(

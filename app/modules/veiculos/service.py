@@ -1673,6 +1673,7 @@ def _build_veiculos_timeline_from_logs(logs):
                 "total_abastecimentos_veiculo": 0,
                 "total_abastecimentos_gerador": 0,
                 "total_limpezas": 0,
+                "total_limpezas_realizadas": {"quantidade": 0, "valor_total": 0},
             },
         )
         if item["veiculo"] is None and veiculo is not None:
@@ -1681,6 +1682,13 @@ def _build_veiculos_timeline_from_logs(logs):
         km_rodado = _km_rodado_log_veiculo(log)
         gasto = log.total_valor_abastecido or 0
         gasto_limpeza = log.total_valor_limpeza or 0
+        limpezas_realizadas = [
+            limpeza
+            for limpeza in (log.limpezas_detalhadas or [])
+            if limpeza.limpeza_realizada
+        ]
+        qtd_limpezas_realizadas = len(limpezas_realizadas)
+        valor_limpezas_realizadas = sum(float(limpeza.valor_total or 0) for limpeza in limpezas_realizadas)
         gasto_por_tipo = _sum_abastecimentos_por_tipo(log)
         data_inicio = log.data_registro
         movimentacao = log.ultima_movimentacao_em or data_inicio
@@ -1722,6 +1730,8 @@ def _build_veiculos_timeline_from_logs(logs):
         item["total_abastecimentos_veiculo"] += gasto_por_tipo["qtd_veiculo"]
         item["total_abastecimentos_gerador"] += gasto_por_tipo["qtd_gerador"]
         item["total_limpezas"] += log.qtd_limpezas
+        item["total_limpezas_realizadas"]["quantidade"] += qtd_limpezas_realizadas
+        item["total_limpezas_realizadas"]["valor_total"] += valor_limpezas_realizadas
 
         if dia is not None:
             dia_item = dias_por_veiculo[log.veiculo_id].setdefault(
@@ -1738,6 +1748,8 @@ def _build_veiculos_timeline_from_logs(logs):
                     "abastecimentos_veiculo": 0,
                     "abastecimentos_gerador": 0,
                     "limpezas": 0,
+                    "limpezas_realizadas": 0,
+                    "valor_limpezas_realizadas": 0,
                     "turnos": [],
                 },
             )
@@ -1751,6 +1763,8 @@ def _build_veiculos_timeline_from_logs(logs):
             dia_item["abastecimentos_veiculo"] += gasto_por_tipo["qtd_veiculo"]
             dia_item["abastecimentos_gerador"] += gasto_por_tipo["qtd_gerador"]
             dia_item["limpezas"] += log.qtd_limpezas
+            dia_item["limpezas_realizadas"] += qtd_limpezas_realizadas
+            dia_item["valor_limpezas_realizadas"] += valor_limpezas_realizadas
             dia_item["turnos"].append(log_info)
 
     for veiculo_id, dias in dias_por_veiculo.items():
@@ -2297,6 +2311,7 @@ def build_veiculo_logs_detalhe_context(tipo_usuario, veiculo_id, args, user=None
         "total_abastecimentos_veiculo": 0,
         "total_abastecimentos_gerador": 0,
         "total_limpezas": 0,
+        "total_limpezas_realizadas": {"quantidade": 0, "valor_total": 0},
     }
 
     return {

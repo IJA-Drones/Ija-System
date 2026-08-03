@@ -23,6 +23,11 @@
         padding: 0.35rem 0.65rem;
         white-space: nowrap;
     }
+    .timeline-chip-cleaning {
+        background: #ecfeff;
+        border-color: #bae6fd;
+        color: #0369a1;
+    }
     .summary-grid {
         display: grid;
         gap: 0.85rem;
@@ -390,6 +395,11 @@
             <span>Registros</span>
             <strong>{{ timeline.total_abastecimentos }}</strong>
         </div>
+        <div class="summary-card">
+            <span>Limpezas realizadas</span>
+            <strong class="text-info">{{ timeline.total_limpezas_realizadas.quantidade or 0 }}</strong>
+            <div class="small text-muted mt-1">R$ {{ '%.2f'|format(timeline.total_limpezas_realizadas.valor_total or 0) }}</div>
+        </div>
     </div>
 
     <div class="km-check-card">
@@ -483,6 +493,11 @@
                         <span class="timeline-chip">Gerador R$ {{ '%.2f'|format(dia.gasto_gerador or 0) }}</span>
                     {% endif %}
                     <span class="timeline-chip">{{ dia.abastecimentos }} abastecimento(s)</span>
+                    {% if dia.limpezas_realizadas %}
+                        <span class="timeline-chip timeline-chip-cleaning">
+                            {{ dia.limpezas_realizadas }} limpeza(s) | R$ {{ '%.2f'|format(dia.valor_limpezas_realizadas or 0) }}
+                        </span>
+                    {% endif %}
                     <span class="timeline-chip vehicle-day-action-chip">
                         <i class="bi bi-chevron-down"></i>
                         <span class="day-action-open">Abrir dia</span>
