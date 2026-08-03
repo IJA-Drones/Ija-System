@@ -7,6 +7,7 @@ from werkzeug.datastructures import MultiDict
 from app import db
 from app.models import Equipe, OrdemServico, Prefeitura, Solicitacao, Usuario
 from app.modules.relatorios.service import (
+    build_relatorio_os_export_data,
     build_relatorios_coleta_imagens_context,
     build_relatorios_os_context,
     build_relatorios_solicitacoes_context,
@@ -97,6 +98,7 @@ def _seed_relatorio_rows():
                 solicitacao_id=solicitacao_norte.id,
                 equipe_id=equipe_norte.id,
                 data_aplicacao=date(2026, 7, 11),
+                tipo_aplicacao="Pulverizacao de area (liq)",
                 larva_visualizada="SIM",
                 imagem_principal="os/norte.jpg",
             ),
@@ -104,6 +106,7 @@ def _seed_relatorio_rows():
                 solicitacao_id=solicitacao_sul.id,
                 equipe_id=equipe_sul.id,
                 data_aplicacao=date(2026, 7, 11),
+                tipo_aplicacao="Selecione...",
                 larva_visualizada="NAO",
                 imagem_principal="os/sul.jpg",
             ),
@@ -166,6 +169,43 @@ def test_relatorios_os_filters_by_region_and_team():
         assert context["regiao_selecionada"] == "NORTE"
         assert context["equipe_id_selecionado"] == equipe_norte.id
         assert context["filtros_exportacao"]["equipe_id"] == equipe_norte.id
+        assert context["dados_tipo_aplicacao"] == [("Pulverizacao de area (liq)", 1)]
+
+        db.session.remove()
+        db.drop_all()
+
+
+def test_relatorios_os_tipo_aplicacao_ignores_placeholder_values():
+    app = _make_app()
+    with app.app_context():
+        db.create_all()
+        admin, _equipe_norte, _equipe_sul = _seed_relatorio_rows()
+
+        context = build_relatorios_os_context(
+            admin,
+            MultiDict(
+                {
+                    "mes": "7",
+                    "ano": "2026",
+                }
+            ),
+        )
+
+        tipos = [label for label, _total in context["dados_tipo_aplicacao"]]
+        assert context["dados_tipo_aplicacao"] == [("Pulverizacao de area (liq)", 1)]
+        assert "Nao informado" not in tipos
+        assert "Selecione..." not in tipos
+
+        export_data = build_relatorio_os_export_data(
+            admin,
+            MultiDict(
+                {
+                    "mes": "7",
+                    "ano": "2026",
+                }
+            ),
+        )
+        assert export_data["dados_tipo_aplicacao"] == [("Pulverizacao de area (liq)", 1)]
 
         db.session.remove()
         db.drop_all()

@@ -26,6 +26,7 @@ from app.shared.query_filters import (
 
 RELATORIOS_MENU_TYPES = ADMIN_PANEL_VIEW_TYPES
 RELATORIOS_COLETA_IMAGENS_TYPES = RELATORIOS_MENU_TYPES | {"uvis"}
+RELATORIO_OS_PLACEHOLDER_VALUES = ("", "SELECIONE", "SELECIONE...")
 STATUS_OS_CONCLUIDAS = ("CONCLUIDO", "CONCLUÍDO")
 COLETA_IMAGENS_MONTH_NAMES = {
     1: "Janeiro",
@@ -253,6 +254,22 @@ def _apply_relatorio_os_filters(query, filtros, *, monthly=False):
         )
 
     return query
+
+
+def _is_relatorio_os_informed_value(value):
+    return (value or "").strip().upper() not in RELATORIO_OS_PLACEHOLDER_VALUES
+
+
+def _agrupar_os_por_valores_informados(base_query, campo):
+    rows = (
+        base_query
+        .with_entities(campo, func.count(OrdemServico.id))
+        .filter(func.upper(func.trim(func.coalesce(campo, ""))).notin_(RELATORIO_OS_PLACEHOLDER_VALUES))
+        .group_by(campo)
+        .order_by(func.count(OrdemServico.id).desc())
+        .all()
+    )
+    return [(valor, total) for valor, total in rows if _is_relatorio_os_informed_value(valor)]
 
 
 def can_access_relatorios_menu(user) -> bool:
@@ -836,7 +853,7 @@ def build_relatorios_os_context(user, args):
         "total_nao_realizadas": base_query.filter(func.length(func.trim(func.coalesce(OrdemServico.motivo_nao_realizacao, ""))) > 0).count(),
         "total_com_kml": base_query.filter(OrdemServico.dji_kml_route_id.isnot(None)).count(),
         "dados_situacao_aplicacao": agrupar_por(OrdemServico.situacao_aplicacao),
-        "dados_tipo_aplicacao": agrupar_por(OrdemServico.tipo_aplicacao),
+        "dados_tipo_aplicacao": _agrupar_os_por_valores_informados(base_query, OrdemServico.tipo_aplicacao),
         "dados_larva": agrupar_por(OrdemServico.larva_visualizada),
         "dados_piloto": agrupar_por(OrdemServico.piloto),
         "dados_unidade": [
@@ -920,7 +937,7 @@ def build_relatorio_os_export_data(user, args, *, include_ordens=False, only_con
         ]
 
     dados_situacao_aplicacao = agrupar_por(OrdemServico.situacao_aplicacao)
-    dados_tipo_aplicacao = agrupar_por(OrdemServico.tipo_aplicacao)
+    dados_tipo_aplicacao = _agrupar_os_por_valores_informados(base_query, OrdemServico.tipo_aplicacao)
     dados_larva = agrupar_por(OrdemServico.larva_visualizada)
     dados_piloto = agrupar_por(OrdemServico.piloto)
 
