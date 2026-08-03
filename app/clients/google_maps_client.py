@@ -33,11 +33,14 @@ def geocode_endereco_google(*, logradouro, numero, bairro, cidade, uf, cep=None)
     data = response.json()
 
     if data.get("status") != "OK":
-        return None, None
+        return None, None, None
 
     results = data.get("results") or []
     if not results:
-        return None, None
+        return None, None, None
 
-    location = results[0].get("geometry", {}).get("location", {})
-    return location.get("lat"), location.get("lng")
+    first_result = results[0]
+    location = first_result.get("geometry", {}).get("location", {})
+    place_id = first_result.get("place_id")
+
+    return location.get("lat"), location.get("lng"), place_id

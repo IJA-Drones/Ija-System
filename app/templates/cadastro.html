@@ -660,13 +660,42 @@
           latInput.value = data.lat;
           lngInput.value = data.lng;
 
-          // centralizarMapaNoEndereco();
+          // 🔒 1. SE O BACKEND RETORNAR O PLACE_ID, SALVA NO INPUT HIDDEN
+          if (data.place_id) {
+            const placeIdInput = document.getElementById("place_id");
+            if (placeIdInput) placeIdInput.value = data.place_id;
+
+            // 🔒 2. CHECA SE O ENDEREÇO ESTÁ MARCADO COMO CONCLUÍDO
+            try {
+              const checkRes = await fetch(`/api/solicitacao/checar-bloqueio?place_id=${data.place_id}`);
+              const checkData = await checkRes.json();
+
+              if (checkData.bloqueado) {
+                if (typeof Swal !== "undefined") {
+                  Swal.fire({
+                    icon: "warning",
+                    title: "Endereço Concluído",
+                    html: "⚠️ Este endereço foi marcado como <strong>CONCLUÍDO</strong> pelo piloto e não aceita novas solicitações.",
+                    confirmButtonColor: "#dc3545",
+                    confirmButtonText: "Entendido"
+                  });
+                } else {
+                  alert("⚠️ Este endereço foi marcado como CONCLUÍDO pelo piloto e não aceita novas solicitações.");
+                }
+
+                // Opcional: Desabilita o botão de enviar pedido
+                const btnEnviar = document.getElementById("btnEnviarPedido");
+                if (btnEnviar) btnEnviar.disabled = true;
+              } else {
+                const btnEnviar = document.getElementById("btnEnviarPedido");
+                if (btnEnviar) btnEnviar.disabled = false;
+              }
+            } catch (errCheck) {
+              console.error("Erro ao verificar bloqueio de endereço:", errCheck);
+            }
+          }
         } else {
           limparLatLng();
-          // Toast opcional (só se quiser)
-          // if (typeof Swal !== 'undefined') {
-          //   Swal.fire({ toast:true, position:'top-end', icon:'warning', title:data.message || 'Não foi possível geocodificar', showConfirmButton:false, timer:2500 });
-          // }
         }
       } catch (e) {
         console.error("Erro geocode:", e);

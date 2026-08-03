@@ -893,14 +893,27 @@
 
         <div class="row g-3 mb-4">
           <div class="col-md-4">
-              <label class="form-label-header">Situação da aplicação *</label>
-              <select name="situacao_aplicacao" class="form-select" required>
-                  <option value="">Selecione...</option>
-                  <option value="MONITORADO E LARVICIDA APLICADO" {% if ordem and ordem.situacao_aplicacao == 'MONITORADO E LARVICIDA APLICADO' %}selected{% endif %}>MONITORADO E LARVICIDA APLICADO</option>
-                  <option value="APENAS MONITORADO" {% if ordem and ordem.situacao_aplicacao == 'APENAS MONITORADO' %}selected{% endif %}>APENAS MONITORADO</option>
-                  <option value="APENAS LARVICIDA APLICADO (FALTA DE SEGURANÇA)" {% if ordem and ordem.situacao_aplicacao == 'APENAS LARVICIDA APLICADO (FALTA DE SEGURANÇA)' %}selected{% endif %}>APENAS LARVICIDA APLICADO (FALTA DE SEGURANÇA)</option>
-                  <option value="NENHUM VOO REALIZADO" {% if ordem and ordem.situacao_aplicacao == 'NENHUM VOO REALIZADO' %}selected{% endif %}>NENHUM VOO REALIZADO</option>
-              </select>
+            <label class="form-label-header">Situação da aplicação *</label>
+            <select name="situacao_aplicacao" id="situacao_aplicacao" class="form-select" required>
+              <option value="">Selecione...</option>
+              <option value="MONITORADO E LARVICIDA APLICADO" {% if ordem and ordem.situacao_aplicacao == 'MONITORADO E LARVICIDA APLICADO' %}selected{% endif %}>MONITORADO E LARVICIDA APLICADO</option>
+              <option value="APENAS MONITORADO" {% if ordem and ordem.situacao_aplicacao == 'APENAS MONITORADO' %}selected{% endif %}>APENAS MONITORADO</option>
+              <option value="APENAS LARVICIDA APLICADO (FALTA DE SEGURANÇA)" {% if ordem and ordem.situacao_aplicacao == 'APENAS LARVICIDA APLICADO (FALTA DE SEGURANÇA)' %}selected{% endif %}>APENAS LARVICIDA APLICADO (FALTA DE SEGURANÇA)</option>
+              <option value="NENHUM VOO REALIZADO" {% if ordem and ordem.situacao_aplicacao == 'NENHUM VOO REALIZADO' %}selected{% endif %}>NENHUM VOO REALIZADO</option>
+            </select>
+          </div>
+
+          <!-- TRAVA DO ENDEREÇO (ALINHADA COM O PADRÃO DOS OUTROS CAMPOS) -->
+          <div class="col-md-8" id="container_endereco_concluido" style="display: none;">
+            <label class="form-label-header text-danger">Status do Endereço</label>
+            <div class="form-control d-flex align-items-center bg-danger-subtle border-danger-subtle">
+              <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" name="endereco_concluido" id="endereco_concluido" value="true" {% if solicitacao and solicitacao.endereco_concluido %}checked{% endif %}>
+                <label class="form-check-label text-danger fw-bold small ms-2" for="endereco_concluido">
+                  🔒 Encerrar Ciclo do Endereço (Bloquear novas solicitações)
+                </label>
+              </div>
+            </div>
           </div>
           <div class="col-md-4">
             <label class="form-label-header">Larva visualizada *</label>
@@ -1944,6 +1957,33 @@ document.addEventListener("DOMContentLoaded", () => {
       bootstrap.Tab.getOrCreateInstance(targetButton).show();
     }
   }
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+  const selectSituacao = document.getElementById("situacao_aplicacao");
+  const containerConcluido = document.getElementById("container_endereco_concluido");
+  const checkboxConcluido = document.getElementById("endereco_concluido");
+
+  if (!selectSituacao || !containerConcluido) return;
+
+  // Opções que permitem ao piloto encerrar o endereço
+  const opcoesLiberamBloqueio = [
+    "APENAS MONITORADO",
+    "NENHUM VOO REALIZADO"
+  ];
+
+  function syncTravaEndereco() {
+    const val = selectSituacao.value;
+    if (opcoesLiberamBloqueio.includes(val)) {
+      containerConcluido.style.display = "block";
+    } else {
+      containerConcluido.style.display = "none";
+      if (checkboxConcluido) checkboxConcluido.checked = false;
+    }
+  }
+
+  selectSituacao.addEventListener("change", syncTravaEndereco);
+  syncTravaEndereco(); // Executa ao carregar para caso de reedição
 });
 
 document.addEventListener("DOMContentLoaded", () => {

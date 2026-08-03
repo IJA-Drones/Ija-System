@@ -1348,17 +1348,27 @@ def register_routes(bp):
                 return redirect(url_for("main.piloto_os_formulario_view", os_id=os_id))
 
             try:
-                flash(
-                    salvar_piloto_os_form(
-                        current_user,
-                        os_id,
-                        request.form,
-                        request.files,
-                        current_app.root_path,
-                    ),
-                    "success",
+                # 1. Salva os dados padrão da OS (Ordem de Serviço)
+                msg_sucesso = salvar_piloto_os_form(
+                    current_user,
+                    os_id,
+                    request.form,
+                    request.files,
+                    current_app.root_path,
                 )
+
+                # 2. Atualiza a flag de bloqueio na Solicitação pai
+                solicitacao = context.get("solicitacao")
+                if solicitacao:
+                    # Captura a marcação do switch (se o switch estiver visível e marcado, envia 'true')
+                    solicitacao.endereco_concluido = (request.form.get("endereco_concluido") == "true")
+                    
+                    from app.extensions import db
+                    db.session.commit()
+
+                flash(msg_sucesso, "success")
                 return redirect(url_for("main.piloto_os"))
+
             except PilotoOsError as exc:
                 flash(str(exc), exc.category)
                 return _redirect_from_piloto_os_error(exc, os_id=os_id)

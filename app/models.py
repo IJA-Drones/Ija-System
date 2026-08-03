@@ -449,6 +449,9 @@ class Solicitacao(db.Model):
     perimetro_planejado = db.Column(db.Text)   # JSON com as coordenadas do desenho da UVIS
     perimetro_executado = db.Column(db.Text)   # JSON com o log real do drone (telemetria)
 
+    #Trava de endereços para evitar duplicidade de voos em endereços já atendidos
+    endereco_bloqueado = db.Column(db.Boolean, default=False, nullable=False)
+
     # Anexos
     anexo_path = db.Column(db.String(255))
     anexo_nome = db.Column(db.String(255))

@@ -102,6 +102,25 @@ def build_novo_cadastro_context_with_form(user, google_maps_key, form_source):
 
 
 def create_nova_solicitacao(user, form_data):
+    # =========================================================================
+    # 🔒 1. TRAVA DE SEGURANÇA: VERIFICA SE O ENDEREÇO JÁ FOI CONCLUÍDO
+    # =========================================================================
+    place_id = form_data.get("place_id")  # Pega o ID retornado pelo Google Maps
+    
+    if place_id:
+        # Busca se existe alguma solicitação marcada como concluída para este lugar
+        solicitacao_bloqueada = Solicitacao.query.filter_by(
+            place_id=place_id,
+            endereco_bloqueado=True
+        ).first()
+
+        if solicitacao_bloqueada:
+            raise NovoCadastroValidationError(
+                f"⚠️ O endereço selecionado foi marcado como CONCLUÍDO pelo piloto na OS #{solicitacao_bloqueada.id} e não aceita novas solicitações.",
+                category="danger"
+            )
+    # =========================================================================
+
     data_str = form_data.get("data")
     hora_str = form_data.get("hora")
     data_obj = datetime.strptime(data_str, "%Y-%m-%d").date() if data_str else None
@@ -130,6 +149,7 @@ def create_nova_solicitacao(user, form_data):
     latitude = float(lat_raw.replace(",", ".")) if lat_raw else None
     longitude = float(lng_raw.replace(",", ".")) if lng_raw else None
     area_restrita = detectar_area_restrita(latitude, longitude) or form_data.get("risco_aereo") == "1"
+    
     try:
         tipo_visita, tipo_imovel, foco = validate_foco_selection(
             form_data.get("tipo_visita"),
@@ -144,6 +164,7 @@ def create_nova_solicitacao(user, form_data):
     nova_solicitacao = Solicitacao(
         data_agendamento=data_obj,
         hora_agendamento=hora_obj,
+        place_id=place_id,  # Lembre-se de salvar o place_id na nova solicitação também!
         cep=form_data.get("cep"),
         logradouro=form_data.get("logradouro"),
         bairro=form_data.get("bairro"),
