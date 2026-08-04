@@ -381,6 +381,7 @@
             />
           </div>
         </div>
+        <input type="hidden" name="place_id" id="place_id" value="{{ form.place_id or '' }}" />
 
         <!-- <input
           type="hidden"
@@ -608,12 +609,15 @@
 
     const latInput = document.getElementById("latitude");
     const lngInput = document.getElementById("longitude");
+    const placeIdInput = document.getElementById("place_id");
+    const uvisResponsavelInput = document.querySelector('[name="uvis_responsavel_id"]');
 
     let geocodeTimer = null;
 
     function limparLatLng() {
       if (latInput) latInput.value = "";
       if (lngInput) lngInput.value = "";
+      if (placeIdInput) placeIdInput.value = "";
     }
 
     function formatarCep(value) {
@@ -662,12 +666,15 @@
 
           // 🔒 1. SE O BACKEND RETORNAR O PLACE_ID, SALVA NO INPUT HIDDEN
           if (data.place_id) {
-            const placeIdInput = document.getElementById("place_id");
             if (placeIdInput) placeIdInput.value = data.place_id;
 
             // 🔒 2. CHECA SE O ENDEREÇO ESTÁ MARCADO COMO CONCLUÍDO
             try {
-              const checkRes = await fetch(`/api/solicitacao/checar-bloqueio?place_id=${data.place_id}`);
+              const bloqueioParams = new URLSearchParams({ place_id: data.place_id });
+              if ((uvisResponsavelInput?.value || "").trim()) {
+                bloqueioParams.set("uvis_responsavel_id", uvisResponsavelInput.value);
+              }
+              const checkRes = await fetch(`/api/solicitacao/checar-bloqueio?${bloqueioParams.toString()}`);
               const checkData = await checkRes.json();
 
               if (checkData.bloqueado) {

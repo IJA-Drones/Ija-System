@@ -24,6 +24,7 @@ STATUS_OPCOES_EDICAO = [
     "NEGADO",
 ]
 FOCO_OPCOES_EDICAO = FILTER_FOCO_OPCOES
+STATUS_CONCLUIDO_BLOQUEIO = ("CONCLUIDO", "CONCLU\u00cdDO")
 UF_OPCOES = [
     "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG",
     "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO",
@@ -54,6 +55,42 @@ def can_use_custom_visit_other(user) -> bool:
 def _clean_empty_marker(value):
     value = (value or "").strip()
     return "" if value == "//" else value
+
+
+def _clean_place_id(value):
+    return (value or "").strip() or None
+
+
+def find_solicitacao_bloqueada_por_place_id(place_id, prefeitura_id=None):
+    place_id = _clean_place_id(place_id)
+    if not place_id:
+        return None
+
+    query = Solicitacao.query.filter(
+        Solicitacao.place_id == place_id,
+        Solicitacao.endereco_bloqueado.is_(True),
+        Solicitacao.status.in_(STATUS_CONCLUIDO_BLOQUEIO),
+    )
+
+    if prefeitura_id is None:
+        query = query.filter(Solicitacao.prefeitura_id.is_(None))
+    else:
+        query = query.filter(Solicitacao.prefeitura_id == prefeitura_id)
+
+    return query.order_by(Solicitacao.data_criacao.desc(), Solicitacao.id.desc()).first()
+
+
+def resolve_prefeitura_id_para_bloqueio(user, uvis_responsavel_id=None):
+    if getattr(user, "tipo_usuario", None) in ["dev", "admin", "visualizar", "prefeitura_admin"]:
+        if uvis_responsavel_id:
+            uvis = Usuario.query.filter_by(id=uvis_responsavel_id, tipo_usuario="uvis").first()
+            if not uvis:
+                return getattr(user, "prefeitura_id", None)
+            if is_prefeitura_admin_user(user) and uvis.prefeitura_id != getattr(user, "prefeitura_id", None):
+                return getattr(user, "prefeitura_id", None)
+            return uvis.prefeitura_id or getattr(user, "prefeitura_id", None)
+
+    return getattr(user, "prefeitura_id", None)
 
 
 def build_novo_cadastro_context(user, google_maps_key):
@@ -88,6 +125,7 @@ def build_novo_cadastro_context_with_form(user, google_maps_key, form_source):
         "uf": (form_source.get("uf") or "").strip(),
         "latitude": (form_source.get("latitude") or "").strip(),
         "longitude": (form_source.get("longitude") or "").strip(),
+        "place_id": (form_source.get("place_id") or "").strip(),
         "tipo_visita": (form_source.get("tipo_visita") or "").strip(),
         "tipo_visita_outros": (form_source.get("tipo_visita_outros") or "").strip(),
         "tipo_imovel": (form_source.get("tipo_imovel") or "").strip(),
@@ -102,25 +140,7 @@ def build_novo_cadastro_context_with_form(user, google_maps_key, form_source):
 
 
 def create_nova_solicitacao(user, form_data):
-    # =========================================================================
-    # 🔒 1. TRAVA DE SEGURANÇA: VERIFICA SE O ENDEREÇO JÁ FOI CONCLUÍDO
-    # =========================================================================
-    place_id = form_data.get("place_id")  # Pega o ID retornado pelo Google Maps
-    
-    if place_id:
-        # Busca se existe alguma solicitação marcada como concluída para este lugar
-        solicitacao_bloqueada = Solicitacao.query.filter_by(
-            place_id=place_id,
-            endereco_bloqueado=True
-        ).first()
-
-        if solicitacao_bloqueada:
-            raise NovoCadastroValidationError(
-                f"⚠️ O endereço selecionado foi marcado como CONCLUÍDO pelo piloto na OS #{solicitacao_bloqueada.id} e não aceita novas solicitações.",
-                category="danger"
-            )
-    # =========================================================================
-
+    place_id = _clean_place_id(form_data.get("place_id"))
     data_str = form_data.get("data")
     hora_str = form_data.get("hora")
     data_obj = datetime.strptime(data_str, "%Y-%m-%d").date() if data_str else None
@@ -144,6 +164,16 @@ def create_nova_solicitacao(user, form_data):
         uvis_id_final = user.id
         prefeitura_id_final = getattr(user, "prefeitura_id", None)
 
+    solicitacao_bloqueada = find_solicitacao_bloqueada_por_place_id(
+        place_id,
+        prefeitura_id=prefeitura_id_final,
+    )
+    if solicitacao_bloqueada:
+        raise NovoCadastroValidationError(
+            f"O endereco selecionado ja foi concluido na OS #{solicitacao_bloqueada.id} e nao aceita novas solicitacoes.",
+            category="danger",
+        )
+
     lat_raw = (form_data.get("latitude") or "").strip()
     lng_raw = (form_data.get("longitude") or "").strip()
     latitude = float(lat_raw.replace(",", ".")) if lat_raw else None
@@ -164,7 +194,7 @@ def create_nova_solicitacao(user, form_data):
     nova_solicitacao = Solicitacao(
         data_agendamento=data_obj,
         hora_agendamento=hora_obj,
-        place_id=place_id,  # Lembre-se de salvar o place_id na nova solicitação também!
+        place_id=place_id,
         cep=form_data.get("cep"),
         logradouro=form_data.get("logradouro"),
         bairro=form_data.get("bairro"),

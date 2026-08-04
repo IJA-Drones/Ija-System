@@ -908,7 +908,7 @@
             <label class="form-label-header text-danger">Status do Endereço</label>
             <div class="form-control d-flex align-items-center bg-danger-subtle border-danger-subtle">
               <div class="form-check form-switch mb-0">
-                <input class="form-check-input" type="checkbox" name="endereco_concluido" id="endereco_concluido" value="true" {% if solicitacao and solicitacao.endereco_concluido %}checked{% endif %}>
+                <input class="form-check-input" type="checkbox" name="endereco_concluido" id="endereco_concluido" value="true" {% if solicitacao and solicitacao.endereco_bloqueado %}checked{% endif %}>
                 <label class="form-check-label text-danger fw-bold small ms-2" for="endereco_concluido">
                   🔒 Encerrar Ciclo do Endereço (Bloquear novas solicitações)
                 </label>

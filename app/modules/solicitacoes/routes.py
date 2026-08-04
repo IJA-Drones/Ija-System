@@ -1,6 +1,6 @@
 import os
 
-from flask import current_app, flash, redirect, render_template, request, url_for
+from flask import current_app, flash, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
 from app.modules.solicitacoes.service import (
@@ -10,12 +10,37 @@ from app.modules.solicitacoes.service import (
     build_editar_solicitacao_context,
     create_nova_solicitacao,
     deletar_solicitacao_admin,
+    find_solicitacao_bloqueada_por_place_id,
+    resolve_prefeitura_id_para_bloqueio,
     atualizar_solicitacao,
     SolicitacaoAccessError,
 )
 
 
 def register_routes(bp):
+    @bp.route("/api/solicitacao/checar-bloqueio", methods=["GET"], endpoint="api_solicitacao_checar_bloqueio")
+    @login_required
+    def api_solicitacao_checar_bloqueio():
+        place_id = (request.args.get("place_id") or "").strip()
+        prefeitura_id = resolve_prefeitura_id_para_bloqueio(
+            current_user,
+            request.args.get("uvis_responsavel_id"),
+        )
+        bloqueada = find_solicitacao_bloqueada_por_place_id(
+            place_id,
+            prefeitura_id=prefeitura_id,
+        )
+        return jsonify({
+            "ok": True,
+            "bloqueado": bloqueada is not None,
+            "solicitacao_id": bloqueada.id if bloqueada else None,
+            "message": (
+                f"Endereco ja concluido na OS #{bloqueada.id}."
+                if bloqueada
+                else ""
+            ),
+        })
+
     @bp.route("/novo_cadastro", methods=["GET", "POST"], endpoint="novo")
     @login_required
     def novo():

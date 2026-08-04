@@ -27,7 +27,7 @@ def register_routes(bp):
             if not logradouro or not numero or not cidade or not uf:
                 return jsonify({"ok": False, "message": "Endere\u00e7o incompleto"}), 200
 
-            lat, lng = geocode_endereco_google(
+            lat, lng, place_id = geocode_endereco_google(
                 logradouro=logradouro,
                 numero=numero,
                 bairro=bairro,
@@ -39,7 +39,7 @@ def register_routes(bp):
             if lat is None or lng is None:
                 return jsonify({"ok": False, "message": "N\u00e3o foi poss\u00edvel geocodificar"}), 200
 
-            return jsonify({"ok": True, "lat": lat, "lng": lng}), 200
+            return jsonify({"ok": True, "lat": lat, "lng": lng, "place_id": place_id}), 200
         except Exception as exc:
             current_app.logger.error("ERRO /api/geocode: %s", exc)
             return jsonify({"ok": False, "message": "Erro interno"}), 200

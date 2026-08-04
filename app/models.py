@@ -446,6 +446,7 @@ class Solicitacao(db.Model):
     # Geolocalização
     latitude = db.Column(db.String(50))
     longitude = db.Column(db.String(50))
+    place_id = db.Column(db.String(255), index=True)
     perimetro_planejado = db.Column(db.Text)   # JSON com as coordenadas do desenho da UVIS
     perimetro_executado = db.Column(db.Text)   # JSON com o log real do drone (telemetria)
 

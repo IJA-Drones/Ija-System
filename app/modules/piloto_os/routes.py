@@ -1361,7 +1361,7 @@ def register_routes(bp):
                 solicitacao = context.get("solicitacao")
                 if solicitacao:
                     # Captura a marcação do switch (se o switch estiver visível e marcado, envia 'true')
-                    solicitacao.endereco_concluido = (request.form.get("endereco_concluido") == "true")
+                    solicitacao.endereco_bloqueado = (request.form.get("endereco_concluido") == "true")
                     
                     from app.extensions import db
                     db.session.commit()
