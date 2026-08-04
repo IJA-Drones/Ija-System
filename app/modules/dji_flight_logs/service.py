@@ -17,6 +17,7 @@ from sqlalchemy import func, or_
 from sqlalchemy.orm import joinedload
 from werkzeug.utils import secure_filename
 
+from app.clients.google_maps_client import reverse_geocode_lat_lng_google
 from app.extensions import db
 from app.models import DjiFlightKmlRoute, DjiFlightLogImport, DjiFlightRecord, EquipePiloto, OrdemServico, Solicitacao
 from app.shared.access import ADMIN_PANEL_VIEW_TYPES, can_access_regiao
@@ -33,6 +34,7 @@ _FLIGHT_WINDOW_RE = re.compile(
 _HEADER_ALIASES = {
     "flight_time": {"flighttime"},
     "location": {"location"},
+    "place_id": {"placeid", "googleplaceid"},
     "aircraft_name": {"aircraftname"},
     "task_type": {"tasktype"},
     "sprayed_area": {"sprayedarea"},
@@ -166,6 +168,7 @@ def import_dji_log_excel(file_storage, user):
                 flight_start=item["flight_start"],
                 flight_end=item["flight_end"],
                 location=item["location"],
+                place_id=item["place_id"],
                 aircraft_name=item["aircraft_name"],
                 task_type=item["task_type"],
                 sprayed_area_ha=item["sprayed_area_ha"],
@@ -400,8 +403,11 @@ def import_dji_kml_files(files, user):
             .first()
         )
 
+        reverse_geocode = _reverse_geocode_kml_route(parsed["points"]) if not parsed["place_id"] else {}
+        route_place_id = parsed["place_id"] or reverse_geocode.get("place_id")
+
         route = DjiFlightKmlRoute(
-            flight_record_id=matched_record.id if matched_record else None,
+            flight_record=matched_record,
             uploaded_by_id=getattr(user, "id", None),
             route_code=parsed["route_code"],
             original_filename=original_filename,
@@ -412,6 +418,7 @@ def import_dji_kml_files(files, user):
             pilot_name=parsed["pilot_name"],
             flight_controller_id=parsed["flight_controller_id"],
             route_timestamp=parsed["route_timestamp"],
+            place_id=route_place_id,
             mode_selection=parsed["mode_selection"],
             flight_time_raw=parsed["flight_time_raw"],
             task_area=parsed["task_area"],
@@ -421,6 +428,7 @@ def import_dji_kml_files(files, user):
             point_count=len(parsed["points"]),
             points_json=json.dumps(parsed["points"], ensure_ascii=False),
         )
+        route.formatted_address = reverse_geocode.get("formatted_address")
         db.session.add(route)
         db.session.flush()
 
@@ -531,6 +539,7 @@ def auto_link_existing_kml_routes_to_os(
     route_id_min=None,
     route_id_max=None,
     commit=True,
+    resolve_missing_place_id=False,
     progress_callback=None,
 ):
     linked_route_rows = (
@@ -545,6 +554,7 @@ def auto_link_existing_kml_routes_to_os(
     }
     query = (
         db.session.query(DjiFlightKmlRoute)
+        .options(joinedload(DjiFlightKmlRoute.flight_record))
         .order_by(DjiFlightKmlRoute.route_timestamp.desc().nullslast(), DjiFlightKmlRoute.id.desc())
     )
     if linked_route_ids:
@@ -561,6 +571,7 @@ def auto_link_existing_kml_routes_to_os(
         "linked": 0,
         "no_match": 0,
         "errors": 0,
+        "place_resolved": 0,
         "matches": [],
     }
 
@@ -573,6 +584,13 @@ def auto_link_existing_kml_routes_to_os(
             if progress_callback:
                 progress_callback("error", route, None, None, None)
             continue
+
+        if resolve_missing_place_id and not _clean_place_id(getattr(route, "place_id", None)):
+            reverse_geocode = _reverse_geocode_kml_route(points)
+            if reverse_geocode.get("place_id"):
+                route.place_id = reverse_geocode["place_id"]
+                result["place_resolved"] += 1
+            route.formatted_address = reverse_geocode.get("formatted_address")
 
         match = _find_best_os_match_for_kml_route(route, points)
         if not match:
@@ -650,17 +668,21 @@ def _candidate_ordens_for_kml_route(route):
 
 
 def _score_os_kml_match(ordem, route, points):
-    time_score = _score_kml_os_time_match(ordem, route.route_timestamp)
-    aircraft_score = _score_kml_os_aircraft_match(ordem, route.aircraft_name)
-    pilot_score = _score_kml_os_pilot_match(ordem, route.pilot_name)
+    time_score = _score_kml_os_time_match(ordem, getattr(route, "route_timestamp", None))
+    aircraft_score = _score_kml_os_aircraft_match(ordem, getattr(route, "aircraft_name", None))
+    pilot_score = _score_kml_os_pilot_match(ordem, getattr(route, "pilot_name", None))
+    place_score = _score_kml_os_place_match(ordem, route)
+    address_score = _score_kml_os_address_match(ordem, route)
     distance_meters = _kml_distance_to_solicitacao_meters(points, getattr(ordem, "solicitacao", None))
     geo_score = _score_kml_os_geo_match(distance_meters)
 
-    score = time_score + aircraft_score + pilot_score + geo_score
+    score = time_score + aircraft_score + pilot_score + place_score + address_score + geo_score
     return score, {
         "time": time_score,
         "aircraft": aircraft_score,
         "pilot": pilot_score,
+        "place": place_score,
+        "address": address_score,
         "geo": geo_score,
         "distance_meters": distance_meters,
     }
@@ -669,9 +691,32 @@ def _score_os_kml_match(ordem, route, points):
 def _is_confident_os_kml_match(score, details):
     if score < 70:
         return False
-    has_time_and_identity = details["time"] >= 20 and (details["aircraft"] >= 25 or details["geo"] >= 22)
-    has_aircraft_and_location = details["aircraft"] >= 25 and details["geo"] >= 22
-    return has_time_and_identity or has_aircraft_and_location
+    has_exact_place = (
+        details.get("place", 0) >= 65
+        and (
+            details.get("time", 0) >= 12
+            or details.get("geo", 0) >= 5
+            or details.get("aircraft", 0) >= 25
+            or details.get("pilot", 0) >= 10
+        )
+    )
+    has_address_and_time = (
+        details.get("address", 0) >= 24
+        and details.get("time", 0) >= 20
+        and (details.get("geo", 0) >= 12 or details.get("aircraft", 0) >= 25)
+    )
+    has_address_and_location = details.get("address", 0) >= 24 and details.get("geo", 0) >= 22
+    has_time_and_identity = details.get("time", 0) >= 20 and (
+        details.get("aircraft", 0) >= 25 or details.get("geo", 0) >= 22
+    )
+    has_aircraft_and_location = details.get("aircraft", 0) >= 25 and details.get("geo", 0) >= 22
+    return (
+        has_exact_place
+        or has_address_and_time
+        or has_address_and_location
+        or has_time_and_identity
+        or has_aircraft_and_location
+    )
 
 
 def _score_kml_os_time_match(ordem, route_timestamp):
@@ -738,12 +783,12 @@ def _score_kml_os_aircraft_match(ordem, aircraft_name):
         return 0
 
     candidates = [
-        ordem.prefixo_aeronave_pulverizacao,
-        ordem.prefixo_aeronave_monitoramento,
-        ordem.drone_denominacao,
-        ordem.drone_monitoramento_denominacao,
-        ordem.drone_numero_serie,
-        ordem.drone_monitoramento_numero_serie,
+        getattr(ordem, "prefixo_aeronave_pulverizacao", None),
+        getattr(ordem, "prefixo_aeronave_monitoramento", None),
+        getattr(ordem, "drone_denominacao", None),
+        getattr(ordem, "drone_monitoramento_denominacao", None),
+        getattr(ordem, "drone_numero_serie", None),
+        getattr(ordem, "drone_monitoramento_numero_serie", None),
     ]
     return max((_text_match_score(route_aircraft, candidate) for candidate in candidates), default=0)
 
@@ -753,9 +798,147 @@ def _score_kml_os_pilot_match(ordem, pilot_name):
     if not route_pilot:
         return 0
     return max(
-        _text_match_score(route_pilot, ordem.piloto, exact_score=15, contains_score=10),
-        _text_match_score(route_pilot, ordem.auxiliar, exact_score=8, contains_score=5),
+        _text_match_score(route_pilot, getattr(ordem, "piloto", None), exact_score=15, contains_score=10),
+        _text_match_score(route_pilot, getattr(ordem, "auxiliar", None), exact_score=8, contains_score=5),
     )
+
+
+def _score_kml_os_place_match(ordem, route):
+    solicitacao = getattr(ordem, "solicitacao", None)
+    os_place_id = _clean_place_id(getattr(solicitacao, "place_id", None))
+    if not os_place_id:
+        return 0
+
+    flight_record = getattr(route, "flight_record", None)
+    route_place_ids = {
+        place_id
+        for place_id in (
+            _clean_place_id(getattr(route, "place_id", None)),
+            _clean_place_id(getattr(flight_record, "place_id", None)),
+            _clean_place_id(_extract_place_id_from_raw_payload(getattr(flight_record, "raw_payload", None))),
+        )
+        if place_id
+    }
+    return 65 if os_place_id in route_place_ids else 0
+
+
+def _score_kml_os_address_match(ordem, route):
+    solicitacao = getattr(ordem, "solicitacao", None)
+    route_address_text = _route_address_text(route)
+    if not solicitacao or not route_address_text:
+        return 0
+
+    route_normalized = _normalize_match_text(route_address_text)
+    route_tokens = _address_tokens(route_address_text)
+    score = 0
+
+    full_address = _solicitacao_address_text(solicitacao)
+    full_normalized = _normalize_match_text(full_address)
+    if full_normalized and (
+        full_normalized in route_normalized or route_normalized in full_normalized
+    ):
+        score = max(score, 30)
+
+    street_tokens = _address_tokens(getattr(solicitacao, "logradouro", None))
+    number_tokens = _address_tokens(getattr(solicitacao, "numero", None))
+    neighborhood_tokens = _address_tokens(getattr(solicitacao, "bairro", None))
+    city_tokens = _address_tokens(getattr(solicitacao, "cidade", None))
+    cep_tokens = _address_tokens(getattr(solicitacao, "cep", None))
+
+    street_matches = bool(street_tokens and street_tokens.issubset(route_tokens))
+    if street_matches:
+        score = max(score, 12)
+        if number_tokens and number_tokens.intersection(route_tokens):
+            score = max(score, 28)
+        if city_tokens and city_tokens.intersection(route_tokens):
+            score = max(score, 24)
+        if neighborhood_tokens and neighborhood_tokens.intersection(route_tokens):
+            score = max(score, 22)
+        if cep_tokens and cep_tokens.intersection(route_tokens):
+            score = max(score, 26)
+
+    return score
+
+
+def _clean_place_id(value):
+    value = str(value or "").strip()
+    return value or None
+
+
+def _extract_place_id_from_raw_payload(raw_payload):
+    if not raw_payload:
+        return None
+    try:
+        payload = json.loads(raw_payload) if isinstance(raw_payload, str) else raw_payload
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return None
+    if not isinstance(payload, dict):
+        return None
+    return payload.get("place_id") or payload.get("placeId") or payload.get("google_place_id")
+
+
+def _route_address_text(route):
+    flight_record = getattr(route, "flight_record", None)
+    parts = [
+        getattr(route, "location", None),
+        getattr(route, "formatted_address", None),
+        getattr(flight_record, "location", None),
+        getattr(flight_record, "field_name", None),
+    ]
+    return " ".join(str(part).strip() for part in parts if part)
+
+
+def _solicitacao_address_text(solicitacao):
+    fields = ("logradouro", "numero", "bairro", "cidade", "uf", "cep")
+    return " ".join(
+        str(getattr(solicitacao, field, "") or "").strip()
+        for field in fields
+        if getattr(solicitacao, field, None)
+    )
+
+
+_ADDRESS_STOPWORDS = {
+    "r",
+    "rua",
+    "av",
+    "avenida",
+    "al",
+    "alameda",
+    "travessa",
+    "tv",
+    "estrada",
+    "rodovia",
+    "praca",
+    "pc",
+    "bairro",
+    "jd",
+    "jardim",
+    "vl",
+    "vila",
+    "n",
+    "no",
+    "numero",
+    "num",
+    "de",
+    "da",
+    "do",
+    "das",
+    "dos",
+}
+
+
+def _address_tokens(value):
+    value = str(value or "").strip()
+    if not value:
+        return set()
+    normalized = unicodedata.normalize("NFKD", value)
+    normalized = "".join(char for char in normalized if not unicodedata.combining(char))
+    tokens = re.findall(r"[a-z0-9]+", normalized.lower())
+    return {
+        token
+        for token in tokens
+        if token not in _ADDRESS_STOPWORDS and (token.isdigit() or len(token) > 1)
+    }
 
 
 def _text_match_score(normalized_left, raw_right, *, exact_score=35, contains_score=25):
@@ -794,6 +977,40 @@ def _kml_distance_to_solicitacao_meters(points, solicitacao):
             continue
         distances.append(_haversine_distance_meters(os_lat, os_lng, point_lat, point_lng))
     return min(distances) if distances else None
+
+
+def _reverse_geocode_kml_route(points):
+    representative_point = _representative_kml_point(points)
+    if not representative_point:
+        return {}
+
+    try:
+        formatted_address, place_id = reverse_geocode_lat_lng_google(
+            lat=representative_point["lat"],
+            lng=representative_point["lng"],
+        )
+    except Exception:
+        return {}
+
+    return {
+        "formatted_address": formatted_address,
+        "place_id": _clean_place_id(place_id),
+    }
+
+
+def _representative_kml_point(points):
+    valid_points = [
+        point
+        for point in points or []
+        if point.get("lat") is not None and point.get("lng") is not None
+    ]
+    if not valid_points:
+        return None
+
+    return {
+        "lat": sum(point["lat"] for point in valid_points) / len(valid_points),
+        "lng": sum(point["lng"] for point in valid_points) / len(valid_points),
+    }
 
 
 def _parse_coordinate(value):
@@ -1206,6 +1423,7 @@ def _parse_excel_row(row_number, row_values, header_map):
     payload = {
         "flight_time": flight_window,
         "location": _stringify(_get_row_value(values, header_map, "location")),
+        "place_id": _clean_place_id(_get_row_value(values, header_map, "place_id")),
         "aircraft_name": _stringify(_get_row_value(values, header_map, "aircraft_name")),
         "task_type": _stringify(_get_row_value(values, header_map, "task_type")),
         "sprayed_area": _parse_optional_float(_get_row_value(values, header_map, "sprayed_area")),
@@ -1238,6 +1456,7 @@ def _parse_excel_row(row_number, row_values, header_map):
         "flight_start": flight_start,
         "flight_end": flight_end,
         "location": payload["location"],
+        "place_id": payload["place_id"],
         "aircraft_name": payload["aircraft_name"],
         "task_type": payload["task_type"],
         "sprayed_area_ha": payload["sprayed_area"] or 0.0,
@@ -1278,6 +1497,20 @@ def _normalize_header(value):
         return ""
     text = str(value).strip().lower()
     return re.sub(r"[^a-z0-9]+", "", text)
+
+
+def _get_extended_data_value(extended_data, *aliases):
+    if not extended_data:
+        return None
+    normalized_values = {
+        _normalize_header(key): value
+        for key, value in extended_data.items()
+    }
+    for alias in aliases:
+        value = normalized_values.get(_normalize_header(alias))
+        if value:
+            return value
+    return None
 
 
 def _parse_flight_window(value, row_number):
@@ -1693,6 +1926,13 @@ def _parse_kml_payload(file_bytes, filename):
         "pilot_name": extended_data.get("Pilot Name") or "",
         "flight_controller_id": extended_data.get("Flight Controller ID") or "",
         "route_timestamp": route_timestamp,
+        "place_id": _clean_place_id(_get_extended_data_value(
+            extended_data,
+            "Place ID",
+            "PlaceId",
+            "Google Place ID",
+            "google_place_id",
+        )),
         "mode_selection": extended_data.get("Mode Selection") or "",
         "flight_time_raw": extended_data.get("Flight Time") or "",
         "task_area": _parse_optional_float(extended_data.get("Task Area")),

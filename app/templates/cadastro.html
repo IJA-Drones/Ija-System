@@ -671,6 +671,11 @@
             // 🔒 2. CHECA SE O ENDEREÇO ESTÁ MARCADO COMO CONCLUÍDO
             try {
               const bloqueioParams = new URLSearchParams({ place_id: data.place_id });
+              ["cep", "logradouro", "numero", "bairro", "cidade", "uf"].forEach((field) => {
+                if ((payload[field] || "").trim()) {
+                  bloqueioParams.set(field, payload[field]);
+                }
+              });
               if ((uvisResponsavelInput?.value || "").trim()) {
                 bloqueioParams.set("uvis_responsavel_id", uvisResponsavelInput.value);
               }

@@ -42,6 +42,11 @@ def parse_args():
         default=None,
         help="Processa por faixas de route_id com este tamanho.",
     )
+    parser.add_argument(
+        "--resolve-place-id",
+        action="store_true",
+        help="Tenta preencher place_id das rotas KML sem place_id antes de vincular.",
+    )
     return parser.parse_args()
 
 
@@ -82,7 +87,14 @@ def main():
                 max_id = DjiFlightKmlRoute.query.order_by(DjiFlightKmlRoute.id.desc()).with_entities(DjiFlightKmlRoute.id).first()
                 max_id = max_id[0] if max_id else 0
 
-            result = {"scanned": 0, "linked": 0, "no_match": 0, "errors": 0, "matches": []}
+            result = {
+                "scanned": 0,
+                "linked": 0,
+                "no_match": 0,
+                "errors": 0,
+                "place_resolved": 0,
+                "matches": [],
+            }
             batch_start = min_id
             while batch_start <= max_id:
                 batch_end = min(batch_start + args.batch_size - 1, max_id)
@@ -92,6 +104,7 @@ def main():
                     route_id_min=batch_start,
                     route_id_max=batch_end,
                     commit=not args.dry_run,
+                    resolve_missing_place_id=args.resolve_place_id,
                     progress_callback=print_progress,
                 )
                 print(
@@ -105,7 +118,7 @@ def main():
                     ),
                     flush=True,
                 )
-                for key in ("scanned", "linked", "no_match", "errors"):
+                for key in ("scanned", "linked", "no_match", "errors", "place_resolved"):
                     result[key] += batch_result[key]
                 result["matches"].extend(batch_result["matches"])
                 all_matches.extend(batch_result["matches"])
@@ -116,6 +129,7 @@ def main():
                 route_id_min=args.route_id_min,
                 route_id_max=args.route_id_max,
                 commit=not args.dry_run,
+                resolve_missing_place_id=args.resolve_place_id,
                 progress_callback=print_progress,
             )
             all_matches.extend(result["matches"])
@@ -125,17 +139,21 @@ def main():
     print(f"linked={result['linked']}")
     print(f"no_match={result['no_match']}")
     print(f"errors={result['errors']}")
+    print(f"place_resolved={result.get('place_resolved', 0)}")
 
     for match in all_matches:
         details = match["details"]
         print(
             "route_id={route_id} route_code={route_code} ordem_id={ordem_id} "
             "os={identificador_os} score={score} time={time} aircraft={aircraft} "
-            "pilot={pilot} geo={geo} distance_meters={distance_meters}".format(
+            "pilot={pilot} place={place} address={address} geo={geo} "
+            "distance_meters={distance_meters}".format(
                 **match,
                 time=details.get("time"),
                 aircraft=details.get("aircraft"),
                 pilot=details.get("pilot"),
+                place=details.get("place"),
+                address=details.get("address"),
                 geo=details.get("geo"),
                 distance_meters=details.get("distance_meters"),
             )

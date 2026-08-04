@@ -249,6 +249,53 @@ class AgendaVisibleStatusTests(unittest.TestCase):
 
         self.assertEqual([item.id for item in resultados], [retorno.id])
 
+    def test_agenda_can_filter_automatic_returns_by_lifecycle(self):
+        vencido = self._nova_solicitacao(
+            "PENDENTE",
+            gerada_automaticamente=True,
+            data_agendamento=date(2026, 6, 10),
+        )
+        futuro = self._nova_solicitacao(
+            "PENDENTE",
+            gerada_automaticamente=True,
+            data_agendamento=date(2026, 6, 20),
+        )
+        concluido = self._nova_solicitacao(
+            "CONCLUIDO",
+            gerada_automaticamente=True,
+            data_agendamento=date(2026, 6, 9),
+        )
+        self._nova_solicitacao(
+            "PENDENTE",
+            gerada_automaticamente=False,
+            data_agendamento=date(2026, 6, 8),
+        )
+        db.session.commit()
+
+        user = SimpleNamespace(tipo_usuario="admin")
+        with patch.object(agenda_service, "datetime", FixedDatetime):
+            pendentes = agenda_service.build_agenda_query(
+                user,
+                filtro_tipo_agenda=agenda_service.AGENDA_TIPO_AUTO_PENDENTE,
+            ).order_by(Solicitacao.id.asc()).all()
+            concluidos = agenda_service.build_agenda_query(
+                user,
+                filtro_tipo_agenda=agenda_service.AGENDA_TIPO_AUTO_CONCLUIDO,
+            ).order_by(Solicitacao.id.asc()).all()
+            vencidos = agenda_service.build_agenda_query(
+                user,
+                filtro_tipo_agenda=agenda_service.AGENDA_TIPO_AUTO_VENCIDO,
+            ).order_by(Solicitacao.id.asc()).all()
+            futuros = agenda_service.build_agenda_query(
+                user,
+                filtro_tipo_agenda=agenda_service.AGENDA_TIPO_AUTO_FUTURO,
+            ).order_by(Solicitacao.id.asc()).all()
+
+        self.assertEqual([item.id for item in pendentes], [vencido.id, futuro.id])
+        self.assertEqual([item.id for item in concluidos], [concluido.id])
+        self.assertEqual([item.id for item in vencidos], [vencido.id])
+        self.assertEqual([item.id for item in futuros], [futuro.id])
+
     def test_operational_agenda_does_not_list_pending_automatic_returns(self):
         self._nova_solicitacao("PENDENTE", gerada_automaticamente=True, equipe_id=self.equipe.id)
         db.session.commit()

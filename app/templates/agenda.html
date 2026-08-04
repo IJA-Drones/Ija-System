@@ -234,18 +234,46 @@
               <label class="small text-muted">Tipo na agenda:</label>
               <select class="form-select form-select-sm" name="tipo_agenda">
                 <option value="">Todos</option>
+                <optgroup label="Agendamentos">
                 <option
                   value="{{ agenda_tipo_normal }}"
                   {% if filtros.tipo_agenda == agenda_tipo_normal %}selected{% endif %}
                 >
                   Agendamentos normais
                 </option>
+                </optgroup>
+                <optgroup label="Retornos automáticos">
                 <option
                   value="{{ agenda_tipo_auto }}"
                   {% if filtros.tipo_agenda == agenda_tipo_auto %}selected{% endif %}
                 >
-                  Retornos automaticos
+                  Todos os retornos
                 </option>
+                <option
+                  value="{{ agenda_tipo_auto_pendente }}"
+                  {% if filtros.tipo_agenda == agenda_tipo_auto_pendente %}selected{% endif %}
+                >
+                  Pendentes
+                </option>
+                <option
+                  value="{{ agenda_tipo_auto_concluido }}"
+                  {% if filtros.tipo_agenda == agenda_tipo_auto_concluido %}selected{% endif %}
+                >
+                  Concluídos
+                </option>
+                <option
+                  value="{{ agenda_tipo_auto_vencido }}"
+                  {% if filtros.tipo_agenda == agenda_tipo_auto_vencido %}selected{% endif %}
+                >
+                  Vencidos
+                </option>
+                <option
+                  value="{{ agenda_tipo_auto_futuro }}"
+                  {% if filtros.tipo_agenda == agenda_tipo_auto_futuro %}selected{% endif %}
+                >
+                  Futuros
+                </option>
+                </optgroup>
               </select>
             </div>
             {% endif %}

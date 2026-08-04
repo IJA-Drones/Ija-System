@@ -2531,6 +2531,7 @@ class DjiFlightRecord(db.Model):
     flight_end = db.Column(db.DateTime, nullable=False, index=True)
 
     location = db.Column(db.Text)
+    place_id = db.Column(db.String(255), index=True)
     aircraft_name = db.Column(db.String(120), index=True)
     task_type = db.Column(db.String(80), index=True)
     sprayed_area_ha = db.Column(db.Float, default=0)
@@ -2622,6 +2623,7 @@ class DjiFlightKmlRoute(db.Model):
     pilot_name = db.Column(db.String(120), index=True)
     flight_controller_id = db.Column(db.String(120), index=True)
     route_timestamp = db.Column(db.DateTime, index=True)
+    place_id = db.Column(db.String(255), index=True)
     mode_selection = db.Column(db.String(40))
     flight_time_raw = db.Column(db.String(40))
     task_area = db.Column(db.Float)

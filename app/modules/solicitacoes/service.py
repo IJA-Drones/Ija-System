@@ -1,4 +1,5 @@
 import re
+import unicodedata
 from datetime import date, datetime
 
 from sqlalchemy.orm import joinedload
@@ -61,23 +62,96 @@ def _clean_place_id(value):
     return (value or "").strip() or None
 
 
-def find_solicitacao_bloqueada_por_place_id(place_id, prefeitura_id=None):
-    place_id = _clean_place_id(place_id)
-    if not place_id:
-        return None
+def _normalize_address_part(value):
+    normalized = unicodedata.normalize("NFKD", str(value or ""))
+    normalized = "".join(char for char in normalized if not unicodedata.combining(char))
+    normalized = normalized.lower().strip()
+    normalized = re.sub(r"\b(r|r\.)\b", "rua", normalized)
+    normalized = re.sub(r"\b(av|av\.)\b", "avenida", normalized)
+    normalized = re.sub(r"\b(al|al\.)\b", "alameda", normalized)
+    normalized = re.sub(r"[^a-z0-9]+", " ", normalized)
+    return re.sub(r"\s+", " ", normalized).strip()
 
+
+def _normalize_cep(value):
+    return re.sub(r"\D", "", str(value or ""))
+
+
+def _address_key_from_mapping(data):
+    data = data or {}
+    return {
+        "cep": _normalize_cep(data.get("cep")),
+        "logradouro": _normalize_address_part(data.get("logradouro")),
+        "numero": _normalize_address_part(data.get("numero")),
+        "bairro": _normalize_address_part(data.get("bairro")),
+        "cidade": _normalize_address_part(data.get("cidade")),
+        "uf": _normalize_address_part(data.get("uf")),
+    }
+
+
+def _address_key_from_solicitacao(solicitacao):
+    return {
+        "cep": _normalize_cep(getattr(solicitacao, "cep", None)),
+        "logradouro": _normalize_address_part(getattr(solicitacao, "logradouro", None)),
+        "numero": _normalize_address_part(getattr(solicitacao, "numero", None)),
+        "bairro": _normalize_address_part(getattr(solicitacao, "bairro", None)),
+        "cidade": _normalize_address_part(getattr(solicitacao, "cidade", None)),
+        "uf": _normalize_address_part(getattr(solicitacao, "uf", None)),
+    }
+
+
+def _same_address_key(left, right):
+    if not left.get("logradouro") or not left.get("numero") or not left.get("cidade") or not left.get("uf"):
+        return False
+    required_fields = ("logradouro", "numero", "cidade", "uf")
+    if any(left.get(field) != right.get(field) for field in required_fields):
+        return False
+    if left.get("bairro") and right.get("bairro") and left["bairro"] != right["bairro"]:
+        return False
+    if left.get("cep") and right.get("cep") and left["cep"] != right["cep"]:
+        return False
+    return True
+
+
+def _base_bloqueio_query(prefeitura_id=None):
     query = Solicitacao.query.filter(
-        Solicitacao.place_id == place_id,
         Solicitacao.endereco_bloqueado.is_(True),
         Solicitacao.status.in_(STATUS_CONCLUIDO_BLOQUEIO),
     )
-
     if prefeitura_id is None:
-        query = query.filter(Solicitacao.prefeitura_id.is_(None))
-    else:
-        query = query.filter(Solicitacao.prefeitura_id == prefeitura_id)
+        return query.filter(Solicitacao.prefeitura_id.is_(None))
+    return query.filter(Solicitacao.prefeitura_id == prefeitura_id)
 
-    return query.order_by(Solicitacao.data_criacao.desc(), Solicitacao.id.desc()).first()
+
+def find_solicitacao_bloqueada_por_place_id(place_id, prefeitura_id=None, endereco=None):
+    place_id = _clean_place_id(place_id)
+    query = _base_bloqueio_query(prefeitura_id)
+
+    if place_id:
+        bloqueada = (
+            query
+            .filter(Solicitacao.place_id == place_id)
+            .order_by(Solicitacao.data_criacao.desc(), Solicitacao.id.desc())
+            .first()
+        )
+        if bloqueada:
+            return bloqueada
+
+    address_key = _address_key_from_mapping(endereco)
+    if not address_key.get("logradouro") or not address_key.get("numero"):
+        return None
+
+    candidates = (
+        query
+        .order_by(Solicitacao.data_criacao.desc(), Solicitacao.id.desc())
+        .limit(300)
+        .all()
+    )
+    for solicitacao in candidates:
+        if _same_address_key(address_key, _address_key_from_solicitacao(solicitacao)):
+            return solicitacao
+
+    return None
 
 
 def resolve_prefeitura_id_para_bloqueio(user, uvis_responsavel_id=None):
@@ -167,6 +241,7 @@ def create_nova_solicitacao(user, form_data):
     solicitacao_bloqueada = find_solicitacao_bloqueada_por_place_id(
         place_id,
         prefeitura_id=prefeitura_id_final,
+        endereco=form_data,
     )
     if solicitacao_bloqueada:
         raise NovoCadastroValidationError(

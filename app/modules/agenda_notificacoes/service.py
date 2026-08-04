@@ -47,9 +47,27 @@ AGENDA_VISIBLE_STATUSES = (
     "CONCLUIDA",
     "CONCLUÍDA",
 )
+AGENDA_CONCLUIDO_STATUSES = (
+    "CONCLUIDO",
+    "CONCLU\u00cdDO",
+    "CONCLUIDA",
+    "CONCLU\u00cdDA",
+)
 EQUIPE_OCEANO_USER_TYPE = "equipe_oceano"
 AGENDA_TIPO_AUTO = "RETORNO_AUTOMATICO"
+AGENDA_TIPO_AUTO_PENDENTE = "RETORNO_AUTOMATICO_PENDENTE"
+AGENDA_TIPO_AUTO_CONCLUIDO = "RETORNO_AUTOMATICO_CONCLUIDO"
+AGENDA_TIPO_AUTO_VENCIDO = "RETORNO_AUTOMATICO_VENCIDO"
+AGENDA_TIPO_AUTO_FUTURO = "RETORNO_AUTOMATICO_FUTURO"
 AGENDA_TIPO_NORMAL = "NORMAL"
+AGENDA_TIPO_OPCOES = {
+    AGENDA_TIPO_AUTO,
+    AGENDA_TIPO_AUTO_PENDENTE,
+    AGENDA_TIPO_AUTO_CONCLUIDO,
+    AGENDA_TIPO_AUTO_VENCIDO,
+    AGENDA_TIPO_AUTO_FUTURO,
+    AGENDA_TIPO_NORMAL,
+}
 TZ_BR = ZoneInfo("America/Sao_Paulo")
 AUTO_ALERT_PREVIEW_LIMIT = 4
 AUTO_ALERT_BATTERY_WARNING_CYCLES = 200
@@ -223,6 +241,7 @@ def build_agenda_query(
 ):
     retorno_automatico_clause = _retorno_automatico_clause()
     visible_clause = Solicitacao.status.in_(AGENDA_VISIBLE_STATUSES)
+    hoje = datetime.now(TZ_BR).date()
 
     query = (
         Solicitacao.query
@@ -254,9 +273,29 @@ def build_agenda_query(
     if filtro_foco:
         query = query.filter(Solicitacao.foco == filtro_foco)
 
-    if filtro_tipo_agenda == AGENDA_TIPO_AUTO:
+    if filtro_tipo_agenda in {
+        AGENDA_TIPO_AUTO,
+        AGENDA_TIPO_AUTO_PENDENTE,
+        AGENDA_TIPO_AUTO_CONCLUIDO,
+        AGENDA_TIPO_AUTO_VENCIDO,
+        AGENDA_TIPO_AUTO_FUTURO,
+    }:
         if can_view_agenda_retornos_automaticos(user):
             query = query.filter(retorno_automatico_clause)
+            if filtro_tipo_agenda == AGENDA_TIPO_AUTO_PENDENTE:
+                query = query.filter(Solicitacao.status == "PENDENTE")
+            elif filtro_tipo_agenda == AGENDA_TIPO_AUTO_CONCLUIDO:
+                query = query.filter(Solicitacao.status.in_(AGENDA_CONCLUIDO_STATUSES))
+            elif filtro_tipo_agenda == AGENDA_TIPO_AUTO_VENCIDO:
+                query = query.filter(
+                    Solicitacao.data_agendamento < hoje,
+                    not_(Solicitacao.status.in_(AGENDA_CONCLUIDO_STATUSES)),
+                )
+            elif filtro_tipo_agenda == AGENDA_TIPO_AUTO_FUTURO:
+                query = query.filter(
+                    Solicitacao.data_agendamento >= hoje,
+                    not_(Solicitacao.status.in_(AGENDA_CONCLUIDO_STATUSES)),
+                )
         else:
             query = query.filter(false())
     elif filtro_tipo_agenda == AGENDA_TIPO_NORMAL:
@@ -271,10 +310,15 @@ def build_agenda_query(
         else:
             month_clause = db.func.strftime("%Y-%m", Solicitacao.data_agendamento) == filtro_mesano
 
-        if can_view_agenda_retornos_automaticos(user) and filtro_tipo_agenda != AGENDA_TIPO_NORMAL:
+        incluir_retornos_futuros = filtro_tipo_agenda in {
+            None,
+            AGENDA_TIPO_AUTO,
+            AGENDA_TIPO_AUTO_FUTURO,
+        }
+        if can_view_agenda_retornos_automaticos(user) and incluir_retornos_futuros:
             future_return_clause = db.and_(
                 retorno_automatico_clause,
-                Solicitacao.data_agendamento >= datetime.now(TZ_BR).date(),
+                Solicitacao.data_agendamento >= hoje,
             )
             query = query.filter(db.or_(month_clause, future_return_clause))
         else:
@@ -408,7 +452,7 @@ def build_agenda_context(user, args):
     filtro_tipo_imovel = (args.get("tipo_imovel") or "").strip() or None
     filtro_foco = (args.get("foco") or "").strip() or None
     filtro_tipo_agenda = (args.get("tipo_agenda") or "").strip() or None
-    if filtro_tipo_agenda not in {AGENDA_TIPO_AUTO, AGENDA_TIPO_NORMAL}:
+    if filtro_tipo_agenda not in AGENDA_TIPO_OPCOES:
         filtro_tipo_agenda = None
     filtro_data_ini = (args.get("data_ini") or "").strip() or None
     filtro_data_fim = (args.get("data_fim") or "").strip() or None
@@ -468,6 +512,10 @@ def build_agenda_context(user, args):
         "pode_filtrar_uvis": can_view_all_agenda(user),
         "pode_ver_retornos_automaticos": can_view_agenda_retornos_automaticos(user),
         "agenda_tipo_auto": AGENDA_TIPO_AUTO,
+        "agenda_tipo_auto_pendente": AGENDA_TIPO_AUTO_PENDENTE,
+        "agenda_tipo_auto_concluido": AGENDA_TIPO_AUTO_CONCLUIDO,
+        "agenda_tipo_auto_vencido": AGENDA_TIPO_AUTO_VENCIDO,
+        "agenda_tipo_auto_futuro": AGENDA_TIPO_AUTO_FUTURO,
         "agenda_tipo_normal": AGENDA_TIPO_NORMAL,
         "google_maps_key": get_agenda_google_maps_key(),
         "periodo_semanal_fixo": periodo_semanal_fixo,
@@ -555,7 +603,7 @@ def build_agenda_export(user, args):
     filtro_tipo_imovel = None if export_all else (args.get("tipo_imovel") or None)
     filtro_foco = None if export_all else (args.get("foco") or None)
     filtro_tipo_agenda = None if export_all else (args.get("tipo_agenda") or None)
-    if filtro_tipo_agenda not in {AGENDA_TIPO_AUTO, AGENDA_TIPO_NORMAL}:
+    if filtro_tipo_agenda not in AGENDA_TIPO_OPCOES:
         filtro_tipo_agenda = None
     filtro_data_ini = None if export_all else (args.get("data_ini") or None)
     filtro_data_fim = None if export_all else (args.get("data_fim") or None)

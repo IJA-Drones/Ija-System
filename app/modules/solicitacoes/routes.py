@@ -29,6 +29,7 @@ def register_routes(bp):
         bloqueada = find_solicitacao_bloqueada_por_place_id(
             place_id,
             prefeitura_id=prefeitura_id,
+            endereco=request.args,
         )
         return jsonify({
             "ok": True,

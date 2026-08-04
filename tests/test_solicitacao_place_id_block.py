@@ -105,6 +105,18 @@ class SolicitacaoPlaceIdBlockTests(unittest.TestCase):
         self.assertIn(f"OS #{bloqueada.id}", exc.exception.message)
         self.assertEqual(Solicitacao.query.count(), 1)
 
+    def test_create_blocks_same_normalized_address_when_existing_os_has_no_place_id(self):
+        bloqueada = self._bloqueio_existente(place_id=None)
+
+        form = self._solicitacao_form("place-new")
+        form["logradouro"] = "R. Hiroshima"
+
+        with self.assertRaises(NovoCadastroValidationError) as exc:
+            solicitacoes_service.create_nova_solicitacao(self.uvis, form)
+
+        self.assertIn(f"OS #{bloqueada.id}", exc.exception.message)
+        self.assertEqual(Solicitacao.query.count(), 1)
+
     def test_create_allows_same_place_id_in_other_prefeitura(self):
         self._bloqueio_existente(prefeitura_id=1, place_id="place-123")
 
