@@ -236,6 +236,9 @@
                 <input type="hidden" name="endereco" value="{{ request.args.get('endereco', '') }}">
                 <input type="hidden" name="data_ini" value="{{ request.args.get('data_ini', '') }}">
                 <input type="hidden" name="data_fim" value="{{ request.args.get('data_fim', '') }}">
+                <input type="hidden" name="data_criacao_ini" value="{{ request.args.get('data_criacao_ini', '') }}">
+                <input type="hidden" name="data_criacao_fim" value="{{ request.args.get('data_criacao_fim', '') }}">
+                <input type="hidden" name="retorno_automatico" value="{{ request.args.get('retorno_automatico', '') }}">
                 <button type="submit" class="btn btn-secondary shadow-sm w-100 d-flex align-items-center justify-content-center gap-2" style="height: 38px;">
                     <i class="bi bi-file-earmark-excel-fill"></i> 
                     <span>Exportar Excel</span>
@@ -252,7 +255,7 @@
         {% endif %}
     </div>
 
-    {% set admin_has_filters = request.args.get('status') or request.args.get('unidade') or request.args.get('regiao') or request.args.get('apoio_cet') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or request.args.get('foco') or request.args.get('protocolo') or request.args.get('endereco') or request.args.get('data_ini') or request.args.get('data_fim') or request.args.get('retorno_automatico') %}
+    {% set admin_has_filters = request.args.get('status') or request.args.get('unidade') or request.args.get('regiao') or request.args.get('apoio_cet') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or request.args.get('foco') or request.args.get('protocolo') or request.args.get('endereco') or request.args.get('data_ini') or request.args.get('data_fim') or request.args.get('data_criacao_ini') or request.args.get('data_criacao_fim') or request.args.get('retorno_automatico') %}
 
     {# --- FILTROS EM "SANFONA" (Accordion) --- #}
     <div class="card shadow-sm rounded-4 mb-4 border-0">
@@ -389,6 +392,24 @@
                                 value="{{ request.args.get('data_fim', '') }}"
                             >
                         </div>
+                        <div class="col-md-3">
+                            <label class="small text-muted">Criada de:</label>
+                            <input
+                                type="date"
+                                name="data_criacao_ini"
+                                class="form-control form-control-sm"
+                                value="{{ request.args.get('data_criacao_ini', '') }}"
+                            >
+                        </div>
+                        <div class="col-md-3">
+                            <label class="small text-muted">Criada ate:</label>
+                            <input
+                                type="date"
+                                name="data_criacao_fim"
+                                class="form-control form-control-sm"
+                                value="{{ request.args.get('data_criacao_fim', '') }}"
+                            >
+                        </div>
                         <div class="col-md-3 admin-filter-actions">
                             <button class="btn btn-success btn-sm w-100 align-items-center justify-content-center" type="submit"><i class="bi bi-search"></i> Filtrar</button>
                             {% if admin_has_filters %}
@@ -502,7 +523,14 @@
                         </div>
 
                         <div class="small text-muted mt-4 border-top pt-2">
-                            <i class="bi bi-calendar-event me-1"></i> {{ p.data_agendamento.strftime('%d/%m/%Y') }} as {{ p.hora_agendamento.strftime('%H:%M') }}
+                            <div>
+                                <i class="bi bi-calendar-event me-1"></i>
+                                Agendada para {{ p.data_agendamento.strftime('%d/%m/%Y') }} as {{ p.hora_agendamento.strftime('%H:%M') }}
+                            </div>
+                            <div class="mt-1">
+                                <i class="bi bi-clock-history me-1"></i>
+                                Criada em {{ brazil_datetime(p.data_criacao).strftime('%d/%m/%Y as %H:%M') if p.data_criacao else '--' }}
+                            </div>
                         </div>
 
                         {# Endereço Desktop (Escondido no Mobile) #}

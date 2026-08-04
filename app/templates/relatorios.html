@@ -183,7 +183,7 @@
             <span class="text-dark">Filtros de busca</span>
 
             {# bolinha vermelha se houver filtros ativos #}
-            {% if mes_selecionado or ano_selecionado or uvis_ids_selecionados or foco_values_selecionados %}
+            {% if mes_selecionado or ano_selecionado or uvis_ids_selecionados or regiao_selecionada or equipe_id_selecionado or foco_values_selecionados %}
                 <span class="badge bg-danger rounded-circle p-1"
                       style="width: 8px; height: 8px;"></span>
             {% endif %}
@@ -230,6 +230,32 @@
                     </div>
 
                     <div class="col-md-3">
+                        <label class="small text-muted">Região:</label>
+                        {% if pode_filtrar_regiao %}
+                            <select name="regiao" class="form-select form-select-sm">
+                                <option value="">Todas as regiões</option>
+                                {% for regiao in regioes_disponiveis %}
+                                    <option value="{{ regiao }}" {% if regiao == regiao_selecionada %}selected{% endif %}>{{ regiao }}</option>
+                                {% endfor %}
+                            </select>
+                        {% else %}
+                            <input type="text" class="form-control form-control-sm" value="{{ regiao_selecionada or 'Todas as regiÃµes' }}" disabled>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="small text-muted">Equipe:</label>
+                        <select name="equipe_id" class="form-select form-select-sm">
+                            <option value="">Todas as equipes</option>
+                            {% for equipe in equipes_disponiveis %}
+                                <option value="{{ equipe.id }}" {% if equipe_id_selecionado|string == equipe.id|string %}selected{% endif %}>
+                                    {{ equipe.nome_equipe }}{% if equipe.regiao %} ({{ equipe.regiao }}){% endif %}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
                         <label class="small text-muted">Foco:</label>
                         {{ render_chip_select_values('foco', solicitacao_filter_foco_opcoes, foco_values_selecionados, 'Adicionar foco') }}
                     </div>
@@ -239,7 +265,7 @@
                             <i class="bi bi-funnel"></i> Filtrar
                         </button>
 
-                        {% if mes_selecionado or ano_selecionado or uvis_ids_selecionados or foco_values_selecionados %}
+                        {% if mes_selecionado or ano_selecionado or uvis_ids_selecionados or regiao_selecionada or equipe_id_selecionado or foco_values_selecionados %}
                             <a href="{{ url_for(request.endpoint) }}"
                                class="btn btn-outline-secondary btn-sm w-100">
                                 <i class="bi bi-x-lg"></i> Limpar
