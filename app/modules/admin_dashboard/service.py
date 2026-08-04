@@ -1,8 +1,9 @@
-from datetime import date, datetime
+from datetime import date, datetime, time, timedelta
 from io import BytesIO
 import os
 import re
 import uuid
+from zoneinfo import ZoneInfo
 
 from flask import current_app
 from openpyxl import Workbook
@@ -35,6 +36,8 @@ HISTORICO_OS_ANDAMENTO_STATUSES = (
 )
 HISTORICO_OS_CONCLUIDAS_STATUSES = ("CONCLUIDO", "CONCLUÍDO")
 HISTORICO_EQUIPE_UVIS_CONCLUIDAS_STATUSES = ("CONCLUIDO", "CONCLUÍDO")
+UTC_TZ = ZoneInfo("UTC")
+BRAZIL_TZ = ZoneInfo("America/Sao_Paulo")
 
 
 def _parse_filter_date(value: str):
@@ -59,6 +62,36 @@ def _apply_data_agendamento_range(query, filtro_data_ini: str = "", filtro_data_
 
     if data_fim:
         query = query.filter(Solicitacao.data_agendamento <= data_fim)
+
+    return query
+
+
+def _brazil_day_start_as_utc_naive(value):
+    return (
+        datetime.combine(value, time.min)
+        .replace(tzinfo=BRAZIL_TZ)
+        .astimezone(UTC_TZ)
+        .replace(tzinfo=None)
+    )
+
+
+def _apply_data_criacao_range(
+    query,
+    filtro_data_criacao_ini: str = "",
+    filtro_data_criacao_fim: str = "",
+):
+    data_ini = _parse_filter_date(filtro_data_criacao_ini)
+    data_fim = _parse_filter_date(filtro_data_criacao_fim)
+
+    if data_ini and data_fim and data_ini > data_fim:
+        data_ini, data_fim = data_fim, data_ini
+
+    if data_ini:
+        query = query.filter(Solicitacao.data_criacao >= _brazil_day_start_as_utc_naive(data_ini))
+
+    if data_fim:
+        end_exclusive = _brazil_day_start_as_utc_naive(data_fim + timedelta(days=1))
+        query = query.filter(Solicitacao.data_criacao < end_exclusive)
 
     return query
 
@@ -173,6 +206,8 @@ def build_admin_dashboard_query(
     filtro_foco: str = "",
     filtro_data_ini: str = "",
     filtro_data_fim: str = "",
+    filtro_data_criacao_ini: str = "",
+    filtro_data_criacao_fim: str = "",
     filtro_retorno_automatico: str = "",
 ):
     query = (
@@ -226,7 +261,8 @@ def build_admin_dashboard_query(
 
     query = apply_retorno_automatico_filter(query, filtro_retorno_automatico)
 
-    return _apply_data_agendamento_range(query, filtro_data_ini, filtro_data_fim)
+    query = _apply_data_agendamento_range(query, filtro_data_ini, filtro_data_fim)
+    return _apply_data_criacao_range(query, filtro_data_criacao_ini, filtro_data_criacao_fim)
 
 
 def build_admin_canceladas_query(
@@ -440,6 +476,8 @@ def build_admin_export_query(
     filtro_foco: str = "",
     filtro_data_ini: str = "",
     filtro_data_fim: str = "",
+    filtro_data_criacao_ini: str = "",
+    filtro_data_criacao_fim: str = "",
     filtro_retorno_automatico: str = "",
 ):
     query = (
@@ -488,6 +526,7 @@ def build_admin_export_query(
     query = apply_retorno_automatico_filter(query, filtro_retorno_automatico)
 
     query = _apply_data_agendamento_range(query, filtro_data_ini, filtro_data_fim)
+    query = _apply_data_criacao_range(query, filtro_data_criacao_ini, filtro_data_criacao_fim)
 
     return query.order_by(Solicitacao.data_criacao.desc())
 
@@ -505,6 +544,8 @@ def build_admin_dashboard_export(
     filtro_foco: str = "",
     filtro_data_ini: str = "",
     filtro_data_fim: str = "",
+    filtro_data_criacao_ini: str = "",
+    filtro_data_criacao_fim: str = "",
     filtro_retorno_automatico: str = "",
 ):
     pedidos = build_admin_export_query(
@@ -520,6 +561,8 @@ def build_admin_dashboard_export(
         filtro_foco=filtro_foco,
         filtro_data_ini=filtro_data_ini,
         filtro_data_fim=filtro_data_fim,
+        filtro_data_criacao_ini=filtro_data_criacao_ini,
+        filtro_data_criacao_fim=filtro_data_criacao_fim,
         filtro_retorno_automatico=filtro_retorno_automatico,
     ).all()
 

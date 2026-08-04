@@ -104,6 +104,8 @@ def register_routes(bp):
         filtro_foco = get_multi_values(request.args, "foco")
         filtro_data_ini = (request.args.get("data_ini") or "").strip()
         filtro_data_fim = (request.args.get("data_fim") or "").strip()
+        filtro_data_criacao_ini = (request.args.get("data_criacao_ini") or "").strip()
+        filtro_data_criacao_fim = (request.args.get("data_criacao_fim") or "").strip()
         filtro_retorno_automatico = (request.args.get("retorno_automatico") or "").strip().upper()
 
         if filtro_status == "CANCELADO":
@@ -119,6 +121,8 @@ def register_routes(bp):
                     endereco=filtro_endereco,
                     data_ini=filtro_data_ini,
                     data_fim=filtro_data_fim,
+                    data_criacao_ini=filtro_data_criacao_ini,
+                    data_criacao_fim=filtro_data_criacao_fim,
                     retorno_automatico=filtro_retorno_automatico,
                 )
             )
@@ -138,6 +142,8 @@ def register_routes(bp):
             filtro_foco=filtro_foco,
             filtro_data_ini=filtro_data_ini,
             filtro_data_fim=filtro_data_fim,
+            filtro_data_criacao_ini=filtro_data_criacao_ini,
+            filtro_data_criacao_fim=filtro_data_criacao_fim,
             filtro_retorno_automatico=filtro_retorno_automatico,
         )
         paginacao = query.order_by(build_status_order(), Solicitacao.data_criacao.desc()).paginate(
@@ -184,6 +190,8 @@ def register_routes(bp):
             filtro_foco = get_multi_values(request.args, "foco")
             filtro_data_ini = (request.args.get("data_ini") or "").strip()
             filtro_data_fim = (request.args.get("data_fim") or "").strip()
+            filtro_data_criacao_ini = (request.args.get("data_criacao_ini") or "").strip()
+            filtro_data_criacao_fim = (request.args.get("data_criacao_fim") or "").strip()
             filtro_retorno_automatico = (request.args.get("retorno_automatico") or "").strip().upper()
 
             output = build_admin_dashboard_export(
@@ -199,6 +207,8 @@ def register_routes(bp):
                 filtro_foco=filtro_foco,
                 filtro_data_ini=filtro_data_ini,
                 filtro_data_fim=filtro_data_fim,
+                filtro_data_criacao_ini=filtro_data_criacao_ini,
+                filtro_data_criacao_fim=filtro_data_criacao_fim,
                 filtro_retorno_automatico=filtro_retorno_automatico,
             )
 
