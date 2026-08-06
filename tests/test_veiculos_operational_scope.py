@@ -7,16 +7,19 @@ from types import SimpleNamespace
 
 from flask import Flask, request
 from werkzeug.datastructures import FileStorage
+from werkzeug.datastructures import MultiDict
 
 from app.extensions import db
 from app.models import (
     Abastecimento,
     AuditoriaUsuario,
     Equipe,
+    EquipePiloto,
     LimpezaVeiculo,
     LimpezaVeiculoAlertaCiencia,
     LogVeiculo,
     OrdemServico,
+    Pilotos,
     Prefeitura,
     Solicitacao,
     Usuario,
@@ -31,12 +34,15 @@ from app.modules.veiculos.service import (
     delete_veiculo_log,
     encerrar_turno_piloto,
     iniciar_turno_piloto,
+    list_equipes_choices,
     registrar_abastecimento_turno_piloto,
     build_limpeza_alertas_admin_context,
     build_limpeza_alertas_operacionais_context,
     confirmar_alerta_limpeza_operacional,
+    update_veiculos_equipes,
     update_veiculo,
     update_veiculo_log_km,
+    validate_veiculo_form,
 )
 
 
@@ -118,6 +124,102 @@ class VeiculosOperationalScopeTests(unittest.TestCase):
         )
 
         self.assertEqual(veiculo.prefeitura_id, 1)
+
+    def test_team_choices_include_linked_pilot_name(self):
+        piloto = Pilotos(nome_piloto="Leonardo Moreira Rodrigues", prefeitura_id=1)
+        auxiliar = Pilotos(nome_piloto="Auxiliar Teste", prefeitura_id=1)
+        db.session.add_all([piloto, auxiliar])
+        db.session.flush()
+        db.session.add_all(
+            [
+                EquipePiloto(equipe_id=self.equipe.id, piloto_id=piloto.id, papel="piloto"),
+                EquipePiloto(equipe_id=self.equipe.id, piloto_id=auxiliar.id, papel="auxiliar"),
+            ]
+        )
+        db.session.commit()
+        user = SimpleNamespace(prefeitura_id=1)
+
+        choices = list_equipes_choices(user=user)
+
+        self.assertEqual(choices[0]["label"], "PLOA 23")
+        self.assertEqual(choices[0]["piloto_label"], "Leonardo Moreira Rodrigues")
+
+    def test_vehicle_form_breaks_legacy_responsavel_link(self):
+        veiculo = self._novo_veiculo(responsavel="Piloto Antigo")
+        form, cleaned, errors = validate_veiculo_form(
+            {
+                "modelo": "FIORINO",
+                "ano_fabricacao": "2024",
+                "frota": "PROPRIA",
+                "operacao": "PMSP",
+                "placa": "ABC1D23",
+                "responsavel": "Piloto Antigo",
+                "equipe_id": str(self.equipe.id),
+                "km_atual": "1000",
+                "status": "Ativo",
+            },
+            equipes=[{"value": str(self.equipe.id), "label": self.equipe.nome_equipe}],
+            existing_veiculo=veiculo,
+        )
+
+        self.assertFalse(errors)
+        self.assertIsNone(cleaned["responsavel"])
+
+        update_veiculo(veiculo, cleaned)
+
+        self.assertIsNone(veiculo.responsavel)
+
+    def test_bulk_team_update_clears_legacy_responsavel_link(self):
+        veiculo = self._novo_veiculo(responsavel="Piloto Antigo", prefeitura_id=1)
+        nova_equipe = Equipe(nome_equipe="PLOA 24", regiao="LESTE", ativa=True, prefeitura_id=1)
+        db.session.add(nova_equipe)
+        db.session.commit()
+        user = SimpleNamespace(tipo_usuario="admin", prefeitura_id=1)
+
+        message = update_veiculos_equipes(
+            user,
+            MultiDict(
+                [
+                    ("veiculo_ids", str(veiculo.id)),
+                    (f"equipe_id_{veiculo.id}", str(nova_equipe.id)),
+                ]
+            ),
+        )
+
+        db.session.refresh(veiculo)
+        self.assertEqual(message, "Equipe responsavel atualizada em 1 veiculo.")
+        self.assertEqual(veiculo.equipe_id, nova_equipe.id)
+        self.assertIsNone(veiculo.responsavel)
+
+    def test_pilot_vehicle_context_ignores_legacy_responsavel_without_team_link(self):
+        self._novo_veiculo(equipe_id=None, responsavel="Leonardo Moreira Rodrigues")
+        user = SimpleNamespace(
+            tipo_usuario="piloto",
+            nome_uvis="Leonardo Moreira Rodrigues",
+            piloto_id=10,
+            prefeitura_id=1,
+        )
+
+        context = build_piloto_veiculos_context(user)
+
+        self.assertFalse(context["piloto_vinculado"])
+        self.assertEqual(context["veiculos"], [])
+
+    def test_pilot_vehicle_context_uses_team_link(self):
+        veiculo = self._novo_veiculo(responsavel="Outro Piloto", prefeitura_id=1)
+        db.session.add(EquipePiloto(equipe_id=self.equipe.id, piloto_id=10, papel="piloto"))
+        db.session.commit()
+        user = SimpleNamespace(
+            tipo_usuario="piloto",
+            nome_uvis="Leonardo Moreira Rodrigues",
+            piloto_id=10,
+            prefeitura_id=1,
+        )
+
+        context = build_piloto_veiculos_context(user)
+
+        self.assertTrue(context["piloto_vinculado"])
+        self.assertEqual([item.id for item in context["veiculos"]], [veiculo.id])
 
     def test_pilot_vehicle_context_uses_last_closed_km_as_initial_reference(self):
         veiculo = self._novo_veiculo(km_atual=1200)

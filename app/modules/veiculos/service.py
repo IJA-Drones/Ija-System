@@ -109,7 +109,7 @@ def list_veiculos(tipo_usuario, args, user=None):
                 id_search_clause(Veiculos.id, q),
                 Veiculos.modelo.ilike(like),
                 Veiculos.placa.ilike(like),
-                Veiculos.responsavel.ilike(like),
+                Veiculos.equipe.has(Equipe.nome_equipe.ilike(like)),
             )
         )
 
@@ -123,11 +123,14 @@ def list_veiculos(tipo_usuario, args, user=None):
         query = query.filter(Veiculos.status == status)
 
     veiculos = query.order_by(Veiculos.criado_em.desc()).all()
+    equipes = list_equipes_choices(user=user)
 
     return {
         "veiculos": veiculos,
         "is_admin": tipo_usuario in {"dev", "admin"},
-        "can_manage": tipo_usuario in {"dev", "admin", "operario", "operador"},
+        "can_manage": tipo_usuario in {"dev", "admin", "operario", "operador", "prefeitura_admin"},
+        "equipes": equipes,
+        "equipes_por_id": {item["value"]: item for item in equipes},
         "filters": {
             "q": q,
             "operacao": operacao,
@@ -139,42 +142,39 @@ def list_veiculos(tipo_usuario, args, user=None):
     }
 
 
-def list_responsaveis_choices(user=None):
-    papeis_por_piloto = {}
-    for row in db.session.query(EquipePiloto.piloto_id, EquipePiloto.papel).all():
-        papeis_por_piloto.setdefault(row.piloto_id, set()).add((row.papel or "").lower())
-
-    pilotos_query = Pilotos.query
-    if user is not None:
-        pilotos_query = apply_prefeitura_scope(pilotos_query, user, Pilotos.prefeitura_id)
-    pilotos = pilotos_query.order_by(Pilotos.nome_piloto.asc()).all()
-
-    options = []
-    for piloto in pilotos:
-        papeis = papeis_por_piloto.get(piloto.id, set())
-
-        if "piloto" in papeis and "auxiliar" in papeis:
-            label = f"{piloto.nome_piloto} (Piloto/Aux)"
-        elif "auxiliar" in papeis:
-            label = f"{piloto.nome_piloto} (Auxiliar)"
-        else:
-            label = f"{piloto.nome_piloto} (Piloto)"
-
-        options.append({"value": piloto.nome_piloto, "label": label})
-
-    return options
-
-
 def list_equipes_choices(user=None):
-    query = Equipe.query.filter(Equipe.ativa.is_(True))
+    query = (
+        Equipe.query
+        .options(selectinload(Equipe.membros).joinedload(EquipePiloto.piloto))
+        .filter(Equipe.ativa.is_(True))
+    )
     if user is not None:
         query = apply_prefeitura_scope(query, user, Equipe.prefeitura_id)
 
     equipes = query.order_by(Equipe.nome_equipe.asc()).all()
-    return [{"value": str(equipe.id), "label": equipe.nome_equipe} for equipe in equipes]
+    options = []
+    for equipe in equipes:
+        piloto_titular = next(
+            (
+                membro.piloto
+                for membro in sorted(equipe.membros or [], key=lambda membro: membro.id or 0)
+                if (membro.papel or "").lower() == "piloto"
+                and membro.piloto
+                and (membro.piloto.nome_piloto or "").strip()
+            ),
+            None,
+        )
+        options.append(
+            {
+                "value": str(equipe.id),
+                "label": equipe.nome_equipe,
+                "piloto_label": piloto_titular.nome_piloto if piloto_titular else "Sem piloto vinculado",
+            }
+        )
+    return options
 
 
-def validate_veiculo_form(form_data, *, responsaveis, equipes=None, existing_veiculo=None):
+def validate_veiculo_form(form_data, *, equipes=None, existing_veiculo=None):
     errors = {}
     equipes = equipes or []
 
@@ -183,7 +183,6 @@ def validate_veiculo_form(form_data, *, responsaveis, equipes=None, existing_vei
     frota = (form_data.get("frota") or "").strip().upper()
     operacao = (form_data.get("operacao") or "").strip().upper()
     placa = (form_data.get("placa") or "").strip().upper()
-    responsavel = (form_data.get("responsavel") or "").strip()
     equipe_id_raw = (form_data.get("equipe_id") or "").strip()
     km_atual_raw = (form_data.get("km_atual") or "").strip()
     km_prox_raw = (form_data.get("km_prox_revisao") or "").strip()
@@ -197,7 +196,6 @@ def validate_veiculo_form(form_data, *, responsaveis, equipes=None, existing_vei
         "frota": frota,
         "operacao": operacao,
         "placa": placa,
-        "responsavel": responsavel,
         "equipe_id": equipe_id_raw,
         "km_atual": km_atual_raw,
         "km_prox_revisao": km_prox_raw,
@@ -220,10 +218,6 @@ def validate_veiculo_form(form_data, *, responsaveis, equipes=None, existing_vei
         )
     if not placa:
         errors["placa"] = "Informe a placa."
-
-    valid_values = {responsavel_item["value"] for responsavel_item in responsaveis}
-    if responsavel and responsavel not in valid_values:
-        errors["responsavel"] = "Selecione um responsável válido."
 
     valid_equipe_ids = {item["value"] for item in equipes}
     equipe_id = None
@@ -288,7 +282,7 @@ def validate_veiculo_form(form_data, *, responsaveis, equipes=None, existing_vei
         "frota": frota,
         "operacao": operacao,
         "placa": placa,
-        "responsavel": responsavel or None,
+        "responsavel": None,
         "equipe_id": equipe_id,
         "km_atual": km_atual,
         "km_prox_revisao": km_prox_revisao,
@@ -346,6 +340,55 @@ def update_veiculo(veiculo, cleaned):
     return veiculo
 
 
+def update_veiculos_equipes(user, form_data):
+    tipo_usuario = normalize_role(getattr(user, "tipo_usuario", None))
+    if tipo_usuario not in {"dev", "admin", "operario", "operador", "prefeitura_admin"}:
+        raise PermissionError
+
+    getlist = getattr(form_data, "getlist", None)
+    raw_ids = getlist("veiculo_ids") if getlist else form_data.get("veiculo_ids", [])
+    if isinstance(raw_ids, str):
+        raw_ids = [raw_ids]
+
+    veiculo_ids = []
+    for raw_id in raw_ids:
+        try:
+            veiculo_ids.append(int(raw_id))
+        except (TypeError, ValueError):
+            continue
+
+    if not veiculo_ids:
+        raise VeiculoTurnoError("Nenhum veiculo foi enviado para atualizacao.", "warning")
+
+    valid_equipe_ids = {item["value"] for item in list_equipes_choices(user=user)}
+    updates = {}
+    for veiculo_id in veiculo_ids:
+        raw_equipe_id = (form_data.get(f"equipe_id_{veiculo_id}") or "").strip()
+        if raw_equipe_id and raw_equipe_id not in valid_equipe_ids:
+            raise VeiculoTurnoError("Uma das equipes selecionadas nao e valida para o seu acesso.", "danger")
+        updates[veiculo_id] = int(raw_equipe_id) if raw_equipe_id else None
+
+    query = apply_prefeitura_scope(Veiculos.query, user, Veiculos.prefeitura_id)
+    veiculos = query.filter(Veiculos.id.in_(veiculo_ids)).all()
+    veiculos_por_id = {veiculo.id: veiculo for veiculo in veiculos}
+    if len(veiculos_por_id) != len(set(veiculo_ids)):
+        raise PermissionError
+
+    alterados = 0
+    for veiculo_id, equipe_id in updates.items():
+        veiculo = veiculos_por_id[veiculo_id]
+        if veiculo.equipe_id != equipe_id or veiculo.responsavel:
+            alterados += 1
+        veiculo.equipe_id = equipe_id
+        veiculo.responsavel = None
+        veiculo.prefeitura_id = _resolve_prefeitura_id_veiculo(equipe_id, veiculo.prefeitura_id)
+
+    db.session.commit()
+    if alterados == 1:
+        return "Equipe responsavel atualizada em 1 veiculo."
+    return f"Equipe responsavel atualizada em {alterados} veiculos."
+
+
 def delete_veiculo(veiculo):
     db.session.delete(veiculo)
     db.session.commit()
@@ -358,7 +401,6 @@ def build_veiculo_form(veiculo):
         "frota": veiculo.frota or "",
         "operacao": veiculo.operacao or "",
         "placa": veiculo.placa or "",
-        "responsavel": veiculo.responsavel or "",
         "equipe_id": str(veiculo.equipe_id or ""),
         "km_atual": str(veiculo.km_atual or ""),
         "km_prox_revisao": str(veiculo.km_prox_revisao or "") if veiculo.km_prox_revisao is not None else "",
@@ -397,9 +439,7 @@ def build_piloto_veiculos_context(user):
             "agora_brasilia": _now_brazil(),
         }
 
-    nome_piloto = _piloto_nome_logado(user)
-
-    if not nome_piloto or not getattr(user, "piloto_id", None):
+    if not getattr(user, "piloto_id", None):
         return {
             "piloto_vinculado": False,
             "veiculos": [],
@@ -409,13 +449,17 @@ def build_piloto_veiculos_context(user):
         }
 
     equipe_ids = _equipe_ids_do_piloto(user)
-    filtros_responsabilidade = [_veiculo_responsavel_filter(nome_piloto, user)]
-    if equipe_ids:
-        filtros_responsabilidade.append(Veiculos.equipe_id.in_(equipe_ids))
-
+    if not equipe_ids:
+        return {
+            "piloto_vinculado": False,
+            "veiculos": [],
+            "turnos_abertos": {},
+            "km_inicial_referencias": {},
+            "agora_brasilia": _now_brazil(),
+        }
     veiculos = (
         Veiculos.query
-        .filter(db.or_(*filtros_responsabilidade))
+        .filter(Veiculos.equipe_id.in_(equipe_ids))
         .order_by(Veiculos.operacao.asc(), Veiculos.modelo.asc())
         .all()
     )
@@ -922,34 +966,8 @@ def _resolve_prefeitura_id_veiculo(equipe_id, fallback_prefeitura_id=None):
     return fallback_prefeitura_id
 
 
-def _veiculo_prefeitura_legacy_filter(user):
-    prefeitura_id = getattr(user, "prefeitura_id", None)
-    if prefeitura_id is None:
-        return db.true()
-    return db.or_(Veiculos.prefeitura_id == prefeitura_id, Veiculos.prefeitura_id.is_(None))
-
-
-def _veiculo_responsavel_filter(nome, user):
-    return db.and_(
-        db.func.lower(Veiculos.responsavel) == (nome or "").strip().lower(),
-        _veiculo_prefeitura_legacy_filter(user),
-    )
-
-
 def _veiculo_equipe_operacional_filter(equipe, user):
-    return db.or_(
-        Veiculos.equipe_id == equipe.id,
-        _veiculo_responsavel_filter(equipe.nome_equipe, user),
-    )
-
-
-def _veiculo_responsavel_ok(veiculo, nome, user):
-    responsavel = (getattr(veiculo, "responsavel", None) or "").strip().lower()
-    if responsavel != (nome or "").strip().lower():
-        return False
-
-    prefeitura_id = getattr(user, "prefeitura_id", None)
-    return prefeitura_id is None or getattr(veiculo, "prefeitura_id", None) in (None, prefeitura_id)
+    return Veiculos.equipe_id == equipe.id
 
 
 def _equipe_ids_do_piloto(user):
@@ -989,21 +1007,19 @@ def _veiculos_operacionais_do_usuario(user):
             .all()
         )
 
-    nome_piloto = _piloto_nome_logado(user)
-    if not nome_piloto or not getattr(user, "piloto_id", None):
+    if not getattr(user, "piloto_id", None):
         return []
 
     equipe_ids = _equipe_ids_do_piloto(user)
-    filtros = [_veiculo_responsavel_filter(nome_piloto, user)]
-    if equipe_ids:
-        filtros.append(Veiculos.equipe_id.in_(equipe_ids))
+    if not equipe_ids:
+        return []
 
     return (
         Veiculos.query
         .options(joinedload(Veiculos.equipe))
         .filter(
             db.func.lower(db.func.coalesce(Veiculos.status, "")) == "ativo",
-            db.or_(*filtros),
+            Veiculos.equipe_id.in_(equipe_ids),
         )
         .order_by(Veiculos.operacao.asc(), Veiculos.modelo.asc(), Veiculos.id.asc())
         .all()
@@ -1166,24 +1182,6 @@ def _build_limpeza_alerta_atores_por_veiculo(veiculo_ids):
             for veiculo in veiculos:
                 if veiculo.equipe_id == membro.equipe_id and membro.piloto_id:
                     piloto_ids_por_veiculo[veiculo.id].add(membro.piloto_id)
-
-    responsaveis = {
-        (veiculo.responsavel or "").strip().lower()
-        for veiculo in veiculos
-        if (veiculo.responsavel or "").strip()
-    }
-    pilotos_por_nome = {}
-    if responsaveis:
-        pilotos = Pilotos.query.filter(db.func.lower(Pilotos.nome_piloto).in_(responsaveis)).all()
-        pilotos_por_nome = {
-            (piloto.nome_piloto or "").strip().lower(): piloto
-            for piloto in pilotos
-        }
-
-    for veiculo in veiculos:
-        piloto_responsavel = pilotos_por_nome.get((veiculo.responsavel or "").strip().lower())
-        if piloto_responsavel:
-            piloto_ids_por_veiculo[veiculo.id].add(piloto_responsavel.id)
 
     all_piloto_ids = {
         piloto_id
@@ -1354,16 +1352,14 @@ def _veiculo_do_operacional_logado(veiculo_id, *, user=None):
 
     if getattr(user, "tipo_usuario", None) == EQUIPE_OCEANO_USER_TYPE:
         equipe = _equipe_oceano_logada(user)
-        responsavel_ok = bool(equipe and _veiculo_responsavel_ok(veiculo, equipe.nome_equipe, user))
-        if not equipe or (veiculo.equipe_id != equipe.id and not responsavel_ok):
+        if not equipe or veiculo.equipe_id != equipe.id:
             raise PermissionError
         return veiculo
 
-    nome_piloto = _piloto_nome_logado(user, strict=True)
+    _piloto_nome_logado(user, strict=True)
     equipe_ids = _equipe_ids_do_piloto(user)
-    responsavel_ok = _veiculo_responsavel_ok(veiculo, nome_piloto, user)
     equipe_ok = bool(veiculo.equipe_id and veiculo.equipe_id in equipe_ids)
-    if not responsavel_ok and not equipe_ok:
+    if not equipe_ok:
         raise PermissionError
     return veiculo
 
@@ -1514,7 +1510,7 @@ def build_veiculos_export_response(tipo_usuario, args, user=None):
         "FROTA",
         "OPERA\u00c7\u00c3O",
         "PLACA",
-        "RESPONSAVEL",
+        "EQUIPE RESPONSAVEL",
         "KM ATUAL",
         "PROX REVISAO",
         "OBS",
@@ -1555,7 +1551,7 @@ def build_veiculos_export_response(tipo_usuario, args, user=None):
                 veiculo.frota or "",
                 veiculo.operacao or "",
                 veiculo.placa or "",
-                veiculo.responsavel or "",
+                veiculo.equipe.nome_equipe if veiculo.equipe else "",
                 float(veiculo.km_atual or 0),
                 float(veiculo.km_prox_revisao) if veiculo.km_prox_revisao is not None else "",
                 obs,
