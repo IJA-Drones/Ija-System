@@ -32,9 +32,9 @@ from app.modules.veiculos.service import (
     list_veiculos,
     list_veiculos_limpezas,
     list_veiculos_logs,
-    list_responsaveis_choices,
     registrar_abastecimento_turno_piloto,
     registrar_limpeza_turno_piloto,
+    update_veiculos_equipes,
     update_veiculo_log_km,
     update_veiculo,
     validate_veiculo_form,
@@ -139,6 +139,30 @@ def register_routes(bp):
             return render_template("veiculos_listar.html", **list_veiculos(tipo, request.args, user=current_user))
         except PermissionError:
             abort(403)
+
+    @bp.route("/veiculos/equipes", methods=["POST"], endpoint="atualizar_equipes_veiculos")
+    @login_required
+    def atualizar_equipes_veiculos():
+        _require_admin_or_operario()
+
+        redirect_args = {
+            key: value
+            for key, value in request.args.items()
+            if key in {"q", "operacao", "frota", "status"}
+        }
+        try:
+            flash(update_veiculos_equipes(current_user, request.form), "success")
+        except PermissionError:
+            abort(403)
+        except VeiculoTurnoError as exc:
+            db.session.rollback()
+            flash(str(exc), exc.category)
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("Erro ao atualizar equipes dos veiculos em massa.")
+            flash("Erro interno ao atualizar as equipes dos veiculos. Tente novamente.", "danger")
+
+        return redirect(url_for("main.listar_veiculos", **redirect_args))
 
     @bp.route("/veiculos/logs", methods=["GET"], endpoint="veiculos_logs")
     @login_required
@@ -352,13 +376,11 @@ def register_routes(bp):
 
         errors = {}
         form = {}
-        responsaveis = list_responsaveis_choices(user=current_user)
         equipes = list_equipes_choices(user=current_user)
 
         if request.method == "POST":
             form, cleaned, errors = validate_veiculo_form(
                 request.form,
-                responsaveis=responsaveis,
                 equipes=equipes,
             )
 
@@ -368,7 +390,6 @@ def register_routes(bp):
                     "cadastrar_veiculo.html",
                     form=form,
                     errors=errors,
-                    responsaveis=responsaveis,
                     equipes=equipes,
                 )
 
@@ -384,7 +405,6 @@ def register_routes(bp):
                     "cadastrar_veiculo.html",
                     form=form,
                     errors=errors,
-                    responsaveis=responsaveis,
                     equipes=equipes,
                 )
 
@@ -392,7 +412,6 @@ def register_routes(bp):
             "cadastrar_veiculo.html",
             form=form,
             errors=errors,
-            responsaveis=responsaveis,
             equipes=equipes,
         )
 
@@ -403,13 +422,11 @@ def register_routes(bp):
 
         veiculo = _get_scoped_veiculo_or_404(veiculo_id)
         errors = {}
-        responsaveis = list_responsaveis_choices(user=current_user)
         equipes = list_equipes_choices(user=current_user)
 
         if request.method == "POST":
             form, cleaned, errors = validate_veiculo_form(
                 request.form,
-                responsaveis=responsaveis,
                 equipes=equipes,
                 existing_veiculo=veiculo,
             )
@@ -421,7 +438,6 @@ def register_routes(bp):
                     form=form,
                     errors=errors,
                     veiculo=veiculo,
-                    responsaveis=responsaveis,
                     equipes=equipes,
                 )
 
@@ -438,7 +454,6 @@ def register_routes(bp):
                     form=form,
                     errors=errors,
                     veiculo=veiculo,
-                    responsaveis=responsaveis,
                     equipes=equipes,
                 )
 
@@ -447,7 +462,6 @@ def register_routes(bp):
             form=build_veiculo_form(veiculo),
             errors=errors,
             veiculo=veiculo,
-            responsaveis=responsaveis,
             equipes=equipes,
         )
 

@@ -87,27 +87,14 @@
                 </div>
 
                 <div class="row g-3 mb-4">
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <label class="form-label fw-bold small text-muted">Placa *</label>
                         <input name="placa" class="form-control {% if errors.placa %}is-invalid{% endif %}"
                                value="{{ form.placa or '' }}" placeholder="Ex: ABC1D23">
                         {% if errors.placa %}<div class="invalid-feedback">{{ errors.placa }}</div>{% endif %}
                     </div>
 
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold small text-muted">Responsável</label>
-                        <select name="responsavel" class="form-select {% if errors.get('responsavel') %}is-invalid{% endif %}">
-                            <option value="">-- Selecione --</option>
-                            {% for r in responsaveis %}
-                                <option value="{{ r.value }}" {% if (form.responsavel or '') == r.value %}selected{% endif %}>
-                                    {{ r.label }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                        {% if errors.get('responsavel') %}<div class="invalid-feedback">{{ errors.get('responsavel') }}</div>{% endif %}
-                    </div>
-
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <label class="form-label fw-bold small text-muted">Equipe responsável</label>
                         <select name="equipe_id" class="form-select {% if errors.get('equipe_id') %}is-invalid{% endif %}">
                             <option value="">-- Sem equipe --</option>
@@ -120,7 +107,7 @@
                         {% if errors.get('equipe_id') %}<div class="invalid-feedback">{{ errors.get('equipe_id') }}</div>{% endif %}
                     </div>
 
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <label class="form-label fw-bold small text-muted">Status Atual</label>
                         <select name="status" class="form-select">
                             {% set st = form.status or 'Ativo' %}

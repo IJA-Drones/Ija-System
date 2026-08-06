@@ -82,7 +82,7 @@
         /* Labels Automáticos */
         tbody tr td:nth-child(1)::before { content: "Veículo"; }
         tbody tr td:nth-child(2)::before { content: "Frota / Op."; }
-        tbody tr td:nth-child(3)::before { content: "Responsável"; }
+        tbody tr td:nth-child(3)::before { content: "Equipe responsável"; }
         tbody tr td:nth-child(4)::before { content: "KM Atual"; }
         tbody tr td:nth-child(5)::before { content: "KM Restante"; }
         tbody tr td:nth-child(6)::before { content: "Ultima Movimentacao"; }
@@ -104,6 +104,106 @@
     .menu-actions-table-wrap .card-body,
     .menu-actions-table-wrap .table-responsive {
         overflow: visible !important;
+    }
+
+    .team-picker {
+        min-width: 170px;
+    }
+
+    .team-picker-toggle {
+        width: 100%;
+        min-height: 40px;
+        border: 1px solid rgba(13, 110, 253, 0.18);
+        border-radius: 8px;
+        background: #fff;
+        color: var(--color-text, #17233c);
+        padding: 5px 30px 5px 10px;
+        text-align: left;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        position: relative;
+        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+    }
+
+    .team-picker-toggle::after {
+        content: "";
+        position: absolute;
+        right: 11px;
+        top: 50%;
+        width: 7px;
+        height: 7px;
+        border-right: 2px solid #63718a;
+        border-bottom: 2px solid #63718a;
+        transform: translateY(-65%) rotate(45deg);
+    }
+
+    .team-picker-toggle:hover,
+    .team-picker-toggle:focus {
+        border-color: rgba(13, 110, 253, 0.45);
+        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.08);
+    }
+
+    .team-picker-pilot {
+        color: #536179;
+        font-size: .68rem;
+        line-height: 1.1;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .team-picker-name {
+        color: #084b83;
+        font-size: .78rem;
+        font-weight: 800;
+        line-height: 1.12;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .team-picker-menu {
+        width: min(280px, 82vw);
+        max-height: 280px;
+        overflow-y: auto;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        border-radius: 10px;
+        padding: 5px;
+    }
+
+    .team-picker-option {
+        border-radius: 7px;
+        padding: 7px 9px;
+        white-space: normal;
+    }
+
+    .team-picker-option.active,
+    .team-picker-option:active {
+        background: rgba(13, 110, 253, 0.10);
+        color: inherit;
+    }
+
+    .team-picker-option .team-picker-pilot {
+        display: block;
+    }
+
+    .team-picker-option .team-picker-name {
+        display: block;
+        margin-top: 2px;
+    }
+
+    @media (max-width: 768px) {
+        .team-picker.dropdown {
+            justify-content: stretch;
+        }
+
+        .team-picker {
+            min-width: 0;
+            width: 100%;
+        }
     }
 </style>
 {% endblock %}
@@ -227,6 +327,12 @@
     </div>
 
     {# --- TABELA / CARDS --- #}
+    {% if can_manage %}
+    <form id="bulk-equipes-form"
+          method="POST"
+          action="{{ url_for('main.atualizar_equipes_veiculos', **request.args) }}"></form>
+    {% endif %}
+
     <div class="card shadow-sm border-0 rounded-4 menu-actions-table-wrap">
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -235,7 +341,7 @@
                         <tr>
                             <th class="ps-4 text-start">Veículo / Placa</th>
                             <th>Frota / Op.</th>
-                            <th>Responsável</th>
+                            <th>Equipe responsável</th>
                             <th>KM Atual</th>
                             <th>KM Restante</th>
                             <th>Ultima Movimentacao</th>
@@ -256,11 +362,63 @@
                                 <span class="badge bg-light text-primary border">{{ v.operacao }}</span>
                             </td>
                             <td>
-                                <div class="small">{{ v.responsavel or '-' }}</div>
-                                {% if v.equipe %}
-                                    <div class="small text-primary fw-bold mt-1">
+                                {% set current_equipe = equipes_por_id.get(v.equipe_id|string) if equipes_por_id is defined else none %}
+                                {% if can_manage %}
+                                    <input type="hidden" name="veiculo_ids" value="{{ v.id }}" form="bulk-equipes-form">
+                                    <input type="hidden"
+                                           name="equipe_id_{{ v.id }}"
+                                           value="{{ v.equipe_id or '' }}"
+                                           form="bulk-equipes-form"
+                                           data-team-input>
+                                    <div class="dropdown team-picker" data-team-picker>
+                                        <button class="team-picker-toggle"
+                                                type="button"
+                                                data-bs-toggle="dropdown"
+                                                data-bs-offset="0,6"
+                                                aria-expanded="false">
+                                            <span class="team-picker-pilot" data-team-pilot>
+                                                {{ current_equipe.piloto_label if current_equipe else 'Sem piloto vinculado' }}
+                                            </span>
+                                            <span class="team-picker-name">
+                                                <i class="bi bi-people-fill me-1"></i><span data-team-name>{{ current_equipe.label if current_equipe else '-- Sem equipe --' }}</span>
+                                            </span>
+                                        </button>
+                                        <ul class="dropdown-menu team-picker-menu">
+                                            <li>
+                                                <button class="dropdown-item team-picker-option {% if not v.equipe_id %}active{% endif %}"
+                                                        type="button"
+                                                        data-team-option
+                                                        data-team-value=""
+                                                        data-team-name="-- Sem equipe --"
+                                                        data-team-pilot="Sem piloto vinculado">
+                                                    <span class="team-picker-pilot">Sem piloto vinculado</span>
+                                                    <span class="team-picker-name">-- Sem equipe --</span>
+                                                </button>
+                                            </li>
+                                            {% for equipe in equipes or [] %}
+                                                <li>
+                                                    <button class="dropdown-item team-picker-option {% if (v.equipe_id|string) == equipe.value %}active{% endif %}"
+                                                            type="button"
+                                                            data-team-option
+                                                            data-team-value="{{ equipe.value }}"
+                                                            data-team-name="{{ equipe.label }}"
+                                                            data-team-pilot="{{ equipe.piloto_label }}">
+                                                        <span class="team-picker-pilot">{{ equipe.piloto_label }}</span>
+                                                        <span class="team-picker-name">
+                                                            <i class="bi bi-people-fill me-1"></i>{{ equipe.label }}
+                                                        </span>
+                                                    </button>
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                {% elif v.equipe %}
+                                    <div class="team-picker-pilot">{{ current_equipe.piloto_label if current_equipe else 'Sem piloto vinculado' }}</div>
+                                    <div class="small text-primary fw-bold">
                                         <i class="bi bi-people-fill me-1"></i>{{ v.equipe.nome_equipe }}
                                     </div>
+                                {% else %}
+                                    <span class="text-muted small">--</span>
                                 {% endif %}
                             </td>
                             <td>
@@ -331,5 +489,35 @@
             </div>
         </div>
     </div>
+    {% if can_manage and veiculos %}
+    <div class="d-flex justify-content-end mt-3">
+        <button type="submit" class="btn btn-primary btn-sm px-4" form="bulk-equipes-form">
+            <i class="bi bi-check-lg me-1"></i> Salvar
+        </button>
+    </div>
+    {% endif %}
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.querySelectorAll("[data-team-option]").forEach((option) => {
+        option.addEventListener("click", () => {
+            const picker = option.closest("[data-team-picker]");
+            if (!picker) return;
+
+            const cell = picker.parentElement;
+            const input = cell ? cell.querySelector("[data-team-input]") : null;
+            const pilotLabel = picker.querySelector("[data-team-pilot]");
+            const teamName = picker.querySelector("[data-team-name]");
+
+            if (input) input.value = option.dataset.teamValue || "";
+            if (pilotLabel) pilotLabel.textContent = option.dataset.teamPilot || "Sem piloto vinculado";
+            if (teamName) teamName.textContent = option.dataset.teamName || "-- Sem equipe --";
+
+            picker.querySelectorAll("[data-team-option]").forEach((item) => item.classList.remove("active"));
+            option.classList.add("active");
+        });
+    });
+</script>
 {% endblock %}
