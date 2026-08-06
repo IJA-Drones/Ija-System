@@ -104,7 +104,7 @@ def register_routes(bp):
                 if vinculo:
                     nome_eq = equipe.nome_equipe if equipe else f"ID {vinculo.equipe_id}"
                     papel = (vinculo.papel or "").lower()
-                    errors["piloto_id"] = f"Este piloto ja esta na equipe '{nome_eq}' como {papel}. Remova de la antes."
+                    errors["piloto_id"] = f"Este piloto já está vinculado à equipe '{nome_eq}' como {papel}. Para atribuí-lo a esta equipe, primeiro remova o vínculo atual."
                     flash(errors["piloto_id"], "warning")
 
             if auxiliar_id_int and "auxiliar_id" not in errors:
