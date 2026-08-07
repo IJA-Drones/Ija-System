@@ -50,7 +50,7 @@ class SolicitacaoAccessError(Exception):
 def can_use_custom_visit_other(user) -> bool:
     tipo_usuario = (getattr(user, "tipo_usuario", None) or "").strip().lower()
     regiao = (getattr(user, "regiao", None) or "").strip().upper()
-    return tipo_usuario in {"dev", "admin"} or (tipo_usuario != "uvis" and regiao == "COVISA")
+    return tipo_usuario in {"dev", "diretor", "admin"} or (tipo_usuario != "uvis" and regiao == "COVISA")
 
 
 def _clean_empty_marker(value):
@@ -155,7 +155,7 @@ def find_solicitacao_bloqueada_por_place_id(place_id, prefeitura_id=None, endere
 
 
 def resolve_prefeitura_id_para_bloqueio(user, uvis_responsavel_id=None):
-    if getattr(user, "tipo_usuario", None) in ["dev", "admin", "visualizar", "prefeitura_admin"]:
+    if getattr(user, "tipo_usuario", None) in ["dev", "diretor", "admin", "visualizar", "prefeitura_admin"]:
         if uvis_responsavel_id:
             uvis = Usuario.query.filter_by(id=uvis_responsavel_id, tipo_usuario="uvis").first()
             if not uvis:
@@ -169,7 +169,7 @@ def resolve_prefeitura_id_para_bloqueio(user, uvis_responsavel_id=None):
 
 def build_novo_cadastro_context(user, google_maps_key):
     uvis_lista = []
-    if user.tipo_usuario in ["dev", "admin", "visualizar", "prefeitura_admin"]:
+    if user.tipo_usuario in ["dev", "diretor", "admin", "visualizar", "prefeitura_admin"]:
         query = Usuario.query.filter_by(tipo_usuario="uvis")
         query = apply_prefeitura_scope(query, user, Usuario.prefeitura_id)
         uvis_lista = query.order_by(Usuario.nome_uvis.asc()).all()
@@ -224,7 +224,7 @@ def create_nova_solicitacao(user, form_data):
     if not distrito_administrativo:
         raise NovoCadastroValidationError("Por favor, informe o DA (Distrito).")
 
-    if user.tipo_usuario in ["dev", "admin", "visualizar", "prefeitura_admin"]:
+    if user.tipo_usuario in ["dev", "diretor", "admin", "visualizar", "prefeitura_admin"]:
         uvis_id_final = form_data.get("uvis_responsavel_id")
         if not uvis_id_final:
             raise NovoCadastroValidationError("Por favor, selecione a UVIS responsavel.")

@@ -53,8 +53,8 @@ FEEDBACK_PRIORITY_OPTIONS = (
 
 FEEDBACK_FINAL_STATUSES = {"concluido", "arquivado"}
 FEEDBACK_ACTIVE_STATUSES = tuple(status for status, _label in FEEDBACK_STATUS_OPTIONS if status not in FEEDBACK_FINAL_STATUSES)
-FEEDBACK_ACCESS_TYPES = {"dev", "admin"}
-FEEDBACK_MODERATOR_TYPES = {"dev", "admin"}
+FEEDBACK_ACCESS_TYPES = {"dev", "diretor", "admin"}
+FEEDBACK_MODERATOR_TYPES = {"dev", "diretor", "admin"}
 FEEDBACK_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg"}
 FEEDBACK_IMAGE_CONTENT_TYPES = {"image/png", "image/jpeg"}
 FEEDBACK_MAX_IMAGES_PER_COMMENT = 6

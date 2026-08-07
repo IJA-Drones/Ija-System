@@ -2,9 +2,10 @@ import re
 import unicodedata
 
 
-ADMIN_CHATBOT_TYPES = {"dev", "admin", "operario", "visualizar", "regional"}
+ADMIN_CHATBOT_TYPES = {"dev", "diretor", "admin", "operario", "visualizar", "regional"}
 AGRO_ADMIN_CHATBOT_TYPES = {
     "dev",
+    "diretor",
     "admin",
     "operario",
     "visualizar",

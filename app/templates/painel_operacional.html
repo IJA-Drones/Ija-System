@@ -1,0 +1,644 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}" />
+<style>
+  .op-page {
+    max-width: 1320px;
+  }
+
+  .op-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 18px;
+  }
+
+  .op-title {
+    margin: 0;
+    color: #102a43;
+    font-weight: 800;
+  }
+
+  .op-search {
+    border: 1px solid rgba(15, 23, 42, 0.1);
+    background: #fff;
+    border-radius: 8px;
+    padding: 14px;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+  }
+
+  .op-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(360px, 0.95fr);
+    gap: 18px;
+    align-items: start;
+  }
+
+  .op-panel {
+    border: 1px solid rgba(15, 23, 42, 0.1);
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.07);
+    overflow: hidden;
+  }
+
+  .op-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  }
+
+  .op-panel-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    color: #173b62;
+    font-size: 1rem;
+    font-weight: 800;
+  }
+
+  .op-panel-body {
+    padding: 16px;
+  }
+
+  .op-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .op-metric {
+    border: 1px solid rgba(15, 23, 42, 0.1);
+    border-radius: 8px;
+    padding: 12px;
+    min-height: 92px;
+  }
+
+  .op-metric-label {
+    color: #64748b;
+    font-size: 0.76rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .op-metric-value {
+    color: #0f172a;
+    font-size: 1.32rem;
+    font-weight: 850;
+    line-height: 1.15;
+  }
+
+  .op-risk {
+    border-radius: 8px;
+    padding: 16px;
+    border: 1px solid transparent;
+  }
+
+  .op-risk.ok {
+    background: #ecfdf3;
+    border-color: #bbf7d0;
+    color: #166534;
+  }
+
+  .op-risk.warning {
+    background: #fff8e6;
+    border-color: #fde68a;
+    color: #92400e;
+  }
+
+  .op-risk.critical {
+    background: #fff1f2;
+    border-color: #fecdd3;
+    color: #9f1239;
+  }
+
+  .op-risk-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1.12rem;
+    font-weight: 850;
+  }
+
+  .op-map {
+    min-height: 490px;
+    height: calc(100vh - 230px);
+    border-radius: 8px;
+    background:
+      linear-gradient(45deg, rgba(14, 165, 233, 0.08) 25%, transparent 25%),
+      linear-gradient(-45deg, rgba(14, 165, 233, 0.08) 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, rgba(14, 165, 233, 0.08) 75%),
+      linear-gradient(-45deg, transparent 75%, rgba(14, 165, 233, 0.08) 75%);
+    background-size: 28px 28px;
+    background-position: 0 0, 0 14px, 14px -14px, -14px 0;
+  }
+
+  .op-placeholder {
+    min-height: 240px;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    color: #64748b;
+    border: 1px dashed rgba(100, 116, 139, 0.28);
+    border-radius: 8px;
+    background: #f8fafc;
+  }
+
+  .op-list {
+    display: grid;
+    gap: 10px;
+  }
+
+  .op-subsection {
+    border-top: 1px solid rgba(15, 23, 42, 0.08);
+    padding-top: 14px;
+  }
+
+  .op-subsection-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 12px;
+    color: #173b62;
+    font-size: 0.95rem;
+    font-weight: 800;
+  }
+
+  .op-list-item {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    border: 1px solid rgba(15, 23, 42, 0.1);
+    border-radius: 8px;
+    padding: 12px;
+  }
+
+  .op-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  html.dark-mode .op-title,
+  body.dark-mode .op-title,
+  html.dark-mode .op-panel-title,
+  body.dark-mode .op-panel-title,
+  html.dark-mode .op-subsection-title,
+  body.dark-mode .op-subsection-title,
+  html.dark-mode .op-metric-value,
+  body.dark-mode .op-metric-value {
+    color: rgba(255, 255, 255, 0.92);
+  }
+
+  html.dark-mode .op-search,
+  body.dark-mode .op-search,
+  html.dark-mode .op-panel,
+  body.dark-mode .op-panel,
+  html.dark-mode .op-metric,
+  body.dark-mode .op-metric,
+  html.dark-mode .op-list-item,
+  body.dark-mode .op-list-item {
+    background: #101b28;
+    border-color: #233549;
+  }
+
+  html.dark-mode .op-placeholder,
+  body.dark-mode .op-placeholder {
+    background: #0f1a24;
+    border-color: #2a4057;
+    color: rgba(255, 255, 255, 0.72);
+  }
+
+  @media (max-width: 991.98px) {
+    .op-header {
+      flex-direction: column;
+    }
+
+    .op-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .op-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .op-map {
+      height: 420px;
+      min-height: 420px;
+    }
+  }
+
+  @media (max-width: 575.98px) {
+    .op-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .op-actions .btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 op-page">
+  <div class="op-header">
+    <div>
+      <h2 class="op-title">
+        <i class="bi bi-command me-2 text-primary"></i>Painel Operacional
+      </h2>
+      <div class="text-muted small">Contexto local para planejamento e liberação operacional.</div>
+    </div>
+    <div class="op-actions">
+      <a id="opRouteLink" class="btn btn-outline-primary btn-sm disabled" href="#" target="_blank" rel="noopener">
+        <i class="bi bi-sign-turn-right-fill me-1"></i>Rota
+      </a>
+      <a id="opMapsLink" class="btn btn-outline-secondary btn-sm disabled" href="#" target="_blank" rel="noopener">
+        <i class="bi bi-map-fill me-1"></i>Maps
+      </a>
+      <a id="opWindyLink" class="btn btn-outline-info btn-sm disabled" href="#" target="_blank" rel="noopener">
+        <i class="bi bi-wind me-1"></i>Vento
+      </a>
+    </div>
+  </div>
+
+  <form id="opSearchForm" class="op-search mb-3">
+    <label for="opAddress" class="form-label fw-bold small text-muted">
+      <i class="bi bi-geo-alt-fill me-1 text-primary"></i>Endereço operacional
+    </label>
+    <div class="input-group">
+      <input
+        id="opAddress"
+        name="address"
+        type="search"
+        class="form-control"
+        placeholder="Rua, número, bairro, cidade/UF"
+        autocomplete="street-address"
+        required
+      />
+      <button id="opSearchButton" type="submit" class="btn btn-primary">
+        <i class="bi bi-search me-1"></i>Consultar
+      </button>
+    </div>
+    <div id="opError" class="alert alert-danger mt-3 mb-0 d-none"></div>
+  </form>
+
+  <div class="op-layout">
+    <div class="d-grid gap-3">
+      <section class="op-panel">
+        <div class="op-panel-header">
+          <h3 class="op-panel-title"><i class="bi bi-activity text-primary"></i>Decisão de voo</h3>
+          <span id="opGeneratedAt" class="badge text-bg-light">Aguardando consulta</span>
+        </div>
+        <div class="op-panel-body">
+          <div id="opEmpty" class="op-placeholder">
+            <div>
+              <i class="bi bi-map fs-1 d-block mb-2 text-primary"></i>
+              <strong>Informe um endereço para carregar o contexto local.</strong>
+            </div>
+          </div>
+
+          <div id="opResults" class="d-none">
+            <div id="opRisk" class="op-risk ok mb-3">
+              <div class="op-risk-label">
+                <i id="opRiskIcon" class="bi bi-check-circle-fill"></i>
+                <span id="opRiskLabel">Favorável</span>
+              </div>
+              <ul id="opRiskReasons" class="mb-0 mt-2 ps-3"></ul>
+            </div>
+
+            <div class="op-grid mb-3">
+              <div class="op-metric">
+                <div class="op-metric-label">Temperatura</div>
+                <div id="opTemperature" class="op-metric-value">-</div>
+                <div id="opWeatherDescription" class="small text-muted"></div>
+              </div>
+              <div class="op-metric">
+                <div class="op-metric-label">Vento</div>
+                <div id="opWind" class="op-metric-value">-</div>
+                <div id="opWindGust" class="small text-muted"></div>
+              </div>
+              <div class="op-metric">
+                <div class="op-metric-label">Chuva</div>
+                <div id="opRain" class="op-metric-value">-</div>
+                <div id="opCloud" class="small text-muted"></div>
+              </div>
+              <div class="op-metric">
+                <div class="op-metric-label">Umidade</div>
+                <div id="opHumidity" class="op-metric-value">-</div>
+              </div>
+              <div class="op-metric">
+                <div class="op-metric-label">Coordenadas</div>
+                <div id="opCoordinates" class="op-metric-value fs-6">-</div>
+              </div>
+              <div class="op-metric">
+                <div class="op-metric-label">Referência</div>
+                <div id="opReference" class="op-metric-value fs-6">-</div>
+              </div>
+            </div>
+
+            <div class="op-subsection mt-3">
+              <h3 class="op-subsection-title"><i class="bi bi-list-check text-success"></i>Checklist operacional</h3>
+              <div id="opChecklist" class="op-list"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="op-panel">
+        <div class="op-panel-header">
+          <h3 class="op-panel-title"><i class="bi bi-cpu-fill text-primary"></i>Recursos da operação</h3>
+        </div>
+        <div class="op-panel-body">
+          <div class="op-grid">
+            <div class="op-metric">
+              <div class="op-metric-label">Drones ativos</div>
+              <div id="opDronesAtivos" class="op-metric-value">-</div>
+            </div>
+            <div class="op-metric">
+              <div class="op-metric-label">Drones em manutenção</div>
+              <div id="opDronesManutencao" class="op-metric-value">-</div>
+            </div>
+            <div class="op-metric">
+              <div class="op-metric-label">Baterias em alerta</div>
+              <div id="opBateriasAlerta" class="op-metric-value">-</div>
+            </div>
+            <div class="op-metric">
+              <div class="op-metric-label">Veículos em revisão</div>
+              <div id="opVeiculosRevisao" class="op-metric-value">-</div>
+            </div>
+            <div class="op-metric">
+              <div class="op-metric-label">Equipes ativas</div>
+              <div id="opEquipesAtivas" class="op-metric-value">-</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="op-panel">
+        <div class="op-panel-header">
+          <h3 class="op-panel-title"><i class="bi bi-clock-history text-primary"></i>Histórico próximo</h3>
+          <span id="opNearbyCount" class="badge text-bg-light">0</span>
+        </div>
+        <div class="op-panel-body">
+          <div id="opNearby" class="op-list">
+            <div class="text-muted small">Nenhum ponto carregado.</div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <section class="op-panel">
+      <div class="op-panel-header">
+        <h3 class="op-panel-title"><i class="bi bi-map-fill text-primary"></i>Mapa local</h3>
+        <span id="opMapStatus" class="badge text-bg-light">Aguardando endereço</span>
+      </div>
+      <div class="op-panel-body">
+        <div id="opMap" class="op-map"></div>
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const OP_CONTEXT_URL = "{{ url_for('main.api_painel_operacional_contexto') }}";
+  const GOOGLE_MAPS_KEY = "{{ google_maps_key or '' }}";
+
+  let opMap = null;
+  let opMarker = null;
+  let opGeocoder = null;
+
+  const el = (id) => document.getElementById(id);
+  const setText = (id, value) => {
+    const node = el(id);
+    if (node) node.textContent = value == null || value === "" ? "-" : String(value);
+  };
+
+  function setExternalLink(id, url) {
+    const link = el(id);
+    if (!link) return;
+    if (!url) {
+      link.href = "#";
+      link.classList.add("disabled");
+      return;
+    }
+    link.href = url;
+    link.classList.remove("disabled");
+  }
+
+  function setLoading(isLoading) {
+    const button = el("opSearchButton");
+    if (!button) return;
+    button.disabled = isLoading;
+    button.innerHTML = isLoading
+      ? '<span class="spinner-border spinner-border-sm me-1"></span>Consultando'
+      : '<i class="bi bi-search me-1"></i>Consultar';
+  }
+
+  function showError(message) {
+    const box = el("opError");
+    if (!box) return;
+    box.textContent = message || "Não foi possível consultar.";
+    box.classList.remove("d-none");
+  }
+
+  function clearError() {
+    const box = el("opError");
+    if (!box) return;
+    box.textContent = "";
+    box.classList.add("d-none");
+  }
+
+  function initOperationalMap() {
+    const canvas = el("opMap");
+    if (!canvas || !window.google || !window.google.maps) return;
+    opGeocoder = new google.maps.Geocoder();
+    opMap = new google.maps.Map(canvas, {
+      center: { lat: -23.55052, lng: -46.633308 },
+      zoom: 12,
+      mapTypeId: "hybrid",
+      streetViewControl: false,
+      fullscreenControl: true,
+      mapTypeControl: true,
+    });
+    setText("opMapStatus", "Mapa carregado");
+  }
+
+  function loadGoogleMaps() {
+    if (!GOOGLE_MAPS_KEY) {
+      setText("opMapStatus", "Maps sem chave");
+      return;
+    }
+    if (window.google && window.google.maps) {
+      initOperationalMap();
+      return;
+    }
+    window.__initOperationalMap = initOperationalMap;
+    const script = document.createElement("script");
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(GOOGLE_MAPS_KEY)}&callback=__initOperationalMap`;
+    script.async = true;
+    script.defer = true;
+    script.onerror = () => setText("opMapStatus", "Falha no Maps");
+    document.head.appendChild(script);
+  }
+
+  function updateMap(location) {
+    if (!opMap || !window.google || !window.google.maps || !location) {
+      setText("opMapStatus", "Coordenadas carregadas");
+      return;
+    }
+    const position = { lat: Number(location.lat), lng: Number(location.lng) };
+    opMap.setCenter(position);
+    opMap.setZoom(17);
+    if (!opMarker) {
+      opMarker = new google.maps.Marker({ map: opMap, position, title: "Local operacional" });
+    } else {
+      opMarker.setPosition(position);
+    }
+    setText("opMapStatus", "Local encontrado");
+  }
+
+  function formatNumber(value, decimals = 0) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return "-";
+    return number.toLocaleString("pt-BR", { maximumFractionDigits: decimals, minimumFractionDigits: decimals });
+  }
+
+  function renderRisk(risk) {
+    const box = el("opRisk");
+    const icon = el("opRiskIcon");
+    box.className = `op-risk ${risk.level || "ok"} mb-3`;
+    setText("opRiskLabel", risk.label || "Favorável");
+    if (icon) {
+      icon.className = risk.level === "critical"
+        ? "bi bi-x-octagon-fill"
+        : risk.level === "warning"
+          ? "bi bi-exclamation-triangle-fill"
+          : "bi bi-check-circle-fill";
+    }
+    const list = el("opRiskReasons");
+    if (list) {
+      list.innerHTML = "";
+      (risk.reasons || []).forEach((reason) => {
+        const item = document.createElement("li");
+        item.textContent = reason;
+        list.appendChild(item);
+      });
+    }
+  }
+
+  function renderChecklist(items) {
+    const root = el("opChecklist");
+    if (!root) return;
+    root.innerHTML = "";
+    (items || []).forEach((text) => {
+      const item = document.createElement("div");
+      item.className = "op-list-item";
+      item.innerHTML = `<span><i class="bi bi-check2-circle text-success me-2"></i>${text}</span>`;
+      root.appendChild(item);
+    });
+  }
+
+  function renderNearby(items) {
+    const root = el("opNearby");
+    if (!root) return;
+    root.innerHTML = "";
+    setText("opNearbyCount", (items || []).length);
+    if (!items || !items.length) {
+      root.innerHTML = '<div class="text-muted small">Nenhuma OS próxima em até 1,5 km.</div>';
+      return;
+    }
+    items.forEach((item) => {
+      const row = document.createElement("div");
+      row.className = "op-list-item";
+      row.innerHTML = `
+        <div>
+          <div class="fw-bold">OS #${item.id} - ${item.distance_km} km</div>
+          <div class="small text-muted">${item.endereco || "Endereço não informado"}</div>
+          <div class="small">${item.foco || "-"} | ${item.tipo_operacao || "-"} | ${item.data_agendamento || "-"}</div>
+          <div class="small text-muted">${item.uvis || "-"}${item.equipe ? " - " + item.equipe : ""}</div>
+        </div>
+        <span class="badge text-bg-light">${item.status || "-"}</span>
+      `;
+      root.appendChild(row);
+    });
+  }
+
+  function renderPayload(payload) {
+    el("opEmpty")?.classList.add("d-none");
+    el("opResults")?.classList.remove("d-none");
+
+    const weather = payload.weather || {};
+    const location = payload.location || {};
+    const assets = payload.assets || {};
+
+    setText("opGeneratedAt", payload.generated_at || "-");
+    setText("opTemperature", `${formatNumber(weather.temperature, 1)}°C`);
+    setText("opWeatherDescription", weather.description || "-");
+    setText("opWind", `${formatNumber(weather.wind_speed, 0)} km/h`);
+    setText("opWindGust", `Rajada ${formatNumber(weather.wind_gusts, 0)} km/h`);
+    setText("opRain", `${formatNumber(weather.precipitation, 1)} mm`);
+    setText("opCloud", `Nuvens ${formatNumber(weather.cloud_cover, 0)}%`);
+    setText("opHumidity", `${formatNumber(weather.humidity, 0)}%`);
+    setText("opCoordinates", `${formatNumber(location.lat, 6)}, ${formatNumber(location.lng, 6)}`);
+    setText("opReference", location.formatted_address || payload.address || "-");
+
+    setText("opDronesAtivos", assets.drones_ativos);
+    setText("opDronesManutencao", assets.drones_manutencao);
+    setText("opBateriasAlerta", assets.baterias_alerta);
+    setText("opVeiculosRevisao", assets.veiculos_revisao);
+    setText("opEquipesAtivas", assets.equipes_ativas);
+
+    renderRisk(payload.risk || {});
+    renderChecklist(payload.checklist || []);
+    renderNearby(payload.nearby_solicitacoes || []);
+    setExternalLink("opRouteLink", payload.links?.route);
+    setExternalLink("opMapsLink", payload.links?.google_maps);
+    setExternalLink("opWindyLink", payload.links?.windy);
+    updateMap(location);
+  }
+
+  async function submitOperationalSearch(event) {
+    event.preventDefault();
+    const address = (el("opAddress")?.value || "").trim();
+    if (!address) return;
+
+    clearError();
+    setLoading(true);
+    try {
+      const response = await fetch(OP_CONTEXT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        body: JSON.stringify({ address }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.error || "Não foi possível consultar esse endereço.");
+      }
+      renderPayload(payload);
+    } catch (error) {
+      showError(error.message || "Erro ao consultar contexto local.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    el("opSearchForm")?.addEventListener("submit", submitOperationalSearch);
+    loadGoogleMaps();
+  });
+</script>
+{% endblock %}

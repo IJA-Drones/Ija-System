@@ -73,7 +73,7 @@
           </div>
         </div>
 
-        {% if current_user.tipo_usuario in ['dev', 'admin', 'visualizar', 'prefeitura_admin'] %}
+        {% if current_user.tipo_usuario in ['dev', 'diretor', 'admin', 'visualizar', 'prefeitura_admin'] %}
           <div class="mb-4">
               <label class="form-label fw-bold small text-muted"><i class="bi bi-geo-alt me-2"></i>Unidade (UVIS) Responsável</label>
               <select class="form-select border-primary" name="uvis_responsavel_id" required>

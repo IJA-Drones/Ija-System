@@ -4,6 +4,7 @@ from app.extensions import db
 from app.models import Notificacao, Usuario
 from app.shared.access import (
     DEV_USER_TYPE,
+    DIRECTOR_USER_TYPE,
     FINANCEIRO_ADMIN_USER_TYPE,
     FINANCEIRO_USER_TYPE,
     PREFEITURA_ADMIN_USER_TYPE,
@@ -17,6 +18,7 @@ from app.shared.query_filters import id_search_clause
 
 ADMIN_USER_TYPES = (
     DEV_USER_TYPE,
+    DIRECTOR_USER_TYPE,
     "admin",
     "operario",
     REGIONAL_USER_TYPE,
@@ -60,11 +62,21 @@ def is_admin_managed_user(usuario) -> bool:
 def can_assign_dev_role(actor) -> bool:
     if is_dev_user(actor):
         return True
-    return is_admin_global_user(actor) and not Usuario.query.filter_by(tipo_usuario=DEV_USER_TYPE).first()
+    return (
+        getattr(actor, "tipo_usuario", None) == "admin"
+        and not Usuario.query.filter_by(tipo_usuario=DEV_USER_TYPE).first()
+    )
+
+
+def can_assign_director_role(actor) -> bool:
+    return is_dev_user(actor)
 
 
 def can_manage_admin_user(actor, usuario) -> bool:
-    return getattr(usuario, "tipo_usuario", None) != DEV_USER_TYPE or is_dev_user(actor)
+    target_type = getattr(usuario, "tipo_usuario", None)
+    if target_type in {DEV_USER_TYPE, DIRECTOR_USER_TYPE}:
+        return is_dev_user(actor)
+    return True
 
 
 def get_admin_user_type_form_value(usuario) -> str:
@@ -89,6 +101,7 @@ def build_admin_users_query(q: str, tipo: str):
             Usuario.tipo_usuario.in_(
                 (
                     DEV_USER_TYPE,
+                    DIRECTOR_USER_TYPE,
                     "admin",
                     "operario",
                     REGIONAL_USER_TYPE,

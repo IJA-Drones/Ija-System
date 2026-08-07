@@ -22,7 +22,7 @@ from app.shared.access import apply_prefeitura_scope, normalize_role
 
 
 def _require_admin_or_operario():
-    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"dev", "admin", "operario", "operador", "prefeitura_admin"}:
+    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"dev", "diretor", "admin", "operario", "operador", "prefeitura_admin"}:
         abort(403)
 
 
@@ -201,7 +201,7 @@ def register_routes(bp):
         )
 
         if export == "xlsx":
-            if tipo not in ["dev", "admin", "visualizar", "prefeitura_admin"]:
+            if tipo not in ["dev", "diretor", "admin", "visualizar", "prefeitura_admin"]:
                 abort(403)
 
             output, filename = build_equipes_export(query.all())
@@ -215,7 +215,7 @@ def register_routes(bp):
         pagination = query.paginate(page=page, per_page=per_page, error_out=False)
         equipes = pagination.items
         equipe_accounts = build_equipe_accounts_map(equipes)
-        is_editable = tipo in ["dev", "admin", "operario", "operador", "prefeitura_admin"]
+        is_editable = tipo in ["dev", "diretor", "admin", "operario", "operador", "prefeitura_admin"]
         filters = build_equipes_filters(
             q=q,
             regiao=regiao,
@@ -235,7 +235,7 @@ def register_routes(bp):
             "listar_equipes.html",
             equipes=equipes,
             filters=filters,
-            is_admin=(tipo in {"dev", "admin"}),
+            is_admin=(tipo in {"dev", "diretor", "admin"}),
             is_editable=is_editable,
             tipo_usuario=tipo,
             equipe_accounts=equipe_accounts,

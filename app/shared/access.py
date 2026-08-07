@@ -8,8 +8,9 @@ PREFEITURA_ADMIN_USER_TYPE = "prefeitura_admin"
 FINANCEIRO_ADMIN_USER_TYPE = "financeiro_admin"
 FINANCEIRO_USER_TYPE = "financeiro"
 ADMIN_USER_TYPE = "admin"
+DIRECTOR_USER_TYPE = "diretor"
 DEV_USER_TYPE = "dev"
-GLOBAL_ADMIN_USER_TYPES = {ADMIN_USER_TYPE, DEV_USER_TYPE}
+GLOBAL_ADMIN_USER_TYPES = {ADMIN_USER_TYPE, DIRECTOR_USER_TYPE, DEV_USER_TYPE}
 ADMIN_PANEL_VIEW_TYPES = {
     *GLOBAL_ADMIN_USER_TYPES,
     "operario",
@@ -59,6 +60,10 @@ def is_agro_finance_user(user) -> bool:
 
 def is_admin_global_user(user) -> bool:
     return normalize_role(getattr(user, "tipo_usuario", None)) in GLOBAL_ADMIN_USER_TYPES
+
+
+def is_director_user(user) -> bool:
+    return normalize_role(getattr(user, "tipo_usuario", None)) == DIRECTOR_USER_TYPE
 
 
 def is_dev_user(user) -> bool:

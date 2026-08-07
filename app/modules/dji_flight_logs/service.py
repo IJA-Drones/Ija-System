@@ -24,8 +24,8 @@ from app.shared.access import ADMIN_PANEL_VIEW_TYPES, can_access_regiao
 from app.shared.uploads import get_upload_folder
 
 
-DJI_LOG_ALLOWED_VIEW_TYPES = {"dev", "admin"}
-DJI_LOG_ALLOWED_IMPORT_TYPES = {"dev", "admin"}
+DJI_LOG_ALLOWED_VIEW_TYPES = {"dev", "diretor", "admin"}
+DJI_LOG_ALLOWED_IMPORT_TYPES = {"dev", "diretor", "admin"}
 
 _FLIGHT_WINDOW_RE = re.compile(
     r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})-(\d{2}:\d{2}:\d{2}|\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})$"

@@ -27,7 +27,7 @@ from app.shared.access import apply_prefeitura_scope, normalize_role
 
 
 def _require_admin_or_operario():
-    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"dev", "admin", "operario", "operador", "prefeitura_admin"}:
+    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"dev", "diretor", "admin", "operario", "operador", "prefeitura_admin"}:
         abort(403)
 
 
@@ -54,8 +54,8 @@ def register_routes(bp):
         return render_template(
             "drones_listar.html",
             drones=list_drones(user=current_user),
-            is_admin=tipo_usuario in {"dev", "admin"},
-            can_manage=tipo_usuario in {"dev", "admin", "operario", "operador", "prefeitura_admin"},
+            is_admin=tipo_usuario in {"dev", "diretor", "admin"},
+            can_manage=tipo_usuario in {"dev", "diretor", "admin", "operario", "operador", "prefeitura_admin"},
         )
 
     @bp.route("/equipamentos/baterias", methods=["GET"], endpoint="listar_baterias")
@@ -65,8 +65,8 @@ def register_routes(bp):
         return render_template(
             "baterias_listar.html",
             baterias=list_baterias(user=current_user),
-            is_admin=tipo_usuario in {"dev", "admin"},
-            can_manage=tipo_usuario in {"dev", "admin", "operario", "operador", "prefeitura_admin"},
+            is_admin=tipo_usuario in {"dev", "diretor", "admin"},
+            can_manage=tipo_usuario in {"dev", "diretor", "admin", "operario", "operador", "prefeitura_admin"},
         )
 
     @bp.route("/drones/cadastrar", methods=["GET", "POST"], endpoint="cadastrar_drone")

@@ -23,6 +23,7 @@ from app.modules.equipe_uvis_dashboard import register_routes as register_equipe
 from app.modules.equipes import register_routes as register_equipes_routes
 from app.modules.feedback import register_routes as register_feedback_routes
 from app.modules.mapas import register_routes as register_mapas_routes
+from app.modules.painel_operacional import register_routes as register_painel_operacional_routes
 from app.modules.piloto_checklists import register_routes as register_piloto_checklists_routes
 from app.modules.piloto_os import register_routes as register_piloto_os_routes
 from app.modules.pilotos import register_routes as register_pilotos_routes
@@ -60,6 +61,7 @@ register_equipe_uvis_dashboard_routes(bp)
 register_equipes_routes(bp)
 register_feedback_routes(bp)
 register_mapas_routes(bp)
+register_painel_operacional_routes(bp)
 register_piloto_checklists_routes(bp)
 register_piloto_os_routes(bp)
 register_pilotos_routes(bp)

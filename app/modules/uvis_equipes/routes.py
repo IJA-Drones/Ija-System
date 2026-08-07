@@ -35,7 +35,7 @@ def _admin_only():
 
 
 def _admin_or_operario_view_only():
-    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"dev", "admin", "operario", "operador"}:
+    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"dev", "diretor", "admin", "operario", "operador"}:
         abort(403)
 
 

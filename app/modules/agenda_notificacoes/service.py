@@ -21,9 +21,10 @@ from app.shared.access import (
 )
 
 
-AGENDA_VIEW_TYPES = {"dev", "admin", "operario", "visualizar", "regional", "prefeitura_admin"}
+AGENDA_VIEW_TYPES = {"dev", "diretor", "admin", "operario", "visualizar", "regional", "prefeitura_admin"}
 AGENDA_EXPORT_TYPES = {
     "dev",
+    "diretor",
     "admin",
     "operario",
     "visualizar",
@@ -32,7 +33,7 @@ AGENDA_EXPORT_TYPES = {
     "uvis",
     "equipe_uvis",
 }
-NOTIFICATION_GLOBAL_VIEW_TYPES = {"dev", "admin", "operario", "visualizar", "prefeitura_admin"}
+NOTIFICATION_GLOBAL_VIEW_TYPES = {"dev", "diretor", "admin", "operario", "visualizar", "prefeitura_admin"}
 AGENDA_ROUTE_STATUSES = (
     "APROVADO",
     "APROVADO COM RECOMENDACOES",

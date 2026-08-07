@@ -827,6 +827,17 @@
             </a>
           </li>
 
+          {% if current_user.tipo_usuario in ['dev', 'diretor'] %}
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint == 'main.painel_operacional' %}active{% endif %}"
+              href="{{ url_for('main.painel_operacional') }}"
+            >
+              <i class="bi bi-command me-2"></i><span>Painel Operacional</span>
+            </a>
+          </li>
+          {% endif %}
+
 {% if is_global_admin %}
   {# ===================== USUÁRIOS ===================== #}       
   <li class="nav-item">

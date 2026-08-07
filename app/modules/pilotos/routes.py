@@ -27,7 +27,7 @@ def _query_args_without_page():
 
 
 def _require_admin_or_operario():
-    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"dev", "admin", "operario", "operador", "prefeitura_admin"}:
+    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"dev", "diretor", "admin", "operario", "operador", "prefeitura_admin"}:
         abort(403)
 
 
@@ -125,7 +125,7 @@ def register_routes(bp):
     @login_required
     def listar_pilotos():
         user_tipo = normalize_role(getattr(current_user, "tipo_usuario", None))
-        if user_tipo not in ("dev", "admin", "uvis", "visualizar", "regional", "operario", "operador", "prefeitura_admin"):
+        if user_tipo not in ("dev", "diretor", "admin", "uvis", "visualizar", "regional", "operario", "operador", "prefeitura_admin"):
             abort(403)
 
         q = (request.args.get("q") or "").strip()
@@ -155,7 +155,7 @@ def register_routes(bp):
         query = build_pilotos_query(user_tipo, regiao, telefone, q, sort, user=current_user)
 
         if export == "xlsx":
-            if user_tipo not in ["dev", "admin", "visualizar", "regional"]:
+            if user_tipo not in ["dev", "diretor", "admin", "visualizar", "regional"]:
                 abort(403)
 
             output, filename = build_pilotos_export(query.all(), user_tipo, uvis_regiao)
@@ -175,8 +175,8 @@ def register_routes(bp):
             "listar_pilotos.html",
             pilotos=pilotos,
             filters=filters,
-            is_admin=(user_tipo in {"dev", "admin"}),
-            is_editable=user_tipo in ["dev", "admin", "operario", "operador"],
+            is_admin=(user_tipo in {"dev", "diretor", "admin"}),
+            is_editable=user_tipo in ["dev", "diretor", "admin", "operario", "operador"],
             tipo_usuario=user_tipo,
             uvis_regiao=(uvis_regiao if user_tipo in {"uvis", "regional"} else None),
             pagination_args=_query_args_without_page(),

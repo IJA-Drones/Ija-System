@@ -422,7 +422,7 @@ def _sincronizar_pendencias(user, piloto_nome, pendencias_semanais, semana_inici
     admin_ids = [
         row[0]
         for row in db.session.query(Usuario.id)
-        .filter(Usuario.tipo_usuario.in_(("dev", "admin")))
+        .filter(Usuario.tipo_usuario.in_(("dev", "diretor", "admin")))
         .all()
     ]
     _sincronizar_notificacoes_pendencia_checklist(

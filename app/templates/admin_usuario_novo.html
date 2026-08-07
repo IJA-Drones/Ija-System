@@ -78,6 +78,9 @@
               {% if can_assign_dev %}
               <option value="dev" {% if tipo == 'dev' %}selected{% endif %}>Desenvolvedor</option>
               {% endif %}
+              {% if can_assign_director %}
+              <option value="diretor" {% if tipo == 'diretor' %}selected{% endif %}>Diretor</option>
+              {% endif %}
               <option value="admin" {% if tipo == 'admin' %}selected{% endif %}>Admin</option>
               <option value="covisa" {% if tipo == 'covisa' %}selected{% endif %}>COVISA</option>
               <option value="regional" {% if tipo == 'regional' %}selected{% endif %}>Regional</option>

@@ -121,7 +121,7 @@
 
     <div class="d-flex gap-2 flex-wrap align-items-center justify-content-md-end">
       {# ✅ Rota do dia #} 
-      {% if current_user.is_authenticated and current_user.tipo_usuario in ["dev", "admin", "operario", "visualizar", "uvis", "regional", "piloto", "equipe_oceano"] %}
+      {% if current_user.is_authenticated and current_user.tipo_usuario in ["dev", "diretor", "admin", "operario", "visualizar", "uvis", "regional", "piloto", "equipe_oceano"] %}
         <div style="width: 180px; min-width: 150px;" class="flex-grow-1 flex-md-grow-0">
           <button id="btnRotaDia" class="btn btn-danger w-100 d-flex align-items-center justify-content-center gap-2" style="height: 38px;">
             <i class="bi bi-sign-turn-right-fill"></i> 
@@ -131,7 +131,7 @@
       {% endif %}
 
       {# ✅ Exportar Tudo #}
-      {% if current_user.is_authenticated and current_user.tipo_usuario in ["dev", "admin", "operario", "visualizar", "regional", "uvis"] %}
+      {% if current_user.is_authenticated and current_user.tipo_usuario in ["dev", "diretor", "admin", "operario", "visualizar", "regional", "uvis"] %}
         {# ✅ Exportar Atual #}
         <div style="width: 180px; min-width: 150px;" class="flex-grow-1 flex-md-grow-0">
           <a href="{{ url_for('main.agenda_exportar_excel', **request.args.to_dict()) }}"

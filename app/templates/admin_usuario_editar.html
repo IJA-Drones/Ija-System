@@ -54,6 +54,9 @@
               {% if can_assign_dev or tipo_sel == 'dev' %}
               <option value="dev" {% if tipo_sel == 'dev' %}selected{% endif %}>Desenvolvedor</option>
               {% endif %}
+              {% if can_assign_director or tipo_sel == 'diretor' %}
+              <option value="diretor" {% if tipo_sel == 'diretor' %}selected{% endif %}>Diretor</option>
+              {% endif %}
               <option value="admin" {% if tipo_sel == 'admin' %}selected{% endif %}>Admin</option>
               <option value="covisa" {% if tipo_sel == 'covisa' %}selected{% endif %}>COVISA</option>
               <option value="operario" {% if tipo_sel == 'operario' %}selected{% endif %}>Operario</option>

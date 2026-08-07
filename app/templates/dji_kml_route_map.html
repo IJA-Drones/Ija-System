@@ -177,7 +177,7 @@
           </p>
         </div>
         <div class="d-flex gap-2 flex-wrap">
-          {% if current_user.tipo_usuario in ['admin', 'dev'] %}
+          {% if current_user.tipo_usuario in ['admin', 'diretor', 'dev'] %}
             <a href="{{ url_for('main.relatorios_dji_logs') }}" class="btn btn-light">
               <i class="bi bi-arrow-left me-1"></i> Voltar aos logs
             </a>

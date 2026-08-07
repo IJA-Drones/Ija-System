@@ -44,12 +44,12 @@ from app.shared.skybox import SkyboxError, stream_skybox_file
 
 
 def _require_admin_or_operario():
-    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"dev", "admin", "operario", "operador", "prefeitura_admin"}:
+    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"dev", "diretor", "admin", "operario", "operador", "prefeitura_admin"}:
         abort(403)
 
 
 def _require_admin():
-    if normalize_role(getattr(current_user, "tipo_usuario", None)) != "admin":
+    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"dev", "diretor", "admin"}:
         abort(403)
 
 
@@ -122,9 +122,9 @@ def register_routes(bp):
 
         return render_template(
             "veiculos_menu.html",
-            can_manage=tipo in {"dev", "admin", "operario", "operador", "prefeitura_admin"},
+            can_manage=tipo in {"dev", "diretor", "admin", "operario", "operador", "prefeitura_admin"},
             can_view_logs=tipo in VEICULOS_LOGS_ALLOWED_TYPES,
-            can_view_checklist=tipo in {"dev", "admin"},
+            can_view_checklist=tipo in {"dev", "diretor", "admin"},
         )
 
     @bp.route("/veiculos", methods=["GET"], endpoint="listar_veiculos")

@@ -11,6 +11,7 @@ from app.extensions import db
 from app.models import Prefeitura, Usuario
 from app.modules.usuarios.service import (
     build_admin_users_query,
+    can_assign_director_role,
     can_assign_dev_role,
     can_manage_admin_user,
     delete_admin_user,
@@ -23,7 +24,7 @@ from app.modules.usuarios.service import (
     validate_password_reset,
 )
 from app.shared.query_filters import id_search_clause
-from app.shared.access import DEV_USER_TYPE, is_admin_global_user, is_dev_user
+from app.shared.access import DEV_USER_TYPE, DIRECTOR_USER_TYPE, is_admin_global_user, is_dev_user
 
 
 def _admin_only():
@@ -331,6 +332,18 @@ def register_routes(bp):
                     form=form,
                     prefeituras=prefeituras,
                     can_assign_dev=False,
+                    can_assign_director=can_assign_director_role(current_user),
+                )
+            if tipo_usuario_form == DIRECTOR_USER_TYPE and not can_assign_director_role(current_user):
+                errors["tipo_usuario"] = "Apenas um desenvolvedor pode criar uma conta diretor."
+                flash(errors["tipo_usuario"], "danger")
+                return render_template(
+                    "admin_usuario_novo.html",
+                    errors=errors,
+                    form=form,
+                    prefeituras=prefeituras,
+                    can_assign_dev=can_assign_dev_role(current_user),
+                    can_assign_director=False,
                 )
 
             errors = validate_new_admin_user(
@@ -350,6 +363,7 @@ def register_routes(bp):
                     form=form,
                     prefeituras=prefeituras,
                     can_assign_dev=can_assign_dev_role(current_user),
+                    can_assign_director=can_assign_director_role(current_user),
                 )
 
             novo = Usuario(
@@ -385,6 +399,7 @@ def register_routes(bp):
             form=form,
             prefeituras=prefeituras,
             can_assign_dev=can_assign_dev_role(current_user),
+            can_assign_director=can_assign_director_role(current_user),
         )
 
     @bp.route("/admin/usuarios", methods=["GET"], endpoint="admin_usuarios_listar")
@@ -441,6 +456,8 @@ def register_routes(bp):
                 tipo_usuario_form = (request.form.get("tipo_usuario") or "").strip().lower()
                 if tipo_usuario_form == DEV_USER_TYPE and not can_assign_dev_role(current_user):
                     abort(403)
+                if tipo_usuario_form == DIRECTOR_USER_TYPE and not can_assign_director_role(current_user):
+                    abort(403)
                 tipo_usuario = normalize_admin_user_type(tipo_usuario_form)
             regiao = normalize_admin_user_regiao(
                 tipo_usuario_form,
@@ -480,6 +497,7 @@ def register_routes(bp):
                     form=form,
                     prefeituras=prefeituras,
                     can_assign_dev=can_assign_dev_role(current_user),
+                    can_assign_director=can_assign_director_role(current_user),
                 )
 
             usuario.nome_uvis = nome_uvis
@@ -514,6 +532,7 @@ def register_routes(bp):
                 form=form,
                 prefeituras=prefeituras,
                 can_assign_dev=can_assign_dev_role(current_user),
+                can_assign_director=can_assign_director_role(current_user),
             )
 
         form = {
@@ -535,6 +554,7 @@ def register_routes(bp):
             form=form,
             prefeituras=prefeituras,
             can_assign_dev=can_assign_dev_role(current_user),
+            can_assign_director=can_assign_director_role(current_user),
         )
 
     @bp.route("/admin/usuarios/<int:id>/reset_senha", methods=["POST"], endpoint="admin_usuario_reset_senha")
