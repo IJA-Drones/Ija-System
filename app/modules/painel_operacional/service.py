@@ -1,6 +1,7 @@
 import math
 import os
 from datetime import datetime
+from time import time
 from urllib.parse import urlencode
 
 import requests
@@ -20,6 +21,8 @@ from app.shared.access import (
 OPERATIONAL_PANEL_TYPES = {DIRECTOR_USER_TYPE, DEV_USER_TYPE}
 OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
 GOOGLE_GEOCODE_URL = "https://maps.googleapis.com/maps/api/geocode/json"
+WEATHER_CACHE_TTL_SECONDS = 600
+WEATHER_CACHE = {}
 WEATHER_CODES = {
     0: "Céu limpo",
     1: "Predominantemente limpo",
@@ -40,6 +43,53 @@ WEATHER_CODES = {
     96: "Trovoada com granizo",
     99: "Trovoada forte com granizo",
 }
+
+
+def _weather_cache_key(lat: float, lng: float):
+    return (round(float(lat), 4), round(float(lng), 4))
+
+
+def _get_cached_weather(lat: float, lng: float, allow_stale=False):
+    cached = WEATHER_CACHE.get(_weather_cache_key(lat, lng))
+    if not cached:
+        return None
+    age_seconds = time() - cached["saved_at"]
+    if not allow_stale and age_seconds > WEATHER_CACHE_TTL_SECONDS:
+        return None
+    weather = dict(cached["weather"])
+    weather["cache_age_seconds"] = int(age_seconds)
+    return weather
+
+
+def _store_weather_cache(lat: float, lng: float, weather: dict):
+    WEATHER_CACHE[_weather_cache_key(lat, lng)] = {
+        "saved_at": time(),
+        "weather": dict(weather),
+    }
+
+
+def _weather_unavailable(message="Clima temporariamente indisponível."):
+    return {
+        "time": None,
+        "temperature": None,
+        "apparent_temperature": None,
+        "humidity": None,
+        "precipitation": None,
+        "rain": None,
+        "weather_code": None,
+        "description": message,
+        "cloud_cover": None,
+        "wind_speed": None,
+        "wind_direction": None,
+        "wind_gusts": None,
+        "source_status": "unavailable",
+        "cache_age_seconds": None,
+        "units": {
+            "temperature": "C",
+            "wind_speed": "km/h",
+            "precipitation": "mm",
+        },
+    }
 
 
 def can_access_operational_panel(user) -> bool:
@@ -88,6 +138,11 @@ def _geocode_address(address: str):
 
 
 def _fetch_weather(lat: float, lng: float):
+    cached = _get_cached_weather(lat, lng)
+    if cached:
+        cached["source_status"] = "cached"
+        return cached
+
     params = {
         "latitude": lat,
         "longitude": lng,
@@ -108,8 +163,18 @@ def _fetch_weather(lat: float, lng: float):
         "timezone": "America/Sao_Paulo",
         "forecast_days": 1,
     }
-    response = requests.get(OPEN_METEO_URL, params=params, timeout=10)
-    response.raise_for_status()
+    try:
+        response = requests.get(OPEN_METEO_URL, params=params, timeout=10)
+        response.raise_for_status()
+    except requests.RequestException:
+        current_app.logger.warning("Falha ao consultar Open-Meteo para o Painel Operacional.", exc_info=True)
+        stale = _get_cached_weather(lat, lng, allow_stale=True)
+        if stale:
+            stale["source_status"] = "stale"
+            stale["description"] = f"{stale.get('description') or 'Clima'} (última leitura disponível)"
+            return stale
+        return _weather_unavailable()
+
     data = response.json()
     current = data.get("current") or {}
     units = data.get("current_units") or {}
@@ -127,15 +192,29 @@ def _fetch_weather(lat: float, lng: float):
         "wind_speed": current.get("wind_speed_10m"),
         "wind_direction": current.get("wind_direction_10m"),
         "wind_gusts": current.get("wind_gusts_10m"),
+        "source_status": "live",
+        "cache_age_seconds": 0,
         "units": {
             "temperature": units.get("temperature_2m", "C"),
             "wind_speed": units.get("wind_speed_10m", "km/h"),
             "precipitation": units.get("precipitation", "mm"),
         },
     }
+    _store_weather_cache(lat, lng, weather)
+    return weather
 
 
 def _risk_level(weather: dict):
+    source_status = weather.get("source_status") or "live"
+    if source_status == "unavailable":
+        return {
+            "level": "warning",
+            "label": "Atenção",
+            "reasons": [
+                "Clima externo indisponível no momento. Confira vento, chuva e temperatura antes de liberar o voo.",
+            ],
+        }
+
     wind_speed = float(weather.get("wind_speed") or 0)
     wind_gusts = float(weather.get("wind_gusts") or 0)
     rain = float(weather.get("rain") or 0)
@@ -163,6 +242,12 @@ def _risk_level(weather: dict):
 
     if not reasons:
         reasons.append("Condições sem alerta automático para vento, chuva ou temperatura.")
+
+    if source_status == "stale":
+        level = "warning" if level == "ok" else level
+        reasons.append("Clima externo temporariamente indisponível; exibindo última leitura disponível.")
+    elif source_status == "cached":
+        reasons.append("Clima reaproveitado de consulta recente para evitar excesso de chamadas externas.")
 
     labels = {
         "ok": "Favorável",

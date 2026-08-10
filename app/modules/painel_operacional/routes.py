@@ -17,7 +17,7 @@ def register_routes(bp):
                 "erro.html",
                 codigo=403,
                 titulo="Acesso restrito",
-                mensagem="Voce nao tem permissao para acessar o Painel Operacional.",
+                mensagem="Você não tem permissão para acessar o Painel Operacional.",
             ), 403
 
         return render_template(
@@ -39,4 +39,4 @@ def register_routes(bp):
             return jsonify({"ok": False, "error": str(exc)}), 400
         except Exception:
             current_app.logger.exception("Erro ao montar contexto operacional.")
-            return jsonify({"ok": False, "error": "Nao foi possivel consultar o contexto local agora."}), 502
+            return jsonify({"ok": False, "error": "Não foi possível consultar o contexto local agora."}), 502

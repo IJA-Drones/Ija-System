@@ -514,6 +514,11 @@
     return number.toLocaleString("pt-BR", { maximumFractionDigits: decimals, minimumFractionDigits: decimals });
   }
 
+  function formatMeasurement(value, decimals = 0, suffix = "") {
+    const formatted = formatNumber(value, decimals);
+    return formatted === "-" ? "-" : `${formatted}${suffix}`;
+  }
+
   function renderRisk(risk) {
     const box = el("opRisk");
     const icon = el("opRiskIcon");
@@ -583,13 +588,15 @@
     const assets = payload.assets || {};
 
     setText("opGeneratedAt", payload.generated_at || "-");
-    setText("opTemperature", `${formatNumber(weather.temperature, 1)}°C`);
+    setText("opTemperature", formatMeasurement(weather.temperature, 1, "°C"));
     setText("opWeatherDescription", weather.description || "-");
-    setText("opWind", `${formatNumber(weather.wind_speed, 0)} km/h`);
-    setText("opWindGust", `Rajada ${formatNumber(weather.wind_gusts, 0)} km/h`);
-    setText("opRain", `${formatNumber(weather.precipitation, 1)} mm`);
-    setText("opCloud", `Nuvens ${formatNumber(weather.cloud_cover, 0)}%`);
-    setText("opHumidity", `${formatNumber(weather.humidity, 0)}%`);
+    setText("opWind", formatMeasurement(weather.wind_speed, 0, " km/h"));
+    const windGust = formatMeasurement(weather.wind_gusts, 0, " km/h");
+    setText("opWindGust", windGust === "-" ? "-" : `Rajada ${windGust}`);
+    setText("opRain", formatMeasurement(weather.precipitation, 1, " mm"));
+    const cloudCover = formatMeasurement(weather.cloud_cover, 0, "%");
+    setText("opCloud", cloudCover === "-" ? "-" : `Nuvens ${cloudCover}`);
+    setText("opHumidity", formatMeasurement(weather.humidity, 0, "%"));
     setText("opCoordinates", `${formatNumber(location.lat, 6)}, ${formatNumber(location.lng, 6)}`);
     setText("opReference", location.formatted_address || payload.address || "-");
 
