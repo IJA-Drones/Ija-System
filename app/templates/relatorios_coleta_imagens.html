@@ -382,10 +382,10 @@
             </div>
 
             <div class="col-md-6 col-xl-2">
-              <label class="small text-muted">OK UVIS</label>
+              <label class="small text-muted">Visualizado UVIS</label>
               <select name="ok_uvis" class="form-select form-select-sm">
                 <option value="" {% if not ok_uvis_selecionado %}selected{% endif %}>Todos</option>
-                <option value="ok" {% if ok_uvis_selecionado == 'ok' %}selected{% endif %}>Com OK</option>
+                <option value="ok" {% if ok_uvis_selecionado == 'ok' %}selected{% endif %}>Visualizados</option>
                 <option value="pendente" {% if ok_uvis_selecionado == 'pendente' %}selected{% endif %}>Pendentes</option>
               </select>
             </div>
