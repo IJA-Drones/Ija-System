@@ -3,7 +3,6 @@ import os
 import unicodedata
 from datetime import date, datetime, timedelta
 from urllib.parse import quote
-from zoneinfo import ZoneInfo
 
 import requests
 from flask import current_app
@@ -50,6 +49,7 @@ from app.shared.skybox import (
     skybox_enabled,
     upload_file_to_skybox,
 )
+from app.shared.timezone import current_brazil_date, datetime_local_input_value, now_brazil_naive
 
 
 STATUS_OS_APROVADAS = [
@@ -71,7 +71,6 @@ OS_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png"}
 OS_VIDEO_EXTENSIONS = {"mp4", "mov", "webm", "m4v", "lrf"}
 EQUIPE_OCEANO_USER_TYPE = "equipe_oceano"
 UVIS_MEDIA_VIEW_TYPES = {"uvis", "equipe_uvis"}
-BRAZIL_TZ = ZoneInfo("America/Sao_Paulo")
 DRONE_CATEGORY_PULVERIZACAO = "pulverizacao"
 DRONE_CATEGORY_MONITORAMENTO = "monitoramento"
 WEBDAV_MARKER_PREFIX = "webdav://"
@@ -334,7 +333,7 @@ def _buscar_equipe_do_usuario_na_os(user, equipe_id):
 
 
 def current_piloto_dashboard_date():
-    return datetime.now(BRAZIL_TZ).date()
+    return current_brazil_date()
 
 
 def build_piloto_os_context(user, args, google_maps_key):
@@ -619,9 +618,8 @@ def build_piloto_os_form_context(user, os_id):
             equipe.piloto_auxiliar.nome_piloto if equipe and equipe.piloto_auxiliar else ""
         ) if equipe else "",
         "respondido_por_padrao": respondido_por_padrao,
-        "respondido_em_value": (
-            ordem.respondido_em.strftime("%Y-%m-%dT%H:%M")
-            if ordem and ordem.respondido_em else datetime.now().strftime("%Y-%m-%dT%H:%M")
+        "respondido_em_value": datetime_local_input_value(
+            ordem.respondido_em if ordem and ordem.respondido_em else now_brazil_naive()
         ),
         "calculo_dosagem_planejado": calculo_dosagem_planejado,
         "calculo_dosagem_planejado_json": (
@@ -775,9 +773,8 @@ def build_admin_os_form_context(user, os_id):
             equipe.piloto_auxiliar.nome_piloto if equipe and equipe.piloto_auxiliar else ""
         ) if equipe else "",
         "respondido_por_padrao": getattr(user, "nome_uvis", "") or "",
-        "respondido_em_value": (
-            ordem.respondido_em.strftime("%Y-%m-%dT%H:%M")
-            if ordem and ordem.respondido_em else datetime.now().strftime("%Y-%m-%dT%H:%M")
+        "respondido_em_value": datetime_local_input_value(
+            ordem.respondido_em if ordem and ordem.respondido_em else now_brazil_naive()
         ),
         "calculo_dosagem_planejado": calculo_dosagem_planejado,
         "calculo_dosagem_planejado_json": (
@@ -1065,7 +1062,7 @@ def _aplicar_campos_formulario(
 
     ordem.identificador_os = _clean_os_text_marker(form_data.get("identificador_os"))
     ordem.respondido_por = _clean_str(form_data.get("respondido_por")) or respondido_por_padrao
-    ordem.respondido_em = _to_datetime_local(form_data.get("respondido_em")) or datetime.now()
+    ordem.respondido_em = _to_datetime_local(form_data.get("respondido_em")) or now_brazil_naive()
     ordem.situacao_aplicacao = _clean_str(form_data.get("situacao_aplicacao"))
     ordem.larva_visualizada = _clean_str(form_data.get("larva_visualizada"))
     ordem.retornar_proxima_semana_monitorar_larvas = _clean_str(form_data.get("retornar_proxima_semana_monitorar_larvas"))

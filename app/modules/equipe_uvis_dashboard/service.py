@@ -12,6 +12,7 @@ from app.shared.os_history_filters import (
 )
 from app.shared.query_filters import id_search_clause
 from app.shared.retorno_ciclo import build_retorno_ciclo_context, build_retorno_ciclo_summaries
+from app.shared.timezone import datetime_local_input_value, now_brazil_naive
 from app.modules.piloto_os.service import build_os_media_context
 
 
@@ -383,9 +384,9 @@ def build_equipe_uvis_os_form_context(user, os_id):
             retorno_existente.hora_agendamento,
         ).strftime("%Y-%m-%dT%H:%M")
 
-    respondido_em_value = datetime.now().strftime("%Y-%m-%dT%H:%M")
-    if ordem and ordem.respondido_em:
-        respondido_em_value = ordem.respondido_em.strftime("%Y-%m-%dT%H:%M")
+    respondido_em_value = datetime_local_input_value(
+        ordem.respondido_em if ordem and ordem.respondido_em else now_brazil_naive()
+    )
 
     return {
         "solicitacao": solicitacao,
@@ -442,9 +443,8 @@ def build_equipe_uvis_os_unificado_context(user, os_id):
             if solicitacao.equipe and solicitacao.equipe.piloto_auxiliar else ""
         ),
         "respondido_por_padrao": getattr(user, "nome_uvis", "") or nome_equipe,
-        "respondido_em_value": (
-            ordem.respondido_em.strftime("%Y-%m-%dT%H:%M")
-            if ordem and ordem.respondido_em else datetime.now().strftime("%Y-%m-%dT%H:%M")
+        "respondido_em_value": datetime_local_input_value(
+            ordem.respondido_em if ordem and ordem.respondido_em else now_brazil_naive()
         ),
         "retorno_existente": retorno_existente,
         "retorno_monitoramento_value": _retorno_monitoramento_value(ordem_uvis, retorno_existente),
@@ -610,7 +610,7 @@ def salvar_equipe_uvis_os_form(user, os_id, form_data):
 
     ordem.identificador_os = _clean_os_text_marker(form_data.get("identificador_os"))
     ordem.respondido_por = _clean_str(form_data.get("respondido_por")) or context["respondido_por_padrao"]
-    ordem.respondido_em = _to_datetime_local(form_data.get("respondido_em")) or datetime.now()
+    ordem.respondido_em = _to_datetime_local(form_data.get("respondido_em")) or now_brazil_naive()
     ordem.situacao_aplicacao = status_execucao
     ordem.tratamento_adicional_realizado = _normalize_upper(form_data.get("tratamento_adicional_realizado"))
     ordem.quantos_quais = _clean_str(form_data.get("quantos_quais"))
