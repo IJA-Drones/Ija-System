@@ -410,7 +410,7 @@
                 <div class="row g-3">
                   <div class="col-md-6">
                     <label class="form-label small fw-bold">Kilometragem de Início</label>
-                    <input type="hidden" name="km_inicial" value="{{ '%.0f'|format(km_inicio_valor or 0) }}">
+                    <input type="hidden" name="km_inicial" value="{{ '%.2f'|format(km_inicio_valor or 0) }}">
                     <input type="number"
                            step="1"
                            class="form-control bg-light fw-bold"
