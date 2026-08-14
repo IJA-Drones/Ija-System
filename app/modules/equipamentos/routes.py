@@ -1,7 +1,8 @@
-from flask import abort, current_app, flash, jsonify, redirect, render_template, request, url_for
+from flask import abort, current_app, flash, jsonify, redirect, render_template, request, send_file, url_for
 from flask_login import current_user, login_required
 
 from app.extensions import db
+from app.modules.equipamentos.exporters import build_manutencao_pdf
 from app.models import Baterias, Drones
 from app.modules.equipamentos.service import (
     build_bateria_edit_form,
@@ -10,12 +11,20 @@ from app.modules.equipamentos.service import (
     create_drone,
     delete_bateria,
     delete_drone,
+    encerrar_manutencao_drone,
+    get_manutencao_aberta,
+    get_manutencao_scoped_or_404,
     list_active_equipes,
     list_baterias,
     list_drones,
     list_drones_for_baterias,
     list_equipamentos_dashboard,
     list_equipamentos_manutencao,
+    list_historico_manutencoes,
+    list_historico_pecas_usadas,
+    list_pecas_disponiveis_manutencao,
+    list_pecas_usadas_manutencao,
+    registrar_pecas_usadas_manutencao,
     send_drone_to_manutencao,
     update_bateria,
     update_bateria_ciclos,
@@ -263,6 +272,112 @@ def register_routes(bp):
             total=len(equipamentos),
         )
 
+    @bp.route("/equipamentos/manutencoes/historico", methods=["GET"], endpoint="equipamentos_manutencoes_historico")
+    @login_required
+    def equipamentos_manutencoes_historico():
+        _require_admin_or_operario()
+        return render_template(
+            "equipamentos_manutencoes_historico.html",
+            manutencoes=list_historico_manutencoes(user=current_user),
+        )
+
+    @bp.route("/equipamentos/manutencoes/pecas/historico", methods=["GET"], endpoint="equipamentos_manutencoes_pecas_historico")
+    @login_required
+    def equipamentos_manutencoes_pecas_historico():
+        _require_admin_or_operario()
+        return render_template(
+            "equipamentos_manutencoes_pecas_historico.html",
+            usos=list_historico_pecas_usadas(user=current_user),
+        )
+
+    @bp.route("/equipamentos/manutencoes/<int:manutencao_id>", methods=["GET"], endpoint="equipamento_manutencao_detalhe")
+    @login_required
+    def equipamento_manutencao_detalhe(manutencao_id):
+        _require_admin_or_operario()
+        manutencao = get_manutencao_scoped_or_404(manutencao_id, current_user)
+        return render_template(
+            "equipamento_manutencao_detalhe.html",
+            manutencao=manutencao,
+            usos=manutencao.pecas_usadas,
+        )
+
+    @bp.route("/equipamentos/<int:drone_id>/manutencao/pecas", methods=["GET", "POST"], endpoint="equipamento_manutencao_pecas")
+    @login_required
+    def equipamento_manutencao_pecas(drone_id):
+        _require_admin_or_operario()
+        drone = _get_scoped_drone_or_404(drone_id)
+
+        if (drone.status or "").strip() not in {"Em Manutenção", "Manutenção", "Manutencao", "Em Manutencao"}:
+            flash("Este drone nao esta em manutencao.", "warning")
+            return redirect(url_for("main.equipamentos_manutencao"))
+
+        errors = {}
+        if request.method == "POST":
+            try:
+                usos, errors = registrar_pecas_usadas_manutencao(drone, request.form, user=current_user)
+                if not errors:
+                    flash(f"{len(usos)} peca(s) registrada(s) na manutencao.", "success")
+                    return redirect(url_for("main.equipamentos_manutencao"))
+                flash("Corrija os campos destacados.", "warning")
+            except Exception:
+                db.session.rollback()
+                current_app.logger.exception("Erro ao registrar pecas usadas na manutencao do drone %s.", drone.id)
+                flash("Erro interno ao registrar as pecas usadas.", "danger")
+
+        return render_template(
+            "equipamento_manutencao_pecas.html",
+            drone=drone,
+            manutencao=get_manutencao_aberta(drone, user=current_user),
+            pecas=list_pecas_disponiveis_manutencao(drone, user=current_user),
+            usos=list_pecas_usadas_manutencao(drone, user=current_user),
+            errors=errors,
+        )
+
+    @bp.route("/equipamentos/<int:drone_id>/manutencao/pdf", methods=["GET"], endpoint="equipamento_manutencao_pdf")
+    @login_required
+    def equipamento_manutencao_pdf(drone_id):
+        _require_admin_or_operario()
+        drone = _get_scoped_drone_or_404(drone_id)
+        usos = list_pecas_usadas_manutencao(drone, user=current_user)
+        try:
+            path = build_manutencao_pdf(drone, usos, manutencao=get_manutencao_aberta(drone, user=current_user))
+            filename = f"manutencao_{drone.renomacao or drone.id}.pdf".replace("/", "-").replace("\\", "-")
+            return send_file(path, mimetype="application/pdf", as_attachment=False, download_name=filename)
+        except Exception:
+            current_app.logger.exception("Erro ao gerar PDF de manutencao do drone %s.", drone.id)
+            flash("Erro ao gerar o PDF da manutencao.", "danger")
+            return redirect(url_for("main.equipamentos_manutencao"))
+
+    @bp.route("/equipamentos/manutencoes/<int:manutencao_id>/pdf", methods=["GET"], endpoint="equipamento_manutencao_historico_pdf")
+    @login_required
+    def equipamento_manutencao_historico_pdf(manutencao_id):
+        _require_admin_or_operario()
+        manutencao = get_manutencao_scoped_or_404(manutencao_id, current_user)
+        try:
+            path = build_manutencao_pdf(manutencao.drone, manutencao.pecas_usadas, manutencao=manutencao)
+            filename = f"manutencao_{manutencao.id}_{manutencao.drone.renomacao or manutencao.drone_id}.pdf".replace("/", "-").replace("\\", "-")
+            return send_file(path, mimetype="application/pdf", as_attachment=False, download_name=filename)
+        except Exception:
+            current_app.logger.exception("Erro ao gerar PDF da manutencao %s.", manutencao.id)
+            flash("Erro ao gerar o PDF da manutencao.", "danger")
+            return redirect(url_for("main.equipamentos_manutencoes_historico"))
+
+    @bp.route("/equipamentos/<int:drone_id>/manutencao/encerrar", methods=["POST"], endpoint="equipamento_manutencao_encerrar")
+    @login_required
+    def equipamento_manutencao_encerrar(drone_id):
+        _require_admin_or_operario()
+        drone = _get_scoped_drone_or_404(drone_id)
+        try:
+            if not encerrar_manutencao_drone(drone, user=current_user):
+                flash("Este drone nao esta em manutencao.", "warning")
+            else:
+                flash(f"Manutencao do drone {drone.renomacao} encerrada com sucesso.", "success")
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("Erro ao encerrar manutencao do drone %s.", drone.id)
+            flash("Erro ao encerrar a manutencao.", "danger")
+        return redirect(url_for("main.equipamentos_manutencao"))
+
     @bp.route("/equipamentos/baterias/update_ciclos/<int:id>", methods=["POST"], endpoint="update_ciclos")
     @login_required
     def update_ciclos(id):
@@ -277,7 +392,7 @@ def register_routes(bp):
 
         drone = _get_scoped_drone_or_404(drone_id)
         try:
-            if not send_drone_to_manutencao(drone):
+            if not send_drone_to_manutencao(drone, user=current_user):
                 flash("Este drone ja esta em manutencao.", "warning")
                 return redirect(url_for("main.listar_drones"))
 

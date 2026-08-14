@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1100px">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+      <h2 class="text-dark mb-1">
+        <i class="bi bi-tools me-2 text-primary"></i>Peças usadas na manutenção
+      </h2>
+      <p class="text-muted small mb-0">
+        {{ drone.renomacao }} - {{ drone.modelo }}
+        {% if drone.numero_serie %} | Nº de série: {{ drone.numero_serie }}{% endif %}
+      </p>
+    </div>
+    <a href="{{ url_for('main.equipamentos_manutencao') }}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-arrow-left me-1"></i> Voltar
+    </a>
+  </div>
+
+  <div class="card info status-primary shadow-sm rounded-4 border-0 mb-4">
+    <div class="card-body p-4">
+      <form method="post" novalidate>
+        <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
+          <div>
+            <h5 class="text-primary fw-bold mb-1">Selecionar peças</h5>
+            <p class="text-muted small mb-0">Somente peças disponíveis no estoque deste drone aparecem aqui.</p>
+          </div>
+        </div>
+
+        {% if errors.get('pecas') %}
+          <div class="alert alert-warning py-2">{{ errors.get('pecas') }}</div>
+        {% endif %}
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th class="ps-3">Usar</th>
+                <th>Peça</th>
+                <th>Nº de série</th>
+                <th>Disponível</th>
+                <th style="width: 160px">Qtd. usada</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for peca in pecas %}
+              <tr>
+                <td class="ps-3">
+                  <input class="form-check-input" type="checkbox" name="peca_id" value="{{ peca.id }}" id="peca_{{ peca.id }}">
+                </td>
+                <td>
+                  <label for="peca_{{ peca.id }}" class="fw-bold text-dark mb-0">{{ peca.modelo_peca }}</label>
+                  {% if peca.observacoes %}
+                    <div class="text-muted small">{{ peca.observacoes }}</div>
+                  {% endif %}
+                </td>
+                <td class="text-muted small">{{ peca.numero_serie or '-' }}</td>
+                <td><span class="badge bg-light text-dark border">{{ peca.quantidade }}</span></td>
+                <td>
+                  <input type="number"
+                         name="quantidade_{{ peca.id }}"
+                         min="1"
+                         max="{{ peca.quantidade }}"
+                         value="1"
+                         class="form-control form-control-sm {% if errors.get('quantidade_' ~ peca.id) %}is-invalid{% endif %}">
+                  {% if errors.get('quantidade_' ~ peca.id) %}
+                    <div class="invalid-feedback">{{ errors.get('quantidade_' ~ peca.id) }}</div>
+                  {% endif %}
+                </td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="5" class="text-center text-muted py-4">
+                  Nenhuma peça disponível para este drone.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="mt-4">
+          <label class="form-label fw-bold small text-muted">Observações da manutenção</label>
+          <textarea name="observacoes" class="form-control" rows="3" placeholder="Detalhes sobre a troca, diagnóstico ou responsável"></textarea>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 mt-5">
+          <a href="{{ url_for('main.equipamentos_manutencao') }}" class="btn btn-outline-danger btn-sm">Cancelar</a>
+          <button type="submit" class="btn btn-primary px-4 fw-bold" {% if not pecas %}disabled{% endif %}>
+            <i class="bi bi-check-lg me-1"></i> Registrar peças usadas
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+    <div class="card-header py-3 border-0">
+      <h6 class="mb-0 fw-bold"><i class="bi bi-clock-history me-2"></i>Peças já registradas nesta manutenção</h6>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-3">Peça</th>
+              <th>Qtd.</th>
+              <th>Registrado por</th>
+              <th>Data</th>
+              <th>Observações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for uso in usos %}
+            <tr>
+              <td class="ps-3">
+                <span class="fw-bold">{{ uso.peca.modelo_peca }}</span>
+                <div class="text-muted small">{{ uso.peca.numero_serie or '-' }}</div>
+              </td>
+              <td>{{ uso.quantidade_usada }}</td>
+              <td>{{ uso.usuario.nome_uvis if uso.usuario else '-' }}</td>
+              <td class="text-muted small">{{ uso.criado_em.strftime('%d/%m/%Y %H:%M') if uso.criado_em else '-' }}</td>
+              <td class="text-muted small">{{ uso.observacoes or '-' }}</td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="5" class="text-center text-muted py-4">Nenhuma peça registrada ainda.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

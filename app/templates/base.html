@@ -836,6 +836,14 @@
               <i class="bi bi-command me-2"></i><span>Painel Operacional</span>
             </a>
           </li>
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint in ['main.estoque_listar', 'main.estoque_novo', 'main.estoque_editar'] %}active{% endif %}"
+              href="{{ url_for('main.estoque_listar') }}"
+            >
+              <i class="bi bi-box-seam-fill me-2"></i><span>Estoque</span>
+            </a>
+          </li>
           {% endif %}
 
 {% if is_global_admin %}
