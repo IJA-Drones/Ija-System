@@ -1,6 +1,6 @@
 {% macro render_retorno_ciclo_resumo(summary, align='start') -%}
   {% if summary and summary.has_cycle %}
-    <div class="mt-2 p-2 border rounded bg-light-subtle text-start retorno-ciclo-resumo">
+    <div class="mt-2 p-2 border rounded retorno-ciclo-resumo text-start">
       <div class="d-flex flex-wrap align-items-center gap-2 small justify-content-{{ align }}">
         <span class="badge bg-warning text-dark border">
           <i class="bi bi-arrow-repeat me-1"></i> Ciclo de retorno

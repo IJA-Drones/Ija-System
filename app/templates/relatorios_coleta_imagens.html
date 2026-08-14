@@ -82,7 +82,7 @@
       margin-bottom: 0.3rem;
     }
     .media-summary-value {
-      color: #133a63;
+      color: #0aa8c3;
       font-size: 1.9rem;
       font-weight: 800;
       line-height: 1;
@@ -209,6 +209,72 @@
       .media-report-action-buttons {
         flex: 1 1 auto;
       }
+    }
+
+    /* Dark Mode Styles - apenas fundos brancos */
+    body.dark-mode .media-report-card {
+      background: #152233;
+      border-color: #233549;
+    }
+
+    body.dark-mode .media-report-thumb {
+      background: #1f2a3e;
+    }
+
+    body.dark-mode .media-report-empty {
+      background: #1f2a3e;
+      color: var(--color-text-muted);
+      border-bottom-color: #233549;
+    }
+
+    body.dark-mode .media-report-meta-item {
+      background: #1f2a3e;
+      border-color: #233549;
+    }
+
+    body.dark-mode .media-summary-card {
+      background: #152233;
+      border-color: #233549;
+    }
+
+    body.dark-mode .media-summary-value {
+      color: #12e3ff;
+    }
+
+    body.dark-mode .media-filter-card {
+      background: #152233;
+      border-color: #233549;
+    }
+
+    body.dark-mode .media-filter-card .form-control,
+    body.dark-mode .media-filter-card .form-select {
+      background: #172334 !important;
+      border-color: #233549 !important;
+      color: var(--color-text-main) !important;
+    }
+
+    body.dark-mode .media-table-card {
+      background: #152233;
+      border-color: #233549;
+    }
+
+    body.dark-mode .media-export-status {
+      background: #1f2a3e;
+      border-color: #233549;
+    }
+
+    body.dark-mode .media-export-status .progress {
+      background: rgba(18,227,255,.12);
+    }
+
+    body.dark-mode .media-report-uvis-review {
+      background: #1f2a3e;
+      border-bottom-color: #233549;
+    }
+
+    body.dark-mode .media-report-uvis-review.is-ok {
+      background: rgba(46, 133, 89, .12);
+      border-bottom-color: #2e8559;
     }
   </style>
 {% endblock %}

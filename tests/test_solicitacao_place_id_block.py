@@ -137,6 +137,27 @@ class SolicitacaoPlaceIdBlockTests(unittest.TestCase):
         self.assertEqual(nova.place_id, "place-123")
         self.assertEqual(Solicitacao.query.count(), 2)
 
+    def test_create_resolves_place_id_on_backend_when_form_does_not_have_it(self):
+        form = self._solicitacao_form("")
+
+        with (
+            patch.object(solicitacoes_service, "detectar_area_restrita", return_value=False),
+            patch.object(
+                solicitacoes_service,
+                "validate_foco_selection",
+                return_value=("Visita", "Casa", "Foco Teste"),
+            ),
+            patch.object(
+                solicitacoes_service,
+                "resolve_google_place_id_for_address",
+                return_value="place-resolvido-no-backend",
+            ) as resolver,
+        ):
+            nova = solicitacoes_service.create_nova_solicitacao(self.uvis, form)
+
+        resolver.assert_called_once()
+        self.assertEqual(nova.place_id, "place-resolvido-no-backend")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -6,9 +6,14 @@ from flask import current_app
 
 
 def geocode_endereco_google(*, logradouro, numero, bairro, cidade, uf, cep=None):
-    api_key = current_app.config.get("Maps_KEY_BACK") or os.getenv("GOOGLE_MAPS_KEY_BACK")
+    api_key = (
+        current_app.config.get("Maps_KEY_BACK")
+        or os.getenv("GOOGLE_MAPS_KEY_BACK")
+        or current_app.config.get("KEY_API_GOOGLE_MAPS")
+        or os.getenv("KEY_API_GOOGLE_MAPS")
+    )
     if not api_key:
-        raise RuntimeError("Maps_KEY_BACK nao encontrada nas configuracoes do app")
+        raise RuntimeError("Chave do Google Maps nao encontrada nas configuracoes do app")
 
     partes = [
         (logradouro or "").strip(),
@@ -47,9 +52,14 @@ def geocode_endereco_google(*, logradouro, numero, bairro, cidade, uf, cep=None)
 
 
 def reverse_geocode_lat_lng_google(*, lat, lng):
-    api_key = current_app.config.get("Maps_KEY_BACK") or os.getenv("GOOGLE_MAPS_KEY_BACK")
+    api_key = (
+        current_app.config.get("Maps_KEY_BACK")
+        or os.getenv("GOOGLE_MAPS_KEY_BACK")
+        or current_app.config.get("KEY_API_GOOGLE_MAPS")
+        or os.getenv("KEY_API_GOOGLE_MAPS")
+    )
     if not api_key:
-        raise RuntimeError("Maps_KEY_BACK nao encontrada nas configuracoes do app")
+        raise RuntimeError("Chave do Google Maps nao encontrada nas configuracoes do app")
 
     params = {
         "latlng": f"{lat},{lng}",

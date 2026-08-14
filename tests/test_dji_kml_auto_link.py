@@ -142,6 +142,39 @@ class DjiKmlAutoLinkTests(unittest.TestCase):
         self.assertEqual(route_place_score, 65)
         self.assertEqual(record_place_score, 65)
 
+    def test_automatic_link_copies_route_place_id_after_os_already_exists(self):
+        solicitacao = SimpleNamespace(
+            place_id=None,
+            cep="00000-000",
+            logradouro="Rua Teste",
+            numero="100",
+            bairro="Centro",
+            cidade="Sao Paulo",
+            uf="SP",
+        )
+        ordem = SimpleNamespace(
+            id=45,
+            identificador_os="OS-45",
+            dji_kml_route_id=None,
+            solicitacao=solicitacao,
+        )
+        route = SimpleNamespace(
+            id=10,
+            place_id="ChIJ-place-da-rota",
+            flight_record=None,
+        )
+
+        with patch.object(
+            service,
+            "_find_best_os_match_for_kml_route",
+            return_value=(ordem, 90, {"place": 65, "time": 25}),
+        ):
+            linked_ordem = service._auto_link_kml_route_to_os(route, [])
+
+        self.assertIs(linked_ordem, ordem)
+        self.assertEqual(ordem.dji_kml_route_id, route.id)
+        self.assertEqual(solicitacao.place_id, route.place_id)
+
     def test_address_match_handles_different_formatting(self):
         ordem = SimpleNamespace(
             solicitacao=SimpleNamespace(

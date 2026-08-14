@@ -1401,6 +1401,25 @@
                 });
             });
 
+            function applyThemeState(themeName, persist = true) {
+                const isDark = themeName === "dark";
+                document.documentElement.classList.toggle("dark-mode", isDark);
+                body.classList.toggle("dark-mode", isDark);
+                document.documentElement.style.backgroundColor = isDark ? "#101927" : "";
+
+                if (toggle) {
+                    toggle.innerHTML = isDark
+                        ? '<span>Modo Claro</span><i class="bi bi-sun-fill"></i>'
+                        : '<span>Modo Escuro</span><i class="bi bi-moon-stars"></i>';
+                }
+
+                if (persist) {
+                    setThemeCookie(isDark ? "dark" : "light");
+                }
+
+                updateThemeColorByMode();
+            }
+
             // 1. CONFIRMAÇÃO DE EXCLUSÃO (Agora inclui anexo e qualquer outro delete)
             document.querySelectorAll('.form-deletar').forEach(form => {
                 form.addEventListener('submit', function (e) {
@@ -1501,17 +1520,15 @@
             if (toggle) {
                 const savedTheme = getThemeFromCookie();
                 if (savedTheme === "dark") {
-                    body.classList.add("dark-mode");
-                    toggle.innerHTML = '<span>Modo Claro</span><i class="bi bi-sun-fill"></i>';
+                    applyThemeState("dark", false);
+                } else {
+                    applyThemeState("light", false);
                 }
-                updateThemeColorByMode();
+
                 toggle.addEventListener("click", (e) => {
                     e.stopPropagation();
-                    body.classList.toggle("dark-mode");
-                    const isDark = body.classList.contains("dark-mode");
-                    setThemeCookie(isDark ? "dark" : "light");
-                    toggle.innerHTML = isDark ? '<span>Modo Claro</span><i class="bi bi-sun-fill"></i>' : '<span>Modo Escuro</span><i class="bi bi-moon-stars"></i>';
-                    updateThemeColorByMode();
+                    const nextTheme = document.documentElement.classList.contains("dark-mode") ? "light" : "dark";
+                    applyThemeState(nextTheme, true);
                 });
             }
 
@@ -1569,10 +1586,11 @@
       }
 
       // Dica iOS
+      const iosLink = document.getElementById("iosInstallHint");
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-      if (isIOS && !isStandalone) {
-          if (iosLink) iosLink.style.display = "block";
+      if (isIOS && !isStandalone && iosLink) {
+          iosLink.style.display = "block";
       }
 
       const videoUploadWidget = document.getElementById("globalVideoUploadStatus");

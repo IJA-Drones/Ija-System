@@ -6,16 +6,23 @@ with matching prefeitura_ids, ensuring the 404 error does not reoccur.
 """
 
 import pytest
-from datetime import date, timedelta
+from datetime import date, time, timedelta
+from flask import Flask
 
-from app import create_app, db
-from app.models import Usuario, Solicitacao, Prefeitura
+from app import db
+from app.models import Equipe, Usuario, Solicitacao, Prefeitura
 from app.shared.access import apply_solicitacao_prefeitura_scope
 
 
 @pytest.fixture
 def app():
-    app = create_app("testing")
+    app = Flask(__name__)
+    app.config.update(
+        TESTING=True,
+        SQLALCHEMY_DATABASE_URI="sqlite:///:memory:",
+        SQLALCHEMY_TRACK_MODIFICATIONS=False,
+    )
+    db.init_app(app)
     with app.app_context():
         db.create_all()
         yield app
@@ -28,7 +35,7 @@ def client(app):
     return app.test_client()
 
 
-def test_equipe_oceano_can_access_return_os_with_matching_prefeitura_id():
+def test_equipe_oceano_can_access_return_os_with_matching_prefeitura_id(app):
     """
     Test that equipe_oceano users can access automatic return OS
     when both user and OS have matching prefeitura_ids.
@@ -36,7 +43,6 @@ def test_equipe_oceano_can_access_return_os_with_matching_prefeitura_id():
     This is a regression test for the bug where all automatic return OS
     had prefeitura_id=None, causing 404 errors for equipe_oceano users.
     """
-    app = create_app()
     with app.app_context():
         # Create a prefeitura
         prefeitura = Prefeitura(nome="Test Prefeitura", slug="test-prefeitura")
@@ -54,13 +60,26 @@ def test_equipe_oceano_can_access_return_os_with_matching_prefeitura_id():
         )
         db.session.add(user)
         db.session.flush()
+
+        equipe = Equipe(nome_equipe="Equipe Teste", prefeitura_id=prefeitura.id)
+        db.session.add(equipe)
+        db.session.flush()
         
         # Create original OS with prefeitura
         original_os = Solicitacao(
             data_agendamento=date.today(),
+            hora_agendamento=time(9, 0),
+            foco="Aedes",
             tipo_operacao="Monitoramento",
+            cep="00000-000",
+            logradouro="Rua Teste",
+            numero="100",
+            bairro="Centro",
+            cidade="Sao Paulo",
+            uf="SP",
             usuario_id=user.id,
             prefeitura_id=prefeitura.id,
+            equipe_id=equipe.id,
             status="CONCLUÍDO",
         )
         db.session.add(original_os)
@@ -69,7 +88,15 @@ def test_equipe_oceano_can_access_return_os_with_matching_prefeitura_id():
         # Create automatic return OS (should copy prefeitura_id)
         return_os = Solicitacao(
             data_agendamento=date.today() + timedelta(days=7),
+            hora_agendamento=time(9, 0),
+            foco="Aedes",
             tipo_operacao="Monitoramento",
+            cep="00000-000",
+            logradouro="Rua Teste",
+            numero="100",
+            bairro="Centro",
+            cidade="Sao Paulo",
+            uf="SP",
             usuario_id=user.id,
             prefeitura_id=original_os.prefeitura_id,  # Must match!
             status="PENDENTE",
@@ -91,12 +118,11 @@ def test_equipe_oceano_can_access_return_os_with_matching_prefeitura_id():
         assert result.prefeitura_id == user.prefeitura_id
 
 
-def test_automatic_return_os_inherits_prefeitura_id_from_original():
+def test_automatic_return_os_inherits_prefeitura_id_from_original(app):
     """
     Test that automatically created return OS inherit the prefeitura_id
     from the original OS, not leaving it as None.
     """
-    app = create_app()
     with app.app_context():
         # Create a prefeitura
         prefeitura = Prefeitura(nome="Test Prefeitura 2", slug="test-prefeitura-2")
@@ -113,14 +139,28 @@ def test_automatic_return_os_inherits_prefeitura_id_from_original():
         )
         db.session.add(user)
         db.session.flush()
+
+        equipe = Equipe(nome_equipe="Equipe Retorno", prefeitura_id=prefeitura.id)
+        db.session.add(equipe)
+        db.session.flush()
         
         # Create original OS with prefeitura
         original_os = Solicitacao(
             data_agendamento=date.today(),
+            hora_agendamento=time(9, 0),
+            foco="Aedes",
             tipo_operacao="Monitoramento",
+            cep="00000-000",
+            logradouro="Rua Teste",
+            numero="100",
+            bairro="Centro",
+            cidade="Sao Paulo",
+            uf="SP",
             usuario_id=user.id,
             prefeitura_id=prefeitura.id,
+            equipe_id=equipe.id,
             status="CONCLUÍDO",
+            place_id="place-id-original",
         )
         db.session.add(original_os)
         db.session.commit()
@@ -131,6 +171,7 @@ def test_automatic_return_os_inherits_prefeitura_id_from_original():
         
         ordem = OrdemServico(
             solicitacao_id=original_os.id,
+            equipe_id=equipe.id,
             identificador_os="TEST",
         )
         db.session.add(ordem)
@@ -153,6 +194,9 @@ def test_automatic_return_os_inherits_prefeitura_id_from_original():
         )
         assert return_os.prefeitura_id is not None, (
             "Return OS prefeitura_id should never be None"
+        )
+        assert return_os.place_id == original_os.place_id, (
+            "Return OS should inherit the Place ID from the original OS"
         )
 
 

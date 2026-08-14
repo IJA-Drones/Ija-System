@@ -21,6 +21,7 @@ from app.clients.google_maps_client import reverse_geocode_lat_lng_google
 from app.extensions import db
 from app.models import DjiFlightKmlRoute, DjiFlightLogImport, DjiFlightRecord, EquipePiloto, OrdemServico, Solicitacao
 from app.shared.access import ADMIN_PANEL_VIEW_TYPES, can_access_regiao
+from app.shared.place_id import clean_place_id, resolve_google_place_id_for_address
 from app.shared.uploads import get_upload_folder
 
 
@@ -454,7 +455,35 @@ def _auto_link_kml_route_to_os(route, points):
         return None
     ordem, _score, _details = match
     ordem.dji_kml_route_id = route.id
+    _fill_solicitacao_place_id_from_route(ordem, route)
     return ordem
+
+
+def _route_source_place_id(route):
+    flight_record = getattr(route, "flight_record", None)
+    return (
+        clean_place_id(getattr(route, "place_id", None))
+        or clean_place_id(getattr(flight_record, "place_id", None))
+        or clean_place_id(
+            _extract_place_id_from_raw_payload(getattr(flight_record, "raw_payload", None))
+        )
+    )
+
+
+def _fill_solicitacao_place_id_from_route(ordem, route):
+    solicitacao = getattr(ordem, "solicitacao", None)
+    if not solicitacao or clean_place_id(solicitacao.place_id):
+        return
+
+    solicitacao.place_id = resolve_google_place_id_for_address(
+        place_id=_route_source_place_id(route),
+        cep=solicitacao.cep,
+        logradouro=solicitacao.logradouro,
+        numero=solicitacao.numero,
+        bairro=solicitacao.bairro,
+        cidade=solicitacao.cidade,
+        uf=solicitacao.uf,
+    )
 
 
 def link_kml_route_to_os_by_solicitacao_id(route_id, solicitacao_id):
@@ -486,6 +515,7 @@ def link_kml_route_to_os_by_solicitacao_id(route_id, solicitacao_id):
         linked_ordem.dji_kml_route_id = None
 
     ordem.dji_kml_route_id = route.id
+    _fill_solicitacao_place_id_from_route(ordem, route)
     db.session.commit()
     return ordem
 

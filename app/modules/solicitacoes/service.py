@@ -8,6 +8,7 @@ from app.extensions import db
 from app.models import Solicitacao, Usuario
 from app.shared.access import apply_prefeitura_scope, is_admin_global_user, is_prefeitura_admin_user
 from app.shared.geofencing import detectar_area_restrita
+from app.shared.place_id import resolve_google_place_id_for_address
 from app.shared.solicitacao_focos import (
     FILTER_FOCO_OPCOES,
     TIPO_VISITA_OUTRO_LABEL,
@@ -238,6 +239,16 @@ def create_nova_solicitacao(user, form_data):
         uvis_id_final = user.id
         prefeitura_id_final = getattr(user, "prefeitura_id", None)
 
+    place_id = resolve_google_place_id_for_address(
+        place_id=place_id,
+        logradouro=form_data.get("logradouro"),
+        numero=form_data.get("numero"),
+        bairro=form_data.get("bairro"),
+        cidade=form_data.get("cidade"),
+        uf=form_data.get("uf"),
+        cep=form_data.get("cep"),
+    )
+
     solicitacao_bloqueada = find_solicitacao_bloqueada_por_place_id(
         place_id,
         prefeitura_id=prefeitura_id_final,
@@ -349,6 +360,14 @@ def atualizar_solicitacao(user, solicitacao_id, form_data):
     context = build_editar_solicitacao_context(user, solicitacao_id)
     pedido = context["pedido"]
     is_admin = context["is_admin"]
+    endereco_original = (
+        pedido.cep,
+        pedido.logradouro,
+        pedido.numero,
+        pedido.bairro,
+        pedido.cidade,
+        pedido.uf,
+    )
 
     pedido.data_agendamento = (
         datetime.strptime(form_data.get("data_agendamento"), "%Y-%m-%d").date()
@@ -407,6 +426,26 @@ def atualizar_solicitacao(user, solicitacao_id, form_data):
     pedido.bairro = form_data.get("bairro") or pedido.bairro
     pedido.cidade = form_data.get("cidade") or pedido.cidade
     pedido.uf = form_data.get("uf") or pedido.uf
+
+    endereco_atual = (
+        pedido.cep,
+        pedido.logradouro,
+        pedido.numero,
+        pedido.bairro,
+        pedido.cidade,
+        pedido.uf,
+    )
+    endereco_foi_alterado = endereco_atual != endereco_original
+    if endereco_foi_alterado or not _clean_place_id(pedido.place_id):
+        pedido.place_id = resolve_google_place_id_for_address(
+            place_id=None if endereco_foi_alterado else pedido.place_id,
+            cep=pedido.cep,
+            logradouro=pedido.logradouro,
+            numero=pedido.numero,
+            bairro=pedido.bairro,
+            cidade=pedido.cidade,
+            uf=pedido.uf,
+        )
 
     lat_raw = (form_data.get("latitude") or "").strip()
     lng_raw = (form_data.get("longitude") or "").strip()

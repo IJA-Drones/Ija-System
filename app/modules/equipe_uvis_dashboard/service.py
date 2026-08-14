@@ -10,6 +10,7 @@ from app.shared.os_history_filters import (
     apply_retorno_automatico_filter,
     get_os_history_filters,
 )
+from app.shared.place_id import resolve_google_place_id_for_address
 from app.shared.query_filters import id_search_clause
 from app.shared.retorno_ciclo import build_retorno_ciclo_context, build_retorno_ciclo_summaries
 from app.shared.timezone import datetime_local_input_value, now_brazil_naive
@@ -691,6 +692,15 @@ def _to_datetime_local(value):
 
 def _criar_solicitacao_retorno_monitoramento_equipe_uvis(solicitacao_original, retorno_em):
     nova_observacao = (solicitacao_original.observacao or "").strip() or None
+    place_id = resolve_google_place_id_for_address(
+        place_id=solicitacao_original.place_id,
+        cep=solicitacao_original.cep,
+        logradouro=solicitacao_original.logradouro,
+        numero=solicitacao_original.numero,
+        bairro=solicitacao_original.bairro,
+        cidade=solicitacao_original.cidade,
+        uf=solicitacao_original.uf,
+    )
     nova_solicitacao = Solicitacao(
         data_agendamento=retorno_em.date(),
         hora_agendamento=retorno_em.time().replace(second=0, microsecond=0),
@@ -712,6 +722,7 @@ def _criar_solicitacao_retorno_monitoramento_equipe_uvis(solicitacao_original, r
         complemento=solicitacao_original.complemento,
         latitude=solicitacao_original.latitude,
         longitude=solicitacao_original.longitude,
+        place_id=place_id,
         perimetro_planejado=solicitacao_original.perimetro_planejado,
         perimetro_executado=None,
         anexo_path=solicitacao_original.anexo_path,

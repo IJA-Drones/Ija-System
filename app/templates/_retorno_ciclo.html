@@ -6,6 +6,16 @@
     background: #f8fbff;
     box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
   }
+  .retorno-ciclo-resumo {
+    background: #f5f9ff;
+    border-color: rgba(45, 95, 150, 0.12);
+    color: #183d63;
+  }
+  body.dark-mode .retorno-ciclo-resumo {
+    background: rgba(21, 34, 51, 0.7);
+    border-color: rgba(126, 180, 255, 0.12);
+    color: rgba(255, 255, 255, 0.85);
+  }
   .return-cycle-head {
     display: flex;
     align-items: flex-start;
@@ -93,9 +103,10 @@
   }
   .return-cycle-meta-item {
     border: 1px solid #e1ebf5;
+    border-left: 4px solid #45b3d1;
     border-radius: 0.75rem;
-    background: #fbfdff;
-    padding: 0.65rem;
+    background: linear-gradient(90deg, rgba(69, 179, 209, 0.06) 0%, #fbfdff 16%, #fbfdff 100%);
+    padding: 0.65rem 0.75rem 0.65rem 0.8rem;
   }
   .return-cycle-label {
     display: block;
@@ -112,6 +123,60 @@
     font-weight: 700;
     line-height: 1.4;
     word-break: break-word;
+  }
+  body.dark-mode .return-cycle-shell {
+    background: rgba(21, 34, 51, 0.76);
+    border-color: rgba(126, 180, 255, 0.12);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+  }
+  body.dark-mode .return-cycle-title,
+  body.dark-mode .return-cycle-subtitle,
+  body.dark-mode .return-cycle-label,
+  body.dark-mode .return-cycle-value,
+  body.dark-mode .return-cycle-card h6,
+  body.dark-mode .return-cycle-card .small,
+  body.dark-mode .return-cycle-tree,
+  body.dark-mode .return-cycle-tree .small,
+  body.dark-mode .return-cycle-tree .fw-bold,
+  body.dark-mode .return-cycle-card {
+    color: rgba(255, 255, 255, 0.88);
+  }
+  body.dark-mode .return-cycle-card {
+    background: rgba(16, 25, 38, 0.82);
+    border-color: rgba(126, 180, 255, 0.12);
+  }
+  body.dark-mode .return-cycle-meta-item {
+    background: linear-gradient(90deg, rgba(18, 227, 255, 0.14) 0%, rgba(16, 25, 38, 0.9) 18%, rgba(16, 25, 38, 0.9) 100%);
+    border-color: rgba(126, 180, 255, 0.12);
+    border-left-color: #12e3ff;
+  }
+  body.dark-mode .return-cycle-value,
+  body.dark-mode .return-cycle-card h6,
+  body.dark-mode .return-cycle-tree .fw-bold {
+    color: rgba(255, 255, 255, 0.95);
+  }
+  body.dark-mode .return-cycle-label,
+  body.dark-mode .return-cycle-card .small,
+  body.dark-mode .return-cycle-tree .small,
+  body.dark-mode .return-cycle-subtitle {
+    color: rgba(184, 210, 233, 0.82);
+  }
+  body.dark-mode .return-cycle-dot {
+    background: rgba(16, 25, 38, 0.95);
+    border-color: rgba(126, 180, 255, 0.2);
+    color: #12e3ff;
+  }
+  body.dark-mode .return-cycle-tree {
+    background: rgba(16, 25, 38, 0.8);
+    border-color: rgba(126, 180, 255, 0.12);
+  }
+  body.dark-mode .return-cycle-tree-node.is-current {
+    background: rgba(18, 227, 255, 0.08);
+  }
+  body.dark-mode .return-cycle-metric {
+    background: rgba(16, 25, 38, 0.6);
+    border-color: rgba(126, 180, 255, 0.12);
+    color: rgba(255, 255, 255, 0.9);
   }
   .return-cycle-media-grid {
     display: grid;
