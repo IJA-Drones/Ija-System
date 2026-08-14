@@ -21,6 +21,7 @@ from app.modules.drones_import import register_routes as register_drones_import_
 from app.modules.equipamentos import register_routes as register_equipamentos_routes
 from app.modules.equipe_uvis_dashboard import register_routes as register_equipe_uvis_dashboard_routes
 from app.modules.equipes import register_routes as register_equipes_routes
+from app.modules.estoque import register_routes as register_estoque_routes
 from app.modules.feedback import register_routes as register_feedback_routes
 from app.modules.mapas import register_routes as register_mapas_routes
 from app.modules.painel_operacional import register_routes as register_painel_operacional_routes
@@ -59,6 +60,7 @@ register_drones_import_routes(bp)
 register_equipamentos_routes(bp)
 register_equipe_uvis_dashboard_routes(bp)
 register_equipes_routes(bp)
+register_estoque_routes(bp)
 register_feedback_routes(bp)
 register_mapas_routes(bp)
 register_painel_operacional_routes(bp)

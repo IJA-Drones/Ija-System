@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1100px">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+      <h2 class="text-dark mb-1"><i class="bi bi-tools me-2 text-primary"></i>Detalhe da manutenção</h2>
+      <p class="text-muted small mb-0">{{ manutencao.drone.renomacao }} - {{ manutencao.drone.modelo }}</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{{ url_for('main.equipamento_manutencao_historico_pdf', manutencao_id=manutencao.id) }}" class="btn btn-outline-primary btn-sm" target="_blank">
+        <i class="bi bi-file-earmark-pdf me-1"></i> PDF
+      </a>
+      <a href="{{ url_for('main.equipamentos_manutencoes_historico') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm rounded-4 p-3 h-100">
+        <span class="text-muted small fw-bold">Status</span>
+        <span class="fs-5 fw-bold {{ 'text-danger' if manutencao.status == 'aberta' else 'text-success' }}">{{ 'Aberta' if manutencao.status == 'aberta' else 'Encerrada' }}</span>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm rounded-4 p-3 h-100">
+        <span class="text-muted small fw-bold">Abertura</span>
+        <span class="fw-bold">{{ manutencao.aberta_em.strftime('%d/%m/%Y %H:%M') if manutencao.aberta_em else '-' }}</span>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm rounded-4 p-3 h-100">
+        <span class="text-muted small fw-bold">Encerramento</span>
+        <span class="fw-bold">{{ manutencao.encerrada_em.strftime('%d/%m/%Y %H:%M') if manutencao.encerrada_em else '-' }}</span>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm rounded-4 p-3 h-100">
+        <span class="text-muted small fw-bold">Peças usadas</span>
+        <span class="fs-5 fw-bold text-primary">{{ usos|sum(attribute='quantidade_usada') }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+    <div class="card-header py-3 border-0">
+      <h6 class="mb-0 fw-bold"><i class="bi bi-box-seam me-2"></i>Peças usadas</h6>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-3">Peça</th>
+              <th>Qtd.</th>
+              <th>Registrado por</th>
+              <th>Data</th>
+              <th>Observações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for uso in usos %}
+            <tr>
+              <td class="ps-3">
+                <span class="fw-bold">{{ uso.peca.modelo_peca }}</span>
+                <div class="text-muted small">{{ uso.peca.numero_serie or '-' }}</div>
+              </td>
+              <td>{{ uso.quantidade_usada }}</td>
+              <td>{{ uso.usuario.nome_uvis if uso.usuario else '-' }}</td>
+              <td class="text-muted small">{{ uso.criado_em.strftime('%d/%m/%Y %H:%M') if uso.criado_em else '-' }}</td>
+              <td class="text-muted small">{{ uso.observacoes or '-' }}</td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="5" class="text-center text-muted py-4">Nenhuma peça registrada nesta manutenção.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
