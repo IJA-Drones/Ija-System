@@ -1,7 +1,8 @@
-from flask import abort, current_app, flash, redirect, render_template, request, url_for
+from flask import abort, current_app, flash, redirect, render_template, request, send_file, url_for
 from flask_login import current_user, login_required
 
 from app.extensions import db
+from app.modules.estoque.exporters import XLSX_MIME, build_estoque_excel
 from app.modules.estoque.service import (
     ESTOQUE_STATUS,
     build_peca_form,
@@ -28,6 +29,13 @@ def register_routes(bp):
         _require_estoque_access()
         pecas = list_pecas(user=current_user)
         return render_template("estoque_listar.html", pecas=pecas, status_labels=ESTOQUE_STATUS)
+
+    @bp.route("/estoque/export/excel", methods=["GET"], endpoint="estoque_export_excel")
+    @login_required
+    def estoque_export_excel():
+        _require_estoque_access()
+        output, filename = build_estoque_excel(list_pecas(user=current_user))
+        return send_file(output, mimetype=XLSX_MIME, as_attachment=True, download_name=filename)
 
     @bp.route("/estoque/novo", methods=["GET", "POST"], endpoint="estoque_novo")
     @login_required

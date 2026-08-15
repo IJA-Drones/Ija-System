@@ -1,8 +1,12 @@
 import os
 import tempfile
 from datetime import datetime
+from io import BytesIO
 
 from flask import current_app
+from openpyxl import Workbook
+from openpyxl.styles import Alignment, Font, PatternFill, Side, Border
+from openpyxl.utils import get_column_letter
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
@@ -16,6 +20,7 @@ OCEANO_BLUE_LIGHT = colors.HexColor("#eaf2fb")
 TEXT_DARK = colors.HexColor("#263247")
 TEXT_MUTED = colors.HexColor("#6b778d")
 BORDER = colors.HexColor("#d9e2ef")
+XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 
 def _fmt_dt(value):
@@ -39,6 +44,54 @@ def _fmt_date(value):
 def _safe(value):
     text = "" if value is None else str(value)
     return text if text.strip() else "-"
+
+
+def _excel_safe(value):
+    return "" if value in (None, "-") else value
+
+
+def _style_worksheet(ws, *, title, freeze_cell="A3"):
+    max_col = ws.max_column
+    ws.freeze_panes = freeze_cell
+    ws.auto_filter.ref = ws.dimensions
+
+    ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=max_col)
+    title_cell = ws.cell(row=1, column=1)
+    title_cell.value = title
+    title_cell.font = Font(bold=True, size=14, color="1F4F82")
+    title_cell.alignment = Alignment(horizontal="left")
+
+    header_fill = PatternFill("solid", fgColor="1F4F82")
+    header_font = Font(bold=True, color="FFFFFF")
+    border = Border(
+        left=Side(style="thin", color="D9E2EF"),
+        right=Side(style="thin", color="D9E2EF"),
+        top=Side(style="thin", color="D9E2EF"),
+        bottom=Side(style="thin", color="D9E2EF"),
+    )
+
+    for cell in ws[2]:
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+        cell.border = border
+
+    for row in ws.iter_rows(min_row=3):
+        for cell in row:
+            cell.alignment = Alignment(vertical="top", wrap_text=True)
+            cell.border = border
+
+    for column_cells in ws.columns:
+        column_letter = get_column_letter(column_cells[0].column)
+        max_length = max(len(str(cell.value or "")) for cell in column_cells)
+        ws.column_dimensions[column_letter].width = min(max(max_length + 2, 12), 42)
+
+
+def _workbook_output(workbook):
+    output = BytesIO()
+    workbook.save(output)
+    output.seek(0)
+    return output
 
 
 def _logo_path():
@@ -213,3 +266,90 @@ def build_manutencao_pdf(drone, usos, manutencao=None):
 
     doc.build(story, onFirstPage=_header_footer, onLaterPages=_header_footer)
     return path
+
+
+def build_manutencoes_excel(manutencoes):
+    workbook = Workbook()
+    ws = workbook.active
+    ws.title = "Manutencoes"
+    ws.append([""])
+    ws.append([
+        "ID",
+        "Drone",
+        "Modelo",
+        "Nº de série",
+        "Equipe",
+        "Status",
+        "Abertura",
+        "Encerramento",
+        "Aberta por",
+        "Encerrada por",
+        "Total de peças",
+        "Registros de peças",
+        "Observações",
+    ])
+
+    for manutencao in manutencoes:
+        drone = manutencao.drone
+        usos = list(manutencao.pecas_usadas)
+        ws.append([
+            manutencao.id,
+            _excel_safe(getattr(drone, "renomacao", None)),
+            _excel_safe(getattr(drone, "modelo", None)),
+            _excel_safe(getattr(drone, "numero_serie", None)),
+            _excel_safe(getattr(getattr(drone, "equipe", None), "nome_equipe", None)),
+            "Aberta" if manutencao.status == "aberta" else "Encerrada",
+            _fmt_dt(manutencao.aberta_em),
+            _fmt_dt(manutencao.encerrada_em),
+            _excel_safe(getattr(getattr(manutencao, "aberta_por", None), "nome_uvis", None)),
+            _excel_safe(getattr(getattr(manutencao, "encerrada_por", None), "nome_uvis", None)),
+            sum((uso.quantidade_usada or 0) for uso in usos),
+            len(usos),
+            _excel_safe(manutencao.observacoes),
+        ])
+
+    _style_worksheet(ws, title="Histórico geral de manutenções")
+    filename = f"historico_manutencoes_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    return _workbook_output(workbook), filename
+
+
+def build_pecas_usadas_excel(usos):
+    workbook = Workbook()
+    ws = workbook.active
+    ws.title = "Pecas usadas"
+    ws.append([""])
+    ws.append([
+        "ID",
+        "Manutenção",
+        "Status manutenção",
+        "Drone",
+        "Modelo drone",
+        "Peça",
+        "Nº de série peça",
+        "Quantidade usada",
+        "Registrado por",
+        "Data do registro",
+        "Observações",
+    ])
+
+    for uso in usos:
+        manutencao = uso.manutencao
+        drone = uso.drone
+        peca = uso.peca
+        ws.append([
+            uso.id,
+            getattr(manutencao, "id", None) or "",
+            ("Aberta" if getattr(manutencao, "status", None) == "aberta" else "Encerrada") if manutencao else "",
+            _excel_safe(getattr(drone, "renomacao", None)),
+            _excel_safe(getattr(drone, "modelo", None)),
+            _excel_safe(getattr(peca, "modelo_peca", None)),
+            _excel_safe(getattr(peca, "numero_serie", None)),
+            uso.quantidade_usada or 0,
+            _excel_safe(getattr(getattr(uso, "usuario", None), "nome_uvis", None)),
+            _fmt_dt(uso.criado_em),
+            _excel_safe(uso.observacoes),
+        ])
+
+    _style_worksheet(ws, title="Histórico geral de peças usadas em manutenções")
+    filename = f"pecas_usadas_manutencoes_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    return _workbook_output(workbook), filename

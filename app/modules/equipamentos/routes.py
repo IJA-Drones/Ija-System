@@ -2,7 +2,7 @@ from flask import abort, current_app, flash, jsonify, redirect, render_template,
 from flask_login import current_user, login_required
 
 from app.extensions import db
-from app.modules.equipamentos.exporters import build_manutencao_pdf
+from app.modules.equipamentos.exporters import XLSX_MIME, build_manutencao_pdf, build_manutencoes_excel, build_pecas_usadas_excel
 from app.models import Baterias, Drones
 from app.modules.equipamentos.service import (
     build_bateria_edit_form,
@@ -281,6 +281,13 @@ def register_routes(bp):
             manutencoes=list_historico_manutencoes(user=current_user),
         )
 
+    @bp.route("/equipamentos/manutencoes/historico/excel", methods=["GET"], endpoint="equipamentos_manutencoes_historico_excel")
+    @login_required
+    def equipamentos_manutencoes_historico_excel():
+        _require_admin_or_operario()
+        output, filename = build_manutencoes_excel(list_historico_manutencoes(user=current_user))
+        return send_file(output, mimetype=XLSX_MIME, as_attachment=True, download_name=filename)
+
     @bp.route("/equipamentos/manutencoes/pecas/historico", methods=["GET"], endpoint="equipamentos_manutencoes_pecas_historico")
     @login_required
     def equipamentos_manutencoes_pecas_historico():
@@ -289,6 +296,13 @@ def register_routes(bp):
             "equipamentos_manutencoes_pecas_historico.html",
             usos=list_historico_pecas_usadas(user=current_user),
         )
+
+    @bp.route("/equipamentos/manutencoes/pecas/historico/excel", methods=["GET"], endpoint="equipamentos_manutencoes_pecas_historico_excel")
+    @login_required
+    def equipamentos_manutencoes_pecas_historico_excel():
+        _require_admin_or_operario()
+        output, filename = build_pecas_usadas_excel(list_historico_pecas_usadas(user=current_user))
+        return send_file(output, mimetype=XLSX_MIME, as_attachment=True, download_name=filename)
 
     @bp.route("/equipamentos/manutencoes/<int:manutencao_id>", methods=["GET"], endpoint="equipamento_manutencao_detalhe")
     @login_required
