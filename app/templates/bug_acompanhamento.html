@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/feedback.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 feedback-page" style="max-width: 980px;">
+  <div class="feedback-header mb-4">
+    <div>
+      <span class="feedback-kicker">Bug #{{ topico.id }}</span>
+      <h2 class="mb-1">Acompanhamento do bug</h2>
+      <p class="text-muted small mb-0">As atualizações dos devs sobre o problema reportado aparecem aqui.</p>
+    </div>
+    <a href="{{ url_for('main.bugs_listar') }}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+  </div>
+
+  <section class="card shadow-sm border-0 feedback-treatment-card mb-4">
+    <div class="card-body p-4">
+      <div class="feedback-chat-header mb-3">
+        <div>
+          <h5><i class="bi bi-bug-fill me-2"></i>{{ topico.titulo }}</h5>
+          <span>Enviado em {{ topico.criado_em.strftime("%d/%m/%Y %H:%M") if topico.criado_em else "-" }}</span>
+        </div>
+        <div class="feedback-detail-badges">
+          <span class="feedback-status feedback-status-{{ topico.status }}">{{ status_labels.get(topico.status, topico.status) }}</span>
+          <span class="feedback-priority feedback-priority-{{ topico.prioridade }}">{{ priority_labels.get(topico.prioridade, topico.prioridade) }}</span>
+        </div>
+      </div>
+
+      <dl class="feedback-summary feedback-summary-inline mb-4">
+        <div><dt>Responsável</dt><dd>{{ topico.responsavel.nome_uvis if topico.responsavel else "Aguardando atribuição" }}</dd></div>
+        <div><dt>Atualizado</dt><dd>{{ topico.atualizado_em.strftime("%d/%m/%Y %H:%M") if topico.atualizado_em else "-" }}</dd></div>
+      </dl>
+
+      <div class="feedback-bug-report">
+        <span class="feedback-bug-report-icon"><i class="bi bi-card-text"></i></span>
+        <div>
+          <div class="feedback-message-head mb-2">
+            <strong>Seu relato</strong>
+          </div>
+          {% if bug_report.impacto %}
+          <div class="feedback-report-field">
+            <span>Impacto</span>
+            <p>{{ bug_report.impacto }}</p>
+          </div>
+          {% endif %}
+          <div class="feedback-report-field">
+            <span>Detalhes</span>
+            <p>{{ bug_report.detalhes }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card shadow-sm border-0 feedback-treatment-card">
+    <div class="card-body p-4">
+      <h5 class="mb-3"><i class="bi bi-clipboard-check-fill me-2"></i>Atualizações da tratativa</h5>
+      {% if atualizacoes %}
+      <div class="feedback-updates-list">
+        {% for atualizacao in atualizacoes %}
+        <article class="feedback-update-item">
+          <div class="feedback-message-head">
+            <strong>{{ atualizacao.usuario_nome }}</strong>
+            <span>{{ atualizacao.criado_em.strftime("%d/%m/%Y %H:%M") if atualizacao.criado_em else "" }}</span>
+          </div>
+          {% if atualizacao.mensagem %}<p>{{ atualizacao.mensagem }}</p>{% endif %}
+          {% if atualizacao.anexos %}
+          <div class="feedback-comment-gallery mt-2">
+            {% for anexo in atualizacao.anexos %}
+            <a href="{{ url_for('main.feedback_anexo', anexo_id=anexo.id) }}" target="_blank" rel="noopener" class="feedback-comment-image-link">
+              <img src="{{ url_for('main.feedback_anexo', anexo_id=anexo.id) }}" alt="{{ anexo.arquivo_nome }}" class="feedback-comment-image">
+            </a>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </article>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="feedback-empty compact">
+        <i class="bi bi-hourglass-split"></i>
+        <p class="mb-0">Ainda não há atualizações dos devs. Quando a tratativa mudar, ela aparece aqui.</p>
+      </div>
+      {% endif %}
+    </div>
+  </section>
+</div>
+{% endblock %}
