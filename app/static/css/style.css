@@ -940,6 +940,24 @@ body.dark-mode.agro-mode .navbar-mode-pill {
 /* Cards Dark */
 body.dark-mode .card { background: #152233; color: var(--color-text-main); box-shadow: var(--shadow-md); }
 body.dark-mode .card-header { background: #1f2a3e; color: var(--color-text-muted); border-bottom: 1px solid #233549; }
+body.dark-mode .media-filter-card {
+  background: rgba(25, 35, 49, 0.8);
+  border: 1px solid rgba(126, 180, 255, 0.12);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.12);
+}
+body.dark-mode .media-filter-header {
+  background: rgba(31, 42, 58, 0.82) !important;
+  border-bottom: 1px solid rgba(126, 180, 255, 0.1) !important;
+}
+body.dark-mode .dashboard-filter-card,
+body.dark-mode .card.dashboard-filter-card {
+  background: rgba(25, 35, 49, 0.8) !important;
+  border: 1px solid rgba(126, 180, 255, 0.12) !important;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.12);
+}
+body.dark-mode .media-filter-card .card-body {
+  background: rgba(21, 30, 42, 0.68);
+}
 body.dark-mode .table thead th,
 body.dark-mode .table tbody td,
 body.dark-mode .table-striped > tbody > tr:nth-of-type(odd) > * {
@@ -1001,6 +1019,36 @@ body.dark-mode .card.info .text-warning { color: var(--color-warning) !important
 body.dark-mode .card.info .text-recomended { color: var(--color-recomended) !important; }
 
 /* Buttons Dark */
+body.dark-mode .retorno-ciclo-resumo {
+  background: linear-gradient(180deg, rgba(31, 42, 58, 0.9) 0%, rgba(23, 33, 45, 0.95) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 1rem !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), 0 12px 28px rgba(0, 0, 0, 0.18);
+  color: rgba(255,255,255,0.9);
+}
+body.dark-mode .retorno-ciclo-resumo--dashboard {
+  background: rgba(31, 42, 58, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.7) !important;
+  border-radius: 1rem !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), 0 10px 18px rgba(0, 0, 0, 0.1);
+}
+body.dark-mode .retorno-ciclo-badge {
+  border-radius: 999px !important;
+}
+body.dark-mode .retorno-ciclo-node-pill {
+  border-radius: 999px !important;
+}
+body.dark-mode .retorno-ciclo-badge--title { background: #f3d65d; color: #152534; }
+body.dark-mode .retorno-ciclo-badge--info { background: rgba(66, 178, 255, 0.22); color: #cceeff; border-color: rgba(96, 180, 255, 0.2); }
+body.dark-mode .retorno-ciclo-badge--neutral { background: rgba(110, 139, 167, 0.18); color: #e8f5ff; border-color: rgba(126, 180, 255, 0.14); }
+body.dark-mode .retorno-ciclo-badge--danger { background: rgba(255, 104, 104, 0.14); color: #ffd7d7; border-color: rgba(255, 104, 104, 0.16); }
+body.dark-mode .retorno-ciclo-badge--pending { background: rgba(255, 193, 7, 0.12); color: #ffe9a1; border-color: rgba(255, 193, 7, 0.18); }
+body.dark-mode .retorno-ciclo-etapas,
+body.dark-mode .retorno-ciclo-meta-inline,
+body.dark-mode .retorno-ciclo-separator { color: rgba(201, 220, 239, 0.86); }
+body.dark-mode .retorno-ciclo-node-pill { background: rgba(19, 29, 42, 0.88); border-color: rgba(126, 180, 255, 0.12); color: rgba(255, 255, 255, 0.9); }
+body.dark-mode .retorno-ciclo-node-pill--more { background: rgba(18, 227, 255, 0.08); color: #dff8ff; }
+body.dark-mode .retorno-ciclo-node-pill .bi { color: #66d9ff; }
 body.dark-mode .btn-primary:hover { background: var(--color-primary-dark); border-color: var(--color-primary-dark); }
 body.dark-mode .btn-outline-secondary { color: var(--color-text-muted); border-color: var(--color-text-muted); }
 body.dark-mode .btn-outline-secondary:hover { background: var(--color-text-muted); color: var(--color-bg-body); }
@@ -1925,13 +1973,24 @@ body.dark-mode .btn-primary:hover {
 }
 
 body.dark-mode .btn-success {
-  background: rgba(46, 133, 89, 0.8);
+  background: rgba(21, 82, 122, 0.92);
   border: 0;
   color: #fff;
 }
 
 body.dark-mode .btn-success:hover {
-  background: rgba(46, 133, 89, 1);
+  background: rgba(17, 66, 98, 1);
+}
+
+body.dark-mode .btn-success.text-white {
+  background: rgba(21, 82, 122, 0.92) !important;
+  border-color: rgba(21, 82, 122, 0.92) !important;
+  color: #fff !important;
+}
+
+body.dark-mode .btn-success.text-white:hover {
+  background: rgba(17, 66, 98, 1) !important;
+  border-color: rgba(17, 66, 98, 1) !important;
 }
 
 body.dark-mode .btn-danger {

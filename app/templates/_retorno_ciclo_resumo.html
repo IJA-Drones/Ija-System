@@ -1,38 +1,40 @@
 {% macro render_retorno_ciclo_resumo(summary, align='start') -%}
+
+
   {% if summary and summary.has_cycle %}
-    <div class="mt-2 p-2 border rounded retorno-ciclo-resumo text-start">
-      <div class="d-flex flex-wrap align-items-center gap-2 small justify-content-{{ align }}">
-        <span class="badge bg-warning text-dark border">
+    <div class="mt-2 p-3 rounded retorno-ciclo-resumo retorno-ciclo-resumo--dashboard text-start" style="border: 1px solid rgba(126, 180, 255, 0.18);">
+      <div class="retorno-ciclo-summary-header d-flex flex-wrap align-items-center gap-2 justify-content-{{ align }}">
+        <span class="retorno-ciclo-badge rounded-pill retorno-ciclo-badge--title">
           <i class="bi bi-arrow-repeat me-1"></i> Ciclo de retorno
         </span>
         {% if summary.is_retorno %}
-          <span class="badge bg-info text-dark border">Esta OS e retorno</span>
+          <span class="retorno-ciclo-badge rounded-pill retorno-ciclo-badge--info text">Esta OS é retorno</span>
         {% endif %}
         {% if summary.gerou_retorno %}
-          <span class="badge bg-primary">Gerou retorno</span>
+          <span class="retorno-ciclo-badge rounded-pill retorno-ciclo-badge--neutral">Gerou retorno</span>
         {% endif %}
         {% if summary.retorno_solicitado and not summary.gerou_retorno %}
-          <span class="badge bg-primary">Retorno solicitado</span>
+          <span class="retorno-ciclo-badge rounded-pill retorno-ciclo-badge--neutral">Retorno solicitado</span>
         {% endif %}
         {% if summary.larvas %}
-          <span class="badge bg-danger">{{ summary.larvas }} com larva</span>
+          <span class="retorno-ciclo-badge rounded-pill retorno-ciclo-badge--danger">{{ summary.larvas }} com larva</span>
         {% endif %}
-        <span class="text-muted">{{ summary.total_etapas }} etapa(s)</span>
+        <span class="retorno-ciclo-etapas">{{ summary.total_etapas }} etapa(s)</span>
         {% if summary.total_midias %}
-          <span class="text-muted"><i class="bi bi-images me-1"></i>{{ summary.total_midias }}</span>
+          <span class="retorno-ciclo-meta-inline"><i class="bi bi-images me-1"></i>{{ summary.total_midias }}</span>
         {% endif %}
         {% if summary.next_pending %}
-          <span class="badge bg-warning-subtle text-dark border">
-            Proxima: {{ summary.next_pending.label }}
+          <span class="retorno-ciclo-badge rounded-pill retorno-ciclo-badge--pending">
+            Próxima: {{ summary.next_pending.label }}
           </span>
         {% endif %}
       </div>
-      <div class="d-flex flex-wrap align-items-center gap-1 mt-2 justify-content-{{ align }}">
+      <div class="retorno-ciclo-node-row d-flex flex-wrap align-items-center gap-2 mt-3 justify-content-{{ align }}">
         {% for node in summary.nodes %}
           {% if not loop.first %}
-            <i class="bi bi-chevron-right text-muted small"></i>
+            <i class="bi bi-chevron-right retorno-ciclo-separator"></i>
           {% endif %}
-          {% set node_classes = 'badge rounded-pill border bg-white text-' ~ node.color %}
+          {% set node_classes = 'retorno-ciclo-node-pill text-' ~ node.color %}
           {% if node.detail_url %}
             <a href="{{ node.detail_url }}" class="{{ node_classes }} text-decoration-none" title="{{ node.status }}">
               <i class="bi {{ node.icon }} me-1"></i>{{ node.label }}{% if node.is_current %} atual{% endif %}
@@ -44,7 +46,7 @@
           {% endif %}
         {% endfor %}
         {% if summary.hidden_nodes %}
-          <span class="badge rounded-pill bg-secondary">+{{ summary.hidden_nodes }}</span>
+          <span class="retorno-ciclo-node-pill retorno-ciclo-node-pill--more">+{{ summary.hidden_nodes }}</span>
         {% endif %}
       </div>
     </div>

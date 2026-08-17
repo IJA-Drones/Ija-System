@@ -111,6 +111,17 @@
   border-color: var(--color-accent-hover);
 }
 
+.btn-success.text-white {
+  background-color: var(--color-accent) !important;
+  border-color: var(--color-accent) !important;
+  color: #fff !important;
+}
+
+.btn-success.text-white:hover {
+  background-color: var(--color-accent-hover) !important;
+  border-color: var(--color-accent-hover) !important;
+}
+
 .btn-secondary {
   background-color: var(--color-success);
   border-color: var(--color-success);

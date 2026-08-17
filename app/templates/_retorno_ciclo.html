@@ -7,14 +7,134 @@
     box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
   }
   .retorno-ciclo-resumo {
-    background: #f5f9ff;
-    border-color: rgba(45, 95, 150, 0.12);
+    background: linear-gradient(180deg, rgba(247, 250, 253, 0.98) 0%, rgba(236, 243, 249, 0.98) 100%);
+    border: 1px solid rgba(64, 104, 153, 0.13);
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
     color: #183d63;
   }
+  .retorno-ciclo-summary-header {
+    min-height: 2.3rem;
+  }
+  .retorno-ciclo-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px !important;
+    padding: 0.35em 0.75em;
+    font-size: 0.68rem;
+    font-weight: 800;
+    line-height: 1.15;
+    border: 1px solid transparent;
+    letter-spacing: 0.01em;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.35);
+  }
+  .retorno-ciclo-badge--title {
+    background: #f3d95e;
+    color: #102332;
+    border-color: rgba(32, 55, 73, 0.12);
+  }
+  .retorno-ciclo-badge--info {
+    background: rgba(61, 200, 255, 0.28);
+    color: #0a2d3b;
+    border-color: rgba(61, 200, 255, 0.42);
+  }
+  .retorno-ciclo-badge--neutral {
+    background: rgba(82, 123, 170, 0.18);
+    color: #1b3553;
+    border-color: rgba(82, 123, 170, 0.28);
+  }
+  .retorno-ciclo-badge--danger {
+    background: rgba(229, 62, 62, 0.16);
+    color: #7a1f1f;
+    border-color: rgba(229, 62, 62, 0.3);
+  }
+  .retorno-ciclo-badge--pending {
+    background: rgba(255, 193, 7, 0.16);
+    color: #5e4a0e;
+    border-color: rgba(255, 193, 7, 0.35);
+  }
+  .retorno-ciclo-etapas,
+  .retorno-ciclo-meta-inline {
+    color: #294f74;
+    font-size: 0.82rem;
+    font-weight: 700;
+  }
+  .retorno-ciclo-node-row {
+    min-height: 2.3rem;
+  }
+  .retorno-ciclo-separator {
+    color: rgba(41, 79, 116, 0.58);
+    font-size: 0.8rem;
+  }
+  .retorno-ciclo-node-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.25rem;
+    padding: 0.55rem 0.9rem;
+    border-radius: 999px;
+    border: 1px solid rgba(107, 143, 176, 0.28);
+    background: rgba(255, 255, 255, 0.45);
+    color: #1b3553;
+    font-size: 0.84rem;
+    font-weight: 700;
+    line-height: 1;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.2);
+  }
+  .retorno-ciclo-node-pill--more {
+    background: rgba(28, 55, 79, 0.1);
+    color: #173d63;
+  }
+  .retorno-ciclo-node-pill .bi {
+    color: inherit;
+  }
+
   body.dark-mode .retorno-ciclo-resumo {
-    background: rgba(21, 34, 51, 0.7);
+    background: linear-gradient(180deg, rgba(21, 34, 51, 0.95) 0%, rgba(17, 27, 40, 0.96) 100%);
+    border: 1px solid rgba(126, 180, 255, 0.18);
+    box-shadow: 0 0 0 1px rgba(126, 180, 255, 0.06), 0 12px 28px rgba(0, 0, 0, 0.18);
+    color: rgba(255, 255, 255, 0.9);
+  }
+  body.dark-mode .retorno-ciclo-badge--title {
+    background: #f3d65d;
+    color: #152534;
+  }
+  body.dark-mode .retorno-ciclo-badge--info {
+    background: rgba(66, 178, 255, 0.22);
+    color: #cceeff;
+    border-color: rgba(96, 180, 255, 0.2);
+  }
+  body.dark-mode .retorno-ciclo-badge--neutral {
+    background: rgba(110, 139, 167, 0.18);
+    color: #e8f5ff;
+    border-color: rgba(126, 180, 255, 0.14);
+  }
+  body.dark-mode .retorno-ciclo-badge--danger {
+    background: rgba(255, 104, 104, 0.14);
+    color: #ffd7d7;
+    border-color: rgba(255, 104, 104, 0.16);
+  }
+  body.dark-mode .retorno-ciclo-badge--pending {
+    background: rgba(255, 193, 7, 0.12);
+    color: #ffe9a1;
+    border-color: rgba(255, 193, 7, 0.18);
+  }
+  body.dark-mode .retorno-ciclo-etapas,
+  body.dark-mode .retorno-ciclo-meta-inline,
+  body.dark-mode .retorno-ciclo-separator {
+    color: rgba(201, 220, 239, 0.86);
+  }
+  body.dark-mode .retorno-ciclo-node-pill {
+    background: rgba(19, 29, 42, 0.88);
     border-color: rgba(126, 180, 255, 0.12);
-    color: rgba(255, 255, 255, 0.85);
+    color: rgba(255, 255, 255, 0.9);
+  }
+  body.dark-mode .retorno-ciclo-node-pill--more {
+    background: rgba(18, 227, 255, 0.08);
+    color: #dff8ff;
+  }
+  body.dark-mode .retorno-ciclo-node-pill .bi {
+    color: #66d9ff;
   }
   .return-cycle-head {
     display: flex;

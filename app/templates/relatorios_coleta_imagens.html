@@ -242,14 +242,33 @@
     }
 
     body.dark-mode .media-filter-card {
-      background: #152233;
-      border-color: #233549;
+      background: rgba(25, 35, 49, 0.8);
+      border: 1px solid rgba(126, 180, 255, 0.12);
+      box-shadow: 0 10px 22px rgba(0, 0, 0, 0.12);
+    }
+
+    body.dark-mode .media-filter-card .card-header {
+      background: rgba(31, 42, 58, 0.82) !important;
+      border-bottom: 1px solid rgba(126, 180, 255, 0.1);
+      color: var(--color-text-main) !important;
+    }
+
+    body.dark-mode .media-filter-card .card-header .text-dark,
+    body.dark-mode .media-filter-card .card-header .fw-bold,
+    body.dark-mode .media-filter-card .card-header .text-muted,
+    body.dark-mode .media-filter-card .card-header i,
+    body.dark-mode .media-filter-card .card-header .badge {
+      color: var(--color-text-main) !important;
+    }
+
+    body.dark-mode .media-filter-card .card-body {
+      background: rgba(21, 30, 42, 0.68);
     }
 
     body.dark-mode .media-filter-card .form-control,
     body.dark-mode .media-filter-card .form-select {
-      background: #172334 !important;
-      border-color: #233549 !important;
+      background: rgba(20, 31, 43, 0.9) !important;
+      border-color: rgba(126, 180, 255, 0.12) !important;
       color: var(--color-text-main) !important;
     }
 
@@ -329,11 +348,11 @@
 
   <div class="card media-filter-card shadow-sm rounded-4 mb-4 border-0">
     <div
-      class="card-header border-0 p-3 d-flex justify-content-between align-items-center"
+      class="card-header media-filter-header border-0 p-3 d-flex justify-content-between align-items-center"
       data-bs-toggle="collapse"
       data-bs-target="#collapseFiltrosColetaImagens"
       aria-expanded="{{ 'true' if filtros_coleta_ativos else 'false' }}"
-      style="cursor: pointer; background: none;"
+      style="cursor: pointer;"
     >
       <div class="d-flex align-items-center gap-2">
         <i class="bi bi-funnel-fill text-primary"></i>

@@ -54,6 +54,23 @@
     .btn-tracar-rota:focus { outline: none; box-shadow: 0 0 0 4px rgba(255, 105, 135, 0.4); }
     .btn-tracar-rota i { font-size: 1.1rem; }
 
+    body.dark-mode .card.shadow-sm.rounded-4.mb-4.border-0 {
+      background: rgba(25, 35, 49, 0.8) !important;
+      border: 1px solid rgba(126, 180, 255, 0.12) !important;
+      box-shadow: 0 10px 22px rgba(0, 0, 0, 0.12);
+    }
+    body.dark-mode .card.shadow-sm.rounded-4.mb-4.border-0 .card-header {
+      background: rgba(31, 42, 58, 0.82) !important;
+      border-bottom: 1px solid rgba(126, 180, 255, 0.1) !important;
+      color: var(--color-text-main) !important;
+    }
+    body.dark-mode .card.shadow-sm.rounded-4.mb-4.border-0 .card-header .text-dark,
+    body.dark-mode .card.shadow-sm.rounded-4.mb-4.border-0 .card-header .fw-bold,
+    body.dark-mode .card.shadow-sm.rounded-4.mb-4.border-0 .card-header i,
+    body.dark-mode .card.shadow-sm.rounded-4.mb-4.border-0 .card-header .badge {
+      color: var(--color-text-main) !important;
+    }
+
     @media (max-width: 768px) {
       .container-fluid.py-4 { padding-left: 12px !important; padding-right: 12px !important; }
 
