@@ -12,41 +12,49 @@ from app.shared.access import (
     apply_prefeitura_scope,
     get_user_regiao,
     is_admin_global_user,
+    is_covisa_user,
     is_regional_user,
     normalize_regiao,
     normalize_role,
+)
+from app.shared.skybox import (
+    SkyboxError,
+    delete_skybox_file,
+    is_skybox_path,
+    skybox_enabled,
+    upload_file_to_skybox,
 )
 from app.shared.uploads import get_upload_folder
 
 
 FEEDBACK_STATUS_OPTIONS = (
     ("aberto", "Aberto"),
-    ("em_analise", "Em analise"),
-    ("aguardando_info", "Aguardando informacoes"),
+    ("em_analise", "Em análise"),
+    ("aguardando_info", "Aguardando informações"),
     ("planejado", "Planejado"),
     ("em_desenvolvimento", "Em desenvolvimento"),
     ("respondido", "Respondido"),
-    ("concluido", "Concluido"),
+    ("concluido", "Concluído"),
     ("arquivado", "Arquivado"),
 )
 
 FEEDBACK_CATEGORY_OPTIONS = (
-    ("sugestao", "Sugestao"),
+    ("sugestao", "Sugestão"),
     ("melhoria", "Melhoria"),
     ("bug", "Erro no sistema"),
     ("processo", "Processo operacional"),
-    ("duvida", "Duvida"),
+    ("duvida", "Dúvida"),
     ("outro", "Outro"),
 )
 
 SUPPORT_SECTOR_OPTIONS = (
-    ("operacional", "Duvidas operacionais"),
-    ("tecnico", "Problemas no sistema"),
+    ("operacional", "Dúvidas operacionais"),
+    ("tecnico", "Suporte técnico"),
 )
 
 FEEDBACK_PRIORITY_OPTIONS = (
     ("baixa", "Baixa"),
-    ("media", "Media"),
+    ("media", "Média"),
     ("alta", "Alta"),
     ("urgente", "Urgente"),
 )
@@ -59,6 +67,8 @@ FEEDBACK_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg"}
 FEEDBACK_IMAGE_CONTENT_TYPES = {"image/png", "image/jpeg"}
 FEEDBACK_MAX_IMAGES_PER_COMMENT = 6
 FEEDBACK_NOTIFICATIONS_ENABLED = False
+FEEDBACK_MAX_ACTIVE_BUGS_PER_COORDINATION = 3
+FEEDBACK_SKYBOX_BASE_DIR = "Suporte técnico/Bugs"
 
 
 STATUS_LABELS = dict(FEEDBACK_STATUS_OPTIONS)
@@ -85,7 +95,7 @@ def can_attend_support(user) -> bool:
 
 
 def can_open_support_ticket(user) -> bool:
-    return is_admin_global_user(user) or is_regional_user(user) or get_feedback_owner_uvis(user) is not None
+    return is_regional_user(user) or is_covisa_user(user)
 
 
 def can_access_feedback(user) -> bool:
@@ -97,10 +107,13 @@ def can_moderate_feedback(user) -> bool:
 
 
 def can_moderate_feedback_topic(user, topico) -> bool:
+    if is_admin_global_user(user):
+        return True
+
     support_sectors = get_user_support_sectors(user)
     if support_sectors:
         return getattr(topico, "setor_suporte", None) in support_sectors
-    return is_admin_global_user(user)
+    return False
 
 
 def can_view_all_feedback(user) -> bool:
@@ -124,8 +137,6 @@ def get_feedback_owner_uvis(user):
 
 
 def build_accessible_uvis_query(user):
-    role = user_role(user)
-
     if is_admin_global_user(user):
         return Usuario.query.filter(Usuario.tipo_usuario == "uvis").order_by(Usuario.nome_uvis.asc())
 
@@ -140,6 +151,9 @@ def build_accessible_uvis_query(user):
         )
         query = apply_prefeitura_scope(query, user, Usuario.prefeitura_id)
         return query.order_by(Usuario.nome_uvis.asc())
+
+    if is_covisa_user(user):
+        return Usuario.query.filter(Usuario.id == getattr(user, "id", None))
 
     owner = get_feedback_owner_uvis(user)
     if owner:
@@ -170,6 +184,9 @@ def user_can_use_uvis(user, uvis_usuario) -> bool:
             is not None
         )
 
+    if is_covisa_user(user):
+        return getattr(uvis_usuario, "id", None) == getattr(user, "id", None)
+
     owner = get_feedback_owner_uvis(user)
     return bool(owner and owner.id == uvis_usuario.id)
 
@@ -181,12 +198,12 @@ def build_feedback_query(user):
         joinedload(FeedbackTopico.responsavel),
     )
 
+    if is_admin_global_user(user):
+        return query
+
     support_sectors = get_user_support_sectors(user)
     if support_sectors:
         return query.filter(FeedbackTopico.setor_suporte.in_(support_sectors))
-
-    if is_admin_global_user(user):
-        return query
 
     visibility_rules = [FeedbackTopico.criado_por_id == getattr(user, "id", None)]
 
@@ -349,6 +366,24 @@ def _feedback_attachment_directory():
     return base_dir, absolute_dir
 
 
+def _feedback_attachment_skybox_path(comment, filename):
+    topico_id = getattr(comment, "topico_id", None) or getattr(getattr(comment, "topico", None), "id", None)
+    if not topico_id:
+        raise ValueError("Não foi possível identificar o bug para salvar o anexo.")
+    return "/".join([FEEDBACK_SKYBOX_BASE_DIR, str(topico_id), filename])
+
+
+def _feedback_stream_content_length(stream):
+    try:
+        current_position = stream.tell()
+        stream.seek(0, os.SEEK_END)
+        end_position = stream.tell()
+        stream.seek(current_position)
+        return max(0, int(end_position))
+    except Exception:
+        return None
+
+
 def _validate_feedback_image(uploaded_file):
     filename = secure_filename((getattr(uploaded_file, "filename", "") or "").strip())
     if not filename:
@@ -363,7 +398,7 @@ def _validate_feedback_image(uploaded_file):
 
     content_type = (getattr(uploaded_file, "mimetype", None) or "").lower()
     if content_type and content_type not in FEEDBACK_IMAGE_CONTENT_TYPES:
-        raise ValueError("Formato de imagem nao permitido.")
+        raise ValueError("Formato de imagem não permitido.")
 
     return filename, extension, content_type or None
 
@@ -374,26 +409,39 @@ def save_feedback_comment_attachments(comment, uploaded_files):
         return []
 
     if len(files) > FEEDBACK_MAX_IMAGES_PER_COMMENT:
-        raise ValueError(f"Envie no maximo {FEEDBACK_MAX_IMAGES_PER_COMMENT} imagens por comentario.")
+        raise ValueError(f"Envie no máximo {FEEDBACK_MAX_IMAGES_PER_COMMENT} imagens por comentário.")
 
-    upload_root, upload_dir = _feedback_attachment_directory()
+    upload_dir = None
+    if not skybox_enabled():
+        _upload_root, upload_dir = _feedback_attachment_directory()
     saved_items = []
 
     for uploaded_file in files:
         original_name, extension, content_type = _validate_feedback_image(uploaded_file)
         unique_name = secure_filename(f"feedback_comment_{comment.id}_{uuid.uuid4().hex}.{extension}")
-        absolute_path = os.path.join(upload_dir, unique_name)
-        uploaded_file.save(absolute_path)
+        tamanho_bytes = _feedback_stream_content_length(uploaded_file.stream)
 
-        tamanho_bytes = None
-        try:
-            tamanho_bytes = os.path.getsize(absolute_path)
-        except OSError:
-            tamanho_bytes = None
+        if skybox_enabled():
+            try:
+                arquivo_path = upload_file_to_skybox(
+                    uploaded_file,
+                    _feedback_attachment_skybox_path(comment, unique_name),
+                )
+            except SkyboxError as exc:
+                raise ValueError(f"Falha ao enviar imagem para o Skybox: {exc}") from exc
+        else:
+            absolute_path = os.path.join(upload_dir, unique_name)
+            uploaded_file.save(absolute_path)
+            if tamanho_bytes is None:
+                try:
+                    tamanho_bytes = os.path.getsize(absolute_path)
+                except OSError:
+                    tamanho_bytes = None
+            arquivo_path = os.path.join("feedback", "comentarios", unique_name).replace("\\", "/")
 
         anexo = FeedbackComentarioAnexo(
             comentario_id=comment.id,
-            arquivo_path=os.path.join("feedback", "comentarios", unique_name).replace("\\", "/"),
+            arquivo_path=arquivo_path,
             arquivo_nome=original_name,
             mime_type=content_type,
             tamanho_bytes=tamanho_bytes,
@@ -408,19 +456,27 @@ def save_feedback_comment_attachments(comment, uploaded_files):
 def resolve_feedback_attachment_file(anexo):
     relative_path = (getattr(anexo, "arquivo_path", None) or "").replace("\\", "/").strip("/")
     if not relative_path:
-        raise FileNotFoundError("Arquivo nao encontrado.")
+        raise FileNotFoundError("Arquivo não encontrado.")
 
     upload_root = os.path.abspath(get_upload_folder())
     absolute_path = os.path.abspath(os.path.join(upload_root, relative_path))
     if os.path.commonpath([upload_root, absolute_path]) != upload_root:
-        raise FileNotFoundError("Arquivo invalido.")
+        raise FileNotFoundError("Arquivo inválido.")
     if not os.path.isfile(absolute_path):
-        raise FileNotFoundError("Arquivo nao encontrado.")
+        raise FileNotFoundError("Arquivo não encontrado.")
 
     return upload_root, relative_path, (anexo.arquivo_nome or os.path.basename(relative_path))
 
 
 def remove_feedback_attachment_file(anexo):
+    arquivo_path = getattr(anexo, "arquivo_path", None)
+    if is_skybox_path(arquivo_path):
+        try:
+            delete_skybox_file(arquivo_path)
+        except SkyboxError:
+            return
+        return
+
     try:
         upload_root, relative_path, _ = resolve_feedback_attachment_file(anexo)
     except FileNotFoundError:

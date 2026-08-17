@@ -52,6 +52,7 @@ def register_template_helpers(bp):
                     "support_nav_latest_id": support_snapshot["latest_id"],
                     "feedback_notifications_enabled": FEEDBACK_NOTIFICATIONS_ENABLED,
                     "safe_url_for": safe_url_for,
+                    "can_access_feedback": can_access_feedback,
                     "is_admin_global_user": is_admin_global_user,
                     "is_dev_user": is_dev_user,
                     "solicitacao_focus_catalog": focus_catalog,
@@ -69,6 +70,7 @@ def register_template_helpers(bp):
                     "support_nav_latest_id": 0,
                     "feedback_notifications_enabled": FEEDBACK_NOTIFICATIONS_ENABLED,
                     "safe_url_for": safe_url_for,
+                    "can_access_feedback": can_access_feedback,
                     "is_admin_global_user": is_admin_global_user,
                     "is_dev_user": is_dev_user,
                     "solicitacao_focus_catalog": focus_catalog,
@@ -85,6 +87,7 @@ def register_template_helpers(bp):
             "support_nav_latest_id": 0,
             "feedback_notifications_enabled": FEEDBACK_NOTIFICATIONS_ENABLED,
             "safe_url_for": safe_url_for,
+            "can_access_feedback": can_access_feedback,
             "is_admin_global_user": is_admin_global_user,
             "is_dev_user": is_dev_user,
             "solicitacao_focus_catalog": focus_catalog,
@@ -112,3 +115,23 @@ def register_template_helpers(bp):
     @bp.app_template_filter("phonebr")
     def phonebr(value):
         return format_phone_br(value)
+
+    @bp.app_template_filter("bugdetails")
+    def bugdetails(value):
+        details = []
+        in_details = False
+        for line in str(value or "").splitlines():
+            clean_line = line.strip()
+            clean_lower = clean_line.lower()
+            if clean_lower.startswith("impacto:"):
+                continue
+            if clean_lower.startswith("página onde aconteceu:") or clean_lower.startswith("pagina onde aconteceu:"):
+                continue
+            if clean_lower.startswith("navegador/dispositivo:"):
+                continue
+            if clean_lower == "detalhes:":
+                in_details = True
+                continue
+            if clean_line or in_details:
+                details.append(line)
+        return "\n".join(details).strip() or str(value or "").strip()
