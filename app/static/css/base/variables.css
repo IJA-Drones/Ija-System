@@ -1,0 +1,65 @@
+/* =========================================
+   DESIGN SYSTEM - VARIÁVEIS GLOBAIS
+   ========================================= */
+
+:root {
+
+  /* safe area */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+
+  /* cores principais */
+  --color-primary-dark: #1a4a7c;
+  --color-primary: #2c5282;
+  --color-accent: #00a3c4;
+  --color-accent-hover: #008ba3;
+  --color-accent-soft: rgba(0, 163, 196, 0.12);
+  --color-accent-soft-hover: rgba(0, 163, 196, 0.18);
+
+
+  /* superfícies */
+  --color-bg-body: #f4f7f9;
+  --color-bg-white: #ffffff;
+  --color-bg-surface: #ffffff;
+
+
+  /* texto */
+  --color-text-main: #2d3748;
+  --color-text-muted: #718096;
+  --color-text-notificação: #abe7fa9a;
+  --color-filter: #424649;
+
+
+  /* cores semânticas */
+  --color-success: #2f855a;
+  --color-success-hover: #276749;
+  --color-warning: #f3e526;
+  --color-danger: #e53e3e;
+  --color-recomended: #f7630c;
+  --color-completed: #9b30ff;
+
+
+  /* sombras */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+
+
+  /* bordas */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 50rem;
+
+
+  /* layout */
+  --navbar-height: 90px;
+  --sidebar-width: 230px;
+  --sidebar-width-collapsed: 80px;
+  --navbar-offset: 64px;
+
+
+  /* transições */
+  --transition-base: 0.3s ease;
+}

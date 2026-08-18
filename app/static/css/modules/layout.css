@@ -1,0 +1,73 @@
+/* =========================================
+   LAYOUT GERAL DO SISTEMA
+   ========================================= */
+
+/* Bloqueia o scroll do conteúdo quando um modal está aberto */
+body.modal-open .app-content {
+  overflow: hidden !important;
+  -webkit-overflow-scrolling: auto !important;
+}
+
+/* Wrapper principal */
+.app-wrapper {
+  height: 100%;
+  display: flex;
+}
+
+/* Conteúdo principal com scroll */
+.app-content {
+  flex: 1;
+  margin-top: calc(
+    var(--navbar-offset) + env(safe-area-inset-top, 0px)
+  );
+  height: calc(
+    100dvh - var(--navbar-offset) - env(safe-area-inset-top, 0px)
+  );
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Evita altura mínima forçada no container principal */
+.app-content > .container-fluid {
+  min-height: unset !important;
+}
+
+.app-content {
+  margin-left: var(--sidebar-width);
+  padding: 1.5rem;
+  margin-top: var(--navbar-height);
+  transition: margin-left 0.3s ease;
+}
+
+/* Sidebar recolhida */
+body.sidebar-collapsed .app-content {
+  margin-left: var(--sidebar-width-collapsed);
+}
+
+/* =========================================
+   LAYOUT RESPONSIVO DO SISTEMA
+   ========================================= */
+
+/* Sidebar recolhida */
+body.sidebar-collapsed .app-content {
+  margin-left: var(--sidebar-width-collapsed);
+}
+
+@media (max-width: 991.98px) {
+  .app-content {
+    margin-left: 0 !important;
+    margin-top: 80px !important;
+    padding: 15px !important;
+    width: 100% !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .app-content {
+      margin-left: var(--sidebar-width);
+      padding: 1.5rem;
+      margin-top: var(--navbar-height);
+      transition: margin-left 0.3s ease, width 0.3s ease;
+      width: calc(100% - var(--sidebar-width));
+    }
+}

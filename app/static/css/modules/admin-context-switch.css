@@ -1,0 +1,168 @@
+/* =========================================
+   ADMIN CONTEXT SWITCH
+   ========================================= */
+
+.admin-context-switch {
+  --admin-context-thumb-left: 4px;
+  --admin-context-thumb-width: calc(50% - 4px);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(255, 255, 255, 0.68);
+  border: 1px solid rgba(30, 45, 70, 0.12);
+  border-radius: 999px;
+  padding: 2px;
+  box-shadow: 0 2px 8px rgba(10, 24, 44, 0.07);
+  backdrop-filter: blur(6px);
+  width: fit-content;
+  isolation: isolate;
+}
+
+.admin-context-switch-dropdown {
+  width: 100%;
+}
+
+.admin-context-switch-thumb {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: var(--admin-context-thumb-left);
+  width: var(--admin-context-thumb-width);
+  border-radius: 999px;
+  z-index: 0;
+  pointer-events: none;
+  transition: left 0.28s ease, width 0.28s ease, background 0.28s ease, box-shadow 0.28s ease;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.16), rgba(255,255,255,0)),
+    linear-gradient(130deg, #3a739f, #1687af 70%, #15769b);
+  box-shadow: 0 4px 12px rgba(16, 34, 58, 0.18);
+}
+
+.admin-context-switch.is-agro .admin-context-switch-thumb {
+  background:
+    linear-gradient(140deg, rgba(255,255,255,0.14), rgba(255,255,255,0)),
+    linear-gradient(135deg, #2a8650, #37a362 68%, #2d9056);
+  box-shadow: 0 4px 12px rgba(20, 66, 37, 0.18);
+}
+
+.admin-context-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 30px;
+  min-width: 116px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #49627d;
+  background: transparent;
+  transition: color 0.22s ease, opacity 0.22s ease, background-color 0.22s ease;
+  border: 1px solid transparent;
+  z-index: 1;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+
+.admin-context-switch-dropdown .admin-context-btn {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.admin-context-btn[data-admin-context="agro"] {
+  color: #2a7c49;
+}
+
+.admin-context-btn-icon {
+  width: 15px;
+  height: 15px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(35, 86, 122, 0.1);
+  font-size: 0.54rem;
+  line-height: 1;
+  color: currentColor;
+  transition: background-color 0.22s ease, color 0.22s ease;
+}
+
+.admin-context-btn[data-admin-context="agro"] .admin-context-btn-icon {
+  background: rgba(33, 111, 61, 0.1);
+}
+
+.admin-context-btn-icon .bi {
+  color: currentColor;
+}
+
+.admin-context-btn:not(.is-active) {
+  opacity: 0.92;
+}
+
+.admin-context-btn:not(.is-active):hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.admin-context-btn.is-active {
+  opacity: 1;
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.admin-context-btn.is-active .admin-context-btn-icon {
+  background: rgba(255, 255, 255, 0.24);
+  color: #ffffff;
+}
+
+.admin-context-badge {
+  margin-left: 6px;
+  padding: 4px 10px;
+  font-size: 0.72rem;
+  border-radius: 999px;
+  background: #e8f5fb;
+  color: #0e7aa6;
+  border: 1px solid rgba(14, 122, 166, 0.25);
+  font-weight: 700;
+}
+
+/* =========================================
+   RESPONSIVIDADE ADMIN CONTEXT SWITCH
+   ========================================= */
+
+@media (max-width: 991.98px) {
+  .admin-context-switch {
+    margin-right: auto;
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 576px) {
+
+  .admin-context-switch {
+    gap: 3px;
+    padding: 2px;
+  }
+
+  .admin-context-switch-thumb {
+    top: 2px;
+    bottom: 2px;
+  }
+
+  .admin-context-btn {
+    min-width: 0;
+    min-height: 28px;
+    padding: 4px 7px;
+    font-size: 0.62rem;
+    gap: 4px;
+  }
+
+  .admin-context-btn-icon {
+    width: 14px;
+    height: 14px;
+    font-size: 0.5rem;
+  }
+}

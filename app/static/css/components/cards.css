@@ -1,0 +1,57 @@
+/* =========================================
+   CARDS
+   ========================================= */
+
+.card {
+  border: none;
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-white);
+  box-shadow: var(--shadow-md);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  overflow: hidden;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+}
+
+.card-header {
+  background: var(--color-bg-white);
+  border-bottom: 1px solid #edf2f7;
+  padding: 1.5rem;
+  font-weight: 700;
+  color: var(--color-primary-dark);
+}
+
+.card-body {
+  padding: 1.5rem;
+}
+
+/* Status Strips (Barrinha lateral colorida) */
+.card.info {
+  position: relative;
+  padding-left: 15px;
+  overflow: hidden;
+  color: var(--color-text-main);
+}
+
+.card.info::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 5px;
+  transition: background-color 0.3s ease;
+}
+
+.card.info.status-primary::before { background: var(--color-primary); }
+.card.info.status-success::before { background: var(--color-success); }
+.card.info.status-danger::before { background: var(--color-danger); }
+.card.info.status-warning::before { background: var(--color-warning); }
+.card.info.status-info::before { background: var(--color-accent); }
+.card.info.status-recomended::before { background: var(--color-recomended); }
+.card.info.status-completed::before { background: var(--color-completed); }
+.card.info.status-secondary::before { background: var(--color-text-muted); }
+.card.info.status-cancelled::before { background: #343a40; }
