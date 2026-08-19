@@ -73,6 +73,17 @@
     .historico-os-tabs .nav-link i {
       color: #0ea5e9;
     }
+    .historico-os-pdf-job {
+      border: 1px solid #f1b7bd;
+      border-radius: 14px;
+      background: #fff7f8;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+    }
+    .historico-os-pdf-job .progress {
+      height: 8px;
+      border-radius: 999px;
+      background: #f8d7da;
+    }
 
     @media (max-width: 991.98px) {
       .historico-os-page.container-fluid.py-4 {
@@ -110,6 +121,7 @@
 {% endblock %}
 
 {% block content %}
+{% set historico_os_pdf_job_id = request.args.get('historico_os_pdf_job_id') %}
 <div class="container-fluid py-4 historico-os-page" style="max-width: 1200px;">
   <div class="historico-os-toolbar mb-4">
     <div>
@@ -151,6 +163,23 @@
       </a>
     </div>
   </div>
+
+  {% if historico_os_pdf_job_id %}
+    <div id="historicoOsPdfJobStatus" class="historico-os-pdf-job p-3 mb-4" data-job-id="{{ historico_os_pdf_job_id }}">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+        <div class="fw-semibold text-dark">
+          <i class="bi bi-file-earmark-zip-fill text-danger me-1"></i>
+          <span id="historicoOsPdfJobMessage">Gerando ZIP de PDFs...</span>
+        </div>
+        <a id="historicoOsPdfJobDownload" href="#" class="btn btn-sm btn-danger d-none">
+          <i class="bi bi-download me-1"></i>Baixar ZIP
+        </a>
+      </div>
+      <div class="progress" role="progressbar" aria-label="Progresso do ZIP de PDFs">
+        <div id="historicoOsPdfJobProgress" class="progress-bar bg-danger" style="width: 8%;"></div>
+      </div>
+    </div>
+  {% endif %}
 
   {% set filtros_ativos = filtros.status or filtros.unidade_values or filtros.regiao or filtros.equipe or filtros.apoio_cet or filtros.tipo_visita or filtros.tipo_imovel or filtros.foco_values or filtros.protocolo or filtros.endereco or filtros.data_ini or filtros.data_fim or filtros.retorno_automatico %}
   <div class="card shadow-sm rounded-4 mb-4 border-0">
@@ -405,4 +434,61 @@
     {{ render_pagination('main.admin_historico_os', paginacao, pagination_args, nav_class='mt-4 pb-3') }}
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  {% set historico_os_pdf_job_id = request.args.get('historico_os_pdf_job_id') %}
+  {% if historico_os_pdf_job_id %}
+    <script>
+      (() => {
+        const statusBox = document.getElementById("historicoOsPdfJobStatus");
+        const message = document.getElementById("historicoOsPdfJobMessage");
+        const progress = document.getElementById("historicoOsPdfJobProgress");
+        const download = document.getElementById("historicoOsPdfJobDownload");
+        const jobId = statusBox?.dataset.jobId;
+        if (!jobId || !statusBox || !message || !progress || !download) return;
+
+        const statusUrl = "{{ url_for('main.admin_historico_os_pdf_job_status', job_id='__JOB_ID__') }}".replace("__JOB_ID__", encodeURIComponent(jobId));
+        const setProgress = (value) => {
+          const normalized = Math.min(100, Math.max(5, Number(value || 0)));
+          progress.style.width = `${normalized}%`;
+        };
+
+        const poll = async () => {
+          try {
+            const response = await fetch(statusUrl, { headers: { "Accept": "application/json" } });
+            const payload = await response.json();
+            if (!response.ok || payload.success === false) {
+              throw new Error(payload.error || "Falha ao consultar a exportacao.");
+            }
+
+            message.textContent = payload.message || "Gerando ZIP de PDFs...";
+            setProgress(payload.progress);
+
+            if (payload.status === "success") {
+              download.href = payload.download_url;
+              download.classList.remove("d-none");
+              message.textContent = "ZIP de PDFs pronto para download.";
+              setProgress(100);
+              return;
+            }
+
+            if (payload.status === "error") {
+              statusBox.classList.add("border-danger");
+              message.textContent = payload.error || "Nao foi possivel gerar o ZIP de PDFs.";
+              return;
+            }
+
+            window.setTimeout(poll, 2500);
+          } catch (error) {
+            statusBox.classList.add("border-danger");
+            message.textContent = error.message || "Falha ao acompanhar a exportacao.";
+          }
+        };
+
+        poll();
+      })();
+    </script>
+  {% endif %}
 {% endblock %}
