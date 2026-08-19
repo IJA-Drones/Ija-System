@@ -129,6 +129,18 @@
         <i class="bi bi-file-earmark-excel-fill me-1"></i> Exportar filtro
       </a>
       <a
+        href="{{ url_for('main.admin_historico_os_exportar_excel_individuais', **pagination_args) }}"
+        class="btn btn-outline-primary"
+      >
+        <i class="bi bi-file-earmark-zip me-1"></i> Excels individuais
+      </a>
+      <a
+        href="{{ url_for('main.admin_historico_os_exportar_pdf_individuais', **pagination_args) }}"
+        class="btn btn-outline-danger"
+      >
+        <i class="bi bi-file-earmark-zip me-1"></i> PDFs individuais
+      </a>
+      <a
         href="{{ url_for('main.admin_historico_os_exportar_excel', tipo_os='piloto', all=1) }}"
         class="btn btn-outline-success"
       >

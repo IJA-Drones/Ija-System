@@ -960,7 +960,8 @@
     const eventos = JSON.parse(raw);
     const calendarEl = document.getElementById("calendar");
     const initialDateFromServer = "{{ initial_date }}";
-    const isMobile = window.matchMedia("(max-width: 768px)").matches;
+    const mobileQuery = window.matchMedia("(max-width: 768px)");
+    const isMobile = mobileQuery.matches;
     const weeklyOnly = {{ periodo_semanal_fixo | tojson }};
     const concluirForm = document.getElementById("m-concluir-form");
 
@@ -1136,16 +1137,22 @@
       });
 
     // responsivo
+    let lastResponsiveMode = isMobile ? "mobile" : "desktop";
     window.addEventListener("resize", () => {
-      const mobileNow = window.matchMedia("(max-width: 768px)").matches;
-      const desiredView = weeklyOnly ? "dayGridMonth" : (mobileNow ? "listWeek" : "dayGridMonth");
-      if (calendar.view.type !== desiredView) calendar.changeView(desiredView);
+      const mobileNow = mobileQuery.matches;
+      const responsiveMode = mobileNow ? "mobile" : "desktop";
 
       calendar.setOption("headerToolbar", {
         left: "prev,next today",
         center: "title",
         right: weeklyOnly ? "dayGridMonth,listWeek" : (mobileNow ? "listWeek" : "dayGridMonth,listWeek"),
       });
+
+      if (responsiveMode === lastResponsiveMode) return;
+
+      lastResponsiveMode = responsiveMode;
+      const desiredView = weeklyOnly ? "dayGridMonth" : (mobileNow ? "listWeek" : "dayGridMonth");
+      if (calendar.view.type !== desiredView) calendar.changeView(desiredView);
     });
   });
 </script>
