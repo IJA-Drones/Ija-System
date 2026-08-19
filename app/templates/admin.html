@@ -4,201 +4,10 @@
 {% from "_multi_select_chips.html" import render_chip_select_values %}
 {% from "_result_summary.html" import render_result_summary %}
 
-{% block extra_styles %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/chatbot.css') }}">
-    <style>
-        .admin-page {
-            width: 100%;
-        }
-        .admin-toolbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 16px;
-        }
-        .admin-toolbar-actions {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            flex-wrap: wrap;
-            justify-content: flex-end;
-        }
-        .admin-toolbar-slot {
-            width: 180px;
-            min-width: 150px;
-        }
-        .admin-filter-actions {
-            display: flex;
-            gap: 8px;
-        }
-        .admin-table-wrap {
-            width: 100%;
-        }
-        .admin-table-wrap .pagination-toolbar {
-            padding-inline: 1rem;
-        }
-        .admin-table-wrap .pagination-page-size-form {
-            flex-wrap: wrap;
-            justify-content: flex-end;
-        }
-        .admin-table-wrap .pagination-page-size-select {
-            min-width: 82px;
-            width: auto;
-            border-radius: 999px;
-            padding-right: 2rem;
-        }
-        .admin-op-table-wrap {
-            margin-top: 14px;
-            border: 1px solid rgba(0, 0, 0, 0.08);
-            border-radius: 14px;
-            overflow: hidden;
-            background: rgba(255, 255, 255, 0.78);
-        }
-        .admin-op-table {
-            width: 100%;
-            margin: 0;
-            border-collapse: collapse;
-        }
-        .admin-op-table th,
-        .admin-op-table td {
-            padding: 8px 12px;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-            vertical-align: top;
-            line-height: 1.35;
-        }
-        .admin-op-table tr:last-child th,
-        .admin-op-table tr:last-child td {
-            border-bottom: 0;
-        }
-        .admin-op-table th {
-            width: 148px;
-            font-size: 0.78rem;
-            font-weight: 700;
-            color: var(--color-text-muted);
-            background: rgba(44, 82, 130, 0.05);
-            white-space: nowrap;
-        }
-        .admin-op-table td {
-            font-size: 0.84rem;
-            font-weight: 700;
-            color: var(--color-text-main);
-            word-break: break-word;
-        }
-
-        @media (max-width: 991.98px) {
-            .admin-page.container-fluid.py-4 {
-                padding-left: 12px !important;
-                padding-right: 12px !important;
-            }
-            .admin-toolbar {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            .admin-toolbar-actions {
-                width: 100%;
-                justify-content: flex-start;
-            }
-            .admin-toolbar-slot {
-                flex: 0 1 180px;
-            }
-            #collapseFiltros .row.g-2.align-items-end > div {
-                width: 100%;
-            }
-            .admin-filter-actions {
-                flex-wrap: wrap;
-                align-items: stretch;
-            }
-            .admin-table-wrap .table-accordion > tbody > tr.main-row {
-                display: block;
-                border: 1px solid rgba(0,0,0,.08);
-                border-radius: 16px;
-                overflow: hidden;
-                box-shadow: 0 10px 22px rgba(0,0,0,.06);
-                background: #fff;
-                margin-bottom: 14px;
-            }
-            .admin-table-wrap .table-accordion > tbody > tr.main-row > td {
-                display: block;
-                width: 100%;
-                padding: 14px !important;
-            }
-            .admin-table-wrap .table-accordion > tbody > tr.d-lg-none > td > .collapse > div {
-                padding: 14px !important;
-                background: #fff;
-            }
-            .admin-table-wrap .table-accordion > tbody > tr.d-lg-none .row.g-2.small > div,
-            .admin-table-wrap .table-accordion > tbody > tr.d-lg-none .row.g-2 > div {
-                width: 100%;
-            }
-            .admin-table-wrap .table-accordion .d-flex.gap-1.mt-2.align-items-center.justify-content-center,
-            .admin-table-wrap .table-accordion .d-none.d-lg-flex.gap-1.mt-4 {
-                flex-wrap: wrap;
-            }
-            .admin-table-wrap .pagination {
-                flex-wrap: wrap;
-            }
-            .admin-table-wrap .pagination-toolbar {
-                padding-inline: 0.75rem;
-            }
-            .admin-table-wrap .pagination-page-size-form {
-                justify-content: flex-start;
-            }
-            .admin-map-modal .modal-dialog {
-                margin: 0.75rem;
-            }
-            .admin-map-modal .modal-footer {
-                flex-direction: column;
-                gap: 10px;
-            }
-            .admin-map-modal .modal-footer .d-flex.gap-2 {
-                flex-wrap: wrap;
-            }
-            .admin-map-modal #mapCanvas {
-                height: 320px !important;
-            }
-        }
-
-        @media (max-width: 420px) {
-            .admin-toolbar-actions {
-                justify-content: center;
-            }
-            .admin-toolbar-slot {
-                width: 100%;
-                min-width: 0;
-            }
-            .admin-filter-actions {
-                flex-direction: column;
-            }
-            .admin-map-modal #mapCanvas {
-                height: 260px !important;
-            }
-        }
-
-        @media (max-width: 991.98px) {
-            html.dark-mode .admin-table-wrap .table-accordion > tbody > tr.main-row,
-            body.dark-mode .admin-table-wrap .table-accordion > tbody > tr.main-row,
-            html.dark-mode .admin-table-wrap .table-accordion > tbody > tr.d-lg-none > td > .collapse > div,
-            body.dark-mode .admin-table-wrap .table-accordion > tbody > tr.d-lg-none > td > .collapse > div {
-                background: #0f1a24 !important;
-                border-color: #233549 !important;
-                box-shadow: 0 14px 30px rgba(0,0,0,.35) !important;
-                color: rgba(255,255,255,.92) !important;
-            }
-            html.dark-mode .admin-table-wrap .text-muted,
-            body.dark-mode .admin-table-wrap .text-muted {
-                color: rgba(255,255,255,.70) !important;
-            }
-        }
-    </style>
-{% endblock %}
-
 {% block content %}
 
 {# --- INÍCIO DO CONTAINER PADRONIZADO --- #}
-<div class="container-fluid py-4 admin-page" style="max-width: 1200px;">
+<div class="container-fluid py-4 admin-page">
 
     <div class="admin-toolbar mb-4">
         <div>
@@ -213,7 +22,7 @@
             {# Substituímos o style fixo por uma classe que o Bootstrap entende, ou mantemos o style mas permitimos que ele diminua #}
             {% if current_user.tipo_usuario in ['dev', 'diretor', 'admin', 'visualizar'] %}
             <div class="admin-toolbar-slot flex-grow-1 flex-md-grow-0">
-                <a href="{{ url_for('main.novo') }}" class="btn btn-success shadow-sm w-100 d-flex align-items-center justify-content-center gap-2" style="height: 38px;">
+                <a href="{{ url_for('main.novo') }}" class="btn btn-nova shadow-sm w-100 d-flex align-items-center justify-content-center gap-2 admin-toolbar-action-btn">
                     <i class="bi bi-plus-lg"></i> 
                     <span>Nova Solicitação</span>
                 </a>
@@ -239,14 +48,14 @@
                 <input type="hidden" name="data_criacao_ini" value="{{ request.args.get('data_criacao_ini', '') }}">
                 <input type="hidden" name="data_criacao_fim" value="{{ request.args.get('data_criacao_fim', '') }}">
                 <input type="hidden" name="retorno_automatico" value="{{ request.args.get('retorno_automatico', '') }}">
-                <button type="submit" class="btn btn-secondary shadow-sm w-100 d-flex align-items-center justify-content-center gap-2" style="height: 38px;">
+                <button type="submit" class="btn btn-secondary shadow-sm w-100 d-flex align-items-center justify-content-center gap-2 admin-toolbar-action-btn">
                     <i class="bi bi-file-earmark-excel-fill"></i> 
                     <span>Exportar Excel</span>
                 </button>
             </form>
 
             <div class="admin-toolbar-slot flex-grow-1 flex-md-grow-0">
-                <a href="{{ url_for('main.admin_canceladas') }}" class="btn btn-danger shadow-sm w-100 d-flex align-items-center justify-content-center gap-2" style="height: 38px;">
+                <a href="{{ url_for('main.admin_canceladas') }}" class="btn btn-danger shadow-sm w-100 d-flex align-items-center justify-content-center gap-2 admin-toolbar-action-btn">
                     <i class="bi bi-x-circle"></i> 
                     <span>Canceladas</span>
                 </a>
@@ -258,21 +67,20 @@
     {% set admin_has_filters = request.args.get('status') or request.args.get('unidade') or request.args.get('regiao') or request.args.get('apoio_cet') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or request.args.get('foco') or request.args.get('protocolo') or request.args.get('endereco') or request.args.get('data_ini') or request.args.get('data_fim') or request.args.get('data_criacao_ini') or request.args.get('data_criacao_fim') or request.args.get('retorno_automatico') %}
 
     {# --- FILTROS EM "SANFONA" (Accordion) --- #}
-    <div class="card shadow-sm rounded-4 mb-4 border-0">
-        <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center cursor-pointer"
+    <div class="card shadow-sm rounded-4 mb-4 border-0 dashboard-filter-card">
+        <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center cursor-pointer dashboard-filter-header"
                 data-bs-toggle="collapse"
                 data-bs-target="#collapseFiltros"
-                aria-expanded="false"
-                style="cursor: pointer;">
+                aria-expanded="false">
 
             <div class="d-flex align-items-center gap-2">
                 <i class="bi bi-funnel-fill text-primary"></i>
-                <span class="text-dark">Filtros de Busca</span>
+                <span class="fw-bold">Filtros de Busca</span>
                 {% if current_user.tipo_usuario in ['dev', 'diretor', 'admin'] %}
                     <span class="admin-context-badge" id="adminContextFilterBadge">UVIS/PREFEITURA</span>
                 {% endif %}
                 {% if admin_has_filters %}
-                    <span class="badge bg-danger rounded-circle p-1" style="width: 8px; height: 8px;"></span>
+                    <span class="badge rounded-pill bg-primary admin-filter-pill">Filtros Ativos</span>
                 {% endif %}
             </div>
             <i class="bi bi-chevron-down text-muted"></i>
@@ -431,9 +239,9 @@
             {# HEADER: OCULTO NO MOBILE (d-none), VISÍVEL NO DESKTOP (d-lg-table-header-group) #}
             <thead class="d-none d-lg-table-header-group">
                 <tr>
-                    <th style="width: 25%">Unidade</th>
-                    <th style="width: 40%">Dados da Operação</th>
-                    <th style="width: 35%">{% if is_editable %}Decisão & Ajustes{% else %}Status Atual & Protocolo DECEA{% endif %}</th>
+                    <th>Unidade</th>
+                    <th>Dados da Operação</th>
+                    <th>{% if is_editable %}Decisão & Ajustes{% else %}Status Atual & Protocolo DECEA{% endif %}</th>
                 </tr>
             </thead>
 
@@ -503,7 +311,7 @@
                                         </span>
                                     </div>
 
-                                    <!-- EQUIPE (exibiÃ§Ã£o rÃ¡pida) -->
+                                    <!-- EQUIPE -->
                                     <div class="mt-2 small text-muted">
                                         <i class="bi bi-people-fill me-1"></i>
                                         {% if p.equipe %}
@@ -1380,4 +1188,3 @@ document.addEventListener("DOMContentLoaded", () => {
 </script>
 
 {% endblock %}
-

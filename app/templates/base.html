@@ -150,7 +150,7 @@
     </style>
   </head>
 
-  <body class="{% if is_agro_context %}agro-mode{% endif %}">
+  <body class="{% if tema_escolhido == 'dark' %}dark-mode {% endif %}{% if is_agro_context %}agro-mode{% endif %}">
     {% set navbar_home_endpoint = 'main.dashboard' %}
     {% if current_user and current_user.is_authenticated %}
       {% if current_user.tipo_usuario in ['piloto', 'equipe_oceano'] %}
