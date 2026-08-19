@@ -28,7 +28,7 @@
   padding: 1.5rem;
 }
 
-/* Status Strips (Barrinha lateral colorida) */
+/* Status Strips */
 .card.info {
   position: relative;
   padding-left: 15px;
@@ -44,6 +44,12 @@
   height: 100%;
   width: 5px;
   transition: background-color 0.3s ease;
+}
+
+/* Card sutil de informações */
+.info-card {
+  background-color: #ffffff;
+  border-color: #edf2f7 !important;
 }
 
 .card.info.status-primary::before { background: var(--color-primary); }

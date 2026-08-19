@@ -1,0 +1,19 @@
+/* =========================================
+   FILTROS
+   ========================================= */
+
+.filter-chip-row {
+  align-items: flex-start !important;
+}
+
+.filter-result-summary {
+  margin-top: 0.25rem;
+  color: #6b7b91;
+  font-size: 0.95rem;
+  line-height: 1.35;
+}
+
+.filter-result-summary strong {
+  color: var(--color-primary);
+  font-weight: 800;
+}

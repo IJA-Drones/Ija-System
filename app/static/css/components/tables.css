@@ -1,15 +1,18 @@
-/* -----------------------------------------
+/* =========================================
    TABLES
-   ----------------------------------------- */
+   ========================================= */
+
 .table-responsive {
   border-radius: var(--radius-lg);
   background: var(--color-bg-white);
 }
+
 .table {
   margin-bottom: 0;
   border-collapse: separate;
   border-spacing: 0;
 }
+
 .table thead th {
   background: var(--color-primary-dark);
   color: #fff;
@@ -20,25 +23,32 @@
   padding: 1rem;
   border: none;
 }
+
 .table tbody tr {
   transition: background-color 0.2s;
 }
+
 .table tbody tr:hover {
   background: #f0f7ff;
 }
+
 .table td {
   vertical-align: middle;
   padding: 1rem;
   border-top: 1px solid #edf2f7;
   color: var(--color-text-main);
 }
+
 .table td.bg-light {
   background: #f8fafc;
   border-right: 3px solid var(--color-accent);
 }
 
-/* Listagens com menu de acoes precisam deixar o dropdown escapar
-   sem perder o recorte arredondado da tabela. */
+
+/* =========================================
+   TABELAS COM MENU DE AÇÕES
+   ========================================= */
+
 .menu-actions-table-wrap {
   overflow: visible !important;
   border-radius: var(--radius-lg);
@@ -78,59 +88,69 @@
   border-bottom-right-radius: var(--radius-lg);
 }
 
-/* Espaçamento entre letras para labels */
-.ls-1 {
-  letter-spacing: 0.5px;
+
+/* =========================================
+   ESTADOS
+   ========================================= */
+
+.table-danger-light {
+  background-color: rgba(220, 53, 69, 0.05) !important;
 }
 
-/* Efeito de borda na UVIS */
-#m-uvis {
-  line-height: 1.2;
-  color: #1a202c;
-}
 
-/* Card sutil de informações */
-.info-card {
-  background-color: #ffffff;
-  border-color: #edf2f7 !important;
-}
+/* =========================================
+   TABLE MOBILE CARDS
+   ========================================= */
 
-/* Alerta suave para modo light */
-.alert-soft-warning {
-  background-color: #fffaf0;
-  color: #9c4221;
-  border: 1px solid #feebc8 !important;
-}
+@media (max-width: 991.98px) {
 
-/* Badge mais visível */
-#m-status {
-  padding: 0.35em 0.8em; /* Diminui o "corpo" do badge */
-  font-size: 0.7rem;      /* Diminui o texto */
-  font-weight: 700;       /* Mantém a legibilidade */
-  letter-spacing: 0.3px;  /* Melhora o visual em letras pequenas */
-  text-transform: uppercase;
-}
+  .table-mobile-cards thead {
+    display: none !important;
+  }
 
-/* dark mode */
-body.dark-mode .table thead th {
-  background: #1f3a5a;
-  color: #fff;
-}
-body.dark-mode .table tbody tr {
-  background: #152233;
-}
-body.dark-mode .table tbody tr:nth-child(even) {
-  background: #1a2c44;
-}
-body.dark-mode .table tbody tr:hover {
-  background: #224268 !important;
-}
-body.dark-mode .table td {
-  border-top: 1px solid #233549;
-  color: var(--color-text-main);
-  background: #1c2b3f;
-}
-body.dark-mode .table td.bg-light {
-  background: #1c2b3f;
-  border-right: 3px solid var(--color-accent);
+  .table-mobile-cards,
+  .table-mobile-cards tbody,
+  .table-mobile-cards tr,
+  .table-mobile-cards td {
+    display: block !important;
+    width: 100% !important;
+    box-sizing: border-box;
+  }
+
+  .table-mobile-cards tr {
+    background: #ffffff;
+    margin-bottom: 20px;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .table-mobile-cards td {
+    padding: 15px;
+    border: none;
+    border-bottom: 1px solid #f5f5f5;
+    text-align: left;
+  }
+
+  .table-mobile-cards td:last-child {
+    border-bottom: none;
+  }
+
+  .status-badge-mobile {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    z-index: 10;
+  }
+
+  .table-mobile-cards .btn {
+    width: 100%;
+    margin-bottom: 5px;
+  }
+
+  .d-md-table-header-group {
+    display: none !important;
+  }
 }

@@ -1,0 +1,49 @@
+/* =========================================
+   PAGINAÇÃO
+   ========================================= */
+
+.pagination {
+  gap: 5px;
+}
+
+.page-item .page-link {
+  border-radius: var(--radius-sm) !important;
+  padding: 0.6rem 1rem;
+
+  color: var(--color-primary);
+  background-color: var(--color-bg-white);
+
+  border: 1px solid rgba(0, 0, 0, 0.08);
+
+  font-weight: 600;
+
+  transition: all 0.2s ease;
+}
+
+.page-item .page-link:hover {
+  background-color: rgba(0, 163, 196, 0.1);
+
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+
+  transform: translateY(-2px);
+}
+
+.page-item.active .page-link {
+  background-color: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+
+  color: #ffffff !important;
+
+  box-shadow: var(--shadow-md);
+}
+
+.page-item.disabled .page-link {
+  background-color: transparent;
+
+  color: var(--color-text-muted);
+
+  border-color: rgba(0, 0, 0, 0.05);
+
+  opacity: 0.6;
+}

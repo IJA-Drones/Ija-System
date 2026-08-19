@@ -1,0 +1,10 @@
+/* -----------------------------------------
+   9) BADGES
+   ----------------------------------------- */
+   
+.badge {
+  padding: 0.5em 0.9em;
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
