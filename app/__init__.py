@@ -3,7 +3,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from dotenv import load_dotenv
-from flask import Flask, g, jsonify, render_template, request
+from flask import Flask, Response, g, jsonify, render_template, request
 from flask_login import current_user
 from flask_talisman import Talisman
 from sqlalchemy import text
@@ -164,10 +164,7 @@ def create_app():
 
     @app.get("/healthz")
     def healthz():
-        return jsonify({
-            "status": "ok",
-            "service": "ija-system",
-        })
+        return Response("ok\n", mimetype="text/plain")
 
     @app.get("/healthz/full")
     def healthz_full():
