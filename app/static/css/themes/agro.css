@@ -1,0 +1,22 @@
+body.agro-mode {
+  --color-primary-dark: #1f6f3f;
+  --color-primary: #2f8f4f;
+  --color-accent: #3ab16b;
+  --color-accent-hover: #2d9458;
+  --color-success: #2c7a4a;
+  --color-success-hover: #25623d;
+  --color-accent-soft: rgba(58, 177, 107, 0.12);
+  --color-accent-soft-hover: rgba(58, 177, 107, 0.2);
+  --bs-primary: #2f8f4f;
+  --bs-primary-rgb: 47, 143, 79;
+  --bs-link-color: #2f8f4f;
+  --bs-link-hover-color: #1f6f3f;
+}
+
+body.agro-mode .navbar-mode-pill {
+  display: inline-flex;
+}
+
+body.agro-mode .navbar-logo {
+  filter: hue-rotate(-95deg) saturate(1.35) contrast(1.03);
+}

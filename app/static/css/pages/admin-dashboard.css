@@ -1,0 +1,1293 @@
+/* =========================================
+   ADMIN DASHBOARD
+   ========================================= */
+
+.admin-page {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  /* Superfícies específicas da página Admin - Light */
+  --admin-surface: #ffffff;
+  --admin-surface-soft: #f7f9fc;
+  --admin-surface-muted: #f1f5f9;
+
+  /* Bordas */
+  --admin-border: rgba(44, 82, 130, 0.10);
+  --admin-border-strong: rgba(44, 82, 130, 0.16);
+
+  /* Sombras */
+  --admin-shadow:
+    0 4px 14px rgba(15, 23, 42, 0.06);
+
+  --admin-shadow-hover:
+    0 8px 22px rgba(15, 23, 42, 0.09);
+}
+
+
+/* =========================================
+   CARDS - LIGHT
+   ========================================= */
+
+.admin-page .card {
+  background: var(--admin-surface);
+
+  border: 1px solid var(--admin-border);
+
+  box-shadow: var(--admin-shadow);
+
+  color: var(--color-text-main);
+}
+
+.admin-page .card:hover {
+  border-color: var(--admin-border-strong);
+
+  box-shadow: var(--admin-shadow-hover);
+}
+
+.admin-page .card-header {
+  background: var(--admin-surface-soft);
+
+  border-bottom: 1px solid var(--admin-border);
+
+  color: var(--color-primary-dark);
+}
+
+
+/* =========================================
+   TOOLBAR
+   ========================================= */
+
+.admin-toolbar {
+  display: flex;
+
+  justify-content: space-between;
+  align-items: center;
+
+  gap: 16px;
+}
+
+.admin-toolbar-actions {
+  display: flex;
+
+  gap: 8px;
+
+  align-items: center;
+
+  flex-wrap: wrap;
+
+  justify-content: flex-end;
+}
+
+.admin-toolbar-slot {
+  width: 180px;
+
+  min-width: 150px;
+}
+
+.admin-toolbar-action-btn {
+  height: 38px;
+}
+
+.admin-filter-indicator {
+  width: 8px;
+  height: 8px;
+}
+
+
+/* =========================================
+   FILTROS
+   ========================================= */
+
+.admin-filter-actions {
+  display: flex;
+
+  gap: 8px;
+}
+
+
+/* =========================================
+   INPUTS E SELECTS - LIGHT
+   ========================================= */
+
+.admin-page .form-control,
+.admin-page .form-select {
+  background: var(--admin-surface);
+
+  border-color: var(--admin-border-strong);
+
+  color: var(--color-text-main);
+}
+
+.admin-page .form-control:focus,
+.admin-page .form-select:focus {
+  background: var(--admin-surface);
+
+  border-color: var(--color-primary);
+
+  color: var(--color-text-main);
+
+  box-shadow:
+    0 0 0 3px rgba(44, 82, 130, 0.10);
+}
+
+.admin-page .form-control::placeholder {
+  color: var(--color-text-muted);
+}
+
+
+/* =========================================
+   TABELA PRINCIPAL
+   ========================================= */
+
+.admin-table-wrap {
+  width: 100%;
+}
+
+.admin-table-wrap .table {
+  margin-bottom: 0;
+
+  color: var(--color-text-main);
+}
+
+
+/* =========================================
+   TABELA PRINCIPAL - LIGHT
+   ========================================= */
+
+.admin-table-wrap .table thead th {
+  background: var(--admin-surface-soft);
+
+  color: var(--color-primary-dark);
+
+  border-bottom:
+    1px solid var(--admin-border-strong);
+
+  font-weight: 700;
+}
+
+.admin-table-wrap .table tbody td {
+  background: var(--admin-surface);
+
+  color: var(--color-text-main);
+
+  border-color: var(--admin-border);
+}
+
+.admin-table-wrap
+.table-hover
+> tbody
+> tr:hover
+> * {
+  background-color:
+    rgba(0, 163, 196, 0.045);
+}
+
+
+/* =========================================
+   PAGINAÇÃO DA DASHBOARD
+   ========================================= */
+
+.admin-table-wrap .pagination-toolbar {
+  padding-inline: 1rem;
+}
+
+.admin-table-wrap .pagination-page-size-form {
+  flex-wrap: wrap;
+
+  justify-content: flex-end;
+}
+
+.admin-table-wrap .pagination-page-size-select {
+  min-width: 82px;
+
+  width: auto;
+
+  border-radius: 999px;
+
+  padding-right: 2rem;
+}
+
+
+/* =========================================
+   TABELA DE DADOS DA OPERAÇÃO
+   ========================================= */
+
+.admin-op-table-wrap {
+  margin-top: 14px;
+
+  border:
+    1px solid var(--admin-border);
+
+  border-radius: 14px;
+
+  overflow: hidden;
+
+  background: var(--admin-surface);
+
+  box-shadow:
+    0 2px 8px rgba(15, 23, 42, 0.035);
+}
+
+.admin-op-table {
+  width: 100%;
+
+  margin: 0;
+
+  border-collapse: collapse;
+}
+
+.admin-op-table th,
+.admin-op-table td {
+  padding: 8px 12px;
+
+  border-bottom:
+    1px solid var(--admin-border);
+
+  vertical-align: top;
+
+  line-height: 1.35;
+}
+
+.admin-op-table tr:last-child th,
+.admin-op-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.admin-op-table th {
+  width: 148px;
+
+  font-size: 0.78rem;
+
+  font-weight: 700;
+
+  color: var(--color-text-muted);
+
+  background: var(--admin-surface-soft);
+
+  white-space: nowrap;
+}
+
+.admin-op-table td {
+  font-size: 0.84rem;
+
+  font-weight: 700;
+
+  color: var(--color-text-main);
+
+  background: var(--admin-surface);
+
+  word-break: break-word;
+}
+
+
+/* =========================================
+   TABELA DASHBOARD - DESKTOP
+   ========================================= */
+
+@media (min-width: 992px) {
+
+  .admin-table-wrap .table-accordion {
+    table-layout: fixed;
+  }
+
+
+  /* -----------------------------------------
+     Comportamento desktop
+     ----------------------------------------- */
+
+  .admin-table-wrap
+  .table-accordion
+  > tbody
+  > tr.main-row {
+    cursor: default !important;
+  }
+
+  .admin-table-wrap
+  .table-accordion
+  .bi-chevron-down {
+    display: none !important;
+  }
+
+
+  /* -----------------------------------------
+     Largura das colunas
+     ----------------------------------------- */
+
+  .admin-table-wrap
+  .table-accordion
+  td:nth-child(1),
+
+  .admin-table-wrap
+  .table-accordion
+  th:nth-child(1) {
+    width: 33%;
+  }
+
+  .admin-table-wrap
+  .table-accordion
+  td:nth-child(2),
+
+  .admin-table-wrap
+  .table-accordion
+  th:nth-child(2) {
+    width: 33%;
+  }
+
+  .admin-table-wrap
+  .table-accordion
+  td:nth-child(3),
+
+  .admin-table-wrap
+  .table-accordion
+  th:nth-child(3) {
+    width: 34%;
+  }
+
+
+  /* -----------------------------------------
+     Proteção contra estouro
+     ----------------------------------------- */
+
+  .admin-table-wrap
+  .table-accordion
+  td {
+    overflow-wrap: break-word;
+
+    word-wrap: break-word;
+  }
+
+  .admin-table-wrap
+  .table-accordion
+  td form {
+    max-width: 100%;
+  }
+
+  .admin-table-wrap
+  .table-accordion
+  input,
+
+  .admin-table-wrap
+  .table-accordion
+  select,
+
+  .admin-table-wrap
+  .table-accordion
+  textarea {
+    max-width: 100%;
+  }
+
+
+  /* -----------------------------------------
+     Blocos internos
+     ----------------------------------------- */
+
+  .admin-table-wrap
+  .table-accordion
+  td
+  .border.rounded {
+    background:
+      var(--admin-surface-soft);
+
+    border-color:
+      var(--admin-border) !important;
+  }
+}
+
+
+/* =========================================
+   RESPONSIVIDADE DASHBOARD
+   ========================================= */
+
+@media (max-width: 991.98px) {
+
+  /* -----------------------------------------
+     Container
+     ----------------------------------------- */
+
+  .admin-page.container-fluid.py-4 {
+    padding-left: 12px !important;
+
+    padding-right: 12px !important;
+  }
+
+
+  /* -----------------------------------------
+     Toolbar
+     ----------------------------------------- */
+
+  .admin-toolbar {
+    flex-direction: column;
+
+    align-items: stretch;
+  }
+
+  .admin-toolbar-actions {
+    width: 100%;
+
+    justify-content: flex-start;
+  }
+
+  .admin-toolbar-slot {
+    flex: 0 1 180px;
+  }
+
+
+  /* -----------------------------------------
+     Filtros
+     ----------------------------------------- */
+
+  #collapseFiltros
+  .row.g-2.align-items-end
+  > div {
+    width: 100%;
+  }
+
+  .admin-filter-actions {
+    flex-wrap: wrap;
+
+    align-items: stretch;
+  }
+
+
+  /* =========================================
+     TABELA MOBILE / SANFONA
+     ========================================= */
+
+  .admin-table-wrap
+  .table-accordion
+  > tbody
+  > tr.main-row {
+    display: block;
+
+    width: 100% !important;
+
+    margin: 14px 0 !important;
+
+    background:
+      var(--admin-surface);
+
+    border:
+      1px solid var(--admin-border);
+
+    border-left:
+      5px solid var(--color-primary);
+
+    border-radius: 16px;
+
+    box-shadow:
+      0 6px 18px rgba(15, 23, 42, 0.07);
+
+    overflow: hidden;
+
+    cursor: pointer;
+
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease,
+      border-color 0.2s ease;
+  }
+
+  .admin-table-wrap
+  .table-accordion
+  > tbody
+  > tr.main-row:active {
+    transform:
+      scale(0.98);
+
+    box-shadow:
+      0 4px 12px rgba(15, 23, 42, 0.12);
+  }
+
+
+  /* -----------------------------------------
+     Célula principal vira bloco
+     ----------------------------------------- */
+
+  .admin-table-wrap
+  .table-accordion
+  > tbody
+  > tr.main-row
+  > td {
+    display: block;
+
+    width: 100%;
+
+    padding: 14px !important;
+
+    border: none !important;
+
+    background:
+      transparent;
+
+    transition:
+      background-color 0.2s ease;
+  }
+
+
+  /* -----------------------------------------
+     Seta da sanfona
+     ----------------------------------------- */
+
+  .admin-table-wrap
+  .table-accordion
+  .bi-chevron-down {
+    display: inline-block !important;
+
+    transition:
+      transform 0.3s ease;
+  }
+
+  .admin-table-wrap
+  .table-accordion
+  tr[aria-expanded="true"]
+  .bi-chevron-down {
+    transform:
+      rotate(180deg);
+
+    color:
+      var(--color-primary);
+  }
+
+
+  /* -----------------------------------------
+     Área expandida
+     ----------------------------------------- */
+
+  .admin-table-wrap
+  .table-accordion
+  .collapse.show {
+    background:
+      var(--admin-surface-soft);
+
+    border-top:
+      1px solid var(--admin-border);
+
+    box-shadow:
+      inset 0 2px 4px rgba(15, 23, 42, 0.025);
+
+    border-radius:
+      0 0 16px 16px;
+  }
+
+  .admin-table-wrap
+  .table-accordion
+  > tbody
+  > tr.d-lg-none
+  > td
+  > .collapse
+  > div {
+    padding: 14px !important;
+
+    background:
+      var(--admin-surface);
+
+    border-color:
+      var(--admin-border);
+  }
+
+
+  /* -----------------------------------------
+     Detalhes mobile
+     ----------------------------------------- */
+
+  .admin-table-wrap
+  .table-accordion
+  > tbody
+  > tr.d-lg-none
+  .row.g-2.small
+  > div,
+
+  .admin-table-wrap
+  .table-accordion
+  > tbody
+  > tr.d-lg-none
+  .row.g-2
+  > div {
+    width: 100%;
+  }
+
+
+  /* -----------------------------------------
+     Botões
+     ----------------------------------------- */
+
+  .admin-table-wrap
+  .table-accordion
+  .d-flex.gap-1.mt-2.align-items-center.justify-content-center,
+
+  .admin-table-wrap
+  .table-accordion
+  .d-none.d-lg-flex.gap-1.mt-4 {
+    flex-wrap: wrap;
+  }
+
+
+  /* -----------------------------------------
+     Paginação
+     ----------------------------------------- */
+
+  .admin-table-wrap .pagination {
+    flex-wrap: wrap;
+  }
+
+  .admin-table-wrap
+  .pagination-toolbar {
+    padding-inline: 0.75rem;
+  }
+
+  .admin-table-wrap
+  .pagination-page-size-form {
+    justify-content: flex-start;
+  }
+
+
+  /* -----------------------------------------
+     Modal do mapa
+     ----------------------------------------- */
+
+  .admin-map-modal
+  .modal-dialog {
+    margin: 0.75rem;
+  }
+
+  .admin-map-modal
+  .modal-footer {
+    flex-direction: column;
+
+    gap: 10px;
+  }
+
+  .admin-map-modal
+  .modal-footer
+  .d-flex.gap-2 {
+    flex-wrap: wrap;
+  }
+
+  .admin-map-modal
+  #mapCanvas {
+    height: 320px !important;
+  }
+}
+
+
+/* =========================================
+   TELAS MUITO PEQUENAS
+   ========================================= */
+
+@media (max-width: 420px) {
+
+  .admin-toolbar-actions {
+    justify-content: center;
+  }
+
+  .admin-toolbar-slot {
+    width: 100%;
+
+    min-width: 0;
+  }
+
+  .admin-filter-actions {
+    flex-direction: column;
+  }
+
+  .admin-map-modal
+  #mapCanvas {
+    height: 260px !important;
+  }
+}
+
+
+/* =========================================
+   DARK MODE - ADMIN DASHBOARD
+   ========================================= */
+
+
+/* =========================================
+   CARDS
+   ========================================= */
+
+body.dark-mode
+.admin-page
+.card {
+  background:
+    rgba(21, 34, 51, 0.7);
+
+  border:
+    1px solid rgba(126, 180, 255, 0.12);
+
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.2);
+
+  color:
+    var(--color-text-main);
+}
+
+body.dark-mode
+.admin-page
+.card:hover {
+  background:
+    rgba(21, 34, 51, 0.8);
+
+  border-color:
+    rgba(126, 180, 255, 0.2);
+
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, 0.25);
+}
+
+body.dark-mode
+.admin-page
+.card-header {
+  background:
+    rgba(16, 25, 38, 0.7);
+
+  border-bottom:
+    1px solid rgba(126, 180, 255, 0.12);
+
+  color:
+    rgba(255, 255, 255, 0.9);
+}
+
+
+/* =========================================
+   TABELA PRINCIPAL
+   ========================================= */
+
+body.dark-mode
+.admin-table-wrap
+.table
+thead
+th {
+  background:
+    rgba(16, 25, 38, 0.7);
+
+  color:
+    rgba(255, 255, 255, 0.8);
+
+  border-bottom:
+    1px solid rgba(126, 180, 255, 0.12);
+}
+
+body.dark-mode
+.admin-table-wrap
+.table
+tbody
+td {
+  background:
+    rgba(21, 34, 51, 0.5);
+
+  border-color:
+    rgba(126, 180, 255, 0.08);
+
+  color:
+    rgba(255, 255, 255, 0.8);
+}
+
+body.dark-mode
+.admin-table-wrap
+.table-hover
+> tbody
+> tr:hover
+> * {
+  background-color:
+    rgba(18, 227, 255, 0.06) !important;
+}
+
+
+/* =========================================
+   TABELA DE DADOS DA OPERAÇÃO
+   ========================================= */
+
+body.dark-mode
+.admin-op-table-wrap {
+  background:
+    rgba(16, 25, 38, 0.42);
+
+  border-color:
+    rgba(126, 180, 255, 0.12);
+}
+
+body.dark-mode
+.admin-op-table
+th {
+  background:
+    rgba(16, 25, 38, 0.7);
+
+  color:
+    var(--color-text-muted);
+
+  border-color:
+    rgba(126, 180, 255, 0.08);
+}
+
+body.dark-mode
+.admin-op-table
+td {
+  background:
+    rgba(21, 34, 51, 0.5);
+
+  color:
+    rgba(255, 255, 255, 0.8);
+
+  border-color:
+    rgba(126, 180, 255, 0.08);
+}
+
+
+/* =========================================
+   INPUTS E SELECTS
+   ========================================= */
+
+body.dark-mode
+.admin-page
+.form-control,
+
+body.dark-mode
+.admin-page
+.form-select {
+  background:
+    rgba(16, 25, 38, 0.8);
+
+  border:
+    1px solid rgba(126, 180, 255, 0.2);
+
+  color:
+    rgba(255, 255, 255, 0.9);
+}
+
+body.dark-mode
+.admin-page
+.form-control:focus,
+
+body.dark-mode
+.admin-page
+.form-select:focus {
+  background:
+    rgba(16, 25, 38, 0.9);
+
+  border-color:
+    rgba(158, 244, 255, 0.4);
+
+  color:
+    rgba(255, 255, 255, 0.95);
+
+  box-shadow:
+    0 0 0 3px rgba(158, 244, 255, 0.1);
+}
+
+body.dark-mode
+.admin-page
+.form-control::placeholder {
+  color:
+    rgba(201, 220, 239, 0.55);
+}
+
+
+/* =========================================
+   BLOCOS INTERNOS DA TABELA
+   ========================================= */
+
+body.dark-mode
+.admin-table-wrap
+.table-accordion
+td
+.border.rounded {
+  background-color:
+    #1f2937;
+
+  border-color:
+    rgba(126, 180, 255, 0.12) !important;
+}
+
+
+/* =========================================
+   TEXTOS
+   ========================================= */
+
+body.dark-mode
+.admin-page
+.text-dark {
+  color:
+    var(--color-text-main) !important;
+}
+
+body.dark-mode
+.admin-page
+.text-muted {
+  color:
+    var(--color-text-muted) !important;
+}
+
+body.dark-mode
+.admin-page
+.small {
+  color:
+    var(--color-text-main);
+}
+
+
+/* =========================================
+   FUNDOS AUXILIARES
+   ========================================= */
+
+body.dark-mode
+.admin-page
+.bg-light {
+  background:
+    #172334 !important;
+
+  color:
+    var(--color-text-main) !important;
+}
+
+
+/* =========================================
+   ALERTAS
+   ========================================= */
+
+body.dark-mode
+.admin-page
+.alert {
+  background:
+    rgba(21, 34, 51, 0.6);
+
+  border:
+    1px solid rgba(126, 180, 255, 0.12);
+
+  color:
+    rgba(255, 255, 255, 0.8);
+}
+
+
+/* =========================================
+   BOTÕES
+   ========================================= */
+
+body.dark-mode
+.admin-page
+.btn-primary {
+  background:
+    rgba(10, 168, 195, 0.8);
+
+  border: 0;
+
+  color: #fff;
+}
+
+body.dark-mode
+.admin-page
+.btn-primary:hover {
+  background:
+    rgba(10, 168, 195, 1);
+
+  box-shadow:
+    0 4px 12px rgba(10, 168, 195, 0.25);
+}
+
+body.dark-mode
+.admin-page
+.btn-success {
+  background:
+    rgba(21, 82, 122, 0.92);
+
+  border: 0;
+
+  color: #fff;
+}
+
+body.dark-mode
+.admin-page
+.btn-success:hover {
+  background:
+    rgba(17, 66, 98, 1);
+}
+
+body.dark-mode
+.admin-page
+.btn-danger {
+  background:
+    rgba(229, 62, 62, 0.8);
+
+  border: 0;
+
+  color: #fff;
+}
+
+
+/* =========================================
+   RETORNO AUTOMÁTICO
+   ========================================= */
+
+/* Light mode: resumo do ciclo */
+.retorno-ciclo-resumo {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  border: 1px solid rgba(100, 132, 171, 0.16);
+  border-radius: 1rem !important;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+  color: #1f3f61;
+}
+
+.retorno-ciclo-resumo--dashboard {
+  background: linear-gradient(180deg, #ffffff 0%, #f5f9fd 100%);
+  border-color: rgba(100, 132, 171, 0.18) !important;
+}
+
+.retorno-ciclo-summary-header,
+.retorno-ciclo-node-row {
+  min-height: 2.3rem;
+}
+
+.retorno-ciclo-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px !important;
+  padding: 0.35em 0.75em;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1.15;
+  border: 1px solid transparent;
+  letter-spacing: 0.01em;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.retorno-ciclo-badge--title {
+  background: linear-gradient(180deg, #f7e7a8 0%, #edd56d 100%);
+  color: #2b2410;
+  border-color: rgba(166, 125, 24, 0.18);
+}
+
+.retorno-ciclo-badge--info {
+  background: rgba(59, 130, 246, 0.12);
+  color: #1e4f83;
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+.retorno-ciclo-badge--neutral {
+  background: rgba(96, 125, 152, 0.1);
+  color: #2b4e6d;
+  border-color: rgba(96, 125, 152, 0.18);
+}
+
+.retorno-ciclo-badge--danger {
+  background: rgba(220, 38, 38, 0.1);
+  color: #a11d1d;
+  border-color: rgba(220, 38, 38, 0.18);
+}
+
+.retorno-ciclo-badge--pending {
+  background: rgba(245, 158, 11, 0.12);
+  color: #8a5a05;
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+.retorno-ciclo-etapas,
+.retorno-ciclo-meta-inline {
+  color: #395f87;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.retorno-ciclo-separator {
+  color: rgba(57, 95, 135, 0.55);
+  font-size: 0.8rem;
+}
+
+.retorno-ciclo-node-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.25rem;
+  padding: 0.55rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid rgba(104, 135, 166, 0.24);
+  background: #fff;
+  color: inherit;
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.retorno-ciclo-node-pill:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.05);
+}
+
+.retorno-ciclo-node-pill--more {
+  background: rgba(59, 130, 246, 0.08);
+  color: #23507c;
+}
+
+.retorno-ciclo-node-pill .bi {
+  color: inherit;
+}
+
+body.dark-mode .retorno-ciclo-resumo {
+  background: linear-gradient(180deg, rgba(31, 42, 58, 0.9) 0%, rgba(23, 33, 45, 0.95) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 1rem !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.12),
+    0 12px 28px rgba(0, 0, 0, 0.18);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+body.dark-mode .retorno-ciclo-resumo--dashboard {
+  background: rgba(31, 42, 58, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.7) !important;
+  border-radius: 1rem !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.12),
+    0 10px 18px rgba(0, 0, 0, 0.1);
+}
+
+body.dark-mode .retorno-ciclo-badge {
+  border-radius: 999px !important;
+}
+
+body.dark-mode .retorno-ciclo-node-pill {
+  background: rgba(19, 29, 42, 0.88);
+  border-color: rgba(126, 180, 255, 0.12);
+  color: rgba(255, 255, 255, 0.9);
+  border-radius: 999px !important;
+}
+
+body.dark-mode .retorno-ciclo-node-pill--more {
+  background: rgba(18, 227, 255, 0.08);
+  color: #dff8ff;
+}
+
+body.dark-mode .retorno-ciclo-node-pill .bi {
+  color: #66d9ff;
+}
+
+body.dark-mode .retorno-ciclo-etapas,
+body.dark-mode .retorno-ciclo-meta-inline,
+body.dark-mode .retorno-ciclo-separator {
+  color: rgba(201, 220, 239, 0.86);
+}
+
+
+/* =========================================
+   MODAL DO MAPA
+   ========================================= */
+
+body.dark-mode
+.admin-map-modal
+.modal-content {
+  background:
+    rgba(21, 34, 51, 0.95);
+
+  border:
+    1px solid rgba(126, 180, 255, 0.12);
+
+  box-shadow:
+    0 10px 40px rgba(0, 0, 0, 0.3);
+
+  color:
+    var(--color-text-main);
+}
+
+body.dark-mode
+.admin-map-modal
+.modal-header {
+  background:
+    rgba(16, 25, 38, 0.8);
+
+  border-bottom:
+    1px solid rgba(126, 180, 255, 0.12);
+}
+
+body.dark-mode
+.admin-map-modal
+.modal-footer {
+  background:
+    rgba(16, 25, 38, 0.8);
+
+  border-top:
+    1px solid rgba(126, 180, 255, 0.12);
+}
+
+body.dark-mode
+.admin-map-modal
+.modal-title {
+  color: #fff;
+}
+
+body.dark-mode
+.admin-map-modal
+.btn-close {
+  filter: invert(1);
+}
+
+
+/* =========================================
+   MOBILE / SANFONA - DARK
+   ========================================= */
+
+@media (max-width: 991.98px) {
+
+  body.dark-mode
+  .admin-table-wrap
+  .table-accordion
+  > tbody
+  > tr.main-row {
+    background:
+      var(--color-bg-surface) !important;
+
+    border-color:
+      #233549 !important;
+
+    border-left-color:
+      var(--color-accent) !important;
+
+    box-shadow:
+      0 6px 16px
+      rgba(0, 0, 0, 0.4) !important;
+
+    color:
+      rgba(255, 255, 255, 0.92) !important;
+  }
+
+  body.dark-mode
+  .admin-table-wrap
+  .table-accordion
+  .collapse.show {
+    background-color:
+      #1a2636;
+
+    border-color:
+      #2d3748;
+
+    box-shadow:
+      inset 0 2px 4px
+      rgba(0, 0, 0, 0.2);
+  }
+
+  body.dark-mode
+  .admin-table-wrap
+  .table-accordion
+  > tbody
+  > tr.d-lg-none
+  > td
+  > .collapse
+  > div {
+    background:
+      #0f1a24 !important;
+
+    border-color:
+      #233549 !important;
+
+    color:
+      rgba(255, 255, 255, 0.92) !important;
+  }
+
+  body.dark-mode
+  .admin-table-wrap
+  .text-muted {
+    color:
+      rgba(255, 255, 255, 0.70) !important;
+  }
+}

@@ -22,10 +22,15 @@
   transition: all 0.3s ease;
 }
 
+/* ícones */
 
-/* -----------------------------------------
-   Navegação
-   ----------------------------------------- */
+.app-sidebar .bi {
+  color: var(--color-accent);
+  transition: color 0.2s;
+}
+
+
+/* Navegação */
 
 .app-sidebar .nav-link {
   color: var(--color-text-main);
@@ -55,9 +60,7 @@
 }
 
 
-/* -----------------------------------------
-   Submenus
-   ----------------------------------------- */
+/* Submenus */
 
 .app-sidebar .nav-link-toggle {
   width: 100%;
@@ -101,9 +104,7 @@
 }
 
 
-/* -----------------------------------------
-   Feedback
-   ----------------------------------------- */
+/* Feedback */
 
 .feedback-placeholder-link {
   align-items: flex-start !important;

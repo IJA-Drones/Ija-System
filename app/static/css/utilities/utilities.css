@@ -1,0 +1,101 @@
+/* =========================================
+   UTILITIES
+   Classes auxiliares reutilizáveis
+   ========================================= */
+
+/* Cores de texto */
+
+.text-primary {
+  color: var(--color-primary) !important;
+}
+
+.text-success {
+  color: var(--color-success) !important;
+}
+
+.text-danger {
+  color: var(--color-danger) !important;
+}
+
+.text-warning {
+  color: var(--color-warning) !important;
+}
+
+.text-info {
+  color: var(--color-accent) !important;
+}
+
+.text-recomended {
+  color: var(--color-recomended) !important;
+}
+
+.text-completed {
+  color: var(--color-completed) !important;
+}
+
+.text-cancelled {
+  color: #343a40 !important;
+}
+
+.text-dark {
+  color: var(--color-primary-dark) !important;
+}
+
+.text-muted {
+  color: var(--color-text-muted) !important;
+}
+
+/* Cores de fundo */
+
+.bg-secondary {
+  background: var(--color-text-muted) !important;
+}
+
+.bg-success {
+  background: var(--color-success) !important;
+}
+
+.bg-warning {
+  background: #d69e2e !important;
+  color: #fff !important;
+}
+
+.bg-recomended {
+  background: var(--color-recomended) !important;
+  color: #fff !important;
+}
+
+.bg-danger {
+  background: var(--color-danger) !important;
+  color: #fff !important;
+}
+
+.bg-light {
+  background: var(--color-bg-white) !important;
+  color: var(--color-text-main) !important;
+}
+
+.bg-filter-custom {
+  background: var(--color-accent) !important;
+  color: #fff !important;
+}
+
+.bg-completed {
+  background: var(--color-completed) !important;
+  color: #fff !important;
+}
+
+/* Tipografia auxiliar */
+
+.small {
+  font-size: 0.875rem;
+}
+
+/* Espaçamento entre letras para labels */
+.ls-1 {
+  letter-spacing: 0.5px;
+}
+
+.transition-all {
+    transition: all 0.25s ease;
+}
