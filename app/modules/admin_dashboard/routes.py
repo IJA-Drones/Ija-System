@@ -13,6 +13,8 @@ from app.modules.admin_dashboard.service import (
     build_admin_dashboard_export,
     build_admin_dashboard_query,
     build_admin_historico_os_export,
+    build_admin_historico_os_individual_excel_zip,
+    build_admin_historico_os_individual_pdf_zip,
     build_admin_historico_os_query,
     build_equipe_uvis_names_select,
     build_status_order,
@@ -416,6 +418,66 @@ def register_routes(bp):
             db.session.rollback()
             current_app.logger.error(f"ERRO EXPORTAR HISTORICO OS EXCEL: {exc}")
             flash("Erro ao gerar o Excel do historico de OS.", "danger")
+            return redirect(url_for("main.admin_historico_os", tipo_os=filtro_tipo_os))
+
+    @bp.route("/admin/historico-os/exportar-excel-individuais")
+    @login_required
+    def admin_historico_os_exportar_excel_individuais():
+        if not can_access_admin_panel(current_user):
+            flash("Permissao negada para exportar.", "danger")
+            return redirect(url_for("main.dashboard"))
+
+        filtro_tipo_os = "piloto"
+        filtros = get_os_history_filters(request.args, status_key="status_os")
+        filtro_equipe = (request.args.get("equipe") or "").strip()
+
+        try:
+            output, download_name = build_admin_historico_os_individual_excel_zip(
+                current_user,
+                filtros,
+                filtro_tipo_os,
+                filtro_equipe,
+            )
+            return send_file(
+                output,
+                download_name=download_name,
+                as_attachment=True,
+                mimetype="application/zip",
+            )
+        except Exception as exc:
+            db.session.rollback()
+            current_app.logger.error(f"ERRO EXPORTAR OS INDIVIDUAIS ZIP: {exc}")
+            flash("Erro ao gerar o pacote de Excels individuais das OS.", "danger")
+            return redirect(url_for("main.admin_historico_os", tipo_os=filtro_tipo_os))
+
+    @bp.route("/admin/historico-os/exportar-pdf-individuais")
+    @login_required
+    def admin_historico_os_exportar_pdf_individuais():
+        if not can_access_admin_panel(current_user):
+            flash("Permissao negada para exportar.", "danger")
+            return redirect(url_for("main.dashboard"))
+
+        filtro_tipo_os = "piloto"
+        filtros = get_os_history_filters(request.args, status_key="status_os")
+        filtro_equipe = (request.args.get("equipe") or "").strip()
+
+        try:
+            output, download_name = build_admin_historico_os_individual_pdf_zip(
+                current_user,
+                filtros,
+                filtro_tipo_os,
+                filtro_equipe,
+            )
+            return send_file(
+                output,
+                download_name=download_name,
+                as_attachment=True,
+                mimetype="application/zip",
+            )
+        except Exception as exc:
+            db.session.rollback()
+            current_app.logger.error(f"ERRO EXPORTAR PDFS INDIVIDUAIS ZIP: {exc}")
+            flash("Erro ao gerar o pacote de PDFs individuais das OS.", "danger")
             return redirect(url_for("main.admin_historico_os", tipo_os=filtro_tipo_os))
 
     @bp.route("/admin/os/<int:os_id>/equipe-uvis-formulario", methods=["GET"], endpoint="admin_equipe_uvis_os_formulario_view")

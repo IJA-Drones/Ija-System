@@ -3,6 +3,7 @@ from io import BytesIO
 import os
 import re
 import uuid
+from zipfile import ZIP_DEFLATED, ZipFile
 from zoneinfo import ZoneInfo
 
 from flask import current_app
@@ -14,6 +15,7 @@ from werkzeug.utils import secure_filename
 
 from app.extensions import db
 from app.models import Equipe, OrdemServico, OrdemServicoEquipeUvis, Solicitacao, Usuario
+from app.modules.piloto_os.exporters import build_admin_os_excel_v2_export, build_admin_os_pdf_v2_export
 from app.shared.access import (
     ADMIN_PANEL_EDIT_TYPES,
     ADMIN_PANEL_VIEW_TYPES,
@@ -867,6 +869,153 @@ def build_admin_historico_os_export(user, filtros, filtro_tipo_os: str, filtro_e
     output.seek(0)
     tipo_nome = "equipe_uvis" if filtro_tipo_os == "equipe_uvis" else "piloto"
     filename = f"historico_os_{tipo_nome}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    return output, filename
+
+
+def _historico_os_zip_readme(tipo_exportacao: str, filtros, filtro_equipe: str, total: int):
+    periodo_inicio = _format_filter_date(filtros.get("data_ini"))
+    periodo_fim = _format_filter_date(filtros.get("data_fim"))
+    if periodo_inicio and periodo_fim:
+        periodo = f"{periodo_inicio} ate {periodo_fim}"
+    elif periodo_inicio:
+        periodo = f"a partir de {periodo_inicio}"
+    elif periodo_fim:
+        periodo = f"ate {periodo_fim}"
+    else:
+        periodo = "Nao informado"
+
+    linhas = [
+        "IJA System - Exportacao em massa de OS",
+        "=" * 42,
+        "",
+        f"Tipo de exportacao: {tipo_exportacao}",
+        f"Gerado em: {_format_datetime_br(datetime.now())}",
+        f"Total de arquivos de OS no pacote: {total}",
+        "",
+        "Filtros aplicados",
+        "-" * 17,
+        f"Periodo de agendamento: {periodo}",
+    ]
+
+    filtros_legiveis = [
+        ("Status da OS", filtros.get("status")),
+        ("Retorno automatico", filtros.get("retorno_automatico")),
+        ("Unidade", filtros.get("unidade_values") or filtros.get("unidade")),
+        ("Regiao", filtros.get("regiao")),
+        ("PLOA / equipe", filtro_equipe),
+        ("Apoio CET", filtros.get("apoio_cet")),
+        ("Tipo de visita", filtros.get("tipo_visita")),
+        ("Tipo de imovel", filtros.get("tipo_imovel")),
+        ("Foco", filtros.get("foco_values") or filtros.get("foco")),
+        ("ID, protocolo ou identificador", filtros.get("protocolo")),
+        ("Endereco", filtros.get("endereco")),
+    ]
+
+    for label, value in filtros_legiveis:
+        linhas.append(f"{label}: {_format_filter_value(value)}")
+
+    linhas.extend([
+        "",
+        "Observacao",
+        "-" * 10,
+        "Cada arquivo individual foi gerado com o mesmo modelo usado no botao de exportacao da linha da OS.",
+        "Este TXT registra apenas os filtros usados para montar este pacote.",
+        "",
+    ])
+    return "\n".join(linhas)
+
+
+def _format_filter_date(value):
+    if not value:
+        return ""
+    try:
+        return date.fromisoformat(str(value)).strftime("%d/%m/%Y")
+    except ValueError:
+        return str(value)
+
+
+def _format_filter_value(value):
+    if isinstance(value, (list, tuple, set)):
+        value = ", ".join(str(item) for item in value if str(item).strip())
+    value = (str(value).strip() if value is not None else "")
+    return value or "Nao informado"
+
+
+def build_admin_historico_os_individual_excel_zip(
+    user,
+    filtros,
+    filtro_tipo_os: str,
+    filtro_equipe: str = "",
+):
+    pedidos = (
+        build_admin_historico_os_query(user, filtros, filtro_tipo_os, filtro_equipe)
+        .order_by(build_status_order(), Solicitacao.data_criacao.desc(), Solicitacao.id.desc())
+        .all()
+    )
+
+    output = BytesIO()
+    used_names = set()
+    with ZipFile(output, "w", ZIP_DEFLATED) as zip_file:
+        zip_file.writestr(
+            "LEIA-ME.txt",
+            _historico_os_zip_readme("Excels individuais", filtros, filtro_equipe, len(pedidos)),
+        )
+        for pedido in pedidos:
+            excel_output, excel_name = build_admin_os_excel_v2_export(pedido.id, {})
+            safe_name = secure_filename(excel_name) or f"os_{pedido.id}_formulario.xlsx"
+            if safe_name in used_names:
+                base, ext = os.path.splitext(safe_name)
+                safe_name = f"{base}_{pedido.id}{ext or '.xlsx'}"
+            used_names.add(safe_name)
+            zip_file.writestr(safe_name, excel_output.getvalue())
+
+    output.seek(0)
+    filename = f"os_individuais_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
+    return output, filename
+
+
+def build_admin_historico_os_individual_pdf_zip(
+    user,
+    filtros,
+    filtro_tipo_os: str,
+    filtro_equipe: str = "",
+):
+    pedidos = (
+        build_admin_historico_os_query(user, filtros, filtro_tipo_os, filtro_equipe)
+        .order_by(build_status_order(), Solicitacao.data_criacao.desc(), Solicitacao.id.desc())
+        .all()
+    )
+
+    output = BytesIO()
+    used_names = set()
+    with ZipFile(output, "w", ZIP_DEFLATED) as zip_file:
+        zip_file.writestr(
+            "LEIA-ME.txt",
+            _historico_os_zip_readme("PDFs individuais", filtros, filtro_equipe, len(pedidos)),
+        )
+        for pedido in pedidos:
+            pdf_path = None
+            try:
+                pdf_path, pdf_name = build_admin_os_pdf_v2_export(pedido.id, {})
+                safe_name = secure_filename(pdf_name) or f"os_{pedido.id}_formulario.pdf"
+                if safe_name in used_names:
+                    base, ext = os.path.splitext(safe_name)
+                    safe_name = f"{base}_{pedido.id}{ext or '.pdf'}"
+                used_names.add(safe_name)
+                with open(pdf_path, "rb") as pdf_file:
+                    zip_file.writestr(safe_name, pdf_file.read())
+            finally:
+                if pdf_path:
+                    try:
+                        os.remove(pdf_path)
+                    except OSError:
+                        current_app.logger.warning(
+                            "Nao foi possivel remover PDF temporario %s",
+                            pdf_path,
+                        )
+
+    output.seek(0)
+    filename = f"os_pdfs_individuais_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
     return output, filename
 
 
