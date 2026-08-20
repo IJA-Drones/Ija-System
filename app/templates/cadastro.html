@@ -283,14 +283,30 @@
               name="logradouro"
               class="form-control"
               required
+              title="Informe somente o nome da rua, sem numero predial."
               value="{{ form.logradouro or '' }}"
             />
+            <div class="invalid-feedback">
+              Nao coloque numero predial no Logradouro. Use somente o campo Numero.
+            </div>
           </div>
           <div class="col-md-4">
             <label class="form-label fw-bold small text-muted">
               <i class="bi bi-hash me-1 text-primary"></i> Número *
             </label>
-            <input type="text" name="numero" class="form-control" required value="{{ form.numero or '' }}" />
+            <input
+              type="text"
+              name="numero"
+              class="form-control"
+              required
+              maxlength="7"
+              pattern="^\s*(\d{1,6}[A-Za-z]?|[sS]/?[nN])\s*$"
+              title="Informe apenas um numero predial, como 150, 150A ou S/N."
+              value="{{ form.numero or '' }}"
+            />
+            <div class="invalid-feedback">
+              Informe apenas um numero predial. Para outro numero, crie uma nova solicitacao separada.
+            </div>
           </div>
         </div>
 
@@ -626,8 +642,50 @@
       return `${digits.slice(0, 5)}-${digits.slice(5)}`;
     }
 
+    function normalizarNumeroEndereco() {
+      if (!numeroInput) return "";
+      const numero = (numeroInput.value || "").replace(/\s+/g, "");
+      numeroInput.value = /^s\/?n$/i.test(numero) ? "S/N" : numero.toUpperCase();
+      return numeroInput.value;
+    }
+
+    function numeroEnderecoValido() {
+      const numero = normalizarNumeroEndereco();
+      return /^(\d{1,6}[A-Z]?|S\/N)$/i.test(numero);
+    }
+
+    function atualizarValidacaoNumero() {
+      if (!numeroInput) return true;
+      const valido = numeroEnderecoValido();
+      numeroInput.classList.toggle("is-invalid", !valido && Boolean(numeroInput.value.trim()));
+      numeroInput.setCustomValidity(
+        valido ? "" : "Informe apenas um numero predial no campo Numero."
+      );
+      return valido;
+    }
+
+    function logradouroValido() {
+      const logradouro = (enderecoInput?.value || "").trim();
+      return !/(?:,|\/|-|\bn[ºo.]?)\s*\d{1,6}[A-Za-z]?\s*$/i.test(logradouro);
+    }
+
+    function atualizarValidacaoLogradouro() {
+      if (!enderecoInput) return true;
+      const valido = logradouroValido();
+      enderecoInput.classList.toggle("is-invalid", !valido && Boolean(enderecoInput.value.trim()));
+      enderecoInput.setCustomValidity(
+        valido ? "" : "Nao coloque numero predial no Logradouro."
+      );
+      return valido;
+    }
+
     async function chamarGeocode() {
       try {
+        if (!atualizarValidacaoLogradouro() || !atualizarValidacaoNumero()) {
+          limparLatLng();
+          return;
+        }
+
         const payload = {
           cep: (cepInput?.value || "").trim(),
           logradouro: (enderecoInput?.value || "").trim(),
@@ -902,11 +960,25 @@
       // enquanto digita
       numeroInput.addEventListener("keyup", function () {
         limparLatLng();
+        if (!atualizarValidacaoNumero()) return;
         agendarGeocode(450);
       });
 
       // quando sai do campo (bem confiável)
       numeroInput.addEventListener("blur", function () {
+        if (!atualizarValidacaoNumero()) return;
+        agendarGeocode(100);
+      });
+    }
+
+    if (enderecoInput) {
+      enderecoInput.addEventListener("input", function () {
+        limparLatLng();
+        atualizarValidacaoLogradouro();
+      });
+
+      enderecoInput.addEventListener("blur", function () {
+        if (!atualizarValidacaoLogradouro()) return;
         agendarGeocode(100);
       });
     }
@@ -1047,6 +1119,34 @@
 
         if (validandoEnvio) return;
         validandoEnvio = true;
+
+        if (!atualizarValidacaoLogradouro()) {
+          Swal.fire({
+            icon: "warning",
+            title: "Revise o logradouro",
+            text: "Nao coloque numero predial no Logradouro. Informe o numero somente no campo Numero.",
+            timer: 3000,
+            showConfirmButton: false,
+          });
+          enderecoInput?.focus();
+          validandoEnvio = false;
+          restaurarBotaoEnvio();
+          return;
+        }
+
+        if (!atualizarValidacaoNumero()) {
+          Swal.fire({
+            icon: "warning",
+            title: "Revise o numero",
+            text: "Informe apenas um numero predial. Para outro numero, crie uma nova solicitacao separada.",
+            timer: 3000,
+            showConfirmButton: false,
+          });
+          numeroInput?.focus();
+          validandoEnvio = false;
+          restaurarBotaoEnvio();
+          return;
+        }
 
         const latField = document.getElementById("latitude");
         const lngField = document.getElementById("longitude");

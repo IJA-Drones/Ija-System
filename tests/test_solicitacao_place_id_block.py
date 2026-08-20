@@ -137,6 +137,87 @@ class SolicitacaoPlaceIdBlockTests(unittest.TestCase):
         self.assertEqual(nova.place_id, "place-123")
         self.assertEqual(Solicitacao.query.count(), 2)
 
+    def test_create_rejects_multiple_address_numbers(self):
+        form = self._solicitacao_form("place-new")
+        form["numero"] = "105, 190"
+
+        with self.assertRaises(NovoCadastroValidationError) as exc:
+            solicitacoes_service.create_nova_solicitacao(self.uvis, form)
+
+        self.assertIn("apenas um numero", exc.exception.message)
+        self.assertEqual(Solicitacao.query.count(), 0)
+
+    def test_create_rejects_long_address_number_sequence(self):
+        form = self._solicitacao_form("place-new")
+        form["numero"] = "134551312QAD222"
+
+        with self.assertRaises(NovoCadastroValidationError) as exc:
+            solicitacoes_service.create_nova_solicitacao(self.uvis, form)
+
+        self.assertIn("numero predial", exc.exception.message)
+        self.assertEqual(Solicitacao.query.count(), 0)
+
+    def test_create_rejects_address_number_inside_street_name(self):
+        form = self._solicitacao_form("place-new")
+        form["logradouro"] = "Rua Augusto de Souza Cardoso, 120"
+        form["numero"] = "138"
+
+        with self.assertRaises(NovoCadastroValidationError) as exc:
+            solicitacoes_service.create_nova_solicitacao(self.uvis, form)
+
+        self.assertIn("Logradouro", exc.exception.message)
+        self.assertEqual(Solicitacao.query.count(), 0)
+
+    def test_create_allows_number_as_part_of_street_name(self):
+        form = self._solicitacao_form("place-new")
+        form["logradouro"] = "Rua 25 de Marco"
+        form["numero"] = "138"
+
+        with (
+            patch.object(solicitacoes_service, "detectar_area_restrita", return_value=False),
+            patch.object(
+                solicitacoes_service,
+                "validate_foco_selection",
+                return_value=("Visita", "Casa", "Foco Teste"),
+            ),
+        ):
+            nova = solicitacoes_service.create_nova_solicitacao(self.uvis, form)
+
+        self.assertEqual(nova.logradouro, "Rua 25 de Marco")
+        self.assertEqual(nova.numero, "138")
+
+    def test_create_normalizes_valid_address_number(self):
+        form = self._solicitacao_form("place-new")
+        form["numero"] = " 120a "
+
+        with (
+            patch.object(solicitacoes_service, "detectar_area_restrita", return_value=False),
+            patch.object(
+                solicitacoes_service,
+                "validate_foco_selection",
+                return_value=("Visita", "Casa", "Foco Teste"),
+            ),
+        ):
+            nova = solicitacoes_service.create_nova_solicitacao(self.uvis, form)
+
+        self.assertEqual(nova.numero, "120A")
+
+    def test_create_accepts_sem_numero_marker(self):
+        form = self._solicitacao_form("place-new")
+        form["numero"] = "sn"
+
+        with (
+            patch.object(solicitacoes_service, "detectar_area_restrita", return_value=False),
+            patch.object(
+                solicitacoes_service,
+                "validate_foco_selection",
+                return_value=("Visita", "Casa", "Foco Teste"),
+            ),
+        ):
+            nova = solicitacoes_service.create_nova_solicitacao(self.uvis, form)
+
+        self.assertEqual(nova.numero, "S/N")
+
 
 if __name__ == "__main__":
     unittest.main()
