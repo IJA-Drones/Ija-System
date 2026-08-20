@@ -49,7 +49,7 @@
 
 {% block content %}
 <div class="container-fluid py-4 veiculos-menu-page">
-  <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-4">
+  <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-4 veiculos-menu-toolbar">
     <div>
       <h2 class="text-dark mb-1">
         <i class="bi bi-truck-front-fill me-2 text-primary"></i> Central de Veículos
@@ -74,7 +74,7 @@
   <div class="row g-3">
     <div class="col-md-6 col-xl-4">
       <a href="{{ url_for('main.listar_veiculos') }}" class="text-decoration-none">
-        <div class="card veiculos-menu-card border-start border-primary border-4">
+        <div class="card veiculos-menu-card veiculos-menu-card--frota border-start border-primary border-4">
           <div class="d-flex justify-content-between align-items-center gap-3">
             <div>
               <h6 class="mb-2 text-muted fw-bold">Frota</h6>
@@ -98,7 +98,7 @@
     {% if can_view_logs %}
     <div class="col-md-6 col-xl-4">
       <a href="{{ url_for('main.veiculos_logs') }}" class="text-decoration-none">
-        <div class="card veiculos-menu-card border-start border-success border-4">
+        <div class="card veiculos-menu-card veiculos-menu-card--logs border-start border-success border-4">
           <div class="d-flex justify-content-between align-items-center gap-3">
             <div>
               <h6 class="mb-2 text-muted fw-bold">Operação</h6>
@@ -121,7 +121,7 @@
 
     <div class="col-md-6 col-xl-4">
       <a href="{{ url_for('main.veiculos_limpezas') }}" class="text-decoration-none">
-        <div class="card veiculos-menu-card border-start border-info border-4">
+        <div class="card veiculos-menu-card veiculos-menu-card--limpezas border-start border-info border-4">
           <div class="d-flex justify-content-between align-items-center gap-3">
             <div>
               <h6 class="mb-2 text-muted fw-bold">Limpeza</h6>
@@ -146,7 +146,7 @@
     {% if can_view_checklist %}
     <div class="col-md-6 col-xl-4">
       <a href="{{ url_for('main.admin_checklists_semanais') }}" class="text-decoration-none">
-        <div class="card veiculos-menu-card border-start border-warning border-4">
+        <div class="card veiculos-menu-card veiculos-menu-card--checklist border-start border-warning border-4">
           <div class="d-flex justify-content-between align-items-center gap-3">
             <div>
               <h6 class="mb-2 text-muted fw-bold">Inspeção</h6>
@@ -171,7 +171,7 @@
     {% if current_user.trabalha_oceano_azul %}
     <div class="col-md-6 col-xl-4">
       <a href="{{ url_for('main.veiculos_alertas_limpeza') }}" class="text-decoration-none">
-        <div class="card veiculos-menu-card border-start border-danger border-4">
+        <div class="card veiculos-menu-card veiculos-menu-card--alertas border-start border-danger border-4">
           <div class="d-flex justify-content-between align-items-center gap-3">
             <div>
               <h6 class="mb-2 text-muted fw-bold">Limpeza</h6>

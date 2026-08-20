@@ -130,7 +130,7 @@
       </a>
       <a
         href="{{ url_for('main.admin_historico_os_exportar_excel', tipo_os='piloto', all=1) }}"
-        class="btn btn-outline-success"
+        class="btn btn-secondary"
       >
         <i class="bi bi-file-earmark-spreadsheet me-1"></i> Exportar tudo
       </a>
@@ -141,7 +141,7 @@
   </div>
 
   {% set filtros_ativos = filtros.status or filtros.unidade_values or filtros.regiao or filtros.equipe or filtros.apoio_cet or filtros.tipo_visita or filtros.tipo_imovel or filtros.foco_values or filtros.protocolo or filtros.endereco or filtros.data_ini or filtros.data_fim or filtros.retorno_automatico %}
-  <div class="card shadow-sm rounded-4 mb-4 border-0">
+  <div class="card shadow-sm rounded-4 mb-4 border-0 historico-os-filters">
     <div
       class="card-header border-0 p-3 d-flex justify-content-between align-items-center"
       data-bs-toggle="collapse"
@@ -303,7 +303,7 @@
     </div>
   </div>
 
-  <div class="card shadow-sm rounded-4 border-0 overflow-hidden">
+  <div class="card shadow-sm rounded-4 border-0 overflow-hidden historico-os-table-wrap">
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0">
         <thead class="table-light">

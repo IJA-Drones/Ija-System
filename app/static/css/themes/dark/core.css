@@ -20,3 +20,8 @@
 @import url("./components/pagination.css");
 @import url("./components/tables.css");
 @import url("./components/chatbot.css");
+@import url("./pages/historico-os.css");
+@import url("./pages/notificacoes.css");
+@import url("./pages/relatorios-menu.css");
+@import url("./pages/veiculos-menu.css");
+@import url("./pages/veiculos-modals.css");

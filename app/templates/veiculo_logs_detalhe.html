@@ -799,7 +799,7 @@
         {% for turno in timeline.logs %}
             <div class="modal fade" id="modalCorrigirKmLog{{ turno.id }}" tabindex="-1" aria-labelledby="modalCorrigirKmLog{{ turno.id }}Label" aria-hidden="true">
                 <div class="modal-dialog modal-lg modal-dialog-centered">
-                    <div class="modal-content border-0 shadow rounded-4">
+                    <div class="modal-content border-0 shadow rounded-4 vehicle-action-modal">
                         <form method="POST" action="{{ url_for('main.corrigir_log_veiculo', log_id=turno.id, return_to='veiculo', veiculo_id=veiculo.id, data_inicio=filters.data_inicio, data_fim=filters.data_fim) }}">
                             <div class="modal-header border-0 pb-0">
                                 <div>

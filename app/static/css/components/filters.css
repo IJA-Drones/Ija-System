@@ -98,7 +98,7 @@ html.dark-mode .filter-card {
 body.dark-mode .filter-card-header,
 html.dark-mode .filter-card-header {
   background: #1f2a3e;
-  color: var(--color-text-main);
+  color: var(--color-primary-dark);
   border-bottom: 1px solid #233549;
 }
 
@@ -106,12 +106,12 @@ body.dark-mode .filter-card-header .fw-bold,
 body.dark-mode .filter-card-header .text-dark,
 html.dark-mode .filter-card-header .fw-bold,
 html.dark-mode .filter-card-header .text-dark {
-  color: var(--color-text-main) !important;
+  color: var(--color-primary-dark) !important;
 }
 
 body.dark-mode .filter-card-header .text-muted,
 html.dark-mode .filter-card-header .text-muted {
-  color: var(--color-text-muted) !important;
+  color: rgba(162, 188, 216, 0.82) !important;
 }
 
 body.dark-mode .filter-card .form-control,
@@ -141,6 +141,6 @@ html.dark-mode .filter-card .form-control::placeholder {
 body.dark-mode .filter-card-badge,
 html.dark-mode .filter-card-badge {
   background: rgba(76, 163, 255, 0.14);
-  color: #a8d8ff;
+  color: #c2e1ff;
   border-color: rgba(76, 163, 255, 0.28);
 }

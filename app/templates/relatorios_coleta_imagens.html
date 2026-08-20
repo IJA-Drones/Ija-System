@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_filters.html" import render_filter_card %}
 {% from "_pagination.html" import render_pagination %}
 {% from "_multi_select_chips.html" import render_chip_select_values, render_chip_select_pairs %}
 {% from "_result_summary.html" import render_result_summary %}
@@ -7,295 +8,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
-  <style>
-    .media-report-card {
-      border: 1px solid #dbe4f0;
-      border-radius: 1rem;
-      overflow: hidden;
-      background: #fff;
-      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
-      height: 100%;
-      position: relative;
-    }
-    .media-report-thumb {
-      width: 100%;
-      height: 220px;
-      object-fit: cover;
-      background: #eff5fb;
-    }
-    .media-report-empty {
-      height: 220px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 1rem;
-      background: #f7fbff;
-      color: #6a7b91;
-      border-bottom: 1px solid #dbe4f0;
-    }
-    .media-report-meta {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 0.75rem;
-    }
-    .media-report-meta-item {
-      background: #f8fbff;
-      border: 1px solid #e3ebf5;
-      border-radius: 0.85rem;
-      padding: 0.7rem 0.8rem;
-    }
-    .media-report-meta-label {
-      display: block;
-      font-size: 0.72rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #7a8798;
-      font-weight: 700;
-      margin-bottom: 0.25rem;
-    }
-    .media-report-meta-value {
-      font-size: 0.92rem;
-      color: #193b62;
-      font-weight: 700;
-      line-height: 1.45;
-      word-break: break-word;
-    }
-    .media-report-address {
-      min-height: 72px;
-    }
-    .media-summary-card {
-      border: 0;
-      border-radius: 1rem;
-      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
-      height: 100%;
-    }
-    .media-summary-card .card-body {
-      padding: 1.15rem;
-    }
-    .media-summary-label {
-      color: #7a8798;
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      margin-bottom: 0.3rem;
-    }
-    .media-summary-value {
-      color: #0aa8c3;
-      font-size: 1.9rem;
-      font-weight: 800;
-      line-height: 1;
-    }
-    .media-filter-card,
-    .media-table-card {
-      border: 0;
-      border-radius: 1rem;
-      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
-    }
-    .media-table-card .table th {
-      font-size: 0.78rem;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: #6e7f94;
-    }
-    .media-table-card .table td {
-      vertical-align: middle;
-    }
-    .media-filter-card .form-control,
-    .media-filter-card .form-select {
-      min-height: 31px;
-    }
-    .media-filter-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      justify-content: flex-end;
-    }
-    .media-filter-actions .btn {
-      min-width: 120px;
-    }
-    .media-export-status {
-      border: 1px solid #dbe4f0;
-      border-radius: 0.75rem;
-      background: #f8fbff;
-    }
-    .media-export-status .progress {
-      height: 0.45rem;
-      background: #e4edf7;
-    }
-    .media-report-uvis-review {
-      min-height: 48px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.75rem;
-      padding: 0.62rem 0.82rem;
-      border-bottom: 1px solid #dbe4f0;
-      background: #f8fbff;
-    }
-    .media-report-uvis-review.is-ok {
-      background: #f3fbf6;
-      border-bottom-color: #cbeed6;
-    }
-    .media-report-uvis-review-copy {
-      min-width: 0;
-    }
-    .media-report-uvis-review-label {
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-      color: #193b62;
-      font-size: 0.78rem;
-      font-weight: 800;
-      line-height: 1.2;
-    }
-    .media-report-uvis-review.is-ok .media-report-uvis-review-label {
-      color: #0f7a34;
-    }
-    .media-report-uvis-review-detail {
-      color: #7a8798;
-      font-size: 0.68rem;
-      font-weight: 600;
-      line-height: 1.35;
-      margin-top: 0.12rem;
-    }
-    .media-report-ok-form {
-      flex: 0 0 auto;
-      margin: 0;
-    }
-    .media-report-ok-button {
-      min-height: 31px;
-      border-radius: 999px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.35rem;
-      padding: 0.32rem 0.68rem;
-      font-size: 0.72rem;
-      font-weight: 800;
-      line-height: 1;
-      white-space: nowrap;
-      border: 1px solid #1f5b94;
-      background: #fff;
-      color: #1f5b94;
-    }
-    .media-report-ok-button:hover,
-    .media-report-ok-button:focus {
-      background: #1f5b94;
-      color: #fff;
-    }
-    .media-report-actions {
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-    }
-    .media-report-action-buttons {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-    }
-    .media-report-ok-button i {
-      font-size: 0.86rem;
-    }
-    @media (max-width: 767.98px) {
-      .media-report-meta {
-        grid-template-columns: 1fr;
-      }
-      .media-filter-actions .btn {
-        width: 100%;
-      }
-      .media-report-action-buttons {
-        flex: 1 1 auto;
-      }
-    }
-
-    /* Dark Mode Styles - apenas fundos brancos */
-    body.dark-mode .media-report-card {
-      background: #152233;
-      border-color: #233549;
-    }
-
-    body.dark-mode .media-report-thumb {
-      background: #1f2a3e;
-    }
-
-    body.dark-mode .media-report-empty {
-      background: #1f2a3e;
-      color: var(--color-text-muted);
-      border-bottom-color: #233549;
-    }
-
-    body.dark-mode .media-report-meta-item {
-      background: #1f2a3e;
-      border-color: #233549;
-    }
-
-    body.dark-mode .media-summary-card {
-      background: #152233;
-      border-color: #233549;
-    }
-
-    body.dark-mode .media-summary-value {
-      color: #12e3ff;
-    }
-
-    body.dark-mode .media-filter-card {
-      background: rgba(25, 35, 49, 0.8);
-      border: 1px solid rgba(126, 180, 255, 0.12);
-      box-shadow: 0 10px 22px rgba(0, 0, 0, 0.12);
-    }
-
-    body.dark-mode .media-filter-card .card-header {
-      background: rgba(31, 42, 58, 0.82) !important;
-      border-bottom: 1px solid rgba(126, 180, 255, 0.1);
-      color: var(--color-text-main) !important;
-    }
-
-    body.dark-mode .media-filter-card .card-header .text-dark,
-    body.dark-mode .media-filter-card .card-header .fw-bold,
-    body.dark-mode .media-filter-card .card-header .text-muted,
-    body.dark-mode .media-filter-card .card-header i,
-    body.dark-mode .media-filter-card .card-header .badge {
-      color: var(--color-text-main) !important;
-    }
-
-    body.dark-mode .media-filter-card .card-body {
-      background: rgba(21, 30, 42, 0.68);
-    }
-
-    body.dark-mode .media-filter-card .form-control,
-    body.dark-mode .media-filter-card .form-select {
-      background: rgba(20, 31, 43, 0.9) !important;
-      border-color: rgba(126, 180, 255, 0.12) !important;
-      color: var(--color-text-main) !important;
-    }
-
-    body.dark-mode .media-table-card {
-      background: #152233;
-      border-color: #233549;
-    }
-
-    body.dark-mode .media-export-status {
-      background: #1f2a3e;
-      border-color: #233549;
-    }
-
-    body.dark-mode .media-export-status .progress {
-      background: rgba(18,227,255,.12);
-    }
-
-    body.dark-mode .media-report-uvis-review {
-      background: #1f2a3e;
-      border-bottom-color: #233549;
-    }
-
-    body.dark-mode .media-report-uvis-review.is-ok {
-      background: rgba(46, 133, 89, .12);
-      border-bottom-color: #2e8559;
-    }
-  </style>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/relatorios_coleta_imagens.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -305,7 +18,7 @@
   9: "Setembro", 10: "Outubro", 11: "Novembro", 12: "Dezembro"
 } %}
 {% set relatorio_pdf_job_id = request.args.get('relatorio_pdf_job_id') %}
-<div class="container-fluid py-4" style="max-width: 1280px;">
+<div class="media-report-page container-fluid py-4">
   <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
     <div>
       <h2 class="text-dark m-0">
@@ -346,26 +59,7 @@
     </div>
   {% endif %}
 
-  <div class="card media-filter-card shadow-sm rounded-4 mb-4 border-0">
-    <div
-      class="card-header media-filter-header border-0 p-3 d-flex justify-content-between align-items-center"
-      data-bs-toggle="collapse"
-      data-bs-target="#collapseFiltrosColetaImagens"
-      aria-expanded="{{ 'true' if filtros_coleta_ativos else 'false' }}"
-      style="cursor: pointer;"
-    >
-      <div class="d-flex align-items-center gap-2">
-        <i class="bi bi-funnel-fill text-primary"></i>
-        <span class="text-dark fw-bold">Filtros de busca</span>
-        {% if filtros_coleta_ativos %}
-          <span class="badge bg-danger rounded-circle p-1" style="width: 8px; height: 8px;"></span>
-        {% endif %}
-      </div>
-      <i class="bi bi-chevron-down text-muted"></i>
-    </div>
-
-    <div class="collapse {% if filtros_coleta_ativos %}show{% endif %}" id="collapseFiltrosColetaImagens">
-      <div class="card-body pt-0 pb-4">
+  {% call render_filter_card('Filtros de busca', collapse_id='collapseFiltrosColetaImagens', active=filtros_coleta_ativos, icon='bi-funnel-fill') %}
         <form method="GET">
           <div class="row g-2 filter-chip-row">
             <div class="col-md-6 col-xl-2">
@@ -492,9 +186,7 @@
             </div>
           </div>
         </form>
-      </div>
-    </div>
-  </div>
+  {% endcall %}
 
   <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
     <div class="text-muted small">

@@ -3,5 +3,9 @@
    ========================================= */
 
 body.dark-mode .filter-result-summary {
-  color: rgba(255, 255, 255, 0.72);
+  color: rgba(191, 213, 238, 0.8);
+}
+
+body.dark-mode .filter-result-summary strong {
+  color: var(--color-primary-dark);
 }

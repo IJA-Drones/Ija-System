@@ -163,24 +163,24 @@
     @media (max-width: 991.98px) {
       html.dark-mode .uvis-os-historico-table-wrap table tbody tr,
       body.dark-mode .uvis-os-historico-table-wrap table tbody tr {
-        background: #0f1a24 !important;
-        border-color: #233549 !important;
-        box-shadow: 0 14px 30px rgba(0,0,0,.35) !important;
+        background: rgba(18, 28, 40, 0.96) !important;
+        border-color: rgba(126, 180, 255, 0.1) !important;
+        box-shadow: 0 14px 30px rgba(0, 0, 0, 0.24) !important;
       }
 
       html.dark-mode .uvis-os-historico-table-wrap table tbody tr td + td,
       body.dark-mode .uvis-os-historico-table-wrap table tbody tr td + td {
-        border-top-color: #233549 !important;
+        border-top-color: rgba(126, 180, 255, 0.08) !important;
       }
 
       html.dark-mode .uvis-os-historico-table-wrap table tbody tr td::before,
       body.dark-mode .uvis-os-historico-table-wrap table tbody tr td::before {
-        color: rgba(255,255,255,.72) !important;
+        color: rgba(162, 188, 216, 0.82) !important;
       }
 
       html.dark-mode .uvis-os-historico-table-wrap .text-muted,
       body.dark-mode .uvis-os-historico-table-wrap .text-muted {
-        color: rgba(255,255,255,.70) !important;
+        color: rgba(162, 188, 216, 0.82) !important;
       }
     }
   </style>
@@ -188,7 +188,7 @@
 
 {% block content %}
 <div class="container-fluid py-4 uvis-os-historico-page" style="max-width: 1200px;">
-  <div class="uvis-os-historico-toolbar mb-4">
+  <div class="uvis-os-historico-toolbar historico-os-toolbar mb-4">
     <div>
       <h2 class="text-dark m-0">
         <i class="bi bi-clock-history me-2 text-primary"></i> Hist&oacute;rico OS
@@ -212,7 +212,7 @@
     equipes_select=equipes_select
   ) }}
 
-  <div class="card shadow-sm rounded-4 border-0 overflow-hidden uvis-os-historico-table-wrap">
+  <div class="card shadow-sm rounded-4 border-0 overflow-hidden uvis-os-historico-table-wrap historico-os-table-wrap">
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0">
         <thead class="table-light">

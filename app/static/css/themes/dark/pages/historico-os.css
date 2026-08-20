@@ -1,0 +1,185 @@
+/* =========================================
+   HISTORICO OS - DARK MODE
+   ========================================= */
+
+body.dark-mode .historico-os-toolbar h2.text-dark,
+body.dark-mode .historico-os-toolbar .text-dark {
+  color: var(--color-primary-dark) !important;
+}
+
+body.dark-mode .historico-os-toolbar .text-muted,
+body.dark-mode .historico-os-toolbar small.text-muted {
+  color: rgba(162, 188, 216, 0.82) !important;
+}
+
+body.dark-mode .historico-os-filters {
+  background:
+    linear-gradient(180deg, rgba(26, 38, 54, 0.96) 0%, rgba(20, 30, 42, 0.92) 100%);
+
+  border:
+    1px solid rgba(126, 180, 255, 0.12);
+
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.16);
+}
+
+body.dark-mode .historico-os-filters .card-header {
+  background:
+    linear-gradient(180deg, rgba(33, 48, 66, 0.98) 0%, rgba(26, 38, 54, 0.95) 100%);
+
+  border-bottom:
+    1px solid rgba(126, 180, 255, 0.1);
+}
+
+body.dark-mode .historico-os-filters .fw-bold,
+body.dark-mode .historico-os-filters .text-dark {
+  color: var(--color-primary-dark) !important;
+}
+
+body.dark-mode .historico-os-filters .text-muted {
+  color: rgba(162, 188, 216, 0.82) !important;
+}
+
+body.dark-mode .historico-os-filters .form-control,
+body.dark-mode .historico-os-filters .form-select {
+  background: rgba(16, 25, 36, 0.92);
+  border-color: rgba(126, 180, 255, 0.12);
+  color: var(--color-text-main);
+}
+
+body.dark-mode .historico-os-filters .form-control:focus,
+body.dark-mode .historico-os-filters .form-select:focus {
+  background: rgba(16, 25, 36, 0.98);
+  border-color: var(--color-primary);
+  color: var(--color-text-main);
+  box-shadow: 0 0 0 3px rgba(76, 163, 255, 0.12);
+}
+
+body.dark-mode .historico-os-filters .form-control::placeholder {
+  color: #94a3b8;
+}
+
+body.dark-mode .historico-os-table-wrap {
+  background:
+    rgba(18, 28, 40, 0.92);
+
+  border:
+    1px solid rgba(126, 180, 255, 0.1);
+
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.16);
+}
+
+body.dark-mode .historico-os-table-wrap .table {
+  margin-bottom: 0;
+  color: var(--color-text-main);
+}
+
+body.dark-mode .historico-os-table-wrap thead th {
+  background:
+    rgba(20, 30, 42, 0.94);
+
+  color:
+    rgba(237, 243, 251, 0.9);
+
+  border-bottom:
+    1px solid rgba(126, 180, 255, 0.08);
+}
+
+body.dark-mode .historico-os-table-wrap tbody td {
+  background:
+    rgba(18, 28, 40, 0.94);
+
+  color:
+    rgba(237, 243, 251, 0.88);
+
+  border-color:
+    rgba(126, 180, 255, 0.08);
+}
+
+body.dark-mode .historico-os-table-wrap .table-hover > tbody > tr:hover > * {
+  background-color: rgba(35, 192, 214, 0.06) !important;
+}
+
+body.dark-mode .historico-os-table-wrap .text-muted {
+  color: rgba(162, 188, 216, 0.82) !important;
+}
+
+body.dark-mode .historico-os-table-wrap .badge.bg-light.text-dark,
+body.dark-mode .historico-os-table-wrap .badge.bg-light {
+  background:
+    rgba(76, 163, 255, 0.12) !important;
+
+  color:
+    #cfe8ff !important;
+
+  border-color:
+    rgba(76, 163, 255, 0.18) !important;
+}
+
+body.dark-mode .historico-os-table-wrap .bg-warning.text-dark {
+  background:
+    rgba(255, 193, 7, 0.18) !important;
+
+  color:
+    #ffe08a !important;
+}
+
+body.dark-mode .historico-os-table-wrap .bg-completed {
+  background:
+    linear-gradient(180deg, rgba(111, 140, 241, 0.95), rgba(79, 111, 219, 0.95)) !important;
+
+  color:
+    #f5f8ff !important;
+}
+
+body.dark-mode .uvis-os-filter-tabs {
+  background:
+    rgba(20, 30, 42, 0.9);
+
+  border:
+    1px solid rgba(126, 180, 255, 0.12);
+
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.14);
+}
+
+body.dark-mode .uvis-os-filter-tabs .btn {
+  color: rgba(191, 213, 238, 0.88);
+  border-color: transparent;
+}
+
+body.dark-mode .uvis-os-filter-tabs .btn:hover {
+  background:
+    rgba(76, 163, 255, 0.08);
+
+  color:
+    var(--color-primary-dark);
+}
+
+body.dark-mode .uvis-os-filter-tabs .btn-primary {
+  background:
+    rgba(76, 163, 255, 0.18);
+
+  color:
+    #eaf4ff;
+
+  box-shadow:
+    inset 0 0 0 1px rgba(126, 180, 255, 0.18);
+}
+
+body.dark-mode .uvis-os-filter-count {
+  background:
+    rgba(76, 163, 255, 0.14);
+
+  color:
+    #cfe8ff;
+}
+
+body.dark-mode .btn-primary .uvis-os-filter-count {
+  background:
+    rgba(255, 255, 255, 0.18);
+
+  color:
+    #ffffff;
+}

@@ -1,0 +1,132 @@
+/* =========================================
+   VEICULOS MENU - DARK MODE
+   ========================================= */
+
+body.dark-mode .veiculos-menu-page h2.text-dark {
+  color: var(--color-primary-dark) !important;
+}
+
+body.dark-mode .veiculos-menu-page .text-muted {
+  color: rgba(162, 188, 216, 0.82) !important;
+}
+
+body.dark-mode .veiculos-menu-card {
+  background:
+    linear-gradient(180deg, rgba(26, 38, 54, 0.96) 0%, rgba(20, 30, 42, 0.92) 100%);
+
+  border-color:
+    rgba(126, 180, 255, 0.12) !important;
+
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.16);
+}
+
+body.dark-mode .veiculos-menu-card:hover {
+  transform:
+    translateY(-2px);
+
+  box-shadow:
+    0 10px 22px rgba(0, 0, 0, 0.2) !important;
+}
+
+body.dark-mode .veiculos-menu-card h6.text-muted {
+  color:
+    rgba(162, 188, 216, 0.7) !important;
+}
+
+body.dark-mode .veiculos-menu-card h3.text-dark {
+  color:
+    var(--color-text-main) !important;
+}
+
+body.dark-mode .veiculos-menu-icon {
+  opacity:
+    0.6;
+  filter:
+    saturate(0.9);
+}
+
+body.dark-mode .veiculos-menu-card .text-primary,
+body.dark-mode .veiculos-menu-card .text-success,
+body.dark-mode .veiculos-menu-card .text-info,
+body.dark-mode .veiculos-menu-card .text-warning,
+body.dark-mode .veiculos-menu-card .text-danger {
+  transition:
+    color 0.2s ease,
+    opacity 0.2s ease;
+}
+
+body.dark-mode .veiculos-menu-card--frota {
+  border-left-color:
+    rgba(124, 184, 255, 0.45) !important;
+}
+
+body.dark-mode .veiculos-menu-card--frota .text-primary {
+  color:
+    #8abcf2 !important;
+}
+
+body.dark-mode .veiculos-menu-card--frota .mt-3.text-primary {
+  color:
+    #94c3fb !important;
+}
+
+body.dark-mode .veiculos-menu-card--logs {
+  border-left-color:
+    rgba(115, 191, 145, 0.42) !important;
+}
+
+body.dark-mode .veiculos-menu-card--logs .text-success {
+  color:
+    #82c49e !important;
+}
+
+body.dark-mode .veiculos-menu-card--logs .mt-3.text-success {
+  color:
+    #8fd0aa !important;
+}
+
+body.dark-mode .veiculos-menu-card--limpezas {
+  border-left-color:
+    rgba(114, 195, 212, 0.42) !important;
+}
+
+body.dark-mode .veiculos-menu-card--limpezas .text-info {
+  color:
+    #7ac7d8 !important;
+}
+
+body.dark-mode .veiculos-menu-card--limpezas .mt-3.text-info {
+  color:
+    #88d1e0 !important;
+}
+
+body.dark-mode .veiculos-menu-card--checklist {
+  border-left-color:
+    rgba(230, 195, 92, 0.42) !important;
+}
+
+body.dark-mode .veiculos-menu-card--checklist .text-warning {
+  color:
+    #d8c067 !important;
+}
+
+body.dark-mode .veiculos-menu-card--checklist .mt-3.text-warning {
+  color:
+    #e1c97a !important;
+}
+
+body.dark-mode .veiculos-menu-card--alertas {
+  border-left-color:
+    rgba(224, 131, 131, 0.42) !important;
+}
+
+body.dark-mode .veiculos-menu-card--alertas .text-danger {
+  color:
+    #df8f8f !important;
+}
+
+body.dark-mode .veiculos-menu-card--alertas .mt-3.text-danger {
+  color:
+    #e8a0a0 !important;
+}

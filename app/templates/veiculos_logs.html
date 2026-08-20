@@ -1285,7 +1285,7 @@
         {% for log in logs %}
             <div class="modal fade" id="modalCorrigirKmLog{{ log.id }}" tabindex="-1" aria-labelledby="modalCorrigirKmLog{{ log.id }}Label" aria-hidden="true">
                 <div class="modal-dialog modal-lg modal-dialog-centered">
-                    <div class="modal-content border-0 shadow rounded-4">
+                    <div class="modal-content border-0 shadow rounded-4 vehicle-action-modal">
                         <form method="POST" action="{{ url_for('main.corrigir_log_veiculo', log_id=log.id, page=paginacao.page, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim, limpeza_realizada=filters.limpeza_realizada, tipo_limpeza=filters.tipo_limpeza, data_limpeza_inicio=filters.data_limpeza_inicio, data_limpeza_fim=filters.data_limpeza_fim, valor_limpeza_min=filters.valor_limpeza_min, valor_limpeza_max=filters.valor_limpeza_max) }}">
                             <div class="modal-header border-0 pb-0">
                                 <div>
@@ -1364,7 +1364,7 @@
             {% if can_delete_logs %}
                 <div class="modal fade" id="modalDeletarLog{{ log.id }}" tabindex="-1" aria-labelledby="modalDeletarLog{{ log.id }}Label" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content border-0 shadow rounded-4">
+                        <div class="modal-content border-0 shadow rounded-4 vehicle-action-modal vehicle-action-modal--danger">
                             <form method="POST" action="{{ url_for('main.deletar_log_veiculo', log_id=log.id, page=paginacao.page, q=filters.q, data_inicio=filters.data_inicio, data_fim=filters.data_fim, limpeza_realizada=filters.limpeza_realizada, tipo_limpeza=filters.tipo_limpeza, data_limpeza_inicio=filters.data_limpeza_inicio, data_limpeza_fim=filters.data_limpeza_fim, valor_limpeza_min=filters.valor_limpeza_min, valor_limpeza_max=filters.valor_limpeza_max) }}">
                                 <div class="modal-header border-0 pb-0">
                                     <div>

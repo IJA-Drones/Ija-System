@@ -1352,13 +1352,22 @@
 
     body.dark-mode .login-screen {
       background:
-        radial-gradient(circle at top left, rgba(0, 173, 197, 0.16), transparent 32%),
-        linear-gradient(135deg, #0a1724 0%, #0f1f2f 42%, #111d2c 100%);
+        radial-gradient(circle at top left, rgba(35, 192, 214, 0.1), transparent 28%),
+        linear-gradient(135deg, #091521 0%, #0f1b27 52%, #121d2b 100%);
     }
 
     body.dark-mode .login-visual {
-      background: rgba(10, 18, 28, 0.7);
-      border-right: 1px solid rgba(126, 180, 255, 0.14);
+      background:
+        linear-gradient(135deg, rgba(9, 18, 27, 0.96), rgba(13, 25, 36, 0.92) 52%, rgba(18, 36, 49, 0.86));
+      border-right: 1px solid rgba(126, 180, 255, 0.08);
+    }
+
+    body.dark-mode .login-visual::before {
+      opacity: .24;
+    }
+
+    body.dark-mode .login-visual::after {
+      opacity: .1;
     }
 
     body.dark-mode .login-copy h1 {
@@ -1375,26 +1384,30 @@
     }
 
     body.dark-mode .login-feature-pill {
-      background: rgba(15, 38, 54, 0.8);
-      border-color: rgba(126, 180, 255, 0.18);
+      background: rgba(12, 24, 35, 0.58);
+      border-color: rgba(126, 180, 255, 0.1);
     }
 
     body.dark-mode .login-info-trigger {
-      background: linear-gradient(135deg, rgba(15, 127, 166, 0.36), rgba(19, 83, 109, 0.3));
-      border-color: rgba(112, 226, 255, 0.22);
+      background: linear-gradient(135deg, rgba(22, 101, 129, 0.2), rgba(15, 64, 84, 0.15));
+      border-color: rgba(112, 226, 255, 0.1);
       color: #eafcff;
-      box-shadow: 0 18px 38px rgba(0, 0, 0, 0.18);
+      box-shadow: 0 10px 22px rgba(0, 0, 0, 0.1);
     }
 
     body.dark-mode .login-info-trigger .info-bulb {
-      background: rgba(21, 214, 214, 0.12);
-      color: #9ef4ff;
+      background: rgba(35, 192, 214, 0.14);
+      color: #b8f4ff;
     }
 
     body.dark-mode .login-ops-panel {
-      border-color: rgba(126, 180, 255, 0.18);
-      background: linear-gradient(180deg, rgba(11, 27, 39, 0.95), rgba(16, 28, 40, 0.88));
-      box-shadow: 0 28px 70px rgba(0, 0, 0, 0.3);
+      border-color: rgba(126, 180, 255, 0.1);
+      background: linear-gradient(180deg, rgba(13, 22, 33, 0.9), rgba(17, 27, 39, 0.84));
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.16);
+    }
+
+    body.dark-mode .login-ops-panel::before {
+      opacity: .16;
     }
 
     body.dark-mode .ops-panel-head strong,
@@ -1408,13 +1421,13 @@
     body.dark-mode .ops-status-line,
     body.dark-mode .ops-step,
     body.dark-mode .ops-progress {
-      border-color: rgba(126, 180, 255, 0.16);
-      background: rgba(10, 19, 29, 0.8);
+      border-color: rgba(126, 180, 255, 0.1);
+      background: rgba(8, 16, 25, 0.5);
     }
 
     body.dark-mode .ops-step:nth-child(2) {
-      background: rgba(0, 206, 218, 0.08);
-      border-color: rgba(0, 206, 218, 0.32);
+      background: rgba(35, 192, 214, 0.06);
+      border-color: rgba(35, 192, 214, 0.18);
     }
 
     body.dark-mode .ops-step span:last-child,
@@ -1423,13 +1436,13 @@
     }
 
     body.dark-mode .ops-node {
-      background: linear-gradient(135deg, #74e7ff, #6fe6ce);
-      color: #062033;
-      box-shadow: 0 0 0 6px rgba(116, 231, 255, 0.12);
+      background: linear-gradient(135deg, #9fe8ff, #79e0c9);
+      color: #072030;
+      box-shadow: 0 0 0 6px rgba(159, 232, 255, 0.1);
     }
 
     body.dark-mode .login-panel {
-      background: linear-gradient(180deg, rgba(12, 23, 34, 0.98), rgba(17, 29, 43, 0.98));
+      background: linear-gradient(180deg, rgba(12, 21, 31, 0.96), rgba(16, 25, 36, 0.96));
     }
 
     body.dark-mode .login-panel h2 {
@@ -1437,18 +1450,18 @@
     }
 
     body.dark-mode .login-form-shell {
-      border-color: rgba(18,227,255,.16);
+      border-color: rgba(18, 227, 255, 0.1);
       background:
-        linear-gradient(180deg, rgba(21,34,51,.96), rgba(16,25,39,.94));
+        linear-gradient(180deg, rgba(20, 30, 42, 0.96), rgba(16, 25, 37, 0.94));
       box-shadow:
-        0 24px 60px rgba(0, 0, 0, .26),
-        0 1px 0 rgba(255,255,255,.05) inset;
+        0 14px 30px rgba(0, 0, 0, .12),
+        0 1px 0 rgba(255,255,255,.03) inset;
     }
 
     body.dark-mode .login-form-icon {
-      background: linear-gradient(135deg, rgba(14, 86, 109, .8), rgba(22, 156, 175, .4));
-      color: #9ef4ff;
-      box-shadow: inset 0 0 0 1px rgba(126, 180, 255, 0.12);
+      background: linear-gradient(135deg, rgba(15, 84, 106, .58), rgba(35, 192, 214, .12));
+      color: #b8f4ff;
+      box-shadow: inset 0 0 0 1px rgba(126, 180, 255, 0.1);
     }
 
     @media (max-width: 900px) {
@@ -1461,44 +1474,44 @@
 
     body.dark-mode .login-field .form-control,
     body.dark-mode .login-alt-link {
-      background: #101927;
-      border-color: #233549;
+      background: #111a25;
+      border-color: #2a3647;
       color: rgba(255,255,255,.92);
     }
 
     body.dark-mode .login-alt-link {
-      box-shadow: 0 10px 24px rgba(0,0,0,.18);
+      box-shadow: 0 8px 18px rgba(0,0,0,.12);
     }
 
     body.dark-mode .login-alt-link:hover {
-      color: #12e3ff;
-      border-color: rgba(18,227,255,.35);
+      color: #b8f4ff;
+      border-color: rgba(35, 192, 214, .34);
     }
 
     body.dark-mode .login-alt-icon {
-      background: rgba(19, 95, 112, 0.35);
-      color: #9ef4ff;
+      background: rgba(35, 192, 214, 0.12);
+      color: #b8f4ff;
     }
 
     body.dark-mode .login-alt-link.agro .login-alt-icon {
-      color: #9af0b8;
-      background: rgba(26, 122, 92, 0.24);
+      color: #aaf0c3;
+      background: rgba(38, 124, 84, 0.24);
     }
 
     body.dark-mode .login-submit {
-      background: linear-gradient(135deg, #1dc0d9, #0f7ea3) !important;
-      box-shadow: 0 18px 34px rgba(17, 167, 199, .26);
+      background: linear-gradient(135deg, var(--color-primary), var(--color-accent)) !important;
+      box-shadow: 0 12px 22px rgba(17, 167, 199, .16);
     }
 
     body.dark-mode .system-modal .modal-content {
-      background: linear-gradient(180deg, rgba(10, 18, 28, 0.98), rgba(17, 29, 43, 0.98));
-      border-color: rgba(126,180,255,.12);
-      box-shadow: 0 28px 70px rgba(0,0,0,.38);
+      background: linear-gradient(180deg, rgba(12, 21, 31, 0.96), rgba(17, 26, 37, 0.96));
+      border-color: rgba(126,180,255,.1);
+      box-shadow: 0 18px 42px rgba(0,0,0,.2);
     }
 
     body.dark-mode .system-feature-card {
-      background: linear-gradient(180deg, rgba(16, 25, 38, 0.96), rgba(18, 31, 45, 0.92));
-      border-color: rgba(126,180,255,.14);
+      background: linear-gradient(180deg, rgba(18, 27, 39, 0.96), rgba(20, 29, 42, 0.92));
+      border-color: rgba(126,180,255,.1);
     }
 
     body.dark-mode .system-feature-card strong {
@@ -1510,8 +1523,8 @@
     }
 
     body.dark-mode .system-feature-icon {
-      color: #9ef4ff;
-      background: rgba(18, 126, 151, 0.2);
+      color: #b8f4ff;
+      background: rgba(35, 192, 214, 0.08);
     }
 
     @keyframes opsScan {

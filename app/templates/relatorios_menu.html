@@ -13,7 +13,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4" style="max-width: 1200px">
+<div class="container-fluid py-4 relatorios-menu-page" style="max-width: 1200px">
   <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
       <h2 class="text-dark">
@@ -26,7 +26,7 @@
   <div class="row g-3">
     <div class="col-md-6 col-xl-4">
       <a href="{{ url_for('main.relatorios_solicitacoes') }}" class="text-decoration-none">
-        <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-primary border-4 hover-shadow" style="transition: all 0.2s ease; cursor: pointer;">
+        <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-primary border-4 hover-shadow relatorios-menu-card relatorios-menu-card--solicitacoes" style="transition: all 0.2s ease; cursor: pointer;">
           <div class="d-flex justify-content-between align-items-center">
             <div>
               <h6 class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Solicitações</h6>
@@ -46,7 +46,7 @@
 
     <div class="col-md-6 col-xl-4">
       <a href="{{ url_for('main.relatorios_os') }}" class="text-decoration-none">
-        <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-success border-4 hover-shadow" style="transition: all 0.2s ease; cursor: pointer;">
+        <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-success border-4 hover-shadow relatorios-menu-card relatorios-menu-card--os" style="transition: all 0.2s ease; cursor: pointer;">
           <div class="d-flex justify-content-between align-items-center">
             <div>
               <h6 class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Ordens de Serviço</h6>
@@ -66,7 +66,7 @@
 
     <div class="col-md-6 col-xl-4">
       <a href="{{ url_for('main.relatorios_coleta_imagens') }}" class="text-decoration-none">
-        <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-warning border-4 hover-shadow" style="transition: all 0.2s ease; cursor: pointer;">
+        <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-warning border-4 hover-shadow relatorios-menu-card relatorios-menu-card--midias" style="transition: all 0.2s ease; cursor: pointer;">
           <div class="d-flex justify-content-between align-items-center">
             <div>
               <h6 class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Levantamento de Midias</h6>
@@ -86,7 +86,7 @@
 
     <div class="col-md-6 col-xl-4">
       <a href="{{ url_for('main.relatorios_retornos_automaticos') }}" class="text-decoration-none">
-        <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-danger border-4 hover-shadow" style="transition: all 0.2s ease; cursor: pointer;">
+        <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-danger border-4 hover-shadow relatorios-menu-card relatorios-menu-card--retornos" style="transition: all 0.2s ease; cursor: pointer;">
           <div class="d-flex justify-content-between align-items-center">
             <div>
               <h6 class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Planejamento</h6>
@@ -107,7 +107,7 @@
     {% if is_admin_global_user(current_user) %}
     <div class="col-md-6 col-xl-4">
       <a href="{{ url_for('main.relatorios_dji_logs') }}" class="text-decoration-none">
-        <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-info border-4 hover-shadow" style="transition: all 0.2s ease; cursor: pointer;">
+        <div class="card border-0 shadow-sm rounded-4 p-3 h-100 border-start border-info border-4 hover-shadow relatorios-menu-card relatorios-menu-card--dji" style="transition: all 0.2s ease; cursor: pointer;">
           <div class="d-flex justify-content-between align-items-center">
             <div>
               <h6 class="mb-1 text-muted fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">DJI</h6>
