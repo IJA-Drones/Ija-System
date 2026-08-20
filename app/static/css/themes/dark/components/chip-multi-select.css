@@ -1,0 +1,17 @@
+/* =========================================
+   CHIP MULTI SELECT
+   ========================================= */
+
+body.dark-mode .chip-multi-item {
+  border-color: rgba(45, 212, 191, 0.4);
+  background: rgba(20, 83, 67, 0.45);
+  color: #b7f7df;
+}
+
+body.dark-mode .chip-multi-remove {
+  color: #b7f7df;
+}
+
+body.dark-mode .chip-multi-values::-webkit-scrollbar-thumb {
+  background: #45637c;
+}

@@ -25,18 +25,6 @@
       transform: translateY(-1px);
       box-shadow: inset 0 0 0 999px rgba(44, 82, 130, 0.02);
     }
-    .dashboard-header .btn-nova {
-      background: linear-gradient(135deg, #0f3e62 0%, #0d2f4f 100%) !important;
-      border-color: #0d2f4f !important;
-      color: #ffffff !important;
-      box-shadow: 0 6px 14px rgba(15, 62, 98, 0.25) !important;
-    }
-    .dashboard-header .btn-nova:hover,
-    .dashboard-header .btn-nova:focus {
-      background: linear-gradient(135deg, #123f62 0%, #0b2640 100%) !important;
-      border-color: #0b2640 !important;
-      color: #ffffff !important;
-    }
     .btn-tracar-rota {
       background-color: #f44336;
       color: white;
@@ -117,8 +105,6 @@
         background: #fff !important;
       }
       .dashboard-header .btn-canceladas:hover { transform: translateY(-1px); }
-      .dashboard-header .btn-nova { border-radius: 999px !important; padding: 8px 16px !important; }
-
       @media (max-width: 768px) {
         .dashboard-header { flex-direction: column !important; align-items: stretch !important; }
         .dashboard-header h2 { margin-right: 0 !important; white-space: normal; }
@@ -272,7 +258,7 @@
         <i class="bi bi-x-circle"></i> Canceladas
       </a>
 
-      <a href="{{ url_for('main.novo') }}" class="btn btn-success shadow-sm btn-nova">
+      <a href="{{ url_for('main.novo') }}" class="btn btn-success shadow-sm">
         <i class="bi bi-plus-lg"></i> Nova Solicitação
       </a>
   </div>

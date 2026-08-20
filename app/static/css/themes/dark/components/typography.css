@@ -1,0 +1,27 @@
+/* =========================================
+   TYPOGRAPHY
+   ========================================= */
+
+body.dark-mode h1,
+body.dark-mode h2,
+body.dark-mode h3,
+body.dark-mode h4,
+body.dark-mode h6 {
+  color: var(--color-primary-dark) !important;
+}
+
+body.dark-mode h5 {
+  color: #fff !important;
+}
+
+body.dark-mode .small {
+  color: var(--color-text-main) !important;
+}
+
+body.dark-mode .text-muted {
+  color: var(--color-text-muted) !important;
+}
+
+body.dark-mode .rua {
+  color: var(--color-accent);
+}

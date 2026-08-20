@@ -1,0 +1,9 @@
+/* =========================================
+   NAVBAR
+   ========================================= */
+
+body.dark-mode .navbar {
+  background: #152233;
+  border-bottom: 1px solid #233549;
+  backdrop-filter: blur(8px);
+}

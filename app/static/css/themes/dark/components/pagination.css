@@ -1,0 +1,26 @@
+/* =========================================
+   PAGINATION
+   ========================================= */
+
+body.dark-mode .page-item .page-link {
+  background-color: #1c2b3f;
+  color: var(--color-text-main);
+  border-color: #233549;
+}
+
+body.dark-mode .page-item .page-link:hover {
+  background-color: rgba(0, 224, 255, 0.15);
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+body.dark-mode .page-item.active .page-link {
+  background-color: var(--color-accent) !important;
+  border-color: var(--color-accent) !important;
+  color: #101927 !important;
+}
+
+body.dark-mode .page-item.disabled .page-link {
+  background-color: transparent;
+  border-color: #233549;
+}

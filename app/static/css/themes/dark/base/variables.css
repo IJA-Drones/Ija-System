@@ -1,0 +1,36 @@
+/* =========================================
+   VARIÁVEIS DARK
+   ========================================= */
+
+body.dark-mode,
+html.dark-mode {
+  --color-bg-body: #101927;
+  --color-bg-white: #1b273b;
+  --color-bg-surface: #162235;
+
+  --color-text-main: #e0e7ff;
+  --color-text-muted: #94a3b8;
+
+  --color-primary-dark: #60afff;
+  --color-primary: #4ca3ff;
+
+  --color-accent: #00e0ff;
+  --color-accent-hover: #00b4cc;
+
+  --color-success: #2e8559;
+  --color-success-hover: #29ab5b;
+
+  --color-warning: #eac808;
+  --color-danger: #e53e3e;
+  --color-recomended: #e66f00;
+
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.45);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 10px 18px -3px rgba(0, 0, 0, 0.75);
+}
+
+body.dark-mode,
+html.dark-mode {
+  background: var(--color-bg-body) !important;
+  color: var(--color-text-main) !important;
+}

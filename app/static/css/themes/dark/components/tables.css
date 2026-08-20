@@ -1,0 +1,45 @@
+/* =========================================
+   TABLES
+   ========================================= */
+
+body.dark-mode .table thead th {
+  background: #1f3a5a;
+  color: #fff;
+}
+
+body.dark-mode .table tbody tr {
+  background: #152233;
+}
+
+body.dark-mode .table tbody tr:nth-child(even) {
+  background: #1a2c44;
+}
+
+body.dark-mode .table tbody tr:hover {
+  background: #224268 !important;
+}
+
+body.dark-mode .table td {
+  border-top: 1px solid #233549;
+  color: var(--color-text-main);
+  background: #1c2b3f;
+}
+
+body.dark-mode .table td.bg-light {
+  background: #1c2b3f;
+  border-right: 3px solid var(--color-accent);
+}
+
+
+/* Table Mobile Cards */
+
+@media (max-width: 991.98px) {
+  body.dark-mode .table-mobile-cards tr {
+    background: var(--color-bg-surface);
+    border-color: #233549;
+  }
+
+  body.dark-mode .table-mobile-cards td {
+    border-bottom-color: #233549;
+  }
+}

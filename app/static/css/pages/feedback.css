@@ -34,7 +34,7 @@
 .feedback-info-panel,
 .feedback-empty,
 .feedback-card,
-.feedback-filter-card,
+.filter-card,
 .feedback-form-main .card,
 .feedback-thread .card,
 .feedback-side-panel .card {
@@ -62,7 +62,7 @@
   line-height: 1;
 }
 
-.feedback-filter-card {
+.filter-card {
   background: rgba(255, 255, 255, 0.95);
 }
 
@@ -677,7 +677,7 @@
 }
 
 body.dark-mode .feedback-metric,
-body.dark-mode .feedback-filter-card,
+body.dark-mode .filter-card,
 body.dark-mode .feedback-card,
 body.dark-mode .feedback-empty,
 body.dark-mode .feedback-info-panel,

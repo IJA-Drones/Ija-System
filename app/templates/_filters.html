@@ -1,0 +1,41 @@
+{% macro render_filter_card(title, collapse_id=None, active=False, icon='bi-funnel-fill', badges=None, card_class='', header_class='', body_class='', collapsible=True) -%}
+  {% set badges = badges or [] %}
+  <div class="card shadow-sm rounded-4 mb-4 border-0 filter-card {{ card_class }}">
+    <div
+      class="card-header border-0 p-3 d-flex justify-content-between align-items-center filter-card-header {{ header_class }}{% if collapsible and collapse_id %} cursor-pointer{% endif %}"
+      {% if collapsible and collapse_id %}
+        data-bs-toggle="collapse"
+        data-bs-target="#{{ collapse_id }}"
+        aria-expanded="{{ 'true' if active else 'false' }}"
+      {% endif %}
+    >
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <i class="bi {{ icon }} text-primary"></i>
+        <span class="fw-bold">{{ title }}</span>
+        {% for badge in badges %}
+          {% if badge.get('label') %}
+            <span
+              {% if badge.get('id') %}id="{{ badge.get('id') }}"{% endif %}
+              class="badge rounded-pill {{ badge.get('class', '') }} filter-card-badge"
+            >{{ badge.get('label') }}</span>
+          {% endif %}
+        {% endfor %}
+      </div>
+      {% if collapsible and collapse_id %}
+        <i class="bi bi-chevron-down text-muted filter-card-toggle"></i>
+      {% endif %}
+    </div>
+
+    {% if collapsible and collapse_id %}
+      <div class="collapse {% if active %}show{% endif %}" id="{{ collapse_id }}">
+        <div class="card-body pt-0 pb-4 filter-card-body {{ body_class }}">
+          {{ caller() }}
+        </div>
+      </div>
+    {% else %}
+      <div class="card-body pt-0 pb-4 filter-card-body {{ body_class }}">
+        {{ caller() }}
+      </div>
+    {% endif %}
+  </div>
+{%- endmacro %}

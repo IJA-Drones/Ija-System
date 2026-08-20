@@ -1,0 +1,34 @@
+/* =========================================
+   ADMIN CONTEXT
+   ========================================= */
+
+body.dark-mode .admin-context-switch {
+  background: rgba(18, 34, 52, 0.74);
+  border-color: rgba(90, 123, 156, 0.22);
+}
+
+body.dark-mode .admin-context-btn {
+  color: #b7dcff;
+}
+
+body.dark-mode .admin-context-btn[data-admin-context="agro"] {
+  color: #c4f0d7;
+}
+
+body.dark-mode .admin-context-btn-icon {
+  background: rgba(76, 163, 255, 0.14);
+}
+
+body.dark-mode .admin-context-btn[data-admin-context="agro"] .admin-context-btn-icon {
+  background: rgba(87, 199, 139, 0.14);
+}
+
+body.dark-mode .admin-context-btn:not(.is-active):hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+body.dark-mode .admin-context-badge {
+  background: rgba(76, 163, 255, 0.14);
+  color: #a8d8ff;
+  border-color: rgba(76, 163, 255, 0.28);
+}

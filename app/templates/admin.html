@@ -2,6 +2,7 @@
 {% from "_pagination.html" import render_pagination %}
 {% from "_retorno_ciclo_resumo.html" import render_retorno_ciclo_resumo %}
 {% from "_multi_select_chips.html" import render_chip_select_values %}
+{% from "_filters.html" import render_filter_card %}
 {% from "_result_summary.html" import render_result_summary %}
 
 {% block content %}
@@ -22,7 +23,7 @@
             {# Substituímos o style fixo por uma classe que o Bootstrap entende, ou mantemos o style mas permitimos que ele diminua #}
             {% if current_user.tipo_usuario in ['dev', 'diretor', 'admin', 'visualizar'] %}
             <div class="admin-toolbar-slot flex-grow-1 flex-md-grow-0">
-                <a href="{{ url_for('main.novo') }}" class="btn btn-nova shadow-sm w-100 d-flex align-items-center justify-content-center gap-2 admin-toolbar-action-btn">
+                <a href="{{ url_for('main.novo') }}" class="btn btn-success shadow-sm w-100 d-flex align-items-center justify-content-center gap-2 admin-toolbar-action-btn">
                     <i class="bi bi-plus-lg"></i> 
                     <span>Nova Solicitação</span>
                 </a>
@@ -67,27 +68,15 @@
     {% set admin_has_filters = request.args.get('status') or request.args.get('unidade') or request.args.get('regiao') or request.args.get('apoio_cet') or request.args.get('tipo_visita') or request.args.get('tipo_imovel') or request.args.get('foco') or request.args.get('protocolo') or request.args.get('endereco') or request.args.get('data_ini') or request.args.get('data_fim') or request.args.get('data_criacao_ini') or request.args.get('data_criacao_fim') or request.args.get('retorno_automatico') %}
 
     {# --- FILTROS EM "SANFONA" (Accordion) --- #}
-    <div class="card shadow-sm rounded-4 mb-4 border-0 dashboard-filter-card">
-        <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center cursor-pointer dashboard-filter-header"
-                data-bs-toggle="collapse"
-                data-bs-target="#collapseFiltros"
-                aria-expanded="false">
-
-            <div class="d-flex align-items-center gap-2">
-                <i class="bi bi-funnel-fill text-primary"></i>
-                <span class="fw-bold">Filtros de Busca</span>
-                {% if current_user.tipo_usuario in ['dev', 'diretor', 'admin'] %}
-                    <span class="admin-context-badge" id="adminContextFilterBadge">UVIS/PREFEITURA</span>
-                {% endif %}
-                {% if admin_has_filters %}
-                    <span class="badge rounded-pill bg-primary admin-filter-pill">Filtros Ativos</span>
-                {% endif %}
-            </div>
-            <i class="bi bi-chevron-down text-muted"></i>
-        </div>
-
-        <div class="collapse {% if admin_has_filters %}show{% endif %}" id="collapseFiltros">
-            <div class="card-body pt-0 pb-4">
+    {% call render_filter_card(
+      'Filtros de Busca',
+      'collapseFiltros',
+      active=admin_has_filters,
+      badges=[
+        {'label': 'UVIS/PREFEITURA', 'class': 'admin-context-badge', 'id': 'adminContextFilterBadge'} if current_user.tipo_usuario in ['dev', 'diretor', 'admin'] else {},
+        {'label': 'Filtros Ativos', 'class': 'bg-primary'} if admin_has_filters else {}
+      ]
+    ) %}
                 <form method="GET">
                     <div class="row g-2 filter-chip-row">
                         <div class="col-md-3">
@@ -218,7 +207,7 @@
                                 value="{{ request.args.get('data_criacao_fim', '') }}"
                             >
                         </div>
-                        <div class="col-md-3 admin-filter-actions">
+                        <div class="col-md-3 admin-filter-actions filter-card-actions">
                             <button class="btn btn-success btn-sm w-100 align-items-center justify-content-center" type="submit"><i class="bi bi-search"></i> Filtrar</button>
                             {% if admin_has_filters %}
                                 <a href="{{ url_for(request.endpoint) }}" class="btn btn-outline-secondary btn-sm w-100">
@@ -228,9 +217,7 @@
                         </div>
                     </div>
                 </form>
-            </div>
-        </div>
-    </div>
+    {% endcall %}
 
     {# --- TABELA HÃBRIDA (SANFONA NO MOBILE / TABELA NO PC) --- #}
     <div class="card shadow-sm rounded-4 border-0 overflow-hidden admin-table-wrap">

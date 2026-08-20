@@ -1,0 +1,55 @@
+/* =========================================
+   DARK MODE + AGRO MODE
+   ========================================= */
+
+body.dark-mode.agro-mode {
+  --color-primary-dark: #7fd8a7;
+  --color-primary: #57c78b;
+  --color-accent: #34d17d;
+  --color-accent-hover: #27b56a;
+  --color-success: #2ba363;
+  --color-success-hover: #228450;
+
+  --bs-primary: #57c78b;
+  --bs-primary-rgb: 87, 199, 139;
+  --bs-link-color: #57c78b;
+  --bs-link-hover-color: #7fd8a7;
+}
+
+body.dark-mode.agro-mode .admin-context-switch {
+  background: rgba(15, 36, 27, 0.78);
+  border-color: rgba(80, 131, 103, 0.22);
+}
+
+body.dark-mode.agro-mode .admin-context-badge {
+  background: rgba(87, 199, 139, 0.15);
+  color: #baf0d2;
+  border-color: rgba(87, 199, 139, 0.35);
+}
+
+body.dark-mode.agro-mode .navbar {
+  background: #0f2318;
+  border-bottom: 1px solid #214634;
+}
+
+body.dark-mode.agro-mode .app-sidebar {
+  background: #0f2318;
+  border-right: 1px solid #214634;
+}
+
+body.dark-mode.agro-mode .app-sidebar .nav-link:hover {
+  background: rgba(52, 209, 125, 0.14);
+  color: var(--color-accent);
+}
+
+body.dark-mode.agro-mode .app-sidebar .nav-link.active {
+  background: rgba(52, 209, 125, 0.18);
+  color: var(--color-accent);
+  border-left: 4px solid var(--color-accent);
+}
+
+body.dark-mode.agro-mode .navbar-mode-pill {
+  border-color: rgba(127, 216, 167, 0.38);
+  background: rgba(127, 216, 167, 0.16);
+  color: #baf0d2;
+}

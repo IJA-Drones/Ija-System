@@ -1,0 +1,22 @@
+@import url("./base/variables.css");
+@import url("./modules/admin-context-switch.css");
+@import url("./modules/navbar.css");
+@import url("./modules/sidebar.css");
+
+@import url("./components/buttons.css");
+@import url("./components/cards.css");
+@import url("./components/forms.css");
+@import url("./components/chip-multi-select.css");
+@import url("./components/filters.css");
+
+@import url("./components/alerts.css");
+@import url("./components/modals.css");
+@import url("./components/sweetalert2.css");
+
+@import url("./components/typography.css");
+@import url("./components/logos.css");
+@import url("./components/loading.css");
+@import url("./components/list-groups.css");
+@import url("./components/pagination.css");
+@import url("./components/tables.css");
+@import url("./components/chatbot.css");

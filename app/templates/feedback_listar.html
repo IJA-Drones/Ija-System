@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_pagination.html" import render_pagination %}
+{% from "_filters.html" import render_filter_card %}
 
 {% block extra_styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
@@ -41,8 +42,7 @@
     </div>
   </div>
 
-  <div class="card shadow-sm border-0 feedback-filter-card mb-4">
-    <div class="card-body">
+  {% call render_filter_card('Filtros', collapsible=False) %}
       <form method="GET" action="{{ url_for('main.feedback_listar') }}">
         <div class="row g-2 align-items-end">
           <div class="col-lg-3 col-md-6">
@@ -108,8 +108,7 @@
           </div>
         </div>
       </form>
-    </div>
-  </div>
+  {% endcall %}
 
   {% if feedbacks %}
   <div class="feedback-list">
