@@ -155,29 +155,7 @@
     .rel-os-filter-actions .btn,
     .rel-os-filter-body .col-md-6.d-flex .btn {
       min-height: 42px;
-      border-radius: 12px;
-      font-weight: 800;
-      box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
       white-space: nowrap;
-    }
-
-    .rel-os-filter-actions .btn-primary,
-    .rel-os-filter-body .col-md-6.d-flex .btn-primary {
-      background: #2c5282;
-      border-color: #2c5282;
-      height: 42px !important;
-    }
-
-    .rel-os-filter-actions .btn-primary:hover,
-    .rel-os-filter-actions .btn-primary:focus,
-    .rel-os-filter-body .col-md-6.d-flex .btn-primary:hover,
-    .rel-os-filter-body .col-md-6.d-flex .btn-primary:focus {
-      background: #24466f;
-      border-color: #24466f;
-    }
-
-    .rel-os-filter-body .col-md-6.d-flex .btn-outline-secondary {
-      height: 42px !important;
     }
 
     @media (max-width: 767.98px) {

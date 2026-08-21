@@ -239,6 +239,38 @@
               <i class="bi bi-grid-fill me-2"></i><span>Dashboard</span>
             </a>
           </li>
+          {% set can_report_bugs_user = current_user.tipo_usuario == 'regional' or (current_user.tipo_usuario == 'visualizar' and (current_user.regiao or '')|upper == 'COVISA') %}
+          {% if can_report_bugs_user %}
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint in ['main.bug_report_novo', 'main.bug_acompanhamento'] or (request.endpoint == 'main.feedback_novo' and request.args.get('tipo') == 'bug') %}active{% endif %}"
+              href="{{ url_for('main.bug_report_novo') }}"
+            >
+              <i class="bi bi-bug-fill me-2"></i><span>Reportar bug</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint in ['main.bugs_listar', 'main.bug_acompanhamento', 'main.bugs_ajuda'] %}active{% endif %}"
+              href="{{ url_for('main.bugs_listar') }}"
+            >
+              <i class="bi bi-inbox-fill me-2"></i><span>Caixa de bugs</span>
+            </a>
+          </li>
+          {% endif %}
+          {% if is_dev_user(current_user) %}
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint in ['main.feedback_listar', 'main.feedback_detalhe'] %}active{% endif %}"
+              href="{{ url_for('main.feedback_listar') }}"
+            >
+              <i class="bi bi-tools me-2"></i><span>Bugs reportados</span>
+              {% if support_nav_count and support_nav_count > 0 %}
+              <span class="badge bg-danger ms-auto" style="border-radius: 999px">{{ support_nav_count }}</span>
+              {% endif %}
+            </a>
+          </li>
+          {% endif %}
 
           {% if is_admin_panel_user and not is_agro_context %}
           <li class="nav-item">
@@ -763,6 +795,14 @@
               <i class="bi bi-command me-2"></i><span>Painel Operacional</span>
             </a>
           </li>
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint in ['main.estoque_listar', 'main.estoque_novo', 'main.estoque_editar'] %}active{% endif %}"
+              href="{{ url_for('main.estoque_listar') }}"
+            >
+              <i class="bi bi-box-seam-fill me-2"></i><span>Estoque</span>
+            </a>
+          </li>
           {% endif %}
 
 {% if is_global_admin %}
@@ -1032,18 +1072,6 @@
           {% endif %}
           {% endif %}
 
-          <li class="nav-item">
-            <span
-              class="nav-link disabled feedback-placeholder-link"
-              aria-disabled="true"
-              title="Funcionalidade em desenvolvimento"
-            >
-              <span class="feedback-placeholder-main">
-                <i class="bi bi-headset me-2"></i><span>Suporte</span>
-              </span>
-              <small class="feedback-placeholder-note">Em Desenvolvimento</small>
-            </span>
-          </li>
           <div class="sidebar-footer mt-auto p-3 text-center">
             <div id="install-container" style="display: none">
               <button

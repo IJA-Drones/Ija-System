@@ -22,16 +22,6 @@
         display: flex;
     }
 
-    .btn-pill {
-        border-radius: 999px !important;
-        padding: 8px 20px !important;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        font-weight: 600;
-        height: 38px;
-    }
-
     .bg-success-light {
         background: rgba(25, 135, 84, 0.14) !important;
     }

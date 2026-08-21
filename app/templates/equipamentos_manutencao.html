@@ -20,10 +20,18 @@
             </p>
         </div>
 
-        <a href="{{ url_for('main.listar_equipamentos') }}"
-           class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-arrow-left me-1"></i> Voltar
-        </a>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{{ url_for('main.equipamentos_manutencoes_historico') }}" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-clock-history me-1"></i> Histórico
+            </a>
+            <a href="{{ url_for('main.equipamentos_manutencoes_pecas_historico') }}" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-box-seam me-1"></i> Peças
+            </a>
+            <a href="{{ url_for('main.listar_equipamentos') }}"
+               class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i> Voltar
+            </a>
+        </div>
     </div>
 
     <div class="card shadow-sm border-0 rounded-4 overflow-hidden equipamentos-manutencao-table-wrap">
@@ -38,6 +46,7 @@
                             <th>Nº de Série</th>
                             <th>Equipe</th>
                             <th>Data Cadastro</th>
+                            <th class="text-end pe-3">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -83,11 +92,39 @@
                                         -
                                     {% endif %}
                                 </td>
+
+                                <td class="text-end pe-3" data-label="Ações">
+                                    {% if eq.tipo_equipamento == 'drones' %}
+                                      <div class="manutencao-actions">
+                                        <a href="{{ url_for('main.equipamento_manutencao_pecas', drone_id=eq.id) }}"
+                                           class="btn btn-sm btn-primary">
+                                            <i class="bi bi-clipboard-plus me-1"></i>
+                                            Peças usadas
+                                        </a>
+                                        <a href="{{ url_for('main.equipamento_manutencao_pdf', drone_id=eq.id) }}"
+                                           class="btn btn-sm btn-outline-primary"
+                                           target="_blank">
+                                            <i class="bi bi-file-earmark-pdf me-1"></i>
+                                            PDF
+                                        </a>
+                                        <form method="post"
+                                              action="{{ url_for('main.equipamento_manutencao_encerrar', drone_id=eq.id) }}"
+                                              onsubmit="return confirm('Encerrar a manutenção deste drone?')">
+                                            <button type="submit" class="btn btn-sm btn-outline-success">
+                                                <i class="bi bi-check2-circle me-1"></i>
+                                                Encerrar
+                                            </button>
+                                        </form>
+                                      </div>
+                                    {% else %}
+                                        <span class="text-muted small">—</span>
+                                    {% endif %}
+                                </td>
                             </tr>
                             {% endfor %}
                         {% else %}
                             <tr>
-                                <td colspan="6" class="text-center py-4 text-muted">
+                                <td colspan="7" class="text-center py-4 text-muted">
                                     Nenhum equipamento em manutenção no momento.
                                 </td>
                             </tr>

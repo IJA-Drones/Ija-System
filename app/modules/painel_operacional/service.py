@@ -179,7 +179,7 @@ def _fetch_weather(lat: float, lng: float):
     current = data.get("current") or {}
     units = data.get("current_units") or {}
     code = current.get("weather_code")
-    return {
+    weather = {
         "time": current.get("time"),
         "temperature": current.get("temperature_2m"),
         "apparent_temperature": current.get("apparent_temperature"),

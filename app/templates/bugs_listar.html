@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% from "_pagination.html" import render_pagination %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/feedback.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 feedback-page" style="max-width: 1120px;">
+  <div class="feedback-header mb-4">
+    <div>
+      <span class="feedback-kicker">Coordenadoria</span>
+      <h2 class="mb-1"><i class="bi bi-inbox-fill me-2 text-primary"></i>Caixa de entrada de bugs</h2>
+      <p class="text-muted small mb-0">Acompanhe os bugs enviados pela sua coordenadoria ao suporte técnico.</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('main.bugs_ajuda') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-question-circle"></i> Como usar
+      </a>
+      <a href="{{ url_for('main.bug_report_novo') }}" class="btn btn-outline-danger">
+        <i class="bi bi-bug-fill"></i> Reportar bug
+      </a>
+    </div>
+  </div>
+
+  <div class="feedback-metrics mb-4">
+    <div class="feedback-metric">
+      <span>Na caixa</span>
+      <strong>{{ counts.total }}</strong>
+    </div>
+    <div class="feedback-metric">
+      <span>Em aberto</span>
+      <strong>{{ counts.abertos }}</strong>
+    </div>
+    <div class="feedback-metric">
+      <span>Em tratativa</span>
+      <strong>{{ counts.em_analise }}</strong>
+    </div>
+    <div class="feedback-metric">
+      <span>Limite ativo</span>
+      <strong>{{ active_bug_count }}/{{ max_active_bug_count }}</strong>
+    </div>
+  </div>
+
+  <div class="feedback-inbox-help mb-4">
+    <div>
+      <i class="bi bi-info-circle"></i>
+      <span>Use esta caixa para acompanhar o retorno do suporte técnico. Bugs concluídos podem ser vistos filtrando por status.</span>
+    </div>
+    {% if active_bug_count >= max_active_bug_count %}
+    <strong>Limite atingido: conclua ou aguarde a correção de um bug antes de abrir outro.</strong>
+    {% endif %}
+  </div>
+
+  <div class="card shadow-sm border-0 feedback-filter-card mb-4">
+    <div class="card-body">
+      <form method="GET" action="{{ url_for('main.bugs_listar') }}">
+        <div class="row g-2 align-items-end">
+          <div class="col-lg-7 col-md-6">
+            <label class="form-label small" for="bug-q">Busca</label>
+            <input id="bug-q" name="q" class="form-control form-control-sm" value="{{ q }}" placeholder="Assunto ou descrição">
+          </div>
+          <div class="col-lg-3 col-md-4">
+            <label class="form-label small" for="bug-status">Status</label>
+            <select id="bug-status" name="status" class="form-select form-select-sm">
+              <option value="">Abertos e em tratativa</option>
+              {% for key, label in status_options %}
+              <option value="{{ key }}" {% if status == key %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-lg-2 col-md-2 feedback-filter-actions">
+            <button type="submit" class="btn btn-primary btn-sm">
+              <i class="bi bi-funnel"></i> Filtrar
+            </button>
+            {% if q or status %}
+            <a href="{{ url_for('main.bugs_listar') }}" class="btn btn-outline-secondary btn-sm" title="Limpar filtros">
+              <i class="bi bi-x-lg"></i>
+            </a>
+            {% endif %}
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="feedback-quick-tabs mb-4">
+    <a href="{{ url_for('main.bugs_listar') }}" class="{% if not status %}active{% endif %}">Caixa ativa</a>
+    <a href="{{ url_for('main.bugs_listar', status='aberto') }}" class="{% if status == 'aberto' %}active{% endif %}">Recebidos</a>
+    <a href="{{ url_for('main.bugs_listar', status='em_analise') }}" class="{% if status == 'em_analise' %}active{% endif %}">Em análise</a>
+    <a href="{{ url_for('main.bugs_listar', status='em_desenvolvimento') }}" class="{% if status == 'em_desenvolvimento' %}active{% endif %}">Em correção</a>
+    <a href="{{ url_for('main.bugs_listar', status='concluido') }}" class="{% if status == 'concluido' %}active{% endif %}">Corrigidos</a>
+  </div>
+
+  {% if bugs %}
+  <div class="feedback-list">
+    {% for bug in bugs %}
+    <a href="{{ url_for('main.bug_acompanhamento', topico_id=bug.id) }}" class="feedback-card">
+      <div class="feedback-card-main">
+        <div class="feedback-card-title-row">
+          <div class="feedback-card-heading">
+            <span class="feedback-ticket-id">#{{ bug.id }}</span>
+            <h5>{{ bug.titulo }}</h5>
+          </div>
+          <div class="feedback-card-status-stack">
+            <span class="feedback-status feedback-status-{{ bug.status }}">{{ status_labels.get(bug.status, bug.status) }}</span>
+            <span class="feedback-priority feedback-priority-{{ bug.prioridade }}">{{ priority_labels.get(bug.prioridade, bug.prioridade) }}</span>
+          </div>
+        </div>
+        <p class="feedback-card-description">{{ bug.descricao|bugdetails|striptags|truncate(150) }}</p>
+        <div class="feedback-card-facts">
+          <span><i class="bi bi-person-circle"></i><strong>Aberto por</strong>{{ bug.criado_por_nome }}</span>
+          <span><i class="bi bi-person-check"></i><strong>Responsável</strong>{{ bug.responsavel.nome_uvis if bug.responsavel else "Aguardando" }}</span>
+          <span><i class="bi bi-clock"></i><strong>Atualizado</strong>{{ bug.atualizado_em.strftime("%d/%m/%Y %H:%M") if bug.atualizado_em else "-" }}</span>
+        </div>
+      </div>
+      <div class="feedback-card-side">
+        <span class="feedback-pill">Erro no sistema</span>
+        <span class="feedback-comments"><i class="bi bi-eye"></i>Acompanhar</span>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+
+  {{ render_pagination('main.bugs_listar', paginacao, pagination_args, show_summary=True, summary_label='bugs') }}
+  {% else %}
+  <div class="feedback-empty">
+    <i class="bi bi-check2-circle"></i>
+    <h5>Nenhum bug em aberto</h5>
+    <p class="text-muted mb-3">Quando você reportar um problema no sistema, ele aparece aqui para acompanhamento.</p>
+    <a href="{{ url_for('main.bug_report_novo') }}" class="btn btn-outline-danger">
+      <i class="bi bi-bug-fill"></i> Reportar bug
+    </a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

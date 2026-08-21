@@ -35,6 +35,9 @@ class Prefeitura(db.Model):
     equipes_agro = db.relationship("EquipeAgro", back_populates="prefeitura", lazy="select")
     equipamentos = db.relationship("Equipamentos", back_populates="prefeitura", lazy="select")
     equipamentos_agro = db.relationship("EquipamentoAgro", back_populates="prefeitura", lazy="select")
+    estoque_pecas = db.relationship("EstoquePeca", back_populates="prefeitura", lazy="select")
+    manutencoes_equipamentos = db.relationship("ManutencaoEquipamento", back_populates="prefeitura", lazy="select")
+    manutencao_pecas_usadas = db.relationship("ManutencaoPecaUso", back_populates="prefeitura", lazy="select")
 
 # -------------------------------------------------------------
 # USUÁRIO (login do sistema)
@@ -2074,8 +2077,109 @@ class Drones(Equipamentos):
         lazy="select",
         foreign_keys="[Baterias.drone_id]"
     )
+    pecas_estoque = db.relationship(
+        "EstoquePeca",
+        back_populates="drone",
+        lazy="select",
+        foreign_keys="[EstoquePeca.drone_id]",
+    )
+    manutencoes_pecas_usadas = db.relationship(
+        "ManutencaoPecaUso",
+        back_populates="drone",
+        lazy="select",
+        foreign_keys="[ManutencaoPecaUso.drone_id]",
+    )
+    manutencoes = db.relationship(
+        "ManutencaoEquipamento",
+        back_populates="drone",
+        lazy="select",
+        foreign_keys="[ManutencaoEquipamento.drone_id]",
+    )
 
     __mapper_args__ = {"polymorphic_identity": "drones"}
+
+
+class EstoquePeca(db.Model):
+    __tablename__ = "estoque_pecas"
+
+    id = db.Column(db.Integer, primary_key=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
+    drone_id = db.Column(db.Integer, db.ForeignKey("drones.id"), nullable=True, index=True)
+
+    numero_serie = db.Column(db.String(100), nullable=True, unique=True, index=True)
+    modelo_peca = db.Column(db.String(120), nullable=False, index=True)
+    quantidade = db.Column(db.Integer, nullable=False, default=1)
+    status = db.Column(db.String(30), nullable=False, default="disponivel_manutencao", index=True)
+    observacoes = db.Column(db.Text, nullable=True)
+
+    criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+    atualizado_em = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now, nullable=False, index=True)
+
+    prefeitura = db.relationship("Prefeitura", back_populates="estoque_pecas", lazy="joined")
+    drone = db.relationship("Drones", back_populates="pecas_estoque", lazy="joined", foreign_keys=[drone_id])
+    usos_manutencao = db.relationship("ManutencaoPecaUso", back_populates="peca", lazy="select")
+
+    __table_args__ = (
+        db.CheckConstraint("quantidade >= 0", name="ck_estoque_pecas_quantidade_nao_negativa"),
+        db.Index("ix_estoque_pecas_drone_status", "drone_id", "status"),
+    )
+
+
+class ManutencaoPecaUso(db.Model):
+    __tablename__ = "manutencao_pecas_usadas"
+
+    id = db.Column(db.Integer, primary_key=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
+    manutencao_id = db.Column(db.Integer, db.ForeignKey("manutencoes_equipamentos.id"), nullable=True, index=True)
+    drone_id = db.Column(db.Integer, db.ForeignKey("drones.id"), nullable=False, index=True)
+    peca_id = db.Column(db.Integer, db.ForeignKey("estoque_pecas.id"), nullable=False, index=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=True, index=True)
+
+    quantidade_usada = db.Column(db.Integer, nullable=False, default=1)
+    observacoes = db.Column(db.Text, nullable=True)
+    criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+
+    prefeitura = db.relationship("Prefeitura", back_populates="manutencao_pecas_usadas", lazy="joined")
+    manutencao = db.relationship("ManutencaoEquipamento", back_populates="pecas_usadas", lazy="joined")
+    drone = db.relationship("Drones", back_populates="manutencoes_pecas_usadas", lazy="joined", foreign_keys=[drone_id])
+    peca = db.relationship("EstoquePeca", back_populates="usos_manutencao", lazy="joined")
+    usuario = db.relationship("Usuario", lazy="joined")
+
+    __table_args__ = (
+        db.CheckConstraint("quantidade_usada > 0", name="ck_manutencao_pecas_usadas_quantidade_positiva"),
+        db.Index("ix_manutencao_pecas_usadas_drone_criado", "drone_id", "criado_em"),
+    )
+
+
+class ManutencaoEquipamento(db.Model):
+    __tablename__ = "manutencoes_equipamentos"
+
+    id = db.Column(db.Integer, primary_key=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
+    drone_id = db.Column(db.Integer, db.ForeignKey("drones.id"), nullable=False, index=True)
+    aberta_por_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=True, index=True)
+    encerrada_por_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=True, index=True)
+
+    status = db.Column(db.String(30), nullable=False, default="aberta", index=True)
+    aberta_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+    encerrada_em = db.Column(db.DateTime, nullable=True, index=True)
+    observacoes = db.Column(db.Text, nullable=True)
+
+    prefeitura = db.relationship("Prefeitura", back_populates="manutencoes_equipamentos", lazy="joined")
+    drone = db.relationship("Drones", back_populates="manutencoes", lazy="joined", foreign_keys=[drone_id])
+    aberta_por = db.relationship("Usuario", foreign_keys=[aberta_por_id], lazy="joined")
+    encerrada_por = db.relationship("Usuario", foreign_keys=[encerrada_por_id], lazy="joined")
+    pecas_usadas = db.relationship(
+        "ManutencaoPecaUso",
+        back_populates="manutencao",
+        lazy="select",
+        order_by="ManutencaoPecaUso.criado_em.desc()",
+    )
+
+    __table_args__ = (
+        db.Index("ix_manutencoes_equipamentos_drone_status", "drone_id", "status"),
+        db.Index("ix_manutencoes_equipamentos_periodo", "aberta_em", "encerrada_em"),
+    )
 
 
 class Baterias(Equipamentos):

@@ -36,8 +36,8 @@
     </div>
   </div>
 
-  <div class="card shadow-sm rounded-4 mb-4 border-0">
-    <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center"
+  <div class="card shadow-sm rounded-4 mb-4 border-0 usuarios-filter-card">
+    <div class="card-header border-0 p-3 d-flex justify-content-between align-items-center usuarios-filter-header"
          data-bs-toggle="collapse"
          data-bs-target="#collapseFiltrosUsers"
          aria-expanded="{{ 'true' if (q or tipo) else 'false' }}"
@@ -105,7 +105,7 @@
 
   <div class="card shadow-sm rounded-4 border-0 overflow-hidden usuarios-table-wrap">
     <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0">
+      <table class="table table-hover align-middle mb-0 usuarios-listing-table">
         <thead class="table-light">
           <tr>
             <th style="width: 80px">ID</th>
@@ -199,7 +199,7 @@
                     </form>
 
                     <div class="collapse w-100 mt-2" id="resetSenha{{ u.id }}">
-                      <div class="p-3 border rounded-3 bg-light">
+                      <div class="p-3 border rounded-3 bg-light usuarios-reset-panel">
                         <form method="POST"
                               action="{{ url_for('main.admin_usuario_reset_senha', id=u.id) }}"
                               class="row g-2 align-items-end m-0">

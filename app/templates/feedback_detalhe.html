@@ -8,24 +8,14 @@
 
 {% block content %}
 <div class="container-fluid py-4 feedback-page" style="max-width: 1220px;">
-  <div
-    id="feedback-live-state"
-    data-live-refresh-enabled="{{ '1' if feedback_notifications_enabled else '0' }}"
-    {% if feedback_notifications_enabled %}
-    data-status-url="{{ url_for('main.feedback_status', topico_id=topico.id) }}"
-    {% endif %}
-    data-updated-at="{{ topico.atualizado_em.isoformat() if topico.atualizado_em else '' }}"
-    data-comment-count="{{ comentarios|length + 1 }}"
-  ></div>
-
   <div class="feedback-header mb-4">
     <div>
-      <span class="feedback-kicker">Chamado #{{ topico.id }}</span>
+      <span class="feedback-kicker">Bug #{{ topico.id }}</span>
       <h2 class="mb-1">{{ topico.titulo }}</h2>
       <div class="feedback-meta mt-2">
-        <span><i class="bi bi-headset"></i>{{ support_sector_labels.get(topico.setor_suporte, "Sem setor") }}</span>
+        <span><i class="bi bi-bug-fill"></i>{{ category_labels.get(topico.categoria, topico.categoria) }}</span>
         <span><i class="bi bi-building"></i>{{ topico.uvis_nome }}</span>
-        <span><i class="bi bi-geo-alt"></i>{{ topico.regiao or "Sem regiao" }}</span>
+        <span><i class="bi bi-geo-alt"></i>{{ topico.regiao or "Sem região" }}</span>
         <span><i class="bi bi-clock"></i>{{ topico.criado_em.strftime("%d/%m/%Y %H:%M") if topico.criado_em else "" }}</span>
       </div>
     </div>
@@ -36,77 +26,53 @@
 
   <div class="feedback-detail-grid">
     <main class="feedback-thread">
-      <section class="feedback-chat-shell">
-        <div class="feedback-chat-header">
-          <div>
-            <h5><i class="bi bi-chat-dots-fill me-2"></i>Conversa</h5>
-            <span>{{ comentarios|length + 1 }} mensagens</span>
-          </div>
-          <div class="feedback-detail-badges">
-            <span class="feedback-status feedback-status-{{ topico.status }}">{{ status_labels.get(topico.status, topico.status) }}</span>
-            <span class="feedback-pill">{{ support_sector_labels.get(topico.setor_suporte, "Sem setor") }}</span>
-            <span class="feedback-pill">{{ category_labels.get(topico.categoria, topico.categoria) }}</span>
-            <span class="feedback-priority feedback-priority-{{ topico.prioridade }}">{{ priority_labels.get(topico.prioridade, topico.prioridade) }}</span>
-          </div>
-        </div>
-
-        <div class="feedback-chat-stream mb-4">
-          <div class="feedback-message {% if topico.criado_por_id == current_user.id %}is-self{% else %}is-other{% endif %}">
-            <div class="feedback-message-avatar">
-              <i class="bi bi-megaphone-fill"></i>
+      <section class="feedback-treatment-card card shadow-sm border-0">
+        <div class="card-body p-4">
+          <div class="feedback-chat-header mb-3">
+            <div>
+              <h5><i class="bi bi-clipboard2-pulse-fill me-2"></i>Tratamento do bug</h5>
+              <span>Analise o relato, atualize o status e encerre quando corrigir.</span>
             </div>
-            <div class="feedback-message-bubble feedback-message-topic">
-              <div class="feedback-message-head">
+            <div class="feedback-detail-badges">
+              <span class="feedback-status feedback-status-{{ topico.status }}">{{ status_labels.get(topico.status, topico.status) }}</span>
+              <span class="feedback-priority feedback-priority-{{ topico.prioridade }}">{{ priority_labels.get(topico.prioridade, topico.prioridade) }}</span>
+            </div>
+          </div>
+
+          <div class="feedback-bug-report mb-4">
+            <span class="feedback-bug-report-icon"><i class="bi bi-megaphone-fill"></i></span>
+            <div>
+              <div class="feedback-message-head mb-2">
                 <strong>{{ topico.criado_por_nome }}</strong>
                 <span>{{ topico.criado_em.strftime("%d/%m/%Y %H:%M") if topico.criado_em else "" }}</span>
-                <span class="feedback-message-role">Abertura</span>
+                <span class="feedback-message-role">Relato inicial</span>
               </div>
-              <p>{{ topico.descricao }}</p>
+              {% if bug_report.impacto %}
+              <div class="feedback-report-field">
+                <span>Impacto</span>
+                <p>{{ bug_report.impacto }}</p>
+              </div>
+              {% endif %}
+              <div class="feedback-report-field">
+                <span>Detalhes</span>
+                <p>{{ bug_report.detalhes }}</p>
+              </div>
             </div>
           </div>
 
-          {% for comentario in comentarios %}
-          {% set is_self = comentario.usuario_id == current_user.id %}
-          {% set can_manage_comment = can_moderate or is_self %}
-          <div class="feedback-message {% if is_self %}is-self{% else %}is-other{% endif %} {% if comentario.interno %}is-internal{% endif %}">
-            <div class="feedback-message-avatar">
-              <i class="bi {% if comentario.interno %}bi-lock-fill{% else %}bi-person-fill{% endif %}"></i>
-            </div>
-            <div class="feedback-message-bubble">
+          {% if comentarios %}
+          <div class="feedback-updates-list">
+            <h6>Atualizações registradas</h6>
+            {% for comentario in comentarios %}
+            <article class="feedback-update-item {% if comentario.interno %}is-internal{% endif %}">
               <div class="feedback-message-head">
                 <strong>{{ comentario.usuario_nome }}</strong>
                 <span>{{ comentario.criado_em.strftime("%d/%m/%Y %H:%M") if comentario.criado_em else "" }}</span>
-                {% if comentario.interno %}
-                <span class="feedback-internal-badge">Interno</span>
-                {% endif %}
-                {% if can_manage_comment %}
-                <div class="feedback-message-actions ms-auto">
-                  <button
-                    type="button"
-                    class="btn btn-sm btn-light feedback-action-btn"
-                    data-bs-toggle="collapse"
-                    data-bs-target="#feedback-edit-{{ comentario.id }}"
-                    aria-expanded="false"
-                    aria-controls="feedback-edit-{{ comentario.id }}"
-                    title="Editar comentario"
-                  >
-                    <i class="bi bi-pencil-square"></i>
-                  </button>
-                  <form method="POST" action="{{ url_for('main.feedback_comentario_apagar', topico_id=topico.id, comment_id=comentario.id) }}" class="form-deletar m-0">
-                    <button type="submit" class="btn btn-sm btn-light feedback-action-btn" title="Apagar comentario">
-                      <i class="bi bi-trash3"></i>
-                    </button>
-                  </form>
-                </div>
-                {% endif %}
+                {% if comentario.interno %}<span class="feedback-internal-badge">Interno</span>{% endif %}
               </div>
-
-              {% if comentario.mensagem %}
-              <p>{{ comentario.mensagem }}</p>
-              {% endif %}
-
+              {% if comentario.mensagem %}<p>{{ comentario.mensagem }}</p>{% endif %}
               {% if comentario.anexos %}
-              <div class="feedback-comment-gallery">
+              <div class="feedback-comment-gallery mt-2">
                 {% for anexo in comentario.anexos %}
                 <a href="{{ url_for('main.feedback_anexo', anexo_id=anexo.id) }}" target="_blank" rel="noopener" class="feedback-comment-image-link">
                   <img src="{{ url_for('main.feedback_anexo', anexo_id=anexo.id) }}" alt="{{ anexo.arquivo_nome }}" class="feedback-comment-image">
@@ -114,74 +80,10 @@
                 {% endfor %}
               </div>
               {% endif %}
-
-              {% if can_manage_comment %}
-              <div class="collapse mt-3" id="feedback-edit-{{ comentario.id }}">
-                <form method="POST" action="{{ url_for('main.feedback_comentario_editar', topico_id=topico.id, comment_id=comentario.id) }}" class="feedback-inline-edit">
-                  <textarea name="mensagem" rows="3" class="form-control mb-2" placeholder="Edite a mensagem aqui.">{{ comentario.mensagem }}</textarea>
-                  <div class="d-flex justify-content-end gap-2 flex-wrap">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" data-bs-target="#feedback-edit-{{ comentario.id }}">
-                      <i class="bi bi-x-lg"></i> Cancelar
-                    </button>
-                    <button type="submit" class="btn btn-primary btn-sm">
-                      <i class="bi bi-check2"></i> Salvar
-                    </button>
-                  </div>
-                </form>
-              </div>
-              {% endif %}
-            </div>
+            </article>
+            {% endfor %}
           </div>
-          {% else %}
-          <div class="feedback-empty compact">
-            <i class="bi bi-chat-square"></i>
-            <p class="mb-0">Nenhuma resposta ainda. A conversa comeca quando alguem comentar.</p>
-          </div>
-          {% endfor %}
-        </div>
-
-        <button type="button" id="feedback-refresh-notice" class="feedback-refresh-notice d-none">
-          <i class="bi bi-arrow-clockwise"></i>
-          <span>Novas mensagens chegaram. Atualizar conversa</span>
-        </button>
-
-        <div class="feedback-composer card shadow-sm border-0">
-          <div class="card-body p-4">
-            <div class="feedback-composer-head">
-              <div>
-                <h5 class="mb-1">Nova mensagem</h5>
-                <span>Responda com texto, imagem ou os dois.</span>
-              </div>
-            </div>
-            <form method="POST" action="{{ url_for('main.feedback_comentar', topico_id=topico.id) }}" enctype="multipart/form-data">
-              <textarea name="mensagem" rows="4" class="form-control mb-3" placeholder="Escreva sua mensagem aqui."></textarea>
-              <div class="mb-3">
-                <label class="form-label" for="feedback-imagens">Imagens do comentario</label>
-                <input
-                  id="feedback-imagens"
-                  type="file"
-                  name="imagens"
-                  class="form-control"
-                  accept=".png,.jpg,.jpeg,image/png,image/jpeg"
-                  multiple
-                >
-                <div class="feedback-upload-hint">Voce pode enviar ate {{ max_images_per_comment }} imagens PNG ou JPG por comentario.</div>
-              </div>
-              <div class="d-flex justify-content-between gap-2 flex-wrap align-items-center">
-                {% if can_moderate %}
-                <label class="feedback-check">
-                  <input type="checkbox" name="interno" value="1">
-                  <span>Nota interna</span>
-                </label>
-                {% else %}
-                <span class="feedback-upload-hint">Mensagens visiveis no historico da UVIS.</span>
-                {% endif %}
-                <button type="submit" class="btn btn-success text-white">
-                  <i class="bi bi-send"></i> Enviar mensagem
-                </button>
-              </div>
-            </form>
-          </div>
+          {% endif %}
         </div>
       </section>
     </main>
@@ -191,38 +93,26 @@
         <div class="card-body p-4">
           <h5 class="mb-3">Resumo</h5>
           <dl class="feedback-summary">
-            <div>
-              <dt>Atendimento</dt>
-              <dd>{{ support_sector_labels.get(topico.setor_suporte, "Sem setor") }}</dd>
-            </div>
-            <div>
-              <dt>UVIS</dt>
-              <dd>{{ topico.uvis_nome }}</dd>
-            </div>
-            <div>
-              <dt>Regiao</dt>
-              <dd>{{ topico.regiao or "-" }}</dd>
-            </div>
-            <div>
-              <dt>Criado por</dt>
-              <dd>{{ topico.criado_por_nome }}</dd>
-            </div>
-            <div>
-              <dt>Responsavel</dt>
-              <dd>{{ topico.responsavel.nome_uvis if topico.responsavel else "-" }}</dd>
-            </div>
-            <div>
-              <dt>Atualizado</dt>
-              <dd>{{ topico.atualizado_em.strftime("%d/%m/%Y %H:%M") if topico.atualizado_em else "-" }}</dd>
-            </div>
+            <div><dt>Atendimento</dt><dd>{{ support_sector_labels.get(topico.setor_suporte, "Sem setor") }}</dd></div>
+            <div><dt>UVIS</dt><dd>{{ topico.uvis_nome }}</dd></div>
+            <div><dt>Região</dt><dd>{{ topico.regiao or "-" }}</dd></div>
+            <div><dt>Criado por</dt><dd>{{ topico.criado_por_nome }}</dd></div>
+            <div><dt>Responsável</dt><dd>{{ topico.responsavel.nome_uvis if topico.responsavel else "-" }}</dd></div>
+            <div><dt>Atualizado</dt><dd>{{ topico.atualizado_em.strftime("%d/%m/%Y %H:%M") if topico.atualizado_em else "-" }}</dd></div>
           </dl>
         </div>
       </div>
 
-      {% if can_moderate %}
       <div class="card shadow-sm border-0">
         <div class="card-body p-4">
           <h5 class="mb-3">Tratativa</h5>
+          <div class="d-grid gap-2 mb-3">
+            <form method="POST" action="{{ url_for('main.feedback_assumir', topico_id=topico.id) }}">
+              <button type="submit" class="btn btn-outline-primary w-100 justify-content-center">
+                <i class="bi bi-person-check"></i> Assumir bug
+              </button>
+            </form>
+          </div>
           <form method="POST" action="{{ url_for('main.feedback_atualizar', topico_id=topico.id) }}">
             <div class="mb-3">
               <label class="form-label" for="feedback-status">Status</label>
@@ -241,93 +131,35 @@
               </select>
             </div>
             <div class="mb-3">
-              <label class="form-label" for="feedback-responsavel">Responsavel</label>
+              <label class="form-label" for="feedback-responsavel">Responsável</label>
               <select id="feedback-responsavel" name="responsavel_id" class="form-select">
-                <option value="">Sem responsavel</option>
+                <option value="">Sem responsável</option>
                 {% for usuario in responsaveis %}
                 <option value="{{ usuario.id }}" {% if topico.responsavel_id == usuario.id %}selected{% endif %}>{{ usuario.nome_uvis }}</option>
                 {% endfor %}
               </select>
             </div>
             <div class="mb-3">
-              <label class="form-label" for="feedback-mensagem-status">Mensagem da atualizacao</label>
-              <textarea id="feedback-mensagem-status" name="mensagem_status" rows="4" class="form-control"></textarea>
+              <label class="form-label" for="feedback-mensagem-status">Atualização para quem reportou</label>
+              <textarea id="feedback-mensagem-status" name="mensagem_status" rows="4" class="form-control" placeholder="Ex.: Bug identificado e em correção. Avisaremos quando estiver concluído."></textarea>
             </div>
-            <label class="feedback-check mb-3">
-              <input type="checkbox" name="mensagem_interna" value="1">
-              <span>Registrar como nota interna</span>
-            </label>
             <button type="submit" class="btn btn-primary w-100 justify-content-center">
               <i class="bi bi-check2-circle"></i> Salvar tratativa
             </button>
           </form>
+          <hr>
+          <form method="POST" action="{{ url_for('main.feedback_corrigir', topico_id=topico.id) }}">
+            <div class="mb-3">
+              <label class="form-label" for="feedback-mensagem-conclusao">O que foi corrigido</label>
+              <textarea id="feedback-mensagem-conclusao" name="mensagem_conclusao" rows="3" class="form-control" required></textarea>
+            </div>
+            <button type="submit" class="btn btn-success text-white w-100 justify-content-center">
+              <i class="bi bi-check2-all"></i> Marcar como corrigido
+            </button>
+          </form>
         </div>
       </div>
-      {% endif %}
     </aside>
   </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-  document.addEventListener("DOMContentLoaded", () => {
-    const state = document.getElementById("feedback-live-state");
-    if (!state) return;
-    if (state.dataset.liveRefreshEnabled !== "1") return;
-
-    const statusUrl = state.dataset.statusUrl;
-    let currentUpdatedAt = state.dataset.updatedAt || "";
-    let currentCommentCount = Number(state.dataset.commentCount || 0);
-    const notice = document.getElementById("feedback-refresh-notice");
-    const composer = document.querySelector(".feedback-composer form");
-
-    function hasDraft() {
-      if (!composer) return false;
-      const textareas = Array.from(composer.querySelectorAll("textarea"));
-      const inputs = Array.from(composer.querySelectorAll('input[type="file"]'));
-      return textareas.some((item) => (item.value || "").trim().length > 0)
-        || inputs.some((item) => item.files && item.files.length > 0);
-    }
-
-    function refreshConversation() {
-      window.location.reload();
-    }
-
-    function handleChangedConversation() {
-      if (hasDraft()) {
-        notice?.classList.remove("d-none");
-        return;
-      }
-      refreshConversation();
-    }
-
-    async function pollConversationStatus() {
-      if (!statusUrl || document.hidden) return;
-      try {
-        const response = await fetch(statusUrl, {
-          headers: { "Accept": "application/json" },
-          cache: "no-store",
-        });
-        const payload = await response.json().catch(() => ({}));
-        if (!response.ok || !payload.success) return;
-
-        const updatedAt = payload.updated_at || "";
-        const commentCount = Number(payload.comment_count || 0);
-        const changed = updatedAt !== currentUpdatedAt || commentCount !== currentCommentCount;
-
-        if (changed) {
-          currentUpdatedAt = updatedAt;
-          currentCommentCount = commentCount;
-          handleChangedConversation();
-        }
-      } catch (error) {
-        // ignore transient polling errors
-      }
-    }
-
-    notice?.addEventListener("click", refreshConversation);
-    window.setInterval(pollConversationStatus, 5000);
-  });
-</script>
 {% endblock %}

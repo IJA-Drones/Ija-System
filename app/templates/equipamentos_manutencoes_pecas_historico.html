@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1200px">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+      <h2 class="text-dark mb-1"><i class="bi bi-box-seam me-2 text-primary"></i>Histórico de peças usadas</h2>
+      <p class="text-muted small mb-0">Controle de baixas feitas nas manutenções dos drones.</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{{ url_for('main.equipamentos_manutencoes_pecas_historico_excel') }}" class="btn btn-outline-success btn-sm">
+        <i class="bi bi-file-earmark-spreadsheet me-1"></i> Excel
+      </a>
+      <a href="{{ url_for('main.equipamentos_manutencao') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-3">Peça</th>
+              <th>Qtd.</th>
+              <th>Drone</th>
+              <th>Manutenção</th>
+              <th>Registrado por</th>
+              <th>Data</th>
+              <th>Observações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for uso in usos %}
+            <tr>
+              <td class="ps-3">
+                <span class="fw-bold text-dark">{{ uso.peca.modelo_peca }}</span>
+                <div class="text-muted small">{{ uso.peca.numero_serie or '-' }}</div>
+              </td>
+              <td>{{ uso.quantidade_usada }}</td>
+              <td>
+                <span class="fw-semibold">{{ uso.drone.renomacao }}</span>
+                <div class="text-muted small">{{ uso.drone.modelo }}</div>
+              </td>
+              <td>
+                {% if uso.manutencao %}
+                  <a href="{{ url_for('main.equipamento_manutencao_detalhe', manutencao_id=uso.manutencao.id) }}" class="text-decoration-none fw-semibold">
+                    #{{ uso.manutencao.id }}
+                  </a>
+                  <div class="text-muted small">{{ 'Aberta' if uso.manutencao.status == 'aberta' else 'Encerrada' }}</div>
+                {% else %}
+                  <span class="text-muted small">Sem vínculo histórico</span>
+                {% endif %}
+              </td>
+              <td>{{ uso.usuario.nome_uvis if uso.usuario else '-' }}</td>
+              <td class="text-muted small">{{ uso.criado_em.strftime('%d/%m/%Y %H:%M') if uso.criado_em else '-' }}</td>
+              <td class="text-muted small">{{ uso.observacoes or '-' }}</td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="7" class="text-center text-muted py-5">Nenhuma peça usada em manutenção ainda.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

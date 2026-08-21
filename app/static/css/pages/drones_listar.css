@@ -23,27 +23,6 @@
         flex-wrap: wrap;
     }
 
-    /* Botões Pill */
-    .btn-pill {
-        border-radius: 999px !important;
-        padding: 8px 16px !important;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        font-weight: 600;
-        transition: transform 0.2s;
-    }
-
-    .btn-pill:hover {
-        transform: translateY(-1px);
-    }
-
-    .btn-voltar {
-        border: 1px solid rgba(0,0,0,.15) !important;
-        background: #fff !important;
-        color: var(--color-text-main) !important;
-    }
-
     /* Ajuste para as ações na tabela */
     .acoes-wrap {
         display: flex;
@@ -137,10 +116,4 @@
     .menu-actions-table-wrap .card-body,
     .menu-actions-table-wrap .table-responsive {
         overflow: visible !important;
-    }
-
-    /* DARK MODE */
-    html.dark-mode .btn-voltar, body.dark-mode .btn-voltar {
-        background: transparent !important;
-        border-color: #233549 !important;
     }

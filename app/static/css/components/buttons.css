@@ -11,6 +11,7 @@
 
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.4rem;
 
   border: 1px solid transparent;
@@ -46,85 +47,181 @@
 /* =========================================================
    BUTTON VARIANTS
    ========================================================= */
-.btn-primary {
-  display: flex;
-  background-color: var(--color-primary);
-  border-color: var(--color-primary);
-  color: #fff;
-  align-items: center;
-  justify-content: center;
+.btn-primary,
+.btn-success,
+.btn-secondary,
+.btn-danger,
+.btn-warning,
+.btn-info,
+.btn-light,
+.btn-dark {
+  color: var(--app-btn-color) !important;
+  background-color: var(--app-btn-bg);
+  border-color: var(--app-btn-border);
 }
 
-.btn-primary:hover {
-  background-color: var(--color-primary-dark);
-  border-color: var(--color-primary-dark);
+.btn-primary:hover,
+.btn-success:hover,
+.btn-secondary:hover,
+.btn-danger:hover,
+.btn-warning:hover,
+.btn-info:hover,
+.btn-light:hover,
+.btn-dark:hover {
+  color: var(--app-btn-hover-color) !important;
+  background-color: var(--app-btn-hover-bg);
+  border-color: var(--app-btn-hover-border);
+}
+
+.btn-primary {
+  --app-btn-bg: var(--color-primary);
+  --app-btn-border: var(--color-primary);
+  --app-btn-color: #fff;
+  --app-btn-hover-bg: var(--color-primary-dark);
+  --app-btn-hover-border: var(--color-primary-dark);
+  --app-btn-hover-color: #fff;
 }
 
 .btn-success {
-  background-color: var(--color-accent);
-  border-color: var(--color-accent);
-  color: #fff;
-}
-
-.btn-success:hover {
-  background-color: var(--color-accent-hover);
-  border-color: var(--color-accent-hover);
-}
-
-.btn-success.text-white {
-  background-color: var(--color-accent) !important;
-  border-color: var(--color-accent) !important;
-  color: #fff !important;
-}
-
-.btn-success.text-white:hover {
-  background-color: var(--color-accent-hover) !important;
-  border-color: var(--color-accent-hover) !important;
+  --app-btn-bg: var(--color-accent);
+  --app-btn-border: var(--color-accent);
+  --app-btn-color: #fff;
+  --app-btn-hover-bg: var(--color-accent-hover);
+  --app-btn-hover-border: var(--color-accent-hover);
+  --app-btn-hover-color: #fff;
 }
 
 .btn-secondary {
-  background-color: var(--color-success);
-  border-color: var(--color-success);
-  color: #fff;
+  --app-btn-bg: var(--color-success);
+  --app-btn-border: var(--color-success);
+  --app-btn-color: #fff;
+  --app-btn-hover-bg: var(--color-success-hover);
+  --app-btn-hover-border: var(--color-success-hover);
+  --app-btn-hover-color: #fff;
 }
 
-.btn-secondary:hover {
-  background-color: var(--color-success-hover);
-  border-color: var(--color-success-hover);
+.btn-danger {
+  --app-btn-bg: var(--color-danger);
+  --app-btn-border: var(--color-danger);
+  --app-btn-color: #fff;
+  --app-btn-hover-bg: var(--color-danger-hover);
+  --app-btn-hover-border: var(--color-danger-hover);
+  --app-btn-hover-color: #fff;
 }
 
-/* outline buttons */
-.btn-outline-primary {
+.btn-warning {
+  --app-btn-bg: var(--color-warning);
+  --app-btn-border: var(--color-warning);
+  --app-btn-color: #26313f;
+  --app-btn-hover-bg: #d4c820;
+  --app-btn-hover-border: #d4c820;
+  --app-btn-hover-color: #1d2733;
+}
+
+.btn-info {
+  --app-btn-bg: var(--color-accent);
+  --app-btn-border: var(--color-accent);
+  --app-btn-color: #fff;
+  --app-btn-hover-bg: var(--color-accent-hover);
+  --app-btn-hover-border: var(--color-accent-hover);
+  --app-btn-hover-color: #fff;
+}
+
+.btn-light {
+  --app-btn-bg: #f8fafc;
+  --app-btn-border: #dbe4ee;
+  --app-btn-color: #334155;
+  --app-btn-hover-bg: #e8eef5;
+  --app-btn-hover-border: #cbd5e1;
+  --app-btn-hover-color: #1e293b;
+}
+
+.btn-dark {
+  --app-btn-bg: #334155;
+  --app-btn-border: #334155;
+  --app-btn-color: #fff;
+  --app-btn-hover-bg: #1e293b;
+  --app-btn-hover-border: #1e293b;
+  --app-btn-hover-color: #fff;
+}
+
+.btn-outline-primary,
+.btn-outline-success,
+.btn-outline-secondary,
+.btn-outline-danger,
+.btn-outline-warning,
+.btn-outline-info,
+.btn-outline-light,
+.btn-outline-dark {
+  color: var(--app-btn-outline-color) !important;
   background: transparent;
-  color: var(--color-primary);
-  border-color: var(--color-primary);
+  border-color: var(--app-btn-outline-color);
 }
 
-.btn-outline-primary:hover {
-  background: var(--color-primary);
-  color: #fff;
+.btn-outline-primary:hover,
+.btn-outline-success:hover,
+.btn-outline-secondary:hover,
+.btn-outline-danger:hover,
+.btn-outline-warning:hover,
+.btn-outline-info:hover,
+.btn-outline-light:hover,
+.btn-outline-dark:hover {
+  color: var(--app-btn-outline-hover-color) !important;
+  background: var(--app-btn-outline-color);
+  border-color: var(--app-btn-outline-color);
+}
+
+.btn-outline-primary {
+  --app-btn-outline-color: var(--color-primary);
+  --app-btn-outline-hover-color: #fff;
+}
+
+.btn-outline-success {
+  --app-btn-outline-color: var(--color-accent);
+  --app-btn-outline-hover-color: #fff;
+}
+
+.btn-outline-secondary {
+  --app-btn-outline-color: #64748b;
+  --app-btn-outline-hover-color: #fff;
 }
 
 .btn-outline-danger {
-  background: transparent;
-  color: var(--color-danger);
-  border-color: var(--color-danger);
+  --app-btn-outline-color: var(--color-danger);
+  --app-btn-outline-hover-color: #fff;
 }
 
-.btn-outline-danger:hover {
-  background: var(--color-danger);
-  color: #fff;
+.btn-outline-warning {
+  --app-btn-outline-color: #b69f18;
+  --app-btn-outline-hover-color: #1f2937;
+}
+
+.btn-outline-info {
+  --app-btn-outline-color: var(--color-accent);
+  --app-btn-outline-hover-color: #fff;
 }
 
 .btn-outline-light {
-  background: transparent;
-  color: var(--color-muted);
-  border-color: var(--color-muted);
+  --app-btn-outline-color: #cbd5e1;
+  --app-btn-outline-hover-color: #1e293b;
 }
 
-.btn-outline-light:hover {
-  background: var(--color-primary);
-  color: #fff;
+.btn-outline-dark {
+  --app-btn-outline-color: #334155;
+  --app-btn-outline-hover-color: #fff;
+}
+
+.btn:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.btn:disabled,
+.btn.disabled,
+.btn[aria-disabled="true"] {
+  transform: none;
+  box-shadow: none;
+  opacity: 0.55;
 }
 
 /* Botões de Ação (Ícones) */

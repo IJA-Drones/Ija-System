@@ -1,94 +1,98 @@
 .equipamentos-manutencao-page {
-            max-width: 1200px;
-        }
+  max-width: 1200px;
+}
 
-        .equipamentos-manutencao-toolbar {
-            gap: 1rem;
-        }
+.equipamentos-manutencao-toolbar {
+  gap: 1rem;
+}
 
-        .equipamentos-manutencao-table-wrap table {
-            margin-bottom: 0;
-        }
+.equipamentos-manutencao-table-wrap table {
+  margin-bottom: 0;
+}
 
-        @media (max-width: 767.98px) {
-            .equipamentos-manutencao-page {
-                padding-left: 0.75rem;
-                padding-right: 0.75rem;
-            }
+.manutencao-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  justify-content: flex-end;
+}
 
-            .equipamentos-manutencao-toolbar {
-                align-items: stretch !important;
-                flex-direction: column;
-            }
+@media (max-width: 767.98px) {
+  .equipamentos-manutencao-page {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
 
-            .equipamentos-manutencao-toolbar .btn {
-                align-self: flex-start;
-            }
+  .equipamentos-manutencao-toolbar {
+    align-items: stretch !important;
+    flex-direction: column;
+  }
 
-            .equipamentos-manutencao-table-wrap {
-                overflow: visible;
-            }
+  .equipamentos-manutencao-toolbar .btn {
+    align-self: flex-start;
+  }
 
-            .equipamentos-manutencao-table-wrap .table-responsive {
-                overflow: visible;
-            }
+  .equipamentos-manutencao-table-wrap,
+  .equipamentos-manutencao-table-wrap .table-responsive {
+    overflow: visible;
+  }
 
-            .equipamentos-manutencao-table-wrap table,
-            .equipamentos-manutencao-table-wrap thead,
-            .equipamentos-manutencao-table-wrap tbody,
-            .equipamentos-manutencao-table-wrap tr,
-            .equipamentos-manutencao-table-wrap th,
-            .equipamentos-manutencao-table-wrap td {
-                display: block;
-                width: 100%;
-            }
+  .equipamentos-manutencao-table-wrap table,
+  .equipamentos-manutencao-table-wrap thead,
+  .equipamentos-manutencao-table-wrap tbody,
+  .equipamentos-manutencao-table-wrap tr,
+  .equipamentos-manutencao-table-wrap th,
+  .equipamentos-manutencao-table-wrap td {
+    display: block;
+    width: 100%;
+  }
 
-            .equipamentos-manutencao-table-wrap thead {
-                display: none;
-            }
+  .equipamentos-manutencao-table-wrap thead {
+    display: none;
+  }
 
-            .equipamentos-manutencao-table-wrap tbody {
-                padding: 0.75rem;
-            }
+  .equipamentos-manutencao-table-wrap tbody {
+    padding: 0.75rem;
+  }
 
-            .equipamentos-manutencao-table-wrap tbody tr {
-                background: #fff;
-                border: 1px solid rgba(16, 25, 39, 0.08);
-                border-radius: 1rem;
-                box-shadow: 0 10px 24px rgba(16, 25, 39, 0.08);
-                margin-bottom: 0.75rem;
-                overflow: hidden;
-                padding: 0.25rem 0;
-            }
+  .equipamentos-manutencao-table-wrap tbody tr {
+    background: #fff;
+    border: 1px solid rgba(16, 25, 39, 0.08);
+    border-radius: 1rem;
+    box-shadow: 0 10px 24px rgba(16, 25, 39, 0.08);
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+    padding: 0.25rem 0;
+  }
 
-            .equipamentos-manutencao-table-wrap tbody tr:last-child {
-                margin-bottom: 0;
-            }
+  .equipamentos-manutencao-table-wrap tbody tr:last-child {
+    margin-bottom: 0;
+  }
 
-            .equipamentos-manutencao-table-wrap tbody td {
-                border: 0;
-                padding: 0.75rem 1rem !important;
-                text-align: left !important;
-            }
+  .equipamentos-manutencao-table-wrap tbody td {
+    border: 0;
+    padding: 0.75rem 1rem !important;
+    text-align: left !important;
+  }
 
-            .equipamentos-manutencao-table-wrap tbody td::before {
-                color: #6c757d;
-                content: attr(data-label);
-                display: block;
-                font-size: 0.72rem;
-                font-weight: 700;
-                letter-spacing: 0.04em;
-                margin-bottom: 0.35rem;
-                text-transform: uppercase;
-            }
-        }
+  .equipamentos-manutencao-table-wrap tbody td::before {
+    color: #6c757d;
+    content: attr(data-label);
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.35rem;
+    text-transform: uppercase;
+  }
+}
 
-        .dark-mode .equipamentos-manutencao-table-wrap tbody tr {
-            background: #162133;
-            border-color: rgba(255, 255, 255, 0.08);
-            box-shadow: none;
-        }
+.dark-mode .equipamentos-manutencao-table-wrap tbody tr {
+  background: #162133;
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+}
 
-        .dark-mode .equipamentos-manutencao-table-wrap tbody td::before {
-            color: rgba(255, 255, 255, 0.65);
-        }
+.dark-mode .equipamentos-manutencao-table-wrap tbody td::before {
+  color: rgba(255, 255, 255, 0.65);
+}

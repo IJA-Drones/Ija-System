@@ -41,86 +41,11 @@
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  border-radius: var(--radius-pill);
-  font-weight: 700;
   line-height: 1.1;
 }
 
 .listing-filter-actions .btn {
   min-height: 36px;
-  font-weight: 700;
-}
-
-.listing-actions .btn-success,
-.listing-filter-actions .btn-success {
-  background: var(--color-accent);
-  border-color: var(--color-accent);
-  color: #fff !important;
-}
-
-.listing-actions .btn-success:hover,
-.listing-filter-actions .btn-success:hover {
-  background: var(--color-accent-hover);
-  border-color: var(--color-accent-hover);
-  color: #fff !important;
-}
-
-.listing-actions .btn-secondary,
-.listing-filter-actions .btn-secondary,
-.listing-cell-actions .btn-secondary {
-  background: #64748b;
-  border-color: #64748b;
-  color: #fff !important;
-}
-
-.listing-actions .btn-secondary:hover,
-.listing-filter-actions .btn-secondary:hover,
-.listing-cell-actions .btn-secondary:hover {
-  background: #475569;
-  border-color: #475569;
-  color: #fff !important;
-}
-
-.listing-actions .btn-outline-secondary,
-.listing-filter-actions .btn-outline-secondary,
-.listing-cell-actions .btn-outline-secondary {
-  background: #fff;
-  border-color: #e2e8f0;
-  color: #475569;
-}
-
-.listing-actions .btn-outline-secondary:hover,
-.listing-filter-actions .btn-outline-secondary:hover,
-.listing-cell-actions .btn-outline-secondary:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-  color: #1e293b;
-}
-
-.listing-cell-actions .btn-success {
-  background: var(--color-accent);
-  border-color: var(--color-accent);
-  color: #fff !important;
-}
-
-.listing-cell-actions .btn-success:hover {
-  background: var(--color-accent-hover);
-  border-color: var(--color-accent-hover);
-  color: #fff !important;
-}
-
-.listing-cell-actions .btn-danger,
-.listing-cell-actions .btn-outline-danger {
-  background: #fff;
-  border-color: rgba(229, 62, 62, 0.28);
-  color: var(--color-danger) !important;
-}
-
-.listing-cell-actions .btn-danger:hover,
-.listing-cell-actions .btn-outline-danger:hover {
-  background: var(--color-danger);
-  border-color: var(--color-danger);
-  color: #fff !important;
 }
 
 .listing-page > .card {

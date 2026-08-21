@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+{% endblock %}
+
+{% block content %}
+{% set status_display = {
+  'disponivel_manutencao': 'Disponível para manutenção',
+  'reservada': 'Reservada',
+  'baixada': 'Baixada',
+  'indisponivel': 'Indisponível'
+} %}
+<div class="container-fluid py-4" style="max-width: 1000px">
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h2 class="text-dark mb-1">
+        <i class="bi bi-box-seam-fill me-2 text-primary"></i>{{ 'Editar peça' if peca else 'Nova peça no estoque' }}
+      </h2>
+      <p class="text-muted small mb-0">Controle de peças disponíveis para manutenção dos drones.</p>
+    </div>
+  </div>
+
+  <div class="card info status-primary shadow-sm rounded-4 border-0">
+    <div class="card-body p-4">
+      <form method="post" novalidate>
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">Modelo da peça *</label>
+            <input type="text" name="modelo_peca" class="form-control {% if errors.get('modelo_peca') %}is-invalid{% endif %}" value="{{ form.get('modelo_peca','') }}" placeholder="Ex.: Hélice DJI T30" required>
+            {% if errors.get('modelo_peca') %}<div class="invalid-feedback">{{ errors.get('modelo_peca') }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted">Número de série</label>
+            <input type="text" name="numero_serie" class="form-control {% if errors.get('numero_serie') %}is-invalid{% endif %}" value="{{ form.get('numero_serie','') }}" placeholder="Único, se houver">
+            {% if errors.get('numero_serie') %}<div class="invalid-feedback">{{ errors.get('numero_serie') }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-muted">Quantidade *</label>
+            <input type="number" name="quantidade" min="0" class="form-control {% if errors.get('quantidade') %}is-invalid{% endif %}" value="{{ form.get('quantidade','1') }}" required>
+            {% if errors.get('quantidade') %}<div class="invalid-feedback">{{ errors.get('quantidade') }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted">Status</label>
+            {% set chosen_status = form.get('status', 'disponivel_manutencao') %}
+            <select name="status" class="form-select {% if errors.get('status') %}is-invalid{% endif %}">
+              {% for value, label in status_labels.items() %}
+                <option value="{{ value }}" {{ 'selected' if chosen_status == value else '' }}>{{ status_display.get(value, label) }}</option>
+              {% endfor %}
+            </select>
+            {% if errors.get('status') %}<div class="invalid-feedback">{{ errors.get('status') }}</div>{% endif %}
+          </div>
+          <div class="col-md-5">
+            <label class="form-label fw-bold small text-muted">Drone do qual faz parte</label>
+            {% set chosen_drone = form.get('drone_id','') %}
+            <select name="drone_id" class="form-select {% if errors.get('drone_id') %}is-invalid{% endif %}">
+              <option value="">Sem vínculo</option>
+              {% for drone in drones %}
+                <option value="{{ drone.id }}" {{ 'selected' if chosen_drone and chosen_drone|int == drone.id else '' }}>
+                  {{ drone.renomacao }} - {{ drone.modelo }}
+                </option>
+              {% endfor %}
+            </select>
+            {% if errors.get('drone_id') %}<div class="invalid-feedback">{{ errors.get('drone_id') }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label fw-bold small text-muted">Observações</label>
+          <textarea name="observacoes" class="form-control" rows="3" placeholder="Detalhes internos sobre a peça">{{ form.get('observacoes','') }}</textarea>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 mt-5">
+          <a href="{{ url_for('main.estoque_listar') }}" class="btn btn-outline-danger btn-sm">Cancelar</a>
+          <button type="submit" class="btn btn-primary px-5 shadow-sm fw-bold">
+            <i class="bi bi-check-lg me-1"></i> Salvar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

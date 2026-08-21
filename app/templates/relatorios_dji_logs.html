@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4" style="max-width: 1280px;">
+<div class="container-fluid py-4 dji-logs-report-page" style="max-width: 1280px;">
   <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
     <div>
       <h2 class="text-dark mb-1">
@@ -980,8 +980,8 @@
         </div>
       </div>
 
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
+      <div class="table-responsive dji-flights-table-wrap">
+        <table class="table table-hover align-middle mb-0 dji-flights-table">
           <thead>
             <tr>
               <th>Período</th>
@@ -1083,7 +1083,7 @@
   </div>
 </div>
 
-<div class="modal fade" id="rotaKmlModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade dji-route-modal" id="rotaKmlModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
     <div class="modal-content border-0 rounded-4 overflow-hidden">
       <div class="modal-header">
@@ -1188,8 +1188,9 @@
       const weeklyArea = {{ resumo_semanal | map(attribute='area') | list | tojson }}.slice().reverse();
       const weeklyVolume = {{ resumo_semanal | map(attribute='volume') | list | tojson }}.slice().reverse();
 
-      const textColor = document.body.classList.contains('dark-mode') ? '#e5e7eb' : '#334155';
-      const gridColor = document.body.classList.contains('dark-mode') ? 'rgba(148, 163, 184, 0.18)' : 'rgba(148, 163, 184, 0.2)';
+      const isDarkMode = document.body.classList.contains('dark-mode');
+      const textColor = isDarkMode ? '#b9cce2' : '#334155';
+      const gridColor = isDarkMode ? 'rgba(126, 180, 255, 0.12)' : 'rgba(148, 163, 184, 0.2)';
 
       const baseOptions = {
         responsive: true,
@@ -1225,7 +1226,7 @@
                 type: 'bar',
                 label: 'Voos',
                 data: monthlyVoos,
-                backgroundColor: 'rgba(13, 110, 253, 0.72)',
+                backgroundColor: isDarkMode ? 'rgba(101, 169, 247, 0.68)' : 'rgba(13, 110, 253, 0.72)',
                 borderRadius: 8,
                 yAxisID: 'y'
               },
@@ -1233,8 +1234,8 @@
                 type: 'line',
                 label: 'Área (ha)',
                 data: monthlyArea,
-                borderColor: '#198754',
-                backgroundColor: 'rgba(25, 135, 84, 0.18)',
+                borderColor: isDarkMode ? '#74c69d' : '#198754',
+                backgroundColor: isDarkMode ? 'rgba(116, 198, 157, 0.16)' : 'rgba(25, 135, 84, 0.18)',
                 tension: 0.35,
                 fill: false,
                 yAxisID: 'y1'
@@ -1243,8 +1244,8 @@
                 type: 'line',
                 label: 'Volume',
                 data: monthlyVolume,
-                borderColor: '#fd7e14',
-                backgroundColor: 'rgba(253, 126, 20, 0.18)',
+                borderColor: isDarkMode ? '#e9c46a' : '#fd7e14',
+                backgroundColor: isDarkMode ? 'rgba(233, 196, 106, 0.16)' : 'rgba(253, 126, 20, 0.18)',
                 tension: 0.35,
                 fill: false,
                 yAxisID: 'y1'
@@ -1282,7 +1283,7 @@
             datasets: [{
               label: 'Voos',
               data: topPilotosValores,
-              backgroundColor: 'rgba(111, 66, 193, 0.78)',
+              backgroundColor: isDarkMode ? 'rgba(126, 180, 255, 0.7)' : 'rgba(111, 66, 193, 0.78)',
               borderRadius: 8
             }]
           },
@@ -1302,7 +1303,7 @@
             datasets: [{
               label: 'Voos',
               data: topAeronavesValores,
-              backgroundColor: 'rgba(32, 201, 151, 0.78)',
+              backgroundColor: isDarkMode ? 'rgba(115, 201, 172, 0.7)' : 'rgba(32, 201, 151, 0.78)',
               borderRadius: 8
             }]
           },
@@ -1320,7 +1321,7 @@
                 type: 'bar',
                 label: 'Voos',
                 data: weeklyVoos,
-                backgroundColor: 'rgba(108, 117, 125, 0.65)',
+                backgroundColor: isDarkMode ? 'rgba(142, 164, 188, 0.62)' : 'rgba(108, 117, 125, 0.65)',
                 borderRadius: 8,
                 yAxisID: 'y'
               },
@@ -1328,8 +1329,8 @@
                 type: 'line',
                 label: 'Área (ha)',
                 data: weeklyArea,
-                borderColor: '#0dcaf0',
-                backgroundColor: 'rgba(13, 202, 240, 0.18)',
+                borderColor: isDarkMode ? '#70cbd4' : '#0dcaf0',
+                backgroundColor: isDarkMode ? 'rgba(112, 203, 212, 0.16)' : 'rgba(13, 202, 240, 0.18)',
                 tension: 0.35,
                 yAxisID: 'y1'
               },
@@ -1337,8 +1338,8 @@
                 type: 'line',
                 label: 'Volume',
                 data: weeklyVolume,
-                borderColor: '#dc3545',
-                backgroundColor: 'rgba(220, 53, 69, 0.18)',
+                borderColor: isDarkMode ? '#e98282' : '#dc3545',
+                backgroundColor: isDarkMode ? 'rgba(233, 130, 130, 0.16)' : 'rgba(220, 53, 69, 0.18)',
                 tension: 0.35,
                 yAxisID: 'y1'
               }

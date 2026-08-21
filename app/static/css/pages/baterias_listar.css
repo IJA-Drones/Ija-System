@@ -21,21 +21,6 @@
         flex-wrap: wrap;
     }
 
-    .btn-pill {
-        border-radius: 999px !important;
-        padding: 8px 16px !important;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        font-weight: 600;
-    }
-
-    .btn-voltar {
-        border: 1px solid rgba(0,0,0,.15) !important;
-        background: #fff !important;
-        color: var(--color-text-main) !important;
-    }
-
     /* =========================================
        RESPONSIVIDADE (MOBILE -> CARDS)
        ========================================= */
@@ -111,9 +96,4 @@
     .menu-actions-table-wrap .card-body,
     .menu-actions-table-wrap .table-responsive {
         overflow: visible !important;
-    }
-
-    html.dark-mode .btn-voltar, body.dark-mode .btn-voltar {
-        background: transparent !important;
-        border-color: #233549 !important;
     }

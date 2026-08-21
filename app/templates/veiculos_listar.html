@@ -25,11 +25,11 @@
             </a>
             
             {% if can_manage %}
-                <a href="{{ url_for('main.cadastrar_veiculo') }}" class="btn btn-success shadow-sm btn-pill">
+                <a href="{{ url_for('main.cadastrar_veiculo') }}" class="btn btn-success shadow-sm">
                     <i class="bi bi-plus-lg"></i> Novo Veículo
                 </a>
 
-                <a href="{{ url_for('main.listar_veiculos', export=1, **request.args) }}" class="btn btn-secondary shadow-sm btn-pill">
+                <a href="{{ url_for('main.listar_veiculos', export=1, **request.args) }}" class="btn btn-secondary shadow-sm">
                     <i class="bi bi-file-earmark-excel-fill"></i> Exportar
                 </a>
             {% endif %}
