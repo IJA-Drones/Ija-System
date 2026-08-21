@@ -1,0 +1,93 @@
+.agro-dashboard-page {
+      max-width: 1200px;
+    }
+
+    .agro-dashboard-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .agro-dashboard-summary .card,
+    .agro-dashboard-menu .card {
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .agro-dashboard-menu .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08) !important;
+    }
+
+    .agro-menu-list {
+      display: grid;
+      gap: 0.65rem;
+    }
+
+    .agro-menu-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.85rem 0.95rem;
+      border-radius: 1rem;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      background: #fff;
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .agro-menu-link:hover {
+      border-color: rgba(13, 110, 253, 0.22);
+      background: rgba(13, 110, 253, 0.02);
+    }
+
+    .agro-menu-main {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      min-width: 0;
+    }
+
+    .agro-menu-icon {
+      width: 40px;
+      height: 40px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 0.85rem;
+      font-size: 1rem;
+      flex: 0 0 40px;
+      background: var(--bs-light);
+      color: var(--bs-primary);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+    }
+
+    .agro-menu-copy {
+      min-width: 0;
+    }
+
+    .agro-menu-title {
+      display: block;
+      font-weight: 700;
+      color: var(--bs-dark);
+      line-height: 1.2;
+    }
+
+    .agro-menu-subtitle {
+      display: block;
+      margin-top: 0.15rem;
+      font-size: 0.82rem;
+      color: var(--bs-secondary-color);
+    }
+
+    @media (max-width: 768px) {
+      .agro-dashboard-page.container-fluid.py-4 {
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+      }
+
+      .agro-dashboard-actions .btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }

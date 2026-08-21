@@ -4,205 +4,13 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
-<style>
-  .usuarios-page {
-    width: 100%;
-  }
-  .usuarios-toolbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 16px;
-  }
-  .usuarios-toolbar-actions {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-  }
-  .usuarios-toolbar-actions > a {
-    white-space: nowrap;
-  }
-  .usuarios-filter-actions {
-    display: flex;
-    gap: 8px;
-  }
-  .usuarios-table-wrap th.col-acoes,
-  .usuarios-table-wrap td.cell-acoes {
-    width: 240px;
-    min-width: 240px;
-    text-align: center;
-  }
-  .usuarios-table-wrap td.cell-acoes {
-    vertical-align: middle;
-  }
-  .usuarios-table-wrap .usuarios-actions-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    width: 100%;
-    max-width: 220px;
-    margin: 0 auto;
-    align-items: stretch;
-  }
-  .usuarios-table-wrap .usuarios-actions-row form {
-    margin: 0;
-  }
-  .usuarios-table-wrap .usuarios-actions-row .btn {
-    width: 100%;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    min-height: 32px;
-  }
-
-  @media (max-width: 991.98px) {
-    .usuarios-page.container-fluid.py-4 {
-      padding-left: 12px !important;
-      padding-right: 12px !important;
-    }
-    .usuarios-toolbar {
-      flex-direction: column;
-      align-items: stretch;
-    }
-    .usuarios-toolbar-actions {
-      width: 100%;
-      justify-content: stretch;
-    }
-    .usuarios-toolbar-actions > a {
-      flex: 1 1 calc(50% - 4px);
-      justify-content: center;
-    }
-    #collapseFiltrosUsers .row.g-2.align-items-end > div {
-      width: 100%;
-    }
-    .usuarios-filter-actions {
-      flex-direction: column;
-    }
-    .usuarios-filter-actions > * {
-      width: 100%;
-    }
-    .usuarios-table-wrap .table-responsive {
-      overflow-x: visible !important;
-    }
-    .usuarios-table-wrap table.table thead {
-      display: none;
-    }
-    .usuarios-table-wrap table.table,
-    .usuarios-table-wrap table.table tbody,
-    .usuarios-table-wrap table.table tr,
-    .usuarios-table-wrap table.table td {
-      display: block;
-      width: 100%;
-    }
-    .usuarios-table-wrap table.table tbody {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      padding: 12px;
-    }
-    .usuarios-table-wrap table.table tbody tr {
-      border: 1px solid rgba(0,0,0,.08);
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 10px 22px rgba(0,0,0,.06);
-      background: #fff;
-    }
-    .usuarios-table-wrap table.table tbody td {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 12px;
-      padding: 14px;
-      border: 0 !important;
-      text-align: left !important;
-    }
-    .usuarios-table-wrap table.table tbody td + td {
-      border-top: 1px solid rgba(0,0,0,.06) !important;
-    }
-    .usuarios-table-wrap table.table tbody td::before {
-      flex: 0 0 96px;
-      max-width: 96px;
-      font-weight: 700;
-      font-size: .82rem;
-      color: rgba(0,0,0,.55);
-      line-height: 1.1;
-      padding-top: 2px;
-    }
-    .usuarios-table-wrap table.table tbody td:nth-child(1)::before { content: "ID"; }
-    .usuarios-table-wrap table.table tbody td:nth-child(2)::before { content: "Nome"; }
-    .usuarios-table-wrap table.table tbody td:nth-child(3)::before { content: "Tipo"; }
-    .usuarios-table-wrap table.table tbody td:nth-child(4)::before { content: "Regiao"; }
-    .usuarios-table-wrap table.table tbody td:nth-child(5)::before { content: "Suporte"; }
-    .usuarios-table-wrap table.table tbody td:nth-child(6)::before { content: "Login"; }
-    .usuarios-table-wrap table.table tbody td:nth-child(7)::before { content: "Acoes"; }
-    .usuarios-table-wrap table.table tbody td > * {
-      flex: 1 1 auto;
-      min-width: 0;
-    }
-    .usuarios-table-wrap .usuarios-actions-row {
-      flex-direction: column;
-      display: flex;
-      max-width: none;
-      margin: 0;
-    }
-    .usuarios-table-wrap td:last-child .collapse .row.g-2.align-items-end > div {
-      width: 100%;
-    }
-    .usuarios-table-wrap td code {
-      white-space: normal;
-      overflow-wrap: anywhere;
-    }
-    .card-footer .pagination {
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-  }
-
-  @media (max-width: 420px) {
-    .usuarios-toolbar-actions > a {
-      flex-basis: 100%;
-    }
-    .usuarios-table-wrap table.table tbody td {
-      flex-direction: column;
-      gap: 6px;
-    }
-    .usuarios-table-wrap table.table tbody td::before {
-      flex-basis: auto;
-      max-width: none;
-      padding-top: 0;
-    }
-  }
-
-  @media (max-width: 991.98px) {
-    html.dark-mode .usuarios-table-wrap table.table tbody tr,
-    body.dark-mode .usuarios-table-wrap table.table tbody tr {
-      background: #0f1a24 !important;
-      border-color: #233549 !important;
-      box-shadow: 0 14px 30px rgba(0,0,0,.35) !important;
-      color: rgba(255,255,255,.92) !important;
-    }
-    html.dark-mode .usuarios-table-wrap table.table tbody td + td,
-    body.dark-mode .usuarios-table-wrap table.table tbody td + td {
-      border-top-color: #233549 !important;
-    }
-    html.dark-mode .usuarios-table-wrap table.table tbody td::before,
-    body.dark-mode .usuarios-table-wrap table.table tbody td::before {
-      color: rgba(255,255,255,.72) !important;
-    }
-    html.dark-mode .usuarios-table-wrap .text-muted,
-    body.dark-mode .usuarios-table-wrap .text-muted {
-      color: rgba(255,255,255,.70) !important;
-    }
-  }
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/admin_usuarios_listar.css') }}">
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4 usuarios-page" style="max-width: 1200px">
 
-  <div class="usuarios-toolbar mb-4">
+  <div class="usuarios-toolbar page-toolbar mb-4">
     <div>
       <h2 class="text-dark m-0">
         <i class="bi bi-people-fill me-2 text-primary"></i> Usuários (Admin / Operário)
@@ -215,7 +23,7 @@
       </p>
     </div>
 
-    <div class="usuarios-toolbar-actions">
+    <div class="usuarios-toolbar-actions page-toolbar-actions">
       <a href="{{ url_for('main.admin_dashboard') }}"
          class="btn btn-outline-secondary d-flex align-items-center gap-2">
         <i class="bi bi-arrow-left"></i> Voltar

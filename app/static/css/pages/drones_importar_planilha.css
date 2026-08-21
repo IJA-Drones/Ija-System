@@ -1,0 +1,328 @@
+.ai-import-page {
+    max-width: 1120px;
+  }
+
+  .ai-import-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(280px, 0.95fr);
+    gap: 18px;
+    align-items: stretch;
+  }
+
+  .ai-import-panel {
+    border: 1px solid rgba(65, 199, 161, 0.24);
+    background:
+      linear-gradient(135deg, rgba(11, 31, 45, 0.98), rgba(13, 48, 47, 0.96)),
+      #0b1f2d;
+    color: #eefaf7;
+    border-radius: 8px;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.24);
+    overflow: hidden;
+  }
+
+  .ai-import-panel-header {
+    padding: 22px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .ai-import-title {
+    margin: 0;
+    color: #ffffff;
+    font-size: 1.35rem;
+    font-weight: 800;
+  }
+
+  .ai-import-subtitle {
+    margin: 6px 0 0;
+    color: rgba(238, 250, 247, 0.72);
+    font-size: 0.92rem;
+  }
+
+  .ai-import-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 34px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: rgba(41, 185, 135, 0.16);
+    color: #8cf0c4;
+    border: 1px solid rgba(140, 240, 196, 0.22);
+    font-size: 0.82rem;
+    font-weight: 700;
+  }
+
+  .ai-import-body {
+    padding: 22px;
+    display: grid;
+    gap: 18px;
+  }
+
+  .fleet-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 5px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 8px;
+  }
+
+  .fleet-tab {
+    min-height: 54px;
+    border: 0;
+    border-radius: 6px;
+    color: rgba(238, 250, 247, 0.72);
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-weight: 800;
+    transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+  }
+
+  .fleet-tab.is-active {
+    background: linear-gradient(135deg, #19b77f, #0b7ed0);
+    color: #ffffff;
+    box-shadow: 0 10px 22px rgba(11, 126, 208, 0.28);
+  }
+
+  .drop-zone {
+    border: 1px dashed rgba(140, 240, 196, 0.42);
+    border-radius: 8px;
+    min-height: 236px;
+    padding: 28px;
+    background: rgba(255, 255, 255, 0.045);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 14px;
+    cursor: pointer;
+    transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+  }
+
+  .drop-zone.is-dragging {
+    border-color: #8cf0c4;
+    background: rgba(25, 183, 127, 0.12);
+    transform: translateY(-1px);
+  }
+
+  .drop-zone-icon {
+    width: 62px;
+    height: 62px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: rgba(11, 126, 208, 0.18);
+    color: #8cf0c4;
+    font-size: 1.55rem;
+  }
+
+  .drop-zone-title {
+    margin: 0;
+    color: #ffffff;
+    font-weight: 800;
+  }
+
+  .drop-zone-copy {
+    margin: 0;
+    max-width: 420px;
+    color: rgba(238, 250, 247, 0.68);
+    font-size: 0.9rem;
+  }
+
+  .selected-file {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+  }
+
+  .selected-file.is-visible {
+    display: flex;
+  }
+
+  .selected-file-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #ffffff;
+    font-weight: 700;
+  }
+
+  .ai-import-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .ai-import-submit {
+    min-height: 46px;
+    border: 0;
+    border-radius: 8px;
+    padding: 0 18px;
+    background: linear-gradient(135deg, #18b979, #0a86d8);
+    color: #ffffff;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 0 12px 24px rgba(10, 134, 216, 0.22);
+  }
+
+  .ai-import-submit:disabled {
+    opacity: 0.62;
+    cursor: not-allowed;
+  }
+
+  .ai-import-status {
+    display: none;
+    padding: 14px 16px;
+    border-radius: 8px;
+    font-weight: 700;
+  }
+
+  .ai-import-status.is-visible {
+    display: block;
+  }
+
+  .ai-import-status.success {
+    color: #c9ffe8;
+    background: rgba(25, 183, 127, 0.16);
+    border: 1px solid rgba(140, 240, 196, 0.25);
+  }
+
+  .ai-import-status.error {
+    color: #ffd0d0;
+    background: rgba(220, 53, 69, 0.16);
+    border: 1px solid rgba(255, 160, 160, 0.28);
+  }
+
+  .ai-import-progress {
+    display: none;
+    height: 8px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.10);
+  }
+
+  .ai-import-progress.is-visible {
+    display: block;
+  }
+
+  .ai-import-progress span {
+    display: block;
+    width: 42%;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #8cf0c4, #0a86d8);
+    animation: importProgress 1.1s ease-in-out infinite;
+  }
+
+  .ai-import-side {
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: #ffffff;
+    box-shadow: var(--shadow-sm);
+    padding: 22px;
+    display: grid;
+    align-content: start;
+    gap: 16px;
+  }
+
+  .ai-import-side h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--color-text-main);
+  }
+
+  .ai-import-side-list {
+    display: grid;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .ai-import-side-list li {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+  }
+
+  .ai-import-side-list i {
+    color: #19a66f;
+    margin-top: 2px;
+  }
+
+  .prefeitura-field {
+    display: grid;
+    gap: 6px;
+  }
+
+  .prefeitura-field label {
+    color: rgba(238, 250, 247, 0.72);
+    font-size: 0.82rem;
+    font-weight: 700;
+  }
+
+  .prefeitura-field input {
+    min-height: 42px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+    padding: 0 12px;
+  }
+
+  html.dark-mode .ai-import-side,
+  body.dark-mode .ai-import-side {
+    background: #101927;
+    border-color: #233549;
+  }
+
+  @keyframes importProgress {
+    0% { transform: translateX(-115%); }
+    100% { transform: translateX(245%); }
+  }
+
+  @media (max-width: 900px) {
+    .ai-import-shell {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 575.98px) {
+    .ai-import-panel-header,
+    .ai-import-body,
+    .ai-import-side {
+      padding: 16px;
+    }
+
+    .fleet-tabs {
+      grid-template-columns: 1fr;
+    }
+
+    .ai-import-actions,
+    .ai-import-submit {
+      width: 100%;
+    }
+  }

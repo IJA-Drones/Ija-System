@@ -56,7 +56,7 @@
 
     <link
       rel="stylesheet"
-      href="{{ url_for('static', filename='css/style.css') }}"
+      href="{{ url_for('static', filename='css/style.bundle.css', v=style_bundle_version) }}"
     />
     <link rel="preload" as="image" href="{{ logo_light_url }}" />
     <link rel="preload" as="image" href="{{ logo_dark_url }}" />
@@ -75,79 +75,6 @@
       })();
     </script>
 
-    <style>
-      :root {
-        --navbar-offset: 70px; /* Fallback mais realista para mobile */
-      }
-
-      body {
-        overflow-x: hidden; /* Evita scroll lateral indesejado no mobile */
-        /* Remova o padding-top daqui e deixe o JS ou uma classe fixa resolver */
-      }
-
-      /* ✅ Classe para evitar que o conteúdo suma antes do JS carregar */
-      body:not(.is-loaded) {
-        padding-top: 70px !important;
-      }
-
-      .navbar.fixed-top {
-        z-index: 1030  !important; /* Acima de quase tudo */
-      }
-
-      /* Overlay deve cobrir a tela toda, inclusive a navbar se necessário */
-      .sidebar-overlay {
-        z-index: 1040  !important;
-      }
-
-      #appSidebar {
-        z-index: 1045  !important; /* Sidebar sempre no topo de tudo no mobile */
-      }
-
-      @media (max-width: 991.98px) {
-        .navbar .navbar-collapse {
-          display: none !important;
-        }
-
-        /* Ajuste para a logo não estourar em celulares pequenos */
-        .navbar-brand img {
-          max-width: 140px;
-          height: auto;
-        }
-
-      }
-
-      .global-video-upload-status {
-        position: fixed;
-        right: 18px;
-        bottom: 18px;
-        z-index: 1080;
-        width: min(360px, calc(100vw - 32px));
-        border: 1px solid rgba(21, 101, 192, 0.18);
-        border-radius: 14px;
-        background: #ffffff;
-        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
-        padding: 14px;
-      }
-
-      .global-video-upload-status .progress {
-        height: 0.6rem;
-        border-radius: 999px;
-        background: #dbe7f4;
-        overflow: hidden;
-      }
-
-      .global-video-upload-title {
-        color: #173b62;
-        font-weight: 800;
-        font-size: 0.92rem;
-      }
-
-      .global-video-upload-message {
-        color: #64748b;
-        font-size: 0.8rem;
-        line-height: 1.4;
-      }
-    </style>
   </head>
 
   <body class="{% if tema_escolhido == 'dark' %}dark-mode {% endif %}{% if is_agro_context %}agro-mode{% endif %}">

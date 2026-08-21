@@ -4,18 +4,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
-  <style>
-    .talent-chip {
-      display: inline-flex;
-      padding: .35rem .65rem;
-      border-radius: 999px;
-      background: var(--bs-primary-bg-subtle);
-      color: var(--bs-primary-text-emphasis);
-      border: 1px solid var(--bs-primary-border-subtle);
-      font-size: .82rem;
-    }
-    .talent-section-list li + li { margin-top: .6rem; }
-  </style>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro_talento_detalhe.css') }}">
 {% endblock %}
 
 {% macro chips(items, empty_text='Nenhuma informação identificada') %}

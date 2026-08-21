@@ -1,0 +1,277 @@
+.checklist-detail-page {
+    max-width: 1360px;
+  }
+
+  .detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .summary-strip {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .summary-card {
+    background: #fff;
+    border-radius: 18px;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: var(--shadow-sm);
+    padding: 1rem 1.1rem;
+  }
+
+  .summary-card .label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    color: #64748b;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+  }
+
+  .summary-card .value {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #1f2937;
+    margin-top: 0.25rem;
+  }
+
+  .section-box {
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 20px;
+    box-shadow: var(--shadow-sm);
+    padding: 1.1rem;
+  }
+
+  .section-title-line {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 1rem;
+    padding-bottom: 0.9rem;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .section-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(13, 110, 253, 0.08);
+    color: #0d6efd;
+    flex: 0 0 42px;
+  }
+
+  .checklist-detail-table-wrap .table {
+    margin-bottom: 0;
+  }
+
+  .checklist-detail-table-wrap tbody > tr > td {
+    vertical-align: middle;
+  }
+
+  .checklist-detail-table-wrap tbody > tr:not(.collapse-row):hover {
+    background-color: rgba(13, 110, 253, 0.02);
+  }
+
+  .collapse-row .bg-light {
+    background-color: #f8fafc !important;
+    border-top: 1px solid #e2e8f0;
+  }
+
+  .collapse-row .card {
+    border-radius: 1rem;
+    overflow: hidden;
+  }
+
+  .collapse-row .card-body {
+    padding: 1.25rem;
+  }
+
+  .meta-line {
+    font-size: 0.88rem;
+    margin-bottom: 0.45rem;
+  }
+
+  .status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.4rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    border: 1px solid transparent;
+  }
+
+  .status-chip-ok {
+    background: #e8f7ee;
+    color: #146c43;
+    border-color: #badbcc;
+  }
+
+  .status-chip-bad {
+    background: #fff4e5;
+    color: #9a6700;
+    border-color: #ffe69c;
+  }
+
+  .obs-item {
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 0.8rem;
+    background: #fff;
+  }
+
+  .checklist-inline-alert {
+    border-radius: 14px;
+  }
+
+  .signature-image {
+    max-height: 190px !important;
+    width: auto !important;
+    object-fit: contain !important;
+  }
+
+  @media (max-width: 992px) {
+    .summary-strip {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 768px) {
+    .checklist-detail-page {
+      padding-left: 12px !important;
+      padding-right: 12px !important;
+    }
+
+    .detail-header {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .detail-header .btn {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .summary-strip {
+      grid-template-columns: 1fr;
+    }
+
+    .checklist-detail-table-wrap {
+      overflow: visible;
+    }
+
+    .checklist-detail-table-wrap .table-responsive {
+      overflow: visible;
+    }
+
+    .checklist-detail-table-wrap table,
+    .checklist-detail-table-wrap thead,
+    .checklist-detail-table-wrap tbody,
+    .checklist-detail-table-wrap tr,
+    .checklist-detail-table-wrap th,
+    .checklist-detail-table-wrap td {
+      display: block;
+      width: 100%;
+    }
+
+    .checklist-detail-table-wrap thead {
+      display: none;
+    }
+
+    .checklist-detail-table-wrap tbody {
+      padding: 0.75rem;
+    }
+
+    .checklist-detail-table-wrap tbody > tr:not(.collapse-row) {
+      background: #fff;
+      border: 1px solid rgba(16, 25, 39, 0.08);
+      border-radius: 1rem;
+      box-shadow: 0 10px 24px rgba(16, 25, 39, 0.08);
+      margin-bottom: 0.75rem;
+      overflow: hidden;
+      padding: 0.25rem 0;
+    }
+
+    .checklist-detail-table-wrap tbody > tr:not(.collapse-row) td {
+      border: 0;
+      padding: 0.75rem 1rem !important;
+      text-align: left !important;
+    }
+
+    .checklist-detail-table-wrap tbody > tr:not(.collapse-row) td::before {
+      color: #6c757d;
+      content: attr(data-label);
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.35rem;
+      text-transform: uppercase;
+    }
+
+    .checklist-detail-table-wrap .collapse-row {
+      margin-top: -0.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .checklist-detail-table-wrap .collapse-row td {
+      border: 0;
+      padding: 0 !important;
+    }
+
+    .checklist-detail-table-wrap .collapse-row td::before {
+      display: none;
+    }
+
+    .checklist-detail-table-wrap .collapse-row .bg-light {
+      border-radius: 0 0 1rem 1rem;
+      padding: 1rem !important;
+    }
+
+    .checklist-detail-table-wrap .collapse-row .card-body {
+      padding: 1rem;
+    }
+  }
+
+  .dark-mode .summary-card,
+  .dark-mode .section-box,
+  .dark-mode .collapse-row .card,
+  .dark-mode .obs-item {
+    background: #162133;
+    border-color: rgba(255, 255, 255, 0.08);
+    color: #e2e8f0;
+  }
+
+  .dark-mode .summary-card .label,
+  .dark-mode .text-muted,
+  .dark-mode .small.text-muted {
+    color: rgba(255, 255, 255, 0.65) !important;
+  }
+
+  .dark-mode .summary-card .value {
+    color: #e2e8f0;
+  }
+
+  .dark-mode .checklist-detail-table-wrap tbody > tr:not(.collapse-row) {
+    background: #162133;
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: none;
+  }
+
+  .dark-mode .checklist-detail-table-wrap tbody > tr:not(.collapse-row) td::before {
+    color: rgba(255, 255, 255, 0.65);
+  }
+
+  .dark-mode .collapse-row .bg-light {
+    background-color: #122033 !important;
+    border-color: rgba(255, 255, 255, 0.08);
+  }

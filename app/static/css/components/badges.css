@@ -8,3 +8,9 @@
   font-weight: 600;
   letter-spacing: 0.3px;
 }
+
+.team-chip {
+  border-radius: 999px;
+  padding: 0.4rem 0.7rem;
+  font-weight: 600;
+}

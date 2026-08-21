@@ -1,0 +1,70 @@
+.uvis-operacional-login {
+      min-height: calc(100vh - 160px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 12px;
+    }
+
+    .uvis-operacional-card {
+      width: 100%;
+      max-width: 460px;
+      border: 1px solid rgba(44, 82, 130, 0.10);
+      box-shadow: 0 22px 54px rgba(15, 23, 42, 0.12);
+    }
+
+    .uvis-operacional-icon {
+      width: 54px;
+      height: 54px;
+      border-radius: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #e8f4ff;
+      color: #1f5f99;
+      font-size: 1.6rem;
+    }
+
+    .uvis-operacional-link {
+      color: #1f5f99;
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .uvis-operacional-link:hover {
+      text-decoration: underline;
+    }
+
+    .uvis-operacional-summary {
+      border: 1px solid rgba(31, 95, 153, 0.12);
+      background: linear-gradient(180deg, #f8fbff, #eef7ff);
+      color: #334155;
+    }
+
+    .uvis-operacional-summary-title {
+      color: #1f5f99;
+      font-weight: 800;
+      font-size: .86rem;
+    }
+
+    .uvis-operacional-summary ul {
+      margin: 10px 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 8px;
+    }
+
+    .uvis-operacional-summary li {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      font-size: .82rem;
+      line-height: 1.35;
+    }
+
+    .uvis-operacional-summary li i {
+      color: #198754;
+      margin-top: 2px;
+      flex: 0 0 auto;
+    }

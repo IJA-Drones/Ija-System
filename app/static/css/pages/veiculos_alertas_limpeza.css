@@ -1,0 +1,65 @@
+.limpeza-alertas-page { max-width: 1280px; }
+  .table-alertas th,
+  .table-alertas td { vertical-align: middle; }
+  .actor-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .actor-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 10px;
+    padding: 8px 10px;
+    background: #f8fafc;
+  }
+  .actor-name { min-width: 0; }
+  .actor-name strong,
+  .actor-name span {
+    display: block;
+    overflow-wrap: anywhere;
+  }
+  @media (max-width: 768px) {
+    .table-responsive { overflow-x: visible !important; }
+    .table-alertas,
+    .table-alertas tbody,
+    .table-alertas tr,
+    .table-alertas td {
+      display: block;
+      width: 100%;
+    }
+    .table-alertas thead { display: none; }
+    .table-alertas tbody { display: flex; flex-direction: column; gap: 14px; }
+    .table-alertas tbody tr {
+      border: 1px solid rgba(0,0,0,.1);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 10px 22px rgba(0,0,0,.06);
+      background: #fff;
+    }
+    .table-alertas tbody td {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 10px;
+      border: 0 !important;
+      border-bottom: 1px solid rgba(0,0,0,.06) !important;
+      text-align: right;
+    }
+    .table-alertas tbody td::before {
+      font-weight: 800;
+      color: rgba(0,0,0,.55);
+      text-align: left;
+    }
+    .table-alertas tbody td:nth-child(1)::before { content: "Veiculo"; }
+    .table-alertas tbody td:nth-child(2)::before { content: "Ultima limpeza"; }
+    .table-alertas tbody td:nth-child(3)::before { content: "Atraso"; }
+    .table-alertas tbody td:nth-child(4)::before { content: "Ciencia"; }
+    .actor-row {
+      flex-direction: column;
+      align-items: stretch;
+      text-align: left;
+    }
+  }

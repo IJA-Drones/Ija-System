@@ -1,0 +1,24 @@
+/* =========================================
+   PAGE TOOLBAR
+   ========================================= */
+
+.page-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.page-toolbar-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+@media (max-width: 991.98px) {
+  .page-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

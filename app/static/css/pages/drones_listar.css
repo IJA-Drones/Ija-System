@@ -1,0 +1,146 @@
+/* =========================================
+       DESIGN SYSTEM OCEANO AZUL (IGUAL DASHBOARD)
+       ========================================= */
+    
+    .dashboard-header {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 12px !important;
+        flex-wrap: wrap;
+    }
+
+    .dashboard-header h2 {
+        margin: 0 !important;
+        margin-right: auto !important;
+        white-space: nowrap;
+    }
+
+    .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    /* Botões Pill */
+    .btn-pill {
+        border-radius: 999px !important;
+        padding: 8px 16px !important;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        transition: transform 0.2s;
+    }
+
+    .btn-pill:hover {
+        transform: translateY(-1px);
+    }
+
+    .btn-voltar {
+        border: 1px solid rgba(0,0,0,.15) !important;
+        background: #fff !important;
+        color: var(--color-text-main) !important;
+    }
+
+    /* Ajuste para as ações na tabela */
+    .acoes-wrap {
+        display: flex;
+        justify-content: center;
+        gap: .5rem;
+        flex-wrap: wrap;
+    }
+
+    /* =========================================
+       RESPONSIVIDADE (MOBILE -> CARDS)
+       ========================================= */
+    @media (max-width: 768px) {
+        .dashboard-header {
+            flex-direction: column !important;
+            align-items: stretch !important;
+        }
+
+        .dashboard-header h2 {
+            margin-right: 0 !important;
+            white-space: normal;
+        }
+
+        .header-actions {
+            width: 100%;
+        }
+
+        .header-actions a.btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        /* Tabela vira Lista de Cards */
+        .table-responsive {
+            background: transparent !important;
+            border: 0 !important;
+        }
+
+        thead { display: none !important; }
+
+        tbody {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 16px !important;
+            padding: 10px 0 !important;
+        }
+
+        tbody tr {
+            display: block !important;
+            background: var(--color-bg-white) !important;
+            border: 1px solid rgba(0, 0, 0, 0.10) !important;
+            border-radius: 18px !important;
+            box-shadow: var(--shadow-sm) !important;
+            padding: 10px !important;
+        }
+
+        tbody tr td {
+            display: grid !important;
+            grid-template-columns: 120px 1fr !important;
+            gap: 10px;
+            padding: 12px 8px !important;
+            border: 0 !important;
+            text-align: left !important;
+            align-items: center !important;
+        }
+
+        tbody tr td + td {
+            border-top: 1px solid rgba(0, 0, 0, 0.05) !important;
+        }
+
+        /* Labels Automáticos */
+        tbody tr td:nth-child(1)::before { content: "Drone"; }
+        tbody tr td:nth-child(2)::before { content: "Modelo"; }
+        tbody tr td:nth-child(3)::before { content: "Equipe"; }
+        tbody tr td:nth-child(4)::before { content: "Baterias"; }
+        tbody tr td:nth-child(5)::before { content: "Status"; }
+        tbody tr td:nth-child(6)::before { content: "Ações"; }
+
+        tbody tr td::before {
+            font-weight: 700;
+            color: var(--color-text-muted);
+            font-size: .75rem;
+            text-transform: uppercase;
+        }
+
+        .acoes-wrap {
+            justify-content: flex-start;
+        }
+    }
+
+    .menu-actions-table-wrap,
+    .menu-actions-table-wrap .card-body,
+    .menu-actions-table-wrap .table-responsive {
+        overflow: visible !important;
+    }
+
+    /* DARK MODE */
+    html.dark-mode .btn-voltar, body.dark-mode .btn-voltar {
+        background: transparent !important;
+        border-color: #233549 !important;
+    }

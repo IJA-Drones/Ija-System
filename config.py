@@ -43,5 +43,16 @@ class Config:
         "pool_pre_ping": True,
         "pool_recycle": 300,
     }
+
+    USER_PRESENCE_UPDATE_INTERVAL_SECONDS = os.getenv(
+        "USER_PRESENCE_UPDATE_INTERVAL_SECONDS",
+        "60",
+    )
+    CSS_BUNDLE_AUTO_BUILD = os.getenv("CSS_BUNDLE_AUTO_BUILD", "0").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False

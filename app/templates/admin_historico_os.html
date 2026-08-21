@@ -8,110 +8,12 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
-  <style>
-    .historico-os-page {
-      width: 100%;
-    }
-    .historico-os-toolbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 16px;
-    }
-    .historico-os-filter-actions {
-      display: flex;
-      gap: 8px;
-      justify-content: flex-end;
-      width: 100%;
-      margin-top: 8px;
-    }
-    .historico-os-filter-submit {
-      flex: 1 1 auto;
-    }
-    .historico-os-filter-clear {
-      flex: 0 0 auto;
-    }
-    .historico-os-toolbar-actions {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-    }
-    .historico-os-subtitle {
-      margin-top: 6px;
-      color: #6c757d;
-      font-size: 0.95rem;
-    }
-    .historico-os-tabs {
-      display: flex;
-      gap: 4px;
-      flex-wrap: wrap;
-      width: fit-content;
-      margin-bottom: 16px;
-      padding: 4px;
-      border: 1px solid #dbe4ef;
-      border-radius: 12px;
-      background: #f8fafc;
-    }
-    .historico-os-tabs .nav-link {
-      border: 0;
-      border-radius: 9px;
-      color: #52657a;
-      font-weight: 700;
-      padding: 0.62rem 0.95rem;
-      transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
-    }
-    .historico-os-tabs .nav-link:hover {
-      background: #eef4fb;
-      color: var(--color-primary);
-    }
-    .historico-os-tabs .nav-link.active {
-      background: #fff;
-      color: var(--color-primary);
-      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12);
-    }
-    .historico-os-tabs .nav-link i {
-      color: #0ea5e9;
-    }
-
-    @media (max-width: 991.98px) {
-      .historico-os-page.container-fluid.py-4 {
-        padding-left: 12px !important;
-        padding-right: 12px !important;
-      }
-      .historico-os-toolbar {
-        flex-direction: column;
-        align-items: stretch;
-      }
-      .historico-os-toolbar-actions {
-        flex-direction: column;
-      }
-      .historico-os-toolbar .btn {
-        width: 100%;
-      }
-      .historico-os-tabs {
-        width: 100%;
-      }
-      .historico-os-tabs .nav-item {
-        flex: 1 1 0;
-      }
-      .historico-os-tabs .nav-link {
-        text-align: center;
-      }
-      .historico-os-filter-actions {
-        flex-direction: column;
-      }
-      .historico-os-filter-actions .btn,
-      .historico-os-filter-actions .btn-sm {
-        width: 100%;
-      }
-    }
-  </style>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/admin_historico_os.css') }}">
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4 historico-os-page" style="max-width: 1200px;">
-  <div class="historico-os-toolbar mb-4">
+  <div class="historico-os-toolbar page-toolbar mb-4">
     <div>
       <h2 class="text-dark m-0">
         <i class="bi bi-clock-history me-2 text-primary"></i> Histórico de OS
@@ -121,7 +23,7 @@
       </div>
       {{ render_result_summary(paginacao.total, 'OS filtradas') }}
     </div>
-    <div class="historico-os-toolbar-actions">
+    <div class="historico-os-toolbar-actions page-toolbar-actions">
       <a
         href="{{ url_for('main.admin_historico_os_exportar_excel', **pagination_args) }}"
         class="btn btn-success"

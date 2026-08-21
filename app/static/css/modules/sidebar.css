@@ -196,6 +196,14 @@ body.sidebar-collapsed .app-sidebar .nav-link-toggle .chevron {
   display: none;
 }
 
+.sidebar-overlay {
+  z-index: 1040 !important;
+}
+
+#appSidebar {
+  z-index: 1045 !important;
+}
+
 
 /* =========================================
    RESPONSIVIDADE SIDEBAR
@@ -265,4 +273,3 @@ body.sidebar-collapsed .app-sidebar .nav-link-toggle .chevron {
     display: none;
   }
 }
-

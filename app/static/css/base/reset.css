@@ -17,3 +17,8 @@ body {
   color: var(--color-text-main);
   scroll-behavior: smooth;
 }
+
+/* Prevents content from sitting beneath the navbar before JS measures it. */
+body:not(.is-loaded) {
+  padding-top: 70px !important;
+}

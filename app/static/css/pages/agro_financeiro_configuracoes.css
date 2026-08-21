@@ -1,0 +1,52 @@
+@media (min-width: 992px) {
+      .financeiro-config-header {
+        display: flex;
+        flex-wrap: nowrap;
+        justify-content: space-between;
+        align-items: flex-start;
+      }
+
+      .financeiro-config-title {
+        flex: 1 1 auto;
+        min-width: 0;
+        max-width: 760px;
+      }
+
+      .financeiro-config-actions {
+        margin-left: auto;
+        justify-content: flex-end;
+        flex-wrap: nowrap;
+        align-items: center;
+        flex: 0 0 auto;
+      }
+    }
+
+    .financeiro-config-actions .btn {
+      min-height: 42px;
+      justify-content: center;
+      white-space: nowrap;
+    }
+
+    .financeiro-config-actions .btn .bi {
+      width: 16px;
+      text-align: center;
+      flex: 0 0 16px;
+    }
+
+    .financeiro-config-subtitle {
+      max-width: 760px;
+    }
+
+    .competencia-config-card {
+      border: 1px solid rgba(0, 0, 0, 0.06);
+    }
+
+    .competencia-status-pill {
+      border-radius: 999px;
+      padding: 0.35rem 0.75rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }

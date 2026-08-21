@@ -2,27 +2,6 @@
    FILTROS
    ========================================= */
 
-.filter-card {
-  background: var(--color-bg-white);
-  border: 1px solid rgba(44, 82, 130, 0.1);
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
-  overflow: hidden;
-}
-
-.filter-card-header {
-  background: linear-gradient(180deg, #f8fbff 0%, #eff5fc 100%);
-  color: var(--color-primary-dark);
-}
-
-.filter-card-header .fw-bold,
-.filter-card-header .text-dark {
-  color: var(--color-primary-dark) !important;
-}
-
-.filter-card-header .text-muted {
-  color: var(--color-text-muted) !important;
-}
-
 .filter-card-header.cursor-pointer {
   cursor: pointer;
 }
@@ -35,41 +14,9 @@
   transform: rotate(180deg);
 }
 
-.filter-card-body {
-  background: transparent;
-}
-
-.filter-card-badge {
-  font-weight: 800;
-}
-
 .filter-card-actions {
   display: flex;
   gap: 8px;
-}
-
-.filter-card .form-control,
-.filter-card .form-select {
-  background: var(--color-bg-white);
-  border-color: #d8e2ee;
-  color: var(--color-text-main);
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
-}
-
-.filter-card .form-control:focus,
-.filter-card .form-select:focus {
-  background: var(--color-bg-white);
-  border-color: var(--color-primary);
-  color: var(--color-text-main);
-  box-shadow: 0 0 0 3px rgba(44, 82, 130, 0.08);
-}
-
-.filter-card .form-control::placeholder {
-  color: #94a3b8;
-}
-
-.filter-card .form-select option {
-  color: var(--color-text-main);
 }
 
 .filter-chip-row {

@@ -1,9 +1,13 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
-from flask import current_app, request
+from flask import current_app, request, session
 
 from app.extensions import db
 from app.models import UsuarioPresenca
+
+
+PRESENCE_SESSION_KEY = "_ija_presence_recorded_at"
+DEFAULT_PRESENCE_UPDATE_INTERVAL_SECONDS = 60
 
 
 def _utcnow_naive():
@@ -32,6 +36,35 @@ def should_track_presence():
     )
 
 
+def _presence_was_recorded_recently(now):
+    try:
+        interval_seconds = max(
+            0,
+            int(
+                current_app.config.get(
+                    "USER_PRESENCE_UPDATE_INTERVAL_SECONDS",
+                    DEFAULT_PRESENCE_UPDATE_INTERVAL_SECONDS,
+                )
+            ),
+        )
+    except (TypeError, ValueError):
+        interval_seconds = DEFAULT_PRESENCE_UPDATE_INTERVAL_SECONDS
+
+    if interval_seconds == 0:
+        return False
+
+    recorded_at = session.get(PRESENCE_SESSION_KEY)
+    if not recorded_at:
+        return False
+
+    try:
+        recorded_at = datetime.fromisoformat(recorded_at)
+    except (TypeError, ValueError):
+        return False
+
+    return now - recorded_at < timedelta(seconds=interval_seconds)
+
+
 def record_user_presence(user, *, mark_login=False, mark_logout=False):
     if not should_track_presence():
         return
@@ -41,6 +74,9 @@ def record_user_presence(user, *, mark_login=False, mark_logout=False):
         return
 
     now = _utcnow_naive()
+    if not mark_login and not mark_logout and _presence_was_recorded_recently(now):
+        return
+
     query_string = request.query_string.decode("utf-8", errors="ignore").strip() or None
     user_agent = (request.headers.get("User-Agent") or "").strip() or None
     referrer = (request.referrer or "").strip() or None
@@ -70,6 +106,10 @@ def record_user_presence(user, *, mark_login=False, mark_logout=False):
             presence.logout_em = now
 
         db.session.commit()
+        if mark_logout:
+            session.pop(PRESENCE_SESSION_KEY, None)
+        else:
+            session[PRESENCE_SESSION_KEY] = now.isoformat()
     except Exception:
         db.session.rollback()
         current_app.logger.exception("Erro ao registrar presenca de usuario.")

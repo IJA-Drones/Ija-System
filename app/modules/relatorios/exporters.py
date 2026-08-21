@@ -45,15 +45,27 @@ from app.shared.access import (
 )
 from app.shared.query_filters import multi_value_to_query
 
-try:
-    import matplotlib
+_MATPLOTLIB_PYPLOT = None
+_MATPLOTLIB_IMPORT_ATTEMPTED = False
 
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
 
-    MATPLOTLIB_AVAILABLE = True
-except ImportError:
-    MATPLOTLIB_AVAILABLE = False
+def _get_matplotlib_pyplot():
+    global _MATPLOTLIB_IMPORT_ATTEMPTED, _MATPLOTLIB_PYPLOT
+
+    if _MATPLOTLIB_IMPORT_ATTEMPTED:
+        return _MATPLOTLIB_PYPLOT
+
+    _MATPLOTLIB_IMPORT_ATTEMPTED = True
+    try:
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as pyplot
+    except ImportError:
+        return None
+
+    _MATPLOTLIB_PYPLOT = pyplot
+    return _MATPLOTLIB_PYPLOT
 
 
 def _env_int(name, default, minimum=None, maximum=None):
@@ -512,6 +524,8 @@ def build_relatorio_pdf_export(user, args):
     story.append(Paragraph("Os gráficos abaixo representam visualmente os dados apresentados nas tabelas anteriores.", normal))
     story.append(Spacer(1, 8))
 
+    plt = _get_matplotlib_pyplot()
+
     def safe_img_from_plt(fig, width_mm=170):
         bio = BytesIO()
         fig.tight_layout()
@@ -520,7 +534,7 @@ def build_relatorio_pdf_export(user, args):
         bio.seek(0)
         return RLImage(bio, width=width_mm * mm)
 
-    if MATPLOTLIB_AVAILABLE:
+    if plt is not None:
         try:
             labels = [status for status, _ in data["dados_status"]]
             values = [count for _, count in data["dados_status"]]
@@ -1535,11 +1549,11 @@ def _os_short_label(value, max_chars=32):
     return value if len(value) <= max_chars else f"{value[:max_chars - 3]}..."
 
 
-def _os_chart_image(fig, *, width_mm=170):
+def _os_chart_image(fig, *, pyplot, width_mm=170):
     bio = BytesIO()
     fig.tight_layout()
     fig.savefig(bio, format="png", dpi=220, bbox_inches="tight", facecolor="white")
-    plt.close(fig)
+    pyplot.close(fig)
     bio.seek(0)
     image_width, image_height = ImageReader(bio).getSize()
     bio.seek(0)
@@ -1548,8 +1562,8 @@ def _os_chart_image(fig, *, width_mm=170):
     return RLImage(bio, width=draw_width, height=draw_height)
 
 
-def _os_no_data_chart(title):
-    fig, ax = plt.subplots(figsize=(7.0, 2.6))
+def _os_no_data_chart(title, *, pyplot):
+    fig, ax = pyplot.subplots(figsize=(7.0, 2.6))
     ax.set_title(title, fontsize=11, pad=10)
     ax.text(0.5, 0.5, "Sem dados para o gráfico", ha="center", va="center", fontsize=10, color="#6c757d")
     ax.axis("off")
@@ -1581,14 +1595,15 @@ def _os_pdf_chart_section(data, styles):
         Paragraph("Visualização dos mesmos indicadores apresentados na tela do relatório de OS.", note),
     ]
 
-    if not MATPLOTLIB_AVAILABLE:
+    plt = _get_matplotlib_pyplot()
+    if plt is None:
         story.append(Paragraph("Matplotlib não disponível; gráficos foram omitidos.", note))
         return story
 
     palette = ["#0d6efd", "#20c997", "#ffc107", "#dc3545", "#6f42c1", "#0dcaf0", "#fd7e14", "#198754", "#adb5bd", "#343a40"]
 
     def append_chart(fig, width_mm=170):
-        story.append(_os_chart_image(fig, width_mm=width_mm))
+        story.append(_os_chart_image(fig, pyplot=plt, width_mm=width_mm))
         story.append(Spacer(1, 10))
 
     try:
@@ -1623,7 +1638,7 @@ def _os_pdf_chart_section(data, styles):
             ax1.axis("equal")
             append_chart(fig1)
         else:
-            append_chart(_os_no_data_chart("Situação da Aplicação"))
+            append_chart(_os_no_data_chart("Situação da Aplicação", pyplot=plt))
 
         tipo = _os_chart_rows(data["dados_tipo_aplicacao"], limit=15)
         tipo_labels = [_os_short_label(label, 36) for label, _ in tipo]

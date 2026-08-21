@@ -1,0 +1,104 @@
+/* =========================================
+   VEICULOS LOGS - DARK MODE
+   ========================================= */
+
+body.dark-mode .veiculos-logs-page .vehicle-summary-card {
+  background:
+    linear-gradient(180deg, rgba(26, 38, 54, 0.96) 0%, rgba(20, 30, 42, 0.92) 100%);
+  border-color: rgba(126, 180, 255, 0.12);
+  border-left-color: var(--vehicle-accent);
+  color: var(--color-text-main);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.16);
+}
+
+body.dark-mode .veiculos-logs-page .vehicle-summary-card:hover {
+  border-color: rgba(126, 180, 255, 0.22);
+  border-left-color: var(--vehicle-accent);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.2);
+  color: var(--color-text-main);
+}
+
+body.dark-mode .veiculos-logs-page .vehicle-summary-eyebrow,
+body.dark-mode .veiculos-logs-page .vehicle-summary-subtitle {
+  color: rgba(162, 188, 216, 0.82);
+}
+
+body.dark-mode .veiculos-logs-page .vehicle-summary-main,
+body.dark-mode .veiculos-logs-page .vehicle-summary-footer {
+  color: var(--color-primary-dark);
+}
+
+body.dark-mode .veiculos-logs-page .vehicle-summary-icon {
+  opacity: 0.68;
+  filter: saturate(0.9);
+}
+
+body.dark-mode .veiculos-logs-page .veiculos-logs-table-wrap {
+  background:
+    linear-gradient(180deg, rgba(26, 38, 54, 0.96) 0%, rgba(20, 30, 42, 0.92) 100%);
+  border: 1px solid rgba(126, 180, 255, 0.1) !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.16);
+}
+
+body.dark-mode .veiculos-logs-page .veiculos-logs-table-wrap .table {
+  color: var(--color-text-main);
+}
+
+body.dark-mode .veiculos-logs-page .veiculos-logs-table-wrap thead th {
+  background: rgba(27, 45, 65, 0.94) !important;
+  border-bottom-color: rgba(126, 180, 255, 0.08);
+  color: rgba(237, 243, 251, 0.9);
+}
+
+body.dark-mode .veiculos-logs-page .veiculos-logs-table-wrap tbody > tr:not(.collapse-row) td {
+  background: rgba(18, 28, 40, 0.9);
+  border-color: rgba(126, 180, 255, 0.08);
+  color: rgba(237, 243, 251, 0.86);
+}
+
+body.dark-mode .veiculos-logs-page .veiculos-logs-table-wrap tbody > tr:not(.collapse-row):nth-child(4n + 3) td {
+  background: rgba(21, 33, 46, 0.92);
+}
+
+body.dark-mode .veiculos-logs-page .veiculos-logs-table-wrap .table-hover > tbody > tr:not(.collapse-row):hover > * {
+  background: rgba(35, 192, 214, 0.06) !important;
+}
+
+body.dark-mode .veiculos-logs-page .veiculos-logs-table-wrap .text-dark {
+  color: var(--color-text-main) !important;
+}
+
+body.dark-mode .veiculos-logs-page .veiculos-logs-table-wrap hr {
+  border-color: rgba(126, 180, 255, 0.12);
+}
+
+body.dark-mode .veiculos-logs-page .veiculos-logs-table-wrap .collapse-row > td {
+  background: rgba(16, 25, 36, 0.82);
+}
+
+body.dark-mode .veiculos-logs-page .veiculos-logs-table-wrap .collapse-row .bg-light {
+  background: rgba(16, 25, 36, 0.9) !important;
+  border-color: rgba(126, 180, 255, 0.08);
+}
+
+@media (max-width: 768px) {
+  body.dark-mode .veiculos-logs-page .veiculos-logs-table-wrap {
+    background: rgba(20, 30, 42, 0.74);
+  }
+
+  body.dark-mode .veiculos-logs-page .veiculos-logs-table-wrap tbody > tr:not(.collapse-row) {
+    background:
+      linear-gradient(180deg, rgba(26, 38, 54, 0.96) 0%, rgba(20, 30, 42, 0.92) 100%);
+    border-color: rgba(126, 180, 255, 0.1);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.14);
+  }
+
+  body.dark-mode .veiculos-logs-page .veiculos-logs-table-wrap tbody > tr:not(.collapse-row) td,
+  body.dark-mode .veiculos-logs-page .veiculos-logs-table-wrap tbody > tr:not(.collapse-row):nth-child(4n + 3) td {
+    background: transparent;
+  }
+
+  body.dark-mode .veiculos-logs-page .veiculos-logs-table-wrap tbody > tr:not(.collapse-row) td::before {
+    color: rgba(162, 188, 216, 0.72);
+  }
+}

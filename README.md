@@ -520,6 +520,7 @@ SKYBOX_WEBDAV_URL=
 SKYBOX_USERNAME=
 SKYBOX_APP_PASSWORD=
 SKYBOX_BASE_DIR=dados ordens de serviço
+USER_PRESENCE_UPDATE_INTERVAL_SECONDS=60
 ```
 
 ### 5. Aplicar migrações
@@ -532,6 +533,24 @@ flask --app app:create_app db upgrade
 
 ```bash
 python run.py
+```
+
+Por padrão, o ambiente local mantém o modo de depuração ativo, mas desativa o
+reloader do Flask para evitar que toda a aplicação seja carregada duas vezes.
+Alterações em CSS e JavaScript continuam aparecendo ao atualizar o navegador.
+Para reativar o reload automático de arquivos Python, use:
+
+```bash
+FLASK_USE_RELOADER=1 python run.py
+```
+
+O `run.py` também mantém `app/static/css/style.bundle.css` sincronizado com os
+arquivos componentizados durante o desenvolvimento. Para gerar ou validar o
+bundle manualmente:
+
+```bash
+python scripts/build_css_bundle.py
+python scripts/build_css_bundle.py --check
 ```
 
 A aplicação sobe em:

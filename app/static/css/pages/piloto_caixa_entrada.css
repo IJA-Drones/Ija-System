@@ -1,0 +1,28 @@
+.inbox-shell { max-width: 1080px; }
+  .alert-card {
+    border: 0;
+    border-left: 5px solid #ffc107;
+    border-radius: 14px;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+  }
+  .alert-card.is-ack {
+    border-left-color: #198754;
+  }
+  .alert-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .alert-meta .badge {
+    border-radius: 999px;
+    padding: 0.45rem 0.7rem;
+  }
+  @media (max-width: 576px) {
+    .inbox-actions {
+      width: 100%;
+    }
+    .inbox-actions .btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }

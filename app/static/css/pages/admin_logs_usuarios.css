@@ -1,0 +1,229 @@
+.auditoria-page {
+    max-width: 1280px;
+  }
+
+  .auditoria-stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .auditoria-stat-card {
+    border: 0;
+    border-radius: 1.25rem;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  }
+
+  .auditoria-stat-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: rgba(33, 37, 41, 0.62);
+  }
+
+  .auditoria-stat-value {
+    margin-top: 12px;
+    font-size: 1.9rem;
+    line-height: 1;
+    font-weight: 700;
+    color: var(--bs-dark);
+  }
+
+  .auditoria-stat-note {
+    margin-top: 10px;
+    font-size: 0.84rem;
+    color: var(--bs-secondary-color);
+  }
+
+  .auditoria-table-card .card-header {
+    background: #fff;
+  }
+
+  .auditoria-table .col-data {
+    width: 150px;
+  }
+
+  .auditoria-table .col-usuario {
+    width: 220px;
+  }
+
+  .auditoria-table .col-evento {
+    width: 180px;
+  }
+
+  .auditoria-table .col-origem {
+    width: 260px;
+  }
+
+  .auditoria-time {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .auditoria-time-date {
+    font-weight: 700;
+    color: var(--bs-dark);
+  }
+
+  .auditoria-time-hour {
+    font-size: 0.88rem;
+    color: var(--bs-secondary-color);
+  }
+
+  .auditoria-user-name {
+    font-weight: 600;
+    color: var(--bs-dark);
+  }
+
+  .auditoria-user-login {
+    margin-top: 4px;
+    font-size: 0.9rem;
+    color: var(--bs-secondary-color);
+  }
+
+  .auditoria-chip-group,
+  .auditoria-badge-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .auditoria-chip-group {
+    margin-top: 10px;
+  }
+
+  .auditoria-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    background: var(--bs-light);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: var(--bs-dark);
+  }
+
+  .auditoria-badge-group .badge {
+    padding: 0.5rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    letter-spacing: 0.03em;
+  }
+
+  .auditoria-path-box,
+  .auditoria-origin-box {
+    border-radius: 1rem;
+    background: rgba(248, 249, 250, 0.9);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+  }
+
+  .auditoria-path-box {
+    padding: 0.9rem 1rem;
+  }
+
+  .auditoria-path-value {
+    font-weight: 600;
+    color: var(--bs-dark);
+    word-break: break-word;
+  }
+
+  .auditoria-path-meta {
+    margin-top: 0.65rem;
+    font-size: 0.84rem;
+    color: var(--bs-secondary-color);
+  }
+
+  .auditoria-path-meta code {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .auditoria-origin-stack {
+    display: grid;
+    gap: 8px;
+  }
+
+  .auditoria-origin-box {
+    padding: 0.75rem 0.9rem;
+  }
+
+  .auditoria-origin-label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: rgba(33, 37, 41, 0.55);
+  }
+
+  .auditoria-origin-value {
+    font-size: 0.88rem;
+    color: var(--bs-dark);
+    word-break: break-word;
+  }
+
+  @media (max-width: 1199.98px) {
+    .auditoria-stats {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 991.98px) {
+    .auditoria-stats {
+      grid-template-columns: 1fr;
+    }
+
+    .auditoria-table tbody tr td:nth-child(1)::before { content: "Data"; }
+    .auditoria-table tbody tr td:nth-child(2)::before { content: "Usuario"; }
+    .auditoria-table tbody tr td:nth-child(3)::before { content: "Evento"; }
+    .auditoria-table tbody tr td:nth-child(4)::before { content: "Tela / Rota"; }
+    .auditoria-table tbody tr td:nth-child(5)::before { content: "Origem"; }
+  }
+
+  @media (max-width: 420px) {
+    .auditoria-stat-value {
+      font-size: 1.6rem;
+    }
+  }
+
+  body.dark-mode .auditoria-stat-card,
+  body.dark-mode .auditoria-table-card,
+  body.dark-mode .auditoria-path-box,
+  body.dark-mode .auditoria-origin-box {
+    background: #0f1a24 !important;
+    border-color: #233549 !important;
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.28) !important;
+  }
+
+  body.dark-mode .auditoria-stat-value,
+  body.dark-mode .auditoria-time-date,
+  body.dark-mode .auditoria-user-name,
+  body.dark-mode .auditoria-path-value,
+  body.dark-mode .auditoria-origin-value,
+  body.dark-mode .auditoria-table-card .text-dark {
+    color: rgba(255, 255, 255, 0.92) !important;
+  }
+
+  body.dark-mode .auditoria-stat-label,
+  body.dark-mode .auditoria-stat-note,
+  body.dark-mode .auditoria-time-hour,
+  body.dark-mode .auditoria-user-login,
+  body.dark-mode .auditoria-origin-label,
+  body.dark-mode .auditoria-path-meta,
+  body.dark-mode .auditoria-table-card .text-muted {
+    color: rgba(255, 255, 255, 0.7) !important;
+  }
+
+  body.dark-mode .auditoria-chip {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: #233549;
+    color: rgba(255, 255, 255, 0.9);
+  }

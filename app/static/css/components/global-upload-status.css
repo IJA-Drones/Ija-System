@@ -1,0 +1,35 @@
+/* =========================================
+   GLOBAL UPLOAD STATUS
+   ========================================= */
+
+.global-video-upload-status {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 1080;
+  width: min(360px, calc(100vw - 32px));
+  border: 1px solid rgba(21, 101, 192, 0.18);
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
+  padding: 14px;
+}
+
+.global-video-upload-status .progress {
+  height: 0.6rem;
+  border-radius: 999px;
+  background: #dbe7f4;
+  overflow: hidden;
+}
+
+.global-video-upload-title {
+  color: #173b62;
+  font-weight: 800;
+  font-size: 0.92rem;
+}
+
+.global-video-upload-message {
+  color: #64748b;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}

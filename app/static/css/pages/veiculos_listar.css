@@ -1,0 +1,296 @@
+/* =========================================
+       DESIGN SYSTEM OCEANO AZUL
+       ========================================= */
+    .dashboard-header {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 12px !important;
+        flex-wrap: wrap;
+    }
+
+    .dashboard-header h2 {
+        margin: 0 !important;
+        white-space: nowrap;
+    }
+
+    .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .btn-pill {
+        border-radius: 999px !important;
+        padding: 8px 20px !important;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        height: 38px;
+    }
+
+    /* =========================================
+       RESPONSIVIDADE (MOBILE -> CARDS)
+       ========================================= */
+    @media (max-width: 768px) {
+        .dashboard-header {
+            flex-direction: column !important;
+            align-items: stretch !important;
+        }
+
+        .dashboard-header h2 { margin-right: 0 !important; white-space: normal; }
+        .header-actions { width: 100%; }
+        .header-actions a.btn { width: 100%; justify-content: center; flex: 1; }
+
+        /* Tabela vira Lista de Cards */
+        .table-responsive { background: transparent !important; border: 0 !important; overflow: visible !important; }
+        thead { display: none !important; }
+        tbody { display: flex !important; flex-direction: column !important; gap: 16px !important; padding: 10px 0 !important; }
+
+        tbody tr {
+            display: block !important;
+            background: var(--color-bg-white) !important;
+            border: 1px solid rgba(0, 0, 0, 0.10) !important;
+            border-radius: 18px !important;
+            box-shadow: var(--shadow-sm) !important;
+            padding: 10px !important;
+            margin-bottom: 5px;
+        }
+
+        tbody tr td {
+            display: grid !important;
+            grid-template-columns: 110px 1fr !important;
+            gap: 10px;
+            padding: 12px 8px !important;
+            border: 0 !important;
+            text-align: right !important;
+            align-items: center !important;
+        }
+
+        tbody tr td + td { border-top: 1px solid rgba(0, 0, 0, 0.05) !important; }
+
+        /* Labels Automáticos */
+        tbody tr td:nth-child(1)::before { content: "Veículo"; }
+        tbody tr td:nth-child(2)::before { content: "Frota / Op."; }
+        tbody tr td:nth-child(3)::before { content: "Equipe responsável"; }
+        tbody tr td:nth-child(4)::before { content: "KM Atual"; }
+        tbody tr td:nth-child(5)::before { content: "KM Restante"; }
+        tbody tr td:nth-child(6)::before { content: "Ultima Movimentacao"; }
+        tbody tr td:nth-child(7)::before { content: "Status"; }
+        tbody tr td:nth-child(8)::before { content: "Ações"; }
+
+        tbody tr td::before {
+            font-weight: 700;
+            color: var(--color-text-muted);
+            font-size: .70rem;
+            text-transform: uppercase;
+            text-align: left !important;
+        }
+
+        .dropdown, .dropup { display: flex; justify-content: flex-end; }
+    }
+
+    .menu-actions-table-wrap,
+    .menu-actions-table-wrap .card-body,
+    .menu-actions-table-wrap .table-responsive {
+        overflow: visible !important;
+    }
+
+    .team-picker {
+        min-width: 170px;
+    }
+
+    .team-picker-toggle {
+        width: 100%;
+        min-height: 40px;
+        border: 1px solid rgba(13, 110, 253, 0.18);
+        border-radius: 8px;
+        background: #fff;
+        color: var(--color-text, #17233c);
+        padding: 5px 30px 5px 10px;
+        text-align: left;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        position: relative;
+        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+    }
+
+    .team-picker-toggle::after {
+        content: "";
+        position: absolute;
+        right: 11px;
+        top: 50%;
+        width: 7px;
+        height: 7px;
+        border-right: 2px solid #63718a;
+        border-bottom: 2px solid #63718a;
+        transform: translateY(-65%) rotate(45deg);
+    }
+
+    .team-picker-toggle:hover,
+    .team-picker-toggle:focus {
+        border-color: rgba(13, 110, 253, 0.45);
+        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.08);
+    }
+
+    .team-picker-pilot {
+        color: #536179;
+        font-size: .68rem;
+        line-height: 1.1;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .team-picker-name {
+        color: #084b83;
+        font-size: .78rem;
+        font-weight: 800;
+        line-height: 1.12;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .team-picker-menu {
+        width: min(280px, 82vw);
+        max-height: 280px;
+        overflow-y: auto;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        border-radius: 10px;
+        padding: 5px;
+    }
+
+    .team-picker-option {
+        border-radius: 7px;
+        padding: 7px 9px;
+        white-space: normal;
+    }
+
+    .team-picker-option.active,
+    .team-picker-option:active {
+        background: rgba(13, 110, 253, 0.10);
+        color: inherit;
+    }
+
+    .team-picker-option .team-picker-pilot {
+        display: block;
+    }
+
+    .team-picker-option .team-picker-name {
+        display: block;
+        margin-top: 2px;
+    }
+
+    body.dark-mode .team-picker-toggle {
+        background:
+            linear-gradient(180deg, rgba(26, 38, 54, 0.96) 0%, rgba(20, 30, 42, 0.96) 100%);
+
+        border-color:
+            rgba(126, 180, 255, 0.14);
+
+        color:
+            var(--color-text-main);
+
+        box-shadow:
+            0 6px 16px rgba(0, 0, 0, 0.14);
+    }
+
+    body.dark-mode .team-picker-toggle:hover,
+    body.dark-mode .team-picker-toggle:focus {
+        border-color:
+            rgba(126, 180, 255, 0.28);
+
+        box-shadow:
+            0 0 0 3px rgba(76, 163, 255, 0.1),
+            0 8px 18px rgba(0, 0, 0, 0.16);
+    }
+
+    body.dark-mode .team-picker-toggle::after {
+        border-right-color:
+            rgba(191, 213, 238, 0.88);
+
+        border-bottom-color:
+            rgba(191, 213, 238, 0.88);
+    }
+
+    body.dark-mode .team-picker-pilot {
+        color:
+            rgba(162, 188, 216, 0.86);
+    }
+
+    body.dark-mode .team-picker-name {
+        color:
+            var(--color-primary-dark);
+    }
+
+    body.dark-mode .team-picker-menu {
+        background:
+            linear-gradient(180deg, rgba(26, 38, 54, 0.98) 0%, rgba(18, 28, 40, 0.98) 100%);
+
+        border-color:
+            rgba(126, 180, 255, 0.12);
+
+        box-shadow:
+            0 18px 36px rgba(0, 0, 0, 0.32);
+    }
+
+    body.dark-mode .team-picker-option {
+        color:
+            var(--color-text-main);
+    }
+
+    body.dark-mode .team-picker-option:hover,
+    body.dark-mode .team-picker-option:focus {
+        background:
+            rgba(76, 163, 255, 0.08);
+
+        color:
+            var(--color-text-main);
+    }
+
+    body.dark-mode .team-picker-option.active,
+    body.dark-mode .team-picker-option:active {
+        background:
+            rgba(76, 163, 255, 0.14);
+
+        color:
+            var(--color-primary-dark);
+    }
+
+    body.dark-mode .team-picker-option.active .team-picker-name,
+    body.dark-mode .team-picker-option:active .team-picker-name {
+        color:
+            var(--color-primary-dark);
+    }
+
+    body.dark-mode .team-picker-option .team-picker-pilot {
+        color:
+            rgba(162, 188, 216, 0.82);
+    }
+
+    body.dark-mode .team-picker-option .team-picker-name {
+        color:
+            rgba(237, 243, 251, 0.94);
+    }
+
+    body.dark-mode .team-picker-option .bi {
+        color:
+            currentColor;
+    }
+
+    @media (max-width: 768px) {
+        .team-picker.dropdown {
+            justify-content: stretch;
+        }
+
+        .team-picker {
+            min-width: 0;
+            width: 100%;
+        }
+    }

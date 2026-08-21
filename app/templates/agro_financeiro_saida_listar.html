@@ -4,38 +4,9 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/listing_pattern.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/listing.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro.css') }}">
-  <style>
-    @media (min-width: 992px) {
-      .manual-finance-header {
-        align-items: center;
-      }
-
-      .manual-finance-header > div:first-child {
-        flex: 1 1 auto;
-        min-width: 0;
-      }
-
-      .manual-finance-actions {
-        flex-wrap: nowrap;
-        justify-content: flex-end;
-        align-items: center;
-      }
-    }
-
-    .manual-finance-actions .btn {
-      min-height: 42px;
-      justify-content: center;
-      white-space: nowrap;
-    }
-
-    .manual-finance-actions .btn .bi {
-      width: 16px;
-      text-align: center;
-      flex: 0 0 16px;
-    }
-  </style>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/agro_financeiro_saida_listar.css') }}">
 {% endblock %}
 
 {% block content %}

@@ -2254,22 +2254,9 @@ def list_veiculos_logs(tipo_usuario, args, user=None):
         valor_limpeza_min=valor_limpeza_min,
         valor_limpeza_max=valor_limpeza_max,
     )
-    total_logs = _build_veiculos_logs_query(
-        user=user,
-        q=q,
-        data_inicio=data_inicio,
-        data_fim=data_fim,
-        limpeza_realizada=limpeza_realizada,
-        tipo_limpeza=tipo_limpeza,
-        data_limpeza_inicio=data_limpeza_inicio,
-        data_limpeza_fim=data_limpeza_fim,
-        valor_limpeza_min=valor_limpeza_min,
-        valor_limpeza_max=valor_limpeza_max,
-        include_options=False,
-        include_order=False,
-    ).count()
     paginacao = query.paginate(page=page, per_page=20, error_out=False)
     logs = paginacao.items
+    total_logs = paginacao.total
 
     return {
         "logs": logs,

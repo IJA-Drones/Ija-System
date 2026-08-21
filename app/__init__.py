@@ -148,6 +148,13 @@ def create_app():
     app.config.from_object(Config)
     app.wsgi_app = WhiteNoise(app.wsgi_app, root="app/static/")
 
+    if app.config.get("CSS_BUNDLE_AUTO_BUILD"):
+        from scripts.build_css_bundle import build_css_bundle_if_stale
+
+        @app.before_request
+        def refresh_css_bundle():
+            build_css_bundle_if_stale()
+
     db.init_app(app)
     migrate.init_app(app, db)
 
@@ -280,6 +287,15 @@ def create_app():
                 or ""
             )
         )
+
+    @app.context_processor
+    def inject_style_bundle_version():
+        bundle_path = os.path.join(app.static_folder, "css", "style.bundle.css")
+        try:
+            version = os.stat(bundle_path).st_mtime_ns
+        except OSError:
+            version = "missing"
+        return {"style_bundle_version": version}
 
     @app.context_processor
     def inject_global_vars():

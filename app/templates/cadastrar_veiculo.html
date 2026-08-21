@@ -3,15 +3,7 @@
 {% block extra_styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
-<style>
-    /* Ajuste para o Dark Mode nos campos de leitura */
-    body.dark-mode .form-control:disabled, 
-    body.dark-mode .form-control[readonly] {
-        background-color: rgba(255, 255, 255, 0.05);
-        border-color: rgba(255, 255, 255, 0.1);
-        color: var(--color-text-muted);
-    }
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/cadastrar_veiculo.css') }}">
 {% endblock %}
 
 {% block content %}

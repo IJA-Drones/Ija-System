@@ -11,23 +11,7 @@
   rel="stylesheet"
   href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"
 />
-<style>
-  #mapaDesenho {
-    height: 450px; /* altura fixa ok */
-    width: 100%; /* IMPORTANTÍSSIMO dentro do modal */
-    display: block;
-  }
-
-  .modal-body {
-    overflow: hidden;
-  }
-  .modal {
-    z-index: 2000 !important;
-  }
-  .modal-backdrop {
-    z-index: 1990 !important;
-  }
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/cadastro.css') }}">
 {% endblock %} {% block content %}
 <div class="container-fluid py-4" style="max-width: 1200px">
   {# --- Cabeçalho --- #}
