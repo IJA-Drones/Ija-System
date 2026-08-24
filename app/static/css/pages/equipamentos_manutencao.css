@@ -86,13 +86,3 @@
     text-transform: uppercase;
   }
 }
-
-.dark-mode .equipamentos-manutencao-table-wrap tbody tr {
-  background: #162133;
-  border-color: rgba(255, 255, 255, 0.08);
-  box-shadow: none;
-}
-
-.dark-mode .equipamentos-manutencao-table-wrap tbody td::before {
-  color: rgba(255, 255, 255, 0.65);
-}

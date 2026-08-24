@@ -3,16 +3,17 @@
 {% block extra_styles %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/equipamento_manutencao_detalhe.css') }}">
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4" style="max-width: 1100px">
-  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+<div class="container-fluid py-4 equipamento-manutencao-detalhe-page">
+  <div class="page-toolbar align-items-center equipamento-manutencao-detalhe-toolbar mb-4">
     <div>
       <h2 class="text-dark mb-1"><i class="bi bi-tools me-2 text-primary"></i>Detalhe da manutenção</h2>
       <p class="text-muted small mb-0">{{ manutencao.drone.renomacao }} - {{ manutencao.drone.modelo }}</p>
     </div>
-    <div class="d-flex flex-wrap gap-2">
+    <div class="page-toolbar-actions">
       <a href="{{ url_for('main.equipamento_manutencao_historico_pdf', manutencao_id=manutencao.id) }}" class="btn btn-outline-primary btn-sm" target="_blank">
         <i class="bi bi-file-earmark-pdf me-1"></i> PDF
       </a>
@@ -22,40 +23,40 @@
     </div>
   </div>
 
-  <div class="row g-3 mb-4">
+  <div class="row g-3 mb-4 manutencao-resumo-grid">
     <div class="col-md-3">
-      <div class="card border-0 shadow-sm rounded-4 p-3 h-100">
+      <div class="card border-0 shadow-sm rounded-4 p-3 h-100 manutencao-resumo-card">
         <span class="text-muted small fw-bold">Status</span>
         <span class="fs-5 fw-bold {{ 'text-danger' if manutencao.status == 'aberta' else 'text-success' }}">{{ 'Aberta' if manutencao.status == 'aberta' else 'Encerrada' }}</span>
       </div>
     </div>
     <div class="col-md-3">
-      <div class="card border-0 shadow-sm rounded-4 p-3 h-100">
+      <div class="card border-0 shadow-sm rounded-4 p-3 h-100 manutencao-resumo-card">
         <span class="text-muted small fw-bold">Abertura</span>
         <span class="fw-bold">{{ manutencao.aberta_em.strftime('%d/%m/%Y %H:%M') if manutencao.aberta_em else '-' }}</span>
       </div>
     </div>
     <div class="col-md-3">
-      <div class="card border-0 shadow-sm rounded-4 p-3 h-100">
+      <div class="card border-0 shadow-sm rounded-4 p-3 h-100 manutencao-resumo-card">
         <span class="text-muted small fw-bold">Encerramento</span>
         <span class="fw-bold">{{ manutencao.encerrada_em.strftime('%d/%m/%Y %H:%M') if manutencao.encerrada_em else '-' }}</span>
       </div>
     </div>
     <div class="col-md-3">
-      <div class="card border-0 shadow-sm rounded-4 p-3 h-100">
+      <div class="card border-0 shadow-sm rounded-4 p-3 h-100 manutencao-resumo-card">
         <span class="text-muted small fw-bold">Peças usadas</span>
         <span class="fs-5 fw-bold text-primary">{{ usos|sum(attribute='quantidade_usada') }}</span>
       </div>
     </div>
   </div>
 
-  <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+  <div class="card shadow-sm border-0 rounded-4 overflow-hidden manutencao-detalhe-table-card">
     <div class="card-header py-3 border-0">
       <h6 class="mb-0 fw-bold"><i class="bi bi-box-seam me-2"></i>Peças usadas</h6>
     </div>
     <div class="card-body p-0">
       <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
+        <table class="table table-hover align-middle mb-0 manutencao-detalhe-table">
           <thead class="table-light">
             <tr>
               <th class="ps-3">Peça</th>

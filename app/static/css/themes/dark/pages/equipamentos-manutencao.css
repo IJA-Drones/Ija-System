@@ -1,0 +1,112 @@
+/* =========================================
+   EQUIPAMENTOS EM MANUTENCAO
+   ========================================= */
+
+body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-toolbar h2,
+body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-toolbar h2.text-dark {
+  color: #8fc4ff !important;
+}
+
+body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-toolbar h2 .text-primary {
+  color: #65a9f7 !important;
+}
+
+body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-toolbar .text-muted {
+  color: rgba(174, 195, 218, 0.82) !important;
+}
+
+body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-toolbar .text-danger {
+  color: #f09999 !important;
+}
+
+body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-table-wrap {
+  background: #142131;
+  border: 1px solid #283c53 !important;
+  box-shadow: 0 14px 32px rgba(2, 8, 20, 0.24) !important;
+}
+
+body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-table-wrap .table-responsive {
+  background: #142131;
+}
+
+body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-table-wrap thead th {
+  color: #d7e5f4 !important;
+  background: #1b2d41 !important;
+  border-bottom: 1px solid #30465f !important;
+}
+
+body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-table-wrap tbody td {
+  color: rgba(237, 243, 251, 0.88);
+  background: #172536;
+  border-color: #2a3d53;
+}
+
+body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-table-wrap tbody tr:nth-child(even) td {
+  background: #19293b;
+}
+
+body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-table-wrap .table-hover > tbody > tr:hover > * {
+  background: #20354c !important;
+}
+
+body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-table-wrap td.text-danger {
+  color: #f09999 !important;
+}
+
+body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-table-wrap .text-muted {
+  color: #94a8bf !important;
+}
+
+body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-table-wrap .badge.bg-light {
+  color: #bddcff !important;
+  background: rgba(76, 163, 255, 0.12) !important;
+  border-color: rgba(126, 180, 255, 0.18) !important;
+}
+
+body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-table-wrap .bi-airplane-engines.text-primary {
+  color: #6db0fb !important;
+}
+
+body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-table-wrap .bi-battery-half.text-warning {
+  color: #e9cf76 !important;
+}
+
+body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-table-wrap .bi-box.text-secondary {
+  color: #9eb1c7 !important;
+}
+
+@media (max-width: 767.98px) {
+  body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-table-wrap {
+    background: transparent;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-table-wrap .table-responsive {
+    background: transparent;
+  }
+
+  body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-table-wrap tbody tr {
+    color: #edf3fb !important;
+    background: linear-gradient(180deg, #19293b, #172536) !important;
+    border-color: #30465f !important;
+    box-shadow: 0 10px 24px rgba(2, 8, 20, 0.24) !important;
+  }
+
+  body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-table-wrap tbody td,
+  body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-table-wrap tbody tr:nth-child(even) td {
+    background: transparent !important;
+  }
+
+  body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-table-wrap tbody td + td {
+    border-top: 1px solid #2a3d53 !important;
+  }
+
+  body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-table-wrap tbody td::before {
+    color: #91a5bd !important;
+  }
+
+  body.dark-mode .equipamentos-manutencao-page .manutencao-actions {
+    justify-content: flex-start;
+  }
+}

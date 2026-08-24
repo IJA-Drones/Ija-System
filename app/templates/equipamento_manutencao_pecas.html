@@ -4,11 +4,12 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/equipamento_manutencao_pecas.css') }}">
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4" style="max-width: 1100px">
-  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+<div class="container-fluid py-4 equipamento-manutencao-pecas-page">
+  <div class="page-toolbar align-items-center equipamento-manutencao-pecas-toolbar mb-4">
     <div>
       <h2 class="text-dark mb-1">
         <i class="bi bi-tools me-2 text-primary"></i>Peças usadas na manutenção
@@ -18,12 +19,14 @@
         {% if drone.numero_serie %} | Nº de série: {{ drone.numero_serie }}{% endif %}
       </p>
     </div>
-    <a href="{{ url_for('main.equipamentos_manutencao') }}" class="btn btn-outline-secondary btn-sm">
-      <i class="bi bi-arrow-left me-1"></i> Voltar
-    </a>
+    <div class="page-toolbar-actions">
+      <a href="{{ url_for('main.equipamentos_manutencao') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
   </div>
 
-  <div class="card info status-primary shadow-sm rounded-4 border-0 mb-4">
+  <div class="card info status-primary shadow-sm rounded-4 border-0 mb-4 registro-pecas-card">
     <div class="card-body p-4">
       <form method="post" novalidate>
         <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
@@ -37,15 +40,15 @@
           <div class="alert alert-warning py-2">{{ errors.get('pecas') }}</div>
         {% endif %}
 
-        <div class="table-responsive">
-          <table class="table table-hover align-middle">
+        <div class="table-responsive registro-pecas-table-wrap">
+          <table class="table table-hover align-middle registro-pecas-table">
             <thead class="table-light">
               <tr>
                 <th class="ps-3">Usar</th>
                 <th>Peça</th>
                 <th>Nº de série</th>
                 <th>Disponível</th>
-                <th style="width: 160px">Qtd. usada</th>
+                <th class="registro-pecas-quantidade-col">Qtd. usada</th>
               </tr>
             </thead>
             <tbody>
@@ -85,12 +88,12 @@
           </table>
         </div>
 
-        <div class="mt-4">
+        <div class="mt-4 registro-pecas-observacoes">
           <label class="form-label fw-bold small text-muted">Observações da manutenção</label>
           <textarea name="observacoes" class="form-control" rows="3" placeholder="Detalhes sobre a troca, diagnóstico ou responsável"></textarea>
         </div>
 
-        <div class="d-flex justify-content-end gap-2 mt-5">
+        <div class="d-flex justify-content-end gap-2 mt-5 registro-pecas-actions">
           <a href="{{ url_for('main.equipamentos_manutencao') }}" class="btn btn-outline-danger btn-sm">Cancelar</a>
           <button type="submit" class="btn btn-primary px-4 fw-bold" {% if not pecas %}disabled{% endif %}>
             <i class="bi bi-check-lg me-1"></i> Registrar peças usadas
@@ -100,13 +103,13 @@
     </div>
   </div>
 
-  <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+  <div class="card shadow-sm border-0 rounded-4 overflow-hidden registro-pecas-historico-card">
     <div class="card-header py-3 border-0">
       <h6 class="mb-0 fw-bold"><i class="bi bi-clock-history me-2"></i>Peças já registradas nesta manutenção</h6>
     </div>
     <div class="card-body p-0">
       <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
+        <table class="table table-hover align-middle mb-0 registro-pecas-historico-table">
           <thead class="table-light">
             <tr>
               <th class="ps-3">Peça</th>

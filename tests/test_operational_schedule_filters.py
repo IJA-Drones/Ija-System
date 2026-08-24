@@ -26,7 +26,11 @@ class EmptyQuery:
 
 class OperationalScheduleFilterTests(unittest.TestCase):
     def test_piloto_dashboard_uses_current_brasilia_day(self):
-        with patch.object(piloto_os_service, "datetime", FixedDatetime):
+        with patch.object(
+            piloto_os_service,
+            "current_brazil_date",
+            return_value=date(2026, 6, 15),
+        ):
             self.assertEqual(
                 piloto_os_service.current_piloto_dashboard_date().isoformat(),
                 "2026-06-15",

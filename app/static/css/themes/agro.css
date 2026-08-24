@@ -20,3 +20,31 @@ body.agro-mode .navbar-mode-pill {
 body.agro-mode .navbar-logo {
   filter: hue-rotate(-95deg) saturate(1.35) contrast(1.03);
 }
+
+.agro-content-width-860 { max-width: 860px; }
+.agro-content-width-960 { max-width: 960px; }
+.agro-content-width-1000 { max-width: 1000px; }
+.agro-content-width-1100 { max-width: 1100px; }
+.agro-content-width-1200 { max-width: 1200px; }
+.agro-content-width-1220 { max-width: 1220px; }
+.agro-content-width-1240 { max-width: 1240px; }
+.agro-content-width-1320 { max-width: 1320px; }
+.agro-content-width-1360 { max-width: 1360px; }
+
+.agro-os-reference-input {
+  max-width: 140px;
+}
+
+.agro-template-wide-column {
+  min-width: 320px;
+}
+
+.agro-talent-upload-icon {
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+}
+
+.agro-preserve-lines {
+  white-space: pre-line;
+}

@@ -2592,6 +2592,35 @@ body.agro-mode .navbar-mode-pill {
 body.agro-mode .navbar-logo {
   filter: hue-rotate(-95deg) saturate(1.35) contrast(1.03);
 }
+
+.agro-content-width-860 { max-width: 860px; }
+.agro-content-width-960 { max-width: 960px; }
+.agro-content-width-1000 { max-width: 1000px; }
+.agro-content-width-1100 { max-width: 1100px; }
+.agro-content-width-1200 { max-width: 1200px; }
+.agro-content-width-1220 { max-width: 1220px; }
+.agro-content-width-1240 { max-width: 1240px; }
+.agro-content-width-1320 { max-width: 1320px; }
+.agro-content-width-1360 { max-width: 1360px; }
+
+.agro-os-reference-input {
+  max-width: 140px;
+}
+
+.agro-template-wide-column {
+  min-width: 320px;
+}
+
+.agro-talent-upload-icon {
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+}
+
+.agro-preserve-lines {
+  white-space: pre-line;
+}
+
 /* bundle-source-end: app/static/css/themes/agro.css */
 
 /* bundle-source: app/static/css/themes/dark.css */
@@ -6328,6 +6357,1683 @@ body.dark-mode .dji-route-modal .route-map-canvas {
 
 /* bundle-source-end: app/static/css/themes/dark/pages/relatorios-dji-logs.css */
 
+/* bundle-source: app/static/css/themes/dark/pages/equipamentos-manutencao.css */
+/* =========================================
+   EQUIPAMENTOS EM MANUTENCAO
+   ========================================= */
+
+body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-toolbar h2,
+body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-toolbar h2.text-dark {
+  color: #8fc4ff !important;
+}
+
+body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-toolbar h2 .text-primary {
+  color: #65a9f7 !important;
+}
+
+body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-toolbar .text-muted {
+  color: rgba(174, 195, 218, 0.82) !important;
+}
+
+body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-toolbar .text-danger {
+  color: #f09999 !important;
+}
+
+body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-table-wrap {
+  background: #142131;
+  border: 1px solid #283c53 !important;
+  box-shadow: 0 14px 32px rgba(2, 8, 20, 0.24) !important;
+}
+
+body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-table-wrap .table-responsive {
+  background: #142131;
+}
+
+body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-table-wrap thead th {
+  color: #d7e5f4 !important;
+  background: #1b2d41 !important;
+  border-bottom: 1px solid #30465f !important;
+}
+
+body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-table-wrap tbody td {
+  color: rgba(237, 243, 251, 0.88);
+  background: #172536;
+  border-color: #2a3d53;
+}
+
+body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-table-wrap tbody tr:nth-child(even) td {
+  background: #19293b;
+}
+
+body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-table-wrap .table-hover > tbody > tr:hover > * {
+  background: #20354c !important;
+}
+
+body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-table-wrap td.text-danger {
+  color: #f09999 !important;
+}
+
+body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-table-wrap .text-muted {
+  color: #94a8bf !important;
+}
+
+body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-table-wrap .badge.bg-light {
+  color: #bddcff !important;
+  background: rgba(76, 163, 255, 0.12) !important;
+  border-color: rgba(126, 180, 255, 0.18) !important;
+}
+
+body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-table-wrap .bi-airplane-engines.text-primary {
+  color: #6db0fb !important;
+}
+
+body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-table-wrap .bi-battery-half.text-warning {
+  color: #e9cf76 !important;
+}
+
+body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-table-wrap .bi-box.text-secondary {
+  color: #9eb1c7 !important;
+}
+
+@media (max-width: 767.98px) {
+  body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-table-wrap {
+    background: transparent;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-table-wrap .table-responsive {
+    background: transparent;
+  }
+
+  body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-table-wrap tbody tr {
+    color: #edf3fb !important;
+    background: linear-gradient(180deg, #19293b, #172536) !important;
+    border-color: #30465f !important;
+    box-shadow: 0 10px 24px rgba(2, 8, 20, 0.24) !important;
+  }
+
+  body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-table-wrap tbody td,
+  body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-table-wrap tbody tr:nth-child(even) td {
+    background: transparent !important;
+  }
+
+  body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-table-wrap tbody td + td {
+    border-top: 1px solid #2a3d53 !important;
+  }
+
+  body.dark-mode .equipamentos-manutencao-page .equipamentos-manutencao-table-wrap tbody td::before {
+    color: #91a5bd !important;
+  }
+
+  body.dark-mode .equipamentos-manutencao-page .manutencao-actions {
+    justify-content: flex-start;
+  }
+}
+
+/* bundle-source-end: app/static/css/themes/dark/pages/equipamentos-manutencao.css */
+
+/* bundle-source: app/static/css/themes/dark/pages/equipamento-manutencao-detalhe.css */
+/* =========================================
+   DETALHE DA MANUTENCAO
+   ========================================= */
+
+body.dark-mode .equipamento-manutencao-detalhe-page .equipamento-manutencao-detalhe-toolbar h2,
+body.dark-mode .equipamento-manutencao-detalhe-page .equipamento-manutencao-detalhe-toolbar h2.text-dark {
+  color: #8fc4ff !important;
+}
+
+body.dark-mode .equipamento-manutencao-detalhe-page .equipamento-manutencao-detalhe-toolbar h2 .text-primary {
+  color: #65a9f7 !important;
+}
+
+body.dark-mode .equipamento-manutencao-detalhe-page .equipamento-manutencao-detalhe-toolbar .text-muted {
+  color: #94a8bf !important;
+}
+
+body.dark-mode .equipamento-manutencao-detalhe-page .manutencao-resumo-card {
+  color: #dce9f8;
+  background: linear-gradient(180deg, #1a2b3e, #172536);
+  border: 1px solid #2d4057 !important;
+  box-shadow: 0 10px 24px rgba(2, 8, 20, 0.2) !important;
+}
+
+body.dark-mode .equipamento-manutencao-detalhe-page .manutencao-resumo-card .text-muted {
+  color: #91a5bd !important;
+}
+
+body.dark-mode .equipamento-manutencao-detalhe-page .manutencao-resumo-card .text-primary {
+  color: #8fc4ff !important;
+}
+
+body.dark-mode .equipamento-manutencao-detalhe-page .manutencao-resumo-card .text-success {
+  color: #83d4a5 !important;
+}
+
+body.dark-mode .equipamento-manutencao-detalhe-page .manutencao-resumo-card .text-danger {
+  color: #f09999 !important;
+}
+
+body.dark-mode .equipamento-manutencao-detalhe-page .manutencao-detalhe-table-card {
+  background: #142131;
+  border: 1px solid #283c53 !important;
+  box-shadow: 0 14px 32px rgba(2, 8, 20, 0.24) !important;
+}
+
+body.dark-mode .equipamento-manutencao-detalhe-page .manutencao-detalhe-table-card .card-header {
+  color: #dce9f4;
+  background: #1b2d41;
+  border-bottom: 1px solid #30465f !important;
+}
+
+body.dark-mode .equipamento-manutencao-detalhe-page .manutencao-detalhe-table-card .table-responsive {
+  background: #142131;
+}
+
+body.dark-mode .equipamento-manutencao-detalhe-page .manutencao-detalhe-table thead th {
+  color: #d7e5f4 !important;
+  background: #1b2d41 !important;
+  border-bottom: 1px solid #30465f !important;
+}
+
+body.dark-mode .equipamento-manutencao-detalhe-page .manutencao-detalhe-table tbody td {
+  color: rgba(237, 243, 251, 0.88);
+  background: #172536;
+  border-color: #2a3d53;
+}
+
+body.dark-mode .equipamento-manutencao-detalhe-page .manutencao-detalhe-table tbody tr:nth-child(even) td {
+  background: #19293b;
+}
+
+body.dark-mode .equipamento-manutencao-detalhe-page .manutencao-detalhe-table.table-hover > tbody > tr:hover > * {
+  background: #20354c !important;
+}
+
+body.dark-mode .equipamento-manutencao-detalhe-page .manutencao-detalhe-table .text-muted {
+  color: #94a8bf !important;
+}
+
+/* bundle-source-end: app/static/css/themes/dark/pages/equipamento-manutencao-detalhe.css */
+
+/* bundle-source: app/static/css/themes/dark/pages/equipamento-manutencao-pecas.css */
+/* =========================================
+   REGISTRO DE PECAS DA MANUTENCAO
+   ========================================= */
+
+body.dark-mode .equipamento-manutencao-pecas-page .equipamento-manutencao-pecas-toolbar h2,
+body.dark-mode .equipamento-manutencao-pecas-page .equipamento-manutencao-pecas-toolbar h2.text-dark {
+  color: #8fc4ff !important;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .equipamento-manutencao-pecas-toolbar h2 .text-primary {
+  color: #65a9f7 !important;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .equipamento-manutencao-pecas-toolbar .text-muted {
+  color: #94a8bf !important;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-card {
+  color: #dce9f8;
+  background: linear-gradient(180deg, #1a2b3e, #172536);
+  border: 1px solid #2d4057 !important;
+  box-shadow: 0 14px 32px rgba(2, 8, 20, 0.22) !important;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-card h5.text-primary {
+  color: #8fc4ff !important;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-card .text-muted,
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-card .form-label {
+  color: #94a8bf !important;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-table-wrap {
+  background: #142131;
+  border: 1px solid #2d4057;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-table thead th {
+  color: #d7e5f4 !important;
+  background: #1b2d41 !important;
+  border-bottom: 1px solid #30465f !important;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-table tbody td {
+  color: rgba(237, 243, 251, 0.88);
+  background: #172536;
+  border-color: #2a3d53;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-table tbody tr:nth-child(even) td {
+  background: #19293b;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-table.table-hover > tbody > tr:hover > * {
+  background: #20354c !important;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-table .text-dark {
+  color: #dce9f8 !important;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-table .text-muted {
+  color: #94a8bf !important;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-table .badge.bg-light {
+  color: #bddcff !important;
+  background: rgba(76, 163, 255, 0.12) !important;
+  border-color: rgba(126, 180, 255, 0.22) !important;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-table .form-check-input {
+  background-color: #132132;
+  border-color: #536b84;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-table .form-check-input:checked {
+  background-color: #4d96e8;
+  border-color: #69aaf2;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-observacoes .form-control {
+  background: #132132;
+  border-color: #334a63;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-observacoes .form-control:focus {
+  border-color: #65a9f7;
+  box-shadow: 0 0 0 3px rgba(101, 169, 247, 0.16);
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-historico-card {
+  background: #142131;
+  border: 1px solid #283c53 !important;
+  box-shadow: 0 14px 32px rgba(2, 8, 20, 0.24) !important;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-historico-card .card-header {
+  color: #dce9f4;
+  background: #1b2d41;
+  border-bottom: 1px solid #30465f !important;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-historico-card .table-responsive {
+  background: #142131;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-historico-table thead th {
+  color: #d7e5f4 !important;
+  background: #1b2d41 !important;
+  border-bottom: 1px solid #30465f !important;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-historico-table tbody td {
+  color: rgba(237, 243, 251, 0.88);
+  background: #172536;
+  border-color: #2a3d53;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-historico-table tbody tr:nth-child(even) td {
+  background: #19293b;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-historico-table.table-hover > tbody > tr:hover > * {
+  background: #20354c !important;
+}
+
+body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-historico-table .text-muted {
+  color: #94a8bf !important;
+}
+
+@media (max-width: 767.98px) {
+  body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-actions {
+    flex-direction: column-reverse;
+  }
+
+  body.dark-mode .equipamento-manutencao-pecas-page .registro-pecas-actions .btn {
+    width: 100%;
+  }
+}
+
+/* bundle-source-end: app/static/css/themes/dark/pages/equipamento-manutencao-pecas.css */
+
+/* bundle-source: app/static/css/themes/dark/pages/equipamentos-manutencoes-historico.css */
+/* =========================================
+   HISTORICO DE MANUTENCOES
+   ========================================= */
+
+body.dark-mode .equipamentos-manutencoes-historico-page .manutencoes-historico-toolbar h2,
+body.dark-mode .equipamentos-manutencoes-historico-page .manutencoes-historico-toolbar h2.text-dark {
+  color: #8fc4ff !important;
+}
+
+body.dark-mode .equipamentos-manutencoes-historico-page .manutencoes-historico-toolbar h2 .text-primary {
+  color: #65a9f7 !important;
+}
+
+body.dark-mode .equipamentos-manutencoes-historico-page .manutencoes-historico-toolbar .text-muted {
+  color: #94a8bf !important;
+}
+
+body.dark-mode .equipamentos-manutencoes-historico-page .manutencoes-historico-table-card {
+  background: #142131;
+  border: 1px solid #283c53 !important;
+  box-shadow: 0 14px 32px rgba(2, 8, 20, 0.24) !important;
+}
+
+body.dark-mode .equipamentos-manutencoes-historico-page .manutencoes-historico-table-card .table-responsive {
+  background: #142131;
+}
+
+body.dark-mode .equipamentos-manutencoes-historico-page .manutencoes-historico-table thead th {
+  color: #d7e5f4 !important;
+  background: #1b2d41 !important;
+  border-bottom: 1px solid #30465f !important;
+}
+
+body.dark-mode .equipamentos-manutencoes-historico-page .manutencoes-historico-table tbody td {
+  color: rgba(237, 243, 251, 0.88);
+  background: #172536;
+  border-color: #2a3d53;
+}
+
+body.dark-mode .equipamentos-manutencoes-historico-page .manutencoes-historico-table tbody tr:nth-child(even) td {
+  background: #19293b;
+}
+
+body.dark-mode .equipamentos-manutencoes-historico-page .manutencoes-historico-table.table-hover > tbody > tr:hover > * {
+  background: #20354c !important;
+}
+
+body.dark-mode .equipamentos-manutencoes-historico-page .manutencoes-historico-table .text-dark {
+  color: #dce9f8 !important;
+}
+
+body.dark-mode .equipamentos-manutencoes-historico-page .manutencoes-historico-table .text-muted {
+  color: #94a8bf !important;
+}
+
+body.dark-mode .equipamentos-manutencoes-historico-page .manutencoes-historico-table .badge.bg-light {
+  color: #bddcff !important;
+  background: rgba(76, 163, 255, 0.12) !important;
+  border-color: rgba(126, 180, 255, 0.22) !important;
+}
+
+body.dark-mode .equipamentos-manutencoes-historico-page .manutencoes-historico-table .badge.bg-danger-light {
+  color: #f3a1a1 !important;
+  background: rgba(222, 91, 91, 0.13) !important;
+  border: 1px solid rgba(240, 153, 153, 0.18);
+}
+
+body.dark-mode .equipamentos-manutencoes-historico-page .manutencoes-historico-table .badge.bg-success-light {
+  color: #8bd8aa !important;
+  background: rgba(76, 175, 120, 0.13) !important;
+  border: 1px solid rgba(131, 212, 165, 0.18);
+}
+
+/* bundle-source-end: app/static/css/themes/dark/pages/equipamentos-manutencoes-historico.css */
+
+/* bundle-source: app/static/css/themes/dark/pages/equipamentos-manutencoes-pecas-historico.css */
+/* =========================================
+   HISTORICO DE PECAS USADAS
+   ========================================= */
+
+body.dark-mode .equipamentos-manutencoes-pecas-historico-page .pecas-historico-toolbar h2,
+body.dark-mode .equipamentos-manutencoes-pecas-historico-page .pecas-historico-toolbar h2.text-dark {
+  color: #8fc4ff !important;
+}
+
+body.dark-mode .equipamentos-manutencoes-pecas-historico-page .pecas-historico-toolbar h2 .text-primary {
+  color: #65a9f7 !important;
+}
+
+body.dark-mode .equipamentos-manutencoes-pecas-historico-page .pecas-historico-toolbar .text-muted {
+  color: #94a8bf !important;
+}
+
+body.dark-mode .equipamentos-manutencoes-pecas-historico-page .pecas-historico-table-card {
+  background: #142131;
+  border: 1px solid #283c53 !important;
+  box-shadow: 0 14px 32px rgba(2, 8, 20, 0.24) !important;
+}
+
+body.dark-mode .equipamentos-manutencoes-pecas-historico-page .pecas-historico-table-card .table-responsive {
+  background: #142131;
+}
+
+body.dark-mode .equipamentos-manutencoes-pecas-historico-page .pecas-historico-table thead th {
+  color: #d7e5f4 !important;
+  background: #1b2d41 !important;
+  border-bottom: 1px solid #30465f !important;
+}
+
+body.dark-mode .equipamentos-manutencoes-pecas-historico-page .pecas-historico-table tbody td {
+  color: rgba(237, 243, 251, 0.88);
+  background: #172536;
+  border-color: #2a3d53;
+}
+
+body.dark-mode .equipamentos-manutencoes-pecas-historico-page .pecas-historico-table tbody tr:nth-child(even) td {
+  background: #19293b;
+}
+
+body.dark-mode .equipamentos-manutencoes-pecas-historico-page .pecas-historico-table.table-hover > tbody > tr:hover > * {
+  background: #20354c !important;
+}
+
+body.dark-mode .equipamentos-manutencoes-pecas-historico-page .pecas-historico-table .text-dark {
+  color: #dce9f8 !important;
+}
+
+body.dark-mode .equipamentos-manutencoes-pecas-historico-page .pecas-historico-table .text-muted {
+  color: #94a8bf !important;
+}
+
+body.dark-mode .equipamentos-manutencoes-pecas-historico-page .pecas-historico-manutencao-link {
+  color: #82baf7;
+}
+
+body.dark-mode .equipamentos-manutencoes-pecas-historico-page .pecas-historico-manutencao-link:hover {
+  color: #b5d8ff;
+}
+
+/* bundle-source-end: app/static/css/themes/dark/pages/equipamentos-manutencoes-pecas-historico.css */
+
+/* bundle-source: app/static/css/themes/dark/pages/estoque-listar.css */
+/* =========================================
+   LISTAGEM DO ESTOQUE
+   ========================================= */
+
+body.dark-mode .estoque-listar-page .estoque-listar-toolbar h2,
+body.dark-mode .estoque-listar-page .estoque-listar-toolbar h2.text-dark {
+  color: #8fc4ff !important;
+}
+
+body.dark-mode .estoque-listar-page .estoque-listar-toolbar h2 .text-primary {
+  color: #65a9f7 !important;
+}
+
+body.dark-mode .estoque-listar-page .estoque-listar-toolbar .text-muted {
+  color: #94a8bf !important;
+}
+
+body.dark-mode .estoque-listar-page .estoque-listar-table-card {
+  background: #142131;
+  border: 1px solid #283c53 !important;
+  box-shadow: 0 14px 32px rgba(2, 8, 20, 0.24) !important;
+}
+
+body.dark-mode .estoque-listar-page .estoque-listar-table-card .table-responsive {
+  background: #142131;
+}
+
+body.dark-mode .estoque-listar-page .estoque-listar-table thead th {
+  color: #d7e5f4 !important;
+  background: #1b2d41 !important;
+  border-bottom: 1px solid #30465f !important;
+}
+
+body.dark-mode .estoque-listar-page .estoque-listar-table tbody td {
+  color: rgba(237, 243, 251, 0.88);
+  background: #172536;
+  border-color: #2a3d53;
+}
+
+body.dark-mode .estoque-listar-page .estoque-listar-table tbody tr:nth-child(even) td {
+  background: #19293b;
+}
+
+body.dark-mode .estoque-listar-page .estoque-listar-table.table-hover > tbody > tr:hover > * {
+  background: #20354c !important;
+}
+
+body.dark-mode .estoque-listar-page .estoque-listar-table .text-dark {
+  color: #dce9f8 !important;
+}
+
+body.dark-mode .estoque-listar-page .estoque-listar-table .text-muted {
+  color: #94a8bf !important;
+}
+
+body.dark-mode .estoque-listar-page .estoque-listar-table .badge.bg-light {
+  color: #b9cee4 !important;
+  background: rgba(118, 145, 176, 0.12) !important;
+  border-color: rgba(148, 168, 191, 0.22) !important;
+}
+
+body.dark-mode .estoque-listar-page .estoque-listar-table .badge.bg-success-light {
+  color: #8bd8aa !important;
+  background: rgba(76, 175, 120, 0.13) !important;
+  border: 1px solid rgba(131, 212, 165, 0.18);
+}
+
+body.dark-mode .estoque-listar-page .estoque-listar-table .badge.bg-danger-light {
+  color: #f3a1a1 !important;
+  background: rgba(222, 91, 91, 0.13) !important;
+  border: 1px solid rgba(240, 153, 153, 0.18);
+}
+
+/* bundle-source-end: app/static/css/themes/dark/pages/estoque-listar.css */
+
+/* bundle-source: app/static/css/themes/dark/pages/estoque-form.css */
+/* =========================================
+   FORMULARIO DO ESTOQUE
+   ========================================= */
+
+body.dark-mode .estoque-form-page .estoque-form-toolbar h2,
+body.dark-mode .estoque-form-page .estoque-form-toolbar h2.text-dark {
+  color: #8fc4ff !important;
+}
+
+body.dark-mode .estoque-form-page .estoque-form-toolbar h2 .text-primary {
+  color: #65a9f7 !important;
+}
+
+body.dark-mode .estoque-form-page .estoque-form-toolbar .text-muted {
+  color: #94a8bf !important;
+}
+
+body.dark-mode .estoque-form-page .estoque-form-card {
+  color: #dce9f8;
+  background: linear-gradient(180deg, #1a2b3e, #172536);
+  border: 1px solid #2d4057 !important;
+  box-shadow: 0 14px 32px rgba(2, 8, 20, 0.22) !important;
+}
+
+body.dark-mode .estoque-form-page .estoque-form-fields .form-label,
+body.dark-mode .estoque-form-page .estoque-form-fields .text-muted {
+  color: #a6b8cc !important;
+}
+
+body.dark-mode .estoque-form-page .estoque-form-fields .form-control,
+body.dark-mode .estoque-form-page .estoque-form-fields .form-select {
+  color: #e5eef8;
+  background-color: #132132;
+  border-color: #334a63;
+}
+
+body.dark-mode .estoque-form-page .estoque-form-fields .form-control::placeholder {
+  color: #7f93aa;
+}
+
+body.dark-mode .estoque-form-page .estoque-form-fields .form-control:focus,
+body.dark-mode .estoque-form-page .estoque-form-fields .form-select:focus {
+  color: #f1f6fc;
+  background-color: #152538;
+  border-color: #65a9f7;
+  box-shadow: 0 0 0 3px rgba(101, 169, 247, 0.16);
+}
+
+body.dark-mode .estoque-form-page .estoque-form-fields .form-select option {
+  color: #e5eef8;
+  background: #172536;
+}
+
+body.dark-mode .estoque-form-page .estoque-form-fields .form-control.is-invalid,
+body.dark-mode .estoque-form-page .estoque-form-fields .form-select.is-invalid {
+  border-color: #e98787;
+}
+
+body.dark-mode .estoque-form-page .estoque-form-fields .invalid-feedback {
+  color: #f2a0a0;
+}
+
+/* bundle-source-end: app/static/css/themes/dark/pages/estoque-form.css */
+
+/* bundle-source: app/static/css/themes/dark/pages/feedback-listar.css */
+/* =========================================
+   LISTAGEM DE BUGS REPORTADOS
+   ========================================= */
+
+body.dark-mode .feedback-listar-page .feedback-header h2 {
+  color: #8fc4ff;
+}
+
+body.dark-mode .feedback-listar-page .feedback-header h2 .text-primary {
+  color: #65a9f7 !important;
+}
+
+body.dark-mode .feedback-listar-page .feedback-kicker {
+  color: #72b5f8;
+}
+
+body.dark-mode .feedback-listar-page .feedback-header .text-muted {
+  color: #94a8bf !important;
+}
+
+body.dark-mode .feedback-listar-page .feedback-metric {
+  background: linear-gradient(180deg, #1a2b3e, #172536);
+  border-color: #2d4057;
+  box-shadow: 0 10px 24px rgba(2, 8, 20, 0.2);
+}
+
+body.dark-mode .feedback-listar-page .feedback-metric span {
+  color: #91a5bd;
+}
+
+body.dark-mode .feedback-listar-page .feedback-metric strong {
+  color: #dce9f8;
+}
+
+body.dark-mode .feedback-listar-page .filter-card {
+  background: #18283a;
+  border: 1px solid #30445b !important;
+  box-shadow: 0 12px 28px rgba(2, 8, 20, 0.2);
+}
+
+body.dark-mode .feedback-listar-page .filter-card-header {
+  color: #cfe3f8;
+  background: #1d3045;
+  border-bottom-color: #30465f;
+}
+
+body.dark-mode .feedback-listar-page .filter-card-header .fw-bold {
+  color: #b9d8f8 !important;
+}
+
+body.dark-mode .feedback-listar-page .filter-card .form-label {
+  color: #a6b8cc;
+}
+
+body.dark-mode .feedback-listar-page .filter-card .form-control,
+body.dark-mode .feedback-listar-page .filter-card .form-select {
+  color: #e5eef8;
+  background: #132132;
+  border-color: #334a63;
+}
+
+body.dark-mode .feedback-listar-page .filter-card .form-control::placeholder {
+  color: #7f93aa;
+}
+
+body.dark-mode .feedback-listar-page .filter-card .form-control:focus,
+body.dark-mode .feedback-listar-page .filter-card .form-select:focus {
+  background: #152538;
+  border-color: #65a9f7;
+  box-shadow: 0 0 0 3px rgba(101, 169, 247, 0.16);
+}
+
+body.dark-mode .feedback-listar-page .filter-card .form-select option {
+  color: #e5eef8;
+  background: #172536;
+}
+
+body.dark-mode .feedback-listar-page .feedback-quick-filter {
+  color: #e5a0a0;
+  background: rgba(193, 83, 83, 0.1);
+  border-color: rgba(229, 126, 126, 0.22);
+}
+
+body.dark-mode .feedback-listar-page .feedback-quick-filter:hover,
+body.dark-mode .feedback-listar-page .feedback-quick-filter.active {
+  color: #fff;
+  background: #a94f55;
+  border-color: #bd6268;
+}
+
+body.dark-mode .feedback-listar-page .feedback-card {
+  color: #dce9f8;
+  background: linear-gradient(180deg, #192a3d, #172536);
+  border-color: #2d4057;
+  box-shadow: 0 10px 24px rgba(2, 8, 20, 0.2);
+}
+
+body.dark-mode .feedback-listar-page .feedback-card:hover {
+  border-color: #496885;
+  box-shadow: 0 16px 34px rgba(2, 8, 20, 0.3);
+}
+
+body.dark-mode .feedback-listar-page .feedback-card h5,
+body.dark-mode .feedback-listar-page .feedback-card-facts strong {
+  color: #dce9f8;
+}
+
+body.dark-mode .feedback-listar-page .feedback-card-description,
+body.dark-mode .feedback-listar-page .feedback-card-facts {
+  color: #94a8bf;
+}
+
+body.dark-mode .feedback-listar-page .feedback-card-facts .bi {
+  color: #65a9f7;
+}
+
+body.dark-mode .feedback-listar-page .feedback-ticket-id {
+  color: #b9dcff;
+  background: rgba(76, 163, 255, 0.13);
+  border: 1px solid rgba(126, 180, 255, 0.18);
+}
+
+body.dark-mode .feedback-listar-page .feedback-pill,
+body.dark-mode .feedback-listar-page .feedback-comments {
+  color: #b9cee4;
+  background: rgba(118, 145, 176, 0.12);
+  border: 1px solid rgba(148, 168, 191, 0.16);
+}
+
+body.dark-mode .feedback-listar-page .feedback-status-aberto {
+  color: #e8cd83;
+  background: rgba(210, 170, 70, 0.13);
+}
+
+body.dark-mode .feedback-listar-page .feedback-status-em_analise,
+body.dark-mode .feedback-listar-page .feedback-status-aguardando_info,
+body.dark-mode .feedback-listar-page .feedback-status-planejado,
+body.dark-mode .feedback-listar-page .feedback-priority-media {
+  color: #9bc8f8;
+  background: rgba(76, 145, 222, 0.14);
+}
+
+body.dark-mode .feedback-listar-page .feedback-status-em_desenvolvimento,
+body.dark-mode .feedback-listar-page .feedback-status-concluido,
+body.dark-mode .feedback-listar-page .feedback-priority-baixa {
+  color: #8bd8aa;
+  background: rgba(76, 175, 120, 0.13);
+}
+
+body.dark-mode .feedback-listar-page .feedback-status-respondido {
+  color: #91d3db;
+  background: rgba(62, 169, 184, 0.13);
+}
+
+body.dark-mode .feedback-listar-page .feedback-status-arquivado {
+  color: #aebed0;
+  background: rgba(128, 148, 171, 0.14);
+}
+
+body.dark-mode .feedback-listar-page .feedback-priority-alta {
+  color: #e6bd79;
+  background: rgba(205, 145, 62, 0.14);
+}
+
+body.dark-mode .feedback-listar-page .feedback-priority-urgente {
+  color: #f0a0a0;
+  background: rgba(205, 83, 83, 0.14);
+}
+
+body.dark-mode .feedback-listar-page .feedback-empty {
+  color: #dce9f8;
+  background: #172536;
+  border-color: #344a62;
+}
+
+body.dark-mode .feedback-listar-page .feedback-empty .text-muted {
+  color: #94a8bf !important;
+}
+
+body.dark-mode .feedback-listar-page .feedback-empty > .bi {
+  color: #65a9f7;
+}
+
+/* bundle-source-end: app/static/css/themes/dark/pages/feedback-listar.css */
+
+/* bundle-source: app/static/css/themes/dark/pages/agro-system.css */
+/* =========================================
+   AGRO - CAMADA DARK COMPARTILHADA
+   ========================================= */
+
+body.dark-mode.agro-mode {
+  --color-primary-dark: #91dfb1;
+  --color-primary: #59bd82;
+  --color-accent: #62c88a;
+  --color-accent-hover: #78d79d;
+  --color-success: #4fb67a;
+  --color-success-hover: #63c78b;
+  --color-accent-soft: rgba(89, 189, 130, 0.13);
+  --color-accent-soft-hover: rgba(89, 189, 130, 0.2);
+  background: #101a21 !important;
+}
+
+body.dark-mode.agro-mode .text-dark {
+  color: #dfece7 !important;
+}
+
+body.dark-mode.agro-mode .text-muted {
+  color: #9eb0b8 !important;
+}
+
+body.dark-mode.agro-mode .bg-white,
+body.dark-mode.agro-mode .bg-light,
+body.dark-mode.agro-mode .bg-light-subtle {
+  background-color: #192d37 !important;
+}
+
+body.dark-mode.agro-mode .border,
+body.dark-mode.agro-mode .border-top,
+body.dark-mode.agro-mode .border-end,
+body.dark-mode.agro-mode .border-bottom,
+body.dark-mode.agro-mode .border-start {
+  border-color: #304750 !important;
+}
+
+body.dark-mode.agro-mode .card,
+body.dark-mode.agro-mode .agro-hero-card,
+body.dark-mode.agro-mode .agro-panel-card,
+body.dark-mode.agro-mode .agro-form-card,
+body.dark-mode.agro-mode .agro-table-card,
+body.dark-mode.agro-mode .agro-filter-card,
+body.dark-mode.agro-mode .agro-side-card,
+body.dark-mode.agro-mode .agro-pilot-soft-card,
+body.dark-mode.agro-mode .agro-pilot-stat,
+body.dark-mode.agro-mode .agro-pilot-focus-card {
+  color: #dfece7;
+  background: #172832;
+  border-color: #2d434c !important;
+  box-shadow: 0 12px 28px rgba(2, 10, 14, 0.22);
+}
+
+body.dark-mode.agro-mode .card-header,
+body.dark-mode.agro-mode .card-header.bg-white,
+body.dark-mode.agro-mode .listing-filter-header {
+  color: #dfece7;
+  background: #1b2f39 !important;
+  border-bottom-color: #304750 !important;
+}
+
+body.dark-mode.agro-mode .listing-filter-body {
+  background: #192b35;
+}
+
+body.dark-mode.agro-mode .agro-page-subtitle,
+body.dark-mode.agro-mode .agro-muted,
+body.dark-mode.agro-mode .agro-row-subtitle,
+body.dark-mode.agro-mode .agro-form-section-copy,
+body.dark-mode.agro-mode .agro-page-footer-note,
+body.dark-mode.agro-mode .agro-stat-label,
+body.dark-mode.agro-mode .agro-side-item div,
+body.dark-mode.agro-mode .agro-shortcut-copy,
+body.dark-mode.agro-mode .agro-value-label,
+body.dark-mode.agro-mode .agro-file-meta {
+  color: #9eb0b8;
+}
+
+body.dark-mode.agro-mode .agro-page-title,
+body.dark-mode.agro-mode .agro-card-title,
+body.dark-mode.agro-mode .agro-form-section-title,
+body.dark-mode.agro-mode .agro-row-title,
+body.dark-mode.agro-mode .agro-side-item strong,
+body.dark-mode.agro-mode .agro-shortcut-title,
+body.dark-mode.agro-mode .agro-stat-value {
+  color: #91dfb1;
+}
+
+body.dark-mode.agro-mode .form-label,
+body.dark-mode.agro-mode label {
+  color: #a9bbc2;
+}
+
+body.dark-mode.agro-mode .form-control,
+body.dark-mode.agro-mode .form-select,
+body.dark-mode.agro-mode .agro-form-control,
+body.dark-mode.agro-mode .agro-form-select {
+  color: #e3eee9;
+  background-color: #14252f;
+  border-color: #354c55;
+}
+
+body.dark-mode.agro-mode .form-control::placeholder {
+  color: #7f949d;
+}
+
+body.dark-mode.agro-mode .form-control:focus,
+body.dark-mode.agro-mode .form-select:focus,
+body.dark-mode.agro-mode .agro-form-control:focus,
+body.dark-mode.agro-mode .agro-form-select:focus {
+  color: #edf6f2;
+  background-color: #172a34;
+  border-color: #68c992;
+  box-shadow: 0 0 0 3px rgba(89, 189, 130, 0.15);
+}
+
+body.dark-mode.agro-mode .form-select option {
+  color: #e3eee9;
+  background: #172832;
+}
+
+body.dark-mode.agro-mode .form-control[readonly],
+body.dark-mode.agro-mode .form-control:disabled,
+body.dark-mode.agro-mode .form-select:disabled {
+  color: #91a4ac;
+  background: #1b2b34;
+  border-color: #30434b;
+}
+
+body.dark-mode.agro-mode .form-check-input {
+  background-color: #14252f;
+  border-color: #526a72;
+}
+
+body.dark-mode.agro-mode .form-check-input:checked {
+  background-color: #59bd82;
+  border-color: #6dca95;
+}
+
+body.dark-mode.agro-mode .invalid-feedback {
+  color: #f0a0a0;
+}
+
+body.dark-mode.agro-mode hr {
+  border-color: #304750;
+}
+
+body.dark-mode.agro-mode .listing-page > .card,
+body.dark-mode.agro-mode .listing-table-wrap,
+body.dark-mode.agro-mode .listing-page .table-responsive {
+  background: #152630;
+  border-color: #2d434c !important;
+}
+
+body.dark-mode.agro-mode .listing-page .listing-table thead th,
+body.dark-mode.agro-mode .table-light,
+body.dark-mode.agro-mode .table-light th,
+body.dark-mode.agro-mode .table thead.table-light th,
+body.dark-mode.agro-mode .agro-table thead th {
+  color: #d9ebe4 !important;
+  background: #1d343d !important;
+  border-color: #34505a !important;
+}
+
+body.dark-mode.agro-mode .table,
+body.dark-mode.agro-mode .listing-table,
+body.dark-mode.agro-mode .agro-table {
+  color: #dfece7;
+}
+
+body.dark-mode.agro-mode .table tbody td,
+body.dark-mode.agro-mode .table tbody th,
+body.dark-mode.agro-mode .listing-table tbody td,
+body.dark-mode.agro-mode .agro-table tbody td {
+  color: #dfece7;
+  background: #172832;
+  border-color: #2d434c;
+}
+
+body.dark-mode.agro-mode .table tbody tr:nth-child(even) td,
+body.dark-mode.agro-mode .listing-table tbody tr:nth-child(even) td,
+body.dark-mode.agro-mode .agro-table tbody tr:nth-child(even) td {
+  background: #1a2d37;
+}
+
+body.dark-mode.agro-mode .table-hover > tbody > tr:hover > *,
+body.dark-mode.agro-mode .listing-table tbody tr:hover > *,
+body.dark-mode.agro-mode .agro-table tbody tr:hover > * {
+  color: #edf6f2;
+  background: #203943 !important;
+}
+
+body.dark-mode.agro-mode .listing-table .fw-bold,
+body.dark-mode.agro-mode .listing-table .fw-semibold {
+  color: #dfece7;
+}
+
+body.dark-mode.agro-mode .filter-card {
+  background: #192b35;
+  border: 1px solid #304750 !important;
+  box-shadow: 0 12px 26px rgba(2, 10, 14, 0.2);
+}
+
+body.dark-mode.agro-mode .filter-card-header,
+body.dark-mode.agro-mode .listing-filter-header {
+  color: #cae5d7;
+  background: #1d333c !important;
+}
+
+body.dark-mode.agro-mode .filter-card-header .fw-bold,
+body.dark-mode.agro-mode .listing-filter-header .text-dark,
+body.dark-mode.agro-mode .listing-filter-header .bi-funnel-fill {
+  color: #a7e4bf !important;
+}
+
+body.dark-mode.agro-mode .listing-page .badge.bg-light,
+body.dark-mode.agro-mode .listing-page .badge.bg-white,
+body.dark-mode.agro-mode .badge.bg-light,
+body.dark-mode.agro-mode .badge.bg-white {
+  color: #bed0c9 !important;
+  background: rgba(123, 153, 143, 0.12) !important;
+  border-color: rgba(158, 176, 184, 0.2) !important;
+}
+
+body.dark-mode.agro-mode .badge.bg-success-light {
+  color: #91dfb1 !important;
+  background: rgba(79, 182, 122, 0.13) !important;
+}
+
+body.dark-mode.agro-mode .badge.bg-danger-light {
+  color: #efa0a0 !important;
+  background: rgba(205, 83, 83, 0.13) !important;
+}
+
+body.dark-mode.agro-mode .dropdown-menu {
+  background: #172a36;
+  border: 1px solid #304750;
+  box-shadow: 0 18px 34px rgba(2, 10, 14, 0.3);
+}
+
+body.dark-mode.agro-mode .dropdown-item,
+body.dark-mode.agro-mode .dropdown-item-text {
+  color: #dfece7;
+}
+
+body.dark-mode.agro-mode .dropdown-item:hover,
+body.dark-mode.agro-mode .dropdown-item:focus {
+  color: #edf6f2;
+  background: rgba(89, 189, 130, 0.11);
+}
+
+body.dark-mode.agro-mode .dropdown-divider {
+  border-color: #304750;
+}
+
+body.dark-mode.agro-mode .modal-content,
+body.dark-mode.agro-mode .modal-header,
+body.dark-mode.agro-mode .modal-body,
+body.dark-mode.agro-mode .modal-footer {
+  color: #dfece7;
+  background: #172832;
+  border-color: #304750;
+}
+
+body.dark-mode.agro-mode .modal-title {
+  color: #dfece7;
+}
+
+body.dark-mode.agro-mode .modal .btn-close {
+  filter: invert(1) grayscale(1);
+}
+
+body.dark-mode.agro-mode .list-group-item {
+  color: #dfece7;
+  background: #172832;
+  border-color: #2d434c;
+}
+
+body.dark-mode.agro-mode .agro-file-box,
+body.dark-mode.agro-mode .agro-side-item,
+body.dark-mode.agro-mode .agro-protocol-chip {
+  color: #dfece7;
+  background: #192d37;
+  border-color: #304750;
+}
+
+body.dark-mode.agro-mode .agro-inline-chip,
+body.dark-mode.agro-mode .agro-shortcut-icon,
+body.dark-mode.agro-mode .agro-kicker {
+  color: #91dfb1;
+  background: rgba(89, 189, 130, 0.12);
+}
+
+body.dark-mode.agro-mode .agro-icon-btn {
+  background: #192d37;
+  border-color: #304750;
+  box-shadow: 0 4px 10px rgba(2, 10, 14, 0.2);
+}
+
+body.dark-mode.agro-mode .agro-icon-btn-pdf {
+  color: #91dfb1;
+  border-color: rgba(126, 224, 178, 0.22);
+  background: rgba(47, 133, 90, 0.13);
+}
+
+body.dark-mode.agro-mode .agro-icon-btn-attachment,
+body.dark-mode.agro-mode .agro-icon-btn-edit {
+  color: #91c6f2;
+  border-color: rgba(127, 191, 255, 0.22);
+  background: rgba(44, 105, 153, 0.16);
+}
+
+body.dark-mode.agro-mode .agro-icon-btn-delete {
+  color: #efa0a0;
+  border-color: rgba(239, 160, 160, 0.2);
+  background: rgba(205, 83, 83, 0.13);
+}
+
+body.dark-mode.agro-mode .agro-report-hero {
+  background:
+    radial-gradient(circle at top right, rgba(145, 223, 177, 0.13), transparent 32%),
+    linear-gradient(135deg, #173327, #1e4932);
+}
+
+body.dark-mode.agro-mode .agro-report-hero-card,
+body.dark-mode.agro-mode .agro-report-stat-card,
+body.dark-mode.agro-mode .agro-report-side-item {
+  border-color: rgba(158, 196, 177, 0.14);
+}
+
+body.dark-mode.agro-mode .agro-report-stat-card,
+body.dark-mode.agro-mode .agro-report-side-item,
+body.dark-mode.agro-mode .agro-report-note-grid > div {
+  background: #172832;
+}
+
+body.dark-mode.agro-mode .agro-report-panel-copy,
+body.dark-mode.agro-mode .agro-report-side-item span,
+body.dark-mode.agro-mode .agro-report-key-copy,
+body.dark-mode.agro-mode .agro-report-stat-caption,
+body.dark-mode.agro-mode .agro-report-ledger-note {
+  color: #9eb0b8;
+}
+
+body.dark-mode.agro-mode .agro-report-table tbody tr td {
+  background: #152630;
+}
+
+body.dark-mode.agro-mode .agro-report-table tbody tr:nth-child(even) td {
+  background: #192b35;
+}
+
+body.dark-mode.agro-mode .agro-report-clean-table thead th {
+  color: #cfe3da;
+  background: #1d343d;
+  border-color: #304750;
+}
+
+body.dark-mode.agro-mode .agro-report-table tbody tr.is-highlight td {
+  background: linear-gradient(90deg, rgba(89, 189, 130, 0.16), rgba(89, 189, 130, 0.04));
+}
+
+body.dark-mode.agro-mode .agro-report-table tbody tr.is-cost-row td {
+  background: linear-gradient(90deg, rgba(205, 151, 62, 0.16), rgba(205, 151, 62, 0.04));
+}
+
+body.dark-mode.agro-mode .agro-report-total-col {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+body.dark-mode.agro-mode .agro-report-row-tag,
+body.dark-mode.agro-mode .agro-report-row-tag.is-result {
+  color: #bcebd0;
+  background: rgba(89, 189, 130, 0.13);
+}
+
+body.dark-mode.agro-mode .agro-report-row-tag.is-cost {
+  color: #e9c985;
+  background: rgba(205, 151, 62, 0.15);
+}
+
+body.dark-mode.agro-mode .agro-report-amount.is-positive {
+  color: #9fe2ba;
+}
+
+body.dark-mode.agro-mode .agro-report-amount.is-negative {
+  color: #e9c985;
+}
+
+@media (max-width: 767.98px) {
+  body.dark-mode.agro-mode .agro-table tbody tr {
+    background: #172832 !important;
+    border-color: #304750 !important;
+    box-shadow: 0 12px 26px rgba(2, 10, 14, 0.28) !important;
+  }
+
+  body.dark-mode.agro-mode .agro-table tbody td,
+  body.dark-mode.agro-mode .agro-table tbody tr:nth-child(even) td {
+    background: transparent !important;
+  }
+
+  body.dark-mode.agro-mode .agro-table tbody td + td {
+    border-top-color: #304750 !important;
+  }
+
+  body.dark-mode.agro-mode .agro-table tbody td::before {
+    color: #9eb0b8;
+  }
+}
+
+/* bundle-source-end: app/static/css/themes/dark/pages/agro-system.css */
+
+/* bundle-source: app/static/css/themes/dark/pages/admin-agro.css */
+/* =========================================
+   PAINEL AGRO
+   ========================================= */
+
+body.dark-mode.agro-mode .agro-dashboard-page .agro-dashboard-toolbar h2,
+body.dark-mode.agro-mode .agro-dashboard-page .agro-dashboard-toolbar h2.text-dark {
+  color: #91dfb1 !important;
+}
+
+body.dark-mode.agro-mode .agro-dashboard-page .agro-dashboard-toolbar h2 .text-primary {
+  color: #63d08a !important;
+}
+
+body.dark-mode.agro-mode .agro-dashboard-page .agro-dashboard-toolbar .text-muted {
+  color: #9eb0c4 !important;
+}
+
+body.dark-mode.agro-mode .agro-dashboard-page .agro-dashboard-summary-card {
+  color: #e4f1ec;
+  background: linear-gradient(180deg, #1a2b38, #172633);
+  border: 1px solid #2b414c !important;
+  box-shadow: 0 10px 24px rgba(2, 10, 14, 0.22) !important;
+}
+
+body.dark-mode.agro-mode .agro-dashboard-page .agro-dashboard-summary-card .agro-dashboard-summary-label,
+body.dark-mode.agro-mode .agro-dashboard-page .agro-dashboard-summary-card .text-muted {
+  color: #9db1b9 !important;
+}
+
+body.dark-mode.agro-mode .agro-dashboard-page .agro-dashboard-summary-card h3.text-dark {
+  color: #e4f1ec !important;
+}
+
+body.dark-mode.agro-mode .agro-dashboard-page .agro-dashboard-summary-card h3.text-warning {
+  color: #e6c978 !important;
+}
+
+body.dark-mode.agro-mode .agro-dashboard-page .agro-dashboard-menu-card {
+  color: #dfece7;
+  background: #142431;
+  border: 1px solid #293f49 !important;
+  box-shadow: 0 14px 30px rgba(2, 10, 14, 0.24) !important;
+}
+
+body.dark-mode.agro-mode .agro-dashboard-page .agro-dashboard-menu-header,
+body.dark-mode.agro-mode .agro-dashboard-page .agro-dashboard-menu-header.bg-white {
+  background: #192b37 !important;
+  border-bottom: 1px solid #2c424c !important;
+}
+
+body.dark-mode.agro-mode .agro-dashboard-page .agro-dashboard-menu-header h5,
+body.dark-mode.agro-mode .agro-dashboard-page .agro-dashboard-menu-header h5.text-dark {
+  color: #dfece7 !important;
+}
+
+body.dark-mode.agro-mode .agro-dashboard-page .agro-dashboard-menu-header h5 .text-primary {
+  color: #71d499 !important;
+}
+
+body.dark-mode.agro-mode .agro-dashboard-page .agro-dashboard-menu-header .text-muted {
+  color: #96aab4 !important;
+}
+
+body.dark-mode.agro-mode .agro-dashboard-page .agro-menu-link {
+  color: #dfece7;
+  background: #172a36;
+  border-color: #2d444e;
+}
+
+body.dark-mode.agro-mode .agro-dashboard-page .agro-menu-link:hover {
+  background: #1d3540;
+  border-color: #47705e;
+}
+
+body.dark-mode.agro-mode .agro-dashboard-page .agro-menu-icon {
+  color: #83d7a5;
+  background: rgba(99, 208, 138, 0.11);
+  border-color: rgba(131, 215, 165, 0.18);
+}
+
+body.dark-mode.agro-mode .agro-dashboard-page .agro-menu-title {
+  color: #dfece7;
+}
+
+body.dark-mode.agro-mode .agro-dashboard-page .agro-menu-subtitle {
+  color: #96aab4;
+}
+
+body.dark-mode.agro-mode .agro-dashboard-page .agro-menu-link > .bi.text-muted {
+  color: #78939e !important;
+}
+
+body.dark-mode.agro-mode .agro-dashboard-page .agro-menu-link:hover > .bi.text-muted {
+  color: #91dfb1 !important;
+}
+
+/* bundle-source-end: app/static/css/themes/dark/pages/admin-agro.css */
+
+/* bundle-source: app/static/css/themes/dark/pages/agro-banco-form.css */
+/* Busca de bancos no formulario Agro. */
+body.dark-mode.agro-mode .agro-bank-results {
+  background: #172a36;
+  border-color: #304750;
+  box-shadow: 0 18px 34px rgba(2, 10, 14, 0.3);
+}
+
+body.dark-mode.agro-mode .agro-bank-option,
+body.dark-mode.agro-mode .agro-bank-empty {
+  color: #dfece7;
+}
+
+body.dark-mode.agro-mode .agro-bank-option:hover,
+body.dark-mode.agro-mode .agro-bank-option:focus,
+body.dark-mode.agro-mode .agro-bank-option.is-active {
+  color: #dff5e8;
+  background: rgba(99, 208, 138, 0.12);
+}
+
+/* bundle-source-end: app/static/css/themes/dark/pages/agro-banco-form.css */
+
+/* bundle-source: app/static/css/themes/dark/pages/agro-contratos.css */
+/* Contratos, menus de acao e detalhe. */
+body.dark-mode.agro-mode .agro-contratos-table-wrap {
+  background: #142431;
+}
+
+body.dark-mode.agro-mode .agro-actions-dropdown .dropdown-menu {
+  background: #172a36;
+  border-color: #304750;
+}
+
+body.dark-mode.agro-mode .agro-template-panel,
+body.dark-mode.agro-mode .agro-detail-card {
+  background: #192c38;
+  border-color: #304750;
+}
+
+body.dark-mode.agro-mode .agro-actions-dropdown .dropdown-item {
+  color: #dfece7;
+}
+
+body.dark-mode.agro-mode .agro-actions-dropdown .dropdown-item:hover,
+body.dark-mode.agro-mode .agro-actions-dropdown .dropdown-item:focus {
+  color: #e9f6f1;
+  background: rgba(99, 208, 138, 0.11);
+}
+
+body.dark-mode.agro-mode .agro-actions-dropdown .dropdown-divider,
+body.dark-mode.agro-mode .agro-detail-list-inline > div + div {
+  border-color: #304750;
+}
+
+body.dark-mode.agro-mode .agro-contrato-modal {
+  color: #dfece7;
+  background: #142431;
+}
+
+body.dark-mode.agro-mode .agro-detail-title {
+  color: #91dfb1;
+}
+
+body.dark-mode.agro-mode .agro-detail-list dt {
+  color: #9eb0b8;
+}
+
+body.dark-mode.agro-mode .agro-detail-list dd {
+  color: #dfece7;
+}
+
+/* bundle-source-end: app/static/css/themes/dark/pages/agro-contratos.css */
+
+/* bundle-source: app/static/css/themes/dark/pages/agro-orcamentos.css */
+/* Detalhe de orcamentos. */
+body.dark-mode.agro-mode .agro-orcamento-modal {
+  color: #dfece7;
+  background: #142431;
+}
+
+body.dark-mode.agro-mode .agro-orcamento-modal .agro-detail-card {
+  background: #192c38;
+  border-color: #304750;
+}
+
+body.dark-mode.agro-mode .agro-orcamento-modal .agro-detail-title {
+  color: #91dfb1;
+}
+
+body.dark-mode.agro-mode .agro-orcamento-modal .agro-detail-list dt {
+  color: #9eb0b8;
+}
+
+body.dark-mode.agro-mode .agro-orcamento-modal .agro-detail-list dd {
+  color: #dfece7;
+}
+
+body.dark-mode.agro-mode .agro-orcamento-modal .agro-detail-list-inline > div + div {
+  border-color: #304750;
+}
+
+/* bundle-source-end: app/static/css/themes/dark/pages/agro-orcamentos.css */
+
+/* bundle-source: app/static/css/themes/dark/pages/agro-relatorio-contas.css */
+/* Relatorio geral de contas. */
+body.dark-mode.agro-mode .relatorio-contas-detail-item,
+body.dark-mode.agro-mode .relatorio-contas-summary-item {
+  background: #172a36;
+  border-color: #304750;
+}
+
+body.dark-mode.agro-mode .relatorio-contas-actions-trigger {
+  background: #192c38;
+}
+
+body.dark-mode.agro-mode .relatorio-contas-modal .modal-header,
+body.dark-mode.agro-mode .relatorio-contas-modal .modal-body,
+body.dark-mode.agro-mode .relatorio-contas-modal .modal-footer {
+  background: #142431;
+  border-color: #304750;
+}
+
+body.dark-mode.agro-mode .relatorio-contas-modal-icon {
+  color: #91dfb1;
+  background: rgba(99, 208, 138, 0.12);
+}
+
+/* bundle-source-end: app/static/css/themes/dark/pages/agro-relatorio-contas.css */
+
+/* bundle-source: app/static/css/themes/dark/pages/piloto-agro.css */
+/* Painel e operacao do piloto Agro. */
+body.dark-mode.agro-mode .agro-pilot-page-header .text-dark,
+body.dark-mode.agro-mode .agro-pilot-overview .text-dark,
+body.dark-mode.agro-mode .agro-pilot-stat .text-dark,
+body.dark-mode.agro-mode .agro-pilot-section-card .text-dark {
+  color: #dfece7 !important;
+}
+
+body.dark-mode.agro-mode .agro-pilot-page-header .text-muted,
+body.dark-mode.agro-mode .agro-pilot-overview .text-muted,
+body.dark-mode.agro-mode .agro-pilot-stat .text-muted,
+body.dark-mode.agro-mode .agro-pilot-section-card .text-muted,
+body.dark-mode.agro-mode .agro-pilot-demand-meta,
+body.dark-mode.agro-mode .agro-pilot-profile-item span {
+  color: #9eb0b8 !important;
+}
+
+body.dark-mode.agro-mode .agro-pilot-overview,
+body.dark-mode.agro-mode .agro-pilot-stat,
+body.dark-mode.agro-mode .agro-pilot-section-card,
+body.dark-mode.agro-mode .agro-pilot-demand-item,
+body.dark-mode.agro-mode .agro-pilot-profile-item,
+body.dark-mode.agro-mode .agro-pilot-help-box,
+body.dark-mode.agro-mode .agro-pilot-overview-note {
+  background: #172a36;
+  border-color: #304750;
+  box-shadow: 0 12px 26px rgba(2, 10, 14, 0.22);
+}
+
+body.dark-mode.agro-mode .agro-pilot-overview-tag {
+  color: #dfece7;
+  background: #1b303b;
+  border-color: #304750;
+}
+
+body.dark-mode.agro-mode .agro-pilot-overview-tag.is-alert {
+  color: #e6cd86;
+  background: rgba(210, 170, 70, 0.12);
+}
+
+body.dark-mode.agro-mode .agro-pilot-demand-title strong,
+body.dark-mode.agro-mode .agro-pilot-profile-item strong,
+body.dark-mode.agro-mode .agro-pilot-empty-state h6 {
+  color: #dfece7;
+}
+
+body.dark-mode.agro-mode .agro-pilot-empty-state {
+  background: #172a36;
+  border-color: #34505a;
+}
+
+body.dark-mode.agro-mode .agro-pilot-empty-icon {
+  color: #91dfb1;
+  background: rgba(99, 208, 138, 0.12);
+}
+
+/* bundle-source-end: app/static/css/themes/dark/pages/piloto-agro.css */
+
+/* bundle-source: app/static/css/themes/dark/pages/agro-financeiro.css */
+/* =========================================
+   AGRO FINANCEIRO
+   ========================================= */
+
+body.dark-mode.agro-mode .agro-finance-stat-card,
+body.dark-mode.agro-mode .agro-finance-shortcut-card,
+body.dark-mode.agro-mode .agro-finance-caixa-item,
+body.dark-mode.agro-mode .agro-finance-conta-total,
+body.dark-mode.agro-mode .agro-finance-conta-metric {
+  color: #dfece7;
+  background: linear-gradient(180deg, #192b35, #172832);
+  border-color: #304750;
+  box-shadow: 0 10px 22px rgba(2, 10, 14, 0.2);
+}
+
+body.dark-mode.agro-mode .agro-finance-conta-title,
+body.dark-mode.agro-mode .agro-finance-conta-total-value,
+body.dark-mode.agro-mode .agro-finance-caixa-item strong {
+  color: #91dfb1;
+}
+
+body.dark-mode.agro-mode .agro-finance-conta-copy,
+body.dark-mode.agro-mode .agro-finance-conta-total-label,
+body.dark-mode.agro-mode .agro-finance-conta-metric-label,
+body.dark-mode.agro-mode .agro-finance-stat-note,
+body.dark-mode.agro-mode .agro-finance-panel-copy {
+  color: #9eb0b8;
+}
+
+body.dark-mode.agro-mode .agro-finance-conta-chip.is-warning,
+body.dark-mode.agro-mode .agro-finance-conta-metric-value.is-warning {
+  color: #e5c77f;
+  background: rgba(205, 151, 62, 0.13);
+}
+
+body.dark-mode.agro-mode .agro-finance-conta-chip.is-success,
+body.dark-mode.agro-mode .agro-finance-conta-badge.is-receber,
+body.dark-mode.agro-mode .agro-finance-conta-metric-value.is-success {
+  color: #91dfb1;
+}
+
+body.dark-mode.agro-mode .agro-finance-conta-chip.is-danger,
+body.dark-mode.agro-mode .agro-finance-conta-badge.is-pagar,
+body.dark-mode.agro-mode .agro-finance-conta-metric-value.is-danger {
+  color: #efa0a0;
+}
+
+body.dark-mode.agro-mode .contas-pagar-shortcut,
+body.dark-mode.agro-mode .contas-receber-shortcut {
+  color: #dfece7;
+  background: linear-gradient(180deg, #192b35, #172832);
+  border-color: #304750;
+  box-shadow: 0 10px 22px rgba(2, 10, 14, 0.2);
+}
+
+body.dark-mode.agro-mode .contas-pagar-shortcut:hover,
+body.dark-mode.agro-mode .contas-receber-shortcut:hover,
+body.dark-mode.agro-mode .contas-pagar-shortcut.is-active,
+body.dark-mode.agro-mode .contas-receber-shortcut.is-active {
+  color: #edf6f2;
+  background: #1d343e;
+  border-color: #4a725f;
+}
+
+body.dark-mode.agro-mode .contas-pagar-shortcut.is-warning {
+  background: linear-gradient(180deg, #2a2a28, #272824);
+  border-color: rgba(205, 151, 62, 0.3);
+}
+
+body.dark-mode.agro-mode .contas-pagar-shortcut-title,
+body.dark-mode.agro-mode .contas-receber-shortcut-title {
+  color: #dfece7;
+}
+
+body.dark-mode.agro-mode .contas-pagar-shortcut-copy,
+body.dark-mode.agro-mode .contas-receber-shortcut-copy {
+  color: #9eb0b8;
+}
+
+body.dark-mode.agro-mode .contas-pagar-shortcut-icon {
+  color: #efa0a0;
+  background: rgba(205, 83, 83, 0.13);
+}
+
+body.dark-mode.agro-mode .contas-pagar-shortcut.is-warning .contas-pagar-shortcut-icon {
+  color: #e5c77f;
+  background: rgba(205, 151, 62, 0.13);
+}
+
+body.dark-mode.agro-mode .contas-receber-shortcut-icon {
+  color: #91dfb1;
+  background: rgba(79, 182, 122, 0.13);
+}
+
+body.dark-mode.agro-mode .competencia-config-card {
+  border-color: #304750;
+}
+
+/* bundle-source-end: app/static/css/themes/dark/pages/agro-financeiro.css */
+
+/* bundle-source: app/static/css/themes/dark/pages/agro-logs-voo.css */
+/* =========================================
+   LOGS DE VOO AGRO
+   ========================================= */
+
+body.dark-mode.agro-mode .agro-flight-page .agro-flight-metric {
+  color: #dfece7;
+  background: linear-gradient(180deg, #192b35, #172832);
+  border: 1px solid #304750;
+  box-shadow: 0 10px 22px rgba(2, 10, 14, 0.2);
+}
+
+body.dark-mode.agro-mode .agro-flight-page .agro-flight-label {
+  color: #9eb0b8;
+}
+
+body.dark-mode.agro-mode .agro-flight-page .agro-flight-value {
+  color: #dfece7;
+}
+
+body.dark-mode.agro-mode .agro-flight-page .agro-route-pill {
+  color: #9fe2ba;
+  background: rgba(79, 182, 122, 0.12);
+  border-color: rgba(145, 223, 177, 0.2);
+}
+
+body.dark-mode.agro-mode .agro-flight-page .agro-route-pill:hover {
+  color: #c8f1d8;
+  background: rgba(79, 182, 122, 0.18);
+}
+
+body.dark-mode.agro-mode .agro-flight-page .agro-route-map {
+  background: #14252f;
+  border: 1px solid #304750;
+}
+
+/* bundle-source-end: app/static/css/themes/dark/pages/agro-logs-voo.css */
+
+/* bundle-source: app/static/css/themes/dark/pages/agro-talentos.css */
+/* =========================================
+   BANCO DE TALENTOS AGRO
+   ========================================= */
+
+body.dark-mode.agro-mode .talent-chip {
+  color: #bcebd0;
+  background: rgba(89, 189, 130, 0.12);
+  border-color: rgba(145, 223, 177, 0.2);
+}
+
+body.dark-mode.agro-mode .agro-talent-upload-panel {
+  color: #dfece7;
+  background: #192d37 !important;
+  border-color: #304750 !important;
+}
+
+body.dark-mode.agro-mode .agro-talent-upload-icon {
+  color: #91dfb1 !important;
+  background: rgba(89, 189, 130, 0.13) !important;
+}
+
+/* bundle-source-end: app/static/css/themes/dark/pages/agro-talentos.css */
+
 /* bundle-source-end: app/static/css/themes/dark/core.css */
 
 /* bundle-source: app/static/css/themes/dark/agro-mode.css */
@@ -6363,6 +8069,19 @@ body.dark-mode.agro-mode .admin-context-badge {
 body.dark-mode.agro-mode .navbar {
   background: #0f2318;
   border-bottom: 1px solid #214634;
+}
+
+body.dark-mode.agro-mode .navbar-brand {
+  background: transparent;
+  box-shadow: none;
+}
+
+body.dark-mode.agro-mode .navbar-brand .navbar-logo {
+  opacity: 0.94;
+  filter:
+    brightness(0)
+    invert(1)
+    drop-shadow(0 2px 3px rgba(0, 0, 0, 0.24));
 }
 
 body.dark-mode.agro-mode .app-sidebar {

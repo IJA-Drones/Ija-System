@@ -1,0 +1,47 @@
+/* Contratos, menus de acao e detalhe. */
+body.dark-mode.agro-mode .agro-contratos-table-wrap {
+  background: #142431;
+}
+
+body.dark-mode.agro-mode .agro-actions-dropdown .dropdown-menu {
+  background: #172a36;
+  border-color: #304750;
+}
+
+body.dark-mode.agro-mode .agro-template-panel,
+body.dark-mode.agro-mode .agro-detail-card {
+  background: #192c38;
+  border-color: #304750;
+}
+
+body.dark-mode.agro-mode .agro-actions-dropdown .dropdown-item {
+  color: #dfece7;
+}
+
+body.dark-mode.agro-mode .agro-actions-dropdown .dropdown-item:hover,
+body.dark-mode.agro-mode .agro-actions-dropdown .dropdown-item:focus {
+  color: #e9f6f1;
+  background: rgba(99, 208, 138, 0.11);
+}
+
+body.dark-mode.agro-mode .agro-actions-dropdown .dropdown-divider,
+body.dark-mode.agro-mode .agro-detail-list-inline > div + div {
+  border-color: #304750;
+}
+
+body.dark-mode.agro-mode .agro-contrato-modal {
+  color: #dfece7;
+  background: #142431;
+}
+
+body.dark-mode.agro-mode .agro-detail-title {
+  color: #91dfb1;
+}
+
+body.dark-mode.agro-mode .agro-detail-list dt {
+  color: #9eb0b8;
+}
+
+body.dark-mode.agro-mode .agro-detail-list dd {
+  color: #dfece7;
+}

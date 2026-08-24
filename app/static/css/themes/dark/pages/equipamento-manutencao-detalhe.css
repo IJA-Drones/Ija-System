@@ -1,0 +1,79 @@
+/* =========================================
+   DETALHE DA MANUTENCAO
+   ========================================= */
+
+body.dark-mode .equipamento-manutencao-detalhe-page .equipamento-manutencao-detalhe-toolbar h2,
+body.dark-mode .equipamento-manutencao-detalhe-page .equipamento-manutencao-detalhe-toolbar h2.text-dark {
+  color: #8fc4ff !important;
+}
+
+body.dark-mode .equipamento-manutencao-detalhe-page .equipamento-manutencao-detalhe-toolbar h2 .text-primary {
+  color: #65a9f7 !important;
+}
+
+body.dark-mode .equipamento-manutencao-detalhe-page .equipamento-manutencao-detalhe-toolbar .text-muted {
+  color: #94a8bf !important;
+}
+
+body.dark-mode .equipamento-manutencao-detalhe-page .manutencao-resumo-card {
+  color: #dce9f8;
+  background: linear-gradient(180deg, #1a2b3e, #172536);
+  border: 1px solid #2d4057 !important;
+  box-shadow: 0 10px 24px rgba(2, 8, 20, 0.2) !important;
+}
+
+body.dark-mode .equipamento-manutencao-detalhe-page .manutencao-resumo-card .text-muted {
+  color: #91a5bd !important;
+}
+
+body.dark-mode .equipamento-manutencao-detalhe-page .manutencao-resumo-card .text-primary {
+  color: #8fc4ff !important;
+}
+
+body.dark-mode .equipamento-manutencao-detalhe-page .manutencao-resumo-card .text-success {
+  color: #83d4a5 !important;
+}
+
+body.dark-mode .equipamento-manutencao-detalhe-page .manutencao-resumo-card .text-danger {
+  color: #f09999 !important;
+}
+
+body.dark-mode .equipamento-manutencao-detalhe-page .manutencao-detalhe-table-card {
+  background: #142131;
+  border: 1px solid #283c53 !important;
+  box-shadow: 0 14px 32px rgba(2, 8, 20, 0.24) !important;
+}
+
+body.dark-mode .equipamento-manutencao-detalhe-page .manutencao-detalhe-table-card .card-header {
+  color: #dce9f4;
+  background: #1b2d41;
+  border-bottom: 1px solid #30465f !important;
+}
+
+body.dark-mode .equipamento-manutencao-detalhe-page .manutencao-detalhe-table-card .table-responsive {
+  background: #142131;
+}
+
+body.dark-mode .equipamento-manutencao-detalhe-page .manutencao-detalhe-table thead th {
+  color: #d7e5f4 !important;
+  background: #1b2d41 !important;
+  border-bottom: 1px solid #30465f !important;
+}
+
+body.dark-mode .equipamento-manutencao-detalhe-page .manutencao-detalhe-table tbody td {
+  color: rgba(237, 243, 251, 0.88);
+  background: #172536;
+  border-color: #2a3d53;
+}
+
+body.dark-mode .equipamento-manutencao-detalhe-page .manutencao-detalhe-table tbody tr:nth-child(even) td {
+  background: #19293b;
+}
+
+body.dark-mode .equipamento-manutencao-detalhe-page .manutencao-detalhe-table.table-hover > tbody > tr:hover > * {
+  background: #20354c !important;
+}
+
+body.dark-mode .equipamento-manutencao-detalhe-page .manutencao-detalhe-table .text-muted {
+  color: #94a8bf !important;
+}

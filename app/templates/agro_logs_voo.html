@@ -256,7 +256,7 @@
                   </div>
                   {% if can_import %}
                     <form method="POST" action="{{ url_for('main.agro_logs_voo_vincular_os', route_id=item.id) }}" class="d-flex gap-1 justify-content-end mt-2">
-                      <input type="text" name="os_ref" class="form-control form-control-sm" style="max-width: 140px;" placeholder="OS Agro">
+                      <input type="text" name="os_ref" class="form-control form-control-sm agro-os-reference-input" placeholder="OS Agro">
                       <button class="btn btn-sm btn-success" type="submit"><i class="bi bi-link-45deg"></i></button>
                     </form>
                     {% if linked_os %}

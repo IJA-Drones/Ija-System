@@ -32,6 +32,19 @@ body.dark-mode.agro-mode .navbar {
   border-bottom: 1px solid #214634;
 }
 
+body.dark-mode.agro-mode .navbar-brand {
+  background: transparent;
+  box-shadow: none;
+}
+
+body.dark-mode.agro-mode .navbar-brand .navbar-logo {
+  opacity: 0.94;
+  filter:
+    brightness(0)
+    invert(1)
+    drop-shadow(0 2px 3px rgba(0, 0, 0, 0.24));
+}
+
 body.dark-mode.agro-mode .app-sidebar {
   background: #0f2318;
   border-right: 1px solid #214634;

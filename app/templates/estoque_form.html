@@ -3,6 +3,7 @@
 {% block extra_styles %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/estoque_form.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -12,8 +13,8 @@
   'baixada': 'Baixada',
   'indisponivel': 'Indisponível'
 } %}
-<div class="container-fluid py-4" style="max-width: 1000px">
-  <div class="d-flex align-items-center justify-content-between mb-4">
+<div class="container-fluid py-4 estoque-form-page">
+  <div class="page-toolbar align-items-center estoque-form-toolbar mb-4">
     <div>
       <h2 class="text-dark mb-1">
         <i class="bi bi-box-seam-fill me-2 text-primary"></i>{{ 'Editar peça' if peca else 'Nova peça no estoque' }}
@@ -22,9 +23,9 @@
     </div>
   </div>
 
-  <div class="card info status-primary shadow-sm rounded-4 border-0">
+  <div class="card info status-primary shadow-sm rounded-4 border-0 estoque-form-card">
     <div class="card-body p-4">
-      <form method="post" novalidate>
+      <form method="post" novalidate class="estoque-form-fields">
         <div class="row g-3 mb-4">
           <div class="col-md-6">
             <label class="form-label fw-bold small text-muted">Modelo da peça *</label>
@@ -74,7 +75,7 @@
           <textarea name="observacoes" class="form-control" rows="3" placeholder="Detalhes internos sobre a peça">{{ form.get('observacoes','') }}</textarea>
         </div>
 
-        <div class="d-flex justify-content-end gap-2 mt-5">
+        <div class="d-flex justify-content-end gap-2 mt-5 estoque-form-actions">
           <a href="{{ url_for('main.estoque_listar') }}" class="btn btn-outline-danger btn-sm">Cancelar</a>
           <button type="submit" class="btn btn-primary px-5 shadow-sm fw-bold">
             <i class="bi bi-check-lg me-1"></i> Salvar

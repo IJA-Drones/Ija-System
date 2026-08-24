@@ -1,0 +1,182 @@
+/* =========================================
+   LISTAGEM DE BUGS REPORTADOS
+   ========================================= */
+
+body.dark-mode .feedback-listar-page .feedback-header h2 {
+  color: #8fc4ff;
+}
+
+body.dark-mode .feedback-listar-page .feedback-header h2 .text-primary {
+  color: #65a9f7 !important;
+}
+
+body.dark-mode .feedback-listar-page .feedback-kicker {
+  color: #72b5f8;
+}
+
+body.dark-mode .feedback-listar-page .feedback-header .text-muted {
+  color: #94a8bf !important;
+}
+
+body.dark-mode .feedback-listar-page .feedback-metric {
+  background: linear-gradient(180deg, #1a2b3e, #172536);
+  border-color: #2d4057;
+  box-shadow: 0 10px 24px rgba(2, 8, 20, 0.2);
+}
+
+body.dark-mode .feedback-listar-page .feedback-metric span {
+  color: #91a5bd;
+}
+
+body.dark-mode .feedback-listar-page .feedback-metric strong {
+  color: #dce9f8;
+}
+
+body.dark-mode .feedback-listar-page .filter-card {
+  background: #18283a;
+  border: 1px solid #30445b !important;
+  box-shadow: 0 12px 28px rgba(2, 8, 20, 0.2);
+}
+
+body.dark-mode .feedback-listar-page .filter-card-header {
+  color: #cfe3f8;
+  background: #1d3045;
+  border-bottom-color: #30465f;
+}
+
+body.dark-mode .feedback-listar-page .filter-card-header .fw-bold {
+  color: #b9d8f8 !important;
+}
+
+body.dark-mode .feedback-listar-page .filter-card .form-label {
+  color: #a6b8cc;
+}
+
+body.dark-mode .feedback-listar-page .filter-card .form-control,
+body.dark-mode .feedback-listar-page .filter-card .form-select {
+  color: #e5eef8;
+  background: #132132;
+  border-color: #334a63;
+}
+
+body.dark-mode .feedback-listar-page .filter-card .form-control::placeholder {
+  color: #7f93aa;
+}
+
+body.dark-mode .feedback-listar-page .filter-card .form-control:focus,
+body.dark-mode .feedback-listar-page .filter-card .form-select:focus {
+  background: #152538;
+  border-color: #65a9f7;
+  box-shadow: 0 0 0 3px rgba(101, 169, 247, 0.16);
+}
+
+body.dark-mode .feedback-listar-page .filter-card .form-select option {
+  color: #e5eef8;
+  background: #172536;
+}
+
+body.dark-mode .feedback-listar-page .feedback-quick-filter {
+  color: #e5a0a0;
+  background: rgba(193, 83, 83, 0.1);
+  border-color: rgba(229, 126, 126, 0.22);
+}
+
+body.dark-mode .feedback-listar-page .feedback-quick-filter:hover,
+body.dark-mode .feedback-listar-page .feedback-quick-filter.active {
+  color: #fff;
+  background: #a94f55;
+  border-color: #bd6268;
+}
+
+body.dark-mode .feedback-listar-page .feedback-card {
+  color: #dce9f8;
+  background: linear-gradient(180deg, #192a3d, #172536);
+  border-color: #2d4057;
+  box-shadow: 0 10px 24px rgba(2, 8, 20, 0.2);
+}
+
+body.dark-mode .feedback-listar-page .feedback-card:hover {
+  border-color: #496885;
+  box-shadow: 0 16px 34px rgba(2, 8, 20, 0.3);
+}
+
+body.dark-mode .feedback-listar-page .feedback-card h5,
+body.dark-mode .feedback-listar-page .feedback-card-facts strong {
+  color: #dce9f8;
+}
+
+body.dark-mode .feedback-listar-page .feedback-card-description,
+body.dark-mode .feedback-listar-page .feedback-card-facts {
+  color: #94a8bf;
+}
+
+body.dark-mode .feedback-listar-page .feedback-card-facts .bi {
+  color: #65a9f7;
+}
+
+body.dark-mode .feedback-listar-page .feedback-ticket-id {
+  color: #b9dcff;
+  background: rgba(76, 163, 255, 0.13);
+  border: 1px solid rgba(126, 180, 255, 0.18);
+}
+
+body.dark-mode .feedback-listar-page .feedback-pill,
+body.dark-mode .feedback-listar-page .feedback-comments {
+  color: #b9cee4;
+  background: rgba(118, 145, 176, 0.12);
+  border: 1px solid rgba(148, 168, 191, 0.16);
+}
+
+body.dark-mode .feedback-listar-page .feedback-status-aberto {
+  color: #e8cd83;
+  background: rgba(210, 170, 70, 0.13);
+}
+
+body.dark-mode .feedback-listar-page .feedback-status-em_analise,
+body.dark-mode .feedback-listar-page .feedback-status-aguardando_info,
+body.dark-mode .feedback-listar-page .feedback-status-planejado,
+body.dark-mode .feedback-listar-page .feedback-priority-media {
+  color: #9bc8f8;
+  background: rgba(76, 145, 222, 0.14);
+}
+
+body.dark-mode .feedback-listar-page .feedback-status-em_desenvolvimento,
+body.dark-mode .feedback-listar-page .feedback-status-concluido,
+body.dark-mode .feedback-listar-page .feedback-priority-baixa {
+  color: #8bd8aa;
+  background: rgba(76, 175, 120, 0.13);
+}
+
+body.dark-mode .feedback-listar-page .feedback-status-respondido {
+  color: #91d3db;
+  background: rgba(62, 169, 184, 0.13);
+}
+
+body.dark-mode .feedback-listar-page .feedback-status-arquivado {
+  color: #aebed0;
+  background: rgba(128, 148, 171, 0.14);
+}
+
+body.dark-mode .feedback-listar-page .feedback-priority-alta {
+  color: #e6bd79;
+  background: rgba(205, 145, 62, 0.14);
+}
+
+body.dark-mode .feedback-listar-page .feedback-priority-urgente {
+  color: #f0a0a0;
+  background: rgba(205, 83, 83, 0.14);
+}
+
+body.dark-mode .feedback-listar-page .feedback-empty {
+  color: #dce9f8;
+  background: #172536;
+  border-color: #344a62;
+}
+
+body.dark-mode .feedback-listar-page .feedback-empty .text-muted {
+  color: #94a8bf !important;
+}
+
+body.dark-mode .feedback-listar-page .feedback-empty > .bi {
+  color: #65a9f7;
+}

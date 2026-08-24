@@ -38,7 +38,7 @@
 {%- endmacro %}
 
 {% block content %}
-<div class="container-fluid py-4" style="max-width: 1240px">
+<div class="container-fluid py-4 agro-content-width-1240">
   <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-4">
     <div>
       <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
@@ -80,7 +80,7 @@
       <div class="card border-0 shadow-sm rounded-4 mb-4">
         <div class="card-body p-4">
           <h5 class="text-primary mb-3"><i class="bi bi-person-lines-fill me-2"></i>Resumo do perfil</h5>
-          <p class="mb-0" style="white-space: pre-line;">{{ curriculo.resumo_perfil or "Resumo ainda não disponível." }}</p>
+          <p class="mb-0 agro-preserve-lines">{{ curriculo.resumo_perfil or "Resumo ainda não disponível." }}</p>
         </div>
       </div>
 

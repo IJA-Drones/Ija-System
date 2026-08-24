@@ -1,0 +1,26 @@
+/* Detalhe de orcamentos. */
+body.dark-mode.agro-mode .agro-orcamento-modal {
+  color: #dfece7;
+  background: #142431;
+}
+
+body.dark-mode.agro-mode .agro-orcamento-modal .agro-detail-card {
+  background: #192c38;
+  border-color: #304750;
+}
+
+body.dark-mode.agro-mode .agro-orcamento-modal .agro-detail-title {
+  color: #91dfb1;
+}
+
+body.dark-mode.agro-mode .agro-orcamento-modal .agro-detail-list dt {
+  color: #9eb0b8;
+}
+
+body.dark-mode.agro-mode .agro-orcamento-modal .agro-detail-list dd {
+  color: #dfece7;
+}
+
+body.dark-mode.agro-mode .agro-orcamento-modal .agro-detail-list-inline > div + div {
+  border-color: #304750;
+}

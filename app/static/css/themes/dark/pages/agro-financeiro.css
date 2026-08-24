@@ -1,0 +1,97 @@
+/* =========================================
+   AGRO FINANCEIRO
+   ========================================= */
+
+body.dark-mode.agro-mode .agro-finance-stat-card,
+body.dark-mode.agro-mode .agro-finance-shortcut-card,
+body.dark-mode.agro-mode .agro-finance-caixa-item,
+body.dark-mode.agro-mode .agro-finance-conta-total,
+body.dark-mode.agro-mode .agro-finance-conta-metric {
+  color: #dfece7;
+  background: linear-gradient(180deg, #192b35, #172832);
+  border-color: #304750;
+  box-shadow: 0 10px 22px rgba(2, 10, 14, 0.2);
+}
+
+body.dark-mode.agro-mode .agro-finance-conta-title,
+body.dark-mode.agro-mode .agro-finance-conta-total-value,
+body.dark-mode.agro-mode .agro-finance-caixa-item strong {
+  color: #91dfb1;
+}
+
+body.dark-mode.agro-mode .agro-finance-conta-copy,
+body.dark-mode.agro-mode .agro-finance-conta-total-label,
+body.dark-mode.agro-mode .agro-finance-conta-metric-label,
+body.dark-mode.agro-mode .agro-finance-stat-note,
+body.dark-mode.agro-mode .agro-finance-panel-copy {
+  color: #9eb0b8;
+}
+
+body.dark-mode.agro-mode .agro-finance-conta-chip.is-warning,
+body.dark-mode.agro-mode .agro-finance-conta-metric-value.is-warning {
+  color: #e5c77f;
+  background: rgba(205, 151, 62, 0.13);
+}
+
+body.dark-mode.agro-mode .agro-finance-conta-chip.is-success,
+body.dark-mode.agro-mode .agro-finance-conta-badge.is-receber,
+body.dark-mode.agro-mode .agro-finance-conta-metric-value.is-success {
+  color: #91dfb1;
+}
+
+body.dark-mode.agro-mode .agro-finance-conta-chip.is-danger,
+body.dark-mode.agro-mode .agro-finance-conta-badge.is-pagar,
+body.dark-mode.agro-mode .agro-finance-conta-metric-value.is-danger {
+  color: #efa0a0;
+}
+
+body.dark-mode.agro-mode .contas-pagar-shortcut,
+body.dark-mode.agro-mode .contas-receber-shortcut {
+  color: #dfece7;
+  background: linear-gradient(180deg, #192b35, #172832);
+  border-color: #304750;
+  box-shadow: 0 10px 22px rgba(2, 10, 14, 0.2);
+}
+
+body.dark-mode.agro-mode .contas-pagar-shortcut:hover,
+body.dark-mode.agro-mode .contas-receber-shortcut:hover,
+body.dark-mode.agro-mode .contas-pagar-shortcut.is-active,
+body.dark-mode.agro-mode .contas-receber-shortcut.is-active {
+  color: #edf6f2;
+  background: #1d343e;
+  border-color: #4a725f;
+}
+
+body.dark-mode.agro-mode .contas-pagar-shortcut.is-warning {
+  background: linear-gradient(180deg, #2a2a28, #272824);
+  border-color: rgba(205, 151, 62, 0.3);
+}
+
+body.dark-mode.agro-mode .contas-pagar-shortcut-title,
+body.dark-mode.agro-mode .contas-receber-shortcut-title {
+  color: #dfece7;
+}
+
+body.dark-mode.agro-mode .contas-pagar-shortcut-copy,
+body.dark-mode.agro-mode .contas-receber-shortcut-copy {
+  color: #9eb0b8;
+}
+
+body.dark-mode.agro-mode .contas-pagar-shortcut-icon {
+  color: #efa0a0;
+  background: rgba(205, 83, 83, 0.13);
+}
+
+body.dark-mode.agro-mode .contas-pagar-shortcut.is-warning .contas-pagar-shortcut-icon {
+  color: #e5c77f;
+  background: rgba(205, 151, 62, 0.13);
+}
+
+body.dark-mode.agro-mode .contas-receber-shortcut-icon {
+  color: #91dfb1;
+  background: rgba(79, 182, 122, 0.13);
+}
+
+body.dark-mode.agro-mode .competencia-config-card {
+  border-color: #304750;
+}

@@ -1,3 +1,12 @@
+.agro-clientes-menu-page {
+      max-width: 1200px;
+    }
+
+    .agro-clientes-menu-label {
+      font-size: 0.7rem;
+      letter-spacing: 0.5px;
+    }
+
 .agro-clientes-menu-card {
       transition: transform 0.18s ease, box-shadow 0.18s ease;
     }

@@ -1,0 +1,95 @@
+/* =========================================
+   PAINEL AGRO
+   ========================================= */
+
+body.dark-mode.agro-mode .agro-dashboard-page .agro-dashboard-toolbar h2,
+body.dark-mode.agro-mode .agro-dashboard-page .agro-dashboard-toolbar h2.text-dark {
+  color: #91dfb1 !important;
+}
+
+body.dark-mode.agro-mode .agro-dashboard-page .agro-dashboard-toolbar h2 .text-primary {
+  color: #63d08a !important;
+}
+
+body.dark-mode.agro-mode .agro-dashboard-page .agro-dashboard-toolbar .text-muted {
+  color: #9eb0c4 !important;
+}
+
+body.dark-mode.agro-mode .agro-dashboard-page .agro-dashboard-summary-card {
+  color: #e4f1ec;
+  background: linear-gradient(180deg, #1a2b38, #172633);
+  border: 1px solid #2b414c !important;
+  box-shadow: 0 10px 24px rgba(2, 10, 14, 0.22) !important;
+}
+
+body.dark-mode.agro-mode .agro-dashboard-page .agro-dashboard-summary-card .agro-dashboard-summary-label,
+body.dark-mode.agro-mode .agro-dashboard-page .agro-dashboard-summary-card .text-muted {
+  color: #9db1b9 !important;
+}
+
+body.dark-mode.agro-mode .agro-dashboard-page .agro-dashboard-summary-card h3.text-dark {
+  color: #e4f1ec !important;
+}
+
+body.dark-mode.agro-mode .agro-dashboard-page .agro-dashboard-summary-card h3.text-warning {
+  color: #e6c978 !important;
+}
+
+body.dark-mode.agro-mode .agro-dashboard-page .agro-dashboard-menu-card {
+  color: #dfece7;
+  background: #142431;
+  border: 1px solid #293f49 !important;
+  box-shadow: 0 14px 30px rgba(2, 10, 14, 0.24) !important;
+}
+
+body.dark-mode.agro-mode .agro-dashboard-page .agro-dashboard-menu-header,
+body.dark-mode.agro-mode .agro-dashboard-page .agro-dashboard-menu-header.bg-white {
+  background: #192b37 !important;
+  border-bottom: 1px solid #2c424c !important;
+}
+
+body.dark-mode.agro-mode .agro-dashboard-page .agro-dashboard-menu-header h5,
+body.dark-mode.agro-mode .agro-dashboard-page .agro-dashboard-menu-header h5.text-dark {
+  color: #dfece7 !important;
+}
+
+body.dark-mode.agro-mode .agro-dashboard-page .agro-dashboard-menu-header h5 .text-primary {
+  color: #71d499 !important;
+}
+
+body.dark-mode.agro-mode .agro-dashboard-page .agro-dashboard-menu-header .text-muted {
+  color: #96aab4 !important;
+}
+
+body.dark-mode.agro-mode .agro-dashboard-page .agro-menu-link {
+  color: #dfece7;
+  background: #172a36;
+  border-color: #2d444e;
+}
+
+body.dark-mode.agro-mode .agro-dashboard-page .agro-menu-link:hover {
+  background: #1d3540;
+  border-color: #47705e;
+}
+
+body.dark-mode.agro-mode .agro-dashboard-page .agro-menu-icon {
+  color: #83d7a5;
+  background: rgba(99, 208, 138, 0.11);
+  border-color: rgba(131, 215, 165, 0.18);
+}
+
+body.dark-mode.agro-mode .agro-dashboard-page .agro-menu-title {
+  color: #dfece7;
+}
+
+body.dark-mode.agro-mode .agro-dashboard-page .agro-menu-subtitle {
+  color: #96aab4;
+}
+
+body.dark-mode.agro-mode .agro-dashboard-page .agro-menu-link > .bi.text-muted {
+  color: #78939e !important;
+}
+
+body.dark-mode.agro-mode .agro-dashboard-page .agro-menu-link:hover > .bi.text-muted {
+  color: #91dfb1 !important;
+}

@@ -1,0 +1,410 @@
+/* =========================================
+   AGRO - CAMADA DARK COMPARTILHADA
+   ========================================= */
+
+body.dark-mode.agro-mode {
+  --color-primary-dark: #91dfb1;
+  --color-primary: #59bd82;
+  --color-accent: #62c88a;
+  --color-accent-hover: #78d79d;
+  --color-success: #4fb67a;
+  --color-success-hover: #63c78b;
+  --color-accent-soft: rgba(89, 189, 130, 0.13);
+  --color-accent-soft-hover: rgba(89, 189, 130, 0.2);
+  background: #101a21 !important;
+}
+
+body.dark-mode.agro-mode .text-dark {
+  color: #dfece7 !important;
+}
+
+body.dark-mode.agro-mode .text-muted {
+  color: #9eb0b8 !important;
+}
+
+body.dark-mode.agro-mode .bg-white,
+body.dark-mode.agro-mode .bg-light,
+body.dark-mode.agro-mode .bg-light-subtle {
+  background-color: #192d37 !important;
+}
+
+body.dark-mode.agro-mode .border,
+body.dark-mode.agro-mode .border-top,
+body.dark-mode.agro-mode .border-end,
+body.dark-mode.agro-mode .border-bottom,
+body.dark-mode.agro-mode .border-start {
+  border-color: #304750 !important;
+}
+
+body.dark-mode.agro-mode .card,
+body.dark-mode.agro-mode .agro-hero-card,
+body.dark-mode.agro-mode .agro-panel-card,
+body.dark-mode.agro-mode .agro-form-card,
+body.dark-mode.agro-mode .agro-table-card,
+body.dark-mode.agro-mode .agro-filter-card,
+body.dark-mode.agro-mode .agro-side-card,
+body.dark-mode.agro-mode .agro-pilot-soft-card,
+body.dark-mode.agro-mode .agro-pilot-stat,
+body.dark-mode.agro-mode .agro-pilot-focus-card {
+  color: #dfece7;
+  background: #172832;
+  border-color: #2d434c !important;
+  box-shadow: 0 12px 28px rgba(2, 10, 14, 0.22);
+}
+
+body.dark-mode.agro-mode .card-header,
+body.dark-mode.agro-mode .card-header.bg-white,
+body.dark-mode.agro-mode .listing-filter-header {
+  color: #dfece7;
+  background: #1b2f39 !important;
+  border-bottom-color: #304750 !important;
+}
+
+body.dark-mode.agro-mode .listing-filter-body {
+  background: #192b35;
+}
+
+body.dark-mode.agro-mode .agro-page-subtitle,
+body.dark-mode.agro-mode .agro-muted,
+body.dark-mode.agro-mode .agro-row-subtitle,
+body.dark-mode.agro-mode .agro-form-section-copy,
+body.dark-mode.agro-mode .agro-page-footer-note,
+body.dark-mode.agro-mode .agro-stat-label,
+body.dark-mode.agro-mode .agro-side-item div,
+body.dark-mode.agro-mode .agro-shortcut-copy,
+body.dark-mode.agro-mode .agro-value-label,
+body.dark-mode.agro-mode .agro-file-meta {
+  color: #9eb0b8;
+}
+
+body.dark-mode.agro-mode .agro-page-title,
+body.dark-mode.agro-mode .agro-card-title,
+body.dark-mode.agro-mode .agro-form-section-title,
+body.dark-mode.agro-mode .agro-row-title,
+body.dark-mode.agro-mode .agro-side-item strong,
+body.dark-mode.agro-mode .agro-shortcut-title,
+body.dark-mode.agro-mode .agro-stat-value {
+  color: #91dfb1;
+}
+
+body.dark-mode.agro-mode .form-label,
+body.dark-mode.agro-mode label {
+  color: #a9bbc2;
+}
+
+body.dark-mode.agro-mode .form-control,
+body.dark-mode.agro-mode .form-select,
+body.dark-mode.agro-mode .agro-form-control,
+body.dark-mode.agro-mode .agro-form-select {
+  color: #e3eee9;
+  background-color: #14252f;
+  border-color: #354c55;
+}
+
+body.dark-mode.agro-mode .form-control::placeholder {
+  color: #7f949d;
+}
+
+body.dark-mode.agro-mode .form-control:focus,
+body.dark-mode.agro-mode .form-select:focus,
+body.dark-mode.agro-mode .agro-form-control:focus,
+body.dark-mode.agro-mode .agro-form-select:focus {
+  color: #edf6f2;
+  background-color: #172a34;
+  border-color: #68c992;
+  box-shadow: 0 0 0 3px rgba(89, 189, 130, 0.15);
+}
+
+body.dark-mode.agro-mode .form-select option {
+  color: #e3eee9;
+  background: #172832;
+}
+
+body.dark-mode.agro-mode .form-control[readonly],
+body.dark-mode.agro-mode .form-control:disabled,
+body.dark-mode.agro-mode .form-select:disabled {
+  color: #91a4ac;
+  background: #1b2b34;
+  border-color: #30434b;
+}
+
+body.dark-mode.agro-mode .form-check-input {
+  background-color: #14252f;
+  border-color: #526a72;
+}
+
+body.dark-mode.agro-mode .form-check-input:checked {
+  background-color: #59bd82;
+  border-color: #6dca95;
+}
+
+body.dark-mode.agro-mode .invalid-feedback {
+  color: #f0a0a0;
+}
+
+body.dark-mode.agro-mode hr {
+  border-color: #304750;
+}
+
+body.dark-mode.agro-mode .listing-page > .card,
+body.dark-mode.agro-mode .listing-table-wrap,
+body.dark-mode.agro-mode .listing-page .table-responsive {
+  background: #152630;
+  border-color: #2d434c !important;
+}
+
+body.dark-mode.agro-mode .listing-page .listing-table thead th,
+body.dark-mode.agro-mode .table-light,
+body.dark-mode.agro-mode .table-light th,
+body.dark-mode.agro-mode .table thead.table-light th,
+body.dark-mode.agro-mode .agro-table thead th {
+  color: #d9ebe4 !important;
+  background: #1d343d !important;
+  border-color: #34505a !important;
+}
+
+body.dark-mode.agro-mode .table,
+body.dark-mode.agro-mode .listing-table,
+body.dark-mode.agro-mode .agro-table {
+  color: #dfece7;
+}
+
+body.dark-mode.agro-mode .table tbody td,
+body.dark-mode.agro-mode .table tbody th,
+body.dark-mode.agro-mode .listing-table tbody td,
+body.dark-mode.agro-mode .agro-table tbody td {
+  color: #dfece7;
+  background: #172832;
+  border-color: #2d434c;
+}
+
+body.dark-mode.agro-mode .table tbody tr:nth-child(even) td,
+body.dark-mode.agro-mode .listing-table tbody tr:nth-child(even) td,
+body.dark-mode.agro-mode .agro-table tbody tr:nth-child(even) td {
+  background: #1a2d37;
+}
+
+body.dark-mode.agro-mode .table-hover > tbody > tr:hover > *,
+body.dark-mode.agro-mode .listing-table tbody tr:hover > *,
+body.dark-mode.agro-mode .agro-table tbody tr:hover > * {
+  color: #edf6f2;
+  background: #203943 !important;
+}
+
+body.dark-mode.agro-mode .listing-table .fw-bold,
+body.dark-mode.agro-mode .listing-table .fw-semibold {
+  color: #dfece7;
+}
+
+body.dark-mode.agro-mode .filter-card {
+  background: #192b35;
+  border: 1px solid #304750 !important;
+  box-shadow: 0 12px 26px rgba(2, 10, 14, 0.2);
+}
+
+body.dark-mode.agro-mode .filter-card-header,
+body.dark-mode.agro-mode .listing-filter-header {
+  color: #cae5d7;
+  background: #1d333c !important;
+}
+
+body.dark-mode.agro-mode .filter-card-header .fw-bold,
+body.dark-mode.agro-mode .listing-filter-header .text-dark,
+body.dark-mode.agro-mode .listing-filter-header .bi-funnel-fill {
+  color: #a7e4bf !important;
+}
+
+body.dark-mode.agro-mode .listing-page .badge.bg-light,
+body.dark-mode.agro-mode .listing-page .badge.bg-white,
+body.dark-mode.agro-mode .badge.bg-light,
+body.dark-mode.agro-mode .badge.bg-white {
+  color: #bed0c9 !important;
+  background: rgba(123, 153, 143, 0.12) !important;
+  border-color: rgba(158, 176, 184, 0.2) !important;
+}
+
+body.dark-mode.agro-mode .badge.bg-success-light {
+  color: #91dfb1 !important;
+  background: rgba(79, 182, 122, 0.13) !important;
+}
+
+body.dark-mode.agro-mode .badge.bg-danger-light {
+  color: #efa0a0 !important;
+  background: rgba(205, 83, 83, 0.13) !important;
+}
+
+body.dark-mode.agro-mode .dropdown-menu {
+  background: #172a36;
+  border: 1px solid #304750;
+  box-shadow: 0 18px 34px rgba(2, 10, 14, 0.3);
+}
+
+body.dark-mode.agro-mode .dropdown-item,
+body.dark-mode.agro-mode .dropdown-item-text {
+  color: #dfece7;
+}
+
+body.dark-mode.agro-mode .dropdown-item:hover,
+body.dark-mode.agro-mode .dropdown-item:focus {
+  color: #edf6f2;
+  background: rgba(89, 189, 130, 0.11);
+}
+
+body.dark-mode.agro-mode .dropdown-divider {
+  border-color: #304750;
+}
+
+body.dark-mode.agro-mode .modal-content,
+body.dark-mode.agro-mode .modal-header,
+body.dark-mode.agro-mode .modal-body,
+body.dark-mode.agro-mode .modal-footer {
+  color: #dfece7;
+  background: #172832;
+  border-color: #304750;
+}
+
+body.dark-mode.agro-mode .modal-title {
+  color: #dfece7;
+}
+
+body.dark-mode.agro-mode .modal .btn-close {
+  filter: invert(1) grayscale(1);
+}
+
+body.dark-mode.agro-mode .list-group-item {
+  color: #dfece7;
+  background: #172832;
+  border-color: #2d434c;
+}
+
+body.dark-mode.agro-mode .agro-file-box,
+body.dark-mode.agro-mode .agro-side-item,
+body.dark-mode.agro-mode .agro-protocol-chip {
+  color: #dfece7;
+  background: #192d37;
+  border-color: #304750;
+}
+
+body.dark-mode.agro-mode .agro-inline-chip,
+body.dark-mode.agro-mode .agro-shortcut-icon,
+body.dark-mode.agro-mode .agro-kicker {
+  color: #91dfb1;
+  background: rgba(89, 189, 130, 0.12);
+}
+
+body.dark-mode.agro-mode .agro-icon-btn {
+  background: #192d37;
+  border-color: #304750;
+  box-shadow: 0 4px 10px rgba(2, 10, 14, 0.2);
+}
+
+body.dark-mode.agro-mode .agro-icon-btn-pdf {
+  color: #91dfb1;
+  border-color: rgba(126, 224, 178, 0.22);
+  background: rgba(47, 133, 90, 0.13);
+}
+
+body.dark-mode.agro-mode .agro-icon-btn-attachment,
+body.dark-mode.agro-mode .agro-icon-btn-edit {
+  color: #91c6f2;
+  border-color: rgba(127, 191, 255, 0.22);
+  background: rgba(44, 105, 153, 0.16);
+}
+
+body.dark-mode.agro-mode .agro-icon-btn-delete {
+  color: #efa0a0;
+  border-color: rgba(239, 160, 160, 0.2);
+  background: rgba(205, 83, 83, 0.13);
+}
+
+body.dark-mode.agro-mode .agro-report-hero {
+  background:
+    radial-gradient(circle at top right, rgba(145, 223, 177, 0.13), transparent 32%),
+    linear-gradient(135deg, #173327, #1e4932);
+}
+
+body.dark-mode.agro-mode .agro-report-hero-card,
+body.dark-mode.agro-mode .agro-report-stat-card,
+body.dark-mode.agro-mode .agro-report-side-item {
+  border-color: rgba(158, 196, 177, 0.14);
+}
+
+body.dark-mode.agro-mode .agro-report-stat-card,
+body.dark-mode.agro-mode .agro-report-side-item,
+body.dark-mode.agro-mode .agro-report-note-grid > div {
+  background: #172832;
+}
+
+body.dark-mode.agro-mode .agro-report-panel-copy,
+body.dark-mode.agro-mode .agro-report-side-item span,
+body.dark-mode.agro-mode .agro-report-key-copy,
+body.dark-mode.agro-mode .agro-report-stat-caption,
+body.dark-mode.agro-mode .agro-report-ledger-note {
+  color: #9eb0b8;
+}
+
+body.dark-mode.agro-mode .agro-report-table tbody tr td {
+  background: #152630;
+}
+
+body.dark-mode.agro-mode .agro-report-table tbody tr:nth-child(even) td {
+  background: #192b35;
+}
+
+body.dark-mode.agro-mode .agro-report-clean-table thead th {
+  color: #cfe3da;
+  background: #1d343d;
+  border-color: #304750;
+}
+
+body.dark-mode.agro-mode .agro-report-table tbody tr.is-highlight td {
+  background: linear-gradient(90deg, rgba(89, 189, 130, 0.16), rgba(89, 189, 130, 0.04));
+}
+
+body.dark-mode.agro-mode .agro-report-table tbody tr.is-cost-row td {
+  background: linear-gradient(90deg, rgba(205, 151, 62, 0.16), rgba(205, 151, 62, 0.04));
+}
+
+body.dark-mode.agro-mode .agro-report-total-col {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+body.dark-mode.agro-mode .agro-report-row-tag,
+body.dark-mode.agro-mode .agro-report-row-tag.is-result {
+  color: #bcebd0;
+  background: rgba(89, 189, 130, 0.13);
+}
+
+body.dark-mode.agro-mode .agro-report-row-tag.is-cost {
+  color: #e9c985;
+  background: rgba(205, 151, 62, 0.15);
+}
+
+body.dark-mode.agro-mode .agro-report-amount.is-positive {
+  color: #9fe2ba;
+}
+
+body.dark-mode.agro-mode .agro-report-amount.is-negative {
+  color: #e9c985;
+}
+
+@media (max-width: 767.98px) {
+  body.dark-mode.agro-mode .agro-table tbody tr {
+    background: #172832 !important;
+    border-color: #304750 !important;
+    box-shadow: 0 12px 26px rgba(2, 10, 14, 0.28) !important;
+  }
+
+  body.dark-mode.agro-mode .agro-table tbody td,
+  body.dark-mode.agro-mode .agro-table tbody tr:nth-child(even) td {
+    background: transparent !important;
+  }
+
+  body.dark-mode.agro-mode .agro-table tbody td + td {
+    border-top-color: #304750 !important;
+  }
+
+  body.dark-mode.agro-mode .agro-table tbody td::before {
+    color: #9eb0b8;
+  }
+}

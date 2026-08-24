@@ -11,7 +11,7 @@
 
 {% block content %}
 <div class="container-fluid py-4 agro-dashboard-page">
-  <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-4">
+  <div class="page-toolbar agro-dashboard-toolbar mb-4">
     <div>
       <h2 class="text-dark mb-1">
         <i class="bi bi-tree-fill me-2 text-primary"></i> Painel Agro
@@ -21,7 +21,7 @@
       </p>
     </div>
 
-    <div class="agro-dashboard-actions">
+    <div class="agro-dashboard-actions page-toolbar-actions">
       <a href="{{ url_for('main.agro_cliente_novo') }}" class="btn btn-success d-flex align-items-center gap-2 shadow-sm">
         <i class="bi bi-person-plus-fill"></i> Novo Cliente
       </a>
@@ -36,36 +36,36 @@
 
   <div class="row g-3 mb-4 agro-dashboard-summary">
     <div class="col-6 col-lg-3">
-      <div class="card border-0 shadow-sm rounded-4 h-100">
+      <div class="card border-0 shadow-sm rounded-4 h-100 agro-dashboard-summary-card">
         <div class="card-body">
-          <small class="text-muted fw-bold text-uppercase" style="font-size: 0.68rem;">Clientes</small>
+          <small class="text-muted fw-bold text-uppercase agro-dashboard-summary-label">Clientes</small>
           <h3 class="fw-bold mb-0 text-dark mt-2">{{ total_clientes_agro }}</h3>
         </div>
       </div>
     </div>
 
     <div class="col-6 col-lg-3">
-      <div class="card border-0 shadow-sm rounded-4 h-100">
+      <div class="card border-0 shadow-sm rounded-4 h-100 agro-dashboard-summary-card">
         <div class="card-body">
-          <small class="text-muted fw-bold text-uppercase" style="font-size: 0.68rem;">Fornecedores</small>
+          <small class="text-muted fw-bold text-uppercase agro-dashboard-summary-label">Fornecedores</small>
           <h3 class="fw-bold mb-0 text-dark mt-2">{{ total_fornecedores_agro }}</h3>
         </div>
       </div>
     </div>
 
     <div class="col-6 col-lg-3">
-      <div class="card border-0 shadow-sm rounded-4 h-100">
+      <div class="card border-0 shadow-sm rounded-4 h-100 agro-dashboard-summary-card">
         <div class="card-body">
-          <small class="text-muted fw-bold text-uppercase" style="font-size: 0.68rem;">Orcamentos</small>
+          <small class="text-muted fw-bold text-uppercase agro-dashboard-summary-label">Orcamentos</small>
           <h3 class="fw-bold mb-0 text-dark mt-2">{{ total_orcamentos_agro }}</h3>
         </div>
       </div>
     </div>
 
     <div class="col-6 col-lg-3">
-      <div class="card border-0 shadow-sm rounded-4 h-100">
+      <div class="card border-0 shadow-sm rounded-4 h-100 agro-dashboard-summary-card">
         <div class="card-body">
-          <small class="text-muted fw-bold text-uppercase" style="font-size: 0.68rem;">Fila Operacional</small>
+          <small class="text-muted fw-bold text-uppercase agro-dashboard-summary-label">Fila Operacional</small>
           <h3 class="fw-bold mb-0 text-dark mt-2">{{ total_contratos_agro_aprovados }}</h3>
           <div class="small text-muted mt-1">de {{ total_contratos_agro }} contrato(s) no total</div>
         </div>
@@ -73,9 +73,9 @@
     </div>
 
     <div class="col-6 col-lg-3">
-      <div class="card border-0 shadow-sm rounded-4 h-100">
+      <div class="card border-0 shadow-sm rounded-4 h-100 agro-dashboard-summary-card">
         <div class="card-body">
-          <small class="text-muted fw-bold text-uppercase" style="font-size: 0.68rem;">Pendencias Financeiras</small>
+          <small class="text-muted fw-bold text-uppercase agro-dashboard-summary-label">Pendencias Financeiras</small>
           <h3 class="fw-bold mb-0 text-warning mt-2">{{ total_financeiros_agro_pendentes }}</h3>
           <div class="small text-muted mt-1">de {{ total_financeiros_agro }} registro(s) financeiros</div>
         </div>
@@ -85,8 +85,8 @@
 
   <div class="row g-3 agro-dashboard-menu">
     <div class="col-lg-4">
-      <div class="card border-0 shadow-sm rounded-4 h-100">
-        <div class="card-header bg-white border-0 p-4 pb-3">
+      <div class="card border-0 shadow-sm rounded-4 h-100 agro-dashboard-menu-card">
+        <div class="card-header bg-white border-0 p-4 pb-3 agro-dashboard-menu-header">
           <h5 class="text-dark mb-1">
             <i class="bi bi-briefcase-fill me-2 text-primary"></i> Comercial
           </h5>
@@ -164,8 +164,8 @@
     </div>
 
     <div class="col-lg-4">
-      <div class="card border-0 shadow-sm rounded-4 h-100">
-        <div class="card-header bg-white border-0 p-4 pb-3">
+      <div class="card border-0 shadow-sm rounded-4 h-100 agro-dashboard-menu-card">
+        <div class="card-header bg-white border-0 p-4 pb-3 agro-dashboard-menu-header">
           <h5 class="text-dark mb-1">
             <i class="bi bi-gear-fill me-2 text-primary"></i> Operacional
           </h5>
@@ -259,8 +259,8 @@
     </div>
 
     <div class="col-lg-4">
-      <div class="card border-0 shadow-sm rounded-4 h-100">
-        <div class="card-header bg-white border-0 p-4 pb-3">
+      <div class="card border-0 shadow-sm rounded-4 h-100 agro-dashboard-menu-card">
+        <div class="card-header bg-white border-0 p-4 pb-3 agro-dashboard-menu-header">
           <h5 class="text-dark mb-1">
             <i class="bi bi-cash-coin me-2 text-primary"></i> Financeiro
           </h5>

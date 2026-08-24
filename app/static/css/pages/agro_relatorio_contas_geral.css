@@ -269,28 +269,6 @@
       overflow-wrap: anywhere;
     }
 
-    body.dark-mode.agro-mode .relatorio-contas-detail-item,
-    body.dark-mode.agro-mode .relatorio-contas-summary-item {
-      background: #122030;
-      border-color: #233549;
-    }
-
-    body.dark-mode.agro-mode .relatorio-contas-actions-trigger {
-      background: #152233;
-    }
-
-    body.dark-mode.agro-mode .relatorio-contas-modal .modal-header,
-    body.dark-mode.agro-mode .relatorio-contas-modal .modal-body,
-    body.dark-mode.agro-mode .relatorio-contas-modal .modal-footer {
-      background: #152233;
-      border-color: #233549;
-    }
-
-    body.dark-mode.agro-mode .relatorio-contas-modal-icon {
-      background: rgba(99, 208, 138, 0.14);
-      color: #d9f7e4;
-    }
-
     .relatorio-contas-filter-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));

@@ -1,8 +1,15 @@
+import json
+import os
+import threading
+import time
+import uuid
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 
 from flask import abort, current_app, flash, jsonify, redirect, render_template, request, send_file, url_for
 from flask_login import current_user, login_required
 from sqlalchemy import and_, func, or_
+from werkzeug.datastructures import MultiDict
 
 from app.extensions import db
 from app.models import Solicitacao, Usuario
@@ -13,6 +20,8 @@ from app.modules.admin_dashboard.service import (
     build_admin_dashboard_export,
     build_admin_dashboard_query,
     build_admin_historico_os_export,
+    build_admin_historico_os_individual_excel_zip,
+    build_admin_historico_os_individual_pdf_zip,
     build_admin_historico_os_query,
     build_equipe_uvis_names_select,
     build_status_order,
@@ -30,6 +39,10 @@ from app.shared.retorno_ciclo import build_retorno_ciclo_context, build_retorno_
 
 
 ADMIN_PER_PAGE_OPTIONS = (10, 25, 50, 100, 250)
+HISTORICO_OS_PDF_ASYNC_WORKERS = 1
+HISTORICO_OS_PDF_JOBS = {}
+HISTORICO_OS_PDF_JOBS_LOCK = threading.Lock()
+HISTORICO_OS_PDF_EXECUTOR = ThreadPoolExecutor(max_workers=HISTORICO_OS_PDF_ASYNC_WORKERS)
 
 
 def _prefers_html_response():
@@ -55,6 +68,164 @@ def _get_admin_per_page():
 def _get_scoped_solicitacao_or_404(solicitacao_id: int):
     query = apply_solicitacao_prefeitura_scope(Solicitacao.query, current_user)
     return query.filter(Solicitacao.id == solicitacao_id).first_or_404()
+
+
+def _historico_os_pdf_jobs_dir():
+    path = os.path.join(current_app.instance_path, "historico_os_pdf_jobs")
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
+def _historico_os_pdf_job_meta_path(job_id):
+    return os.path.join(_historico_os_pdf_jobs_dir(), f"{job_id}.json")
+
+
+def _write_json_file(path, payload):
+    temp_path = f"{path}.tmp"
+    with open(temp_path, "w", encoding="utf-8") as handle:
+        json.dump(payload, handle, ensure_ascii=True)
+    os.replace(temp_path, path)
+
+
+def _read_json_file(path):
+    if not os.path.isfile(path):
+        return None
+    with open(path, "r", encoding="utf-8") as handle:
+        return json.load(handle)
+
+
+def _set_historico_os_pdf_job(job_id, **updates):
+    with HISTORICO_OS_PDF_JOBS_LOCK:
+        job = HISTORICO_OS_PDF_JOBS.get(job_id) or _read_json_file(_historico_os_pdf_job_meta_path(job_id))
+        if not job:
+            return None
+        job.update(updates)
+        job["updated_at"] = time.time()
+        HISTORICO_OS_PDF_JOBS[job_id] = job
+        _write_json_file(_historico_os_pdf_job_meta_path(job_id), job)
+        return dict(job)
+
+
+def _get_historico_os_pdf_job(job_id):
+    with HISTORICO_OS_PDF_JOBS_LOCK:
+        job = _read_json_file(_historico_os_pdf_job_meta_path(job_id)) or HISTORICO_OS_PDF_JOBS.get(job_id)
+        if job:
+            HISTORICO_OS_PDF_JOBS[job_id] = job
+        return dict(job) if job else None
+
+
+def _historico_os_pdf_job_json(job):
+    payload = {
+        "success": job.get("status") != "error",
+        "job_id": job.get("id"),
+        "status": job.get("status"),
+        "progress": int(job.get("progress") or 0),
+        "message": job.get("message") or "",
+        "error": job.get("error"),
+        "download_name": job.get("download_name"),
+    }
+    if job.get("status") == "success":
+        payload["download_url"] = url_for("main.admin_historico_os_pdf_job_download", job_id=job["id"])
+    return payload
+
+
+def _create_historico_os_pdf_job(user, args):
+    job_id = uuid.uuid4().hex
+    args_payload = {
+        key: value
+        for key, value in query_args_without_page(args).items()
+        if key not in {"page", "historico_os_pdf_job_id"}
+    }
+    now = time.time()
+    job = {
+        "id": job_id,
+        "user_id": int(user.id),
+        "args": args_payload,
+        "status": "queued",
+        "progress": 0,
+        "message": "Exportacao recebida. Aguardando geracao do ZIP.",
+        "error": None,
+        "path": None,
+        "download_name": None,
+        "created_at": now,
+        "updated_at": now,
+    }
+    with HISTORICO_OS_PDF_JOBS_LOCK:
+        HISTORICO_OS_PDF_JOBS[job_id] = job
+        _write_json_file(_historico_os_pdf_job_meta_path(job_id), job)
+    return job_id
+
+
+def _redirect_to_historico_os_with_pdf_job(job_id, args=None):
+    source_args = args if args is not None else request.args
+    params = {
+        key: value
+        for key, value in query_args_without_page(source_args).items()
+        if key not in {"page", "historico_os_pdf_job_id"}
+    }
+    params["historico_os_pdf_job_id"] = job_id
+    return redirect(url_for("main.admin_historico_os", **params))
+
+
+def _run_historico_os_pdf_job(app, job_id):
+    with app.app_context():
+        try:
+            job = _get_historico_os_pdf_job(job_id)
+            if not job:
+                return
+
+            _set_historico_os_pdf_job(
+                job_id,
+                status="running",
+                progress=10,
+                message="Preparando filtros do historico de OS.",
+                error=None,
+            )
+            user = Usuario.query.get(job["user_id"])
+            if not user:
+                raise RuntimeError("Usuario da exportacao nao foi encontrado.")
+
+            args = MultiDict(job.get("args") or {})
+            filtro_tipo_os = "piloto"
+            filtros = get_os_history_filters(args, status_key="status_os")
+            filtro_equipe = (args.get("equipe") or "").strip()
+
+            _set_historico_os_pdf_job(
+                job_id,
+                progress=25,
+                message="Gerando PDFs individuais e compactando em ZIP.",
+            )
+            output, download_name = build_admin_historico_os_individual_pdf_zip(
+                user,
+                filtros,
+                filtro_tipo_os,
+                filtro_equipe,
+            )
+            jobs_dir = _historico_os_pdf_jobs_dir()
+            zip_path = os.path.join(jobs_dir, f"{job_id}.zip")
+            with open(zip_path, "wb") as handle:
+                handle.write(output.getvalue())
+
+            _set_historico_os_pdf_job(
+                job_id,
+                status="success",
+                progress=100,
+                message="ZIP de PDFs pronto para download.",
+                path=zip_path,
+                download_name=download_name,
+            )
+        except Exception as exc:
+            db.session.rollback()
+            current_app.logger.exception("Erro ao gerar ZIP assincrono de PDFs individuais das OS.")
+            message = str(exc).strip()[:500] or "Nao foi possivel gerar o ZIP de PDFs."
+            _set_historico_os_pdf_job(
+                job_id,
+                status="error",
+                message=message,
+                error=message,
+            )
+        finally:
+            db.session.remove()
 
 
 HISTORICO_OS_ANDAMENTO_STATUSES = (
@@ -417,6 +588,95 @@ def register_routes(bp):
             current_app.logger.error(f"ERRO EXPORTAR HISTORICO OS EXCEL: {exc}")
             flash("Erro ao gerar o Excel do historico de OS.", "danger")
             return redirect(url_for("main.admin_historico_os", tipo_os=filtro_tipo_os))
+
+    @bp.route("/admin/historico-os/exportar-excel-individuais")
+    @login_required
+    def admin_historico_os_exportar_excel_individuais():
+        if not can_access_admin_panel(current_user):
+            flash("Permissao negada para exportar.", "danger")
+            return redirect(url_for("main.dashboard"))
+
+        filtro_tipo_os = "piloto"
+        filtros = get_os_history_filters(request.args, status_key="status_os")
+        filtro_equipe = (request.args.get("equipe") or "").strip()
+
+        try:
+            output, download_name = build_admin_historico_os_individual_excel_zip(
+                current_user,
+                filtros,
+                filtro_tipo_os,
+                filtro_equipe,
+            )
+            return send_file(
+                output,
+                download_name=download_name,
+                as_attachment=True,
+                mimetype="application/zip",
+            )
+        except Exception as exc:
+            db.session.rollback()
+            current_app.logger.error(f"ERRO EXPORTAR OS INDIVIDUAIS ZIP: {exc}")
+            flash("Erro ao gerar o pacote de Excels individuais das OS.", "danger")
+            return redirect(url_for("main.admin_historico_os", tipo_os=filtro_tipo_os))
+
+    @bp.route("/admin/historico-os/exportar-pdf-individuais")
+    @login_required
+    def admin_historico_os_exportar_pdf_individuais():
+        if not can_access_admin_panel(current_user):
+            flash("Permissao negada para exportar.", "danger")
+            return redirect(url_for("main.dashboard"))
+
+        job_id = _create_historico_os_pdf_job(current_user, request.args)
+        HISTORICO_OS_PDF_EXECUTOR.submit(
+            _run_historico_os_pdf_job,
+            current_app._get_current_object(),
+            job_id,
+        )
+        flash("O pacote de PDFs esta sendo gerado em segundo plano. Voce pode continuar usando o sistema.", "info")
+        return _redirect_to_historico_os_with_pdf_job(job_id)
+
+    @bp.route(
+        "/admin/historico-os/exportar-pdf-individuais/jobs/<job_id>",
+        methods=["GET"],
+        endpoint="admin_historico_os_pdf_job_status",
+    )
+    @login_required
+    def admin_historico_os_pdf_job_status(job_id):
+        if not can_access_admin_panel(current_user):
+            return jsonify({"success": False, "error": "Acesso restrito."}), 403
+
+        job = _get_historico_os_pdf_job(job_id)
+        if not job or int(job.get("user_id") or 0) != int(current_user.id):
+            return jsonify({"success": False, "error": "Exportacao nao encontrada."}), 404
+
+        return jsonify(_historico_os_pdf_job_json(job))
+
+    @bp.route(
+        "/admin/historico-os/exportar-pdf-individuais/jobs/<job_id>/download",
+        methods=["GET"],
+        endpoint="admin_historico_os_pdf_job_download",
+    )
+    @login_required
+    def admin_historico_os_pdf_job_download(job_id):
+        if not can_access_admin_panel(current_user):
+            flash("Acesso restrito.", "danger")
+            return redirect(url_for("main.dashboard"))
+
+        job = _get_historico_os_pdf_job(job_id)
+        if not job or int(job.get("user_id") or 0) != int(current_user.id):
+            flash("Exportacao nao encontrada.", "warning")
+            return redirect(url_for("main.admin_historico_os"))
+
+        if job.get("status") != "success" or not job.get("path") or not os.path.isfile(job["path"]):
+            flash("O ZIP de PDFs ainda nao esta pronto para download.", "warning")
+            return _redirect_to_historico_os_with_pdf_job(job_id, job.get("args") or {})
+
+        return send_file(
+            job["path"],
+            download_name=job.get("download_name") or "os_pdfs_individuais.zip",
+            as_attachment=True,
+            mimetype="application/zip",
+        )
 
     @bp.route("/admin/os/<int:os_id>/equipe-uvis-formulario", methods=["GET"], endpoint="admin_equipe_uvis_os_formulario_view")
     @login_required

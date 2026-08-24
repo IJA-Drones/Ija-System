@@ -63,6 +63,43 @@ def _clean_place_id(value):
     return (value or "").strip() or None
 
 
+def _clean_address_number(value):
+    return re.sub(r"\s+", "", str(value or "")).strip()
+
+
+def _validate_single_address_number(value):
+    numero = _clean_address_number(value)
+    if not numero:
+        raise NovoCadastroValidationError("Por favor, informe o numero do endereco.")
+
+    if re.fullmatch(r"s/?n", numero, flags=re.IGNORECASE):
+        return "S/N"
+
+    if not re.fullmatch(r"\d{1,6}[A-Za-z]?", numero):
+        raise NovoCadastroValidationError(
+            "Informe apenas um numero predial no campo Numero. Para outro numero, crie uma nova solicitacao separada."
+        )
+
+    return numero.upper()
+
+
+def _clean_street_name(value):
+    return re.sub(r"\s+", " ", str(value or "")).strip()
+
+
+def _validate_street_without_address_number(value):
+    logradouro = _clean_street_name(value)
+    if not logradouro:
+        raise NovoCadastroValidationError("Por favor, informe o logradouro.")
+
+    if re.search(r"(?:,|/|-|\bn[ºo.]?)\s*\d{1,6}[A-Za-z]?\s*$", logradouro, flags=re.IGNORECASE):
+        raise NovoCadastroValidationError(
+            "Nao coloque numero predial no Logradouro. Informe o numero somente no campo Numero."
+        )
+
+    return logradouro
+
+
 def _normalize_address_part(value):
     normalized = unicodedata.normalize("NFKD", str(value or ""))
     normalized = "".join(char for char in normalized if not unicodedata.combining(char))
@@ -216,6 +253,8 @@ def build_novo_cadastro_context_with_form(user, google_maps_key, form_source):
 
 def create_nova_solicitacao(user, form_data):
     place_id = _clean_place_id(form_data.get("place_id"))
+    logradouro = _validate_street_without_address_number(form_data.get("logradouro"))
+    numero = _validate_single_address_number(form_data.get("numero"))
     data_str = form_data.get("data")
     hora_str = form_data.get("hora")
     data_obj = datetime.strptime(data_str, "%Y-%m-%d").date() if data_str else None
@@ -282,10 +321,10 @@ def create_nova_solicitacao(user, form_data):
         hora_agendamento=hora_obj,
         place_id=place_id,
         cep=form_data.get("cep"),
-        logradouro=form_data.get("logradouro"),
+        logradouro=logradouro,
         bairro=form_data.get("bairro"),
         cidade=form_data.get("cidade"),
-        numero=form_data.get("numero"),
+        numero=numero,
         uf=form_data.get("uf"),
         complemento=form_data.get("complemento"),
         foco=foco,

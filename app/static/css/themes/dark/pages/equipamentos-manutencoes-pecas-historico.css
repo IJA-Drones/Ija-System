@@ -1,0 +1,62 @@
+/* =========================================
+   HISTORICO DE PECAS USADAS
+   ========================================= */
+
+body.dark-mode .equipamentos-manutencoes-pecas-historico-page .pecas-historico-toolbar h2,
+body.dark-mode .equipamentos-manutencoes-pecas-historico-page .pecas-historico-toolbar h2.text-dark {
+  color: #8fc4ff !important;
+}
+
+body.dark-mode .equipamentos-manutencoes-pecas-historico-page .pecas-historico-toolbar h2 .text-primary {
+  color: #65a9f7 !important;
+}
+
+body.dark-mode .equipamentos-manutencoes-pecas-historico-page .pecas-historico-toolbar .text-muted {
+  color: #94a8bf !important;
+}
+
+body.dark-mode .equipamentos-manutencoes-pecas-historico-page .pecas-historico-table-card {
+  background: #142131;
+  border: 1px solid #283c53 !important;
+  box-shadow: 0 14px 32px rgba(2, 8, 20, 0.24) !important;
+}
+
+body.dark-mode .equipamentos-manutencoes-pecas-historico-page .pecas-historico-table-card .table-responsive {
+  background: #142131;
+}
+
+body.dark-mode .equipamentos-manutencoes-pecas-historico-page .pecas-historico-table thead th {
+  color: #d7e5f4 !important;
+  background: #1b2d41 !important;
+  border-bottom: 1px solid #30465f !important;
+}
+
+body.dark-mode .equipamentos-manutencoes-pecas-historico-page .pecas-historico-table tbody td {
+  color: rgba(237, 243, 251, 0.88);
+  background: #172536;
+  border-color: #2a3d53;
+}
+
+body.dark-mode .equipamentos-manutencoes-pecas-historico-page .pecas-historico-table tbody tr:nth-child(even) td {
+  background: #19293b;
+}
+
+body.dark-mode .equipamentos-manutencoes-pecas-historico-page .pecas-historico-table.table-hover > tbody > tr:hover > * {
+  background: #20354c !important;
+}
+
+body.dark-mode .equipamentos-manutencoes-pecas-historico-page .pecas-historico-table .text-dark {
+  color: #dce9f8 !important;
+}
+
+body.dark-mode .equipamentos-manutencoes-pecas-historico-page .pecas-historico-table .text-muted {
+  color: #94a8bf !important;
+}
+
+body.dark-mode .equipamentos-manutencoes-pecas-historico-page .pecas-historico-manutencao-link {
+  color: #82baf7;
+}
+
+body.dark-mode .equipamentos-manutencoes-pecas-historico-page .pecas-historico-manutencao-link:hover {
+  color: #b5d8ff;
+}

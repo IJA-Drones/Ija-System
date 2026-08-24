@@ -8,6 +8,10 @@
       flex-wrap: wrap;
     }
 
+    .agro-dashboard-summary-label {
+      font-size: 0.68rem;
+    }
+
     .agro-dashboard-summary .card,
     .agro-dashboard-menu .card {
       transition: transform 0.2s ease, box-shadow 0.2s ease;

@@ -48,24 +48,6 @@
       color: #64748b;
     }
 
-    body.dark-mode .agro-bank-results {
-      border-color: #334155;
-      background: #16283a;
-      box-shadow: 0 18px 34px rgba(0, 0, 0, 0.32);
-    }
-
-    body.dark-mode .agro-bank-option,
-    body.dark-mode .agro-bank-empty {
-      color: var(--color-text-main);
-    }
-
-    body.dark-mode .agro-bank-option:hover,
-    body.dark-mode .agro-bank-option:focus,
-    body.dark-mode .agro-bank-option.is-active {
-      background: rgba(99, 208, 138, 0.14);
-      color: #d9f7e4;
-    }
-
     @media (max-width: 767.98px) {
       .agro-bank-results {
         width: min(100%, calc(100vw - 2rem));

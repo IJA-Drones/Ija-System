@@ -24,7 +24,7 @@
             <a href="{{ url_for('main.equipamentos_manutencoes_historico') }}" class="btn btn-outline-primary btn-sm">
                 <i class="bi bi-clock-history me-1"></i> Histórico
             </a>
-            <a href="{{ url_for('main.equipamentos_manutencoes_pecas_historico') }}" class="btn btn-outline-primary btn-sm">
+            <a href="{{ url_for('main.equipamentos_manutencoes_pecas_historico') }}" class="btn btn-secondary btn-sm">
                 <i class="bi bi-box-seam me-1"></i> Peças
             </a>
             <a href="{{ url_for('main.listar_equipamentos') }}"
@@ -102,7 +102,7 @@
                                             Peças usadas
                                         </a>
                                         <a href="{{ url_for('main.equipamento_manutencao_pdf', drone_id=eq.id) }}"
-                                           class="btn btn-sm btn-outline-primary"
+                                           class="btn btn-sm btn-outline-danger"
                                            target="_blank">
                                             <i class="bi bi-file-earmark-pdf me-1"></i>
                                             PDF
@@ -110,7 +110,7 @@
                                         <form method="post"
                                               action="{{ url_for('main.equipamento_manutencao_encerrar', drone_id=eq.id) }}"
                                               onsubmit="return confirm('Encerrar a manutenção deste drone?')">
-                                            <button type="submit" class="btn btn-sm btn-outline-success">
+                                            <button type="submit" class="btn btn-sm btn-success">
                                                 <i class="bi bi-check2-circle me-1"></i>
                                                 Encerrar
                                             </button>
