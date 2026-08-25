@@ -29,7 +29,11 @@ A mudança resolveu problemas como:
 
 > **Imagem sugerida:** visão geral de uma tela antes e depois da modernização.
 
-## 2. Arquitetura anterior
+## 2. Antes e depois da estrutura
+
+Esta parte do relatório mostra como a base visual estava organizada antes da refatoração, como ela ficou após a separação dos arquivos e onde entram as imagens comparativas.
+
+### 2.1. Como era a estrutura
 
 Antes da refatoração, boa parte da estilização estava concentrada em arquivos grandes ou diretamente nos templates.
 
@@ -44,7 +48,17 @@ Os principais problemas eram:
 - Navegador carregando uma cadeia de arquivos por meio de vários `@import`.
 - Dificuldade para descobrir qual arquivo controlava determinado elemento.
 
-## 3. Nova estrutura CSS
+### 2.2. Como ficou depois de separar arquivos
+
+A separação por responsabilidade deixou a base muito mais previsível.
+
+| Antes | Depois |
+|---|---|
+| Estilos espalhados em templates e arquivos grandes | Arquivos separados por responsabilidade |
+| Regras globais misturadas com estilos específicos | Base, componentes, módulos, páginas e temas bem definidos |
+| Dark mode distribuído em diferentes arquivos | Tema centralizado em `themes/dark` |
+| Alterações exigiam ajustes em várias páginas | Reuso de componentes e menor risco de regressão |
+| Difícil localizar qual arquivo controlava cada elemento | Estrutura organizada e fácil de manter |
 
 A estrutura foi dividida por responsabilidade.
 
@@ -68,7 +82,53 @@ Atualmente, a estrutura possui:
 
 O ponto de entrada da estrutura é `app/static/css/style.css`.
 
+```text
+static/
+└── css/
+    ├── base/
+    │   ├── variables.css
+    │   ├── reset.css
+    │   └── typography.css
+    │
+    ├── components/
+    │   ├── cards.css
+    │   ├── badges.css
+    │   ├── forms.css
+    │   ├── pagination.css
+    │   ├── file-upload.css
+    │   ├── tables.css
+    │   └── sweetalert.css
+    │
+    ├── modules/
+    │   ├── layout.css
+    │   ├── navbar.css
+    │   ├── sidebar.css
+    │   └── admin-context-switch.css
+    │
+    ├── pages/
+    │   ├── dashboard.css
+    │   └── map.css
+    │
+    ├── themes/
+    │   ├── dark.css
+    │   └── agro.css
+    │
+    ├── utilities/
+    │   ├── animations.css
+    │   └── utilities.css
+    │
+    └── style.css
+```
+
 > **Imagem sugerida:** captura da árvore de diretórios da nova estrutura CSS.
+
+### 2.3. Fotos antes e depois
+
+> **Foto antes:** inserir uma captura da estrutura antiga ou de uma tela com estilos concentrados nos templates.
+
+> **Foto depois:** inserir uma captura da nova estrutura separada por arquivos ou da tela já aplicada com o dark mode refatorado.
+
+> **Imagem sugerida:** comparação lado a lado entre o antes e o depois.
 
 ## 4. Componentes globais
 
@@ -168,6 +228,38 @@ A estrutura possui:
 - Tema complementar para o modo Agro.
 
 O carregamento é centralizado em `app/static/css/themes/dark/core.css`. Essa separação permite melhorar uma página sem afetar o light mode, outras páginas, o modo Agro ou componentes não relacionados.
+
+### 6.1. Checkpoint do dark mode
+
+Antes da refatoração, a maior parte do CSS ficava concentrada em um arquivo principal, normalmente o `style.css` ou um conjunto pequeno de arquivos globais. Isso fazia com que:
+
+- estilos de base, componentes e páginas ficassem misturados;
+- o dark mode dependesse de regras espalhadas e difíceis de localizar;
+- ajustes em uma tela pudessem afetar outras páginas;
+- o carregamento do CSS ficasse menos eficiente por conta de imports encadeados e regras acumuladas no mesmo ponto.
+
+Com a separação por responsabilidade, a estrutura passou a ficar organizada em:
+
+- `base` para variáveis, reset e tipografia;
+- `components` para elementos reutilizáveis;
+- `modules` para layout, navbar, sidebar e comportamento estrutural;
+- `pages` para regras específicas de cada tela;
+- `themes` para `dark.css` e `agro.css`;
+- `utilities` para utilitários e animações.
+
+Isso deixou o dark mode mais fácil de manter e evoluir, sem mexer no light mode.
+
+Sim, essa refatoração também ajuda a otimizar o carregamento do CSS.
+
+Os principais ganhos são:
+
+- menos CSS duplicado;
+- menos dependência de arquivos grandes concentrando tudo em um só ponto;
+- organização para gerar um bundle global quando necessário;
+- menor risco de carregamento fora de ordem;
+- melhor controle de cache e manutenção.
+
+Na prática, a aplicação passa a ter uma base visual mais modular no desenvolvimento e mais eficiente na entrega ao navegador.
 
 ## 7. Direção visual do dark mode
 
