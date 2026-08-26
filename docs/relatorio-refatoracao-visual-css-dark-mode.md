@@ -124,11 +124,61 @@ static/
 
 ### 2.3. Fotos antes e depois
 
-> **Foto antes:** inserir uma captura da estrutura antiga ou de uma tela com estilos concentrados nos templates.
+Esta seção pode ser usada como galeria de comparação para as principais telas alteradas.
 
-> **Foto depois:** inserir uma captura da nova estrutura separada por arquivos ou da tela já aplicada com o dark mode refatorado.
+### Login
 
-> **Imagem sugerida:** comparação lado a lado entre o antes e o depois.
+> **Foto antes:** inserir a captura da tela de login no dark mode anterior.
+
+> **Foto depois:** inserir a captura da tela de login após a refatoração.
+
+### Administração e histórico de OS
+
+> **Foto antes:** inserir a captura do dashboard administrativo e do histórico de OS no visual anterior.
+
+> **Foto depois:** inserir a captura do dashboard administrativo e do histórico de OS no novo dark mode.
+
+### Relatórios
+
+> **Foto antes:** inserir a captura do menu de relatórios ou do relatório de logs de voo no visual anterior.
+
+> **Foto depois:** inserir a captura do menu de relatórios ou do relatório de logs de voo modernizado.
+
+### Veículos
+
+> **Foto antes:** inserir a captura da listagem de veículos no visual anterior.
+
+> **Foto depois:** inserir a captura da listagem de veículos e do modal de ações após a refatoração.
+
+### Cadastros e listagens
+
+> **Foto antes:** inserir a captura de uma listagem de prefeituras, usuários, UVIS, clientes ou pilotos no visual anterior.
+
+> **Foto depois:** inserir a captura da mesma listagem com o novo padrão visual.
+
+### Agenda
+
+> **Foto antes:** inserir a captura da agenda com os rótulos em inglês e o visual anterior.
+
+> **Foto depois:** inserir a captura da agenda com o novo dark mode e os textos em português.
+
+### Estoque e manutenção
+
+> **Foto antes:** inserir a captura da tela de estoque ou manutenção com o visual anterior.
+
+> **Foto depois:** inserir a captura da tela de estoque ou manutenção após a refatoração.
+
+### Módulo Agro
+
+> **Foto antes:** inserir a captura do dashboard Agro com a identidade visual anterior.
+
+> **Foto depois:** inserir a captura do dashboard Agro com a nova identidade no Dark Agro.
+
+### Comparação entre temas
+
+> **Foto antes:** inserir a captura da mesma página no light mode.
+
+> **Foto depois:** inserir a captura da mesma página no dark mode.
 
 ## 4. Componentes globais
 
@@ -292,6 +342,10 @@ O objetivo foi reduzir o aspecto pesado do dark anterior sem transformar o siste
 - Campos e textos mais legíveis.
 - Preservação da composição original.
 
+> **Antes:** imagem da tela de login no dark mode antigo.
+
+> **Depois:** imagem da tela de login após a refatoração.
+
 > **Imagem sugerida:** tela de login no dark mode.
 
 ### 8.2. Administração e histórico de OS
@@ -303,6 +357,10 @@ O objetivo foi reduzir o aspecto pesado do dark anterior sem transformar o siste
 - Tabelas e filtros harmonizados.
 - Botões alinhados ao componente global.
 - Botão “Exportar tudo” padronizado em verde.
+
+> **Antes:** imagem do dashboard administrativo e histórico de OS com o visual anterior.
+
+> **Depois:** imagem do dashboard administrativo e histórico de OS com o novo dark mode.
 
 > **Imagem sugerida:** dashboard administrativo e histórico de OS.
 
@@ -317,6 +375,10 @@ Melhorias aplicadas:
 - Filtros padronizados.
 - Tabelas coerentes com o restante da página.
 - Correção da tabela de voos processados que cobria os botões.
+
+> **Antes:** imagem do menu de relatórios ou da listagem antiga com contrastes mais pesados.
+
+> **Depois:** imagem do menu de relatórios ou do relatório de logs de voo já modernizado.
 
 > **Imagem sugerida:** menu de relatórios e relatório de logs de voo.
 
@@ -333,6 +395,10 @@ Melhorias aplicadas:
 - Campos e selects com contraste adequado.
 - Ações padronizadas.
 
+> **Antes:** imagem da listagem de veículos com o visual anterior.
+
+> **Depois:** imagem da listagem de veículos e do modal de ações após a refatoração.
+
 > **Imagem sugerida:** listagem de veículos e modal de ações.
 
 ### 8.5. Cadastros e listagens
@@ -340,6 +406,10 @@ Melhorias aplicadas:
 Foram modernizadas as páginas de prefeituras, usuários, UVIS, clientes, pilotos, equipes, menus de clientes e feedbacks.
 
 A revisão padronizou cards, tabelas, botões, filtros e estados vazios.
+
+> **Antes:** imagem de uma listagem de cadastros no visual antigo.
+
+> **Depois:** imagem da mesma listagem com o novo padrão visual.
 
 > **Imagem sugerida:** listagem de prefeituras, usuários ou clientes.
 
@@ -349,6 +419,10 @@ A revisão padronizou cards, tabelas, botões, filtros e estados vazios.
 - Cards, eventos e controles com melhor contraste.
 - Formulários e filtros consistentes.
 - Preservação das características próprias do calendário.
+
+> **Antes:** imagem da agenda com os rótulos e controles no padrão anterior.
+
+> **Depois:** imagem da agenda com o novo dark mode e os textos em português.
 
 > **Imagem sugerida:** agenda exibindo eventos no dark mode.
 
@@ -365,6 +439,10 @@ Melhorias aplicadas:
 - PDF em vermelho outline.
 - Encerramento em verde.
 - Voltar e cancelar em estilo secundário.
+
+> **Antes:** imagem da tela de estoque ou manutenção com o visual antigo.
+
+> **Depois:** imagem da tela de estoque ou manutenção após a refatoração.
 
 > **Imagem sugerida:** painel de estoque e detalhes de uma manutenção.
 
@@ -398,6 +476,10 @@ O Agro mantém sua cor verde, mas com tons menos saturados e mais corporativos.
 - O light mode não foi alterado.
 
 A configuração está em `app/static/css/themes/dark/agro-mode.css`.
+
+> **Antes:** imagem do dashboard Agro com a identidade visual anterior.
+
+> **Depois:** imagem do dashboard Agro com a nova identidade no Dark Agro.
 
 > **Imagem sugerida:** dashboard Agro mostrando navbar, sidebar e logo branca.
 
@@ -512,27 +594,38 @@ O resultado entrega:
 ## 15. Registro visual
 
 Esta seção pode ser utilizada para concentrar as imagens finais antes da exportação para PDF.
+Ela também pode servir como galeria de comparativos, com uma captura de antes e outra de depois para as principais páginas alteradas.
 
 ### 15.1. Visão geral
 
-> Adicionar imagem da tela principal no dark mode.
+> **Antes:** inserir imagem da tela principal antes da refatoração.
+
+> **Depois:** inserir imagem da tela principal após a refatoração.
 
 ### 15.2. Componentes
 
-> Adicionar imagens dos botões, filtros, cards e tabelas padronizados.
+> **Antes:** inserir imagem dos componentes com o visual antigo.
+
+> **Depois:** inserir imagem dos botões, filtros, cards e tabelas já padronizados.
 
 ### 15.3. Administração e relatórios
 
-> Adicionar imagens do dashboard administrativo, histórico de OS e relatórios.
+> **Antes:** inserir imagens do dashboard administrativo, histórico de OS e relatórios no tema anterior.
+
+> **Depois:** inserir imagens do dashboard administrativo, histórico de OS e relatórios no novo dark mode.
 
 ### 15.4. Veículos, estoque e manutenção
 
-> Adicionar imagens das listagens, modais e formulários atualizados.
+> **Antes:** inserir imagens das listagens, modais e formulários com o layout anterior.
+
+> **Depois:** inserir imagens das listagens, modais e formulários atualizados.
 
 ### 15.5. Módulo Agro
 
-> Adicionar imagens do dashboard Agro, área financeira e identidade visual verde.
+> **Antes:** inserir imagem do Agro com a identidade anterior.
+
+> **Depois:** inserir imagens do dashboard Agro, área financeira e identidade visual verde refinada.
 
 ### 15.6. Comparação entre temas
 
-> Adicionar comparações da mesma página no light mode e no dark mode.
+> Inserir comparações da mesma página no light mode e no dark mode.
