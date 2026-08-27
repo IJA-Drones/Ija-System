@@ -32,7 +32,7 @@
 @import url("./components/badges.css");
 
 @import url("./components/tables.css");
-/* pagination.css nao existe; manter o fallback atual do Bootstrap. */
+@import url("./components/paginations.css");
 
 @import url("./components/list-groups.css");
 @import url("./components/logos.css");

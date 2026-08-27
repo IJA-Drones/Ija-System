@@ -2,25 +2,44 @@
    PAGINATION
    ========================================= */
 
+html.dark-mode .page-item .page-link,
 body.dark-mode .page-item .page-link {
-  background-color: #1c2b3f;
+  background-color: rgba(28, 43, 63, 0.92);
   color: var(--color-text-main);
-  border-color: #233549;
+  border-color: rgba(109, 196, 226, 0.16);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
 }
 
+html.dark-mode .page-item .page-link:hover,
 body.dark-mode .page-item .page-link:hover {
   background-color: rgba(0, 224, 255, 0.15);
   color: var(--color-accent);
   border-color: var(--color-accent);
 }
 
+html.dark-mode .page-item .page-link:focus,
+body.dark-mode .page-item .page-link:focus {
+  box-shadow: 0 0 0 0.2rem rgba(0, 224, 255, 0.2);
+}
+
+html.dark-mode .page-item.active .page-link,
 body.dark-mode .page-item.active .page-link {
   background-color: var(--color-accent) !important;
   border-color: var(--color-accent) !important;
   color: #101927 !important;
+  box-shadow: 0 8px 20px rgba(0, 224, 255, 0.22);
 }
 
+html.dark-mode .page-item.disabled .page-link,
 body.dark-mode .page-item.disabled .page-link {
-  background-color: transparent;
-  border-color: #233549;
+  background-color: rgba(28, 43, 63, 0.35);
+  border-color: rgba(109, 196, 226, 0.1);
+  box-shadow: none;
+}
+
+html.dark-mode .pagination-page-size-select,
+body.dark-mode .pagination-page-size-select {
+  background-color: rgba(28, 43, 63, 0.92);
+  border-color: rgba(109, 196, 226, 0.16);
+  color: var(--color-text-main);
 }
