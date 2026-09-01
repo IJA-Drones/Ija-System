@@ -6,13 +6,14 @@ from flask import Flask
 from werkzeug.datastructures import MultiDict
 
 from app.extensions import db
-from app.models import Equipe, OrdemServico, Prefeitura, Solicitacao, Usuario
+from app.models import Equipe, EquipePiloto, OrdemServico, Pilotos, Prefeitura, Solicitacao, Usuario
 from app.modules.dashboard.service import build_uvis_os_form_context
 from app.modules.piloto_os.service import (
     PilotoOsError,
     get_os_complementary_image_path_for_user,
     get_os_principal_image_path_for_user,
     get_os_video_path_for_user,
+    salvar_piloto_os_form,
 )
 from app.modules.relatorios.service import (
     build_relatorio_coleta_imagens_export_data,
@@ -32,6 +33,11 @@ class UvisOsMediaAccessTests(unittest.TestCase):
         self.app.add_url_rule(
             "/uvis/os/<int:os_id>",
             endpoint="main.uvis_os_formulario_view",
+            view_func=lambda os_id: "",
+        )
+        self.app.add_url_rule(
+            "/piloto/os/<int:os_id>/formulario",
+            endpoint="main.piloto_os_formulario_view",
             view_func=lambda os_id: "",
         )
         self.app.add_url_rule(
@@ -85,6 +91,16 @@ class UvisOsMediaAccessTests(unittest.TestCase):
         )
         self.equipe = Equipe(nome_equipe="PLOA 01", regiao="OESTE", ativa=True, prefeitura_id=1)
         db.session.add_all([self.equipe_uvis, self.equipe])
+        db.session.commit()
+
+        self.piloto = Pilotos(nome_piloto="Piloto Oficial", regiao="OESTE", prefeitura_id=1)
+        self.auxiliar = Pilotos(nome_piloto="Auxiliar Oficial", regiao="OESTE", prefeitura_id=1)
+        db.session.add_all([self.piloto, self.auxiliar])
+        db.session.flush()
+        db.session.add_all([
+            EquipePiloto(equipe_id=self.equipe.id, piloto_id=self.piloto.id, papel="piloto"),
+            EquipePiloto(equipe_id=self.equipe.id, piloto_id=self.auxiliar.id, papel="auxiliar"),
+        ])
         db.session.commit()
 
         self.solicitacao = Solicitacao(
@@ -194,6 +210,38 @@ class UvisOsMediaAccessTests(unittest.TestCase):
         self.assertTrue(com_ok_depois["levantamentos"][0]["uvis_visualizado"])
         self.assertEqual(com_ok_depois["total_ok_uvis"], 1)
         self.assertEqual(pendentes_depois["total_levantamentos"], 0)
+
+    def test_piloto_form_ignores_posted_pilot_and_auxiliary_names(self):
+        usuario_piloto = Usuario(
+            nome_uvis="Usuario Piloto",
+            login="usuario_piloto",
+            senha_hash="hash",
+            tipo_usuario="piloto",
+            piloto_id=self.piloto.id,
+            prefeitura_id=1,
+        )
+        db.session.add(usuario_piloto)
+        self.solicitacao.status = "APROVADO"
+        db.session.commit()
+
+        salvar_piloto_os_form(
+            usuario_piloto,
+            self.solicitacao.id,
+            MultiDict({
+                "piloto": "Nome adulterado",
+                "auxiliar": "Auxiliar adulterado",
+                "respondido_por": "Usuario Piloto",
+                "data_aplicacao": "2026-07-01",
+                "hora_inicio_aplicacao": "09:00",
+                "hora_termino_aplicacao": "10:00",
+            }),
+            MultiDict(),
+            self.app.root_path,
+        )
+
+        db.session.refresh(self.ordem)
+        self.assertEqual(self.ordem.piloto, "Piloto Oficial")
+        self.assertEqual(self.ordem.auxiliar, "Auxiliar Oficial")
 
 
 if __name__ == "__main__":
