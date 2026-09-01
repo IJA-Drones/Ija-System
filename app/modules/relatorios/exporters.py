@@ -2,6 +2,7 @@ import gc
 import os
 import tempfile
 import unicodedata
+import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from io import BytesIO
@@ -19,6 +20,7 @@ from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas as pdf_canvas
 from reportlab.platypus import Image as RLImage
 from reportlab.platypus import PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from werkzeug.datastructures import MultiDict
 
 from app.extensions import db
 from app.models import Solicitacao, Usuario
@@ -35,6 +37,7 @@ from app.modules.relatorios.service import (
     _apply_relatorio_solicitacoes_filters,
     _resolve_relatorio_solicitacoes_filters,
     _coleta_imagens_max_export_items,
+    build_coleta_imagens_uvis_ids_com_registro,
     build_relatorio_coleta_imagens_export_data,
     build_relatorio_os_export_data,
 )
@@ -2196,6 +2199,78 @@ def build_relatorio_coleta_imagens_pdf_export(user, args):
         max_items=_coleta_imagens_max_export_items(),
     )
     return _build_relatorio_coleta_imagens_pdf_export_streamed(data, args)
+
+
+def _coleta_imagens_zip_name(data):
+    nome = os.path.splitext(_coleta_imagens_pdf_name(data))[0]
+    return f"{nome}_por_uvis.zip"
+
+
+def build_relatorio_coleta_imagens_pdf_zip_export(user, args, *, progress_callback=None):
+    data = build_relatorio_coleta_imagens_export_data(user, args, max_items=1)
+    uvis_ids = build_coleta_imagens_uvis_ids_com_registro(user, args)
+    db.session.remove()
+
+    tmp_zip = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
+    zip_path = tmp_zip.name
+    tmp_zip.close()
+
+    total_uvis = len(uvis_ids)
+    written = 0
+    used_names = set()
+
+    if progress_callback:
+        progress_callback(30, "Separando levantamentos por UVIS.")
+
+    try:
+        with zipfile.ZipFile(zip_path, mode="w", compression=zipfile.ZIP_DEFLATED) as zip_file:
+            for index, uvis_id in enumerate(uvis_ids, start=1):
+                item_args = MultiDict(args)
+                item_args.setlist("uvis_id", [str(uvis_id)])
+
+                item_data = build_relatorio_coleta_imagens_export_data(
+                    user,
+                    item_args,
+                    max_items=_coleta_imagens_max_export_items(),
+                )
+                db.session.remove()
+                if item_data.get("total_levantamentos", 0) <= 0:
+                    continue
+
+                if progress_callback:
+                    uvis_nome = item_data.get("uvis_nome_selecionado") or f"UVIS {uvis_id}"
+                    progress = 30 + int((index - 1) / max(total_uvis, 1) * 60)
+                    progress_callback(progress, f"Gerando PDF de {uvis_nome}.")
+
+                pdf_path, pdf_name = _build_relatorio_coleta_imagens_pdf_export_streamed(item_data, item_args)
+                arcname = os.path.basename(pdf_name)
+                if arcname in used_names:
+                    base, ext = os.path.splitext(arcname)
+                    arcname = f"{base}_{uvis_id}{ext}"
+                used_names.add(arcname)
+
+                try:
+                    zip_file.write(pdf_path, arcname)
+                    written += 1
+                finally:
+                    try:
+                        os.unlink(pdf_path)
+                    except OSError:
+                        pass
+
+        if written <= 0:
+            raise ValueError("Nenhuma UVIS possui levantamentos com foto principal para os filtros selecionados.")
+
+        if progress_callback:
+            progress_callback(95, "Compactando PDFs em ZIP.")
+
+        return zip_path, _coleta_imagens_zip_name(data)
+    except Exception:
+        try:
+            os.unlink(zip_path)
+        except OSError:
+            pass
+        raise
 
     tmp_pdf = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
     path = tmp_pdf.name

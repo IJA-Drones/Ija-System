@@ -1611,6 +1611,36 @@ def _coleta_imagens_group_count(query, campo):
     ]
 
 
+def build_coleta_imagens_uvis_ids_com_registro(user, args):
+    filtros = _resolve_coleta_imagens_filters(user, args)
+    query = _build_coleta_imagens_query(
+        user,
+        regiao=filtros["regiao"],
+        uvis_ids=filtros["uvis_ids"],
+        mes=filtros["mes"],
+        ano=filtros["ano"],
+        os_id=filtros["os_id"],
+        data_inicio=filtros["data_inicio"],
+        data_fim=filtros["data_fim"],
+        busca=filtros["busca"],
+        foco_values=filtros["foco_values"],
+        midia=filtros["midia"],
+        ok_uvis=filtros["ok_uvis"],
+        equipe_id=filtros["equipe_id"],
+    )
+    return [
+        int(uvis_id)
+        for uvis_id, _total in (
+            query
+            .with_entities(Solicitacao.usuario_id, func.count(OrdemServico.id))
+            .group_by(Solicitacao.usuario_id)
+            .order_by(func.count(OrdemServico.id).desc())
+            .all()
+        )
+        if uvis_id
+    ]
+
+
 def build_relatorio_coleta_imagens_export_data(user, args, *, page=None, per_page=None, max_items=None):
     user_type = getattr(user, "tipo_usuario", None)
     is_uvis = user_type == "uvis"
