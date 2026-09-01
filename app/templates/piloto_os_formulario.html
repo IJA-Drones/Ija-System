@@ -616,13 +616,13 @@
             <div class="row g-3">
               <div class="col-md-6">
                 <label class="form-label-header">PILOTO</label>
-                <input type="text" name="piloto" class="form-control bg-light" 
-                      value="{{ (ordem.piloto if ordem and ordem.piloto else piloto_padrao) }}" />
+                <input type="text" class="form-control bg-light"
+                      value="{{ piloto_padrao }}" readonly />
               </div>
               <div class="col-md-6">
                 <label class="form-label-header">AUXILIAR</label>
-                <input type="text" name="auxiliar" class="form-control bg-light" 
-                      value="{{ (ordem.auxiliar if ordem and ordem.auxiliar else auxiliar_padrao) }}" />
+                <input type="text" class="form-control bg-light"
+                      value="{{ auxiliar_padrao }}" readonly />
               </div>
             </div>
           </div>

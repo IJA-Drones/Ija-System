@@ -1107,9 +1107,9 @@ def _aplicar_campos_formulario(
     ordem.velocidade_vento_kmh = _to_float(form_data.get("velocidade_vento_kmh"))
     ordem.motivo_nao_realizacao = _clean_str(form_data.get("motivo_nao_realizacao"))
     ordem.observacoes = _clean_str(form_data.get("observacoes"))
-    ordem.piloto = _clean_str(form_data.get("piloto")) or piloto_padrao
+    ordem.piloto = _clean_str(piloto_padrao)
     ordem.assinatura_piloto = _clean_str(form_data.get("assinatura_piloto"))
-    ordem.auxiliar = _clean_str(form_data.get("auxiliar")) or auxiliar_padrao
+    ordem.auxiliar = _clean_str(auxiliar_padrao)
     ordem.proprietario_ou_preposto = _clean_str(form_data.get("proprietario_ou_preposto"))
     ordem.assinatura_proprietario_ou_preposto = _clean_str(form_data.get("assinatura_proprietario_ou_preposto"))
     _aplicar_midias_os(
