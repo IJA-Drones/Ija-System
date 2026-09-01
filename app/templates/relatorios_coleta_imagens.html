@@ -39,6 +39,14 @@
           <i class="bi bi-file-earmark-pdf-fill me-1"></i>Exportar PDF
         </button>
       </form>
+      <form method="GET" action="{{ url_for('main.relatorios_coleta_imagens_export_pdf_zip') }}" class="m-0">
+        {% for nome, valor in filtros_exportacao.items() %}
+          <input type="hidden" name="{{ nome }}" value="{{ valor or '' }}">
+        {% endfor %}
+        <button type="submit" class="btn btn-outline-danger">
+          <i class="bi bi-file-zip-fill me-1"></i>ZIP por UVIS
+        </button>
+      </form>
     </div>
   </div>
 
@@ -47,10 +55,10 @@
       <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
         <div class="fw-semibold text-dark">
           <i class="bi bi-file-earmark-pdf-fill text-danger me-1"></i>
-          <span id="coletaPdfJobMessage">Gerando PDF do relatorio...</span>
+          <span id="coletaPdfJobMessage">Gerando arquivo do relatorio...</span>
         </div>
         <a id="coletaPdfJobDownload" href="#" class="btn btn-sm btn-danger d-none">
-          <i class="bi bi-download me-1"></i>Baixar PDF
+          <i class="bi bi-download me-1"></i>Baixar arquivo
         </a>
       </div>
       <div class="progress" role="progressbar" aria-label="Progresso do PDF">
@@ -463,27 +471,27 @@
               throw new Error(payload.error || "Falha ao consultar o PDF.");
             }
 
-            message.textContent = payload.message || "Gerando PDF do relatorio...";
+            message.textContent = payload.message || "Gerando arquivo do relatorio...";
             setProgress(payload.progress);
 
             if (payload.status === "success") {
               download.href = payload.download_url;
               download.classList.remove("d-none");
-              message.textContent = "PDF pronto para download.";
+              message.textContent = payload.message || "Arquivo pronto para download.";
               setProgress(100);
               return;
             }
 
             if (payload.status === "error") {
               statusBox.classList.add("border-danger");
-              message.textContent = payload.error || "Nao foi possivel gerar o PDF.";
+              message.textContent = payload.error || "Nao foi possivel gerar o arquivo.";
               return;
             }
 
             window.setTimeout(poll, 2500);
           } catch (error) {
             statusBox.classList.add("border-danger");
-            message.textContent = error.message || "Falha ao acompanhar a geracao do PDF.";
+            message.textContent = error.message || "Falha ao acompanhar a geracao do arquivo.";
           }
         };
 
