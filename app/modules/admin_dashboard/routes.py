@@ -522,6 +522,7 @@ def register_routes(bp):
         filtro_equipe = (request.args.get("equipe") or "").strip()
         filtros["equipe"] = filtro_equipe
         page = request.args.get("page", 1, type=int)
+        per_page = _get_admin_per_page()
 
         query = build_admin_historico_os_query(
             current_user,
@@ -534,7 +535,7 @@ def register_routes(bp):
             build_status_order(),
             Solicitacao.data_criacao.desc(),
             Solicitacao.id.desc(),
-        ).paginate(page=page, per_page=6, error_out=False)
+        ).paginate(page=page, per_page=per_page, error_out=False)
 
         return render_template(
             "admin_historico_os.html",
@@ -552,6 +553,7 @@ def register_routes(bp):
                 if key != "tipo_os"
             },
             pagination_args=_query_args_without_page(),
+            per_page_options=ADMIN_PER_PAGE_OPTIONS,
             retorno_ciclos=build_retorno_ciclo_summaries(current_user, paginacao.items),
         )
 
