@@ -322,7 +322,16 @@
       </table>
     </div>
 
-    {{ render_pagination('main.admin_historico_os', paginacao, pagination_args, nav_class='mt-4 pb-3') }}
+    {{ render_pagination(
+      'main.admin_historico_os',
+      paginacao,
+      pagination_args,
+      nav_class='mt-4 pb-3',
+      show_summary=True,
+      summary_label='OS',
+      page_size_options=per_page_options,
+      page_size_label='Itens por pagina'
+    ) }}
   </div>
 </div>
 {% endblock %}
