@@ -13,7 +13,7 @@
 
 {% block content %}
 {% set meses = {
-  1: "Janeiro", 2: "Fevereiro", 3: "Marco", 4: "Abril",
+  1: "Janeiro", 2: "Fevereiro", 3: "Março", 4: "Abril",
   5: "Maio", 6: "Junho", 7: "Julho", 8: "Agosto",
   9: "Setembro", 10: "Outubro", 11: "Novembro", 12: "Dezembro"
 } %}
@@ -22,7 +22,7 @@
   <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
     <div>
       <h2 class="text-dark m-0">
-        <i class="bi bi-images me-2 text-primary"></i>Relatorio de Coleta de Imagens
+        <i class="bi bi-images me-2 text-primary"></i>Relatório de Coleta de Imagens
       </h2>
       <p class="text-muted small mb-0">{{ descricao_painel }}</p>
       {{ render_result_summary(total_levantamentos, 'Levantamentos filtrados') }}
@@ -55,7 +55,7 @@
       <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
         <div class="fw-semibold text-dark">
           <i class="bi bi-file-earmark-pdf-fill text-danger me-1"></i>
-          <span id="coletaPdfJobMessage">Gerando arquivo do relatorio...</span>
+          <span id="coletaPdfJobMessage">Gerando arquivo do relatório...</span>
         </div>
         <a id="coletaPdfJobDownload" href="#" class="btn btn-sm btn-danger d-none">
           <i class="bi bi-download me-1"></i>Baixar arquivo
@@ -75,15 +75,15 @@
               <input type="number" min="1" name="os_id" class="form-control form-control-sm" value="{{ os_id_selecionado or '' }}" placeholder="Ex: 1745">
             </div>
             <div class="col-md-6 col-xl-2">
-              <label class="small text-muted">Periodo de</label>
+              <label class="small text-muted">Período de</label>
               <input type="date" name="data_inicio" class="form-control form-control-sm" value="{{ data_inicio_selecionada }}">
             </div>
             <div class="col-md-6 col-xl-2">
-              <label class="small text-muted">Periodo ate</label>
+              <label class="small text-muted">Período até</label>
               <input type="date" name="data_fim" class="form-control form-control-sm" value="{{ data_fim_selecionada }}">
             </div>
             <div class="col-md-6 col-xl-2">
-              <label class="small text-muted">Mes</label>
+              <label class="small text-muted">Mês</label>
               <select name="mes" class="form-select form-select-sm">
                 <option value="">Todos</option>
                 {% for numero, nome in meses.items() %}
@@ -113,9 +113,9 @@
 
             {% if pode_filtrar_regiao %}
             <div class="col-md-6 col-xl-3">
-              <label class="small text-muted">Regiao</label>
+              <label class="small text-muted">Região</label>
               <select name="regiao" class="form-select form-select-sm">
-                <option value="">Todas as Regioes</option>
+                <option value="">Todas as Regiões</option>
                 {% for regiao in regioes_disponiveis %}
                   <option value="{{ regiao }}" {% if regiao == regiao_selecionada %}selected{% endif %}>{{ regiao }}</option>
                 {% endfor %}
@@ -123,7 +123,7 @@
             </div>
             {% else %}
             <div class="col-md-6 col-xl-3">
-              <label class="small text-muted">Regiao</label>
+              <label class="small text-muted">Região</label>
               <input type="text" class="form-control form-control-sm" value="{{ regiao_nome_selecionada }}" disabled>
             </div>
             {% endif %}
@@ -158,11 +158,11 @@
             </div>
 
             <div class="col-md-6 col-xl-2">
-              <label class="small text-muted">Midia</label>
+              <label class="small text-muted">Mídia</label>
               <select name="midia" class="form-select form-select-sm">
                 <option value="" {% if not midia_selecionada %}selected{% endif %}>Todas</option>
-                <option value="com_video" {% if midia_selecionada == 'com_video' %}selected{% endif %}>Com video</option>
-                <option value="sem_video" {% if midia_selecionada == 'sem_video' %}selected{% endif %}>Sem video</option>
+                <option value="com_video" {% if midia_selecionada == 'com_video' %}selected{% endif %}>Com vídeo</option>
+                <option value="sem_video" {% if midia_selecionada == 'sem_video' %}selected{% endif %}>Sem vídeo</option>
                 <option value="com_complementares" {% if midia_selecionada == 'com_complementares' %}selected{% endif %}>Com extras</option>
                 <option value="sem_complementares" {% if midia_selecionada == 'sem_complementares' %}selected{% endif %}>Sem extras</option>
               </select>
@@ -179,7 +179,7 @@
 
             <div class="col-md-12 col-xl-2">
               <label class="small text-muted">Busca</label>
-              <input type="search" name="busca" class="form-control form-control-sm" value="{{ busca_selecionada }}" placeholder="Endereco, CEP, UVIS, foco...">
+              <input type="search" name="busca" class="form-control form-control-sm" value="{{ busca_selecionada }}" placeholder="Endereço, CEP, UVIS, foco...">
             </div>
 
             <div class="col-12">
@@ -198,7 +198,7 @@
 
   <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
     <div class="text-muted small">
-      Periodo selecionado: <strong>{{ periodo_label }}</strong>
+      Período selecionado: <strong>{{ periodo_label }}</strong>
       {% if os_id_selecionado %}
         <span class="ms-2">OS: <strong>#{{ os_id_selecionado }}</strong></span>
       {% endif %}
@@ -231,7 +231,7 @@
     <div class="col-6 col-md-4 col-xl">
       <div class="card media-summary-card">
         <div class="card-body">
-          <div class="media-summary-label">Regioes</div>
+          <div class="media-summary-label">Regiões</div>
           <div class="media-summary-value">{{ total_regioes_com_registro }}</div>
         </div>
       </div>
@@ -247,7 +247,7 @@
     <div class="col-6 col-md-4 col-xl">
       <div class="card media-summary-card">
         <div class="card-body">
-          <div class="media-summary-label">Videos</div>
+          <div class="media-summary-label">Vídeos</div>
           <div class="media-summary-value">{{ total_videos }}</div>
         </div>
       </div>
@@ -255,7 +255,7 @@
     <div class="col-6 col-md-4 col-xl">
       <div class="card media-summary-card">
         <div class="card-body">
-          <div class="media-summary-label">Midias totais</div>
+          <div class="media-summary-label">Mídias totais</div>
           <div class="media-summary-value">{{ total_midias }}</div>
         </div>
       </div>
@@ -266,12 +266,12 @@
     <div class="col-lg-4">
       <div class="card media-table-card h-100">
         <div class="card-body">
-          <h5 class="text-dark mb-3"><i class="bi bi-globe-americas me-2 text-primary"></i>Por Regiao</h5>
+          <h5 class="text-dark mb-3"><i class="bi bi-globe-americas me-2 text-primary"></i>Por Região</h5>
           <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
               <thead>
                 <tr>
-                  <th>Regiao</th>
+                  <th>Região</th>
                   <th class="text-center">Total</th>
                 </tr>
               </thead>
@@ -335,7 +335,7 @@
               <div class="media-report-empty">
                 <div>
                   <i class="bi bi-image fs-2 d-block mb-2 text-primary"></i>
-                  Sem imagem principal disponivel.
+                  Sem imagem principal disponível.
                 </div>
               </div>
             {% endif %}
@@ -356,7 +356,7 @@
                     <i class="bi bi-hourglass-split"></i>
                     Aguardando UVIS
                   </div>
-                  <div class="media-report-uvis-review-detail">Sem confirmacao de leitura</div>
+                  <div class="media-report-uvis-review-detail">Sem confirmação de leitura</div>
                 {% endif %}
               </div>
               {% if not item.uvis_visualizado and current_user.tipo_usuario == 'uvis' %}
@@ -366,7 +366,7 @@
                   class="media-report-ok-form form-no-loading"
                 >
                   <input type="hidden" name="next" value="{{ request.full_path }}">
-                  <button type="submit" class="media-report-ok-button" title="Registrar visualizacao pela UVIS" aria-label="Registrar visualizacao pela UVIS">
+                  <button type="submit" class="media-report-ok-button" title="Registrar visualização pela UVIS" aria-label="Registrar visualização pela UVIS">
                     <i class="bi bi-check2"></i>Marcar visualizado
                   </button>
                 </form>
@@ -386,13 +386,13 @@
                 <span class="badge bg-primary-subtle text-primary">Foco: {{ item.foco }}</span>
                 <span class="badge bg-light text-dark border">{{ item.outras_imagens_count }} imagem(ns) extra(s)</span>
                 {% if item.tem_video %}
-                  <span class="badge bg-light text-dark border">Video anexado</span>
+                  <span class="badge bg-light text-dark border">Vídeo anexado</span>
                 {% endif %}
               </div>
 
               <div class="media-report-meta mb-3">
                 <div class="media-report-meta-item media-report-address">
-                  <span class="media-report-meta-label">Endereco</span>
+                  <span class="media-report-meta-label">Endereço</span>
                   <div class="media-report-meta-value">{{ item.endereco }}</div>
                 </div>
                 <div class="media-report-meta-item">
@@ -471,7 +471,7 @@
               throw new Error(payload.error || "Falha ao consultar o PDF.");
             }
 
-            message.textContent = payload.message || "Gerando arquivo do relatorio...";
+            message.textContent = payload.message || "Gerando arquivo do relatório...";
             setProgress(payload.progress);
 
             if (payload.status === "success") {
@@ -484,14 +484,14 @@
 
             if (payload.status === "error") {
               statusBox.classList.add("border-danger");
-              message.textContent = payload.error || "Nao foi possivel gerar o arquivo.";
+              message.textContent = payload.error || "Não foi possível gerar o arquivo.";
               return;
             }
 
             window.setTimeout(poll, 2500);
           } catch (error) {
             statusBox.classList.add("border-danger");
-            message.textContent = error.message || "Falha ao acompanhar a geracao do arquivo.";
+            message.textContent = error.message || "Falha ao acompanhar a geração do arquivo.";
           }
         };
 
