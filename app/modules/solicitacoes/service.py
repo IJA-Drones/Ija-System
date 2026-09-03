@@ -27,6 +27,15 @@ STATUS_OPCOES_EDICAO = [
 ]
 FOCO_OPCOES_EDICAO = FILTER_FOCO_OPCOES
 STATUS_CONCLUIDO_BLOQUEIO = ("CONCLUIDO", "CONCLU\u00cdDO")
+LIMITE_SOLICITACOES_UVIS_DIA = 20
+STATUS_SOLICITACOES_CONTAM_NO_LIMITE_DIARIO = (
+    "PENDENTE",
+    "EM ANÁLISE",
+    "APROVADO",
+    "APROVADO COM RECOMENDAÇÕES",
+    "CONCLUIDO",
+    "CONCLUÍDO",
+)
 UF_OPCOES = [
     "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG",
     "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO",
@@ -205,6 +214,34 @@ def resolve_prefeitura_id_para_bloqueio(user, uvis_responsavel_id=None):
     return getattr(user, "prefeitura_id", None)
 
 
+def contar_solicitacoes_uvis_no_limite_diario(uvis_id, data_referencia=None, excluir_solicitacao_id=None):
+    data_referencia = data_referencia or date.today()
+
+    query = Solicitacao.query.filter(
+        Solicitacao.usuario_id == uvis_id,
+        Solicitacao.data_agendamento == data_referencia,
+        Solicitacao.status.in_(STATUS_SOLICITACOES_CONTAM_NO_LIMITE_DIARIO),
+    )
+    if excluir_solicitacao_id:
+        query = query.filter(Solicitacao.id != excluir_solicitacao_id)
+    return query.count()
+
+
+def validar_limite_diario_solicitacoes_uvis(uvis_id, data_referencia=None, excluir_solicitacao_id=None):
+    total = contar_solicitacoes_uvis_no_limite_diario(
+        uvis_id,
+        data_referencia=data_referencia,
+        excluir_solicitacao_id=excluir_solicitacao_id,
+    )
+    if total >= LIMITE_SOLICITACOES_UVIS_DIA:
+        data_label = data_referencia.strftime("%d/%m/%Y") if data_referencia else "selecionado"
+        raise NovoCadastroValidationError(
+            f"Esta UVIS já possui 20 solicitações válidas para {data_label}. "
+            "Solicitações negadas ou canceladas liberam vaga; solicitações concluídas continuam contando no limite do dia.",
+            category="limite_diario_solicitacoes",
+        )
+
+
 def build_novo_cadastro_context(user, google_maps_key):
     uvis_lista = []
     if user.tipo_usuario in ["dev", "diretor", "admin", "visualizar", "prefeitura_admin"]:
@@ -277,6 +314,8 @@ def create_nova_solicitacao(user, form_data):
     else:
         uvis_id_final = user.id
         prefeitura_id_final = getattr(user, "prefeitura_id", None)
+
+    validar_limite_diario_solicitacoes_uvis(uvis_id_final, data_referencia=data_obj)
 
     place_id = resolve_google_place_id_for_address(
         place_id=place_id,
@@ -498,6 +537,11 @@ def atualizar_solicitacao(user, solicitacao_id, form_data):
         justificativa = (form_data.get("justificativa") or "").strip()
         pedido.justificativa = justificativa or None
     else:
+        validar_limite_diario_solicitacoes_uvis(
+            pedido.usuario_id,
+            data_referencia=pedido.data_agendamento,
+            excluir_solicitacao_id=pedido.id,
+        )
         if pedido.status == "NEGADO":
             motivo_original = (pedido.justificativa or "").strip()
             limpo = re.sub(r"^\s*CORRE\u00c7\u00c3O:\s*", "", motivo_original, flags=re.IGNORECASE)

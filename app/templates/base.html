@@ -1193,13 +1193,31 @@
                         popup: isDarkMode ? 'swal2-dark-mode' : ''
                     }
                 });
+            } else if (flashCategory === 'limite_diario_solicitacoes') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Limite diário atingido',
+                    text: flashMessage,
+                    confirmButtonText: 'Entendi',
+                    confirmButtonColor: '#0d6efd',
+                    allowOutsideClick: false,
+                    allowEscapeKey: true,
+                    background: isDarkMode ? '#152233' : '#ffffff',
+                    color: isDarkMode ? '#ffffff' : '#545454',
+                    customClass: {
+                        popup: isDarkMode ? 'swal2-dark-mode' : ''
+                    }
+                });
             } else {
 
-                let iconType =
-                "{{ 'success' if category == 'success'
-                else 'error' if category in ['danger','error']
-                else 'warning' if category == 'warning'
-                else 'info' }}";
+                let iconType = 'info';
+                if (flashCategory === 'success') {
+                    iconType = 'success';
+                } else if (['danger', 'error'].includes(flashCategory)) {
+                    iconType = 'error';
+                } else if (flashCategory === 'warning') {
+                    iconType = 'warning';
+                }
 
                 Swal.fire({
                 toast: true,

@@ -1,5 +1,5 @@
 import unittest
-from datetime import date, time
+from datetime import date, datetime, time
 from unittest.mock import patch
 
 from flask import Flask
@@ -71,6 +71,38 @@ class SolicitacaoPlaceIdBlockTests(unittest.TestCase):
             "distrito_administrativo": "DA Teste",
             "apoio_cet": "nao",
         })
+
+    def _editar_form(self):
+        form = self._solicitacao_form("place-new")
+        form["data_agendamento"] = form["data"]
+        form["hora_agendamento"] = form["hora"]
+        return form
+
+    def _solicitacao_no_limite(
+        self,
+        *,
+        status="PENDENTE",
+        uvis_id=None,
+        data_agendamento=date(2026, 8, 10),
+        data_criacao=None,
+    ):
+        solicitacao = Solicitacao(
+            data_agendamento=data_agendamento,
+            hora_agendamento=time(8, 0),
+            foco="Foco Teste",
+            cep="02131-040",
+            logradouro="Rua Hiroshima",
+            numero="100",
+            bairro="Vila Maria Alta",
+            cidade="Sao Paulo",
+            uf="SP",
+            status=status,
+            usuario_id=uvis_id or self.uvis.id,
+            prefeitura_id=1,
+            data_criacao=data_criacao or datetime.now(),
+        )
+        db.session.add(solicitacao)
+        return solicitacao
 
     def _bloqueio_existente(self, *, prefeitura_id=1, place_id="place-123"):
         bloqueada = Solicitacao(
@@ -238,6 +270,90 @@ class SolicitacaoPlaceIdBlockTests(unittest.TestCase):
             nova = solicitacoes_service.create_nova_solicitacao(self.uvis, form)
 
         self.assertEqual(nova.numero, "S/N")
+
+    def test_create_blocks_when_daily_limit_includes_concluded_requests(self):
+        for _ in range(19):
+            self._solicitacao_no_limite(status="PENDENTE")
+        self._solicitacao_no_limite(status="CONCLUÍDO")
+        self._solicitacao_no_limite(status="NEGADO")
+        db.session.commit()
+
+        with self.assertRaises(NovoCadastroValidationError) as exc:
+            solicitacoes_service.create_nova_solicitacao(
+                self.uvis,
+                self._solicitacao_form("place-new"),
+            )
+
+        self.assertIn("20 solicitações válidas para 10/08/2026", exc.exception.message)
+        self.assertEqual(Solicitacao.query.count(), 21)
+
+    def test_create_allows_new_request_when_one_of_twenty_is_denied(self):
+        for _ in range(19):
+            self._solicitacao_no_limite(status="PENDENTE")
+        self._solicitacao_no_limite(status="NEGADO")
+        db.session.commit()
+
+        with (
+            patch.object(solicitacoes_service, "detectar_area_restrita", return_value=False),
+            patch.object(
+                solicitacoes_service,
+                "validate_foco_selection",
+                return_value=("Visita", "Casa", "Foco Teste"),
+            ),
+        ):
+            nova = solicitacoes_service.create_nova_solicitacao(
+                self.uvis,
+                self._solicitacao_form("place-new"),
+            )
+
+        self.assertEqual(nova.status, "PENDENTE")
+        self.assertEqual(Solicitacao.query.count(), 21)
+
+    def test_create_allows_request_when_limit_is_for_another_scheduled_day(self):
+        for _ in range(19):
+            self._solicitacao_no_limite(status="PENDENTE", data_agendamento=date(2026, 8, 11))
+        self._solicitacao_no_limite(status="CONCLUIDO", data_agendamento=date(2026, 8, 11))
+        db.session.commit()
+
+        with (
+            patch.object(solicitacoes_service, "detectar_area_restrita", return_value=False),
+            patch.object(
+                solicitacoes_service,
+                "validate_foco_selection",
+                return_value=("Visita", "Casa", "Foco Teste"),
+            ),
+        ):
+            nova = solicitacoes_service.create_nova_solicitacao(
+                self.uvis,
+                self._solicitacao_form("place-new"),
+            )
+
+        self.assertEqual(nova.data_agendamento, date(2026, 8, 10))
+        self.assertEqual(Solicitacao.query.count(), 21)
+
+    def test_uvis_cannot_reopen_denied_request_when_daily_limit_is_full(self):
+        for _ in range(19):
+            self._solicitacao_no_limite(status="PENDENTE")
+        self._solicitacao_no_limite(status="CONCLUIDO")
+        negada = self._solicitacao_no_limite(status="NEGADO")
+        db.session.commit()
+
+        with (
+            patch.object(
+                solicitacoes_service,
+                "validate_foco_selection",
+                return_value=("Visita", "Casa", "Foco Teste"),
+            ),
+            self.assertRaises(NovoCadastroValidationError) as exc,
+        ):
+            solicitacoes_service.atualizar_solicitacao(
+                self.uvis,
+                negada.id,
+                self._editar_form(),
+            )
+
+        self.assertIn("20 solicitações válidas para 10/08/2026", exc.exception.message)
+        self.assertEqual(Solicitacao.query.get(negada.id).status, "NEGADO")
 
 
 if __name__ == "__main__":
