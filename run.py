@@ -24,4 +24,4 @@ if __name__ == "__main__":
 
     debug = _env_flag("FLASK_DEBUG", default=True)
     use_reloader = _env_flag("FLASK_USE_RELOADER", default=False)
-    app.run(host="0.0.0.0", port=5000, debug=debug, use_reloader=use_reloader)
+    app.run(host="0.0.0.0", port=5002, debug=debug, use_reloader=use_reloader)

@@ -3,6 +3,7 @@
 {% set is_financeiro_agro_user = current_user.is_authenticated and current_user.tipo_usuario in ['financeiro_admin', 'financeiro'] %}
 {% set is_financeiro_agro_admin = current_user.is_authenticated and (is_global_admin or current_user.tipo_usuario == 'financeiro_admin') %}
 {% set is_admin_panel_user = current_user.is_authenticated and (is_global_admin or current_user.tipo_usuario in ['operario', 'visualizar', 'regional', 'prefeitura_admin']) %}
+{% set can_access_agro_context = current_user.is_authenticated and can_access_agro_panel(current_user) %}
 {% set logo_light_url = url_for('static', filename='img/logo_oceano_azul_light.png') %}
 {% set logo_dark_url = url_for('static', filename='img/logo_oceano_azul_dark.png') %}
 <!doctype html>
@@ -156,7 +157,7 @@
               >
             </li>
             {% endif %}
-            {% if is_global_admin %}
+            {% if is_global_admin and can_access_agro_context %}
             <li class="px-2 pb-2 mb-2 border-bottom">
               <div class="admin-context-switch admin-context-switch-dropdown {% if is_agro_context %}is-agro{% else %}is-uvis{% endif %}" role="group" aria-label="Alternar contexto entre UVIS e Agro">
                 <span class="admin-context-switch-thumb" aria-hidden="true"></span>
@@ -223,7 +224,7 @@
         {% elif current_user.tipo_usuario == 'equipe_uvis' %}
           {% set sidebar_dashboard_endpoint = 'main.dashboard_equipe_uvis' %}
           {% set sidebar_dashboard_active = request.endpoint == 'main.dashboard_equipe_uvis' %}
-        {% elif is_financeiro_agro_user %}
+        {% elif is_financeiro_agro_user and can_access_agro_context %}
           {% set sidebar_dashboard_endpoint = 'main.admin_agro' %}
           {% set sidebar_dashboard_active = request.endpoint == 'main.admin_agro' %}
         {% elif is_admin_panel_user %}
@@ -390,7 +391,7 @@
           </li>
           {% endif %}
 
-          {% if (is_admin_panel_user or is_financeiro_agro_user) and is_agro_context %}
+          {% if can_access_agro_context and is_agro_context %}
           {% set agro_financeiro_menu_active = request.endpoint in [
             'main.agro_financeiro_dashboard',
             'main.agro_caixa_diario',

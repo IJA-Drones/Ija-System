@@ -1,5 +1,6 @@
 from app.models import Usuario
-from app.shared.access import ADMIN_PANEL_VIEW_TYPES, is_agro_finance_user, is_dev_user
+from app.modules.agro.service import can_access_agro_panel
+from app.shared.access import ADMIN_PANEL_VIEW_TYPES, is_dev_user
 
 
 def _authenticate_any_user(login_value, password):
@@ -52,7 +53,7 @@ def authenticate_piloto_agro(login_value, password):
 def get_authenticated_redirect_endpoint(user):
     if is_dev_user(user):
         return "main.dev_dashboard"
-    if is_agro_finance_user(user):
+    if can_access_agro_panel(user) and user.tipo_usuario in {"financeiro_admin", "financeiro"}:
         return "main.admin_agro"
     if user.tipo_usuario in ADMIN_PANEL_VIEW_TYPES:
         return "main.admin_dashboard"
