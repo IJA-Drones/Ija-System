@@ -79,6 +79,10 @@ def is_dev_user(user) -> bool:
     return normalize_role(getattr(user, "tipo_usuario", None)) == DEV_USER_TYPE
 
 
+def can_manage_user_work_flags(user) -> bool:
+    return normalize_role(getattr(user, "tipo_usuario", None)) in {DIRECTOR_USER_TYPE, DEV_USER_TYPE}
+
+
 def get_user_regiao(user) -> str:
     return normalize_regiao(getattr(user, "regiao", None))
 

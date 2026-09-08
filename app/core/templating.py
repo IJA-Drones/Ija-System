@@ -13,6 +13,7 @@ from app.modules.feedback.service import (
     build_support_notification_snapshot,
     can_access_feedback,
 )
+from app.modules.agro.service import can_access_agro_panel
 from app.shared.access import is_admin_global_user, is_dev_user
 from app.shared.formatters import format_currency_br, format_phone_br
 from app.shared.solicitacao_focos import build_focus_catalog
@@ -53,6 +54,7 @@ def register_template_helpers(bp):
                     "feedback_notifications_enabled": FEEDBACK_NOTIFICATIONS_ENABLED,
                     "safe_url_for": safe_url_for,
                     "can_access_feedback": can_access_feedback,
+                    "can_access_agro_panel": can_access_agro_panel,
                     "is_admin_global_user": is_admin_global_user,
                     "is_dev_user": is_dev_user,
                     "solicitacao_focus_catalog": focus_catalog,
@@ -71,6 +73,7 @@ def register_template_helpers(bp):
                     "feedback_notifications_enabled": FEEDBACK_NOTIFICATIONS_ENABLED,
                     "safe_url_for": safe_url_for,
                     "can_access_feedback": can_access_feedback,
+                    "can_access_agro_panel": can_access_agro_panel,
                     "is_admin_global_user": is_admin_global_user,
                     "is_dev_user": is_dev_user,
                     "solicitacao_focus_catalog": focus_catalog,

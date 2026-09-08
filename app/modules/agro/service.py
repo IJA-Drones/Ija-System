@@ -90,19 +90,26 @@ def build_agro_categoria_composta(categoria, subcategoria) -> str:
 
 
 def can_access_agro_panel(user) -> bool:
-    return normalize_role(getattr(user, "tipo_usuario", None)) in (ADMIN_PANEL_VIEW_TYPES | AGRO_FINANCE_VIEW_TYPES)
+    role = normalize_role(getattr(user, "tipo_usuario", None))
+    return role in (ADMIN_PANEL_VIEW_TYPES | AGRO_FINANCE_VIEW_TYPES) and bool(getattr(user, "trabalha_agro", False))
 
 
 def can_edit_agro_panel(user) -> bool:
-    return normalize_role(getattr(user, "tipo_usuario", None)) in ADMIN_PANEL_EDIT_TYPES
+    return can_access_agro_panel(user) and normalize_role(getattr(user, "tipo_usuario", None)) in ADMIN_PANEL_EDIT_TYPES
 
 
 def can_edit_agro_finance_panel(user) -> bool:
-    return normalize_role(getattr(user, "tipo_usuario", None)) in (ADMIN_PANEL_EDIT_TYPES | AGRO_FINANCE_EDIT_TYPES)
+    role = normalize_role(getattr(user, "tipo_usuario", None))
+    return can_access_agro_panel(user) and role in (ADMIN_PANEL_EDIT_TYPES | AGRO_FINANCE_EDIT_TYPES)
 
 
 def is_financeiro_agro_admin(user) -> bool:
-    return normalize_role(getattr(user, "tipo_usuario", None)) in {"dev", "diretor", "admin", FINANCEIRO_ADMIN_USER_TYPE}
+    return can_access_agro_panel(user) and normalize_role(getattr(user, "tipo_usuario", None)) in {
+        "dev",
+        "diretor",
+        "admin",
+        FINANCEIRO_ADMIN_USER_TYPE,
+    }
 
 
 def is_financeiro_agro_only_user(user) -> bool:
