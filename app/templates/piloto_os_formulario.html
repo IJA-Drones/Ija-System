@@ -1517,12 +1517,71 @@ document.addEventListener("DOMContentLoaded", () => {
     return fallbackMessage;
   };
 
-  const VIDEO_UPLOAD_CHUNK_BYTES = 8 * 1024 * 1024;
+  const VIDEO_UPLOAD_CHUNK_BYTES = 16 * 1024 * 1024;
+  const IMAGE_UPLOAD_MAX_DIMENSION = 1920;
+  const IMAGE_UPLOAD_JPEG_QUALITY = 0.78;
 
   const formatFileSize = (bytes) => {
     const value = Number(bytes) || 0;
     if (value < 1024 * 1024) return `${Math.max(1, Math.round(value / 1024))} KB`;
     return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const optimizedImageFileName = (file) => {
+    const baseName = String(file?.name || "imagem-os")
+      .replace(/\.[^.]+$/, "")
+      .replace(/[^\w.-]+/g, "_")
+      .replace(/^_+|_+$/g, "");
+    return `${baseName || "imagem-os"}.jpg`;
+  };
+
+  const loadImageFromFile = (file) => new Promise((resolve, reject) => {
+    const image = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    image.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("Nao foi possivel preparar a imagem para envio."));
+    };
+    image.src = objectUrl;
+  });
+
+  const optimizeImageForUpload = async (file) => {
+    if (!file?.type?.startsWith("image/")) return file;
+    if (!["image/jpeg", "image/png", "image/jpg"].includes(file.type.toLowerCase())) return file;
+    if (typeof document.createElement("canvas").toBlob !== "function") return file;
+
+    const image = await loadImageFromFile(file);
+    const originalWidth = Number(image.naturalWidth || image.width || 0);
+    const originalHeight = Number(image.naturalHeight || image.height || 0);
+    if (!originalWidth || !originalHeight) return file;
+
+    const scale = Math.min(1, IMAGE_UPLOAD_MAX_DIMENSION / Math.max(originalWidth, originalHeight));
+    const width = Math.max(1, Math.round(originalWidth * scale));
+    const height = Math.max(1, Math.round(originalHeight * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d", { alpha: false });
+    if (!context) return file;
+
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, width, height);
+    context.drawImage(image, 0, 0, width, height);
+
+    const blob = await new Promise((resolve) => {
+      canvas.toBlob(resolve, "image/jpeg", IMAGE_UPLOAD_JPEG_QUALITY);
+    });
+    if (!blob || blob.size <= 0) return file;
+
+    const optimized = new File([blob], optimizedImageFileName(file), {
+      type: "image/jpeg",
+      lastModified: Date.now(),
+    });
+    return optimized.size < file.size ? optimized : file;
   };
 
   const validateVideoFileBeforeUpload = (file) => {
@@ -1795,16 +1854,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (principalUploadButton) principalUploadButton.disabled = true;
     if (principalInput) principalInput.disabled = true;
-    setUploadStatus("Enviando arquivo para o WebDAV...", "loading");
+    setUploadStatus("Otimizando foto para envio...", "loading");
 
     try {
+      const uploadFile = await optimizeImageForUpload(file);
+      const sizeMessage = uploadFile.size < file.size
+        ? ` (${formatFileSize(file.size)} -> ${formatFileSize(uploadFile.size)})`
+        : "";
+      setUploadStatus(`Enviando foto para o WebDAV${sizeMessage}...`, "loading");
+
       const response = await fetch("{{ url_for('main.os_upload_stream', os_id=solicitacao.id) }}", {
         method: "PUT",
         headers: {
-          "Content-Type": file.type || "application/octet-stream",
-          "X-File-Name": encodeURIComponent(file.name),
+          "Content-Type": uploadFile.type || "application/octet-stream",
+          "X-File-Name": encodeURIComponent(uploadFile.name),
         },
-        body: file,
+        body: uploadFile,
       });
 
       let payload = {};
@@ -2295,14 +2360,19 @@ document.addEventListener("DOMContentLoaded", () => {
       let uploadedCount = 0;
       try {
         for (const [index, file] of files.entries()) {
-          setExtrasUploadStatus(`Enviando imagem ${index + 1} de ${files.length} para o WebDAV...`, "loading");
+          setExtrasUploadStatus(`Otimizando imagem ${index + 1} de ${files.length}...`, "loading");
+          const uploadFile = await optimizeImageForUpload(file);
+          const sizeMessage = uploadFile.size < file.size
+            ? ` (${formatFileSize(file.size)} -> ${formatFileSize(uploadFile.size)})`
+            : "";
+          setExtrasUploadStatus(`Enviando imagem ${index + 1} de ${files.length}${sizeMessage}...`, "loading");
           const response = await fetch("{{ url_for('main.os_upload_complementary_stream', os_id=solicitacao.id) }}", {
             method: "PUT",
             headers: {
-              "Content-Type": file.type || "application/octet-stream",
-              "X-File-Name": encodeURIComponent(file.name),
+              "Content-Type": uploadFile.type || "application/octet-stream",
+              "X-File-Name": encodeURIComponent(uploadFile.name),
             },
-            body: file,
+            body: uploadFile,
           });
 
           let payload = {};

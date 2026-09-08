@@ -91,7 +91,7 @@ def delete_skybox_file(value):
     raise SkyboxError(f"Falha ao remover arquivo do Skybox ({response.status_code}).")
 
 
-def stream_skybox_file(value, range_header=None, *, as_attachment=False):
+def stream_skybox_file(value, range_header=None, *, as_attachment=False, conditional_headers=None):
     if not skybox_enabled():
         raise SkyboxError("Skybox nao esta configurado.")
 
@@ -99,11 +99,21 @@ def stream_skybox_file(value, range_header=None, *, as_attachment=False):
     headers = {}
     if range_header:
         headers["Range"] = range_header
+    for header in ("If-None-Match", "If-Modified-Since"):
+        if conditional_headers and conditional_headers.get(header):
+            headers[header] = conditional_headers[header]
 
     upstream = _request("GET", remote_path, headers=headers, stream=True)
     if upstream.status_code == 404:
         upstream.close()
         raise SkyboxError("Arquivo nao encontrado no Skybox.")
+    if upstream.status_code == 304:
+        upstream.close()
+        response_headers = {"Cache-Control": "private, max-age=86400"}
+        for header in ("Last-Modified", "ETag"):
+            if upstream.headers.get(header):
+                response_headers[header] = upstream.headers[header]
+        return Response(status=304, headers=response_headers)
     if upstream.status_code not in (200, 206):
         status_code = upstream.status_code
         upstream.close()
@@ -128,6 +138,7 @@ def stream_skybox_file(value, range_header=None, *, as_attachment=False):
     response_headers["Content-Type"] = content_type
     response_headers.setdefault("Accept-Ranges", "bytes")
     response_headers["Content-Disposition"] = _content_disposition(remote_path, as_attachment=as_attachment)
+    response_headers["Cache-Control"] = "private, max-age=86400"
 
     def generate():
         with upstream:

@@ -126,13 +126,16 @@ def _send_local_os_media(media_path, *, as_attachment=False):
     if not os.path.isfile(abs_path):
         abort(404)
 
-    return send_file(
+    response = send_file(
         abs_path,
         mimetype=mimetypes.guess_type(abs_path)[0] or "application/octet-stream",
         as_attachment=as_attachment,
         download_name=os.path.basename(abs_path),
         conditional=True,
     )
+    response.cache_control.private = True
+    response.cache_control.max_age = 86400
+    return response
 
 
 def _send_os_media(media_path, *, as_attachment=False):
@@ -145,7 +148,12 @@ def _send_os_media(media_path, *, as_attachment=False):
 
     if is_skybox_path(media_path):
         try:
-            return stream_skybox_file(media_path, request.headers.get("Range"), as_attachment=as_attachment)
+            return stream_skybox_file(
+                media_path,
+                request.headers.get("Range"),
+                as_attachment=as_attachment,
+                conditional_headers=request.headers,
+            )
         except SkyboxError:
             current_app.logger.exception("Erro ao servir midia da OS pelo Skybox.")
             abort(404)
@@ -282,6 +290,9 @@ def _stream_webdav_file(value, range_header=None, *, as_attachment=False):
     headers = {}
     if range_header:
         headers["Range"] = range_header
+    for header in ("If-None-Match", "If-Modified-Since"):
+        if request.headers.get(header):
+            headers[header] = request.headers[header]
 
     remote_path = _webdav_remote_path_from_marker(value)
     upstream = requests.get(
@@ -294,6 +305,13 @@ def _stream_webdav_file(value, range_header=None, *, as_attachment=False):
     if upstream.status_code == 404:
         upstream.close()
         abort(404)
+    if upstream.status_code == 304:
+        upstream.close()
+        response_headers = {"Cache-Control": "private, max-age=86400"}
+        for header in ("Last-Modified", "ETag"):
+            if upstream.headers.get(header):
+                response_headers[header] = upstream.headers[header]
+        return current_app.response_class(status=304, headers=response_headers)
     if upstream.status_code not in (200, 206):
         status_code = upstream.status_code
         upstream.close()
@@ -328,6 +346,7 @@ def _stream_webdav_file(value, range_header=None, *, as_attachment=False):
                 "Last-Modified": upstream.headers.get("Last-Modified"),
                 "ETag": upstream.headers.get("ETag"),
                 "Content-Disposition": _content_disposition(remote_path, as_attachment=as_attachment),
+                "Cache-Control": "private, max-age=86400",
             }.items()
             if value
         },
