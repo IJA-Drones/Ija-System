@@ -123,6 +123,8 @@ def list_veiculos(tipo_usuario, args, user=None):
 
     if status:
         query = query.filter(Veiculos.status == status)
+    else:
+        query = query.filter(db.func.lower(db.func.coalesce(Veiculos.status, "")) != "inativo")
 
     veiculos = query.order_by(Veiculos.criado_em.desc()).all()
     equipes = list_equipes_choices(user=user)
@@ -392,8 +394,27 @@ def update_veiculos_equipes(user, form_data):
 
 
 def delete_veiculo(veiculo):
-    db.session.delete(veiculo)
+    turnos_abertos = (
+        LogVeiculo.query
+        .options(selectinload(LogVeiculo.abastecimentos_detalhados))
+        .filter(LogVeiculo.veiculo_id == veiculo.id, LogVeiculo.km_final.is_(None))
+        .all()
+    )
+    for log in turnos_abertos:
+        log.km_final = log.ultimo_km_registrado
+        if not log.observacao:
+            log.observacao = "Turno encerrado automaticamente ao retirar o veiculo de operacao."
+
+    if turnos_abertos:
+        veiculo.km_atual = max((log.km_final or 0) for log in turnos_abertos)
+    else:
+        _recalcular_km_atual_veiculo(veiculo.id)
+
+    veiculo.status = "Inativo"
+    veiculo.equipe_id = None
+    veiculo.responsavel = None
     db.session.commit()
+    return "Veiculo retirado de operacao. Os logs historicos foram mantidos."
 
 
 def build_veiculo_form(veiculo):

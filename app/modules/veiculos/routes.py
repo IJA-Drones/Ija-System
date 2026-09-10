@@ -472,8 +472,7 @@ def register_routes(bp):
 
         veiculo = _get_scoped_veiculo_or_404(veiculo_id)
         try:
-            delete_veiculo(veiculo)
-            flash("Veículo removido!", "success")
+            flash(delete_veiculo(veiculo), "success")
         except Exception:
             db.session.rollback()
             current_app.logger.exception("Erro ao remover veiculo %s.", veiculo.id)

@@ -108,6 +108,7 @@
                                 <option value="">Todos</option>
                                 <option value="Ativo" {{ 'selected' if filters.status == 'Ativo' }}>🟢 Ativo</option>
                                 <option value="Em Manutenção" {{ 'selected' if filters.status == 'Em Manutenção' }}>Manutenção</option>
+                                <option value="Inativo" {{ 'selected' if filters.status == 'Inativo' }}>Inativo</option>
                             </select>
                         </div>
                         <div class="col-md-3 d-flex gap-2">
@@ -258,7 +259,7 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <span class="badge {% if v.status == 'Ativo' %}bg-success-light text-success{% else %}bg-warning-light text-warning{% endif %} rounded-pill px-3">
+                                <span class="badge {% if v.status == 'Ativo' %}bg-success-light text-success{% elif v.status == 'Inativo' %}bg-light text-muted{% else %}bg-warning-light text-warning{% endif %} rounded-pill px-3">
                                     {{ v.status }}
                                 </span>
                             </td>

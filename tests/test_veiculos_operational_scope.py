@@ -39,6 +39,7 @@ from app.modules.veiculos.service import (
     build_limpeza_alertas_admin_context,
     build_limpeza_alertas_operacionais_context,
     confirmar_alerta_limpeza_operacional,
+    delete_veiculo,
     update_veiculos_equipes,
     update_veiculo,
     update_veiculo_log_km,
@@ -190,6 +191,54 @@ class VeiculosOperationalScopeTests(unittest.TestCase):
         self.assertEqual(message, "Equipe responsavel atualizada em 1 veiculo.")
         self.assertEqual(veiculo.equipe_id, nova_equipe.id)
         self.assertIsNone(veiculo.responsavel)
+
+    def test_vehicle_delete_deactivates_and_closes_open_turno_preserving_logs(self):
+        veiculo = self._novo_veiculo(prefeitura_id=1)
+        log = LogVeiculo(
+            veiculo_id=veiculo.id,
+            equipe_id=self.equipe.id,
+            km_inicial=42845,
+            km_final=None,
+            data_registro=datetime(2026, 8, 21, 7, 28),
+        )
+        db.session.add(log)
+        db.session.flush()
+        db.session.add(
+            Abastecimento(
+                log_veiculo_id=log.id,
+                data_hora=datetime(2026, 8, 21, 7, 28),
+                km_registro=42845,
+                tipo_abastecimento="Veiculo",
+                litros=10,
+                valor_total=126,
+                foto_nf_path="notas/nf.jpg",
+            )
+        )
+        db.session.commit()
+
+        message = delete_veiculo(veiculo)
+
+        db.session.refresh(veiculo)
+        db.session.refresh(log)
+        self.assertEqual(message, "Veiculo retirado de operacao. Os logs historicos foram mantidos.")
+        self.assertEqual(veiculo.status, "Inativo")
+        self.assertIsNone(veiculo.equipe_id)
+        self.assertEqual(veiculo.km_atual, 42845)
+        self.assertEqual(log.km_final, 42845)
+        self.assertEqual(LogVeiculo.query.filter_by(veiculo_id=veiculo.id).count(), 1)
+
+    def test_default_vehicle_list_hides_inactive_vehicles(self):
+        ativo = self._novo_veiculo(placa="AAA1A11", renomacao="AAA1A11", prefeitura_id=1)
+        inativo = self._novo_veiculo(placa="BBB2B22", renomacao="BBB2B22", status="Inativo", prefeitura_id=1)
+        user = SimpleNamespace(tipo_usuario="admin", prefeitura_id=1)
+
+        context = veiculos_service.list_veiculos("admin", MultiDict(), user=user)
+
+        self.assertEqual([item.id for item in context["veiculos"]], [ativo.id])
+
+        context = veiculos_service.list_veiculos("admin", MultiDict([("status", "Inativo")]), user=user)
+
+        self.assertEqual([item.id for item in context["veiculos"]], [inativo.id])
 
     def test_pilot_vehicle_context_ignores_legacy_responsavel_without_team_link(self):
         self._novo_veiculo(equipe_id=None, responsavel="Leonardo Moreira Rodrigues")
