@@ -137,6 +137,17 @@
         <textarea class="form-control border-2" name="condicao_itens_manutencao"></textarea>
       </div>
 
+      <div class="topic-divider">Embreagem e freios</div>
+      <div class="check-grid">
+        {{ bool_choice('embreagem', 'Embreagem', 'group_embreagem_freios') }}
+        {{ bool_choice('freio_mao', 'Freio de mão', 'group_embreagem_freios') }}
+        {{ bool_choice('freio_pe', 'Freio do pé', 'group_embreagem_freios') }}
+      </div>
+      <div id="group_embreagem_freios" class="obs-container shadow-sm">
+        <label class="form-label small fw-bold text-primary">CONDIÇÃO DA EMBREAGEM E DOS FREIOS</label>
+        <textarea class="form-control border-2" name="condicao_embreagem_freios" placeholder="Descreva o defeito observado..."></textarea>
+      </div>
+
       <div class="topic-divider">Vidros e retrovisores</div>
       <div class="check-grid">
         {{ bool_choice('vidros', 'Vidros', 'group_vidros') }}
@@ -347,6 +358,7 @@
   const veiculoBoolFields = {{ [
     'farois_funcionando', 'setas_funcionando', 'lanternas_funcionando', 'piscaalerta_funcionando',
     'luz_painel', 'limpador_parabrisa', 'agua_radiador', 'fluido_freio', 'oleo_motor',
+    'embreagem', 'freio_mao', 'freio_pe',
     'vidros', 'retrovisores', 'pneus', 'estepe', 'macaco', 'triangulo', 'chave_roda',
     'extintor', 'cinto_seguranca', 'alarme', 'ar_condicionado', 'radio', 'giroflex',
     'isqueiro', 'carregador', 'lataria_frontal', 'lataria_lateral', 'lataria_traseira',
@@ -356,6 +368,7 @@
 
   const veiculoTextFields = {{ [
     'condicao_luzes_direcao', 'condicao_luz_painel', 'condicao_itens_manutencao',
+    'condicao_embreagem_freios',
     'condicao_vidros_retrovisores', 'condicao_pneus_estepe', 'condicao_itens_seguranca',
     'condicao_itens_carro_interno', 'condicao_giroflex_isqueiro_carregador',
     'condicao_lataria', 'condicao_lataria_portas', 'condicao_itens_carro_externo'
@@ -375,6 +388,7 @@
     'group_luzes',
     'group_painel',
     'group_manutencao',
+    'group_embreagem_freios',
     'group_vidros',
     'group_pneus',
     'group_seg',

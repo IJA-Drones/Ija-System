@@ -2478,6 +2478,12 @@ class ChecklistSemanalVeiculo(db.Model):
     oleo_motor = db.Column(db.Boolean, default=True)
     condicao_itens_manutencao = db.Column(db.Text)  
 
+    # Embreagem e freios
+    embreagem = db.Column(db.Boolean, default=True)
+    freio_mao = db.Column(db.Boolean, default=True)
+    freio_pe = db.Column(db.Boolean, default=True)
+    condicao_embreagem_freios = db.Column(db.Text)
+
     # Itens de Segurança motorista
     vidros = db.Column(db.Boolean, default=True)
     retrovisores = db.Column(db.Boolean, default=True)
