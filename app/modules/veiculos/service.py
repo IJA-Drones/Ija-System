@@ -44,7 +44,6 @@ from app.shared.skybox import (
 EQUIPE_OCEANO_USER_TYPE = "equipe_oceano"
 UTC_TZ = ZoneInfo("UTC")
 BRAZIL_TZ = ZoneInfo("America/Sao_Paulo")
-MAX_KM_POR_TURNO = 500
 LIMPEZA_ALERTA_OPERACIONAL_DIAS = 14
 LIMPEZA_ALERTA_ADMIN_DIAS = 21
 VEICULO_LOG_DELETE_AUDIT_ENDPOINT = "main.deletar_log_veiculo.snapshot"
@@ -798,8 +797,6 @@ def registrar_abastecimento_turno_piloto(user, veiculo_id, form_data, files_data
             "warning",
         )
 
-    _validar_limite_km_turno(log.km_inicial or 0, km_registro, "KM do abastecimento")
-
     novo_abastecimento = Abastecimento(
         log_veiculo_id=log.id,
         data_hora=_now_brazil(),
@@ -929,8 +926,6 @@ def encerrar_turno_piloto(user, veiculo_id, form_data, files_data=None, root_pat
             f"KM final nao pode ser menor que o KM do abastecimento ({maior_km_abastecimento:.0f}).",
             "danger",
         )
-    _validar_limite_km_turno(km_inicial_turno, km_final, "KM final")
-
     log.qtd_fazendas_enderecos = qtd_fazendas_enderecos
     log.km_final = km_final
     log.observacao = observacao
@@ -1341,22 +1336,6 @@ def _parse_km_form(raw_value, label="KM"):
         return float(f"{decimal_simples.group(1)}.{decimal_simples.group(2)}")
 
     raise ValueError(f"{label} deve ser informado como numero valido.")
-
-
-def _validar_limite_km_turno(km_referencia, km_informado, label):
-    km_referencia = km_referencia or 0
-    if km_informado is None:
-        return
-
-    km_rodado = km_informado - km_referencia
-    if km_rodado > MAX_KM_POR_TURNO:
-        raise VeiculoTurnoError(
-            (
-                f"{label} ultrapassa o limite de {MAX_KM_POR_TURNO} km por turno. "
-                f"Conferir o painel: referencia {km_referencia:.0f} km, informado {km_informado:.0f} km."
-            ),
-            "danger",
-        )
 
 
 def _parse_optional_int(raw_value):

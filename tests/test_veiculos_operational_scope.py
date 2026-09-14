@@ -731,7 +731,7 @@ class VeiculosOperationalScopeTests(unittest.TestCase):
             with self.assertRaises(PermissionError):
                 build_veiculos_deleted_logs_context("admin", request.args)
 
-    def test_closing_shift_rejects_more_than_500_km_in_turn(self):
+    def test_closing_shift_accepts_more_than_500_km_in_turn(self):
         veiculo = self._novo_veiculo(km_atual=1000)
         user = SimpleNamespace(
             tipo_usuario="equipe_oceano",
@@ -749,16 +749,21 @@ class VeiculosOperationalScopeTests(unittest.TestCase):
         db.session.commit()
 
         with TemporaryDirectory() as tmp_dir:
-            with self.assertRaisesRegex(veiculos_service.VeiculoTurnoError, "500 km por turno"):
-                encerrar_turno_piloto(
-                    user,
-                    veiculo.id,
-                    {"km_final": "1601", "qtd_fazendas_enderecos": "1", "observacao": ""},
-                    {
-                        "foto_painel_final": FileStorage(stream=BytesIO(b"fim"), filename="fim.png", content_type="image/png"),
-                    },
-                    tmp_dir,
-                )
+            message = encerrar_turno_piloto(
+                user,
+                veiculo.id,
+                {"km_final": "1601", "qtd_fazendas_enderecos": "1", "observacao": ""},
+                {
+                    "foto_painel_final": FileStorage(stream=BytesIO(b"fim"), filename="fim.png", content_type="image/png"),
+                },
+                tmp_dir,
+            )
+
+        db.session.refresh(log)
+        db.session.refresh(veiculo)
+        self.assertEqual(message, "Turno encerrado com sucesso!")
+        self.assertEqual(log.km_final, 1601)
+        self.assertEqual(veiculo.km_atual, 1601)
 
     def test_vehicle_local_media_path_resolves_to_skybox_path(self):
         self.assertEqual(
@@ -1053,7 +1058,7 @@ class VeiculosOperationalScopeTests(unittest.TestCase):
         self.assertEqual(abastecimento.litros, 40.5)
         self.assertEqual(abastecimento.valor_total, 1402.40)
 
-    def test_fuel_record_rejects_more_than_500_km_from_shift_initial(self):
+    def test_fuel_record_accepts_more_than_500_km_from_shift_initial(self):
         veiculo = self._novo_veiculo()
         user = SimpleNamespace(
             tipo_usuario="equipe_oceano",
@@ -1071,22 +1076,25 @@ class VeiculosOperationalScopeTests(unittest.TestCase):
         db.session.commit()
 
         with TemporaryDirectory() as tmp_dir:
-            with self.assertRaisesRegex(veiculos_service.VeiculoTurnoError, "500 km por turno"):
-                registrar_abastecimento_turno_piloto(
-                    user,
-                    veiculo.id,
-                    {
-                        "km_abastecimento": "1501",
-                        "litros": "20",
-                        "valor_abastecimento": "100",
-                        "tipo_abastecimento": "Veiculo",
-                    },
-                    {
-                        "foto_nf": FileStorage(stream=BytesIO(b"nf"), filename="nf.png", content_type="image/png"),
-                        "foto_painel_abastecimento": FileStorage(stream=BytesIO(b"painel"), filename="painel.png", content_type="image/png"),
-                    },
-                    tmp_dir,
-                )
+            message = registrar_abastecimento_turno_piloto(
+                user,
+                veiculo.id,
+                {
+                    "km_abastecimento": "1501",
+                    "litros": "20",
+                    "valor_abastecimento": "100",
+                    "tipo_abastecimento": "Veiculo",
+                },
+                {
+                    "foto_nf": FileStorage(stream=BytesIO(b"nf"), filename="nf.png", content_type="image/png"),
+                    "foto_painel_abastecimento": FileStorage(stream=BytesIO(b"painel"), filename="painel.png", content_type="image/png"),
+                },
+                tmp_dir,
+            )
+
+        abastecimento = Abastecimento.query.one()
+        self.assertEqual(message, "Abastecimento registrado com sucesso!")
+        self.assertEqual(abastecimento.km_registro, 1501)
 
     def test_closing_shift_rejects_final_km_lower_than_fuel_km(self):
         veiculo = self._novo_veiculo(km_atual=1000)
