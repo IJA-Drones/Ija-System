@@ -1,11 +1,12 @@
 import mimetypes
 import os
 
-from flask import abort, current_app, flash, redirect, render_template, request, send_file, url_for
+from flask import abort, current_app, flash, jsonify, redirect, render_template, request, send_file, url_for
 from flask_login import current_user, login_required
 
 from app.extensions import db
 from app.models import Veiculos
+from app.modules.veiculos.rastreamento import build_rastreamento_payload
 from app.modules.veiculos.service import (
     VEICULOS_ALLOWED_TYPES,
     VEICULOS_LOGS_ALLOWED_TYPES,
@@ -113,6 +114,27 @@ def _send_veiculo_media_from_skybox(media_path, placa):
 
 
 def register_routes(bp):
+    @bp.route("/veiculos/rastreamento", methods=["GET"], endpoint="veiculos_rastreamento")
+    @login_required
+    def veiculos_rastreamento():
+        try:
+            payload = build_rastreamento_payload(current_user)
+        except PermissionError:
+            abort(403)
+        response = current_app.make_response(render_template("veiculos_rastreamento.html", tracking=payload))
+        response.headers["Cache-Control"] = "private, no-store"
+        return response
+
+    @bp.route("/veiculos/rastreamento/dados", methods=["GET"], endpoint="veiculos_rastreamento_dados")
+    @login_required
+    def veiculos_rastreamento_dados():
+        try:
+            response = jsonify(build_rastreamento_payload(current_user))
+        except PermissionError:
+            abort(403)
+        response.headers["Cache-Control"] = "private, no-store"
+        return response
+
     @bp.route("/veiculos/menu", methods=["GET"], endpoint="veiculos_menu")
     @login_required
     def veiculos_menu():

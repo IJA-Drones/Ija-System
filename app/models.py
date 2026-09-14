@@ -38,6 +38,9 @@ class Prefeitura(db.Model):
     estoque_pecas = db.relationship("EstoquePeca", back_populates="prefeitura", lazy="select")
     manutencoes_equipamentos = db.relationship("ManutencaoEquipamento", back_populates="prefeitura", lazy="select")
     manutencao_pecas_usadas = db.relationship("ManutencaoPecaUso", back_populates="prefeitura", lazy="select")
+    rastreamento_posicoes = db.relationship("RastreamentoPosicao", back_populates="prefeitura", lazy="select")
+    rastreamento_historicos = db.relationship("RastreamentoHistorico", back_populates="prefeitura", lazy="select")
+    rastreamento_alertas = db.relationship("RastreamentoAlerta", back_populates="prefeitura", lazy="select")
 
 # -------------------------------------------------------------
 # USUÁRIO (login do sistema)
@@ -2222,6 +2225,25 @@ class Veiculos(Equipamentos):
     revisao_marcada_em = db.Column(db.DateTime, nullable=True, index=True)
     revisao_obs = db.Column(db.String(255))
 
+    rastreamento_posicoes = db.relationship(
+        "RastreamentoPosicao",
+        back_populates="veiculo",
+        lazy="select",
+        cascade="all, delete-orphan",
+    )
+    rastreamento_historicos = db.relationship(
+        "RastreamentoHistorico",
+        back_populates="veiculo",
+        lazy="select",
+        cascade="all, delete-orphan",
+    )
+    rastreamento_alertas = db.relationship(
+        "RastreamentoAlerta",
+        back_populates="veiculo",
+        lazy="select",
+        cascade="all, delete-orphan",
+    )
+
     __mapper_args__ = {"polymorphic_identity": "veiculos"}
 
     @property
@@ -2234,6 +2256,82 @@ class Veiculos(Equipamentos):
             return None
 
 
+# -------------------------------------------------------------
+# RASTREAMENTO (posição atual, histórico e alertas)
+# -------------------------------------------------------------
+class RastreamentoPosicao(db.Model):
+    __tablename__ = "rastreamento_posicoes"
+
+    id = db.Column(db.Integer, primary_key=True)
+    veiculo_id = db.Column(db.Integer, db.ForeignKey("veiculos.id", ondelete="CASCADE"), nullable=False, index=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
+
+    latitude = db.Column(db.Float, nullable=False)
+    longitude = db.Column(db.Float, nullable=False)
+    velocidade_kmh = db.Column(db.Float, nullable=True)
+    ignicao = db.Column(db.Boolean, nullable=True)
+    hodometro_km = db.Column(db.Float, nullable=True)
+    endereco = db.Column(db.String(255), nullable=True)
+    reportado_em = db.Column(db.DateTime, nullable=False, index=True)
+    provedor = db.Column(db.String(40), nullable=False, default="RedGPS", index=True)
+    is_demo = db.Column(db.Boolean, nullable=False, default=False, index=True)
+    chave_fixture = db.Column(db.String(160), nullable=True, unique=True, index=True)
+
+    veiculo = db.relationship("Veiculos", back_populates="rastreamento_posicoes")
+    prefeitura = db.relationship("Prefeitura", back_populates="rastreamento_posicoes", lazy="joined")
+
+    __table_args__ = (
+        db.Index("ix_rastreamento_posicoes_veiculo_reportado", "veiculo_id", "reportado_em"),
+    )
+
+
+class RastreamentoHistorico(db.Model):
+    __tablename__ = "rastreamento_historicos"
+
+    id = db.Column(db.Integer, primary_key=True)
+    veiculo_id = db.Column(db.Integer, db.ForeignKey("veiculos.id", ondelete="CASCADE"), nullable=False, index=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
+
+    latitude = db.Column(db.Float, nullable=False)
+    longitude = db.Column(db.Float, nullable=False)
+    velocidade_kmh = db.Column(db.Float, nullable=True)
+    ignicao = db.Column(db.Boolean, nullable=True)
+    hodometro_km = db.Column(db.Float, nullable=True)
+    reportado_em = db.Column(db.DateTime, nullable=False, index=True)
+    provedor = db.Column(db.String(40), nullable=False, default="RedGPS", index=True)
+    is_demo = db.Column(db.Boolean, nullable=False, default=False, index=True)
+    chave_fixture = db.Column(db.String(160), nullable=True, unique=True, index=True)
+
+    veiculo = db.relationship("Veiculos", back_populates="rastreamento_historicos")
+    prefeitura = db.relationship("Prefeitura", back_populates="rastreamento_historicos", lazy="joined")
+
+    __table_args__ = (
+        db.Index("ix_rastreamento_historicos_veiculo_reportado", "veiculo_id", "reportado_em"),
+    )
+
+
+class RastreamentoAlerta(db.Model):
+    __tablename__ = "rastreamento_alertas"
+
+    id = db.Column(db.Integer, primary_key=True)
+    veiculo_id = db.Column(db.Integer, db.ForeignKey("veiculos.id", ondelete="CASCADE"), nullable=False, index=True)
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
+
+    tipo = db.Column(db.String(80), nullable=False, index=True)
+    severidade = db.Column(db.String(20), nullable=False, default="media", index=True)
+    mensagem = db.Column(db.String(255), nullable=False)
+    reportado_em = db.Column(db.DateTime, nullable=False, index=True)
+    resolvido = db.Column(db.Boolean, nullable=False, default=False, index=True)
+    provedor = db.Column(db.String(40), nullable=False, default="RedGPS", index=True)
+    is_demo = db.Column(db.Boolean, nullable=False, default=False, index=True)
+    chave_fixture = db.Column(db.String(160), nullable=True, unique=True, index=True)
+
+    veiculo = db.relationship("Veiculos", back_populates="rastreamento_alertas")
+    prefeitura = db.relationship("Prefeitura", back_populates="rastreamento_alertas", lazy="joined")
+
+    __table_args__ = (
+        db.Index("ix_rastreamento_alertas_veiculo_reportado", "veiculo_id", "reportado_em"),
+    )
 # -------------------------------------------------------------
 # LOGS DE VEÍCULO (UNIFICADO: ABS + CCD)
 # -------------------------------------------------------------

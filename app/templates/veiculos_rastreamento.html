@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/filters.css') }}">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/veiculos_rastreamento.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="tracking-page" id="trackingPage" data-url="{{ url_for('main.veiculos_rastreamento_dados') }}">
+  <header class="tracking-header dashboard-header">
+    <div>
+      <a class="tracking-back" href="{{ url_for('main.veiculos_menu') }}"><i class="bi bi-arrow-left"></i> Central de veículos</a>
+      <div class="tracking-title"><h2>Rastreamento</h2><span class="badge bg-light text-primary border tracking-provider" id="trackingProvider">Google Maps · RedGPS</span></div>
+      <p class="text-muted mb-0">Uma visão da frota, do deslocamento aos detalhes de cada veículo.</p>
+    </div>
+    <button type="button" class="btn btn-outline-primary" id="trackingRefresh"><i class="bi bi-arrow-clockwise"></i> Atualizar painel</button>
+  </header>
+
+  <section class="tracking-notice alert alert-info" aria-label="Situação do rastreamento">
+    <span class="tracking-notice-icon"><i class="bi bi-broadcast-pin"></i></span>
+    <div><strong id="trackingNoticeTitle">Aguardando conexão com o rastreamento</strong><p id="trackingNoticeText">Consulte a frota cadastrada. As posições e os trajetos estarão disponíveis após a ativação.</p></div>
+    <button type="button" class="btn btn-success" id="trackingDemo" aria-pressed="false"><i class="bi bi-play-circle"></i> Explorar demonstração</button>
+  </section>
+  <div class="tracking-feedback alert alert-secondary" id="trackingFeedback" role="status" aria-live="polite" hidden></div>
+  <noscript><p class="alert alert-warning">Ative o JavaScript para consultar o mapa e os filtros de rastreamento.</p></noscript>
+
+  <section class="tracking-stats" aria-label="Resumo da frota filtrada">
+    <article class="tracking-stat card border-0 shadow-sm"><div><span class="text-muted small">Veículos na frota</span><strong class="h3 d-block text-primary mb-1" id="statTotal">{{ tracking.vehicles|length }}</strong><small class="text-muted">Conforme os filtros</small></div><i class="bi bi-truck text-primary"></i></article>
+    <article class="tracking-stat card border-0 shadow-sm"><div><span class="text-muted small">Em movimento</span><strong class="h3 d-block text-primary mb-1" id="statMoving">—</strong><small class="text-muted">Posição recente</small></div><i class="bi bi-send text-success"></i></article>
+    <article class="tracking-stat card border-0 shadow-sm"><div><span class="text-muted small">Parados</span><strong class="h3 d-block text-primary mb-1" id="statStopped">—</strong><small class="text-muted">Posição recente</small></div><i class="bi bi-pause-circle text-primary"></i></article>
+    <article class="tracking-stat card border-0 shadow-sm"><div><span class="text-muted small">Sem posição recente</span><strong class="h3 d-block text-primary mb-1" id="statPending">{{ tracking.vehicles|length }}</strong><small class="text-muted">Aguardando atualização</small></div><i class="bi bi-clock-history text-warning"></i></article>
+  </section>
+
+  <nav class="tracking-module-tabs nav nav-tabs" aria-label="Ferramentas de rastreamento">
+    <button type="button" id="trackingPositionTab" data-view="positions" class="nav-link active" aria-pressed="true"><i class="bi bi-geo-alt"></i> Mapa online</button>
+    <button type="button" id="trackingHistoryTab" data-view="history" class="nav-link" aria-pressed="false"><i class="bi bi-signpost-split"></i> Rotas percorridas</button>
+    <button type="button" data-view="playback" class="nav-link" aria-pressed="false"><i class="bi bi-play-circle"></i> Flashback</button>
+    <button type="button" data-view="telemetry" class="nav-link" aria-pressed="false"><i class="bi bi-speedometer2"></i> Telemetria</button>
+    <button type="button" data-view="alerts" class="nav-link" aria-pressed="false"><i class="bi bi-bell"></i> Avisos</button>
+    <button type="button" data-view="areas" class="nav-link" aria-pressed="false"><i class="bi bi-bounding-box"></i> Áreas de interesse</button>
+    <button type="button" data-view="reports" class="nav-link" aria-pressed="false"><i class="bi bi-file-earmark-bar-graph"></i> Relatórios</button>
+  </nav>
+
+  <div class="tracking-workspace">
+    <aside class="tracking-fleet card border-0 shadow-sm" aria-label="Seleção de veículos">
+      <div class="tracking-fleet-heading"><h2>Sua frota</h2><span id="trackingCount" class="badge bg-light text-primary border tracking-count">{{ tracking.vehicles|length }}</span></div>
+      <div class="tracking-filters">
+        <div class="tracking-search input-group input-group-sm"><span class="input-group-text"><i class="bi bi-search"></i></span><input class="form-control" id="trackingSearch" type="search" aria-label="Buscar veículo" placeholder="Placa, modelo ou equipe" autocomplete="off"></div>
+        <div class="tracking-selects">
+          <label class="form-label">Operação<select class="form-select form-select-sm" id="trackingOperation"><option value="">Todas as operações</option></select></label>
+          <label class="form-label">Situação<select class="form-select form-select-sm" id="trackingStatus"><option value="">Todas as situações</option><option value="moving">Em movimento</option><option value="stopped">Parado</option><option value="stale">Posição antiga</option><option value="pending">Sem posição</option></select></label>
+        </div>
+        <button class="btn btn-link p-0" id="trackingClear" type="button" hidden><i class="bi bi-x-circle"></i> Limpar filtros</button>
+      </div>
+      <div id="trackingVehicleList" class="tracking-vehicle-list list-group list-group-flush" aria-label="Veículos disponíveis"><p class="tracking-list-message">Carregando veículos…</p></div>
+      <footer class="tracking-fleet-footer"><i class="bi bi-shield-check"></i> Frota disponível para o seu acesso</footer>
+    </aside>
+
+    <section class="tracking-main card border-0 shadow-sm" aria-label="Mapa e detalhes do veículo">
+      <div class="tracking-map-toolbar" id="trackingMapToolbar">
+        <div><strong id="trackingMapTitle">Mapa da frota</strong><span id="trackingMapSubtitle">Localização dos veículos selecionados</span></div>
+        <button type="button" class="btn btn-sm btn-outline-primary tracking-fit" id="trackingFit" disabled><i class="bi bi-arrows-fullscreen"></i> Enquadrar</button>
+      </div>
+      <div class="tracking-history-toolbar" id="trackingHistoryControls" hidden>
+        <label class="form-label mb-0" for="trackingHistoryDate">Data do trajeto</label><input class="form-control form-control-sm" type="date" id="trackingHistoryDate">
+        <span id="trackingHistorySummary">Selecione um veículo para consultar o trajeto.</span>
+      </div>
+      <div class="tracking-playback" id="trackingPlayback" hidden>
+        <button type="button" class="btn btn-primary btn-sm" id="trackingPlay" disabled aria-label="Reproduzir trajeto">Reproduzir</button>
+        <input type="range" id="trackingPlaybackRange" min="0" max="0" value="0" aria-label="Ponto do trajeto" disabled>
+        <label class="visually-hidden" for="trackingPlaybackSpeed">Velocidade da reprodução</label>
+        <select class="form-select form-select-sm" id="trackingPlaybackSpeed"><option value="1">1×</option><option value="2">2×</option><option value="4">4×</option></select>
+        <output id="trackingPlaybackLabel" for="trackingPlaybackRange">Sem trajeto</output>
+      </div>
+      <section class="tracking-tool-panel" id="trackingToolPanel" aria-live="polite" hidden></section>
+      <div class="tracking-map-wrap" id="trackingMapWrap">
+        <div class="tracking-map" id="trackingMap" role="region" aria-label="Mapa de localização dos veículos"></div>
+        <div class="tracking-map-empty" id="trackingMapEmpty"><span><i class="bi bi-geo-alt"></i></span><strong id="trackingMapEmptyTitle">O próximo destino da sua frota está aqui</strong><p id="trackingMapEmptyText">As posições aparecerão no mapa quando o rastreamento estiver conectado.</p></div>
+        <div class="tracking-map-label" id="trackingMapLabel"><span class="tracking-status-dot"></span> Aguardando posições</div>
+        <div class="tracking-map-error" id="trackingMapError" role="status" hidden>Não foi possível carregar o mapa. Os detalhes da frota continuam disponíveis.</div>
+      </div>
+      <div class="tracking-map-legend" id="trackingMapLegend" aria-label="Legenda"><span><i class="tracking-dot moving"></i> Em movimento</span><span><i class="tracking-dot stopped"></i> Parado</span><span><i class="tracking-dot stale"></i> Posição antiga</span><span class="tracking-legend-note">Horários de Brasília</span></div>
+
+      <section class="tracking-detail" id="trackingDetail" aria-label="Detalhes do veículo selecionado" aria-live="polite">
+        <div class="tracking-detail-heading"><div><span class="tracking-eyebrow text-muted">VEÍCULO SELECIONADO</span><h5 id="trackingDetailTitle" class="text-primary mb-1">Selecione um veículo</h5><p id="trackingDetailSubtitle" class="text-muted mb-0">Consulte a localização e as informações da frota.</p></div><span class="badge tracking-badge pending" id="trackingDetailStatus">Sem posição</span></div>
+        <div class="tracking-detail-grid">
+          <div><span><i class="bi bi-speedometer2"></i> Velocidade</span><strong id="detailSpeed">—</strong></div>
+          <div><span><i class="bi bi-power"></i> Ignição</span><strong id="detailIgnition">—</strong></div>
+          <div><span><i class="bi bi-truck"></i> KM registrado</span><strong id="detailRegisteredKm">—</strong></div>
+          <div><span><i class="bi bi-broadcast"></i> KM GPS</span><strong id="detailGpsKm">—</strong></div>
+        </div>
+        <div class="tracking-detail-bottom"><div><i class="bi bi-geo-alt"></i><span id="detailAddress">Localização ainda não disponível</span><small id="detailReportedAt">Sem reporte recebido</small></div><a id="trackingLogsLink" class="btn btn-link p-0" hidden>Ver logs do veículo <i class="bi bi-arrow-up-right"></i></a></div>
+      </section>
+    </section>
+  </div>
+</div>
+<script type="application/json" id="trackingData">{{ tracking | tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="{{ url_for('static', filename='js/veiculos-rastreamento.js') }}" defer></script>
+{% endblock %}
