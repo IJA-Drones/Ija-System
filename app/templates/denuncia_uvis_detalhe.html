@@ -1,297 +1,152 @@
 {% extends "base.html" %}
+{% from "denuncias/_components.html" import detail_header, section, occurrence, address, media, citizen %}
+{% block extra_styles %}{% include "denuncias/_styles.html" %}{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4" style="max-width: 1200px">
-  <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
-    <div>
-      <a href="{{ back_url }}" class="btn btn-outline-secondary btn-sm mb-3">
-        <i class="bi bi-arrow-left me-1"></i> Voltar para denúncias
-      </a>
-      <h2 class="text-dark mb-1">
-        <i class="bi bi-megaphone-fill me-2 text-primary"></i>{{ denuncia.protocolo }}
-      </h2>
-      <p class="text-muted small mb-0">
-        Denúncia encaminhada para {{ denuncia.uvis_usuario.nome_uvis if denuncia.uvis_usuario else 'sua UVIS' }}.
-      </p>
-    </div>
-    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2">
-      {{ denuncia.status.replace('_', ' ') }}
-    </span>
-  </div>
-
+<div class="container-fluid py-4 listing-page denuncias-page">
+  {{ detail_header(denuncia, back_url, 'UVIS') }}
   <div class="row g-4 mb-4">
     <div class="col-12 col-xl-7">
-      <div class="card border-0 shadow-sm rounded-4 h-100">
-        <div class="card-header bg-white border-0 p-4 pb-0">
-          <h5 class="text-dark mb-0"><i class="bi bi-geo-alt-fill me-2 text-primary"></i>Local da denúncia</h5>
-        </div>
-        <div class="card-body p-4">
-          <div class="row g-3">
-            <div class="col-md-8">
-              <div class="text-muted small fw-bold">Endereço</div>
-              <div class="text-dark">{{ denuncia.logradouro }}, {{ denuncia.numero }}</div>
-              {% if denuncia.complemento %}<div class="text-muted small">{{ denuncia.complemento }}</div>{% endif %}
-            </div>
-            <div class="col-md-4">
-              <div class="text-muted small fw-bold">CEP</div>
-              <div class="text-dark">{{ denuncia.cep or 'Não informado' }}</div>
-            </div>
-            <div class="col-md-4">
-              <div class="text-muted small fw-bold">Bairro</div>
-              <div class="text-dark">{{ denuncia.bairro }}</div>
-            </div>
-            <div class="col-md-4">
-              <div class="text-muted small fw-bold">Cidade/UF</div>
-              <div class="text-dark">{{ denuncia.cidade }}/{{ denuncia.uf }}</div>
-            </div>
-            <div class="col-md-4">
-              <div class="text-muted small fw-bold">Coordenadas</div>
-              <div class="text-dark">{{ denuncia.latitude or '-' }}{% if denuncia.longitude %}, {{ denuncia.longitude }}{% endif %}</div>
-            </div>
-            {% if denuncia.latitude and denuncia.longitude %}
-            <div class="col-12">
-              <a class="btn btn-outline-primary btn-sm" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query={{ denuncia.latitude }},{{ denuncia.longitude }}">
-                <i class="bi bi-map me-1"></i>Abrir no mapa
-              </a>
-            </div>
-            {% endif %}
-          </div>
-        </div>
-      </div>
+      {% call section('Local da denúncia', 'bi-geo-alt', 'h-100', 'Encaminhada para ' ~ (denuncia.uvis_usuario.nome_uvis if denuncia.uvis_usuario else 'sua UVIS') ~ '.') %}
+        {{ address(denuncia) }}
+      {% endcall %}
     </div>
-
     <div class="col-12 col-xl-5">
-      <div class="card border-0 shadow-sm rounded-4 h-100">
-        <div class="card-header bg-white border-0 p-4 pb-0">
-          <h5 class="text-dark mb-0"><i class="bi bi-clipboard2-pulse me-2 text-primary"></i>Relato</h5>
-        </div>
-        <div class="card-body p-4">
-          <div class="d-flex flex-wrap gap-2 mb-3">
-            <span class="badge bg-light text-dark border">{{ denuncia.tipo_visita }}</span>
-            {% if denuncia.tipo_imovel %}<span class="badge bg-light text-dark border">{{ denuncia.tipo_imovel }}</span>{% endif %}
-            <span class="badge bg-secondary">{{ denuncia.foco }}</span>
-          </div>
-          <div class="text-muted small fw-bold">Descrição</div>
-          <p class="text-dark mb-3">{{ denuncia.descricao or 'Sem descrição complementar.' }}</p>
-          <div class="text-muted small">
-            Cidadão: <strong>{{ denuncia.cidadao_nome }}</strong><br>
-            Telefone: <strong>{{ denuncia.cidadao_telefone }}</strong>
-          </div>
-        </div>
-      </div>
+      {% call section('Relato do cidadão', 'bi-clipboard2-pulse', 'h-100') %}
+        {{ occurrence(denuncia) }}
+        <hr class="my-4">
+        {{ citizen(denuncia) }}
+      {% endcall %}
     </div>
   </div>
 
-  {% if denuncia.anexos %}
-  <div class="card border-0 shadow-sm rounded-4 mb-4">
-    <div class="card-header bg-white border-0 p-4 pb-0">
-      <h5 class="text-dark mb-0"><i class="bi bi-images me-2 text-primary"></i>Fotos e vídeos enviados</h5>
-    </div>
-    <div class="card-body p-4">
-      <div class="row g-3">
-        {% for anexo in denuncia.anexos %}
-        {% set media_url = url_for('main.denuncia_anexo', anexo_id=anexo.id) %}
-        <div class="col-12 col-md-4">
-          <div class="border rounded-3 p-2 h-100 bg-light">
-            {% if anexo.tipo_midia == 'video' %}
-            <video class="w-100 rounded-3 bg-dark" controls preload="metadata" style="max-height: 220px">
-              <source src="{{ media_url }}" type="{{ anexo.mime_type or 'video/mp4' }}">
-            </video>
-            {% else %}
-            <a href="{{ media_url }}" target="_blank" rel="noopener">
-              <img src="{{ media_url }}" alt="{{ anexo.arquivo_nome }}" class="w-100 rounded-3" style="height: 220px; object-fit: cover;">
-            </a>
-            {% endif %}
-            <div class="small text-muted mt-2 text-truncate">{{ anexo.arquivo_nome }}</div>
-          </div>
-        </div>
-        {% endfor %}
-      </div>
-    </div>
-  </div>
-  {% endif %}
+  {% call section('Fotos e vídeos enviados', 'bi-images', 'mb-4') %}{{ media(denuncia) }}{% endcall %}
 
-  <div class="card border-0 shadow-sm rounded-4">
-    <div class="card-header bg-white border-0 p-4 pb-0">
-      <h5 class="text-dark mb-0"><i class="bi bi-send-fill me-2 text-primary"></i>Gerar solicitação operacional</h5>
-      <p class="text-muted small mb-0 mt-1">Complete os campos operacionais. Os dados do endereço serão enviados para a tabela de solicitações.</p>
+  {% call section('Gerar solicitação operacional', 'bi-send', description='Revise as informações do relato e complete o agendamento e os dados da operação.') %}
+    {% if denuncia.solicitacao_id %}
+    <div class="alert alert-success mb-0">
+      <i class="bi bi-check-circle me-2" aria-hidden="true"></i>Esta denúncia já gerou a solicitação #{{ denuncia.solicitacao_id }}.
+      <a class="alert-link" href="{{ url_for('main.editar_solicitacao', id=denuncia.solicitacao_id) }}">Abrir solicitação</a>
     </div>
-    <div class="card-body p-4">
-      {% if denuncia.solicitacao_id %}
-      <div class="alert alert-success">
-        Esta denúncia já gerou a solicitação #{{ denuncia.solicitacao_id }}.
-        <a href="{{ url_for('main.editar_solicitacao', id=denuncia.solicitacao_id) }}">Abrir solicitação</a>
-      </div>
-      {% else %}
-      <form method="post" id="formDenunciaSolicitacao" class="form-no-loading">
-        <input type="hidden" name="risco_aereo" value="0">
-        <input type="hidden" name="logradouro" value="{{ form.logradouro }}">
-        <input type="hidden" name="numero" value="{{ form.numero }}">
-        <input type="hidden" name="complemento" value="{{ form.complemento }}">
-        <input type="hidden" name="bairro" value="{{ form.bairro }}">
-        <input type="hidden" name="cidade" value="{{ form.cidade }}">
-        <input type="hidden" name="uf" value="{{ form.uf }}">
-        <input type="hidden" name="latitude" value="{{ form.latitude }}">
-        <input type="hidden" name="longitude" value="{{ form.longitude }}">
-        <input type="hidden" name="place_id" value="{{ form.place_id }}">
+    {% else %}
+    <form method="post" id="formDenunciaSolicitacao" class="form-no-loading">
+      <input type="hidden" name="risco_aereo" value="0">
+      {% for name in ['logradouro', 'numero', 'complemento', 'bairro', 'cidade', 'uf', 'latitude', 'longitude', 'place_id'] %}
+      <input type="hidden" name="{{ name }}" value="{{ form[name] }}">
+      {% endfor %}
 
-        <div class="d-flex align-items-center mb-3">
-          <i class="bi bi-calendar-event text-primary me-2 fs-5"></i>
-          <h5 class="m-0 text-primary fw-bold">Agendamento</h5>
-        </div>
-        <div class="row g-3 mb-4">
+      <fieldset class="denuncia-operation-section">
+        <legend class="denuncia-section-title"><i class="bi bi-calendar-event" aria-hidden="true"></i>Agendamento</legend>
+        <div class="row g-3">
           <div class="col-md-4">
-            <label class="form-label fw-bold small text-muted">Data da visita *</label>
-            <input type="date" name="data" class="form-control" required min="{{ hoje }}" value="{{ form.data }}">
+            <label class="form-label" for="denunciaData">Data da visita *</label>
+            <input id="denunciaData" type="date" name="data" class="form-control" required min="{{ hoje }}" value="{{ form.data }}">
           </div>
           <div class="col-md-4">
-            <label class="form-label fw-bold small text-muted">Horário previsto *</label>
-            <input type="time" name="hora" class="form-control" required value="{{ form.hora }}">
+            <label class="form-label" for="denunciaHora">Horário previsto *</label>
+            <input id="denunciaHora" type="time" name="hora" class="form-control" required value="{{ form.hora }}">
           </div>
           <div class="col-md-4">
-            <label class="form-label fw-bold small text-muted">CEP *</label>
-            <input type="text" name="cep" class="form-control" required value="{{ form.cep }}" placeholder="00000-000">
+            <label class="form-label" for="denunciaCep">CEP *</label>
+            <input id="denunciaCep" type="text" name="cep" class="form-control" required value="{{ form.cep }}" placeholder="00000-000">
           </div>
         </div>
-
-        <hr class="text-muted opacity-25 my-4">
-
-        <div class="d-flex align-items-center mb-3">
-          <i class="bi bi-sliders text-primary me-2 fs-5"></i>
-          <h5 class="m-0 text-primary fw-bold">Detalhes da Operação</h5>
-        </div>
-
-        <div class="row g-4 mb-4">
+      </fieldset>
+      <hr class="my-4">
+      <fieldset class="denuncia-operation-section">
+        <legend class="denuncia-section-title"><i class="bi bi-sliders" aria-hidden="true"></i>Detalhes da operação</legend>
+        <div class="row g-3">
           <div class="col-md-6">
-            <label class="form-label fw-bold small text-muted mb-2">
-              <i class="bi bi-list-task me-1 text-primary"></i> TIPO DE VISITA *
-            </label>
-            <select class="form-select shadow-sm" name="tipo_visita" required>
+            <label class="form-label" for="denunciaTipoVisita">Tipo de visita *</label>
+            <select id="denunciaTipoVisita" class="form-select" name="tipo_visita" required aria-describedby="denunciaTipoHint">
               <option value="" disabled {% if not form.tipo_visita %}selected{% endif %}>Selecione...</option>
               {% for opcao in solicitacao_tipo_visita_opcoes %}
               <option value="{{ opcao }}" {% if form.tipo_visita == opcao %}selected{% endif %}>{{ opcao }}</option>
               {% endfor %}
             </select>
-            <small class="text-muted d-block mt-2">Ao selecionar Aedes, o campo Tipo de Imovel sera exibido.</small>
+            <small id="denunciaTipoHint" class="text-muted d-block mt-2">Para Aedes, informe também o tipo de imóvel.</small>
           </div>
-
           <div class="col-md-6{% if not form.tipo_visita_outros %} d-none{% endif %}" data-tipo-visita-outros-wrapper>
-            <label class="form-label fw-bold small text-muted mb-2">
-              <i class="bi bi-pencil-square me-1 text-primary"></i> QUAL TIPO DE VISITA?
-            </label>
-            <input
-              type="text"
-              class="form-control shadow-sm"
-              name="tipo_visita_outros"
-              value="{{ form.tipo_visita_outros or '' }}"
-              placeholder="Descreva o tipo de visita"
-              {% if not form.tipo_visita_outros %}disabled{% endif %}
-            >
+            <label class="form-label" for="denunciaTipoOutros">Qual tipo de visita?</label>
+            <input id="denunciaTipoOutros" type="text" class="form-control" name="tipo_visita_outros" value="{{ form.tipo_visita_outros or '' }}" placeholder="Descreva o tipo de visita" {% if not form.tipo_visita_outros %}disabled{% endif %}>
           </div>
-
           <div class="col-md-6">
-            <label class="form-label fw-bold small text-muted mb-2">
-              <i class="bi bi-arrow-up me-1 text-primary"></i> ALTURA DO VOO *
-            </label>
-            <select class="form-select shadow-sm" name="altura_voo" required>
+            <label class="form-label" for="denunciaAltura">Altura do voo *</label>
+            <select id="denunciaAltura" class="form-select" name="altura_voo" required>
               <option value="" disabled {% if not form.altura_voo %}selected{% endif %}>Selecione...</option>
-              <option value="10m" {% if form.altura_voo == '10m' %}selected{% endif %}>10 Metros</option>
-              <option value="20m" {% if form.altura_voo == '20m' %}selected{% endif %}>20 Metros</option>
-              <option value="30m" {% if form.altura_voo == '30m' %}selected{% endif %}>30 Metros</option>
-              <option value="40m" {% if form.altura_voo == '40m' %}selected{% endif %}>40 Metros</option>
+              {% for altura in ['10', '20', '30', '40'] %}
+              <option value="{{ altura }}m" {% if form.altura_voo == altura ~ 'm' %}selected{% endif %}>{{ altura }} metros</option>
+              {% endfor %}
             </select>
           </div>
-
           <div class="col-md-6">
-            <label class="form-label fw-bold small text-muted mb-2">
-              <i class="bi bi-geo-alt me-1 text-primary"></i> DA (Distrito) *
-            </label>
-            <input type="text" name="distrito_administrativo" class="form-control shadow-sm" maxlength="100" required value="{{ form.distrito_administrativo or '' }}">
+            <label class="form-label" for="denunciaDistrito">Distrito administrativo (DA) *</label>
+            <input id="denunciaDistrito" type="text" name="distrito_administrativo" class="form-control" maxlength="100" required value="{{ form.distrito_administrativo or '' }}">
           </div>
-        </div>
-
-        <div class="row g-4 mb-4">
+          <div class="col-md-6">
+            <label class="form-label" for="denunciaFoco">Foco da ação *</label>
+            <select id="denunciaFoco" class="form-select" name="foco" required>
+              <option value="" {% if not form.foco %}selected{% endif %} disabled>Selecione o foco da ação...</option>
+              {% if form.foco %}<option value="{{ form.foco }}" selected>{{ form.foco }}</option>{% endif %}
+            </select>
+          </div>
           <div class="col-12{% if form.tipo_visita != 'Aedes' %} d-none{% endif %}" data-tipo-imovel-wrapper>
-            <div class="p-3 border rounded bg-white shadow-sm">
-              <label class="form-label fw-bold small text-muted mb-2">
-                <i class="bi bi-building me-1 text-primary"></i> TIPO DE IMOVEL *
-              </label>
-              <div class="d-flex flex-wrap gap-4">
+            <fieldset class="denuncia-choice-group">
+              <legend>Tipo de imóvel *</legend>
+              <div class="d-flex flex-wrap gap-3">
                 {% for opcao in solicitacao_tipo_imovel_opcoes %}
                 {% set radio_id = 'denuncia_tipo_imovel_' ~ loop.index %}
                 <div class="form-check">
                   <input class="form-check-input" type="radio" name="tipo_imovel" id="{{ radio_id }}" value="{{ opcao }}" {% if form.tipo_imovel == opcao %}checked{% endif %}>
-                  <label class="form-check-label small fw-medium" for="{{ radio_id }}">{{ opcao }}</label>
+                  <label class="form-check-label small" for="{{ radio_id }}">{{ opcao }}</label>
                 </div>
                 {% endfor %}
               </div>
-            </div>
+            </fieldset>
           </div>
-
-          <div class="col-md-6">
-            <label class="form-label fw-bold small text-muted mb-2">
-              <i class="bi bi-crosshair me-1 text-primary"></i> FOCO DA ACAO *
-            </label>
-            <select class="form-select shadow-sm" name="foco" required>
-              <option value="" {% if not form.foco %}selected{% endif %} disabled>Selecione o foco da acao...</option>
-              {% if form.foco %}
-              <option value="{{ form.foco }}" selected>{{ form.foco }}</option>
-              {% endif %}
-            </select>
-          </div>
-
           <div class="col-12">
-            <div class="p-3 border rounded bg-white shadow-sm">
-              <label class="form-label fw-bold small text-muted mb-2">
-                <i class="bi bi-check2-square me-1 text-primary"></i> TIPO DE OPERAÇÃO *
-              </label>
-              <div class="d-flex flex-wrap gap-4">
+            <fieldset class="denuncia-choice-group">
+              <legend>Tipo de operação *</legend>
+              <div class="d-flex flex-wrap gap-3">
                 <div class="form-check">
                   <input class="form-check-input" type="radio" name="tipo_operacao" id="denunciaOpMonitoramento" value="Monitoramento" {% if form.tipo_operacao == 'Monitoramento' %}checked{% endif %}>
-                  <label class="form-check-label small fw-medium" for="denunciaOpMonitoramento">Monitoramento</label>
+                  <label class="form-check-label small" for="denunciaOpMonitoramento">Monitoramento</label>
                 </div>
                 <div class="form-check">
                   <input class="form-check-input" type="radio" name="tipo_operacao" id="denunciaOpTratamento" value="Tratamento" {% if not form.tipo_operacao or form.tipo_operacao == 'Tratamento' %}checked{% endif %}>
-                  <label class="form-check-label small fw-medium" for="denunciaOpTratamento">Tratamento e Monitoramento</label>
+                  <label class="form-check-label small" for="denunciaOpTratamento">Tratamento e Monitoramento</label>
                 </div>
               </div>
-            </div>
+            </fieldset>
           </div>
-
           <div class="col-12">
-            <div class="p-3 border rounded bg-white shadow-sm">
-              <label class="fw-bold small text-muted d-block mb-3">
-                <i class="bi bi-cone-striped me-1 text-primary"></i> NECESSÁRIO APOIO CET?
-              </label>
-              <div class="d-flex flex-wrap gap-4">
+            <fieldset class="denuncia-choice-group">
+              <legend>Necessário apoio CET?</legend>
+              <div class="d-flex flex-wrap gap-3">
                 <div class="form-check">
                   <input class="form-check-input" type="radio" name="apoio_cet" id="denunciaCetSim" value="sim" {% if form.apoio_cet == 'sim' %}checked{% endif %}>
-                  <label class="form-check-label small fw-medium" for="denunciaCetSim">Sim</label>
+                  <label class="form-check-label small" for="denunciaCetSim">Sim</label>
                 </div>
                 <div class="form-check">
                   <input class="form-check-input" type="radio" name="apoio_cet" id="denunciaCetNao" value="nao" {% if not form.apoio_cet or form.apoio_cet == 'nao' %}checked{% endif %}>
-                  <label class="form-check-label small fw-medium" for="denunciaCetNao">Não</label>
+                  <label class="form-check-label small" for="denunciaCetNao">Não</label>
                 </div>
               </div>
-            </div>
+            </fieldset>
+          </div>
+          <div class="col-12">
+            <label class="form-label" for="denunciaObservacao">Observações</label>
+            <textarea id="denunciaObservacao" class="form-control" name="observacao" rows="4">{{ form.observacao }}</textarea>
           </div>
         </div>
-
-        <div class="mb-4">
-          <label class="form-label fw-bold small text-muted">Observações</label>
-          <textarea class="form-control" name="observacao" rows="4">{{ form.observacao }}</textarea>
-        </div>
-
-        <div class="d-flex justify-content-end gap-2">
-          <a href="{{ back_url }}" class="btn btn-outline-secondary">Cancelar</a>
-          <button type="submit" class="btn btn-primary px-4">
-            <i class="bi bi-send me-1"></i> Criar solicitação
-          </button>
-        </div>
-      </form>
-      {% endif %}
-    </div>
-  </div>
+      </fieldset>
+      <div class="denuncia-form-actions mt-4">
+        <a href="{{ back_url }}" class="btn btn-outline-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-success"><i class="bi bi-send" aria-hidden="true"></i>Criar solicitação</button>
+      </div>
+    </form>
+    {% endif %}
+  {% endcall %}
 </div>
 {% endblock %}
 

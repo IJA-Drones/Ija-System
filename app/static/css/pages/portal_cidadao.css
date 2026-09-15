@@ -169,8 +169,9 @@
 
 .portal-cidadao-hero-svg {
   display: block;
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 26px;
+  height: 26px;
+  flex: none;
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
@@ -178,16 +179,16 @@
   stroke-width: 1.8;
 }
 
-.portal-cidadao-community-svg {
-  width: 1.7rem;
-  height: 1.7rem;
-  stroke-width: 1.55;
+.portal-cidadao-hero-heart {
+  fill: currentColor;
+  stroke: none;
 }
 
-.portal-cidadao-hero-card-head strong,
-.portal-cidadao-hero-card-head span { display: block; }
-.portal-cidadao-hero-card-head strong { color: #fff; font-size: .94rem; }
-.portal-cidadao-hero-card-head span { margin-top: 4px; color: rgba(255, 255, 255, .65); font-size: .76rem; line-height: 1.35; }
+.portal-cidadao-hero-card-copy { min-width: 0; }
+.portal-cidadao-hero-card-copy > strong,
+.portal-cidadao-hero-card-copy > span { display: block; }
+.portal-cidadao-hero-card-copy > strong { color: #fff; font-size: .94rem; }
+.portal-cidadao-hero-card-copy > span { margin-top: 4px; color: rgba(255, 255, 255, .65); font-size: .76rem; line-height: 1.35; }
 
 .portal-cidadao-mini-flow {
   display: grid;
