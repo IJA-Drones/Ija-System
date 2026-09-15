@@ -178,6 +178,12 @@
   stroke-width: 1.8;
 }
 
+.portal-cidadao-community-svg {
+  width: 1.7rem;
+  height: 1.7rem;
+  stroke-width: 1.55;
+}
+
 .portal-cidadao-hero-card-head strong,
 .portal-cidadao-hero-card-head span { display: block; }
 .portal-cidadao-hero-card-head strong { color: #fff; font-size: .94rem; }
@@ -322,26 +328,132 @@
 .portal-cidadao-footer span, .portal-cidadao-footer a { display: inline-flex; align-items: center; gap: 7px; }
 .portal-cidadao-footer i { color: var(--portal-cyan-dark); }
 
+/* O portal usa as mesmas superfícies, bordas e cores de texto do tema escuro
+   global. As regras ficam escopadas para não alterar as telas internas. */
+body.dark-mode .portal-cidadao-page,
+html.dark-mode .portal-cidadao-page {
+  --portal-ink: var(--color-text-main);
+  --portal-muted: var(--color-text-muted);
+  --portal-line: #2f4258;
+  --portal-cyan: var(--color-accent);
+  --portal-cyan-dark: var(--color-accent);
+  color: var(--color-text-main);
+  color-scheme: dark;
+}
+
+/* O tema global aplica azul aos headings no modo escuro. No hero e nos
+   cartões do portal, preservamos a hierarquia visual da própria página. */
+body.dark-mode .portal-cidadao-hero h1 { color: #fff !important; }
 body.dark-mode .portal-cidadao-section-heading h2,
 body.dark-mode .portal-cidadao-form-card h3,
 body.dark-mode .portal-cidadao-side-card h3,
 body.dark-mode .portal-cidadao-info-card h3,
 body.dark-mode .portal-cidadao-field label,
+body.dark-mode .portal-cidadao-form legend,
 body.dark-mode .portal-cidadao-type-option,
-body.dark-mode .portal-cidadao-type-option strong { color: #e7eef7; }
+body.dark-mode .portal-cidadao-type-option strong,
+body.dark-mode .portal-cidadao-upload-box strong { color: var(--portal-ink) !important; }
+
 body.dark-mode .portal-cidadao-side-card,
 body.dark-mode .portal-cidadao-form-card,
-body.dark-mode .portal-cidadao-info-card,
-body.dark-mode .portal-cidadao-type-option { border-color: rgba(148, 163, 184, .22); background: #162334; }
-body.dark-mode .portal-cidadao-type-option.is-selected { background: #193b49; }
+body.dark-mode .portal-cidadao-info-card {
+  border-color: #2f4258;
+  background: #152233;
+  box-shadow: var(--shadow-md);
+}
+
+body.dark-mode .portal-cidadao-type-option {
+  border-color: #334155;
+  background: #1c2b3f;
+}
+
+body.dark-mode .portal-cidadao-type-option:hover,
+body.dark-mode .portal-cidadao-type-option:focus-visible {
+  border-color: var(--color-accent);
+  background: rgba(35, 192, 214, .08);
+}
+
+body.dark-mode .portal-cidadao-type-option > i:first-child,
+body.dark-mode .portal-cidadao-info-card > i {
+  color: var(--color-accent);
+  background: rgba(35, 192, 214, .14);
+}
+
+body.dark-mode .portal-cidadao-type-option.is-selected {
+  border-color: var(--color-accent);
+  background: rgba(35, 192, 214, .14);
+  box-shadow: 0 0 0 3px rgba(35, 192, 214, .18);
+}
+
 body.dark-mode .portal-cidadao-side-tip,
 body.dark-mode .portal-cidadao-upload-box,
 body.dark-mode .portal-cidadao-consent,
-body.dark-mode .portal-cidadao-identity-note { background: #1b2a3c; }
-body.dark-mode .portal-cidadao-feedback.is-success { color: #9be0b6; background: #173424; }
-body.dark-mode .portal-cidadao-feedback.is-error { color: #f1a3ad; background: #3a1f28; }
+body.dark-mode .portal-cidadao-identity-note {
+  background: #172334;
+}
+
+body.dark-mode .portal-cidadao-upload-box {
+  border-color: rgba(35, 192, 214, .42);
+}
+
+body.dark-mode .portal-cidadao-upload-icon {
+  color: var(--color-accent);
+  background: rgba(35, 192, 214, .14);
+}
+
+body.dark-mode .portal-cidadao-file-item {
+  color: var(--color-accent);
+  background: rgba(35, 192, 214, .14);
+}
+
 body.dark-mode .portal-cidadao-field .form-control,
-body.dark-mode .portal-cidadao-field .form-select { border-color: rgba(148, 163, 184, .24); color: #e7eef7; background: #101927; }
+body.dark-mode .portal-cidadao-field .form-select {
+  border-color: #334155 !important;
+  color: var(--color-text-main) !important;
+  background: #1c2b3f !important;
+}
+
+body.dark-mode .portal-cidadao-field .form-control:focus,
+body.dark-mode .portal-cidadao-field .form-select:focus {
+  border-color: var(--color-accent) !important;
+  box-shadow: 0 0 0 3px rgba(35, 192, 214, .25) !important;
+}
+
+body.dark-mode .portal-cidadao-field .form-control::placeholder {
+  color: #94a3b8 !important;
+}
+
+body.dark-mode .portal-cidadao-field .form-control:disabled,
+body.dark-mode .portal-cidadao-field .form-select:disabled {
+  background: #172334 !important;
+  color: var(--color-text-muted) !important;
+  opacity: 1;
+}
+
+body.dark-mode .portal-cidadao-form .form-select option {
+  color: var(--color-text-main);
+  background: #1c2b3f;
+}
+
+body.dark-mode .portal-cidadao-location-action {
+  color: var(--color-accent);
+}
+
+body.dark-mode .portal-cidadao-feedback.is-success {
+  border-color: rgba(51, 154, 107, .45);
+  color: #9be0b6;
+  background: #173424;
+}
+
+body.dark-mode .portal-cidadao-feedback.is-error {
+  border-color: rgba(228, 96, 96, .45);
+  color: #f1a3ad;
+  background: #3a1f28;
+}
+
+body.dark-mode .portal-cidadao-info-card > span {
+  color: rgba(35, 192, 214, .34);
+}
 
 @media (max-width: 980px) {
   .portal-cidadao-hero { grid-template-columns: 1fr; }
