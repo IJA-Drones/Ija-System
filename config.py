@@ -24,6 +24,9 @@ class Config:
     SKYBOX_USERNAME = os.environ.get("SKYBOX_USERNAME")
     SKYBOX_APP_PASSWORD = os.environ.get("SKYBOX_APP_PASSWORD")
     SKYBOX_BASE_DIR = os.environ.get("SKYBOX_BASE_DIR", "dados ordens de serviço")
+    CORREIOS_API_TOKEN = os.environ.get("CORREIOS_API_TOKEN")
+    CORREIOS_CEP_TOKEN = os.environ.get("CORREIOS_CEP_TOKEN")
+    CORREIOS_CEP_BASE_URL = os.environ.get("CORREIOS_CEP_BASE_URL", "https://api.correios.com.br/cep")
 
     # Nova variável (sem restrição de site) apenas para o Geocode do Python
     Maps_KEY_BACK = os.getenv("GOOGLE_MAPS_KEY_BACK")

@@ -296,6 +296,8 @@ def create_nova_solicitacao(user, form_data):
     hora_str = form_data.get("hora")
     data_obj = datetime.strptime(data_str, "%Y-%m-%d").date() if data_str else None
     hora_obj = datetime.strptime(hora_str, "%H:%M").time() if hora_str else None
+    if data_obj and data_obj < date.today():
+        raise NovoCadastroValidationError("A data da visita nao pode ser retroativa.")
     distrito_administrativo = _clean_empty_marker(form_data.get("distrito_administrativo"))
 
     if not distrito_administrativo:

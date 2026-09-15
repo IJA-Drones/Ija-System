@@ -699,7 +699,7 @@
 
     .login-alt {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: 1fr;
       gap: 10px;
       margin-top: 22px;
       padding-top: 18px;
@@ -718,10 +718,11 @@
     .login-alt-link {
       display: flex;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
       gap: 10px;
       min-height: 56px;
       padding: 10px;
+      min-width: 0;
       border-radius: 16px;
       background: #ffffff;
       border: 1px solid rgba(100,116,139,.16);
@@ -756,9 +757,21 @@
       background: #ecfdf3;
     }
 
+    .login-alt-link.citizen {
+      grid-column: 1 / -1;
+      border-color: rgba(10, 168, 195, .22);
+      background: linear-gradient(135deg, #f4fdff, #ffffff);
+    }
+
+    .login-alt-link.citizen .login-alt-icon {
+      color: #087088;
+      background: #e8f8fb;
+    }
+
     .login-alt-copy {
       flex: 1 1 auto;
       min-width: 0;
+      overflow: hidden;
     }
 
     .login-alt-title {
@@ -767,6 +780,12 @@
       font-size: .8rem;
       line-height: 1.15;
       font-weight: 850;
+      overflow-wrap: anywhere;
+    }
+
+    .login-alt-link > .bi-arrow-right-short {
+      flex: 0 0 auto;
+      margin-left: auto;
     }
 
     .login-alt-caption {
