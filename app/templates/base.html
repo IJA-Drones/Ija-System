@@ -275,17 +275,20 @@
 
           {% if is_admin_panel_user and not is_agro_context %}
           {% if can_access_denuncias(current_user) %}
-          {% set denuncias_sidebar_endpoint = 'main.coordenadoria_denuncias_listar' if current_user.tipo_usuario == 'regional' else 'main.denuncias_listar' %}
           <li class="nav-item">
-            <a
-              class="nav-link {% if request.endpoint in ['main.denuncias_listar', 'main.denuncia_detalhe', 'main.coordenadoria_denuncias_listar', 'main.coordenadoria_denuncia_detalhe'] %}active{% endif %}"
-              href="{{ url_for(denuncias_sidebar_endpoint) }}"
+            <span
+              class="nav-link nav-link-disabled"
+              aria-disabled="true"
+              title="Em desenvolvimento"
             >
               <i class="bi bi-megaphone-fill me-2"></i><span>Denúncias</span>
               {% if denuncias_nav_count and denuncias_nav_count > 0 %}
               <span class="badge bg-danger ms-auto" style="border-radius: 999px">{{ denuncias_nav_count }}</span>
+              <span class="badge text-bg-secondary ms-2 nav-development-badge">Em desenvolvimento</span>
+              {% else %}
+              <span class="badge text-bg-secondary ms-auto nav-development-badge">Em desenvolvimento</span>
               {% endif %}
-            </a>
+            </span>
           </li>
           {% endif %}
           <li class="nav-item">
@@ -388,15 +391,19 @@
             </a>
           </li>
           <li class="nav-item">
-            <a
-              class="nav-link {% if request.endpoint in ['main.uvis_denuncias_listar', 'main.uvis_denuncia_detalhe'] %}active{% endif %}"
-              href="{{ url_for('main.uvis_denuncias_listar') }}"
+            <span
+              class="nav-link nav-link-disabled"
+              aria-disabled="true"
+              title="Em desenvolvimento"
             >
               <i class="bi bi-megaphone-fill me-2"></i><span>Denúncias</span>
               {% if denuncias_nav_count and denuncias_nav_count > 0 %}
               <span class="badge bg-danger ms-auto" style="border-radius: 999px">{{ denuncias_nav_count }}</span>
+              <span class="badge text-bg-secondary ms-2 nav-development-badge">Em desenvolvimento</span>
+              {% else %}
+              <span class="badge text-bg-secondary ms-auto nav-development-badge">Em desenvolvimento</span>
               {% endif %}
-            </a>
+            </span>
           </li>
           {% endif %}
 

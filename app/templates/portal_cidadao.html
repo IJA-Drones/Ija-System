@@ -54,6 +54,57 @@
     </div>
   </header>
 
+  <section class="portal-cidadao-section portal-cidadao-news-section" id="boletim-saude" aria-labelledby="portal-boletim-title">
+    <div class="portal-cidadao-section-heading">
+      <div>
+        <span class="portal-cidadao-eyebrow"><i class="bi bi-journal-text" aria-hidden="true"></i> Informação e prevenção</span>
+        <h2 id="portal-boletim-title">Boletim de saúde</h2>
+        <p>Conteúdo recente sobre dengue, vigilância e cuidados com a saúde.</p>
+      </div>
+      <span class="portal-cidadao-status-pill">
+        <i class="bi bi-patch-check-fill" aria-hidden="true"></i>
+        Fontes públicas oficiais
+      </span>
+    </div>
+
+    <div class="portal-cidadao-news-layout">
+      <div class="portal-cidadao-news-feed" aria-label="Notícias oficiais de saúde">
+        {% for noticia in health_news %}
+        <article class="portal-cidadao-news-card{% if loop.first %} portal-cidadao-news-lead{% endif %}">
+          {% if loop.first %}<span class="portal-cidadao-news-label">Em destaque</span>{% endif %}
+          <div class="portal-cidadao-news-meta">
+            <span>{{ noticia.source }}</span>
+            <span>{{ noticia.published_label }}</span>
+          </div>
+          <h3><a href="{{ noticia.url }}" target="_blank" rel="noopener noreferrer">{{ noticia.title }}</a></h3>
+          {% if noticia.summary %}
+          <p>{{ noticia.summary }}</p>
+          {% endif %}
+          <a class="portal-cidadao-news-read" href="{{ noticia.url }}" target="_blank" rel="noopener noreferrer" aria-label="Ler na fonte oficial: {{ noticia.title }} (abre em nova aba)">
+            Ler publicação
+            <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+          </a>
+        </article>
+        {% endfor %}
+      </div>
+
+      <aside class="portal-cidadao-news-aside" aria-label="Participação e atendimento">
+        <span class="portal-cidadao-news-aside-icon"><i class="bi bi-megaphone-fill" aria-hidden="true"></i></span>
+        <span class="portal-cidadao-eyebrow">Sua cidade, seu cuidado</span>
+        <h3>Viu um possível foco?</h3>
+        <p>Água parada, criadouros ou outro risco à saúde: seu relato ajuda a vigilância a identificar onde agir.</p>
+        <a class="btn btn-success" href="#portal-relato">
+          Registrar um relato
+          <i class="bi bi-arrow-right" aria-hidden="true"></i>
+        </a>
+        <span class="portal-cidadao-news-aside-note">
+          <i class="bi bi-shield-check" aria-hidden="true"></i>
+          As informações passam pela análise da equipe responsável.
+        </span>
+      </aside>
+    </div>
+  </section>
+
   <section class="portal-cidadao-section" id="portal-relato" aria-labelledby="portal-relato-title">
     <div class="portal-cidadao-section-heading">
       <div>
