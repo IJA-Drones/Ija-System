@@ -52,6 +52,25 @@
   color: var(--color-accent);
 }
 
+.app-sidebar .nav-link-disabled {
+  cursor: default;
+  opacity: 0.72;
+}
+
+.app-sidebar .nav-link-disabled:hover {
+  background: transparent;
+  color: var(--color-text-main);
+}
+
+.app-sidebar .nav-development-badge {
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+}
+
 .app-sidebar .nav-link.active {
   background: rgba(0, 163, 196, 0.15);
   color: var(--color-accent);
