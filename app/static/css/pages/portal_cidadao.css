@@ -308,6 +308,9 @@
 .portal-cidadao-form-footer > span i { color: var(--portal-cyan-dark); margin-right: 4px; }
 .portal-cidadao-submit { min-height: 45px; white-space: nowrap; }
 .portal-cidadao-preview-feedback i { margin-top: 2px; }
+.portal-cidadao-feedback { margin-top: 16px; padding: 12px 14px; border-radius: 8px; font-size: .78rem; font-weight: 700; line-height: 1.4; }
+.portal-cidadao-feedback.is-success { border: 1px solid rgba(25, 135, 84, .2); color: #146c43; background: #dff5e8; }
+.portal-cidadao-feedback.is-error { border: 1px solid rgba(220, 53, 69, .22); color: #b02a37; background: #fdecef; }
 
 .portal-cidadao-info-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
 .portal-cidadao-info-card { position: relative; min-height: 180px; padding: 20px; overflow: hidden; }
@@ -335,6 +338,8 @@ body.dark-mode .portal-cidadao-side-tip,
 body.dark-mode .portal-cidadao-upload-box,
 body.dark-mode .portal-cidadao-consent,
 body.dark-mode .portal-cidadao-identity-note { background: #1b2a3c; }
+body.dark-mode .portal-cidadao-feedback.is-success { color: #9be0b6; background: #173424; }
+body.dark-mode .portal-cidadao-feedback.is-error { color: #f1a3ad; background: #3a1f28; }
 body.dark-mode .portal-cidadao-field .form-control,
 body.dark-mode .portal-cidadao-field .form-select { border-color: rgba(148, 163, 184, .24); color: #e7eef7; background: #101927; }
 

@@ -1,5 +1,5 @@
 import unittest
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 from unittest.mock import patch
 
 from flask import Flask
@@ -44,6 +44,8 @@ class SolicitacaoPlaceIdBlockTests(unittest.TestCase):
         )
         db.session.add_all([self.prefeitura, self.outra_prefeitura, self.uvis, self.outra_uvis])
         db.session.commit()
+        self.future_date = date.today() + timedelta(days=30)
+        self.other_future_date = self.future_date + timedelta(days=1)
 
     def tearDown(self):
         db.session.remove()
@@ -52,7 +54,7 @@ class SolicitacaoPlaceIdBlockTests(unittest.TestCase):
 
     def _solicitacao_form(self, place_id):
         return MultiDict({
-            "data": "2026-08-10",
+            "data": self.future_date.isoformat(),
             "hora": "09:30",
             "cep": "02131-040",
             "logradouro": "Rua Hiroshima",
@@ -83,11 +85,11 @@ class SolicitacaoPlaceIdBlockTests(unittest.TestCase):
         *,
         status="PENDENTE",
         uvis_id=None,
-        data_agendamento=date(2026, 8, 10),
+        data_agendamento=None,
         data_criacao=None,
     ):
         solicitacao = Solicitacao(
-            data_agendamento=data_agendamento,
+            data_agendamento=data_agendamento or self.future_date,
             hora_agendamento=time(8, 0),
             foco="Foco Teste",
             cep="02131-040",
@@ -284,7 +286,10 @@ class SolicitacaoPlaceIdBlockTests(unittest.TestCase):
                 self._solicitacao_form("place-new"),
             )
 
-        self.assertIn("20 solicitações válidas para 10/08/2026", exc.exception.message)
+        self.assertIn(
+            f"20 solicitações válidas para {self.future_date.strftime('%d/%m/%Y')}",
+            exc.exception.message,
+        )
         self.assertEqual(Solicitacao.query.count(), 21)
 
     def test_create_allows_new_request_when_one_of_twenty_is_denied(self):
@@ -311,8 +316,8 @@ class SolicitacaoPlaceIdBlockTests(unittest.TestCase):
 
     def test_create_allows_request_when_limit_is_for_another_scheduled_day(self):
         for _ in range(19):
-            self._solicitacao_no_limite(status="PENDENTE", data_agendamento=date(2026, 8, 11))
-        self._solicitacao_no_limite(status="CONCLUIDO", data_agendamento=date(2026, 8, 11))
+            self._solicitacao_no_limite(status="PENDENTE", data_agendamento=self.other_future_date)
+        self._solicitacao_no_limite(status="CONCLUIDO", data_agendamento=self.other_future_date)
         db.session.commit()
 
         with (
@@ -328,7 +333,7 @@ class SolicitacaoPlaceIdBlockTests(unittest.TestCase):
                 self._solicitacao_form("place-new"),
             )
 
-        self.assertEqual(nova.data_agendamento, date(2026, 8, 10))
+        self.assertEqual(nova.data_agendamento, self.future_date)
         self.assertEqual(Solicitacao.query.count(), 21)
 
     def test_uvis_cannot_reopen_denied_request_when_daily_limit_is_full(self):
@@ -352,7 +357,10 @@ class SolicitacaoPlaceIdBlockTests(unittest.TestCase):
                 self._editar_form(),
             )
 
-        self.assertIn("20 solicitações válidas para 10/08/2026", exc.exception.message)
+        self.assertIn(
+            f"20 solicitações válidas para {self.future_date.strftime('%d/%m/%Y')}",
+            exc.exception.message,
+        )
         self.assertEqual(Solicitacao.query.get(negada.id).status, "NEGADO")
 
 

@@ -87,7 +87,20 @@
           <i class="bi bi-bug-fill" aria-hidden="true"></i>
         </div>
 
-        <form class="portal-cidadao-form" id="portalCidadaoForm" novalidate>
+        <form
+          class="portal-cidadao-form"
+          id="portalCidadaoForm"
+          method="post"
+          action="{{ url_for('main.portal_cidadao_denuncias_criar') }}"
+          enctype="multipart/form-data"
+          novalidate
+        >
+          <input type="hidden" id="portalTipoVisita" name="tipo_visita">
+          <input type="hidden" id="portalUf" name="uf" value="SP">
+          <input type="hidden" id="portalLatitude" name="latitude">
+          <input type="hidden" id="portalLongitude" name="longitude">
+          <input type="hidden" id="portalPlaceId" name="place_id">
+          <input type="hidden" id="portalComplemento" name="complemento">
           <fieldset>
             <legend>O que você encontrou?</legend>
             <div class="portal-cidadao-type-grid" role="group" aria-label="Tipo de ocorrência">
@@ -117,7 +130,7 @@
           <div class="portal-cidadao-dependent-fields" id="portalCidadaoDependentFields" hidden>
             <div class="portal-cidadao-field" id="portalTipoImovelField" hidden>
               <label for="portalTipoImovel">Que tipo de local é?</label>
-              <select class="form-select" id="portalTipoImovel">
+              <select class="form-select" id="portalTipoImovel" name="tipo_imovel">
                 <option value="">Selecione o tipo de imóvel</option>
                 {% for tipo_imovel in focus_catalog.tipo_imovel_opcoes %}
                 {% if tipo_imovel == 'Imovel Geral' %}
@@ -132,7 +145,7 @@
 
             <div class="portal-cidadao-field">
               <label for="portalFoco">O que você viu no local?</label>
-              <select class="form-select" id="portalFoco" disabled>
+              <select class="form-select" id="portalFoco" name="foco" disabled>
                 <option value="">Primeiro escolha o tipo de ocorrência</option>
               </select>
               <small id="portalFocoHint">Escolha uma opção que mais se aproxima do que você encontrou.</small>
@@ -144,28 +157,28 @@
             <div class="portal-cidadao-form-grid">
               <div class="portal-cidadao-field portal-cidadao-field-wide">
                 <label for="portalLogradouro">Logradouro</label>
-                <input class="form-control" id="portalLogradouro" type="text" placeholder="Rua, avenida ou estrada">
+                <input class="form-control" id="portalLogradouro" name="logradouro" type="text" placeholder="Rua, avenida ou estrada" required>
               </div>
               <div class="portal-cidadao-field">
                 <label for="portalNumero">Número</label>
-                <input class="form-control" id="portalNumero" type="text" placeholder="Número ou s/n">
+                <input class="form-control" id="portalNumero" name="numero" type="text" placeholder="Número ou s/n" required>
               </div>
               <div class="portal-cidadao-field">
                 <label for="portalBairro">Bairro</label>
-                <input class="form-control" id="portalBairro" type="text" placeholder="Bairro">
+                <input class="form-control" id="portalBairro" name="bairro" type="text" placeholder="Bairro" required>
               </div>
               <div class="portal-cidadao-field">
                 <label for="portalCidade">Cidade</label>
-                <input class="form-control" id="portalCidade" type="text" placeholder="Cidade">
+                <input class="form-control" id="portalCidade" name="cidade" type="text" placeholder="Cidade" required>
               </div>
               <div class="portal-cidadao-field">
                 <label for="portalCep">CEP <span>(opcional)</span></label>
-                <input class="form-control" id="portalCep" type="text" inputmode="numeric" placeholder="00000-000">
+                <input class="form-control" id="portalCep" name="cep" type="text" inputmode="numeric" placeholder="00000-000">
               </div>
             </div>
-            <button class="portal-cidadao-location-action" type="button" disabled>
+            <button class="portal-cidadao-location-action" id="portalUseLocationButton" type="button">
               <i class="bi bi-crosshair" aria-hidden="true"></i>
-              Usar minha localização (em breve)
+              Usar minha localização
             </button>
           </fieldset>
 
@@ -189,8 +202,8 @@
                 <input class="form-control" id="portalRg" name="rg" type="text" autocomplete="off" placeholder="Número do RG" required>
               </div>
               <div class="portal-cidadao-field portal-cidadao-field-wide">
-                <label for="portalContato">Telefone ou e-mail <span>(opcional)</span></label>
-                <input class="form-control" id="portalContato" name="contato" type="text" autocomplete="email" placeholder="Para receber atualizações do atendimento">
+                <label for="portalTelefone">Telefone <span class="portal-cidadao-required">obrigatório</span></label>
+                <input class="form-control" id="portalTelefone" name="telefone" type="text" inputmode="tel" autocomplete="tel" placeholder="(00) 00000-0000" required>
               </div>
             </div>
           </fieldset>
@@ -199,7 +212,7 @@
             <legend>Detalhes do relato</legend>
             <div class="portal-cidadao-field">
               <label for="portalDescricao">O que você observou?</label>
-              <textarea class="form-control" id="portalDescricao" rows="4" placeholder="Descreva o local, a situação encontrada e qualquer informação que ajude a equipe."></textarea>
+              <textarea class="form-control" id="portalDescricao" name="descricao" rows="4" placeholder="Descreva o local, a situação encontrada e qualquer informação que ajude a equipe."></textarea>
             </div>
             <div class="portal-cidadao-upload-box">
               <div class="portal-cidadao-upload-icon"><i class="bi bi-camera" aria-hidden="true"></i></div>
@@ -209,21 +222,23 @@
               </div>
               <label class="btn btn-outline-primary btn-sm portal-cidadao-upload-label" for="portalMidia">
                 Escolher arquivo
-                <input id="portalMidia" type="file" accept="image/*,video/*" multiple hidden>
+                <input id="portalMidia" name="midias" type="file" accept="image/*,video/*" multiple hidden>
               </label>
             </div>
             <div class="portal-cidadao-file-list" id="portalCidadaoFileList" aria-live="polite"></div>
           </fieldset>
 
           <div class="portal-cidadao-consent">
-            <input id="portalConsentimento" type="checkbox">
+            <input id="portalConsentimento" name="consentimento" value="1" type="checkbox" required>
             <label for="portalConsentimento">Concordo que as informações sejam utilizadas para triagem e organização das ações de vigilância.</label>
           </div>
 
+          <div class="portal-cidadao-feedback" id="portalCidadaoFeedback" hidden></div>
+
           <div class="portal-cidadao-form-footer">
             <span><i class="bi bi-lock" aria-hidden="true"></i> Seus dados serão tratados conforme a finalidade do atendimento.</span>
-            <button class="btn btn-success portal-cidadao-submit" id="portalCidadaoPreviewButton" type="button">
-              Continuar
+            <button class="btn btn-success portal-cidadao-submit" id="portalCidadaoPreviewButton" type="submit">
+              Enviar relato
               <i class="bi bi-arrow-right" aria-hidden="true"></i>
             </button>
           </div>
