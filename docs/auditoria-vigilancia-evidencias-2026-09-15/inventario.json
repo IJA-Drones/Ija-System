@@ -1,0 +1,13 @@
+{
+  "module_count": 32,
+  "model_classes": 58,
+  "route_declarations": 331,
+  "migration_files": 112,
+  "reachable_revisions": 112,
+  "heads": [
+    "b7c1e4f2a9d6"
+  ],
+  "test_files": 18,
+  "python_files": 135,
+  "app_python_lines": 54932
+}

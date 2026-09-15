@@ -1,0 +1,45 @@
+{
+  "data": "2026-09-15",
+  "commit": "8e839c4787ce5c364a650d59ea0814be1a76e356",
+  "codigo_aplicacao_modificado": false,
+  "producao_acessada": false,
+  "testes_existentes": {
+    "comando": ".venv/bin/python -m unittest discover tests",
+    "quantidade": 132,
+    "duracao_segundos": 10.374,
+    "resultado": "OK",
+    "avisos": [
+      "ResourceWarning: conexoes SQLite nao encerradas",
+      "LegacyAPIWarning: Query.get()"
+    ]
+  },
+  "reproducoes_sinteticas": {
+    "kml_prefeitura_1_autoriza_recurso_prefeitura_2": true,
+    "heatmap_perfil_visualizar_sem_prefeitura_quantidade_entes": 2,
+    "backup_upload_falhou_mas_status_declara_enviado": true,
+    "backup_last_error_apos_upload_falho": null,
+    "rota_sw_raiz_erro": "'static_folder' must be set to serve static_files."
+  },
+  "script_temporario_reproducao": "/private/tmp/ija-audit/probes.py",
+  "metodo_reproducoes": "Fixtures sinteticas, banco SQLite em memoria e mocks de fronteiras externas; sem acesso a banco ou canais de producao.",
+  "status_contratual": {
+    "atendido": 0,
+    "parcialmente_atendido": 3,
+    "nao_atendido": 15,
+    "itens_parciais": [
+      "II",
+      "VIII",
+      "XIII"
+    ]
+  },
+  "fontes_sha256": {
+    "/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/models.py": "ddfa45b5d8e5d7db3b2a785f836a3dcbceeb39e32f5119bab80af761438397c7",
+    "/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/shared/access.py": "4113584a58306e70dd717d6e239e06cd11ccd15b68055aa3881733796564f1d8",
+    "/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/modules/dji_flight_logs/service.py": "593ab2d32704ebc213f591491160abd68479ff02a5bcae1bc7a30c05ee38e97a",
+    "/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/modules/backup/service.py": "83acd55728f6980f1c4dd2bf0d3c3bae6ce279767362e415eff79a25ec89a6bb",
+    "/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/templates/mapa_relatorio.html": "9fdc767222abda57f7c074b8423c7048459022f594e1951aa863f6079d102a4e",
+    "/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/static/sw.js": "49715b1efd16a353ead3a357463512891345a289aa8fa5508065bcd69c17a689",
+    "/Users/pedrohenriquevb/.codex/attachments/9b0211ad-2ec9-4bdf-9caa-f3d653cbd917/pasted-text.txt": "6590d043a2578ad6ec58b7a1c8010967478333399d279122624a8dc19b6d1548",
+    "/Users/pedrohenriquevb/Downloads/dc9ca10b-cce0-4999-a27e-15514056dabd_Relatrio_de_Anlise_de_Aderncia_e_Novas_Demandas.pdf": "de015742babb9383736196a36baca725873a2ed92de0b13925b6a08899044326"
+  }
+}
