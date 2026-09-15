@@ -6,6 +6,7 @@ from flask import Flask
 from werkzeug.datastructures import FileStorage, MultiDict
 
 from app.clients import cep_client
+from app.modules.portal_cidadao import health_news
 from app.modules.portal_cidadao import service as portal_service
 
 
@@ -149,6 +150,61 @@ class PortalCidadaoDenunciaServiceTests(unittest.TestCase):
         self.assertEqual(payload["cep"], "01001-001")
         self.assertEqual(payload["logradouro"], "Praca da Se")
         self.assertEqual(payload["cidade"], "Sao Paulo")
+
+    def test_health_news_fetches_only_official_health_items(self):
+        class Response:
+            content = b"""
+                <rss><channel>
+                  <item>
+                    <title>Dengue tem nova orientacao de prevencao</title>
+                    <link>https://www.saude.sp.gov.br/noticia/dengue-prevencao</link>
+                    <description><![CDATA[Medidas contra o Aedes aegypti.]]></description>
+                    <pubDate>Tue, 15 Sep 2026 12:00:00 GMT</pubDate>
+                  </item>
+                  <item>
+                    <title>Agenda cultural da semana</title>
+                    <link>https://www.saude.sp.gov.br/noticia/cultura</link>
+                    <description>Programacao artistica da semana.</description>
+                  </item>
+                  <item>
+                    <title>Dengue em portal nao oficial</title>
+                    <link>https://example.com/dengue</link>
+                    <description>Deve ser ignorado.</description>
+                  </item>
+                </channel></rss>
+            """
+
+            def raise_for_status(self):
+                return None
+
+        original_get = health_news.requests.get
+        try:
+            health_news.clear_health_news_cache()
+            health_news.requests.get = lambda *args, **kwargs: Response()
+
+            items = health_news.get_portal_health_news()
+
+            self.assertEqual(len(items), 1)
+            self.assertEqual(items[0]["title"], "Dengue tem nova orientacao de prevencao")
+            self.assertEqual(items[0]["source"], "Secretaria de Estado da Saúde de SP")
+        finally:
+            health_news.requests.get = original_get
+            health_news.clear_health_news_cache()
+
+    def test_health_news_uses_official_fallback_when_feed_fails(self):
+        original_get = health_news.requests.get
+        try:
+            health_news.clear_health_news_cache()
+            health_news.requests.get = lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("offline"))
+
+            items = health_news.get_portal_health_news()
+
+            self.assertGreaterEqual(len(items), 1)
+            self.assertEqual(items[0]["source"], "COVISA/SMS-SP")
+            self.assertIn("prefeitura.sp.gov.br", items[0]["url"])
+        finally:
+            health_news.requests.get = original_get
+            health_news.clear_health_news_cache()
 
 
 if __name__ == "__main__":

@@ -4,6 +4,7 @@ from flask import current_app, jsonify, render_template, request
 
 from app.clients.cep_client import CepLookupError, CepNotFoundError, lookup_cep
 from app.clients.google_maps_client import reverse_geocode_lat_lng_google_details
+from app.modules.portal_cidadao.health_news import get_portal_health_news
 from app.modules.portal_cidadao.service import DenunciaValidationError, criar_denuncia
 from app.shared.solicitacao_focos import build_focus_catalog
 
@@ -14,6 +15,7 @@ def register_routes(bp):
         return render_template(
             "portal_cidadao.html",
             focus_catalog=build_focus_catalog(),
+            health_news=get_portal_health_news(logger=current_app.logger),
         )
 
     @bp.route("/portal-cidadao/denuncias", methods=["POST"], endpoint="portal_cidadao_denuncias_criar")
