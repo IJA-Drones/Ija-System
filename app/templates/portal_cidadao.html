@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/portal_cidadao.css') }}">
+{% endblock %}
+
+{% block auth_content %}
+<main class="portal-cidadao-page" data-portal-cidadao>
+  <header class="portal-cidadao-hero">
+    <div class="portal-cidadao-hero-copy">
+      <div class="portal-cidadao-brandmark">
+        <img src="{{ logo_light_url }}" alt="Oceano Azul">
+        <span>Vigilância e participação cidadã</span>
+      </div>
+      <div class="portal-cidadao-kicker">
+        <i class="bi bi-people-fill" aria-hidden="true"></i>
+        Participação cidadã
+      </div>
+      <h1>Ajude a manter sua comunidade protegida.</h1>
+      <p>
+        Informe focos, criadouros e situações que precisam da atenção da vigilância.
+        Seu relato ajuda a Prefeitura a organizar a resposta e as ações de controle.
+      </p>
+      <div class="portal-cidadao-hero-actions">
+        <a class="btn btn-success portal-cidadao-primary-action" href="#portal-relato">
+          <i class="bi bi-megaphone-fill" aria-hidden="true"></i>
+          Registrar um relato
+        </a>
+        <a class="portal-cidadao-back-link" href="{{ url_for('auth.login') }}">
+          <i class="bi bi-arrow-left" aria-hidden="true"></i>
+          Voltar para o acesso interno
+        </a>
+      </div>
+    </div>
+
+    <div class="portal-cidadao-hero-card" aria-label="Como o relato será tratado">
+      <div class="portal-cidadao-hero-card-head">
+        <span class="portal-cidadao-hero-icon" aria-hidden="true">
+          <svg class="portal-cidadao-hero-svg" viewBox="0 0 24 24" focusable="false">
+            <path d="M12 3.2 19 6v5.1c0 4.4-2.7 8.4-7 9.8-4.3-1.4-7-5.4-7-9.8V6l7-2.8Z"></path>
+            <path d="m8.4 12 2.2 2.2 4.9-5"></path>
+          </svg>
+        </span>
+        <div>
+          <strong>Um canal simples para colaborar</strong>
+          <span>O atendimento passa por triagem da equipe responsável.</span>
+        </div>
+      </div>
+      <div class="portal-cidadao-mini-flow">
+        <div><span>01</span><strong>Relate</strong><small>Conte o que encontrou.</small></div>
+        <div><span>02</span><strong>Triagem</strong><small>A gestão avalia a ocorrência.</small></div>
+        <div><span>03</span><strong>Ação</strong><small>A equipe organiza o atendimento.</small></div>
+      </div>
+    </div>
+  </header>
+
+  <section class="portal-cidadao-section" id="portal-relato" aria-labelledby="portal-relato-title">
+    <div class="portal-cidadao-section-heading">
+      <div>
+        <span class="portal-cidadao-eyebrow">Novo relato</span>
+        <h2 id="portal-relato-title">O que você encontrou?</h2>
+        <p>Selecione uma categoria já utilizada no atendimento operacional.</p>
+      </div>
+    </div>
+
+    <div class="portal-cidadao-report-layout">
+      <aside class="portal-cidadao-side-card">
+        <span class="portal-cidadao-side-card-icon"><i class="bi bi-list-check" aria-hidden="true"></i></span>
+        <h3>Como preencher</h3>
+        <ol class="portal-cidadao-steps">
+          <li class="is-active"><span>1</span><div><strong>Categoria</strong><small>Escolha o tipo de ocorrência.</small></div></li>
+          <li><span>2</span><div><strong>Local</strong><small>Informe onde está o foco.</small></div></li>
+          <li><span>3</span><div><strong>Detalhes</strong><small>Adicione uma descrição e evidências.</small></div></li>
+        </ol>
+        <div class="portal-cidadao-side-tip">
+          <i class="bi bi-lightbulb" aria-hidden="true"></i>
+          <span>Se não tiver certeza da categoria, escolha a opção mais próxima e explique na descrição.</span>
+        </div>
+      </aside>
+
+      <div class="portal-cidadao-form-card">
+        <div class="portal-cidadao-form-card-head">
+          <div>
+            <span class="portal-cidadao-form-step">Comece pelo tipo de ocorrência</span>
+            <h3>Identifique a ocorrência</h3>
+          </div>
+          <i class="bi bi-bug-fill" aria-hidden="true"></i>
+        </div>
+
+        <form class="portal-cidadao-form" id="portalCidadaoForm" novalidate>
+          <fieldset>
+            <legend>O que você encontrou?</legend>
+            <div class="portal-cidadao-type-grid" role="group" aria-label="Tipo de ocorrência">
+              {% for tipo in focus_catalog.tipo_visita_opcoes %}
+              <button
+                class="portal-cidadao-type-option"
+                type="button"
+                data-tipo-visita="{{ tipo }}"
+                aria-pressed="false"
+              >
+                {% if tipo == 'Aedes' %}
+                  <i class="bi bi-droplet-half" aria-hidden="true"></i>
+                  <span><strong>Água parada ou criadouro</strong><small>Recipientes, piscinas, obras e terrenos</small></span>
+                {% elif tipo == 'Culex' %}
+                  <i class="bi bi-water" aria-hidden="true"></i>
+                  <span><strong>Mosquitos em área alagada</strong><small>Córregos, alagamentos e piscinões</small></span>
+                {% else %}
+                  <i class="bi bi-three-dots" aria-hidden="true"></i>
+                  <span><strong>Outro problema</strong><small>Explique a situação na descrição</small></span>
+                {% endif %}
+                <i class="bi bi-check-circle-fill portal-cidadao-type-check" aria-hidden="true"></i>
+              </button>
+              {% endfor %}
+            </div>
+          </fieldset>
+
+          <div class="portal-cidadao-dependent-fields" id="portalCidadaoDependentFields" hidden>
+            <div class="portal-cidadao-field" id="portalTipoImovelField" hidden>
+              <label for="portalTipoImovel">Que tipo de local é?</label>
+              <select class="form-select" id="portalTipoImovel">
+                <option value="">Selecione o tipo de imóvel</option>
+                {% for tipo_imovel in focus_catalog.tipo_imovel_opcoes %}
+                {% if tipo_imovel == 'Imovel Geral' %}
+                <option value="{{ tipo_imovel }}">Casa, terreno ou outro imóvel</option>
+                {% else %}
+                <option value="{{ tipo_imovel }}">Local com muita circulação ou recipientes</option>
+                {% endif %}
+                {% endfor %}
+              </select>
+              <small>Exemplos: oficina, borracharia, escola, cemitério ou depósito.</small>
+            </div>
+
+            <div class="portal-cidadao-field">
+              <label for="portalFoco">O que você viu no local?</label>
+              <select class="form-select" id="portalFoco" disabled>
+                <option value="">Primeiro escolha o tipo de ocorrência</option>
+              </select>
+              <small id="portalFocoHint">Escolha uma opção que mais se aproxima do que você encontrou.</small>
+            </div>
+          </div>
+
+          <fieldset class="portal-cidadao-location-fieldset">
+            <legend>Onde está o problema?</legend>
+            <div class="portal-cidadao-form-grid">
+              <div class="portal-cidadao-field portal-cidadao-field-wide">
+                <label for="portalLogradouro">Logradouro</label>
+                <input class="form-control" id="portalLogradouro" type="text" placeholder="Rua, avenida ou estrada">
+              </div>
+              <div class="portal-cidadao-field">
+                <label for="portalNumero">Número</label>
+                <input class="form-control" id="portalNumero" type="text" placeholder="Número ou s/n">
+              </div>
+              <div class="portal-cidadao-field">
+                <label for="portalBairro">Bairro</label>
+                <input class="form-control" id="portalBairro" type="text" placeholder="Bairro">
+              </div>
+              <div class="portal-cidadao-field">
+                <label for="portalCidade">Cidade</label>
+                <input class="form-control" id="portalCidade" type="text" placeholder="Cidade">
+              </div>
+              <div class="portal-cidadao-field">
+                <label for="portalCep">CEP <span>(opcional)</span></label>
+                <input class="form-control" id="portalCep" type="text" inputmode="numeric" placeholder="00000-000">
+              </div>
+            </div>
+            <button class="portal-cidadao-location-action" type="button" disabled>
+              <i class="bi bi-crosshair" aria-hidden="true"></i>
+              Usar minha localização (em breve)
+            </button>
+          </fieldset>
+
+          <fieldset class="portal-cidadao-identity-fieldset">
+            <legend>Identificação do cidadão</legend>
+            <p class="portal-cidadao-identity-note">
+              <i class="bi bi-shield-lock" aria-hidden="true"></i>
+              A identificação será usada para reduzir duplicidades e abusos no atendimento.
+            </p>
+            <div class="portal-cidadao-form-grid">
+              <div class="portal-cidadao-field portal-cidadao-field-wide">
+                <label for="portalNome">Nome completo <span class="portal-cidadao-required">obrigatório</span></label>
+                <input class="form-control" id="portalNome" name="nome" type="text" autocomplete="name" placeholder="Digite seu nome completo" required>
+              </div>
+              <div class="portal-cidadao-field">
+                <label for="portalCpf">CPF <span class="portal-cidadao-required">obrigatório</span></label>
+                <input class="form-control" id="portalCpf" name="cpf" type="text" inputmode="numeric" autocomplete="off" placeholder="000.000.000-00" required>
+              </div>
+              <div class="portal-cidadao-field">
+                <label for="portalRg">RG <span class="portal-cidadao-required">obrigatório</span></label>
+                <input class="form-control" id="portalRg" name="rg" type="text" autocomplete="off" placeholder="Número do RG" required>
+              </div>
+              <div class="portal-cidadao-field portal-cidadao-field-wide">
+                <label for="portalContato">Telefone ou e-mail <span>(opcional)</span></label>
+                <input class="form-control" id="portalContato" name="contato" type="text" autocomplete="email" placeholder="Para receber atualizações do atendimento">
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Detalhes do relato</legend>
+            <div class="portal-cidadao-field">
+              <label for="portalDescricao">O que você observou?</label>
+              <textarea class="form-control" id="portalDescricao" rows="4" placeholder="Descreva o local, a situação encontrada e qualquer informação que ajude a equipe."></textarea>
+            </div>
+            <div class="portal-cidadao-upload-box">
+              <div class="portal-cidadao-upload-icon"><i class="bi bi-camera" aria-hidden="true"></i></div>
+              <div>
+                <strong>Adicionar foto ou vídeo</strong>
+                <span>Uma imagem pode ajudar a equipe a entender a situação.</span>
+              </div>
+              <label class="btn btn-outline-primary btn-sm portal-cidadao-upload-label" for="portalMidia">
+                Escolher arquivo
+                <input id="portalMidia" type="file" accept="image/*,video/*" multiple hidden>
+              </label>
+            </div>
+            <div class="portal-cidadao-file-list" id="portalCidadaoFileList" aria-live="polite"></div>
+          </fieldset>
+
+          <div class="portal-cidadao-consent">
+            <input id="portalConsentimento" type="checkbox">
+            <label for="portalConsentimento">Concordo que as informações sejam utilizadas para triagem e organização das ações de vigilância.</label>
+          </div>
+
+          <div class="portal-cidadao-form-footer">
+            <span><i class="bi bi-lock" aria-hidden="true"></i> Seus dados serão tratados conforme a finalidade do atendimento.</span>
+            <button class="btn btn-success portal-cidadao-submit" id="portalCidadaoPreviewButton" type="button">
+              Continuar
+              <i class="bi bi-arrow-right" aria-hidden="true"></i>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <section class="portal-cidadao-section portal-cidadao-how-section" id="como-funciona" aria-labelledby="portal-como-funciona-title">
+    <div class="portal-cidadao-section-heading portal-cidadao-section-heading-centered">
+      <div>
+        <span class="portal-cidadao-eyebrow">Transparência do atendimento</span>
+        <h2 id="portal-como-funciona-title">O que acontece depois do relato?</h2>
+        <p>A equipe responsável analisa as informações antes de encaminhar uma ação.</p>
+      </div>
+    </div>
+    <div class="portal-cidadao-info-grid">
+      <article class="portal-cidadao-info-card"><span>01</span><i class="bi bi-inbox" aria-hidden="true"></i><h3>Recebimento</h3><p>O relato recebe um protocolo para acompanhamento.</p></article>
+      <article class="portal-cidadao-info-card"><span>02</span><i class="bi bi-search" aria-hidden="true"></i><h3>Triagem</h3><p>A gestão confere a categoria, o local e as evidências.</p></article>
+      <article class="portal-cidadao-info-card"><span>03</span><i class="bi bi-clipboard2-check" aria-hidden="true"></i><h3>Encaminhamento</h3><p>Quando necessário, a ocorrência segue para a operação.</p></article>
+      <article class="portal-cidadao-info-card"><span>04</span><i class="bi bi-chat-square-text" aria-hidden="true"></i><h3>Devolutiva</h3><p>O cidadão poderá acompanhar a atualização do atendimento.</p></article>
+    </div>
+  </section>
+
+  <footer class="portal-cidadao-footer">
+    <span><i class="bi bi-shield-check" aria-hidden="true"></i> Canal de participação cidadã</span>
+    <a href="{{ url_for('auth.login') }}">Acessar área interna <i class="bi bi-arrow-up-right" aria-hidden="true"></i></a>
+  </footer>
+
+  <script type="application/json" id="portalCidadaoFocusCatalog">{{ focus_catalog | tojson }}</script>
+</main>
+{% endblock auth_content %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/portal-cidadao.js') }}"></script>
+{% endblock %}

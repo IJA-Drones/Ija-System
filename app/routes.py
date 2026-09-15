@@ -28,6 +28,7 @@ from app.modules.painel_operacional import register_routes as register_painel_op
 from app.modules.piloto_checklists import register_routes as register_piloto_checklists_routes
 from app.modules.piloto_os import register_routes as register_piloto_os_routes
 from app.modules.pilotos import register_routes as register_pilotos_routes
+from app.modules.portal_cidadao import register_routes as register_portal_cidadao_routes
 from app.modules.relatorios import register_routes as register_relatorios_routes
 from app.modules.solicitacoes import register_routes as register_solicitacoes_routes
 from app.modules.uvis_equipes import register_routes as register_uvis_equipes_routes
@@ -67,6 +68,7 @@ register_painel_operacional_routes(bp)
 register_piloto_checklists_routes(bp)
 register_piloto_os_routes(bp)
 register_pilotos_routes(bp)
+register_portal_cidadao_routes(bp)
 register_relatorios_routes(bp)
 register_solicitacoes_routes(bp)
 register_uvis_equipes_routes(bp)
