@@ -491,6 +491,8 @@ body.sidebar-collapsed .app-content {
 .app-sidebar .nav-link-disabled {
   cursor: default;
   opacity: 0.72;
+  flex-wrap: wrap;
+  gap: 0 0.35rem;
 }
 
 .app-sidebar .nav-link-disabled:hover {
@@ -505,6 +507,8 @@ body.sidebar-collapsed .app-content {
   letter-spacing: 0;
   text-transform: none;
   white-space: nowrap;
+  margin-top: 0.2rem;
+  margin-left: 1.65rem !important;
 }
 
 .app-sidebar .nav-link.active {
