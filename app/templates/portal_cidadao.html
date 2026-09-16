@@ -6,7 +6,21 @@
 
 {% block auth_content %}
 <main class="portal-cidadao-page" data-portal-cidadao>
-  <header class="portal-cidadao-hero">
+  <nav class="portal-cidadao-nav" aria-label="Navegação do portal">
+    <a class="portal-cidadao-nav-brand" href="#portal-inicio" aria-label="Portal do cidadão, início">
+      <i class="bi bi-people" aria-hidden="true"></i>
+      <span>Participação cidadã</span>
+    </a>
+    <div class="portal-cidadao-nav-links">
+      <a href="#boletim-saude">Boletim de saúde</a>
+      <a href="#como-funciona">Atendimento</a>
+      <a class="portal-cidadao-nav-report" href="#portal-relato">
+        <i class="bi bi-plus-circle" aria-hidden="true"></i> Enviar relato
+      </a>
+    </div>
+  </nav>
+
+  <header class="portal-cidadao-hero" id="portal-inicio">
     <div class="portal-cidadao-hero-copy">
       <div class="portal-cidadao-brandmark">
         <img src="{{ logo_light_url }}" alt="Oceano Azul">
@@ -59,13 +73,58 @@
       <div>
         <span class="portal-cidadao-eyebrow"><i class="bi bi-journal-text" aria-hidden="true"></i> Informação e prevenção</span>
         <h2 id="portal-boletim-title">Boletim de saúde</h2>
-        <p>Conteúdo recente sobre dengue, vigilância e cuidados com a saúde.</p>
+        <p>Dengue, vigilância e cuidados com a saúde.</p>
       </div>
       <span class="portal-cidadao-status-pill">
         <i class="bi bi-patch-check-fill" aria-hidden="true"></i>
         Fontes públicas oficiais
       </span>
     </div>
+
+    <article class="portal-cidadao-dengue-card" aria-labelledby="portal-dengue-title">
+      <div class="portal-cidadao-dengue-heading">
+        <div>
+          <span class="portal-cidadao-eyebrow"><i class="bi bi-activity" aria-hidden="true"></i> Dados epidemiológicos</span>
+          <h3 id="portal-dengue-title">Dengue em São Paulo</h3>
+          {% if dengue_summary.available %}
+          <p>{{ dengue_summary.week_label }} · início em <time datetime="{{ dengue_summary.week_start_iso }}">{{ dengue_summary.week_start_label }}</time></p>
+          {% else %}
+          <p>Acompanhe os indicadores semanais do município.</p>
+          {% endif %}
+        </div>
+        {% if dengue_summary.available %}
+        <div class="portal-cidadao-alert-level is-{{ dengue_summary.level_class }}">
+          <span>Nível de alerta</span>
+          <strong><i class="bi bi-circle-fill" aria-hidden="true"></i>{{ dengue_summary.level_label }}</strong>
+        </div>
+        {% endif %}
+      </div>
+
+      {% if dengue_summary.available %}
+      {% if dengue_summary.stale %}
+      <p class="portal-cidadao-data-notice" role="status"><i class="bi bi-clock-history" aria-hidden="true"></i> A atualização está temporariamente indisponível. Exibindo os últimos dados consultados.</p>
+      {% endif %}
+      <dl class="portal-cidadao-health-metrics">
+        <div><dt>Casos notificados</dt><dd>{{ dengue_summary.reported_cases }}</dd></div>
+        <div><dt>Casos estimados</dt><dd>{{ dengue_summary.estimated_cases }}</dd></div>
+        <div><dt>Incidência por 100 mil</dt><dd>{{ dengue_summary.incidence }}</dd></div>
+        <div><dt>Prob. Rt acima de 1</dt><dd>{{ dengue_summary.probability }}</dd></div>
+      </dl>
+      <p class="portal-cidadao-data-caption">Fonte: InfoDengue · Última semana publicada. Os dados podem ser revisados pela fonte. Rt acima de 1 indica crescimento da transmissão.</p>
+      {% else %}
+      <p class="portal-cidadao-data-notice" role="status"><i class="bi bi-cloud-slash" aria-hidden="true"></i> Os indicadores estão temporariamente indisponíveis. Consulte o boletim oficial ou os dados no InfoDengue pelos links abaixo.</p>
+      {% endif %}
+
+      <div class="portal-cidadao-dengue-actions">
+        <a class="btn btn-success" href="{{ dengue_summary.report_url }}" target="_blank" rel="noopener noreferrer" aria-label="Ver relatório completo da COVISA/SMS-SP (abre em nova aba)">
+          <i class="bi bi-bar-chart-line" aria-hidden="true"></i> Ver relatório completo
+          <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+        </a>
+        <a class="portal-cidadao-data-link" href="{{ dengue_summary.source_url }}" target="_blank" rel="noopener noreferrer" aria-label="Consultar dados no InfoDengue (abre em nova aba)">
+          Consultar dados no InfoDengue <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+        </a>
+      </div>
+    </article>
 
     <div class="portal-cidadao-news-layout">
       <div class="portal-cidadao-news-feed" aria-label="Notícias oficiais de saúde">

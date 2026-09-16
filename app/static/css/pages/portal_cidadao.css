@@ -12,6 +12,58 @@
   color: var(--portal-ink);
 }
 
+.portal-cidadao-page [id] { scroll-margin-top: calc(var(--navbar-height, 90px) + 24px); }
+
+.portal-cidadao-page :is(a, button):focus-visible {
+  outline: 2px solid var(--portal-cyan-dark);
+  outline-offset: 4px;
+}
+
+.portal-cidadao-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 14px 18px;
+  border: 1px solid var(--portal-line);
+  border-radius: 20px;
+  background: var(--color-bg-white);
+  box-shadow: var(--shadow-sm);
+}
+
+.portal-cidadao-nav-brand,
+.portal-cidadao-nav-links,
+.portal-cidadao-nav-links a {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.portal-cidadao-nav-brand {
+  color: var(--portal-ink);
+  font-size: .85rem;
+  font-weight: 800;
+}
+
+.portal-cidadao-nav-brand > i {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  color: var(--portal-cyan-dark);
+  background: rgba(10, 168, 195, .09);
+  font-size: 1.15rem;
+}
+
+.portal-cidadao-nav-links { flex-wrap: wrap; gap: 6px; }
+.portal-cidadao-nav-links a { min-height: 44px; padding: 10px 14px; border-radius: 12px; color: var(--portal-ink); font-size: .78rem; font-weight: 750; }
+.portal-cidadao-nav a { text-decoration: none; }
+.portal-cidadao-nav a:hover { color: var(--portal-cyan-dark); }
+.portal-cidadao-nav-links a:hover { background: rgba(10, 168, 195, .06); }
+.portal-cidadao-nav-links .portal-cidadao-nav-report { color: var(--portal-cyan-dark); background: rgba(10, 168, 195, .10); }
+
 .portal-cidadao-hero {
   position: relative;
   display: grid;
@@ -247,6 +299,51 @@
   font-weight: 800;
   white-space: nowrap;
 }
+
+.portal-cidadao-dengue-card {
+  margin-bottom: 24px;
+  padding: clamp(22px, 3vw, 32px);
+  border: 1px solid var(--portal-line);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(10, 168, 195, .07), transparent 40%),
+    var(--color-bg-white);
+  box-shadow: var(--shadow-md);
+}
+
+.portal-cidadao-dengue-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.portal-cidadao-dengue-heading h3 { margin: 12px 0 8px; color: var(--portal-ink); font-size: clamp(1.4rem, 2.5vw, 1.9rem); font-weight: 800; letter-spacing: -.04em; }
+.portal-cidadao-dengue-heading p { margin: 0; color: var(--portal-muted); font-size: .82rem; }
+
+.portal-cidadao-alert-level {
+  --level-color: var(--portal-muted);
+  flex-shrink: 0;
+  min-width: 136px;
+  padding: 14px 18px;
+  border: 1px solid var(--portal-line);
+  border-radius: 16px;
+  background: var(--color-bg-white);
+}
+
+.portal-cidadao-alert-level > span { display: block; color: var(--portal-muted); font-size: .65rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+.portal-cidadao-alert-level strong { display: flex; align-items: center; gap: 8px; margin-top: 5px; color: var(--level-color); font-size: 1.25rem; }
+.portal-cidadao-alert-level i { font-size: .5rem; }
+.portal-cidadao-alert-level.is-low { --level-color: #167454; }
+.portal-cidadao-alert-level.is-attention { --level-color: #866100; }
+.portal-cidadao-alert-level.is-alert { --level-color: #b34c0b; }
+.portal-cidadao-alert-level.is-high { --level-color: #c13242; }
+
+.portal-cidadao-health-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin: 26px 0 14px; }
+.portal-cidadao-health-metrics > div { min-width: 0; padding: 18px; border: 1px solid var(--portal-line); border-radius: 16px; background: rgba(10, 168, 195, .035); }
+.portal-cidadao-health-metrics dt { color: var(--portal-muted); font-size: .67rem; font-weight: 800; text-transform: uppercase; }
+.portal-cidadao-health-metrics dd { margin: 8px 0 0; color: var(--portal-ink); font-size: clamp(1.5rem, 2.5vw, 2rem); font-weight: 800; line-height: 1.2; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.portal-cidadao-data-caption { margin: 0; color: var(--portal-muted); font-size: .7rem; line-height: 1.6; }
+.portal-cidadao-data-notice { display: flex; align-items: flex-start; gap: 9px; margin: 22px 0; padding: 14px 16px; border: 1px solid var(--portal-line); border-radius: 14px; color: var(--portal-muted); background: rgba(10, 168, 195, .05); font-size: .8rem; line-height: 1.6; }
+.portal-cidadao-data-notice > i { color: var(--portal-cyan-dark); }
+.portal-cidadao-dengue-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 14px 24px; margin-top: 24px; padding-top: 22px; border-top: 1px solid var(--portal-line); }
+.portal-cidadao-dengue-actions a { display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 44px; }
+.portal-cidadao-data-link { color: var(--portal-cyan-dark); font-size: .8rem; font-weight: 800; }
+.portal-cidadao-data-link:hover { color: var(--portal-cyan-dark); text-decoration: underline; }
 
 .portal-cidadao-news-layout {
   display: grid;
@@ -502,6 +599,14 @@ body.dark-mode .portal-cidadao-hero {
   box-shadow: var(--shadow-md);
 }
 
+body.dark-mode .portal-cidadao-nav-links .portal-cidadao-nav-report,
+body.dark-mode .portal-cidadao-nav-brand > i { background: var(--color-accent-soft); }
+body.dark-mode .portal-cidadao-dengue-heading h3 { color: var(--portal-ink) !important; }
+body.dark-mode .portal-cidadao-alert-level.is-low { --level-color: #9be0b6; }
+body.dark-mode .portal-cidadao-alert-level.is-attention { --level-color: #f4d36e; }
+body.dark-mode .portal-cidadao-alert-level.is-alert { --level-color: #ffb27e; }
+body.dark-mode .portal-cidadao-alert-level.is-high { --level-color: #f1a3ad; }
+
 body.dark-mode .portal-cidadao-hero::after {
   opacity: .12;
 }
@@ -707,6 +812,8 @@ body.dark-mode .portal-cidadao-info-card > span {
 }
 
 @media (max-width: 980px) {
+  .portal-cidadao-nav { flex-wrap: wrap; }
+  .portal-cidadao-health-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .portal-cidadao-hero { grid-template-columns: minmax(0, 1fr); }
   .portal-cidadao-hero-card { max-width: 680px; }
   .portal-cidadao-news-layout { grid-template-columns: 1fr; }
@@ -719,6 +826,16 @@ body.dark-mode .portal-cidadao-info-card > span {
 
 @media (max-width: 720px) {
   .portal-cidadao-page { padding-top: 0; }
+  .portal-cidadao-nav { gap: 10px; padding: 12px; border-radius: 18px; }
+  .portal-cidadao-nav-links { width: 100%; gap: 4px; }
+  .portal-cidadao-nav-links a { justify-content: center; flex: 1 1 auto; padding: 10px 8px; font-size: .72rem; }
+  .portal-cidadao-dengue-heading { align-items: flex-start; flex-direction: column; gap: 16px; }
+  .portal-cidadao-alert-level { display: flex; align-items: center; gap: 14px; min-width: 0; padding: 10px 14px; }
+  .portal-cidadao-alert-level strong { margin-top: 0; font-size: 1rem; }
+  .portal-cidadao-health-metrics { gap: 10px; margin-top: 20px; }
+  .portal-cidadao-health-metrics > div { padding: 14px 12px; }
+  .portal-cidadao-dengue-actions { align-items: stretch; flex-direction: column; gap: 10px; }
+  .portal-cidadao-dengue-actions a { text-align: center; font-size: .75rem; }
   .portal-cidadao-hero { padding: 28px 20px; border-radius: 24px; }
   .portal-cidadao-hero h1 { font-size: 2.45rem; }
   .portal-cidadao-section-heading { display: block; }
