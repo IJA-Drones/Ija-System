@@ -1,10 +1,16 @@
 import re
+from datetime import date
 
 from flask import current_app, jsonify, render_template, request
 
 from app.clients.cep_client import CepLookupError, CepNotFoundError, lookup_cep
 from app.clients.google_maps_client import reverse_geocode_lat_lng_google_details
-from app.modules.portal_cidadao.health_news import get_portal_health_news
+from app.modules.portal_cidadao.health_news import (
+    INFODENGUE_DISEASE_LABELS,
+    get_infodengue_alert,
+    get_infodengue_report,
+    get_portal_health_news,
+)
 from app.modules.portal_cidadao.service import DenunciaValidationError, criar_denuncia
 from app.shared.solicitacao_focos import build_focus_catalog
 
@@ -16,6 +22,34 @@ def register_routes(bp):
             "portal_cidadao.html",
             focus_catalog=build_focus_catalog(),
             health_news=get_portal_health_news(logger=current_app.logger),
+            infodengue_alert=get_infodengue_alert(config=current_app.config, logger=current_app.logger),
+        )
+
+    @bp.route("/portal-cidadao/boletim-dengue", methods=["GET"], endpoint="portal_cidadao_boletim_dengue")
+    def portal_cidadao_boletim_dengue():
+        current_year = int(date.today().isocalendar().year)
+        selected_disease = (request.args.get("doenca") or current_app.config.get("INFODENGUE_DISEASE") or "dengue").strip().lower()
+        if selected_disease not in INFODENGUE_DISEASE_LABELS:
+            selected_disease = "dengue"
+        try:
+            selected_year = int(request.args.get("ano") or current_year)
+        except ValueError:
+            selected_year = current_year
+        if selected_year < 2010 or selected_year > current_year:
+            selected_year = current_year
+
+        return render_template(
+            "portal_cidadao_boletim_dengue.html",
+            report=get_infodengue_report(
+                config=current_app.config,
+                disease=selected_disease,
+                year=selected_year,
+                logger=current_app.logger,
+            ),
+            disease_options=INFODENGUE_DISEASE_LABELS,
+            selected_disease=selected_disease,
+            selected_year=selected_year,
+            available_years=list(range(current_year, max(2009, current_year - 5), -1)),
         )
 
     @bp.route("/portal-cidadao/denuncias", methods=["POST"], endpoint="portal_cidadao_denuncias_criar")

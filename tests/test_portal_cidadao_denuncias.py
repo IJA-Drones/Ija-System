@@ -206,6 +206,110 @@ class PortalCidadaoDenunciaServiceTests(unittest.TestCase):
             health_news.requests.get = original_get
             health_news.clear_health_news_cache()
 
+    def test_infodengue_alert_normalizes_latest_epidemiological_week(self):
+        rows = [
+            {
+                "SE": 202636,
+                "casos": 8,
+                "casos_est": 10.5,
+                "p_inc100k": 2.25,
+                "p_rt1": 0.61,
+                "nivel": 1,
+                "data_iniSE": 1788748800000,
+            },
+            {
+                "SE": 202637,
+                "casos": 12,
+                "casos_est": 14.2,
+                "p_inc100k": 3.1,
+                "p_rt1": 0.73,
+                "nivel": 2,
+                "data_iniSE": 1789353600000,
+            },
+        ]
+
+        alert = health_news._build_infodengue_alert(
+            rows,
+            city="São Paulo",
+            disease="dengue",
+            source_url="https://info.dengue.mat.br/api/alertcity?geocode=3550308",
+        ).to_dict()
+
+        self.assertEqual(alert["city"], "São Paulo")
+        self.assertEqual(alert["disease"], "Dengue")
+        self.assertEqual(alert["week_label"], "SE 37/2026")
+        self.assertEqual(alert["alert_label"], "Atenção")
+        self.assertEqual(alert["cases"], "12")
+        self.assertEqual(alert["estimated_cases"], "14,2")
+        self.assertEqual(alert["incidence"], "3,10")
+        self.assertEqual(alert["probability_rt_above_1"], "73,0%")
+
+    def test_infodengue_alert_returns_none_when_api_fails(self):
+        original_get = health_news.requests.get
+        try:
+            health_news.clear_health_news_cache()
+            health_news.requests.get = lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("offline"))
+
+            alert = health_news.get_infodengue_alert(config={})
+
+            self.assertIsNone(alert)
+        finally:
+            health_news.requests.get = original_get
+            health_news.clear_health_news_cache()
+
+    def test_infodengue_report_builds_series_summary_and_peak(self):
+        rows = [
+            {
+                "SE": 202601,
+                "casos": 10,
+                "casos_est": 12.5,
+                "p_inc100k": 1.25,
+                "p_rt1": 0.40,
+                "nivel": 1,
+                "data_iniSE": 1767225600000,
+            },
+            {
+                "SE": 202602,
+                "casos": 18,
+                "casos_est": 25.2,
+                "p_inc100k": 2.10,
+                "p_rt1": 0.82,
+                "nivel": 2,
+                "data_iniSE": 1767830400000,
+            },
+        ]
+
+        report = health_news._build_infodengue_report(
+            rows,
+            city="São Paulo",
+            disease="dengue",
+            year=2026,
+            source_url="https://info.dengue.mat.br/api/alertcity?geocode=3550308",
+        )
+
+        self.assertEqual(report["city"], "São Paulo")
+        self.assertEqual(report["disease_label"], "Dengue")
+        self.assertEqual(report["summary"]["latest_week_label"], "SE 02/2026")
+        self.assertEqual(report["summary"]["latest_alert_label"], "Atenção")
+        self.assertEqual(report["summary"]["total_cases"], "28")
+        self.assertEqual(report["summary"]["total_estimated_cases"], "37,7")
+        self.assertEqual(report["summary"]["peak_week_label"], "SE 02/2026")
+        self.assertEqual(len(report["series"]), 2)
+        self.assertEqual(report["series"][1]["bar_percent"], 100)
+
+    def test_infodengue_report_returns_none_when_api_fails(self):
+        original_get = health_news.requests.get
+        try:
+            health_news.clear_health_news_cache()
+            health_news.requests.get = lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("offline"))
+
+            report = health_news.get_infodengue_report(config={}, disease="dengue", year=2026)
+
+            self.assertIsNone(report)
+        finally:
+            health_news.requests.get = original_get
+            health_news.clear_health_news_cache()
+
 
 if __name__ == "__main__":
     unittest.main()
