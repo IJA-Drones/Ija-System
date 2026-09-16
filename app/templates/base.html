@@ -1132,7 +1132,7 @@
       </div>
     </div>
     {% else %}
-    <div class="container py-4">{% block auth_content %}{% endblock %}</div>
+    <div class="{% block auth_container_class %}container py-4{% endblock %}">{% block auth_content %}{% endblock %}</div>
     {% endif %}
 
     {% if current_user.is_authenticated %}
