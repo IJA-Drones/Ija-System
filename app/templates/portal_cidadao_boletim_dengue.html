@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/portal_cidadao.css') }}">
+{% endblock %}
+
+{% block auth_content %}
+<main class="portal-cidadao-page portal-cidadao-report-page">
+  <nav class="portal-cidadao-nav" aria-label="Navegação do boletim">
+    <a class="portal-cidadao-nav-brand" href="{{ url_for('main.portal_cidadao') }}#portal-inicio" aria-label="Voltar ao Portal do cidadão">
+      <i class="bi bi-people" aria-hidden="true"></i>
+      <span>Participação cidadã</span>
+    </a>
+    <div class="portal-cidadao-nav-links">
+      <a href="{{ url_for('main.portal_cidadao') }}#boletim-saude">Boletim de saúde</a>
+      <a href="{{ url_for('main.portal_cidadao') }}#portal-relato">Enviar relato</a>
+      <a class="portal-cidadao-nav-report" href="{{ url_for('main.portal_cidadao') }}"><i class="bi bi-arrow-left" aria-hidden="true"></i> Portal</a>
+    </div>
+  </nav>
+
+  <header class="portal-cidadao-report-hero">
+    <div>
+      <span class="portal-cidadao-eyebrow"><i class="bi bi-graph-up-arrow" aria-hidden="true"></i> Relatório epidemiológico</span>
+      <h1>Boletim de arboviroses</h1>
+      <p>Dados semanais do InfoDengue para acompanhar o cenário da cidade e apoiar a prevenção.</p>
+    </div>
+    <form class="portal-cidadao-report-filter" method="get" action="{{ url_for('main.portal_cidadao_boletim_dengue') }}">
+      <label>
+        <span>Doença</span>
+        <select class="form-select" name="doenca">
+          {% for value, label in disease_options.items() %}
+          <option value="{{ value }}" {% if value == selected_disease %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>
+        <span>Ano</span>
+        <select class="form-select" name="ano">
+          {% for year in available_years %}
+          <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>{{ year }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <button class="btn btn-success" type="submit">Atualizar</button>
+    </form>
+  </header>
+
+  {% if report %}
+  <section class="portal-cidadao-report-summary" aria-label="Resumo do relatório">
+    <article>
+      <span>Localidade</span>
+      <strong>{{ report.city }}</strong>
+      <small>{{ report.disease_label }} · {{ report.year }}</small>
+    </article>
+    <article>
+      <span>Última semana</span>
+      <strong>{{ report.summary.latest_week_label }}</strong>
+      <small>{{ report.updated_label or 'Atualização informada pela API' }}</small>
+    </article>
+    <article>
+      <span>Nível atual</span>
+      <strong>{{ report.summary.latest_alert_label }}</strong>
+      <small>Alerta {{ report.summary.latest_alert_level or 'não informado' }}</small>
+    </article>
+    <article>
+      <span>Casos no período</span>
+      <strong>{{ report.summary.total_cases }}</strong>
+      <small>{{ report.summary.total_estimated_cases }} estimados</small>
+    </article>
+  </section>
+
+  <section class="portal-cidadao-report-grid">
+    <div class="portal-cidadao-report-chart" aria-label="Série histórica semanal">
+      <div class="portal-cidadao-report-panel-heading">
+        <div>
+          <span class="portal-cidadao-eyebrow">Série semanal</span>
+          <h2>Casos estimados por semana</h2>
+        </div>
+        <a class="portal-cidadao-text-link" href="{{ report.source_url }}" target="_blank" rel="noopener noreferrer">
+          Fonte InfoDengue <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+        </a>
+      </div>
+      <div class="portal-cidadao-week-bars">
+        {% for item in report.series %}
+        <div class="portal-cidadao-week-row">
+          <span>{{ item.week_short_label }}</span>
+          <div class="portal-cidadao-week-track">
+            <i style="width: {{ item.bar_percent }}%;" data-alert-level="{{ item.alert_level or 0 }}"></i>
+          </div>
+          <strong>{{ item.estimated_cases }}</strong>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <aside class="portal-cidadao-report-insights" aria-label="Indicadores complementares">
+      <article>
+        <span>Incidência atual</span>
+        <strong>{{ report.summary.latest_incidence }}</strong>
+        <small>por 100 mil habitantes</small>
+      </article>
+      <article>
+        <span>Probabilidade Rt acima de 1</span>
+        <strong>{{ report.summary.latest_probability_rt_above_1 }}</strong>
+        <small>indicador de tendência de transmissão</small>
+      </article>
+      <article>
+        <span>Pico no período</span>
+        <strong>{{ report.summary.peak_week_label }}</strong>
+        <small>{{ report.summary.peak_estimated_cases }} casos estimados</small>
+      </article>
+      <a class="btn btn-success" href="{{ url_for('main.portal_cidadao') }}#portal-relato">Registrar um relato <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+    </aside>
+  </section>
+
+  <section class="portal-cidadao-report-table-section" aria-labelledby="portal-relatorio-tabela-title">
+    <div class="portal-cidadao-report-panel-heading">
+      <div>
+        <span class="portal-cidadao-eyebrow">Conferência técnica</span>
+        <h2 id="portal-relatorio-tabela-title">Semanas epidemiológicas</h2>
+      </div>
+    </div>
+    <div class="portal-cidadao-report-table-wrap">
+      <table class="portal-cidadao-report-table">
+        <thead>
+          <tr>
+            <th>Semana</th>
+            <th>Início</th>
+            <th>Nível</th>
+            <th>Casos</th>
+            <th>Estimados</th>
+            <th>Incidência</th>
+            <th>Rt &gt; 1</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in report.series|reverse %}
+          <tr>
+            <td>{{ item.week_label }}</td>
+            <td>{{ item.started_at_label or '-' }}</td>
+            <td>{{ item.alert_label }}</td>
+            <td>{{ item.cases }}</td>
+            <td>{{ item.estimated_cases }}</td>
+            <td>{{ item.incidence }}</td>
+            <td>{{ item.probability_rt_above_1 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% else %}
+  <section class="portal-cidadao-report-empty">
+    <i class="bi bi-cloud-slash" aria-hidden="true"></i>
+    <h2>Não foi possível carregar o relatório agora</h2>
+    <p>O portal continua disponível para envio de relatos. Tente novamente mais tarde ou consulte a fonte oficial do InfoDengue.</p>
+    <a class="btn btn-success" href="{{ url_for('main.portal_cidadao') }}#portal-relato">Registrar um relato</a>
+  </section>
+  {% endif %}
+
+  <footer class="portal-cidadao-footer">
+    <span><i class="bi bi-patch-check" aria-hidden="true"></i> Dados públicos do InfoDengue</span>
+    <a href="{{ url_for('main.portal_cidadao') }}">Voltar ao Portal do Cidadão <i class="bi bi-arrow-up-right" aria-hidden="true"></i></a>
+  </footer>
+</main>
+{% endblock auth_content %}

@@ -27,6 +27,10 @@ class Config:
     CORREIOS_API_TOKEN = os.environ.get("CORREIOS_API_TOKEN")
     CORREIOS_CEP_TOKEN = os.environ.get("CORREIOS_CEP_TOKEN")
     CORREIOS_CEP_BASE_URL = os.environ.get("CORREIOS_CEP_BASE_URL", "https://api.correios.com.br/cep")
+    INFODENGUE_GEOCODE = os.environ.get("INFODENGUE_GEOCODE", "3550308")
+    INFODENGUE_CITY = os.environ.get("INFODENGUE_CITY", "São Paulo")
+    INFODENGUE_DISEASE = os.environ.get("INFODENGUE_DISEASE", "dengue")
+    INFODENGUE_LOOKBACK_WEEKS = os.environ.get("INFODENGUE_LOOKBACK_WEEKS", "8")
 
     # Nova variável (sem restrição de site) apenas para o Geocode do Python
     Maps_KEY_BACK = os.getenv("GOOGLE_MAPS_KEY_BACK")

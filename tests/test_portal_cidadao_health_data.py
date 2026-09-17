@@ -140,11 +140,13 @@ class PortalHealthPageTests(unittest.TestCase):
         self.app.add_url_rule("/login", endpoint="auth.login", view_func=lambda: "")
 
     def render_page(self, available):
-        health_data.clear_dengue_summary_cache()
-        self.addCleanup(health_data.clear_dengue_summary_cache)
-        response = Mock()
-        response.json.return_value = [weekly_record()] if available else []
-        with patch.object(health_data.requests, "get", return_value=response), patch(
+        alert = health_news._build_infodengue_alert(
+            [weekly_record()], city="São Paulo", disease="dengue",
+            source_url=health_data.INFO_DENGUE_SOURCE_URL,
+        ).to_dict() if available else None
+        with patch(
+            "app.modules.portal_cidadao.routes.get_infodengue_alert", return_value=alert,
+        ), patch(
             "app.modules.portal_cidadao.routes.get_portal_health_news",
             return_value=list(health_news.OFFICIAL_FALLBACK_LINKS),
         ):
@@ -161,6 +163,9 @@ class PortalHealthPageTests(unittest.TestCase):
             self.assertIn(target, links.anchors)
         for text in ("Dengue em São Paulo", "260,0", "2,13", "0,0%", "Ver relatório completo", "Consultar dados no InfoDengue", "portalCidadaoForm"):
             self.assertIn(text, html)
+        self.assertEqual(html.count('id="portal-dengue-title"'), 1)
+        self.assertEqual(html.count("Casos notificados"), 1)
+        self.assertIn('href="/portal-cidadao/boletim-dengue"', html)
 
     def test_public_page_keeps_form_news_and_source_links_when_api_fails(self):
         html = self.render_page(False)

@@ -857,3 +857,106 @@ body.dark-mode .portal-cidadao-info-card > span {
   .portal-cidadao-footer { align-items: flex-start; flex-direction: column; }
   .portal-cidadao-submit { width: 100%; }
 }
+
+/* Relatório completo integrado ao mesmo tema do portal. */
+.portal-cidadao-report-page { padding-bottom: 42px; }
+.portal-cidadao-report-hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 32px; align-items: end; padding: 34px 0 28px; border-bottom: 1px solid var(--portal-line); }
+.portal-cidadao-report-hero h1 { margin: 8px 0 10px; font-size: 2.25rem; line-height: 1.12; font-weight: 800; }
+.portal-cidadao-report-hero p { max-width: 640px; margin: 0; color: var(--portal-muted); font-size: .95rem; }
+.portal-cidadao-report-filter { display: flex; align-items: end; gap: 12px; padding: 14px; border: 1px solid var(--portal-line); border-radius: 20px; background: var(--color-bg-surface); }
+.portal-cidadao-report-filter label { display: grid; gap: 5px; min-width: 130px; color: var(--portal-muted); font-size: .7rem; font-weight: 700; text-transform: uppercase; }
+.portal-cidadao-report-filter .form-select { min-height: 46px; border-color: var(--portal-line); border-radius: 12px; color: var(--portal-ink); background-color: var(--color-bg-white); box-shadow: none; }
+.portal-cidadao-report-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin: 26px 0; }
+.portal-cidadao-report-summary article, .portal-cidadao-report-insights article { min-width: 0; padding: 16px; border: 1px solid var(--portal-line); border-radius: 20px; background: var(--color-bg-white); }
+.portal-cidadao-report-summary span, .portal-cidadao-report-insights span { display: block; color: var(--portal-muted); font-size: .68rem; font-weight: 700; text-transform: uppercase; }
+.portal-cidadao-report-summary strong, .portal-cidadao-report-insights strong { display: block; margin-top: 6px; font-size: 1.35rem; line-height: 1.15; }
+.portal-cidadao-report-summary small, .portal-cidadao-report-insights small { display: block; margin-top: 7px; color: var(--portal-muted); font-size: .75rem; line-height: 1.45; }
+.portal-cidadao-report-grid { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 28px; align-items: start; }
+.portal-cidadao-report-chart { min-width: 0; padding: 22px; border: 1px solid var(--portal-line); border-radius: 20px; background: var(--color-bg-white); }
+.portal-cidadao-report-panel-heading { display: flex; justify-content: space-between; align-items: end; gap: 18px; margin-bottom: 20px; }
+.portal-cidadao-report-panel-heading h2 { margin: 5px 0 0; font-size: 1.35rem; line-height: 1.25; font-weight: 750; }
+.portal-cidadao-week-bars { display: grid; gap: 10px; }
+.portal-cidadao-week-row { display: grid; grid-template-columns: 64px minmax(0, 1fr) 78px; gap: 12px; align-items: center; }
+.portal-cidadao-week-row > span { color: var(--portal-muted); font-size: .72rem; font-weight: 700; }
+.portal-cidadao-week-row > strong { text-align: right; font-size: .8rem; }
+.portal-cidadao-week-track { height: 12px; border-radius: 999px; background: var(--color-bg-surface); overflow: hidden; }
+.portal-cidadao-week-track i { display: block; height: 100%; border-radius: inherit; background: var(--portal-cyan-dark); }
+.portal-cidadao-week-track i[data-alert-level="3"], .portal-cidadao-week-track i[data-alert-level="4"] { background: #a44218; }
+.portal-cidadao-report-insights { display: grid; gap: 14px; }
+.portal-cidadao-report-insights .btn { width: 100%; }
+.portal-cidadao-report-table-section { margin-top: 32px; padding-top: 28px; border-top: 1px solid var(--portal-line); }
+.portal-cidadao-report-table-wrap { overflow-x: auto; border: 1px solid var(--portal-line); border-radius: 20px; }
+.portal-cidadao-report-table { width: 100%; min-width: 760px; border-collapse: collapse; background: var(--color-bg-white); }
+.portal-cidadao-report-table th, .portal-cidadao-report-table td { padding: 12px 14px; border-bottom: 1px solid var(--portal-line); text-align: left; font-size: .82rem; white-space: nowrap; }
+.portal-cidadao-report-table th { color: var(--portal-muted); font-size: .68rem; text-transform: uppercase; }
+.portal-cidadao-report-table tbody tr:last-child td { border-bottom: 0; }
+.portal-cidadao-report-empty { margin: 36px 0; padding: 36px 0; border-top: 1px solid var(--portal-line); border-bottom: 1px solid var(--portal-line); }
+.portal-cidadao-report-empty i { color: var(--portal-cyan-dark); font-size: 1.8rem; }
+.portal-cidadao-report-empty h2 { margin: 12px 0 8px; font-size: 1.6rem; }
+.portal-cidadao-report-empty p { max-width: 620px; color: var(--portal-muted); }
+
+
+/* Mantém um único fluxo de rolagem, inclusive nos formulários longos. */
+html:has(.portal-cidadao-page) { height: auto; min-height: 100%; overflow-x: clip; overflow-y: auto; }
+body:has(.portal-cidadao-page) { height: auto; min-height: 100vh; overflow: visible; }
+.portal-cidadao-page [hidden] { display: none !important; }
+.portal-cidadao-page :is(input, select, textarea):focus-visible,
+.portal-cidadao-upload-label:focus-within { outline: 2px solid var(--portal-cyan-dark); outline-offset: 4px; }
+.portal-cidadao-page :is(h1, h2, h3, p, small, label) { overflow-wrap: anywhere; }
+.portal-cidadao-form-card, .portal-cidadao-field, .portal-cidadao-form fieldset { min-width: 0; }
+.portal-cidadao-steps li { opacity: 1; }
+.portal-cidadao-text-link { display: inline-flex; align-items: center; gap: 8px; color: var(--portal-cyan-dark); font-size: .8rem; font-weight: 750; }
+.portal-cidadao-news-aside .portal-cidadao-text-link { margin-top: 16px; color: #9ef4ff; }
+.portal-cidadao-nav a { overflow-wrap: anywhere; }
+.portal-cidadao-nav-brand { min-width: 0; }
+.portal-cidadao-nav-brand > i { flex-shrink: 0; }
+
+.portal-cidadao-report-hero {
+  align-items: center;
+  padding: clamp(24px, 4vw, 42px);
+  border: 1px solid var(--portal-line);
+  border-radius: 28px;
+  color: #fff;
+  background: radial-gradient(circle at 100% 0%, rgba(66, 245, 200, .2), transparent 42%), linear-gradient(135deg, #061827, #087088);
+  box-shadow: var(--shadow-md);
+}
+.portal-cidadao-report-hero h1 { color: #fff; letter-spacing: -.04em; }
+.portal-cidadao-report-hero p { color: rgba(255, 255, 255, .78); line-height: 1.7; }
+.portal-cidadao-report-hero .portal-cidadao-eyebrow { color: #9ef4ff; }
+.portal-cidadao-report-filter { flex-wrap: wrap; align-items: flex-end; background: var(--color-bg-white); }
+.portal-cidadao-report-filter label { min-width: 100px; }
+.portal-cidadao-report-summary article,
+.portal-cidadao-report-insights article,
+.portal-cidadao-report-chart { box-shadow: var(--shadow-md); }
+.portal-cidadao-report-page :is(h2, strong) { color: var(--portal-ink); }
+.portal-cidadao-report-table-wrap { background: var(--color-bg-white); box-shadow: var(--shadow-md); }
+.portal-cidadao-report-table th { background: rgba(10, 168, 195, .06); }
+.portal-cidadao-report-table td { color: var(--portal-ink); font-variant-numeric: tabular-nums; }
+.portal-cidadao-report-empty { padding: clamp(24px, 4vw, 42px); border: 1px solid var(--portal-line); border-radius: 24px; background: var(--color-bg-white); box-shadow: var(--shadow-md); }
+
+body.dark-mode .portal-cidadao-news-aside .portal-cidadao-text-link { color: var(--portal-cyan-dark); }
+body.dark-mode .portal-cidadao-report-hero { background: radial-gradient(circle at 100% 0%, rgba(35, 192, 214, .07), transparent 42%), linear-gradient(135deg, var(--color-bg-surface), var(--color-bg-body)); }
+body.dark-mode .portal-cidadao-report-page :is(h1, h2, strong) { color: var(--portal-ink) !important; }
+body.dark-mode .portal-cidadao-report-hero p { color: var(--portal-muted); }
+body.dark-mode .portal-cidadao-report-filter .form-select { color: var(--portal-ink) !important; background-color: var(--color-bg-surface) !important; border-color: var(--portal-line) !important; }
+body.dark-mode .portal-cidadao-week-track i[data-alert-level="3"],
+body.dark-mode .portal-cidadao-week-track i[data-alert-level="4"] { background: #ffb27e; }
+
+@media (max-width: 1100px) {
+  .portal-cidadao-report-hero { grid-template-columns: 1fr; align-items: start; }
+  .portal-cidadao-report-filter { width: 100%; }
+  .portal-cidadao-report-filter label { flex: 1; }
+  .portal-cidadao-report-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .portal-cidadao-report-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 980px) and (min-width: 721px) {
+  .portal-cidadao-steps { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (max-width: 720px) {
+  .portal-cidadao-report-hero h1 { font-size: 1.9rem; }
+  .portal-cidadao-report-filter { flex-direction: column; align-items: stretch; }
+  .portal-cidadao-report-summary { grid-template-columns: 1fr; }
+  .portal-cidadao-report-chart { padding: 16px; }
+  .portal-cidadao-report-panel-heading { flex-direction: column; align-items: flex-start; }
+  .portal-cidadao-week-row { grid-template-columns: 54px minmax(0, 1fr) 68px; gap: 8px; }
+}

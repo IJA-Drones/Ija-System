@@ -75,52 +75,46 @@
         <h2 id="portal-boletim-title">Boletim de saúde</h2>
         <p>Dengue, vigilância e cuidados com a saúde.</p>
       </div>
-      <span class="portal-cidadao-status-pill">
-        <i class="bi bi-patch-check-fill" aria-hidden="true"></i>
-        Fontes públicas oficiais
-      </span>
+      <span class="portal-cidadao-status-pill"><i class="bi bi-patch-check" aria-hidden="true"></i> Fontes públicas oficiais</span>
     </div>
 
     <article class="portal-cidadao-dengue-card" aria-labelledby="portal-dengue-title">
       <div class="portal-cidadao-dengue-heading">
         <div>
           <span class="portal-cidadao-eyebrow"><i class="bi bi-activity" aria-hidden="true"></i> Dados epidemiológicos</span>
-          <h3 id="portal-dengue-title">Dengue em São Paulo</h3>
-          {% if dengue_summary.available %}
-          <p>{{ dengue_summary.week_label }} · início em <time datetime="{{ dengue_summary.week_start_iso }}">{{ dengue_summary.week_start_label }}</time></p>
+          <h3 id="portal-dengue-title">{{ infodengue_alert.disease if infodengue_alert else 'Dengue' }} em {{ infodengue_alert.city if infodengue_alert else portal_city }}</h3>
+          {% if infodengue_alert %}
+          <p>{{ infodengue_alert.week_label }}{% if infodengue_alert.started_at_label %} · início em {{ infodengue_alert.started_at_label }}{% endif %}</p>
           {% else %}
           <p>Acompanhe os indicadores semanais do município.</p>
           {% endif %}
         </div>
-        {% if dengue_summary.available %}
-        <div class="portal-cidadao-alert-level is-{{ dengue_summary.level_class }}">
+        {% if infodengue_alert %}
+        <div class="portal-cidadao-alert-level is-{{ {1: 'low', 2: 'attention', 3: 'alert', 4: 'high'}.get(infodengue_alert.alert_level, 'unknown') }}">
           <span>Nível de alerta</span>
-          <strong><i class="bi bi-circle-fill" aria-hidden="true"></i>{{ dengue_summary.level_label }}</strong>
+          <strong><i class="bi bi-circle-fill" aria-hidden="true"></i>{{ infodengue_alert.alert_label }}</strong>
         </div>
         {% endif %}
       </div>
 
-      {% if dengue_summary.available %}
-      {% if dengue_summary.stale %}
-      <p class="portal-cidadao-data-notice" role="status"><i class="bi bi-clock-history" aria-hidden="true"></i> A atualização está temporariamente indisponível. Exibindo os últimos dados consultados.</p>
-      {% endif %}
+      {% if infodengue_alert %}
       <dl class="portal-cidadao-health-metrics">
-        <div><dt>Casos notificados</dt><dd>{{ dengue_summary.reported_cases }}</dd></div>
-        <div><dt>Casos estimados</dt><dd>{{ dengue_summary.estimated_cases }}</dd></div>
-        <div><dt>Incidência por 100 mil</dt><dd>{{ dengue_summary.incidence }}</dd></div>
-        <div><dt>Prob. Rt acima de 1</dt><dd>{{ dengue_summary.probability }}</dd></div>
+        <div><dt>Casos notificados</dt><dd>{{ infodengue_alert.cases }}</dd></div>
+        <div><dt>Casos estimados</dt><dd>{{ infodengue_alert.estimated_cases }}</dd></div>
+        <div><dt>Incidência por 100 mil</dt><dd>{{ infodengue_alert.incidence }}</dd></div>
+        <div><dt>Prob. Rt acima de 1</dt><dd>{{ infodengue_alert.probability_rt_above_1 }}</dd></div>
       </dl>
       <p class="portal-cidadao-data-caption">Fonte: InfoDengue · Última semana publicada. Os dados podem ser revisados pela fonte. Rt acima de 1 indica crescimento da transmissão.</p>
       {% else %}
-      <p class="portal-cidadao-data-notice" role="status"><i class="bi bi-cloud-slash" aria-hidden="true"></i> Os indicadores estão temporariamente indisponíveis. Consulte o boletim oficial ou os dados no InfoDengue pelos links abaixo.</p>
+      <p class="portal-cidadao-data-notice" role="status"><i class="bi bi-cloud-slash" aria-hidden="true"></i> Os indicadores estão temporariamente indisponíveis. Consulte o relatório completo ou os dados no InfoDengue pelos links abaixo.</p>
       {% endif %}
 
       <div class="portal-cidadao-dengue-actions">
-        <a class="btn btn-success" href="{{ dengue_summary.report_url }}" target="_blank" rel="noopener noreferrer" aria-label="Ver relatório completo da COVISA/SMS-SP (abre em nova aba)">
+        <a class="btn btn-success" href="{{ url_for('main.portal_cidadao_boletim_dengue') }}">
           <i class="bi bi-bar-chart-line" aria-hidden="true"></i> Ver relatório completo
-          <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+          <i class="bi bi-arrow-right" aria-hidden="true"></i>
         </a>
-        <a class="portal-cidadao-data-link" href="{{ dengue_summary.source_url }}" target="_blank" rel="noopener noreferrer" aria-label="Consultar dados no InfoDengue (abre em nova aba)">
+        <a class="portal-cidadao-data-link" href="{{ infodengue_alert.source_url if infodengue_alert else 'https://info.dengue.mat.br/services/api' }}" target="_blank" rel="noopener noreferrer" aria-label="Consultar dados no InfoDengue (abre em nova aba)">
           Consultar dados no InfoDengue <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
         </a>
       </div>
@@ -146,20 +140,14 @@
         </article>
         {% endfor %}
       </div>
-
       <aside class="portal-cidadao-news-aside" aria-label="Participação e atendimento">
         <span class="portal-cidadao-news-aside-icon"><i class="bi bi-megaphone-fill" aria-hidden="true"></i></span>
         <span class="portal-cidadao-eyebrow">Sua cidade, seu cuidado</span>
         <h3>Viu um possível foco?</h3>
         <p>Água parada, criadouros ou outro risco à saúde: seu relato ajuda a vigilância a identificar onde agir.</p>
-        <a class="btn btn-success" href="#portal-relato">
-          Registrar um relato
-          <i class="bi bi-arrow-right" aria-hidden="true"></i>
-        </a>
-        <span class="portal-cidadao-news-aside-note">
-          <i class="bi bi-shield-check" aria-hidden="true"></i>
-          As informações passam pela análise da equipe responsável.
-        </span>
+        <a class="btn btn-success" href="#portal-relato">Registrar um relato <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+        <div class="portal-cidadao-news-aside-note"><i class="bi bi-shield-check" aria-hidden="true"></i><span>As informações passam pela análise da equipe responsável.</span></div>
+        <a class="portal-cidadao-text-link" href="#como-funciona">Entenda o atendimento <i class="bi bi-arrow-down-right" aria-hidden="true"></i></a>
       </aside>
     </div>
   </section>
@@ -169,18 +157,19 @@
       <div>
         <span class="portal-cidadao-eyebrow">Novo relato</span>
         <h2 id="portal-relato-title">O que você encontrou?</h2>
-        <p>Selecione uma categoria já utilizada no atendimento operacional.</p>
+        <p>Um relato pode fazer a diferença no cuidado com a sua comunidade.</p>
       </div>
     </div>
 
     <div class="portal-cidadao-report-layout">
       <aside class="portal-cidadao-side-card">
         <span class="portal-cidadao-side-card-icon"><i class="bi bi-list-check" aria-hidden="true"></i></span>
-        <h3>Como preencher</h3>
+        <h3>Seu relato</h3>
         <ol class="portal-cidadao-steps">
-          <li class="is-active"><span>1</span><div><strong>Categoria</strong><small>Escolha o tipo de ocorrência.</small></div></li>
-          <li><span>2</span><div><strong>Local</strong><small>Informe onde está o foco.</small></div></li>
-          <li><span>3</span><div><strong>Detalhes</strong><small>Adicione uma descrição e evidências.</small></div></li>
+          <li><span>1</span><div><strong>Ocorrência</strong><small>Tipo de situação encontrada.</small></div></li>
+          <li><span>2</span><div><strong>Local</strong><small>Endereço da ocorrência.</small></div></li>
+          <li><span>3</span><div><strong>Identificação</strong><small>Seus dados de contato.</small></div></li>
+          <li><span>4</span><div><strong>Detalhes</strong><small>Descrição, fotos e vídeos.</small></div></li>
         </ol>
         <div class="portal-cidadao-side-tip">
           <i class="bi bi-lightbulb" aria-hidden="true"></i>
@@ -212,7 +201,7 @@
           <input type="hidden" id="portalPlaceId" name="place_id">
           <input type="hidden" id="portalComplemento" name="complemento">
           <fieldset>
-            <legend>O que você encontrou?</legend>
+            <legend>Tipo de ocorrência</legend>
             <div class="portal-cidadao-type-grid" role="group" aria-label="Tipo de ocorrência">
               {% for tipo in focus_catalog.tipo_visita_opcoes %}
               <button
@@ -332,7 +321,7 @@
               </div>
               <label class="btn btn-outline-primary btn-sm portal-cidadao-upload-label" for="portalMidia">
                 Escolher arquivo
-                <input id="portalMidia" name="midias" type="file" accept="image/*,video/*" multiple hidden>
+                <input class="visually-hidden" id="portalMidia" name="midias" type="file" accept="image/*,video/*" multiple>
               </label>
             </div>
             <div class="portal-cidadao-file-list" id="portalCidadaoFileList" aria-live="polite"></div>
@@ -366,10 +355,10 @@
       </div>
     </div>
     <div class="portal-cidadao-info-grid">
-      <article class="portal-cidadao-info-card"><span>01</span><i class="bi bi-inbox" aria-hidden="true"></i><h3>Recebimento</h3><p>O relato recebe um protocolo para acompanhamento.</p></article>
-      <article class="portal-cidadao-info-card"><span>02</span><i class="bi bi-search" aria-hidden="true"></i><h3>Triagem</h3><p>A gestão confere a categoria, o local e as evidências.</p></article>
-      <article class="portal-cidadao-info-card"><span>03</span><i class="bi bi-clipboard2-check" aria-hidden="true"></i><h3>Encaminhamento</h3><p>Quando necessário, a ocorrência segue para a operação.</p></article>
-      <article class="portal-cidadao-info-card"><span>04</span><i class="bi bi-chat-square-text" aria-hidden="true"></i><h3>Devolutiva</h3><p>O cidadão poderá acompanhar a atualização do atendimento.</p></article>
+      <article class="portal-cidadao-info-card"><span>01</span><i class="bi bi-inbox" aria-hidden="true"></i><h3>Recebimento</h3><p>Seu relato é registrado e recebe um número de protocolo.</p></article>
+      <article class="portal-cidadao-info-card"><span>02</span><i class="bi bi-search" aria-hidden="true"></i><h3>Análise da COVISA</h3><p>A equipe verifica o endereço e as informações enviadas.</p></article>
+      <article class="portal-cidadao-info-card"><span>03</span><i class="bi bi-signpost-split" aria-hidden="true"></i><h3>Encaminhamento</h3><p>A coordenadoria designa a UVIS responsável pela região.</p></article>
+      <article class="portal-cidadao-info-card"><span>04</span><i class="bi bi-clipboard2-check" aria-hidden="true"></i><h3>Avaliação da UVIS</h3><p>A unidade avalia a necessidade de uma solicitação de atendimento.</p></article>
     </div>
   </section>
 
