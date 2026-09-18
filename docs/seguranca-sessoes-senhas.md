@@ -8,18 +8,19 @@ tela para gravar configurações no banco.
 
 O recurso fica **desativado por padrão**. A instalação do código não altera a
 política em uso. Nenhum valor do `.env` é modificado pelo código.
-O `Procfile` deixa de executar `flask db upgrade` automaticamente: por padrão,
-`IJA_AUTO_DB_MIGRATE=0`. Quando você decidir executar migrações futuras, faça
-isso manualmente ou defina `IJA_AUTO_DB_MIGRATE=1` de forma explícita no ambiente
-de implantação. Esta alteração não exige migração no Neon nem em produção.
+O `Procfile` mantém a execução de `flask db upgrade` condicionada a
+`IJA_AUTO_DB_MIGRATE=1`; sem essa variável, a migração automática fica desligada.
+Esta alteração de segurança não exige migração no Neon nem em produção. Se a
+opção de migração automática estiver ativa, outras migrações pendentes do projeto
+serão aplicadas na próxima inicialização.
 
 Para ativar primeiro em homologação, definir no ambiente e reiniciar todos os
 processos da aplicação:
 
 ```dotenv
 SECURITY_CONTROLS_ENABLED=1
-SESSION_IDLE_TIMEOUT_MINUTES=30
-SESSION_MAX_LIFETIME_HOURS=8
+SESSION_IDLE_TIMEOUT_MINUTES=15
+SESSION_MAX_LIFETIME_HOURS=0
 PASSWORD_MIN_LENGTH=15
 PASSWORD_REQUIRE_UPPERCASE=1
 PASSWORD_REQUIRE_LOWERCASE=1
@@ -34,7 +35,15 @@ ativar as duas juntas. Uma `SECRET_KEY` fixa de pelo menos 32 caracteres é
 obrigatória quando qualquer uma delas estiver ativa.
 
 - Timeout: inteiro entre 1 e 1440 minutos. Mínimo da senha: entre 8 e 128 caracteres.
-- Duração máxima: inteiro entre 1 e 168 horas, mesmo que haja atividade.
+- Ao iniciar localmente com `python run.py` em DEBUG, o teste usa 30 segundos
+  de inatividade por padrão. Reinicie o processo após atualizar o código e
+  entre novamente para testar. Em outros pontos de entrada locais, definir
+  `SESSION_IDLE_TIMEOUT_SECONDS=30` com `SECURITY_CONTROLS_ENABLED=1` e DEBUG.
+  Esse parâmetro é rejeitado fora de DEBUG/TESTING; o processo de produção
+  continua usando `SESSION_IDLE_TIMEOUT_MINUTES`. Não é necessário executar
+  migrações nem alterar banco algum.
+- Duração máxima opcional: `0` desativa o limite total; de 1 a 168 horas o ativa.
+  O padrão é `0`, para encerrar a sessão somente por inatividade.
 - As quatro regras de composição são independentes; `0` desativa cada exigência.
 - Máximo da senha: 128 caracteres. Espaços são preservados quando a política está ativa.
 - Configurações inválidas impedem a inicialização com o recurso ativo, com uma
@@ -55,10 +64,20 @@ A sessão expira ao alcançar o prazo, inclusive se o JavaScript estiver desativ
 Operações expiradas não são executadas. Páginas retornam ao login; chamadas de API
 recebem HTTP 401 com `code=session_expired`.
 
-Navegação HTML e interação com a página renovam o prazo. O navegador envia eventos
-de atividade limitados em frequência e protegidos por um token da sessão. Consultas
+Navegação HTML e interação com a página renovam o prazo. Cliques, digitação,
+movimento do ponteiro, rolagem e gestos de toque reiniciam a contagem local e
+enviam sinais de atividade limitados em frequência, protegidos por um token da sessão.
+Com o prazo padrão de 15 minutos, o navegador envia renovações periódicas
+em intervalos de 45 segundos enquanto há uso e consulta o status a cada 5 minutos
+quando a aba está visível e parada. Também consulta ao abrir o alerta, ao atingir
+o prazo e ao voltar para a aba. Essas rotas leem a sessão e o usuário, mas não
+gravam presença nem auditoria no banco.
+Um alerta central aparece nos últimos 15 segundos, mostra a contagem regressiva e
+permite continuar conectado. Uma interação real também cancela o alerta e renova
+a sessão enquanto ela ainda estiver válida. O cronômetro permanente da própria
+sessão aparece apenas no painel Dev, na aba Presença. Consultas
 de status, atualizações automáticas, uploads em segundo plano e arquivos estáticos
-não renovam a sessão. O aviso aparece no último minuto. A opção “Continuar conectado”
+não renovam a sessão. A opção “Continuar”
 só funciona enquanto a sessão ainda está válida. Ao voltar de uma aba suspensa, o
 navegador verifica a validade no servidor.
 

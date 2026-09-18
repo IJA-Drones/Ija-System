@@ -93,6 +93,30 @@ class SessionSecurityTests(unittest.TestCase):
         with self.client.session_transaction() as stored:
             self.assertNotIn("_user_id", stored)
 
+    def test_thirty_second_test_timeout_expires_at_boundary(self):
+        self.app.config["SESSION_IDLE_TIMEOUT_SECONDS"] = 30
+        self.now += 29
+        self.assertEqual(self.client.get("/auth/session-status").status_code, 200)
+        self.now += 1
+        self.assertEqual(self.client.post("/protected").status_code, 303)
+        self.assertEqual(self.mutations, 0)
+
+    def test_activity_renews_thirty_second_test_timeout(self):
+        self.app.config["SESSION_IDLE_TIMEOUT_SECONDS"] = 30
+        for _ in range(5):
+            self.now += 20
+            self.assertEqual(self.activity().status_code, 200)
+        self.assertEqual(self.client.get("/auth/session-status").status_code, 200)
+        self.now += 30
+        self.assertEqual(self.client.get("/auth/session-status").status_code, 401)
+
+    def test_absolute_lifetime_is_off_by_default(self):
+        self.app.config["SESSION_IDLE_TIMEOUT_SECONDS"] = 30
+        self.now += 8 * 3600
+        with self.client.session_transaction() as stored:
+            stored[SESSION_KEY] = {**stored[SESSION_KEY], "last_activity": self.now}
+        self.assertEqual(self.client.get("/auth/session-status").status_code, 200)
+
     def test_active_post_still_works(self):
         self.now += 59
         self.assertEqual(self.client.post("/protected").status_code, 200)
@@ -284,7 +308,7 @@ class PasswordPolicyTests(unittest.TestCase):
 
     def test_invalid_enabled_configuration_is_rejected_early(self):
         for name, value in (("SESSION_IDLE_TIMEOUT_MINUTES", "0"), ("SESSION_IDLE_TIMEOUT_MINUTES", "abc"),
-                            ("SESSION_MAX_LIFETIME_HOURS", "0"),
+                            ("SESSION_MAX_LIFETIME_HOURS", "-1"),
                             ("PASSWORD_MIN_LENGTH", "7"), ("PASSWORD_MIN_LENGTH", "129")):
             with self.subTest(name=name, value=value):
                 app = Flask(__name__)
@@ -292,6 +316,27 @@ class PasswordPolicyTests(unittest.TestCase):
                 app.config[name] = value
                 with self.assertRaises(ValueError):
                     register_session_security(app)
+
+    def test_short_timeout_is_limited_to_local_test_mode(self):
+        for value in ("0", "4", "60", "invalid"):
+            with self.subTest(value=value):
+                app = Flask(__name__)
+                app.config.update(SECRET_KEY="isolated-test-key-for-security-tests-1234",
+                                  SECURITY_CONTROLS_ENABLED=True, TESTING=True,
+                                  SESSION_IDLE_TIMEOUT_SECONDS=value)
+                with self.assertRaises(ValueError):
+                    register_session_security(app)
+
+        app = Flask(__name__)
+        app.config.update(SECRET_KEY="isolated-test-key-for-security-tests-1234",
+                          SECURITY_CONTROLS_ENABLED=True, SESSION_IDLE_TIMEOUT_SECONDS="30")
+        with self.assertRaisesRegex(ValueError, "DEBUG ou TESTING"):
+            register_session_security(app)
+
+        app.config["TESTING"] = True
+        register_session_security(app)
+        self.assertEqual(app.config["SESSION_IDLE_TIMEOUT_SECONDS"], 30)
+        self.assertEqual(app.config["SESSION_IDLE_TIMEOUT_MINUTES"], 15)
 
     def test_generated_development_secret_is_not_accepted(self):
         app = Flask(__name__)

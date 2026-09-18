@@ -4,25 +4,62 @@
   if (!element) return;
   const config = JSON.parse(element.textContent);
   let deadline = Date.now() + config.expires_in * 1000;
+  let confirmedDeadline = deadline;
+  let absoluteDeadline = Number.isFinite(config.absolute_expires_in)
+    ? Date.now() + config.absolute_expires_in * 1000 : Infinity;
   let absolute = config.absolute;
   let pendingActivityAt = 0;
-  let lastRequestAt = 0;
   let inFlight = false;
   let leaving = false;
+  const idleSeconds = Number(config.idle_timeout_seconds) || 900;
+  const idleMs = idleSeconds * 1000;
+  const activityIntervalMs = Math.min(45000, Math.max(1000, Math.floor(idleMs / 3)));
+  const statusIntervalMs = Math.min(300000, Math.max(30000, Math.floor(idleMs / 3)));
+  const warningMs = 15000;
+  let lastRequestAt = Date.now();
+  let activitySent = false;
+  const devSessionCountdown = document.getElementById("devSessionCountdown");
 
   const warning = document.createElement("div");
-  warning.className = "alert alert-warning shadow position-fixed bottom-0 start-50 translate-middle-x mb-3";
-  warning.style.zIndex = "1090";
-  warning.style.width = "min(92vw, 560px)";
-  warning.setAttribute("role", "status");
+  warning.className = "ija-session-warning position-fixed top-50 start-50 translate-middle p-4 text-center";
+  warning.setAttribute("role", "alert");
+  warning.setAttribute("aria-live", "polite");
   warning.hidden = true;
-  const message = document.createElement("span");
+  const title = document.createElement("h2");
+  title.className = "ija-session-warning-title h4 fw-bold mb-2";
+  title.textContent = "Você ainda está aí?";
+  const message = document.createElement("p");
+  message.className = "mb-2";
+  const countdown = document.createElement("strong");
+  countdown.className = "ija-session-warning-countdown d-block display-5 fw-bold mb-3";
+  countdown.setAttribute("aria-hidden", "true");
   const continueButton = document.createElement("button");
   continueButton.type = "button";
-  continueButton.className = "btn btn-sm btn-primary ms-2";
+  continueButton.className = "btn btn-primary fw-semibold px-4";
   continueButton.textContent = "Continuar conectado";
-  warning.append(message, continueButton);
+  warning.append(title, message, countdown, continueButton);
   document.body.append(warning);
+
+  function renderSessionState() {
+    const remainingMs = Math.max(0, deadline - Date.now());
+    const seconds = Math.ceil(remainingMs / 1000);
+    warning.hidden = remainingMs > warningMs || leaving;
+    continueButton.hidden = absolute;
+    const warningMessage = absolute
+      ? "Sua sessão atingirá o limite de duração em até 15 segundos."
+      : "Sua sessão será encerrada por inatividade em até 15 segundos.";
+    if (message.textContent !== warningMessage) message.textContent = warningMessage;
+    const countdownLabel = `00:${String(seconds).padStart(2, "0")}`;
+    if (countdown.textContent !== countdownLabel) countdown.textContent = countdownLabel;
+    if (devSessionCountdown) {
+      const minutes = String(Math.floor(seconds / 60)).padStart(2, "0");
+      const remainder = String(seconds % 60).padStart(2, "0");
+      const label = `${minutes}:${remainder}`;
+      if (devSessionCountdown.textContent !== label) devSessionCountdown.textContent = label;
+    }
+  }
+
+  renderSessionState();
 
   function goToLogin() {
     if (leaving) return;
@@ -33,6 +70,7 @@
   async function sync(activity = false) {
     if (inFlight || leaving) return;
     inFlight = true;
+    if (activity) activitySent = true;
     lastRequestAt = Date.now();
     const sentActivityAt = pendingActivityAt;
     const controller = new AbortController();
@@ -52,31 +90,53 @@
       if (!response.ok) throw new Error("Session status unavailable");
       const data = await response.json();
       if (!Number.isFinite(data.expires_in)) throw new Error("Invalid session status");
-      deadline = Date.now() + data.expires_in * 1000;
-      absolute = data.absolute;
+      const now = Date.now();
+      confirmedDeadline = now + data.expires_in * 1000;
+      absoluteDeadline = Number.isFinite(data.absolute_expires_in)
+        ? now + data.absolute_expires_in * 1000 : Infinity;
+      const newerActivity = pendingActivityAt && (!activity || pendingActivityAt > sentActivityAt);
+      deadline = newerActivity
+        ? Math.min(absoluteDeadline, Math.max(deadline, confirmedDeadline))
+        : confirmedDeadline;
+      absolute = Number.isFinite(absoluteDeadline) && absoluteDeadline <= deadline;
       if (activity && pendingActivityAt === sentActivityAt) pendingActivityAt = 0;
-      warning.hidden = data.expires_in > 60;
-      continueButton.hidden = absolute;
+      renderSessionState();
     } catch (_) {
+      deadline = confirmedDeadline;
+      renderSessionState();
       if (Date.now() >= deadline) goToLogin();
     } finally {
       clearTimeout(abortTimer);
       inFlight = false;
+      if (!leaving && !activity && pendingActivityAt && Date.now() < confirmedDeadline) sync(true);
     }
   }
 
-  function recordActivity(event) {
+  function recordActivity(event, forceRenewal = false) {
     if (!event.isTrusted || document.visibilityState !== "visible") return;
-    pendingActivityAt = Date.now();
-    if (Date.now() - lastRequestAt >= 15000 || deadline - Date.now() <= 15000) sync(true);
+    const now = Date.now();
+    if (now >= deadline && !inFlight) {
+      sync(false);
+      return;
+    }
+    const warningVisible = !warning.hidden;
+    pendingActivityAt = now;
+    deadline = Math.min(absoluteDeadline, Math.max(deadline, now + idleMs));
+    absolute = Number.isFinite(absoluteDeadline) && absoluteDeadline <= deadline;
+    if (!warning.hidden) warning.hidden = true;
+    if (devSessionCountdown) renderSessionState();
+    if (!activitySent || forceRenewal || warningVisible || shouldSendActivity(now)) sync(true);
   }
-  for (const eventName of ["pointerdown", "keydown", "input", "wheel", "touchstart"]) {
+  function shouldSendActivity(now) {
+    return now - lastRequestAt >= activityIntervalMs ||
+      (confirmedDeadline - now <= Math.max(activityIntervalMs, 5000) && now - lastRequestAt >= 1000);
+  }
+  for (const eventName of ["pointerdown", "pointermove", "click", "keydown", "input", "change", "wheel", "touchstart", "touchmove"]) {
     document.addEventListener(eventName, recordActivity, { passive: true });
   }
   continueButton.addEventListener("click", (event) => {
     if (!event.isTrusted) return;
-    pendingActivityAt = Date.now();
-    sync(true);
+    recordActivity(event, true);
   });
   document.addEventListener("visibilitychange", () => {
     // Returning to a tab checks the server before attempting to renew anything.
@@ -86,16 +146,13 @@
   setInterval(() => {
     if (leaving) return;
     const now = Date.now();
-    const seconds = Math.max(0, Math.ceil((deadline - now) / 1000));
-    warning.hidden = seconds > 60;
-    continueButton.hidden = absolute;
-    message.textContent = absolute
-      ? `Sua sessão atinge o limite de duração em ${seconds} segundos.`
-      : `Sua sessão expira em ${seconds} segundos por inatividade.`;
+    const warningWasHidden = warning.hidden;
+    renderSessionState();
     // Other tabs share the cookie. Confirm expiry with the server before leaving.
-    if (seconds === 0) sync(false);
-    else if (pendingActivityAt && now - pendingActivityAt < 15000 && now - lastRequestAt >= 15000) sync(true);
-    else if (now - lastRequestAt >= 30000) sync(false);
+    if (now >= deadline) sync(false);
+    else if (warningWasHidden && !warning.hidden) sync(false);
+    else if (pendingActivityAt && shouldSendActivity(now)) sync(true);
+    else if (document.visibilityState === "visible" && now - lastRequestAt >= statusIntervalMs) sync(false);
   }, 1000);
 
   const policy = config.password;

@@ -16,11 +16,15 @@ bp = Blueprint("session_security", __name__)
 
 
 def idle_seconds():
-    return int(current_app.config.get("SESSION_IDLE_TIMEOUT_MINUTES", 30)) * 60
+    test_seconds = current_app.config.get("SESSION_IDLE_TIMEOUT_SECONDS")
+    if test_seconds is not None:
+        return int(test_seconds)
+    return int(current_app.config.get("SESSION_IDLE_TIMEOUT_MINUTES", 15)) * 60
 
 
 def max_lifetime_seconds():
-    return int(current_app.config.get("SESSION_MAX_LIFETIME_HOURS", 8)) * 3600
+    hours = int(current_app.config.get("SESSION_MAX_LIFETIME_HOURS", 0))
+    return hours * 3600 if hours else None
 
 
 def start_security_session():
@@ -90,10 +94,12 @@ def _session_timing():
     if created_at > now + 5 or last_activity > now + 5 or last_activity < created_at:
         return None
     idle_remaining = idle_seconds() - (now - last_activity)
-    absolute_remaining = max_lifetime_seconds() - (now - created_at)
+    maximum = max_lifetime_seconds()
+    absolute_remaining = maximum - (now - created_at) if maximum is not None else None
     return {
-        "expires_in": min(idle_remaining, absolute_remaining),
-        "absolute": absolute_remaining <= idle_remaining,
+        "expires_in": min(idle_remaining, absolute_remaining) if absolute_remaining is not None else idle_remaining,
+        "absolute": absolute_remaining is not None and absolute_remaining <= idle_remaining,
+        "absolute_expires_in": absolute_remaining,
     }
 
 
@@ -125,7 +131,8 @@ def enforce_idle_timeout():
 
 def _status_response():
     timing = _session_timing()
-    return jsonify(expires_in=max(0, timing["expires_in"]), absolute=timing["absolute"], login_url=_login_url())
+    return jsonify(expires_in=max(0, timing["expires_in"]), absolute=timing["absolute"],
+                   absolute_expires_in=timing["absolute_expires_in"], login_url=_login_url())
 
 
 @bp.get("/auth/session-status")
@@ -157,7 +164,9 @@ def _template_security():
     timing = _session_timing()
     return {"ija_security": {
         "expires_in": max(0, timing["expires_in"]),
+        "idle_timeout_seconds": idle_seconds(),
         "absolute": timing["absolute"],
+        "absolute_expires_in": timing["absolute_expires_in"],
         "csrf": session[SESSION_KEY]["csrf"],
         "status_url": url_for("session_security.status"),
         "activity_url": url_for("session_security.activity"),
@@ -170,9 +179,20 @@ def register_session_security(app):
     if app.config.get("SECURITY_CONTROLS_ENABLED"):
         if not app.secret_key or str(app.secret_key).startswith("dev-") or len(app.secret_key) < 32:
             raise ValueError("SECURITY_CONTROLS_ENABLED exige SECRET_KEY fixa e com pelo menos 32 caracteres.")
+        test_seconds = app.config.get("SESSION_IDLE_TIMEOUT_SECONDS")
+        if test_seconds is not None:
+            if not (app.debug or app.testing):
+                raise ValueError("SESSION_IDLE_TIMEOUT_SECONDS é permitido apenas em DEBUG ou TESTING.")
+            try:
+                test_seconds = int(test_seconds)
+            except (TypeError, ValueError) as exc:
+                raise ValueError("SESSION_IDLE_TIMEOUT_SECONDS deve ser um número inteiro.") from exc
+            if not 5 <= test_seconds <= 59:
+                raise ValueError("SESSION_IDLE_TIMEOUT_SECONDS deve estar entre 5 e 59.")
+            app.config["SESSION_IDLE_TIMEOUT_SECONDS"] = test_seconds
         for name, default, minimum, maximum in (
-            ("SESSION_IDLE_TIMEOUT_MINUTES", 30, 1, 1440),
-            ("SESSION_MAX_LIFETIME_HOURS", 8, 1, 168),
+            ("SESSION_IDLE_TIMEOUT_MINUTES", 15, 1, 1440),
+            ("SESSION_MAX_LIFETIME_HOURS", 0, 0, 168),
             ("PASSWORD_MIN_LENGTH", 15, 8, 128),
         ):
             try:
