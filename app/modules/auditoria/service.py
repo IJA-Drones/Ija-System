@@ -1,7 +1,7 @@
 from datetime import datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import func, or_
+from sqlalchemy import delete, func, or_, select
 
 from app.models import AuditoriaUsuario
 from app.shared.query_filters import id_search_clause
@@ -85,3 +85,24 @@ def build_auditoria_query(q="", metodo="", tipo_evento="", status="", data_inici
         )
 
     return query.order_by(AuditoriaUsuario.criado_em.desc(), AuditoriaUsuario.id.desc())
+
+
+def trim_auditoria_usuarios(connection, max_records):
+    """Keep only the newest audit records in the same transaction as the insert."""
+    try:
+        max_records = int(max_records)
+    except (TypeError, ValueError):
+        return 0
+
+    if max_records < 1:
+        return 0
+
+    old_ids = select(AuditoriaUsuario.id).order_by(
+        AuditoriaUsuario.criado_em.desc(), AuditoriaUsuario.id.desc()
+    ).offset(max_records).subquery()
+    result = connection.execute(
+        delete(AuditoriaUsuario.__table__).where(
+            AuditoriaUsuario.id.in_(select(old_ids.c.id))
+        )
+    )
+    return result.rowcount or 0

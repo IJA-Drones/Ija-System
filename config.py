@@ -61,5 +61,6 @@ class Config:
         "yes",
         "on",
     }
+    AUDIT_RETENTION_MAX_RECORDS = int(os.getenv("AUDIT_RETENTION_MAX_RECORDS", "15000"))
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False

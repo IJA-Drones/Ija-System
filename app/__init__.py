@@ -167,6 +167,7 @@ def create_app():
     login_manager.login_view = "auth.login"
 
     from app.models import AuditoriaUsuario, Usuario
+    from app.modules.auditoria.service import trim_auditoria_usuarios
     from app.shared.presence import record_user_presence
 
     @app.get("/healthz")
@@ -268,6 +269,10 @@ def create_app():
                         referrer=referrer[:255] if referrer else None,
                         criado_em=_utcnow_naive(),
                     )
+                )
+                trim_auditoria_usuarios(
+                    conn,
+                    app.config.get("AUDIT_RETENTION_MAX_RECORDS", 15000),
                 )
         except Exception:
             app.logger.exception("Erro ao registrar auditoria de usuario.")
