@@ -54,21 +54,10 @@ def upgrade():
         batch_op.drop_index(batch_op.f('ix_contratos_agro_orcamento_agro_id'))
         batch_op.create_index(batch_op.f('ix_contratos_agro_orcamento_agro_id'), ['orcamento_agro_id'], unique=True)
 
-    with op.batch_alter_table('denuncias', schema=None) as batch_op:
-        batch_op.drop_constraint(batch_op.f('denuncias_protocolo_key'), type_='unique')
-        batch_op.drop_constraint(batch_op.f('denuncias_solicitacao_id_key'), type_='unique')
-        batch_op.create_index(batch_op.f('ix_denuncias_atualizado_em'), ['atualizado_em'], unique=False)
-
     with op.batch_alter_table('equipamentos_agro', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_equipamentos_agro_funcao_operacional'), ['funcao_operacional'], unique=False)
         batch_op.create_index(batch_op.f('ix_equipamentos_agro_registro_anac'), ['registro_anac'], unique=False)
         batch_op.create_index(batch_op.f('ix_equipamentos_agro_registro_anatel'), ['registro_anatel'], unique=False)
-
-    with op.batch_alter_table('estoque_pecas', schema=None) as batch_op:
-        batch_op.drop_constraint(batch_op.f('estoque_pecas_numero_serie_key'), type_='unique')
-        batch_op.drop_index(batch_op.f('ix_estoque_pecas_numero_serie'))
-        batch_op.create_index(batch_op.f('ix_estoque_pecas_numero_serie'), ['numero_serie'], unique=True)
-        batch_op.create_index(batch_op.f('ix_estoque_pecas_atualizado_em'), ['atualizado_em'], unique=False)
 
     with op.batch_alter_table('limpezas_veiculo_alertas_ciencia', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_limpezas_veiculo_alertas_ciencia_criado_em'), ['criado_em'], unique=False)
@@ -141,21 +130,10 @@ def downgrade():
     with op.batch_alter_table('limpezas_veiculo_alertas_ciencia', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_limpezas_veiculo_alertas_ciencia_criado_em'))
 
-    with op.batch_alter_table('estoque_pecas', schema=None) as batch_op:
-        batch_op.drop_index(batch_op.f('ix_estoque_pecas_atualizado_em'))
-        batch_op.drop_index(batch_op.f('ix_estoque_pecas_numero_serie'))
-        batch_op.create_index(batch_op.f('ix_estoque_pecas_numero_serie'), ['numero_serie'], unique=False)
-        batch_op.create_unique_constraint(batch_op.f('estoque_pecas_numero_serie_key'), ['numero_serie'], postgresql_nulls_not_distinct=False)
-
     with op.batch_alter_table('equipamentos_agro', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_equipamentos_agro_registro_anatel'))
         batch_op.drop_index(batch_op.f('ix_equipamentos_agro_registro_anac'))
         batch_op.drop_index(batch_op.f('ix_equipamentos_agro_funcao_operacional'))
-
-    with op.batch_alter_table('denuncias', schema=None) as batch_op:
-        batch_op.drop_index(batch_op.f('ix_denuncias_atualizado_em'))
-        batch_op.create_unique_constraint(batch_op.f('denuncias_solicitacao_id_key'), ['solicitacao_id'], postgresql_nulls_not_distinct=False)
-        batch_op.create_unique_constraint(batch_op.f('denuncias_protocolo_key'), ['protocolo'], postgresql_nulls_not_distinct=False)
 
     with op.batch_alter_table('contratos_agro', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_contratos_agro_orcamento_agro_id'))
