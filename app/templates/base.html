@@ -13,6 +13,10 @@
 >
   <head>
     <meta charset="UTF-8" />
+    {% if ija_csrf_enabled %}
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
+    <script src="{{ url_for('static', filename='js/csrf-security.js') }}"></script>
+    {% endif %}
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Oceano Azul</title>
 
@@ -1814,6 +1818,10 @@
       navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}");
   }
     </script>
+    {% if ija_security %}
+    <script id="ija-security-config" type="application/json">{{ ija_security|tojson }}</script>
+    <script src="{{ url_for('static', filename='js/session-security.js') }}" defer></script>
+    {% endif %}
     {% block scripts %}{% endblock %}
   </body>
 </html>

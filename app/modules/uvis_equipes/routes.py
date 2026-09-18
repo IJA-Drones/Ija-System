@@ -3,6 +3,7 @@ from flask_login import current_user, login_required
 from sqlalchemy.exc import IntegrityError
 
 from app.extensions import db
+from app.shared.password_policy import password_input
 from app.models import EquipeUvis, Solicitacao, Usuario
 from app.modules.uvis_equipes.service import (
     MAX_MEMBROS_EQUIPE_UVIS,
@@ -53,8 +54,8 @@ def register_routes(bp):
 
         if request.method == "POST":
             login_operacional = (request.form.get("login_operacional") or "").strip()
-            senha = (request.form.get("senha") or "").strip()
-            senha2 = (request.form.get("senha2") or "").strip()
+            senha = password_input(request.form.get("senha"))
+            senha2 = password_input(request.form.get("senha2"))
             form["login_operacional"] = login_operacional
 
             login_error = validate_team_login(
@@ -119,8 +120,8 @@ def register_routes(bp):
             return redirect(url_for("main.listar_equipes_uvis"))
 
         login_novo = (request.form.get("login_equipe") or "").strip()
-        senha = (request.form.get("senha") or "").strip()
-        senha2 = (request.form.get("senha2") or "").strip()
+        senha = password_input(request.form.get("senha"))
+        senha2 = password_input(request.form.get("senha2"))
 
         login_error = validate_team_login(login_novo, current_login=conta.login)
         if login_error:
@@ -230,8 +231,8 @@ def register_routes(bp):
             form["nome_equipe"] = nome_equipe
 
             login_equipe = (request.form.get("login_equipe") or "").strip()
-            senha = (request.form.get("senha") or "").strip()
-            senha2 = (request.form.get("senha2") or "").strip()
+            senha = password_input(request.form.get("senha"))
+            senha2 = password_input(request.form.get("senha2"))
             form["login_equipe"] = login_equipe
 
             if not nome_equipe:
@@ -378,8 +379,8 @@ def register_routes(bp):
         uvis = Usuario.query.filter_by(id=uvis_id, tipo_usuario="uvis").first_or_404()
         conta = get_operational_uvis_account(uvis.id)
         login_operacional = (request.form.get("login_operacional") or "").strip()
-        senha = (request.form.get("senha") or "").strip()
-        senha2 = (request.form.get("senha2") or "").strip()
+        senha = password_input(request.form.get("senha"))
+        senha2 = password_input(request.form.get("senha2"))
 
         login_error = validate_team_login(
             login_operacional,

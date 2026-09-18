@@ -14,6 +14,7 @@ from app.shared.access import (
     normalize_regiao,
 )
 from app.shared.query_filters import id_search_clause
+from app.shared.password_policy import validate_password
 
 
 ADMIN_USER_TYPES = (
@@ -162,6 +163,8 @@ def validate_new_admin_user(
         errors["prefeitura_id"] = "Selecione a prefeitura desse usuario."
     if not senha:
         errors["senha"] = "Informe uma senha."
+    elif password_error := validate_password(senha):
+        errors["senha"] = password_error
     if not senha2:
         errors["senha2"] = "Confirme a senha."
     if senha and senha2 and senha != senha2:
@@ -198,6 +201,8 @@ def validate_edit_admin_user(
     if senha or senha2:
         if len(senha) < 4:
             errors["senha"] = "Senha muito curta (min. 4)."
+        if senha and (password_error := validate_password(senha)):
+            errors["senha"] = password_error
         if senha != senha2:
             errors["senha2"] = "As senhas nao conferem."
 
@@ -214,7 +219,7 @@ def validate_password_reset(senha: str, senha2: str, **_kwargs):
     if senha != senha2:
         return "As senhas nao conferem."
 
-    return None
+    return validate_password(senha)
 
 
 def delete_admin_user(usuario):

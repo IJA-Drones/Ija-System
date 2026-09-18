@@ -9,6 +9,7 @@ from app.extensions import db
 from app.models import EquipeUvis, Notificacao, PilotoUvis, Usuario
 from app.shared.access import ADMIN_PANEL_VIEW_TYPES, apply_prefeitura_scope, apply_regiao_scope
 from app.shared.query_filters import id_search_clause
+from app.shared.password_policy import validate_password
 from app.shared.access import (
     ADMIN_PANEL_VIEW_TYPES,
     GLOBAL_ADMIN_USER_TYPES,
@@ -77,6 +78,9 @@ def validate_new_uvis(nome_uvis: str, login: str, senha: str, confirmar: str):
     if senha != confirmar:
         return "warning", "As senhas nao conferem."
 
+    if password_error := validate_password(senha):
+        return "warning", password_error
+
     if login_em_uso(login):
         return "danger", "Esse login ja esta em uso. Escolha outro."
 
@@ -89,6 +93,9 @@ def validate_edit_uvis(nome_uvis: str, login: str, senha: str, confirmar: str, u
 
     if senha and senha != confirmar:
         return "warning", "As senhas nao conferem."
+
+    if senha and (password_error := validate_password(senha)):
+        return "warning", password_error
 
     if login_em_uso(login, exclude_user_id=uvis_id):
         return "danger", "Esse login ja esta em uso. Escolha outro."

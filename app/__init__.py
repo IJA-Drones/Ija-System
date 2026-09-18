@@ -166,6 +166,14 @@ def create_app():
     login_manager.init_app(app)
     login_manager.login_view = "auth.login"
 
+    from app.shared.session_security import register_session_security
+
+    register_session_security(app)
+
+    from app.shared.csrf_security import register_csrf_security
+
+    register_csrf_security(app)
+
     from app.models import AuditoriaUsuario, Usuario
     from app.shared.presence import record_user_presence
 
@@ -205,6 +213,8 @@ def create_app():
 
     @app.before_request
     def capture_audit_user():
+        if request.blueprint == "session_security":
+            return
         if not getattr(current_user, "is_authenticated", False):
             return
 

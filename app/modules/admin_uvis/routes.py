@@ -3,6 +3,7 @@ from flask_login import current_user, login_required
 from sqlalchemy.exc import IntegrityError
 
 from app.extensions import db
+from app.shared.password_policy import password_input
 from app.models import Prefeitura, Solicitacao, Usuario
 from app.modules.admin_uvis.service import (
     build_uvis_export,
@@ -167,8 +168,8 @@ def register_routes(bp):
             codigo_setor_field = request.form.get("codigo_setor")
             codigo_setor = (codigo_setor_field or "").strip() or None
             login = (request.form.get("login") or "").strip()
-            senha = (request.form.get("senha") or "").strip()
-            confirmar = (request.form.get("confirmar") or "").strip()
+            senha = password_input(request.form.get("senha"))
+            confirmar = password_input(request.form.get("confirmar"))
             prefeitura_id_form = request.form.get("prefeitura_id", type=int)
             prefeitura_id = _resolve_prefeitura_uvis(prefeitura_id_form, atual_prefeitura_id=uvis.prefeitura_id)
 

@@ -18,6 +18,7 @@ from app.modules.pilotos.service import (
     validate_piloto_data,
 )
 from app.shared.access import apply_prefeitura_scope, normalize_role
+from app.shared.password_policy import password_input, validate_password
 
 
 def _query_args_without_page():
@@ -79,6 +80,9 @@ def register_routes(bp):
                 errors["senha"] = "Informe uma senha."
             elif len(senha) < 6:
                 errors["senha"] = "A senha deve ter pelo menos 6 caracteres."
+
+            if senha and (password_error := validate_password(senha)):
+                errors["senha"] = password_error
 
             if senha != senha2:
                 errors["senha2"] = "As senhas nao conferem."
@@ -199,8 +203,8 @@ def register_routes(bp):
             regiao_alternativa = (request.form.get("regiao_alternativa") or "").strip().upper()
             telefone = (request.form.get("telefone") or "").strip()
             login = (request.form.get("login") or "").strip()
-            senha = (request.form.get("senha") or "").strip()
-            senha2 = (request.form.get("senha2") or "").strip()
+            senha = password_input(request.form.get("senha"))
+            senha2 = password_input(request.form.get("senha2"))
 
             form = {
                 "nome_piloto": nome_piloto,
@@ -223,6 +227,8 @@ def register_routes(bp):
             if senha or senha2:
                 if len(senha) < 4:
                     errors["senha"] = "A senha deve ter pelo menos 4 caracteres."
+                if senha and (password_error := validate_password(senha)):
+                    errors["senha"] = password_error
                 if senha != senha2:
                     errors["senha2"] = "As senhas nao conferem."
 

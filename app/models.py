@@ -144,6 +144,11 @@ class Usuario(UserMixin, db.Model):
     )
 
     def set_senha(self, senha):
+        from app.shared.password_policy import PasswordPolicyError, validate_password
+
+        error = validate_password(senha)
+        if error:
+            raise PasswordPolicyError(error)
         self.senha_hash = generate_password_hash(senha)
 
     def check_senha(self, senha):
