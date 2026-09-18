@@ -98,6 +98,10 @@ CHECKLIST_DRONE_BOOL_FIELDS = [field for field, _ in CHECKLIST_DRONE_BOOL_LABELS
 CHECKLIST_DRONE_TEXT_FIELDS = [field for field, _ in CHECKLIST_DRONE_TEXT_LABELS]
 
 
+def _drone_has_tanque(drone):
+    return "monitoramento" not in (drone.categoria or "").strip().lower()
+
+
 class PilotoChecklistError(Exception):
     def __init__(self, message, category="warning", *, redirect_endpoint="main.piloto_checklist_semanal"):
         super().__init__(message)
@@ -278,6 +282,7 @@ def _build_equipment_state(user, args=None, include_prefill=True):
             "registro_anatel": item.registro_anatel or "",
             "registro_anac": item.registro_anac or "",
             "num_baterias": int(baterias_por_drone.get(item.id, 0) or 0),
+            "has_tanque": _drone_has_tanque(item),
         }
         for item in drones_equipe
     }
@@ -401,7 +406,10 @@ def _save_drone_checklist(user, drone_id, baterias_por_drone, form_data, assinat
     checklist.data_registro = agora_brasilia_naive()
 
     for field in CHECKLIST_DRONE_BOOL_FIELDS:
-        setattr(checklist, field, _bool_from_form(form_data.get(field), default=True))
+        if field == "tanque" and not _drone_has_tanque(checklist.drone):
+            setattr(checklist, field, None)
+        else:
+            setattr(checklist, field, _bool_from_form(form_data.get(field), default=True))
     for field in CHECKLIST_DRONE_TEXT_FIELDS:
         setattr(checklist, field, _clean_str(form_data.get(field)))
 

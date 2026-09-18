@@ -276,9 +276,11 @@
         <textarea class="form-control border-2" name="condicao_helices"></textarea>
       </div>
 
-      <div class="topic-divider">Tanque, trem de pouso e cameras</div>
-      <div class="check-grid">
-        {{ bool_choice('tanque', 'Tanque', 'group_estrutura') }}
+      <div class="topic-divider" id="estrutura-title">Tanque, trem de pouso e cameras</div>
+      <div class="check-grid" id="estrutura-check-grid">
+        <div id="tanque-check-item">
+          {{ bool_choice('tanque', 'Tanque', 'group_estrutura') }}
+        </div>
         {{ bool_choice('trem_pouso', 'Trem de pouso', 'group_estrutura') }}
         {{ bool_choice('cameras', 'Cameras', 'group_estrutura') }}
       </div>
@@ -456,6 +458,13 @@ function applyVehiclePrefill() {
     const droneId = select.value;
     const meta = droneMeta[droneId] || null;
     const prefill = dronePrefill[droneId] || {};
+    const hasTanque = !meta || meta.has_tanque !== false;
+    const tanqueItem = document.getElementById("tanque-check-item");
+    const estruturaTitle = document.getElementById("estrutura-title");
+    if (tanqueItem) tanqueItem.style.display = hasTanque ? "" : "none";
+    if (estruturaTitle) estruturaTitle.textContent = hasTanque
+      ? "Tanque, trem de pouso e cameras"
+      : "Trem de pouso e cameras";
 
     document.getElementById("summary-drone").textContent = meta ? meta.label : "Selecione";
     document.getElementById("summary-baterias").textContent = meta ? `${prefill.num_baterias ?? meta.num_baterias ?? 0}` : "-";
