@@ -9873,3 +9873,12 @@ body.dark-mode .return-cycle-media span {
   letter-spacing: 0.3px;
   text-transform: uppercase;
 }
+.quadra-readonly-fields {
+  pointer-events: none;
+  opacity: 0.78;
+}
+
+.quadra-readonly-field {
+  pointer-events: none;
+  background-color: var(--bs-secondary-bg, #f2f4f7);
+}

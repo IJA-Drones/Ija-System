@@ -1035,7 +1035,11 @@ def apply_admin_update_fields(pedido, form, *, user=None):
     pedido.latitude = form.get("latitude")
     pedido.longitude = form.get("longitude")
     if is_solicitacao_quadra(pedido):
-        pedido.quadra_confirmada_admin = form.get("quadra_confirmada_admin") == "1"
+        quadra_decisao = form.get("quadra_confirmada_admin")
+        if quadra_decisao in {"0", "1"}:
+            pedido.quadra_confirmada_admin = quadra_decisao == "1"
+            pedido.quadra_visualizada_admin = True
+            pedido.quadra_visualizada_admin_em = datetime.now()
 
     equipe_id = form.get("equipe_id")
     if equipe_id in (None, "", "null", "undefined"):
