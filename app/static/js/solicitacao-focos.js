@@ -139,6 +139,7 @@
 
     function syncFields() {
       var visitValue = tipoVisitaSelect.value;
+      var isQuadra = normalize(visitValue) === "quadra";
       var showTipoImovel = resolveVisitKey(visitValue) === "aedes";
 
       if (tipoImovelWrapper) {
@@ -177,6 +178,19 @@
         focusStillValid ? currentFocus : "",
         (config && config.focoPlaceholder) || "Selecione o foco da acao..."
       );
+
+      var operation = root.querySelector('[name="tipo_operacao"]');
+      if (operation) {
+        var quadraOption = Array.prototype.find.call(operation.options, function (option) {
+          return normalize(option.value) === "tratamento e monitoramento de quadra";
+        });
+        if (isQuadra && quadraOption) {
+          operation.value = quadraOption.value;
+          operation.disabled = true;
+        } else {
+          operation.disabled = false;
+        }
+      }
     }
 
     tipoVisitaSelect.addEventListener("change", syncFields);

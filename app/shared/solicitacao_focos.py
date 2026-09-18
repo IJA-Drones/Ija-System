@@ -3,7 +3,7 @@ from __future__ import annotations
 import unicodedata
 
 
-TIPO_VISITA_OPCOES = ["Aedes", "Culex", "Outro"]
+TIPO_VISITA_OPCOES = ["Aedes", "Culex", "Quadra", "Outro"]
 TIPO_IMOVEL_OPCOES = ["Imovel Geral", "PE Cadastrado"]
 TIPO_VISITA_OUTRO_LABEL = "Outro"
 
@@ -109,6 +109,7 @@ def canonical_tipo_visita(value: str | None) -> str | None:
         "culex": "Culex",
         "outro": "Outro",
         "outros": "Outro",
+        "quadra": "Quadra",
     }
     return lookup.get(_normalize(value))
 
@@ -141,6 +142,8 @@ def get_foco_opcoes(tipo_visita: str | None, tipo_imovel: str | None = None) -> 
         return list(Aedes_FOCOS_POR_IMOVEL[imovel])
     if visit == "Culex":
         return list(CULEX_FOCOS)
+    if visit == "Quadra":
+        return ["QUADRA"]
     return list(FORM_FOCOS_OUTRO)
 
 
@@ -180,6 +183,9 @@ def validate_foco_selection(
             raise ValueError("Selecione o tipo de imovel para atendimentos Aedes.")
     else:
         imovel = None
+
+    if visit == "Quadra":
+        return tipo_visita_final, None, "QUADRA"
 
     foco_opcoes = get_foco_opcoes(visit, imovel)
     foco_canonico = _match_option(foco, foco_opcoes)
