@@ -281,10 +281,13 @@
           {% if can_access_denuncias(current_user) %}
           <li class="nav-item">
             <a
-              class="nav-link {% if request.endpoint in ['main.denuncias_listar', 'main.denuncia_detalhe', 'main.coordenadoria_denuncias_listar', 'main.coordenadoria_denuncia_detalhe'] %}active{% endif %}"
-              href="{{ url_for('main.denuncias_listar') }}"
+              class="nav-link nav-link-disabled {% if request.endpoint in ['main.denuncias_listar', 'main.denuncia_detalhe', 'main.coordenadoria_denuncias_listar', 'main.coordenadoria_denuncia_detalhe'] %}active{% endif %}"
+              href="#"
+              aria-disabled="true"
+              tabindex="-1"
             >
               <i class="bi bi-megaphone-fill me-2"></i><span>Denúncias</span>
+              <span class="nav-development-badge">Em desenvolvimento</span>
               {% if denuncias_nav_count and denuncias_nav_count > 0 %}
               <span class="badge bg-danger ms-auto" style="border-radius: 999px">{{ denuncias_nav_count }}</span>
               {% endif %}
@@ -392,10 +395,13 @@
           </li>
           <li class="nav-item">
             <a
-              class="nav-link {% if request.endpoint in ['main.uvis_denuncias_listar', 'main.uvis_denuncia_detalhe'] %}active{% endif %}"
-              href="{{ url_for('main.denuncias_listar') }}"
+              class="nav-link nav-link-disabled {% if request.endpoint in ['main.uvis_denuncias_listar', 'main.uvis_denuncia_detalhe'] %}active{% endif %}"
+              href="#"
+              aria-disabled="true"
+              tabindex="-1"
             >
               <i class="bi bi-megaphone-fill me-2"></i><span>Denúncias</span>
+              <span class="nav-development-badge">Em desenvolvimento</span>
               {% if denuncias_nav_count and denuncias_nav_count > 0 %}
               <span class="badge bg-danger ms-auto" style="border-radius: 999px">{{ denuncias_nav_count }}</span>
               {% endif %}

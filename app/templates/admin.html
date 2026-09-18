@@ -463,6 +463,21 @@
                                         </select>
                                     </div>
 
+                                    {% if is_admin_solicitacao_quadra(p) %}
+                                    <div class="mt-2 p-2 border rounded bg-light">
+                                        <label class="form-label mb-1">Solicitado como Quadra?</label>
+                                        <div class="mb-2">
+                                            <span class="badge {% if p.quadra_confirmada_admin %}bg-success{% else %}bg-secondary{% endif %}">
+                                                {{ 'Sim' if p.quadra_confirmada_admin else 'Não' }}
+                                            </span>
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            <button type="submit" name="quadra_confirmada_admin" value="0" class="btn btn-sm btn-outline-secondary flex-fill">Cancelar</button>
+                                            <button type="submit" name="quadra_confirmada_admin" value="1" class="btn btn-sm btn-primary flex-fill">Confirmar</button>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+
                                     <div id="boxJustificativa{{ p.id }}" style="display: none;">
                                         <label class="form-label mt-2">Justificativa</label>
                                         <input name="justificativa" id="inputJustificativa{{ p.id }}" class="form-control form-control-sm" value="{{ p.justificativa or '' }}">

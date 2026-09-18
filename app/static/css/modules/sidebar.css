@@ -57,6 +57,7 @@
   opacity: 0.72;
   flex-wrap: wrap;
   gap: 0 0.35rem;
+  pointer-events: none;
 }
 
 .app-sidebar .nav-link-disabled:hover {
