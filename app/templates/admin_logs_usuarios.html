@@ -10,10 +10,12 @@
 {% endblock %}
 
 {% block content %}
-{% set ns = namespace(total_page=logs|length, errors=0, creates=0, deletes=0, filtered=0) %}
+{% set ns = namespace(total_page=logs|length, errors=0, creates=0, deletes=0, successful=0, filtered=0) %}
 {% for log in logs %}
   {% if log.status_code and log.status_code >= 400 %}
     {% set ns.errors = ns.errors + 1 %}
+  {% elif log.status_code and log.status_code < 400 %}
+    {% set ns.successful = ns.successful + 1 %}
   {% endif %}
   {% if log.metodo == 'POST' %}
     {% set ns.creates = ns.creates + 1 %}
@@ -27,10 +29,11 @@
 {% endif %}
 
 <div class="container-fluid py-4 listing-page auditoria-page">
-  <div class="listing-header mb-4">
+  <div class="listing-header mb-4 auditoria-hero">
     <div>
-      <h2 class="text-dark mb-1">
-        <i class="bi bi-clipboard-data me-2 text-primary"></i> Logs de Usuarios
+      <div class="auditoria-eyebrow"><i class="bi bi-shield-check"></i> Monitoramento e rastreabilidade</div>
+      <h2 class="text-dark mb-1 auditoria-title">
+        <i class="bi bi-clipboard-data me-2 text-primary"></i> Logs de Usuários
       </h2>
       <p class="text-muted small mb-0">
         Total de registros: <strong>{{ paginacao.total }}</strong>
@@ -41,6 +44,7 @@
     </div>
 
     <div class="listing-actions">
+      <span class="auditoria-retention"><i class="bi bi-database-check"></i> Retenção: <strong>15 mil</strong></span>
       <a href="{{ url_for('main.admin_dashboard') }}"
          class="btn btn-outline-secondary d-flex align-items-center gap-2">
         <i class="bi bi-arrow-left"></i> Voltar
@@ -53,11 +57,11 @@
       <div class="card-body">
         <div class="auditoria-stat-label">
           <i class="bi bi-journal-text text-primary"></i>
-          <span>Nesta pagina</span>
+          <span>Nesta página</span>
         </div>
         <div class="auditoria-stat-value">{{ logs|length }}</div>
         <div class="auditoria-stat-note">
-          Registros exibidos na consulta atual.
+          {{ ns.successful }} respostas bem-sucedidas nesta página.
         </div>
       </div>
     </div>
@@ -66,12 +70,12 @@
       <div class="card-body">
         <div class="auditoria-stat-label">
           <i class="bi bi-funnel-fill text-danger"></i>
-          <span>Filtros</span>
+          <span>Consulta</span>
         </div>
-        <div class="auditoria-stat-value">{{ 'Sim' if ns.filtered else 'Nao' }}</div>
+          <div class="auditoria-stat-value">{{ 'Sim' if ns.filtered else 'Não' }}</div>
         <div class="auditoria-stat-note">
           {% if ns.filtered %}
-            A listagem esta refinada pelos criterios informados.
+            A listagem está refinada pelos critérios informados.
           {% else %}
             Nenhum filtro aplicado no momento.
           {% endif %}
@@ -87,7 +91,7 @@
         </div>
         <div class="auditoria-stat-value">{{ ns.creates }}</div>
         <div class="auditoria-stat-note">
-          Cadastros ou envios presentes nesta pagina.
+          Cadastros ou envios presentes nesta página.
         </div>
       </div>
     </div>
@@ -100,7 +104,7 @@
         </div>
         <div class="auditoria-stat-value">{{ ns.errors }}</div>
         <div class="auditoria-stat-note">
-          Respostas com status 4xx ou 5xx nesta pagina.
+          Respostas com status 4xx ou 5xx nesta página.
         </div>
       </div>
     </div>
@@ -124,18 +128,20 @@
     <div class="collapse {% if ns.filtered %}show{% endif %}" id="collapseFiltrosAuditoria">
       <div class="card-body pt-0 listing-filter-body">
         <form method="GET" action="{{ url_for('main.admin_logs_usuarios') }}">
-          <div class="row g-2 align-items-end">
-            <div class="col-lg-4">
-              <label class="small text-muted">Buscar</label>
-              <input type="text"
+          <div class="auditoria-filter-hint"><i class="bi bi-info-circle"></i> Combine filtros para localizar uma ação específica ou investigar falhas.</div>
+          <div class="row g-3 align-items-end">
+            <div class="col-12">
+              <label class="small text-muted fw-semibold" for="auditoriaBusca">Busca rápida</label>
+              <input type="search"
+                     id="auditoriaBusca"
                      name="q"
-                     class="form-control form-control-sm"
+                     class="form-control auditoria-search-input"
                      value="{{ filters.q }}"
-                     placeholder="Usuario, login, tipo, evento, rota, path ou IP">
+                     placeholder="Usuário, login, tipo, evento, rota, path ou IP">
             </div>
 
-            <div class="col-md-2">
-              <label class="small text-muted">Metodo</label>
+            <div class="col-md-3">
+              <label class="small text-muted fw-semibold">Método</label>
               <select name="metodo" class="form-select form-select-sm">
                 <option value="">Todos</option>
                 {% for metodo in ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] %}
@@ -144,20 +150,20 @@
               </select>
             </div>
 
-            <div class="col-md-2">
-              <label class="small text-muted">Tipo</label>
+            <div class="col-md-3">
+              <label class="small text-muted fw-semibold">Tipo de evento</label>
               <select name="tipo_evento" class="form-select form-select-sm">
                 <option value="">Todos</option>
                 {% set tipos_evento = [
-                  ('ACAO', 'Acao'),
+                  ('ACAO', 'Ação'),
                   ('CANCELAMENTO', 'Cancelamento'),
-                  ('FORMULARIO', 'Formulario'),
-                  ('CONCLUSAO', 'Conclusao'),
+                  ('FORMULARIO', 'Formulário'),
+                  ('CONCLUSAO', 'Conclusão'),
                   ('DOSAGEM', 'Dosagem'),
                   ('CREDENCIAIS', 'Credenciais'),
-                  ('CRIACAO', 'Criacao'),
-                  ('EDICAO', 'Edicao'),
-                  ('EXCLUSAO', 'Exclusao')
+                  ('CRIACAO', 'Criação'),
+                  ('EDICAO', 'Edição'),
+                  ('EXCLUSAO', 'Exclusão')
                 ] %}
                 {% for valor, label in tipos_evento %}
                   <option value="{{ valor }}" {% if filters.tipo_evento == valor %}selected{% endif %}>{{ label }}</option>
@@ -177,7 +183,7 @@
             </div>
 
             <div class="col-md-2">
-              <label class="small text-muted">Data inicial</label>
+              <label class="small text-muted fw-semibold">A partir de</label>
               <input type="date"
                      name="data_inicio"
                      class="form-control form-control-sm"
@@ -185,15 +191,15 @@
             </div>
 
             <div class="col-md-2">
-              <label class="small text-muted">Data final</label>
+              <label class="small text-muted fw-semibold">Até</label>
               <input type="date"
                      name="data_fim"
                      class="form-control form-control-sm"
                      value="{{ filters.data_fim }}">
             </div>
 
-            <div class="col-lg-4 listing-filter-actions">
-              <button type="submit" class="btn btn-success btn-sm w-100">
+            <div class="col-md-2 listing-filter-actions auditoria-filter-actions">
+              <button type="submit" class="btn btn-primary btn-sm w-100">
                 <i class="bi bi-search"></i> Filtrar
               </button>
 
@@ -215,13 +221,16 @@
     <div class="card-header border-0 p-4 pb-3 d-flex justify-content-between align-items-start gap-3 flex-wrap">
       <div>
         <h5 class="text-dark mb-1">
-          <i class="bi bi-table me-1 text-primary"></i> Auditoria de acoes importantes
+          <i class="bi bi-table me-1 text-primary"></i> Auditoria de ações importantes
         </h5>
         <p class="text-muted small mb-0">
-          Visualize usuario, evento, rota alterada e origem de cada movimentacao registrada.
+          Visualize quem fez o quê, quando, em qual rota e de onde partiu a requisição.
         </p>
       </div>
-      <span class="badge bg-light text-dark border">{{ paginacao.total }} registros</span>
+      <div class="auditoria-result-meta">
+        <span class="badge bg-light text-dark border">{{ paginacao.total }} registros</span>
+        <span class="auditoria-page-count">Página {{ paginacao.page }} de {{ paginacao.pages or 1 }}</span>
+      </div>
     </div>
 
     <div class="card-body p-0">
@@ -229,10 +238,10 @@
         <table class="table table-hover align-middle mb-0 listing-table auditoria-table">
           <thead class="table-light">
             <tr>
-              <th class="col-data">Data / Hora</th>
-              <th class="col-usuario">Usuario</th>
+              <th class="col-data">Data / hora</th>
+              <th class="col-usuario">Usuário</th>
               <th class="col-evento">Evento</th>
-              <th>Tela / Rota</th>
+              <th>Tela / rota</th>
               <th class="col-origem">Origem</th>
             </tr>
           </thead>
@@ -254,7 +263,7 @@
                   </td>
 
                   <td data-label="Usuario">
-                    <div class="auditoria-user-name">{{ log.usuario_nome or 'Usuario nao identificado' }}</div>
+                    <div class="auditoria-user-name">{{ log.usuario_nome or 'Usuário não identificado' }}</div>
                     <div class="auditoria-user-login">{{ log.usuario_login or '-' }}</div>
 
                     <div class="auditoria-chip-group">
@@ -292,7 +301,7 @@
 
                       {% if log.query_string %}
                         <div class="auditoria-path-meta">
-                          <strong>Query:</strong>
+                          <strong>Parâmetros:</strong>
                           <code>{{ log.query_string }}</code>
                         </div>
                       {% endif %}
