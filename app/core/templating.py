@@ -18,6 +18,7 @@ from app.modules.agro.service import can_access_agro_panel
 from app.shared.access import is_admin_global_user, is_covisa_user, is_dev_user
 from app.shared.formatters import format_currency_br, format_phone_br
 from app.shared.solicitacao_focos import build_focus_catalog
+from app.modules.solicitacoes.service import is_solicitacao_quadra
 
 
 def register_template_helpers(bp):
@@ -64,6 +65,7 @@ def register_template_helpers(bp):
                     "solicitacao_focus_catalog": focus_catalog,
                     "solicitacao_filter_foco_opcoes": focus_catalog["filtro_foco_opcoes"],
                     "solicitacao_tipo_visita_opcoes": focus_catalog["tipo_visita_opcoes"],
+                    "is_solicitacao_quadra": is_solicitacao_quadra,
                     "solicitacao_tipo_imovel_opcoes": focus_catalog["tipo_imovel_opcoes"],
                 }
             except Exception:

@@ -471,6 +471,7 @@ class Solicitacao(db.Model):
     protocolo = db.Column(db.String(50), index=True)
     justificativa = db.Column(db.String(255))
     equipe_uvis_nome = db.Column(db.String(100), index=True)
+    quadra_confirmada_admin = db.Column(db.Boolean, default=False, nullable=False, index=True)
 
     data_criacao = db.Column(db.DateTime, default=datetime.now, index=True)
 
