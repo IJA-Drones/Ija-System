@@ -512,6 +512,19 @@
                                                     required
                                                 >
                                             </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label small fw-bold text-muted">
+                                                    Litros abastecimento #{{ abastecimento.id }}
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    inputmode="decimal"
+                                                    name="abastecimento_{{ abastecimento.id }}_litros"
+                                                    class="form-control"
+                                                    value="{{ '%.2f'|format(abastecimento.litros or 0) }}"
+                                                    required
+                                                >
+                                            </div>
                                         {% endfor %}
                                     {% endif %}
                                 </div>
