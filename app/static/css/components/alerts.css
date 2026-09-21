@@ -13,3 +13,27 @@
   color: #9c4221;
   border: 1px solid #feebc8 !important;
 }
+
+.ija-session-warning {
+  z-index: 1090;
+  width: min(92vw, 420px);
+  background: var(--color-bg-surface);
+  color: var(--color-text-main);
+  border: 1px solid var(--color-accent);
+  border-top: 4px solid var(--color-accent);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+.ija-session-warning-title {
+  color: var(--color-primary-dark);
+}
+
+.ija-session-warning-countdown {
+  color: var(--color-primary);
+}
+
+body.dark-mode .ija-session-warning .btn-primary {
+  --app-btn-color: var(--color-bg-body);
+  --app-btn-hover-color: var(--color-bg-body);
+}

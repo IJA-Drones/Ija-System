@@ -1,0 +1,376 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/portal_cidadao.css') }}">
+{% endblock %}
+
+{% block auth_content %}
+<main class="portal-cidadao-page" data-portal-cidadao>
+  <nav class="portal-cidadao-nav" aria-label="Navegação do portal">
+    <a class="portal-cidadao-nav-brand" href="#portal-inicio" aria-label="Portal do cidadão, início">
+      <i class="bi bi-people" aria-hidden="true"></i>
+      <span>Participação cidadã</span>
+    </a>
+    <div class="portal-cidadao-nav-links">
+      <a href="#boletim-saude">Boletim de saúde</a>
+      <a href="#como-funciona">Atendimento</a>
+      <a class="portal-cidadao-nav-report" href="#portal-relato">
+        <i class="bi bi-plus-circle" aria-hidden="true"></i> Enviar relato
+      </a>
+    </div>
+  </nav>
+
+  <header class="portal-cidadao-hero" id="portal-inicio">
+    <div class="portal-cidadao-hero-copy">
+      <div class="portal-cidadao-brandmark">
+        <img src="{{ logo_light_url }}" alt="Oceano Azul">
+        <span>Vigilância e participação cidadã</span>
+      </div>
+      <div class="portal-cidadao-kicker">
+        <i class="bi bi-people-fill" aria-hidden="true"></i>
+        Participação cidadã
+      </div>
+      <h1>Ajude a manter sua comunidade protegida.</h1>
+      <p>
+        Informe focos, criadouros e situações que precisam da atenção da vigilância.
+        Seu relato ajuda a Prefeitura a organizar a resposta e as ações de controle.
+      </p>
+      <div class="portal-cidadao-hero-actions">
+        <a class="btn btn-success portal-cidadao-primary-action" href="#portal-relato">
+          <i class="bi bi-megaphone-fill" aria-hidden="true"></i>
+          Registrar um relato
+        </a>
+        <a class="portal-cidadao-back-link" href="{{ url_for('auth.login') }}">
+          <i class="bi bi-arrow-left" aria-hidden="true"></i>
+          Voltar para o acesso interno
+        </a>
+      </div>
+    </div>
+
+    <div class="portal-cidadao-hero-card" aria-label="Como o relato será tratado">
+      <div class="portal-cidadao-hero-card-head">
+        <span class="portal-cidadao-hero-icon" aria-hidden="true">
+          <svg class="portal-cidadao-hero-svg" viewBox="0 0 24 24" focusable="false">
+            <path d="M7 3.5h10a3.5 3.5 0 0 1 3.5 3.5v7a3.5 3.5 0 0 1-3.5 3.5h-6l-5.5 3v-3.3a3.5 3.5 0 0 1-2-3.2V7A3.5 3.5 0 0 1 7 3.5Z"></path>
+            <path class="portal-cidadao-hero-heart" d="M12 14s-4-2.4-4-4.7a2.1 2.1 0 0 1 4-1 2.1 2.1 0 0 1 4 1c0 2.3-4 4.7-4 4.7Z"></path>
+          </svg>
+        </span>
+        <div class="portal-cidadao-hero-card-copy">
+          <strong>Um canal simples para colaborar</strong>
+          <span>O atendimento passa por triagem da equipe responsável.</span>
+        </div>
+      </div>
+      <div class="portal-cidadao-mini-flow">
+        <div><span>01</span><strong>Relate</strong><small>Conte o que encontrou.</small></div>
+        <div><span>02</span><strong>Triagem</strong><small>A gestão avalia a ocorrência.</small></div>
+        <div><span>03</span><strong>Ação</strong><small>A equipe organiza o atendimento.</small></div>
+      </div>
+    </div>
+  </header>
+
+  <section class="portal-cidadao-section portal-cidadao-news-section" id="boletim-saude" aria-labelledby="portal-boletim-title">
+    <div class="portal-cidadao-section-heading">
+      <div>
+        <span class="portal-cidadao-eyebrow"><i class="bi bi-journal-text" aria-hidden="true"></i> Informação e prevenção</span>
+        <h2 id="portal-boletim-title">Boletim de saúde</h2>
+        <p>Dengue, vigilância e cuidados com a saúde.</p>
+      </div>
+      <span class="portal-cidadao-status-pill"><i class="bi bi-patch-check" aria-hidden="true"></i> Fontes públicas oficiais</span>
+    </div>
+
+    <article class="portal-cidadao-dengue-card" aria-labelledby="portal-dengue-title">
+      <div class="portal-cidadao-dengue-heading">
+        <div>
+          <span class="portal-cidadao-eyebrow"><i class="bi bi-activity" aria-hidden="true"></i> Dados epidemiológicos</span>
+          <h3 id="portal-dengue-title">{{ infodengue_alert.disease if infodengue_alert else 'Dengue' }} em {{ infodengue_alert.city if infodengue_alert else portal_city }}</h3>
+          {% if infodengue_alert %}
+          <p>{{ infodengue_alert.week_label }}{% if infodengue_alert.started_at_label %} · início em {{ infodengue_alert.started_at_label }}{% endif %}</p>
+          {% else %}
+          <p>Acompanhe os indicadores semanais do município.</p>
+          {% endif %}
+        </div>
+        {% if infodengue_alert %}
+        <div class="portal-cidadao-alert-level is-{{ {1: 'low', 2: 'attention', 3: 'alert', 4: 'high'}.get(infodengue_alert.alert_level, 'unknown') }}">
+          <span>Nível de alerta</span>
+          <strong><i class="bi bi-circle-fill" aria-hidden="true"></i>{{ infodengue_alert.alert_label }}</strong>
+        </div>
+        {% endif %}
+      </div>
+
+      {% if infodengue_alert %}
+      <dl class="portal-cidadao-health-metrics">
+        <div><dt>Casos notificados</dt><dd>{{ infodengue_alert.cases }}</dd></div>
+        <div><dt>Casos estimados</dt><dd>{{ infodengue_alert.estimated_cases }}</dd></div>
+        <div><dt>Incidência por 100 mil</dt><dd>{{ infodengue_alert.incidence }}</dd></div>
+        <div><dt>Prob. Rt acima de 1</dt><dd>{{ infodengue_alert.probability_rt_above_1 }}</dd></div>
+      </dl>
+      <p class="portal-cidadao-data-caption">Fonte: InfoDengue · Última semana publicada. Os dados podem ser revisados pela fonte. Rt acima de 1 indica crescimento da transmissão.</p>
+      {% else %}
+      <p class="portal-cidadao-data-notice" role="status"><i class="bi bi-cloud-slash" aria-hidden="true"></i> Os indicadores estão temporariamente indisponíveis. Consulte o relatório completo ou os dados no InfoDengue pelos links abaixo.</p>
+      {% endif %}
+
+      <div class="portal-cidadao-dengue-actions">
+        <a class="btn btn-success" href="{{ url_for('main.portal_cidadao_boletim_dengue') }}">
+          <i class="bi bi-bar-chart-line" aria-hidden="true"></i> Ver relatório completo
+          <i class="bi bi-arrow-right" aria-hidden="true"></i>
+        </a>
+        <a class="portal-cidadao-data-link" href="{{ infodengue_alert.source_url if infodengue_alert else 'https://info.dengue.mat.br/services/api' }}" target="_blank" rel="noopener noreferrer" aria-label="Consultar dados no InfoDengue (abre em nova aba)">
+          Consultar dados no InfoDengue <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+        </a>
+      </div>
+    </article>
+
+    <div class="portal-cidadao-news-layout">
+      <div class="portal-cidadao-news-feed" aria-label="Notícias oficiais de saúde">
+        {% for noticia in health_news %}
+        <article class="portal-cidadao-news-card{% if loop.first %} portal-cidadao-news-lead{% endif %}">
+          {% if loop.first %}<span class="portal-cidadao-news-label">Em destaque</span>{% endif %}
+          <div class="portal-cidadao-news-meta">
+            <span>{{ noticia.source }}</span>
+            <span>{{ noticia.published_label }}</span>
+          </div>
+          <h3><a href="{{ noticia.url }}" target="_blank" rel="noopener noreferrer">{{ noticia.title }}</a></h3>
+          {% if noticia.summary %}
+          <p>{{ noticia.summary }}</p>
+          {% endif %}
+          <a class="portal-cidadao-news-read" href="{{ noticia.url }}" target="_blank" rel="noopener noreferrer" aria-label="Ler na fonte oficial: {{ noticia.title }} (abre em nova aba)">
+            Ler publicação
+            <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+          </a>
+        </article>
+        {% endfor %}
+      </div>
+      <aside class="portal-cidadao-news-aside" aria-label="Participação e atendimento">
+        <span class="portal-cidadao-news-aside-icon"><i class="bi bi-megaphone-fill" aria-hidden="true"></i></span>
+        <span class="portal-cidadao-eyebrow">Sua cidade, seu cuidado</span>
+        <h3>Viu um possível foco?</h3>
+        <p>Água parada, criadouros ou outro risco à saúde: seu relato ajuda a vigilância a identificar onde agir.</p>
+        <a class="btn btn-success" href="#portal-relato">Registrar um relato <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+        <div class="portal-cidadao-news-aside-note"><i class="bi bi-shield-check" aria-hidden="true"></i><span>As informações passam pela análise da equipe responsável.</span></div>
+        <a class="portal-cidadao-text-link" href="#como-funciona">Entenda o atendimento <i class="bi bi-arrow-down-right" aria-hidden="true"></i></a>
+      </aside>
+    </div>
+  </section>
+
+  <section class="portal-cidadao-section" id="portal-relato" aria-labelledby="portal-relato-title">
+    <div class="portal-cidadao-section-heading">
+      <div>
+        <span class="portal-cidadao-eyebrow">Novo relato</span>
+        <h2 id="portal-relato-title">O que você encontrou?</h2>
+        <p>Um relato pode fazer a diferença no cuidado com a sua comunidade.</p>
+      </div>
+    </div>
+
+    <div class="portal-cidadao-report-layout">
+      <aside class="portal-cidadao-side-card">
+        <span class="portal-cidadao-side-card-icon"><i class="bi bi-list-check" aria-hidden="true"></i></span>
+        <h3>Seu relato</h3>
+        <ol class="portal-cidadao-steps">
+          <li><span>1</span><div><strong>Ocorrência</strong><small>Tipo de situação encontrada.</small></div></li>
+          <li><span>2</span><div><strong>Local</strong><small>Endereço da ocorrência.</small></div></li>
+          <li><span>3</span><div><strong>Identificação</strong><small>Seus dados de contato.</small></div></li>
+          <li><span>4</span><div><strong>Detalhes</strong><small>Descrição, fotos e vídeos.</small></div></li>
+        </ol>
+        <div class="portal-cidadao-side-tip">
+          <i class="bi bi-lightbulb" aria-hidden="true"></i>
+          <span>Se não tiver certeza da categoria, escolha a opção mais próxima e explique na descrição.</span>
+        </div>
+      </aside>
+
+      <div class="portal-cidadao-form-card">
+        <div class="portal-cidadao-form-card-head">
+          <div>
+            <span class="portal-cidadao-form-step">Comece pelo tipo de ocorrência</span>
+            <h3>Identifique a ocorrência</h3>
+          </div>
+          <i class="bi bi-bug-fill" aria-hidden="true"></i>
+        </div>
+
+        <form
+          class="portal-cidadao-form"
+          id="portalCidadaoForm"
+          method="post"
+          action="{{ url_for('main.portal_cidadao_denuncias_criar') }}"
+          enctype="multipart/form-data"
+          novalidate
+        >
+          <input type="hidden" id="portalTipoVisita" name="tipo_visita">
+          <input type="hidden" id="portalUf" name="uf" value="SP">
+          <input type="hidden" id="portalLatitude" name="latitude">
+          <input type="hidden" id="portalLongitude" name="longitude">
+          <input type="hidden" id="portalPlaceId" name="place_id">
+          <input type="hidden" id="portalComplemento" name="complemento">
+          <fieldset>
+            <legend>Tipo de ocorrência</legend>
+            <div class="portal-cidadao-type-grid" role="group" aria-label="Tipo de ocorrência">
+              {% for tipo in focus_catalog.tipo_visita_opcoes %}
+              <button
+                class="portal-cidadao-type-option"
+                type="button"
+                data-tipo-visita="{{ tipo }}"
+                aria-pressed="false"
+              >
+                {% if tipo == 'Aedes' %}
+                  <i class="bi bi-droplet-half" aria-hidden="true"></i>
+                  <span><strong>Água parada ou criadouro</strong><small>Recipientes, piscinas, obras e terrenos</small></span>
+                {% elif tipo == 'Culex' %}
+                  <i class="bi bi-water" aria-hidden="true"></i>
+                  <span><strong>Mosquitos em área alagada</strong><small>Córregos, alagamentos e piscinões</small></span>
+                {% else %}
+                  <i class="bi bi-three-dots" aria-hidden="true"></i>
+                  <span><strong>Outro problema</strong><small>Explique a situação na descrição</small></span>
+                {% endif %}
+                <i class="bi bi-check-circle-fill portal-cidadao-type-check" aria-hidden="true"></i>
+              </button>
+              {% endfor %}
+            </div>
+          </fieldset>
+
+          <div class="portal-cidadao-dependent-fields" id="portalCidadaoDependentFields" hidden>
+            <div class="portal-cidadao-field" id="portalTipoImovelField" hidden>
+              <label for="portalTipoImovel">Que tipo de local é?</label>
+              <select class="form-select" id="portalTipoImovel" name="tipo_imovel">
+                <option value="">Selecione o tipo de imóvel</option>
+                {% for tipo_imovel in focus_catalog.tipo_imovel_opcoes %}
+                {% if tipo_imovel == 'Imovel Geral' %}
+                <option value="{{ tipo_imovel }}">Casa, terreno ou outro imóvel</option>
+                {% else %}
+                <option value="{{ tipo_imovel }}">Local com muita circulação ou recipientes</option>
+                {% endif %}
+                {% endfor %}
+              </select>
+              <small>Exemplos: oficina, borracharia, escola, cemitério ou depósito.</small>
+            </div>
+
+            <div class="portal-cidadao-field">
+              <label for="portalFoco">O que você viu no local?</label>
+              <select class="form-select" id="portalFoco" name="foco" disabled>
+                <option value="">Primeiro escolha o tipo de ocorrência</option>
+              </select>
+              <small id="portalFocoHint">Escolha uma opção que mais se aproxima do que você encontrou.</small>
+            </div>
+          </div>
+
+          <fieldset class="portal-cidadao-location-fieldset">
+            <legend>Onde está o problema?</legend>
+            <div class="portal-cidadao-form-grid">
+              <div class="portal-cidadao-field portal-cidadao-field-wide">
+                <label for="portalLogradouro">Logradouro</label>
+                <input class="form-control" id="portalLogradouro" name="logradouro" type="text" placeholder="Rua, avenida ou estrada" required>
+              </div>
+              <div class="portal-cidadao-field">
+                <label for="portalNumero">Número</label>
+                <input class="form-control" id="portalNumero" name="numero" type="text" placeholder="Número ou s/n" required>
+              </div>
+              <div class="portal-cidadao-field">
+                <label for="portalBairro">Bairro</label>
+                <input class="form-control" id="portalBairro" name="bairro" type="text" placeholder="Bairro" required>
+              </div>
+              <div class="portal-cidadao-field">
+                <label for="portalCidade">Cidade</label>
+                <input class="form-control" id="portalCidade" name="cidade" type="text" placeholder="Cidade" required>
+              </div>
+              <div class="portal-cidadao-field">
+                <label for="portalCep">CEP <span>(opcional)</span></label>
+                <input class="form-control" id="portalCep" name="cep" type="text" inputmode="numeric" placeholder="00000-000">
+              </div>
+            </div>
+            <button class="portal-cidadao-location-action" id="portalUseLocationButton" type="button">
+              <i class="bi bi-crosshair" aria-hidden="true"></i>
+              Usar minha localização
+            </button>
+          </fieldset>
+
+          <fieldset class="portal-cidadao-identity-fieldset">
+            <legend>Identificação do cidadão</legend>
+            <p class="portal-cidadao-identity-note">
+              <i class="bi bi-shield-lock" aria-hidden="true"></i>
+              A identificação será usada para reduzir duplicidades e abusos no atendimento.
+            </p>
+            <div class="portal-cidadao-form-grid">
+              <div class="portal-cidadao-field portal-cidadao-field-wide">
+                <label for="portalNome">Nome completo <span class="portal-cidadao-required">obrigatório</span></label>
+                <input class="form-control" id="portalNome" name="nome" type="text" autocomplete="name" placeholder="Digite seu nome completo" required>
+              </div>
+              <div class="portal-cidadao-field">
+                <label for="portalCpf">CPF <span class="portal-cidadao-required">obrigatório</span></label>
+                <input class="form-control" id="portalCpf" name="cpf" type="text" inputmode="numeric" autocomplete="off" placeholder="000.000.000-00" required>
+              </div>
+              <div class="portal-cidadao-field">
+                <label for="portalRg">RG <span class="portal-cidadao-required">obrigatório</span></label>
+                <input class="form-control" id="portalRg" name="rg" type="text" autocomplete="off" placeholder="Número do RG" required>
+              </div>
+              <div class="portal-cidadao-field portal-cidadao-field-wide">
+                <label for="portalTelefone">Telefone <span class="portal-cidadao-required">obrigatório</span></label>
+                <input class="form-control" id="portalTelefone" name="telefone" type="text" inputmode="tel" autocomplete="tel" placeholder="(00) 00000-0000" required>
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Detalhes do relato</legend>
+            <div class="portal-cidadao-field">
+              <label for="portalDescricao">O que você observou?</label>
+              <textarea class="form-control" id="portalDescricao" name="descricao" rows="4" placeholder="Descreva o local, a situação encontrada e qualquer informação que ajude a equipe."></textarea>
+            </div>
+            <div class="portal-cidadao-upload-box">
+              <div class="portal-cidadao-upload-icon"><i class="bi bi-camera" aria-hidden="true"></i></div>
+              <div>
+                <strong>Adicionar foto ou vídeo</strong>
+                <span>Uma imagem pode ajudar a equipe a entender a situação.</span>
+              </div>
+              <label class="btn btn-outline-primary btn-sm portal-cidadao-upload-label" for="portalMidia">
+                Escolher arquivo
+                <input class="visually-hidden" id="portalMidia" name="midias" type="file" accept="image/*,video/*" multiple>
+              </label>
+            </div>
+            <div class="portal-cidadao-file-list" id="portalCidadaoFileList" aria-live="polite"></div>
+          </fieldset>
+
+          <div class="portal-cidadao-consent">
+            <input id="portalConsentimento" name="consentimento" value="1" type="checkbox" required>
+            <label for="portalConsentimento">Concordo que as informações sejam utilizadas para triagem e organização das ações de vigilância.</label>
+          </div>
+
+          <div class="portal-cidadao-feedback" id="portalCidadaoFeedback" hidden></div>
+
+          <div class="portal-cidadao-form-footer">
+            <span><i class="bi bi-lock" aria-hidden="true"></i> Seus dados serão tratados conforme a finalidade do atendimento.</span>
+            <button class="btn btn-success portal-cidadao-submit" id="portalCidadaoPreviewButton" type="submit">
+              Enviar relato
+              <i class="bi bi-arrow-right" aria-hidden="true"></i>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <section class="portal-cidadao-section portal-cidadao-how-section" id="como-funciona" aria-labelledby="portal-como-funciona-title">
+    <div class="portal-cidadao-section-heading portal-cidadao-section-heading-centered">
+      <div>
+        <span class="portal-cidadao-eyebrow">Transparência do atendimento</span>
+        <h2 id="portal-como-funciona-title">O que acontece depois do relato?</h2>
+        <p>A equipe responsável analisa as informações antes de encaminhar uma ação.</p>
+      </div>
+    </div>
+    <div class="portal-cidadao-info-grid">
+      <article class="portal-cidadao-info-card"><span>01</span><i class="bi bi-inbox" aria-hidden="true"></i><h3>Recebimento</h3><p>Seu relato é registrado e recebe um número de protocolo.</p></article>
+      <article class="portal-cidadao-info-card"><span>02</span><i class="bi bi-search" aria-hidden="true"></i><h3>Análise da COVISA</h3><p>A equipe verifica o endereço e as informações enviadas.</p></article>
+      <article class="portal-cidadao-info-card"><span>03</span><i class="bi bi-signpost-split" aria-hidden="true"></i><h3>Encaminhamento</h3><p>A coordenadoria designa a UVIS responsável pela região.</p></article>
+      <article class="portal-cidadao-info-card"><span>04</span><i class="bi bi-clipboard2-check" aria-hidden="true"></i><h3>Avaliação da UVIS</h3><p>A unidade avalia a necessidade de uma solicitação de atendimento.</p></article>
+    </div>
+  </section>
+
+  <footer class="portal-cidadao-footer">
+    <span><i class="bi bi-shield-check" aria-hidden="true"></i> Canal de participação cidadã</span>
+    <a href="{{ url_for('auth.login') }}">Acessar área interna <i class="bi bi-arrow-up-right" aria-hidden="true"></i></a>
+  </footer>
+
+  <script type="application/json" id="portalCidadaoFocusCatalog">{{ focus_catalog | tojson }}</script>
+</main>
+{% endblock auth_content %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/portal-cidadao.js') }}"></script>
+{% endblock %}

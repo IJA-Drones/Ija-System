@@ -25,6 +25,7 @@ from app.shared.access import (
 )
 from app.shared.os_history_filters import apply_retorno_automatico_filter
 from app.shared.query_filters import id_search_clause, normalize_multi_values
+from app.shared.solicitacao_focos import same_normalized
 from app.shared.uploads import allowed_file, get_upload_folder
 
 APPROVAL_STATUSES = {"APROVADO", "APROVADO COM RECOMENDAÇÕES"}
@@ -40,6 +41,14 @@ HISTORICO_OS_CONCLUIDAS_STATUSES = ("CONCLUIDO", "CONCLUÍDO")
 HISTORICO_EQUIPE_UVIS_CONCLUIDAS_STATUSES = ("CONCLUIDO", "CONCLUÍDO")
 UTC_TZ = ZoneInfo("UTC")
 BRAZIL_TZ = ZoneInfo("America/Sao_Paulo")
+
+
+def is_solicitacao_quadra(pedido):
+    return (
+        same_normalized(pedido.tipo_visita, "Quadra")
+        and same_normalized(pedido.foco, "QUADRA")
+        and same_normalized(pedido.tipo_operacao, "Tratamento e monitoramento de quadra")
+    )
 
 
 def _parse_filter_date(value: str):
@@ -1025,6 +1034,12 @@ def apply_admin_update_fields(pedido, form, *, user=None):
     pedido.justificativa = form.get("justificativa")
     pedido.latitude = form.get("latitude")
     pedido.longitude = form.get("longitude")
+    if is_solicitacao_quadra(pedido):
+        quadra_decisao = form.get("quadra_confirmada_admin")
+        if quadra_decisao in {"0", "1"}:
+            pedido.quadra_confirmada_admin = quadra_decisao == "1"
+            pedido.quadra_visualizada_admin = True
+            pedido.quadra_visualizada_admin_em = datetime.now()
 
     equipe_id = form.get("equipe_id")
     if equipe_id in (None, "", "null", "undefined"):

@@ -6,6 +6,7 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
 from app.extensions import db
+from app.shared.password_policy import validate_password
 from app.models import Equipe, EquipePiloto, Pilotos, Usuario
 from app.shared.access import apply_prefeitura_scope, normalize_role
 from app.shared.query_filters import id_search_clause
@@ -104,6 +105,9 @@ def validate_equipe_account_form(login: str, senha: str, senha2: str, current_ac
         errors["senha"] = "Informe a senha da equipe."
     elif senha and len(senha) < 6:
         errors["senha"] = "A senha deve ter pelo menos 6 caracteres."
+
+    if senha and (password_error := validate_password(senha)):
+        errors["senha"] = password_error
 
     if senha or senha2:
         if senha != senha2:

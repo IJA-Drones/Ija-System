@@ -12,6 +12,7 @@
     var visit = normalize(value);
     if (visit === "aedes") return "aedes";
     if (visit === "culex") return "culex";
+    if (visit === "quadra") return "quadra";
     return "outro";
   }
 
@@ -64,6 +65,10 @@
 
     if (visitKey === "culex") {
       return (catalog && catalog.culex) || [];
+    }
+
+    if (visitKey === "quadra") {
+      return ["QUADRA"];
     }
 
     return (catalog && catalog.outro) || [];
@@ -139,6 +144,7 @@
 
     function syncFields() {
       var visitValue = tipoVisitaSelect.value;
+      var isQuadra = normalize(visitValue) === "quadra";
       var showTipoImovel = resolveVisitKey(visitValue) === "aedes";
 
       if (tipoImovelWrapper) {
@@ -177,6 +183,31 @@
         focusStillValid ? currentFocus : "",
         (config && config.focoPlaceholder) || "Selecione o foco da acao..."
       );
+      focoSelect.disabled = isQuadra;
+      var lockedFocus = root.querySelector('[data-quadra-foco-hidden]');
+      if (isQuadra) {
+        if (!lockedFocus) {
+          lockedFocus = document.createElement("input");
+          lockedFocus.type = "hidden";
+          lockedFocus.name = "foco";
+          lockedFocus.setAttribute("data-quadra-foco-hidden", "true");
+          root.querySelector("form")?.appendChild(lockedFocus);
+        }
+        lockedFocus.value = "QUADRA";
+      } else if (lockedFocus) {
+        lockedFocus.remove();
+      }
+
+      var operationInputs = Array.prototype.slice.call(root.querySelectorAll('[name="tipo_operacao"]'));
+      operationInputs.forEach(function (input) {
+        var isQuadraOperation = normalize(input.value) === "tratamento e monitoramento de quadra";
+        if (isQuadra) {
+          input.checked = isQuadraOperation;
+          input.disabled = true;
+        } else {
+          input.disabled = false;
+        }
+      });
     }
 
     tipoVisitaSelect.addEventListener("change", syncFields);

@@ -12,6 +12,7 @@ from sqlalchemy.orm import joinedload, selectinload
 from werkzeug.utils import secure_filename
 
 from app.extensions import db
+from app.shared.password_policy import password_input, validate_password
 from app.models import (
     BancoAgro,
     ClienteAgro,
@@ -2474,8 +2475,8 @@ def _normalize_piloto_form(form_source):
         "telefone": (form_source.get("telefone") or "").strip(),
         "equipe_agro_id": (form_source.get("equipe_agro_id") or "").strip(),
         "login": (form_source.get("login") or "").strip(),
-        "senha": (form_source.get("senha") or "").strip(),
-        "confirmar_senha": (form_source.get("confirmar_senha") or "").strip(),
+        "senha": password_input(form_source.get("senha")),
+        "confirmar_senha": password_input(form_source.get("confirmar_senha")),
         "ativo": (form_source.get("ativo") or "SIM").strip().upper(),
     }
 
@@ -2513,6 +2514,9 @@ def _validate_piloto_agro_form(form, equipes, *, piloto_atual=None):
         errors["senha"] = "Informe uma senha inicial para o piloto agro."
     elif form["senha"] and len(form["senha"]) < 6:
         errors["senha"] = "A senha deve ter pelo menos 6 caracteres."
+
+    if form["senha"] and (password_error := validate_password(form["senha"])):
+        errors["senha"] = password_error
 
     if form["senha"] or form["confirmar_senha"]:
         if form["senha"] != form["confirmar_senha"]:

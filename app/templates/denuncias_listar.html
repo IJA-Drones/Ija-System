@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% from "_pagination.html" import render_pagination %}
+{% from "_filters.html" import render_filter_card %}
+{% from "_result_summary.html" import render_result_summary %}
+{% from "denuncias/_components.html" import status_badge, status_options %}
+
+{% block extra_styles %}{% include "denuncias/_styles.html" %}{% endblock %}
+
+{% block content %}
+{% set has_filters = filters.q or filters.status or filters.tipo_visita %}
+{% set area = 'Coordenadoria' if view_mode == 'coordenadoria' else ('UVIS' if view_mode == 'uvis' else 'COVISA') %}
+<div class="container-fluid py-4 listing-page denuncias-page">
+  <header class="page-toolbar listing-header mb-4">
+    <div>
+      <p class="denuncia-context mb-2">Portal do Cidadão <span aria-hidden="true">/</span> {{ area }}</p>
+      <h2 class="mb-2"><i class="bi bi-megaphone-fill me-2" aria-hidden="true"></i>Denúncias da {{ area }}</h2>
+      <p class="text-muted small mb-0">
+        {% if view_mode == 'coordenadoria' %}
+          Analise os relatos da sua região e encaminhe para a UVIS responsável.
+        {% elif view_mode == 'uvis' %}
+          Consulte os relatos encaminhados à sua UVIS e prepare a solicitação operacional.
+        {% else %}
+          Confira os relatos do cidadão e organize o encaminhamento às coordenadorias.
+        {% endif %}
+      </p>
+    </div>
+    <div class="listing-actions page-toolbar-actions">
+      <a href="{{ back_url }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left" aria-hidden="true"></i>Voltar</a>
+    </div>
+  </header>
+
+  {% call render_filter_card('Filtros de busca', collapse_id='denunciasFiltros', active=has_filters, header_class='listing-filter-header', body_class='listing-filter-body') %}
+    <form method="get" action="{{ url_for(list_endpoint) }}">
+      <div class="row g-3 align-items-end">
+        <div class="col-12 col-lg-5">
+          <label class="form-label" for="denunciaBusca">Busca</label>
+          <input class="form-control" id="denunciaBusca" name="q" type="search" value="{{ filters.q }}" placeholder="Protocolo, endereço, cidadão ou foco">
+        </div>
+        <div class="col-12 col-md-8 col-lg-4">
+          <label class="form-label" for="denunciaStatus">Status</label>
+          <select class="form-select" id="denunciaStatus" name="status">
+            <option value="">Todos os status</option>
+            {% for value, label, tone, icon in status_options %}
+            <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12 col-md-4 col-lg-3">
+          <label class="form-label" for="denunciaTipo">Tipo de visita</label>
+          <select class="form-select" id="denunciaTipo" name="tipo_visita">
+            <option value="">Todos os tipos</option>
+            {% for tipo in ['Aedes', 'Culex', 'Outro'] %}
+            <option value="{{ tipo }}" {% if filters.tipo_visita == tipo %}selected{% endif %}>{{ tipo }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12">
+          <div class="listing-filter-actions">
+            <button class="btn btn-success btn-sm" type="submit"><i class="bi bi-funnel" aria-hidden="true"></i>Filtrar</button>
+            {% if has_filters %}
+            <a class="btn btn-outline-secondary btn-sm" href="{{ clear_url }}"><i class="bi bi-x-lg" aria-hidden="true"></i>Limpar filtros</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </form>
+  {% endcall %}
+
+  <div class="denuncia-results mb-3">
+    {{ render_result_summary(paginacao.total, label='Denúncias encontradas' if has_filters else 'Denúncias recebidas') }}
+    {% if has_filters %}<span class="badge denuncia-status"><i class="bi bi-funnel" aria-hidden="true"></i>Filtros aplicados</span>{% endif %}
+  </div>
+
+  {% if denuncias %}
+  <div class="card listing-table-wrap">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0 listing-table">
+        <caption class="visually-hidden">Denúncias de {{ area }}{% if has_filters %} com os filtros aplicados{% endif %}</caption>
+        <thead>
+          <tr>
+            <th scope="col">Protocolo</th><th scope="col">Ocorrência</th><th scope="col">Endereço</th>
+            <th scope="col">Cidadão</th><th scope="col">Status</th><th scope="col" class="text-end">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for denuncia in denuncias %}
+          <tr>
+            <td data-label="Protocolo">
+              <div>
+                <a class="denuncia-protocol" href="{{ url_for(detail_endpoint, denuncia_id=denuncia.id) }}">{{ denuncia.protocolo }}</a>
+                <div class="text-muted small mt-1">{{ denuncia.criado_em.strftime('%d/%m/%Y %H:%M') if denuncia.criado_em else 'Data não informada' }}</div>
+              </div>
+            </td>
+            <td data-label="Ocorrência">
+              <div>
+                <strong>{{ denuncia.foco }}</strong>
+                <div class="text-muted small mt-1">{{ denuncia.tipo_visita }}{% if denuncia.tipo_imovel %} · {{ denuncia.tipo_imovel }}{% endif %}</div>
+                {% if denuncia.anexos %}
+                <span class="badge denuncia-status denuncia-attachments mt-2"><i class="bi bi-images" aria-hidden="true"></i><span>{{ denuncia.anexos|length }} {{ 'anexo' if denuncia.anexos|length == 1 else 'anexos' }}</span></span>
+                {% endif %}
+              </div>
+            </td>
+            <td data-label="Endereço">
+              <div>
+                <div>{{ denuncia.logradouro }}, {{ denuncia.numero }}</div>
+                <div class="text-muted small mt-1">{{ denuncia.bairro }} · {{ denuncia.cidade }}/{{ denuncia.uf }}{% if denuncia.cep %}<br>{{ denuncia.cep }}{% endif %}</div>
+              </div>
+            </td>
+            <td data-label="Cidadão"><div>{{ denuncia.cidadao_nome }}<div class="text-muted small mt-1">{{ denuncia.cidadao_telefone }}</div></div></td>
+            <td data-label="Status"><div>{{ status_badge(denuncia.status) }}</div></td>
+            <td data-label="Ações" class="listing-cell-actions text-end">
+              <a class="btn btn-sm btn-outline-primary" href="{{ url_for(detail_endpoint, denuncia_id=denuncia.id) }}" aria-label="Visualizar denúncia {{ denuncia.protocolo }}"><i class="bi bi-eye" aria-hidden="true"></i>Visualizar</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="card">
+    <div class="card-body denuncia-empty text-center py-5">
+      <i class="bi {{ 'bi-search' if has_filters else 'bi-inbox' }}" aria-hidden="true"></i>
+      <h3 class="mt-3">Nenhuma denúncia encontrada</h3>
+      <p class="text-muted mb-0">{{ 'Ajuste os filtros para consultar outros relatos.' if has_filters else 'Os relatos recebidos pela sua área aparecerão aqui.' }}</p>
+      {% if has_filters %}<a href="{{ clear_url }}" class="btn btn-outline-secondary btn-sm mt-3">Limpar filtros</a>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {{ render_pagination(list_endpoint, paginacao, pagination_args, show_summary=True, summary_label='denúncias') }}
+</div>
+{% endblock %}

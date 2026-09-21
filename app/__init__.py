@@ -166,7 +166,16 @@ def create_app():
     login_manager.init_app(app)
     login_manager.login_view = "auth.login"
 
+    from app.shared.session_security import register_session_security
+
+    register_session_security(app)
+
+    from app.shared.csrf_security import register_csrf_security
+
+    register_csrf_security(app)
+
     from app.models import AuditoriaUsuario, Usuario
+    from app.modules.auditoria.service import trim_auditoria_usuarios
     from app.shared.presence import record_user_presence
 
     @app.get("/healthz")
@@ -205,6 +214,8 @@ def create_app():
 
     @app.before_request
     def capture_audit_user():
+        if request.blueprint == "session_security":
+            return
         if not getattr(current_user, "is_authenticated", False):
             return
 
@@ -268,6 +279,10 @@ def create_app():
                         referrer=referrer[:255] if referrer else None,
                         criado_em=_utcnow_naive(),
                     )
+                )
+                trim_auditoria_usuarios(
+                    conn,
+                    app.config.get("AUDIT_RETENTION_MAX_RECORDS", 15000),
                 )
         except Exception:
             app.logger.exception("Erro ao registrar auditoria de usuario.")

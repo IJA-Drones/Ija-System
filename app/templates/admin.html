@@ -430,17 +430,18 @@
                     <td class="align-top pt-3 d-none d-lg-table-cell bg-opacity-10">
                         {% if is_editable %}
                             {# --- FORMULÁRIO DESKTOP (ADMIN/OPERÁRIO) --- #}
+                            {% set quadra_admin = is_admin_solicitacao_quadra(p) %}
                             <form action="{{ url_for('main.atualizar', id=p.id) }}" method="POST" enctype="multipart/form-data">
                                 <input type="hidden" name="next" value="{{ admin_return_url }}">
-                                <div class="row g-1 mb-2">
+                                <div class="row g-1 mb-2 {% if quadra_admin %}quadra-readonly-fields{% endif %}">
                                     <div class="col-6"><input name="latitude" class="form-control form-control-sm" value="{{ p.latitude or '' }}" placeholder="Lat"></div>
                                     <div class="col-6"><input name="longitude" class="form-control form-control-sm" value="{{ p.longitude or '' }}" placeholder="Long"></div>
                                 </div>
 
-                                <input name="protocolo" class="form-control form-control-sm mb-2" placeholder="Protocolo" value="{{ p.protocolo or '' }}">
+                                <input name="protocolo" class="form-control form-control-sm mb-2 {% if quadra_admin %}quadra-readonly-field{% endif %}" placeholder="Protocolo" value="{{ p.protocolo or '' }}">
 
                                 <div class="p-2 border rounded gap-1 d-flex flex-column">
-                                    <div>
+                                    <div class="{% if quadra_admin and not p.quadra_visualizada_admin %}quadra-readonly-fields{% endif %}">
                                         <label class="form-label">Status</label>
                                         <select name="status" class="form-select form-select-sm" data-jid="{{ p.id }}" onchange="toggleJustificativa(this, this.dataset.jid)">
                                             <option value="PENDENTE" {% if p.status=='PENDENTE' %}selected{% endif %}>⚪️ Pendente</option>
@@ -451,7 +452,7 @@
                                         </select>
                                     </div>
 
-                                    <div>
+                                    <div class="{% if quadra_admin and not p.quadra_visualizada_admin %}quadra-readonly-fields{% endif %}">
                                         <label class="form-label mt-2">Equipe responsável</label>
                                         <select class="form-select form-select-sm" name="equipe_id">
                                             <option value="" {% if not p.equipe_id %}selected{% endif %}>- Sem equipe -</option>
@@ -462,6 +463,24 @@
                                             {% endfor %}
                                         </select>
                                     </div>
+
+                                    {% if is_admin_solicitacao_quadra(p) %}
+                                    <div class="mt-2 p-2 border rounded bg-light">
+                                        <label class="form-label mb-1">Solicitado como Quadra?</label>
+                                        <div class="mb-2">
+                                            {% if p.quadra_visualizada_admin %}
+                                            <span class="badge bg-success"><i class="bi bi-check-circle-fill"></i> Visualizado</span>
+                                            <span class="text-muted small ms-1">{{ 'Confirmado' if p.quadra_confirmada_admin else 'Cancelado' }}</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">Aguardando retorno</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            <button type="submit" name="quadra_confirmada_admin" value="0" class="btn btn-sm btn-outline-secondary flex-fill">Cancelar</button>
+                                            <button type="submit" name="quadra_confirmada_admin" value="1" class="btn btn-sm btn-primary flex-fill">Confirmar</button>
+                                        </div>
+                                    </div>
+                                    {% endif %}
 
                                     <div id="boxJustificativa{{ p.id }}" style="display: none;">
                                         <label class="form-label mt-2">Justificativa</label>
@@ -491,7 +510,7 @@
                                       {% endif %}
                                     </div>
                                     <input type="file" name="anexo" id="inputPdf{{ p.id }}" class="d-none" onchange="processarArquivo(this, '{{ p.id }}')">
-                                    <button type="submit" class="btn btn-primary btn-sm w-100 mt-2">Salvar</button>
+                                    <button type="submit" class="btn btn-primary btn-sm w-100 mt-2" {% if quadra_admin and not p.quadra_visualizada_admin %}disabled title="Aguarde a escolha do administrador"{% endif %}>Salvar</button>
                                 </div>
                             </form>
                         {% else %}

@@ -488,6 +488,30 @@ body.sidebar-collapsed .app-content {
   color: var(--color-accent);
 }
 
+.app-sidebar .nav-link-disabled {
+  cursor: default;
+  opacity: 0.72;
+  flex-wrap: wrap;
+  gap: 0 0.35rem;
+  pointer-events: none;
+}
+
+.app-sidebar .nav-link-disabled:hover {
+  background: transparent;
+  color: var(--color-text-main);
+}
+
+.app-sidebar .nav-development-badge {
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+  margin-top: 0.2rem;
+  margin-left: 1.65rem !important;
+}
+
 .app-sidebar .nav-link.active {
   background: rgba(0, 163, 196, 0.15);
   color: var(--color-accent);
@@ -1517,6 +1541,31 @@ html.dark-mode .filter-card-badge {
   color: #9c4221;
   border: 1px solid #feebc8 !important;
 }
+
+.ija-session-warning {
+  z-index: 1090;
+  width: min(92vw, 420px);
+  background: var(--color-bg-surface);
+  color: var(--color-text-main);
+  border: 1px solid var(--color-accent);
+  border-top: 4px solid var(--color-accent);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+.ija-session-warning-title {
+  color: var(--color-primary-dark);
+}
+
+.ija-session-warning-countdown {
+  color: var(--color-primary);
+}
+
+body.dark-mode .ija-session-warning .btn-primary {
+  --app-btn-color: var(--color-bg-body);
+  --app-btn-hover-color: var(--color-bg-body);
+}
+
 /* bundle-source-end: app/static/css/components/alerts.css */
 
 /* bundle-source: app/static/css/components/badges.css */
@@ -7299,6 +7348,27 @@ body.dark-mode .feedback-listar-page .feedback-empty > .bi {
 
 /* bundle-source-end: app/static/css/themes/dark/pages/feedback-listar.css */
 
+/* bundle-source: app/static/css/themes/dark/pages/denuncias.css */
+/* Exceções do módulo de denúncias ao tema global. */
+body.dark-mode .denuncias-page .denuncia-status--warning { --denuncia-status-color: var(--color-warning); }
+body.dark-mode .denuncias-page .denuncia-status--success { --denuncia-status-color: #88d5ae; }
+body.dark-mode .denuncias-page .denuncia-status--neutral { --denuncia-status-color: var(--color-text-muted); }
+body.dark-mode .denuncias-page .listing-table tbody tr:hover > * { background: var(--color-bg-surface); }
+
+body.dark-mode .denuncias-page .form-select {
+  --bs-form-select-bg-img: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%239aa8ba' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+  background-image: var(--bs-form-select-bg-img);
+  background-repeat: no-repeat;
+  background-position: right .75rem center;
+  background-size: 16px 12px;
+}
+body.dark-mode .denuncias-page .form-select option { background: var(--color-bg-white); color: var(--color-text-main); }
+body.dark-mode .denuncias-page .form-check-input:not(:checked) { background-color: var(--color-bg-surface); border-color: var(--color-text-muted); }
+body.dark-mode .denuncias-page .form-check-input:checked { background-color: var(--color-primary); border-color: var(--color-primary); }
+body.dark-mode .denuncias-page .form-check-input:focus { box-shadow: 0 0 0 3px var(--color-accent-soft); }
+
+/* bundle-source-end: app/static/css/themes/dark/pages/denuncias.css */
+
 /* bundle-source: app/static/css/themes/dark/pages/agro-system.css */
 /* =========================================
    AGRO - CAMADA DARK COMPARTILHADA
@@ -9802,4 +9872,13 @@ body.dark-mode .return-cycle-media span {
   font-weight: 700;
   letter-spacing: 0.3px;
   text-transform: uppercase;
+}
+.quadra-readonly-fields {
+  pointer-events: none;
+  opacity: 0.78;
+}
+
+.quadra-readonly-field {
+  pointer-events: none;
+  background-color: var(--bs-secondary-bg, #f2f4f7);
 }

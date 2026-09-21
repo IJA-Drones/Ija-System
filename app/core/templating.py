@@ -13,10 +13,13 @@ from app.modules.feedback.service import (
     build_support_notification_snapshot,
     can_access_feedback,
 )
+from app.modules.denuncias.service import can_access_denuncias, count_denuncias_alerta
 from app.modules.agro.service import can_access_agro_panel
-from app.shared.access import is_admin_global_user, is_dev_user
+from app.shared.access import is_admin_global_user, is_covisa_user, is_dev_user
 from app.shared.formatters import format_currency_br, format_phone_br
 from app.shared.solicitacao_focos import build_focus_catalog
+from app.modules.solicitacoes.service import is_solicitacao_quadra
+from app.modules.admin_dashboard.service import is_solicitacao_quadra as is_admin_solicitacao_quadra
 
 
 def register_template_helpers(bp):
@@ -50,16 +53,21 @@ def register_template_helpers(bp):
                     "limpeza_alertas_operacionais_count": count_limpeza_alertas_operacionais(current_user),
                     "limpeza_alertas_admin_count": count_limpeza_alertas_admin(current_user),
                     "support_nav_count": support_snapshot["count"],
+                    "denuncias_nav_count": count_denuncias_alerta(current_user),
                     "support_nav_latest_id": support_snapshot["latest_id"],
                     "feedback_notifications_enabled": FEEDBACK_NOTIFICATIONS_ENABLED,
                     "safe_url_for": safe_url_for,
                     "can_access_feedback": can_access_feedback,
+                    "can_access_denuncias": can_access_denuncias,
                     "can_access_agro_panel": can_access_agro_panel,
                     "is_admin_global_user": is_admin_global_user,
+                    "is_covisa_user": is_covisa_user,
                     "is_dev_user": is_dev_user,
                     "solicitacao_focus_catalog": focus_catalog,
                     "solicitacao_filter_foco_opcoes": focus_catalog["filtro_foco_opcoes"],
                     "solicitacao_tipo_visita_opcoes": focus_catalog["tipo_visita_opcoes"],
+                    "is_solicitacao_quadra": is_solicitacao_quadra,
+                    "is_admin_solicitacao_quadra": is_admin_solicitacao_quadra,
                     "solicitacao_tipo_imovel_opcoes": focus_catalog["tipo_imovel_opcoes"],
                 }
             except Exception:
@@ -69,12 +77,15 @@ def register_template_helpers(bp):
                     "limpeza_alertas_operacionais_count": 0,
                     "limpeza_alertas_admin_count": 0,
                     "support_nav_count": 0,
+                    "denuncias_nav_count": 0,
                     "support_nav_latest_id": 0,
                     "feedback_notifications_enabled": FEEDBACK_NOTIFICATIONS_ENABLED,
                     "safe_url_for": safe_url_for,
                     "can_access_feedback": can_access_feedback,
+                    "can_access_denuncias": can_access_denuncias,
                     "can_access_agro_panel": can_access_agro_panel,
                     "is_admin_global_user": is_admin_global_user,
+                    "is_covisa_user": is_covisa_user,
                     "is_dev_user": is_dev_user,
                     "solicitacao_focus_catalog": focus_catalog,
                     "solicitacao_filter_foco_opcoes": focus_catalog["filtro_foco_opcoes"],
@@ -87,11 +98,14 @@ def register_template_helpers(bp):
             "limpeza_alertas_operacionais_count": 0,
             "limpeza_alertas_admin_count": 0,
             "support_nav_count": 0,
+            "denuncias_nav_count": 0,
             "support_nav_latest_id": 0,
             "feedback_notifications_enabled": FEEDBACK_NOTIFICATIONS_ENABLED,
             "safe_url_for": safe_url_for,
             "can_access_feedback": can_access_feedback,
+            "can_access_denuncias": can_access_denuncias,
             "is_admin_global_user": is_admin_global_user,
+            "is_covisa_user": is_covisa_user,
             "is_dev_user": is_dev_user,
             "solicitacao_focus_catalog": focus_catalog,
             "solicitacao_filter_foco_opcoes": focus_catalog["filtro_foco_opcoes"],

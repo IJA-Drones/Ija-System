@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
 from app.extensions import db
+from app.shared.password_policy import password_input
 from app.models import Prefeitura, Usuario
 from app.modules.usuarios.service import (
     build_admin_users_query,
@@ -314,8 +315,8 @@ def register_routes(bp):
             trabalha_agro = can_manage_work_flags and request.form.get("trabalha_agro") == "1"
             suporte_operacional = request.form.get("suporte_operacional") == "1"
             suporte_tecnico = request.form.get("suporte_tecnico") == "1"
-            senha = (request.form.get("senha") or "").strip()
-            senha2 = (request.form.get("senha2") or "").strip()
+            senha = password_input(request.form.get("senha"))
+            senha2 = password_input(request.form.get("senha2"))
 
             form = {
                 "nome": nome,
@@ -488,8 +489,8 @@ def register_routes(bp):
                 (request.form.get("regiao") or "").strip() or None,
             )
 
-            senha = (request.form.get("senha") or "").strip()
-            senha2 = (request.form.get("senha2") or "").strip()
+            senha = password_input(request.form.get("senha"))
+            senha2 = password_input(request.form.get("senha2"))
 
             form = {
                 "nome_uvis": nome_uvis,
@@ -600,8 +601,8 @@ def register_routes(bp):
         if not can_manage_admin_user(current_user, user):
             abort(403)
 
-        senha = (request.form.get("senha") or "").strip()
-        senha2 = (request.form.get("senha2") or "").strip()
+        senha = password_input(request.form.get("senha"))
+        senha2 = password_input(request.form.get("senha2"))
         reset_error = validate_password_reset(
             senha,
             senha2,

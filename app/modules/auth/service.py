@@ -4,6 +4,8 @@ from app.shared.access import ADMIN_PANEL_VIEW_TYPES, is_dev_user
 
 
 def _authenticate_any_user(login_value, password):
+    if not login_value or not password:
+        return None
     user = Usuario.query.filter_by(login=login_value).first()
     if user and user.check_senha(password):
         if user.tipo_usuario == "piloto_agro":

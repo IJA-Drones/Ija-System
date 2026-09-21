@@ -13,6 +13,10 @@
 >
   <head>
     <meta charset="UTF-8" />
+    {% if ija_csrf_enabled %}
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
+    <script src="{{ url_for('static', filename='js/csrf-security.js') }}"></script>
+    {% endif %}
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Oceano Azul</title>
 
@@ -274,6 +278,22 @@
           {% endif %}
 
           {% if is_admin_panel_user and not is_agro_context %}
+          {% if can_access_denuncias(current_user) %}
+          <li class="nav-item">
+            <a
+              class="nav-link nav-link-disabled {% if request.endpoint in ['main.denuncias_listar', 'main.denuncia_detalhe', 'main.coordenadoria_denuncias_listar', 'main.coordenadoria_denuncia_detalhe'] %}active{% endif %}"
+              href="#"
+              aria-disabled="true"
+              tabindex="-1"
+            >
+              <i class="bi bi-megaphone-fill me-2"></i><span>Denúncias</span>
+              <span class="nav-development-badge">Em desenvolvimento</span>
+              {% if denuncias_nav_count and denuncias_nav_count > 0 %}
+              <span class="badge bg-danger ms-auto" style="border-radius: 999px">{{ denuncias_nav_count }}</span>
+              {% endif %}
+            </a>
+          </li>
+          {% endif %}
           <li class="nav-item">
             <a
               class="nav-link {% if request.endpoint == 'main.admin_historico_os' %}active{% endif %}"
@@ -371,6 +391,20 @@
               href="{{ url_for('main.uvis_historico_os') }}"
             >
               <i class="bi bi-clock-history me-2"></i><span>Histórico OS</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a
+              class="nav-link nav-link-disabled {% if request.endpoint in ['main.uvis_denuncias_listar', 'main.uvis_denuncia_detalhe'] %}active{% endif %}"
+              href="#"
+              aria-disabled="true"
+              tabindex="-1"
+            >
+              <i class="bi bi-megaphone-fill me-2"></i><span>Denúncias</span>
+              <span class="nav-development-badge">Em desenvolvimento</span>
+              {% if denuncias_nav_count and denuncias_nav_count > 0 %}
+              <span class="badge bg-danger ms-auto" style="border-radius: 999px">{{ denuncias_nav_count }}</span>
+              {% endif %}
             </a>
           </li>
           {% endif %}
@@ -1100,7 +1134,7 @@
       </div>
     </div>
     {% else %}
-    <div class="container py-4">{% block auth_content %}{% endblock %}</div>
+    <div class="{% block auth_container_class %}container py-4{% endblock %}">{% block auth_content %}{% endblock %}</div>
     {% endif %}
 
     {% if current_user.is_authenticated %}
@@ -1782,6 +1816,10 @@
       navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}");
   }
     </script>
+    {% if ija_security %}
+    <script id="ija-security-config" type="application/json">{{ ija_security|tojson }}</script>
+    <script src="{{ url_for('static', filename='js/session-security.js', v='20260918d') }}" defer></script>
+    {% endif %}
     {% block scripts %}{% endblock %}
   </body>
 </html>

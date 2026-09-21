@@ -18,6 +18,15 @@ from app.shared.solicitacao_focos import (
     validate_foco_selection,
 )
 
+QUADRA_TIPO_OPERACAO = "Tratamento e monitoramento de quadra"
+
+def is_solicitacao_quadra(pedido):
+    return (
+        same_normalized(pedido.tipo_visita, "Quadra")
+        and same_normalized(pedido.foco, "QUADRA")
+        and same_normalized(pedido.tipo_operacao, QUADRA_TIPO_OPERACAO)
+    )
+
 STATUS_OPCOES_EDICAO = [
     "PENDENTE",
     "EM ANÁLISE",
@@ -296,6 +305,8 @@ def create_nova_solicitacao(user, form_data):
     hora_str = form_data.get("hora")
     data_obj = datetime.strptime(data_str, "%Y-%m-%d").date() if data_str else None
     hora_obj = datetime.strptime(hora_str, "%H:%M").time() if hora_str else None
+    if data_obj and data_obj < date.today():
+        raise NovoCadastroValidationError("A data da visita nao pode ser retroativa.")
     distrito_administrativo = _clean_empty_marker(form_data.get("distrito_administrativo"))
 
     if not distrito_administrativo:
@@ -355,6 +366,10 @@ def create_nova_solicitacao(user, form_data):
     except ValueError as exc:
         raise NovoCadastroValidationError(str(exc))
 
+    tipo_operacao = (form_data.get("tipo_operacao") or "").strip()
+    if tipo_visita == "Quadra":
+        tipo_operacao = QUADRA_TIPO_OPERACAO
+
     nova_solicitacao = Solicitacao(
         data_agendamento=data_obj,
         hora_agendamento=hora_obj,
@@ -369,7 +384,7 @@ def create_nova_solicitacao(user, form_data):
         foco=foco,
         tipo_visita=tipo_visita,
         tipo_imovel=tipo_imovel,
-        tipo_operacao=form_data.get("tipo_operacao"),
+        tipo_operacao=tipo_operacao,
         altura_voo=form_data.get("altura_voo"),
         distrito_administrativo=distrito_administrativo,
         apoio_cet=form_data.get("apoio_cet") == "sim",
@@ -431,6 +446,7 @@ def build_editar_solicitacao_context(user, solicitacao_id):
         "allow_custom_visit_other": allow_custom_visit_other,
         "pedido_tipo_visita_select": pedido_tipo_visita_select,
         "pedido_tipo_visita_outros": pedido_tipo_visita_outros,
+        "is_solicitacao_quadra": is_solicitacao_quadra,
     }
 
 
@@ -488,6 +504,10 @@ def atualizar_solicitacao(user, solicitacao_id, form_data):
     pedido.tipo_visita = tipo_visita
     pedido.tipo_imovel = tipo_imovel
     pedido.tipo_operacao = form_data.get("tipo_operacao") or pedido.tipo_operacao
+    if tipo_visita == "Quadra":
+        pedido.tipo_operacao = QUADRA_TIPO_OPERACAO
+    if is_admin and is_solicitacao_quadra(pedido):
+        pedido.quadra_confirmada_admin = form_data.get("quadra_confirmada_admin") == "1"
     pedido.altura_voo = form_data.get("altura_voo") or pedido.altura_voo
     pedido.distrito_administrativo = (
         _clean_empty_marker(form_data.get("distrito_administrativo"))

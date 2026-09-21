@@ -41,6 +41,7 @@ class Prefeitura(db.Model):
     rastreamento_posicoes = db.relationship("RastreamentoPosicao", back_populates="prefeitura", lazy="select")
     rastreamento_historicos = db.relationship("RastreamentoHistorico", back_populates="prefeitura", lazy="select")
     rastreamento_alertas = db.relationship("RastreamentoAlerta", back_populates="prefeitura", lazy="select")
+    denuncias = db.relationship("Denuncia", back_populates="prefeitura", lazy="select")
 
 # -------------------------------------------------------------
 # USUÁRIO (login do sistema)
@@ -146,6 +147,11 @@ class Usuario(UserMixin, db.Model):
     )
 
     def set_senha(self, senha):
+        from app.shared.password_policy import PasswordPolicyError, validate_password
+
+        error = validate_password(senha)
+        if error:
+            raise PasswordPolicyError(error)
         self.senha_hash = generate_password_hash(senha)
 
     def check_senha(self, senha):
@@ -468,6 +474,9 @@ class Solicitacao(db.Model):
     protocolo = db.Column(db.String(50), index=True)
     justificativa = db.Column(db.String(255))
     equipe_uvis_nome = db.Column(db.String(100), index=True)
+    quadra_confirmada_admin = db.Column(db.Boolean, default=False, nullable=False, index=True)
+    quadra_visualizada_admin = db.Column(db.Boolean, default=False, nullable=False, index=True)
+    quadra_visualizada_admin_em = db.Column(db.DateTime, nullable=True, index=True)
 
     data_criacao = db.Column(db.DateTime, default=datetime.now, index=True)
 
@@ -540,6 +549,90 @@ class Solicitacao(db.Model):
         db.Index("ix_solicitacao_piloto_data", "piloto_id", "data_criacao"),
         db.Index("ix_solicitacao_agenda", "data_agendamento", "hora_agendamento"),
     )
+
+
+class Denuncia(db.Model):
+    __tablename__ = "denuncias"
+
+    STATUS_RECEBIDA = "RECEBIDA"
+    STATUS_EM_TRIAGEM_COVISA = "EM_TRIAGEM_COVISA"
+    STATUS_ENCAMINHADA_COORDENADORIA = "ENCAMINHADA_COORDENADORIA"
+    STATUS_ENCAMINHADA_UVIS = "ENCAMINHADA_UVIS"
+    STATUS_CONVERTIDA_SOLICITACAO = "CONVERTIDA_SOLICITACAO"
+    STATUS_ARQUIVADA = "ARQUIVADA"
+
+    id = db.Column(db.Integer, primary_key=True)
+    protocolo = db.Column(db.String(40), nullable=False, unique=True, index=True)
+    status = db.Column(db.String(40), nullable=False, default=STATUS_RECEBIDA, index=True)
+
+    tipo_visita = db.Column(db.String(50), nullable=False, index=True)
+    tipo_imovel = db.Column(db.String(30), nullable=True, index=True)
+    foco = db.Column(db.String(80), nullable=False, index=True)
+    descricao = db.Column(db.Text)
+
+    cep = db.Column(db.String(9), nullable=True, index=True)
+    logradouro = db.Column(db.String(150), nullable=False)
+    numero = db.Column(db.String(20), nullable=False)
+    complemento = db.Column(db.String(100))
+    bairro = db.Column(db.String(100), nullable=False, index=True)
+    cidade = db.Column(db.String(100), nullable=False, index=True)
+    uf = db.Column(db.String(2), nullable=False, index=True)
+    latitude = db.Column(db.String(50))
+    longitude = db.Column(db.String(50))
+    place_id = db.Column(db.String(255), index=True)
+
+    cidadao_nome = db.Column(db.String(150), nullable=False)
+    cidadao_cpf = db.Column(db.String(14), nullable=False, index=True)
+    cidadao_rg = db.Column(db.String(30), nullable=False, index=True)
+    cidadao_telefone = db.Column(db.String(30), nullable=False)
+
+    prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
+    coordenadoria = db.Column(db.String(100), nullable=True, index=True)
+    uvis_usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=True, index=True)
+    solicitacao_id = db.Column(db.Integer, db.ForeignKey("solicitacoes.id"), nullable=True, unique=True, index=True)
+    triado_por_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=True, index=True)
+    encaminhado_em = db.Column(db.DateTime, nullable=True, index=True)
+    arquivado_em = db.Column(db.DateTime, nullable=True, index=True)
+    arquivado_motivo = db.Column(db.Text, nullable=True)
+
+    ip_origem = db.Column(db.String(64), nullable=True)
+    user_agent = db.Column(db.Text, nullable=True)
+    consentimento = db.Column(db.Boolean, nullable=False, default=False)
+    criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+    atualizado_em = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now, nullable=False, index=True)
+
+    prefeitura = db.relationship("Prefeitura", back_populates="denuncias", lazy="joined")
+    uvis_usuario = db.relationship("Usuario", foreign_keys=[uvis_usuario_id], lazy="joined")
+    solicitacao = db.relationship("Solicitacao", foreign_keys=[solicitacao_id], lazy="joined")
+    triado_por = db.relationship("Usuario", foreign_keys=[triado_por_id], lazy="joined")
+    anexos = db.relationship(
+        "DenunciaAnexo",
+        back_populates="denuncia",
+        cascade="all, delete-orphan",
+        lazy="select",
+        order_by="DenunciaAnexo.id.asc()",
+    )
+
+    __table_args__ = (
+        db.Index("ix_denuncias_status_criado", "status", "criado_em"),
+        db.Index("ix_denuncias_localizacao", "cidade", "uf", "bairro"),
+        db.Index("ix_denuncias_fluxo", "coordenadoria", "uvis_usuario_id", "status"),
+    )
+
+
+class DenunciaAnexo(db.Model):
+    __tablename__ = "denuncia_anexos"
+
+    id = db.Column(db.Integer, primary_key=True)
+    denuncia_id = db.Column(db.Integer, db.ForeignKey("denuncias.id"), nullable=False, index=True)
+    arquivo_path = db.Column(db.String(255), nullable=False)
+    arquivo_nome = db.Column(db.String(255), nullable=False)
+    mime_type = db.Column(db.String(120), nullable=True)
+    tamanho_bytes = db.Column(db.Integer, nullable=True)
+    tipo_midia = db.Column(db.String(20), nullable=False, default="arquivo", index=True)
+    criado_em = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
+
+    denuncia = db.relationship("Denuncia", back_populates="anexos", lazy="joined")
 
 
 # -------------------------------------------------------------

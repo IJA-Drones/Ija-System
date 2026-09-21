@@ -5,6 +5,7 @@ from app.models import Solicitacao, Usuario
 
 REGIONAL_USER_TYPE = "regional"
 COVISA_LEGACY_USER_TYPE = "visualizar"
+COVISA_USER_TYPE = "covisa"
 COVISA_REGIAO = "COVISA"
 PREFEITURA_ADMIN_USER_TYPE = "prefeitura_admin"
 FINANCEIRO_ADMIN_USER_TYPE = "financeiro_admin"
@@ -18,6 +19,7 @@ ADMIN_PANEL_VIEW_TYPES = {
     "operario",
     "visualizar",
     "visualizador",
+    COVISA_USER_TYPE,
     REGIONAL_USER_TYPE,
     PREFEITURA_ADMIN_USER_TYPE,
 }
@@ -45,10 +47,10 @@ def is_regional_user(user) -> bool:
 
 
 def is_covisa_user(user) -> bool:
-    return (
-        normalize_role(getattr(user, "tipo_usuario", None)) == COVISA_LEGACY_USER_TYPE
-        and get_user_regiao(user) == COVISA_REGIAO
-    )
+    user_type = normalize_role(getattr(user, "tipo_usuario", None))
+    if user_type == COVISA_USER_TYPE:
+        return True
+    return user_type == COVISA_LEGACY_USER_TYPE and get_user_regiao(user) == COVISA_REGIAO
 
 
 def is_prefeitura_admin_user(user) -> bool:
