@@ -188,8 +188,11 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="https://unpkg.com/@deck.gl/core@9.2.2/dist.min.js"></script>
+<script src="https://unpkg.com/@deck.gl/aggregation-layers@9.2.2/dist.min.js"></script>
+<script src="https://unpkg.com/@deck.gl/google-maps@9.2.2/dist.min.js"></script>
 <script>
-  let mapHeat, mapArea, mapLogistics, heatmap;
+  let mapHeat, mapArea, mapLogistics, heatmapOverlay;
   let markers = [];
   let circles = [];
 
@@ -367,8 +370,8 @@
 
       atualizarIndicadoresBI(pontos.length);
 
-      const heatData = pontos.map(p => new google.maps.LatLng(p.lat, p.lng));
-      if (heatmap) heatmap.setMap(null);
+      const heatData = pontos.map(p => ({ position: [p.lng, p.lat] }));
+      if (heatmapOverlay) heatmapOverlay.setMap(null);
 
       let gradienteMapa, gradienteCSS;
       const categoria = (focoFiltro === "todos") ? "todos" : getCategoriaPorFoco(focoFiltro);
@@ -410,17 +413,28 @@
       const barra = document.querySelector('.gradient-bar');
       if (barra) barra.style.setProperty('--legenda-gradiente', gradienteCSS);
 
-      heatmap = new google.maps.visualization.HeatmapLayer({
-        data: heatData,
-        map: mapHeat,
-        radius: 40,
-        opacity: 0.8,
-        gradient: gradienteMapa
+      const colorRange = gradienteMapa.map((cor) => {
+        const match = cor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+        return match ? [Number(match[1]), Number(match[2]), Number(match[3])] : [255, 0, 0];
       });
+
+      heatmapOverlay = new deckGoogleMaps.GoogleMapsOverlay({
+        interleaved: false,
+        layers: [new deck.HeatmapLayer({
+          id: "solicitacoes-heatmap",
+          data: heatData,
+          getPosition: ponto => ponto.position,
+          getWeight: () => 1,
+          radiusPixels: 40,
+          opacity: 0.8,
+          colorRange
+        })]
+      });
+      heatmapOverlay.setMap(mapHeat);
 
       if (heatData.length > 0) {
         const bounds = new google.maps.LatLngBounds();
-        heatData.forEach(p => bounds.extend(p));
+        heatData.forEach(p => bounds.extend({ lat: p.position[1], lng: p.position[0] }));
         mapHeat.fitBounds(bounds);
       }
     } catch (error) {
