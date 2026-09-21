@@ -2545,16 +2545,26 @@ def update_veiculo_log_km(user, log_id, form_data):
                 f"Valor do abastecimento #{abastecimento.id}",
                 required=True,
             )
-        abastecimento_updates.append((abastecimento, km_registro, valor_total))
+        litros_field_name = f"abastecimento_{abastecimento.id}_litros"
+        litros = abastecimento.litros
+        if litros_field_name in form_data:
+            litros = _parse_log_decimal_field(
+                form_data,
+                litros_field_name,
+                f"Litros do abastecimento #{abastecimento.id}",
+                required=True,
+            )
+        abastecimento_updates.append((abastecimento, km_registro, litros, valor_total))
 
-    maior_km_abastecimento = max([km for _item, km, _valor in abastecimento_updates], default=None)
+    maior_km_abastecimento = max([km for _item, km, _litros, _valor in abastecimento_updates], default=None)
     if km_final is not None and maior_km_abastecimento is not None and km_final < maior_km_abastecimento:
         raise VeiculoTurnoError("KM final nao pode ser menor que o maior KM de abastecimento.")
 
     log.km_inicial = km_inicial
     log.km_final = km_final
-    for abastecimento, km_registro, valor_total in abastecimento_updates:
+    for abastecimento, km_registro, litros, valor_total in abastecimento_updates:
         abastecimento.km_registro = km_registro
+        abastecimento.litros = litros
         abastecimento.valor_total = valor_total
 
     _recalcular_km_atual_veiculo(log.veiculo_id)
