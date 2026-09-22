@@ -438,7 +438,8 @@
                                     <div class="col-6"><input name="longitude" class="form-control form-control-sm" value="{{ p.longitude or '' }}" placeholder="Long"></div>
                                 </div>
 
-                                <input name="protocolo" class="form-control form-control-sm mb-2 {% if quadra_admin %}quadra-readonly-field{% endif %}" placeholder="Protocolo" value="{{ p.protocolo or '' }}">
+                                {# O protocolo pode ser informado antes da confirmação da quadra. #}
+                                <input name="protocolo" class="form-control form-control-sm mb-2" placeholder="Protocolo" value="{{ p.protocolo or '' }}">
 
                                 <div class="p-2 border rounded gap-1 d-flex flex-column">
                                     <div class="{% if quadra_admin and not p.quadra_visualizada_admin %}quadra-readonly-fields{% endif %}">
@@ -510,7 +511,7 @@
                                       {% endif %}
                                     </div>
                                     <input type="file" name="anexo" id="inputPdf{{ p.id }}" class="d-none" onchange="processarArquivo(this, '{{ p.id }}')">
-                                    <button type="submit" class="btn btn-primary btn-sm w-100 mt-2" {% if quadra_admin and not p.quadra_visualizada_admin %}disabled title="Aguarde a escolha do administrador"{% endif %}>Salvar</button>
+                                    <button type="submit" class="btn btn-primary btn-sm w-100 mt-2">Salvar</button>
                                 </div>
                             </form>
                         {% else %}

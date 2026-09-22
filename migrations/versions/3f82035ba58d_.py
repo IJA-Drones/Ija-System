@@ -24,9 +24,9 @@ def upgrade():
                nullable=False)
 
     with op.batch_alter_table('agro_flight_kml_routes', schema=None) as batch_op:
-        batch_op.drop_constraint(batch_op.f('agro_flight_kml_routes_file_sha256_key'), type_='unique')
-        batch_op.drop_constraint(batch_op.f('agro_flight_kml_routes_flight_record_id_key'), type_='unique')
-        batch_op.drop_constraint(batch_op.f('agro_flight_kml_routes_route_code_key'), type_='unique')
+        # batch_op.drop_constraint(batch_op.f('agro_flight_kml_routes_file_sha256_key'), type_='unique')
+        # batch_op.drop_constraint(batch_op.f('agro_flight_kml_routes_flight_record_id_key'), type_='unique')
+        # batch_op.drop_constraint(batch_op.f('agro_flight_kml_routes_route_code_key'), type_='unique')
         batch_op.drop_index(batch_op.f('ix_agro_flight_kml_routes_file_sha256'))
         batch_op.create_index(batch_op.f('ix_agro_flight_kml_routes_file_sha256'), ['file_sha256'], unique=True)
         batch_op.drop_index(batch_op.f('ix_agro_flight_kml_routes_flight_record_id'))
@@ -35,12 +35,12 @@ def upgrade():
         batch_op.create_index(batch_op.f('ix_agro_flight_kml_routes_route_code'), ['route_code'], unique=True)
 
     with op.batch_alter_table('agro_flight_log_imports', schema=None) as batch_op:
-        batch_op.drop_constraint(batch_op.f('agro_flight_log_imports_file_sha256_key'), type_='unique')
+        # batch_op.drop_constraint(batch_op.f('agro_flight_log_imports_file_sha256_key'), type_='unique')
         batch_op.drop_index(batch_op.f('ix_agro_flight_log_imports_file_sha256'))
         batch_op.create_index(batch_op.f('ix_agro_flight_log_imports_file_sha256'), ['file_sha256'], unique=True)
 
     with op.batch_alter_table('agro_flight_records', schema=None) as batch_op:
-        batch_op.drop_constraint(batch_op.f('agro_flight_records_fingerprint_key'), type_='unique')
+        # batch_op.drop_constraint(batch_op.f('agro_flight_records_fingerprint_key'), type_='unique')
         batch_op.drop_index(batch_op.f('ix_agro_flight_records_fingerprint'))
         batch_op.create_index(batch_op.f('ix_agro_flight_records_fingerprint'), ['fingerprint'], unique=True)
 
@@ -50,7 +50,7 @@ def upgrade():
         batch_op.create_index(batch_op.f('ix_banco_agro_id'), ['id'], unique=False)
 
     with op.batch_alter_table('contratos_agro', schema=None) as batch_op:
-        batch_op.drop_constraint(batch_op.f('contratos_agro_orcamento_agro_id_key'), type_='unique')
+        # batch_op.drop_constraint(batch_op.f('contratos_agro_orcamento_agro_id_key'), type_='unique')
         batch_op.drop_index(batch_op.f('ix_contratos_agro_orcamento_agro_id'))
         batch_op.create_index(batch_op.f('ix_contratos_agro_orcamento_agro_id'), ['orcamento_agro_id'], unique=True)
 
@@ -63,7 +63,7 @@ def upgrade():
         batch_op.create_index(batch_op.f('ix_limpezas_veiculo_alertas_ciencia_criado_em'), ['criado_em'], unique=False)
 
     with op.batch_alter_table('ordens_servico_agro', schema=None) as batch_op:
-        batch_op.drop_constraint(batch_op.f('ordens_servico_agro_identificador_os_key'), type_='unique')
+        # batch_op.drop_constraint(batch_op.f('ordens_servico_agro_identificador_os_key'), type_='unique')
         batch_op.drop_index(batch_op.f('ix_ordens_servico_agro_identificador_os'))
         batch_op.create_index(batch_op.f('ix_ordens_servico_agro_identificador_os'), ['identificador_os'], unique=True)
         batch_op.create_index(batch_op.f('ix_ordens_servico_agro_cidade_operacao'), ['cidade_operacao'], unique=False)
@@ -79,18 +79,20 @@ def upgrade():
         batch_op.drop_index(batch_op.f('ix_ordens_servico_equipe_uvis_id'))
 
     with op.batch_alter_table('prefeituras', schema=None) as batch_op:
-        batch_op.drop_constraint(batch_op.f('prefeituras_nome_key'), type_='unique')
-        batch_op.drop_constraint(batch_op.f('prefeituras_slug_key'), type_='unique')
+        # batch_op.drop_constraint(batch_op.f('prefeituras_nome_key'), type_='unique')
+        # batch_op.drop_constraint(batch_op.f('prefeituras_slug_key'), type_='unique')
         batch_op.drop_index(batch_op.f('ix_prefeituras_nome'))
         batch_op.create_index(batch_op.f('ix_prefeituras_nome'), ['nome'], unique=True)
         batch_op.drop_index(batch_op.f('ix_prefeituras_slug'))
         batch_op.create_index(batch_op.f('ix_prefeituras_slug'), ['slug'], unique=True)
 
     with op.batch_alter_table('usuario_presencas', schema=None) as batch_op:
-        batch_op.drop_constraint(batch_op.f('usuario_presencas_usuario_id_key'), type_='unique')
+        # batch_op.drop_constraint(batch_op.f('usuario_presencas_usuario_id_key'), type_='unique')
+        pass
 
     with op.batch_alter_table('watchdog_deploy_events', schema=None) as batch_op:
-        batch_op.drop_constraint(batch_op.f('watchdog_deploy_events_event_id_key'), type_='unique')
+        # batch_op.drop_constraint(batch_op.f('watchdog_deploy_events_event_id_key'), type_='unique')
+        pass
 
     # ### end Alembic commands ###
 
@@ -98,18 +100,20 @@ def upgrade():
 def downgrade():
     # ### commands auto generated by Alembic - please adjust! ###
     with op.batch_alter_table('watchdog_deploy_events', schema=None) as batch_op:
-        batch_op.create_unique_constraint(batch_op.f('watchdog_deploy_events_event_id_key'), ['event_id'], postgresql_nulls_not_distinct=False)
+        # batch_op.create_unique_constraint(batch_op.f('watchdog_deploy_events_event_id_key'), ['event_id'], postgresql_nulls_not_distinct=False)
+        pass
 
     with op.batch_alter_table('usuario_presencas', schema=None) as batch_op:
-        batch_op.create_unique_constraint(batch_op.f('usuario_presencas_usuario_id_key'), ['usuario_id'], postgresql_nulls_not_distinct=False)
+        # batch_op.create_unique_constraint(batch_op.f('usuario_presencas_usuario_id_key'), ['usuario_id'], postgresql_nulls_not_distinct=False)
+        pass
 
     with op.batch_alter_table('prefeituras', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_prefeituras_slug'))
         batch_op.create_index(batch_op.f('ix_prefeituras_slug'), ['slug'], unique=False)
         batch_op.drop_index(batch_op.f('ix_prefeituras_nome'))
         batch_op.create_index(batch_op.f('ix_prefeituras_nome'), ['nome'], unique=False)
-        batch_op.create_unique_constraint(batch_op.f('prefeituras_slug_key'), ['slug'], postgresql_nulls_not_distinct=False)
-        batch_op.create_unique_constraint(batch_op.f('prefeituras_nome_key'), ['nome'], postgresql_nulls_not_distinct=False)
+        # batch_op.create_unique_constraint(batch_op.f('prefeituras_slug_key'), ['slug'], postgresql_nulls_not_distinct=False)
+        # batch_op.create_unique_constraint(batch_op.f('prefeituras_nome_key'), ['nome'], postgresql_nulls_not_distinct=False)
 
     with op.batch_alter_table('ordens_servico_equipe_uvis', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_ordens_servico_equipe_uvis_id'), ['id'], unique=False)
@@ -125,7 +129,7 @@ def downgrade():
         batch_op.drop_index(batch_op.f('ix_ordens_servico_agro_cidade_operacao'))
         batch_op.drop_index(batch_op.f('ix_ordens_servico_agro_identificador_os'))
         batch_op.create_index(batch_op.f('ix_ordens_servico_agro_identificador_os'), ['identificador_os'], unique=False)
-        batch_op.create_unique_constraint(batch_op.f('ordens_servico_agro_identificador_os_key'), ['identificador_os'], postgresql_nulls_not_distinct=False)
+        # batch_op.create_unique_constraint(batch_op.f('ordens_servico_agro_identificador_os_key'), ['identificador_os'], postgresql_nulls_not_distinct=False)
 
     with op.batch_alter_table('limpezas_veiculo_alertas_ciencia', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_limpezas_veiculo_alertas_ciencia_criado_em'))
@@ -138,22 +142,25 @@ def downgrade():
     with op.batch_alter_table('contratos_agro', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_contratos_agro_orcamento_agro_id'))
         batch_op.create_index(batch_op.f('ix_contratos_agro_orcamento_agro_id'), ['orcamento_agro_id'], unique=False)
-        batch_op.create_unique_constraint(batch_op.f('contratos_agro_orcamento_agro_id_key'), ['orcamento_agro_id'], postgresql_nulls_not_distinct=False)
+        # batch_op.create_unique_constraint(batch_op.f('contratos_agro_orcamento_agro_id_key'), ['orcamento_agro_id'], postgresql_nulls_not_distinct=False)
 
     with op.batch_alter_table('banco_agro', schema=None) as batch_op:
-        batch_op.drop_index(batch_op.f('ix_banco_agro_id'))
-        batch_op.drop_index(batch_op.f('ix_banco_agro_criado_em'))
-        batch_op.drop_index(batch_op.f('ix_banco_agro_atualizado_em'))
+        # Se esses índices já existem no banco, comente-os ou adicione if_not_exists=True:
+        # batch_op.drop_index(batch_op.f('ix_banco_agro_atualizado_em')) # se houver drop
+        # Comente as criações que dão conflito:
+        # batch_op.drop_index(batch_op.f('ix_banco_agro_atualizado_em'))
+        # batch_op.create_index(batch_op.f('ix_banco_agro_atualizado_em'), ['atualizado_em'], unique=False)
+        pass
 
     with op.batch_alter_table('agro_flight_records', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_agro_flight_records_fingerprint'))
         batch_op.create_index(batch_op.f('ix_agro_flight_records_fingerprint'), ['fingerprint'], unique=False)
-        batch_op.create_unique_constraint(batch_op.f('agro_flight_records_fingerprint_key'), ['fingerprint'], postgresql_nulls_not_distinct=False)
+        # batch_op.create_unique_constraint(batch_op.f('agro_flight_records_fingerprint_key'), ['fingerprint'], postgresql_nulls_not_distinct=False)
 
     with op.batch_alter_table('agro_flight_log_imports', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_agro_flight_log_imports_file_sha256'))
         batch_op.create_index(batch_op.f('ix_agro_flight_log_imports_file_sha256'), ['file_sha256'], unique=False)
-        batch_op.create_unique_constraint(batch_op.f('agro_flight_log_imports_file_sha256_key'), ['file_sha256'], postgresql_nulls_not_distinct=False)
+        # batch_op.create_unique_constraint(batch_op.f('agro_flight_log_imports_file_sha256_key'), ['file_sha256'], postgresql_nulls_not_distinct=False)
 
     with op.batch_alter_table('agro_flight_kml_routes', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_agro_flight_kml_routes_route_code'))
@@ -162,9 +169,9 @@ def downgrade():
         batch_op.create_index(batch_op.f('ix_agro_flight_kml_routes_flight_record_id'), ['flight_record_id'], unique=False)
         batch_op.drop_index(batch_op.f('ix_agro_flight_kml_routes_file_sha256'))
         batch_op.create_index(batch_op.f('ix_agro_flight_kml_routes_file_sha256'), ['file_sha256'], unique=False)
-        batch_op.create_unique_constraint(batch_op.f('agro_flight_kml_routes_route_code_key'), ['route_code'], postgresql_nulls_not_distinct=False)
-        batch_op.create_unique_constraint(batch_op.f('agro_flight_kml_routes_flight_record_id_key'), ['flight_record_id'], postgresql_nulls_not_distinct=False)
-        batch_op.create_unique_constraint(batch_op.f('agro_flight_kml_routes_file_sha256_key'), ['file_sha256'], postgresql_nulls_not_distinct=False)
+        # batch_op.create_unique_constraint(batch_op.f('agro_flight_kml_routes_route_code_key'), ['route_code'], postgresql_nulls_not_distinct=False)
+        # batch_op.create_unique_constraint(batch_op.f('agro_flight_kml_routes_flight_record_id_key'), ['flight_record_id'], postgresql_nulls_not_distinct=False)
+        # batch_op.create_unique_constraint(batch_op.f('agro_flight_kml_routes_file_sha256_key'), ['file_sha256'], postgresql_nulls_not_distinct=False)
 
     with op.batch_alter_table('abastecimentos', schema=None) as batch_op:
         batch_op.alter_column('tipo_abastecimento',
