@@ -6,11 +6,11 @@ from app.modules.admin_checklists.service import (
     build_admin_checklists_totals,
     build_admin_checklists_weekly_groups,
 )
-from app.shared.access import is_admin_global_user
+from app.shared.access import VEICULOS_SUPERVISOR_USER_TYPES, is_admin_global_user, normalize_role
 
 
 def _admin_only():
-    if not is_admin_global_user(current_user):
+    if not is_admin_global_user(current_user) and normalize_role(getattr(current_user, "tipo_usuario", None)) not in VEICULOS_SUPERVISOR_USER_TYPES:
         abort(403)
 
 

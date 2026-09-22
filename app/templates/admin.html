@@ -16,12 +16,12 @@
             {{ render_result_summary(paginacao.total, 'Solicitações filtradas') }}
         </div>
 
-        {% if current_user.tipo_usuario in ['dev', 'diretor', 'admin', 'operario', 'visualizar', 'regional'] %}
+        {% if current_user.tipo_usuario in ['dev', 'diretor', 'admin', 'operario', 'visualizar', 'regional'] or is_veiculos_supervisor(current_user) %}
         {# 'flex-wrap' aqui garante que os botões se organizem entre si se a tela for muito estreita #}
         <div class="admin-toolbar-actions">
             
             {# Substituímos o style fixo por uma classe que o Bootstrap entende, ou mantemos o style mas permitimos que ele diminua #}
-            {% if current_user.tipo_usuario in ['dev', 'diretor', 'admin', 'visualizar'] %}
+            {% if current_user.tipo_usuario in ['dev', 'diretor', 'admin', 'visualizar'] or is_veiculos_supervisor(current_user) %}
             <div class="admin-toolbar-slot flex-grow-1 flex-md-grow-0">
                 <a href="{{ url_for('main.novo') }}" class="btn btn-success shadow-sm w-100 d-flex align-items-center justify-content-center gap-2 admin-toolbar-action-btn">
                     <i class="bi bi-plus-lg"></i> 

@@ -224,7 +224,9 @@
                                     </div>
                                 </td>
                                 <td data-label="Operador / Equipe">
-                                    {% if log.piloto %}
+                                    {% if log.responsavel_usuario %}
+                                        {{ log.responsavel_usuario.nome_uvis or log.responsavel_usuario.login }}
+                                    {% elif log.piloto %}
                                         {{ log.piloto.nome_piloto }}
                                     {% elif log.equipe %}
                                         {{ log.equipe.nome_equipe }}
@@ -301,7 +303,9 @@
                                                             {% endif %}
                                                             <span>
                                                                 Operador:
-                                                                {% if log.piloto %}
+                                                                {% if log.responsavel_usuario %}
+                                                                    {{ log.responsavel_usuario.nome_uvis or log.responsavel_usuario.login }}
+                                                                {% elif log.piloto %}
                                                                     {{ log.piloto.nome_piloto }}
                                                                 {% elif log.equipe %}
                                                                     {{ log.equipe.nome_equipe }}

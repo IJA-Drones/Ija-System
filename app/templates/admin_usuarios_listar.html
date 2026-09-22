@@ -81,6 +81,7 @@
                 <option value="dev" {% if tipo == 'dev' %}selected{% endif %}>Desenvolvedor</option>
                 <option value="financeiro" {% if tipo == 'financeiro' %}selected{% endif %}>Financeiro</option>
                 <option value="prefeitura_admin" {% if tipo == 'prefeitura_admin' %}selected{% endif %}>Prefeitura (Admin)</option>
+                <option value="sup_veiculos" {% if tipo == 'sup_veiculos' %}selected{% endif %}>Supervisor Operacional de Veículos</option>
               </select>
             </div>
 
@@ -153,6 +154,8 @@
                     <span class="badge bg-success-subtle text-success border border-success-subtle">FINANCEIRO</span>
                   {% elif u.tipo_usuario == 'prefeitura_admin' %}
                     <span class="badge bg-dark">PREFEITURA</span>
+                  {% elif u.tipo_usuario in ['sup_veiculos', 'sup_veiculo'] %}
+                    <span class="badge bg-primary">SUPERVISOR DE VEÍCULOS</span>
                   {% else %}
                     <span class="badge bg-warning text-dark">OPERÁRIO</span>
                   {% endif %}

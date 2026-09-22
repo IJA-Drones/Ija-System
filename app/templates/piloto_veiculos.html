@@ -52,12 +52,31 @@
             </tr>
           </thead>
           <tbody>
+            {% set ns = namespace(separator_rendered=false) %}
             {% for v in veiculos %}
+              {% set is_supervisor_veiculo = v.id in (veiculos_supervisor_ids or []) %}
+
+              {# Se chegou nos veículos comuns e o separador ainda não foi renderizado, exibe ele agora #}
+              {% if not is_supervisor_veiculo and not ns.separator_rendered and veiculos_supervisor_ids %}
+                {% set ns.separator_rendered = true %}
+                <tr class="table-secondary">
+                  <td colspan="6" class="text-center text-secondary fw-bold py-3 text-uppercase" style="letter-spacing: 1px; font-size: 0.85rem;">
+                    <i class="bi bi-car-front me-2"></i> Demais Veículos da Equipe
+                  </td>
+                </tr>
+              {% endif %}
+
               {% set turno_aberto = turnos_abertos.get(v.id) %}
               {% set km_atual_visual = turno_aberto.ultimo_km_registrado if turno_aberto else v.km_atual %}
-              <tr>
+              
+              <tr class="{% if is_supervisor_veiculo %}table-light border-start border-4 border-primary{% endif %}">
                 <td>
-                  <div class="fw-bold">{{ v.modelo }}</div>
+                  <div class="fw-bold d-flex align-items-center gap-2 flex-wrap">
+                    <span>{{ v.modelo }}</span>
+                    {% if is_supervisor_veiculo %}
+                      <span class="badge bg-primary-subtle text-primary border" style="font-size: 0.65rem;">Sua Supervisão</span>
+                    {% endif %}
+                  </div>
                   <div class="text-muted small">{{ v.placa }}</div>
                 </td>
                 <td><span class="badge bg-light text-dark border">{{ v.operacao }}</span></td>
@@ -169,10 +188,12 @@
                   </div>
                 </div>
 
-                <div class="modal-section-title">2. Assinatura do responsável</div>
+                <div class="modal-section-title">2. Assinatura do Piloto/Supervisor</div>
                 <div class="modal-soft-card mb-3">
                   <div class="small text-muted">Fluxo do turno</div>
-                  <div class="hint-line mt-1">Depois de iniciar o turno, use o botão de abastecimento para registrar quantos lançamentos forem necessários até o encerramento.</div>
+                  <div class="hint-line mt-1">
+                    O início deste turno deve ser assinado para validação. Depois de iniciar, use o botão de abastecimento para registrar os lançamentos necessários.
+                  </div>
                 </div>
                 <div class="signature-container text-center">
                     <canvas id="sig-canvas-{{ v.id }}" class="shadow-sm bg-white border rounded-3"></canvas>
@@ -468,7 +489,7 @@ document.querySelectorAll('.check-form').forEach(form => {
     form.addEventListener('submit', function (e) {
         const sigInput = this.querySelector('input[name="assinatura_b64"]');
         if (!sigInput || !sigInput.value) {
-            alert("A assinatura do motorista Ã© obrigatÃ³ria para iniciar o turno."); 
+            alert("A assinatura do motorista é obrigatória para iniciar o turno."); 
             e.preventDefault();
             return false;
         }

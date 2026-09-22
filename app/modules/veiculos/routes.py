@@ -45,12 +45,20 @@ from app.shared.skybox import SkyboxError, stream_skybox_file
 
 
 def _require_admin_or_operario():
-    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"dev", "diretor", "admin", "operario", "operador", "prefeitura_admin"}:
+    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {
+        "dev",
+        "diretor",
+        "admin",
+        "operario",
+        "operador",
+        "prefeitura_admin",
+        "sup_veiculos",
+    }:
         abort(403)
 
 
 def _require_admin():
-    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"dev", "diretor", "admin"}:
+    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"dev", "diretor", "admin", "sup_veiculos"}:
         abort(403)
 
 
@@ -60,7 +68,7 @@ def _require_dev():
 
 
 def _require_piloto():
-    if getattr(current_user, "tipo_usuario", None) not in {"piloto", EQUIPE_OCEANO_USER_TYPE}:
+    if getattr(current_user, "tipo_usuario", None) not in {"piloto", EQUIPE_OCEANO_USER_TYPE, "sup_veiculos"}:
         abort(403)
 
 
@@ -146,7 +154,7 @@ def register_routes(bp):
             "veiculos_menu.html",
             can_manage=tipo in {"dev", "diretor", "admin", "operario", "operador", "prefeitura_admin"},
             can_view_logs=tipo in VEICULOS_LOGS_ALLOWED_TYPES,
-            can_view_checklist=tipo in {"dev", "diretor", "admin"},
+            can_view_checklist=tipo in {"dev", "diretor", "admin", "sup_veiculos"},
         )
 
     @bp.route("/veiculos", methods=["GET"], endpoint="listar_veiculos")

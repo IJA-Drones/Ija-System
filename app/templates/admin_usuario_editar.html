@@ -64,6 +64,7 @@
               <option value="financeiro_admin" {% if tipo_sel == 'financeiro_admin' %}selected{% endif %}>Financeiro Admin</option>
               <option value="financeiro" {% if tipo_sel == 'financeiro' %}selected{% endif %}>Financeiro</option>
               <option value="prefeitura_admin" {% if tipo_sel == 'prefeitura_admin' %}selected{% endif %}>Prefeitura (Admin)</option>
+              <option value="sup_veiculos" {% if tipo_sel == 'sup_veiculos' %}selected{% endif %}>Supervisor Operacional de Veículos</option>
             </select>
 
             {% if usuario.id == current_user.id %}

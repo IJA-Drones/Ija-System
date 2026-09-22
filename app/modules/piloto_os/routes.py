@@ -37,7 +37,7 @@ from app.modules.piloto_os.service import (
     salvar_admin_os_form,
     salvar_piloto_os_form,
 )
-from app.shared.access import ADMIN_PANEL_VIEW_TYPES, can_access_regiao
+from app.shared.access import ADMIN_PANEL_VIEW_TYPES, VEICULOS_SUPERVISOR_USER_TYPES, can_access_regiao, normalize_role
 from app.shared.skybox import (
     SkyboxError,
     build_os_video_remote_path,
@@ -75,7 +75,11 @@ VIDEO_BACKGROUND_UPLOAD_EXECUTOR = ThreadPoolExecutor(
 
 
 def _require_piloto():
-    if not is_piloto_os_user(current_user):
+    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {
+        "piloto",
+        "equipe_oceano",
+        *VEICULOS_SUPERVISOR_USER_TYPES,
+    }:
         abort(403)
 
 

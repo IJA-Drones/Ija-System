@@ -32,11 +32,11 @@ from app.modules.equipamentos.service import (
     validate_bateria_form,
     validate_drone_form,
 )
-from app.shared.access import apply_prefeitura_scope, normalize_role
+from app.shared.access import apply_prefeitura_scope, is_veiculos_supervisor, normalize_role
 
 
 def _require_admin_or_operario():
-    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"dev", "diretor", "admin", "operario", "operador", "prefeitura_admin"}:
+    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"dev", "diretor", "admin", "operario", "operador", "prefeitura_admin"} and not is_veiculos_supervisor(current_user):
         abort(403)
 
 
@@ -63,8 +63,8 @@ def register_routes(bp):
         return render_template(
             "drones_listar.html",
             drones=list_drones(user=current_user),
-            is_admin=tipo_usuario in {"dev", "diretor", "admin"},
-            can_manage=tipo_usuario in {"dev", "diretor", "admin", "operario", "operador", "prefeitura_admin"},
+            is_admin=tipo_usuario in {"dev", "diretor", "admin"} or is_veiculos_supervisor(current_user),
+            can_manage=tipo_usuario in {"dev", "diretor", "admin", "operario", "operador", "prefeitura_admin"} or is_veiculos_supervisor(current_user),
         )
 
     @bp.route("/equipamentos/baterias", methods=["GET"], endpoint="listar_baterias")
@@ -74,8 +74,8 @@ def register_routes(bp):
         return render_template(
             "baterias_listar.html",
             baterias=list_baterias(user=current_user),
-            is_admin=tipo_usuario in {"dev", "diretor", "admin"},
-            can_manage=tipo_usuario in {"dev", "diretor", "admin", "operario", "operador", "prefeitura_admin"},
+            is_admin=tipo_usuario in {"dev", "diretor", "admin"} or is_veiculos_supervisor(current_user),
+            can_manage=tipo_usuario in {"dev", "diretor", "admin", "operario", "operador", "prefeitura_admin"} or is_veiculos_supervisor(current_user),
         )
 
     @bp.route("/drones/cadastrar", methods=["GET", "POST"], endpoint="cadastrar_drone")

@@ -16,6 +16,8 @@ from app.models import (
     Veiculos,
 )
 from app.modules.agenda_notificacoes import agora_brasilia_naive, criar_notificacao
+from app.shared.access import is_veiculos_supervisor
+from app.shared.vehicle_supervisor import get_supervisor_equipe, supervisor_equipment_query
 
 
 EQUIPE_OCEANO_USER_TYPE = "equipe_oceano"
@@ -115,14 +117,19 @@ def build_piloto_checklist_context(user, args):
 
     veiculo_ids = [item.id for item in state["veiculos_equipe"]]
     drone_ids = [item.id for item in state["drones_equipe"]]
+    equipe_principal = state["equipe"] if is_veiculos_supervisor(user) else None
 
     veiculo_padrao_id = args.get("veiculo_id", type=int)
     if veiculo_padrao_id not in veiculo_ids:
-        veiculo_padrao_id = state["veiculos_equipe"][0].id if len(state["veiculos_equipe"]) == 1 else None
+        principais = [item for item in state["veiculos_equipe"] if equipe_principal and item.equipe_id == equipe_principal.id]
+        opcoes = principais or state["veiculos_equipe"]
+        veiculo_padrao_id = opcoes[0].id if len(opcoes) == 1 else None
 
     drone_padrao_id = args.get("drone_id", type=int)
     if drone_padrao_id not in drone_ids:
-        drone_padrao_id = state["drones_equipe"][0].id if len(state["drones_equipe"]) == 1 else None
+        principais = [item for item in state["drones_equipe"] if equipe_principal and item.equipe_id == equipe_principal.id]
+        opcoes = principais or state["drones_equipe"]
+        drone_padrao_id = opcoes[0].id if len(opcoes) == 1 else None
 
     return {
         "equipe": state["equipe"],
@@ -212,9 +219,10 @@ def save_piloto_checklist(user, form_data):
 
 
 def _build_equipment_state(user, args=None, include_prefill=True):
+    is_supervisor = is_veiculos_supervisor(user)
     vinculo = _piloto_vinculo_ativo(user)
-    equipe = _equipe_operacional_ativa(user)
-    if not equipe:
+    equipe = get_supervisor_equipe(user) if is_supervisor else _equipe_operacional_ativa(user)
+    if not equipe and not is_supervisor:
         raise PilotoChecklistError(
             "Voce ainda nao esta vinculado a nenhuma equipe ativa.",
             redirect_endpoint="main.piloto_os",
@@ -222,26 +230,28 @@ def _build_equipment_state(user, args=None, include_prefill=True):
 
     piloto_nome = _piloto_nome(user)
 
-    veiculos_equipe = (
-        Veiculos.query
-        .filter(
+    veiculos_query = Veiculos.query
+    if is_supervisor:
+        veiculos_query = supervisor_equipment_query(Veiculos, user)
+    else:
+        veiculos_query = veiculos_query.filter(
             db.or_(
                 Veiculos.equipe_id == equipe.id,
                 db.func.lower(Veiculos.responsavel) == piloto_nome.lower(),
                 db.func.lower(Veiculos.responsavel) == equipe.nome_equipe.lower(),
             )
         )
-        .distinct()
-        .order_by(Veiculos.operacao.asc(), Veiculos.modelo.asc(), Veiculos.placa.asc())
-        .all()
-    )
+    veiculos_equipe = veiculos_query.distinct().order_by(
+        Veiculos.operacao.asc(), Veiculos.modelo.asc(), Veiculos.placa.asc()
+    ).all()
 
+    drones_query = Drones.query.filter(Drones.status == "Ativo")
+    if is_supervisor:
+        drones_query = supervisor_equipment_query(Drones, user).filter(Drones.status == "Ativo")
+    else:
+        drones_query = drones_query.filter(Drones.equipe_id == equipe.id)
     drones_equipe = (
-        Drones.query
-        .filter(
-            Drones.equipe_id == equipe.id,
-            Drones.status == "Ativo",
-        )
+        drones_query
         .order_by(Drones.renomacao.asc())
         .all()
     )
@@ -296,7 +306,7 @@ def _build_equipment_state(user, args=None, include_prefill=True):
     return {
         "vinculo": vinculo,
         "equipe": equipe,
-        "papel_equipe": "equipe" if _is_equipe_oceano(user) else ((vinculo.papel or "").lower() if vinculo else ""),
+        "papel_equipe": "supervisor" if is_supervisor else ("equipe" if _is_equipe_oceano(user) else ((vinculo.papel or "").lower() if vinculo else "")),
         "piloto_nome": piloto_nome,
         "veiculos_equipe": veiculos_equipe,
         "drones_equipe": drones_equipe,
@@ -369,7 +379,7 @@ def _save_vehicle_checklist(user, veiculo_id, veiculos_equipe, form_data, assina
         checklist = ChecklistSemanalVeiculo(
             veiculo_id=veiculo_id,
             piloto_id=actor_filter["piloto_id"],
-            equipe_id=actor_filter["equipe_id"],
+            equipe_id=veiculo.equipe_id or actor_filter["equipe_id"],
         )
         db.session.add(checklist)
 
@@ -396,10 +406,11 @@ def _save_drone_checklist(user, drone_id, baterias_por_drone, form_data, assinat
         .first()
     )
     if not checklist:
+        drone = db.session.get(Drones, drone_id)
         checklist = ChecklistSemanalDrone(
-            drone_id=drone_id,
+            drone=drone,
             piloto_id=actor_filter["piloto_id"],
-            equipe_id=actor_filter["equipe_id"],
+            equipe_id=drone.equipe_id or actor_filter["equipe_id"],
         )
         db.session.add(checklist)
 
@@ -611,6 +622,15 @@ def _checklist_actor_filter(user, equipe):
             "veiculo": ChecklistSemanalVeiculo.equipe_id == equipe_id,
             "drone": ChecklistSemanalDrone.equipe_id == equipe_id,
         }
+    if is_veiculos_supervisor(user):
+        veiculo_ids = supervisor_equipment_query(Veiculos, user).with_entities(Veiculos.id)
+        drone_ids = supervisor_equipment_query(Drones, user).with_entities(Drones.id)
+        return {
+            "piloto_id": None,
+            "equipe_id": None,
+            "veiculo": ChecklistSemanalVeiculo.veiculo_id.in_(veiculo_ids),
+            "drone": ChecklistSemanalDrone.drone_id.in_(drone_ids),
+        }
 
     piloto_id = getattr(user, "piloto_id", None)
     return {
@@ -649,6 +669,7 @@ def _serialize_checklist_drone(checklist):
     data["num_baterias_wb"] = checklist.num_baterias_wb
     data["assinatura_piloto"] = checklist.assinatura_piloto or ""
     data["nome_responsavel"] = checklist.nome_responsavel or ""
+    data["assinatura_piloto_responsavel"] = checklist.assinatura_piloto_responsavel or ""
     return data
 
 

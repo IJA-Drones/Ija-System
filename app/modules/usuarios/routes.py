@@ -9,7 +9,7 @@ from sqlalchemy.orm import selectinload
 
 from app.extensions import db
 from app.shared.password_policy import password_input
-from app.models import Prefeitura, Usuario
+from app.models import Prefeitura, Usuario, Pilotos
 from app.modules.usuarios.service import (
     build_admin_users_query,
     can_assign_director_role,
@@ -23,11 +23,14 @@ from app.modules.usuarios.service import (
     validate_edit_admin_user,
     validate_new_admin_user,
     validate_password_reset,
+    garantir_piloto_para_supervisor, # ➔ IMPORTAÇÃO ADICIONADA AQUI
 )
 from app.shared.query_filters import id_search_clause
 from app.shared.access import (
     DEV_USER_TYPE,
     DIRECTOR_USER_TYPE,
+    VEICULOS_SUPERVISOR_USER_TYPES,
+    is_veiculos_supervisor,
     can_manage_user_work_flags,
     is_admin_global_user,
     is_dev_user,
@@ -367,6 +370,8 @@ def register_routes(bp):
                 senha,
                 senha2,
             )
+            if tipo_usuario in VEICULOS_SUPERVISOR_USER_TYPES:
+                codigo_setor = None
             if errors:
                 flash("Revise os campos destacados.", "warning")
                 return render_template(
@@ -395,6 +400,10 @@ def register_routes(bp):
 
             try:
                 db.session.add(novo)
+                
+                # ➔ ADICIONADO AQUI: Garante que o supervisor criado tenha um piloto_id
+                garantir_piloto_para_supervisor(novo)
+                
                 db.session.commit()
                 flash("Usuario criado com sucesso!", "success")
                 return redirect(url_for("main.admin_usuarios_listar"))
@@ -515,6 +524,8 @@ def register_routes(bp):
                 senha2=senha2,
                 usuario_id=usuario.id,
             )
+            if tipo_usuario in VEICULOS_SUPERVISOR_USER_TYPES:
+                codigo_setor = usuario.codigo_setor if is_veiculos_supervisor(usuario) else None
             if errors:
                 return render_template(
                     "admin_usuario_editar.html",
@@ -542,6 +553,9 @@ def register_routes(bp):
                 usuario.set_senha(senha)
 
             try:
+                # ➔ ADICIONADO AQUI: Garante piloto na edição, caso um utilizador comum mude para supervisor
+                garantir_piloto_para_supervisor(usuario)
+                
                 db.session.commit()
                 flash("Usuario atualizado com sucesso!", "success")
                 return redirect(url_for("main.admin_usuarios_listar"))
