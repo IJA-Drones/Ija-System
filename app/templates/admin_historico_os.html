@@ -245,6 +245,7 @@
             <th>Operação</th>
             <th>Equipe</th>
             <th class="text-center">Status</th>
+            <th class="text-center">Situação da aplicação</th>
             <th class="text-center pe-4">Ação</th>
           </tr>
         </thead>
@@ -297,6 +298,14 @@
                   <span class="badge bg-completed">{{ p.status }}</span>
                 {% endif %}
               </td>
+              <td class="text-center">
+                {% set situacao_aplicacao = (ordem_piloto.situacao_aplicacao or '')|trim if ordem_piloto else '' %}
+                {% if situacao_aplicacao %}
+                  <span class="small fw-semibold text-dark">{{ situacao_aplicacao }}</span>
+                {% else %}
+                  <span class="small text-muted">Não preenchido</span>
+                {% endif %}
+              </td>
               <td class="text-center pe-4">
                 <div class="d-flex gap-2 justify-content-center flex-wrap">
                   <a href="{{ url_for('main.admin_os_formulario_view', os_id=p.id) }}" class="btn btn-sm btn-outline-primary shadow-sm" title="Ver formulario">
@@ -313,7 +322,7 @@
             </tr>
           {% else %}
             <tr>
-              <td colspan="6" class="text-center py-5 text-muted">
+              <td colspan="7" class="text-center py-5 text-muted">
                 Nenhuma OS concluida ou em andamento encontrada.
               </td>
             </tr>
