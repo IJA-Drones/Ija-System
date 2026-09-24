@@ -47,6 +47,7 @@ UTC_TZ = ZoneInfo("UTC")
 BRAZIL_TZ = ZoneInfo("America/Sao_Paulo")
 LIMPEZA_ALERTA_OPERACIONAL_DIAS = 14
 LIMPEZA_ALERTA_ADMIN_DIAS = 21
+LIMITE_KM_ENTRE_ABASTECIMENTOS = 500
 VEICULO_LOG_DELETE_AUDIT_ENDPOINT = "main.deletar_log_veiculo.snapshot"
 VEICULOS_ALLOWED_TYPES = (
     "dev",
@@ -560,12 +561,14 @@ def build_piloto_veiculos_context(user):
             .all()
         )
         supervisor_ids = [v.id for v in veiculos if v.supervisor_usuario_id == user.id]
+        turnos_abertos = _build_turnos_abertos_veiculos(veiculos, user)
 
         return {
             "piloto_vinculado": True,
             "veiculos": veiculos,
             "veiculos_supervisor_ids": supervisor_ids,
-            "turnos_abertos": _build_turnos_abertos_veiculos(veiculos, user),
+            "turnos_abertos": turnos_abertos,
+            "km_abastecimento_referencias": _build_km_abastecimento_referencias(turnos_abertos),
             "km_inicial_referencias": _build_km_inicial_referencias(veiculos),
             "agora_brasilia": _now_brazil(),
         }
@@ -587,10 +590,12 @@ def build_piloto_veiculos_context(user):
             .order_by(Veiculos.operacao.asc(), Veiculos.modelo.asc())
             .all()
         )
+        turnos_abertos = _build_turnos_abertos_veiculos(veiculos, user)
         return {
             "piloto_vinculado": True,
             "veiculos": veiculos,
-            "turnos_abertos": _build_turnos_abertos_veiculos(veiculos, user),
+            "turnos_abertos": turnos_abertos,
+            "km_abastecimento_referencias": _build_km_abastecimento_referencias(turnos_abertos),
             "km_inicial_referencias": _build_km_inicial_referencias(veiculos),
             "agora_brasilia": _now_brazil(),
         }
@@ -620,12 +625,14 @@ def build_piloto_veiculos_context(user):
         .order_by(Veiculos.operacao.asc(), Veiculos.modelo.asc())
         .all()
     )
+    turnos_abertos = _build_turnos_abertos_veiculos(veiculos, user)
 
     return {
         "piloto_vinculado": True,
         "veiculos": veiculos,
         "veiculos_supervisor_ids": [],
-        "turnos_abertos": _build_turnos_abertos_veiculos(veiculos, user),
+        "turnos_abertos": turnos_abertos,
+        "km_abastecimento_referencias": _build_km_abastecimento_referencias(turnos_abertos),
         "km_inicial_referencias": _build_km_inicial_referencias(veiculos),
         "agora_brasilia": _now_brazil(),
     }
@@ -774,6 +781,40 @@ def _build_turnos_abertos_veiculos(veiculos, user):
                 turnos_abertos[log.veiculo_id] = log
 
     return turnos_abertos
+
+
+def _build_km_abastecimento_referencias(turnos_abertos):
+    if not turnos_abertos:
+        return {}
+
+    ultimo_km = (
+        db.session.query(Abastecimento.km_registro)
+        .join(LogVeiculo, Abastecimento.log_veiculo_id == LogVeiculo.id)
+        .filter(
+            LogVeiculo.veiculo_id == Veiculos.id,
+            db.not_(db.func.lower(db.func.coalesce(Abastecimento.tipo_abastecimento, "")).like("%gerador%")),
+        )
+        .order_by(Abastecimento.data_hora.desc(), Abastecimento.id.desc())
+        .limit(1)
+        .correlate(Veiculos)
+        .scalar_subquery()
+    )
+    registros = (
+        db.session.query(Veiculos.id, ultimo_km.label("km"))
+        .filter(Veiculos.id.in_(list(turnos_abertos)))
+        .all()
+    )
+    referencias = {}
+    for veiculo_id, km in registros:
+        origem = "ultimo_abastecimento" if km is not None else "km_inicial"
+        if km is None:
+            km = turnos_abertos[veiculo_id].km_inicial or 0
+        referencias[veiculo_id] = {
+            "km": km,
+            "origem": origem,
+            "limite": km + LIMITE_KM_ENTRE_ABASTECIMENTOS,
+        }
+    return referencias
 
 
 def _build_km_inicial_referencias(veiculos):
@@ -948,6 +989,21 @@ def registrar_abastecimento_turno_piloto(user, veiculo_id, form_data, files_data
             "O tipo de abastecimento deve ter no maximo 100 caracteres.",
             "warning",
         )
+
+    if _abastecimento_tipo_key(tipo_abastecimento) == "veiculo":
+        referencia = _build_km_abastecimento_referencias({veiculo.id: log})[veiculo.id]
+        if km_registro > referencia["limite"]:
+            origem = (
+                "ultimo abastecimento do veiculo"
+                if referencia["origem"] == "ultimo_abastecimento"
+                else "KM inicial do turno (primeiro abastecimento do veiculo)"
+            )
+            raise VeiculoTurnoError(
+                f"KM do abastecimento nao pode ultrapassar {LIMITE_KM_ENTRE_ABASTECIMENTOS} km "
+                f"acima do {origem} ({referencia['km']:.2f} km). "
+                f"Limite permitido: {referencia['limite']:.2f} km.",
+                "danger",
+            )
 
     novo_abastecimento = Abastecimento(
         log_veiculo_id=log.id,

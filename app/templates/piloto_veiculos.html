@@ -220,6 +220,7 @@
       </div>
 
       {% if turno_aberto %}
+      {% set referencia_abastecimento = km_abastecimento_referencias[v.id] %}
       <div class="modal fade" id="modalAbastecimento{{ v.id }}" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content border-0 shadow-lg rounded-4">
@@ -247,8 +248,8 @@
                   </div>
                   <div class="col-md-3">
                     <label class="form-label small fw-bold">KM no Abastecimento</label>
-                    <input type="text" inputmode="numeric" name="km_abastecimento" class="form-control js-decimal-centavos" value="{{ '%.2f'|format(turno_aberto.ultimo_km_registrado or v.km_atual or 0)|replace('.', ',') }}" placeholder="0,00" autocomplete="off" required>
-                    <div class="hint-line mt-1">Usado para auditoria e relatórios do abastecimento.</div>
+                    <input type="text" inputmode="numeric" name="km_abastecimento" class="form-control js-decimal-centavos" value="{{ '%.2f'|format(turno_aberto.ultimo_km_registrado or v.km_atual or 0)|replace('.', ',') }}" data-km-max="{{ referencia_abastecimento.limite }}" aria-describedby="limite-abastecimento-{{ v.id }}" placeholder="0,00" autocomplete="off" required>
+                    <div class="hint-line mt-1" id="limite-abastecimento-{{ v.id }}">Para veículo, limite de {{ '%.2f'|format(referencia_abastecimento.limite)|replace('.', ',') }} km: até 500 km acima do {{ 'último abastecimento do veículo' if referencia_abastecimento.origem == 'ultimo_abastecimento' else 'KM inicial do turno (primeiro abastecimento)' }}.</div>
                   </div>
                   <div class="col-md-3">
                     <label class="form-label small fw-bold">Litros</label>
@@ -518,6 +519,30 @@ document.querySelectorAll('.js-money-centavos, .js-decimal-centavos').forEach(in
     input.addEventListener('input', applyMask);
     input.addEventListener('blur', applyMask);
     input.form?.addEventListener('submit', applyMask);
+});
+
+document.querySelectorAll('input[name="km_abastecimento"][data-km-max]').forEach(input => {
+    const tipo = input.form.querySelector('[name="tipo_abastecimento"]');
+    const limite = Number(input.dataset.kmMax);
+    const validarKm = () => {
+        const km = Number(input.value.replace(/\./g, '').replace(',', '.'));
+        const ehVeiculo = !tipo.value.toLowerCase().includes('gerador');
+        input.setCustomValidity(ehVeiculo && km > limite
+            ? `KM do abastecimento acima do limite de ${limite.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} km. A diferença máxima permitida é de 500 km.`
+            : '');
+    };
+
+    input.addEventListener('input', validarKm);
+    input.addEventListener('blur', validarKm);
+    tipo.addEventListener('change', validarKm);
+    input.form.addEventListener('submit', event => {
+        validarKm();
+        if (!input.checkValidity()) {
+            event.preventDefault();
+            input.reportValidity();
+        }
+    });
+    validarKm();
 });
 </script>
 {% endblock %}

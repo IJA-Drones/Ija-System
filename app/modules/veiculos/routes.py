@@ -535,6 +535,7 @@ def register_routes(bp):
             veiculos=context["veiculos"],
             veiculos_supervisor_ids=context.get("veiculos_supervisor_ids", []),
             turnos_abertos=context["turnos_abertos"],
+            km_abastecimento_referencias=context.get("km_abastecimento_referencias", {}),
             km_inicial_referencias=context["km_inicial_referencias"],
             agora_brasilia=context["agora_brasilia"],
         )

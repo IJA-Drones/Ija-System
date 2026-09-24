@@ -220,6 +220,14 @@ class SupervisorVeiculosTests(unittest.TestCase):
         self.assertEqual(log.equipe_id, self.sul.id)
         self.assertEqual(_operador_log_veiculo(log), "Supervisor")
 
+        with self.client.session_transaction() as session:
+            session["_user_id"] = str(self.supervisor.id)
+        response = self.client.get("/piloto/veiculos")
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn('data-km-max="1500.0"', html)
+        self.assertIn("KM inicial do turno (primeiro abastecimento)", html)
+
     @patch.object(checklists, "_sincronizar_pendencias")
     def test_weekly_vehicle_and_drone_checklists_keep_supervisor_as_author(self, _notifications):
         form = MultiDict({"veiculo_id": str(self.veiculos[1].id), "drone_id": str(self.drones[1].id),
