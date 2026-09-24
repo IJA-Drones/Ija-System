@@ -65,11 +65,12 @@
         tbody tr td:nth-child(1)::before { content: "Veículo"; }
         tbody tr td:nth-child(2)::before { content: "Frota / Op."; }
         tbody tr td:nth-child(3)::before { content: "Equipe responsável"; }
-        tbody tr td:nth-child(4)::before { content: "KM Atual"; }
-        tbody tr td:nth-child(5)::before { content: "KM Restante"; }
-        tbody tr td:nth-child(6)::before { content: "Ultima Movimentacao"; }
-        tbody tr td:nth-child(7)::before { content: "Status"; }
-        tbody tr td:nth-child(8)::before { content: "Ações"; }
+        tbody tr td:nth-child(4)::before { content: "Supervisor responsável"; }
+        tbody tr td:nth-child(5)::before { content: "KM Atual"; }
+        tbody tr td:nth-child(6)::before { content: "KM Restante"; }
+        tbody tr td:nth-child(7)::before { content: "Ultima Movimentacao"; }
+        tbody tr td:nth-child(8)::before { content: "Status"; }
+        tbody tr td:nth-child(9)::before { content: "Ações"; }
 
         tbody tr td::before {
             font-weight: 700;

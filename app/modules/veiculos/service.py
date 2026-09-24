@@ -31,7 +31,7 @@ from app.models import (
     Veiculos,
 )
 from app.shared.access import apply_prefeitura_scope, is_veiculos_supervisor, normalize_role
-from app.shared.vehicle_supervisor import get_supervisor_equipe, supervisor_equipment_query
+from app.shared.vehicle_supervisor import supervisor_equipment_query
 from app.shared.query_filters import id_search_clause
 from app.shared.skybox import (
     SkyboxError,
@@ -130,6 +130,7 @@ def list_veiculos(tipo_usuario, args, user=None):
 
     veiculos = query.order_by(Veiculos.criado_em.desc()).all()
     equipes = list_equipes_choices(user=user)
+    supervisores = list_supervisores_choices(user=user)
 
     return {
         "veiculos": veiculos,
@@ -145,6 +146,8 @@ def list_veiculos(tipo_usuario, args, user=None):
         },
         "equipes": equipes,
         "equipes_por_id": {item["value"]: item for item in equipes},
+        "supervisores": supervisores,
+        "supervisores_por_id": {item.id: item for item in supervisores},
         "filters": {
             "q": q,
             "operacao": operacao,
@@ -188,7 +191,14 @@ def list_equipes_choices(user=None):
     return options
 
 
-def validate_veiculo_form(form_data, *, equipes=None, existing_veiculo=None):
+def list_supervisores_choices(user=None):
+    query = Usuario.query.filter(Usuario.tipo_usuario.in_(("sup_veiculos", "sup_veiculo")))
+    if user is not None:
+        query = apply_prefeitura_scope(query, user, Usuario.prefeitura_id)
+    return query.order_by(Usuario.nome_uvis.asc(), Usuario.id.asc()).all()
+
+
+def validate_veiculo_form(form_data, *, equipes=None, supervisores=None, existing_veiculo=None):
     errors = {}
     equipes = equipes or []
 
@@ -198,6 +208,7 @@ def validate_veiculo_form(form_data, *, equipes=None, existing_veiculo=None):
     operacao = (form_data.get("operacao") or "").strip().upper()
     placa = (form_data.get("placa") or "").strip().upper()
     equipe_id_raw = (form_data.get("equipe_id") or "").strip()
+    supervisor_id_raw = (form_data.get("supervisor_id") or "").strip()
     km_atual_raw = (form_data.get("km_atual") or "").strip()
     km_prox_raw = (form_data.get("km_prox_revisao") or "").strip()
     status = (form_data.get("status") or "Ativo").strip()
@@ -211,6 +222,7 @@ def validate_veiculo_form(form_data, *, equipes=None, existing_veiculo=None):
         "operacao": operacao,
         "placa": placa,
         "equipe_id": equipe_id_raw,
+        "supervisor_id": supervisor_id_raw,
         "km_atual": km_atual_raw,
         "km_prox_revisao": km_prox_raw,
         "status": status,
@@ -240,6 +252,29 @@ def validate_veiculo_form(form_data, *, equipes=None, existing_veiculo=None):
             errors["equipe_id"] = "Selecione uma equipe válida."
         else:
             equipe_id = int(equipe_id_raw)
+
+    supervisor_id = None
+    if supervisor_id_raw:
+        valid_supervisor_ids = {str(item.id) for item in (supervisores or [])}
+        if supervisor_id_raw not in valid_supervisor_ids:
+            errors["supervisor_id"] = "Selecione um supervisor de veículos válido."
+        elif equipe_id is None:
+            errors["supervisor_id"] = "Vincule o veículo a uma equipe antes de atribuir o supervisor."
+        else:
+            supervisor_id = int(supervisor_id_raw)
+            supervisor = next(item for item in supervisores if item.id == supervisor_id)
+            equipe = db.session.get(Equipe, equipe_id)
+            if (
+                equipe and supervisor.prefeitura_id is not None
+                and equipe.prefeitura_id is not None
+                and supervisor.prefeitura_id != equipe.prefeitura_id
+            ):
+                errors["supervisor_id"] = "Supervisor e equipe devem pertencer à mesma prefeitura."
+            existing_assignment = Veiculos.query.filter(Veiculos.responsavel == f"sup_veiculos:{supervisor_id}")
+            if existing_veiculo is not None:
+                existing_assignment = existing_assignment.filter(Veiculos.id != existing_veiculo.id)
+            if existing_assignment.first():
+                errors["supervisor_id"] = "Este supervisor já é responsável por outro veículo."
 
     ano_fabricacao = None
     if ano_raw:
@@ -296,7 +331,7 @@ def validate_veiculo_form(form_data, *, equipes=None, existing_veiculo=None):
         "frota": frota,
         "operacao": operacao,
         "placa": placa,
-        "responsavel": None,
+        "responsavel": f"sup_veiculos:{supervisor_id}" if supervisor_id else None,
         "equipe_id": equipe_id,
         "km_atual": km_atual,
         "km_prox_revisao": km_prox_revisao,
@@ -331,6 +366,8 @@ def create_veiculo(cleaned, *, prefeitura_id=None):
         prefeitura_id=prefeitura_id,
     )
     db.session.add(novo)
+    if novo.supervisor_usuario_id:
+        db.session.get(Usuario, novo.supervisor_usuario_id).codigo_setor = None
     db.session.commit()
     return novo
 
@@ -342,6 +379,8 @@ def update_veiculo(veiculo, cleaned):
     veiculo.operacao = cleaned["operacao"]
     veiculo.placa = cleaned["placa"]
     veiculo.responsavel = cleaned["responsavel"]
+    if veiculo.supervisor_usuario_id:
+        db.session.get(Usuario, veiculo.supervisor_usuario_id).codigo_setor = None
     veiculo.equipe_id = cleaned["equipe_id"]
     veiculo.prefeitura_id = _resolve_prefeitura_id_veiculo(cleaned["equipe_id"], veiculo.prefeitura_id)
     veiculo.km_atual = cleaned["km_atual"]
@@ -374,16 +413,26 @@ def update_veiculos_equipes(user, form_data):
     if not veiculo_ids:
         raise VeiculoTurnoError("Nenhum veiculo foi enviado para atualizacao.", "warning")
 
-    supervisor_equipe = get_supervisor_equipe(user) if is_veiculos_supervisor(user) else None
-    valid_equipe_ids = (
-        {str(supervisor_equipe.id)} if supervisor_equipe else set()
-    ) if is_veiculos_supervisor(user) else {item["value"] for item in list_equipes_choices(user=user)}
+    valid_equipe_ids = {item["value"] for item in list_equipes_choices(user=user)}
+    supervisores = {item.id: item for item in list_supervisores_choices(user=user)}
     updates = {}
     for veiculo_id in veiculo_ids:
         raw_equipe_id = (form_data.get(f"equipe_id_{veiculo_id}") or "").strip()
         if raw_equipe_id and raw_equipe_id not in valid_equipe_ids:
             raise VeiculoTurnoError("Uma das equipes selecionadas nao e valida para o seu acesso.", "danger")
-        updates[veiculo_id] = int(raw_equipe_id) if raw_equipe_id else None
+        supervisor_key = f"supervisor_id_{veiculo_id}"
+        supervisor_posted = supervisor_key in form_data
+        raw_supervisor_id = (form_data.get(supervisor_key) or "").strip() if supervisor_posted else ""
+        if raw_supervisor_id:
+            try:
+                supervisor_id = int(raw_supervisor_id)
+            except ValueError as exc:
+                raise VeiculoTurnoError("Selecione um supervisor de veículos válido.", "danger") from exc
+            if supervisor_id not in supervisores:
+                raise VeiculoTurnoError("Selecione um supervisor de veículos válido para o seu acesso.", "danger")
+        else:
+            supervisor_id = None
+        updates[veiculo_id] = (int(raw_equipe_id) if raw_equipe_id else None, supervisor_posted, supervisor_id)
 
     query = (
         supervisor_equipment_query(Veiculos, user)
@@ -395,23 +444,65 @@ def update_veiculos_equipes(user, form_data):
     if len(veiculos_por_id) != len(set(veiculo_ids)):
         raise PermissionError
 
-    alterados = 0
-    for veiculo_id, equipe_id in updates.items():
+    previstos = {}
+    for veiculo_id, (equipe_id, supervisor_posted, supervisor_id) in updates.items():
         veiculo = veiculos_por_id[veiculo_id]
-        if veiculo.equipe_id != equipe_id or veiculo.responsavel:
+        if equipe_id is None and supervisor_posted and supervisor_id:
+            raise VeiculoTurnoError("Vincule o veículo a uma equipe antes de atribuir o supervisor.", "danger")
+        if equipe_id is None:
+            supervisor_id = None
+        elif not supervisor_posted:
+            supervisor_id = veiculo.supervisor_usuario_id
+        if supervisor_id:
+            supervisor = supervisores.get(supervisor_id) or db.session.get(Usuario, supervisor_id)
+            equipe = db.session.get(Equipe, equipe_id)
+            if supervisor is None or equipe is None:
+                raise VeiculoTurnoError("Supervisor ou equipe não encontrado.", "danger")
+            if supervisor.prefeitura_id is not None and equipe.prefeitura_id is not None and equipe.prefeitura_id != supervisor.prefeitura_id:
+                raise VeiculoTurnoError("Supervisor e equipe devem pertencer à mesma prefeitura.", "danger")
+        previstos[veiculo_id] = (equipe_id, supervisor_posted, supervisor_id)
+
+    owners = [owner_id for _, _, owner_id in previstos.values() if owner_id]
+    if len(owners) != len(set(owners)):
+        raise VeiculoTurnoError("Um supervisor só pode ser responsável por um veículo.", "danger")
+    if owners:
+        existing_elsewhere = Veiculos.query.filter(
+            Veiculos.responsavel.in_([f"sup_veiculos:{owner_id}" for owner_id in owners]),
+            Veiculos.id.notin_(list(previstos)),
+        ).first()
+        if existing_elsewhere:
+            raise VeiculoTurnoError("Um dos supervisores já é responsável por outro veículo.", "danger")
+
+    alterados = 0
+    for veiculo_id, (equipe_id, supervisor_posted, supervisor_id) in previstos.items():
+        veiculo = veiculos_por_id[veiculo_id]
+        if equipe_id is None:
+            responsavel = None
+        elif supervisor_posted:
+            responsavel = (
+                f"sup_veiculos:{supervisor_id}" if supervisor_id else
+                veiculo.responsavel if veiculo.supervisor_usuario_id is None and veiculo.equipe_id == equipe_id else None
+            )
+        elif veiculo.equipe_id != equipe_id and veiculo.supervisor_usuario_id is None:
+            responsavel = None
+        else:
+            responsavel = veiculo.responsavel
+        if veiculo.equipe_id != equipe_id or veiculo.responsavel != responsavel:
             alterados += 1
         veiculo.equipe_id = equipe_id
-        veiculo.responsavel = (
-            user.nome_uvis or user.login
-            if is_veiculos_supervisor(user) and supervisor_equipe and equipe_id == supervisor_equipe.id
-            else None
-        )
+        veiculo.responsavel = responsavel
         veiculo.prefeitura_id = _resolve_prefeitura_id_veiculo(equipe_id, veiculo.prefeitura_id)
+        if supervisor_id:
+            db.session.get(Usuario, supervisor_id).codigo_setor = None
 
     db.session.commit()
+    if not any(supervisor_posted for _, supervisor_posted, _ in previstos.values()):
+        if alterados == 1:
+            return "Equipe responsavel atualizada em 1 veiculo."
+        return f"Equipe responsavel atualizada em {alterados} veiculos."
     if alterados == 1:
-        return "Equipe responsavel atualizada em 1 veiculo."
-    return f"Equipe responsavel atualizada em {alterados} veiculos."
+        return "Equipe e supervisor atualizados em 1 veículo."
+    return f"Equipe e supervisor atualizados em {alterados} veículos."
 
 
 def delete_veiculo(veiculo):
@@ -446,6 +537,7 @@ def build_veiculo_form(veiculo):
         "operacao": veiculo.operacao or "",
         "placa": veiculo.placa or "",
         "equipe_id": str(veiculo.equipe_id or ""),
+        "supervisor_id": str(veiculo.supervisor_usuario_id or ""),
         "km_atual": str(veiculo.km_atual or ""),
         "km_prox_revisao": str(veiculo.km_prox_revisao or "") if veiculo.km_prox_revisao is not None else "",
         "status": veiculo.status or "Ativo",
@@ -459,46 +551,15 @@ def build_veiculo_form(veiculo):
 
 def build_piloto_veiculos_context(user):
     if is_veiculos_supervisor(user):
-        equipe = get_supervisor_equipe(user)
-        if not equipe and getattr(user, "codigo_setor", None):
-            try:
-                eq_id = int(str(user.codigo_setor).strip())
-                equipe = Equipe.query.filter_by(id=eq_id).first()
-            except (TypeError, ValueError):
-                pass
-
-        query = supervisor_equipment_query(Veiculos, user)
-        
-        # Ordena colocando os veículos da equipe do supervisor no topo, se houver equipe
-        if equipe:
-            query = query.order_by(
-                case((Veiculos.equipe_id == equipe.id, 0), else_=1),
-                Veiculos.operacao.asc(),
-                Veiculos.modelo.asc()
+        veiculos = (
+            supervisor_equipment_query(Veiculos, user)
+            .order_by(
+                case((Veiculos.responsavel == f"sup_veiculos:{user.id}", 0), else_=1),
+                Veiculos.operacao.asc(), Veiculos.modelo.asc(), Veiculos.id.asc(),
             )
-        else:
-            query = query.order_by(Veiculos.operacao.asc(), Veiculos.modelo.asc())
-
-        veiculos = query.all()
-        
-        user_identifiers = {
-            (getattr(user, "nome_uvis", None) or "").strip().lower(),
-            (getattr(user, "login", None) or "").strip().lower()
-        }
-        user_identifiers.discard("")
-
-        # Identifica os IDs dos veículos vinculados à equipe ou responsabilidade do supervisor
-        supervisor_ids = [
-            veiculo.id
-            for veiculo in veiculos
-            if (equipe and veiculo.equipe_id == equipe.id) or 
-               (veiculo.responsavel and any(uid in veiculo.responsavel.lower() for uid in user_identifiers))
-        ]
-
-        # Fallback de segurança: se nenhum veículo específico foi marcado mas há veículos na consulta,
-        # considera o primeiro grupo ou todos como da supervisão para o layout não ficar sem estilo
-        if not supervisor_ids and veiculos and equipe:
-            supervisor_ids = [v.id for v in veiculos if v.equipe_id == equipe.id]
+            .all()
+        )
+        supervisor_ids = [v.id for v in veiculos if v.supervisor_usuario_id == user.id]
 
         return {
             "piloto_vinculado": True,
@@ -705,7 +766,8 @@ def _build_turnos_abertos_veiculos(veiculos, user):
             )
             .filter(LogVeiculo.veiculo_id.in_(veiculo_ids), LogVeiculo.km_final.is_(None))
         )
-        query = _apply_log_actor_scope(query, user)
+        if not is_veiculos_supervisor(user):
+            query = _apply_log_actor_scope(query, user)
         logs_abertos = query.order_by(LogVeiculo.veiculo_id.asc(), LogVeiculo.data_registro.desc()).all()
         for log in logs_abertos:
             if log.veiculo_id not in turnos_abertos:
@@ -761,9 +823,10 @@ def _buscar_ultimo_fechamento_veiculo(veiculo_id):
 def iniciar_turno_piloto(user, veiculo_id, form_data, files_data, root_path):
     veiculo = _veiculo_do_operacional_logado(veiculo_id, user=user)
     is_supervisor = is_veiculos_supervisor(user)
-    supervisor_equipe = get_supervisor_equipe(user) if is_supervisor else None
-    is_supervisor_responsavel = bool(supervisor_equipe and veiculo.equipe_id == supervisor_equipe.id)
-    piloto_id = getattr(user, "piloto_id", None) if getattr(user, "tipo_usuario", None) != EQUIPE_OCEANO_USER_TYPE and not is_supervisor else None
+    if is_supervisor:
+        from app.modules.usuarios.service import garantir_piloto_para_supervisor
+        garantir_piloto_para_supervisor(user)
+    piloto_id = getattr(user, "piloto_id", None) if getattr(user, "tipo_usuario", None) != EQUIPE_OCEANO_USER_TYPE else None
     equipe_id = veiculo.equipe_id if getattr(user, "tipo_usuario", None) != EQUIPE_OCEANO_USER_TYPE else _parse_equipe_oceano_id(user)
     ultimo_fechamento = _buscar_ultimo_fechamento_veiculo(veiculo.id)
 
@@ -797,7 +860,10 @@ def iniciar_turno_piloto(user, veiculo_id, form_data, files_data, root_path):
     if ultimo_fechamento is None and km_atual_veiculo > 0 and abs(km_inicial - km_atual_veiculo) > 0.0001:
         raise VeiculoTurnoError("KM inicial deve ser igual ao KM atual do veiculo.", "danger")
 
-    turno_aberto = _buscar_turno_aberto_usuario(veiculo.id, user)
+    turno_aberto = (
+        LogVeiculo.query.filter(LogVeiculo.veiculo_id == veiculo.id, LogVeiculo.km_final.is_(None)).first()
+        if is_supervisor else _buscar_turno_aberto_usuario(veiculo.id, user)
+    )
     if turno_aberto:
         raise VeiculoTurnoError(
             "Ja existe um turno aberto para este veiculo. Finalize-o antes de iniciar outro.",
@@ -808,7 +874,6 @@ def iniciar_turno_piloto(user, veiculo_id, form_data, files_data, root_path):
         veiculo_id=veiculo.id,
         piloto_id=piloto_id,
         equipe_id=equipe_id,
-        responsavel_usuario_id=getattr(user, "id", None) if is_supervisor_responsavel else None,
         km_inicial=km_inicial,
         km_final=None,
         check_diario=True,
@@ -1471,7 +1536,8 @@ def _veiculo_do_operacional_logado(veiculo_id, *, user=None):
 
 def _apply_log_actor_scope(query, user):
     if is_veiculos_supervisor(user):
-        return query.filter(LogVeiculo.veiculo_id.in_(supervisor_equipment_query(Veiculos, user).with_entities(Veiculos.id)))
+        piloto_id = getattr(user, "piloto_id", None)
+        return query.filter(LogVeiculo.piloto_id == piloto_id) if piloto_id else query.filter(db.false())
 
     if getattr(user, "tipo_usuario", None) == EQUIPE_OCEANO_USER_TYPE:
         equipe_id = _parse_equipe_oceano_id(user)
@@ -2229,8 +2295,6 @@ def _km_rodado_log_veiculo(log):
 
 
 def _operador_log_veiculo(log):
-    if log.responsavel_usuario:
-        return log.responsavel_usuario.nome_uvis or log.responsavel_usuario.login
     if log.piloto:
         return log.piloto.nome_piloto
     if log.equipe:
@@ -2742,17 +2806,12 @@ def _build_veiculo_log_delete_snapshot(log):
             "id": log.veiculo.id if log.veiculo else log.veiculo_id,
             "modelo": log.veiculo.modelo if log.veiculo else None,
             "placa": log.veiculo.placa if log.veiculo else None,
-            "responsavel": log.veiculo.responsavel if log.veiculo else None,
+            "responsavel": log.veiculo.responsavel_exibicao if log.veiculo else None,
             "prefeitura_id": getattr(log.veiculo, "prefeitura_id", None) if log.veiculo else None,
         },
         "operador": {
             "piloto_id": log.piloto_id,
             "piloto_nome": log.piloto.nome_piloto if log.piloto else None,
-            "responsavel_usuario_id": log.responsavel_usuario_id,
-            "responsavel_usuario_nome": (
-                (log.responsavel_usuario.nome_uvis or log.responsavel_usuario.login)
-                if log.responsavel_usuario else None
-            ),
             "equipe_id": log.equipe_id,
             "equipe_nome": log.equipe.nome_equipe if log.equipe else None,
         },
@@ -2976,10 +3035,8 @@ def build_veiculos_logs_export(tipo_usuario, args, user=None):
             log.ultima_movimentacao_em.strftime("%d/%m/%Y %H:%M") if log.ultima_movimentacao_em else "",
             (log.veiculo.modelo if log.veiculo else "") or "",
             (log.veiculo.placa if log.veiculo else "") or "",
-            (log.veiculo.responsavel if log.veiculo else "") or "",
-            (log.piloto.nome_piloto if log.piloto else None)
-            or (log.equipe.nome_equipe if log.equipe else "")
-            or "",
+            (log.veiculo.responsavel_exibicao if log.veiculo else "") or "",
+            _operador_log_veiculo(log),
             "SIM" if log.check_diario else "N\u00c3O",
             float(log.km_inicial or 0),
             "" if log.km_final is None else float(log.km_final),

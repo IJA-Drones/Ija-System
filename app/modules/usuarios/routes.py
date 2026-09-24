@@ -544,6 +544,8 @@ def register_routes(bp):
             usuario.prefeitura_id = prefeitura_id
             usuario.codigo_setor = codigo_setor
             usuario.tipo_usuario = tipo_usuario
+            if is_veiculos_supervisor(usuario):
+                usuario.codigo_setor = None
             usuario.trabalha_oceano_azul = trabalha_oceano_azul
             usuario.trabalha_agro = trabalha_agro
             usuario.suporte_operacional = suporte_operacional

@@ -146,6 +146,7 @@
                             <th class="ps-4 text-start">Veículo / Placa</th>
                             <th>Frota / Op.</th>
                             <th>Equipe responsável</th>
+                            <th>Supervisor responsável</th>
                             <th>KM Atual</th>
                             <th>KM Restante</th>
                             <th>Ultima Movimentacao</th>
@@ -221,6 +222,37 @@
                                     <div class="small text-primary fw-bold">
                                         <i class="bi bi-people-fill me-1"></i>{{ v.equipe.nome_equipe }}
                                     </div>
+                                {% else %}
+                                    <span class="text-muted small">--</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if can_manage %}
+                                    <input type="hidden" name="supervisor_id_{{ v.id }}"
+                                           value="{{ v.supervisor_usuario_id or '' }}"
+                                           form="bulk-equipes-form" data-supervisor-input>
+                                    <div class="dropdown team-picker" data-supervisor-picker>
+                                        <button class="team-picker-toggle" type="button" data-bs-toggle="dropdown"
+                                                data-bs-offset="0,6" aria-expanded="false"
+                                                aria-label="Supervisor responsável pelo veículo {{ v.placa }}">
+                                            <span class="team-picker-pilot">Responsável individual</span>
+                                            <span class="team-picker-name"><i class="bi bi-person-badge me-1"></i><span data-supervisor-name>{{ v.responsavel_exibicao if v.supervisor_usuario_id else '-- Sem supervisor --' }}</span></span>
+                                        </button>
+                                        <ul class="dropdown-menu team-picker-menu">
+                                            <li><button class="dropdown-item team-picker-option {% if not v.supervisor_usuario_id %}active{% endif %}"
+                                                        type="button" data-supervisor-option data-supervisor-value=""
+                                                        data-supervisor-name="-- Sem supervisor --">-- Sem supervisor --</button></li>
+                                            {% for supervisor in supervisores or [] %}
+                                                <li><button class="dropdown-item team-picker-option {% if v.supervisor_usuario_id == supervisor.id %}active{% endif %}"
+                                                            type="button" data-supervisor-option data-supervisor-value="{{ supervisor.id }}"
+                                                            data-supervisor-name="{{ supervisor.nome_uvis or supervisor.login }}">
+                                                    {{ supervisor.nome_uvis or supervisor.login }}
+                                                </button></li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                {% elif v.supervisor_usuario_id %}
+                                    <span class="small text-primary fw-semibold">{{ v.responsavel_exibicao }}</span>
                                 {% else %}
                                     <span class="text-muted small">--</span>
                                 {% endif %}
@@ -319,7 +351,35 @@
             if (pilotLabel) pilotLabel.textContent = option.dataset.teamPilot || "Sem piloto vinculado";
             if (teamName) teamName.textContent = option.dataset.teamName || "-- Sem equipe --";
 
+            if (!option.dataset.teamValue && cell) {
+                const row = cell.closest("tr");
+                const supervisorInput = row?.querySelector("[data-supervisor-input]");
+                const supervisorPicker = row?.querySelector("[data-supervisor-picker]");
+                if (supervisorInput) supervisorInput.value = "";
+                if (supervisorPicker) {
+                    const supervisorName = supervisorPicker.querySelector("[data-supervisor-name]");
+                    if (supervisorName) supervisorName.textContent = "-- Sem supervisor --";
+                    supervisorPicker.querySelectorAll("[data-supervisor-option]").forEach((item) => {
+                        item.classList.toggle("active", !item.dataset.supervisorValue);
+                    });
+                }
+            }
+
             picker.querySelectorAll("[data-team-option]").forEach((item) => item.classList.remove("active"));
+            option.classList.add("active");
+        });
+    });
+
+    document.querySelectorAll("[data-supervisor-option]").forEach((option) => {
+        option.addEventListener("click", () => {
+            const picker = option.closest("[data-supervisor-picker]");
+            if (!picker) return;
+            const cell = picker.parentElement;
+            const input = cell ? cell.querySelector("[data-supervisor-input]") : null;
+            const name = picker.querySelector("[data-supervisor-name]");
+            if (input) input.value = option.dataset.supervisorValue || "";
+            if (name) name.textContent = option.dataset.supervisorName || "-- Sem supervisor --";
+            picker.querySelectorAll("[data-supervisor-option]").forEach((item) => item.classList.remove("active"));
             option.classList.add("active");
         });
     });

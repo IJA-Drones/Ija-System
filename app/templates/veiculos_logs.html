@@ -220,13 +220,11 @@
                                     <div class="fw-bold text-dark">{{ log.veiculo.modelo if log.veiculo else '-' }}</div>
                                     <div class="text-muted small">
                                         {{ log.veiculo.placa if log.veiculo else '-' }}
-                                        {% if log.veiculo and log.veiculo.responsavel %} • {{ log.veiculo.responsavel }}{% endif %}
+                                        {% if log.veiculo and log.veiculo.responsavel %} • {{ log.veiculo.responsavel_exibicao }}{% endif %}
                                     </div>
                                 </td>
                                 <td data-label="Operador / Equipe">
-                                    {% if log.responsavel_usuario %}
-                                        {{ log.responsavel_usuario.nome_uvis or log.responsavel_usuario.login }}
-                                    {% elif log.piloto %}
+                                    {% if log.piloto %}
                                         {{ log.piloto.nome_piloto }}
                                     {% elif log.equipe %}
                                         {{ log.equipe.nome_equipe }}
@@ -299,13 +297,11 @@
                                                         <div class="vehicle-timeline-meta">
                                                             <span>Placa: {{ log.veiculo.placa if log.veiculo else '-' }}</span>
                                                             {% if log.veiculo and log.veiculo.responsavel %}
-                                                                <span>Responsavel: {{ log.veiculo.responsavel }}</span>
+                                                                <span>Responsavel: {{ log.veiculo.responsavel_exibicao }}</span>
                                                             {% endif %}
                                                             <span>
                                                                 Operador:
-                                                                {% if log.responsavel_usuario %}
-                                                                    {{ log.responsavel_usuario.nome_uvis or log.responsavel_usuario.login }}
-                                                                {% elif log.piloto %}
+                                                                {% if log.piloto %}
                                                                     {{ log.piloto.nome_piloto }}
                                                                 {% elif log.equipe %}
                                                                     {{ log.equipe.nome_equipe }}
@@ -725,7 +721,7 @@
                             </h5>
                             <div class="vehicle-timeline-meta">
                                 <span>Placa: {{ v.placa if v else '-' }}</span>
-                                {% if v and v.responsavel %}<span>Responsavel: {{ v.responsavel }}</span>{% endif %}
+                                {% if v and v.responsavel %}<span>Responsavel: {{ v.responsavel_exibicao }}</span>{% endif %}
                                 {% if v and v.equipe %}<span>Equipe: {{ v.equipe.nome_equipe }}</span>{% endif %}
                             </div>
                         </div>

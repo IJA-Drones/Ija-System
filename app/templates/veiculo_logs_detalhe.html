@@ -13,7 +13,7 @@
                 <i class="bi bi-truck-front-fill me-2 text-primary"></i>{{ veiculo.modelo }} - {{ veiculo.placa }}
             </h2>
             <div class="text-muted">
-                {{ veiculo.responsavel or 'Sem responsavel' }}{% if veiculo.equipe %} | {{ veiculo.equipe.nome_equipe }}{% endif %}
+                {{ veiculo.responsavel_exibicao or 'Sem responsavel' }}{% if veiculo.equipe %} | {{ veiculo.equipe.nome_equipe }}{% endif %}
             </div>
         </div>
         <div class="detail-actions">

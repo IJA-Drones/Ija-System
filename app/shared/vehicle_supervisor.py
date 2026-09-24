@@ -1,18 +1,25 @@
 """Operational team and equipment access for vehicle supervisors."""
 
 from app.extensions import db
-from app.models import Equipe
+from app.models import Equipe, Veiculos
 from app.shared.access import apply_prefeitura_scope, is_veiculos_supervisor
 
 
 def get_supervisor_equipe(user):
-    """
-    Mantido por compatibilidade com outras partes do código que possam esperar 
-    um retorno, mas desativado da lógica restritiva de equipas.
-    """
+    """O supervisor não pertence a uma equipe como usuário."""
+    return None
+
+
+def get_supervisor_operational_equipe(user):
+    """Equipe do veículo atribuído, apenas como contexto para ordens de serviço."""
     if not is_veiculos_supervisor(user):
         return None
-    return None
+    veiculo = (
+        supervisor_equipment_query(Veiculos, user)
+        .filter(Veiculos.responsavel == f"sup_veiculos:{user.id}")
+        .first()
+    )
+    return veiculo.equipe if veiculo else None
 
 
 def supervisor_equipment_query(model, user):

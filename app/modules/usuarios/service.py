@@ -237,25 +237,25 @@ def delete_admin_user(usuario):
 
 
 def garantir_piloto_para_supervisor(usuario):
-    """
-    Garante que os utilizadores do tipo supervisor de veículos tenham um 
-    perfil de Piloto correspondente para permitir a vinculação a equipas.
-    """
+    """Usa a identidade de piloto existente para registrar autoria sem equipe."""
     tipo_normalizado = (usuario.tipo_usuario or "").strip().lower()
-    if tipo_normalizado in VEICULOS_SUPERVISOR_USER_TYPES and not getattr(usuario, "piloto_id", None):
-        
-        # Procura se já existe um registo de piloto com o mesmo nome/login
-        piloto_existente = Pilotos.query.filter_by(nome_piloto=usuario.nome_uvis or usuario.login).first()
-        
-        if piloto_existente:
-            usuario.piloto_id = piloto_existente.id
-        else:
-            # Cria um novo registo na tabela de Pilotos
-            novo_piloto = Pilotos(
-                nome_piloto=usuario.nome_uvis or usuario.login,
-                prefeitura_id=getattr(usuario, 'prefeitura_id', None)
-            )
-            db.session.add(novo_piloto)
-            db.session.flush()  # Gera o ID do piloto antes do commit
-            
-            usuario.piloto_id = novo_piloto.id
+    if tipo_normalizado not in VEICULOS_SUPERVISOR_USER_TYPES:
+        return
+    if getattr(usuario, "piloto_id", None):
+        compartilhado = Usuario.query.filter(
+            Usuario.piloto_id == usuario.piloto_id,
+            Usuario.id != usuario.id,
+        ).first()
+        if not compartilhado:
+            piloto = db.session.get(Pilotos, usuario.piloto_id)
+            if piloto:
+                piloto.nome_piloto = usuario.nome_uvis or usuario.login
+                piloto.prefeitura_id = usuario.prefeitura_id
+                return
+    novo_piloto = Pilotos(
+        nome_piloto=usuario.nome_uvis or usuario.login,
+        prefeitura_id=getattr(usuario, "prefeitura_id", None),
+    )
+    db.session.add(novo_piloto)
+    db.session.flush()
+    usuario.piloto_id = novo_piloto.id

@@ -30,6 +30,7 @@ from app.modules.veiculos.service import (
     get_abastecimento_for_media,
     get_veiculo_log_for_media,
     list_equipes_choices,
+    list_supervisores_choices,
     list_veiculos,
     list_veiculos_limpezas,
     list_veiculos_logs,
@@ -407,11 +408,13 @@ def register_routes(bp):
         errors = {}
         form = {}
         equipes = list_equipes_choices(user=current_user)
+        supervisores = list_supervisores_choices(user=current_user)
 
         if request.method == "POST":
             form, cleaned, errors = validate_veiculo_form(
                 request.form,
                 equipes=equipes,
+                supervisores=supervisores,
             )
 
             if errors:
@@ -421,6 +424,7 @@ def register_routes(bp):
                     form=form,
                     errors=errors,
                     equipes=equipes,
+                    supervisores=supervisores,
                 )
 
             try:
@@ -436,6 +440,7 @@ def register_routes(bp):
                     form=form,
                     errors=errors,
                     equipes=equipes,
+                    supervisores=supervisores,
                 )
 
         return render_template(
@@ -443,6 +448,7 @@ def register_routes(bp):
             form=form,
             errors=errors,
             equipes=equipes,
+            supervisores=supervisores,
         )
 
     @bp.route("/veiculos/<int:veiculo_id>/editar", methods=["GET", "POST"], endpoint="editar_veiculo")
@@ -453,11 +459,13 @@ def register_routes(bp):
         veiculo = _get_scoped_veiculo_or_404(veiculo_id)
         errors = {}
         equipes = list_equipes_choices(user=current_user)
+        supervisores = list_supervisores_choices(user=current_user)
 
         if request.method == "POST":
             form, cleaned, errors = validate_veiculo_form(
                 request.form,
                 equipes=equipes,
+                supervisores=supervisores,
                 existing_veiculo=veiculo,
             )
 
@@ -469,6 +477,7 @@ def register_routes(bp):
                     errors=errors,
                     veiculo=veiculo,
                     equipes=equipes,
+                    supervisores=supervisores,
                 )
 
             try:
@@ -485,6 +494,7 @@ def register_routes(bp):
                     errors=errors,
                     veiculo=veiculo,
                     equipes=equipes,
+                    supervisores=supervisores,
                 )
 
         return render_template(
@@ -493,6 +503,7 @@ def register_routes(bp):
             errors=errors,
             veiculo=veiculo,
             equipes=equipes,
+            supervisores=supervisores,
         )
 
     @bp.route("/veiculos/<int:veiculo_id>/deletar", methods=["POST"], endpoint="deletar_veiculo")
@@ -522,6 +533,7 @@ def register_routes(bp):
         return render_template(
             "piloto_veiculos.html",
             veiculos=context["veiculos"],
+            veiculos_supervisor_ids=context.get("veiculos_supervisor_ids", []),
             turnos_abertos=context["turnos_abertos"],
             km_inicial_referencias=context["km_inicial_referencias"],
             agora_brasilia=context["agora_brasilia"],

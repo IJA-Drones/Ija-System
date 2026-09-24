@@ -121,7 +121,9 @@ def build_piloto_checklist_context(user, args):
 
     veiculo_padrao_id = args.get("veiculo_id", type=int)
     if veiculo_padrao_id not in veiculo_ids:
-        principais = [item for item in state["veiculos_equipe"] if equipe_principal and item.equipe_id == equipe_principal.id]
+        principais = [item for item in state["veiculos_equipe"] if is_veiculos_supervisor(user) and item.supervisor_usuario_id == user.id]
+        if not principais:
+            principais = [item for item in state["veiculos_equipe"] if equipe_principal and item.equipe_id == equipe_principal.id]
         opcoes = principais or state["veiculos_equipe"]
         veiculo_padrao_id = opcoes[0].id if len(opcoes) == 1 else None
 
@@ -623,13 +625,14 @@ def _checklist_actor_filter(user, equipe):
             "drone": ChecklistSemanalDrone.equipe_id == equipe_id,
         }
     if is_veiculos_supervisor(user):
-        veiculo_ids = supervisor_equipment_query(Veiculos, user).with_entities(Veiculos.id)
-        drone_ids = supervisor_equipment_query(Drones, user).with_entities(Drones.id)
+        from app.modules.usuarios.service import garantir_piloto_para_supervisor
+        garantir_piloto_para_supervisor(user)
+        piloto_id = user.piloto_id
         return {
-            "piloto_id": None,
+            "piloto_id": piloto_id,
             "equipe_id": None,
-            "veiculo": ChecklistSemanalVeiculo.veiculo_id.in_(veiculo_ids),
-            "drone": ChecklistSemanalDrone.drone_id.in_(drone_ids),
+            "veiculo": ChecklistSemanalVeiculo.piloto_id == piloto_id,
+            "drone": ChecklistSemanalDrone.piloto_id == piloto_id,
         }
 
     piloto_id = getattr(user, "piloto_id", None)

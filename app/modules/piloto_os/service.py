@@ -28,10 +28,11 @@ from app.shared.access import (
     ADMIN_PANEL_VIEW_TYPES,
     apply_solicitacao_prefeitura_scope,
     can_access_regiao,
+    is_veiculos_supervisor,
     normalize_role,
     VEICULOS_SUPERVISOR_USER_TYPES,
 )
-from app.shared.vehicle_supervisor import get_supervisor_equipe
+from app.shared.vehicle_supervisor import get_supervisor_operational_equipe
 from app.shared.query_filters import aplicar_filtros_base, id_search_clause
 from app.shared.os_history_filters import (
     apply_os_history_filters,
@@ -338,7 +339,7 @@ def _buscar_equipe_do_usuario_na_os(user, equipe_id):
         return equipe if equipe.id == equipe_id else None
 
     if role in VEICULOS_SUPERVISOR_USER_TYPES:
-        equipe = get_supervisor_equipe(user)
+        equipe = get_supervisor_operational_equipe(user)
         return equipe if equipe and equipe.id == equipe_id else None
 
     vinculo = _buscar_vinculo_piloto_na_equipe(getattr(user, "piloto_id", None), equipe_id)
@@ -364,7 +365,7 @@ def build_piloto_os_context(user, args, google_maps_key):
     if is_equipe_oceano:
         equipe = _buscar_equipe_operacional_usuario(user)
     elif is_supervisor:
-        equipe = get_supervisor_equipe(user)
+        equipe = get_supervisor_operational_equipe(user)
     else:
         vinculo = _buscar_vinculo_ativo_piloto(user.piloto_id)
         equipe = vinculo.equipe if vinculo else None
@@ -474,7 +475,7 @@ def build_piloto_os_historico_context(user, args):
         equipe = _buscar_equipe_operacional_usuario(user)
         equipes_filter = Solicitacao.equipe_id == equipe.id
     elif is_veiculos_supervisor(user):
-        equipe = get_supervisor_equipe(user)
+        equipe = get_supervisor_operational_equipe(user)
         equipes_filter = Solicitacao.equipe_id == equipe.id if equipe else db.false()
     elif not getattr(user, "piloto_id", None):
         raise PilotoOsError("Piloto sem vinculo cadastrado.", "danger", redirect_endpoint="main.piloto_os")

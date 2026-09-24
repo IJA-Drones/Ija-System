@@ -12,9 +12,6 @@ from app.modules.equipes.service import (
     find_piloto_conflict,
     get_equipe_account,
     get_pilotos_ordered,
-    get_supervisores_ordered,
-    build_equipe_supervisores_map,
-    validate_equipe_supervisores,
     sync_equipe_supervisores,
     is_truthy,
     parse_optional_int,
@@ -40,7 +37,6 @@ def register_routes(bp):
         form = {}
         pilotos = get_pilotos_ordered(user=current_user)
         regioes = build_regioes_list()
-        supervisores = get_supervisores_ordered(user=current_user)
 
         if request.method == "POST":
             nome_equipe = (request.form.get("nome_equipe") or "").strip()
@@ -57,7 +53,6 @@ def register_routes(bp):
                 "trabalha_oceano_azul": "1" if trabalha_oceano_azul else "",
                 "piloto_id": piloto_id,
                 "auxiliar_id": auxiliar_id,
-                "supervisor_ids": request.form.getlist("supervisor_ids"),
             }
 
             if not nome_equipe:
@@ -121,11 +116,7 @@ def register_routes(bp):
                     errors["auxiliar_id"] = f"Este piloto ja esta na equipe '{nome_eq}' como {papel}. Remova de la antes."
                     flash(errors["auxiliar_id"], "warning")
 
-            selecionados, prefeitura_id, supervisor_errors = validate_equipe_supervisores(
-                request.form.getlist("supervisor_ids"), current_user,
-                getattr(current_user, "prefeitura_id", None), nova_equipe=True,
-            )
-            errors.update(supervisor_errors)
+            prefeitura_id = getattr(current_user, "prefeitura_id", None)
             if errors:
                 flash("Corrija os campos destacados.", "warning")
                 return render_template(
@@ -133,7 +124,6 @@ def register_routes(bp):
                     form=form,
                     errors=errors,
                     pilotos=pilotos,
-                    supervisores=supervisores,
                     regioes=regioes,
                 )
 
@@ -154,7 +144,6 @@ def register_routes(bp):
                 db.session.add(EquipePiloto(equipe_id=equipe.id, piloto_id=auxiliar_obj.id, papel="auxiliar"))
 
             try:
-                sync_equipe_supervisores(equipe, selecionados, user=current_user)
                 db.session.commit()
                 flash("Equipe cadastrada com sucesso!", "success")
                 return redirect(url_for("main.listar_equipes"))
@@ -166,7 +155,6 @@ def register_routes(bp):
                     form=form,
                     errors=errors,
                     pilotos=pilotos,
-                    supervisores=supervisores,
                     regioes=regioes,
                 )
 
@@ -175,7 +163,6 @@ def register_routes(bp):
             form=form,
             errors=errors,
             pilotos=pilotos,
-            supervisores=supervisores,
             regioes=regioes,
         )
 
@@ -230,7 +217,6 @@ def register_routes(bp):
         pagination = query.paginate(page=page, per_page=per_page, error_out=False)
         equipes = pagination.items
         equipe_accounts = build_equipe_accounts_map(equipes)
-        equipe_supervisores = build_equipe_supervisores_map(equipes, user=current_user)
         is_editable = tipo in ["dev", "diretor", "admin", "operario", "operador", "prefeitura_admin"]
         filters = build_equipes_filters(
             q=q,
@@ -255,7 +241,6 @@ def register_routes(bp):
             is_editable=is_editable,
             tipo_usuario=tipo,
             equipe_accounts=equipe_accounts,
-            equipe_supervisores=equipe_supervisores,
         )
 
     @bp.route("/equipes/<int:equipe_id>/credenciais", methods=["POST"], endpoint="atualizar_credenciais_equipe")
@@ -306,12 +291,6 @@ def register_routes(bp):
         errors = {}
         form = request.form.to_dict(flat=True) if request.method == "POST" else {}
         pilotos = get_pilotos_ordered(user=current_user)
-        supervisores = get_supervisores_ordered(user=current_user)
-        atuais = build_equipe_supervisores_map([equipe], user=current_user)[equipe.id]
-        editar_supervisores = "supervisores_presentes" in request.form or "supervisor_ids" in request.form
-        form["supervisor_ids"] = (
-            request.form.getlist("supervisor_ids") if editar_supervisores else [str(item.id) for item in atuais]
-        )
 
         if request.method == "POST":
             nome_equipe = (request.form.get("nome_equipe") or "").strip()
@@ -382,12 +361,6 @@ def register_routes(bp):
                     errors["auxiliar_id"] = msg
                     flash(msg, "warning")
 
-            selecionados = atuais
-            if editar_supervisores:
-                selecionados, _, supervisor_errors = validate_equipe_supervisores(
-                    request.form.getlist("supervisor_ids"), current_user, equipe.prefeitura_id,
-                )
-                errors.update(supervisor_errors)
 
             if not errors:
                 equipe.nome_equipe = nome_equipe
@@ -432,7 +405,6 @@ def register_routes(bp):
                         "editar_equipe.html",
                         equipe=equipe,
                         pilotos=pilotos,
-                        supervisores=supervisores,
                         errors=errors,
                         form=form,
                         piloto_atual=piloto_atual,
@@ -441,8 +413,6 @@ def register_routes(bp):
                     )
 
                 try:
-                    if editar_supervisores:
-                        sync_equipe_supervisores(equipe, selecionados, user=current_user)
                     db.session.commit()
                     flash("Equipe atualizada com sucesso.", "success")
                     return redirect(url_for("main.listar_equipes", equipe_id=equipe.id))
@@ -457,7 +427,6 @@ def register_routes(bp):
             "editar_equipe.html",
             equipe=equipe,
             pilotos=pilotos,
-            supervisores=supervisores,
             errors=errors,
             form=form,
             piloto_atual=piloto_atual,

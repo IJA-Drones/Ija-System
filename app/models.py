@@ -2333,6 +2333,24 @@ class Veiculos(Equipamentos):
 
     responsavel = db.Column(db.String(120), index=True)
 
+    @property
+    def supervisor_usuario_id(self):
+        marker = (self.responsavel or "").strip()
+        if not marker.startswith("sup_veiculos:"):
+            return None
+        try:
+            return int(marker.split(":", 1)[1])
+        except ValueError:
+            return None
+
+    @property
+    def responsavel_exibicao(self):
+        supervisor_id = self.supervisor_usuario_id
+        if supervisor_id is None:
+            return self.responsavel
+        supervisor = db.session.get(Usuario, supervisor_id)
+        return (supervisor.nome_uvis or supervisor.login) if supervisor else f"Supervisor #{supervisor_id}"
+
     km_atual = db.Column(db.Float, default=0, nullable=False)
     km_prox_revisao = db.Column(db.Float, nullable=True)
 
