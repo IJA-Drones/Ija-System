@@ -42,6 +42,7 @@ O IJA System organiza esse fluxo em uma aplicação única, com dados estruturad
 - [Filtro de endereço no painel de gestão](docs/manuais-operacionais/painel-gestao-filtro-endereco-notion.md)
 - [Banco de talentos agro](docs/manuais-operacionais/banco-talentos-agro-notion.md)
 - [Alertas de limpeza de veículos](docs/manuais-operacionais/alertas-limpeza-veiculos-oceano-azul-notion.md)
+- [Supervisor Operacional de Veículos: apresentação e guia de uso](docs/perfil-supervisor-operacional-veiculos.md)
 
 ### Autenticação e Perfis de Acesso
 
