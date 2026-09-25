@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+      <h2 class="mb-1">Corrigir checklist de {{ registro.tipo_label|lower }}</h2>
+      <div class="text-muted">{{ registro.titulo }} · {{ registro.subtitulo }}</div>
+      <div class="small text-muted">{{ actor_nome }} · {{ checklist.data_registro.strftime('%d/%m/%Y %H:%M') }}</div>
+    </div>
+    <a href="{{ voltar_url }}" class="btn btn-outline-secondary">Voltar</a>
+  </div>
+  <p class="text-muted">Corrija os dados da inspeção. O responsável, a data e a assinatura originais serão mantidos.</p>
+  <form method="post">
+    {% if csrf_token is defined %}<input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">{% endif %}
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+      <div class="card-body">
+        <h5 class="mb-3">Dados da inspeção</h5>
+        <div class="row g-3">
+          {% if registro.tipo == 'veiculo' %}
+          <div class="col-sm-6 col-lg-4">
+            <label class="form-label" for="km_leitura">Quilometragem registrada</label>
+            <input class="form-control" type="number" id="km_leitura" name="km_leitura" min="0" step="any" required
+                   value="{{ form_data.get('km_leitura', checklist.km_leitura) }}">
+          </div>
+          {% else %}
+          {% for field, label in [('num_baterias', 'Quantidade de baterias'), ('num_baterias_wb', 'Quantidade de baterias WB')] %}
+          <div class="col-sm-6">
+            <label class="form-label" for="{{ field }}">{{ label }}</label>
+            <input class="form-control" type="number" id="{{ field }}" name="{{ field }}" min="0" step="1" required
+                   value="{{ form_data.get(field, checklist[field] or 0) }}">
+          </div>
+          {% endfor %}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+      <div class="card-body">
+        <h5 class="mb-3">Itens verificados</h5>
+        <div class="row g-3">
+          {% for field, label in bool_labels %}
+          {% set value = form_data.get(field, '1' if checklist[field] else '0') %}
+          <div class="col-sm-6 col-lg-4">
+            <label class="form-label" for="{{ field }}">{{ label }}</label>
+            <select class="form-select" id="{{ field }}" name="{{ field }}" required>
+              <option value="1" {% if value == '1' %}selected{% endif %}>Funcional</option>
+              <option value="0" {% if value == '0' %}selected{% endif %}>Defeituoso</option>
+            </select>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+      <div class="card-body">
+        <h5 class="mb-2">Observações</h5>
+        <p class="small text-muted">As observações de defeitos são removidas quando todos os itens do grupo ficam funcionais.</p>
+        <div class="row g-3">
+          {% for field, label in text_labels %}
+          <div class="col-md-6">
+            <label class="form-label" for="{{ field }}">{{ label }}</label>
+            <textarea class="form-control" id="{{ field }}" name="{{ field }}" rows="3">{{ form_data.get(field, checklist[field] or '') }}</textarea>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <div class="d-flex flex-wrap gap-2 justify-content-end">
+      <a href="{{ voltar_url }}" class="btn btn-outline-secondary">Cancelar</a>
+      <button type="submit" class="btn btn-primary">Salvar correção</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
