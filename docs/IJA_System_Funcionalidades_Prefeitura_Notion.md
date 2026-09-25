@@ -5,13 +5,15 @@
 **Escopo:** Prefeitura, administração municipal, regionais, UVIS, equipes operacionais, pilotos urbanos, operação de campo e Portal do Cidadão  
 **Atualização incorporada:** Integração do Portal do Cidadão com a API InfoDengue - 16/09/2026
 
+**Complemento de 25/09/2026:** supervisor operacional de veículos, triagem de denúncias e controles opcionais de sessão, senha e CSRF. Os guias de [configuração](configuracao.md), [arquitetura](arquitetura.md) e [operação](operacao.md) detalham os parâmetros atuais e suas limitações.
+
 ---
 
 ## 1. Visão geral do âmbito Prefeitura
 
 O âmbito Prefeitura do IJA System reúne as funcionalidades relacionadas à gestão municipal e à operação urbana com drones, abrangendo administração, usuários, UVIS, regiões, solicitações, agenda, equipes, pilotos, ordens de serviço, execução em campo, veículos, equipamentos, mapas, registros de voo, relatórios e atendimento público por meio do Portal do Cidadão.
 
-O sistema aplica segregação de dados por prefeitura, região, UVIS, equipe e usuário, de forma que cada perfil visualize e manipule apenas os dados compatíveis com o seu escopo e suas permissões.
+O sistema possui filtros e permissões por prefeitura, região, UVIS, equipe e usuário. A aplicação dessas regras varia por módulo e por vínculo da conta; ausência de prefeitura não bloqueia todas as consultas de forma uniforme. Consulte a [matriz descritiva e as limitações de escopo](arquitetura.md) antes de considerar um fluxo homologado entre municípios.
 
 ### Fluxo funcional principal
 
@@ -30,6 +32,7 @@ Em paralelo, o sistema mantém gestão de usuários, regiões, UVIS, equipes, pi
 - Controle de sessão autenticada.
 - Validação do perfil antes da abertura de telas e execução de ações.
 - Controle de leitura, edição, exclusão e exportação conforme permissão.
+- Timeout de sessão, política de senha e CSRF disponíveis por ativação explícita de ambiente. Os recursos ficam desligados no Config por padrão; detalhes em [segurança](seguranca-sessoes-senhas.md).
 
 ## 2.2 Perfis relacionados ao âmbito Prefeitura
 
@@ -43,6 +46,8 @@ Em paralelo, o sistema mantém gestão de usuários, regiões, UVIS, equipes, pi
 - Equipe operacional da UVIS (`equipe_uvis`).
 - Piloto urbano.
 - Equipe operacional urbana.
+- Supervisor operacional de veículos (`sup_veiculos`).
+- COVISA (`covisa`; também há reconhecimento de perfil legado em regras específicas).
 
 ## 2.3 Escopo por Prefeitura
 
@@ -494,6 +499,10 @@ A OS urbana pode registrar:
 
 # 14. Veículos e logística
 
+O [manual do supervisor](perfil-supervisor-operacional-veiculos.md) detalha atribuição de veículo pela listagem, responsabilidade direta, turnos, abastecimentos, limpezas e checklists. O tipo Veículo aplica limite de 500 km acima do abastecimento anterior do veículo, ou do KM inicial do turno quando não há histórico desse tipo. O tipo Gerador não usa essa trava.
+
+A tela de rastreamento lê posições, histórico e alertas persistidos. A presença da tela não comprova ingestão atualizada da RedGPS; o processo de sincronização externa ainda precisa ser identificado/documentado.
+
 ## 14.1 Cadastro de veículos
 
 - Cadastro de veículo.
@@ -859,6 +868,12 @@ O Portal do Cidadão amplia o âmbito Prefeitura para uma área pública de part
 - Manutenção do formulário de relato mesmo quando serviços externos de dados epidemiológicos estiverem indisponíveis.
 - Botão para registrar um relato a partir do relatório epidemiológico.
 - Integração entre informação epidemiológica e participação cidadã sem fundir os dois fluxos.
+
+## 25.2 Triagem e conversão em solicitação
+
+O registro público exige identificação, endereço e consentimento, aceita até cinco anexos e gera protocolo. A triagem central encaminha para uma coordenadoria; o perfil regional designa uma UVIS da mesma região. A UVIS consulta as denúncias atribuídas à sua conta e pode criar a solicitação pelo formulário operacional.
+
+O vínculo com a solicitação é guardado e impede repetir a conversão pelo handler. Também existe arquivamento com motivo. Denúncia não equivale a OS ou aprovação automática. O procedimento e os estados estão no [manual do portal e da triagem](manuais-operacionais/portal-cidadao-triagem.md).
 
 ---
 

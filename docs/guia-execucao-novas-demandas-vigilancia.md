@@ -1,7 +1,7 @@
 # Guia de execução das novas demandas de vigilância
 
 **Sistema:** IJA System  
-**Documento relacionado:** [Relatório de Análise de Aderência e Novas Demandas](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/docs/relatorio-novas-demandas-vigilancia-epidemiologica.md)  
+**Documento relacionado:** [Relatório de Análise de Aderência e Novas Demandas](relatorio-novas-demandas-vigilancia-epidemiologica.md)
 **Objetivo:** orientar a equipe sobre o que fazer primeiro, como decompor o trabalho e quais evidências devem existir para considerar cada etapa concluída.
 
 > Este é um guia de execução. Ele não altera o código e não transforma uma recomendação em requisito contratual. As decisões sobre fontes, indicadores, conteúdo de saúde, privacidade, SLA e aceite precisam ser aprovadas pelo contratante e pela vigilância.
