@@ -1,10 +1,18 @@
 from datetime import datetime, timedelta
+from math import isfinite
 
 from sqlalchemy.orm import joinedload
 
 from app.extensions import db
 from app.models import ChecklistSemanalDrone, ChecklistSemanalVeiculo, Drones, Equipe, Pilotos, Veiculos
 from app.modules.agenda_notificacoes import agora_brasilia_naive
+from app.modules.piloto_checklists.service import (
+    CHECKLIST_DRONE_TEXT_GROUPS,
+    CHECKLIST_VEICULO_TEXT_GROUPS,
+    _drone_has_tanque,
+    sincronizar_pendencias_registro,
+)
+from app.shared.access import apply_prefeitura_scope, is_admin_global_user, is_veiculos_supervisor
 from app.shared.query_filters import id_search_clause
 
 
@@ -81,6 +89,91 @@ CHECKLIST_DRONE_TEXT_LABELS = [
 ]
 
 
+def _checklist_edit_config(tipo):
+    if tipo == "veiculo":
+        return (ChecklistSemanalVeiculo, Veiculos, CHECKLIST_VEICULO_BOOL_LABELS,
+                CHECKLIST_VEICULO_TEXT_LABELS, CHECKLIST_VEICULO_TEXT_GROUPS)
+    if tipo == "drone":
+        return (ChecklistSemanalDrone, Drones, CHECKLIST_DRONE_BOOL_LABELS,
+                CHECKLIST_DRONE_TEXT_LABELS, CHECKLIST_DRONE_TEXT_GROUPS)
+    raise LookupError("Tipo de checklist inexistente.")
+
+
+def get_admin_checklist_for_edit(user, tipo, checklist_id):
+    if not (is_admin_global_user(user) or is_veiculos_supervisor(user)):
+        raise PermissionError
+    model, equipamento, *_ = _checklist_edit_config(tipo)
+    query = model.query.join(equipamento).filter(model.id == checklist_id)
+    checklist = apply_prefeitura_scope(query, user, equipamento.prefeitura_id).first()
+    if checklist is None:
+        raise PermissionError
+    return checklist
+
+
+def build_admin_checklist_edit_context(user, tipo, checklist_id):
+    checklist = get_admin_checklist_for_edit(user, tipo, checklist_id)
+    _, _, bool_labels, text_labels, _ = _checklist_edit_config(tipo)
+    if tipo == "drone" and not _drone_has_tanque(checklist.drone):
+        bool_labels = [(field, label) for field, label in bool_labels if field != "tanque"]
+    normalize = normalize_checklist_veiculo_admin if tipo == "veiculo" else normalize_checklist_drone_admin
+    actor = _checklist_actor_info(checklist)
+    inicio = checklist.data_registro.date()
+    return {
+        "checklist": checklist,
+        "registro": normalize(checklist),
+        "bool_labels": bool_labels,
+        "text_labels": text_labels,
+        "semana_inicio": inicio - timedelta(days=inicio.weekday()),
+        **actor,
+    }
+
+
+def update_admin_checklist(user, tipo, checklist_id, form_data):
+    checklist = get_admin_checklist_for_edit(user, tipo, checklist_id)
+    _, _, bool_labels, text_labels, text_groups = _checklist_edit_config(tipo)
+    updates = {}
+    for field, label in bool_labels:
+        if tipo == "drone" and field == "tanque" and not _drone_has_tanque(checklist.drone):
+            updates[field] = None
+        elif field in form_data:
+            if form_data[field] not in {"0", "1"}:
+                raise ValueError(f"Selecione Funcional ou Defeituoso para {label}.")
+            updates[field] = form_data[field] == "1"
+
+    numeric_fields = [("km_leitura", "Quilometragem", float)] if tipo == "veiculo" else [
+        ("num_baterias", "Quantidade de baterias", int),
+        ("num_baterias_wb", "Quantidade de baterias WB", int),
+    ]
+    for field, label, parser in numeric_fields:
+        if field not in form_data:
+            continue
+        try:
+            value = parser(form_data[field].strip().replace(",", "."))
+        except (TypeError, ValueError):
+            raise ValueError(f"{label}: informe um número válido.") from None
+        if not isfinite(value) or value < 0:
+            raise ValueError(f"{label}: informe um número maior ou igual a zero.")
+        updates[field] = value
+
+    for field, _ in text_labels:
+        group = text_groups.get(field)
+        if group and all(updates.get(item, getattr(checklist, item)) is not False for item in group):
+            updates[field] = None
+        elif field in form_data:
+            updates[field] = _clean_str(form_data[field])
+
+    try:
+        for field, value in updates.items():
+            setattr(checklist, field, value)
+        # A correcao conserva equipamento, piloto, equipe, data e assinaturas.
+        db.session.flush()
+        sincronizar_pendencias_registro(checklist)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        raise
+
+
 def _clean_str(value):
     if value is None:
         return ""
@@ -99,6 +192,8 @@ def _checklist_status_items(checklist, labels):
     failures = 0
 
     for field, label in labels:
+        if field == "tanque" and not _drone_has_tanque(checklist.drone):
+            continue
         ok = bool(getattr(checklist, field))
         if not ok:
             failures += 1
@@ -204,7 +299,7 @@ def normalize_checklist_drone_admin(checklist):
         {"label": actor["actor_label"], "value": actor["actor_nome"]},
     ]
 
-    total_items = len(CHECKLIST_DRONE_BOOL_LABELS)
+    total_items = len(items)
     return {
         "id": checklist.id,
         "tipo": "drone",
@@ -293,7 +388,7 @@ def group_admin_checklists_by_week(records):
     return grouped
 
 
-def build_admin_checklists_weekly_groups(q: str, data_inicio: str, data_fim: str):
+def build_admin_checklists_weekly_groups(q: str, data_inicio: str, data_fim: str, user=None):
     records = []
 
     query_veiculos = (
@@ -307,6 +402,8 @@ def build_admin_checklists_weekly_groups(q: str, data_inicio: str, data_fim: str
         .outerjoin(Pilotos, ChecklistSemanalVeiculo.piloto_id == Pilotos.id)
         .outerjoin(Equipe, ChecklistSemanalVeiculo.equipe_id == Equipe.id)
     )
+
+    query_veiculos = apply_prefeitura_scope(query_veiculos, user, Veiculos.prefeitura_id)
 
     if q:
         like = f"%{q}%"
@@ -354,6 +451,7 @@ def build_admin_checklists_weekly_groups(q: str, data_inicio: str, data_fim: str
         .outerjoin(Pilotos, ChecklistSemanalDrone.piloto_id == Pilotos.id)
         .outerjoin(Equipe, ChecklistSemanalDrone.equipe_id == Equipe.id)
     )
+    query_drones = apply_prefeitura_scope(query_drones, user, Drones.prefeitura_id)
 
     if q:
         like = f"%{q}%"
@@ -419,7 +517,7 @@ def _actor_filters(actor_type: str, actor_id: int):
     )
 
 
-def build_admin_checklist_detail(actor_id: int, semana_inicio: str, actor_type: str = "piloto"):
+def build_admin_checklist_detail(actor_id: int, semana_inicio: str, actor_type: str = "piloto", user=None):
     semana_inicio_date = datetime.strptime(semana_inicio, "%Y-%m-%d").date()
     semana_inicio_dt = datetime.combine(semana_inicio_date, datetime.min.time())
     semana_fim_dt = semana_inicio_dt + timedelta(days=7)
@@ -428,7 +526,9 @@ def build_admin_checklist_detail(actor_id: int, semana_inicio: str, actor_type: 
     veiculos = [
         normalize_checklist_veiculo_admin(item)
         for item in (
-            ChecklistSemanalVeiculo.query
+            apply_prefeitura_scope(
+                ChecklistSemanalVeiculo.query.join(Veiculos), user, Veiculos.prefeitura_id,
+            )
             .options(
                 joinedload(ChecklistSemanalVeiculo.veiculo),
                 joinedload(ChecklistSemanalVeiculo.piloto),
@@ -447,7 +547,9 @@ def build_admin_checklist_detail(actor_id: int, semana_inicio: str, actor_type: 
     drones = [
         normalize_checklist_drone_admin(item)
         for item in (
-            ChecklistSemanalDrone.query
+            apply_prefeitura_scope(
+                ChecklistSemanalDrone.query.join(Drones), user, Drones.prefeitura_id,
+            )
             .options(
                 joinedload(ChecklistSemanalDrone.drone),
                 joinedload(ChecklistSemanalDrone.piloto),

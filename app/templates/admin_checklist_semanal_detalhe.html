@@ -42,6 +42,10 @@
                         aria-expanded="false" aria-controls="{{ prefix }}-{{ registro.id }}">
                   <i class="bi bi-card-list me-1"></i> Ver dados
                 </button>
+                <a class="btn btn-sm btn-outline-secondary rounded-pill px-3"
+                   href="{{ url_for('main.editar_checklist_semanal', tipo=registro.tipo, checklist_id=registro.id) }}">
+                  <i class="bi bi-pencil me-1"></i> Corrigir
+                </a>
               </td>
             </tr>
             <tr class="collapse-row">

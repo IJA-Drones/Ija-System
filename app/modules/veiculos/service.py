@@ -81,6 +81,11 @@ VEICULOS_LOGS_ALLOWED_TYPES = (
     EQUIPE_OCEANO_USER_TYPE,
     "sup_veiculos",
 )
+VEICULOS_LOGS_EDIT_TYPES = {
+    "dev", "diretor", "admin", "operario", "operador", "prefeitura_admin", "sup_veiculos",
+}
+
+
 class VeiculoTurnoError(Exception):
     def __init__(self, message, category="warning"):
         super().__init__(message)
@@ -2525,7 +2530,7 @@ def list_veiculos_logs(tipo_usuario, args, user=None):
             "valor_limpeza_min": valor_limpeza_min,
             "valor_limpeza_max": valor_limpeza_max,
         },
-        "can_edit_logs": tipo_usuario in {"dev", "diretor", "admin", "operario", "operador", "prefeitura_admin"},
+        "can_edit_logs": tipo_usuario in VEICULOS_LOGS_EDIT_TYPES,
         "can_delete_logs": tipo_usuario == "admin",
         "can_view_deleted_logs": tipo_usuario == "dev",
         "veiculos_timeline": _build_veiculos_summary_from_logs_query(
@@ -2642,7 +2647,7 @@ def build_veiculo_logs_detalhe_context(tipo_usuario, veiculo_id, args, user=None
         "timeline": timeline,
         "km_conferencia": _build_veiculo_km_conferencia(logs),
         "filters": {"data_inicio": data_inicio, "data_fim": data_fim},
-        "can_edit_logs": tipo_usuario in {"dev", "diretor", "admin", "operario", "operador", "prefeitura_admin"},
+        "can_edit_logs": tipo_usuario in VEICULOS_LOGS_EDIT_TYPES,
         "can_delete_logs": tipo_usuario == "admin",
         "can_view_deleted_logs": tipo_usuario == "dev",
         "can_view_retorno_automatico_audit": can_view_retorno_automatico_audit,
@@ -2738,7 +2743,7 @@ def _get_veiculo_logs_scoped(veiculo_id, user):
 
 def update_veiculo_log_km(user, log_id, form_data):
     tipo_usuario = normalize_role(getattr(user, "tipo_usuario", None))
-    if tipo_usuario not in {"dev", "diretor", "admin", "operario", "operador", "prefeitura_admin"}:
+    if tipo_usuario not in VEICULOS_LOGS_EDIT_TYPES:
         raise PermissionError
 
     log = (

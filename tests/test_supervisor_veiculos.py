@@ -1,4 +1,5 @@
 import unittest
+from datetime import datetime
 from io import BytesIO
 from pathlib import Path
 from unittest.mock import patch
@@ -9,7 +10,9 @@ from jinja2 import ChoiceLoader, DictLoader
 from werkzeug.datastructures import FileStorage, MultiDict
 
 from app.extensions import db
-from app.models import ChecklistSemanalDrone, ChecklistSemanalVeiculo, Drones, Equipe, LogVeiculo, Prefeitura, Usuario, Veiculos
+from app.models import Abastecimento, ChecklistSemanalDrone, ChecklistSemanalVeiculo, Drones, Equipe, LogVeiculo, Notificacao, Pilotos, Prefeitura, Usuario, Veiculos
+from app.modules.admin_checklists.routes import register_routes as register_admin_checklists_routes
+from app.modules.admin_checklists import service as admin_checklists
 from app.modules.equipes.routes import register_routes as register_equipes_routes
 from app.modules.equipes.service import build_equipes_query
 from app.modules.piloto_checklists import service as checklists
@@ -35,6 +38,7 @@ class SupervisorVeiculosTests(unittest.TestCase):
         register_usuarios_routes(bp)
         register_equipes_routes(bp)
         register_veiculos_routes(bp)
+        register_admin_checklists_routes(bp)
         bp.add_url_rule("/", "dashboard", lambda: "ok")
         bp.add_url_rule("/piloto-os", "piloto_os", lambda: "ok")
         self.app.register_blueprint(bp)
@@ -243,3 +247,207 @@ class SupervisorVeiculosTests(unittest.TestCase):
                          self.veiculos[1].id)
         with self.assertRaises(PermissionError):
             _veiculo_do_operacional_logado(self.veiculos[2].id, user=self.supervisor)
+
+    def _login_as(self, user):
+        with self.client.session_transaction() as session:
+            session["_user_id"] = str(user.id)
+            session["_fresh"] = True
+
+    def _pilot_records(self, equipment_index=0):
+        veiculo = self.veiculos[equipment_index]
+        piloto = Pilotos(nome_piloto=f"Piloto {equipment_index}", prefeitura_id=veiculo.prefeitura_id)
+        db.session.add(piloto)
+        db.session.flush()
+        identity = {"piloto_id": piloto.id, "equipe_id": veiculo.equipe_id,
+                    "data_registro": datetime(2026, 8, 3, 8), "assinatura_piloto": "assinatura-original"}
+        log = LogVeiculo(veiculo_id=veiculo.id, km_inicial=1000, km_final=1100,
+                         check_diario=True, **identity)
+        vehicle_check = ChecklistSemanalVeiculo(veiculo_id=veiculo.id, km_leitura=1000, **identity)
+        drone_check = ChecklistSemanalDrone(drone_id=self.drones[equipment_index].id,
+                                            nome_responsavel=piloto.nome_piloto, num_baterias=2,
+                                            assinatura_piloto_responsavel="assinatura-original", **identity)
+        db.session.add_all([log, vehicle_check, drone_check])
+        db.session.flush()
+        fuel = Abastecimento(log_veiculo_id=log.id, km_registro=1050, litros=10, valor_total=60,
+                              tipo_abastecimento="Veiculo", foto_nf_path="nota.jpg",
+                              data_hora=datetime(2026, 8, 3, 9))
+        db.session.add(fuel)
+        db.session.commit()
+        return log, fuel, vehicle_check, drone_check
+
+    def test_supervisor_can_correct_pilot_shift_from_list_and_vehicle_history(self):
+        log, fuel, _, _ = self._pilot_records()
+        self._login_as(self.supervisor)
+        identity = (log.piloto_id, log.equipe_id, log.assinatura_piloto, log.data_registro)
+        for url in ("/veiculos/logs", f"/veiculos/logs/veiculo/{log.veiculo_id}"):
+            with self.subTest(url=url):
+                response = self.client.get(url)
+                self.assertEqual(response.status_code, 200)
+                self.assertIn(f"/veiculos/logs/{log.id}/corrigir-km", response.get_data(as_text=True))
+        response = self.client.post(f"/veiculos/logs/{log.id}/corrigir-km", data={
+            "km_inicial": "1010", "km_final": "1150", f"abastecimento_{fuel.id}_km": "1070",
+            f"abastecimento_{fuel.id}_litros": "12,5", f"abastecimento_{fuel.id}_valor": "75,50",
+        })
+        self.assertEqual(response.status_code, 302)
+        db.session.expire_all()
+        self.assertEqual((log.km_inicial, log.km_final, fuel.km_registro, fuel.litros, fuel.valor_total),
+                         (1010, 1150, 1070, 12.5, 75.5))
+        self.assertEqual(self.veiculos[0].km_atual, 1150)
+        self.assertEqual((log.piloto_id, log.equipe_id, log.assinatura_piloto, log.data_registro), identity)
+        self.assertEqual(self.client.post(f"/veiculos/logs/{log.id}/deletar").status_code, 403)
+        self.assertIsNotNone(db.session.get(LogVeiculo, log.id))
+
+    def test_supervisor_shift_correction_rejects_invalid_km_without_partial_save(self):
+        log, fuel, _, _ = self._pilot_records()
+        self._login_as(self.supervisor)
+        response = self.client.post(f"/veiculos/logs/{log.id}/corrigir-km", data={
+            "km_inicial": "1010", "km_final": "1020", f"abastecimento_{fuel.id}_km": "1070",
+        })
+        self.assertEqual(response.status_code, 302)
+        db.session.expire_all()
+        self.assertEqual((log.km_inicial, log.km_final, fuel.km_registro), (1000, 1100, 1050))
+
+    def test_supervisor_cannot_correct_shift_outside_municipality_or_without_one(self):
+        local, _, _, _ = self._pilot_records()
+        foreign, _, _, _ = self._pilot_records(2)
+        self._login_as(self.supervisor)
+        for prefeitura_id, log in ((1, foreign), (None, local)):
+            with self.subTest(prefeitura_id=prefeitura_id):
+                self.supervisor.prefeitura_id = prefeitura_id
+                db.session.commit()
+                self.assertEqual(self.client.post(f"/veiculos/logs/{log.id}/corrigir-km",
+                                                 data={"km_inicial": "1", "km_final": "2"}).status_code, 403)
+                self.assertEqual(log.km_inicial, 1000)
+
+    def test_supervisor_edits_vehicle_checklist_preserving_original_identity(self):
+        _, _, checklist, _ = self._pilot_records()
+        self._login_as(self.supervisor)
+        detail_url = f"/admin/checklists/semanais/piloto/{checklist.piloto_id}/2026-08-03"
+        edit_url = f"/admin/checklists/veiculo/{checklist.id}/editar"
+        self.assertIn(edit_url, self.client.get(detail_url).get_data(as_text=True))
+        self.assertEqual(self.client.get(edit_url).status_code, 200)
+        identity = (checklist.piloto_id, checklist.equipe_id, checklist.data_registro, checklist.assinatura_piloto)
+        response = self.client.post(edit_url, data={
+            "km_leitura": "1020,5", "freio_mao": "0", "condicao_embreagem_freios": "Precisa de ajuste.",
+            "piloto_id": "999", "equipe_id": "999", "veiculo_id": str(self.veiculos[2].id),
+            "data_registro": "2026-09-25", "assinatura_piloto": "alterada",
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.location.endswith(detail_url))
+        db.session.expire_all()
+        self.assertEqual(ChecklistSemanalVeiculo.query.count(), 1)
+        self.assertEqual(checklist.km_leitura, 1020.5)
+        self.assertIs(checklist.freio_mao, False)
+        self.assertEqual(checklist.condicao_embreagem_freios, "Precisa de ajuste.")
+        self.assertIs(checklist.farois_funcionando, True)
+        self.assertEqual(checklist.veiculo_id, self.veiculos[0].id)
+        self.assertEqual((checklist.piloto_id, checklist.equipe_id, checklist.data_registro,
+                          checklist.assinatura_piloto), identity)
+        alert = Notificacao.query.one()
+        self.assertIn("2026-08-03", alert.link)
+        self.assertIn("Freio de mão", alert.mensagem)
+        self.assertIsNone(alert.apagada_em)
+        self.client.post(edit_url, data={"freio_mao": "1", "condicao_embreagem_freios": "Texto antigo"})
+        db.session.expire_all()
+        self.assertIsNone(checklist.condicao_embreagem_freios)
+        self.assertIsNotNone(alert.apagada_em)
+
+    def test_supervisor_edits_drone_checklist_and_battery_counts(self):
+        _, _, _, checklist = self._pilot_records()
+        self._login_as(self.supervisor)
+        url = f"/admin/checklists/drone/{checklist.id}/editar"
+        self.assertEqual(self.client.get(url).status_code, 200)
+        response = self.client.post(url, data={
+            "num_baterias": "0", "num_baterias_wb": "3", "helices_status": "0",
+            "condicao_helices": "Hélice trincada.", "observacoes_equipamento": "Conferido.",
+            "nome_responsavel": "Outro nome", "assinatura_piloto_responsavel": "alterada",
+        })
+        self.assertEqual(response.status_code, 302)
+        db.session.expire_all()
+        self.assertEqual((checklist.num_baterias, checklist.num_baterias_wb), (0, 3))
+        self.assertIs(checklist.helices_status, False)
+        self.assertEqual(checklist.condicao_helices, "Hélice trincada.")
+        self.assertEqual(checklist.observacoes_equipamento, "Conferido.")
+        self.assertEqual(checklist.nome_responsavel, "Piloto 0")
+        self.assertEqual(checklist.assinatura_piloto_responsavel, "assinatura-original")
+        self.assertEqual(ChecklistSemanalDrone.query.count(), 1)
+
+    def test_monitoring_drone_correction_keeps_tank_not_applicable(self):
+        _, _, _, checklist = self._pilot_records()
+        checklist.drone.categoria = "Monitoramento"
+        checklist.tanque = None
+        db.session.commit()
+        self._login_as(self.supervisor)
+        url = f"/admin/checklists/drone/{checklist.id}/editar"
+        self.assertNotIn('name="tanque"', self.client.get(url).get_data(as_text=True))
+        self.assertEqual(self.client.post(url, data={"tanque": "0"}).status_code, 302)
+        self.assertIsNone(checklist.tanque)
+        self.assertEqual(Notificacao.query.count(), 0)
+        normalized = admin_checklists.normalize_checklist_drone_admin(checklist)
+        self.assertEqual((normalized["itens_total"], normalized["falhas"]), (7, 0))
+
+    def test_checklist_correction_rejects_invalid_values_without_partial_save(self):
+        _, _, vehicle, drone = self._pilot_records()
+        self._login_as(self.supervisor)
+        for tipo, checklist, data in (
+            ("veiculo", vehicle, {"km_leitura": "nan", "freio_mao": "0"}),
+            ("veiculo", vehicle, {"km_leitura": "-1"}),
+            ("veiculo", vehicle, {"freio_mao": "desconhecido"}),
+            ("drone", drone, {"num_baterias": "1.5", "helices_status": "0"}),
+            ("drone", drone, {"num_baterias_wb": "-1"}),
+        ):
+            with self.subTest(data=data):
+                response = self.client.post(f"/admin/checklists/{tipo}/{checklist.id}/editar", data=data)
+                self.assertEqual(response.status_code, 400)
+                db.session.expire_all()
+                self.assertEqual(vehicle.km_leitura, 1000)
+                self.assertIs(vehicle.freio_mao, True)
+                self.assertIs(drone.helices_status, True)
+                self.assertEqual(drone.num_baterias, 2)
+
+    def test_checklist_history_and_corrections_respect_municipality(self):
+        _, _, local, local_drone = self._pilot_records()
+        _, _, foreign, foreign_drone = self._pilot_records(2)
+        self._login_as(self.supervisor)
+        html = self.client.get("/admin/checklists/semanais").get_data(as_text=True)
+        self.assertIn("Piloto 0", html)
+        self.assertNotIn("Piloto 2", html)
+        for prefeitura_id, vehicle, drone in ((1, foreign, foreign_drone), (None, local, local_drone)):
+            with self.subTest(prefeitura_id=prefeitura_id):
+                self.supervisor.prefeitura_id = prefeitura_id
+                db.session.commit()
+                for detail_url in (
+                    f"/admin/checklists/semanais/piloto/{vehicle.piloto_id}/2026-08-03",
+                    f"/admin/checklists/semanais/{vehicle.piloto_id}/2026-08-03",
+                    f"/admin/checklists/semanais/equipe/{vehicle.equipe_id}/2026-08-03",
+                ):
+                    self.assertEqual(self.client.get(detail_url).status_code, 404)
+                for tipo, checklist in (("veiculo", vehicle), ("drone", drone)):
+                    url = f"/admin/checklists/{tipo}/{checklist.id}/editar"
+                    self.assertEqual(self.client.get(url).status_code, 403)
+                    self.assertEqual(self.client.post(url, data={"km_leitura": "500"}).status_code, 403)
+                self.assertEqual(vehicle.km_leitura, 1000)
+        html = self.client.get("/admin/checklists/semanais").get_data(as_text=True)
+        self.assertNotIn("Piloto 0", html)
+        self.assertNotIn("Piloto 2", html)
+
+    def test_pilot_and_viewer_cannot_use_supervisor_corrections(self):
+        log, _, checklist, _ = self._pilot_records()
+        for role in ("piloto", "visualizar", "equipe_oceano"):
+            with self.subTest(role=role):
+                self.supervisor.tipo_usuario = role
+                db.session.commit()
+                self._login_as(self.supervisor)
+                url = f"/admin/checklists/veiculo/{checklist.id}/editar"
+                self.assertEqual(self.client.get(url).status_code, 403)
+                self.assertEqual(self.client.post(url, data={"km_leitura": "1"}).status_code, 403)
+                with self.assertRaises(PermissionError):
+                    admin_checklists.update_admin_checklist(self.supervisor, "veiculo", checklist.id, {})
+                self.assertEqual(self.client.post(f"/veiculos/logs/{log.id}/corrigir-km").status_code, 403)
+
+    def test_admin_can_correct_checklists_from_other_municipalities(self):
+        _, _, checklist, _ = self._pilot_records(2)
+        url = f"/admin/checklists/veiculo/{checklist.id}/editar"
+        self.assertEqual(self.client.get(url).status_code, 200)
+        self.assertEqual(self.client.post(url, data={"km_leitura": "1010"}).status_code, 302)
+        self.assertEqual(checklist.km_leitura, 1010)

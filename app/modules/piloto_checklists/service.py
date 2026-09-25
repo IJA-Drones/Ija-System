@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from types import SimpleNamespace
 
 from flask import url_for
 from sqlalchemy.orm import joinedload
@@ -470,6 +471,29 @@ def _save_drone_checklist(user, drone_id, baterias_por_drone, form_data, assinat
     checklist.assinatura_piloto_responsavel = assinatura_piloto
 
 
+def sincronizar_pendencias_registro(checklist):
+    """Atualiza os alertas da semana original depois de uma correcao administrativa."""
+    inicio = checklist.data_registro.date()
+    inicio -= timedelta(days=inicio.weekday())
+    inicio_dt = datetime.combine(inicio, datetime.min.time())
+    if checklist.piloto_id:
+        actor_filter = {
+            "veiculo": ChecklistSemanalVeiculo.piloto_id == checklist.piloto_id,
+            "drone": ChecklistSemanalDrone.piloto_id == checklist.piloto_id,
+        }
+        nome = checklist.piloto.nome_piloto if checklist.piloto else "-"
+    else:
+        actor_filter = {
+            "veiculo": ChecklistSemanalVeiculo.equipe_id == checklist.equipe_id,
+            "drone": ChecklistSemanalDrone.equipe_id == checklist.equipe_id,
+        }
+        nome = checklist.equipe.nome_equipe if checklist.equipe else "-"
+    pendencias = _coletar_pendencias_checklists_semanais(
+        actor_filter, inicio_dt, inicio_dt + timedelta(days=7),
+    )
+    _sincronizar_pendencias(SimpleNamespace(piloto_id=checklist.piloto_id), nome, pendencias, inicio)
+
+
 def _sincronizar_pendencias(user, piloto_nome, pendencias_semanais, semana_inicio):
     if getattr(user, "piloto_id", None):
         detalhe_link = url_for(
@@ -577,6 +601,8 @@ def _coletar_pendencias_checklists_semanais(actor_filter, inicio_semana_dt, prox
 def _campos_defeituosos_checklist(checklist, labels):
     defeitos = []
     for field, label in labels:
+        if field == "tanque" and not _drone_has_tanque(checklist.drone):
+            continue
         if not bool(getattr(checklist, field)):
             defeitos.append(label)
     return defeitos

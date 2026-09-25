@@ -183,7 +183,7 @@ class ChecklistEmbreagemFreiosTests(unittest.TestCase):
         self.assertIs(updated.farois_funcionando, True)
         for field in ("embreagem", "freio_mao", "freio_pe"):
             self.assertIs(getattr(updated, field), updated.farois_funcionando)
-        self.assertEqual(updated.condicao_luzes_direcao, "")
+        self.assertIsNone(updated.condicao_luzes_direcao)
         self.assertEqual(
             updated.condicao_embreagem_freios,
             updated.condicao_luzes_direcao,
