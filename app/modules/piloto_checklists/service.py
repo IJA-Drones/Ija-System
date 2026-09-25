@@ -99,6 +99,31 @@ CHECKLIST_VEICULO_TEXT_FIELDS = [field for field, _ in CHECKLIST_VEICULO_TEXT_LA
 CHECKLIST_DRONE_BOOL_FIELDS = [field for field, _ in CHECKLIST_DRONE_BOOL_LABELS]
 CHECKLIST_DRONE_TEXT_FIELDS = [field for field, _ in CHECKLIST_DRONE_TEXT_LABELS]
 
+# Cada observacao pertence ao grupo de itens correspondente. Se todos os
+# itens do grupo voltarem a ficar funcionais, a observacao deixa de ser
+# aplicavel e deve ser removida antes de persistir o checklist.
+CHECKLIST_VEICULO_TEXT_GROUPS = {
+    "condicao_luzes_direcao": ("farois_funcionando", "setas_funcionando", "lanternas_funcionando", "piscaalerta_funcionando"),
+    "condicao_luz_painel": ("luz_painel",),
+    "condicao_itens_manutencao": ("limpador_parabrisa", "agua_radiador", "fluido_freio", "oleo_motor"),
+    "condicao_embreagem_freios": ("embreagem", "freio_mao", "freio_pe"),
+    "condicao_vidros_retrovisores": ("vidros", "retrovisores"),
+    "condicao_pneus_estepe": ("pneus", "estepe", "macaco", "triangulo", "chave_roda"),
+    "condicao_itens_seguranca": ("extintor", "cinto_seguranca"),
+    "condicao_itens_carro_interno": ("alarme", "ar_condicionado", "radio"),
+    "condicao_giroflex_isqueiro_carregador": ("giroflex", "isqueiro", "carregador"),
+    "condicao_lataria": ("lataria_frontal", "lataria_lateral", "lataria_traseira"),
+    "condicao_lataria_portas": ("lataria_porta_frontal", "lataria_porta_traseira", "lataria_porta_lateral"),
+    "condicao_itens_carro_externo": ("parachoque_frontal", "parachoque_traseiro"),
+}
+
+CHECKLIST_DRONE_TEXT_GROUPS = {
+    "condicao_helices": ("helices_status",),
+    "condicao_estrutura": ("tanque", "trem_pouso", "cameras"),
+    "condicao_carregador_bateria": ("carregador_controle", "baterias"),
+    "condicao_cabos_correia": ("cabos_carregador", "correia_pescoco"),
+}
+
 
 def _drone_has_tanque(drone):
     return "monitoramento" not in (drone.categoria or "").strip().lower()
@@ -391,7 +416,11 @@ def _save_vehicle_checklist(user, veiculo_id, veiculos_equipe, form_data, assina
     for field in CHECKLIST_VEICULO_BOOL_FIELDS:
         setattr(checklist, field, _bool_from_form(form_data.get(field), default=True))
     for field in CHECKLIST_VEICULO_TEXT_FIELDS:
-        setattr(checklist, field, _clean_str(form_data.get(field)))
+        has_issue = any(
+            _bool_from_form(form_data.get(bool_field), default=True) is False
+            for bool_field in CHECKLIST_VEICULO_TEXT_GROUPS[field]
+        )
+        setattr(checklist, field, _clean_str(form_data.get(field)) if has_issue else None)
 
     checklist.assinatura_piloto = assinatura_piloto
 
@@ -424,7 +453,14 @@ def _save_drone_checklist(user, drone_id, baterias_por_drone, form_data, assinat
         else:
             setattr(checklist, field, _bool_from_form(form_data.get(field), default=True))
     for field in CHECKLIST_DRONE_TEXT_FIELDS:
-        setattr(checklist, field, _clean_str(form_data.get(field)))
+        if field in CHECKLIST_DRONE_TEXT_GROUPS:
+            has_issue = any(
+                _bool_from_form(form_data.get(bool_field), default=True) is False
+                for bool_field in CHECKLIST_DRONE_TEXT_GROUPS[field]
+            )
+            setattr(checklist, field, _clean_str(form_data.get(field)) if has_issue else None)
+        else:
+            setattr(checklist, field, _clean_str(form_data.get(field)))
 
     default_baterias = baterias_por_drone.get(drone_id, 0)
     checklist.num_baterias = _to_int(form_data.get("num_baterias")) or int(default_baterias or 0)

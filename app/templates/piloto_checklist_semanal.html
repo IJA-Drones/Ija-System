@@ -414,7 +414,10 @@
     const textarea = container.querySelector("textarea");
 
     container.style.display = hasIssue ? "block" : "none";
-    if (textarea) textarea.required = hasIssue;
+    if (textarea) {
+      textarea.required = hasIssue;
+      if (!hasIssue) textarea.value = "";
+    }
   }
 
   function setRadioValue(name, value, defaultValue = true) {
@@ -449,6 +452,7 @@ function applyVehiclePrefill() {
     // mantém o reaproveitamento dos demais campos do checklist anterior
     veiculoBoolFields.forEach((field) => setRadioValue(field, prefill[field], true));
     veiculoTextFields.forEach((field) => setFieldValue(field, prefill[field], ""));
+    groupIds.forEach(checkGroupStatus);
   }
 
   function applyDronePrefill() {
@@ -475,6 +479,7 @@ function applyVehiclePrefill() {
 
     droneBoolFields.forEach((field) => setRadioValue(field, prefill[field], true));
     droneTextFields.forEach((field) => setFieldValue(field, prefill[field], ""));
+    groupIds.forEach(checkGroupStatus);
   }
 
   const canvas = document.getElementById("signature-pad");
