@@ -22,7 +22,7 @@ from app.modules.uvis_equipes.service import (
     validate_team_login,
     validate_team_password,
 )
-from app.shared.access import is_admin_global_user, normalize_role
+from app.shared.access import is_admin_global_user, is_veiculos_supervisor, normalize_role
 
 
 def _uvis_only():
@@ -334,6 +334,8 @@ def register_routes(bp):
     @bp.route("/solicitacao/<int:id>/atribuir-equipe-uvis", methods=["POST"], endpoint="atribuir_equipe_uvis_solicitacao")
     @login_required
     def atribuir_equipe_uvis_solicitacao(id):
+        if is_veiculos_supervisor(current_user):
+            abort(403)
         solicitacao = Solicitacao.query.get_or_404(id)
 
         if solicitacao.usuario_id != current_user.id and not is_admin_global_user(current_user):

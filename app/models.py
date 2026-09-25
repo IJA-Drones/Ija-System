@@ -51,6 +51,17 @@ class Prefeitura(db.Model):
 class Usuario(UserMixin, db.Model):
     __tablename__ = "usuarios"
 
+    TIPO_DEV = "dev"
+    TIPO_ADMIN = "admin"
+    TIPO_UVIS = "uvis"
+    TIPO_OPERARIO = "operario"
+    TIPO_VISUALIZADOR = "visualizador"
+    TIPO_REGIONAL = "regional"
+    TIPO_PILOTO = "piloto"
+    TIPO_EQUIPE_UVIS = "equipe_uvis"
+    TIPO_EQUIPE_OCEANO = "equipe_oceano"
+    TIPO_ADMIN_SUPERVISOR = "sup_veiculos"
+
     id = db.Column(db.Integer, primary_key=True)
     prefeitura_id = db.Column(db.Integer, db.ForeignKey("prefeituras.id"), nullable=True, index=True)
 
@@ -62,7 +73,7 @@ class Usuario(UserMixin, db.Model):
     senha_hash = db.Column(db.String(200), nullable=False)
 
     # + incluir "equipe_uvis" e "regional"
-    # tipos esperados: "dev", "admin", "uvis", "operario", "visualizador", "regional", "piloto", "equipe_uvis", "equipe_oceano"
+    # tipos esperados: "dev", "admin", "uvis", "operario", "visualizador", "regional", "piloto", "equipe_uvis", "equipe_oceano", "supervisor_veiculos"
     tipo_usuario = db.Column(db.String(20), default="uvis", index=True)
     trabalha_oceano_azul = db.Column(db.Boolean, nullable=False, default=False, index=True)
     trabalha_agro = db.Column(db.Boolean, nullable=False, default=False, index=True)
@@ -78,7 +89,7 @@ class Usuario(UserMixin, db.Model):
     piloto_agro = db.relationship("PilotoAgro", back_populates="usuario", lazy="joined", foreign_keys=[piloto_agro_id])
 
     # ----------------------------
-    # Equipe UVIS (NOVO)
+    # Equipe UVIS
     # Essa "conta" representa uma equipe específica de uma UVIS dona.
     # ----------------------------
     equipe_uvis_uvis_usuario_id = db.Column(
@@ -145,6 +156,16 @@ class Usuario(UserMixin, db.Model):
         back_populates="uvis_usuario",
         lazy="select",
     )
+
+    @property
+    def is_admin(self):
+        """Retorna True se for administrador, desenvolvedor ou o novo supervisor de veículos"""
+        return self.tipo_usuario in [self.TIPO_ADMIN, self.TIPO_DEV, self.TIPO_ADMIN_SUPERVISOR]
+
+    @property
+    def is_piloto(self):
+        """Retorna True se for piloto ou o novo supervisor (ganha acesso aos menus do piloto)"""
+        return self.tipo_usuario in [self.TIPO_PILOTO, self.TIPO_ADMIN_SUPERVISOR]
 
     def set_senha(self, senha):
         from app.shared.password_policy import PasswordPolicyError, validate_password
@@ -2311,6 +2332,24 @@ class Veiculos(Equipamentos):
     placa = db.Column(db.String(10), nullable=False, unique=True, index=True)
 
     responsavel = db.Column(db.String(120), index=True)
+
+    @property
+    def supervisor_usuario_id(self):
+        marker = (self.responsavel or "").strip()
+        if not marker.startswith("sup_veiculos:"):
+            return None
+        try:
+            return int(marker.split(":", 1)[1])
+        except ValueError:
+            return None
+
+    @property
+    def responsavel_exibicao(self):
+        supervisor_id = self.supervisor_usuario_id
+        if supervisor_id is None:
+            return self.responsavel
+        supervisor = db.session.get(Usuario, supervisor_id)
+        return (supervisor.nome_uvis or supervisor.login) if supervisor else f"Supervisor #{supervisor_id}"
 
     km_atual = db.Column(db.Float, default=0, nullable=False)
     km_prox_revisao = db.Column(db.Float, nullable=True)

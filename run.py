@@ -10,11 +10,10 @@ def _env_flag(name, default=False):
     return os.getenv(name, default_value).strip().lower() in {"1", "true", "yes", "on"}
 
 
-# The short timeout is only for the local debug entry point. Production uses
-# app:create_app() and keeps SESSION_IDLE_TIMEOUT_MINUTES.
+# Local debug sessions expire after eight hours of inactivity by default.
 if __name__ == "__main__" and _env_flag("FLASK_DEBUG", default=True):
     os.environ.setdefault("FLASK_DEBUG", "1")
-    os.environ.setdefault("SESSION_IDLE_TIMEOUT_SECONDS", "30")
+    os.environ.setdefault("SESSION_IDLE_TIMEOUT_MINUTES", "480")
 
 os.environ.setdefault("CSS_BUNDLE_AUTO_BUILD", "1")
 

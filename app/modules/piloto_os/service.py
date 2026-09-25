@@ -28,7 +28,11 @@ from app.shared.access import (
     ADMIN_PANEL_VIEW_TYPES,
     apply_solicitacao_prefeitura_scope,
     can_access_regiao,
+    is_veiculos_supervisor,
+    normalize_role,
+    VEICULOS_SUPERVISOR_USER_TYPES,
 )
+from app.shared.vehicle_supervisor import get_supervisor_operational_equipe
 from app.shared.query_filters import aplicar_filtros_base, id_search_clause
 from app.shared.os_history_filters import (
     apply_os_history_filters,
@@ -296,7 +300,11 @@ def _get_valid_os_drone(user, solicitacao, drone_id, expected_category, field_la
 
 
 def is_piloto_os_user(user):
-    return getattr(user, "tipo_usuario", None) in {"piloto", EQUIPE_OCEANO_USER_TYPE}
+    return normalize_role(getattr(user, "tipo_usuario", None)) in {
+        "piloto",
+        EQUIPE_OCEANO_USER_TYPE,
+        *VEICULOS_SUPERVISOR_USER_TYPES,
+    }
 
 
 def _parse_equipe_id_from_user(user):
@@ -325,9 +333,14 @@ def _buscar_equipe_operacional_usuario(user):
 
 
 def _buscar_equipe_do_usuario_na_os(user, equipe_id):
-    if getattr(user, "tipo_usuario", None) == EQUIPE_OCEANO_USER_TYPE:
+    role = normalize_role(getattr(user, "tipo_usuario", None))
+    if role == EQUIPE_OCEANO_USER_TYPE:
         equipe = _buscar_equipe_operacional_usuario(user)
         return equipe if equipe.id == equipe_id else None
+
+    if role in VEICULOS_SUPERVISOR_USER_TYPES:
+        equipe = get_supervisor_operational_equipe(user)
+        return equipe if equipe and equipe.id == equipe_id else None
 
     vinculo = _buscar_vinculo_piloto_na_equipe(getattr(user, "piloto_id", None), equipe_id)
     return vinculo.equipe if vinculo else None
@@ -342,7 +355,8 @@ def build_piloto_os_context(user, args, google_maps_key):
     busca = (args.get("q") or "").strip()
 
     is_equipe_oceano = getattr(user, "tipo_usuario", None) == EQUIPE_OCEANO_USER_TYPE
-    if not is_equipe_oceano and not getattr(user, "piloto_id", None):
+    is_supervisor = is_veiculos_supervisor(user)
+    if not is_equipe_oceano and not is_supervisor and not getattr(user, "piloto_id", None):
         raise PilotoOsError("Piloto sem vinculo cadastrado.", "danger", redirect_endpoint="main.piloto_os")
 
     piloto = getattr(user, "piloto", None)
@@ -350,6 +364,8 @@ def build_piloto_os_context(user, args, google_maps_key):
     equipe = None
     if is_equipe_oceano:
         equipe = _buscar_equipe_operacional_usuario(user)
+    elif is_supervisor:
+        equipe = get_supervisor_operational_equipe(user)
     else:
         vinculo = _buscar_vinculo_ativo_piloto(user.piloto_id)
         equipe = vinculo.equipe if vinculo else None
@@ -424,7 +440,7 @@ def build_piloto_os_context(user, args, google_maps_key):
         "status_ok": STATUS_OS_APROVADAS_COM_ACENTO,
         "pilot_team_nome": equipe.nome_equipe,
         "pilot_team_regiao": equipe.regiao,
-        "pilot_team_papel": "equipe" if is_equipe_oceano else (vinculo.papel or "").lower(),
+        "pilot_team_papel": "equipe" if is_equipe_oceano else "supervisor" if is_supervisor else (vinculo.papel or "").lower(),
         "pilot_regiao_principal": getattr(piloto, "regiao", None),
         "pilot_regiao_alternativa": getattr(piloto, "regiao_alternativa", None),
         "google_maps_key": google_maps_key,
@@ -458,6 +474,9 @@ def build_piloto_os_historico_context(user, args):
     if getattr(user, "tipo_usuario", None) == EQUIPE_OCEANO_USER_TYPE:
         equipe = _buscar_equipe_operacional_usuario(user)
         equipes_filter = Solicitacao.equipe_id == equipe.id
+    elif is_veiculos_supervisor(user):
+        equipe = get_supervisor_operational_equipe(user)
+        equipes_filter = Solicitacao.equipe_id == equipe.id if equipe else db.false()
     elif not getattr(user, "piloto_id", None):
         raise PilotoOsError("Piloto sem vinculo cadastrado.", "danger", redirect_endpoint="main.piloto_os")
     else:
@@ -513,7 +532,7 @@ def build_piloto_os_historico_context(user, args):
 
 
 def concluir_os_piloto(user, os_id):
-    if getattr(user, "tipo_usuario", None) != EQUIPE_OCEANO_USER_TYPE and not getattr(user, "piloto_id", None):
+    if getattr(user, "tipo_usuario", None) != EQUIPE_OCEANO_USER_TYPE and not is_veiculos_supervisor(user) and not getattr(user, "piloto_id", None):
         raise PilotoOsError("Piloto sem vinculo cadastrado.", "danger", redirect_endpoint="main.piloto_os")
 
     solicitacao = Solicitacao.query.get_or_404(os_id)
@@ -544,7 +563,7 @@ def concluir_os_piloto(user, os_id):
 
 
 def build_piloto_os_form_context(user, os_id):
-    if getattr(user, "tipo_usuario", None) != EQUIPE_OCEANO_USER_TYPE and not getattr(user, "piloto_id", None):
+    if getattr(user, "tipo_usuario", None) != EQUIPE_OCEANO_USER_TYPE and not is_veiculos_supervisor(user) and not getattr(user, "piloto_id", None):
         raise PilotoOsError("Piloto sem vinculo cadastrado.", "danger", redirect_endpoint="main.piloto_os")
 
     query = (
@@ -679,7 +698,7 @@ def salvar_piloto_os_form(user, os_id, form_data, files_data, root_path):
 
 
 def get_piloto_drone_payload(user, drone_id):
-    if getattr(user, "tipo_usuario", None) != EQUIPE_OCEANO_USER_TYPE and not getattr(user, "piloto_id", None):
+    if getattr(user, "tipo_usuario", None) != EQUIPE_OCEANO_USER_TYPE and not is_veiculos_supervisor(user) and not getattr(user, "piloto_id", None):
         raise PilotoOsError("Piloto sem vinculo.", "danger")
 
     drone = Drones.query.get_or_404(drone_id)

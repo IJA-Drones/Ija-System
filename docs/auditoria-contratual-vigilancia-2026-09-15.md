@@ -1,5 +1,7 @@
 # Auditoria técnica de aderência contratual - IJA System
 
+**Nota editorial de 25/09/2026:** este documento preserva a análise e as evidências da sua emissão. Os links locais foram tornados relativos ao repositório; números de linha nos rótulos são referências históricas e podem ter mudado. Para o estado atual e complementos, consulte a [revisão de documentação](revisao-documentacao-2026-09-25.md).
+
 **Data:** 15/09/2026  
 **Revisão de código:** `8e839c4787ce5c364a650d59ea0814be1a76e356`  
 **Objeto:** itens 4.6.1, 4.7/4.7.1 e I a XVI do texto fornecido.  
@@ -19,10 +21,10 @@ O total de itens não mede percentual de desenvolvimento, custo ou esforço. Uma
 
 ### 2.1 Fontes locais
 
-- Texto original em [pasted-text.txt](/Users/pedrohenriquevb/.codex/attachments/9b0211ad-2ec9-4bdf-9caa-f3d653cbd917/pasted-text.txt).
+- Texto original fornecido como `pasted-text.txt`, mantido como anexo local fora do repositório. Sua custódia deve ser preservada separadamente pelo responsável pela auditoria.
 - PDF “Relatório de Análise de Aderência e Novas Demandas”, 23 páginas, fornecido pelo usuário; conteúdo integral extraído e páginas inspecionadas visualmente.
-- Versão Markdown do relatório em [relatorio-novas-demandas-vigilancia-epidemiologica.md](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/docs/relatorio-novas-demandas-vigilancia-epidemiologica.md).
-- [README](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/README.md), [documentação técnica INPI em Markdown](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/docs/documentacao-tecnica-inpi-ija-system.md), documentação de retornos, upload e demais inventários pertinentes.
+- Versão Markdown do relatório em [relatorio-novas-demandas-vigilancia-epidemiologica.md](relatorio-novas-demandas-vigilancia-epidemiologica.md).
+- [README](../README.md), [documentação técnica INPI em Markdown](documentacao-tecnica-inpi-ija-system.md), documentação de retornos, upload e demais inventários pertinentes.
 - Código de inicialização, modelos, registro de rotas, serviços relevantes, templates, clientes externos, migrações, configuração de execução e testes.
 
 O texto colado repete I a XVI três vezes; foi contabilizado uma vez. As propostas arquiteturais contidas no relatório foram auditadas como propostas, sem transformá-las em novas obrigações do contrato.
@@ -60,7 +62,7 @@ Aplicações dessa regra: registro manual de OS não comprova importação de da
 | Execução | Procfile com Gunicorn, padrão de 2 workers e 4 threads por worker; migrações antes do servidor. |
 | Apresentação | Jinja2, CSS responsivo, JavaScript, manifesto e service worker básico. |
 
-Evidências: [factory](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/__init__.py:139), [registro modular](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/routes.py:40), [configuração do banco](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/config.py:16), [Procfile](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/Procfile:1).
+Evidências: [factory](../app/__init__.py), [registro modular](../app/routes.py), [configuração do banco](../config.py), [Procfile](../Procfile).
 
 ### 3.2 Fluxos atuais
 
@@ -83,7 +85,7 @@ flowchart LR
 
 Há dados de solicitação, geocodificação, equipe, larva visualizada, produto/dosagem, criadouro em texto, fotos, vídeos e retorno. **Não há entidade de paciente/caso, levantamento amostral LIRAa, inspeção entomológica normalizada ou denominador para IIP.**
 
-Evidências: [Solicitacao](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/models.py:418), [OrdemServico](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/models.py:548), [OrdemServicoEquipeUvis](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/models.py:689), [catálogo de focos](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/shared/solicitacao_focos.py:6), [geração de retorno](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/modules/piloto_os/service.py:933).
+Evidências: [Solicitacao](../app/models.py), [OrdemServico](../app/models.py), [OrdemServicoEquipeUvis](../app/models.py), [catálogo de focos](../app/shared/solicitacao_focos.py), [geração de retorno](../app/modules/piloto_os/service.py).
 
 ### 3.3 APIs e integrações
 
@@ -188,7 +190,7 @@ Em `can_access_dji_kml_route`, membros de `ADMIN_PANEL_VIEW_TYPES`, incluindo `p
 
 **Correção:** aplicar autorização por objeto, prefeitura e perfil antes de obter payload ou arquivo; usar a mesma política para mapa, download, exportação e mídias. Testar negação entre entes, inclusive quando a região tem o mesmo nome.
 
-Evidências: [helper KML](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/modules/dji_flight_logs/service.py:63), [helper regional](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/shared/access.py:135), [API KML](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/modules/dji_flight_logs/routes.py:126).
+Evidências: [helper KML](../app/modules/dji_flight_logs/service.py), [helper regional](../app/shared/access.py), [API KML](../app/modules/dji_flight_logs/routes.py).
 
 ### A02 - P0: ausência de prefeitura pode remover o filtro territorial
 
@@ -198,7 +200,7 @@ Evidências: [helper KML](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app
 
 **Correção:** negar acesso por padrão quando faltar escopo; representar a autorização global por permissão explícita; revisar dados legados antes da mudança e separar gestão operacional de acesso nominativo a casos.
 
-Evidências: [escopo municipal](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/shared/access.py:94), [consulta do mapa](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/modules/mapas/service.py:24).
+Evidências: [escopo municipal](../app/shared/access.py), [consulta do mapa](../app/modules/mapas/service.py).
 
 ### A03 - P0: proteção de requisições e transporte incompleta
 
@@ -206,7 +208,7 @@ Não foi encontrada inicialização global de CSRF; referências esparsas a toke
 
 **Correção:** proteção CSRF nos fluxos por cookie; autenticação e autorização próprias nos fluxos de máquina; TLS validado; remoção dos logs de credenciais; exigência de segredo estável em produção; CSP compatível com os scripts usados, começando com observação antes de enforcement. Adicionar limites de requisição/volume em login, relato público, geocodificação e uploads. Não foi avaliada uma possível proteção adicional no proxy de produção.
 
-Evidências: [extensões](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/extensions.py:6), [Talisman](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/__init__.py:161), [CEP](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/clients/cep_client.py:14), [log de backup](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/modules/backup/service.py:31), [segredo](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/config.py:11).
+Evidências: [extensões](../app/extensions.py), [Talisman](../app/__init__.py), [CEP](../app/clients/cep_client.py), [log de backup](../app/modules/backup/service.py), [segredo](../config.py).
 
 ### A04 - P0: falso sucesso no backup e recuperação não comprovada
 
@@ -218,7 +220,7 @@ O scheduler inicia no registro do blueprint. A trava `_scheduler_started` e `max
 
 **Correção:** estados distintos para extração, envio e verificação; falhar/alertar se o envio falhar; agendador único ou trava distribuída; retenção; backup de objetos; ensaio de restauração documentado com RPO/RTO acordados. Monitorar completude, idade e recuperabilidade do backup, além da existência do arquivo.
 
-Evidências: [tratamento de falha e status](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/modules/backup/service.py:143), [scheduler](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/modules/backup/routes.py:14), [processos web](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/Procfile:1).
+Evidências: [tratamento de falha e status](../app/modules/backup/service.py), [scheduler](../app/modules/backup/routes.py), [processos web](../Procfile).
 
 ### A05 - P1: camada de mapa descontinuada e filtros inconsistentes
 
@@ -228,7 +230,7 @@ As chamadas do mapa fixam `ano=2026`. O backend retorna apenas solicitações ap
 
 **Correção:** substituir a camada retirada; selecionar período explicitamente; unificar filtros de mapa/tabela/exportação; validar coordenadas na ingestão; usar consultas espaciais e agregação compatíveis com volume e privacidade. Concentração de demandas operacionais não serve como indicador de infestação ou risco epidemiológico.
 
-Evidências: [HeatmapLayer](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/templates/mapa_relatorio.html:413), [ano fixo](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/templates/mapa_relatorio.html:359), [biblioteca semanal](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/templates/base.html:1146), [backend do mapa](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/modules/mapas/service.py:47).
+Evidências: [HeatmapLayer](../app/templates/mapa_relatorio.html), [ano fixo](../app/templates/mapa_relatorio.html), [biblioteca semanal](../app/templates/base.html), [backend do mapa](../app/modules/mapas/service.py).
 
 ### A06 - P1: execução assíncrona local não garante entrega
 
@@ -236,7 +238,7 @@ Upload e relatório PDF combinam dicionários, `ThreadPoolExecutor`, travas de t
 
 **Correção:** banco para estado e idempotência, fila durável, workers separados, armazenamento compartilhado, confirmação após commit, retentativas limitadas e fila de falhas. Usar padrão outbox: persistir a alteração de negócio e o evento na mesma transação. Garantir limpeza de arquivos órfãos e compensação quando arquivo remoto e transação do banco divergirem.
 
-Evidências: [jobs de vídeo](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/modules/piloto_os/routes.py:670), [jobs PDF](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/modules/relatorios/routes.py:93).
+Evidências: [jobs de vídeo](../app/modules/piloto_os/routes.py), [jobs PDF](../app/modules/relatorios/routes.py).
 
 ### A07 - P1: trilha de auditoria insuficiente para dados de saúde
 
@@ -244,7 +246,7 @@ A auditoria depende do método e de palavras no endpoint/path. Ignora GET e fam�
 
 **Correção:** registrar objeto/versão, origem, finalidade, ator/serviço, ente, correlação e resultado; auditar leitura/exportação sensível e alterações de classificação; reduzir dados pessoais nos logs; política de retenção e proteção contra alteração. Definir comportamento quando a auditoria obrigatória não puder ser persistida. Validar o IP na borda confiável.
 
-Evidências: [seleção de eventos](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/__init__.py:99), [gravação](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/__init__.py:222), [IP](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/__init__.py:73).
+Evidências: [seleção de eventos](../app/__init__.py), [gravação](../app/__init__.py), [IP](../app/__init__.py).
 
 ### A08 - P1: PWA básica não valida jornada pública ou operação offline
 
@@ -252,7 +254,7 @@ O service worker apenas repassa requisições para a rede; não implementa cache
 
 **Correção:** criar a jornada mobile cidadã e validá-la nos dispositivos-alvo, corrigir manifesto/registro do worker e avaliar acessibilidade com usuários e ferramentas. Offline e aplicativo nativo dependem de confirmação de escopo; não constam como obrigação expressa no texto original do item IX.
 
-Evidências: [worker](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/static/sw.js:1), [registro](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/templates/base.html:1781), [rota raiz](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/core/routes.py:13), [manifesto](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/static/manifest.json:1).
+Evidências: [worker](../app/static/sw.js), [registro](../app/templates/base.html), [rota raiz](../app/core/routes.py), [manifesto](../app/static/manifest.json).
 
 ### A09 - P0/P1: dados e regras operacionais não substituem dados epidemiológicos
 
@@ -388,26 +390,26 @@ Critérios abaixo são propostas objetivas de homologação a formalizar com o c
 
 | ID | Fonte verificável | Constatação |
 |---|---|---|
-| E01 | [app/routes.py](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/routes.py:5) e [app/models.py](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/models.py:418) | Registro de domínios e modelos operacionais; inventário sem domínio SINAN/LIRAa/cidadão. |
-| E02 | [Solicitacao/OS](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/models.py:428) | Foco, tipo de operação/imóvel, criadouro, coordenadas textuais; OS contém larva, tratamento, mídias e motivo de não realização. |
-| E03 | [solicitacao_focos.py](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/shared/solicitacao_focos.py:6) | Catálogo operacional Aedes/Culex/PE; sem levantamento amostral normalizado. |
-| E04 | [solicitacoes/routes.py](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/modules/solicitacoes/routes.py:45) | Cadastro exige login e perfis institucionais. |
-| E05 | [DJI import](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/modules/dji_flight_logs/service.py:99) | Excel de voos; lote/hash/fingerprint/payload; sem layout de vigilância. |
-| E06 | [drones_import](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/modules/drones_import/service.py:501) | Importação de equipamentos, normalização por IA e commit. |
-| E07 | [mapas/service.py](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/modules/mapas/service.py:24) e [geocoder](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/clients/google_maps_client.py:47) | Mapa de solicitações aprovadas; geocoder usa primeiro resultado; sem IIP. |
-| E08 | [relatorios/service.py](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/modules/relatorios/service.py:663) e [exportações](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/modules/relatorios/routes.py:463) | Agregações e arquivos operacionais. |
-| E09 | [Notificacao](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/models.py:736) e [agenda](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/modules/agenda_notificacoes/service.py:73) | Mensagem/leitura e alertas operacionais; sem fluxo de suspeita cidadã. |
-| E10 | [FAQ](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/modules/chatbot/service.py:540), [rotas do bot](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/modules/chatbot/routes.py:16) e [watchdog token](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/modules/dev_dashboard/routes.py:24) | Bot determinístico e interno; token de máquina existente apenas no processo operacional citado. |
-| E11 | [manifesto](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/static/manifest.json:1) e [worker](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/static/sw.js:1) | Base mobile, sem cache/sincronização funcional. |
-| E12 | [backup](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/modules/backup/service.py:108) e [health checks](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/__init__.py:172) | Dump próprio, scheduler e sondas básicas; limites descritos nos achados. |
-| E13 | [retornos](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/shared/retorno_ciclo.py:86) e [mídias](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/models.py:604) | Retorno de OS e registros de foto/vídeo reutilizáveis. |
-| E14 | [workflow](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/.github/workflows/render-watchdog.yml:1) | Watchdog periódico; não executa a suíte nem testa canais sociais. |
-| E15 | [autorização](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/shared/access.py:94) e [autorização KML](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/modules/dji_flight_logs/service.py:63) | Falhas de isolamento reproduzidas com dados sintéticos. |
-| E16 | [geofencing](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/app/shared/geofencing.py:4) | Áreas aeronáuticas fixas; não identifica risco de arboviroses. |
+| E01 | [app/routes.py](../app/routes.py) e [app/models.py](../app/models.py) | Registro de domínios e modelos operacionais; inventário sem domínio SINAN/LIRAa/cidadão. |
+| E02 | [Solicitacao/OS](../app/models.py) | Foco, tipo de operação/imóvel, criadouro, coordenadas textuais; OS contém larva, tratamento, mídias e motivo de não realização. |
+| E03 | [solicitacao_focos.py](../app/shared/solicitacao_focos.py) | Catálogo operacional Aedes/Culex/PE; sem levantamento amostral normalizado. |
+| E04 | [solicitacoes/routes.py](../app/modules/solicitacoes/routes.py) | Cadastro exige login e perfis institucionais. |
+| E05 | [DJI import](../app/modules/dji_flight_logs/service.py) | Excel de voos; lote/hash/fingerprint/payload; sem layout de vigilância. |
+| E06 | [drones_import](../app/modules/drones_import/service.py) | Importação de equipamentos, normalização por IA e commit. |
+| E07 | [mapas/service.py](../app/modules/mapas/service.py) e [geocoder](../app/clients/google_maps_client.py) | Mapa de solicitações aprovadas; geocoder usa primeiro resultado; sem IIP. |
+| E08 | [relatorios/service.py](../app/modules/relatorios/service.py) e [exportações](../app/modules/relatorios/routes.py) | Agregações e arquivos operacionais. |
+| E09 | [Notificacao](../app/models.py) e [agenda](../app/modules/agenda_notificacoes/service.py) | Mensagem/leitura e alertas operacionais; sem fluxo de suspeita cidadã. |
+| E10 | [FAQ](../app/modules/chatbot/service.py), [rotas do bot](../app/modules/chatbot/routes.py) e [watchdog token](../app/modules/dev_dashboard/routes.py) | Bot determinístico e interno; token de máquina existente apenas no processo operacional citado. |
+| E11 | [manifesto](../app/static/manifest.json) e [worker](../app/static/sw.js) | Base mobile, sem cache/sincronização funcional. |
+| E12 | [backup](../app/modules/backup/service.py) e [health checks](../app/__init__.py) | Dump próprio, scheduler e sondas básicas; limites descritos nos achados. |
+| E13 | [retornos](../app/shared/retorno_ciclo.py) e [mídias](../app/models.py) | Retorno de OS e registros de foto/vídeo reutilizáveis. |
+| E14 | [workflow](../.github/workflows/render-watchdog.yml) | Watchdog periódico; não executa a suíte nem testa canais sociais. |
+| E15 | [autorização](../app/shared/access.py) e [autorização KML](../app/modules/dji_flight_logs/service.py) | Falhas de isolamento reproduzidas com dados sintéticos. |
+| E16 | [geofencing](../app/shared/geofencing.py) | Áreas aeronáuticas fixas; não identifica risco de arboviroses. |
 
 ### 10.1 Evidência reproduzível da auditoria
 
-Os arquivos de apoio estão em [evidencias.json](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/docs/auditoria-vigilancia-evidencias-2026-09-15/evidencias.json), [inventario.json](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/docs/auditoria-vigilancia-evidencias-2026-09-15/inventario.json) e [rotas.json](/Users/pedrohenriquevb/Projetos/Empresa/Ija-System/docs/auditoria-vigilancia-evidencias-2026-09-15/rotas.json). O script das reproduções foi mantido somente no diretório temporário da auditoria, fora do código do projeto: [probes.py](/private/tmp/ija-audit/probes.py). Os resultados e hashes das fontes foram preservados nos arquivos JSON; o script temporário pode ser removido pela limpeza do sistema.
+Os arquivos de apoio estão em [evidencias.json](auditoria-vigilancia-evidencias-2026-09-15/evidencias.json), [inventario.json](auditoria-vigilancia-evidencias-2026-09-15/inventario.json) e [rotas.json](auditoria-vigilancia-evidencias-2026-09-15/rotas.json). O script das reproduções foi mantido somente no diretório temporário da auditoria, fora do código do projeto: `probes.py` (instrumentação temporária não disponível no repositório). Os resultados e hashes das fontes foram preservados nos arquivos JSON; o script temporário pode ser removido pela limpeza do sistema.
 
 - Suíte original: `.venv/bin/python -m unittest discover tests` → `Ran 132 tests in 10.374s`, `OK`.
 - Avisos: conexões SQLite não encerradas e uso legado de `Query.get()`; falhas externas esperadas simuladas em testes.

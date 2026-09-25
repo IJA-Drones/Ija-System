@@ -16,7 +16,7 @@
         <i class="bi bi-car-front-fill me-2 text-primary"></i> Gestão de Frota
       </h2>
       <div class="text-muted small mt-1">
-        Gerencie os veículos sob responsabilidade da equipe e registre os turnos conforme os padrões Oceano Azul.
+        {% if current_user.tipo_usuario in ['sup_veiculos', 'sup_veiculo'] %}Gerencie seu veículo e acompanhe a frota das equipes.{% else %}Gerencie os veículos sob responsabilidade da equipe e registre os turnos conforme os padrões Oceano Azul.{% endif %}
       </div>
     </div>
     <a href="{{ url_for('main.piloto_os') }}" class="btn btn-outline-secondary">
@@ -35,7 +35,17 @@
   {% endif %}
 
   {% if veiculos %}
-    <div class="card shadow-sm rounded-4 border-0 overflow-hidden" id="veiculos-equipe">
+    {% set separar_supervisor = current_user.tipo_usuario in ['sup_veiculos', 'sup_veiculo'] and veiculos_supervisor_ids %}
+    {% set grupos = [true, false] if separar_supervisor and (veiculos|length > veiculos_supervisor_ids|length) else [none] %}
+    {% for grupo in grupos %}
+    <div class="card shadow-sm rounded-4 border-0 overflow-hidden mb-4 {% if grupo is sameas true %}supervisor-vehicle-card{% endif %}" {% if grupo is sameas true %}id="meu-veiculo"{% endif %}>
+      {% if grupo is sameas true %}
+        <div class="card-header supervisor-vehicle-heading py-3 px-4">
+          <strong><i class="bi bi-person-badge-fill me-2"></i>Veículo sob sua responsabilidade</strong>
+        </div>
+      {% elif grupo is sameas false %}
+        <div class="card-header bg-light py-3 px-4"><strong>Demais veículos das equipes</strong></div>
+      {% endif %}
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0 table-frota">
           <colgroup>
@@ -53,11 +63,20 @@
           </thead>
           <tbody>
             {% for v in veiculos %}
+              {% set is_supervisor_veiculo = v.id in (veiculos_supervisor_ids or []) %}
+              {% if grupo is none or is_supervisor_veiculo == grupo %}
               {% set turno_aberto = turnos_abertos.get(v.id) %}
+              {% set turno_de_outro = turno_aberto and current_user.tipo_usuario in ['sup_veiculos', 'sup_veiculo'] and (not current_user.piloto_id or turno_aberto.piloto_id != current_user.piloto_id) %}
               {% set km_atual_visual = turno_aberto.ultimo_km_registrado if turno_aberto else v.km_atual %}
-              <tr>
+              
+              <tr class="{% if is_supervisor_veiculo %}table-light border-start border-4 border-primary{% endif %}">
                 <td>
-                  <div class="fw-bold">{{ v.modelo }}</div>
+                  <div class="fw-bold d-flex align-items-center gap-2 flex-wrap">
+                    <span>{{ v.modelo }}</span>
+                    {% if is_supervisor_veiculo %}
+                      <span class="badge bg-primary-subtle text-primary border" style="font-size: 0.65rem;">Seu veículo</span>
+                    {% endif %}
+                  </div>
                   <div class="text-muted small">{{ v.placa }}</div>
                 </td>
                 <td><span class="badge bg-light text-dark border">{{ v.operacao }}</span></td>
@@ -80,7 +99,9 @@
                   {% endif %}
                 </td>
                 <td class="turno-actions-cell">
-                  {% if turno_aberto %}
+                  {% if turno_de_outro %}
+                    <div class="small text-muted">Turno em andamento por {{ turno_aberto.piloto.nome_piloto if turno_aberto.piloto else (turno_aberto.equipe.nome_equipe if turno_aberto.equipe else 'outro operador') }}</div>
+                  {% elif turno_aberto %}
                     <div class="d-flex flex-column align-items-center gap-2">
                       <div class="small text-muted turno-actions-meta">
                         Aberto em {{ turno_aberto.data_registro.strftime('%d/%m/%Y %H:%M') if turno_aberto.data_registro else '-' }}
@@ -114,11 +135,13 @@
                   {% endif %}
                 </td>
               </tr>
+              {% endif %}
             {% endfor %}
           </tbody>
         </table>
       </div>
     </div>
+    {% endfor %}
 
     {% for v in veiculos %}
       {% set turno_aberto = turnos_abertos.get(v.id) %}
@@ -169,10 +192,12 @@
                   </div>
                 </div>
 
-                <div class="modal-section-title">2. Assinatura do responsável</div>
+                <div class="modal-section-title">2. Assinatura do Piloto/Supervisor</div>
                 <div class="modal-soft-card mb-3">
                   <div class="small text-muted">Fluxo do turno</div>
-                  <div class="hint-line mt-1">Depois de iniciar o turno, use o botão de abastecimento para registrar quantos lançamentos forem necessários até o encerramento.</div>
+                  <div class="hint-line mt-1">
+                    O início deste turno deve ser assinado para validação. Depois de iniciar, use o botão de abastecimento para registrar os lançamentos necessários.
+                  </div>
                 </div>
                 <div class="signature-container text-center">
                     <canvas id="sig-canvas-{{ v.id }}" class="shadow-sm bg-white border rounded-3"></canvas>
@@ -195,6 +220,7 @@
       </div>
 
       {% if turno_aberto %}
+      {% set referencia_abastecimento = km_abastecimento_referencias[v.id] %}
       <div class="modal fade" id="modalAbastecimento{{ v.id }}" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content border-0 shadow-lg rounded-4">
@@ -222,8 +248,8 @@
                   </div>
                   <div class="col-md-3">
                     <label class="form-label small fw-bold">KM no Abastecimento</label>
-                    <input type="text" inputmode="numeric" name="km_abastecimento" class="form-control js-decimal-centavos" value="{{ '%.2f'|format(turno_aberto.ultimo_km_registrado or v.km_atual or 0)|replace('.', ',') }}" placeholder="0,00" autocomplete="off" required>
-                    <div class="hint-line mt-1">Usado para auditoria e relatórios do abastecimento.</div>
+                    <input type="text" inputmode="numeric" name="km_abastecimento" class="form-control js-decimal-centavos" value="{{ '%.2f'|format(turno_aberto.ultimo_km_registrado or v.km_atual or 0)|replace('.', ',') }}" data-km-max="{{ referencia_abastecimento.limite }}" aria-describedby="limite-abastecimento-{{ v.id }}" placeholder="0,00" autocomplete="off" required>
+                    <div class="hint-line mt-1" id="limite-abastecimento-{{ v.id }}">Para veículo, limite de {{ '%.2f'|format(referencia_abastecimento.limite)|replace('.', ',') }} km: até 500 km acima do {{ 'último abastecimento do veículo' if referencia_abastecimento.origem == 'ultimo_abastecimento' else 'KM inicial do turno (primeiro abastecimento)' }}.</div>
                   </div>
                   <div class="col-md-3">
                     <label class="form-label small fw-bold">Litros</label>
@@ -468,7 +494,7 @@ document.querySelectorAll('.check-form').forEach(form => {
     form.addEventListener('submit', function (e) {
         const sigInput = this.querySelector('input[name="assinatura_b64"]');
         if (!sigInput || !sigInput.value) {
-            alert("A assinatura do motorista Ã© obrigatÃ³ria para iniciar o turno."); 
+            alert("A assinatura do motorista é obrigatória para iniciar o turno."); 
             e.preventDefault();
             return false;
         }
@@ -493,6 +519,30 @@ document.querySelectorAll('.js-money-centavos, .js-decimal-centavos').forEach(in
     input.addEventListener('input', applyMask);
     input.addEventListener('blur', applyMask);
     input.form?.addEventListener('submit', applyMask);
+});
+
+document.querySelectorAll('input[name="km_abastecimento"][data-km-max]').forEach(input => {
+    const tipo = input.form.querySelector('[name="tipo_abastecimento"]');
+    const limite = Number(input.dataset.kmMax);
+    const validarKm = () => {
+        const km = Number(input.value.replace(/\./g, '').replace(',', '.'));
+        const ehVeiculo = !tipo.value.toLowerCase().includes('gerador');
+        input.setCustomValidity(ehVeiculo && km > limite
+            ? `KM do abastecimento acima do limite de ${limite.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} km. A diferença máxima permitida é de 500 km.`
+            : '');
+    };
+
+    input.addEventListener('input', validarKm);
+    input.addEventListener('blur', validarKm);
+    tipo.addEventListener('change', validarKm);
+    input.form.addEventListener('submit', event => {
+        validarKm();
+        if (!input.checkValidity()) {
+            event.preventDefault();
+            input.reportValidity();
+        }
+    });
+    validarKm();
 });
 </script>
 {% endblock %}

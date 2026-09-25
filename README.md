@@ -8,6 +8,18 @@ O projeto nasceu para resolver uma dor prática: substituir planilhas, mensagens
 
 > Este repositório representa um sistema real, construído e evoluído a partir de demandas operacionais. A documentação abaixo descreve os módulos existentes e as principais decisões técnicas do projeto.
 
+## Documentação do Projeto
+
+A [central de documentação](docs/README.md) reúne os guias e identifica quais documentos são históricos. Para começar:
+
+- [Instalação e primeiro acesso local](docs/desenvolvimento.md)
+- [Configuração e variáveis de ambiente](docs/configuracao.md) e [.env.example](.env.example)
+- [Arquitetura, dados e permissões](docs/arquitetura.md)
+- [Inventário de módulos, modelos e rotas](docs/referencia-codigo.md)
+- [Testes e manutenção](docs/testes.md)
+- [Deploy, backup, recuperação e diagnóstico](docs/operacao.md)
+- [Revisão de 25/09/2026 e pendências técnicas](docs/revisao-documentacao-2026-09-25.md)
+
 ## Visão Geral
 
 O IJA System centraliza duas frentes principais:
@@ -37,11 +49,14 @@ O IJA System organiza esse fluxo em uma aplicação única, com dados estruturad
 ### Documentação específica
 
 - [Retorno automático em ordens de serviço](docs/README-retorno-automatico.md)
-- [Retorno automático para Notion](docs/README-notion-retorno-automatico.md)
+- [Central de retornos automáticos](docs/relatorio-central-retornos-automaticos.md)
 - [Upload em streaming com WebDAV/Skybox](docs/relatorio-upload-stream-webdav.md)
 - [Filtro de endereço no painel de gestão](docs/manuais-operacionais/painel-gestao-filtro-endereco-notion.md)
 - [Banco de talentos agro](docs/manuais-operacionais/banco-talentos-agro-notion.md)
 - [Alertas de limpeza de veículos](docs/manuais-operacionais/alertas-limpeza-veiculos-oceano-azul-notion.md)
+- [Supervisor Operacional de Veículos: apresentação e guia de uso](docs/perfil-supervisor-operacional-veiculos.md)
+- [Portal do Cidadão e triagem de denúncias](docs/manuais-operacionais/portal-cidadao-triagem.md)
+- [Sessões, senhas e proteção CSRF](docs/seguranca-sessoes-senhas.md)
 
 ### Autenticação e Perfis de Acesso
 
@@ -49,17 +64,20 @@ O sistema possui login com redirecionamento conforme o perfil do usuário. Entre
 
 - desenvolvedor;
 - administrador;
+- diretor;
 - administrador de prefeitura;
 - regional;
+- COVISA;
 - UVIS;
 - equipe operacional da UVIS;
 - piloto;
 - equipe operacional;
+- supervisor operacional de veículos;
 - financeiro;
 - financeiro admin;
 - piloto agro.
 
-Essa separação permite que cada usuário acesse apenas as telas e dados compatíveis com sua função. O projeto também aplica escopos por prefeitura, região, UVIS e equipe em consultas sensíveis.
+O projeto combina perfil, indicadores de atuação e escopos por prefeitura, região, UVIS e equipe. As regras variam por módulo; consulte a [referência de permissões e suas limitações](docs/arquitetura.md). Sessões com timeout, política de senha e CSRF possuem ativação opcional por ambiente.
 
 ### Painéis Operacionais e Administrativos
 
@@ -102,6 +120,12 @@ O fluxo de retorno automático organiza ciclos de OS que precisam de nova visita
 - filtros para localizar retornos automáticos, OSs que geraram retorno ou ciclos completos.
 
 A lógica fica centralizada em `app/shared/retorno_ciclo.py` e os filtros de histórico em `app/shared/os_history_filters.py`.
+
+### Portal do Cidadão e Triagem
+
+O portal público recebe ocorrências com endereço, identificação, consentimento e até cinco anexos, gerando protocolo. A triagem central encaminha a denúncia para coordenadoria e UVIS; a UVIS pode convertê-la em solicitação operacional, que segue as validações do fluxo urbano.
+
+O portal também apresenta notícias e boletim a partir de fontes externas, incluindo InfoDengue, com filtros de doença e ano. A disponibilidade depende do provedor e da configuração municipal. Consulte o [manual do portal e da triagem](docs/manuais-operacionais/portal-cidadao-triagem.md).
 
 ### Agenda e Notificações
 
@@ -229,6 +253,8 @@ Funcionalidades:
 - painel administrativo de checklists semanais;
 - exportação de veículos e logs em Excel.
 
+O supervisor pode receber um veículo diretamente pela listagem. Para abastecimento do tipo Veículo, há trava de até 500 km acima da referência anterior, com regras detalhadas no [manual do supervisor](docs/perfil-supervisor-operacional-veiculos.md). A tela de rastreamento usa tabelas de posições, histórico e alertas associadas à RedGPS; o sincronizador que obtém leituras externas não foi localizado neste repositório.
+
 ### Importação de Dados DJI e KML
 
 O projeto possui módulo para importar e analisar dados vindos de voos DJI.
@@ -282,7 +308,7 @@ O projeto possui mecanismos internos para registrar atividade e diagnosticar pro
 
 Recursos técnicos:
 
-- auditoria automática de ações mutáveis (`POST`, `PUT`, `PATCH`, `DELETE`);
+- auditoria automática de requisições mutáveis (`POST`, `PUT`, `PATCH`, `DELETE`) selecionadas por palavras-chave de ação, com exclusões;
 - registro de usuário, método, endpoint, path, status code, IP, user agent e horário;
 - presença de usuários autenticados;
 - painel dev com métricas de erros, usuários ativos, checks de ambiente e runtime;
@@ -365,18 +391,21 @@ app/
     chatbot/
     clientes/
     dashboard/
+    denuncias/
     dev_dashboard/
     dji_flight_logs/
     drones_import/
     equipamentos/
     equipe_uvis_dashboard/
     equipes/
+    estoque/
     feedback/
     mapas/
     painel_operacional/
     piloto_checklists/
     piloto_os/
     pilotos/
+    portal_cidadao/
     relatorios/
     solicitacoes/
     usuarios/
@@ -395,11 +424,14 @@ O banco possui entidades para diferentes áreas do sistema. Alguns grupos import
 
 - **Usuários e acesso**: `Usuario`, `Prefeitura`, vínculos por perfil, prefeitura, região, piloto agro e equipe UVIS.
 - **Operação UVIS**: `Solicitacao`, `OrdemServico`, `OrdemServicoEquipeUvis`, `Notificacao`.
+- **Participação cidadã**: `Denuncia`, `DenunciaAnexo`, vínculos de triagem e conversão em solicitação.
 - **Equipes e pilotos urbanos**: `Pilotos`, `PilotoUvis`, `Equipe`, `EquipePiloto`, `EquipeUvis`.
 - **Agro comercial e operacional**: `ClienteAgro`, `FornecedorAgro`, `OrcamentoAgro`, `ContratoAgro`, `RdMapeamentoAgro`, `OrdemServicoAgro`, `EquipeAgro`, `PilotoAgro`, `EquipamentoAgro`.
 - **Financeiro agro**: `FinanceiroAgro`, `FinanceiroAgroEntrada`, `FinanceiroAgroSaida`, `FinanceiroAgroCategoria`, `FinanceiroAgroSubcategoria`, `BancoAgro`, `FinanceiroAgroCaixaDiario`, `FinanceiroAgroCompetenciaControle`.
 - **Banco de talentos agro**: `CurriculoAgro`.
 - **Equipamentos e frota**: `Equipamentos`, `Drones`, `Baterias`, `Veiculos`, `LogVeiculo`, `Abastecimento`, `LimpezaVeiculo`, `LimpezaVeiculoAlertaCiencia`, `ChecklistSemanalVeiculo`, `ChecklistSemanalDrone`.
+- **Manutenção e estoque**: `EstoquePeca`, `ManutencaoEquipamento`, `ManutencaoPecaUso`.
+- **Rastreamento**: `RastreamentoPosicao`, `RastreamentoHistorico`, `RastreamentoAlerta`.
 - **DJI urbano**: `DjiFlightLogImport`, `DjiFlightRecord`, `DjiFlightKmlRoute`.
 - **Logs agro**: `AgroFlightLogImport`, `AgroFlightRecord`, `AgroFlightKmlRoute`.
 - **Governança**: `AuditoriaUsuario`, `UsuarioPresenca`, `FeedbackTopico`, `FeedbackComentario`, `FeedbackComentarioAnexo`, `WatchdogDeployEvent`.
@@ -409,11 +441,14 @@ O banco possui entidades para diferentes áreas do sistema. Alguns grupos import
 O projeto integra ou prepara integração com:
 
 - **Google Maps**: mapas, geocodificação, rotas, visualização geográfica e KML;
-- **ViaCEP**: consulta de endereço por CEP e busca de CEP por endereço;
+- **Correios, ViaCEP e BrasilAPI**: consulta de endereço por CEP, conforme configuração e fallback;
 - **Skybox/Nextcloud via WebDAV**: armazenamento de mídias de OS e arquivos operacionais;
-- **Dropbox**: rotina de backup;
+- **Dropbox**: rotina de backup e currículos do banco de talentos;
+- **Gemini**: processamento de currículos e importação assistida de drones;
+- **InfoDengue, feeds de saúde e clima**: conteúdo público e contexto operacional;
+- **RedGPS**: apresentação de posições persistidas; ingestão externa a confirmar;
 - **PostgreSQL**: banco de produção via `DATABASE_URL`;
-- **SQLite/PostgreSQL local**: conforme configuração de ambiente;
+- **SQLite em testes / PostgreSQL local**: SQLite temporário cobre regras; migrações completas exigem validação em PostgreSQL;
 - **Gunicorn**: execução em produção;
 - **Flask-Migrate/Alembic**: versionamento de schema.
 
@@ -454,25 +489,24 @@ O repositório possui testes automatizados cobrindo regras específicas de negó
 - retorno automático e escopos por prefeitura;
 - filtros regionais/equipe em relatórios.
 
-Os testes ficam em `tests/` e podem ser executados com:
+Com o ambiente virtual ativado, execute na raiz:
 
 ```bash
-python -m unittest discover tests
+DATABASE_URL=sqlite:///:memory: python -m pytest -q
+node --test tests/session_security_browser.test.cjs tests/csrf_security_browser.test.cjs
+python scripts/build_css_bundle.py --check
+python scripts/build_docs_inventory.py --check
 ```
 
-Ou, para projetos que usam Pytest no ambiente:
-
-```bash
-pytest
-```
+Na revisão de 25/09/2026, passaram 229 testes Python, 36 subtestes e 25 testes JavaScript. Os testes usam dados temporários e simulações; não comprovam funcionamento das integrações em produção. Veja [testes e manutenção](docs/testes.md) para cobertura e aceite manual.
 
 ## Como Rodar Localmente
 
 ### 1. Clonar o repositório
 
 ```bash
-git clone https://github.com/pedro-cruzz/IJA-System.git
-cd IJA-System
+git clone https://github.com/IJA-Drones/Ija-System.git
+cd Ija-System
 ```
 
 ### 2. Criar e ativar ambiente virtual
@@ -480,50 +514,36 @@ cd IJA-System
 Windows:
 
 ```bash
-python -m venv venv
-venv\Scripts\activate
+python -m venv .venv
+.venv\Scripts\activate
 ```
 
 Linux/macOS:
 
 ```bash
-python -m venv venv
-source venv/bin/activate
+python -m venv .venv
+source .venv/bin/activate
 ```
 
 ### 3. Instalar dependências
 
 ```bash
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
 
 ### 4. Configurar variáveis de ambiente
 
-Crie um arquivo `.env` na raiz do projeto.
+Copie [.env.example](.env.example) para `.env` apenas se o arquivo ainda não existir. Configure `DATABASE_URL` para um PostgreSQL local exclusivo e preencha `SECRET_KEY` com uma chave gerada:
 
-Exemplo mínimo:
-
-```env
-SECRET_KEY=uma-chave-local
-DATABASE_URL=postgresql://usuario:senha@localhost:5432/ija_system
-KEY_API_GOOGLE_MAPS=sua-chave-google-maps
-GOOGLE_MAPS_KEY_BACK=sua-chave-google-maps-backend
+```bash
+python -c "import secrets; print(secrets.token_hex(32))"
 ```
 
-Variáveis opcionais usadas por módulos específicos:
-
-```env
-DROPBOX_APP_KEY=
-DROPBOX_APP_SECRET=
-DROPBOX_REFRESH_TOKEN=
-SKYBOX_WEBDAV_URL=
-SKYBOX_USERNAME=
-SKYBOX_APP_PASSWORD=
-SKYBOX_BASE_DIR=dados ordens de serviço
-USER_PRESENCE_UPDATE_INTERVAL_SECONDS=60
-```
+Não há banco padrão nem credencial inicial. O [guia de desenvolvimento](docs/desenvolvimento.md) detalha dependências, configuração, preparação do banco e criação do primeiro administrador local. As integrações e flags opcionais estão no [catálogo de configuração](docs/configuracao.md).
 
 ### 5. Aplicar migrações
+
+Depois de conferir o banco de destino e as observações de instalação do [guia de desenvolvimento](docs/desenvolvimento.md):
 
 ```bash
 flask --app app:create_app db upgrade
@@ -556,16 +576,12 @@ python scripts/build_css_bundle.py --check
 A aplicação sobe em:
 
 ```text
-http://localhost:5000
+http://localhost:5002
 ```
 
 ## Deploy
 
-O `Procfile` indica um fluxo de deploy com migrações antes da inicialização do servidor:
-
-```text
-flask --app app:create_app db upgrade && gunicorn "app:create_app()"
-```
+O [Procfile](Procfile) constrói o bundle CSS, aplica migrações e inicia Gunicorn. A migração é incondicional no comando atual. Parâmetros de workers, threads e timeout estão descritos em [configuração](docs/configuracao.md).
 
 Também existem endpoints de saúde:
 
@@ -574,7 +590,7 @@ Também existem endpoints de saúde:
 /healthz/full
 ```
 
-O primeiro verifica a aplicação. O segundo também valida a conexão com o banco.
+O primeiro verifica a resposta do processo. O segundo executa `SELECT 1` no banco e retorna 503 em erro SQL; não valida todo o schema ou as integrações. Veja o [guia de operação](docs/operacao.md) para publicação, limitações do backup, restauração e diagnóstico.
 
 ## O Que Este Projeto Demonstra
 

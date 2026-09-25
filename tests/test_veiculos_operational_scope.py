@@ -4,6 +4,7 @@ from datetime import datetime, time, timedelta
 from io import BytesIO
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from flask import Flask, request
 from werkzeug.datastructures import FileStorage
@@ -1058,7 +1059,7 @@ class VeiculosOperationalScopeTests(unittest.TestCase):
         self.assertEqual(abastecimento.litros, 40.5)
         self.assertEqual(abastecimento.valor_total, 1402.40)
 
-    def test_fuel_record_accepts_more_than_500_km_from_shift_initial(self):
+    def test_first_fuel_record_rejects_more_than_500_km_from_shift_initial(self):
         veiculo = self._novo_veiculo()
         user = SimpleNamespace(
             tipo_usuario="equipe_oceano",
@@ -1075,26 +1076,100 @@ class VeiculosOperationalScopeTests(unittest.TestCase):
         db.session.add(log)
         db.session.commit()
 
-        with TemporaryDirectory() as tmp_dir:
-            message = registrar_abastecimento_turno_piloto(
-                user,
-                veiculo.id,
-                {
-                    "km_abastecimento": "1501",
-                    "litros": "20",
-                    "valor_abastecimento": "100",
-                    "tipo_abastecimento": "Veiculo",
-                },
-                {
-                    "foto_nf": FileStorage(stream=BytesIO(b"nf"), filename="nf.png", content_type="image/png"),
-                    "foto_painel_abastecimento": FileStorage(stream=BytesIO(b"painel"), filename="painel.png", content_type="image/png"),
-                },
-                tmp_dir,
-            )
+        with patch.object(veiculos_service, "_salvar_upload_veiculo") as upload:
+            with self.assertRaisesRegex(veiculos_service.VeiculoTurnoError, "primeiro abastecimento"):
+                self._registrar_abastecimento(user, veiculo, "1500,01")
+            upload.assert_not_called()
 
-        abastecimento = Abastecimento.query.one()
-        self.assertEqual(message, "Abastecimento registrado com sucesso!")
-        self.assertEqual(abastecimento.km_registro, 1501)
+        self.assertEqual(Abastecimento.query.count(), 0)
+        self.assertEqual(veiculo.km_atual, 1000)
+
+    def _registrar_abastecimento(self, user, veiculo, km, tipo="Veículo"):
+        return registrar_abastecimento_turno_piloto(
+            user,
+            veiculo.id,
+            {
+                "km_abastecimento": km,
+                "litros": "20",
+                "valor_abastecimento": "100",
+                "tipo_abastecimento": tipo,
+            },
+            {
+                "foto_nf": FileStorage(stream=BytesIO(b"nf"), filename="nf.png", content_type="image/png"),
+                "foto_painel_abastecimento": FileStorage(stream=BytesIO(b"painel"), filename="painel.png", content_type="image/png"),
+            },
+            self.app.root_path,
+        )
+
+    def test_fuel_limit_uses_last_vehicle_fuel_across_shifts(self):
+        veiculo = self._novo_veiculo(km_atual=1700)
+        user = SimpleNamespace(tipo_usuario="equipe_oceano", codigo_setor=str(self.equipe.id), prefeitura_id=1)
+        turno_anterior = LogVeiculo(veiculo_id=veiculo.id, km_inicial=1000, km_final=1700,
+                                   data_registro=datetime(2026, 7, 1, 8))
+        turno_atual = LogVeiculo(veiculo_id=veiculo.id, equipe_id=self.equipe.id, km_inicial=1700,
+                                km_final=None, data_registro=datetime(2026, 7, 2, 8))
+        outro_veiculo = self._novo_veiculo(placa="DEF2G34", renomacao="DEF2G34")
+        outro_turno = LogVeiculo(veiculo_id=outro_veiculo.id, km_inicial=9000, km_final=9500)
+        db.session.add_all([turno_anterior, turno_atual, outro_turno])
+        db.session.flush()
+
+        # O registro mais recente é definido por data, e não pelo maior KM ou ID.
+        for turno, km, tipo, data in (
+            (turno_anterior, 1300, "Veiculo", datetime(2026, 7, 1, 12)),
+            (turno_anterior, 1400, "Veículo", datetime(2026, 7, 1, 10)),
+            (turno_atual, 1700, "Gerador", datetime(2026, 7, 2, 9)),
+            (outro_turno, 9400, "Veículo", datetime(2026, 7, 2, 10)),
+        ):
+            db.session.add(Abastecimento(log_veiculo_id=turno.id, km_registro=km, tipo_abastecimento=tipo,
+                                        data_hora=data, litros=20, valor_total=100, foto_nf_path="nf.png"))
+        db.session.commit()
+
+        context = build_piloto_veiculos_context(user)
+        self.assertEqual(context["km_abastecimento_referencias"][veiculo.id],
+                         {"km": 1300, "limite": 1800, "origem": "ultimo_abastecimento"})
+        with patch.object(veiculos_service, "_salvar_upload_veiculo", return_value="foto.png") as upload:
+            for km in ("1.800,01", "1900"):
+                with self.subTest(km=km):
+                    with self.assertRaisesRegex(veiculos_service.VeiculoTurnoError, "Limite permitido: 1800.00"):
+                        self._registrar_abastecimento(user, veiculo, km)
+            upload.assert_not_called()
+            self.assertEqual(Abastecimento.query.count(), 4)
+
+            message = self._registrar_abastecimento(user, veiculo, "1.800,00")
+            self.assertEqual(message, "Abastecimento registrado com sucesso!")
+            self.assertEqual(Abastecimento.query.filter_by(log_veiculo_id=turno_atual.id, tipo_abastecimento="Veículo").one().km_registro, 1800)
+
+            # O novo abastecimento redefine o limite, mesmo no mesmo turno.
+            self.assertEqual(build_piloto_veiculos_context(user)["km_abastecimento_referencias"][veiculo.id]["limite"], 2300)
+            self._registrar_abastecimento(user, veiculo, "2299,99")
+
+    def test_fuel_limit_keeps_zero_reference_and_breaks_date_ties_by_id(self):
+        veiculo = self._novo_veiculo()
+        log = LogVeiculo(veiculo_id=veiculo.id, equipe_id=self.equipe.id, km_inicial=1000, km_final=None)
+        db.session.add(log)
+        db.session.flush()
+        for km in (100, 0):
+            db.session.add(Abastecimento(log_veiculo_id=log.id, km_registro=km, tipo_abastecimento="Veículo",
+                                        data_hora=datetime(2026, 7, 1, 12), litros=20, foto_nf_path="nf.png"))
+            db.session.flush()
+        db.session.commit()
+
+        self.assertEqual(veiculos_service._build_km_abastecimento_referencias({veiculo.id: log})[veiculo.id],
+                         {"km": 0, "limite": 500, "origem": "ultimo_abastecimento"})
+
+    def test_generator_fuel_does_not_apply_or_reset_vehicle_limit(self):
+        veiculo = self._novo_veiculo()
+        user = SimpleNamespace(tipo_usuario="equipe_oceano", codigo_setor=str(self.equipe.id), prefeitura_id=1)
+        log = LogVeiculo(veiculo_id=veiculo.id, equipe_id=self.equipe.id, km_inicial=1000, km_final=None)
+        db.session.add(log)
+        db.session.commit()
+
+        with patch.object(veiculos_service, "_salvar_upload_veiculo", return_value="foto.png"):
+            self._registrar_abastecimento(user, veiculo, "2000", tipo="Gerador")
+
+        self.assertEqual(Abastecimento.query.one().km_registro, 2000)
+        self.assertEqual(build_piloto_veiculos_context(user)["km_abastecimento_referencias"][veiculo.id],
+                         {"km": 1000, "limite": 1500, "origem": "km_inicial"})
 
     def test_closing_shift_rejects_final_km_lower_than_fuel_km(self):
         veiculo = self._novo_veiculo(km_atual=1000)

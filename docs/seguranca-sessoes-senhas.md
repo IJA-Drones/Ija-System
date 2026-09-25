@@ -8,11 +8,11 @@ tela para gravar configurações no banco.
 
 O recurso fica **desativado por padrão**. A instalação do código não altera a
 política em uso. Nenhum valor do `.env` é modificado pelo código.
-O `Procfile` mantém a execução de `flask db upgrade` condicionada a
-`IJA_AUTO_DB_MIGRATE=1`; sem essa variável, a migração automática fica desligada.
-Esta alteração de segurança não exige migração no Neon nem em produção. Se a
-opção de migração automática estiver ativa, outras migrações pendentes do projeto
-serão aplicadas na próxima inicialização.
+Os controles de segurança descritos aqui não exigem migração própria. Entretanto,
+o `Procfile` atual executa `flask --app app:create_app db upgrade` em toda
+inicialização, antes do Gunicorn; outras migrações pendentes serão aplicadas.
+`IJA_AUTO_DB_MIGRATE` não é lida pelo código atual. Confira o
+[guia de operação](operacao.md) antes de publicar.
 
 Para ativar primeiro em homologação, definir no ambiente e reiniciar todos os
 processos da aplicação:
@@ -35,10 +35,13 @@ ativar as duas juntas. Uma `SECRET_KEY` fixa de pelo menos 32 caracteres é
 obrigatória quando qualquer uma delas estiver ativa.
 
 - Timeout: inteiro entre 1 e 1440 minutos. Mínimo da senha: entre 8 e 128 caracteres.
-- Ao iniciar localmente com `python run.py` em DEBUG, o teste usa 30 segundos
-  de inatividade por padrão. Reinicie o processo após atualizar o código e
-  entre novamente para testar. Em outros pontos de entrada locais, definir
+- O Config usa 120 minutos de inatividade e senha mínima de 9 caracteres.
+  O exemplo acima define explicitamente 15 minutos e 15 caracteres para homologação.
+  Ao iniciar com `python run.py` em DEBUG, o timeout é 480 minutos se
+  `SESSION_IDLE_TIMEOUT_MINUTES` não estiver definido. Não há timeout automático
+  de 30 segundos. Para esse teste curto, defina
   `SESSION_IDLE_TIMEOUT_SECONDS=30` com `SECURITY_CONTROLS_ENABLED=1` e DEBUG.
+  Reinicie o processo e entre novamente para testar.
   Esse parâmetro é rejeitado fora de DEBUG/TESTING; o processo de produção
   continua usando `SESSION_IDLE_TIMEOUT_MINUTES`. Não é necessário executar
   migrações nem alterar banco algum.
@@ -67,7 +70,7 @@ recebem HTTP 401 com `code=session_expired`.
 Navegação HTML e interação com a página renovam o prazo. Cliques, digitação,
 movimento do ponteiro, rolagem e gestos de toque reiniciam a contagem local e
 enviam sinais de atividade limitados em frequência, protegidos por um token da sessão.
-Com o prazo padrão de 15 minutos, o navegador envia renovações periódicas
+Com o prazo configurado de 15 minutos no exemplo, o navegador envia renovações periódicas
 em intervalos de 45 segundos enquanto há uso e consulta o status a cada 5 minutos
 quando a aba está visível e parada. Também consulta ao abrir o alerta, ao atingir
 o prazo e ao voltar para a aba. Essas rotas leem a sessão e o usuário, mas não

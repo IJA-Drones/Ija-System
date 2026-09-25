@@ -12,17 +12,18 @@ from app.modules.equipes.service import (
     find_piloto_conflict,
     get_equipe_account,
     get_pilotos_ordered,
+    sync_equipe_supervisores,
     is_truthy,
     parse_optional_int,
     regiao_valida,
     upsert_equipe_account,
     validate_equipe_account_form,
 )
-from app.shared.access import apply_prefeitura_scope, normalize_role
+from app.shared.access import apply_prefeitura_scope, is_veiculos_supervisor, normalize_role
 
 
 def _require_admin_or_operario():
-    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"dev", "diretor", "admin", "operario", "operador", "prefeitura_admin"}:
+    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"dev", "diretor", "admin", "operario", "operador", "prefeitura_admin"} and not is_veiculos_supervisor(current_user):
         abort(403)
 
 
@@ -115,6 +116,7 @@ def register_routes(bp):
                     errors["auxiliar_id"] = f"Este piloto ja esta na equipe '{nome_eq}' como {papel}. Remova de la antes."
                     flash(errors["auxiliar_id"], "warning")
 
+            prefeitura_id = getattr(current_user, "prefeitura_id", None)
             if errors:
                 flash("Corrija os campos destacados.", "warning")
                 return render_template(
@@ -131,7 +133,7 @@ def register_routes(bp):
                 regiao=regiao or None,
                 ativa=True,
                 trabalha_oceano_azul=trabalha_oceano_azul,
-                prefeitura_id=getattr(current_user, "prefeitura_id", None),
+                prefeitura_id=prefeitura_id,
             )
             db.session.add(equipe)
             db.session.flush()
@@ -359,6 +361,7 @@ def register_routes(bp):
                     errors["auxiliar_id"] = msg
                     flash(msg, "warning")
 
+
             if not errors:
                 equipe.nome_equipe = nome_equipe
                 equipe.regiao = regiao or None
@@ -439,6 +442,7 @@ def register_routes(bp):
         equipe = apply_prefeitura_scope(Equipe.query, current_user, Equipe.prefeitura_id).filter(Equipe.id == equipe_id).first_or_404()
 
         try:
+            sync_equipe_supervisores(equipe, [], user=current_user)
             db.session.delete(equipe)
             db.session.commit()
             flash(f"Equipe '{equipe.nome_equipe}' excluida com sucesso.", "success")

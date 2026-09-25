@@ -53,17 +53,17 @@ class Config:
 
     USER_PRESENCE_UPDATE_INTERVAL_SECONDS = os.getenv(
         "USER_PRESENCE_UPDATE_INTERVAL_SECONDS",
-        "60",
+        "300",
     )
     # Opt-in rollout: no migration or database-backed configuration is required.
     SECURITY_CONTROLS_ENABLED = os.getenv("SECURITY_CONTROLS_ENABLED", "0").strip().lower() in {"1", "true", "yes", "on"}
     CSRF_PROTECTION_ENABLED = os.getenv("CSRF_PROTECTION_ENABLED", "0").strip().lower() in {"1", "true", "yes", "on"}
-    SESSION_IDLE_TIMEOUT_MINUTES = os.getenv("SESSION_IDLE_TIMEOUT_MINUTES", "15")
+    SESSION_IDLE_TIMEOUT_MINUTES = os.getenv("SESSION_IDLE_TIMEOUT_MINUTES", "120")
     # Short timeout for local/manual tests only; rejected outside DEBUG/TESTING.
     SESSION_IDLE_TIMEOUT_SECONDS = os.getenv("SESSION_IDLE_TIMEOUT_SECONDS")
     # An absolute limit is optional; inactivity is the only limit by default.
     SESSION_MAX_LIFETIME_HOURS = os.getenv("SESSION_MAX_LIFETIME_HOURS", "0")
-    PASSWORD_MIN_LENGTH = os.getenv("PASSWORD_MIN_LENGTH", "15")
+    PASSWORD_MIN_LENGTH = os.getenv("PASSWORD_MIN_LENGTH", "9")
     PASSWORD_REQUIRE_UPPERCASE = os.getenv("PASSWORD_REQUIRE_UPPERCASE", "1").strip().lower() in {"1", "true", "yes", "on"}
     PASSWORD_REQUIRE_LOWERCASE = os.getenv("PASSWORD_REQUIRE_LOWERCASE", "1").strip().lower() in {"1", "true", "yes", "on"}
     PASSWORD_REQUIRE_DIGIT = os.getenv("PASSWORD_REQUIRE_DIGIT", "1").strip().lower() in {"1", "true", "yes", "on"}

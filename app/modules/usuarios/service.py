@@ -1,7 +1,7 @@
 from sqlalchemy import and_, func, or_
 
 from app.extensions import db
-from app.models import Notificacao, Usuario
+from app.models import Notificacao, Usuario, Pilotos
 from app.shared.access import (
     DEV_USER_TYPE,
     DIRECTOR_USER_TYPE,
@@ -9,6 +9,7 @@ from app.shared.access import (
     FINANCEIRO_USER_TYPE,
     PREFEITURA_ADMIN_USER_TYPE,
     REGIONAL_USER_TYPE,
+    VEICULOS_SUPERVISOR_USER_TYPES,
     is_admin_global_user,
     is_dev_user,
     normalize_regiao,
@@ -27,6 +28,7 @@ ADMIN_USER_TYPES = (
     FINANCEIRO_ADMIN_USER_TYPE,
     FINANCEIRO_USER_TYPE,
     "covisa",
+    "sup_veiculos",
 )
 LEGACY_COVISA_USER_TYPE = "visualizar"
 LEGACY_COVISA_REGIAO = "COVISA"
@@ -36,6 +38,8 @@ def normalize_admin_user_type(tipo_usuario: str | None) -> str:
     tipo_normalizado = (tipo_usuario or "").strip().lower()
     if tipo_normalizado == "covisa":
         return LEGACY_COVISA_USER_TYPE
+    if tipo_normalizado in VEICULOS_SUPERVISOR_USER_TYPES:
+        return "sup_veiculos"
     return tipo_normalizado
 
 
@@ -57,7 +61,8 @@ def admin_user_types():
 
 
 def is_admin_managed_user(usuario) -> bool:
-    return getattr(usuario, "tipo_usuario", None) in ADMIN_USER_TYPES or is_legacy_covisa_user(usuario)
+    tipo = getattr(usuario, "tipo_usuario", None)
+    return tipo in ADMIN_USER_TYPES or tipo in VEICULOS_SUPERVISOR_USER_TYPES or is_legacy_covisa_user(usuario)
 
 
 def can_assign_dev_role(actor) -> bool:
@@ -83,7 +88,8 @@ def can_manage_admin_user(actor, usuario) -> bool:
 def get_admin_user_type_form_value(usuario) -> str:
     if is_legacy_covisa_user(usuario):
         return "covisa"
-    return (getattr(usuario, "tipo_usuario", None) or "").strip().lower()
+    tipo = (getattr(usuario, "tipo_usuario", None) or "").strip().lower()
+    return "sup_veiculos" if tipo in VEICULOS_SUPERVISOR_USER_TYPES else tipo
 
 
 def login_em_uso(login: str, exclude_user_id=None):
@@ -109,6 +115,7 @@ def build_admin_users_query(q: str, tipo: str):
                     PREFEITURA_ADMIN_USER_TYPE,
                     FINANCEIRO_ADMIN_USER_TYPE,
                     FINANCEIRO_USER_TYPE,
+                    *VEICULOS_SUPERVISOR_USER_TYPES,
                 )
             ),
             and_(
@@ -124,6 +131,8 @@ def build_admin_users_query(q: str, tipo: str):
                 Usuario.tipo_usuario == LEGACY_COVISA_USER_TYPE,
                 func.upper(func.coalesce(Usuario.regiao, "")) == LEGACY_COVISA_REGIAO,
             )
+        elif tipo in VEICULOS_SUPERVISOR_USER_TYPES:
+            query = query.filter(Usuario.tipo_usuario.in_(VEICULOS_SUPERVISOR_USER_TYPES))
         else:
             query = query.filter(Usuario.tipo_usuario == tipo)
 
@@ -225,3 +234,28 @@ def validate_password_reset(senha: str, senha2: str, **_kwargs):
 def delete_admin_user(usuario):
     Notificacao.query.filter(Notificacao.usuario_id == usuario.id).delete(synchronize_session=False)
     db.session.delete(usuario)
+
+
+def garantir_piloto_para_supervisor(usuario):
+    """Usa a identidade de piloto existente para registrar autoria sem equipe."""
+    tipo_normalizado = (usuario.tipo_usuario or "").strip().lower()
+    if tipo_normalizado not in VEICULOS_SUPERVISOR_USER_TYPES:
+        return
+    if getattr(usuario, "piloto_id", None):
+        compartilhado = Usuario.query.filter(
+            Usuario.piloto_id == usuario.piloto_id,
+            Usuario.id != usuario.id,
+        ).first()
+        if not compartilhado:
+            piloto = db.session.get(Pilotos, usuario.piloto_id)
+            if piloto:
+                piloto.nome_piloto = usuario.nome_uvis or usuario.login
+                piloto.prefeitura_id = usuario.prefeitura_id
+                return
+    novo_piloto = Pilotos(
+        nome_piloto=usuario.nome_uvis or usuario.login,
+        prefeitura_id=getattr(usuario, "prefeitura_id", None),
+    )
+    db.session.add(novo_piloto)
+    db.session.flush()
+    usuario.piloto_id = novo_piloto.id

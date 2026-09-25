@@ -8,10 +8,15 @@ from app.modules.piloto_checklists.service import (
     build_piloto_checklist_context,
     save_piloto_checklist,
 )
+from app.shared.access import VEICULOS_SUPERVISOR_USER_TYPES, normalize_role
 
 
 def _require_piloto():
-    if getattr(current_user, "tipo_usuario", None) not in {"piloto", EQUIPE_OCEANO_USER_TYPE}:
+    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {
+        "piloto",
+        EQUIPE_OCEANO_USER_TYPE,
+        *VEICULOS_SUPERVISOR_USER_TYPES,
+    }:
         abort(403)
 
 

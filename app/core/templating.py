@@ -15,7 +15,7 @@ from app.modules.feedback.service import (
 )
 from app.modules.denuncias.service import can_access_denuncias, count_denuncias_alerta
 from app.modules.agro.service import can_access_agro_panel
-from app.shared.access import is_admin_global_user, is_covisa_user, is_dev_user
+from app.shared.access import is_admin_global_user, is_covisa_user, is_dev_user, is_veiculos_supervisor
 from app.shared.formatters import format_currency_br, format_phone_br
 from app.shared.solicitacao_focos import build_focus_catalog
 from app.modules.solicitacoes.service import is_solicitacao_quadra
@@ -61,6 +61,7 @@ def register_template_helpers(bp):
                     "can_access_denuncias": can_access_denuncias,
                     "can_access_agro_panel": can_access_agro_panel,
                     "is_admin_global_user": is_admin_global_user,
+                    "is_veiculos_supervisor": is_veiculos_supervisor,
                     "is_covisa_user": is_covisa_user,
                     "is_dev_user": is_dev_user,
                     "solicitacao_focus_catalog": focus_catalog,
@@ -85,6 +86,7 @@ def register_template_helpers(bp):
                     "can_access_denuncias": can_access_denuncias,
                     "can_access_agro_panel": can_access_agro_panel,
                     "is_admin_global_user": is_admin_global_user,
+                    "is_veiculos_supervisor": is_veiculos_supervisor,
                     "is_covisa_user": is_covisa_user,
                     "is_dev_user": is_dev_user,
                     "solicitacao_focus_catalog": focus_catalog,
@@ -105,6 +107,7 @@ def register_template_helpers(bp):
             "can_access_feedback": can_access_feedback,
             "can_access_denuncias": can_access_denuncias,
             "is_admin_global_user": is_admin_global_user,
+            "is_veiculos_supervisor": is_veiculos_supervisor,
             "is_covisa_user": is_covisa_user,
             "is_dev_user": is_dev_user,
             "solicitacao_focus_catalog": focus_catalog,

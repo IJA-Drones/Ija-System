@@ -2,7 +2,7 @@
 {% set is_global_admin = current_user.is_authenticated and is_admin_global_user(current_user) %}
 {% set is_financeiro_agro_user = current_user.is_authenticated and current_user.tipo_usuario in ['financeiro_admin', 'financeiro'] %}
 {% set is_financeiro_agro_admin = current_user.is_authenticated and (is_global_admin or current_user.tipo_usuario == 'financeiro_admin') %}
-{% set is_admin_panel_user = current_user.is_authenticated and (is_global_admin or current_user.tipo_usuario in ['operario', 'visualizar', 'regional', 'prefeitura_admin']) %}
+{% set is_admin_panel_user = current_user.is_authenticated and (is_global_admin or current_user.tipo_usuario in ['operario', 'visualizar', 'regional', 'prefeitura_admin', 'sup_veiculos']) %}
 {% set can_access_agro_context = current_user.is_authenticated and can_access_agro_panel(current_user) %}
 {% set logo_light_url = url_for('static', filename='img/logo_oceano_azul_light.png') %}
 {% set logo_dark_url = url_for('static', filename='img/logo_oceano_azul_dark.png') %}
@@ -302,6 +302,32 @@
               <i class="bi bi-clock-history me-2"></i><span>Histórico OS</span>
             </a>
           </li>
+          {% if current_user.tipo_usuario == 'sup_veiculos' %}
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint == 'main.piloto_dosagem' %}active{% endif %}"
+              href="{{ url_for('main.piloto_dosagem') }}"
+            >
+              <i class="bi bi-calculator-fill me-2"></i><span>Dosagem</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint == 'main.piloto_checklist_semanal' %}active{% endif %}"
+              href="{{ url_for('main.piloto_checklist_semanal') }}"
+            >
+              <i class="bi bi-ui-checks-grid me-2"></i><span>Checklist Semanal</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.endpoint == 'main.piloto_veiculos' and request.args.get('acao') == 'abrir_turno' %}active{% endif %}"
+              href="{{ url_for('main.piloto_veiculos', acao='abrir_turno') }}#veiculos-equipe"
+            >
+              <i class="bi bi-play-circle-fill me-2"></i><span>Abrir Turno</span>
+            </a>
+          </li>
+          {% endif %}
           {% elif current_user.tipo_usuario == 'equipe_uvis' %}
           <li class="nav-item">
             <a
@@ -311,7 +337,7 @@
               <i class="bi bi-clock-history me-2"></i><span>Histórico Operacional</span>
             </a>
           </li>
-          {% elif current_user.tipo_usuario in ['piloto', 'equipe_oceano'] %}
+          {% elif current_user.tipo_usuario in ['piloto', 'equipe_oceano', 'sup_veiculos'] %}
           <li class="nav-item">
             <a
               class="nav-link {% if request.endpoint == 'main.piloto_os_historico' %}active{% endif %}"
@@ -803,7 +829,7 @@
           </li>
           {% endif %}
 
-          {% if is_global_admin or current_user.tipo_usuario in ['visualizar', 'operario', 'regional', 'prefeitura_admin'] %}
+          {% if is_global_admin or current_user.tipo_usuario in ['visualizar', 'operario', 'regional', 'prefeitura_admin', 'sup_veiculos'] %}
           <li class="nav-item">
             <a
               class="nav-link {% if request.endpoint in ['main.relatorios', 'main.relatorios_solicitacoes', 'main.relatorios_os', 'main.relatorios_coleta_imagens'] %}active{% endif %}"
@@ -903,7 +929,7 @@
 {% endif %}
           {% endif %} 
           {# ===================== PILOTOS ===================== #} 
-          {% if is_global_admin or current_user.tipo_usuario in ['visualizar', 'regional', 'operario', 'operador', 'prefeitura_admin'] %}
+          {% if is_global_admin or current_user.tipo_usuario in ['visualizar', 'regional', 'operario', 'operador', 'prefeitura_admin', 'sup_veiculos'] %}
           <li class="nav-item">
             <button
               type="button"
@@ -928,7 +954,7 @@
                     <i class="bi bi-list-ul me-2"></i><span>Listar</span>
                   </a>
                 </li>
-                {% if is_global_admin or current_user.tipo_usuario|lower in ['operario', 'operador', 'prefeitura_admin'] %}
+                {% if is_global_admin or current_user.tipo_usuario|lower in ['operario', 'operador', 'prefeitura_admin' , 'sup_veiculos'] %}
                 <li class="nav-item">
                   <a
                     class="nav-link sub-link"
@@ -945,14 +971,14 @@
           {% endif %}
 
           {# ===================== EQUIPAMNETOS ===================== #} 
-          {% if is_global_admin or current_user.tipo_usuario|lower in ['operario', 'operador', 'prefeitura_admin'] %}
+          {% if is_global_admin or current_user.tipo_usuario|lower in ['operario', 'operador', 'prefeitura_admin', 'sup_veiculos'] %}
           <li class="nav-item">
             <a class="nav-link {% if request.endpoint in ['main.listar_equipamentos', 'main.importar_planilha_drones'] %}active{% endif %}"
               href="{{ url_for('main.listar_equipamentos') }}">
               <i class="bi bi-gear-fill me-2"></i><span>Equipamentos</span>
             </a> 
           </li>
-          {% if is_global_admin or current_user.tipo_usuario|lower in ['operario', 'operador', 'prefeitura_admin'] %}
+          {% if is_global_admin or current_user.tipo_usuario|lower in ['operario', 'operador', 'prefeitura_admin', 'sup_veiculos'] %}
           {# ===================== VEÍCULOS ===================== #}
           <li class="nav-item">
             <a class="nav-link {% if request.endpoint in ['main.veiculos_menu', 'main.listar_veiculos', 'main.veiculos_rastreamento', 'main.veiculos_logs', 'main.veiculos_limpezas', 'main.exportar_logs_veiculos_xlsx', 'main.admin_checklists_semanais', 'main.editar_veiculo', 'main.cadastrar_veiculo', 'main.veiculos_alertas_limpeza'] %}active{% endif %}"
@@ -984,7 +1010,7 @@
         {% endif %}
 
           {% endif %} {# ===================== EQUIPES (ADMIN COMPLETO / UVIS SÓ LISTAR) ===================== #} 
-          {% if is_global_admin or current_user.tipo_usuario in ['uvis', 'regional', 'operario', 'operador', 'prefeitura_admin'] %}
+          {% if is_global_admin or current_user.tipo_usuario in ['uvis', 'regional', 'operario', 'operador', 'prefeitura_admin', 'sup_veiculos'] %}
           <li class="nav-item">
             <button type="button" class="nav-link nav-link-toggle" data-bs-toggle="collapse" data-bs-target="#menuEquipes">
               <span>
@@ -1003,7 +1029,7 @@
                 </li>
 
                 {# ✅ Somente ADMIN pode cadastrar equipes da Oceano Azul #}
-                {% if is_global_admin or current_user.tipo_usuario|lower in ['operario', 'operador', 'prefeitura_admin'] %}
+                {% if is_global_admin or current_user.tipo_usuario|lower in ['operario', 'operador', 'prefeitura_admin', 'sup_veiculos'] %}
                 <li class="nav-item">
                   <a class="nav-link sub-link" href="{{ url_for('main.cadastrar_equipes') }}">
                     <i class="bi bi-person-plus-fill me-2"></i><span>Cadastrar</span>

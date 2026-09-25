@@ -17,7 +17,7 @@ from app.modules.pilotos.service import (
     serialize_pilotos,
     validate_piloto_data,
 )
-from app.shared.access import apply_prefeitura_scope, normalize_role
+from app.shared.access import apply_prefeitura_scope, is_veiculos_supervisor, normalize_role
 from app.shared.password_policy import password_input, validate_password
 
 
@@ -28,7 +28,7 @@ def _query_args_without_page():
 
 
 def _require_admin_or_operario():
-    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"dev", "diretor", "admin", "operario", "operador", "prefeitura_admin"}:
+    if normalize_role(getattr(current_user, "tipo_usuario", None)) not in {"dev", "diretor", "admin", "operario", "operador", "prefeitura_admin"} and not is_veiculos_supervisor(current_user):
         abort(403)
 
 

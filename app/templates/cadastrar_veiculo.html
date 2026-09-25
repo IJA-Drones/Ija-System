@@ -108,6 +108,17 @@
                             <option value="Em Manutenção" {% if st == 'Em Manutenção' %}selected{% endif %}>🟡 Em Manutenção</option>
                         </select>
                     </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-muted" for="supervisor_id">Supervisor responsável pelo veículo</label>
+                        <select id="supervisor_id" name="supervisor_id" class="form-select {% if errors.supervisor_id %}is-invalid{% endif %}">
+                            <option value="">-- Sem supervisor --</option>
+                            {% for supervisor in supervisores or [] %}
+                                <option value="{{ supervisor.id }}" {% if (form.supervisor_id or '') == supervisor.id|string %}selected{% endif %}>{{ supervisor.nome_uvis or supervisor.login }}</option>
+                            {% endfor %}
+                        </select>
+                        {% if errors.supervisor_id %}<div class="invalid-feedback">{{ errors.supervisor_id }}</div>{% endif %}
+                        <div class="form-text">O veículo continua na equipe selecionada; o supervisor é responsável individualmente.</div>
+                    </div>
                 </div>
 
                 <hr class="text-muted opacity-25 my-4" />
