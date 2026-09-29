@@ -2,6 +2,24 @@
   width: 100%;
 }
 
+/* Mantém o menu fixo fora do recorte da tabela, inclusive durante o hover. */
+.historico-os-page .historico-os-table-wrap {
+  transform: none;
+}
+
+.historico-os-page .historico-os-col-id,
+.historico-os-page .historico-os-col-acao {
+  width: 1%;
+}
+
+.historico-os-page .historico-os-col-operacao {
+  width: 30%;
+}
+
+.historico-os-page .historico-os-table-wrap .retorno-ciclo-resumo {
+  min-width: 14rem;
+}
+
 .historico-os-toolbar {
   display: flex;
   justify-content: space-between;

@@ -90,7 +90,7 @@
         background: #fff;
       }
 
-      .uvis-os-historico-table-wrap table tbody tr td {
+      .uvis-os-historico-table-wrap table tbody tr td[data-label] {
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
@@ -100,11 +100,11 @@
         text-align: left !important;
       }
 
-      .uvis-os-historico-table-wrap table tbody tr td + td {
+      .uvis-os-historico-table-wrap table tbody tr td[data-label] + td[data-label] {
         border-top: 1px solid rgba(0,0,0,.06) !important;
       }
 
-      .uvis-os-historico-table-wrap table tbody tr td::before {
+      .uvis-os-historico-table-wrap table tbody tr td[data-label]::before {
         content: attr(data-label);
         flex: 0 0 92px;
         max-width: 92px;
@@ -116,7 +116,7 @@
         padding-top: 2px;
       }
 
-      .uvis-os-historico-table-wrap table tbody tr td > * {
+      .uvis-os-historico-table-wrap table tbody tr td[data-label] > .historico-os-cell-value {
         flex: 1 1 auto;
         min-width: 0;
       }
@@ -131,12 +131,12 @@
     }
 
     @media (max-width: 420px) {
-      .uvis-os-historico-table-wrap table tbody tr td {
+      .uvis-os-historico-table-wrap table tbody tr td[data-label] {
         flex-direction: column;
         gap: 6px;
       }
 
-      .uvis-os-historico-table-wrap table tbody tr td::before {
+      .uvis-os-historico-table-wrap table tbody tr td[data-label]::before {
         flex-basis: auto;
         max-width: none;
         margin-bottom: 2px;
@@ -153,12 +153,12 @@
       }
 
       html.dark-mode .uvis-os-historico-table-wrap table tbody tr td + td,
-      body.dark-mode .uvis-os-historico-table-wrap table tbody tr td + td {
+      body.dark-mode .uvis-os-historico-table-wrap table tbody tr td[data-label] + td[data-label] {
         border-top-color: rgba(126, 180, 255, 0.08) !important;
       }
 
       html.dark-mode .uvis-os-historico-table-wrap table tbody tr td::before,
-      body.dark-mode .uvis-os-historico-table-wrap table tbody tr td::before {
+      body.dark-mode .uvis-os-historico-table-wrap table tbody tr td[data-label]::before {
         color: rgba(162, 188, 216, 0.82) !important;
       }
 

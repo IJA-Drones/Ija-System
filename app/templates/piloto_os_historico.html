@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_historico_os_filters.html" import render_historico_os_filters %}
+{% from "_historico_os_filters.html" import render_historico_os_filters with context %}
 {% from "_retorno_ciclo_resumo.html" import render_retorno_ciclo_resumo %}
 {% from "_result_summary.html" import render_result_summary %}
 
@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/piloto_os_historico.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/piloto_os_historico.css', v=style_bundle_version) }}">
 {% endblock %}
 
 {% block content %}
@@ -51,46 +51,58 @@
           {% set retorno_resumo = retorno_ciclos.get(p.id) if retorno_ciclos is defined else none %}
           <tr>
             <td class="ps-4" data-label="OS">
-              <strong>#{{ p.id }}</strong>
-              {{ render_retorno_ciclo_resumo(retorno_resumo) }}
+              <div class="historico-os-cell-value">
+                <strong>#{{ p.id }}</strong>
+                {{ render_retorno_ciclo_resumo(retorno_resumo) }}
+              </div>
             </td>
 
             <td data-label="Localização">
-              <div class="small">
-                <strong class="text-dark">{{ p.logradouro or '-' }}, {{ p.numero or 'S/N' }}</strong><br>
-                <span class="text-muted">{{ p.bairro or '-' }} - {{ p.cidade or '-' }}</span>
+              <div class="historico-os-cell-value">
+                <div class="small">
+                  <strong class="text-dark">{{ p.logradouro or '-' }}, {{ p.numero or 'S/N' }}</strong><br>
+                  <span class="text-muted">{{ p.bairro or '-' }} - {{ p.cidade or '-' }}</span>
+                </div>
               </div>
             </td>
 
             <td data-label="Data">
-              <div class="small">
-                <div class="text-dark fw-semibold">
-                  <i class="bi bi-calendar-event me-1 text-primary"></i>{{ p.data_agendamento.strftime('%d/%m/%Y') if p.data_agendamento else '-' }}
-                </div>
-                <div class="text-muted">
-                  <i class="bi bi-clock me-1"></i>{{ p.hora_agendamento.strftime('%H:%M') if p.hora_agendamento else '-' }}
+              <div class="historico-os-cell-value">
+                <div class="small">
+                  <div class="text-dark fw-semibold">
+                    <i class="bi bi-calendar-event me-1 text-primary"></i>{{ p.data_agendamento.strftime('%d/%m/%Y') if p.data_agendamento else '-' }}
+                  </div>
+                  <div class="text-muted">
+                    <i class="bi bi-clock me-1"></i>{{ p.hora_agendamento.strftime('%H:%M') if p.hora_agendamento else '-' }}
+                  </div>
                 </div>
               </div>
             </td>
 
             <td data-label="Equipe">
-              {% if p.equipe %}
-                <span class="badge bg-light text-dark border team-chip">
-                  <i class="bi bi-people-fill me-1 text-primary"></i> {{ p.equipe.nome_equipe }}
-                </span>
-              {% else %}
-                <span class="text-muted small">-</span>
-              {% endif %}
+              <div class="historico-os-cell-value">
+                {% if p.equipe %}
+                  <span class="badge bg-light text-dark border team-chip">
+                    <i class="bi bi-people-fill me-1 text-primary"></i> {{ p.equipe.nome_equipe }}
+                  </span>
+                {% else %}
+                  <span class="text-muted small">-</span>
+                {% endif %}
+              </div>
             </td>
 
             <td class="text-center" data-label="Status">
-              <span class="badge bg-completed rounded-pill px-3">CONCLUÍDO</span>
+              <div class="historico-os-cell-value">
+                <span class="badge bg-completed rounded-pill px-3">CONCLUÍDO</span>
+              </div>
             </td>
 
             <td class="text-center pe-4" data-label="Ação">
-              <a href="{{ url_for('main.piloto_os_formulario_view', os_id=p.id) }}" class="btn btn-sm btn-outline-primary">
-                <i class="bi bi-clipboard2-check me-1"></i> Formulário
-              </a>
+              <div class="historico-os-cell-value">
+                <a href="{{ url_for('main.piloto_os_formulario_view', os_id=p.id) }}" class="btn btn-sm btn-outline-primary">
+                  <i class="bi bi-clipboard2-check me-1"></i> Formulário
+                </a>
+              </div>
             </td>
           </tr>
           {% else %}

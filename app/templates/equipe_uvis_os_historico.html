@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_historico_os_filters.html" import render_historico_os_filters %}
+{% from "_historico_os_filters.html" import render_historico_os_filters with context %}
 {% from "_retorno_ciclo_resumo.html" import render_retorno_ciclo_resumo %}
 {% from "_result_summary.html" import render_result_summary %}
 
@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/equipe_uvis_os_historico.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/equipe_uvis_os_historico.css', v=style_bundle_version) }}">
 {% endblock %}
 
 {% block content %}
@@ -53,48 +53,60 @@
             {% set ordem = p.ordem_servico_equipe_uvis %}
             <tr>
               <td class="ps-4" data-label="OS">
-                <strong>#{{ p.id }}</strong>
-                {% if ordem and ordem.identificador_os %}
-                  <br><small class="text-muted">{{ ordem.identificador_os }}</small>
-                {% endif %}
-                {{ render_retorno_ciclo_resumo(retorno_resumo) }}
+                <div class="historico-os-cell-value">
+                  <strong>#{{ p.id }}</strong>
+                  {% if ordem and ordem.identificador_os %}
+                    <br><small class="text-muted">{{ ordem.identificador_os }}</small>
+                  {% endif %}
+                  {{ render_retorno_ciclo_resumo(retorno_resumo) }}
+                </div>
               </td>
 
               <td data-label="Localização">
-                <div class="small">
-                  <strong class="text-dark">{{ p.logradouro or '-' }}, {{ p.numero or 'S/N' }}</strong><br>
-                  <span class="text-muted">{{ p.bairro or '-' }} - {{ p.cidade or '-' }}</span>
+                <div class="historico-os-cell-value">
+                  <div class="small">
+                    <strong class="text-dark">{{ p.logradouro or '-' }}, {{ p.numero or 'S/N' }}</strong><br>
+                    <span class="text-muted">{{ p.bairro or '-' }} - {{ p.cidade or '-' }}</span>
+                  </div>
                 </div>
               </td>
 
               <td data-label="Data">
-                <div class="small">
-                  <div class="text-dark fw-semibold">
-                    <i class="bi bi-calendar-event me-1 text-primary"></i>{{ p.data_agendamento.strftime('%d/%m/%Y') if p.data_agendamento else '-' }}
-                  </div>
-                  <div class="text-muted">
-                    <i class="bi bi-clock me-1"></i>{{ p.hora_agendamento.strftime('%H:%M') if p.hora_agendamento else '-' }}
+                <div class="historico-os-cell-value">
+                  <div class="small">
+                    <div class="text-dark fw-semibold">
+                      <i class="bi bi-calendar-event me-1 text-primary"></i>{{ p.data_agendamento.strftime('%d/%m/%Y') if p.data_agendamento else '-' }}
+                    </div>
+                    <div class="text-muted">
+                      <i class="bi bi-clock me-1"></i>{{ p.hora_agendamento.strftime('%H:%M') if p.hora_agendamento else '-' }}
+                    </div>
                   </div>
                 </div>
               </td>
 
               <td data-label="Equipe">
-                <span class="badge bg-light text-dark border team-chip">
-                  <i class="bi bi-people-fill me-1 text-success"></i> {{ (ordem.equipe_uvis_nome if ordem else p.equipe_uvis_nome) or nome_equipe }}
-                </span>
+                <div class="historico-os-cell-value">
+                  <span class="badge bg-light text-dark border team-chip">
+                    <i class="bi bi-people-fill me-1 text-success"></i> {{ (ordem.equipe_uvis_nome if ordem else p.equipe_uvis_nome) or nome_equipe }}
+                  </span>
+                </div>
               </td>
 
               <td class="text-center" data-label="Status">
-                <span class="badge bg-completed rounded-pill px-3">CONCLUIDO</span>
-                {% if ordem and ordem.situacao_aplicacao %}
-                  <div class="small text-muted mt-1">{{ ordem.situacao_aplicacao }}</div>
-                {% endif %}
+                <div class="historico-os-cell-value">
+                  <span class="badge bg-completed rounded-pill px-3">CONCLUIDO</span>
+                  {% if ordem and ordem.situacao_aplicacao %}
+                    <div class="small text-muted mt-1">{{ ordem.situacao_aplicacao }}</div>
+                  {% endif %}
+                </div>
               </td>
 
               <td class="text-center pe-4" data-label="Acao">
-                <a href="{{ url_for('main.equipe_uvis_os_formulario_view', os_id=p.id, voltar='historico') }}" class="btn btn-sm btn-outline-success">
-                  <i class="bi bi-clipboard2-check me-1"></i> Ver OS
-                </a>
+                <div class="historico-os-cell-value">
+                  <a href="{{ url_for('main.equipe_uvis_os_formulario_view', os_id=p.id, voltar='historico') }}" class="btn btn-sm btn-outline-success">
+                    <i class="bi bi-clipboard2-check me-1"></i> Ver OS
+                  </a>
+                </div>
               </td>
             </tr>
           {% else %}
