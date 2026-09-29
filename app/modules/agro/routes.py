@@ -7580,6 +7580,35 @@ def register_routes(bp):
     def agro_equipamento_deletar(equipamento_id):
         _require_agro_edit()
         equipamento = _get_equipamento_agro_or_404(equipamento_id)
+
+        # O equipamento pode ser referenciado por orcamentos e ordens de
+        # servico. Os dados descritivos usados nesses documentos sao
+        # armazenados em snapshots; portanto, ao excluir o cadastro, apenas
+        # removemos os vinculos para nao perder o historico nem violar as FKs.
+        db.session.query(OrcamentoAgro).filter(
+            or_(
+                OrcamentoAgro.drone_agro_id == equipamento_id,
+                OrcamentoAgro.drone_mapeamento_agro_id == equipamento_id,
+            )
+        ).update(
+            {
+                OrcamentoAgro.drone_agro_id: None,
+                OrcamentoAgro.drone_mapeamento_agro_id: None,
+            },
+            synchronize_session=False,
+        )
+        db.session.query(OrdemServicoAgro).filter(
+            or_(
+                OrdemServicoAgro.drone_pulverizacao_id == equipamento_id,
+                OrdemServicoAgro.drone_mapeamento_id == equipamento_id,
+            )
+        ).update(
+            {
+                OrdemServicoAgro.drone_pulverizacao_id: None,
+                OrdemServicoAgro.drone_mapeamento_id: None,
+            },
+            synchronize_session=False,
+        )
         db.session.delete(equipamento)
         db.session.commit()
         flash("Equipamento agro removido com sucesso.", "success")
