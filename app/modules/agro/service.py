@@ -108,7 +108,7 @@ def can_access_agro_finance_panel(user) -> bool:
 
 def can_edit_agro_finance_panel(user) -> bool:
     role = normalize_role(getattr(user, "tipo_usuario", None))
-    return can_access_agro_finance_panel(user) and (role in AGRO_FINANCE_EDIT_TYPES or role == ADMIN_USER_TYPE or is_dev_user(user))
+    return can_access_agro_finance_panel(user) and (role in AGRO_FINANCE_EDIT_TYPES or is_dev_user(user))
 
 
 def can_edit_agro_fornecedores(user) -> bool:
