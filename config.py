@@ -16,6 +16,13 @@ class Config:
     uri = os.environ.get('DATABASE_URL')
     Maps_KEY_FRONT = os.getenv("KEY_API_GOOGLE_MAPS")
 
+    REDGPS_BASE_URL = os.getenv("REDGPS_BASE_URL", "https://api.service24gps.com/api/v1")
+    REDGPS_API_KEY = os.getenv("REDGPS_API_KEY", "")
+    REDGPS_USERNAME = os.getenv("REDGPS_USERNAME", "")
+    REDGPS_PASSWORD = os.getenv("REDGPS_PASSWORD", "")
+    REDGPS_SYNC_ENABLED = os.getenv("REDGPS_SYNC_ENABLED", "false").lower() in {"1", "true", "yes", "on"}
+    REDGPS_POLL_INTERVAL_SECONDS = max(60, int(os.getenv("REDGPS_POLL_INTERVAL_SECONDS", "60")))
+
     # Dropbox Configs
     DROPBOX_APP_KEY = os.environ.get('DROPBOX_APP_KEY')
     DROPBOX_APP_SECRET = os.environ.get('DROPBOX_APP_SECRET')

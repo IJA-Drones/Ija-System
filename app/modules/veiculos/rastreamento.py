@@ -1,6 +1,9 @@
 """Fleet view backed by RedGPS position tables (or the Neon fixture)."""
 
-from flask import url_for
+from datetime import datetime, time, timedelta, timezone
+from zoneinfo import ZoneInfo
+
+from flask import request, url_for
 from sqlalchemy.orm import joinedload
 
 from app.extensions import db
@@ -12,6 +15,7 @@ from app.modules.veiculos.service import (
     _equipe_ids_do_piloto,
     _equipe_oceano_logada,
 )
+from app.modules.veiculos.redgps_sync import sync_redgps
 from app.shared.access import apply_prefeitura_scope, normalize_role
 
 
@@ -36,6 +40,14 @@ def build_rastreamento_payload(user):
 
     vehicles = query.order_by(Veiculos.placa.asc(), Veiculos.id.asc()).all()
     vehicle_ids = [vehicle.id for vehicle in vehicles]
+    sync = sync_redgps() if vehicle_ids else {"enabled": False, "error": False}
+    local_zone = ZoneInfo("America/Sao_Paulo")
+    try:
+        history_day = datetime.strptime(request.args.get("date", ""), "%Y-%m-%d").date()
+    except ValueError:
+        history_day = datetime.now(local_zone).date()
+    start = datetime.combine(history_day, time.min, local_zone).astimezone(timezone.utc).replace(tzinfo=None)
+    end = start + timedelta(days=1)
 
     # The RedGPS synchronizer can append readings without changing the vehicle
     # cadastro.  Keep the latest reading and the route history separate so the
@@ -56,6 +68,7 @@ def build_rastreamento_payload(user):
         histories = (
             RastreamentoHistorico.query
             .filter(RastreamentoHistorico.veiculo_id.in_(vehicle_ids))
+            .filter(RastreamentoHistorico.reportado_em >= start, RastreamentoHistorico.reportado_em < end)
             .order_by(RastreamentoHistorico.reportado_em.asc(), RastreamentoHistorico.id.asc())
             .all()
         )
@@ -71,8 +84,8 @@ def build_rastreamento_payload(user):
         for alert in alerts:
             alerts_by_vehicle.setdefault(alert.veiculo_id, []).append(alert)
 
-    def iso(value):
-        return value.isoformat() if value else None
+    def iso(value, utc=False):
+        return value.isoformat() + ("Z" if utc else "") if value else None
 
     def position_payload(position):
         if not position:
@@ -83,7 +96,7 @@ def build_rastreamento_payload(user):
             "speed_kmh": position.velocidade_kmh,
             "ignition": 1 if position.ignicao is True else 0 if position.ignicao is False else 2,
             "odometer_km": position.hodometro_km,
-            "reported_at": iso(position.reportado_em),
+            "reported_at": iso(position.reportado_em, utc=not position.is_demo),
             "address": position.endereco,
         }
 
@@ -94,7 +107,7 @@ def build_rastreamento_payload(user):
             "speed_kmh": point.velocidade_kmh,
             "ignition": 1 if point.ignicao is True else 0 if point.ignicao is False else 2,
             "odometer_km": point.hodometro_km,
-            "reported_at": iso(point.reportado_em),
+            "reported_at": iso(point.reportado_em, utc=not point.is_demo),
         }
 
     def alert_payload(alert):
@@ -143,7 +156,8 @@ def build_rastreamento_payload(user):
             "provider": "RedGPS",
             "status": "test" if has_demo else "connected" if positions_by_vehicle else "pending",
             "source": "Neon · fixture fictícia" if has_demo else "RedGPS",
-            "synced_at": iso(latest_report),
+            "synced_at": iso(latest_report, utc=not has_demo),
+            "sync": sync,
         },
         "vehicles": payload_vehicles,
     }

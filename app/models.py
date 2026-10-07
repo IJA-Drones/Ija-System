@@ -2391,6 +2391,15 @@ class Veiculos(Equipamentos):
 # -------------------------------------------------------------
 # RASTREAMENTO (posição atual, histórico e alertas)
 # -------------------------------------------------------------
+class RastreamentoSincronizacao(db.Model):
+    __tablename__ = "rastreamento_sincronizacao"
+
+    id = db.Column(db.Integer, primary_key=True)
+    tentado_em = db.Column(db.DateTime)
+    sincronizado_em = db.Column(db.DateTime)
+    erro = db.Column(db.String(80))
+
+
 class RastreamentoPosicao(db.Model):
     __tablename__ = "rastreamento_posicoes"
 

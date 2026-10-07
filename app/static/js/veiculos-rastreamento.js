@@ -69,11 +69,20 @@
   }
   function selectedVehicle() { return filteredVehicles().find((vehicle) => vehicle.id === state.selected); }
   function routeData(vehicle) {
-    if (!vehicle || $('trackingHistoryDate').value !== today) return [];
+    if (!vehicle || (state.demo && $('trackingHistoryDate').value !== today)) return [];
+    const selectedDay = $('trackingHistoryDate').value;
     return (vehicle.history || []).map((point) => {
       if (Array.isArray(point)) return { lat: Number(point[0]), lng: Number(point[1]), speed_kmh: null };
       return { ...point, lat: Number(point.lat), lng: Number(point.lng) };
-    }).filter((point) => Number.isFinite(point.lat) && Number.isFinite(point.lng));
+    }).filter((point) => {
+      if (!Number.isFinite(point.lat) || !Number.isFinite(point.lng)) return false;
+      if (state.demo) return true;
+      const date = new Date(point.reported_at);
+      if (!Number.isFinite(date.getTime())) return false;
+      const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(date);
+      const value = (name) => parts.find((part) => part.type === name).value;
+      return `${value('year')}-${value('month')}-${value('day')}` === selectedDay;
+    });
   }
   function fillOperations() {
     const previous = $('trackingOperation').value;
@@ -99,8 +108,16 @@
       $('trackingNoticeText').textContent = 'A tela está carregando o fixture RedGPS persistido no banco de teste. Esses registros são identificados como demonstração.';
       return;
     }
-    $('trackingNoticeTitle').textContent = hasConnectedData() ? 'Rastreamento conectado' : 'Aguardando conexão com o rastreamento';
-    $('trackingNoticeText').textContent = hasConnectedData() ? 'As posições e os trajetos abaixo vieram do sincronizador RedGPS.' : 'Consulte a frota cadastrada. As posições e os trajetos estarão disponíveis após a ativação.';
+    const sync = state.live.integration?.sync;
+    if (sync?.error) {
+      $('trackingNoticeTitle').textContent = 'Atualização do rastreamento indisponível';
+      $('trackingNoticeText').textContent = 'Não foi possível consultar novas posições. As últimas informações recebidas foram mantidas; confira o horário de cada veículo.';
+      return;
+    }
+    $('trackingNoticeTitle').textContent = hasConnectedData() ? 'Rastreamento conectado' : 'Aguardando posições';
+    $('trackingNoticeText').textContent = hasConnectedData()
+      ? `Posições recebidas da OLLOG / RedGPS.${sync?.enabled ? ` Atualização automática a cada ${sync.poll_interval_seconds} segundos enquanto este painel estiver aberto.` : ''} Os trajetos reúnem os pontos coletados pelo IJA System.`
+      : 'Os veículos sem localização recebida permanecem na lista como “Sem posição”.';
   }
   function renderList(list) {
     const fragment = document.createDocumentFragment();
@@ -516,7 +533,7 @@
   });
   $('trackingFit').addEventListener('click', fitMap);
   document.querySelectorAll('.tracking-module-tabs button').forEach((button) => button.addEventListener('click', () => setView(button.dataset.view)));
-  $('trackingHistoryDate').addEventListener('change', () => { stopPlayback(); state.playIndex = 0; renderMap(); });
+  $('trackingHistoryDate').addEventListener('change', () => { stopPlayback(); state.playIndex = 0; renderMap(); refreshTracking(true); });
   $('trackingPlay').addEventListener('click', () => state.playTimer ? stopPlayback() : startPlayback());
   $('trackingPlaybackRange').addEventListener('input', () => { stopPlayback(); state.playIndex = Number($('trackingPlaybackRange').value); renderMap(); });
   $('trackingPlaybackSpeed').addEventListener('change', () => { if (state.playTimer) { stopPlayback(); startPlayback(); } });
@@ -538,7 +555,7 @@
     render();
     setView('positions');
   });
-  $('trackingRefresh').addEventListener('click', async () => {
+  async function refreshTracking(automatic = false) {
     if (state.busy || state.demo) return;
     state.busy = true;
     $('trackingRefresh').disabled = true;
@@ -547,9 +564,11 @@
     page.setAttribute('aria-busy', 'true');
     feedback('');
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
+    const timeout = setTimeout(() => controller.abort(), 45000);
     try {
-      const response = await fetch(page.dataset.url, { headers: { Accept: 'application/json' }, credentials: 'same-origin', cache: 'no-store', signal: controller.signal });
+      const url = new URL(page.dataset.url, window.location.href);
+      url.searchParams.set('date', $('trackingHistoryDate').value);
+      const response = await fetch(url, { headers: { Accept: 'application/json' }, credentials: 'same-origin', cache: 'no-store', signal: controller.signal });
       if (!response.ok || !response.headers.get('content-type')?.includes('application/json')) throw new Error('response');
       const data = await response.json();
       if (!Array.isArray(data.vehicles) || !data.integration) throw new Error('payload');
@@ -557,7 +576,8 @@
       fillOperations();
       render();
       updateNotice();
-      feedback(isFixtureData() ? 'Fixture do Neon atualizado no painel.' : hasConnectedData() ? 'Frota atualizada com dados recebidos.' : 'Frota atualizada. O rastreamento continua aguardando conexão.');
+      if (data.integration.sync?.error) feedback('A consulta à RedGPS falhou. Exibindo as últimas posições recebidas.', true);
+      else if (!automatic) feedback(isFixtureData() ? 'Fixture do Neon atualizado no painel.' : hasConnectedData() ? 'Frota atualizada com dados recebidos.' : 'Frota atualizada. Aguardando posições dos rastreadores.');
     } catch (_) {
       feedback('Não foi possível atualizar o painel. Os dados anteriores foram mantidos. Tente novamente; se sua sessão expirou, entre no sistema.', true);
     } finally {
@@ -568,7 +588,14 @@
       $('trackingRefresh').replaceChildren(node('i', 'bi bi-arrow-clockwise'), document.createTextNode(' Atualizar painel'));
       page.setAttribute('aria-busy', 'false');
     }
-  });
+  }
+  $('trackingRefresh').addEventListener('click', () => refreshTracking());
+  if (initial.integration?.sync?.enabled) {
+    const interval = Math.max(60, Number(initial.integration.sync.poll_interval_seconds) || 60) * 1000;
+    setInterval(() => {
+      if (!document.hidden && !state.playTimer) refreshTracking(true);
+    }, interval);
+  }
   document.addEventListener('googlemaps:ready', () => {
     if (state.demo || state.provider === 'google') return;
     if (state.map && state.provider === 'leaflet' && typeof state.map.remove === 'function') state.map.remove();
