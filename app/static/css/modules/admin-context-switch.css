@@ -72,6 +72,16 @@
   min-width: 0;
 }
 
+.admin-context-switch-extended .admin-context-btn {
+  white-space: normal;
+  line-height: 1.35;
+  min-height: 38px;
+}
+
+.admin-context-switch.is-financeiro .admin-context-switch-thumb {
+  background: linear-gradient(130deg, #2c5282, #1a4a7c);
+}
+
 .admin-context-btn[data-admin-context="agro"] {
   color: #2a7c49;
 }

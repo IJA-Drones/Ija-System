@@ -1,15 +1,17 @@
 {% set is_agro_context = request.endpoint and (request.endpoint == 'main.admin_agro' or request.endpoint.startswith('main.agro_') or request.endpoint == 'auth.login_piloto_agro') %}
+{% set is_financeiro_context = request.endpoint and request.endpoint.startswith('main.financeiro_') %}
 {% set is_global_admin = current_user.is_authenticated and is_admin_global_user(current_user) %}
 {% set is_financeiro_agro_user = current_user.is_authenticated and current_user.tipo_usuario in ['financeiro_admin', 'financeiro'] %}
 {% set is_financeiro_agro_admin = current_user.is_authenticated and (is_global_admin or current_user.tipo_usuario == 'financeiro_admin') %}
 {% set is_admin_panel_user = current_user.is_authenticated and (is_global_admin or current_user.tipo_usuario in ['operario', 'visualizar', 'regional', 'prefeitura_admin', 'sup_veiculos']) %}
 {% set can_access_agro_context = current_user.is_authenticated and can_access_agro_panel(current_user) %}
+{% set can_access_financeiro_context = current_user.is_authenticated and can_access_financeiro_panel(current_user) %}
 {% set logo_light_url = url_for('static', filename='img/logo_oceano_azul_light.png') %}
 {% set logo_dark_url = url_for('static', filename='img/logo_oceano_azul_dark.png') %}
 <!doctype html>
 <html
   lang="pt-br"
-  class="{% if tema_escolhido == 'dark' %}dark-mode {% endif %}{% if is_agro_context %}agro-mode{% endif %}"
+  class="{% if tema_escolhido == 'dark' %}dark-mode {% endif %}{% if is_agro_context %}agro-mode{% elif is_financeiro_context %}financeiro-mode{% endif %}"
 >
   <head>
     <meta charset="UTF-8" />
@@ -18,7 +20,7 @@
     <script src="{{ url_for('static', filename='js/csrf-security.js') }}"></script>
     {% endif %}
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Oceano Azul</title>
+    <title>{% block title %}Oceano Azul{% endblock %}</title>
 
     <link
       rel="manifest"
@@ -82,17 +84,19 @@
 
   </head>
 
-  <body class="{% if tema_escolhido == 'dark' %}dark-mode {% endif %}{% if is_agro_context %}agro-mode{% endif %}">
+  <body class="{% if tema_escolhido == 'dark' %}dark-mode {% endif %}{% if is_agro_context %}agro-mode{% elif is_financeiro_context %}financeiro-mode{% endif %}">
     {% set navbar_home_endpoint = 'main.dashboard' %}
     {% if current_user and current_user.is_authenticated %}
-      {% if current_user.tipo_usuario in ['piloto', 'equipe_oceano'] %}
+      {% if is_financeiro_context %}
+        {% set navbar_home_endpoint = 'main.financeiro_central' %}
+      {% elif current_user.tipo_usuario in ['piloto', 'equipe_oceano'] %}
         {% set navbar_home_endpoint = 'main.piloto_os' %}
       {% elif current_user.tipo_usuario == 'piloto_agro' %}
         {% set navbar_home_endpoint = 'main.agro_piloto_dashboard' %}
       {% elif current_user.tipo_usuario == 'equipe_uvis' %}
         {% set navbar_home_endpoint = 'main.dashboard_equipe_uvis' %}
       {% elif is_financeiro_agro_user %}
-        {% set navbar_home_endpoint = 'main.admin_agro' %}
+        {% set navbar_home_endpoint = 'main.financeiro_central' %}
       {% elif is_admin_panel_user %}
         {% set navbar_home_endpoint = 'main.admin_agro' if is_agro_context else 'main.admin_dashboard' %}
       {% endif %}
@@ -161,20 +165,23 @@
               >
             </li>
             {% endif %}
-            {% if is_global_admin and can_access_agro_context %}
+            {% if can_access_financeiro_context %}
             <li class="px-2 pb-2 mb-2 border-bottom">
-              <div class="admin-context-switch admin-context-switch-dropdown {% if is_agro_context %}is-agro{% else %}is-uvis{% endif %}" role="group" aria-label="Alternar contexto entre UVIS e Agro">
+              <div class="admin-context-switch admin-context-switch-dropdown admin-context-switch-extended {% if is_agro_context %}is-agro{% elif is_financeiro_context %}is-financeiro{% else %}is-uvis{% endif %}" role="group" aria-label="Selecionar central">
                 <span class="admin-context-switch-thumb" aria-hidden="true"></span>
+                {% if is_global_admin %}
                 <button
                   type="button"
-                  class="admin-context-btn {% if not is_agro_context %}is-active{% endif %}"
+                  class="admin-context-btn {% if not is_agro_context and not is_financeiro_context %}is-active{% endif %}"
                   data-admin-context="uvis_prefeitura"
                   data-admin-context-url="{{ url_for('main.admin_dashboard') }}"
-                  aria-pressed="{{ 'true' if not is_agro_context else 'false' }}"
+                  aria-pressed="{{ 'true' if not is_agro_context and not is_financeiro_context else 'false' }}"
                 >
                   <span class="admin-context-btn-icon"><i class="bi bi-buildings-fill"></i></span>
                   <span>UVIS e Prefeitura</span>
                 </button>
+                {% endif %}
+                {% if can_access_agro_context %}
                 <button
                   type="button"
                   class="admin-context-btn {% if is_agro_context %}is-active{% endif %}"
@@ -184,6 +191,17 @@
                 >
                   <span class="admin-context-btn-icon"><i class="bi bi-tree-fill"></i></span>
                   <span>Agro</span>
+                </button>
+                {% endif %}
+                <button
+                  type="button"
+                  class="admin-context-btn {% if is_financeiro_context %}is-active{% endif %}"
+                  data-admin-context="financeiro"
+                  data-admin-context-url="{{ url_for('main.financeiro_central') }}"
+                  aria-pressed="{{ 'true' if is_financeiro_context else 'false' }}"
+                >
+                  <span class="admin-context-btn-icon"><i class="bi bi-bank"></i></span>
+                  <span>Financeiro</span>
                 </button>
               </div>
             </li>
@@ -219,7 +237,10 @@
       <div class="app-sidebar d-flex flex-column" id="appSidebar">
         {% set sidebar_dashboard_endpoint = 'main.dashboard' %}
         {% set sidebar_dashboard_active = request.endpoint == 'main.dashboard' %}
-        {% if current_user.tipo_usuario in ['piloto', 'equipe_oceano'] %}
+        {% if is_financeiro_context %}
+          {% set sidebar_dashboard_endpoint = 'main.financeiro_central' %}
+          {% set sidebar_dashboard_active = request.endpoint == 'main.financeiro_central' %}
+        {% elif current_user.tipo_usuario in ['piloto', 'equipe_oceano'] %}
           {% set sidebar_dashboard_endpoint = 'main.piloto_os' %}
           {% set sidebar_dashboard_active = request.endpoint == 'main.piloto_os' %}
         {% elif current_user.tipo_usuario == 'piloto_agro' %}
@@ -228,9 +249,9 @@
         {% elif current_user.tipo_usuario == 'equipe_uvis' %}
           {% set sidebar_dashboard_endpoint = 'main.dashboard_equipe_uvis' %}
           {% set sidebar_dashboard_active = request.endpoint == 'main.dashboard_equipe_uvis' %}
-        {% elif is_financeiro_agro_user and can_access_agro_context %}
-          {% set sidebar_dashboard_endpoint = 'main.admin_agro' %}
-          {% set sidebar_dashboard_active = request.endpoint == 'main.admin_agro' %}
+        {% elif is_financeiro_agro_user %}
+          {% set sidebar_dashboard_endpoint = 'main.admin_agro' if is_agro_context else 'main.financeiro_central' %}
+          {% set sidebar_dashboard_active = request.endpoint == sidebar_dashboard_endpoint %}
         {% elif is_admin_panel_user %}
           {% set sidebar_dashboard_endpoint = 'main.admin_agro' if is_agro_context else 'main.admin_dashboard' %}
           {% set sidebar_dashboard_active = request.endpoint == ('main.admin_agro' if is_agro_context else 'main.admin_dashboard') %}
@@ -241,9 +262,25 @@
               class="nav-link {% if sidebar_dashboard_active %}active{% endif %}"
               href="{{ url_for(sidebar_dashboard_endpoint) }}"
             >
-              <i class="bi bi-grid-fill me-2"></i><span>Dashboard</span>
+              <i class="bi {{ 'bi-buildings' if is_financeiro_context else 'bi-grid-fill' }} me-2"></i><span>{{ 'Empresas' if is_financeiro_context else 'Dashboard' }}</span>
             </a>
           </li>
+          {% if is_financeiro_context %}
+            {% if empresa is defined %}
+            <li class="nav-item">
+              <a class="nav-link active" href="{{ url_for('main.financeiro_empresa', empresa_slug=empresa.slug) }}" aria-current="page">
+                <i class="bi bi-grid-fill me-2"></i><span>Visão geral</span>
+              </a>
+            </li>
+            {% endif %}
+          {% else %}
+          {% if can_access_financeiro_context %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('main.financeiro_central') }}">
+              <i class="bi bi-bank me-2"></i><span>Central Financeiro</span>
+            </a>
+          </li>
+          {% endif %}
           {% set can_report_bugs_user = current_user.tipo_usuario == 'regional' or (current_user.tipo_usuario == 'visualizar' and (current_user.regiao or '')|upper == 'COVISA') %}
           {% if can_report_bugs_user %}
           <li class="nav-item">
@@ -1133,6 +1170,7 @@
           {% endif %}
           {% endif %}
 
+          {% endif %}
           <div class="sidebar-footer mt-auto p-3 text-center">
             <div id="install-container" style="display: none">
               <button
@@ -1201,10 +1239,12 @@
       };
     </script>
 
+    {% if not is_financeiro_context %}
     <script
       async
       src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_key }}&v=weekly&libraries=geometry,visualization,marker&callback=initGoogleMaps&loading=async">
     </script>
+    {% endif %}
 
     <script>
       function setThemeCookie(themeName) {
@@ -1307,14 +1347,19 @@
             const contextSwitches = document.querySelectorAll(".admin-context-switch");
             const contextButtons = document.querySelectorAll("[data-admin-context]");
             const contextStorageKey = "oa_admin_context_mode";
-            const serverContextMode = "{{ 'agro' if is_agro_context else 'uvis_prefeitura' }}";
+            const serverContextMode = "{{ 'agro' if is_agro_context else 'financeiro' if is_financeiro_context else 'uvis_prefeitura' }}";
             const contextLabels = {
                 uvis_prefeitura: "UVIS/PREFEITURA",
                 agro: "AGRO",
+                financeiro: "FINANCEIRO",
             };
 
             function readContextMode() {
-                return serverContextMode === "agro" ? "agro" : "uvis_prefeitura";
+                return normalizeContextMode(serverContextMode);
+            }
+
+            function normalizeContextMode(mode) {
+                return ["agro", "financeiro", "uvis_prefeitura"].includes(mode) ? mode : "uvis_prefeitura";
             }
 
             function writeContextMode(mode) {
@@ -1349,7 +1394,7 @@
 
             function syncContextSwitchElement(contextSwitch, mode) {
                 if (!contextSwitch) return;
-                const selectedMode = mode === "agro" ? "agro" : "uvis_prefeitura";
+                const selectedMode = normalizeContextMode(mode);
                 const activeButton = contextSwitch.querySelector(`[data-admin-context="${selectedMode}"]`);
                 if (!activeButton) return;
 
@@ -1357,7 +1402,8 @@
                 const activeRect = activeButton.getBoundingClientRect();
 
                 contextSwitch.classList.toggle("is-agro", selectedMode === "agro");
-                contextSwitch.classList.toggle("is-uvis", selectedMode !== "agro");
+                contextSwitch.classList.toggle("is-uvis", selectedMode === "uvis_prefeitura");
+                contextSwitch.classList.toggle("is-financeiro", selectedMode === "financeiro");
                 contextSwitch.style.setProperty("--admin-context-thumb-left", `${activeRect.left - switchRect.left}px`);
                 contextSwitch.style.setProperty("--admin-context-thumb-width", `${activeRect.width}px`);
             }
@@ -1369,11 +1415,13 @@
             }
 
             function applyContextMode(mode, persist = true) {
-                const selectedMode = mode === "agro" ? "agro" : "uvis_prefeitura";
+                const selectedMode = normalizeContextMode(mode);
                 const isAgro = selectedMode === "agro";
 
                 body.classList.toggle("agro-mode", isAgro);
                 document.documentElement.classList.toggle("agro-mode", isAgro);
+                body.classList.toggle("financeiro-mode", selectedMode === "financeiro");
+                document.documentElement.classList.toggle("financeiro-mode", selectedMode === "financeiro");
 
                 contextButtons.forEach((button) => {
                     const active = button.dataset.adminContext === selectedMode;

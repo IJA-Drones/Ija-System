@@ -13,8 +13,7 @@ from app.modules.equipe_uvis_dashboard.service import (
     EquipeUvisDashboardError,
     salvar_uvis_retorno_automatico_form,
 )
-from app.modules.agro.service import can_access_agro_panel
-from app.shared.access import ADMIN_PANEL_VIEW_TYPES
+from app.shared.access import ADMIN_PANEL_VIEW_TYPES, is_agro_finance_user
 from app.shared.query_filters import query_args_without_page
 
 
@@ -33,8 +32,8 @@ def register_routes(bp):
         if current_user.tipo_usuario == "equipe_uvis":
             return redirect(url_for("main.dashboard_equipe_uvis"))
 
-        if can_access_agro_panel(current_user) and current_user.tipo_usuario in {"financeiro_admin", "financeiro"}:
-            return redirect(url_for("main.admin_agro"))
+        if is_agro_finance_user(current_user):
+            return redirect(url_for("main.financeiro_central"))
 
         if current_user.tipo_usuario in ADMIN_PANEL_VIEW_TYPES:
             return redirect(url_for("main.admin_dashboard"))

@@ -6,7 +6,7 @@ Execute as verificações a partir da raiz, com o ambiente virtual ativado. A su
 
 ```bash
 DATABASE_URL=sqlite:///:memory: python -m pytest -q
-node --test tests/session_security_browser.test.cjs tests/csrf_security_browser.test.cjs
+node --test tests/*.test.cjs
 python scripts/build_css_bundle.py --check
 python scripts/build_docs_inventory.py --check
 git diff --check
@@ -41,6 +41,7 @@ Esses resultados não medem cobertura de linhas, carga, integração real, insta
 | Portal, boletim e triagem | `test_portal_cidadao_denuncias.py`, `test_portal_cidadao_health_data.py`, `test_denuncias_triagem.py`. |
 | Arquivos, agro e KML | `test_skybox_upload.py`, `test_uvis_os_media_access.py`, `test_agro_payment_receipt_skybox.py`, `test_agro_talent_bank.py`, `test_dji_kml_auto_link.py`. |
 | Diagnóstico e apresentação | `test_dev_access.py`, `test_css_bundle.py`. |
+| Central Financeiro | `test_financeiro_central.py`, `financeiro_central_browser.test.cjs`; [escopo inicial](central-financeiro.md). |
 
 Todos os arquivos e suas contagens estão vinculados na [referência do código](referencia-codigo.md). Um teste pode validar apenas uma parte do fluxo; ter um arquivo com o nome da funcionalidade não comprova sua cobertura completa.
 

@@ -154,7 +154,7 @@
 
   .navbar .dropdown-menu { right: 0; left: auto; }
   .navbar .dropdown button { padding: 0.4rem 0.8rem; display: flex; align-items: center; gap: 8px; }
-  .navbar .dropdown button span { display: none; }
+  .navbar .dropdown > button span { display: none; }
 
   .navbar-account-dropdown {
     min-width: 250px !important;

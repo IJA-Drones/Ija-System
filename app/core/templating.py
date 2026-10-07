@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from flask import url_for
+from flask import request, url_for
 from flask_login import current_user
 from werkzeug.routing import BuildError
 
@@ -34,7 +34,7 @@ def register_template_helpers(bp):
                 raise
 
         focus_catalog = build_focus_catalog()
-        if current_user.is_authenticated:
+        if current_user.is_authenticated and not (request.endpoint or "").startswith("main.financeiro_"):
             try:
                 query = db.session.query(db.func.count(Notificacao.id)).filter(
                     Notificacao.lida_em.is_(None),
@@ -106,6 +106,7 @@ def register_template_helpers(bp):
             "safe_url_for": safe_url_for,
             "can_access_feedback": can_access_feedback,
             "can_access_denuncias": can_access_denuncias,
+            "can_access_agro_panel": can_access_agro_panel,
             "is_admin_global_user": is_admin_global_user,
             "is_veiculos_supervisor": is_veiculos_supervisor,
             "is_covisa_user": is_covisa_user,

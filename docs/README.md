@@ -26,6 +26,7 @@ Esta é a entrada da documentação técnica e operacional. A revisão de 25/09/
 | Equipamentos | [Estoque e manutenção](manuais-operacionais/estoque-manutencao-drones-notion.md) |
 | Gestão | [Painel do diretor](manuais-operacionais/painel-operacional-diretor-notion.md), [filtro por endereço](manuais-operacionais/painel-gestao-filtro-endereco-notion.md) |
 | Agro | [Banco de talentos](manuais-operacionais/banco-talentos-agro-notion.md), [visão técnica dos domínios](arquitetura.md) |
+| Financeiro | [Central de empresas — estrutura inicial](central-financeiro.md) |
 | Retornos | [Visualização do ciclo](README-retorno-automatico.md), [central de retornos automáticos](relatorio-central-retornos-automaticos.md) |
 | Endereços e voos | [Bloqueio por endereço resolvido](relatorio-bloqueio-novas-solicitacoes-endereco-resolvido.md), [Place ID e vínculo de KML](relatorio-melhoria-place-id-vinculo-kml-os.md) |
 | Arquivos | [Streaming WebDAV](relatorio-upload-stream-webdav.md) |

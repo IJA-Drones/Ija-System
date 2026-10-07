@@ -383,7 +383,7 @@ body.sidebar-collapsed .app-content {
 
   .navbar .dropdown-menu { right: 0; left: auto; }
   .navbar .dropdown button { padding: 0.4rem 0.8rem; display: flex; align-items: center; gap: 8px; }
-  .navbar .dropdown button span { display: none; }
+  .navbar .dropdown > button span { display: none; }
 
   .navbar-account-dropdown {
     min-width: 250px !important;
@@ -811,6 +811,16 @@ body.sidebar-collapsed .app-sidebar .nav-link-toggle .chevron {
   min-width: 0;
 }
 
+.admin-context-switch-extended .admin-context-btn {
+  white-space: normal;
+  line-height: 1.35;
+  min-height: 38px;
+}
+
+.admin-context-switch.is-financeiro .admin-context-switch-thumb {
+  background: linear-gradient(130deg, #2c5282, #1a4a7c);
+}
+
 .admin-context-btn[data-admin-context="agro"] {
   color: #2a7c49;
 }
@@ -905,6 +915,7 @@ body.sidebar-collapsed .app-sidebar .nav-link-toggle .chevron {
     font-size: 0.5rem;
   }
 }
+
 /* bundle-source-end: app/static/css/modules/admin-context-switch.css */
 
 
