@@ -82,7 +82,7 @@ class FinanceiroCentralTests(unittest.TestCase):
                 self.assertEqual(response.headers["Cache-Control"], "private, no-store")
 
     def test_finance_and_dev_roles_can_open_hub(self):
-        for role in ("financeiro_admin", "financeiro", "admin", "dev"):
+        for role in ("financeiro_admin", "financeiro", "dev"):
             with self.subTest(role=role):
                 self.login(role)
                 response = self.client.get("/financeiro")
@@ -92,7 +92,7 @@ class FinanceiroCentralTests(unittest.TestCase):
 
     def test_other_roles_are_denied_before_building_companies(self):
         with patch("app.modules.financeiro.routes.build_financeiro_empresas") as companies:
-            for role in ("diretor", "piloto", "piloto_agro", "operario", "prefeitura_admin", "regional", "uvis"):
+            for role in ("admin", "diretor", "piloto", "piloto_agro", "operario", "prefeitura_admin", "regional", "uvis"):
                 self.login(role)
                 for path in ("/financeiro", "/financeiro/empresas/ija"):
                     with self.subTest(role=role, path=path):
@@ -120,7 +120,7 @@ class FinanceiroCentralTests(unittest.TestCase):
             self.assertEqual(dict(stored), original)
 
     def test_company_registration_is_visible_but_not_implemented(self):
-        for role in ("financeiro_admin", "admin", "dev"):
+        for role in ("financeiro_admin", "dev"):
             with self.subTest(role=role):
                 self.login(role)
                 html = self.client.get("/financeiro").get_data(as_text=True)
@@ -269,7 +269,7 @@ class FinanceiroCentralTests(unittest.TestCase):
                         else:
                             self.assertNotIn('href="/financeiro', sidebar)
                         self.assertEqual('data-admin-context="financeiro"' in html,
-                                         role in {"admin", "dev", "financeiro_admin", "financeiro"})
+                                         role in {"dev", "financeiro_admin", "financeiro"})
 
     def test_global_admins_keep_original_hubs_without_finance_access(self):
         self.user = FinanceUser("diretor")
@@ -281,20 +281,22 @@ class FinanceiroCentralTests(unittest.TestCase):
                 self.assertIn(f'data-admin-context="{context}"', html)
             self.assertNotIn('data-admin-context="financeiro"', html)
 
-    def test_admin_can_access_three_centrals_without_work_flag(self):
+    def test_admin_keeps_operational_centrals_but_cannot_access_finance(self):
         self.login("admin", trabalha_agro=False)
         self.assertTrue(can_access_agro_panel(self.user))
         self.assertEqual(get_authenticated_redirect_endpoint(self.user), "main.admin_dashboard")
-        self.assertEqual(self.client.get("/financeiro").status_code, 200)
-        self.assertEqual(self.client.get("/financeiro/empresas/ija").status_code, 200)
+        self.assertEqual(self.client.get("/financeiro").status_code, 403)
+        self.assertEqual(self.client.get("/financeiro/empresas/ija").status_code, 403)
         with patch("app.modules.agro.routes.get_agro_dashboard_context", return_value={"ultimos_orcamentos": []}), \
              patch("app.core.templating.db.session") as stored:
             stored.query.side_effect = RuntimeError("No database in dashboard test")
             response = self.client.get("/agro/admin")
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        for central in ("uvis_prefeitura", "agro", "financeiro"):
+        for central in ("uvis_prefeitura", "agro"):
             self.assertIn(f'data-admin-context="{central}"', html)
+
+        self.assertNotIn('data-admin-context="financeiro"', html)
 
     def test_finance_users_cannot_open_operational_centrals_even_with_work_flag(self):
         with patch("app.modules.agro.routes.db.session") as stored:
@@ -359,7 +361,7 @@ class FinanceiroCentralTests(unittest.TestCase):
         rules = [rule for rule in self.app.url_map.iter_rules() if is_financeiro_legacy_endpoint(rule.endpoint)]
         self.assertGreaterEqual(len(rules), 35)
         with patch("app.modules.agro.routes.db.session") as stored:
-            for role in ("diretor", "operario", "regional", "piloto_agro"):
+            for role in ("admin", "diretor", "operario", "regional", "piloto_agro"):
                 self.login(role)
                 for rule in rules:
                     path = re.sub(r"<[^>]+>", "1", rule.rule)
@@ -384,7 +386,7 @@ class FinanceiroCentralTests(unittest.TestCase):
                 for method in rule.methods & {"GET", "POST"}:
                     with self.subTest(endpoint=rule.endpoint, method=method):
                         self.assertEqual(self.client.open(path, method=method).status_code, 403)
-        for role, work_flag in (("financeiro_admin", True), ("financeiro_admin", False), ("admin", False), ("dev", True), ("dev", False)):
+        for role, work_flag in (("financeiro_admin", True), ("financeiro_admin", False), ("dev", True), ("dev", False)):
             with self.subTest(role=role, trabalha_agro=work_flag):
                 self.login(role, trabalha_agro=work_flag)
                 with patch("app.modules.agro.routes.build_agro_finance_competencia_settings", return_value=[]):
@@ -398,7 +400,7 @@ class FinanceiroCentralTests(unittest.TestCase):
              patch("app.modules.agro.routes.build_financeiro_agro_entrada_query", return_value=query), \
              patch("app.modules.agro.routes.build_financeiro_agro_saida_query", return_value=query), \
              patch("app.modules.agro.routes.build_bancos_agro_query", return_value=query):
-            for role, work_flag in (("financeiro_admin", True), ("financeiro_admin", False), ("financeiro", True), ("financeiro", False), ("admin", False), ("dev", True), ("dev", False)):
+            for role, work_flag in (("financeiro_admin", True), ("financeiro_admin", False), ("financeiro", True), ("financeiro", False), ("dev", True), ("dev", False)):
                 self.login(role, trabalha_agro=work_flag)
                 for path in ("/agro/financeiro/contas", "/agro/bancos"):
                     with self.subTest(role=role, path=path):
@@ -439,8 +441,8 @@ class FinanceiroCentralTests(unittest.TestCase):
         for role in ("financeiro_admin", "financeiro", "admin", "diretor", "dev", "operario"):
             with self.subTest(role=role):
                 user = FinanceUser(role)
-                self.assertEqual(can_edit_agro_finance_panel(user), role in {"financeiro_admin", "financeiro", "admin", "dev"})
-                self.assertEqual(can_manage_agro_finance_settings(user), role in {"financeiro_admin", "admin", "dev"})
+                self.assertEqual(can_edit_agro_finance_panel(user), role in {"financeiro_admin", "financeiro", "dev"})
+                self.assertEqual(can_manage_agro_finance_settings(user), role in {"financeiro_admin", "dev"})
         user = FinanceUser("dev", trabalha_agro=False)
         self.assertTrue(can_edit_agro_finance_panel(user))
         self.assertTrue(can_manage_agro_finance_settings(user))
@@ -498,7 +500,7 @@ class FinanceiroCentralTests(unittest.TestCase):
                          patch("app.modules.agro.routes._build_latest_os_by_contrato", return_value={}), \
                          patch("app.core.templating.db.session") as stored:
                         stored.query.side_effect = RuntimeError("No database in template regression test")
-                        if role == "diretor":
+                        if role in {"admin", "diretor"}:
                             path = {"clientes": "/agro/clientes", "orcamentos": "/agro/orcamentos",
                                     "mapeamentos": "/agro/orcamentos/template-mapeamento", "contratos": "/agro/contratos"}[tab]
                         else:
@@ -509,7 +511,7 @@ class FinanceiroCentralTests(unittest.TestCase):
                     self.assertIn("Cliente IJA", html)
                     self.assertNotIn('<script>alert(1)</script>', html)
                     self.assertEqual(read_query.call_args.kwargs["q"], "IJA")
-                    if role != "diretor":
+                    if role not in {"admin", "diretor"}:
                         self.assertEqual(response.headers["Cache-Control"], "private, no-store")
                         self.assertIn('href="/financeiro/empresas/ija"', html)
                         self.assertIn('action="/financeiro/empresas/ija/' + suffix, html)
@@ -542,6 +544,17 @@ class FinanceiroCentralTests(unittest.TestCase):
             for consulta in consultas:
                 consulta.assert_not_called()
 
+    def test_admin_cannot_access_any_company_endpoint(self):
+        for flag in (True, False):
+            self.login("admin", trabalha_agro=flag)
+            for rule in self.app.url_map.iter_rules():
+                if not rule.endpoint.startswith("main.financeiro_"):
+                    continue
+                path = rule.rule.replace("<empresa_slug>", "ija")
+                for method in rule.methods & {"GET", "POST"}:
+                    with self.subTest(path=path, method=method, trabalha_agro=flag):
+                        self.assertEqual(self.client.open(path, method=method).status_code, 403)
+
     def test_company_identity_persists_and_replaces_demo_document(self):
         self.login("financeiro_admin")
         response = self.client.post("/financeiro/empresas/ija/configuracoes", data={
@@ -559,7 +572,7 @@ class FinanceiroCentralTests(unittest.TestCase):
     def test_logo_upload_display_invalid_replacement_and_removal(self):
         from io import BytesIO
         from PIL import Image
-        self.login("admin")
+        self.login("financeiro_admin")
         upload = BytesIO()
         Image.new("RGBA", (800, 400), (20, 80, 120, 100)).save(upload, format="PNG")
         upload.seek(0)
@@ -582,7 +595,7 @@ class FinanceiroCentralTests(unittest.TestCase):
         from io import BytesIO
         from PIL import Image
         from app.shared.skybox import SkyboxError
-        self.login("admin")
+        self.login("financeiro_admin")
         with self.app.app_context():
             db.session.add(FinanceiroEmpresaPerfil(empresa_slug="ija", logo_path="skybox://old.png", tem_logo=True))
             db.session.commit()
@@ -598,7 +611,7 @@ class FinanceiroCentralTests(unittest.TestCase):
     def test_logo_replacement_deletes_old_file_only_after_commit(self):
         from io import BytesIO
         from PIL import Image
-        self.login("admin")
+        self.login("financeiro_admin")
         with self.app.app_context():
             db.session.add(FinanceiroEmpresaPerfil(empresa_slug="ija", logo_path="skybox://old.png", tem_logo=True))
             db.session.commit()
@@ -632,7 +645,7 @@ class FinanceiroCentralTests(unittest.TestCase):
     def test_company_settings_require_csrf(self):
         self.app.config["CSRF_PROTECTION_ENABLED"] = True
         register_csrf_security(self.app)
-        self.login("admin")
+        self.login("financeiro_admin")
         path = "/financeiro/empresas/ija/configuracoes"
         self.assertEqual(self.client.post(path, data={"secao": "layout", "remover_logo": "1"}).status_code, 403)
         self.client.get(path)
@@ -641,7 +654,7 @@ class FinanceiroCentralTests(unittest.TestCase):
         self.assertEqual(self.client.post(path, data={"secao": "layout", "remover_logo": "1", "_csrf_token": token}).status_code, 302)
 
     def test_settings_sections_keep_competencies_separate(self):
-        self.login("admin")
+        self.login("financeiro_admin")
         for section, expected in (("dados", 'id="empresa-cnpj"'), ("layout", 'id="empresa-logo"'), ("competencias", 'id="competencia_select"')):
             with patch("app.modules.agro.routes.build_agro_finance_competencia_settings", return_value=[]):
                 html = self.client.get("/financeiro/empresas/ija/configuracoes?secao=" + section).get_data(as_text=True)
