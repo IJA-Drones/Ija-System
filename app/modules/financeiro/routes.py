@@ -1,4 +1,17 @@
-from flask import abort, current_app, g, render_template, request, url_for
+from io import BytesIO
+import warnings
+
+from PIL import Image, UnidentifiedImageError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from requests import RequestException
+from app.shared.skybox import SkyboxError, stream_skybox_file
+from app.modules.financeiro.logos import upload_company_logo, cleanup_company_logo
+from app.extensions import db
+from app.models import FinanceiroEmpresaPerfil
+from app.shared.formatters import only_digits
+from app.shared.validators import validate_cnpj
+
+from flask import flash, redirect, abort, current_app, g, render_template, request, url_for
 from flask_login import current_user, login_required
 
 from app.modules.financeiro.service import build_financeiro_empresas, build_financeiro_menu
@@ -122,6 +135,106 @@ def register_routes(bp):
         # The company is resolved on every request from the URL and permissions.
         # No shared selected-company cookie can change another tab's context.
         return render_template("financeiro_empresa.html", empresa=empresa)
+
+    @bp.route("/financeiro/empresas/<empresa_slug>/logo", methods=["GET"], endpoint="financeiro_empresa_logo")
+    @login_required
+    def financeiro_empresa_logo(empresa_slug):
+        _resolve_empresa(empresa_slug)
+        perfil = db.session.get(FinanceiroEmpresaPerfil, empresa_slug)
+        if not perfil or not perfil.logo_path:
+            abort(404)
+        try:
+            response = stream_skybox_file(perfil.logo_path, request.headers.get("Range"), as_attachment=False)
+        except (SkyboxError, RequestException):
+            current_app.logger.exception("Falha ao carregar logo da empresa no Skybox.")
+            abort(502)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        return response
+
+    @bp.route("/financeiro/empresas/<empresa_slug>/configuracoes", methods=["GET"], endpoint="financeiro_empresa_configuracoes")
+    @login_required
+    def financeiro_empresa_configuracoes(empresa_slug):
+        g.financeiro_empresa = _resolve_empresa(empresa_slug)
+        if not can_manage_financeiro_settings(current_user):
+            abort(403)
+        secao = request.args.get("secao", "dados")
+        if secao == "competencias" and empresa_slug == "ija":
+            return current_app.view_functions["main.agro_financeiro_configuracoes"]()
+        if secao not in {"dados", "layout"}:
+            secao = "dados"
+        return render_template("agro_financeiro_configuracoes.html", secao=secao, competencias=[], competencias_configuradas=[])
+
+    @bp.route("/financeiro/empresas/<empresa_slug>/configuracoes", methods=["POST"], endpoint="financeiro_empresa_configuracoes_salvar")
+    @login_required
+    def financeiro_empresa_configuracoes_salvar(empresa_slug):
+        _resolve_empresa(empresa_slug)
+        if not can_manage_financeiro_settings(current_user):
+            abort(403)
+        secao = request.form.get("secao")
+        destino = url_for("main.financeiro_empresa_configuracoes", empresa_slug=empresa_slug, secao=secao)
+        perfil = db.session.get(FinanceiroEmpresaPerfil, empresa_slug)
+        novo = perfil is None
+        if novo:
+            perfil = FinanceiroEmpresaPerfil(empresa_slug=empresa_slug)
+        old_logo_path = perfil.logo_path
+        uploaded_path = None
+        try:
+            if secao == "dados":
+                nome = request.form.get("nome", "").strip()
+                razao = request.form.get("razao_social", "").strip()
+                cnpj = only_digits(request.form.get("cnpj", ""))
+                if not nome or len(nome) > 120 or not razao or len(razao) > 180:
+                    raise ValueError("Preencha o nome (até 120 caracteres) e a razão social (até 180).")
+                # Preserve the initial demonstration document until replaced.
+                demo = cnpj == "11111111000111" and not perfil.cnpj and empresa_slug == "ija"
+                if not demo and not validate_cnpj(cnpj):
+                    raise ValueError("Informe um CNPJ válido.")
+                perfil.nome, perfil.razao_social = nome, razao
+                perfil.cnpj = None if demo else cnpj
+            elif secao == "layout":
+                arquivo = request.files.get("logo")
+                if request.form.get("remover_logo") == "1":
+                    perfil.logo_path, perfil.tem_logo = None, False
+                elif arquivo and arquivo.filename:
+                    data = arquivo.stream.read(2 * 1024 * 1024 + 1)
+                    if len(data) > 2 * 1024 * 1024:
+                        raise ValueError("A logo deve ter no máximo 2 MB.")
+                    try:
+                        with warnings.catch_warnings():
+                            warnings.simplefilter("error", Image.DecompressionBombWarning)
+                            with Image.open(BytesIO(data)) as img:
+                                if img.format not in {"PNG", "JPEG", "WEBP"} or img.width * img.height > 16000000:
+                                    raise ValueError("Use uma imagem PNG, JPG ou WebP de até 16 megapixels.")
+                                img.thumbnail((512, 512))
+                                out = BytesIO()
+                                img.convert("RGBA").save(out, format="PNG")
+                                uploaded_path = upload_company_logo(empresa_slug, out.getvalue())
+                                perfil.logo_path, perfil.tem_logo = uploaded_path, True
+                    except (UnidentifiedImageError, OSError, Image.DecompressionBombError, Image.DecompressionBombWarning):
+                        raise ValueError("Não foi possível ler a imagem. Use PNG, JPG ou WebP.")
+                else:
+                    raise ValueError("Selecione uma imagem para salvar a logo.")
+            else:
+                abort(400)
+            if novo:
+                db.session.add(perfil)
+            db.session.commit()
+        except (ValueError, SQLAlchemyError, SkyboxError) as exc:
+            db.session.rollback()
+            cleanup_company_logo(uploaded_path)
+            if isinstance(exc, (ValueError, SkyboxError)):
+                message = str(exc)
+            elif isinstance(exc, IntegrityError):
+                message = "Este CNPJ já está cadastrado em outra empresa."
+            else:
+                current_app.logger.exception("Falha ao salvar configurações da empresa.")
+                message = "Não foi possível salvar. Tente novamente."
+            flash(message, "warning")
+            return redirect(destino)
+        if secao == "layout" and old_logo_path != perfil.logo_path:
+            cleanup_company_logo(old_logo_path)
+        flash("Configurações da empresa salvas.", "success")
+        return redirect(destino)
 
     def render_company_consulta(empresa_slug, tipo):
         empresa = _resolve_empresa(empresa_slug, existing_data=True)

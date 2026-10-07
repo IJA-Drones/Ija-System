@@ -1,12 +1,12 @@
-"""Company catalog for the finance hub, initially with one demo entry.
+"""Authorized company catalog with persisted identity and branding overrides.
 
-The hub and workspace consume a list of companies. Registration and persisted
-company permissions will be added after the finance area is validated.
+Registration and financial-record isolation remain separate from branding.
 """
 
 from app.modules.agro.service import can_access_agro_finance_panel
 from app.shared.access import can_access_financeiro_panel, can_manage_financeiro_settings
 from app.shared.formatters import format_documento
+from app.models import FinanceiroEmpresaPerfil
 
 
 FINANCEIRO_MENU = (
@@ -30,7 +30,7 @@ FINANCEIRO_MENU = (
 def build_financeiro_empresas(user):
     can_open_ija = can_access_agro_finance_panel(user)
     cnpj = "11111111000111"
-    return [{
+    empresas = [{
         "slug": "ija",
         "nome": "IJA",
         "sigla": "IJA",
@@ -41,6 +41,18 @@ def build_financeiro_empresas(user):
         "disponivel": can_open_ija,
         "demonstracao": True,
     }]
+    perfis = {perfil.empresa_slug: perfil for perfil in FinanceiroEmpresaPerfil.query.all()}
+    for empresa in empresas:
+        perfil = perfis.get(empresa["slug"])
+        empresa["tem_logo"] = bool(perfil and perfil.tem_logo)
+        if perfil:
+            for campo in ("nome", "razao_social", "cnpj"):
+                if getattr(perfil, campo):
+                    empresa[campo] = getattr(perfil, campo)
+            empresa["cnpj_formatado"] = format_documento(empresa["cnpj"])
+            empresa["demonstracao"] = not bool(perfil.cnpj)
+            empresa["sigla"] = empresa["nome"][:3].upper()
+    return empresas
 
 
 def build_financeiro_menu(user, empresa):

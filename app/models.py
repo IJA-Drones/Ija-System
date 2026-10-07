@@ -3134,3 +3134,15 @@ class AgroFlightKmlRoute(db.Model):
     @property
     def has_points(self):
         return bool(self.point_count)
+
+
+class FinanceiroEmpresaPerfil(db.Model):
+    """Branding keyed by the authorized catalog slug; does not grant data access."""
+    __tablename__ = "financeiro_empresa_perfis"
+
+    empresa_slug = db.Column(db.String(80), primary_key=True)
+    nome = db.Column(db.String(120), nullable=True)
+    razao_social = db.Column(db.String(180), nullable=True)
+    cnpj = db.Column(db.String(14), nullable=True, unique=True)
+    logo_path = db.Column(db.String(500), nullable=True)
+    tem_logo = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false())
