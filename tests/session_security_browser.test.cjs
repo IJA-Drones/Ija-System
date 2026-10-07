@@ -79,6 +79,10 @@ function browser({ enabled = true, expiresIn = 60, idleSeconds = expiresIn, abso
       document.listeners[name]?.({ isTrusted: trusted });
       await flush();
     },
+    async uploadProgress() {
+      document.listeners["ija:video-upload-progress"]?.({});
+      await flush();
+    },
     async continueSession(trusted = true) {
       document.body.children[0].children[3].listeners.click?.({ isTrusted: trusted });
       await flush();
@@ -225,6 +229,31 @@ test("synthetic events and hidden tabs do not renew the session", async () => {
   page.document.visibilityState = "hidden";
   await page.event("keydown");
   assert.equal(page.requests.length, 0);
+});
+
+test("video upload progress renews the session while the tab is hidden", async () => {
+  const page = browser({ expiresIn: 900, idleSeconds: 900, devTimer: true });
+  page.document.visibilityState = "hidden";
+  await page.uploadProgress();
+  assert.equal(page.requests.length, 1);
+  assert.equal(page.requests[0].method, "POST");
+  assert.equal(page.requests[0].headers["X-Session-CSRF"], "csrf-test");
+  assert.equal(page.timer.textContent, "15:00");
+
+  await page.tick(44);
+  await page.uploadProgress();
+  assert.equal(page.requests.length, 1);
+  await page.tick(1);
+  await page.uploadProgress();
+  assert.deepEqual(page.requests.map(request => request.method), ["POST", "POST"]);
+});
+
+test("upload progress cannot revive an expired session", async () => {
+  const page = browser({ expiresIn: 30, idleSeconds: 30 });
+  await page.tick(31);
+  await page.uploadProgress();
+  assert.ok(page.requests.every(request => request.method === "GET"));
+  assert.deepEqual(page.redirects, ["/agro/login"]);
 });
 
 test("local expiry checks another tab's activity before redirecting", async () => {
