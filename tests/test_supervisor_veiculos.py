@@ -4,7 +4,7 @@ from io import BytesIO
 from pathlib import Path
 from unittest.mock import patch
 
-from flask import Blueprint, Flask
+from flask import Blueprint, Flask, g
 from flask_login import LoginManager
 from jinja2 import ChoiceLoader, DictLoader
 from werkzeug.datastructures import FileStorage, MultiDict
@@ -232,6 +232,41 @@ class SupervisorVeiculosTests(unittest.TestCase):
         self.assertIn('data-km-max="1500.0"', html)
         self.assertIn("KM inicial do turno (primeiro abastecimento)", html)
 
+    @patch("app.modules.veiculos.service._salvar_upload_veiculo", return_value="painel.jpg")
+    def test_supervisor_opens_assigned_vehicle_shift_through_route(self, _upload):
+        veiculo = self.veiculos[1]
+        response = self.client.post("/veiculos/equipes", data={
+            "veiculo_ids": str(veiculo.id),
+            f"equipe_id_{veiculo.id}": str(self.sul.id),
+            f"supervisor_id_{veiculo.id}": str(self.supervisor.id),
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(veiculo.supervisor_usuario_id, self.supervisor.id)
+
+        self._login_as(self.supervisor)
+        response = self.client.get("/piloto/veiculos?acao=abrir_turno")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Veículo sob sua responsabilidade", response.get_data(as_text=True))
+
+        response = self.client.post(f"/piloto/veiculos/{veiculo.id}/km", data={
+            "km_inicial": "1000.00", "assinatura_b64": "assinatura",
+            "foto_painel": (BytesIO(b"foto"), "painel.jpg"),
+        }, content_type="multipart/form-data")
+        self.assertEqual(response.status_code, 302)
+        log = LogVeiculo.query.one()
+        self.assertEqual(log.veiculo_id, veiculo.id)
+        self.assertIsNone(log.km_final)
+        self.assertEqual(log.piloto_id, self.supervisor.piloto_id)
+        self.assertEqual(log.equipe_id, self.sul.id)
+        self.assertEqual(_operador_log_veiculo(log), "Supervisor")
+
+        response = self.client.post(f"/piloto/veiculos/{veiculo.id}/km", data={
+            "km_inicial": "1000.00", "assinatura_b64": "assinatura",
+            "foto_painel": (BytesIO(b"foto"), "painel.jpg"),
+        }, content_type="multipart/form-data")
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(LogVeiculo.query.count(), 1)
+
     @patch.object(checklists, "_sincronizar_pendencias")
     def test_weekly_vehicle_and_drone_checklists_keep_supervisor_as_author(self, _notifications):
         form = MultiDict({"veiculo_id": str(self.veiculos[1].id), "drone_id": str(self.drones[1].id),
@@ -252,6 +287,7 @@ class SupervisorVeiculosTests(unittest.TestCase):
         with self.client.session_transaction() as session:
             session["_user_id"] = str(user.id)
             session["_fresh"] = True
+        g.pop("_login_user", None)
 
     def _pilot_records(self, equipment_index=0):
         veiculo = self.veiculos[equipment_index]

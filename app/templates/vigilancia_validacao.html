@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/vigilancia_validacao.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="vigilancia-preview-page py-4">
+  <header class="vigilancia-preview-header">
+    <div>
+      <p class="vigilancia-preview-eyebrow">Vigilância de campo</p>
+      <h1>Validação de Focal e LIRAa</h1>
+      <p class="vigilancia-preview-muted">Confira o arquivo, revise inconsistências e consulte os indicadores preliminares.</p>
+    </div>
+    <span class="vigilancia-preview-tag">Layout provisório</span>
+  </header>
+
+  <div class="vigilancia-preview-notice">
+    <i class="bi bi-info-circle" aria-hidden="true"></i>
+    <p>Esta prévia não grava dados no sistema. Use o exemplo sintético para validar o fluxo; os layouts e resultados oficiais dependem de homologação da vigilância.</p>
+  </div>
+
+  {% if erro %}
+  <div class="alert alert-danger" role="alert">{{ erro }}</div>
+  {% endif %}
+
+  <section class="vigilancia-preview-panel" aria-labelledby="arquivo-heading">
+    <h2 id="arquivo-heading">Conferir arquivo</h2>
+    <form method="post" action="{{ url_for('main.vigilancia_validacao') }}" enctype="multipart/form-data">
+      <input type="hidden" name="_csrf_token" value="{{ preview_csrf_token }}">
+      <div class="vigilancia-preview-form-grid">
+        <div>
+          <label for="prefeitura-id" class="form-label">Código da prefeitura</label>
+          <input class="form-control" type="number" id="prefeitura-id" name="prefeitura_id" min="1" step="1" required
+            value="{{ prefeitura_id if prefeitura_id is not none else '' }}" {% if not municipio_editavel %}readonly{% endif %}
+            aria-describedby="prefeitura-help">
+          <p class="vigilancia-preview-help" id="prefeitura-help">Deve coincidir com <code>municipio_id</code> no CSV.</p>
+        </div>
+        <div>
+          <label for="arquivo-csv" class="form-label">Arquivo CSV</label>
+          <input class="form-control" type="file" id="arquivo-csv" name="arquivo" accept=".csv,text/csv" required aria-describedby="arquivo-help">
+          <p class="vigilancia-preview-help" id="arquivo-help">Até {{ max_file_bytes // 1024 }} KB · UTF-8 · vírgula ou ponto e vírgula.</p>
+        </div>
+      </div>
+      <div class="vigilancia-preview-actions">
+        <button class="btn btn-primary" type="submit"><i class="bi bi-file-earmark-check me-2" aria-hidden="true"></i>Validar arquivo</button>
+        <a class="btn btn-outline-primary {% if not prefeitura_id %}disabled{% endif %}" id="sample-download"
+          href="{% if prefeitura_id %}{{ url_for('main.vigilancia_modelo_csv', prefeitura_id=prefeitura_id) }}{% else %}#{% endif %}"
+          data-sample-url="{{ url_for('main.vigilancia_modelo_csv') }}" {% if not prefeitura_id %}aria-disabled="true" tabindex="-1"{% endif %}>
+          <i class="bi bi-download me-2" aria-hidden="true"></i>Baixar exemplo sintético
+        </a>
+      </div>
+    </form>
+    <details class="vigilancia-preview-layout">
+      <summary>Consultar colunas e regras do layout</summary>
+      <p class="vigilancia-preview-help">Versão: <code>{{ layout_version }}</code>. Todos os cabeçalhos abaixo são obrigatórios.</p>
+      <div class="vigilancia-preview-columns">{% for column in csv_columns %}<code>{{ column }}</code>{% endfor %}</div>
+      <p class="vigilancia-preview-help">Origens: <strong>FOCAL</strong> e <strong>LIRAA</strong>. Situações: <strong>INSPECIONADO</strong>, <strong>FECHADO</strong> ou <strong>RECUSADO</strong>. Positividade: <strong>SIM</strong>/<strong>NAO</strong> para inspeções realizadas e vazia em pendências. Datas no formato AAAA-MM-DD.</p>
+      <p class="vigilancia-preview-help">LIRAa exige levantamento e estrato; focal deixa esses campos vazios. Coordenadas são opcionais, mas devem vir em par. Identificadores de imóvel e inspeção devem permanecer estáveis.</p>
+    </details>
+  </section>
+
+  {% if result %}
+  <section class="vigilancia-preview-panel" aria-labelledby="resultado-heading">
+    <div class="vigilancia-preview-section-header">
+      <div>
+        <h2 id="resultado-heading">Resultado da prévia</h2>
+        <p class="vigilancia-preview-muted">{{ 'Arquivo consistente com o layout provisório.' if result.status == 'VALIDADO' else 'Revise as inconsistências antes de continuar.' }}</p>
+      </div>
+      <button type="button" class="btn btn-outline-primary btn-sm" id="download-report"><i class="bi bi-download me-2" aria-hidden="true"></i>Baixar relatório JSON</button>
+    </div>
+    <dl class="vigilancia-preview-metrics">
+      {% for label, value in [('Linhas', result.resumo.linhas), ('Aceitas', result.resumo.aceitas), ('Duplicadas', result.resumo.duplicadas), ('Rejeitadas', result.resumo.rejeitadas)] %}
+      <div><dt>{{ label }}</dt><dd>{{ value }}</dd></div>
+      {% endfor %}
+    </dl>
+    <p class="vigilancia-preview-help">{{ result.resumo.imoveis }} imóveis e {{ result.resumo.inspecoes }} inspeções válidas. {{ result.resumo.sem_coordenadas }} registros sem coordenadas.</p>
+    {% if result.erros %}
+    <h3>Inconsistências encontradas</h3>
+    <div class="vigilancia-preview-table-wrap" tabindex="0" role="region" aria-label="Tabela de inconsistências">
+      <table class="table vigilancia-preview-table">
+        <thead><tr><th scope="col">Linha</th><th scope="col">Campo</th><th scope="col">O que revisar</th></tr></thead>
+        <tbody>{% for item in result.erros %}<tr><td>{{ item.linha }}</td><td>{{ item.campo }}</td><td>{{ item.mensagem }}</td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
+    {% endif %}
+  </section>
+
+  <section class="vigilancia-preview-panel" aria-labelledby="indicadores-heading">
+    <h2 id="indicadores-heading">IIP preliminar por levantamento</h2>
+    <p class="vigilancia-preview-muted">Considera imóveis únicos inspecionados no LIRAa. Registros focais e visitas fechadas ou recusadas não participam do denominador.</p>
+    {% if result.erros %}<p class="vigilancia-preview-notice">O IIP fica indisponível enquanto houver inconsistências no arquivo, para evitar apresentar um percentual calculado com dados incompletos.</p>{% endif %}
+    {% if result.indicadores %}
+    <div class="vigilancia-preview-table-wrap" tabindex="0" role="region" aria-label="Indicadores preliminares do LIRAa">
+      <table class="table vigilancia-preview-table">
+        <thead><tr><th scope="col">Levantamento / estrato</th><th scope="col">Área</th><th scope="col">Inspecionados</th><th scope="col">Positivos</th><th scope="col">Pendentes</th><th scope="col">IIP preliminar</th></tr></thead>
+        <tbody>{% for item in result.indicadores %}
+          <tr>
+            <td><strong>{{ item.levantamento_codigo }}</strong><br><span class="vigilancia-preview-muted">{{ item.estrato_codigo }}</span></td>
+            <td>{{ item.area_codigo }}</td><td>{{ item.imoveis_inspecionados }}</td><td>{{ item.imoveis_positivos }}</td><td>{{ item.imoveis_pendentes }}</td>
+            <td>{% if item.iip is not none %}<strong>{{ '%.2f'|format(item.iip)|replace('.', ',') }}%</strong>{% else %}<span>Indisponível</span><br><small class="vigilancia-preview-muted">{{ item.motivo }}</small>{% endif %}</td>
+          </tr>
+        {% endfor %}</tbody>
+      </table>
+    </div>
+    {% else %}<p class="vigilancia-preview-empty">Nenhum levantamento LIRAa válido neste arquivo.</p>{% endif %}
+    <p class="vigilancia-preview-help">Fórmula preliminar: 100 × imóveis positivos ÷ imóveis inspecionados. O resultado não valida a amostragem nem substitui a homologação técnica.</p>
+  </section>
+
+  <section class="vigilancia-preview-panel" aria-labelledby="registros-heading">
+    <h2 id="registros-heading">Registros aceitos</h2>
+    <p class="vigilancia-preview-muted">{{ result.registros|length }} registros disponíveis no relatório. A tabela mostra os primeiros 100.</p>
+    {% if result.registros %}
+    <div class="vigilancia-preview-table-wrap" tabindex="0" role="region" aria-label="Registros normalizados aceitos">
+      <table class="table vigilancia-preview-table">
+        <thead><tr><th scope="col">Linha</th><th scope="col">Origem</th><th scope="col">Imóvel / inspeção</th><th scope="col">Data</th><th scope="col">Área / bairro</th><th scope="col">Situação</th><th scope="col">Positivo Aedes</th><th scope="col">Localização</th></tr></thead>
+        <tbody>{% for item in result.registros[:100] %}
+          <tr><td>{{ item.linha }}</td><td>{{ item.origem }}</td><td><strong>{{ item.imovel_codigo }}</strong><br>{{ item.inspecao_codigo }}</td><td>{{ item.data_inspecao }}</td><td>{{ item.area_codigo }}<br><span class="vigilancia-preview-muted">{{ item.bairro }}</span></td><td>{{ item.situacao }}</td><td>{{ item.positivo_aedes if item.positivo_aedes else 'Não avaliado' }}</td><td>{% if item.latitude is not none %}{{ item.latitude }}, {{ item.longitude }}{% else %}Não informada{% endif %}</td></tr>
+        {% endfor %}</tbody>
+      </table>
+    </div>
+    {% else %}<p class="vigilancia-preview-empty">Nenhum registro aceito. Corrija o arquivo e valide novamente.</p>{% endif %}
+    <details class="vigilancia-preview-layout"><summary>Identificação do arquivo</summary><p class="vigilancia-preview-help">SHA-256: <code class="vigilancia-preview-hash">{{ result.arquivo_sha256 }}</code></p></details>
+  </section>
+  <script type="application/json" id="preview-report">{{ result|tojson }}</script>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/vigilancia-validacao.js') }}" defer></script>
+{% endblock %}

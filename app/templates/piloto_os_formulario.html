@@ -1593,6 +1593,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const uploadBlobChunkWithProgress = (url, blob, onProgress) => new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
+    let lastActivityLoaded = 0;
     xhr.open("PUT", url, true);
     xhr.responseType = "text";
     xhr.timeout = 0;
@@ -1602,6 +1603,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (csrfToken) xhr.setRequestHeader("X-CSRFToken", csrfToken);
 
     xhr.upload.onprogress = (event) => {
+      if (event.loaded > lastActivityLoaded) {
+        lastActivityLoaded = event.loaded;
+        document.dispatchEvent(new Event("ija:video-upload-progress"));
+      }
       if (!event.lengthComputable) return;
       onProgress(event.loaded, event.total);
     };

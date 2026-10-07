@@ -31,6 +31,7 @@ class Config:
     INFODENGUE_CITY = os.environ.get("INFODENGUE_CITY", "São Paulo")
     INFODENGUE_DISEASE = os.environ.get("INFODENGUE_DISEASE", "dengue")
     INFODENGUE_LOOKBACK_WEEKS = os.environ.get("INFODENGUE_LOOKBACK_WEEKS", "8")
+    VIGILANCIA_PREVIEW_ENABLED = os.getenv("VIGILANCIA_PREVIEW_ENABLED", "0").strip().lower() in {"1", "true", "yes", "on"}
 
     # Nova variável (sem restrição de site) apenas para o Geocode do Python
     Maps_KEY_BACK = os.getenv("GOOGLE_MAPS_KEY_BACK")

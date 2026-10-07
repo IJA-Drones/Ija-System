@@ -112,8 +112,7 @@
     }
   }
 
-  function recordActivity(event, forceRenewal = false) {
-    if (!event.isTrusted || document.visibilityState !== "visible") return;
+  function renewForActivity(forceRenewal = false) {
     const now = Date.now();
     if (now >= deadline && !inFlight) {
       sync(false);
@@ -127,6 +126,10 @@
     if (devSessionCountdown) renderSessionState();
     if (!activitySent || forceRenewal || warningVisible || shouldSendActivity(now)) sync(true);
   }
+  function recordActivity(event, forceRenewal = false) {
+    if (!event.isTrusted || document.visibilityState !== "visible") return;
+    renewForActivity(forceRenewal);
+  }
   function shouldSendActivity(now) {
     return now - lastRequestAt >= activityIntervalMs ||
       (confirmedDeadline - now <= Math.max(activityIntervalMs, 5000) && now - lastRequestAt >= 1000);
@@ -134,6 +137,9 @@
   for (const eventName of ["pointerdown", "pointermove", "click", "keydown", "input", "change", "wheel", "touchstart", "touchmove"]) {
     document.addEventListener(eventName, recordActivity, { passive: true });
   }
+  // Video upload progress is real application activity even when the tab is hidden.
+  // The upload code emits this event only after the transmitted byte count grows.
+  document.addEventListener("ija:video-upload-progress", () => renewForActivity());
   continueButton.addEventListener("click", (event) => {
     if (!event.isTrusted) return;
     recordActivity(event, true);

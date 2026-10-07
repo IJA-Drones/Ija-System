@@ -21,6 +21,7 @@ Esta é a entrada da documentação técnica e operacional. A revisão de 25/09/
 | --- | --- |
 | Prefeitura e operação urbana | [Catálogo funcional municipal](IJA_System_Funcionalidades_Prefeitura_Notion.md) |
 | Cidadão e triagem | [Portal, denúncias e encaminhamento para UVIS](manuais-operacionais/portal-cidadao-triagem.md) |
+| Vigilância em validação | [Prévia de importação focal/LIRAa](vigilancia-validacao-inicial.md) |
 | Frota e supervisor | [Supervisor Operacional de Veículos](perfil-supervisor-operacional-veiculos.md), [alertas de limpeza](manuais-operacionais/alertas-limpeza-veiculos-oceano-azul-notion.md) |
 | Equipamentos | [Estoque e manutenção](manuais-operacionais/estoque-manutencao-drones-notion.md) |
 | Gestão | [Painel do diretor](manuais-operacionais/painel-operacional-diretor-notion.md), [filtro por endereço](manuais-operacionais/painel-gestao-filtro-endereco-notion.md) |
