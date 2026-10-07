@@ -31,10 +31,13 @@ from app.models import (
 from app.shared.access import (
     ADMIN_PANEL_EDIT_TYPES,
     ADMIN_PANEL_VIEW_TYPES,
+    ADMIN_USER_TYPE,
     AGRO_FINANCE_EDIT_TYPES,
     AGRO_FINANCE_VIEW_TYPES,
-    FINANCEIRO_ADMIN_USER_TYPE,
     apply_prefeitura_scope,
+    can_access_financeiro_panel,
+    can_manage_financeiro_settings,
+    is_dev_user,
     normalize_role,
 )
 from app.shared.formatters import format_cep, format_currency_br, format_documento, only_digits
@@ -91,25 +94,30 @@ def build_agro_categoria_composta(categoria, subcategoria) -> str:
 
 def can_access_agro_panel(user) -> bool:
     role = normalize_role(getattr(user, "tipo_usuario", None))
-    return role in (ADMIN_PANEL_VIEW_TYPES | AGRO_FINANCE_VIEW_TYPES) and bool(getattr(user, "trabalha_agro", False))
+    return role == ADMIN_USER_TYPE or (role in ADMIN_PANEL_VIEW_TYPES and bool(getattr(user, "trabalha_agro", False)))
 
 
 def can_edit_agro_panel(user) -> bool:
     return can_access_agro_panel(user) and normalize_role(getattr(user, "tipo_usuario", None)) in ADMIN_PANEL_EDIT_TYPES
 
 
+def can_access_agro_finance_panel(user) -> bool:
+    # Finance is its own area; its roles do not require an operational Agro flag.
+    return can_access_financeiro_panel(user)
+
+
 def can_edit_agro_finance_panel(user) -> bool:
     role = normalize_role(getattr(user, "tipo_usuario", None))
-    return can_access_agro_panel(user) and role in (ADMIN_PANEL_EDIT_TYPES | AGRO_FINANCE_EDIT_TYPES)
+    return can_access_agro_finance_panel(user) and (role in AGRO_FINANCE_EDIT_TYPES or role == ADMIN_USER_TYPE or is_dev_user(user))
+
+
+def can_edit_agro_fornecedores(user) -> bool:
+    # Suppliers remain shared with Agro without reopening its finance panel.
+    return can_edit_agro_panel(user) or can_edit_agro_finance_panel(user)
 
 
 def is_financeiro_agro_admin(user) -> bool:
-    return can_access_agro_panel(user) and normalize_role(getattr(user, "tipo_usuario", None)) in {
-        "dev",
-        "diretor",
-        "admin",
-        FINANCEIRO_ADMIN_USER_TYPE,
-    }
+    return can_access_agro_finance_panel(user) and can_manage_financeiro_settings(user)
 
 
 def is_financeiro_agro_only_user(user) -> bool:
@@ -1446,8 +1454,6 @@ def get_agro_dashboard_context(user) -> dict:
     equipes_query = apply_prefeitura_scope(EquipeAgro.query, user, EquipeAgro.prefeitura_id)
     equipamentos_query = apply_prefeitura_scope(EquipamentoAgro.query, user, EquipamentoAgro.prefeitura_id)
     ordens_servico_query = apply_prefeitura_scope(OrdemServicoAgro.query, user, OrdemServicoAgro.prefeitura_id)
-    financeiro_query = apply_prefeitura_scope(FinanceiroAgro.query, user, FinanceiroAgro.prefeitura_id)
-
     return {
         "total_clientes_agro": clientes_query.count(),
         "total_fornecedores_agro": fornecedores_query.count(),
@@ -1461,16 +1467,6 @@ def get_agro_dashboard_context(user) -> dict:
             ContratoAgro.status == ContratoAgro.STATUS_APROVADO
         ).count(),
         "total_ordens_servico_agro": ordens_servico_query.count(),
-        "total_financeiros_agro": financeiro_query.count(),
-        "total_financeiros_agro_pendentes": financeiro_query.filter(
-            FinanceiroAgro.status.in_(
-                (
-                    FinanceiroAgro.STATUS_PENDENTE,
-                    FinanceiroAgro.STATUS_PARCIAL,
-                    FinanceiroAgro.STATUS_VENCIDO,
-                )
-            )
-        ).count(),
         "total_pilotos_agro": pilotos_query.count(),
         "total_equipes_agro": equipes_query.count(),
         "total_equipamentos_agro": equipamentos_query.count(),

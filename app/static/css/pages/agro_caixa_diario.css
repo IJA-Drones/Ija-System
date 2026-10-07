@@ -9,7 +9,7 @@
       }
 
       .caixa-diario-actions {
-        flex-wrap: nowrap;
+        flex-wrap: wrap;
         justify-content: flex-end;
         align-items: center;
       }
@@ -26,3 +26,19 @@
       text-align: center;
       flex: 0 0 16px;
     }
+
+.caixa-abrir-destaque {
+  min-height: 46px;
+  padding: .7rem 1.25rem;
+  font-weight: 600;
+}
+
+#abrir-caixa-form {
+  scroll-margin-top: 110px;
+}
+
+@media (max-width: 575.98px) {
+  .caixa-abrir-destaque {
+    width: 100%;
+  }
+}

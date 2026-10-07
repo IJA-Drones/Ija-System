@@ -1,10 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Financeiro · {{ empresa.nome }} | Oceano Azul{% endblock %}
 
-{% block extra_styles %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/financeiro-central.css', v='20261007a') }}">
-{% endblock %}
-
 {% block content %}
 <div class="container-fluid py-4 finance-hub">
   <nav class="finance-breadcrumb" aria-label="Caminho de navegação">
@@ -26,12 +22,19 @@
     <span class="finance-operation-label"><i class="bi bi-tree" aria-hidden="true"></i>{{ empresa.operacao }}</span>
   </section>
 
-  <section class="finance-workspace-empty" aria-labelledby="finance-workspace-title">
-    <div class="finance-empty-symbol" aria-hidden="true"><i class="bi bi-bank"></i></div>
-    <span class="finance-eyebrow">Um novo espaço para sua empresa</span>
-    <h2 id="finance-workspace-title">O financeiro da {{ empresa.nome }} começa aqui.</h2>
-    <p>Este ambiente está pronto para receber os próximos recursos financeiros.<br class="d-none d-md-block"> Em breve, você poderá acompanhar a gestão da empresa por aqui.</p>
-    <a href="{{ url_for('main.financeiro_central') }}" class="finance-back-link">Voltar para suas empresas <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+  <section aria-labelledby="finance-workspace-title">
+    <h2 id="finance-workspace-title" class="finance-module-title">Funcionalidades financeiras</h2>
+    <div class="finance-module-grid">
+      {% for item in build_financeiro_menu(current_user, empresa) %}
+      <a class="finance-module-link" href="{{ url_for(item.endpoint, **item.params) }}">
+        <i class="bi {{ item.icon }} finance-module-icon" aria-hidden="true"></i>
+        <span>{{ item.label }}</span>
+        <i class="bi bi-arrow-right" aria-hidden="true"></i>
+      </a>
+      {% else %}
+      <p class="text-muted">As funcionalidades desta empresa ainda não estão disponíveis.</p>
+      {% endfor %}
+    </div>
   </section>
 </div>
 {% endblock %}

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from flask import request, url_for
+from flask import g, request, url_for
 from flask_login import current_user
 from werkzeug.routing import BuildError
 
@@ -15,8 +15,9 @@ from app.modules.feedback.service import (
 )
 from app.modules.denuncias.service import can_access_denuncias, count_denuncias_alerta
 from app.modules.agro.service import can_access_agro_panel
-from app.shared.access import is_admin_global_user, is_covisa_user, is_dev_user, is_veiculos_supervisor
+from app.shared.access import is_admin_global_user, is_agro_finance_user, is_covisa_user, is_dev_user, is_veiculos_supervisor
 from app.shared.formatters import format_currency_br, format_phone_br
+from app.shared.financeiro_navigation import is_financeiro_endpoint
 from app.shared.solicitacao_focos import build_focus_catalog
 from app.modules.solicitacoes.service import is_solicitacao_quadra
 from app.modules.admin_dashboard.service import is_solicitacao_quadra as is_admin_solicitacao_quadra
@@ -34,7 +35,7 @@ def register_template_helpers(bp):
                 raise
 
         focus_catalog = build_focus_catalog()
-        if current_user.is_authenticated and not (request.endpoint or "").startswith("main.financeiro_"):
+        if current_user.is_authenticated and not (is_financeiro_endpoint(request.endpoint) or getattr(g, "financeiro_empresa", None) is not None or is_agro_finance_user(current_user)):
             try:
                 query = db.session.query(db.func.count(Notificacao.id)).filter(
                     Notificacao.lida_em.is_(None),

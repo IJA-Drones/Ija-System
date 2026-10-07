@@ -39,7 +39,7 @@ AGRO_FINANCE_EDIT_TYPES = {
     FINANCEIRO_ADMIN_USER_TYPE,
     FINANCEIRO_USER_TYPE,
 }
-FINANCEIRO_PANEL_VIEW_TYPES = GLOBAL_ADMIN_USER_TYPES | AGRO_FINANCE_VIEW_TYPES
+FINANCEIRO_PANEL_VIEW_TYPES = AGRO_FINANCE_VIEW_TYPES | {ADMIN_USER_TYPE, DEV_USER_TYPE}
 
 
 def normalize_role(value: str | None) -> str:
@@ -83,6 +83,10 @@ def is_agro_finance_user(user) -> bool:
 
 def can_access_financeiro_panel(user) -> bool:
     return normalize_role(getattr(user, "tipo_usuario", None)) in FINANCEIRO_PANEL_VIEW_TYPES
+
+
+def can_manage_financeiro_settings(user) -> bool:
+    return is_financeiro_admin_user(user) or is_dev_user(user) or normalize_role(getattr(user, "tipo_usuario", None)) == ADMIN_USER_TYPE
 
 
 def is_admin_global_user(user) -> bool:

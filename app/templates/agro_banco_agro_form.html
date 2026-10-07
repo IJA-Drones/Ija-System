@@ -13,9 +13,9 @@
     <div>
       <h2 class="text-dark m-0">
         <i class="bi bi-bank me-2 text-primary"></i>
-        {{ 'Novo Banco Agro' if modo == 'novo' else 'Editar Banco Agro' }}
+        {{ 'Novo Banco' if modo == 'novo' else 'Editar Banco' }}
       </h2>
-      <p class="text-muted small mb-0">Esse banco sera usado nos lancamentos de contrato, entrada e saida do Agro.</p>
+      <p class="text-muted small mb-0">Esse banco sera usado nos lancamentos de contrato, entrada e saida da empresa.</p>
     </div>
     <a href="{{ url_for('main.agro_bancos_listar') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
       <i class="bi bi-arrow-left"></i> Voltar

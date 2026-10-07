@@ -5,7 +5,7 @@ import uuid
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
-from flask import abort, current_app, flash, jsonify, redirect, render_template, request, send_file, send_from_directory, url_for
+from flask import abort, current_app, flash, g, jsonify, redirect, render_template, request, send_file, send_from_directory, url_for
 from flask_login import current_user, login_required
 from sqlalchemy import or_
 from sqlalchemy.orm import joinedload, selectinload
@@ -67,6 +67,8 @@ from app.modules.agro.service import (
     build_ordens_servico_agro_query,
     build_orcamentos_agro_query,
     can_access_agro_panel,
+    can_access_agro_finance_panel,
+    can_edit_agro_fornecedores,
     can_edit_agro_panel,
     can_edit_agro_finance_panel,
     can_user_write_agro_finance_competencia,
@@ -104,6 +106,7 @@ from app.modules.agro.flight_logs_service import (
     unlink_agro_kml_route_from_os,
 )
 from app.shared.access import apply_prefeitura_scope, is_admin_global_user
+from app.shared.financeiro_navigation import is_financeiro_legacy_endpoint
 from app.shared.formatters import format_cep, format_currency_br, format_documento, format_phone_br, only_digits, parse_currency_br
 from app.shared.query_filters import id_search_clause
 from app.shared.skybox import SkyboxError, stream_skybox_file
@@ -272,7 +275,17 @@ def _redirect_back_to_agro(default_endpoint: str, **values):
 
 
 def _require_agro_access():
-    if not can_access_agro_panel(current_user):
+    if getattr(g, "financeiro_empresa", None) is not None and can_access_agro_finance_panel(current_user):
+        return
+    if request.endpoint == "main.agro_contrato_comprovante_pagamento":
+        # Receipt files are shared by Finance and the operational contract view.
+        if not (can_access_agro_finance_panel(current_user) or can_access_agro_panel(current_user)):
+            abort(403)
+        return
+    allowed = (can_access_agro_finance_panel(current_user)
+               if is_financeiro_legacy_endpoint(request.endpoint)
+               else can_access_agro_panel(current_user))
+    if not allowed:
         abort(403)
 
 
@@ -286,12 +299,19 @@ def _require_agro_finance_edit():
         abort(403)
 
 
+def _require_agro_fornecedor_edit():
+    if not can_edit_agro_fornecedores(current_user):
+        abort(403)
+
+
 def _require_agro_payment_receipt_edit():
     if not (can_edit_agro_panel(current_user) or can_edit_agro_finance_panel(current_user)):
         abort(403)
 
 
 def _require_agro_admin():
+    if request.endpoint == "main.financeiro_empresa_comercial" and request.args.get("aba") == "mapeamentos" and getattr(g, "financeiro_empresa", None) is not None:
+        return
     if not is_admin_global_user(current_user):
         abort(403)
 
@@ -3845,8 +3865,7 @@ def register_routes(bp):
     def admin_agro():
         _require_agro_access()
         if is_financeiro_agro_only_user(current_user):
-            context = get_agro_finance_dashboard_context(current_user)
-            return render_template("agro_financeiro_dashboard.html", **context)
+            return redirect(url_for("main.financeiro_empresa", empresa_slug="ija"))
         context = get_agro_dashboard_context(current_user)
         return render_template("admin_agro.html", **context)
 
@@ -4333,7 +4352,7 @@ def register_routes(bp):
             total_clientes=clientes_query.count(),
             total_fornecedores=fornecedores_query.count(),
             can_edit_clientes=can_edit_agro_panel(current_user),
-            can_edit_fornecedores=can_edit_agro_finance_panel(current_user),
+            can_edit_fornecedores=can_edit_agro_fornecedores(current_user),
         )
 
     @bp.route("/agro/clientes/cadastrar", methods=["GET", "POST"], endpoint="agro_cliente_novo")
@@ -4454,13 +4473,13 @@ def register_routes(bp):
             fornecedores_serializados=[serialize_fornecedor_agro(fornecedor) for fornecedor in fornecedores],
             filters={"q": q, "page": page, "total": total, "total_pages": total_pages},
             pagination_args=_query_args_without_page(),
-            is_editable=can_edit_agro_finance_panel(current_user),
+            is_editable=can_edit_agro_fornecedores(current_user),
         )
 
     @bp.route("/agro/fornecedores/cadastrar", methods=["GET", "POST"], endpoint="agro_fornecedor_novo")
     @login_required
     def agro_fornecedor_novo():
-        _require_agro_finance_edit()
+        _require_agro_fornecedor_edit()
 
         errors = {}
         form = _normalize_fornecedor_form(request.form if request.method == "POST" else {})
@@ -4495,7 +4514,7 @@ def register_routes(bp):
     @bp.route("/agro/fornecedores/<int:fornecedor_id>/editar", methods=["GET", "POST"], endpoint="agro_fornecedor_editar")
     @login_required
     def agro_fornecedor_editar(fornecedor_id):
-        _require_agro_finance_edit()
+        _require_agro_fornecedor_edit()
         fornecedor = _get_fornecedor_agro_or_404(fornecedor_id)
 
         errors = {}
@@ -4546,7 +4565,7 @@ def register_routes(bp):
     @bp.route("/agro/fornecedores/<int:fornecedor_id>/deletar", methods=["POST"], endpoint="agro_fornecedor_deletar")
     @login_required
     def agro_fornecedor_deletar(fornecedor_id):
-        _require_agro_finance_edit()
+        _require_agro_fornecedor_edit()
         fornecedor = _get_fornecedor_agro_or_404(fornecedor_id)
 
         if fornecedor.financeiros_saidas:
@@ -4591,7 +4610,7 @@ def register_routes(bp):
             },
             pagination_args=_query_args_without_page(),
             is_editable=can_edit_agro_panel(current_user),
-            is_admin_agro=is_admin_global_user(current_user),
+            is_admin_agro=is_admin_global_user(current_user) and can_access_agro_panel(current_user),
         )
 
     @bp.route("/agro/orcamentos/cadastrar", methods=["GET", "POST"], endpoint="agro_orcamento_novo")
@@ -4951,6 +4970,7 @@ def register_routes(bp):
             "agro_orcamentos_template_mapeamento.html",
             orcamentos=orcamentos,
             equipes_ativas=equipes_ativas,
+            is_editable=is_admin_global_user(current_user) and can_edit_agro_panel(current_user),
             filters={"q": q, "equipe_id": equipe_id, "total": len(orcamentos)},
         )
 
@@ -5235,7 +5255,7 @@ def register_routes(bp):
             status_options=AGRO_CONTRATO_STATUS_OPTIONS,
             is_editable=can_edit_agro_panel(current_user),
             can_edit_payment_receipts=can_edit_agro_panel(current_user) or can_edit_agro_finance_panel(current_user),
-            is_admin_agro=is_admin_global_user(current_user),
+            is_admin_agro=is_admin_global_user(current_user) and can_access_agro_panel(current_user),
             build_endereco_agro=build_endereco_agro,
         )
 
@@ -6739,7 +6759,7 @@ def register_routes(bp):
             status_options=AGRO_OS_STATUS_OPTIONS,
             filters={"q": q, "status": status, "equipe_id": equipe_id, "total": len(ordens_servico)},
             is_editable=can_edit_agro_panel(current_user),
-            is_admin_agro=is_admin_global_user(current_user),
+            is_admin_agro=is_admin_global_user(current_user) and can_access_agro_panel(current_user),
         )
 
     @bp.route("/agro/logs-voo", methods=["GET"], endpoint="agro_logs_voo")

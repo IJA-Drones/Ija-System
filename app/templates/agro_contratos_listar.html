@@ -14,7 +14,7 @@
   <div class="listing-header mb-4">
     <div>
       <h2 class="text-dark m-0">
-        <i class="bi bi-file-earmark-text-fill me-2 text-primary"></i> Contratos Agro
+        <i class="bi bi-file-earmark-text-fill me-2 text-primary"></i> Contratos {{ '· ' ~ empresa_financeiro.nome if empresa_financeiro else 'Agro' }}
       </h2>
       <p class="text-muted small mb-0">
         Total de registros: <strong>{{ filters.total }}</strong>
@@ -25,13 +25,10 @@
     </div>
 
     <div class="listing-actions">
-      <a href="{{ url_for('main.admin_agro') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+      <a href="{{ financeiro_consulta_url('main.admin_agro') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
-      <a href="{{ url_for('main.agro_financeiro_listar') }}" class="btn btn-outline-success d-flex align-items-center gap-2">
-        <i class="bi bi-cash-coin"></i> Financeiro
-      </a>
-      <a href="{{ url_for('main.agro_orcamentos_listar') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
+      <a href="{{ financeiro_consulta_url('main.agro_orcamentos_listar') }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
         <i class="bi bi-file-earmark-text"></i> Orcamentos
       </a>
       {% if is_admin_agro %}
@@ -59,7 +56,8 @@
 
     <div class="collapse {% if filters.q or filters.status or filters.equipe_id %}show{% endif %}" id="collapseFiltrosContratosAgro">
       <div class="card-body pt-0 listing-filter-body">
-        <form method="GET" action="{{ url_for('main.agro_contratos_listar') }}">
+        <form method="GET" action="{{ financeiro_consulta_url('main.agro_contratos_listar') }}">
+          {% if request.endpoint == "main.financeiro_empresa_comercial" %}<input type="hidden" name="aba" value="contratos">{% endif %}
           <div class="row g-2 align-items-end">
             <div class="col-md-5">
               <label class="small text-muted mb-1">Busca geral:</label>
@@ -100,7 +98,7 @@
               </button>
 
               {% if filters.q or filters.status or filters.equipe_id %}
-                <a href="{{ url_for('main.agro_contratos_listar') }}" class="btn btn-outline-secondary btn-sm">
+                <a href="{{ financeiro_consulta_url('main.agro_contratos_listar') }}" class="btn btn-outline-secondary btn-sm">
                   <i class="bi bi-x-lg"></i> Limpar
                 </a>
               {% endif %}
@@ -231,11 +229,6 @@
                       {% endif %}
                       {% if is_editable %}
                         <li>
-                          <a href="{{ url_for('main.agro_financeiro_novo', contrato_id=contrato.id) }}" class="dropdown-item py-2">
-                            <i class="bi bi-cash-stack text-warning me-2"></i> Gerar lancamento financeiro
-                          </a>
-                        </li>
-                        <li>
                           <a href="{{ url_for('main.agro_contrato_editar', orcamento_id=contrato.orcamento.id) }}" class="dropdown-item py-2">
                             <i class="bi bi-pencil-square text-success me-2"></i> Editar contrato
                           </a>
@@ -286,11 +279,11 @@
           <nav>
             <ul class="pagination pagination-sm mb-0 listing-pagination">
               <li class="page-item {% if filters.page <= 1 %}disabled{% endif %}">
-                <a class="page-link shadow-none" href="{{ url_for('main.agro_contratos_listar', page=filters.page-1, **pagination_args) }}">Anterior</a>
+                <a class="page-link shadow-none" href="{{ financeiro_consulta_url('main.agro_contratos_listar', page=filters.page-1, **pagination_args) }}">Anterior</a>
               </li>
               <li class="page-item active"><span class="page-link shadow-none">{{ filters.page }}</span></li>
               <li class="page-item {% if filters.page >= filters.total_pages %}disabled{% endif %}">
-                <a class="page-link shadow-none" href="{{ url_for('main.agro_contratos_listar', page=filters.page+1, **pagination_args) }}">Proxima</a>
+                <a class="page-link shadow-none" href="{{ financeiro_consulta_url('main.agro_contratos_listar', page=filters.page+1, **pagination_args) }}">Proxima</a>
               </li>
             </ul>
           </nav>

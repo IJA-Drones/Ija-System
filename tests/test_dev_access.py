@@ -58,14 +58,15 @@ class DevAccessTests(unittest.TestCase):
         self.assertTrue(can_manage_user_work_flags(DummyUser("dev")))
         self.assertFalse(can_manage_user_work_flags(DummyUser("admin")))
 
-    def test_agro_panel_requires_agro_work_flag_for_admin_users(self):
-        self.assertFalse(can_access_agro_panel(DummyUser("admin")))
+    def test_admin_has_agro_access_and_other_operational_users_keep_work_flag(self):
+        self.assertTrue(can_access_agro_panel(DummyUser("admin")))
         self.assertTrue(can_access_agro_panel(DummyUser("admin", trabalha_agro=True)))
+        self.assertFalse(can_access_agro_panel(DummyUser("operario")))
         self.assertTrue(can_edit_agro_panel(DummyUser("operario", trabalha_agro=True)))
 
-    def test_agro_panel_requires_agro_work_flag_for_finance_users(self):
+    def test_finance_users_do_not_have_operational_agro_access(self):
         self.assertFalse(can_access_agro_panel(DummyUser("financeiro")))
-        self.assertTrue(can_access_agro_panel(DummyUser("financeiro", trabalha_agro=True)))
+        self.assertFalse(can_access_agro_panel(DummyUser("financeiro", trabalha_agro=True)))
 
     def test_covisa_can_report_bugs(self):
         user = DummyUser("visualizar", "COVISA")

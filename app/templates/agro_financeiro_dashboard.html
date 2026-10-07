@@ -11,13 +11,13 @@
   <div class="agro-page-header">
     <div class="agro-finance-header-copy">
       <h2 class="agro-page-title">
-        <i class="bi bi-cash-coin me-2 text-primary"></i> Painel Financeiro Agro
+        <i class="bi bi-cash-coin me-2 text-primary"></i> Painel Financeiro
       </h2>
-      <p class="agro-page-subtitle">Acesso focado no caixa, recebiveis e lancamentos manuais do Agro.</p>
+      <p class="agro-page-subtitle">Caixa, recebiveis e lancamentos manuais da empresa.</p>
     </div>
 
     <div class="agro-actions-inline agro-finance-top-actions">
-      <a href="{{ url_for('main.admin_agro') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
+      <a href="{{ url_for('main.financeiro_empresa', empresa_slug='ija') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
       <a href="{{ url_for('main.agro_fluxo_caixa_exportar_excel') }}" class="btn btn-success btn-sm d-flex align-items-center gap-2">
@@ -107,7 +107,7 @@
         <div class="agro-card-head">
           <div>
             <h5 class="agro-card-title">Atalhos do financeiro</h5>
-            <p class="agro-finance-panel-copy">Os acessos operacionais ficam centralizados aqui, com o mesmo padrao visual do restante do Agro.</p>
+            <p class="agro-finance-panel-copy">Acesse as funcionalidades financeiras da empresa.</p>
           </div>
         </div>
         <div class="agro-card-body">

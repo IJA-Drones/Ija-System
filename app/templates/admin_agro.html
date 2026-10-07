@@ -17,7 +17,7 @@
         <i class="bi bi-tree-fill me-2 text-primary"></i> Painel Agro
       </h2>
       <p class="text-muted small mb-0">
-        Acesso rapido aos fluxos comercial, operacional e financeiro do Agro.
+        Acesso rapido aos fluxos comercial e operacional do Agro.
       </p>
     </div>
 
@@ -72,19 +72,10 @@
       </div>
     </div>
 
-    <div class="col-6 col-lg-3">
-      <div class="card border-0 shadow-sm rounded-4 h-100 agro-dashboard-summary-card">
-        <div class="card-body">
-          <small class="text-muted fw-bold text-uppercase agro-dashboard-summary-label">Pendencias Financeiras</small>
-          <h3 class="fw-bold mb-0 text-warning mt-2">{{ total_financeiros_agro_pendentes }}</h3>
-          <div class="small text-muted mt-1">de {{ total_financeiros_agro }} registro(s) financeiros</div>
-        </div>
-      </div>
-    </div>
   </div>
 
   <div class="row g-3 agro-dashboard-menu">
-    <div class="col-lg-4">
+    <div class="col-lg-6">
       <div class="card border-0 shadow-sm rounded-4 h-100 agro-dashboard-menu-card">
         <div class="card-header bg-white border-0 p-4 pb-3 agro-dashboard-menu-header">
           <h5 class="text-dark mb-1">
@@ -163,7 +154,7 @@
       </div>
     </div>
 
-    <div class="col-lg-4">
+    <div class="col-lg-6">
       <div class="card border-0 shadow-sm rounded-4 h-100 agro-dashboard-menu-card">
         <div class="card-header bg-white border-0 p-4 pb-3 agro-dashboard-menu-header">
           <h5 class="text-dark mb-1">
@@ -258,110 +249,6 @@
       </div>
     </div>
 
-    <div class="col-lg-4">
-      <div class="card border-0 shadow-sm rounded-4 h-100 agro-dashboard-menu-card">
-        <div class="card-header bg-white border-0 p-4 pb-3 agro-dashboard-menu-header">
-          <h5 class="text-dark mb-1">
-            <i class="bi bi-cash-coin me-2 text-primary"></i> Financeiro
-          </h5>
-          <p class="text-muted small mb-0">Caixa, contas, bancos e lancamentos manuais do Agro.</p>
-        </div>
-        <div class="card-body pt-0">
-          <div class="agro-menu-list">
-            <a href="{{ url_for('main.agro_caixa_diario') }}" class="agro-menu-link">
-              <div class="agro-menu-main">
-                <span class="agro-menu-icon">
-                  <i class="bi bi-journal-text"></i>
-                </span>
-                <div class="agro-menu-copy">
-                  <span class="agro-menu-title">Caixa Diario</span>
-                  <span class="agro-menu-subtitle">Fechamento diario e conferencia de caixa</span>
-                </div>
-              </div>
-              <i class="bi bi-arrow-right text-muted"></i>
-            </a>
-
-            <a href="{{ url_for('main.agro_financeiro_contas') }}" class="agro-menu-link">
-              <div class="agro-menu-main">
-                <span class="agro-menu-icon">
-                  <i class="bi bi-wallet2"></i>
-                </span>
-                <div class="agro-menu-copy">
-                  <span class="agro-menu-title">Contas</span>
-                  <span class="agro-menu-subtitle">Visao central de contas a pagar e a receber</span>
-                </div>
-              </div>
-              <i class="bi bi-arrow-right text-muted"></i>
-            </a>
-
-            <a href="{{ url_for('main.agro_financeiro_listar') }}" class="agro-menu-link">
-              <div class="agro-menu-main">
-                <span class="agro-menu-icon">
-                  <i class="bi bi-receipt-cutoff"></i>
-                </span>
-                <div class="agro-menu-copy">
-                  <span class="agro-menu-title">Recebimentos</span>
-                  <span class="agro-menu-subtitle">{{ total_financeiros_agro }} registro(s) a acompanhar</span>
-                </div>
-              </div>
-              <i class="bi bi-arrow-right text-muted"></i>
-            </a>
-
-            <a href="{{ url_for('main.agro_bancos_listar') }}" class="agro-menu-link">
-              <div class="agro-menu-main">
-                <span class="agro-menu-icon">
-                  <i class="bi bi-bank"></i>
-                </span>
-                <div class="agro-menu-copy">
-                  <span class="agro-menu-title">Bancos</span>
-                  <span class="agro-menu-subtitle">Contas bancarias e saldos do Agro</span>
-                </div>
-              </div>
-              <i class="bi bi-arrow-right text-muted"></i>
-            </a>
-
-            <a href="{{ url_for('main.agro_financeiro_entrada_novo') }}" class="agro-menu-link">
-              <div class="agro-menu-main">
-                <span class="agro-menu-icon">
-                  <i class="bi bi-plus-circle"></i>
-                </span>
-                <div class="agro-menu-copy">
-                  <span class="agro-menu-title">Nova Entrada Manual</span>
-                  <span class="agro-menu-subtitle">Cadastrar conta a receber avulsa</span>
-                </div>
-              </div>
-              <i class="bi bi-arrow-right text-muted"></i>
-            </a>
-
-            <a href="{{ url_for('main.agro_financeiro_saida_novo') }}" class="agro-menu-link">
-              <div class="agro-menu-main">
-                <span class="agro-menu-icon">
-                  <i class="bi bi-plus-circle"></i>
-                </span>
-                <div class="agro-menu-copy">
-                  <span class="agro-menu-title">Nova Saida Manual</span>
-                  <span class="agro-menu-subtitle">Cadastrar conta a pagar avulsa</span>
-                </div>
-              </div>
-              <i class="bi bi-arrow-right text-muted"></i>
-            </a>
-
-            <a href="{{ url_for('main.agro_fluxo_caixa_exportar_excel') }}" class="agro-menu-link">
-              <div class="agro-menu-main">
-                <span class="agro-menu-icon">
-                  <i class="bi bi-file-earmark-spreadsheet"></i>
-                </span>
-                <div class="agro-menu-copy">
-                  <span class="agro-menu-title">Exportar Fluxo Excel</span>
-                  <span class="agro-menu-subtitle">Gerar relatorio externo</span>
-                </div>
-              </div>
-              <i class="bi bi-arrow-right text-muted"></i>
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </div>
 
@@ -376,8 +263,7 @@
   {'label': 'Novo cliente', 'question': 'Como cadastrar um cliente?'},
   {'label': 'Novo orcamento', 'question': 'Como criar um orcamento?'},
   {'label': 'RD de mapeamento', 'question': 'Quando usar RD de mapeamento?'},
-  {'label': 'Contrato', 'question': 'Como montar o contrato pelo sistema?'},
-  {'label': 'Financeiro', 'question': 'Como funciona o financeiro do Agro?'}
+  {'label': 'Contrato', 'question': 'Como montar o contrato pelo sistema?'}
 ] %}
 {% set chatbot_welcome_html %}
 Ola! Sou o <strong>assistente do Agro administrativo</strong>.<br>
@@ -386,7 +272,7 @@ Posso te ajudar com:<br>
 - cadastro de clientes e fornecedores<br>
 - orcamentos, RD de mapeamento e contratos<br>
 - acompanhamento de OS e relatorio final<br>
-- contas, caixa, bancos e recebimentos<br><br>
+<br>
 Como posso te ajudar hoje?
 {% endset %}
 {% include "_chatbot_widget.html" %}
