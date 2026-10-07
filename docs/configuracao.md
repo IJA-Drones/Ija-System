@@ -58,6 +58,45 @@ O CEP consulta Correios quando há token, depois ViaCEP e, em falha de consulta,
 
 `GOOGLE_MAPS_API_KEY` aparece como fallback de `current_app.config` em uma rota de OS, mas não é carregada do ambiente por `Config`; prefira os dois nomes documentados na tabela.
 
+## Rastreamento OLLOG / RedGPS
+
+Configure `REDGPS_BASE_URL`, `REDGPS_API_KEY`, `REDGPS_USERNAME` e
+`REDGPS_PASSWORD` somente no ambiente do servidor. `REDGPS_SYNC_ENABLED=true`
+habilita a coleta; `REDGPS_POLL_INTERVAL_SECONDS=60` define o intervalo, com
+mínimo de 60 segundos. Execute as migrações antes de ativar.
+
+O painel `/veiculos/rastreamento` consulta a integração ao abrir e se atualiza
+enquanto estiver visível, fora do modo de demonstração e da reprodução de trajetos.
+O controle persistido e o lock transacional do PostgreSQL evitam consultas
+duplicadas entre processos. Falhas também respeitam o intervalo, e as últimas
+posições válidas são preservadas. Tokens ficam em memória e são renovados antes
+de seis horas ou após a recusa de um token. Credenciais não são enviadas ao navegador.
+
+As posições são associadas por placa normalizada apenas a veículos já cadastrados,
+ativos e sem ambiguidade. Não são criados veículos nem alterados equipe, prefeitura
+ou quilometragem cadastral. As permissões existentes do painel continuam valendo.
+Datas do provedor são solicitadas em UTC; o painel usa America/Sao_Paulo. O odômetro
+de `getdata` é convertido de metros para quilômetros. Veículos sem posição válida
+continuam na lista sem marcador no mapa.
+
+O histórico reúne as posições coletadas pelo IJA, sem duplicar a mesma leitura;
+o painel busca somente o dia selecionado. Esta etapa não importa trajetos anteriores
+da OLLOG nem sincroniza alertas, geocercas ou sensores adicionais.
+
+Para coletar sem manter o painel aberto, execute **uma instância** do worker no
+ambiente configurado (supervisionado pelo serviço de hospedagem em produção):
+
+```sh
+python scripts/sync_redgps.py --watch
+```
+
+Sem `--watch`, o comando faz uma única tentativa, respeitando o intervalo, e imprime
+somente metadados e contagens. O `.env` local não configura o ambiente hospedado;
+nesse ambiente, configure as variáveis e publique o código/migração separadamente.
+
+Referências: [autenticação](https://docs.redgps.com/books/webservice/page/metodo-de-autenticacion-gettoken/es),
+[posições](https://docs.redgps.com/books/webservice/page/datos-de-unidades-getdata/es).
+
 ## Arquivos e WebDAV
 
 | Variável | Padrão | Uso |

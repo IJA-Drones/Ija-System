@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import Mock
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -189,6 +190,33 @@ class VeiculosRastreamentoTests(unittest.TestCase):
         self.assertIn('class="form-control form-control-sm" type="date"', html)
         self.assertNotIn('</script><script>alert("x")', html)
         self.assertIn("no-store", response.headers["Cache-Control"])
+
+    def test_live_sync_keeps_vehicle_scope_and_credentials_private(self):
+        self.vehicle("AAA1A11", prefeitura_id=1)
+        self.vehicle("BBB2B22", prefeitura_id=2)
+        self.login(prefeitura_id=1)
+        self.app.config.update(REDGPS_SYNC_ENABLED=True, REDGPS_API_KEY="private-test-key")
+        client = Mock()
+        from tests.test_redgps_sync import reading
+        client.read.return_value = [reading(UnitPlate="AAA1A11"), reading(UnitPlate="BBB2B22")]
+        self.app.extensions["redgps_client"] = client
+        data = self.data()
+        self.assertEqual([v["plate"] for v in data["vehicles"]], ["AAA1A11"])
+        self.assertEqual(data["integration"]["status"], "connected")
+        self.assertTrue(data["vehicles"][0]["position"]["reported_at"].endswith("Z"))
+        self.assertNotIn("private-test-key", str(data))
+        self.assertEqual(db.session.query(RastreamentoPosicao).count(), 2)
+
+    def test_history_is_filtered_by_selected_brazilian_day(self):
+        vehicle = self.vehicle("AAA1A11", prefeitura_id=1)
+        self.login(prefeitura_id=1)
+        for when in (datetime(2026, 10, 7, 2, 59), datetime(2026, 10, 7, 3, 0)):
+            db.session.add(RastreamentoHistorico(veiculo_id=vehicle.id, latitude=-23, longitude=-46,
+                                                reportado_em=when, is_demo=False))
+        db.session.commit()
+        data = self.client.get("/veiculos/rastreamento/dados?date=2026-10-07").get_json()
+        self.assertEqual(len(data["vehicles"][0]["history"]), 1)
+        self.assertEqual(data["vehicles"][0]["history"][0]["reported_at"], "2026-10-07T03:00:00Z")
 
 
 if __name__ == "__main__":
