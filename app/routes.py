@@ -35,6 +35,7 @@ from app.modules.solicitacoes import register_routes as register_solicitacoes_ro
 from app.modules.uvis_equipes import register_routes as register_uvis_equipes_routes
 from app.modules.usuarios import register_routes as register_usuarios_routes
 from app.modules.veiculos import register_routes as register_veiculos_routes
+from app.modules.vigilancia import register_routes as register_vigilancia_routes
 
 
 print("--- ROTAS CARREGADAS COM SUCESSO ---")
@@ -76,3 +77,4 @@ register_solicitacoes_routes(bp)
 register_uvis_equipes_routes(bp)
 register_usuarios_routes(bp)
 register_veiculos_routes(bp)
+register_vigilancia_routes(bp)

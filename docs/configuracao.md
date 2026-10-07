@@ -14,6 +14,7 @@ Referência conferida em 25/09/2026 contra [config.py](../config.py), [run.py](.
 | `FLASK_DEBUG` | `1` ao executar `python run.py`; debug desligado normalmente na factory | Controla debug e comportamento HTTPS do Talisman. Use `0` em produção. |
 | `FLASK_USE_RELOADER` | `0` em `run.py` | Habilita recarga de Python no servidor local. |
 | `CSS_BUNDLE_AUTO_BUILD` | `0` no Config; `run.py` usa `setdefault(..., "1")` | Recompila bundle desatualizado antes da requisição. Produção já constrói no Procfile. |
+| `VIGILANCIA_PREVIEW_ENABLED` | `0` | Libera a prévia provisória de CSV focal/LIRAa para administradores autorizados, sem persistência. Ver [guia de validação](vigilancia-validacao-inicial.md). |
 | `IJA_CREATE_ALL` | Inativo | Somente o valor `1` aciona `db.create_all()` ao executar `run.py` diretamente; não substitui Alembic. |
 | `USER_PRESENCE_UPDATE_INTERVAL_SECONDS` | `300` | Intervalo de atualização de presença. Não é o timeout da sessão. |
 | `AUDIT_RETENTION_MAX_RECORDS` | `15000` | Limita quantidade de registros de auditoria; não expressa dias de retenção. Deve ser inteiro. |
