@@ -16,7 +16,7 @@
   </header>
 
   <section class="finance-selected-company" aria-label="Empresa selecionada">
-    <span class="finance-company-monogram" aria-hidden="true">{{ empresa.sigla }}</span>
+    {% if empresa.tem_logo %}<span class="finance-company-monogram"><img src="{{ url_for('main.financeiro_empresa_logo', empresa_slug=empresa.slug) }}" alt="Logo de {{ empresa.nome }}"></span>{% else %}<span class="finance-company-monogram" aria-hidden="true">{{ empresa.sigla }}</span>{% endif %}
     <div class="finance-selected-name"><h2>{{ empresa.nome }}</h2><p>{{ empresa.razao_social if empresa.razao_social != empresa.nome else 'Gestão financeira' }}</p>{% if empresa.demonstracao %}<span class="finance-demo-label"><i class="bi bi-info-circle" aria-hidden="true"></i> CNPJ fictício para demonstração</span>{% endif %}</div>
     <div class="finance-selected-document"><span>CNPJ</span><strong>{{ empresa.cnpj_formatado or 'Pendente de identificação' }}</strong></div>
     <span class="finance-operation-label"><i class="bi bi-tree" aria-hidden="true"></i>{{ empresa.operacao }}</span>

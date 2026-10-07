@@ -187,3 +187,7 @@ body.financeiro-mode .finance-navbar-brand { min-width: 0; flex-shrink: 1; }
 @media (prefers-reduced-motion: reduce) {
   .finance-company-card { transition: none; }
 }
+
+.finance-company-monogram img { width: 100%; height: 100%; object-fit: contain; border-radius: inherit; }
+.finance-context-identity { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+.finance-context-logo { width: 44px; height: 44px; object-fit: contain; border-radius: 8px; }

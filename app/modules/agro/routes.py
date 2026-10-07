@@ -5510,9 +5510,13 @@ def register_routes(bp):
         if not can_manage_agro_finance_settings(current_user):
             abort(403)
 
-        competencias = build_agro_finance_competencia_settings(24, 12)
+        secao = request.args.get("secao", "dados")
+        if secao not in {"dados", "layout", "competencias"}:
+            secao = "dados"
+        competencias = build_agro_finance_competencia_settings(24, 12) if secao == "competencias" else []
         return render_template(
             "agro_financeiro_configuracoes.html",
+            secao=secao,
             competencias=competencias,
             competencias_configuradas=[item for item in competencias if item["controle"] is not None],
         )
@@ -5529,7 +5533,7 @@ def register_routes(bp):
         acao = (request.form.get("acao") or "").strip().lower()
         if not ano or not mes or mes < 1 or mes > 12:
             flash("Competencia invalida para configuracao.", "warning")
-            return redirect(url_for("main.agro_financeiro_configuracoes"))
+            return redirect(url_for("main.agro_financeiro_configuracoes", secao="competencias"))
 
         controle = get_agro_finance_competencia_controle(ano, mes)
         if controle is None:
@@ -5548,7 +5552,7 @@ def register_routes(bp):
         else:
             flash(f"Competencia {mes:02d}/{ano} bloqueada novamente para o perfil financeiro.", "success")
 
-        return redirect(url_for("main.agro_financeiro_configuracoes"))
+        return redirect(url_for("main.agro_financeiro_configuracoes", secao="competencias"))
 
     @bp.route("/agro/financeiro/cadastrar", methods=["GET", "POST"], endpoint="agro_financeiro_novo")
     @login_required

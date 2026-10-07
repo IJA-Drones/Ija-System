@@ -7,10 +7,11 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-from flask import Flask, render_template_string
+from flask import Flask, Response, render_template_string
 from flask_login import LoginManager, UserMixin, login_user
 
-from app.models import ClienteAgro, OrcamentoAgro, ContratoAgro
+from app.extensions import db
+from app.models import FinanceiroEmpresaPerfil, ClienteAgro, OrcamentoAgro, ContratoAgro
 from app.modules.auth.routes import bp as auth_bp
 from app.modules.auth.service import get_authenticated_redirect_endpoint
 from app.modules.financeiro.service import build_financeiro_empresas
@@ -40,12 +41,31 @@ class FinanceiroCentralTests(unittest.TestCase):
         self.user = FinanceUser()
         self.app = Flask(__name__, template_folder=str(APP_DIR / "templates"), static_folder=str(APP_DIR / "static"))
         self.app.config.update(TESTING=True, SECRET_KEY="isolated-finance-hub-test-secret-1234567890", SESSION_PROTECTION=None)
+        self.app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
+        db.init_app(self.app)
+        with self.app.app_context():
+            FinanceiroEmpresaPerfil.__table__.create(db.engine)
         manager = LoginManager(self.app)
         manager.login_view = "auth.login"
         manager.user_loader(lambda user_id: self.user if user_id == "7" else None)
         self.app.register_blueprint(auth_bp)
         self.app.register_blueprint(main_bp)
         self.client = self.app.test_client()
+        self.logo_files = {}
+        def upload(storage, path):
+            marker = "skybox://" + path
+            self.logo_files[marker] = storage.stream.read()
+            return marker
+        def stream(path, *args, **kwargs):
+            return Response(self.logo_files[path], mimetype="image/png")
+        def delete(path):
+            self.logo_files.pop(path, None)
+        for target, handler in (("app.modules.financeiro.logos.upload_file_to_skybox", upload),
+                                ("app.modules.financeiro.routes.stream_skybox_file", stream),
+                                ("app.modules.financeiro.logos.delete_skybox_file", delete)):
+            patcher = patch(target, side_effect=handler)
+            patcher.start()
+            self.addCleanup(patcher.stop)
 
     def login(self, role="financeiro", trabalha_agro=True):
         self.user = FinanceUser(role, trabalha_agro)
@@ -521,6 +541,113 @@ class FinanceiroCentralTests(unittest.TestCase):
                         self.assertEqual(self.client.post(f"/financeiro/empresas/ija/{suffix}").status_code, 405)
             for consulta in consultas:
                 consulta.assert_not_called()
+
+    def test_company_identity_persists_and_replaces_demo_document(self):
+        self.login("financeiro_admin")
+        response = self.client.post("/financeiro/empresas/ija/configuracoes", data={
+            "secao": "dados", "nome": "Minha empresa", "razao_social": "Minha Empresa Ltda.", "cnpj": "11.222.333/0001-81"})
+        self.assertEqual(response.status_code, 302)
+        html = self.client.get("/financeiro").get_data(as_text=True)
+        self.assertIn("Minha empresa", html)
+        self.assertIn("11.222.333/0001-81", html)
+        self.assertNotIn("CNPJ fictício", html)
+        self.client.post("/financeiro/empresas/ija/configuracoes", data={
+            "secao": "dados", "nome": "Inválida", "razao_social": "Inválida", "cnpj": "123"})
+        with self.app.app_context():
+            self.assertEqual(db.session.get(FinanceiroEmpresaPerfil, "ija").nome, "Minha empresa")
+
+    def test_logo_upload_display_invalid_replacement_and_removal(self):
+        from io import BytesIO
+        from PIL import Image
+        self.login("admin")
+        upload = BytesIO()
+        Image.new("RGBA", (800, 400), (20, 80, 120, 100)).save(upload, format="PNG")
+        upload.seek(0)
+        response = self.client.post("/financeiro/empresas/ija/configuracoes", data={"secao": "layout", "logo": (upload, "logo.png")})
+        self.assertEqual(response.status_code, 302)
+        logo = self.client.get("/financeiro/empresas/ija/logo")
+        self.assertEqual(logo.mimetype, "image/png")
+        self.assertEqual(Image.open(BytesIO(logo.data)).size, (512, 256))
+        self.assertEqual(logo.headers["Cache-Control"], "private, no-store")
+        for path in ("/financeiro", "/financeiro/empresas/ija", "/financeiro/empresas/ija/configuracoes?secao=layout"):
+            self.assertIn('src="/financeiro/empresas/ija/logo"', self.client.get(path).get_data(as_text=True))
+        for data in (b"<svg onload=alert(1)></svg>", b"x" * (2 * 1024 * 1024 + 1)):
+            self.client.post("/financeiro/empresas/ija/configuracoes", data={"secao": "layout", "logo": (BytesIO(data), "fake.png")})
+            self.assertEqual(self.client.get("/financeiro/empresas/ija/logo").data, logo.data)
+        self.client.post("/financeiro/empresas/ija/configuracoes", data={"secao": "layout", "remover_logo": "1"})
+        self.assertEqual(self.client.get("/financeiro/empresas/ija/logo").status_code, 404)
+        self.assertNotIn('src="/financeiro/empresas/ija/logo"', self.client.get("/financeiro").get_data(as_text=True))
+
+    def test_logo_skybox_failure_preserves_previous_path(self):
+        from io import BytesIO
+        from PIL import Image
+        from app.shared.skybox import SkyboxError
+        self.login("admin")
+        with self.app.app_context():
+            db.session.add(FinanceiroEmpresaPerfil(empresa_slug="ija", logo_path="skybox://old.png", tem_logo=True))
+            db.session.commit()
+        upload = BytesIO()
+        Image.new("RGB", (10, 10)).save(upload, format="PNG")
+        upload.seek(0)
+        with patch("app.modules.financeiro.logos.upload_file_to_skybox", side_effect=SkyboxError("Unavailable")):
+            self.client.post("/financeiro/empresas/ija/configuracoes", data={"secao": "layout", "logo": (upload, "logo.png")})
+        with self.app.app_context():
+            self.assertEqual(db.session.get(FinanceiroEmpresaPerfil, "ija").logo_path, "skybox://old.png")
+        self.assertEqual(self.logo_files, {})
+
+    def test_logo_replacement_deletes_old_file_only_after_commit(self):
+        from io import BytesIO
+        from PIL import Image
+        self.login("admin")
+        with self.app.app_context():
+            db.session.add(FinanceiroEmpresaPerfil(empresa_slug="ija", logo_path="skybox://old.png", tem_logo=True))
+            db.session.commit()
+        self.logo_files["skybox://old.png"] = b"old"
+        upload = BytesIO()
+        Image.new("RGB", (10, 10)).save(upload, format="PNG")
+        upload.seek(0)
+        self.client.post("/financeiro/empresas/ija/configuracoes", data={"secao": "layout", "logo": (upload, "logo.png")})
+        self.assertNotIn("skybox://old.png", self.logo_files)
+        with self.app.app_context():
+            path = db.session.get(FinanceiroEmpresaPerfil, "ija").logo_path
+            self.assertTrue(path.startswith("skybox://financeiro/empresas/ija/logos/"))
+            self.assertIn(path, self.logo_files)
+            self.assertNotIn("logo", FinanceiroEmpresaPerfil.__table__.columns)
+
+    def test_settings_are_scoped_and_protected(self):
+        self.login("financeiro")
+        path = "/financeiro/empresas/ija/configuracoes"
+        self.assertEqual(self.client.get(path).status_code, 403)
+        self.assertEqual(self.client.post(path, data={"secao": "layout", "remover_logo": "1"}).status_code, 403)
+        self.login("dev")
+        self.assertEqual(self.client.post("/financeiro/empresas/inexistente/configuracoes").status_code, 404)
+        with self.app.app_context():
+            db.session.add(FinanceiroEmpresaPerfil(empresa_slug="outra", nome="Outra empresa", logo_path="skybox://other.png", tem_logo=True))
+            db.session.commit()
+        self.client.post(path, data={"secao": "layout", "remover_logo": "1"})
+        with self.app.app_context():
+            self.assertEqual(db.session.get(FinanceiroEmpresaPerfil, "outra").logo_path, "skybox://other.png")
+        self.assertEqual(self.client.get("/financeiro/empresas/outra/logo").status_code, 404)
+
+    def test_company_settings_require_csrf(self):
+        self.app.config["CSRF_PROTECTION_ENABLED"] = True
+        register_csrf_security(self.app)
+        self.login("admin")
+        path = "/financeiro/empresas/ija/configuracoes"
+        self.assertEqual(self.client.post(path, data={"secao": "layout", "remover_logo": "1"}).status_code, 403)
+        self.client.get(path)
+        with self.client.session_transaction() as stored:
+            token = stored["_ija_csrf"]
+        self.assertEqual(self.client.post(path, data={"secao": "layout", "remover_logo": "1", "_csrf_token": token}).status_code, 302)
+
+    def test_settings_sections_keep_competencies_separate(self):
+        self.login("admin")
+        for section, expected in (("dados", 'id="empresa-cnpj"'), ("layout", 'id="empresa-logo"'), ("competencias", 'id="competencia_select"')):
+            with patch("app.modules.agro.routes.build_agro_finance_competencia_settings", return_value=[]):
+                html = self.client.get("/financeiro/empresas/ija/configuracoes?secao=" + section).get_data(as_text=True)
+            self.assertIn(expected, html)
+            if section != "competencias":
+                self.assertNotIn('id="competencia_select"', html)
 
     def test_views_do_not_accept_mutations(self):
         self.login()

@@ -1,4 +1,4 @@
 <div class="finance-module-context">
-  <div><span class="finance-eyebrow">Financeiro · {{ financeiro_empresa_atual.nome }}</span><span class="finance-module-document">CNPJ {{ financeiro_empresa_atual.cnpj_formatado }}</span>{% if financeiro_empresa_atual.demonstracao %}<span class="finance-demo-label">CNPJ fictício para demonstração</span>{% endif %}</div>
+  <div class="finance-context-identity">{% if financeiro_empresa_atual.tem_logo %}<img class="finance-context-logo" src="{{ url_for('main.financeiro_empresa_logo', empresa_slug=financeiro_empresa_atual.slug) }}" alt="Logo de {{ financeiro_empresa_atual.nome }}">{% endif %}<span class="finance-eyebrow">Financeiro · {{ financeiro_empresa_atual.nome }}</span><span class="finance-module-document">CNPJ {{ financeiro_empresa_atual.cnpj_formatado }}</span>{% if financeiro_empresa_atual.demonstracao %}<span class="finance-demo-label">CNPJ fictício para demonstração</span>{% endif %}</div>
   <a href="{{ url_for('main.financeiro_central') }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-arrow-left-right me-2" aria-hidden="true"></i>Trocar empresa</a>
 </div>

@@ -45,7 +45,7 @@
         data-company-search="{{ item.nome }} {{ item.razao_social }} {{ item.cnpj }} {{ item.cnpj_formatado or '' }} {{ item.sigla }}"
         data-company-available="{{ 'true' if item.disponivel else 'false' }}">
         <div class="finance-company-card-top">
-          <span class="finance-company-monogram" aria-hidden="true">{{ item.sigla }}</span>
+          {% if item.tem_logo %}<span class="finance-company-monogram"><img src="{{ url_for('main.financeiro_empresa_logo', empresa_slug=item.slug) }}" alt="Logo de {{ item.nome }}"></span>{% else %}<span class="finance-company-monogram" aria-hidden="true">{{ item.sigla }}</span>{% endif %}
           <span class="finance-status {{ 'is-available' if item.disponivel else '' }}">
             {% if item.disponivel %}<span class="finance-status-dot" aria-hidden="true"></span>Disponível{% else %}Sem acesso{% endif %}
           </span>

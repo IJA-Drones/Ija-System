@@ -4,11 +4,11 @@
 
 A central reúne empresas, cada uma identificada pelo CNPJ, e permite abrir o ambiente financeiro da empresa selecionada. É uma área própria dentro da aplicação Flask existente, ao lado de Prefeitura e Agro. O cabeçalho das páginas financeiras usa a identificação **Central Financeiro**, com ícone bancário e sem o logo da Oceano Azul; a troca mantém o link para a central e se adapta ao tema e ao celular. A organização por empresa segue a ideia de aplicativos por CNPJ apresentada na [documentação do Omie](https://ajuda.omie.com.br/pt-BR/articles/5409954-compartilhamento-de-cadastros-entre-aplicativos), usando os componentes e as cores do IJA System.
 
-Nesta entrega, o catálogo contém apenas a IJA, com o CNPJ fictício `11.111.111/0001-11`, explicitamente identificado como demonstração. A lista e o ambiente recebem dados de empresa; não estão limitados visualmente à IJA. Os testes verificam também a renderização de duas empresas simuladas.
+O catálogo contém apenas a IJA, inicialmente com o CNPJ fictício `11.111.111/0001-11`, explicitamente identificado como demonstração. A lista e o ambiente recebem dados de empresa; não estão limitados visualmente à IJA. Os testes verificam também a renderização de duas empresas simuladas.
 
 O cadastro de empresas ainda não foi implementado. O botão **Cadastrar empresa**, desativado e marcado como **Em breve**, aparece para `financeiro_admin`, `admin` e `dev`, que pode validar a interface. O administrador financeiro será responsável pelo cadastro e pela configuração das empresas quando a função for desenvolvida. Os demais perfis não recebem esse controle.
 
-Não foram criados modelos, tabelas, migrações ou registros financeiros para esta entrega. A validação automatizada usa dados simulados e SQLite em memória; a validação visual lê o banco já conectado ao servidor local, sem executar lançamentos. O `Procfile` permanece inalterado. Os recursos financeiros existentes no Agro agora são acessados pelo ambiente da IJA na Central Financeiro. Suas URLs, serviços, consultas e regras de lançamento foram preservados; o escopo dos dados não foi alterado.
+A entrega inicial não criou tabelas ou registros financeiros. A configuração de identidade agora usa a tabela própria descrita ao final deste documento. A validação automatizada usa dados simulados e SQLite em memória; a validação visual lê o banco já conectado ao servidor local, sem executar lançamentos. O `Procfile` permanece inalterado. Os recursos financeiros existentes no Agro agora são acessados pelo ambiente da IJA na Central Financeiro. Suas URLs, serviços, consultas e regras de lançamento foram preservados; o escopo dos dados não foi alterado.
 
 As abas financeiras foram removidas do menu e dos atalhos do dashboard Agro. Também foram retirados o contador de pendências financeiras e os atalhos para o financeiro na listagem operacional de contratos. Clientes, Fornecedores e Comercial continuam no Agro com suas telas e funções existentes. Os perfis financeiros não acessam o painel operacional Agro, mesmo que tenham o antigo campo `trabalha_agro` marcado; as URLs operacionais retornam 403. O dashboard Prefeitura encaminha esses perfis à Central Financeiro.
 
@@ -72,3 +72,35 @@ node --test tests/financeiro_central_browser.test.cjs
 Os testes da central usam uma aplicação isolada sem conexão de banco. Verificam os perfis permitidos e negados em todas as rotas financeiras, inclusive POST, antes de qualquer gravação; a configuração do administrador financeiro e do DEV; o acesso do DEV sem vínculo operacional e a exigência de CSRF nas suas operações quando habilitado; a preservação de Prefeitura/Agro; a remoção dos atalhos financeiros de lá; a abertura de Contas e Bancos com o contexto da IJA; reutilização das telas originais de Clientes, Orçamentos, Mapeamentos e Contratos, com busca, paginação e bloqueio de outras empresas antes da consulta; a ausência de seleção global na sessão; múltiplas empresas simuladas e escape de HTML. Os testes JavaScript usam DOM simulado e verificam busca por nome/CNPJ, filtro e estado vazio.
 
 No navegador, conferir tema claro/escuro, celular, entrada na IJA, abertura de Contas/Bancos e retorno ao catálogo. Entrar como `financeiro` e confirmar ausência de Configurações/Categorias; como `financeiro_admin` ou `dev`, confirmar sua presença; como `dev`, abrir a central pelo atalho do painel técnico; como `admin`, conferir acesso às três centrais e a preservação de Clientes/Comercial no Agro; como `diretor`, confirmar que o Financeiro permanece negado. Expandir os dois grupos na sidebar financeira e confirmar as opções. Em Caixa Diário, testar o atalho **Abrir caixa** sem enviar o formulário; executar abertura/fechamento somente em homologação. Após publicação, repetir os fluxos com usuários de homologação. A validação local não equivale a testar integrações de produção.
+
+
+## Identidade por empresa e configurações
+
+As configurações agora se dividem em **Dados da empresa**, **Logo e aparência** e
+**Competências**. Nome, razão social, CNPJ e logo são persistidos pelo slug autorizado
+do catálogo na tabela `financeiro_empresa_perfis`. A logo aparece no catálogo, na
+visão geral e no cabeçalho das telas financeiras; sem imagem, o cartão usa iniciais.
+PNG, JPG e WebP são validados pelo conteúdo, limitados a 2 MB/16 megapixels e
+normalizados para PNG de até 512 × 512, mantendo proporção e transparência.
+As imagens são enviadas ao Skybox em `financeiro/empresas/<slug>/logos/<uuid>.png` e servidas por rota autenticada sem cache. No banco fica apenas o marcador `skybox://...` em `logo_path`, sem conteúdo binário. O envio exige Skybox configurado; não há fallback para o banco. Substituições e remoções limpam o arquivo anterior somente após confirmar a gravação no banco. Falhas de limpeza remota são registradas no log.
+O CNPJ substituído deve ser válido e único; o documento demonstrativo pode ser
+mantido até a atualização. Apenas os perfis com permissão de configuração podem
+alterar a identidade, com a proteção CSRF existente.
+
+Para instalações que já usaram logos no banco, com a aplicação parada:
+
+```bash
+flask --app run db upgrade e2b431cc9f70
+python -m scripts.migrate_company_logos_to_skybox
+flask --app run db upgrade
+```
+
+O script transfere uma empresa por transação e confere o SHA-256 da cópia baixada
+antes de limpar o binário. Pode ser retomado após interrupção. Em falha, preserva
+o original e pode deixar uma cópia remota sem referência para revisão, evitando
+apagar dados em caso de resultado incerto de commit. A migração final
+`f2c531cc9f71` impede a remoção da coluna binária enquanto houver logos pendentes.
+Instalações sem logos antigas podem executar `flask --app run db upgrade` diretamente. Esta implementação não habilita cadastro de outras
+empresas nem isolamento dos lançamentos: a IJA continua sendo a única empresa
+no catálogo e a única com acesso às competências existentes. Adicionar uma linha
+de perfil por si só não concede acesso a uma empresa.
