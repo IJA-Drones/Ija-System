@@ -25,6 +25,7 @@ from app.modules.equipes import register_routes as register_equipes_routes
 from app.modules.estoque import register_routes as register_estoque_routes
 from app.modules.feedback import register_routes as register_feedback_routes
 from app.modules.financeiro import register_routes as register_financeiro_routes
+from app.modules.gestao_ti import register_routes as register_gestao_ti_routes
 from app.modules.mapas import register_routes as register_mapas_routes
 from app.modules.painel_operacional import register_routes as register_painel_operacional_routes
 from app.modules.piloto_checklists import register_routes as register_piloto_checklists_routes
@@ -68,6 +69,7 @@ register_equipes_routes(bp)
 register_estoque_routes(bp)
 register_feedback_routes(bp)
 register_financeiro_routes(bp)
+register_gestao_ti_routes(bp)
 register_mapas_routes(bp)
 register_painel_operacional_routes(bp)
 register_piloto_checklists_routes(bp)

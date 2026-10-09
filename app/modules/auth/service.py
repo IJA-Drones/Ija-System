@@ -1,3 +1,5 @@
+from flask import current_app, has_app_context
+
 from app.models import Usuario
 from app.shared.access import ADMIN_PANEL_VIEW_TYPES, is_agro_finance_user, is_dev_user
 
@@ -54,6 +56,8 @@ def authenticate_piloto_agro(login_value, password):
 def get_authenticated_redirect_endpoint(user):
     if is_dev_user(user):
         return "main.dev_dashboard"
+    if user.tipo_usuario == "gestor_ti" and has_app_context() and current_app.config.get("CENTRAL_TI_ENABLED", False):
+        return "main.central_ti"
     if is_agro_finance_user(user):
         return "main.financeiro_central"
     if user.tipo_usuario in ADMIN_PANEL_VIEW_TYPES:

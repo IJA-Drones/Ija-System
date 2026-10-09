@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Central de TI | Oceano Azul{% endblock %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/gestao-ti-central.css', v='20261008e') }}">
+{% endblock %}
+
+{% block content %}
+<div class="ti-central" id="ti-central">
+  <header class="page-toolbar ti-heading">
+    <h1 class="h2 mb-0"><i class="bi bi-shield-check me-2" aria-hidden="true"></i>Central de TI</h1>
+  </header>
+
+  <div class="ti-workspace">
+    <aside class="ti-profiles ti-panel" aria-labelledby="ti-profiles-title">
+      <h2 id="ti-profiles-title"><i class="bi bi-people me-2" aria-hidden="true"></i>Tipos de usuário</h2>
+      <div class="ti-search">
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <label class="visually-hidden" for="ti-profile-search">Buscar tipo de usuário</label>
+        <input class="form-control" type="search" id="ti-profile-search" placeholder="Buscar perfil" autocomplete="off">
+      </div>
+      <ul class="ti-profile-list" id="ti-profile-list" aria-label="Tipos de usuário para configurar"></ul>
+      <p class="ti-empty" id="ti-profile-empty" hidden>Nenhum perfil encontrado.</p>
+    </aside>
+
+    <section class="ti-editor" aria-labelledby="ti-selected-name">
+      <div class="ti-selected">
+        <span class="ti-avatar" id="ti-selected-avatar" aria-hidden="true"><i class="bi bi-buildings"></i></span>
+        <h2 id="ti-selected-name">Admin Prefeitura</h2>
+        <span class="ti-preview-label" id="ti-profile-status"></span>
+      </div>
+
+      <nav class="ti-area-nav" id="ti-area-nav" aria-label="Área para configurar"></nav>
+
+      <section class="ti-permissions ti-panel" aria-labelledby="ti-area-title">
+        <div class="ti-area-heading">
+          <h3><span id="ti-area-icon" aria-hidden="true"><i class="bi bi-buildings"></i></span><span id="ti-area-title">Prefeitura</span></h3>
+          <label class="ti-area-toggle"><input type="checkbox" id="ti-area-enabled"><span class="ti-switch" aria-hidden="true"></span><span>Permitir acesso</span></label>
+        </div>
+        <p class="ti-rule-note" id="ti-rule-note" hidden></p>
+        <div class="ti-module-list" id="ti-module-list"></div>
+        <noscript><p class="ti-empty">Ative o JavaScript para experimentar os checklists.</p></noscript>
+      </section>
+    </section>
+  </div>
+
+  <div class="ti-save-bar">
+    <span class="ti-preview-label">{{ 'Configuração em validação' if central_ti_data is defined else 'Prévia visual' }}</span>
+    <button class="btn btn-primary" type="button" id="ti-save" disabled aria-haspopup="dialog"><i class="bi bi-save me-2" aria-hidden="true"></i>Salvar alterações</button>
+  </div>
+  <p class="ti-feedback" id="ti-feedback" role="status" aria-live="polite" hidden></p>
+</div>
+{% if central_ti_data is defined %}
+<script type="application/json" id="ti-central-data">{{ central_ti_data | tojson }}</script>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/gestao-ti-central.js', v='20261008e') }}" defer></script>
+{% endblock %}

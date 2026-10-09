@@ -79,6 +79,7 @@
                 <option value="regional" {% if tipo == 'regional' %}selected{% endif %}>Regional</option>
                 <option value="financeiro_admin" {% if tipo == 'financeiro_admin' %}selected{% endif %}>Financeiro Admin</option>
                 <option value="dev" {% if tipo == 'dev' %}selected{% endif %}>Desenvolvedor</option>
+                <option value="gestor_ti" {% if tipo == 'gestor_ti' %}selected{% endif %}>Gestor de TI</option>
                 <option value="financeiro" {% if tipo == 'financeiro' %}selected{% endif %}>Financeiro</option>
                 <option value="prefeitura_admin" {% if tipo == 'prefeitura_admin' %}selected{% endif %}>Prefeitura (Admin)</option>
                 <option value="sup_veiculos" {% if tipo == 'sup_veiculos' %}selected{% endif %}>Supervisor Operacional de Veículos</option>
@@ -142,6 +143,8 @@
                     <span class="badge bg-info">COVISA</span>
                   {% elif u.tipo_usuario == 'dev' %}
                     <span class="badge bg-danger">DEV</span>
+                  {% elif u.tipo_usuario == 'gestor_ti' %}
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle">GESTOR DE TI</span>
                   {% elif u.tipo_usuario == 'diretor' %}
                     <span class="badge bg-dark">DIRETOR</span>
                   {% elif u.tipo_usuario == 'admin' %}
@@ -186,7 +189,7 @@
                   <div class="usuarios-actions-row">
                     <a class="btn btn-sm btn-success text-white shadow-sm"
                        href="{{ url_for('main.admin_usuario_editar', id=u.id) }}"
-                       {% if u.tipo_usuario in ['dev', 'diretor'] and not can_manage_dev_accounts %}aria-disabled="true" tabindex="-1" style="pointer-events:none;opacity:.55"{% endif %}>
+                       {% if u.tipo_usuario in ['dev', 'diretor', 'gestor_ti'] and not can_manage_dev_accounts %}aria-disabled="true" tabindex="-1" style="pointer-events:none;opacity:.55"{% endif %}>
                       <i class="bi bi-pencil-square me-1"></i> Editar
                     </a>
 
@@ -195,7 +198,7 @@
                           action="{{ url_for('main.admin_usuario_excluir', id=u.id) }}">
                       <button type="submit"
                               class="btn btn-sm btn-danger shadow-sm"
-                              {% if u.tipo_usuario in ['dev', 'diretor'] and not can_manage_dev_accounts %}disabled title="Apenas dev pode excluir esta conta"{% endif %}
+                              {% if u.tipo_usuario in ['dev', 'diretor', 'gestor_ti'] and not can_manage_dev_accounts %}disabled title="Apenas dev pode excluir esta conta"{% endif %}
                               {% if u.id == current_user.id %}disabled title="Você não pode excluir seu próprio usuário"{% endif %}>
                         <i class="bi bi-trash me-1"></i> Excluir
                       </button>

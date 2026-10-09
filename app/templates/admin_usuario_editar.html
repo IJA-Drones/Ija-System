@@ -57,6 +57,9 @@
               {% if can_assign_director or tipo_sel == 'diretor' %}
               <option value="diretor" {% if tipo_sel == 'diretor' %}selected{% endif %}>Diretor</option>
               {% endif %}
+              {% if can_assign_ti_manager or tipo_sel == 'gestor_ti' %}
+              <option value="gestor_ti" {% if tipo_sel == 'gestor_ti' %}selected{% endif %}>Gestor de TI</option>
+              {% endif %}
               <option value="admin" {% if tipo_sel == 'admin' %}selected{% endif %}>Admin</option>
               <option value="covisa" {% if tipo_sel == 'covisa' %}selected{% endif %}>COVISA</option>
               <option value="operario" {% if tipo_sel == 'operario' %}selected{% endif %}>Operario</option>

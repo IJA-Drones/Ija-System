@@ -14,6 +14,7 @@ from app.modules.usuarios.service import (
     build_admin_users_query,
     can_assign_director_role,
     can_assign_dev_role,
+    can_assign_ti_manager_role,
     can_manage_admin_user,
     delete_admin_user,
     get_admin_user_type_form_value,
@@ -24,6 +25,7 @@ from app.modules.usuarios.service import (
     validate_new_admin_user,
     validate_password_reset,
     garantir_piloto_para_supervisor, # ➔ IMPORTAÇÃO ADICIONADA AQUI
+    TI_MANAGER_USER_TYPE,
 )
 from app.shared.query_filters import id_search_clause
 from app.shared.access import (
@@ -102,6 +104,10 @@ def _prefeitura_dependency_labels(prefeitura):
 
 
 def register_routes(bp):
+    @bp.app_context_processor
+    def inject_ti_manager_creation_access():
+        return {"can_assign_ti_manager": can_assign_ti_manager_role(current_user)}
+
     @bp.route("/admin/prefeituras/nova", methods=["GET", "POST"], endpoint="admin_prefeitura_nova")
     @login_required
     def admin_prefeitura_nova():
@@ -336,6 +342,8 @@ def register_routes(bp):
                 "senha2": senha2,
             }
 
+            if tipo_usuario_form == TI_MANAGER_USER_TYPE and not can_assign_ti_manager_role(current_user):
+                abort(403)
             if tipo_usuario_form == DEV_USER_TYPE and not can_assign_dev_role(current_user):
                 errors["tipo_usuario"] = "Apenas um desenvolvedor pode criar outra conta dev."
                 flash(errors["tipo_usuario"], "danger")
@@ -491,6 +499,8 @@ def register_routes(bp):
                 if tipo_usuario_form == DEV_USER_TYPE and not can_assign_dev_role(current_user):
                     abort(403)
                 if tipo_usuario_form == DIRECTOR_USER_TYPE and not can_assign_director_role(current_user):
+                    abort(403)
+                if tipo_usuario_form == TI_MANAGER_USER_TYPE and not can_assign_ti_manager_role(current_user):
                     abort(403)
                 tipo_usuario = normalize_admin_user_type(tipo_usuario_form)
             regiao = normalize_admin_user_regiao(

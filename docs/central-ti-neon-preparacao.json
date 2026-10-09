@@ -1,0 +1,78 @@
+{
+  "applied": true,
+  "target_fingerprint": "b90eb571d84c0287",
+  "tables_created": [
+    "central_ti_auditoria",
+    "central_ti_perfis_configuracoes",
+    "central_ti_selecoes"
+  ],
+  "profiles_added": [
+    "prefeitura_admin",
+    "financeiro",
+    "financeiro_admin",
+    "piloto",
+    "regional",
+    "uvis",
+    "operario",
+    "sup_veiculos",
+    "piloto_agro",
+    "equipe_oceano",
+    "equipe_uvis",
+    "covisa",
+    "admin",
+    "diretor",
+    "visualizar",
+    "dev",
+    "gestor_ti",
+    "visualizador",
+    "operador",
+    "sup_veiculo"
+  ],
+  "alembic_revisions": [
+    "0251eb11b61b"
+  ],
+  "users_count": 12,
+  "central_tables": [
+    "central_ti_auditoria",
+    "central_ti_perfis_configuracoes",
+    "central_ti_selecoes"
+  ],
+  "profiles": [
+    "admin",
+    "covisa",
+    "dev",
+    "diretor",
+    "equipe_oceano",
+    "equipe_uvis",
+    "financeiro",
+    "financeiro_admin",
+    "gestor_ti",
+    "operador",
+    "operario",
+    "piloto",
+    "piloto_agro",
+    "prefeitura_admin",
+    "regional",
+    "sup_veiculo",
+    "sup_veiculos",
+    "uvis",
+    "visualizador",
+    "visualizar"
+  ],
+  "date": "2026-10-08",
+  "provider": "neon",
+  "scope": "Central de TI no banco de testes autorizado",
+  "general_migrations_advanced": false,
+  "login_accounts_created": 0,
+  "existing_login_accounts_preserved": true,
+  "permission_enforcement_enabled": false,
+  "local_flag": "CENTRAL_TI_ENABLED=1",
+  "validation": {
+    "page_status": 200,
+    "unchanged_save_status": 200,
+    "profiles_loaded": 20,
+    "selections_count": 0,
+    "audit_count": 20,
+    "isolated_tests_passed": 44
+  }
+}

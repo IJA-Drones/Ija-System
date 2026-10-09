@@ -1,4 +1,5 @@
 from sqlalchemy import and_, func, or_
+from flask import current_app, has_app_context
 
 from app.extensions import db
 from app.models import Notificacao, Usuario, Pilotos
@@ -18,6 +19,7 @@ from app.shared.query_filters import id_search_clause
 from app.shared.password_policy import validate_password
 
 
+TI_MANAGER_USER_TYPE = "gestor_ti"
 ADMIN_USER_TYPES = (
     DEV_USER_TYPE,
     DIRECTOR_USER_TYPE,
@@ -29,6 +31,7 @@ ADMIN_USER_TYPES = (
     FINANCEIRO_USER_TYPE,
     "covisa",
     "sup_veiculos",
+    TI_MANAGER_USER_TYPE,
 )
 LEGACY_COVISA_USER_TYPE = "visualizar"
 LEGACY_COVISA_REGIAO = "COVISA"
@@ -78,9 +81,16 @@ def can_assign_director_role(actor) -> bool:
     return is_dev_user(actor)
 
 
+def can_assign_ti_manager_role(actor) -> bool:
+    return (
+        is_dev_user(actor) and has_app_context()
+        and bool(current_app.config.get("CENTRAL_TI_ENABLED", False))
+    )
+
+
 def can_manage_admin_user(actor, usuario) -> bool:
     target_type = getattr(usuario, "tipo_usuario", None)
-    if target_type in {DEV_USER_TYPE, DIRECTOR_USER_TYPE}:
+    if target_type in {DEV_USER_TYPE, DIRECTOR_USER_TYPE, TI_MANAGER_USER_TYPE}:
         return is_dev_user(actor)
     return True
 
@@ -115,6 +125,7 @@ def build_admin_users_query(q: str, tipo: str):
                     PREFEITURA_ADMIN_USER_TYPE,
                     FINANCEIRO_ADMIN_USER_TYPE,
                     FINANCEIRO_USER_TYPE,
+                    TI_MANAGER_USER_TYPE,
                     *VEICULOS_SUPERVISOR_USER_TYPES,
                 )
             ),
@@ -166,6 +177,8 @@ def validate_new_admin_user(
         errors["login"] = "Informe o login."
     if tipo_usuario not in ADMIN_USER_TYPES:
         errors["tipo_usuario"] = "Selecione um tipo valido."
+    if tipo_usuario == TI_MANAGER_USER_TYPE and not current_app.config.get("CENTRAL_TI_ENABLED", False):
+        errors["tipo_usuario"] = "Ative a Central de TI antes de criar esse perfil."
     if tipo_usuario == REGIONAL_USER_TYPE and not normalize_regiao(regiao):
         errors["regiao"] = "Informe a regiao do usuario regional."
     if tipo_usuario == PREFEITURA_ADMIN_USER_TYPE and not prefeitura_id:
@@ -202,6 +215,8 @@ def validate_edit_admin_user(
         errors["login"] = "Informe o login."
     if tipo_usuario not in ADMIN_USER_TYPES:
         errors["tipo_usuario"] = "Tipo invalido."
+    if tipo_usuario == TI_MANAGER_USER_TYPE and not current_app.config.get("CENTRAL_TI_ENABLED", False):
+        errors["tipo_usuario"] = "A Central de TI está desativada."
     if tipo_usuario == REGIONAL_USER_TYPE and not normalize_regiao(regiao):
         errors["regiao"] = "Informe a regiao do usuario regional."
     if tipo_usuario == PREFEITURA_ADMIN_USER_TYPE and not prefeitura_id:

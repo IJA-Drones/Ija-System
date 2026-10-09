@@ -179,6 +179,46 @@ class Usuario(UserMixin, db.Model):
         return check_password_hash(self.senha_hash, senha)
 
 
+class CentralTiPerfilConfiguracao(db.Model):
+    """Proposed profile configuration; not consumed by access checks yet."""
+
+    __tablename__ = "central_ti_perfis_configuracoes"
+
+    perfil_codigo = db.Column(db.String(20), primary_key=True)
+    versao = db.Column(db.Integer, nullable=False, server_default="1")
+    atualizado_em = db.Column(db.DateTime, nullable=False, server_default=db.func.now())
+    atualizado_por_id = db.Column(db.Integer, db.ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
+    __table_args__ = (db.CheckConstraint("versao >= 1", name="ck_central_ti_perfil_versao"),)
+
+
+class CentralTiSelecao(db.Model):
+    __tablename__ = "central_ti_selecoes"
+
+    perfil_codigo = db.Column(
+        db.String(20), db.ForeignKey("central_ti_perfis_configuracoes.perfil_codigo", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    codigo = db.Column(db.String(120), primary_key=True)
+
+
+class CentralTiAuditoria(db.Model):
+    __tablename__ = "central_ti_auditoria"
+
+    id = db.Column(db.Integer, primary_key=True)
+    lote = db.Column(db.String(36), nullable=False, index=True)
+    perfil_codigo = db.Column(db.String(20), nullable=False, index=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
+    usuario_login = db.Column(db.String(50), nullable=False)
+    versao_anterior = db.Column(db.Integer, nullable=False)
+    versao_nova = db.Column(db.Integer, nullable=False)
+    antes = db.Column(db.JSON, nullable=False)
+    depois = db.Column(db.JSON, nullable=False)
+    criado_em = db.Column(db.DateTime, nullable=False, server_default=db.func.now())
+    __table_args__ = (
+        db.CheckConstraint("versao_anterior >= 0 AND versao_nova > versao_anterior", name="ck_central_ti_auditoria_versao"),
+    )
+
+
 class FeedbackTopico(db.Model):
     __tablename__ = "feedback_topicos"
 

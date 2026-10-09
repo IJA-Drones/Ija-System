@@ -92,7 +92,9 @@
   <body class="{% if tema_escolhido == 'dark' %}dark-mode {% endif %}{% if is_agro_context %}agro-mode{% elif is_financeiro_context %}financeiro-mode{% endif %}">
     {% set navbar_home_endpoint = 'main.dashboard' %}
     {% if current_user and current_user.is_authenticated %}
-      {% if is_financeiro_context %}
+      {% if current_user.tipo_usuario == 'gestor_ti' and can_manage_central_ti is defined and can_manage_central_ti(current_user) %}
+        {% set navbar_home_endpoint = 'main.central_ti' %}
+      {% elif is_financeiro_context %}
         {% set navbar_home_endpoint = 'main.financeiro_central' %}
       {% elif current_user.tipo_usuario in ['piloto', 'equipe_oceano'] %}
         {% set navbar_home_endpoint = 'main.piloto_os' %}
@@ -246,7 +248,10 @@
       <div class="app-sidebar d-flex flex-column" id="appSidebar">
         {% set sidebar_dashboard_endpoint = 'main.dashboard' %}
         {% set sidebar_dashboard_active = request.endpoint == 'main.dashboard' %}
-        {% if is_financeiro_context %}
+        {% if current_user.tipo_usuario == 'gestor_ti' and can_manage_central_ti is defined and can_manage_central_ti(current_user) %}
+          {% set sidebar_dashboard_endpoint = 'main.central_ti' %}
+          {% set sidebar_dashboard_active = request.endpoint == 'main.central_ti' %}
+        {% elif is_financeiro_context %}
           {% set sidebar_dashboard_endpoint = 'main.financeiro_central' %}
           {% set sidebar_dashboard_active = request.endpoint == 'main.financeiro_central' %}
         {% elif current_user.tipo_usuario in ['piloto', 'equipe_oceano'] %}
@@ -263,14 +268,22 @@
           {% set sidebar_dashboard_active = request.endpoint == ('main.admin_agro' if is_agro_context else 'main.admin_dashboard') %}
         {% endif %}
         <ul class="nav flex-column flex-grow-1">
+          {% if current_user.tipo_usuario == 'dev' and can_manage_central_ti is defined and can_manage_central_ti(current_user) %}
+          <li class="nav-item">
+            <a class="nav-link {% if request.endpoint == 'main.central_ti' %}active{% endif %}" href="{{ url_for('main.central_ti') }}">
+              <i class="bi bi-shield-check me-2"></i><span>Central de TI</span>
+            </a>
+          </li>
+          {% endif %}
           <li class="nav-item">
             <a
               class="nav-link {% if sidebar_dashboard_active %}active{% endif %}"
               href="{{ url_for(sidebar_dashboard_endpoint) }}"
             >
-              <i class="bi {{ 'bi-buildings' if is_financeiro_context else 'bi-grid-fill' }} me-2"></i><span>{{ 'Empresas' if is_financeiro_context else 'Dashboard' }}</span>
+              <i class="bi {{ 'bi-shield-check' if sidebar_dashboard_endpoint == 'main.central_ti' else ('bi-buildings' if is_financeiro_context else 'bi-grid-fill') }} me-2"></i><span>{{ 'Central de TI' if sidebar_dashboard_endpoint == 'main.central_ti' else ('Empresas' if is_financeiro_context else 'Dashboard') }}</span>
             </a>
           </li>
+          {% if sidebar_dashboard_endpoint != 'main.central_ti' %}
           {% if is_financeiro_context %}
             {% if empresa_financeiro %}
             <li class="nav-item">
@@ -1016,6 +1029,7 @@
           {% endif %}
           {% endif %}
 
+          {% endif %}
           {% endif %}
           <div class="sidebar-footer mt-auto p-3 text-center">
             <div id="install-container" style="display: none">
