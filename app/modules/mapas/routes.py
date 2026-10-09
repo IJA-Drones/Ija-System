@@ -10,9 +10,22 @@ from app.modules.mapas.service import (
     build_uvis_disponiveis,
     get_consulta_geolocalizacao_key,
     get_mapa_relatorio_key,
+    normalize_larva_filter,
 )
 
 BRAZIL_TZ = ZoneInfo("America/Sao_Paulo")
+
+
+def _optional_integer_filter(name, *, minimum, maximum=None):
+    value = (request.args.get(name) or "").strip()
+    if not value:
+        return None
+    if not value.isdecimal():
+        raise ValueError(f"Filtro {name} inválido.")
+    value = int(value)
+    if value < minimum or (maximum is not None and value > maximum):
+        raise ValueError(f"Filtro {name} inválido.")
+    return value
 
 
 def register_routes(bp):
@@ -52,11 +65,18 @@ def register_routes(bp):
     @bp.route("/api/heatmap-data", endpoint="heatmap_data")
     @login_required
     def heatmap_data():
+        try:
+            filters = {
+                "uvis_id": _optional_integer_filter("uvis_id", minimum=1),
+                "mes": _optional_integer_filter("mes", minimum=1, maximum=12),
+                "ano": _optional_integer_filter("ano", minimum=1, maximum=9999),
+                "larva_visualizada": normalize_larva_filter(request.args.get("larva_visualizada")),
+            }
+        except ValueError as exc:
+            return jsonify({"ok": False, "message": str(exc)}), 400
         pontos = build_heatmap_points(
             current_user,
-            uvis_id=request.args.get("uvis_id", type=int),
-            mes=request.args.get("mes", type=int),
-            ano=request.args.get("ano", type=int),
+            **filters,
         )
         return jsonify(pontos)
 
