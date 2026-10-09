@@ -71,7 +71,7 @@
     <div class="col-12"><dt>Telefone</dt><dd>{{ denuncia.cidadao_telefone }}</dd></div>
     {% if show_documents %}
     <div class="col-sm-6"><dt>CPF</dt><dd>{{ denuncia.cidadao_cpf }}</dd></div>
-    <div class="col-sm-6"><dt>RG</dt><dd>{{ denuncia.cidadao_rg }}</dd></div>
+    <div class="col-sm-6"><dt>RG</dt><dd>{{ denuncia.cidadao_rg or 'Não informado' }}</dd></div>
     {% endif %}
   </dl>
 {%- endmacro %}

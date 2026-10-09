@@ -28,8 +28,11 @@
       <i class="bi bi-check-circle me-2" aria-hidden="true"></i>Esta denúncia já gerou a solicitação #{{ denuncia.solicitacao_id }}.
       <a class="alert-link" href="{{ url_for('main.editar_solicitacao', id=denuncia.solicitacao_id) }}">Abrir solicitação</a>
     </div>
+    {% elif denuncia.status != "ENCAMINHADA_UVIS" %}
+    <p class="text-muted">Esta denúncia não está disponível para conversão.</p>
     {% else %}
     <form method="post" id="formDenunciaSolicitacao" class="form-no-loading">
+          {% if ija_csrf_enabled %}<input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">{% endif %}
       <input type="hidden" name="risco_aereo" value="0">
       {% for name in ['logradouro', 'numero', 'complemento', 'bairro', 'cidade', 'uf', 'latitude', 'longitude', 'place_id'] %}
       <input type="hidden" name="{{ name }}" value="{{ form[name] }}">

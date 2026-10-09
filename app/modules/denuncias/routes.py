@@ -7,6 +7,7 @@ from flask_login import current_user, login_required
 from app.modules.denuncias.service import (
     build_denuncias_query,
     can_access_denuncias,
+    can_triage_denuncias,
     COORDENADORIAS_DENUNCIA,
     arquivar_denuncia,
     build_denuncias_coordenadoria_query,
@@ -26,6 +27,7 @@ from app.modules.solicitacoes.service import (
     can_use_custom_visit_other,
     create_nova_solicitacao,
 )
+from app.extensions import db
 from app.shared.access import is_regional_user
 from app.shared.skybox import SkyboxError, is_skybox_path, stream_skybox_file
 
@@ -73,6 +75,10 @@ def register_routes(bp):
             abort(403)
 
         denuncia = get_denuncia_scoped_or_404(denuncia_id, current_user)
+        if is_regional_user(current_user):
+            return redirect(url_for("main.coordenadoria_denuncia_detalhe", denuncia_id=denuncia.id))
+        if current_user.tipo_usuario == "uvis":
+            return redirect(url_for("main.uvis_denuncia_detalhe", denuncia_id=denuncia.id))
         return render_template(
             "denuncia_detalhe.html",
             denuncia=denuncia,
@@ -129,10 +135,10 @@ def register_routes(bp):
     @bp.route("/denuncias/<int:denuncia_id>/encaminhar-coordenadoria", methods=["POST"], endpoint="denuncia_encaminhar_coordenadoria")
     @login_required
     def denuncia_encaminhar_coordenadoria(denuncia_id):
-        if not can_access_denuncias(current_user):
+        if not can_triage_denuncias(current_user):
             abort(403)
 
-        denuncia = get_denuncia_or_404(denuncia_id)
+        denuncia = get_denuncia_or_404(denuncia_id, for_update=True)
         try:
             encaminhar_denuncia_para_coordenadoria(
                 denuncia,
@@ -151,7 +157,7 @@ def register_routes(bp):
         if not is_regional_user(current_user):
             abort(403)
 
-        denuncia = get_denuncia_scoped_or_404(denuncia_id, current_user)
+        denuncia = get_denuncia_scoped_or_404(denuncia_id, current_user, for_update=True)
         try:
             designar_denuncia_para_uvis(denuncia, request.form.get("uvis_usuario_id"), current_user)
             flash("Denúncia encaminhada para a UVIS responsável.", "success")
@@ -196,23 +202,28 @@ def register_routes(bp):
 
         denuncia = get_denuncia_scoped_or_404(denuncia_id, current_user)
         if request.method == "POST":
+            denuncia = get_denuncia_or_404(denuncia_id, for_update=True)
+            if not can_access_denuncia(current_user, denuncia):
+                abort(403)
             if denuncia.solicitacao_id:
                 flash("Esta denúncia já foi convertida em solicitação.", "warning")
                 return redirect(url_for("main.uvis_denuncia_detalhe", denuncia_id=denuncia.id))
 
+            if denuncia.status != denuncia.STATUS_ENCAMINHADA_UVIS:
+                abort(409)
             try:
-                solicitacao = create_nova_solicitacao(current_user, request.form)
+                solicitacao = create_nova_solicitacao(current_user, request.form, commit=False)
                 denuncia.solicitacao_id = solicitacao.id
                 denuncia.status = denuncia.STATUS_CONVERTIDA_SOLICITACAO
                 denuncia.triado_por_id = getattr(current_user, "id", None)
-                from app.extensions import db
-
                 db.session.commit()
                 flash("Solicitação criada a partir da denúncia.", "success")
                 return redirect(url_for("main.dashboard"))
             except NovoCadastroValidationError as exc:
+                db.session.rollback()
                 flash(exc.message, exc.category)
             except Exception:
+                db.session.rollback()
                 current_app.logger.exception("Erro ao converter denuncia %s em solicitacao.", denuncia.id)
                 flash("Erro ao criar solicitação a partir da denúncia.", "danger")
 
@@ -229,10 +240,10 @@ def register_routes(bp):
     @bp.route("/denuncias/<int:denuncia_id>/arquivar", methods=["POST"], endpoint="denuncia_arquivar")
     @login_required
     def denuncia_arquivar(denuncia_id):
-        if not can_access_denuncias(current_user):
+        if not can_triage_denuncias(current_user):
             abort(403)
 
-        denuncia = get_denuncia_or_404(denuncia_id)
+        denuncia = get_denuncia_or_404(denuncia_id, for_update=True)
         try:
             arquivar_denuncia(denuncia, request.form.get("motivo"), current_user)
             flash("Denúncia arquivada com sucesso.", "success")

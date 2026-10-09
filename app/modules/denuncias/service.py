@@ -2,7 +2,7 @@ import os
 from datetime import datetime
 
 from sqlalchemy import func, or_
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, lazyload
 
 from app.models import Denuncia, DenunciaAnexo, Usuario
 from app.extensions import db
@@ -26,6 +26,15 @@ COORDENADORIAS_DENUNCIA = (
 )
 
 
+def can_triage_denuncias(user):
+    return is_covisa_user(user) or is_admin_global_user(user)
+
+
+def _require_active_denuncia(denuncia):
+    if denuncia.solicitacao_id or denuncia.status in {Denuncia.STATUS_ARQUIVADA, Denuncia.STATUS_CONVERTIDA_SOLICITACAO}:
+        raise ValueError("Esta denúncia já foi encerrada e não pode ser alterada pela triagem.")
+
+
 def can_access_denuncias(user):
     return bool(
         is_covisa_user(user)
@@ -39,7 +48,7 @@ def can_access_denuncia(user, denuncia):
     if is_covisa_user(user) or is_admin_global_user(user):
         return True
     if is_regional_user(user):
-        return get_user_regiao(user) == (denuncia.coordenadoria or "").strip().upper()
+        return bool(get_user_regiao(user)) and get_user_regiao(user) == (denuncia.coordenadoria or "").strip().upper()
     if getattr(user, "tipo_usuario", None) == "uvis":
         return denuncia.uvis_usuario_id == getattr(user, "id", None)
     return False
@@ -112,12 +121,14 @@ def build_denuncias_uvis_query(user, args):
     )
 
 
-def get_denuncia_or_404(denuncia_id):
+def get_denuncia_or_404(denuncia_id, *, for_update=False):
+    if for_update:
+        return Denuncia.query.options(lazyload("*")).filter_by(id=denuncia_id).populate_existing().with_for_update().first_or_404()
     return Denuncia.query.options(joinedload(Denuncia.anexos)).filter(Denuncia.id == denuncia_id).first_or_404()
 
 
-def get_denuncia_scoped_or_404(denuncia_id, user):
-    denuncia = get_denuncia_or_404(denuncia_id)
+def get_denuncia_scoped_or_404(denuncia_id, user, *, for_update=False):
+    denuncia = get_denuncia_or_404(denuncia_id, for_update=for_update)
     if not can_access_denuncia(user, denuncia):
         from flask import abort
 
@@ -145,10 +156,14 @@ def resolve_denuncia_local_media(anexo):
 
 
 def encaminhar_denuncia_para_coordenadoria(denuncia, coordenadoria, user):
+    if not can_triage_denuncias(user):
+        raise ValueError("Somente a COVISA pode encaminhar denúncias.")
+    _require_active_denuncia(denuncia)
     coordenadoria = (coordenadoria or "").strip().upper()
     if coordenadoria not in COORDENADORIAS_DENUNCIA:
         raise ValueError("Selecione uma coordenadoria valida.")
 
+    denuncia.uvis_usuario_id = None
     denuncia.coordenadoria = coordenadoria
     denuncia.status = Denuncia.STATUS_ENCAMINHADA_COORDENADORIA
     denuncia.triado_por_id = getattr(user, "id", None)
@@ -160,6 +175,9 @@ def encaminhar_denuncia_para_coordenadoria(denuncia, coordenadoria, user):
 
 
 def arquivar_denuncia(denuncia, motivo, user):
+    if not can_triage_denuncias(user):
+        raise ValueError("Somente a COVISA pode arquivar denúncias.")
+    _require_active_denuncia(denuncia)
     motivo = " ".join((motivo or "").strip().split())
     if len(motivo) < 10:
         raise ValueError("Informe um motivo com pelo menos 10 caracteres.")
@@ -189,9 +207,12 @@ def designar_denuncia_para_uvis(denuncia, uvis_id, user):
     if not is_regional_user(user) and not is_admin_global_user(user):
         raise ValueError("Usuario sem permissao para designar UVIS.")
 
+    _require_active_denuncia(denuncia)
+    if denuncia.status not in {Denuncia.STATUS_ENCAMINHADA_COORDENADORIA, Denuncia.STATUS_ENCAMINHADA_UVIS}:
+        raise ValueError("Aguarde o encaminhamento da COVISA.")
     user_regiao = get_user_regiao(user)
     coordenadoria = (denuncia.coordenadoria or "").strip().upper()
-    if is_regional_user(user) and user_regiao != coordenadoria:
+    if is_regional_user(user) and (not user_regiao or user_regiao != coordenadoria):
         raise ValueError("Esta denuncia nao pertence a sua coordenadoria.")
 
     try:

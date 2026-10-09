@@ -116,7 +116,6 @@ def _validate_denuncia_data(data):
         "cidade": "Informe a cidade.",
         "nome": "Informe seu nome completo.",
         "cpf": "Informe um CPF valido.",
-        "rg": "Informe o RG.",
         "telefone": "Informe um telefone valido.",
     }
     for field, message in required.items():

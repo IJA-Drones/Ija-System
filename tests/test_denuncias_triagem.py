@@ -20,7 +20,7 @@ class DenunciasTriagemTests(unittest.TestCase):
 
     def test_encaminhar_denuncia_updates_status_and_coordenadoria(self):
         denuncia = Denuncia(status=Denuncia.STATUS_RECEBIDA)
-        user = SimpleNamespace(id=42)
+        user = SimpleNamespace(id=42, tipo_usuario="covisa")
 
         denuncias_service.encaminhar_denuncia_para_coordenadoria(denuncia, "norte", user)
 
@@ -32,14 +32,14 @@ class DenunciasTriagemTests(unittest.TestCase):
 
     def test_arquivar_denuncia_requires_meaningful_reason(self):
         denuncia = Denuncia(status=Denuncia.STATUS_RECEBIDA)
-        user = SimpleNamespace(id=42)
+        user = SimpleNamespace(id=42, tipo_usuario="covisa")
 
         with self.assertRaises(ValueError):
             denuncias_service.arquivar_denuncia(denuncia, "trote", user)
 
     def test_arquivar_denuncia_updates_status_and_reason(self):
         denuncia = Denuncia(status=Denuncia.STATUS_RECEBIDA)
-        user = SimpleNamespace(id=42)
+        user = SimpleNamespace(id=42, tipo_usuario="covisa")
 
         denuncias_service.arquivar_denuncia(denuncia, "Relato duplicado e sem evidencias", user)
 
