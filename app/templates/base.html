@@ -3,7 +3,7 @@
 {% set empresa_financeiro = empresa if empresa is defined else financeiro_empresa_atual|default(none) %}
 {% set is_global_admin = current_user.is_authenticated and is_admin_global_user(current_user) %}
 {% set is_financeiro_agro_user = current_user.is_authenticated and current_user.tipo_usuario in ['financeiro_admin', 'financeiro'] %}
-{% set is_admin_panel_user = current_user.is_authenticated and (is_global_admin or current_user.tipo_usuario in ['operario', 'visualizar', 'regional', 'prefeitura_admin', 'sup_veiculos']) %}
+{% set is_admin_panel_user = current_user.is_authenticated and (is_global_admin or current_user.tipo_usuario in ['operario', 'visualizar', 'covisa', 'regional', 'prefeitura_admin', 'sup_veiculos']) %}
 {% set can_access_agro_context = current_user.is_authenticated and can_access_agro_panel(current_user) %}
 {% set can_access_financeiro_context = current_user.is_authenticated and can_access_financeiro_panel is defined and can_access_financeiro_panel(current_user) %}
 {% set logo_light_url = url_for('static', filename='img/logo_oceano_azul_light.png') %}
@@ -318,13 +318,10 @@
           {% if can_access_denuncias(current_user) %}
           <li class="nav-item">
             <a
-              class="nav-link nav-link-disabled {% if request.endpoint in ['main.denuncias_listar', 'main.denuncia_detalhe', 'main.coordenadoria_denuncias_listar', 'main.coordenadoria_denuncia_detalhe'] %}active{% endif %}"
-              href="#"
-              aria-disabled="true"
-              tabindex="-1"
+              class="nav-link {% if request.endpoint in ['main.denuncias_listar', 'main.denuncia_detalhe', 'main.coordenadoria_denuncias_listar', 'main.coordenadoria_denuncia_detalhe'] %}active{% endif %}"
+              href="{{ url_for('main.denuncias_listar') }}"
             >
               <i class="bi bi-megaphone-fill me-2"></i><span>Denúncias</span>
-              <span class="nav-development-badge">Em desenvolvimento</span>
               {% if denuncias_nav_count and denuncias_nav_count > 0 %}
               <span class="badge bg-danger ms-auto" style="border-radius: 999px">{{ denuncias_nav_count }}</span>
               {% endif %}
@@ -458,13 +455,10 @@
           </li>
           <li class="nav-item">
             <a
-              class="nav-link nav-link-disabled {% if request.endpoint in ['main.uvis_denuncias_listar', 'main.uvis_denuncia_detalhe'] %}active{% endif %}"
-              href="#"
-              aria-disabled="true"
-              tabindex="-1"
+              class="nav-link {% if request.endpoint in ['main.uvis_denuncias_listar', 'main.uvis_denuncia_detalhe'] %}active{% endif %}"
+              href="{{ url_for('main.uvis_denuncias_listar') }}"
             >
               <i class="bi bi-megaphone-fill me-2"></i><span>Denúncias</span>
-              <span class="nav-development-badge">Em desenvolvimento</span>
               {% if denuncias_nav_count and denuncias_nav_count > 0 %}
               <span class="badge bg-danger ms-auto" style="border-radius: 999px">{{ denuncias_nav_count }}</span>
               {% endif %}

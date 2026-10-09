@@ -69,9 +69,9 @@
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(360px, .9fr);
   gap: clamp(20px, 4vw, 54px);
-  align-items: stretch;
+  align-items: center;
   overflow: hidden;
-  padding: clamp(28px, 5vw, 66px);
+  padding: clamp(24px, 3vw, 40px);
   border-radius: 32px;
   color: #fff;
   background:
@@ -149,7 +149,7 @@
   max-width: 620px;
   margin: 22px 0 16px;
   color: #fff;
-  font-size: clamp(2.1rem, 4.8vw, 4.15rem);
+  font-size: clamp(1.9rem, 3vw, 2.9rem);
   font-weight: 850;
   letter-spacing: -.05em;
   line-height: 1.02;
@@ -837,7 +837,7 @@ body.dark-mode .portal-cidadao-info-card > span {
   .portal-cidadao-dengue-actions { align-items: stretch; flex-direction: column; gap: 10px; }
   .portal-cidadao-dengue-actions a { text-align: center; font-size: .75rem; }
   .portal-cidadao-hero { padding: 28px 20px; border-radius: 24px; }
-  .portal-cidadao-hero h1 { font-size: 2.45rem; }
+  .portal-cidadao-hero h1 { font-size: 2rem; }
   .portal-cidadao-section-heading { display: block; }
   .portal-cidadao-status-pill { margin-top: 14px; }
   .portal-cidadao-news-feed { grid-template-columns: 1fr; }
@@ -959,4 +959,31 @@ body.dark-mode .portal-cidadao-week-track i[data-alert-level="4"] { background: 
   .portal-cidadao-report-chart { padding: 16px; }
   .portal-cidadao-report-panel-heading { flex-direction: column; align-items: flex-start; }
   .portal-cidadao-week-row { grid-template-columns: 54px minmax(0, 1fr) 68px; gap: 8px; }
+}
+
+/* Mobile citizen portal: compact introduction and comfortable touch controls. */
+@media (max-width: 600px) {
+  .portal-cidadao-page { padding-bottom: 96px; }
+  .portal-cidadao-nav { margin-bottom: 16px; }
+  .portal-cidadao-nav-links { display: grid; grid-template-columns: 1fr 1fr; }
+  .portal-cidadao-nav-links .portal-cidadao-nav-report { grid-column: 1 / -1; }
+  .portal-cidadao-nav-links a { font-size: 13px; min-height: 44px; }
+  .portal-cidadao-hero { padding: 24px 20px; gap: 0; border-radius: 20px; }
+  .portal-cidadao-hero h1 { font-size: clamp(1.7rem, 7vw, 2.1rem); line-height: 1.12; margin-top: 16px; }
+  .portal-cidadao-hero-copy > p { font-size: 14px; line-height: 1.6; }
+  .portal-cidadao-hero-card { display: none; } /* The full service flow remains below the form. */
+  .portal-cidadao-hero-actions { display: grid; gap: 10px; margin-top: 20px; }
+  .portal-cidadao-hero-actions a { display: flex; justify-content: center; min-height: 46px; align-items: center; }
+  .portal-cidadao-section { margin-top: 28px; }
+  .portal-cidadao-section-heading h2 { font-size: 1.65rem; }
+  .portal-cidadao-form-card, .portal-cidadao-side-card, .portal-cidadao-dengue-card { padding: 18px 16px; border-radius: 18px; }
+  .portal-cidadao-page :is(input, select, textarea) { font-size: 16px; min-width: 0; }
+  .portal-cidadao-page :is(input:not([type=checkbox]):not([type=hidden]), select) { min-height: 46px; }
+  .portal-cidadao-page .portal-cidadao-consent input { flex-shrink: 0; width: 22px; height: 22px; }
+  .portal-cidadao-page .portal-cidadao-upload-label { margin-left: 0; min-height: 44px; display: inline-flex; align-items: center; }
+  .portal-cidadao-file-item { max-width: 100%; overflow-wrap: anywhere; }
+  .portal-cidadao-type-option { min-width: 0; }
+  .portal-cidadao-type-option > span { min-width: 0; }
+  .portal-cidadao-page .portal-cidadao-report-filter { flex-wrap: wrap; }
+  .portal-cidadao-page .portal-cidadao-report-filter label { min-width: 0; flex: 1; }
 }

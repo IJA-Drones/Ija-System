@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
 {% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/portal_chatbot.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/portal_cidadao.css') }}">
 {% endblock %}
 
@@ -22,15 +23,11 @@
 
   <header class="portal-cidadao-hero" id="portal-inicio">
     <div class="portal-cidadao-hero-copy">
-      <div class="portal-cidadao-brandmark">
-        <img src="{{ logo_light_url }}" alt="Oceano Azul">
-        <span>Vigilância e participação cidadã</span>
-      </div>
       <div class="portal-cidadao-kicker">
         <i class="bi bi-people-fill" aria-hidden="true"></i>
         Participação cidadã
       </div>
-      <h1>Ajude a manter sua comunidade protegida.</h1>
+      <h1>Cuidar da comunidade começa com seu relato.</h1>
       <p>
         Informe focos, criadouros e situações que precisam da atenção da vigilância.
         Seu relato ajuda a Prefeitura a organizar a resposta e as ações de controle.
@@ -40,9 +37,9 @@
           <i class="bi bi-megaphone-fill" aria-hidden="true"></i>
           Registrar um relato
         </a>
-        <a class="portal-cidadao-back-link" href="{{ url_for('auth.login') }}">
-          <i class="bi bi-arrow-left" aria-hidden="true"></i>
-          Voltar para o acesso interno
+        <a class="portal-cidadao-back-link" href="#boletim-saude">
+          <i class="bi bi-journal-text" aria-hidden="true"></i>
+          Consultar boletim
         </a>
       </div>
     </div>
@@ -187,7 +184,7 @@
         </div>
 
         <form
-          class="portal-cidadao-form"
+          class="portal-cidadao-form form-no-loading"
           id="portalCidadaoForm"
           method="post"
           action="{{ url_for('main.portal_cidadao_denuncias_criar') }}"
@@ -297,8 +294,8 @@
                 <input class="form-control" id="portalCpf" name="cpf" type="text" inputmode="numeric" autocomplete="off" placeholder="000.000.000-00" required>
               </div>
               <div class="portal-cidadao-field">
-                <label for="portalRg">RG <span class="portal-cidadao-required">obrigatório</span></label>
-                <input class="form-control" id="portalRg" name="rg" type="text" autocomplete="off" placeholder="Número do RG" required>
+                <label for="portalRg">RG <span>(opcional)</span></label>
+                <input class="form-control" id="portalRg" name="rg" type="text" autocomplete="off" placeholder="Número do RG, se desejar informar">
               </div>
               <div class="portal-cidadao-field portal-cidadao-field-wide">
                 <label for="portalTelefone">Telefone <span class="portal-cidadao-required">obrigatório</span></label>
@@ -369,8 +366,12 @@
 
   <script type="application/json" id="portalCidadaoFocusCatalog">{{ focus_catalog | tojson }}</script>
 </main>
+{% include '_portal_chatbot.html' %}
 {% endblock auth_content %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/portal-chat-mobile.js') }}"></script>
+<script src="{{ url_for('static', filename='js/portal-chatbot.js') }}"></script>
 <script src="{{ url_for('static', filename='js/portal-cidadao.js') }}"></script>
+<script src="{{ url_for('static', filename='js/portal-chat-report.js') }}"></script>
 {% endblock %}
