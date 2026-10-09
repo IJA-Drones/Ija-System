@@ -6,6 +6,8 @@
 {% set is_admin_panel_user = current_user.is_authenticated and (is_global_admin or current_user.tipo_usuario in ['operario', 'visualizar', 'regional', 'prefeitura_admin', 'sup_veiculos']) %}
 {% set can_access_agro_context = current_user.is_authenticated and can_access_agro_panel(current_user) %}
 {% set can_access_financeiro_context = current_user.is_authenticated and can_access_financeiro_panel is defined and can_access_financeiro_panel(current_user) %}
+{% set ti_area_homes = central_ti_area_homes|default({}, true) %}
+{% set prefeitura_context_endpoint = ti_area_homes.get('prefeitura', 'main.admin_dashboard') if central_ti_profile_active|default(false) else 'main.admin_dashboard' %}
 {% set logo_light_url = url_for('static', filename='img/logo_oceano_azul_light.png') %}
 {% set logo_dark_url = url_for('static', filename='img/logo_oceano_azul_dark.png') %}
 <!doctype html>
@@ -96,7 +98,9 @@
   <body class="{% if tema_escolhido == 'dark' %}dark-mode {% endif %}{% if is_agro_context %}agro-mode{% elif is_financeiro_context %}financeiro-mode{% endif %}">
     {% set navbar_home_endpoint = 'main.dashboard' %}
     {% if current_user and current_user.is_authenticated %}
-      {% if current_user.tipo_usuario == 'gestor_ti' and can_manage_central_ti is defined and can_manage_central_ti(current_user) %}
+      {% if is_agro_context %}
+        {% set navbar_home_endpoint = 'main.agro_piloto_dashboard' if current_user.tipo_usuario == 'piloto_agro' else 'main.admin_agro' %}
+      {% elif current_user.tipo_usuario == 'gestor_ti' and not is_financeiro_context and can_manage_central_ti is defined and can_manage_central_ti(current_user) %}
         {% set navbar_home_endpoint = 'main.central_ti' %}
       {% elif is_financeiro_context %}
         {% set navbar_home_endpoint = 'main.financeiro_central' %}
@@ -111,7 +115,7 @@
       {% endif %}
     {% endif %}
     {% if central_ti_profile_active|default(false) and not central_ti_url_allowed(url_for(navbar_home_endpoint)) %}
-      {% set navbar_home_endpoint = 'main.acessos_dashboard' %}
+      {% set navbar_home_endpoint = ti_area_homes.get('financeiro' if is_financeiro_context else ('agro' if is_agro_context else 'prefeitura')) or central_ti_home_endpoint|default(navbar_home_endpoint, true) %}
     {% endif %}
     <div id="sidebarOverlay" class="sidebar-overlay"></div>
 
@@ -181,18 +185,18 @@
               >
             </li>
             {% endif %}
-            {% if can_access_financeiro_context or (is_global_admin and can_access_agro_context) or central_ti_profile_active|default(false) %}
+            {% if can_access_financeiro_context or (is_global_admin and can_access_agro_context) or (central_ti_profile_active|default(false) and (prefeitura_context_endpoint or can_access_agro_context)) %}
             <li class="px-2 pb-2 mb-2 border-bottom">
               <div class="admin-context-switch admin-context-switch-dropdown admin-context-switch-extended {% if is_agro_context %}is-agro{% elif is_financeiro_context %}is-financeiro{% else %}is-uvis{% endif %}" role="group" aria-label="Selecionar central">
                 <span class="admin-context-switch-thumb" aria-hidden="true"></span>
-                {% if is_global_admin or (central_ti_profile_active|default(false) and central_ti_permission('area:prefeitura')) %}
+                {% if (is_global_admin and not central_ti_profile_active|default(false)) or (central_ti_profile_active|default(false) and prefeitura_context_endpoint) %}
                 <button
                   type="button"
                   class="admin-context-btn {% if not is_agro_context and not is_financeiro_context %}is-active{% endif %}"
                   data-admin-context="uvis_prefeitura"
-                  data-admin-context-url="{{ url_for('main.admin_dashboard') }}"
+                  data-admin-context-url="{{ url_for(prefeitura_context_endpoint) }}"
                   aria-pressed="{{ 'true' if not is_agro_context and not is_financeiro_context else 'false' }}"
-                 data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_dashboard')) if central_ti_url_allowed is defined else true) else 'false' }}">
+                 data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for(prefeitura_context_endpoint)) if central_ti_url_allowed is defined else true) else 'false' }}">
                   <span class="admin-context-btn-icon"><i class="bi bi-buildings-fill"></i></span>
                   <span>UVIS e Prefeitura</span>
                 </button>
@@ -255,7 +259,10 @@
       <div class="app-sidebar d-flex flex-column" id="appSidebar">
         {% set sidebar_dashboard_endpoint = 'main.dashboard' %}
         {% set sidebar_dashboard_active = request.endpoint == 'main.dashboard' %}
-        {% if current_user.tipo_usuario == 'gestor_ti' and can_manage_central_ti is defined and can_manage_central_ti(current_user) %}
+        {% if is_agro_context %}
+          {% set sidebar_dashboard_endpoint = 'main.agro_piloto_dashboard' if current_user.tipo_usuario == 'piloto_agro' else 'main.admin_agro' %}
+          {% set sidebar_dashboard_active = request.endpoint == sidebar_dashboard_endpoint %}
+        {% elif current_user.tipo_usuario == 'gestor_ti' and not is_financeiro_context and request.endpoint == 'main.central_ti' and can_manage_central_ti is defined and can_manage_central_ti(current_user) %}
           {% set sidebar_dashboard_endpoint = 'main.central_ti' %}
           {% set sidebar_dashboard_active = request.endpoint == 'main.central_ti' %}
         {% elif is_financeiro_context %}
@@ -275,10 +282,6 @@
           {% set sidebar_dashboard_active = request.endpoint == ('main.admin_agro' if is_agro_context else 'main.admin_dashboard') %}
         {% endif %}
         <ul class="nav flex-column flex-grow-1">
-          {% if central_ti_profile_active|default(false) %}
-          <li class="nav-item"><a class="nav-link {% if request.endpoint == 'main.acessos_dashboard' %}active{% endif %}" href="{{ url_for('main.acessos_dashboard') }}"><i class="bi bi-grid-fill me-2"></i><span>Seus acessos</span></a></li>
-          {% include '_central_ti_menu.html' %}
-          {% else %}
           {% if current_user.tipo_usuario == 'dev' and can_manage_central_ti is defined and can_manage_central_ti(current_user) %}
           <li class="nav-item">
             <a class="nav-link {% if request.endpoint == 'main.central_ti' %}active{% endif %}" href="{{ url_for('main.central_ti') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.central_ti')) if central_ti_url_allowed is defined else true) else 'false' }}">
@@ -306,7 +309,7 @@
             {% endif %}
           {% else %}
           {% set can_report_bugs_user = current_user.tipo_usuario == 'regional' or (current_user.tipo_usuario == 'visualizar' and (current_user.regiao or '')|upper == 'COVISA') %}
-          {% if can_report_bugs_user %}
+          {% if (central_ti_ui_guard(['main.bug_report_novo', 'main.bugs_listar'], can_report_bugs_user) if central_ti_ui_guard is defined else (can_report_bugs_user)) %}
           <li class="nav-item">
             <a
               class="nav-link {% if request.endpoint in ['main.bug_report_novo', 'main.bug_acompanhamento'] or (request.endpoint == 'main.feedback_novo' and request.args.get('tipo') == 'bug') %}active{% endif %}"
@@ -324,7 +327,7 @@
             </a>
           </li>
           {% endif %}
-          {% if is_dev_user(current_user) %}
+          {% if (central_ti_ui_guard(['main.feedback_listar'], is_dev_user(current_user)) if central_ti_ui_guard is defined else (is_dev_user(current_user))) %}
           <li class="nav-item">
             <a
               class="nav-link {% if request.endpoint in ['main.feedback_listar', 'main.feedback_detalhe'] %}active{% endif %}"
@@ -338,17 +341,26 @@
           </li>
           {% endif %}
 
-          {% if is_admin_panel_user and not is_agro_context %}
+          {% if not is_agro_context and central_ti_profile_active|default(false) and not is_admin_panel_user and current_user.tipo_usuario != 'uvis' and central_ti_permission('prefeitura.denuncias.consultar') %}
+          <li class="nav-item">
+            <a class="nav-link {% if request.endpoint in ['main.denuncias_listar', 'main.denuncia_detalhe'] %}active{% endif %}" href="{{ url_for('main.denuncias_listar') }}">
+              <i class="bi bi-megaphone-fill me-2"></i><span>Denúncias</span>
+            </a>
+          </li>
+          {% endif %}
+          {% if not is_agro_context and (is_admin_panel_user or (central_ti_profile_active|default(false) and current_user.tipo_usuario not in ['piloto', 'equipe_oceano', 'equipe_uvis', 'uvis'] and central_ti_permission('prefeitura.os.consultar'))) %}
           {% if can_access_denuncias(current_user) %}
           <li class="nav-item">
             <a
-              class="nav-link nav-link-disabled {% if request.endpoint in ['main.denuncias_listar', 'main.denuncia_detalhe', 'main.coordenadoria_denuncias_listar', 'main.coordenadoria_denuncia_detalhe'] %}active{% endif %}"
-              href="#"
+              class="nav-link {% if not central_ti_profile_active|default(false) %}nav-link-disabled{% endif %} {% if request.endpoint in ['main.denuncias_listar', 'main.denuncia_detalhe', 'main.coordenadoria_denuncias_listar', 'main.coordenadoria_denuncia_detalhe'] %}active{% endif %}"
+              href="{{ url_for('main.denuncias_listar') if central_ti_profile_active|default(false) else '#' }}"
+              {% if central_ti_profile_active|default(false) %}data-ti-allowed="{{ 'true' if central_ti_url_allowed(url_for('main.denuncias_listar')) else 'false' }}"{% else %}
               aria-disabled="true"
               tabindex="-1"
+              {% endif %}
             >
               <i class="bi bi-megaphone-fill me-2"></i><span>Denúncias</span>
-              <span class="nav-development-badge">Em desenvolvimento</span>
+              {% if not central_ti_profile_active|default(false) %}<span class="nav-development-badge">Em desenvolvimento</span>{% endif %}
               {% if denuncias_nav_count and denuncias_nav_count > 0 %}
               <span class="badge bg-danger ms-auto" style="border-radius: 999px">{{ denuncias_nav_count }}</span>
               {% endif %}
@@ -389,7 +401,7 @@
             </a>
           </li>
           {% endif %}
-          {% elif current_user.tipo_usuario == 'equipe_uvis' %}
+          {% elif not is_agro_context and current_user.tipo_usuario == 'equipe_uvis' %}
           <li class="nav-item">
             <a
               class="nav-link {% if request.endpoint == 'main.equipe_uvis_os_historico' or (request.endpoint == 'main.equipe_uvis_os_formulario_view' and request.args.get('voltar') == 'historico') %}active{% endif %}"
@@ -398,7 +410,7 @@
               <i class="bi bi-clock-history me-2"></i><span>Histórico Operacional</span>
             </a>
           </li>
-          {% elif current_user.tipo_usuario in ['piloto', 'equipe_oceano', 'sup_veiculos'] %}
+          {% elif not is_agro_context and current_user.tipo_usuario in ['piloto', 'equipe_oceano', 'sup_veiculos'] %}
           <li class="nav-item">
             <a
               class="nav-link {% if request.endpoint == 'main.piloto_os_historico' %}active{% endif %}"
@@ -471,7 +483,7 @@
               <i class="bi bi-clipboard2-data-fill me-2"></i><span>Minhas OS</span>
             </a>
           </li>
-          {% elif current_user.tipo_usuario == 'uvis' %}
+          {% elif not is_agro_context and current_user.tipo_usuario == 'uvis' %}
           <li class="nav-item">
             <a
               class="nav-link {% if request.endpoint in ['main.uvis_historico_os', 'main.uvis_os_formulario_view'] %}active{% endif %}"
@@ -482,13 +494,15 @@
           </li>
           <li class="nav-item">
             <a
-              class="nav-link nav-link-disabled {% if request.endpoint in ['main.uvis_denuncias_listar', 'main.uvis_denuncia_detalhe'] %}active{% endif %}"
-              href="#"
+              class="nav-link {% if not central_ti_profile_active|default(false) %}nav-link-disabled{% endif %} {% if request.endpoint in ['main.uvis_denuncias_listar', 'main.uvis_denuncia_detalhe'] %}active{% endif %}"
+              href="{{ url_for('main.uvis_denuncias_listar') if central_ti_profile_active|default(false) else '#' }}"
+              {% if central_ti_profile_active|default(false) %}data-ti-allowed="{{ 'true' if central_ti_url_allowed(url_for('main.uvis_denuncias_listar')) else 'false' }}"{% else %}
               aria-disabled="true"
               tabindex="-1"
+              {% endif %}
             >
               <i class="bi bi-megaphone-fill me-2"></i><span>Denúncias</span>
-              <span class="nav-development-badge">Em desenvolvimento</span>
+              {% if not central_ti_profile_active|default(false) %}<span class="nav-development-badge">Em desenvolvimento</span>{% endif %}
               {% if denuncias_nav_count and denuncias_nav_count > 0 %}
               <span class="badge bg-danger ms-auto" style="border-radius: 999px">{{ denuncias_nav_count }}</span>
               {% endif %}
@@ -553,6 +567,7 @@
             'main.agro_equipamento_editar',
             'main.agro_importar_planilha_drones'
           ] %}
+          {% if (central_ti_ui_guard(['main.agro_clientes_menu', 'main.agro_clientes_listar', 'main.agro_fornecedores_listar'], true) if central_ti_ui_guard is defined else (true)) %}
           <li class="nav-item">
             <button
               type="button"
@@ -597,7 +612,9 @@
               </ul>
             </div>
           </li>
+          {% endif %}
 
+          {% if (central_ti_ui_guard(['main.agro_orcamentos_listar', 'main.agro_orcamentos_template_mapeamento', 'main.agro_contratos_listar'], true) if central_ti_ui_guard is defined else (true)) %}
           <li class="nav-item">
             <button
               type="button"
@@ -642,6 +659,8 @@
               </ul>
             </div>
           </li>
+          {% endif %}
+          {% if (central_ti_ui_guard(['main.agro_contratos_template', 'main.agro_os_listar', 'main.agro_logs_voo', 'main.agro_equipes_listar', 'main.agro_pilotos_listar', 'main.agro_talentos_listar', 'main.agro_equipamentos_listar'], true) if central_ti_ui_guard is defined else (true)) %}
           <li class="nav-item">
             <button
               type="button"
@@ -659,7 +678,7 @@
 
             <div class="collapse {% if agro_operacional_menu_active %}show{% endif %}" id="menuOperacionalAgro">
               <ul class="nav flex-column sub-nav">
-                {% if is_global_admin %}
+                {% if (central_ti_ui_guard(['main.agro_contratos_template'], is_global_admin) if central_ti_ui_guard is defined else (is_global_admin)) %}
                 <li class="nav-item">
                   <a
                     class="nav-link sub-link {% if request.endpoint == 'main.agro_contratos_template' %}active{% endif %}"
@@ -701,7 +720,7 @@
                     <i class="bi bi-person-badge-fill me-2"></i><span>Pilotos</span>
                   </a>
                 </li>
-                {% if is_admin_panel_user or (central_ti_profile_active|default(false) and central_ti_permission('area:prefeitura')) %}
+                {% if (central_ti_ui_guard(['main.agro_talentos_listar'], is_admin_panel_user) if central_ti_ui_guard is defined else (is_admin_panel_user)) %}
                 <li class="nav-item">
                   <a
                     class="nav-link sub-link {% if request.endpoint in ['main.agro_talentos_listar', 'main.agro_talento_novo', 'main.agro_talento_detalhe', 'main.agro_talento_pdf'] %}active{% endif %}"
@@ -723,6 +742,7 @@
             </div>
           </li>
           {% endif %}
+          {% endif %}
 
           {% if not is_agro_context %}
           {% if current_user.tipo_usuario == 'uvis' %}
@@ -736,7 +756,7 @@
           </li>
           {% endif %}
 
-          {% if is_global_admin or current_user.tipo_usuario in ['visualizar', 'operario', 'regional', 'prefeitura_admin', 'sup_veiculos'] %}
+          {% if is_global_admin or current_user.tipo_usuario in ['visualizar', 'operario', 'regional', 'prefeitura_admin', 'sup_veiculos'] or central_ti_profile_active|default(false) %}
           <li class="nav-item">
             <a
               class="nav-link {% if request.endpoint in ['main.relatorios', 'main.relatorios_solicitacoes', 'main.relatorios_os', 'main.relatorios_coleta_imagens'] %}active{% endif %}"
@@ -745,6 +765,7 @@
               <i class="bi bi-bar-chart-fill me-2"></i><span>Relatórios</span>
             </a>
           </li>
+          {% if not central_ti_profile_active|default(false) or current_user.tipo_usuario not in ['piloto', 'equipe_oceano', 'sup_veiculos', 'uvis'] %}
           <li class="nav-item">
             <a
               class="nav-link {% if request.endpoint == 'main.agenda' %}active{% endif %}"
@@ -753,8 +774,9 @@
               <i class="bi bi-calendar-event-fill me-2"></i><span>Agenda</span>
             </a>
           </li>
+          {% endif %}
 
-          {% if current_user.tipo_usuario in ['dev', 'diretor'] %}
+          {% if (central_ti_ui_guard(['main.painel_operacional', 'main.estoque_listar'], current_user.tipo_usuario in ['dev', 'diretor']) if central_ti_ui_guard is defined else (current_user.tipo_usuario in ['dev', 'diretor'])) %}
           <li class="nav-item">
             <a
               class="nav-link {% if request.endpoint == 'main.painel_operacional' %}active{% endif %}"
@@ -773,7 +795,7 @@
           </li>
           {% endif %}
 
-{% if is_global_admin %}
+{% if (central_ti_ui_guard(['main.admin_prefeituras', 'main.admin_usuarios_listar', 'main.admin_usuario_novo'], is_global_admin) if central_ti_ui_guard is defined else (is_global_admin)) %}
   {# ===================== USUÁRIOS ===================== #}       
   <li class="nav-item">
     <button type="button" class="nav-link nav-link-toggle" data-bs-toggle="collapse" data-bs-target="#menuUsuarios">
@@ -802,7 +824,7 @@
   </li>
 {% endif %}
 
-{% if is_global_admin or current_user.tipo_usuario == 'prefeitura_admin' %}
+{% if (central_ti_ui_guard(['main.clientes_menu'], is_global_admin or current_user.tipo_usuario == 'prefeitura_admin') if central_ti_ui_guard is defined else (is_global_admin or current_user.tipo_usuario == 'prefeitura_admin')) %}
   {# ===================== CLIENTES ===================== #} 
   <li class="nav-item">
     <a
@@ -814,7 +836,7 @@
   </li>
 {% endif %}
 
-{% if is_dev_user(current_user) %}
+{% if (central_ti_ui_guard(['main.admin_logs_usuarios'], is_dev_user(current_user)) if central_ti_ui_guard is defined else (is_dev_user(current_user))) %}
   <li class="nav-item">
     <a
       class="nav-link {% if request.endpoint == 'main.admin_logs_usuarios' %}active{% endif %}"
@@ -824,7 +846,7 @@
     </a>
   </li>
 {% endif %}
-{% if is_dev_user(current_user) %}
+{% if (central_ti_ui_guard(['main.dev_dashboard'], is_dev_user(current_user)) if central_ti_ui_guard is defined else (is_dev_user(current_user))) %}
   <li class="nav-item">
     <a
       class="nav-link {% if request.endpoint == 'main.dev_dashboard' %}active{% endif %}"
@@ -836,7 +858,7 @@
 {% endif %}
           {% endif %} 
           {# ===================== PILOTOS ===================== #} 
-          {% if is_global_admin or current_user.tipo_usuario in ['visualizar', 'regional', 'operario', 'operador', 'prefeitura_admin', 'sup_veiculos'] %}
+          {% if (central_ti_ui_guard(['main.listar_pilotos', 'main.cadastrar_pilotos'], is_global_admin or current_user.tipo_usuario in ['visualizar', 'regional', 'operario', 'operador', 'prefeitura_admin', 'sup_veiculos']) if central_ti_ui_guard is defined else (is_global_admin or current_user.tipo_usuario in ['visualizar', 'regional', 'operario', 'operador', 'prefeitura_admin', 'sup_veiculos'])) %}
           <li class="nav-item">
             <button
               type="button"
@@ -861,7 +883,7 @@
                     <i class="bi bi-list-ul me-2"></i><span>Listar</span>
                   </a>
                 </li>
-                {% if is_global_admin or current_user.tipo_usuario|lower in ['operario', 'operador', 'prefeitura_admin' , 'sup_veiculos'] %}
+                {% if (central_ti_ui_guard(['main.cadastrar_pilotos'], is_global_admin or current_user.tipo_usuario|lower in ['operario', 'operador', 'prefeitura_admin' , 'sup_veiculos']) if central_ti_ui_guard is defined else (is_global_admin or current_user.tipo_usuario|lower in ['operario', 'operador', 'prefeitura_admin' , 'sup_veiculos'])) %}
                 <li class="nav-item">
                   <a
                     class="nav-link sub-link"
@@ -878,14 +900,14 @@
           {% endif %}
 
           {# ===================== EQUIPAMNETOS ===================== #} 
-          {% if is_global_admin or current_user.tipo_usuario|lower in ['operario', 'operador', 'prefeitura_admin', 'sup_veiculos'] %}
+          {% if (central_ti_ui_guard(['main.listar_equipamentos', 'main.veiculos_menu', 'main.veiculos_alertas_limpeza'], is_global_admin or current_user.tipo_usuario|lower in ['operario', 'operador', 'prefeitura_admin', 'sup_veiculos']) if central_ti_ui_guard is defined else (is_global_admin or current_user.tipo_usuario|lower in ['operario', 'operador', 'prefeitura_admin', 'sup_veiculos'])) %}
           <li class="nav-item">
             <a class="nav-link {% if request.endpoint in ['main.listar_equipamentos', 'main.importar_planilha_drones'] %}active{% endif %}"
               href="{{ url_for('main.listar_equipamentos') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.listar_equipamentos')) if central_ti_url_allowed is defined else true) else 'false' }}">
               <i class="bi bi-gear-fill me-2"></i><span>Equipamentos</span>
             </a> 
           </li>
-          {% if is_global_admin or current_user.tipo_usuario|lower in ['operario', 'operador', 'prefeitura_admin', 'sup_veiculos'] %}
+          {% if (central_ti_ui_guard(['main.veiculos_menu', 'main.veiculos_alertas_limpeza'], is_global_admin or current_user.tipo_usuario|lower in ['operario', 'operador', 'prefeitura_admin', 'sup_veiculos']) if central_ti_ui_guard is defined else (is_global_admin or current_user.tipo_usuario|lower in ['operario', 'operador', 'prefeitura_admin', 'sup_veiculos'])) %}
           {# ===================== VEÍCULOS ===================== #}
           <li class="nav-item">
             <a class="nav-link {% if request.endpoint in ['main.veiculos_menu', 'main.listar_veiculos', 'main.veiculos_rastreamento', 'main.veiculos_logs', 'main.veiculos_limpezas', 'main.exportar_logs_veiculos_xlsx', 'main.admin_checklists_semanais', 'main.editar_veiculo', 'main.cadastrar_veiculo', 'main.veiculos_alertas_limpeza'] %}active{% endif %}"
@@ -917,7 +939,7 @@
         {% endif %}
 
           {% endif %} {# ===================== EQUIPES (ADMIN COMPLETO / UVIS SÓ LISTAR) ===================== #} 
-          {% if is_global_admin or current_user.tipo_usuario in ['uvis', 'regional', 'operario', 'operador', 'prefeitura_admin', 'sup_veiculos'] %}
+          {% if (central_ti_ui_guard(['main.listar_equipes', 'main.cadastrar_equipes'], is_global_admin or current_user.tipo_usuario in ['uvis', 'regional', 'operario', 'operador', 'prefeitura_admin', 'sup_veiculos']) if central_ti_ui_guard is defined else (is_global_admin or current_user.tipo_usuario in ['uvis', 'regional', 'operario', 'operador', 'prefeitura_admin', 'sup_veiculos'])) %}
           <li class="nav-item">
             <button type="button" class="nav-link nav-link-toggle" data-bs-toggle="collapse" data-bs-target="#menuEquipes">
               <span>
@@ -936,7 +958,7 @@
                 </li>
 
                 {# ✅ Somente ADMIN pode cadastrar equipes da Oceano Azul #}
-                {% if is_global_admin or current_user.tipo_usuario|lower in ['operario', 'operador', 'prefeitura_admin', 'sup_veiculos'] %}
+                {% if (central_ti_ui_guard(['main.cadastrar_equipes'], is_global_admin or current_user.tipo_usuario|lower in ['operario', 'operador', 'prefeitura_admin', 'sup_veiculos']) if central_ti_ui_guard is defined else (is_global_admin or current_user.tipo_usuario|lower in ['operario', 'operador', 'prefeitura_admin', 'sup_veiculos'])) %}
                 <li class="nav-item">
                   <a class="nav-link sub-link" href="{{ url_for('main.cadastrar_equipes') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.cadastrar_equipes')) if central_ti_url_allowed is defined else true) else 'false' }}">
                     <i class="bi bi-person-plus-fill me-2"></i><span>Cadastrar</span>
@@ -949,7 +971,7 @@
           {% endif %}
 
           {# ===================== ACESSOS OPERACIONAIS (UVIS) ===================== #}
-          {% if is_global_admin or current_user.tipo_usuario|lower in ['operario', 'operador'] %}
+          {% if (central_ti_ui_guard(['main.admin_listar_equipes_uvis'], is_global_admin or current_user.tipo_usuario|lower in ['operario', 'operador']) if central_ti_ui_guard is defined else (is_global_admin or current_user.tipo_usuario|lower in ['operario', 'operador'])) %}
           <li class="nav-item">
             <button type="button" class="nav-link nav-link-toggle" data-bs-toggle="collapse" data-bs-target="#menuEquipesUvis">
               <span>
@@ -963,7 +985,7 @@
               <ul class="nav flex-column sub-nav">
 
                 {# --- ADMIN: lista global --- #}
-                {% if is_global_admin or current_user.tipo_usuario|lower in ['operario', 'operador', 'prefeitura_admin'] %}
+                {% if (central_ti_ui_guard(['main.admin_listar_equipes_uvis'], is_global_admin or current_user.tipo_usuario|lower in ['operario', 'operador', 'prefeitura_admin']) if central_ti_ui_guard is defined else (is_global_admin or current_user.tipo_usuario|lower in ['operario', 'operador', 'prefeitura_admin'])) %}
                 <li class="nav-item">
                   <a class="nav-link sub-link {% if request.endpoint in ['main.admin_listar_equipes_uvis','main.admin_listar_membros_equipe_uvis'] %}active{% endif %}"
                     href="{{ url_for('main.admin_listar_equipes_uvis') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.admin_listar_equipes_uvis')) if central_ti_url_allowed is defined else true) else 'false' }}">
@@ -1030,7 +1052,7 @@
               <i class="bi bi-search me-2"></i><span>Geolocalização</span>
             </a>
           </li>
-          {% if is_dev_user(current_user) %}
+          {% if (central_ti_ui_guard(['main.backups_list_page'], is_dev_user(current_user)) if central_ti_ui_guard is defined else (is_dev_user(current_user))) %}
             <li class="nav-item">
               <a class="nav-link {% if request.endpoint in ['main.backups_list_page','main.backup_page'] %}active{% endif %}"
                 href="{{ url_for('main.backups_list_page') }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.backups_list_page')) if central_ti_url_allowed is defined else true) else 'false' }}">
@@ -1040,7 +1062,6 @@
           {% endif %}
           {% endif %}
 
-          {% endif %}
           {% endif %}
           {% endif %}
           <div class="sidebar-footer mt-auto p-3 text-center">

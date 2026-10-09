@@ -1,7 +1,6 @@
-"""Business screens shown by base.html, using the same policy as their routes."""
-from flask import request, url_for
-from app.modules.gestao_ti.catalog import CATALOG
-from app.modules.gestao_ti.permissions import can_access_endpoint, profile_code
+"""Choose an authorized landing page without replacing the existing sidebars."""
+from flask import current_app
+from app.modules.gestao_ti.permissions import can_access_endpoint, has_permission, profile_code
 
 # API, file and background-job endpoints are deliberately not navigation entries.
 SCREENS = {
@@ -48,35 +47,62 @@ SCREENS = {
 }
 
 
-def build_navigation(user):
+def _screens_for(user, key):
     role = profile_code(user)
-    groups = []
-    for area in CATALOG['catalog']:
-        for module in area['modules']:
-            key = f"{area['id']}.{module[0]}"
-            screens = SCREENS.get(key, ())
-            if role in {'piloto', 'equipe_oceano'}:
-                if key == 'prefeitura.os': screens = [('piloto_os','Ordens de serviço'),('piloto_os_historico','Histórico de OS')]
-                if key == 'prefeitura.veiculos': screens = [('piloto_veiculos','Veículos'),('piloto_caixa_entrada','Alertas'),('listar_veiculos','Frota')]
-                if key == 'prefeitura.checklists': screens = [('piloto_checklist_semanal','Checklists semanais')]
-            if role == 'uvis' and key == 'prefeitura.solicitacoes':
-                screens = [('dashboard','Solicitações'),('novo','Nova solicitação'),('solicitacoes_canceladas','Canceladas')]
-            if role == 'uvis' and key == 'prefeitura.os': screens = [('uvis_historico_os','Histórico de OS')]
-            if role == 'equipe_uvis' and key == 'prefeitura.os': screens = [('dashboard_equipe_uvis','Ordens de serviço'),('equipe_uvis_os_historico','Histórico de OS')]
-            if role == 'piloto_agro':
-                if key == 'agro.os': screens = [('agro_piloto_os_listar','Ordens de serviço')]
-                if key == 'agro.mapeamentos': screens = [('agro_piloto_mapeamentos_listar','Mapeamentos')]
-            children=[]
-            for endpoint,label in screens:
-                endpoint='main.'+endpoint
-                if not can_access_endpoint(user, endpoint): continue
-                if endpoint == 'main.vigilancia_validacao':
-                    from flask import current_app
-                    if not current_app.config.get('VIGILANCIA_PREVIEW_ENABLED'): continue
-                params={'empresa_slug':'ija'} if endpoint.startswith('main.financeiro_empresa') else {}
-                children.append({'label':label,'url':url_for(endpoint,**params),'active':request.endpoint==endpoint})
-            if children:
-                groups.append({'label':module[1], 'icon':module[3], 'area':area['id'],
-                               'id':'ti-menu-'+key.replace('.','-'), 'children':children,
-                               'active':any(child['active'] for child in children)})
-    return groups
+    overrides = {
+        'piloto': {
+            'prefeitura.os': [('piloto_os', 'Ordens de serviço'), ('piloto_os_historico', 'Histórico de OS')],
+            'prefeitura.veiculos': [('piloto_veiculos', 'Veículos'), ('piloto_caixa_entrada', 'Alertas'), ('listar_veiculos', 'Frota')],
+            'prefeitura.checklists': [('piloto_checklist_semanal', 'Checklists semanais')],
+        },
+        'uvis': {
+            'prefeitura.solicitacoes': [('dashboard', 'Solicitações'), ('novo', 'Nova solicitação'), ('solicitacoes_canceladas', 'Canceladas')],
+            'prefeitura.os': [('uvis_historico_os', 'Histórico de OS')],
+        },
+        'equipe_uvis': {
+            'prefeitura.os': [('dashboard_equipe_uvis', 'Ordens de serviço'), ('equipe_uvis_os_historico', 'Histórico de OS')],
+        },
+        'piloto_agro': {
+            'agro.os': [('agro_piloto_os_listar', 'Ordens de serviço')],
+            'agro.mapeamentos': [('agro_piloto_mapeamentos_listar', 'Mapeamentos')],
+        },
+    }
+    return overrides.get('piloto' if role == 'equipe_oceano' else role, {}).get(key, SCREENS.get(key, ()))
+
+
+def first_allowed_screen_endpoint(user, area=None):
+    if area == 'financeiro' and has_permission(user, 'area:financeiro'):
+        return 'main.financeiro_central'
+    for key in SCREENS:
+        if area and not key.startswith(area + '.'):
+            continue
+        # Company screens are entered through the company selector.
+        if key.startswith('financeiro.') and has_permission(user, 'area:financeiro'):
+            return 'main.financeiro_central'
+        for screen, _ in _screens_for(user, key):
+            endpoint = 'main.' + screen
+            if endpoint == 'main.vigilancia_validacao' and not current_app.config.get('VIGILANCIA_PREVIEW_ENABLED'):
+                continue
+            if can_access_endpoint(user, endpoint) and any(
+                not rule.arguments for rule in current_app.url_map.iter_rules(endpoint)
+            ):
+                return endpoint
+    return None
+
+
+def area_home_endpoint(user, area):
+    if not has_permission(user, 'area:' + area):
+        return None
+    role = profile_code(user)
+    if area == 'financeiro':
+        return 'main.financeiro_central'
+    if area == 'agro':
+        return 'main.agro_piloto_dashboard' if role == 'piloto_agro' else 'main.admin_agro'
+    if area == 'prefeitura':
+        endpoint = {
+            'piloto': 'main.piloto_os', 'equipe_oceano': 'main.piloto_os',
+            'equipe_uvis': 'main.dashboard_equipe_uvis', 'uvis': 'main.dashboard',
+        }.get(role, 'main.admin_dashboard')
+        if can_access_endpoint(user, endpoint):
+            return endpoint
+    return first_allowed_screen_endpoint(user, area)

@@ -3720,10 +3720,8 @@ def register_routes(bp):
             has_permission(current_user, f"agro.{module}.consultar")
             for module in ("equipamentos", "contratos", "mapeamentos", "os")
         ):
-            from app.modules.gestao_ti.navigation import build_navigation
-            return render_template("acessos_dashboard.html", central_ti_navigation=[
-                group for group in build_navigation(current_user) if group["area"] in {"agro", "sistema"}
-            ])
+            from app.modules.gestao_ti.navigation import first_allowed_screen_endpoint
+            return redirect(url_for(first_allowed_screen_endpoint(current_user, "agro") or "main.inicio"))
 
         piloto = _get_logged_piloto_agro()
         if piloto is None:
@@ -3877,10 +3875,8 @@ def register_routes(bp):
             has_permission(current_user, f"agro.{module}.consultar")
             for module in ("clientes", "comercial", "contratos", "talentos", "equipes", "equipamentos", "os")
         ):
-            from app.modules.gestao_ti.navigation import build_navigation
-            return render_template("acessos_dashboard.html", central_ti_navigation=[
-                group for group in build_navigation(current_user) if group["area"] in {"agro", "sistema"}
-            ])
+            from app.modules.gestao_ti.navigation import first_allowed_screen_endpoint
+            return redirect(url_for(first_allowed_screen_endpoint(current_user, "agro") or "main.inicio"))
         if is_financeiro_agro_only_user(current_user):
             return redirect(url_for("main.financeiro_empresa", empresa_slug="ija"))
         context = get_agro_dashboard_context(current_user)

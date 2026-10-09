@@ -66,8 +66,9 @@ class CentralTiPermissionsTests(unittest.TestCase):
         self.configure('piloto',areas=['agro'])
         self.login('piloto')
         response=self.client.get('/agro/admin')
-        self.assertEqual(response.status_code,200)
-        self.assertIn('Seu perfil ainda não possui funções liberadas',response.get_data(as_text=True))
+        self.assertEqual(response.status_code,302)
+        self.assertTrue(response.location.endswith('/inicio'))
+        self.assertNotIn('Seus acessos',self.client.get('/inicio').get_data(as_text=True))
 
     def test_clearing_a_profile_denies_all_business_routes_before_handlers(self):
         self.configure('admin')
@@ -83,7 +84,8 @@ class CentralTiPermissionsTests(unittest.TestCase):
                 with self.subTest(endpoint=endpoint,method=method):
                     response=self.client.open(urls[endpoint],method=method)
                     self.assertEqual(response.status_code,403)
-        self.assertEqual(self.client.get('/acessos').status_code,200)
+        self.assertEqual(self.client.get('/inicio').status_code,200)
+        self.assertEqual(self.client.get('/acessos').status_code,302)
         self.assertEqual(EstoquePeca.query.count(),0)
 
     def test_a_newly_granted_report_appears_in_the_pilot_sidebar_and_opens(self):
@@ -92,7 +94,7 @@ class CentralTiPermissionsTests(unittest.TestCase):
         response=self.client.get('/relatorios')
         self.assertEqual(response.status_code,200)
         html=response.get_data(as_text=True)
-        self.assertRegex(html,r'class="nav-link[^"\n]*" href="/relatorios"')
+        self.assertRegex(html,r'class="nav-link[^"\n]*"\s+href="/relatorios"')
         self.assertEqual(self.client.get('/relatorios/solicitacoes?mes=7&ano=2026').status_code,200)
         self.assertEqual(self.client.get('/admin').status_code,403)
         self.assertEqual(self.client.get('/agro/admin').status_code,403)
@@ -137,10 +139,65 @@ class CentralTiPermissionsTests(unittest.TestCase):
         self.assertEqual(self.client.get('/relatorios').status_code,200)
         self.configure('piloto')
         self.assertEqual(self.client.get('/relatorios').status_code,403)
-        response=self.client.get('/acessos')
-        self.assertNotIn('href="/relatorios"',response.get_data(as_text=True))
+        response=self.client.get('/inicio')
+        self.assertNotIn('Seus acessos',response.get_data(as_text=True))
+        self.assertRegex(response.get_data(as_text=True),r'href="/relatorios"[^>]*data-ti-allowed="false"')
         with self.client.session_transaction() as stored:
             self.assertEqual(stored['_user_id'],str(self.users['piloto'].id))
+
+    def test_admin_agenda_changes_saved_by_dev_apply_to_the_same_admin_session(self):
+        self.login('dev')
+        state = next(item for item in self.editor_data()['states'] if item['id'] == 'admin')
+        self.assertTrue(self.token())
+        version = state['version']
+        admin_client = self.app.test_client()
+        with admin_client.session_transaction() as stored:
+            stored['_user_id'] = str(self.users['admin'].id)
+            stored['_fresh'] = True
+
+        def save_admin_permissions(permissions):
+            nonlocal version
+            response = self.save([{
+                'id': 'admin', 'version': version, 'areas': ['prefeitura'],
+                'permissions': permissions,
+            }])
+            self.assertEqual(response.status_code, 200)
+            self.assertTrue(response.json['active_rules_changed'])
+            saved = response.json['profiles'][0]
+            self.assertEqual(saved['id'], 'admin')
+            self.assertGreater(saved['version'], version)
+            version = saved['version']
+            reloaded = next(item for item in self.editor_data()['states'] if item['id'] == 'admin')
+            self.assertEqual(reloaded['version'], version)
+            self.assertEqual(set(reloaded['permissions']), set(permissions))
+
+        requests_permission = 'prefeitura.solicitacoes.consultar'
+        agenda_permission = 'prefeitura.mapas.consultar'
+        export_permission = 'prefeitura.mapas.exportar'
+        save_admin_permissions([requests_permission, agenda_permission, export_permission])
+        response = admin_client.get('/admin')
+        self.assertEqual(response.status_code, 200)
+        self.assertRegex(response.get_data(as_text=True), r'href="/agenda"[^>]*data-ti-allowed="true"')
+        self.assertEqual(admin_client.get('/agenda').status_code, 200)
+        self.assertEqual(admin_client.get('/agenda/exportar_excel').status_code, 200)
+
+        save_admin_permissions([requests_permission])
+        response = admin_client.get('/admin')
+        self.assertEqual(response.status_code, 200)
+        self.assertRegex(response.get_data(as_text=True), r'href="/agenda"[^>]*data-ti-allowed="false"')
+        for path in ('/agenda', '/agenda/rotas-dia', '/agenda/exportar_excel'):
+            with self.subTest(revoked_path=path):
+                self.assertEqual(admin_client.get(path).status_code, 403)
+
+        save_admin_permissions([requests_permission, agenda_permission])
+        response = admin_client.get('/admin')
+        self.assertEqual(response.status_code, 200)
+        self.assertRegex(response.get_data(as_text=True), r'href="/agenda"[^>]*data-ti-allowed="true"')
+        self.assertEqual(admin_client.get('/agenda').status_code, 200)
+        self.assertEqual(admin_client.get('/agenda/exportar_excel').status_code, 403)
+        with admin_client.session_transaction() as stored:
+            self.assertEqual(stored['_user_id'], str(self.users['admin'].id))
+            self.assertTrue(stored['_fresh'])
 
     def test_export_requires_its_own_permission(self):
         self.configure('admin',['prefeitura.relatorios.consultar'])
@@ -354,4 +411,86 @@ class CentralTiPermissionsTests(unittest.TestCase):
     def test_login_falls_back_to_allowed_screens_after_home_access_is_removed(self):
         self.configure('piloto',['prefeitura.relatorios.consultar'])
         with self.app.test_request_context():
-            self.assertEqual(get_authenticated_redirect_endpoint(self.users['piloto']),'main.acessos_dashboard')
+            self.assertEqual(get_authenticated_redirect_endpoint(self.users['piloto']),'main.relatorios')
+
+    def sidebar(self, response):
+        self.assertEqual(response.status_code, 200)
+        return response.get_data(as_text=True).split('id="appSidebar"', 1)[1].split('id="appContent"', 1)[0]
+
+    def test_full_permissions_keep_the_three_original_sidebars_separate(self):
+        permissions = [code for code in PERMISSION_CODES
+                       if code.endswith('.consultar') and code != 'sistema.perfis.consultar']
+        self.configure('admin', permissions)
+        self.login('admin')
+        prefeitura = self.sidebar(self.client.get('/relatorios'))
+        agro = self.sidebar(self.client.get('/agro/admin'))
+        financeiro = self.sidebar(self.client.get('/financeiro/empresas/ija'))
+        for sidebar in (prefeitura, agro, financeiro):
+            self.assertNotIn('Seus acessos', sidebar)
+            self.assertNotIn('ti-menu-', sidebar)
+        self.assertIn('menuPilotos', prefeitura)
+        self.assertIn('bi-bar-chart-fill', prefeitura)
+        self.assertIn('bi-box-seam-fill', prefeitura)
+        self.assertNotIn('href="/agro', prefeitura)
+        self.assertNotIn('menuRelacionamentosFinanceiro', prefeitura)
+        for group in ('menuRelacionamentosAgro', 'menuComercialAgro', 'menuOperacionalAgro'):
+            self.assertIn(group, agro)
+            self.assertNotIn(group, prefeitura)
+            self.assertNotIn(group, financeiro)
+        self.assertIn('bi-briefcase-fill', agro)
+        self.assertIn('bi-gear-fill', agro)
+        for municipal_url in ('/relatorios', '/admin', '/pilotos', '/mapa-relatorio'):
+            self.assertNotIn(f'href="{municipal_url}"', agro)
+            self.assertNotIn(f'href="{municipal_url}"', financeiro)
+        self.assertIn('menuRelacionamentosFinanceiro', financeiro)
+        self.assertIn('menuComercialFinanceiro', financeiro)
+        for operational_url in ('/agro/clientes', '/agro/os', '/agro/orcamentos'):
+            self.assertNotIn(f'href="{operational_url}"', financeiro)
+
+    def test_partial_agro_permissions_keep_only_the_authorized_original_groups(self):
+        self.configure('admin', ['agro.mapeamentos.consultar'])
+        self.login('admin')
+        response = self.client.get('/agro/admin', follow_redirects=True)
+        sidebar = self.sidebar(response)
+        self.assertIn('menuComercialAgro', sidebar)
+        self.assertIn('bi-briefcase-fill', sidebar)
+        self.assertIn('Mapeamentos', sidebar)
+        self.assertNotIn('menuRelacionamentosAgro', sidebar)
+        self.assertNotIn('menuOperacionalAgro', sidebar)
+        self.assertNotIn('href="/relatorios"', sidebar)
+
+    def test_configured_finance_menu_hides_empty_groups_and_write_only_options(self):
+        self.configure('financeiro', ['financeiro.configuracoes.consultar'])
+        self.login('financeiro')
+        sidebar = self.sidebar(self.client.get('/financeiro/empresas/ija'))
+        self.assertIn('Configurações', sidebar)
+        self.assertIn('Categorias', sidebar)
+        self.assertNotIn('menuRelacionamentosFinanceiro', sidebar)
+        self.assertNotIn('menuComercialFinanceiro', sidebar)
+        self.assertNotIn('Nova Entrada Manual', sidebar)
+        self.assertNotIn('Nova Saída Manual', sidebar)
+        self.assertEqual(self.client.post('/agro/financeiro/configuracoes').status_code, 403)
+
+    def test_templates_tolerate_an_older_navigation_context_without_relaxing_access(self):
+        processors = self.app.template_context_processors[None]
+        original = next(processor for processor in processors if processor.__name__ == 'inject_permissions')
+
+        def older_context():
+            context = original()
+            context.pop('central_ti_area_homes')
+            context.pop('central_ti_home_endpoint')
+            return context
+
+        compatible_processors = [older_context if processor is original else processor for processor in processors]
+        with patch.dict(self.app.template_context_processors, {None: compatible_processors}):
+            self.configure('admin', ['prefeitura.solicitacoes.consultar'])
+            self.login('admin')
+            self.assertEqual(self.client.get('/admin').status_code, 200)
+            self.configure('piloto', ['prefeitura.relatorios.consultar'])
+            self.login('piloto')
+            response = self.client.get('/relatorios')
+            self.assertEqual(response.status_code, 200)
+            self.assertIn('bi-bar-chart-fill', self.sidebar(response))
+            forbidden = self.client.get('/admin', headers={'Accept': 'text/html'})
+            self.assertEqual(forbidden.status_code, 403)
+            self.assertIn('Acesso negado', forbidden.get_data(as_text=True))

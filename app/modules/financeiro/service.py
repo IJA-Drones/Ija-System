@@ -56,6 +56,7 @@ def build_financeiro_empresas(user):
 
 
 def build_financeiro_menu(user, empresa):
+    from app.modules.gestao_ti.permissions import active_configuration, can_access_endpoint
     # Existing Agro records are available only through IJA until company storage
     # and data scopes have been modeled; another card must not expose these data.
     if not empresa or empresa["slug"] != "ija" or not empresa["disponivel"] or not can_access_financeiro_panel(user):
@@ -71,6 +72,20 @@ def build_financeiro_menu(user, empresa):
          "children": [{"label": label, "icon": icon, "endpoint": "main.financeiro_empresa_comercial", "params": {"empresa_slug": empresa["slug"], "aba": aba}}
                       for aba, label, icon in (("orcamentos", "Orçamentos", "bi-file-earmark-text-fill"), ("mapeamentos", "Mapeamentos", "bi-map-fill"), ("contratos", "Contratos", "bi-file-earmark-text-fill"))]},
     ]
-    return consultas + [{"label": label, "icon": icon, "endpoint": "main." + endpoint, "params": dict(params)}
+    configured = active_configuration(user) is not None
+    menu = consultas + [{"label": label, "icon": icon, "endpoint": "main." + endpoint, "params": dict(params)}
                        for label, icon, endpoint, params, admin_only in FINANCEIRO_MENU
-                       if not admin_only or can_manage_financeiro_settings(user)]
+                       if configured or not admin_only or can_manage_financeiro_settings(user)]
+    if not configured:
+        return menu
+    visible = []
+    for item in menu:
+        if "children" in item:
+            item["children"] = [child for child in item["children"]
+                                if can_access_endpoint(user, child["endpoint"], args=child["params"])]
+            if not item["children"]:
+                continue
+        elif not can_access_endpoint(user, item["endpoint"], args=item["params"]):
+            continue
+        visible.append(item)
+    return visible

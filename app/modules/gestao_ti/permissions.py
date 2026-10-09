@@ -21,7 +21,7 @@ from app.modules.gestao_ti.catalog import AREA_CODES, PERMISSION_CODES
 
 POLICY = json.loads(Path(__file__).with_name("route_policy.json").read_text())
 EXCLUSIONS = json.loads(Path(__file__).with_name("route_exclusions.json").read_text())
-FIXED_ENDPOINTS = {"main.central_ti", "main.central_ti_salvar", "main.acessos_dashboard"}
+FIXED_ENDPOINTS = {"main.central_ti", "main.central_ti_salvar", "main.inicio", "main.acessos_dashboard"}
 
 
 def validate_route_policy(app):
@@ -228,7 +228,7 @@ def invalidate_request_permissions():
 
 
 def register_permission_security(bp):
-    from flask import render_template
+    from flask import redirect, render_template, url_for
     from flask_login import login_required
 
     @bp.record_once
@@ -264,7 +264,17 @@ def register_permission_security(bp):
     @bp.get("/acessos", endpoint="acessos_dashboard")
     @login_required
     def access_home():
-        return render_template("acessos_dashboard.html")
+        return redirect(url_for("main.inicio"))
+
+    @bp.get("/inicio", endpoint="inicio")
+    @login_required
+    def home():
+        from flask_login import current_user
+        from app.modules.auth.service import get_authenticated_redirect_endpoint
+        endpoint = get_authenticated_redirect_endpoint(current_user)
+        if endpoint != "main.inicio":
+            return redirect(url_for(endpoint))
+        return render_template("inicio.html")
 
     @bp.after_request
     def expire_capability_cache(response):
@@ -277,12 +287,14 @@ def register_permission_security(bp):
     @bp.app_context_processor
     def inject_permissions():
         from flask_login import current_user
-        from app.modules.gestao_ti.navigation import build_navigation
+        from app.modules.auth.service import get_authenticated_redirect_endpoint
+        from app.modules.gestao_ti.navigation import area_home_endpoint
         from app.modules.usuarios.service import can_manage_admin_user
         active = active_configuration(current_user) is not None
         return {
             "central_ti_profile_active": active,
-            "central_ti_navigation": build_navigation(current_user) if active else [],
+            "central_ti_home_endpoint": get_authenticated_redirect_endpoint(current_user) if active else None,
+            "central_ti_area_homes": {area: area_home_endpoint(current_user, area) for area in AREA_CODES} if active else {},
             "central_ti_permission": lambda code: has_permission(current_user, code),
             "central_ti_url_allowed": lambda url, method=None: ui_url_allowed(current_user, url, method),
             "central_ti_ui_guard": lambda endpoints, legacy: ui_guard(current_user, endpoints, legacy),

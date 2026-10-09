@@ -22,6 +22,8 @@ Ao marcar uma ação, a central também marca Consultar. Retirar Consultar remov
 - As permissões liberam funcionalidades. Não transformam o usuário em administrador nem trocam seu tipo.
 - Permanecem os vínculos e filtros de prefeitura, região, equipe, propriedade do registro e empresa. Um perfil sem vínculo necessário pode abrir uma tela autorizada e não ter registros disponíveis.
 - O Financeiro permanece na central financeira. O menu respeita a área em uso e a seleção de empresa existente.
+- A sidebar conserva os ícones, nomes, ordem e menus expansíveis anteriores. Prefeitura, Agro e Financeiro mantêm seus próprios menus; a Central de TI determina a visibilidade das opções dentro de cada área. Não há uma tela ou opção "Seus acessos" para os usuários.
+- Quando a tela inicial habitual não estiver autorizada, o login abre uma tela de negócio permitida. Perfis sem nenhuma função de negócio recebem somente uma página inicial neutra.
 - A Central de TI continua reservada a Dev e Gestor de TI. O acesso administrativo à própria central é preservado mesmo ao limpar as demais permissões desses perfis.
 - Administradores de usuários delegados não podem assumir ou criar contas de perfil mais privilegiado que o próprio. As proteções específicas das contas Dev, Diretor e Gestor de TI permanecem.
 

@@ -77,5 +77,6 @@ def get_authenticated_redirect_endpoint(user):
     if active_configuration(user) is not None and not can_access_endpoint(user, endpoint):
         if user.tipo_usuario in {"dev", "gestor_ti"}:
             return "main.central_ti"
-        return "main.acessos_dashboard"
+        from app.modules.gestao_ti.navigation import first_allowed_screen_endpoint
+        return first_allowed_screen_endpoint(user) or "main.inicio"
     return endpoint
