@@ -1,6 +1,7 @@
 {
   "main.serve_sw": "public, personal or separately protected endpoint",
   "main.portal_cidadao": "public, personal or separately protected endpoint",
+  "main.portal_cidadao_chatbot": "public portal chatbot protected by its session token, input validation and request quotas",
   "main.portal_cidadao_boletim_dengue": "public, personal or separately protected endpoint",
   "main.portal_cidadao_denuncias_criar": "public, personal or separately protected endpoint",
   "main.portal_cidadao_cep": "public, personal or separately protected endpoint",

@@ -2,6 +2,7 @@
 import re
 import unittest
 from io import BytesIO
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from flask import g, url_for
@@ -61,6 +62,72 @@ class CentralTiPermissionsTests(unittest.TestCase):
         self.app.url_map.add(Rule('/demo-unmapped',endpoint='main.demo_unmapped',methods=['GET']))
         with self.assertRaisesRegex(ValueError,'rota sem permissão'):
             validate_route_policy(self.app)
+
+    def test_public_chatbot_keeps_its_tokens_when_logged_in_profile_has_no_business_access(self):
+        self.configure('admin')
+        self.login('admin')
+        self.app.config.update(CSRF_PROTECTION_ENABLED=True, OPENAI_API_KEY='test-key')
+        with self.client.session_transaction() as stored:
+            stored['portal_chat_token'] = 'portal-test-token'
+            stored['_ija_csrf'] = 'csrf-test-token'
+        endpoint = '/portal-cidadao/chatbot'
+        module = 'app.modules.portal_cidadao.chatbot.'
+        with patch(module + 'OpenAI') as provider, patch(module + 'consume_quota', return_value=True):
+            provider.return_value.__enter__.return_value.responses.create.return_value = SimpleNamespace(
+                status='completed', output_text='Use o formulário do portal.', output=[],
+            )
+            with self.assertLogs(self.app.logger, level='WARNING'):
+                response = self.client.post(endpoint, json={'message': 'Como registro um relato?'})
+            self.assertEqual(response.status_code, 403)
+            self.assertEqual(response.json['code'], 'csrf_invalid')
+            response = self.client.post(endpoint, json={'message': 'Como registro um relato?'},
+                headers={'X-CSRFToken': 'csrf-test-token'})
+            self.assertEqual(response.status_code, 403)
+            self.assertIn('Recarregue', response.json['error'])
+            provider.assert_not_called()
+            response = self.client.post(endpoint, json={'message': 'Como registro um relato?'},
+                headers={'X-CSRFToken': 'csrf-test-token', 'X-Portal-Chat-Token': 'portal-test-token'})
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.json['answer'], 'Use o formulário do portal.')
+            self.assertTrue(response.cache_control.no_store)
+            provider.assert_called_once()
+
+    def test_central_denuncia_grants_keep_triage_state_checks_and_same_session_revocation(self):
+        report = Denuncia(protocolo='MERGE-TEST', status=Denuncia.STATUS_RECEBIDA,
+            tipo_visita='Aedes', foco='Piscina', logradouro='Rua fictícia', numero='1',
+            bairro='Teste', cidade='Teste', uf='SP', cidadao_nome='Pessoa fictícia',
+            cidadao_cpf='00000000000', cidadao_rg='', cidadao_telefone='000')
+        db.session.add(report)
+        db.session.commit()
+        endpoint = f'/denuncias/{report.id}'
+        consult = 'prefeitura.denuncias.consultar'
+        forward = 'prefeitura.denuncias.encaminhar'
+        archive = 'prefeitura.denuncias.arquivar'
+        self.configure('admin', [consult])
+        self.login('admin')
+        self.assertEqual(self.client.get(endpoint).status_code, 200)
+        self.assertEqual(self.client.post(endpoint + '/encaminhar-coordenadoria',
+            data={'coordenadoria': 'NORTE'}).status_code, 403)
+        self.assertEqual(self.client.post(endpoint + '/arquivar',
+            data={'motivo': 'Relato duplicado de teste'}).status_code, 403)
+        self.assertEqual(report.status, Denuncia.STATUS_RECEBIDA)
+        self.configure('admin', [consult, forward])
+        self.assertEqual(self.client.post(endpoint + '/encaminhar-coordenadoria',
+            data={'coordenadoria': 'NORTE'}).status_code, 302)
+        self.assertEqual(report.status, Denuncia.STATUS_ENCAMINHADA_COORDENADORIA)
+        self.configure('admin', [consult, archive])
+        self.assertEqual(self.client.post(endpoint + '/encaminhar-coordenadoria',
+            data={'coordenadoria': 'SUL'}).status_code, 403)
+        self.assertEqual(report.coordenadoria, 'NORTE')
+        self.assertEqual(self.client.post(endpoint + '/arquivar',
+            data={'motivo': 'Relato duplicado de teste'}).status_code, 302)
+        self.assertEqual(report.status, Denuncia.STATUS_ARQUIVADA)
+        self.configure('admin', [consult, forward, archive])
+        self.assertEqual(self.client.post(endpoint + '/encaminhar-coordenadoria',
+            data={'coordenadoria': 'SUL'}).status_code, 302)
+        self.assertEqual(report.status, Denuncia.STATUS_ARQUIVADA)
+        self.assertEqual(report.coordenadoria, 'NORTE')
+        self.assertIn('Triagem encerrada', self.client.get(endpoint).get_data(as_text=True))
 
     def test_area_access_alone_does_not_expose_unselected_agro_dashboard_data(self):
         self.configure('piloto',areas=['agro'])

@@ -37,6 +37,7 @@
   const complementoInput = page.querySelector("#portalComplemento");
   const useLocationButton = page.querySelector("#portalUseLocationButton");
   let selectedType = "";
+  let submitting = false;
 
   function clearFocusOptions(placeholder) {
     focusSelect.innerHTML = "";
@@ -180,7 +181,7 @@
   async function lookupCep(cepDigits) {
     try {
       const response = await fetch("/portal-cidadao/cep/" + cepDigits, {
-        headers: { Accept: "application/json" }
+        headers: { Accept: "application/json", "X-CSRFToken": document.querySelector('meta[name="csrf-token"]')?.content || "" }
       });
       const payload = await response.json();
       if (response.ok && payload.ok) {
@@ -248,7 +249,7 @@
     Array.from(fileInput.files || []).forEach(function (file) {
       const item = document.createElement("span");
       item.className = "portal-cidadao-file-item";
-      item.innerHTML = '<i class="bi bi-paperclip" aria-hidden="true"></i>' + file.name;
+      item.textContent = file.name;
       fileList.appendChild(item);
     });
   });
@@ -261,6 +262,8 @@
 
   form.addEventListener("submit", async function (event) {
     event.preventDefault();
+    if (submitting) return;
+    if (form.dataset.chatReport === "true" && form.dataset.reportConfirmed !== "true") return;
 
     if (!selectedType) {
       typeButtons[0]?.focus();
@@ -273,6 +276,8 @@
       return;
     }
 
+    submitting = true;
+    form.dataset.submitting = "true";
     previewButton.disabled = true;
     previewButton.innerHTML = 'Enviando <i class="bi bi-hourglass-split" aria-hidden="true"></i>';
     feedback.hidden = true;
@@ -281,7 +286,7 @@
       const response = await fetch(form.action, {
         method: "POST",
         body: new FormData(form),
-        headers: { Accept: "application/json" }
+        headers: { Accept: "application/json", "X-CSRFToken": document.querySelector('meta[name="csrf-token"]')?.content || "" }
       });
       const payload = await response.json();
 
@@ -289,6 +294,7 @@
         const errors = payload.errors || {};
         const firstError = Object.values(errors)[0] || "Não foi possível registrar o relato.";
         showFeedback(firstError, "error");
+        form.dispatchEvent(new CustomEvent("portal:report-error", {detail: {errors, message: firstError}}));
         return;
       }
 
@@ -304,10 +310,16 @@
       fileList.innerHTML = "";
       clearFocusOptions("Primeiro escolha o tipo de ocorrência");
       focusSelect.disabled = true;
+      form.dispatchEvent(new CustomEvent("portal:report-success", {detail: {protocolo: payload.protocolo}}));
     } catch (error) {
       console.error("Erro ao enviar relato cidadão.", error);
-      showFeedback("Erro de comunicação ao registrar o relato. Tente novamente.", "error");
+      const message = "Não foi possível confirmar o envio. O relato pode ter sido recebido. Evite reenviar imediatamente para não duplicar o registro.";
+      showFeedback(message, "error");
+      form.dispatchEvent(new CustomEvent("portal:report-error", {detail: {errors: {}, message}}));
     } finally {
+      submitting = false;
+      form.dataset.submitting = "false";
+      delete form.dataset.reportConfirmed;
       previewButton.disabled = false;
       previewButton.innerHTML = 'Enviar relato <i class="bi bi-arrow-right" aria-hidden="true"></i>';
     }

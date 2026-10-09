@@ -14,9 +14,12 @@
     </div>
     <div class="col-12 col-xl-4">
       {% call section('Ações da ' ~ area, 'bi-send', 'mb-4') %}
-        {% if view_mode == 'coordenadoria' %}
+        {% if denuncia.solicitacao_id or denuncia.status in ['ARQUIVADA', 'CONVERTIDA_SOLICITACAO'] %}
+        <p class="text-muted mb-0">Triagem encerrada. Consulte o fluxo do atendimento abaixo.</p>
+        {% elif view_mode == 'coordenadoria' %}
         <p class="text-muted small">Revise o endereço, as evidências e a descrição antes de escolher a UVIS que fará a atuação.</p>
         <form method="post" action="{{ url_for('main.coordenadoria_denuncia_designar_uvis', denuncia_id=denuncia.id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.coordenadoria_denuncia_designar_uvis', denuncia_id=denuncia.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
+          {% if ija_csrf_enabled %}<input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">{% endif %}
           <label class="form-label" for="denunciaUvis">UVIS responsável</label>
           <select id="denunciaUvis" name="uvis_usuario_id" class="form-select mb-3" required {% if not uvis_options %}disabled{% endif %}>
             <option value="">Selecione uma UVIS da região {{ denuncia.coordenadoria }}</option>
@@ -30,6 +33,7 @@
         {% else %}
         <p class="text-muted small">Confira o relato e escolha a coordenadoria responsável pelo local.</p>
         <form method="post" action="{{ url_for('main.denuncia_encaminhar_coordenadoria', denuncia_id=denuncia.id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.denuncia_encaminhar_coordenadoria', denuncia_id=denuncia.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
+          {% if ija_csrf_enabled %}<input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">{% endif %}
           <label class="form-label" for="denunciaCoordenadoria">Coordenadoria responsável</label>
           <select id="denunciaCoordenadoria" name="coordenadoria" class="form-select mb-3" required>
             <option value="">Selecione a coordenadoria</option>
@@ -41,8 +45,9 @@
         </form>
         <hr class="my-4">
         <form method="post" action="{{ url_for('main.denuncia_arquivar', denuncia_id=denuncia.id) }}" data-ti-allowed="{{ 'true' if (central_ti_url_allowed(url_for('main.denuncia_arquivar', denuncia_id=denuncia.id), 'POST') if central_ti_url_allowed is defined else true) else 'false' }}">
+          {% if ija_csrf_enabled %}<input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">{% endif %}
           <label class="form-label" for="denunciaMotivo">Motivo do arquivamento</label>
-          <textarea id="denunciaMotivo" class="form-control mb-3" name="motivo" rows="3" required placeholder="Descreva o motivo: duplicidade, endereço inválido ou outra situação.">{{ denuncia.arquivado_motivo or '' }}</textarea>
+          <textarea id="denunciaMotivo" class="form-control mb-3" name="motivo" rows="3" required minlength="10" placeholder="Descreva o motivo: duplicidade, endereço inválido ou outra situação.">{{ denuncia.arquivado_motivo or '' }}</textarea>
           <button class="btn btn-outline-danger w-100" type="submit"><i class="bi bi-archive" aria-hidden="true"></i>Arquivar denúncia</button>
         </form>
         {% endif %}

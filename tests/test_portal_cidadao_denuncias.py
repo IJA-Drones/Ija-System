@@ -68,6 +68,20 @@ class PortalCidadaoDenunciaServiceTests(unittest.TestCase):
         self.assertEqual(data["cpf"], "529.982.247-25")
         self.assertEqual(data["telefone"], "(11) 98765-4321")
 
+    def test_rg_is_optional_but_validated_when_provided(self):
+        data = portal_service._parse_denuncia_form(MultiDict({
+            "tipo_visita": "Culex", "foco": "Corrego",
+            "logradouro": "Rua Teste", "numero": "1", "bairro": "Centro",
+            "cidade": "Sao Paulo", "nome": "Cidadao Teste",
+            "cpf": "52998224725", "telefone": "11987654321", "consentimento": "1",
+        }))
+        self.assertEqual(data["rg"], "")
+        self.assertEqual(portal_service._validate_denuncia_data(data), {})
+        data["rg"] = "12"
+        self.assertIn("rg", portal_service._validate_denuncia_data(data))
+        data["rg"] = "123456789"
+        self.assertEqual(portal_service._validate_denuncia_data(data), {})
+
     def test_denuncia_accepts_address_without_cep(self):
         data = portal_service._parse_denuncia_form(MultiDict({
             "tipo_visita": "Outro",

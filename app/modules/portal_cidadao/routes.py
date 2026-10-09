@@ -12,19 +12,29 @@ from app.modules.portal_cidadao.health_news import (
     get_portal_health_news,
 )
 from app.modules.portal_cidadao.service import DenunciaValidationError, criar_denuncia
-from app.shared.solicitacao_focos import build_focus_catalog
+from app.modules.portal_cidadao.catalog import build_public_focus_catalog
+from app.modules.portal_cidadao.chatbot import chat_token, reply
 
 
 def register_routes(bp):
+    @bp.route("/portal-cidadao/chatbot", methods=["POST"], endpoint="portal_cidadao_chatbot")
+    def portal_cidadao_chatbot():
+        response = current_app.make_response(reply())
+        response.headers["Cache-Control"] = "no-store"
+        return response
+
     @bp.route("/portal-cidadao", methods=["GET"], endpoint="portal_cidadao")
     def portal_cidadao():
-        return render_template(
+        response = current_app.make_response(render_template(
             "portal_cidadao.html",
-            focus_catalog=build_focus_catalog(),
+            portal_chat_token=chat_token(),
+            focus_catalog=build_public_focus_catalog(),
             health_news=get_portal_health_news(logger=current_app.logger),
             infodengue_alert=get_infodengue_alert(config=current_app.config, logger=current_app.logger),
             portal_city=current_app.config.get("INFODENGUE_CITY") or "São Paulo",
-        )
+        ))
+        response.headers["Cache-Control"] = "private, no-store"
+        return response
 
     @bp.route("/portal-cidadao/boletim-dengue", methods=["GET"], endpoint="portal_cidadao_boletim_dengue")
     def portal_cidadao_boletim_dengue():

@@ -7,6 +7,10 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 class Config:
+    PORTAL_CHATBOT_WEB_SEARCH_ENABLED = os.getenv("PORTAL_CHATBOT_WEB_SEARCH_ENABLED", "1").strip().lower() in {"1", "true", "yes", "on"}
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+    OPENAI_CHAT_MODEL = os.getenv("OPENAI_CHAT_MODEL", "gpt-6-luna")
+    PORTAL_CHATBOT_DAILY_LIMIT = int(os.getenv("PORTAL_CHATBOT_DAILY_LIMIT", "500"))
     # Gera uma chave secreta aleatória ou usa uma fixa
     SECRET_KEY = (
         os.environ.get("SECRET_KEY")

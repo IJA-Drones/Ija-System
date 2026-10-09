@@ -299,7 +299,7 @@ def build_novo_cadastro_context_with_form(user, google_maps_key, form_source):
     return context
 
 
-def create_nova_solicitacao(user, form_data):
+def create_nova_solicitacao(user, form_data, *, commit=True):
     place_id = _clean_place_id(form_data.get("place_id"))
     logradouro = _validate_street_without_address_number(form_data.get("logradouro"))
     numero = _validate_single_address_number(form_data.get("numero"))
@@ -402,7 +402,10 @@ def create_nova_solicitacao(user, form_data):
 
     try:
         db.session.add(nova_solicitacao)
-        db.session.commit()
+        if commit:
+            db.session.commit()
+        else:
+            db.session.flush()
     except Exception:
         db.session.rollback()
         raise
