@@ -175,7 +175,7 @@
         <i class="bi bi-funnel-fill text-primary"></i>
         <span class="text-dark fw-bold">Filtros de Busca</span>
         <span id="filterBadge" class="badge bg-danger rounded-circle p-1 d-none"
-          style="width: 8px; height: 8px;"></span>
+          style="width: 8px; height: 8px;"><span class="visually-hidden">Filtros adicionais ativos</span></span>
       </div>
       <i class="bi bi-chevron-down text-muted"></i>
     </div>
@@ -396,12 +396,12 @@
         if (mapLogistics) google.maps.event.trigger(mapLogistics, "resize");
 
         const target = e.target.getAttribute("href");
-        if (target === "#tabCalor") carregarDadosCalor();
-        if (target === "#tabArea") carregarDadosOperacionais();
+        if (target === "#tabCalor") ajustarMapaAosPontos(mapHeat, pontosAtuais);
+        if (target === "#tabArea") ajustarMapaAosPontos(mapArea, pontosAtuais);
       });
     });
 
-    carregarDadosCalor();
+    atualizarMapas();
   }
 
   function bootRelatorioMapas() {
@@ -418,16 +418,77 @@
     document.addEventListener("googlemaps:ready", bootRelatorioMapas, { once: true });
   }
 
-  function atualizarMapas() {
+  function atualizarBadgeFiltros() {
     const foco = document.getElementById("focoFilter").value;
     const badge = document.getElementById("filterBadge");
+    const ativo = foco !== "todos"
+      || Boolean(document.getElementById("uvisFilter")?.value)
+      || Boolean(document.getElementById("larvaFilter").value)
+      || document.getElementById("mesFilter").value !== String(MES_RELATORIO_ATUAL)
+      || document.getElementById("anoFilter").value !== String(ANO_RELATORIO_ATUAL);
+    badge.classList.toggle("d-none", !ativo);
+  }
 
-    if (foco !== "todos") badge.classList.remove("d-none");
-    else badge.classList.add("d-none");
+  function mostrarFeedbackMapa(message = "", erro = false) {
+    const feedback = document.getElementById("mapFeedback");
+    feedback.textContent = message;
+    feedback.classList.toggle("d-none", !message);
+    feedback.classList.toggle("alert-warning", erro);
+    feedback.classList.toggle("alert-info", !erro);
+  }
 
-    atualizarLegendaCategorias();   // mantém legenda coerente
-    carregarDadosCalor();
-    carregarDadosOperacionais();
+  function limparDadosMapas() {
+    if (heatmap) heatmap.setMap(null);
+    heatmap = null;
+    markers.forEach(marker => marker.setMap(null));
+    circles.forEach(circle => circle.setMap(null));
+    markers = [];
+    circles = [];
+    pontosAtuais = [];
+    atualizarIndicadoresBI(0);
+    atualizarLegendaCategorias([]);
+  }
+
+  async function atualizarMapas() {
+    atualizarBadgeFiltros();
+    const sequence = ++mapasRequestSequence;
+    mapasAbortController?.abort();
+    limparDadosMapas();
+
+    if (!document.getElementById("anoFilter").reportValidity()) {
+      mostrarFeedbackMapa("Informe um ano válido entre 1 e 9999.", true);
+      return;
+    }
+    if (!mapHeat && !mapArea) return;
+
+    mapasAbortController = new AbortController();
+    const focoFiltro = document.getElementById("focoFilter").value;
+    mostrarFeedbackMapa("Carregando registros…");
+
+    try {
+      const response = await fetch(heatmapDataUrl(), { signal: mapasAbortController.signal });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      let pontos = await response.json();
+      if (sequence !== mapasRequestSequence) return;
+      if (!Array.isArray(pontos)) throw new Error("Resposta inválida do mapa");
+
+      if (focoFiltro !== "todos") {
+        const alvo = normalizarFoco(focoFiltro);
+        pontos = pontos.filter(ponto => normalizarFoco(ponto.foco) === alvo);
+      }
+
+      pontosAtuais = pontos;
+      renderizarDadosCalor(pontos, focoFiltro);
+      renderizarDadosOperacionais(pontos);
+      atualizarIndicadoresBI(pontos.length);
+      atualizarLegendaCategorias(pontos);
+      mostrarFeedbackMapa(pontos.length ? "" : "Nenhum registro encontrado para os filtros selecionados.");
+    } catch (error) {
+      if (sequence !== mapasRequestSequence || error.name === "AbortError") return;
+      limparDadosMapas();
+      mostrarFeedbackMapa("Não foi possível carregar o mapa. Tente novamente em Filtrar.", true);
+      console.error(error);
+    }
   }
 
   function atualizarIndicadoresBI(total) {
@@ -706,7 +767,8 @@
     const params = new URLSearchParams({
       uvis_id: uvisId,
       mes,
-      ano: String(ANO_RELATORIO_ATUAL),
+      ano: document.getElementById("anoFilter").value,
+      larva_visualizada: document.getElementById("larvaFilter").value,
     });
     return `/api/heatmap-data?${params.toString()}`;
   }
@@ -731,135 +793,101 @@
     map.fitBounds(bounds);
   }
 
-  async function carregarDadosCalor() {
+  function renderizarDadosCalor(pontos, focoFiltro) {
     if (!mapHeat) return;
-    try {
-      const focoFiltro = document.getElementById("focoFilter")?.value || "todos";
+    const heatData = pontos.map(p => new google.maps.LatLng(p.lat, p.lng));
+    if (heatmap) heatmap.setMap(null);
 
-      const response = await fetch(heatmapDataUrl());
-      let pontos = await response.json();
+    let gradienteMapa, gradienteCSS;
+    const categoria = (focoFiltro === "todos") ? "todos" : getCategoriaPorFoco(focoFiltro);
 
-      // filtro por foco EXATO (quando não for "todos")
-      if (focoFiltro !== "todos") {
-        const alvo = normalizarFoco(focoFiltro);
-        pontos = pontos.filter(p => normalizarFoco(p.foco) === alvo);
-      }
-
-      atualizarIndicadoresBI(pontos.length);
-
-      const heatData = pontos.map(p => new google.maps.LatLng(p.lat, p.lng));
-      if (heatmap) heatmap.setMap(null);
-
-      let gradienteMapa, gradienteCSS;
-      const categoria = (focoFiltro === "todos") ? "todos" : getCategoriaPorFoco(focoFiltro);
-
-      if (categoria === "piscina") {
-        gradienteMapa = [
-          'rgba(0, 255, 255, 0)',
-          'rgba(0, 255, 255, 1)',
-          'rgba(0, 150, 255, 1)',
-          'rgba(0, 0, 255, 1)'
-        ];
-        gradienteCSS = "linear-gradient(to right, #00ffff, #0096ff, #0000ff)";
-      } else if (categoria === "abandonado") {
-        gradienteMapa = [
-          'rgba(255, 0, 0, 0)',
-          'rgba(255, 0, 0, 1)',
-          'rgba(150, 0, 150, 1)',
-          'rgba(100, 0, 100, 1)'
-        ];
-        gradienteCSS = "linear-gradient(to right, #ff0000, #960096, #640064)";
-      } else if (categoria === "terreno") {
-        gradienteMapa = [
-          'rgba(0, 255, 0, 0)',
-          'rgba(173, 255, 47, 1)',
-          'rgba(0, 255, 0, 1)',
-          'rgba(0, 100, 0, 1)'
-        ];
-        gradienteCSS = "linear-gradient(to right, #adff2f, #00ff00, #006400)";
-      } else {
-        gradienteMapa = [
-          'rgba(0, 255, 255, 0)',
-          'rgba(0, 255, 0, 1)',
-          'rgba(255, 255, 0, 1)',
-          'rgba(255, 0, 0, 1)'
-        ];
-        gradienteCSS = "linear-gradient(to right, #00ffff, #00ff00, #ffff00, #ff0000)";
-      }
-
-      const barra = document.querySelector('.gradient-bar');
-      if (barra) barra.style.setProperty('--legenda-gradiente', gradienteCSS);
-
-      const HeatmapOverlay = ensureCanvasHeatmapOverlay();
-      heatmap = new HeatmapOverlay({
-        data: heatData,
-        map: mapHeat,
-        radius: 40,
-        opacity: 0.8,
-        gradient: gradienteMapa
-      });
-
-      ajustarMapaAosPontos(mapHeat, heatData);
-    } catch (error) {
-      console.error(error);
+    if (categoria === "piscina") {
+      gradienteMapa = [
+        'rgba(0, 255, 255, 0)',
+        'rgba(0, 255, 255, 1)',
+        'rgba(0, 150, 255, 1)',
+        'rgba(0, 0, 255, 1)'
+      ];
+      gradienteCSS = "linear-gradient(to right, #00ffff, #0096ff, #0000ff)";
+    } else if (categoria === "abandonado") {
+      gradienteMapa = [
+        'rgba(255, 0, 0, 0)',
+        'rgba(255, 0, 0, 1)',
+        'rgba(150, 0, 150, 1)',
+        'rgba(100, 0, 100, 1)'
+      ];
+      gradienteCSS = "linear-gradient(to right, #ff0000, #960096, #640064)";
+    } else if (categoria === "terreno") {
+      gradienteMapa = [
+        'rgba(0, 255, 0, 0)',
+        'rgba(173, 255, 47, 1)',
+        'rgba(0, 255, 0, 1)',
+        'rgba(0, 100, 0, 1)'
+      ];
+      gradienteCSS = "linear-gradient(to right, #adff2f, #00ff00, #006400)";
+    } else {
+      gradienteMapa = [
+        'rgba(0, 255, 255, 0)',
+        'rgba(0, 255, 0, 1)',
+        'rgba(255, 255, 0, 1)',
+        'rgba(255, 0, 0, 1)'
+      ];
+      gradienteCSS = "linear-gradient(to right, #00ffff, #00ff00, #ffff00, #ff0000)";
     }
+
+    const barra = document.querySelector('.gradient-bar');
+    if (barra) barra.style.setProperty('--legenda-gradiente', gradienteCSS);
+
+    const HeatmapOverlay = ensureCanvasHeatmapOverlay();
+    heatmap = new HeatmapOverlay({
+      data: heatData,
+      map: mapHeat,
+      radius: 40,
+      opacity: 0.8,
+      gradient: gradienteMapa
+    });
+
+    ajustarMapaAosPontos(mapHeat, heatData);
   }
 
-  async function carregarDadosOperacionais() {
+  function renderizarDadosOperacionais(pontos) {
     if (!mapArea) return;
-    try {
-      const focoFiltro = document.getElementById("focoFilter")?.value || "todos";
+    markers.forEach(m => m.setMap(null));
+    circles.forEach(c => c.setMap(null));
+    markers = []; circles = [];
 
-      const response = await fetch(heatmapDataUrl());
-      let pontos = await response.json();
+    pontos.forEach(p => {
+      const cor = getCorPorFoco(p.foco);
 
-      // filtro por foco EXATO (quando não for "todos")
-      if (focoFiltro !== "todos") {
-        const alvo = normalizarFoco(focoFiltro);
-        pontos = pontos.filter(p => normalizarFoco(p.foco) === alvo);
-      }
-
-      atualizarLegendaCategorias(pontos);
-
-      markers.forEach(m => m.setMap(null));
-      circles.forEach(c => c.setMap(null));
-      markers = []; circles = [];
-
-      pontos.forEach(p => {
-        const cor = getCorPorFoco(p.foco);
-
-        const marker = new google.maps.Marker({
-          position: { lat: p.lat, lng: p.lng },
-          map: mapArea,
-          icon: {
-            path: google.maps.SymbolPath.CIRCLE,
-            scale: 5,
-            fillColor: cor,
-            fillOpacity: 1,
-            strokeWeight: 1.5,
-            strokeColor: "#ffffff"
-          }
-        });
-        markers.push(marker);
-
-        const circle = new google.maps.Circle({
-          map: mapArea,
-          radius: 20,
+      const marker = new google.maps.Marker({
+        position: { lat: p.lat, lng: p.lng },
+        map: mapArea,
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 5,
           fillColor: cor,
-          fillOpacity: 0.15,
-          strokeColor: cor,
-          strokeOpacity: 0.4,
-          strokeWeight: 1,
-          center: { lat: p.lat, lng: p.lng },
-          clickable: false
-        });
-        circles.push(circle);
+          fillOpacity: 1,
+          strokeWeight: 1.5,
+          strokeColor: "#ffffff"
+        }
       });
+      markers.push(marker);
 
-      ajustarMapaAosPontos(mapArea, pontos.map(p => ({ lat: p.lat, lng: p.lng })));
-    } catch (error) {
-      console.error(error);
-    }
+      const circle = new google.maps.Circle({
+        map: mapArea,
+        radius: 20,
+        fillColor: cor,
+        fillOpacity: 0.15,
+        strokeColor: cor,
+        strokeOpacity: 0.4,
+        strokeWeight: 1,
+        center: { lat: p.lat, lng: p.lng },
+        clickable: false
+      });
+      circles.push(circle);
+    });
+
+    ajustarMapaAosPontos(mapArea, pontos.map(p => ({ lat: p.lat, lng: p.lng })));
   }
 
   const darkMapStyle = [
